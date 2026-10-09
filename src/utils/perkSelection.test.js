@@ -38,7 +38,7 @@ describe('one Perks surface', () => {
   });
 
   it('the plain perk entry points open the Perks tab with a fresh params object (so Discover re-applies it)', () => {
-    for (const f of ['Home', 'Matches', 'Gatherings', 'Settings']) {
+    for (const f of ['Home', 'Matches', 'Settings']) {
       const src = read(`screens/${f}Screen.js`);
       expect(src).toMatch(/navigateKeepingTrail\(navigation, 'Discover', \{ \.\.\.PERKS_TAB \}\)/);
     }

@@ -95,7 +95,7 @@ describe('the same object reads the same everywhere', () => {
 });
 
 describe('screens do not decide CTAs themselves', () => {
-  const SCREENS = ['GatheringsScreen', 'DiscoverHubScreen', 'GatheringDetailScreen', 'HomeScreen', 'BusinessRequestDetailScreen', 'BusinessDashboardScreen', 'ActivityScreen'];
+  const SCREENS = ['DiscoverHubScreen', 'GatheringDetailScreen', 'HomeScreen', 'BusinessRequestDetailScreen', 'BusinessDashboardScreen', 'ActivityScreen'];
   test('no hand-written join / accept / send-offer labels', () => {
     for (const name of SCREENS) {
       const src = read(`src/screens/${name}.js`);
@@ -109,9 +109,6 @@ describe('screens do not decide CTAs themselves', () => {
     expect(read('src/screens/BusinessRequestDetailScreen.js')).not.toContain("canDo('request', request.status, 'accept_offer')");
   });
   test('each converted screen goes through the shared functions', () => {
-    // the feed's action comes from the context object (gatheringCardModel -> gatheringPrimaryAction)
-    expect(read('src/screens/GatheringsScreen.js')).toContain('gatheringCardModel(g, { myUserId, language })');
-    expect(read('src/screens/GatheringsScreen.js')).not.toMatch(/gatheringPrimaryAction\(/);
     // Discover's gathering action comes from the context object (gatheringCardModel -> gatheringPrimaryAction)
     expect(read('src/screens/DiscoverHubScreen.js')).toContain('gatheringCardModel(g, {');
     expect(read('src/screens/DiscoverHubScreen.js')).not.toMatch(/gatheringPrimaryAction\(/);

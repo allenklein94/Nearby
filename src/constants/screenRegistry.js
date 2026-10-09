@@ -24,7 +24,6 @@ export const SCREEN_REGISTRY = {
   Create: { surface: true, reason: 'Tab: start a gathering, a community or a plan for someone.' },
   Activity: { surface: true, jobs: ['B'], reason: 'Tab: invitations, requests and replies that need an answer.' },
   Plans: { surface: true, jobs: ['C'], reason: 'Your upcoming, hosting and past plans; the way into managing each one.' },
-  Gatherings: { surface: true, jobs: ['A'], reason: 'The nearby gatherings feed (filters change it in place).' },
 
   // ---- signing in and onboarding (one multi-step setup workflow) ----
   Onboarding: { jobs: ['C'], reason: 'Welcome step of setting up an account.' },
@@ -157,6 +156,7 @@ export const RULE14_DECISIONS = {
     BusinessAIAutomation: 'a panel that opens in place under the business dashboard Profile tab Settings (B10)',
     GatheringConfirmation: 'a one-time "Your gathering is live" panel at the top of GatheringDetail after publishing (screen-reduction audit B5, 2026-10-09)',
     Communities: 'your own communities + Create, opened in place under Profile > Your connections; public discovery is Discover -> Communities (screen-reduction audit B8, 2026-10-09)',
+    Gatherings: 'Discover -> Gatherings with the feed\'s useful filters on that tab, ranked by Discover\'s one ladder (screen-reduction audit B3, 2026-10-09)',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).

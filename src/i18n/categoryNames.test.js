@@ -130,7 +130,7 @@ describe('chips and pickers (display only)', () => {
     expect(railName('pets', 'fr')).toBe(translations.fr.vocab.categories.groups.pets); // non-leading group = its group name
   });
   it('pickers render names through the hook but keep storing the canonical value', () => {
-    for (const f of ['CreateGatheringScreen', 'EditGatheringScreen', 'CreateCommunityScreen', 'EditCommunityScreen', 'GatheringsScreen', 'ProfileScreen', 'ViewProfileScreen', 'DiscoverHubScreen']) {
+    for (const f of ['CreateGatheringScreen', 'EditGatheringScreen', 'CreateCommunityScreen', 'EditCommunityScreen', 'ProfileScreen', 'ViewProfileScreen', 'DiscoverHubScreen']) {
       const src = read(`screens/${f}.js`);
       expect([f, /useCategoryNames\(\)/.test(src)]).toEqual([f, true]);
       expect([f, /set\w+\(names\./.test(src)]).toEqual([f, false]); // a translated name is never saved

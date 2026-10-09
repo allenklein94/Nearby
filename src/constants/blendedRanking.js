@@ -51,7 +51,8 @@ export function becauseYouLikeCategories({ declared = [], behavior = {}, maturit
 }
 
 // A small lift for a gathering that fits the person's stated social comfort: below any declared interest (5) and any real behavior
-// signal. The Gatherings feed ranks with it (utils/gatheringFeedRanking.js, the one ranking ladder).
+// signal. Discover's gathering ladder ranks with it (scoreGathering in DiscoverHubScreen; the separate Gatherings feed and its
+// ranker folded into Discover, screen-reduction audit B3).
 export const COMFORT_POINTS = 1;
 
 // Categories for "For You": declared ones always qualify; behavior-only ones qualify once behavior is trusted

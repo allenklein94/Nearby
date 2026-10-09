@@ -7,6 +7,8 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
+import { navigateKeepingTrail } from '../services/openDestination';
+import { gatheringsTabParams } from '../utils/gatheringFilters';
 const SATISFACTION_OPTIONS = [
   { value: 'loved_it', emoji: '😊', labelKey: 'lovedIt' },
   { value: 'good', emoji: '🙂', labelKey: 'good' },
@@ -103,7 +105,7 @@ export default function GatheringFeedbackModal({ visible, gatheringId, navigatio
 
   function handleJoinNextWeek() {
     handleClose();
-    navigation.navigate('Gatherings');
+    navigateKeepingTrail(navigation, 'Discover', gatheringsTabParams());
   }
 
   if (step === 'next') {

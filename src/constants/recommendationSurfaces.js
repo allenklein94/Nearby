@@ -14,7 +14,6 @@ export const RECOMMENDATION_SURFACES = [
   { surface: 'Discover: friend-going', file: 'screens/DiscoverHubScreen.js', marker: 'friendGoingReason', status: 'reasoned' },
   { surface: 'Discover: communities', file: 'screens/DiscoverHubScreen.js', marker: 'communityReason', status: 'reasoned' },
   { surface: 'Discover: perks', file: 'screens/DiscoverHubScreen.js', marker: 'target_interest_tag', status: 'reasoned' },
-  { surface: 'Gatherings feed badge', file: 'screens/GatheringsScreen.js', marker: 'becauseYouLike', status: 'reasoned' },
   { surface: 'Gathering detail: Why this fits you', file: 'screens/GatheringDetailScreen.js', marker: 'ReasonList', status: 'reasoned' },
   { surface: 'Friend discovery cards', file: 'components/FriendDiscoverySwipeCards.js', marker: 'ReasonList', status: 'reasoned', optional: true },
   { surface: 'Business opportunity card', file: 'utils/businessOpportunityCard.js', marker: 'buildMatchReasons', status: 'reasoned' },

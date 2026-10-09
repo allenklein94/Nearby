@@ -70,12 +70,9 @@ describe('attendee identities: friends see names, strangers see counts (item 75)
   });
 
   describe('every render path goes through the one summary and the server-narrowed rows', () => {
-    const feed = read('../screens/GatheringsScreen.js');
     const detail = read('../screens/GatheringDetailScreen.js');
-    it('feed and detail no longer print a single attendee name inline', () => {
-      expect(feed).not.toMatch(/is attending`/);
+    it('detail no longer prints a single attendee name inline', () => {
       expect(detail).not.toMatch(/\} is going`/);
-      expect(feed).toMatch(/attendeeSummary\(item/);
       expect(detail).toMatch(/attendeeSummary\(gathering/);
     });
     it('the Who\'s Going block shows on a count, not on visible rows, so a hidden-only crowd is still a count', () => {
@@ -100,7 +97,7 @@ describe('attendee identities: friends see names, strangers see counts (item 75)
     it('no other screen renders an attendee\'s name or photo from a gathering payload', () => {
       const files = ['screens', 'components'].flatMap((d) => fs.readdirSync(path.join(__dirname, '..', d))
         .filter((f) => f.endsWith('.js') && !f.includes('.test.')).map((f) => `../${d}/${f}`));
-      const allowed = ['../screens/GatheringsScreen.js', '../screens/GatheringDetailScreen.js', '../components/GatheringAttendingSection.js', '../screens/GatheringChatScreen.js'];
+      const allowed = ['../screens/GatheringDetailScreen.js', '../components/GatheringAttendingSection.js', '../screens/GatheringChatScreen.js'];
       const offenders = files.filter((f) => !allowed.includes(f) && /approvedAttendees[^\n]*(display_name|photo_url)/.test(read(f)));
       expect(offenders).toEqual([]);
     });

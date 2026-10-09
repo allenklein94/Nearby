@@ -18,6 +18,8 @@ import { translate } from '../i18n/translate';
 import { displayCount } from '../i18n/display';
 import { vocabValue } from '../i18n/format';
 import { categoryName } from '../i18n/categoryNames';
+import { navigateKeepingTrail } from '../services/openDestination';
+import { gatheringsTabParams } from '../utils/gatheringFilters';
 // Convergence pass P2 (CLAUDE.md, "Insights vs. Momentum -- one user-facing
 // 'how am I doing?' concept"): this screen used to be Momentum-only (the
 // streak/weekly-chart/month-deltas content below); InsightsScreen.js used
@@ -282,7 +284,7 @@ export default function MomentumScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.ctaButton}
-          onPress={() => navigation.navigate('Gatherings')}
+          onPress={() => navigateKeepingTrail(navigation, 'Discover', gatheringsTabParams())}
           activeOpacity={0.85}
           accessibilityLabel={momentum?.currentStreak > 0 ? t('ui.momentum.keepYourStreakGoingA11y') : t('ui.momentum.findSomethingToDoThisA11y')}
           accessibilityRole="button"

@@ -22,11 +22,8 @@ describe('host controls live on GatheringDetail', () => {
     const en = require('../i18n/ui/gatheringParts').default.en;
     expect([en.decline2, en.remove2]).toEqual(['Decline', 'Remove']);
   });
-  test('the Gatherings screen has no hosting tab / hosted-gatherings collection', () => {
-    const g = read('GatheringsScreen.js');
-    expect(g).not.toMatch(/tab === 'hosting'/);
-    expect(g).not.toMatch(/setTab\('hosting'\)/);
-    expect(g).not.toMatch(/getMyGatherings/);
+  test('the Gatherings feed is gone (folded into Discover -> Gatherings, audit B3), so it cannot regrow a hosting tab', () => {
+    expect(fs.existsSync(path.join(__dirname, 'GatheringsScreen.js'))).toBe(false);
   });
   test('nothing navigates to a Gatherings hosting tab', () => {
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) =>
@@ -39,12 +36,6 @@ describe('host controls live on GatheringDetail', () => {
       e.isDirectory() ? walk(path.join(d, e.name)) : /\.js$/.test(e.name) && !/\.test\.js$/.test(e.name) ? [path.join(d, e.name)] : []);
     const bad = walk(path.join(__dirname, '..')).filter((f) => /navigate\('Gatherings',\s*\{[^}]*initialTab:\s*'(attending|hosting)'/.test(fs.readFileSync(f, 'utf8')));
     expect(bad).toEqual([]);
-  });
-  test('Gatherings is browse-only: no attending collection', () => {
-    const g = read('GatheringsScreen.js');
-    expect(g).not.toMatch(/tab === 'attending'/);
-    expect(g).not.toMatch(/setTab\(/);
-    expect(g).not.toMatch(/getMyAttendingGatherings|getFellowAttendees|sendNoticeTo/);
   });
   test('attending actions moved off the retired tab are still reachable', () => {
     expect(read('../components/GatheringAttendingSection.js')).toMatch(/sendNoticeTo/);

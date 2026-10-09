@@ -3,6 +3,7 @@
 // Start Something, Continue Browsing) are not signals and stay; this decides only the Quick Stats rows.
 import { nearbyToMeetRow } from './meetTonight';
 import { tr } from '../i18n/translate';
+import { gatheringsTabParams } from './gatheringFilters';
 
 export function homeQuickStatRows(dashboard) {
   const d = dashboard ?? {};
@@ -12,7 +13,7 @@ export function homeQuickStatRows(dashboard) {
     rows.push({ key: 'people', icon: 'people-outline', text: meet.text, cta: tr('ui.actions.meetPeople'), screen: 'Discover', params: { initialMode: 'people' } });
   }
   if (d.gatheringsTodayCount > 0) {
-    rows.push({ key: 'today', icon: 'calendar-outline', text: tr('ui.homeParts.stats.gatheringsToday', { count: d.gatheringsTodayCount }), screen: 'Gatherings', params: { initialDateFilter: 'today' } });
+    rows.push({ key: 'today', icon: 'calendar-outline', text: tr('ui.homeParts.stats.gatheringsToday', { count: d.gatheringsTodayCount }), screen: 'Discover', params: gatheringsTabParams({ when: 'today' }) });
   }
   const sighted = d.mostRecentSighting;
   if (sighted?.profiles?.display_name && sighted.otherUserId) {

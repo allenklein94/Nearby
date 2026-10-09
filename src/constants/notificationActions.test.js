@@ -35,7 +35,7 @@ const ACTION_OPENS = {
   view_attendees: ['GatheringDetail'],
   reply: ['Chat'], open_chat: ['Chat'], view_notices: ['Notices'],
   see_details: ['AskBusiness', 'BusinessProfile', 'GatheringDetail', 'CommunityDetail'],
-  browse_gatherings: ['Gatherings'], find_something_else: ['Gatherings', 'MainTabs'],
+  browse_gatherings: ['MainTabs'], find_something_else: ['MainTabs'], // Discover -> Gatherings / Communities (B3, B8)
   view_friend_request: ['Friends'], view_friends: ['Friends'], view_profile: ['ViewProfile'],
   start_planning: ['CelebrateSomething', 'Occasions', 'MainTabs'], plan_visit: ['CreateGathering'],
   view_progress: ['Momentum', 'MainTabs'], open_dashboard: ['BusinessDashboard'], view_application: ['MyBusinessApplication'],

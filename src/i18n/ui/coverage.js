@@ -23,7 +23,6 @@ export const LOCALIZED_FILES = [
   'src/utils/occasionRecall.js',
   'src/utils/gatheringFullness.js',
   'src/screens/DiscoverHubScreen.js',
-  'src/screens/GatheringsScreen.js',
   'src/screens/GatheringDetailScreen.js',
   'src/screens/CreateGatheringScreen.js',
   'src/screens/EditGatheringScreen.js',

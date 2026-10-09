@@ -102,7 +102,7 @@ describe('hobby relations', () => {
     const read = (f) => fs.readFileSync(path.join(__dirname, '../..', f), 'utf8');
     expect(read('src/services/gatherings.js')).toMatch(/relatedHobbyFor/);
     expect(read('src/services/homeDashboard.js')).toMatch(/relatedHobbyFor/);
-    expect(read('src/screens/GatheringsScreen.js')).toMatch(/relatedInterestReason/);
+    expect(read('src/screens/DiscoverHubScreen.js')).toMatch(/relatedInterestReason/); // the Gatherings feed folded into Discover (B3)
     expect(read('src/services/intentResolver.js')).toMatch(/hobbyAttributeBonus/);
   });
 });

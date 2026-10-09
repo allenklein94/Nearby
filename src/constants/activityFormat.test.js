@@ -140,7 +140,7 @@ describe('item 66 decision (LOCKED 2026-09-25): format is a structured gathering
     });
   });
   it('no format filter on Discover or Gatherings, no business format field, nothing in business payloads, no AI detection', () => {
-    for (const f of ['src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js']) expect([f, /activityFormat|FORMAT_OPTIONS|\.format\s*===|formatOf\(/.test(read(f))]).toEqual([f, false]);
+    for (const f of ['src/screens/DiscoverHubScreen.js', 'src/utils/gatheringFilters.js']) expect([f, /activityFormat|FORMAT_OPTIONS|\.format\s*===|formatOf\(/.test(read(f))]).toEqual([f, false]);
     const migrations = fs.readdirSync(path.join(ROOT, 'supabase/migrations')).filter((m) => m > '20270205');
     for (const m of ['20270205_gathering_activity_format.sql', ...migrations]) {
       const sql = read(`supabase/migrations/${m}`);

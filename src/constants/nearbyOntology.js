@@ -100,7 +100,7 @@ export const SURFACE_PIPELINE = {
   search: { population: 'the ask\'s eligible candidates (runAskEligibility)', ordering: 'resolveIntent -> compareRanked', uses: ALL, never: {}, note: 'typed asks on Home and Discover: resolveAsk -> resolveIntent' },
   create: { population: 'n/a (makes an object)', ordering: 'n/a', uses: ['category', 'subcategory', 'activity', 'tags', 'occasion', 'group', 'temporary_intent', 'action'],
     never: { ranking: 'creating is not choosing among results', persistent_interests: 'a prefill comes from the words, never the profile' } },
-  gatherings: { population: 'upcoming discoverable gatherings the viewer may see', ordering: 'rankGatheringFeed (shared ladder, then nearest)', uses: ['category', 'subcategory', 'tags', 'group', 'persistent_interests', 'eligibility', 'ranking', 'action'],
+  gatherings: { population: 'upcoming discoverable gatherings the viewer may see', ordering: 'compareDiscover (Discover -> Gatherings; the separate feed folded in, audit B3)', uses: ['category', 'subcategory', 'tags', 'group', 'persistent_interests', 'eligibility', 'ranking', 'action'],
     never: { temporary_intent: 'feed, not an ask (item 114)' } },
   people: {
     population: 'OPT-IN people discovery, never connected friends: Dating = people you crossed paths with (proximity sightings + shared past gatherings) or, in Browse, profiles in your ~7-mile area buckets, minus matches/blocks/friends, filtered by your dating preferences; Friends = people who opted into friend discovery (get_friend_discovery_candidates, server-side exclusions)',

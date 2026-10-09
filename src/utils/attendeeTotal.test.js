@@ -17,7 +17,7 @@ describe('attendeeTotal (server count beats visible rows)', () => {
   test('the RPC exists as one migration and screens do not derive fullness from the visible rows', () => {
     const root = path.join(__dirname, '..', '..');
     expect(fs.readdirSync(path.join(root, 'supabase/migrations')).some((f) => f.includes('gathering_approved_counts'))).toBe(true);
-    for (const f of ['screens/GatheringsScreen.js', 'screens/DiscoverHubScreen.js', 'screens/GatheringDetailScreen.js']) {
+    for (const f of ['screens/DiscoverHubScreen.js', 'screens/GatheringDetailScreen.js']) {
       const src = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       expect(src).not.toMatch(/approvedAttendees\?*\.length \?\? 0\) >= /);
       expect(src).not.toMatch(/capacity - gathering\.approvedAttendees/);

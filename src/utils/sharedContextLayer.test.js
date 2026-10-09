@@ -340,7 +340,7 @@ describe('sponsored slot: shared destination only, never organic', () => {
     expect(slot).not.toMatch(/navigation\.navigate\(/);
     expect(read('components/SponsoredCard.js')).toMatch(/SPONSORED_LABEL/);
     // ranking / selection code only (the context module maps a sponsored card's ids for its destination, nothing else)
-    for (const f of ['utils/homeAttention.js', 'constants/signalPriority.js', 'utils/discoverSections.js', 'utils/gatheringFeedRanking.js']) {
+    for (const f of ['utils/homeAttention.js', 'constants/signalPriority.js', 'utils/discoverSections.js', 'utils/gatheringFilters.js']) {
       const code = read(f).split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
       expect(code).not.toMatch(/placement_id|sponsored_(seen|payments)|getSponsoredSpotlight/);
     }

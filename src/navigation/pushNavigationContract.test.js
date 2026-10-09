@@ -358,13 +358,17 @@ describe('the audit: every push type has one registered destination', () => {
     }
     expect(seen.size).toBeGreaterThanOrEqual(20);
   });
-  test('only the two Home pushes and the perk-tier nudge switch tabs; nothing falls back to a generic Discover', () => {
+  test('tab-switching pushes each open their one home; nothing falls back to a generic Discover', () => {
     expect((dest.match(/to\('MainTabs', \{ screen: 'Home' \}\)/g) ?? []).length).toBe(2);
     // Rule 14: the Rewards screen folded into Discover -> Perks, so "Almost at Silver" opens the Perks tab where the tier
     // line now lives. That is the tier's one home, not a fallback; it is the only Discover destination.
     // Screen-reduction audit B8: community_cancelled ("Find something else") opens Discover -> Communities, the one
     // community browse home, now that the Communities screen folded into Profile.
-    expect(dest.match(/'Discover'/g)).toEqual(["'Discover'", "'Discover'"]);
+    // Screen-reduction audit B3: the Gatherings feed folded into Discover -> Gatherings, so the three gathering-browse pushes
+    // (a gathering push with no id, gathering_cancelled, first_mission_reminder) open that tab with nothing carried in.
+    expect(dest.match(/'Discover'/g)).toHaveLength(5);
+    expect(dest.match(/to\('MainTabs', \{ screen: 'Discover', params: gatheringsTabParams\(\) \}\)/g)).toHaveLength(3);
+    expect(dest).not.toMatch(/to\('Gatherings'/);
     expect(dest).toMatch(/case 'community_cancelled':[\s\S]{0,400}to\('MainTabs', \{ screen: 'Discover', params: \{ initialMode: 'things', initialTypeTab: 'communities' \} \}\)/);
     expect(dest).toMatch(/case 'reward_tier_nudge':[\s\S]{0,200}to\('MainTabs', \{ screen: 'Discover', params: \{ \.\.\.PERKS_TAB \} \}\)/);
   });

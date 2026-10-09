@@ -26,9 +26,10 @@ export const DESTINATION_CONTRACT = {
   community: { kind: 'navigate', screen: 'CommunityDetail', requires: ['communityId'] },
   friend_request: { kind: 'navigate', screen: 'ViewProfile', requires: ['userId'] },
   place: { kind: 'url' },
-  // Home Quick Stats: "3 gatherings today" -> the Gatherings feed narrowed to today (exactly the set counted);
+  // Home Quick Stats: "3 gatherings today" -> Discover -> Gatherings narrowed to today (exactly the set counted; the separate
+  // Gatherings feed folded into Discover, screen-reduction audit B3);
   // "You crossed paths with Sam" -> Sam's profile
-  gatherings_today: { kind: 'navigate', screen: 'Gatherings', params: { initialDateFilter: 'today' } },
+  gatherings_today: { kind: 'navigate', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'gatherings', gatheringFilters: { when: 'today' } } },
   crossed_paths: { kind: 'navigate', screen: 'ViewProfile', requires: ['userId'] },
   // "2 of your friends are making plans", "3 things start in the next 30 minutes": one thing -> its detail; several -> those
   // exact gatherings inline, each to its own detail. Never the whole Discover list.
@@ -52,6 +53,9 @@ export function satisfiesContract(claim, destination) {
   if (rule.kind === 'url') return typeof destination.url === 'string' && destination.url.length > 0;
   if (destination.screen !== rule.screen) return false;
   const params = destination.params ?? {};
-  for (const [k, v] of Object.entries(rule.params ?? {})) if (params[k] !== v) return false;
+  for (const [k, v] of Object.entries(rule.params ?? {})) {
+    const same = v && typeof v === 'object' ? JSON.stringify(params[k]) === JSON.stringify(v) : params[k] === v;
+    if (!same) return false;
+  }
   return (rule.requires ?? []).every((k) => params[k] != null);
 }

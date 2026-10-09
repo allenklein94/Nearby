@@ -20,11 +20,11 @@ describe('Coffee tonight keeps tonight', () => {
       expect(matchesDateFilter(new Date(2026, 9, 2, 17, 30).toISOString(), 'today')).toBe(true);
     } finally { jest.useRealTimers(); }
   });
-  test('Home chips under the "Tonight" header open Gatherings filtered to tonight', () => {
+  test('Home chips under the "Tonight" header open Discover -> Gatherings filtered to tonight', () => {
     const home = src('screens/HomeScreen.js');
     expect(home).toMatch(/PERIOD_DATE_FILTER = \{[^}]*evening: 'tonight'/);
     expect(home).toMatch(/PERIOD_SECTION_LABEL_KEYS = \{[^}]*evening: 'tonight'/);
-    expect(home).toMatch(/initialCategoryFilter: item\.category,\s*initialDateFilter: PERIOD_DATE_FILTER\[period\]/);
+    expect(home).toMatch(/navigateKeepingTrail\(navigation, 'Discover', gatheringsTabParams\(\{\s*category: item\.category,\s*when: PERIOD_DATE_FILTER\[period\],\s*term: item\.searchTerm,/);
   });
 });
 
@@ -50,7 +50,8 @@ describe('Morning and afternoon Quick Picks keep their time', () => {
     const opts = Object.fromEntries(DATE_OPTIONS.map((o) => [o.key, o]));
     expect(opts.morning.contextOnly).toBe(true);
     expect(opts.afternoon.contextOnly).toBe(true);
-    expect(src('screens/GatheringsScreen.js')).toMatch(/DATE_OPTIONS\.filter\(\(o\) => !o\.contextOnly \|\| o\.key === dateFilter\)/);
+    // the Gatherings feed folded into Discover -> Gatherings (audit B3): its When row keeps the same rule
+    expect(src('screens/DiscoverHubScreen.js')).toMatch(/DATE_OPTIONS\.filter\(\(o\) => o\.key !== 'anytime' && \(!o\.contextOnly \|\| o\.key === f\.when\)\)/);
     const ns = require('../i18n/ui/gatherings').default;
     for (const lang of Object.keys(ns)) {
       expect(ns[lang].dateFilter.morning).toBeTruthy();
@@ -97,7 +98,6 @@ describe('Outdoors keeps outdoors', () => {
     const hub = src('screens/DiscoverHubScreen.js');
     expect(hub).toMatch(/filterGatheringsByEnvironment\(\s*applyOpenNow/);
     expect(hub).toContain('setEnvironmentFilter(null)');
-    expect(src('screens/GatheringsScreen.js')).toContain('filterGatheringsByEnvironment([g], environmentFilter)');
   });
   test('Discover (a tab that stays mounted) applies context from each new navigation', () => {
     const hub = src('screens/DiscoverHubScreen.js');

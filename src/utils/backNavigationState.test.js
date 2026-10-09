@@ -23,7 +23,7 @@ const RESETS = /set(Search(Query)?|TypeFilter|TypeTab|ExpandedContext|OpenNowOnl
 
 describe('Back preserves state', () => {
   test('Discover and Gatherings focus effects only refresh data, never reset what the person chose', () => {
-    for (const file of ['screens/DiscoverHubScreen.js', 'screens/GatheringsScreen.js']) {
+    for (const file of ['screens/DiscoverHubScreen.js']) {
       const bodies = focusBodies(src(file));
       expect(bodies.length).toBeGreaterThan(0);
       for (const b of bodies) expect(b).not.toMatch(RESETS);

@@ -18,7 +18,7 @@ describe('host-declared practical facts (item 39)', () => {
     expect(r('supabase/migrations/20270194_gathering_equipment_duration.sql')).toMatch(/between 15 and 720/);
     expect(r('src/services/gatherings.js')).toMatch(/equipment_provided, duration_minutes, genre, format, skill_level, effort_level, features, suited_age_min, suited_age_max\b/);
     for (const f of ['CreateGatheringScreen', 'EditGatheringScreen']) expect(r(`src/screens/${f}.js`)).toMatch(/setDurationMinutes/);
-    for (const f of ['GatheringsScreen', 'GatheringDetailScreen']) expect(r(`src/screens/${f}.js`)).toMatch(/practicalFacts/);
+    for (const f of ['GatheringDetailScreen']) expect(r(`src/screens/${f}.js`)).toMatch(/practicalFacts/);
   });
 });
 

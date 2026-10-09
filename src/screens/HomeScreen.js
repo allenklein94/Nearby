@@ -1,5 +1,6 @@
 import { useLanguage } from '../context/LanguageContext';
 import { PERKS_TAB } from '../utils/recommendationContext';
+import { gatheringsTabParams } from '../utils/gatheringFilters';
 import { localizeAskNote } from '../i18n/askNoteView';
 import { surpriseView, surpriseText } from '../i18n/surpriseView';
 import { translate, tr } from '../i18n/translate';
@@ -978,11 +979,12 @@ export default function HomeScreen({ navigation }) {
     // also carries a real `searchTerm`, layered on as a real indexed text
     // search alongside the category filter so the result is an actual
     // narrower match, not just every gathering in the broad category.
-    navigation.navigate('Gatherings', {
-      initialCategoryFilter: item.category,
-      initialDateFilter: PERIOD_DATE_FILTER[period],
-      initialSearchQuery: item.searchTerm,
-    });
+    // B3: the Gatherings feed folded into Discover -> Gatherings; the pick carries the same three filters there.
+    navigateKeepingTrail(navigation, 'Discover', gatheringsTabParams({
+      category: item.category,
+      when: PERIOD_DATE_FILTER[period],
+      term: item.searchTerm,
+    }));
   }
 
   // Phase 1 of the "Build everything" plan -- taps through to the same
@@ -2681,7 +2683,7 @@ export default function HomeScreen({ navigation }) {
                   {i > 0 && <View style={styles.divider} />}
                   <TouchableOpacity
                     style={styles.cardRow}
-                    onPress={() => navigation.navigate(row.screen, row.params)}
+                    onPress={() => navigateKeepingTrail(navigation, row.screen, row.params)}
                     accessibilityLabel={t('ui.home.tapToViewA11y', { text: row.text })}
                     accessibilityRole="button"
                   >

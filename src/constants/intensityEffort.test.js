@@ -77,7 +77,7 @@ describe('compatibility and ranking', () => {
 
 describe('scope: typed requests only, nothing to businesses', () => {
   it('not in Home/Discover/Gatherings feeds', () => {
-    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js', 'src/services/homeDashboard.js']) {
+    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/utils/gatheringFilters.js', 'src/services/homeDashboard.js']) {
       if (fs.existsSync(path.join(ROOT, f))) expect([f, /intensityEffort|effort_level|effortLevel/.test(read(f))]).toEqual([f, false]);
     }
   });

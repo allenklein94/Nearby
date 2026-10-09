@@ -6,12 +6,12 @@ export const SURFACES = {
   nearby: {
     label: 'Nearby',
     means: 'Real things (gatherings) ordered by how close they are to you, on any date. Not time-sensitive, not personalized beyond a light interest ranking.',
-    where: 'Gatherings feed ("Nearby Gatherings").',
+    where: 'Retired as a destination: the Gatherings feed folded into Discover -> Gatherings (audit B3), which orders by Discover\'s one ladder.',
   },
   nearbyRightNow: {
     label: 'Right Now',
     means: 'Things that are geographically close AND inside the canonical Right Now window (started up to 30 min ago, or starts within 2 h; utils/rightNowWindow.js).',
-    where: 'Gatherings "Right Now" filter, Discover "Happening Now" bucket, Home "Nearby Right Now" section (item 33).',
+    where: 'Discover -> Gatherings "Right Now" filter, Discover "Happening Now" bucket, Home "Nearby Right Now" section (item 33).',
   },
   openNow: {
     label: 'Open now',

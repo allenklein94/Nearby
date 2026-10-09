@@ -46,7 +46,7 @@ describe('display', () => {
     expect(practicalFacts({ interest_tag: 'Pickleball' })).toEqual([]);
   });
   it('the old universal "Beginner friendly" badge and boost are gone; the Edit switch is gone', () => {
-    for (const f of ['src/screens/GatheringsScreen.js', 'src/screens/GatheringDetailScreen.js', 'src/screens/EditGatheringScreen.js', 'src/services/gatherings.js']) {
+    for (const f of ['src/screens/DiscoverHubScreen.js', 'src/screens/GatheringDetailScreen.js', 'src/screens/EditGatheringScreen.js', 'src/services/gatherings.js']) {
       const src = read(f);
       expect([f, /Beginner friendly/.test(src)]).toEqual([f, false]);
       expect([f, /\b(item|gathering)\.beginner_friendly\b/.test(src)]).toEqual([f, false]);
@@ -107,7 +107,7 @@ describe('recognition and ranking', () => {
     expect(applySkillToCandidates([{ id: 'x', title: 'Beginner pickleball', description: 'beginners welcome', score: 0 }], ['beginner'])[0].score).toBe(0);
   });
   it('scoped to typed requests: not in Home or Discover feeds', () => {
-    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js', 'src/services/homeDashboard.js', 'src/services/homeRecommendations.js']) {
+    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/utils/gatheringFilters.js', 'src/services/homeDashboard.js', 'src/services/homeRecommendations.js']) {
       if (fs.existsSync(path.join(ROOT, f))) expect([f, /skillLevel|skill_level|applySkillToCandidates/.test(read(f))]).toEqual([f, false]);
     }
   });

@@ -437,8 +437,8 @@ describe('result titles Nearby composes around a name', () => {
 });
 
 describe('wiring guards', () => {
-  it('Home, Discover and the Gatherings feed pass the person\'s language to the shared layer', () => {
-    for (const f of ['screens/HomeScreen.js', 'screens/DiscoverHubScreen.js', 'screens/GatheringsScreen.js']) {
+  it('Home and Discover pass the person\'s language to the shared layer', () => {
+    for (const f of ['screens/HomeScreen.js', 'screens/DiscoverHubScreen.js']) {
       expect([f, /const \{[^}]*\blanguage\b[^}]*\} = useLanguage\(\)/.test(read(f))]).toEqual([f, true]);
     }
     const home = read('screens/HomeScreen.js');
@@ -449,13 +449,6 @@ describe('wiring guards', () => {
     const discover = read('screens/DiscoverHubScreen.js');
     expect(discover).toMatch(/resultRowView\(item, \{ language, myUserId \}\)/);
     expect(discover.match(/\), \{ language \}\);/g).length).toBeGreaterThanOrEqual(3);
-  });
-  it('the Gatherings feed badges use the shared reason wording (no translated prefix + English tag)', () => {
-    const src = read('screens/GatheringsScreen.js');
-    expect(src).toMatch(/t\('reasons\.becauseYouLike', \{ category: names\.tag\(item\.interest_tag\) \}\)/);
-    expect(src).toMatch(/localizeReason\(relatedInterestReason\(item\.relatedHobby\), language\)/);
-    expect(src).toMatch(/localizeReason\(friendReason, language\)/);
-    expect(src).not.toMatch(/gatherings\.becauseYouLike/);
   });
   it('the reason builders no longer hand-type the template English', () => {
     const banned = {

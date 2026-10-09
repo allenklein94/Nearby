@@ -152,25 +152,3 @@ describe('storage and privacy (migration 20270255)', () => {
   });
 });
 
-describe('Gatherings feed (the one ladder)', () => {
-  const { rankGatheringFeed, feedRankParts } = require('./gatheringFeedRanking');
-  const g = (id, tag, miles, extra = {}) => ({ id, interest_tag: tag, distanceMiles: miles, capacity: null, approvedCount: 0, ...extra });
-  const walker = learnProximity(trips('Coffee', [0.3, 0.4, 0.5]));
-  test('learned proximity is the weakest tier: it reorders only among otherwise-equal gatherings', () => {
-    // incoming order is nearest-first; a far coffee and a near coffee: unchanged order (monotonic)
-    const list = [g('near', 'Coffee', 0.4), g('far', 'Coffee', 8)];
-    expect(rankGatheringFeed(list, { personalization: { learnedProximity: walker } }).map((x) => x.id)).toEqual(['near', 'far']);
-    // a stronger signal (a declared interest) still wins over learned proximity
-    const list2 = [g('near', 'Coffee', 0.4), g('yoga', 'Yoga', 9)];
-    expect(rankGatheringFeed(list2, { personalization: { learnedProximity: walker, declared: ['Yoga'] } }).map((x) => x.id)).toEqual(['yoga', 'near']);
-  });
-  test('nothing learned = the feed parts are exactly what they were', () => {
-    const x = g('a', 'Coffee', 8);
-    expect(feedRankParts(x, { personalization: {} }).map((p) => p.code)).not.toContain('learned_proximity');
-    expect(feedRankParts(x, { personalization: { learnedProximity: walker } })).toEqual(expect.arrayContaining([{ code: 'learned_proximity', tier: 10, delta: -1 }]));
-  });
-  test('Discover feeds the same part into its tier vector', () => {
-    const src = fs.readFileSync(path.join(__dirname, '..', 'screens', 'DiscoverHubScreen.js'), 'utf8');
-    expect(src).toMatch(/SIGNAL_TIERS\.discovery, delta: learnedProximityFor\(personalization\.learnedProximity, g\.interest_tag, g\.distanceMiles\)/);
-  });
-});

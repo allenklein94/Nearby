@@ -118,7 +118,9 @@ describe('Discover contextual sections (item 91)', () => {
     expect(d).toMatch(/declared: personalization\.declared,/);
     expect(d).toMatch(/excludeIds: topCategoryIds,/);
     expect(d).toMatch(/gatherings: filteredGatherings,/);
-    expect(d).toMatch(/const filteredGatherings = filterGatheringsByEnvironment\(\s*applyOpenNow\(/);
+    expect(d).toMatch(/const environmentGatherings = filterGatheringsByEnvironment\(\s*applyOpenNow\(/);
+    // the Gatherings tab's own filters (audit B3) narrow only that tab; every other view reads the list unchanged
+    expect(d).toMatch(/const filteredGatherings = gatheringTabActive\s*\? applyGatheringFilters\(environmentGatherings, gatheringFilters, \{ forYouCategories \}\)\s*: environmentGatherings;/);
     expect(d.indexOf('{topCategoryGatherings.map(renderGatheringTile)}')).toBeLessThan(d.indexOf('discoverSections.map('));
     expect(d).toMatch(/railGroups\(CATEGORY_GROUPS\)/);
     expect(d).toMatch(/\.\.\.\(showMoreCategories \? rail\.more : \[\]\)/);

@@ -126,7 +126,7 @@ describe('scope and taxonomy guards', () => {
   });
 
   it('typed-ask only: not in Home / Discover / Gatherings feeds, not in people discovery', () => {
-    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js',
+    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/utils/gatheringFilters.js',
       'src/services/homeDashboard.js', 'src/utils/datingCardReasons.js', 'src/services/friendDiscovery.js']) {
       if (fs.existsSync(path.join(ROOT, f))) expect([f, /genreMatch|genresFromText/.test(read(f))]).toEqual([f, false]);
     }

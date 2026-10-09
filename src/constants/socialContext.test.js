@@ -125,7 +125,7 @@ describe('scope and privacy boundary', () => {
   });
   it('wired only into the typed-ask resolver', () => {
     expect(read('src/services/intentResolver.js')).toContain('applySocialToCandidates(deduped, socialSignalsFromText(rawText)');
-    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js', 'src/services/homeDashboard.js', 'src/services/homeRecommendations.js',
+    for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/utils/gatheringFilters.js', 'src/services/homeDashboard.js', 'src/services/homeRecommendations.js',
       'src/screens/BusinessDashboardScreen.js', 'src/services/businessFulfillment.js', 'src/services/notifications.js', 'src/services/friendDiscovery.js', 'src/utils/gatheringPractical.js']) {
       expect([f, /socialContext|socialSignalsFromText|applySocialToCandidates/.test(read(f))]).toEqual([f, false]);
     }

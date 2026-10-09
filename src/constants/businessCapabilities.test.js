@@ -156,7 +156,7 @@ describe('public profile line', () => {
     expect(src).toMatch(/largestGroupLine\(partner\.max_group_size, language\) &&/);
     expect(read('src/i18n/businessProfileDisplay.js')).toMatch(/isEnglish\(language\) \? maxGroupLine\(value\)/);
     expect(src).not.toMatch(/max_group_size\s*\?\?\s*['"]Unknown|Capacity:/);
-    for (const f of ['src/screens/DiscoverHubScreen.js', 'src/screens/GatheringsScreen.js', 'src/screens/HomeScreen.js']) expect(read(f)).not.toMatch(/max_group_size|maxGroupLine/);
+    for (const f of ['src/screens/DiscoverHubScreen.js', 'src/screens/HomeScreen.js']) expect(read(f)).not.toMatch(/max_group_size|maxGroupLine/);
   });
 });
 

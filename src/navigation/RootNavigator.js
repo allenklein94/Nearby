@@ -56,7 +56,6 @@ import BusinessConversationScreen from '../screens/BusinessConversationScreen';
 import BusinessProfileScreen from '../screens/BusinessProfileScreen';
 import EditGatheringScreen from '../screens/EditGatheringScreen';
 import ActivityScreen from '../screens/ActivityScreen';
-import GatheringsScreen from '../screens/GatheringsScreen';
 import GatheringDetailScreen from '../screens/GatheringDetailScreen';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
@@ -453,7 +452,6 @@ export default function RootNavigator() {
             <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} options={{ headerShown: true, title: 'Verifications (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} options={{ headerShown: true, title: t('ui.nav.title.inviteFriends'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: t('ui.nav.title.selectGatheringLocation'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="Gatherings" component={GatheringsScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringDetail" component={GatheringDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Notices" component={ActivityScreen} options={{ headerShown: true, title: t('ui.nav.title.notices'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Friends" component={FriendsScreen} options={{ headerShown: true, title: t('ui.nav.title.friends'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

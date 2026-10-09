@@ -6,6 +6,7 @@
 // the business. Moved verbatim from services/notifications.js (routeNotificationTap); comments kept.
 import { extractNameFromBirthdayTitle } from '../services/celebrateSomething';
 import { PERKS_TAB } from '../utils/recommendationContext';
+import { gatheringsTabParams } from '../utils/gatheringFilters';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 
 const to = (name, params) => (params === undefined ? { name } : { name, params });
@@ -65,7 +66,7 @@ export async function notificationDestination(data, { lookupAvailability = async
           notificationSuggestsInvite: true,
         });
       } else {
-        return to('Gatherings');
+        return to('MainTabs', { screen: 'Discover', params: gatheringsTabParams() });
       }
       break;
     case 'gathering_invite':
@@ -78,7 +79,7 @@ export async function notificationDestination(data, { lookupAvailability = async
       if (data.gathering_id) {
         return to('GatheringDetail', { gatheringId: data.gathering_id, notificationReason: data.body ?? null });
       } else {
-        return to('Gatherings');
+        return to('MainTabs', { screen: 'Discover', params: gatheringsTabParams() });
       }
       break;
     // Item 49 (CLAUDE.md, "don't notify users about things they can't
@@ -124,7 +125,7 @@ export async function notificationDestination(data, { lookupAvailability = async
       // deleted by the time this fires (an ON DELETE trigger), so there's
       // nothing left to open. Land on browse instead of doing nothing.
     case 'first_mission_reminder':
-      return to('Gatherings');
+      return to('MainTabs', { screen: 'Discover', params: gatheringsTabParams() });
       break;
     // Item 49 audit fix: community_cancelled previously had no case at all
     // (tap did nothing) despite carrying a real, specific reason. Same

@@ -19,7 +19,8 @@ import usePlacesToGo from '../hooks/usePlacesToGo';
 import PlacesToGoSection from '../components/PlacesToGoSection';
 import { askBusinessesFits } from '../utils/placesToGo';
 import { learnedProximityFor } from '../utils/learnedProximity';
-import { behaviorNudge, broadGroupNudge, relatedHobbyNudge } from '../constants/blendedRanking';
+import { behaviorNudge, broadGroupNudge, relatedHobbyNudge, forYouBlend, COMFORT_POINTS } from '../constants/blendedRanking';
+import { comfortFits } from '../constants/socialComfort';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
 import { friendsInterestReason } from '../utils/friendInterests';
@@ -87,7 +88,10 @@ import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
 import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
 import { foundBlockShownIds, withoutFoundBlock } from '../utils/searchTopDedupe';
-import { matchesDateFilter } from '../utils/gatheringDateFilter';
+import { matchesDateFilter, DATE_OPTIONS } from '../utils/gatheringDateFilter';
+import { applyGatheringFilters, gatheringFiltersFromParams, GATHERING_FILTER_DEFAULTS, hasActiveGatheringFilters, toggleForYou, selectCategory, PRICE_FILTER_OPTIONS, PLAN_KIND_FILTER_OPTIONS } from '../utils/gatheringFilters';
+import useMyInterests from '../hooks/useMyInterests';
+import { canonicalizeInterests } from '../constants/interestGraph';
 import { lightenHex } from '../utils/colorUtils';
 import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
@@ -467,6 +471,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const env = route.params?.initialEnvironment;
     return env === 'outdoor' || env === 'indoor' ? env : null;
   });
+  // Screen-reduction audit B3 (owner, 2026-10-09): the separate Gatherings feed folded in here. Its useful filters (when, a
+  // category or For You, a carried word, Trending, price, plan kind, within ~1 mi) live on Discover's Gatherings tab and apply
+  // only there (utils/gatheringFilters.js); the ORDER stays Discover's one ladder (compareDiscover). User state like Open now:
+  // kept while switching tabs; a new navigation into the Gatherings tab replaces it with what that entry carries.
+  const [gatheringFilters, setGatheringFilters] = useState(() => (route.params?.initialTypeTab === 'gatherings'
+    ? gatheringFiltersFromParams(route.params?.gatheringFilters)
+    : GATHERING_FILTER_DEFAULTS));
+  const myInterests = useMyInterests();
+  // "For You": declared interests from day one; learned behavior joins in as the account matures (the feed's same rule).
+  const blendedForYou = forYouBlend(personalization.declared, personalization.behavior, personalization.maturity, 50, personalization.declaredGroups);
+  const forYouCategories = blendedForYou.length > 0 ? blendedForYou : canonicalizeInterests(myInterests);
   // Discover is a tab and stays mounted, so a later tap from Home with new context (a mode, a type tab, an environment)
   // must apply when it arrives, not only on first mount. Each navigation carries its own context; one without an
   // environment clears a previous one. The tab bar re-opens Discover with the SAME params object, so nothing re-applies.
@@ -478,6 +493,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (p.initialMode === 'things' || p.initialMode === 'people') setMode(p.initialMode);
     if (p.initialPeopleSubMode === 'dating' || p.initialPeopleSubMode === 'friends') setPeopleSubMode(p.initialPeopleSubMode);
     if (p.initialTypeTab) setTypeFilter(p.initialTypeTab);
+    if (p.initialTypeTab === 'gatherings') setGatheringFilters(gatheringFiltersFromParams(p.gatheringFilters));
     setEnvironmentFilter(p.initialEnvironment === 'outdoor' || p.initialEnvironment === 'indoor' ? p.initialEnvironment : null);
     setDateView(null); // a new navigation into Discover carries its own context; it never lands inside a date view
     // A link to one perk opens Perks with that perk selected and scrolled into view; any other arrival starts unselected.
@@ -1035,10 +1051,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Outdoor / Indoor (carried in from a Home weather card): one declared-data rule for every kind (constants/environmentMatch.js).
   // Unknown is left out; a business's side is only what it declared, never its type; Google places declare nothing.
   const applyEnv = (list, kind) => filterByEnvironment(list, kind, environmentFilter);
-  const filteredGatherings = filterGatheringsByEnvironment(
+  const environmentGatherings = filterGatheringsByEnvironment(
     applyOpenNow(isSearching ? (searchResultsFresh ? searchedGatherings : []) : gatherings, gatheringEntity),
     environmentFilter,
   );
+  // B3: the Gatherings tab's own filters narrow only that tab; every other view reads the list unchanged.
+  const gatheringTabActive = typeFilter === 'gatherings';
+  const filteredGatherings = gatheringTabActive
+    ? applyGatheringFilters(environmentGatherings, gatheringFilters, { forYouCategories })
+    : environmentGatherings;
+  const gatheringFiltersOn = gatheringTabActive && hasActiveGatheringFilters(gatheringFilters);
   const filteredCommunities = openNowActive ? [] : applyEnv(isSearching ? (searchResultsFresh ? searchedCommunities : []) : communities, 'community');
   // Offers: real server-side, indexed search results (searchedOffers,
   // populated by the debounced effect above — a genuine cross-table search
@@ -1131,6 +1153,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
       { tier: SIGNAL_TIERS.planFriend, delta: friendGoing ? 4 : 0 },
       { tier: SIGNAL_TIERS.weather, delta: weatherFit ? WEATHER_BONUS : 0 },
       { tier: SIGNAL_TIERS.interest, delta: nudge },
+      // the onboarding social-comfort answer vs the host's group feel (rank-only; was the Gatherings feed's, audit B3)
+      { tier: SIGNAL_TIERS.interest, delta: comfortFits(g.group_size_feel, personalization.socialComfort) ? COMFORT_POINTS : 0 },
       { tier: SIGNAL_TIERS.business, delta: related + broad },
       // item 137: this person's usual trip for the gathering's category (rank-only, weakest tier; no reason line)
       { tier: SIGNAL_TIERS.discovery, delta: learnedProximityFor(personalization.learnedProximity, g.interest_tag, g.distanceMiles) },
@@ -1374,7 +1398,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Whatever already surfaced above doesn't repeat in the plain catch-all
   // list right below it. A no-op when `notableGatherings` is empty
   // (Communities/Places/Perks views, or while actively searching).
-  const dedupedGatherings = filteredGatherings.filter((g) => !notableGatheringIds.has(g.id));
+  // B3: one canonical gathering-results pipeline. Browsing the Gatherings tab, the rest of the list follows the same ladder as
+  // every other Discover gathering list (it used to keep load order); a literal search keeps its own order.
+  const dedupedGatheringsRaw = filteredGatherings.filter((g) => !notableGatheringIds.has(g.id));
+  const dedupedGatherings = gatheringTabActive && !isSearching ? byLadder(dedupedGatheringsRaw) : dedupedGatheringsRaw;
   const visiblePlaces = applyEnv(applyOpenNow(placesFresh ? places : [], placeEntity), 'place');
 
   // Decision 5 (CLAUDE.md, Aug 27 2026): a real "nothing anywhere matched"
@@ -1437,7 +1464,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     && searchedBusinesses.length === 0;
 
   function renderEnvironmentChip() {
-    if (!environmentFilter) return null;
+    if (!environmentFilter || gatheringTabActive) return null; // the Gatherings tab shows it in its own filter row
     const label = t(environmentFilter === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip');
     return (
       <TapActiveChip
@@ -1450,6 +1477,58 @@ export default function DiscoverHubScreen({ navigation, route }) {
       >
         <Text style={[styles.filterChipText, styles.filterChipTextActive]}>{`${label} ✕`}</Text>
       </TapActiveChip>
+    );
+  }
+
+  // B3: the old Gatherings feed's filters, as two chip rows on the Gatherings tab (no accordion, no new screen). Row 1 = when
+  // (morning / afternoon only while an entry set them, as on the feed); row 2 = category or word an entry carried (removable),
+  // For You, Trending, ~1 mi, Indoor / Outdoor (the one environment filter), price, plan kind, and Clear filters.
+  function gatheringChip(key, label, active, onPress) {
+    return (
+      <TapActiveChip
+        key={key}
+        active={active}
+        style={[styles.filterChip, active && styles.filterChipActive]}
+        onPress={() => { animateLayout(); onPress(); }}
+        accessibilityLabel={t('ui.gatherings.filterBy', { label })}
+        accessibilityRole="button"
+        accessibilityState={{ selected: active }}
+      >
+        <Text style={[styles.filterChipText, active && styles.filterChipTextActive]} numberOfLines={1}>{label}</Text>
+      </TapActiveChip>
+    );
+  }
+  function renderGatheringFilterRows() {
+    const f = gatheringFilters;
+    const set = (patch) => setGatheringFilters((cur) => ({ ...cur, ...patch }));
+    const dateLabel = (key) => t(`ui.gatherings.dateFilter.${key}`);
+    const priceLabel = (key) => (key === 'free' ? t('ui.gatherings.free') : key);
+    return (
+      <>
+        <View style={[styles.filterRow, { flexDirection: 'row' }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }} style={{ flex: 1 }}>
+            {DATE_OPTIONS.filter((o) => o.key !== 'anytime' && (!o.contextOnly || o.key === f.when)).map((o) => (
+              gatheringChip(`when-${o.key}`, dateLabel(o.key), f.when === o.key, () => set({ when: f.when === o.key ? 'anytime' : o.key }))
+            ))}
+          </ScrollView>
+        </View>
+        <View style={[styles.filterRow, { flexDirection: 'row' }]}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }} style={{ flex: 1 }}>
+            {f.category ? gatheringChip('category', `${names.tag(f.category)} ✕`, true, () => setGatheringFilters((cur) => selectCategory(cur, cur.category))) : null}
+            {f.term ? gatheringChip('term', `“${f.term}” ✕`, true, () => set({ term: null })) : null}
+            {forYouCategories.length > 0 ? gatheringChip('forYou', t('ui.gatherings.forYouChip'), f.forYou, () => setGatheringFilters((cur) => toggleForYou(cur))) : null}
+            {gatheringChip('trending', t('ui.gatherings.trendingChip'), f.trending, () => set({ trending: !f.trending }))}
+            {gatheringChip('local', t('ui.gatherings.localChip'), f.local, () => set({ local: !f.local }))}
+            {['outdoor', 'indoor'].map((env) => gatheringChip(
+              `env-${env}`, t(env === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip'), environmentFilter === env,
+              () => setEnvironmentFilter(environmentFilter === env ? null : env),
+            ))}
+            {PRICE_FILTER_OPTIONS.filter(Boolean).map((k) => gatheringChip(`price-${k}`, priceLabel(k), f.price === k, () => set({ price: f.price === k ? null : k })))}
+            {PLAN_KIND_FILTER_OPTIONS.filter(Boolean).map((k) => gatheringChip(`kind-${k}`, t(`ui.gatherings.partyType.${k}`), f.planKind === k, () => set({ planKind: f.planKind === k ? null : k })))}
+            {hasActiveGatheringFilters(f) ? gatheringChip('clear', t('ui.discover.clearGatheringFilters'), false, () => setGatheringFilters(GATHERING_FILTER_DEFAULTS)) : null}
+          </ScrollView>
+        </View>
+      </>
     );
   }
 
@@ -2335,6 +2414,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             {isAll && !isSearching && (
               <View style={[styles.filterRow, { flexDirection: 'row' }]}>{renderTimeChips()}</View>
             )}
+            {gatheringTabActive && renderGatheringFilterRows()}
 
             {typeFilter === 'places' && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingTop: spacing.sm }}>
@@ -3000,6 +3080,38 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {/* The dedicated Gatherings tab's own real scored/tiered list
               (unaffected by the P1 item 14 redesign above, which only
               replaces the default "All" landing view). */}
+          {/* B3: the Gatherings tab with nothing to show says why, with the old feed's next steps (never a dead end). */}
+          {gatheringTabActive && !isSearching && coreLoadedOnce && !showCoreLoader && filteredGatherings.length === 0 && (() => {
+            const f = gatheringFilters;
+            const filtered = gatheringFiltersOn || !!environmentFilter || openNowActive;
+            const label = f.category ? names.tag(f.category) : '';
+            return (
+              <View style={{ paddingVertical: spacing.md }}>
+                {filtered
+                  ? <EmptyCopy id={f.forYou && !f.category ? 'gatherings_for_you' : 'gatherings_filtered'} />
+                  : <Text style={styles.cardSubtitle}>{t('gatherings.emptyNearby')}</Text>}
+                {filtered && (
+                  <TouchableOpacity
+                    onPress={() => { animateLayout(); setGatheringFilters(GATHERING_FILTER_DEFAULTS); setEnvironmentFilter(null); setOpenNowOnly(false); }}
+                    accessibilityLabel={t('ui.discover.clearGatheringFilters')}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.emptyActionText}>{t('ui.discover.clearGatheringFilters')}</Text>
+                  </TouchableOpacity>
+                )}
+                {!f.forYou && (
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('CreateGathering', { quickStartCategory: f.category || undefined })}
+                    accessibilityLabel={label ? t('ui.gatherings.startTopicA11y', { topic: label }) : t('ui.gatherings.startA11y')}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.emptyActionText}>{label ? t('ui.gatherings.startTopic', { topic: label }) : t('ui.gatherings.start')}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })()}
+
           {notableGatherings.length > 0 && (
             <Text style={styles.sectionHeader}>{t('ui.discover.recommended')}</Text>
           )}

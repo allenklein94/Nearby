@@ -35,14 +35,12 @@ describe('when weather is named', () => {
 });
 
 describe('every weather-talking surface uses the one rule', () => {
-  it('Discover banner + card reasons and the Gatherings banner read weatherMention, never the raw bias', () => {
+  it('Discover banner + card reasons read weatherMention, never the raw bias', () => {
     const discover = read('src/screens/DiscoverHubScreen.js');
     expect(discover).toMatch(/const weatherSaid = weatherMention\(weatherSignal\)/);
     expect(discover).toMatch(/if \(weatherSaid === 'indoor'\) fit\.reasons = \[\.\.\.fit\.reasons, reasonText\('goodForWeather'\)\]/);
     expect(discover).toMatch(/if \(weatherSaid === 'outdoor'\) fit\.reasons = \[\.\.\.fit\.reasons, reasonText\('greatWeatherForIt'\)\]/);
     expect(discover).toMatch(/const weatherBanner = weatherSaid === 'indoor'/);
-    const feed = read('src/screens/GatheringsScreen.js');
-    expect(feed).toMatch(/const weatherSaid = weatherMention\(weatherSignal\);\s*const weatherBanner = weatherSaid === 'indoor'/);
   });
 
   it('Home already speaks only when material: its card needs bad or exceptional weather, its reason line only exceptional', () => {
