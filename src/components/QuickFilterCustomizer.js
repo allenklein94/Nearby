@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, TouchableOpacity, Switch, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
 import { NLoader } from '../motion';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import LoadErrorState from '../components/LoadErrorState';
+import LoadErrorState from './LoadErrorState';
 import {
   DATING_QUICK_FILTER_CATALOG, DATING_DEFAULT_ORDER, DATING_DEFAULT_VISIBLE, DATING_DEFAULT_CONFIG,
   FRIEND_QUICK_FILTER_CATALOG, FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE, FRIEND_DEFAULT_CONFIG,
 } from '../constants/quickFilterCatalog';
 
 // Sep 6 2026 (CLAUDE.md, external UX critique item 9): one real "select
-// filters, set values, reorder" screen, driven by route.params.mode --
+// filters, set values, reorder" editor, driven by its mode prop --
 // Dating and Friends get their own real catalog (quickFilterCatalog.js)
 // and their own profile columns, not two copies of this screen. Dating's
 // Match % is the one 'threshold' entry with an actual settable value;
@@ -35,9 +35,12 @@ const MODE_SETUP = {
   },
 };
 
-export default function QuickFilterCustomizeScreen({ route }) {
+// Screen-reduction audit B10 (2026-10-09): opens IN PLACE where the quick filters are (the dating Filters sheet, the
+// Friends filter panel) instead of on its own screen. Every change saves at once and is reported through onChange so the
+// chips above update without a reload.
+export default function QuickFilterCustomizer({ mode: modeProp, onChange }) {
   const { t } = useLanguage();
-  const mode = route?.params?.mode === 'friends' ? 'friends' : 'dating';
+  const mode = modeProp === 'friends' ? 'friends' : 'dating';
   const setup = MODE_SETUP[mode];
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -82,6 +85,7 @@ export default function QuickFilterCustomizeScreen({ route }) {
     const { order: orderCol, visible: visibleCol, config: configCol } = setup.columns;
     const { data: sessionData } = await supabase.auth.getSession();
     const userId = sessionData?.session?.user?.id;
+    onChange?.({ order: newOrder, visible: newVisible, config: newConfig });
     await supabase.from('profiles').update({ [orderCol]: newOrder, [visibleCol]: newVisible, [configCol]: newConfig }).eq('id', userId);
   }
 
@@ -115,24 +119,23 @@ export default function QuickFilterCustomizeScreen({ route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.quickPicks.loadingYourFilters')}</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (loadError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <LoadErrorState message={t('ui.quickPicks.couldntLoadYourQuickFilters')} onRetry={load} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+    <View style={styles.container}>
         <Text style={styles.description}>{t(mode === 'friends' ? 'ui.quickPicks.descriptionFriends' : 'ui.quickPicks.descriptionDating')}</Text>
         {order.map((key, index) => {
           const info = setup.catalog.find((f) => f.key === key);
@@ -195,14 +198,13 @@ export default function QuickFilterCustomizeScreen({ route }) {
             </View>
           );
         })}
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const getStyles = (colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  description: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, lineHeight: 18 },
+  container: { marginTop: spacing.sm },
+  description: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm, lineHeight: 18 },
   row: { paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   rowLabel: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },

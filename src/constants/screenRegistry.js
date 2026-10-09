@@ -41,8 +41,6 @@ export const SCREEN_REGISTRY = {
   EditProfile: { jobs: ['C'], reason: 'Editing your profile (photos, prompts, about you, basics, interests) is its own task (item 35); Save returns to where you came from.' },
   Settings: { jobs: ['C'], reason: 'Preferences, privacy, notifications and account controls.' },
   DatingPreferences: { jobs: ['C'], reason: 'Edit your dating profile and who you want to see.' },
-  QuickFilterCustomize: { jobs: ['C'], reason: 'Choose, set and reorder your quick filters.' },
-  BlockedUsers: { jobs: ['C'], reason: 'Review and unblock people you blocked.' },
   EmergencyContacts: { jobs: ['C'], reason: 'Add and remove your emergency contacts.' },
   Occasions: { jobs: ['C'], reason: 'Add, edit and remove the occasions Nearby remembers for you.' },
   MusicMode: { jobs: ['C'], reason: 'Connect Spotify and pick the tracks shown on your profile.' },
@@ -114,7 +112,6 @@ export const SCREEN_REGISTRY = {
   BusinessDashboard: { jobs: ['C', 'E'], reason: 'Opportunities, bookings, availability and profile for an owner.' },
   BusinessWebHome: { jobs: ['C'], reason: 'The business website\'s landing and sign-in entry.' },
   BusinessAIAssistant: { jobs: ['D'], reason: 'An owner\'s conversation with the AI assistant.' },
-  BusinessAIAutomation: { jobs: ['C'], reason: 'An owner\'s automation rules and policies.' },
   BusinessPartnerApply: { jobs: ['C'], reason: 'Apply to list a business.' },
   MyBusinessApplication: { jobs: ['C', 'F'], reason: 'Your application\'s status and the resubmit form.' },
 
@@ -160,6 +157,9 @@ export const RULE14_DECISIONS = {
     TimelinePlanner: 'TogetherNotes kind timeline (B6)',
     StressTest: 'TogetherNotes kind stresstest (B6)',
     RelationshipConstitution: 'TogetherNotes kind constitution (B6)',
+    BlockedUsers: 'a section that opens in place under Settings > Safety (screen-reduction audit B10, 2026-10-09)',
+    QuickFilterCustomize: 'an editor that opens in place in the dating Filters sheet and the Friends filter panel (B10)',
+    BusinessAIAutomation: 'a panel that opens in place under the business dashboard Profile tab Settings (B10)',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).

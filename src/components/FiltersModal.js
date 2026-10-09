@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Modal,
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { DATING_QUICK_FILTER_CATALOG } from '../constants/quickFilterCatalog';
+import QuickFilterCustomizer from './QuickFilterCustomizer';
 import { TapActiveChip, modalAnimation } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
@@ -24,7 +25,7 @@ import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
 // Sep 6 2026 (CLAUDE.md, external UX critique item 9): the fixed 3-entry
 // inline map here used to be the *only* customization surface -- Customize
 // could only reorder/show-hide these same 3. The real catalog (now shared
-// with QuickFilterCustomizeScreen, quickFilterCatalog.js) can include a
+// with QuickFilterCustomizer, quickFilterCatalog.js) can include a
 // configurable value (Match %'s threshold) -- the chip label reflects
 // whatever the user actually set in Customize, defaulting to the catalog's
 // default when unset.
@@ -61,13 +62,14 @@ export default function FiltersModal({
   quickFilterConfig,
   quickFilters,
   onToggleQuickFilter,
-  onCustomizeQuickFilters,
+  onQuickFiltersChanged,
   onClearFreeFilters,
 }) {
   const { colors, shadow } = useTheme();
   const { t, language } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [draft, setDraft] = useState(activeFilters);
+  const [customizing, setCustomizing] = useState(false); // quick-filter editor, opened in place (audit B10)
   const [draftMinAge, setDraftMinAge] = useState(String(ageRange?.min ?? 18));
   const [draftMaxAge, setDraftMaxAge] = useState(String(ageRange?.max ?? 99));
 
@@ -189,9 +191,10 @@ export default function FiltersModal({
             <View style={styles.fieldSection}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.fieldLabel}>{t('ui.dating.quickFilters')}</Text>
-                {onCustomizeQuickFilters && (
+                {onQuickFiltersChanged && (
                   <TouchableOpacity
-                    onPress={onCustomizeQuickFilters}
+                    onPress={() => setCustomizing((v) => !v)}
+                    accessibilityState={{ expanded: customizing }}
                     accessibilityLabel={t('ui.dating.customizeWhichQuickFiltersShowA11y')}
                     accessibilityRole="button"
                   >
@@ -199,6 +202,7 @@ export default function FiltersModal({
                   </TouchableOpacity>
                 )}
               </View>
+              {customizing && <QuickFilterCustomizer mode="dating" onChange={onQuickFiltersChanged} />}
               <View style={styles.chipsWrap}>
                 {quickFilterOrder.filter((key) => quickFilterVisible?.includes(key)).map((key) => {
                   const info = DATING_QUICK_FILTER_CATALOG.find((f) => f.key === key);

@@ -903,7 +903,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
           if (key === 'online') setOnlineOnly((v) => !v);
           if (key === 'sharedInterests') setSharedInterestsOnly((v) => !v);
         }}
-        onCustomizeQuickFilters={() => { setFiltersModalVisible(false); navigation.navigate('QuickFilterCustomize', { mode: 'dating' }); }}
+        onQuickFiltersChanged={({ order, visible, config }) => { setQuickFilterOrder(order); setQuickFilterVisible(visible); setQuickFilterConfig({ ...DATING_DEFAULT_CONFIG, ...config }); }}
         onClearFreeFilters={() => {
           setIntentionFilter([]);
           setVerifiedOnly(false);

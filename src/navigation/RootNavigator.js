@@ -82,7 +82,6 @@ import MomentumScreen from '../screens/MomentumScreen';
 import PlansScreen from '../screens/PlansScreen';
 import MarketValidationScreen from '../screens/MarketValidationScreen';
 import BusinessAIAssistantScreen from '../screens/BusinessAIAssistantScreen';
-import BusinessAIAutomationScreen from '../screens/BusinessAIAutomationScreen';
 import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
 import OccasionsScreen from '../screens/OccasionsScreen';
 import PlanDetailScreen from '../screens/PlanDetailScreen';
@@ -93,12 +92,10 @@ import RehearsalRoomScreen from '../screens/RehearsalRoomScreen';
 import IdVerificationScreen from '../screens/IdVerificationScreen';
 import AdminVerificationScreen from '../screens/AdminVerificationScreen';
 import InviteFriendsScreen from '../screens/InviteFriendsScreen';
-import BlockedUsersScreen from '../screens/BlockedUsersScreen';
 import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScreen';
 import FriendsScreen from '../screens/FriendsScreen';
 import GatheringChatScreen from '../screens/GatheringChatScreen';
 import PlanChatScreen from '../screens/PlanChatScreen';
-import QuickFilterCustomizeScreen from '../screens/QuickFilterCustomizeScreen';
 import PreferencePollScreen from '../screens/PreferencePollScreen';
 import MusicModeScreen from '../screens/MusicModeScreen';
 
@@ -449,7 +446,6 @@ export default function RootNavigator() {
             <Stack.Screen name="Plans" component={PlansScreen} options={{ headerShown: true, title: t('ui.nav.title.plans'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MarketValidation" component={MarketValidationScreen} options={{ headerShown: true, title: 'Market Validation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessAIAssistant" component={BusinessAIAssistantScreen} options={{ headerShown: true, title: 'AI Assistant', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="BusinessAIAutomation" component={BusinessAIAutomationScreen} options={{ headerShown: true, title: 'AI Automation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ headerShown: true, title: t('ui.nav.title.emergencyContacts'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Occasions" component={OccasionsScreen} options={{ headerShown: true, title: t('ui.nav.title.occasions'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: t('ui.nav.title.musicMode'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
@@ -459,7 +455,6 @@ export default function RootNavigator() {
             <Stack.Screen name="IdVerification" component={IdVerificationScreen} options={{ headerShown: true, title: t('ui.nav.title.idVerification'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} options={{ headerShown: true, title: 'Verifications (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="InviteFriends" component={InviteFriendsScreen} options={{ headerShown: true, title: t('ui.nav.title.inviteFriends'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="BlockedUsers" component={BlockedUsersScreen} options={{ headerShown: true, title: t('ui.nav.title.blockedUsers'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, title: t('ui.nav.title.selectGatheringLocation'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Gatherings" component={GatheringsScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringDetail" component={GatheringDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
@@ -503,7 +498,6 @@ export default function RootNavigator() {
                 same content, no rewrite, just corrects the one concrete gap
                 the audit found (FiltersModal itself was already a real
                 in-place modal; only this deeper "Customize" screen wasn't). */}
-            <Stack.Screen name="QuickFilterCustomize" component={QuickFilterCustomizeScreen} options={({ route }) => ({ headerShown: true, title: route?.params?.mode === 'friends' ? t('ui.nav.customizeFriendsFilters') : t('ui.nav.customizeQuickFilters'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' })} />
             <Stack.Screen name="PreferencePolls" component={PreferencePollScreen} options={{ headerShown: true, title: t('ui.nav.title.preferencePolls'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: t('ui.nav.title.createCommunity'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />

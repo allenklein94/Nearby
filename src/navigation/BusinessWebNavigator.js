@@ -9,7 +9,6 @@ import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
 import BusinessProfileScreen from '../screens/BusinessProfileScreen';
 import BusinessConversationScreen from '../screens/BusinessConversationScreen';
 import BusinessAIAssistantScreen from '../screens/BusinessAIAssistantScreen';
-import BusinessAIAutomationScreen from '../screens/BusinessAIAutomationScreen';
 import CreateGatheringScreen from '../screens/CreateGatheringScreen';
 import EditGatheringScreen from '../screens/EditGatheringScreen';
 import GatheringDetailScreen from '../screens/GatheringDetailScreen';
@@ -60,7 +59,6 @@ export default function BusinessWebNavigator() {
             <Stack.Screen name="BusinessProfile" component={BusinessProfileScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessConversation" component={BusinessConversationScreen} options={{ headerShown: true, title: 'Message', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessAIAssistant" component={BusinessAIAssistantScreen} options={{ headerShown: true, title: 'AI Assistant', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="BusinessAIAutomation" component={BusinessAIAutomationScreen} options={{ headerShown: true, title: 'AI Automation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
 
             {/* Hosting: the same gathering/community screens the app uses (no duplicated logic). */}
             <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: 'Host a Gathering' }} />

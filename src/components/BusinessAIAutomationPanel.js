@@ -12,15 +12,14 @@
 // the server-side entitlement check inside set_business_ai_trust_level()/
 // upsert_business_ai_policy() themselves.
 import { presentRecoverableError } from '../utils/recoverableError';
-import EmptyCopy from '../components/EmptyCopy';
-import React, { useState, useCallback } from 'react';
+import EmptyCopy from './EmptyCopy';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, TextInput, Switch,
-  StyleSheet, SafeAreaView, Alert, ActivityIndicator, Modal, KeyboardAvoidingView,
+  StyleSheet, Alert, ActivityIndicator, Modal, KeyboardAvoidingView,
   Platform, TouchableWithoutFeedback, Keyboard,
 } from 'react-native';
 import { NLoader, modalAnimation } from '../motion';
-import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { formatAgo } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
@@ -73,8 +72,9 @@ function formatRelativeTime(iso) {
   return formatAgo(iso) ?? 'time unknown';
 }
 
-export default function BusinessAIAutomationScreen({ route }) {
-  const { partnerId, partnerName } = route.params || {};
+// Screen-reduction audit B10 (2026-10-09): opens in place under the business dashboard's Profile tab Settings, beside
+// the other business settings, instead of on its own screen. Loads when opened and when the business changes.
+export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -147,14 +147,12 @@ export default function BusinessAIAutomationScreen({ route }) {
     setLoadingLog(false);
   }, [partnerId]);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-      loadPolicies();
-      loadActivityLog();
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-  );
+  useEffect(() => {
+    load();
+    loadPolicies();
+    loadActivityLog();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [partnerId]);
 
   function levelEntitled(feature) {
     if (!feature) return true;
@@ -393,15 +391,14 @@ export default function BusinessAIAutomationScreen({ route }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <NLoader fullScreen={false} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl }}>
+    <View style={styles.container}>
         <Text style={styles.headline}>AI Automation for {partnerName || 'Your Business'}</Text>
         <Text style={styles.subtext}>
           Choose how much Nearby is allowed to do on its own. You can raise or lower this at any
@@ -502,7 +499,6 @@ export default function BusinessAIAutomationScreen({ route }) {
         ) : (
           activityLog.map(renderActivityRow)
         )}
-      </ScrollView>
 
       <Modal visible={policyModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setPolicyModalVisible(false)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.modalOverlay}>
@@ -615,12 +611,12 @@ export default function BusinessAIAutomationScreen({ route }) {
           </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const getStyles = (colors, shadow) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { marginTop: spacing.md },
   headline: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   subtext: { color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: spacing.lg },
   levelCard: {

@@ -4,7 +4,7 @@
 // filter ordering. This catalog is the real, honest set of filter
 // dimensions each mode can offer: only ones already backed by real, live
 // filtering logic (no invented signals, see CLAUDE.md's "no fabricated
-// signals" rule). 'kind' drives both QuickFilterCustomizeScreen's value
+// signals" rule). 'kind' drives both QuickFilterCustomizer's value
 // editor and how the owning screen applies the filter:
 //   'boolean'   -- plain on/off, no configurable value
 //   'threshold' -- on/off + a single configurable numeric value, chosen

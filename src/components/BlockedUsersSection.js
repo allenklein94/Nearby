@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Image } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader, PullToRefresh } from '../motion';
-import { useFocusEffect } from '@react-navigation/native';
+import { NLoader } from '../motion';
 import { getMyBlockedUsers, unblockUser } from '../services/blockedUsers';
 import { getSignedPhotoUrl } from '../services/photos';
 import LoadErrorState from '../components/LoadErrorState';
@@ -12,7 +11,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
-export default function BlockedUsersScreen() {
+// Blocked people, shown in place under Settings > Safety (screen-reduction audit B10, 2026-10-09: this was its own
+// screen, BlockedUsers). Loads when the section is opened; unblocking re-reads the list.
+export default function BlockedUsersSection() {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const posthog = usePostHog();
@@ -21,7 +22,6 @@ export default function BlockedUsersScreen() {
   const [photoUrls, setPhotoUrls] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
   const [unblockingId, setUnblockingId] = useState(null);
 
   const load = useCallback(async () => {
@@ -46,17 +46,7 @@ export default function BlockedUsersScreen() {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
-
-  async function onRefresh() {
-    setRefreshing(true);
-    await load();
-    setRefreshing(false);
-  }
+  useEffect(() => { load(); }, [load]);
 
   function confirmUnblock(block) {
     Alert.alert(
@@ -84,28 +74,23 @@ export default function BlockedUsersScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.blockedUsers.loadingBlockedUsers')}</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (loadError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <LoadErrorState message={t('ui.blockedUsers.couldntLoadYourBlockedUsers')} onRetry={load} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={{ padding: spacing.lg }}
-        refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <Text style={styles.headerTitle} accessibilityRole="header">{t('blockedUsers.title')}</Text>
+    <View style={styles.container}>
         <Text style={styles.headerSubtitle}>
           {t('blockedUsers.subtitle')}
         </Text>
@@ -136,16 +121,14 @@ export default function BlockedUsersScreen() {
             </TouchableOpacity>
           </View>
         ))}
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const getStyles = (colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  headerTitle: { ...typography.title, color: colors.textPrimary },
-  headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 18 },
-  emptyState: { alignItems: 'center', paddingTop: spacing.xxl },
+  container: { paddingTop: spacing.xs, paddingBottom: spacing.sm },
+  headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.md, lineHeight: 18 },
+  emptyState: { alignItems: 'center', paddingVertical: spacing.md },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center' },
   card: {

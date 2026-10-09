@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
 import { NLoader, MatchAnimation, FilterTransition, TapActiveChip } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
+import QuickFilterCustomizer from '../components/QuickFilterCustomizer';
 import {
   isOpenToFriendDiscovery,
   setOpenToFriendDiscovery,
@@ -102,10 +103,11 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   // Sep 6 2026 (CLAUDE.md, external UX critique item 9): real "select
   // filters, set values, reorder" parity with Dating's own Quick Filters
-  // (QuickFilterCustomizeScreen, quickFilterCatalog.js) -- for Friends,
+  // (QuickFilterCustomizer, quickFilterCatalog.js) -- for Friends,
   // "set values" already happens live above (tap tags, tap a distance
   // bucket), so Customize here only needs to control which of these 4
   // sections show and in what order.
+  const [customizingFilters, setCustomizingFilters] = useState(false); // quick-filter editor, opened in place (audit B10)
   const [quickFilterOrder, setQuickFilterOrder] = useState(FRIEND_DEFAULT_ORDER);
   const [quickFilterVisible, setQuickFilterVisible] = useState(FRIEND_DEFAULT_VISIBLE);
   // Unified Crossed Paths, step 5 (CLAUDE.md, 2026-09-10): Friends gains
@@ -505,13 +507,17 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                 return null;
               })}
               <TouchableOpacity
-                onPress={() => navigation.navigate('QuickFilterCustomize', { mode: 'friends' })}
+                onPress={() => setCustomizingFilters((v) => !v)}
                 accessibilityLabel={t('ui.friends.customizeWhichFiltersShowAndA11y')}
                 accessibilityRole="button"
+                accessibilityState={{ expanded: customizingFilters }}
                 style={{ marginTop: spacing.md }}
               >
                 <Text style={styles.customizeLink}>{t('ui.friends.customize')}</Text>
               </TouchableOpacity>
+              {customizingFilters && (
+                <QuickFilterCustomizer mode="friends" onChange={({ order, visible }) => { setQuickFilterOrder(order); setQuickFilterVisible(visible); }} />
+              )}
             </View>
           )}
         </View>

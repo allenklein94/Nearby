@@ -1,3 +1,4 @@
+import BlockedUsersSection from '../components/BlockedUsersSection';
 import React, { useEffect, useRef, useState } from 'react';
 import { PERKS_TAB } from '../utils/recommendationContext';
 import { navigateKeepingTrail } from '../services/openDestination';
@@ -88,6 +89,7 @@ export default function SettingsScreen({ navigation, route }) {
   const { t, language, setLanguage } = useLanguage();
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
+  const [showBlocked, setShowBlocked] = useState(false); // Blocked users open in place (audit B10)
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
   const [shareInterestInDemand, setShareInterestInDemand] = useState(true);
@@ -981,14 +983,16 @@ export default function SettingsScreen({ navigation, route }) {
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.safety')}</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('BlockedUsers')}
+          onPress={() => setShowBlocked((v) => !v)}
           activeOpacity={0.85}
           accessibilityLabel={t('ui.settings.blockedUsersA11y')}
           accessibilityRole="button"
+          accessibilityState={{ expanded: showBlocked }}
         >
           <Text style={styles.rowButtonText}>{t('ui.settings.blockedUsers')}</Text>
-          <Text style={styles.chevron}>›</Text>
+          <Text style={styles.chevron}>{showBlocked ? '▾' : '›'}</Text>
         </TouchableOpacity>
+        {showBlocked && <BlockedUsersSection />}
 
         <TouchableOpacity
           style={styles.rowButtonCard}

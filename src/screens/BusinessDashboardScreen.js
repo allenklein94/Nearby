@@ -1,3 +1,4 @@
+import BusinessAIAutomationPanel from '../components/BusinessAIAutomationPanel';
 import { windowPhrase } from '../utils/timeWindow';
 import { useLanguage } from '../context/LanguageContext';
 import { activityHints } from '../constants/activityLayer';
@@ -293,6 +294,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const offerTypeLabel = (key) => (OFFER_TYPE_OPTIONS.some((o) => o.key === key) ? t(`ui.bizDash3.offerType.${key}`) : key);
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
+  const [showAiAutomation, setShowAiAutomation] = useState(false); // AI Automation opens in place (audit B10)
   const [section, setSectionRaw] = useState(() => {
     const initial = route?.params?.initialSection ?? 'home';
     return LEGACY_SECTION_TAB[initial] ?? initial;
@@ -6150,19 +6152,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     )}
                   </View>
                 )}
-              {/* Business Intelligence Phase 6 -- the real AI Trust Engine
-                  settings surface (level selector, named policies, the
-                  real Activity Log). A dedicated screen, not more inline
-                  UI here, matching this exact "AI Assistant" button's own
-                  precedent. */}
+              {/* Business Intelligence Phase 6 -- the AI Trust Engine settings (level selector, named policies, the
+                  Activity Log). Opens in place here, beside the other settings (screen-reduction audit B10). */}
               <TouchableOpacity
                 style={[styles.createOfferButton, { marginTop: spacing.md, backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border }]}
-                onPress={() => navigation.navigate('BusinessAIAutomation', { partnerId: selectedPartner.id, partnerName: selectedPartner.name })}
+                onPress={() => setShowAiAutomation((v) => !v)}
                 accessibilityLabel={t('ui.bizDash3.manageAiAutomationForYourA11y')}
                 accessibilityRole="button"
+                accessibilityState={{ expanded: showAiAutomation }}
               >
-                <Text style={[styles.createOfferButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash3.aiAutomationSettings')}</Text>
+                <Text style={[styles.createOfferButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash3.aiAutomationSettings')} {showAiAutomation ? '▾' : '›'}</Text>
               </TouchableOpacity>
+              {showAiAutomation && <BusinessAIAutomationPanel partnerId={selectedPartner.id} partnerName={selectedPartner.name} />}
                 <BusinessNotificationPreferences />
                 {Platform.OS === 'web' && <BusinessEmailNotifications />}
 
