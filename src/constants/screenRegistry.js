@@ -66,11 +66,7 @@ export const SCREEN_REGISTRY = {
 
   // ---- tools shared with a match (each opened from that match's chat) ----
   SharedPlaylist: { jobs: ['D', 'C'], reason: 'A playlist you build together with a match.' },
-  TripPlanning: { jobs: ['D', 'C'], reason: 'Trip ideas you collect together with a match.' },
-  SharedDecisions: { jobs: ['D', 'C'], reason: 'Decisions you note down together with a match.' },
-  TimelinePlanner: { jobs: ['D', 'C'], reason: 'Where the relationship is heading, written together.' },
-  StressTest: { jobs: ['D', 'C'], reason: 'Hard scenarios you talk through together.' },
-  RelationshipConstitution: { jobs: ['D', 'C'], reason: 'Shared ground rules you write together.' },
+  TogetherNotes: { jobs: ['D', 'C'], reason: 'Notes two matched people write together by section: trip ideas, big picture, timeline, stress test, constitution (one screen, `kind` picks which).' },
   MemoryVault: { jobs: ['D', 'C'], reason: 'Memories you save together with a match.' },
   RelationshipLegacy: { jobs: ['C'], reason: 'Leave anonymous relationship wisdom from a match.' },
 
@@ -159,6 +155,11 @@ export const RULE14_DECISIONS = {
     BrandOffers: 'Discover -> Perks (browse and redeem in place)',
     Rewards: 'one tier line at the top of Discover -> Perks',
     GatheringHub: 'the attending section on GatheringDetail (joining changes your state on the gathering, never the screen; screen-reduction audit B1, 2026-10-08)',
+    TripPlanning: 'TogetherNotes kind trip (screen-reduction audit B6, 2026-10-09)',
+    SharedDecisions: 'TogetherNotes kind bigpicture (B6)',
+    TimelinePlanner: 'TogetherNotes kind timeline (B6)',
+    StressTest: 'TogetherNotes kind stresstest (B6)',
+    RelationshipConstitution: 'TogetherNotes kind constitution (B6)',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).

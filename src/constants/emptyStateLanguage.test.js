@@ -36,6 +36,7 @@ describe('empty-state language (item 80)', () => {
     for (const f of files) {
       const src = fs.readFileSync(f, 'utf8');
       for (const m of src.matchAll(/EmptyCopy id=\{?['"]([a-z_]+)['"]/g)) used.add(m[1]);
+      for (const m of src.matchAll(/emptyCopyId: ['"]([a-z_]+)['"]/g)) used.add(m[1]); // config-driven (TogetherNotes kinds)
       if (src.includes('EmptyCopy')) {
         // ids chosen by a ternary or a lookup table still name registry entries as quoted strings
         for (const id of Object.keys(EMPTY_STATES)) if (src.includes(`'${id}'`) || src.includes(`"${id}"`)) used.add(id);

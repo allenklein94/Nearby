@@ -3,6 +3,8 @@
 // Files NOT listed are either not converted yet or deliberately English (NOT_LOCALIZED below).
 export const LOCALIZED_FILES = [
   'src/screens/PlansScreen.js',
+  'src/screens/TogetherNotesScreen.js',
+  'src/constants/togetherNotesKinds.js',
   'src/components/LoadErrorState.js',
   'src/components/DraftBanner.js',
   'src/components/OnboardingTopBar.js',
@@ -108,13 +110,8 @@ export const LOCALIZED_FILES = [
   'src/screens/GoodbyeArchiveListScreen.js',
   'src/screens/GoodbyeArchiveEntryScreen.js',
   'src/screens/RelationshipEmergencyKitScreen.js',
-  'src/screens/SharedDecisionsScreen.js',
-  'src/screens/TripPlanningScreen.js',
   'src/screens/SharedPlaylistScreen.js',
   'src/screens/MusicModeScreen.js',
-  'src/screens/RelationshipConstitutionScreen.js',
-  'src/screens/StressTestScreen.js',
-  'src/screens/TimelinePlannerScreen.js',
   'src/screens/MemoryVaultScreen.js',
   'src/screens/ChemistryDiaryEntryScreen.js',
   'src/screens/LegacyLibraryScreen.js',

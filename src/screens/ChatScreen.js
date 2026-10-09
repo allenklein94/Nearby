@@ -544,15 +544,15 @@ export default function ChatScreen({ route, navigation }) {
   // Something Together are all genuinely neutral and stay for everyone.
   const togetherMenuOptions = [
     { key: 'playlist', text: t('ui.chat.together.playlist'), onPress: () => navigation.navigate('SharedPlaylist', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'trip', text: t('ui.chat.together.trip'), onPress: () => navigation.navigate('TripPlanning', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'bigpicture', romanticOnly: true, text: t('ui.chat.together.bigpicture'), onPress: () => navigation.navigate('SharedDecisions', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'trip', text: t('ui.chat.together.trip'), onPress: () => navigation.navigate('TogetherNotes', { kind: 'trip', matchId, matchName: otherUser?.display_name }) },
+    { key: 'bigpicture', romanticOnly: true, text: t('ui.chat.together.bigpicture'), onPress: () => navigation.navigate('TogetherNotes', { kind: 'bigpicture', matchId, matchName: otherUser?.display_name }) },
     { key: 'experiment', text: t('ui.chat.together.experiment'), onPress: showRandomExperiment },
     { key: 'legacy', romanticOnly: true, text: t('ui.chat.together.legacy'), onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'timeline', romanticOnly: true, text: t('ui.chat.together.timeline'), onPress: () => navigation.navigate('TimelinePlanner', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'timeline', romanticOnly: true, text: t('ui.chat.together.timeline'), onPress: () => navigation.navigate('TogetherNotes', { kind: 'timeline', matchId, matchName: otherUser?.display_name }) },
     { key: 'memoryvault', romanticOnly: true, text: t('ui.chat.together.memoryvault'), onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
     { key: 'chemistry', romanticOnly: true, text: t('ui.chat.together.chemistry'), onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
-    { key: 'stresstest', romanticOnly: true, text: t('ui.chat.together.stresstest'), onPress: () => navigation.navigate('StressTest', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'constitution', romanticOnly: true, text: t('ui.chat.together.constitution'), onPress: () => navigation.navigate('RelationshipConstitution', { matchId, matchName: otherUser?.display_name }) },
+    { key: 'stresstest', romanticOnly: true, text: t('ui.chat.together.stresstest'), onPress: () => navigation.navigate('TogetherNotes', { kind: 'stresstest', matchId, matchName: otherUser?.display_name }) },
+    { key: 'constitution', romanticOnly: true, text: t('ui.chat.together.constitution'), onPress: () => navigation.navigate('TogetherNotes', { kind: 'constitution', matchId, matchName: otherUser?.display_name }) },
     { key: 'courage', text: t('ui.chat.together.courage'), onPress: showCourageMenu },
     { key: 'datenight', text: t(isRomanticMatch ? 'ui.chat.together.dateNight' : 'ui.chat.together.somethingToDo'), onPress: suggestDateNight },
     // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4):

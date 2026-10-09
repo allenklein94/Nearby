@@ -3,6 +3,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { Animated, TouchableOpacity, Text, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import TogetherNotesScreen from '../screens/TogetherNotesScreen';
+import { TOGETHER_NOTES_KINDS } from '../constants/togetherNotesKinds';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -70,14 +72,11 @@ import LegalScreen from '../screens/LegalScreen';
 import CreateGatheringScreen from '../screens/CreateGatheringScreen';
 import GatheringConfirmationScreen from '../screens/GatheringConfirmationScreen';
 import SharedPlaylistScreen from '../screens/SharedPlaylistScreen';
-import TripPlanningScreen from '../screens/TripPlanningScreen';
-import SharedDecisionsScreen from '../screens/SharedDecisionsScreen';
 import RelationshipLegacyScreen from '../screens/RelationshipLegacyScreen';
 import LegacyLibraryScreen from '../screens/LegacyLibraryScreen';
 import GoodbyeArchiveEntryScreen from '../screens/GoodbyeArchiveEntryScreen';
 import GoodbyeArchiveListScreen from '../screens/GoodbyeArchiveListScreen';
 import RelationshipEmergencyKitScreen from '../screens/RelationshipEmergencyKitScreen';
-import TimelinePlannerScreen from '../screens/TimelinePlannerScreen';
 import MemoryVaultScreen from '../screens/MemoryVaultScreen';
 import MomentumScreen from '../screens/MomentumScreen';
 import PlansScreen from '../screens/PlansScreen';
@@ -90,8 +89,6 @@ import PlanDetailScreen from '../screens/PlanDetailScreen';
 import SharedNightScreen from '../screens/SharedNightScreen';
 import ChemistryDiaryEntryScreen from '../screens/ChemistryDiaryEntryScreen';
 import ChemistryDiaryListScreen from '../screens/ChemistryDiaryListScreen';
-import StressTestScreen from '../screens/StressTestScreen';
-import RelationshipConstitutionScreen from '../screens/RelationshipConstitutionScreen';
 import RehearsalRoomScreen from '../screens/RehearsalRoomScreen';
 import IdVerificationScreen from '../screens/IdVerificationScreen';
 import AdminVerificationScreen from '../screens/AdminVerificationScreen';
@@ -438,14 +435,12 @@ export default function RootNavigator() {
             <Stack.Screen name="CelebrateSomething" component={CelebrateSomethingScreen} options={{ headerShown: true, title: t('ui.nav.title.celebrateSomething'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="GatheringConfirmation" component={GatheringConfirmationScreen} options={{ headerShown: false, presentation: 'modal', gestureEnabled: false }} />
             <Stack.Screen name="SharedPlaylist" component={SharedPlaylistScreen} options={{ headerShown: true, title: t('ui.nav.title.sharedPlaylist'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="TripPlanning" component={TripPlanningScreen} options={{ headerShown: true, title: t('ui.nav.title.tripPlanning'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="SharedDecisions" component={SharedDecisionsScreen} options={{ headerShown: true, title: t('ui.nav.title.sharedDecisions'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="TogetherNotes" component={TogetherNotesScreen} options={({ route }) => ({ headerShown: true, title: t(TOGETHER_NOTES_KINDS[route.params?.kind]?.navTitleKey ?? 'ui.nav.title.tripPlanning'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
             <Stack.Screen name="RelationshipLegacy" component={RelationshipLegacyScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipLegacy'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="LegacyLibrary" component={LegacyLibraryScreen} options={{ headerShown: true, title: t('ui.nav.title.legacyLibrary'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GoodbyeArchiveEntry" component={GoodbyeArchiveEntryScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveEntry'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="GoodbyeArchiveList" component={GoodbyeArchiveListScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipEmergencyKit" component={RelationshipEmergencyKitScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipEmergencyKit'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="TimelinePlanner" component={TimelinePlannerScreen} options={{ headerShown: true, title: t('ui.nav.title.timelinePlanner'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: t('ui.nav.title.memoryVault'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             {/* Convergence pass P2 (CLAUDE.md): the old separate "Insights"
                 route is retired -- MomentumScreen now covers both, one
@@ -460,8 +455,6 @@ export default function RootNavigator() {
             <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: t('ui.nav.title.musicMode'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="ChemistryDiaryEntry" component={ChemistryDiaryEntryScreen} options={{ headerShown: true, title: t('ui.nav.title.chemistryDiaryEntry'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="ChemistryDiaryList" component={ChemistryDiaryListScreen} options={{ headerShown: true, title: t('ui.nav.title.chemistryDiaryList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="StressTest" component={StressTestScreen} options={{ headerShown: true, title: t('ui.nav.title.stressTest'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="RelationshipConstitution" component={RelationshipConstitutionScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipConstitution'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RehearsalRoom" component={RehearsalRoomScreen} options={{ headerShown: true, title: t('ui.nav.title.rehearsalRoom'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="IdVerification" component={IdVerificationScreen} options={{ headerShown: true, title: t('ui.nav.title.idVerification'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminVerification" component={AdminVerificationScreen} options={{ headerShown: true, title: 'Verifications (Admin)', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
