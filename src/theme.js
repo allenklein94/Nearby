@@ -25,6 +25,8 @@ export const lightColors = {
   // countdown). One hardcoded #B8791F used to serve both modes -- 3.45:1 on the light background,
   // under AA. Per-mode tokens keep >= 4.5:1 in each appearance.
   inProgress: '#9A6210',
+  // Offer travel (2026-10-09): the brief dim behind the offer as it emerges from the arrival signal.
+  scrim: 'rgba(45, 36, 32, 0.16)',
 };
 
 export const darkColors = {
@@ -45,6 +47,7 @@ export const darkColors = {
   surprise: '#9B8CFF',
   surpriseMuted: 'rgba(155, 140, 255, 0.18)',
   inProgress: '#E0A84A',
+  scrim: 'rgba(0, 0, 0, 0.32)',
 };
 
 export const typography = {

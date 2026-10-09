@@ -15,7 +15,7 @@ const BASE_DELAY_MS = 70;
 // Item 131: cascade budget -- max delay 200 + 250 item = 450ms to fully settled (medium).
 const MAX_DELAY_MS = 200;
 
-export default function StaggeredReveal({ index = 0, children, style, onLayout }) {
+export default function StaggeredReveal({ index = 0, children, style, onLayout, viewRef }) {
   const reduceMotion = useReduceMotion();
   const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
   const translateY = useRef(new Animated.Value(reduceMotion ? 0 : 10)).current;
@@ -40,7 +40,7 @@ export default function StaggeredReveal({ index = 0, children, style, onLayout }
   }, [reduceMotion]);
 
   return (
-    <Animated.View style={[style, { opacity, transform: [{ translateY }] }]} onLayout={onLayout}>
+    <Animated.View ref={viewRef} collapsable={false} style={[style, { opacity, transform: [{ translateY }] }]} onLayout={onLayout}>
       {children}
     </Animated.View>
   );

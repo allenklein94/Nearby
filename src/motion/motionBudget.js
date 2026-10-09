@@ -51,6 +51,9 @@ export const SEQUENCES = {
   // A rich offer opening: "<business> sent you an offer" fades in, then the offer body settles under it (business tone:
   // no glyph beat, no haptic, plain fades).
   offerReveal: { tier: 'medium', headerMs: 140, bodyDelayMs: 100, bodyMs: 200 },
+  // Offer travel (2026-10-09): dim in, the light travels from the arrival signal while the frame grows into the offer card,
+  // then frame + dim fade into the real card. Waiting for the card to be on screen is a hold, not part of the transition.
+  offerTravel: { tier: 'special', dimMs: 180, travelMs: 380, settleMs: 220, targetWaitMs: 1500 },
   // Result cascades.
   cascade: { tier: 'medium', maxDelayMs: 200, itemMs: 250 },
 };
@@ -78,6 +81,8 @@ export function settleMs(name) {
       return s.maxDelayMs + s.itemMs;
     case 'offerReveal':
       return Math.max(s.headerMs, s.bodyDelayMs + s.bodyMs);
+    case 'offerTravel':
+      return s.dimMs + s.travelMs + s.settleMs;
     default:
       return NaN;
   }

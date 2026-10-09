@@ -13,6 +13,7 @@ import { openOnTop } from '../navigation/openOnTop';
 import { createOfferArrivals, arrivalDestination, emitViewedArrival } from '../services/offerArrivals';
 import { fetchMyLiveReplies, subscribeToOfferChanges } from '../services/offerArrivalSource';
 import { arrivalSignalTitle, arrivalSignalA11y } from '../utils/offerCopy';
+import { startOfferTravel } from '../motion/offerTravel';
 
 // Offer arrival signal, Layer 1 (owner, 2026-10-09). The rules for WHICH replies are announced live in
 // services/offerArrivals.js; this file only listens (realtime, a push received while open, app foreground/background) and
@@ -71,11 +72,15 @@ export default function OfferArrivalHost() {
     };
   }, [userId]);
 
-  const open = () => {
+  // One offer: the offer travels from the signal into its card (motion/offerTravel.js). The screen opens at once either
+  // way; the travel is drawn over it and never delays it. Several replies open a list, so there is nothing to travel to.
+  const open = (fromRect) => {
     const current = controllerRef.current?.getSignal() ?? signal;
     const dest = arrivalDestination(current);
     controllerRef.current?.dismiss();
-    if (dest) openOnTop(navigationRef, dest.name, dest.params);
+    if (!dest) return;
+    if (dest.params?.focusOfferId && fromRect) startOfferTravel({ offerId: dest.params.focusOfferId, from: fromRect });
+    openOnTop(navigationRef, dest.name, dest.params);
   };
 
   return <OfferArrivalSignal signal={signal} onPress={open} />;
@@ -88,6 +93,15 @@ export function OfferArrivalSignal({ signal, onPress }) {
   const [shown, setShown] = useState(null); // kept through the fade-out
   const opacity = useRef(new Animated.Value(0)).current;
   const sparkle = useRef(new Animated.Value(1)).current;
+  const pillRef = useRef(null);
+  const press = () => {
+    const node = pillRef.current;
+    if (!node?.measureInWindow) { onPress(null); return; }
+    let done = false;
+    const go = (rect) => { if (!done) { done = true; onPress(rect); } };
+    node.measureInWindow((x, y, width, height) => go({ x, y, width, height }));
+    setTimeout(() => go(null), 50); // a measurement that never answers never holds up the tap
+  };
 
   useEffect(() => {
     if (signal) {
@@ -116,7 +130,8 @@ export function OfferArrivalSignal({ signal, onPress }) {
       <Animated.View style={{ opacity }}>
         <TouchableOpacity
           key={language}
-          onPress={onPress}
+          ref={pillRef}
+          onPress={press}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLiveRegion="polite"

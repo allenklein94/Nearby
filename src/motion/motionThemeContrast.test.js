@@ -17,7 +17,7 @@ const modes = { light: lightColors, dark: darkColors };
 describe.each(Object.entries(modes))('%s mode motion colors', (_name, c) => {
   test('every mode defines the tokens motion components read', () => {
     ['background', 'surface', 'surfaceElevated', 'primary', 'primaryMuted', 'textPrimary',
-      'textSecondary', 'border', 'surprise', 'surpriseMuted', 'inProgress'].forEach((k) => {
+      'textSecondary', 'border', 'surprise', 'surpriseMuted', 'inProgress', 'scrim'].forEach((k) => {
       expect(c[k]).toBeTruthy();
     });
   });

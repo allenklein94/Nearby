@@ -10,6 +10,7 @@ import * as Calendar from 'expo-calendar';
 import { NLoader, SuccessAnimation, ModeTransition } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { subscribeViewedArrivals } from '../services/offerArrivals';
+import { isOfferTravelPending, reportOfferTravelTarget } from '../motion/offerTravel';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
@@ -94,6 +95,9 @@ const OFFER_TYPE_LABELS = { standard: true, discount: true, perk: true, upgrade:
 // matching the plan's own "a consumer-side offer-review/accept screen"
 // (singular) scope; revisiting a request relies on the push deep link,
 // same as this app's established gathering_invite precedent.
+// How long the focus scroll takes before the offer card's on-screen position is read for the offer travel.
+const OFFER_SCROLL_SETTLE_MS = 380;
+
 export default function BusinessRequestDetailScreen({ navigation, route }) {
   const { t, language } = useLanguage();
   const names = useCategoryNames();
@@ -898,11 +902,17 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // outlined, so "Coastal Coffee made you an offer" lands on Coastal Coffee's offer, not the top of the request.
   const focusOfferId = route.params?.focusOfferId ?? null;
   const focusScrolledRef = useRef(false);
+  const focusCardRef = useRef(null);
   function onOfferLayout(offerId, e) {
     if (!focusOfferId || offerId !== focusOfferId || focusScrolledRef.current) return;
     focusScrolledRef.current = true;
     const y = e.nativeEvent.layout.y;
     requestAnimationFrame(() => scrollViewRef.current?.scrollTo?.({ y: Math.max(y - spacing.lg, 0), animated: true }));
+    // Offer travel (motion/offerTravel.js): once the scroll has settled, say where the card is so the offer can travel
+    // into it. Nothing here waits on it; no travel pending = nothing happens.
+    if (isOfferTravelPending(offerId)) {
+      setTimeout(() => focusCardRef.current?.measureInWindow?.((x, cy, width, height) => reportOfferTravelTarget(offerId, { x, y: cy, width, height })), OFFER_SCROLL_SETTLE_MS);
+    }
   }
   function goInviteFromAchievementCard() {
     setShowOrganizers(true);
@@ -1307,7 +1317,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             const stats = partnerStats[o.partner_id];
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
             return (
-            <StaggeredReveal key={o.id} index={offerIndex} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
+            <StaggeredReveal key={o.id} index={offerIndex} viewRef={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
             <View>
               <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
               {/* Item 92 ("Businesses should be able to respond specifically to
