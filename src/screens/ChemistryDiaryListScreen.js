@@ -1,9 +1,10 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader, PullToRefresh, modalAnimation } from '../motion';
+import { NLoader, PullToRefresh } from '../motion';
+import ChemistryEntryComposer, { CHEMISTRY_SIGNALS } from '../components/ChemistryEntryComposer';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyChemistryEntries, deleteChemistryEntry } from '../services/chemistryDiary';
 import { usePostHog } from 'posthog-react-native';
@@ -13,13 +14,7 @@ import { displayDay } from '../i18n/display';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
-const SIGNALS = [
-  { key: 'felt_relaxed', icon: '😌', labelKey: 'relaxed' },
-  { key: 'felt_curious', icon: '🤔', labelKey: 'curious' },
-  { key: 'felt_respected', icon: '🤝', labelKey: 'respected' },
-  { key: 'felt_laughed', icon: '😄', labelKey: 'laughed' },
-  { key: 'felt_like_myself', icon: '✨', labelKey: 'likeMyself' },
-];
+const SIGNALS = CHEMISTRY_SIGNALS; // one list, shared with the composer
 
 const MIN_ENTRIES_FOR_INSIGHTS = 3;
 
@@ -48,7 +43,7 @@ function computeInsights(entries) {
     .sort((a, b) => b.count - a.count);
 }
 
-export default function ChemistryDiaryListScreen({ navigation }) {
+export default function ChemistryDiaryListScreen({ navigation, route }) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const posthog = usePostHog();
@@ -58,8 +53,17 @@ export default function ChemistryDiaryListScreen({ navigation }) {
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
-  const [nameModalVisible, setNameModalVisible] = useState(false);
-  const [nameInput, setNameInput] = useState('');
+  // Audit B9: adding an entry happens IN PLACE (the composer at the top of this list), never on a second screen. A match's chat
+  // or profile opens this list with composeFor = that person's name; saving there returns to where they started.
+  const [composer, setComposer] = useState(() => (route?.params?.composeFor != null ? { name: route.params.composeFor } : null));
+  const scrollRef = useRef(null);
+  const appliedParams = useRef(route?.params);
+  useEffect(() => {
+    const p = route?.params;
+    if (!p || p === appliedParams.current) return;
+    appliedParams.current = p;
+    if (p.composeFor != null) setComposer({ name: p.composeFor });
+  }, [route?.params]);
 
   const load = useCallback(async () => {
     try {
@@ -115,17 +119,15 @@ export default function ChemistryDiaryListScreen({ navigation }) {
   }
 
   function startNewEntry() {
-    setNameInput('');
-    setNameModalVisible(true);
+    posthog.capture('chemistry_diary_entry_started');
+    setComposer({ name: '' });
+    scrollRef.current?.scrollTo?.({ y: 0, animated: true });
   }
 
-  function proceedToEntry() {
-    if (!nameInput.trim()) {
-      return Alert.alert(t('ui.chemistryDiary.addAName'), t('ui.chemistryDiary.whoIsThisEntryAbout'));
-    }
-    setNameModalVisible(false);
-    posthog.capture('chemistry_diary_entry_started');
-    navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: nameInput.trim() });
+  function onComposerSaved() {
+    setComposer(null);
+    if (route?.params?.returnAfterSave && navigation.canGoBack()) { navigation.goBack(); return; }
+    load();
   }
 
   if (loading) {
@@ -152,6 +154,9 @@ export default function ChemistryDiaryListScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        ref={scrollRef}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
       >
@@ -160,6 +165,14 @@ export default function ChemistryDiaryListScreen({ navigation }) {
           {t('chemistryDiary.subtitle')}
         </Text>
 
+        {composer ? (
+          <ChemistryEntryComposer
+            key={composer.name}
+            initialName={composer.name}
+            onSaved={onComposerSaved}
+            onCancel={() => setComposer(null)}
+          />
+        ) : (
         <TouchableOpacity
           style={styles.addButton}
           onPress={startNewEntry}
@@ -169,6 +182,7 @@ export default function ChemistryDiaryListScreen({ navigation }) {
         >
           <Text style={styles.addButtonText}>{t('ui.chemistryDiary.addEntry')}</Text>
         </TouchableOpacity>
+        )}
 
         {canShowInsights && (
           <TouchableOpacity
@@ -250,39 +264,6 @@ export default function ChemistryDiaryListScreen({ navigation }) {
         })}
       </ScrollView>
 
-      <Modal visible={nameModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setNameModalVisible(false)}>
-        <View style={styles.overlay}>
-          <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>{t('ui.chemistryDiary.whoIsThisEntryAbout2')}</Text>
-            <TextInput
-              style={styles.nameInput}
-              placeholder={t('ui.chemistryDiary.firstNameOrHoweverYoud')}
-              placeholderTextColor={colors.textTertiary}
-              value={nameInput}
-              onChangeText={setNameInput}
-              autoFocus
-              accessibilityLabel={t('ui.chemistryDiary.nameA11y')}
-            />
-            <TouchableOpacity
-              style={styles.sheetButton}
-              onPress={proceedToEntry}
-              activeOpacity={0.85}
-              accessibilityLabel={t('ui.chemistryDiary.continueA11y')}
-              accessibilityRole="button"
-            >
-              <Text style={styles.sheetButtonText}>{t('ui.chemistryDiary.continue')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setNameModalVisible(false)}
-              style={{ marginTop: spacing.md }}
-              accessibilityLabel={t('ui.chemistryDiary.cancelA11y')}
-              accessibilityRole="button"
-            >
-              <Text style={styles.cancelText}>{t('ui.chemistryDiary.cancel')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -296,13 +277,6 @@ const getStyles = (colors) => StyleSheet.create({
     alignItems: 'center', marginBottom: spacing.lg,
   },
   addButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
-  sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
-  nameInput: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
-  sheetButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
-  sheetButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
   insightsCard: {
     backgroundColor: colors.primaryMuted, borderRadius: radius.lg, padding: spacing.md,
     marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.primary,

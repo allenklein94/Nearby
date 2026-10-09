@@ -623,7 +623,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
           {!isOwnProfile && (
             <TouchableOpacity
-              onPress={() => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: profile.display_name })}
+              onPress={() => navigation.navigate('ChemistryDiaryList', { composeFor: profile.display_name ?? '', returnAfterSave: true })}
               accessibilityLabel={t('ui.viewProfile.logAChemistryCheckInA11y', { name: profile.display_name })}
               accessibilityRole="button"
               style={styles.chemistryDiaryLink}

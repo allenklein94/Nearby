@@ -70,9 +70,7 @@ export const SCREEN_REGISTRY = {
   // ---- private relationship reflection ----
   RehearsalRoom: { jobs: ['C'], reason: 'Practise a hard conversation privately.' },
   ChemistryDiaryList: { jobs: ['C'], reason: 'Your private chemistry diary entries.' },
-  ChemistryDiaryEntry: { jobs: ['C'], reason: 'Write or edit one diary entry.' },
   GoodbyeArchiveList: { jobs: ['C'], reason: 'Your private reflections on ended connections.' },
-  GoodbyeArchiveEntry: { jobs: ['C'], reason: 'Write or edit one reflection.' },
   LegacyLibrary: { jobs: ['F'], reason: 'Anonymous reflections from real couples (content, not navigation).' },
   RelationshipEmergencyKit: { jobs: ['F'], reason: 'Advice for hard moments (content, not navigation).' },
 
@@ -157,6 +155,8 @@ export const RULE14_DECISIONS = {
     GatheringConfirmation: 'a one-time "Your gathering is live" panel at the top of GatheringDetail after publishing (screen-reduction audit B5, 2026-10-09)',
     Communities: 'your own communities + Create, opened in place under Profile > Your connections; public discovery is Discover -> Communities (screen-reduction audit B8, 2026-10-09)',
     Gatherings: 'Discover -> Gatherings with the feed\'s useful filters on that tab, ranked by Discover\'s one ladder (screen-reduction audit B3, 2026-10-09)',
+    ChemistryDiaryEntry: 'the add-an-entry composer IN PLACE on ChemistryDiaryList (chat / profile open it with the name; screen-reduction audit B9, 2026-10-09)',
+    GoodbyeArchiveEntry: 'the add-a-reflection composer IN PLACE on GoodbyeArchiveList (chat opens it with the name; audit B9)',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).

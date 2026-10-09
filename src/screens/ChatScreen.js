@@ -533,7 +533,7 @@ export default function ChatScreen({ route, navigation }) {
   // RelationshipConstitution's categories are "How We Handle Conflict"/
   // "How We Make Big Decisions"; TimelinePlanner's are month1/month6/
   // year1/year3 relationship milestones; MemoryVault's own placeholder
-  // text is "our first conversation, first date"; ChemistryDiaryEntry is
+  // text is "our first conversation, first date"; the chemistry diary is
   // a romantic-feelings log; StressTest's scenarios assume a long-term
   // partner; SharedDecisions ("Big Picture Chat") covers cohabitation/
   // shared-finances decisions. None of that translates to a friendship,
@@ -550,7 +550,7 @@ export default function ChatScreen({ route, navigation }) {
     { key: 'legacy', romanticOnly: true, text: t('ui.chat.together.legacy'), onPress: () => navigation.navigate('RelationshipLegacy', { matchId, matchName: otherUser?.display_name }) },
     { key: 'timeline', romanticOnly: true, text: t('ui.chat.together.timeline'), onPress: () => navigation.navigate('TogetherNotes', { kind: 'timeline', matchId, matchName: otherUser?.display_name }) },
     { key: 'memoryvault', romanticOnly: true, text: t('ui.chat.together.memoryvault'), onPress: () => navigation.navigate('MemoryVault', { matchId, matchName: otherUser?.display_name }) },
-    { key: 'chemistry', romanticOnly: true, text: t('ui.chat.together.chemistry'), onPress: () => navigation.navigate('ChemistryDiaryEntry', { aboutDisplayName: otherUser?.display_name }) },
+    { key: 'chemistry', romanticOnly: true, text: t('ui.chat.together.chemistry'), onPress: () => navigation.navigate('ChemistryDiaryList', { composeFor: otherUser?.display_name ?? '', returnAfterSave: true }) },
     { key: 'stresstest', romanticOnly: true, text: t('ui.chat.together.stresstest'), onPress: () => navigation.navigate('TogetherNotes', { kind: 'stresstest', matchId, matchName: otherUser?.display_name }) },
     { key: 'constitution', romanticOnly: true, text: t('ui.chat.together.constitution'), onPress: () => navigation.navigate('TogetherNotes', { kind: 'constitution', matchId, matchName: otherUser?.display_name }) },
     { key: 'courage', text: t('ui.chat.together.courage'), onPress: showCourageMenu },
@@ -752,7 +752,7 @@ export default function ChatScreen({ route, navigation }) {
                     { text: t('ui.chat.notNow'), style: 'cancel' },
                     {
                       text: t('ui.chat.addAReflection'),
-                      onPress: () => navigation.navigate('GoodbyeArchiveEntry', { aboutDisplayName: otherPersonName }),
+                      onPress: () => navigation.navigate('GoodbyeArchiveList', { composeFor: otherPersonName ?? '', returnAfterSave: true }),
                     },
                   ]
                 );

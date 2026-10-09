@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, TextInput, Modal, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader, PullToRefresh, modalAnimation } from '../motion';
+import { NLoader, PullToRefresh } from '../motion';
+import GoodbyeEntryComposer from '../components/GoodbyeEntryComposer';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyGoodbyeEntries, deleteGoodbyeEntry } from '../services/goodbyeArchive';
 import LoadErrorState from '../components/LoadErrorState';
@@ -18,7 +19,7 @@ const FIELDS = [
   { key: 'what_you_want_next_time', labelKey: 'whatYouWant' },
 ];
 
-export default function GoodbyeArchiveListScreen({ navigation }) {
+export default function GoodbyeArchiveListScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const posthog = usePostHog();
@@ -27,8 +28,17 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [nameModalVisible, setNameModalVisible] = useState(false);
-  const [nameInput, setNameInput] = useState('');
+  // Audit B9: adding an entry happens IN PLACE (the composer at the top of this list), never on a second screen. A match's chat
+  // or profile opens this list with composeFor = that person's name; saving there returns to where they started.
+  const [composer, setComposer] = useState(() => (route?.params?.composeFor != null ? { name: route.params.composeFor } : null));
+  const scrollRef = useRef(null);
+  const appliedParams = useRef(route?.params);
+  useEffect(() => {
+    const p = route?.params;
+    if (!p || p === appliedParams.current) return;
+    appliedParams.current = p;
+    if (p.composeFor != null) setComposer({ name: p.composeFor });
+  }, [route?.params]);
 
   const load = useCallback(async () => {
     try {
@@ -77,17 +87,15 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
   }
 
   function startNewEntry() {
-    setNameInput('');
-    setNameModalVisible(true);
+    posthog.capture('goodbye_archive_entry_started');
+    setComposer({ name: '' });
+    scrollRef.current?.scrollTo?.({ y: 0, animated: true });
   }
 
-  function proceedToEntry() {
-    if (!nameInput.trim()) {
-      return Alert.alert(t('ui.goodbyeArchive.addAName'), t('ui.goodbyeArchive.whoIsThisReflectionAbout'));
-    }
-    setNameModalVisible(false);
-    posthog.capture('goodbye_archive_entry_started');
-    navigation.navigate('GoodbyeArchiveEntry', { aboutDisplayName: nameInput.trim() });
+  function onComposerSaved() {
+    setComposer(null);
+    if (route?.params?.returnAfterSave && navigation.canGoBack()) { navigation.goBack(); return; }
+    load();
   }
 
   if (loading) {
@@ -110,6 +118,9 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
+        ref={scrollRef}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
       >
@@ -118,6 +129,14 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
           {t('goodbyeArchive.subtitle')}
         </Text>
 
+        {composer ? (
+          <GoodbyeEntryComposer
+            key={composer.name}
+            initialName={composer.name}
+            onSaved={onComposerSaved}
+            onCancel={() => setComposer(null)}
+          />
+        ) : (
         <TouchableOpacity
           style={styles.addButton}
           onPress={startNewEntry}
@@ -127,6 +146,7 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
         >
           <Text style={styles.addButtonText}>{t('goodbyeArchive.addReflection')}</Text>
         </TouchableOpacity>
+        )}
 
         {entries.length === 0 && (
           <FadeInState style={styles.emptyState}>
@@ -160,39 +180,6 @@ export default function GoodbyeArchiveListScreen({ navigation }) {
         })}
       </ScrollView>
 
-      <Modal visible={nameModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setNameModalVisible(false)}>
-        <View style={styles.overlay}>
-          <View style={styles.sheet}>
-            <Text style={styles.sheetTitle}>{t('goodbyeArchive.whoIsThisAbout')}</Text>
-            <TextInput
-              style={styles.nameInput}
-              placeholder={t('ui.goodbyeArchive.firstNameOrHoweverYoud')}
-              placeholderTextColor={colors.textTertiary}
-              value={nameInput}
-              onChangeText={setNameInput}
-              autoFocus
-              accessibilityLabel={t('ui.goodbyeArchive.nameA11y')}
-            />
-            <TouchableOpacity
-              style={styles.sheetButton}
-              onPress={proceedToEntry}
-              activeOpacity={0.85}
-              accessibilityLabel={t('ui.goodbyeArchive.continueA11y')}
-              accessibilityRole="button"
-            >
-              <Text style={styles.sheetButtonText}>{t('ui.goodbyeArchive.continue')}</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setNameModalVisible(false)}
-              style={{ marginTop: spacing.md }}
-              accessibilityLabel={t('ui.goodbyeArchive.cancelA11y')}
-              accessibilityRole="button"
-            >
-              <Text style={styles.cancelText}>{t('ui.goodbyeArchive.cancel')}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -219,11 +206,4 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   fieldBlock: { marginBottom: spacing.sm },
   fieldLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: 2 },
   fieldText: { ...typography.body, color: colors.textPrimary, lineHeight: 20 },
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
-  sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
-  nameInput: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
-  sheetButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
-  sheetButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  cancelText: { color: colors.textTertiary, textAlign: 'center', fontSize: 13 },
 });

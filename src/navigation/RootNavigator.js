@@ -71,7 +71,6 @@ import CreateGatheringScreen from '../screens/CreateGatheringScreen';
 import SharedPlaylistScreen from '../screens/SharedPlaylistScreen';
 import RelationshipLegacyScreen from '../screens/RelationshipLegacyScreen';
 import LegacyLibraryScreen from '../screens/LegacyLibraryScreen';
-import GoodbyeArchiveEntryScreen from '../screens/GoodbyeArchiveEntryScreen';
 import GoodbyeArchiveListScreen from '../screens/GoodbyeArchiveListScreen';
 import RelationshipEmergencyKitScreen from '../screens/RelationshipEmergencyKitScreen';
 import MemoryVaultScreen from '../screens/MemoryVaultScreen';
@@ -83,7 +82,6 @@ import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
 import OccasionsScreen from '../screens/OccasionsScreen';
 import PlanDetailScreen from '../screens/PlanDetailScreen';
 import SharedNightScreen from '../screens/SharedNightScreen';
-import ChemistryDiaryEntryScreen from '../screens/ChemistryDiaryEntryScreen';
 import ChemistryDiaryListScreen from '../screens/ChemistryDiaryListScreen';
 import RehearsalRoomScreen from '../screens/RehearsalRoomScreen';
 import IdVerificationScreen from '../screens/IdVerificationScreen';
@@ -431,7 +429,6 @@ export default function RootNavigator() {
             <Stack.Screen name="TogetherNotes" component={TogetherNotesScreen} options={({ route }) => ({ headerShown: true, title: t(TOGETHER_NOTES_KINDS[route.params?.kind]?.navTitleKey ?? 'ui.nav.title.tripPlanning'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false })} />
             <Stack.Screen name="RelationshipLegacy" component={RelationshipLegacyScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipLegacy'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="LegacyLibrary" component={LegacyLibraryScreen} options={{ headerShown: true, title: t('ui.nav.title.legacyLibrary'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="GoodbyeArchiveEntry" component={GoodbyeArchiveEntryScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveEntry'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="GoodbyeArchiveList" component={GoodbyeArchiveListScreen} options={{ headerShown: true, title: t('ui.nav.title.goodbyeArchiveList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RelationshipEmergencyKit" component={RelationshipEmergencyKitScreen} options={{ headerShown: true, title: t('ui.nav.title.relationshipEmergencyKit'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MemoryVault" component={MemoryVaultScreen} options={{ headerShown: true, title: t('ui.nav.title.memoryVault'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
@@ -445,7 +442,6 @@ export default function RootNavigator() {
             <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ headerShown: true, title: t('ui.nav.title.emergencyContacts'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Occasions" component={OccasionsScreen} options={{ headerShown: true, title: t('ui.nav.title.occasions'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: t('ui.nav.title.musicMode'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="ChemistryDiaryEntry" component={ChemistryDiaryEntryScreen} options={{ headerShown: true, title: t('ui.nav.title.chemistryDiaryEntry'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="ChemistryDiaryList" component={ChemistryDiaryListScreen} options={{ headerShown: true, title: t('ui.nav.title.chemistryDiaryList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RehearsalRoom" component={RehearsalRoomScreen} options={{ headerShown: true, title: t('ui.nav.title.rehearsalRoom'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="IdVerification" component={IdVerificationScreen} options={{ headerShown: true, title: t('ui.nav.title.idVerification'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
