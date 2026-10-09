@@ -1,5 +1,7 @@
 # Screen-Reduction Audit (CLAUDE.md item 45), 2026-10-08
 
+**Status (2026-10-09):** B4, B1, B2, B6, B10, B5, B7, B8 built (see CLAUDE.md). B7 partial by design: the community partnership request and the Create-tab target choice still use RequestBusinessPartner. Open, need the owner: B3, B9, B11.
+
 Audit only. No code, route or test was changed. Every finding below comes from reading the navigators,
 `src/constants/screenRegistry.js`, `src/navigation/notificationDestinations.js`, and the screen files themselves
 (inbound references found by grep over `src/`, excluding tests). Nothing was run on a device or in a browser.
