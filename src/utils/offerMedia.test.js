@@ -21,10 +21,10 @@ test('redemption instructions are shown only once the offer is the customer\'s',
   expect(visibleRedemption({ ...o, status: 'accepted' })).toBe('Show this at the counter');
   expect(visibleRedemption({ redemption_instructions: '  ', status: 'accepted' })).toBeNull();
 });
-test('the offer reveal sits inside the medium motion tier and is arrival-driven (no haptic)', () => {
-  expect(isWithinBudget(settleMs('offerReveal'), SEQUENCES.offerReveal.tier)).toBe(true);
-  expect(read('src/components/OfferReveal.js')).not.toMatch(/expo-haptics|playHaptic/);
-  expect(read('src/components/OfferReveal.js')).toMatch(/useReduceMotion/);
+test('the offer card assembly sits inside its motion tier and is arrival-driven (no haptic)', () => {
+  expect(isWithinBudget(settleMs('offerAssembly'), SEQUENCES.offerAssembly.tier)).toBe(true);
+  expect(read('src/components/OfferAssembly.js')).not.toMatch(/expo-haptics|playHaptic/);
+  expect(read('src/components/OfferAssembly.js')).toMatch(/useReduceMotion/);
 });
 test('the server screens media before a customer sees it and refuses a video without frames', () => {
   const fn = read('supabase/functions/screen-business-content/index.ts');

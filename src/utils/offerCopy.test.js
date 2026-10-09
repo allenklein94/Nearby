@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { businessReplyTitle, businessReplyKind, businessReplyStatus, acceptedReplyTitle, offerRevealHeader } = require('./offerCopy');
+const { businessReplyTitle, businessReplyKind, businessReplyStatus, acceptedReplyTitle, heardYourRequest } = require('./offerCopy');
 
 describe('offer copy is a personal response, not an ad', () => {
   it('says "made you an offer" only for a real offer', () => {
@@ -10,11 +10,11 @@ describe('offer copy is a personal response, not an ad', () => {
     expect(businessReplyTitle('Coastal Coffee', { status: 'withdrawn' })).toBe('Coastal Coffee responded to your request');
     expect(businessReplyTitle(null, { status: 'offered', discount_pct: 10 })).toBe('A local business made you an offer');
   });
-  it('the reveal header uses the same wording', () => {
-    expect(offerRevealHeader('Coastal Coffee')).toBe('Coastal Coffee made you an offer');
+  it('"Heard your request" is the same line for every kind of reply', () => {
+    expect(heardYourRequest()).toBe('Heard your request');
   });
   it('no consumer offer surface uses ad language', () => {
-    for (const f of ['screens/BusinessRequestDetailScreen.js', 'screens/ActivityScreen.js', 'components/OfferReveal.js', 'components/OfferMedia.js']) {
+    for (const f of ['screens/BusinessRequestDetailScreen.js', 'screens/ActivityScreen.js', 'components/OfferAssembly.js', 'components/OfferMedia.js']) {
       const src = fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
       expect(src).not.toMatch(/sponsored|promoted content|advertisement/i);
     }

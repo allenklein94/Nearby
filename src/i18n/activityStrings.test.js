@@ -1,6 +1,6 @@
 // Localization pass 5, Activity: the helper lines the screen shows are localized, and English stays word for word.
 import { setCurrentLanguage } from './translate';
-import { businessReplyTitle, businessReplyStatus, acceptedReplyTitle, offerRevealHeader } from '../utils/offerCopy';
+import { businessReplyTitle, businessReplyStatus, acceptedReplyTitle, heardYourRequest } from '../utils/offerCopy';
 import { expiredInviteLabel, expiredDateLabel } from '../utils/inviteExpiry';
 import { formatOfferSummary } from '../services/businessFulfillment';
 import { UI_NAMESPACES, UI_LANGUAGES } from './ui';
@@ -23,7 +23,7 @@ describe('English is unchanged', () => {
     expect(businessReplyTitle(null, { status: 'offered', offer_type: 'standard' })).toBe('A local business can take you');
     expect(businessReplyStatus({ offer_type: 'standard' })).toBe('Can take you');
     expect(acceptedReplyTitle('Coastal Coffee', { offer_type: 'standard' })).toBe('You chose Coastal Coffee');
-    expect(offerRevealHeader(null)).toBe('A business made you an offer');
+    expect(heardYourRequest()).toBe('Heard your request');
   });
   test('expired labels and offer summary', () => {
     const d = new Date(2026, 7, 30, 19);

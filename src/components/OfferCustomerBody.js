@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import OfferMedia from './OfferMedia';
+import { AssemblyStep } from './OfferAssembly';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
@@ -33,7 +34,7 @@ export function offerWindowText(from, until, language) {
 }
 
 // The body of an offer exactly as the CUSTOMER sees it (description, included items, proposed time, price, available
-// window, validity, media). One component used by the customer's offer card AND the owner's "Customer Preview", so the
+// window, validity, media; price comes before time, the order the card assembles in). One component used by the customer's offer card AND the owner's "Customer Preview", so the
 // preview cannot drift from what is actually shown. `offer` uses the stored row's field names. `localMedia` (owner
 // preview only) = { uri, type } for a file not uploaded yet.
 export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null }) {
@@ -45,19 +46,29 @@ export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typ
   return (
     <View>
       {showTypeLabel && typeLabel ? <Text style={styles.offerTypeLabel}>{typeLabel}</Text> : null}
-      {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
-      {(o.included_items ?? []).map((item, index) => (
-        <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
-      ))}
-      {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time, language)}</Text> : null}
-      {price ? <Text style={styles.offerPrice}>{price}</Text> : null}
-      {window ? <Text style={styles.offerProposedTime}>🕒 {window}</Text> : null}
-      {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? t('ui.requestDetail.thisOfferHasExpired') : offerValidityText(o.valid_until, language)}</Text> : null}
-      {localMedia ? (
-        <OfferMedia localUri={localMedia.uri} type={localMedia.type} />
-      ) : (
-        <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
-      )}
+      {/* Steps of the card assembling itself (components/OfferAssembly.js): the order, then the price, then when. Outside
+          an assembly (the owner's preview, an accepted offer) they render as plain lines. */}
+      <AssemblyStep step="order">
+        {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
+        {(o.included_items ?? []).map((item, index) => (
+          <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
+        ))}
+      </AssemblyStep>
+      <AssemblyStep step="price">
+        {price ? <Text style={styles.offerPrice}>{price}</Text> : null}
+      </AssemblyStep>
+      <AssemblyStep step="when">
+        {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time, language)}</Text> : null}
+        {window ? <Text style={styles.offerProposedTime}>🕒 {window}</Text> : null}
+        {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? t('ui.requestDetail.thisOfferHasExpired') : offerValidityText(o.valid_until, language)}</Text> : null}
+      </AssemblyStep>
+      <AssemblyStep step="order">
+        {localMedia ? (
+          <OfferMedia localUri={localMedia.uri} type={localMedia.type} />
+        ) : (
+          <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
+        )}
+      </AssemblyStep>
     </View>
   );
 }

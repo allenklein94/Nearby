@@ -14,7 +14,7 @@ describe('customer preview before publishing (item 84)', () => {
     expect(dash).toContain('<OfferCustomerBody offer={previewOffer}');
     expect(detail).toContain('<OfferCustomerBody offer={o}');
     // the customer screen no longer hand-renders the offered body
-    const offered = detail.slice(detail.indexOf('<OfferReveal offerId'), detail.indexOf('</OfferReveal>'));
+    const offered = detail.slice(detail.indexOf("{o.status === 'offered' && ("), detail.indexOf("{o.status === 'accepted' && ("));
     expect(offered).not.toContain('offer_description');
   });
   test('the body renders every customer-visible field from the stored field names', () => {

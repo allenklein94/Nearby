@@ -17,7 +17,7 @@ import { useSettingConflicts } from '../hooks/useSettingConflicts';
 import { conflictMessages, hasPending, shownValue } from '../utils/settingConflicts';
 import OfferCustomerBody from '../components/OfferCustomerBody';
 import { offerFunnelView } from '../utils/offerFunnel';
-import { offerRevealHeader } from '../utils/offerCopy';
+import { heardYourRequest, businessReplyStatus } from '../utils/offerCopy';
 import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionConfirmations';
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
@@ -6916,7 +6916,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
                     <View style={styles.gatheringRow}>
                       <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
-                      <Text style={styles.breakdownText}>{offerRevealHeader(selectedPartner?.name ?? t('ui.bizDash3.aBusiness'))}</Text>
+                      {/* Same lines, same order as the customer's card (components/OfferAssembly.js): heard, then what this reply is. */}
+                      <Text style={styles.breakdownText}>{heardYourRequest()}</Text>
+                      <Text style={styles.breakdownText}>{businessReplyStatus({ ...previewOffer, offer_type: offerTypeInput, offer_title: offerTitleInput.trim() || null, discount_pct: offerTypeInput === 'discount' ? parseDiscountPct(offerDiscountInput) : null })}</Text>
                       {!!offerTitleInput.trim() && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{offerTitleInput.trim()}</Text>}
                       <OfferCustomerBody offer={previewOffer} localMedia={localMedia} />
                       <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>

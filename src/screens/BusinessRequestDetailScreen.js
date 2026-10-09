@@ -30,7 +30,7 @@ import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
 import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import StaggeredReveal from '../components/StaggeredReveal';
 import OfferMedia from '../components/OfferMedia';
-import OfferReveal from '../components/OfferReveal';
+import OfferAssembly, { AssemblyStep } from '../components/OfferAssembly';
 import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
 import { visibleRedemption, validityLabel, isOfferExpired, availableWindowLabel } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
@@ -50,7 +50,7 @@ import OfferOutcomeModal from '../components/OfferOutcomeModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
-import { businessReplyStatus, acceptedReplyTitle, businessReplyKind } from '../utils/offerCopy';
+import { businessReplyStatus, acceptedReplyTitle, businessReplyKind, heardYourRequest } from '../utils/offerCopy';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 
@@ -1325,7 +1325,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
             return (
             <StaggeredReveal key={o.id} index={offerIndex} viewRef={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
+            <OfferAssembly offer={o}>
             <View>
+              {/* An open reply assembles itself once, when newly received (components/OfferAssembly.js): business ->
+                  "Heard your request" -> what they said -> order -> price -> when. The button below is never part of it. */}
+              <AssemblyStep step="business">
               <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
               {/* Item 92 ("Businesses should be able to respond specifically to
                   the occasion", CLAUDE.md): a real, named offer title -- "Special
@@ -1333,9 +1337,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   the business's own name above it. Null for a plain generic
                   offer with no title, same as it always rendered before. */}
               {pickOfferId === o.id && offerLifecycleState(o) === 'offered' ? <Text style={styles.offerReputationLine}>{t('ui.requestDetail.ourPick')}</Text> : null}
-              {o.offer_title ? <Text style={styles.offerTitleHeadline}>{o.offer_title}</Text> : null}
+              {o.offer_title && o.status !== 'offered' ? <Text style={styles.offerTitleHeadline}>{o.offer_title}</Text> : null}
               {reputationLine && (offerLifecycleState(o) === 'offered' || o.status === 'accepted') ? (
                 <Text style={styles.offerReputationLine}>{reputationLine}</Text>
+              ) : null}
+              </AssemblyStep>
+              {o.status === 'offered' ? (
+                <AssemblyStep step="heard"><Text style={styles.offerReputationLine}>{heardYourRequest()}</Text></AssemblyStep>
               ) : null}
               {/* Item 121 ("Business offer acceptance should feel equally tangible"): "Offer
                   Accepted ✓ -> details slide into place" -- a brief dip/recover on the whole
@@ -1344,9 +1352,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   switches (Items 114-117), applied here to a single offer card's own real state
                   transition. */}
               <ModeTransition activeKey={o.status}>
+              <AssemblyStep step="status">
               <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.requestDetail.thisOfferHasExpired') : (o.status === 'offered' ? businessReplyStatus(o) : (OFFER_STATUS_COPY[o.status] ? t(`ui.requestDetail.offerStatus.${o.status}`) : o.status))}</Text>
+              </AssemblyStep>
               {o.status === 'offered' && (
-                <OfferReveal offerId={o.id} partnerName={o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')} enabled={!!(o.media_path || o.offer_title)}>
+                <>
+                  {o.offer_title ? <AssemblyStep step="order"><Text style={styles.offerTitleHeadline}>{o.offer_title}</Text></AssemblyStep> : null}
                   <OfferCustomerBody offer={o} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ? t(`ui.requestDetail.offerType.${o.offer_type}`) : o.offer_type} />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>{t('ui.requestDetail.youveSeenThis')}</Text>
@@ -1380,7 +1391,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       </TouchableOpacity>
                     );
                   })()}
-                </OfferReveal>
+                </>
               )}
               {o.status === 'accepted' && (
                 <>
@@ -1471,6 +1482,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               )}
               </ModeTransition>
             </View>
+            </OfferAssembly>
             </StaggeredReveal>
             );
           })}

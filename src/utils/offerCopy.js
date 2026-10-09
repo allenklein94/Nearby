@@ -48,9 +48,9 @@ export function acceptedReplyTitle(partnerName, offer) {
   }
 }
 
-// Only rich offers (a title or media) get the reveal, so this is always a real offer.
-export function offerRevealHeader(partnerName) {
-  return tr('ui.offerCopy.revealHeader', { name: partnerName || tr('ui.offerCopy.aBusiness') });
+// The second line of an open reply's card ("Heard your request"), true for every kind of reply (components/OfferAssembly.js).
+export function heardYourRequest() {
+  return tr('ui.offerCopy.heardYourRequest');
 }
 
 // The in-app arrival signal (services/offerArrivals.js). One reply = the same line Activity uses ("Coastal Coffee made you

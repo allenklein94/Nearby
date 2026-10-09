@@ -47,3 +47,22 @@ export function getOfferTravel() { return current; }
 function validRect(r) {
   return !!r && [r.x, r.y, r.width, r.height].every((v) => Number.isFinite(v)) && r.width > 0 && r.height > 0;
 }
+
+// The offer card assembling itself (components/OfferAssembly.js) starts only once a travel INTO this card has finished, so
+// the two never overlap. No travel for this offer = start now. A travel that never ends on its own (it always does) is cut
+// off by the cap so the card can never stay unassembled. Returns a cancel function (unmount, rapid navigation).
+export function afterOfferTravel(offerId, start, { capMs = SEQUENCES.offerTravel.targetWaitMs + travelSettleMs() } = {}) {
+  let done = false;
+  const go = () => { if (done) return; done = true; cleanup(); start(); };
+  const busy = () => !!current && current.offerId === offerId;
+  if (!busy()) { done = true; start(); return () => {}; }
+  const unsubscribe = subscribeOfferTravel(() => { if (!busy()) go(); });
+  const timer = setTimeout(go, capMs);
+  function cleanup() { unsubscribe(); clearTimeout(timer); }
+  return () => { if (!done) { done = true; cleanup(); } };
+}
+
+function travelSettleMs() {
+  const t = SEQUENCES.offerTravel;
+  return t.dimMs + t.travelMs + t.settleMs;
+}
