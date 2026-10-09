@@ -78,7 +78,7 @@ export const LOCALIZED_FILES = [
   'src/services/crossedPathsSignals.js',
   'src/utils/datingCardReasons.js',
   'src/utils/freeTonight.js',
-  'src/screens/GatheringConfirmationScreen.js',
+  'src/components/GatheringPublishedPanel.js',
   'src/components/GatheringAttendingSection.js',
   'src/constants/gatheringHubContent.js',
   'src/components/HostAttendeeManager.js',

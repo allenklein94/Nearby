@@ -11,7 +11,7 @@ const read = (f) => fs.readFileSync(path.join(SRC, f), 'utf8');
 
 jest.mock('../services/supabase', () => ({ supabase: {} }));
 
-const ROUTES = ['MainTabs', 'Friends', 'GatheringConfirmation', 'CreateGathering', 'FriendDiscovery', 'GatheringDetail'];
+const ROUTES = ['MainTabs', 'Friends', 'CreateGathering', 'FriendDiscovery', 'GatheringDetail'];
 const router = StackRouter({});
 const opts = { routeNames: ROUTES, routeParamList: {}, routeGetIdList: {} };
 function stack(names) {
@@ -49,7 +49,7 @@ describe('entries that start on a tab open Discover -> People -> Friends in plac
 describe('entries from a stack screen open the FriendDiscovery presentation on top; Back returns exactly there', () => {
   test.each([
     ['Friends screen', 'screens/FriendsScreen.js', ['MainTabs', 'Friends']],
-    ['gathering published', 'screens/GatheringConfirmationScreen.js', ['MainTabs', 'GatheringConfirmation']],
+    ['gathering published (panel on the gathering)', 'components/GatheringPublishedPanel.js', ['MainTabs', 'GatheringDetail']],
     ['Create invite picker', 'components/FriendInviteSelector.js', ['MainTabs', 'CreateGathering']],
   ])('%s', (_label, file, origin) => {
     expect(read(file)).toMatch(/navigation\.navigate\('FriendDiscovery'\)/);

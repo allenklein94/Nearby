@@ -57,12 +57,12 @@ describe('meaningful confirmations', () => {
     const src = read('utils/actionConfirmations.js');
     expect(src).toMatch(/from '.\/offerCopy'/);
     expect(src).not.toMatch(/offer_type ===/);
-    for (const f of ['screens/GatheringConfirmationScreen.js', 'components/InviteFriendsModal.js']) expect(read(f)).toMatch(/inviteSentConfirmation\(/);
+    for (const f of ['components/GatheringPublishedPanel.js', 'components/InviteFriendsModal.js']) expect(read(f)).toMatch(/inviteSentConfirmation\(/);
     for (const f of ['screens/GatheringDetailScreen.js', 'screens/HomeScreen.js']) expect(read(f)).toMatch(/interestedConfirmation\(/);
     expect(read('screens/AskBusinessScreen.js')).toMatch(/targetPartnerName: targetPartner\?\.name/);
     expect(read('screens/BusinessRequestDetailScreen.js')).toMatch(/justSentLine\(notifiedCount, targetPartnerName\)/);
     // the two moments that already said what happened stay
-    expect(read('screens/GatheringConfirmationScreen.js')).toContain("t('ui.gatheringConfirmation.yourGatheringIsLive')");
+    expect(read('components/GatheringPublishedPanel.js')).toContain("t('ui.gatheringConfirmation.yourGatheringIsLive')");
     expect(require('../i18n/ui/gatheringConfirmation').default.en.yourGatheringIsLive).toBe('Your gathering is live!');
     expect(read('screens/BusinessRequestDetailScreen.js')).toContain("t('ui.requestDetail.youreBooked2')");
     expect(require('../i18n/ui/requestDetail').default.en.youreBooked2).toBe("You're booked. ✓");

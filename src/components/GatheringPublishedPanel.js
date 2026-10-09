@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
-import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
+import EmptyCopy from './EmptyCopy';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
-import { getGatheringById, getFriendsWithSharedContext, isFirstGatheringHosted, gatheringInviteShareUrl } from '../services/gatherings';
+import { getFriendsWithSharedContext, isFirstGatheringHosted, gatheringInviteShareUrl } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { sendInvite } from '../services/invites';
 import { getMyCircles } from '../services/friendCircles';
-import LoadErrorState from '../components/LoadErrorState';
-import { NearbyMark } from '../components/brand';
+import { NearbyMark } from './brand';
 import * as Haptics from 'expo-haptics';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
@@ -24,17 +23,17 @@ import { inviteSentConfirmation } from '../utils/actionConfirmations';
 // has caught before) and friends-only "Invite Connections" (locked
 // decision #3 — never nearby strangers, even ones the recommendation
 // engine would score as a good match).
-export default function GatheringConfirmationScreen({ route, navigation }) {
+// Screen-reduction audit B5 (2026-10-09): this was its own screen (GatheringConfirmation) that publishing replaced Create
+// with, and its Done then replaced it with the gathering. Publishing now lands on GatheringDetail, which shows this panel
+// once at the top (route param justPublished); Done / "I'll do this later" just closes it, so the host is already on
+// their gathering and Back returns where they started Create from.
+export default function GatheringPublishedPanel({ gathering, gatheringId, placeName, businessesAsked, preInviteResult, onDone, navigation }) {
   const { t, language } = useLanguage();
-  const { gatheringId, placeName, businessesAsked, preInviteResult } = route.params;
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   // Celebrate Something's suggested friends are preselected on Create's own invite step (item 109) and sent at publish,
   // so they arrive here as preInviteResult, not as a second suggestion.
 
-  const [gathering, setGathering] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
   const [isFirstHosted, setIsFirstHosted] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [friends, setFriends] = useState([]);
@@ -53,29 +52,15 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   const markScale = useRef(new Animated.Value(0.7)).current;
   const markOpacity = useRef(new Animated.Value(0)).current;
 
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const g = await getGatheringById(gatheringId);
-      setGathering(g);
-      setLoadError(false);
-    } catch (e) {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }, [gatheringId]);
-
   useEffect(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Animated.parallel([
       Animated.spring(markScale, { toValue: 1, friction: 6, useNativeDriver: true }),
       Animated.timing(markOpacity, { toValue: 1, duration: MOTION_BUDGET.medium.ms, useNativeDriver: true }),
     ]).start();
-    load();
     isFirstGatheringHosted().then(setIsFirstHosted);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gatheringId, load]);
+  }, [gatheringId]);
 
   async function handleShare() {
     try {
@@ -175,41 +160,13 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
   }
 
   function handleDone() {
-    navigation.replace('GatheringDetail', { gatheringId });
-  }
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.gatheringConfirmation.loadingYourGathering')}</Text>
-      </View>
-    );
-  }
-
-  if (loadError) {
-    // gestureEnabled is deliberately false on this modal (RootNavigator),
-    // and there's no back button by design -- but that means a real load
-    // failure here previously had *zero* way out, only a retry. handleDone
-    // only ever needs the route's own gatheringId (already known, the
-    // gathering itself was already created successfully before this
-    // screen even loaded), not the fetched `gathering` state, so it works
-    // fine here too -- a real, working escape, not just a retry loop.
-    return (
-      <View style={styles.loadingContainer}>
-        <LoadErrorState message={t('ui.gatheringConfirmation.couldntLoadYourGathering')} onRetry={load} />
-        <TouchableOpacity onPress={handleDone} style={{ marginTop: spacing.lg }} accessibilityLabel={t('ui.gatheringConfirmation.continueToYourGatheringA11y')} accessibilityRole="button">
-          <Text style={styles.doneLink}>{t('ui.gatheringConfirmation.continueToYourGathering')}</Text>
-        </TouchableOpacity>
-      </View>
-    );
+    onDone?.();
   }
 
   const categoryStyle = categoryStyleFor(gathering?.interest_tag);
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xxl, alignItems: 'center' }}>
         <Animated.View style={{ opacity: markOpacity, transform: [{ scale: markScale }], marginBottom: spacing.xs }}>
           <NearbyMark size={40} />
         </Animated.View>
@@ -331,14 +288,12 @@ export default function GatheringConfirmationScreen({ route, navigation }) {
             </TouchableOpacity>
           </View>
         )}
-      </ScrollView>
     </View>
   );
 }
 
 const getStyles = (colors, shadow) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  loadingContainer: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
+  container: { padding: spacing.lg, paddingTop: spacing.xl, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: colors.border, marginBottom: spacing.md },
   celebrateIcon: { fontSize: 48, marginBottom: spacing.sm },
   title: { ...typography.title, color: colors.textPrimary, textAlign: 'center' },
   subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: 4, marginBottom: spacing.lg },

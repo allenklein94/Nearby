@@ -1,3 +1,4 @@
+import GatheringPublishedPanel from '../components/GatheringPublishedPanel';
 import { practicalFactsIn } from '../i18n/gatheringFactsDisplay';
 import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -137,6 +138,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // for the two types where it's genuinely the one obviously-correct next
   // step, a flag to surface "Invite Friends" right alongside it -- never
   // forced for every notification type, only the ones where it's real.
+  // Just published from Create: show the one-time "Your gathering is live" panel at the top (screen-reduction audit B5).
+  const justPublished = route.params?.justPublished ?? null;
   const notificationReason = route.params?.notificationReason ?? null;
   const notificationSuggestsInvite = route.params?.notificationSuggestsInvite ?? false;
   const openJoinHandled = useRef(false);
@@ -618,6 +621,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl * 2 }}>
+        {justPublished && gathering.isHost && (
+          <GatheringPublishedPanel
+            gathering={gathering}
+            gatheringId={gatheringId}
+            placeName={justPublished.placeName ?? null}
+            businessesAsked={!!justPublished.businessesAsked}
+            preInviteResult={justPublished.preInviteResult ?? null}
+            onDone={() => navigation.setParams({ justPublished: undefined })}
+            navigation={navigation}
+          />
+        )}
         {coverUrl ? (
           <Image source={{ uri: coverUrl }} style={styles.hero} accessibilityLabel={t('ui.gatherings.coverA11y', { name: gathering.title })} />
         ) : curatedCover ? (

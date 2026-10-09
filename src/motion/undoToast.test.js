@@ -51,7 +51,7 @@ describe('Undo toast', () => {
   });
 
   test('actions that reach someone else never offer Undo (a push or a business already has it)', () => {
-    for (const rel of ['screens/GatheringConfirmationScreen.js', 'components/InviteFriendsModal.js', 'screens/ViewProfileScreen.js', 'screens/BusinessDashboardScreen.js']) {
+    for (const rel of ['components/GatheringPublishedPanel.js', 'components/InviteFriendsModal.js', 'screens/ViewProfileScreen.js', 'screens/BusinessDashboardScreen.js']) {
       expect(read(rel)).not.toMatch(/undo\s*:/);
     }
   });

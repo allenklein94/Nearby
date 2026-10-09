@@ -78,9 +78,9 @@ describe('4-5, 10. invitations only after a successful publish; the gathering it
     const catchAt = submit.indexOf('} catch (e) {');
     expect(created).toBeGreaterThan(0);
     expect(send).toBeGreaterThan(created);
-    expect(send).toBeLessThan(submit.indexOf("navigation.replace('GatheringConfirmation'"));
+    expect(send).toBeLessThan(submit.indexOf("navigation.replace('GatheringDetail'"));
     expect(send).toBeLessThan(catchAt);
-    expect(submit).toMatch(/preInviteResult,/); // the existing "We invited N of M" line on the confirmation screen
+    expect(submit).toMatch(/preInviteResult \}/); // the existing "We invited N of M" line on the confirmation screen
   });
   it('the gathering payload does not change: no invites, no party type or friend data added for it', () => {
     const payload = submit.slice(submit.indexOf('await createGathering({'), submit.indexOf('});', submit.indexOf('await createGathering({')));
@@ -117,7 +117,7 @@ describe('6-8. eligibility, no strangers, no second system', () => {
     }
     const bulk = SRC.filter((f) => /Promise\.allSettled\( ?\w+\.map\(\(\w+\) => sendInvite\('gathering'/.test(fs.readFileSync(f, 'utf8').replace(/\s+/g, ' ')));
     // the post-publish panel's "Invite a Circle" (one tap, gathering already exists) is the only other bulk send, unchanged
-    expect(bulk.map((f) => path.basename(f)).sort()).toEqual(['GatheringConfirmationScreen.js', 'invites.js']);
+    expect(bulk.map((f) => path.basename(f)).sort()).toEqual(['GatheringPublishedPanel.js', 'invites.js']);
     // no new RPC, table or screen for invitations
     expect(SRC.filter((f) => /navigate\('(?:InviteStep|CreateInvite|PickInvitees)'/.test(fs.readFileSync(f, 'utf8')))).toEqual([]);
   });
@@ -166,7 +166,7 @@ describe('Celebrate suggestions are preselected on the shared step', () => {
   it('the suggestion is handled once: Create sends it at publish, the confirmation no longer re-offers it', () => {
     const submit = CREATE.slice(CREATE.indexOf('async function submit()'), CREATE.indexOf('const selectedStyle'));
     expect(submit).not.toMatch(/suggestedInvitee/);
-    expect(read('../screens/GatheringConfirmationScreen.js')).not.toMatch(/suggestedInviteeIds|suggestedIdSet/);
+    expect(read('../components/GatheringPublishedPanel.js')).not.toMatch(/suggestedInviteeIds|suggestedIdSet/);
   });
   it('no selection reaches a business', () => {
     const businessFiles = SRC.filter((f) => /business|Business/.test(path.basename(f)) && !/BusinessRequestDetailScreen|AskBusinessScreen/.test(f));

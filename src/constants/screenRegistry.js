@@ -83,7 +83,6 @@ export const SCREEN_REGISTRY = {
   CreateGathering: { jobs: ['C'], reason: 'The multi-step workflow that creates a gathering.' },
   EditGathering: { jobs: ['C'], reason: 'Edit a gathering you host and its settings.' },
   SelectGatheringLocation: { jobs: ['C'], reason: 'Pick the gathering\'s place on a map (a step of creating or editing).' },
-  GatheringConfirmation: { jobs: ['C'], reason: 'After publishing: invite connections and share.' },
 
   // ---- communities ----
   Communities: {
@@ -160,6 +159,7 @@ export const RULE14_DECISIONS = {
     BlockedUsers: 'a section that opens in place under Settings > Safety (screen-reduction audit B10, 2026-10-09)',
     QuickFilterCustomize: 'an editor that opens in place in the dating Filters sheet and the Friends filter panel (B10)',
     BusinessAIAutomation: 'a panel that opens in place under the business dashboard Profile tab Settings (B10)',
+    GatheringConfirmation: 'a one-time "Your gathering is live" panel at the top of GatheringDetail after publishing (screen-reduction audit B5, 2026-10-09)',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).

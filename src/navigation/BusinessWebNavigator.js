@@ -12,7 +12,6 @@ import BusinessAIAssistantScreen from '../screens/BusinessAIAssistantScreen';
 import CreateGatheringScreen from '../screens/CreateGatheringScreen';
 import EditGatheringScreen from '../screens/EditGatheringScreen';
 import GatheringDetailScreen from '../screens/GatheringDetailScreen';
-import GatheringConfirmationScreen from '../screens/GatheringConfirmationScreen';
 import GatheringChatScreen from '../screens/GatheringChatScreen';
 import SelectGatheringLocationScreen from '../screens/SelectGatheringLocationScreen';
 import CreateCommunityScreen from '../screens/CreateCommunityScreen';
@@ -64,7 +63,6 @@ export default function BusinessWebNavigator() {
             <Stack.Screen name="CreateGathering" component={CreateGatheringScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: 'Host a Gathering' }} />
             <Stack.Screen name="EditGathering" component={EditGatheringScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: 'Edit Gathering' }} />
             <Stack.Screen name="SelectGatheringLocation" component={SelectGatheringLocationScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: 'Set Location' }} />
-            <Stack.Screen name="GatheringConfirmation" component={GatheringConfirmationScreen} options={{ headerShown: false }} />
             <Stack.Screen name="GatheringDetail" component={GatheringDetailScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="GatheringChat" component={GatheringChatScreen} options={({ route }) => ({ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: route.params?.gatheringTitle ? `${route.params.gatheringTitle} Chat` : 'Gathering Chat' })} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: 'Create Community' }} />

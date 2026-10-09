@@ -558,11 +558,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
         linkOccasionToPlan({ occasionId: route.params.linkOccasionId, resultingGatheringId: created.id }).catch(() => {});
       }
 
-      navigation.replace('GatheringConfirmation', {
+      // Lands on the gathering itself, with a one-time "Your gathering is live" panel (screen-reduction audit B5).
+      navigation.replace('GatheringDetail', {
         gatheringId: created.id,
-        placeName,
-        businessesAsked: askLocalBusinesses,
-        preInviteResult,
+        justPublished: { placeName, businessesAsked: askLocalBusinesses, preInviteResult },
       });
     } catch (e) {
       presentRecoverableError(Alert, { what: 'create your gathering', error: e, draftKept: true, onRetry: () => submit() });
