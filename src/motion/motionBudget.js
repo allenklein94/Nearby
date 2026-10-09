@@ -53,6 +53,9 @@ export const SEQUENCES = {
   offerReveal: { tier: 'medium', headerMs: 140, bodyDelayMs: 100, bodyMs: 200 },
   // Offer travel (2026-10-09): dim in, the light travels from the arrival signal while the frame grows into the offer card,
   // then frame + dim fade into the real card. Waiting for the card to be on screen is a hold, not part of the transition.
+  // You're booked (2026-10-09): the ring closes, the ✓ settles, one soft ripple while the facts fade in. A booking is a
+  // transaction (item 122): success colour, no particles, no bounce, one ripple, done in under 0.8 s.
+  booked: { tier: 'special', ringMs: 200, checkMs: 160, rippleMs: 380, textFadeMs: 220 },
   offerTravel: { tier: 'special', dimMs: 180, travelMs: 380, settleMs: 220, targetWaitMs: 1500 },
   // Result cascades.
   cascade: { tier: 'medium', maxDelayMs: 200, itemMs: 250 },
@@ -81,6 +84,8 @@ export function settleMs(name) {
       return s.maxDelayMs + s.itemMs;
     case 'offerReveal':
       return Math.max(s.headerMs, s.bodyDelayMs + s.bodyMs);
+    case 'booked':
+      return s.ringMs + s.checkMs + Math.max(s.rippleMs, s.textFadeMs);
     case 'offerTravel':
       return s.dimMs + s.travelMs + s.settleMs;
     default:

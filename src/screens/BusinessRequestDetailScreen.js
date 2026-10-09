@@ -7,7 +7,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking } from 'react-native';
 import * as Calendar from 'expo-calendar';
-import { NLoader, SuccessAnimation, ModeTransition } from '../motion';
+import { NLoader, SuccessAnimation, ModeTransition, BookedCelebration } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { subscribeViewedArrivals } from '../services/offerArrivals';
 import { isOfferTravelPending, reportOfferTravelTarget } from '../motion/offerTravel';
@@ -97,6 +97,8 @@ const OFFER_TYPE_LABELS = { standard: true, discount: true, perk: true, upgrade:
 // same as this app's established gathering_invite precedent.
 // How long the focus scroll takes before the offer card's on-screen position is read for the offer travel.
 const OFFER_SCROLL_SETTLE_MS = 380;
+// How long the "You're booked" card stays before the screen's own booked header carries it.
+const BOOKED_HOLD_MS = 4500;
 
 export default function BusinessRequestDetailScreen({ navigation, route }) {
   const { t, language } = useLanguage();
@@ -663,7 +665,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       await load();
       setJustAccepted(true);
       clearTimeout(justAcceptedTimerRef.current);
-      justAcceptedTimerRef.current = setTimeout(() => setJustAccepted(false), 3200);
+      justAcceptedTimerRef.current = setTimeout(() => setJustAccepted(false), BOOKED_HOLD_MS);
       // accept_business_offer() itself already confirmed the real
       // reservation ('nearby' provider) regardless of payment -- this is
       // purely the follow-up payment-collection step, never a condition
@@ -1001,7 +1003,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             confirmed. ✓" phrasing GroupPlanScreen already uses for this exact same real
             moment, with tone="business" (skips the ✨ discovery beat, settles fast, no
             springy bounce). */}
-        {justAccepted && <SuccessAnimation haptic text={t('ui.requestDetail.youreBooked2')} tone="business" />}
+        {/* 2026-10-09: the booking moment is now BookedCelebration (ring + ✓ + one ripple + the real facts), still the
+            item-122 business tone: success colour, no particles, under 0.8 s. */}
+        {justAccepted && (
+          <BookedCelebration
+            haptic
+            title={t('ui.requestDetail.youreBooked')}
+            details={{ businessName: winningOffer?.brand_partners?.name ?? null, dateLabel: planSummary?.dateLabel ?? null, timeLabel: planSummary?.timeLabel ?? null }}
+          />
+        )}
         {request && parentPlan && (
           <TouchableOpacity onPress={() => navigation.navigate('PlanDetail', { planId: parentPlan.id })} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.partOf', { title: parentPlan.title || t('ui.planDetail.yourNight') })}>
             <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.sm }}>{t('ui.planDetail.partOf', { title: parentPlan.title || t('ui.planDetail.yourNight') })} →</Text>

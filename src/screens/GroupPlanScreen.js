@@ -5,7 +5,7 @@ import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput } from 'react-native';
-import { NLoader, SuccessAnimation } from '../motion';
+import { NLoader, SuccessAnimation, BookedCelebration } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import {
@@ -363,7 +363,7 @@ export default function GroupPlanScreen({ navigation, route }) {
             occasion-creation moment -- tone="business" for a fast, professional settle rather
             than the full celebratory production. */}
         {successBanner === 'plan' && <SuccessAnimation haptic text={t('ui.groupPlan.planConfirmed')} tone="business" />}
-        {successBanner === 'reservation' && <SuccessAnimation haptic text={t('ui.groupPlan.youreBooked2')} tone="business" />}
+        {successBanner === 'reservation' && <BookedCelebration haptic title={t('ui.requestDetail.youreBooked')} />}
         <Text style={styles.title}>{t('ui.groupPlan.groupPlan', { category: categoryName(proposal.category, language) })}</Text>
         <Text style={styles.statusLine}>
           {proposal.status === 'pending' && t('ui.groupPlan.decidingTogether')}

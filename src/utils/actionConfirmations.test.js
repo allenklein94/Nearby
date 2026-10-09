@@ -64,8 +64,9 @@ describe('meaningful confirmations', () => {
     // the two moments that already said what happened stay
     expect(read('components/GatheringPublishedPanel.js')).toContain("t('ui.gatheringConfirmation.yourGatheringIsLive')");
     expect(require('../i18n/ui/gatheringConfirmation').default.en.yourGatheringIsLive).toBe('Your gathering is live!');
-    expect(read('screens/BusinessRequestDetailScreen.js')).toContain("t('ui.requestDetail.youreBooked2')");
-    expect(require('../i18n/ui/requestDetail').default.en.youreBooked2).toBe("You're booked. ✓");
+    // 2026-10-09: the BookedCelebration card draws its own ✓ ring, so its title is the same words without the glyph.
+    expect(read('screens/BusinessRequestDetailScreen.js')).toContain("title={t('ui.requestDetail.youreBooked')}");
+    expect(require('../i18n/ui/requestDetail').default.en.youreBooked).toBe("You're booked");
   });
   it('no screen confirms with a bare "Success!"', () => {
     const dir = path.join(__dirname, '..');

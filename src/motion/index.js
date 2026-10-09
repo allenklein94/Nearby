@@ -25,6 +25,7 @@
 // shim files were deleted (2026-09-18).
 export { default as NLoader } from './NLoader';
 export { default as SuccessAnimation } from './SuccessAnimation';
+export { default as BookedCelebration, bookedDetailsLine } from './BookedCelebration';
 export { default as MatchAnimation } from './MatchAnimation';
 export { default as OccasionAnimation, OCCASION_SELECT_ANIMATIONS } from './OccasionAnimation';
 export { default as SurpriseRevealAnimation, SURPRISE_REVEAL_TOTAL_MS } from './SurpriseRevealAnimation';
