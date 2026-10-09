@@ -97,8 +97,6 @@ const OFFER_TYPE_LABELS = { standard: true, discount: true, perk: true, upgrade:
 // same as this app's established gathering_invite precedent.
 // How long the focus scroll takes before the offer card's on-screen position is read for the offer travel.
 const OFFER_SCROLL_SETTLE_MS = 380;
-// How long the "You're booked" card stays before the screen's own booked header carries it.
-const BOOKED_HOLD_MS = 4500;
 
 export default function BusinessRequestDetailScreen({ navigation, route }) {
   const { t, language } = useLanguage();
@@ -194,7 +192,6 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // permanent "Confirmed" label just below it (that one stays forever; this one is
   // the one-time moment of it becoming true).
   const [justAccepted, setJustAccepted] = useState(false);
-  const justAcceptedTimerRef = useRef(null);
   // 10/10 roadmap Part 5 (see CLAUDE.md's "10/10 roadmap" plan) --
   // partnerId -> { reputation, responseTime }, fetched for every partner
   // with a real offer showing, so the consumer isn't blind to whether a
@@ -663,9 +660,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const result = await acceptBusinessOffer(offerId);
       recordAcceptBehavior(request?.id, request?.category); // item 95: private ranking signal, never a profile edit
       await load();
+      // The card times itself (hold, then shrinks away and closes its space) and calls onDone; setting this again while it
+      // is showing does not remount or replay it.
       setJustAccepted(true);
-      clearTimeout(justAcceptedTimerRef.current);
-      justAcceptedTimerRef.current = setTimeout(() => setJustAccepted(false), BOOKED_HOLD_MS);
       // accept_business_offer() itself already confirmed the real
       // reservation ('nearby' provider) regardless of payment -- this is
       // purely the follow-up payment-collection step, never a condition
@@ -679,7 +676,6 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     setActingOfferId(null);
   }
 
-  useEffect(() => () => clearTimeout(justAcceptedTimerRef.current), []);
 
   // The real Stripe Connect direct-charge flow: create_business_payment_intent
   // returns a real client_secret scoped to the accepting business's own
@@ -1008,6 +1004,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         {justAccepted && (
           <BookedCelebration
             haptic
+            onDone={() => setJustAccepted(false)}
             title={t('ui.requestDetail.youreBooked')}
             details={{ businessName: winningOffer?.brand_partners?.name ?? null, dateLabel: planSummary?.dateLabel ?? null, timeLabel: planSummary?.timeLabel ?? null }}
           />

@@ -79,7 +79,8 @@ export default function GroupPlanScreen({ navigation, route }) {
   function flashSuccess(kind) {
     setSuccessBanner(kind);
     clearTimeout(successBannerTimerRef.current);
-    successBannerTimerRef.current = setTimeout(() => setSuccessBanner(null), 3200);
+    // The booking card times itself and closes its own space (BookedCelebration onDone); only the plan banner needs a timer.
+    if (kind !== 'reservation') successBannerTimerRef.current = setTimeout(() => setSuccessBanner(null), 3200);
   }
 
   const load = useCallback(async () => {
@@ -363,7 +364,7 @@ export default function GroupPlanScreen({ navigation, route }) {
             occasion-creation moment -- tone="business" for a fast, professional settle rather
             than the full celebratory production. */}
         {successBanner === 'plan' && <SuccessAnimation haptic text={t('ui.groupPlan.planConfirmed')} tone="business" />}
-        {successBanner === 'reservation' && <BookedCelebration haptic title={t('ui.requestDetail.youreBooked')} />}
+        {successBanner === 'reservation' && <BookedCelebration haptic title={t('ui.requestDetail.youreBooked')} onDone={() => setSuccessBanner((b) => (b === 'reservation' ? null : b))} />}
         <Text style={styles.title}>{t('ui.groupPlan.groupPlan', { category: categoryName(proposal.category, language) })}</Text>
         <Text style={styles.statusLine}>
           {proposal.status === 'pending' && t('ui.groupPlan.decidingTogether')}

@@ -27,7 +27,7 @@ describe('locked constraints (source guards)', () => {
   });
   test('vibrates only when the person tapped (opt-in prop), Reduce Motion lands on the settled card', () => {
     expect(src).toMatch(/if \(haptic\) playHaptic\(HAPTIC_MOMENTS\.success\)/);
-    expect(src).toMatch(/if \(reduceMotion\) \{/);
+    expect(src).toMatch(/if \(reduceMotion\) \[card, ring, check, text, ripple\]\.forEach\(\(v\) => v\.setValue\(1\)\)/);
   });
   test('both booking moments use it, with haptic (both follow the person\'s own tap)', () => {
     const detail = fs.readFileSync(path.join(__dirname, '../screens/BusinessRequestDetailScreen.js'), 'utf8');

@@ -56,6 +56,8 @@ export const SEQUENCES = {
   // You're booked (2026-10-09): the ring closes, the ✓ settles, one soft ripple while the facts fade in. A booking is a
   // transaction (item 122): success colour, no particles, no bounce, one ripple, done in under 0.8 s.
   booked: { tier: 'special', ringMs: 200, checkMs: 160, rippleMs: 380, textFadeMs: 220 },
+  // Its exit (2026-10-09): fade + a slight shrink, then the space it took closes, so nothing below jumps.
+  bookedExit: { tier: 'medium', fadeMs: 180, collapseMs: 220, shrinkTo: 0.96 },
   offerTravel: { tier: 'special', dimMs: 180, travelMs: 380, settleMs: 220, targetWaitMs: 1500 },
   // Result cascades.
   cascade: { tier: 'medium', maxDelayMs: 200, itemMs: 250 },
@@ -86,6 +88,8 @@ export function settleMs(name) {
       return Math.max(s.headerMs, s.bodyDelayMs + s.bodyMs);
     case 'booked':
       return s.ringMs + s.checkMs + Math.max(s.rippleMs, s.textFadeMs);
+    case 'bookedExit':
+      return s.fadeMs + s.collapseMs;
     case 'offerTravel':
       return s.dimMs + s.travelMs + s.settleMs;
     default:
