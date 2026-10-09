@@ -148,7 +148,7 @@ const linking = {
 // NavigationContainer's own `linking` resolution above has nothing to
 // navigate to for a tapped nearby://gathering/:id link from someone not
 // yet signed in, which is exactly the audience "Share Gathering"/"Share
-// Link" actually targets (GatheringConfirmationScreen.js, and the
+// Link" actually targets (GatheringPublishedPanel.js, and the
 // attending section on GatheringDetailScreen.js). Without this, that link would silently do
 // nothing for a not-yet-authenticated recipient — the same class of
 // dead-link bug this file has already caught and fixed once for this

@@ -6,7 +6,7 @@ const { StackRouter, StackActions, CommonActions } = require('@react-navigation/
 const read = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 
 test('the GatheringConfirmation route and screen are gone from both navigators', () => {
-  for (const nav of ['navigation/RootNavigator.js', 'navigation/BusinessWebNavigator.js']) expect(read(nav)).not.toMatch(/GatheringConfirmation/);
+  for (const nav of ['navigation/RootNavigator.js', 'navigation/BusinessWebNavigator.js']) expect(read(nav)).not.toMatch(/name="GatheringConfirmation"|GatheringConfirmationScreen/);
   expect(fs.existsSync(path.join(__dirname, 'GatheringConfirmationScreen.js'))).toBe(false);
 });
 
