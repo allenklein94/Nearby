@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { multiObjectParent } from '../utils/planDestination';
 import { stopDatePrefill } from '../utils/nightDate';
 import { tr } from '../i18n/translate';
 
@@ -144,6 +145,20 @@ export async function getPlanIdForResource(kind, resourceId) {
   const { data, error } = await supabase.rpc('get_plan_id_for_resource', { kind_param: kind, resource_id_param: resourceId });
   if (error) throw new Error(error.message);
   return data ?? null;
+}
+
+// The plan that combines this gathering / request with other things (a night out, an occasion), for its "Part of:" link
+// (screen-reduction audit B2). Null when there is none, it is a match's plan (the match is its chat), or the lookup fails:
+// the link is extra context, so a failure just leaves it out.
+export async function getMultiObjectParent(kind, resourceId) {
+  try {
+    const planId = await getPlanIdForResource(kind, resourceId);
+    if (!planId) return null;
+    return multiObjectParent(await getPlanOverview(planId));
+  } catch (e) {
+    console.error('getMultiObjectParent failed', e);
+    return null;
+  }
 }
 
 // Resolves the plans row behind an occasion (creator only -- plans RLS is creator-only) or an occasion group plan

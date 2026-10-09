@@ -2,7 +2,6 @@
 // are inserted as stored. Count phrases are plural objects chosen by {count} (i18n/translate.js).
 export default {
   en: {
-    couldNotOpenPlan: 'Could not open this plan.',
     withdrawTitle: 'Withdraw your request?', leaveTitle: 'Leave this gathering?',
     leaveBodyApproved: "If someone's waiting on the waitlist, they'll take your spot.", leaveBodyPending: "The host won't see your request anymore.", leaveBodyWaitlist: "You'll be removed from the waitlist.",
     stay: 'Stay', withdraw: 'Withdraw',
@@ -15,7 +14,6 @@ export default {
     loading: 'Loading gathering...', loadError: "Couldn't load this gathering.", notAvailable: "This gathering isn't available anymore.",
     findAPlace: 'Find a place',
     inviteA11y: 'Invite friends to this gathering', inviteFriendsCap: '🤝 Invite Friends',
-    wholePlanA11y: 'View the whole plan', wholePlan: 'View the whole plan →',
     fullTaken: '🔒 Full — {n}/{cap} spots taken', spotsFilled: '{n}/{cap} spots filled',
     hostedByA11y: 'Hosted by {name}, view profile', hostedBy: 'Hosted by {name}',
     whyFits: 'Why this fits you', whosGoing: "Who's Going",
@@ -66,7 +64,6 @@ export default {
     inviteOneA11y: 'Invite a friend to this gathering', inviteOne: '🤝 Invite a friend',
   },
   es: {
-    couldNotOpenPlan: 'No pudimos abrir este plan.',
     withdrawTitle: '¿Retirar tu solicitud?', leaveTitle: '¿Salir de esta reunión?',
     leaveBodyApproved: 'Si alguien está en la lista de espera, tomará tu lugar.', leaveBodyPending: 'El anfitrión ya no verá tu solicitud.', leaveBodyWaitlist: 'Saldrás de la lista de espera.',
     stay: 'Quedarme', withdraw: 'Retirar',
@@ -79,7 +76,6 @@ export default {
     loading: 'Cargando reunión...', loadError: 'No pudimos cargar esta reunión.', notAvailable: 'Esta reunión ya no está disponible.',
     findAPlace: 'Buscar un lugar',
     inviteA11y: 'Invitar amigos a esta reunión', inviteFriendsCap: '🤝 Invitar amigos',
-    wholePlanA11y: 'Ver todo el plan', wholePlan: 'Ver todo el plan →',
     fullTaken: '🔒 Llena — {n}/{cap} lugares ocupados', spotsFilled: '{n}/{cap} lugares ocupados',
     hostedByA11y: 'Organizada por {name}, ver perfil', hostedBy: 'Organizada por {name}',
     whyFits: 'Por qué te encaja', whosGoing: 'Quién va',
@@ -130,7 +126,6 @@ export default {
     inviteOneA11y: 'Invitar a un amigo a esta reunión', inviteOne: '🤝 Invitar a un amigo',
   },
   de: {
-    couldNotOpenPlan: 'Dieser Plan konnte nicht geöffnet werden.',
     withdrawTitle: 'Anfrage zurückziehen?', leaveTitle: 'Dieses Treffen verlassen?',
     leaveBodyApproved: 'Wenn jemand auf der Warteliste steht, bekommt diese Person deinen Platz.', leaveBodyPending: 'Der Gastgeber sieht deine Anfrage dann nicht mehr.', leaveBodyWaitlist: 'Du wirst von der Warteliste entfernt.',
     stay: 'Bleiben', withdraw: 'Zurückziehen',
@@ -143,7 +138,6 @@ export default {
     loading: 'Treffen wird geladen...', loadError: 'Dieses Treffen konnte nicht geladen werden.', notAvailable: 'Dieses Treffen ist nicht mehr verfügbar.',
     findAPlace: 'Einen Ort finden',
     inviteA11y: 'Freunde zu diesem Treffen einladen', inviteFriendsCap: '🤝 Freunde einladen',
-    wholePlanA11y: 'Den ganzen Plan ansehen', wholePlan: 'Den ganzen Plan ansehen →',
     fullTaken: '🔒 Voll — {n}/{cap} Plätze belegt', spotsFilled: '{n}/{cap} Plätze belegt',
     hostedByA11y: 'Veranstaltet von {name}, Profil ansehen', hostedBy: 'Veranstaltet von {name}',
     whyFits: 'Warum das zu dir passt', whosGoing: 'Wer dabei ist',
@@ -194,7 +188,6 @@ export default {
     inviteOneA11y: 'Einen Freund zu diesem Treffen einladen', inviteOne: '🤝 Einen Freund einladen',
   },
   fr: {
-    couldNotOpenPlan: "Impossible d'ouvrir ce projet.",
     withdrawTitle: 'Retirer votre demande ?', leaveTitle: 'Quitter cette rencontre ?',
     leaveBodyApproved: "Si quelqu'un est sur la liste d'attente, il prendra votre place.", leaveBodyPending: "L'organisateur ne verra plus votre demande.", leaveBodyWaitlist: "Vous serez retiré de la liste d'attente.",
     stay: 'Rester', withdraw: 'Retirer',
@@ -207,7 +200,6 @@ export default {
     loading: 'Chargement de la rencontre...', loadError: 'Impossible de charger cette rencontre.', notAvailable: "Cette rencontre n'est plus disponible.",
     findAPlace: 'Trouver un lieu',
     inviteA11y: 'Inviter des amis à cette rencontre', inviteFriendsCap: '🤝 Inviter des amis',
-    wholePlanA11y: 'Voir tout le projet', wholePlan: 'Voir tout le projet →',
     fullTaken: '🔒 Complet — {n}/{cap} places prises', spotsFilled: '{n}/{cap} places prises',
     hostedByA11y: 'Organisé par {name}, voir le profil', hostedBy: 'Organisé par {name}',
     whyFits: 'Pourquoi ça vous correspond', whosGoing: 'Qui vient',
@@ -258,7 +250,6 @@ export default {
     inviteOneA11y: 'Inviter un ami à cette rencontre', inviteOne: '🤝 Inviter un ami',
   },
   pt: {
-    couldNotOpenPlan: 'Não foi possível abrir este plano.',
     withdrawTitle: 'Retirar seu pedido?', leaveTitle: 'Sair deste encontro?',
     leaveBodyApproved: 'Se alguém estiver na lista de espera, vai ficar com sua vaga.', leaveBodyPending: 'O organizador não vai mais ver seu pedido.', leaveBodyWaitlist: 'Você será removido da lista de espera.',
     stay: 'Ficar', withdraw: 'Retirar',
@@ -271,7 +262,6 @@ export default {
     loading: 'Carregando encontro...', loadError: 'Não foi possível carregar este encontro.', notAvailable: 'Este encontro não está mais disponível.',
     findAPlace: 'Encontrar um lugar',
     inviteA11y: 'Convidar amigos para este encontro', inviteFriendsCap: '🤝 Convidar amigos',
-    wholePlanA11y: 'Ver o plano completo', wholePlan: 'Ver o plano completo →',
     fullTaken: '🔒 Lotado — {n}/{cap} vagas ocupadas', spotsFilled: '{n}/{cap} vagas ocupadas',
     hostedByA11y: 'Organizado por {name}, ver perfil', hostedBy: 'Organizado por {name}',
     whyFits: 'Por que combina com você', whosGoing: 'Quem vai',
@@ -322,7 +312,6 @@ export default {
     inviteOneA11y: 'Convidar um amigo para este encontro', inviteOne: '🤝 Convidar um amigo',
   },
   ht: {
-    couldNotOpenPlan: 'Nou pa t ka louvri plan sa a.',
     withdrawTitle: 'Retire demann ou?', leaveTitle: 'Kite rasanbleman sa a?',
     leaveBodyApproved: 'Si gen yon moun sou lis datant lan, l ap pran plas ou.', leaveBodyPending: 'Òganizatè a p ap wè demann ou ankò.', leaveBodyWaitlist: 'Y ap retire w sou lis datant lan.',
     stay: 'Rete', withdraw: 'Retire',
@@ -335,7 +324,6 @@ export default {
     loading: 'N ap chaje rasanbleman an...', loadError: 'Nou pa t ka chaje rasanbleman sa a.', notAvailable: 'Rasanbleman sa a pa disponib ankò.',
     findAPlace: 'Jwenn yon kote',
     inviteA11y: 'Envite zanmi nan rasanbleman sa a', inviteFriendsCap: '🤝 Envite zanmi',
-    wholePlanA11y: 'Wè tout plan an', wholePlan: 'Wè tout plan an →',
     fullTaken: '🔒 Plen — {n}/{cap} plas pran', spotsFilled: '{n}/{cap} plas pran',
     hostedByA11y: '{name} ki òganize l, wè pwofil', hostedBy: '{name} ki òganize l',
     whyFits: 'Poukisa sa bon pou ou', whosGoing: 'Ki moun ki prale',
@@ -386,7 +374,6 @@ export default {
     inviteOneA11y: 'Envite yon zanmi nan rasanbleman sa a', inviteOne: '🤝 Envite yon zanmi',
   },
   zh: {
-    couldNotOpenPlan: '无法打开这个计划。',
     withdrawTitle: '撤回你的请求？', leaveTitle: '退出这个聚会？',
     leaveBodyApproved: '如果有人在候补名单上，他们会接替你的位置。', leaveBodyPending: '组织者将不再看到你的请求。', leaveBodyWaitlist: '你将被移出候补名单。',
     stay: '留下', withdraw: '撤回',
@@ -399,7 +386,6 @@ export default {
     loading: '正在加载聚会...', loadError: '无法加载这个聚会。', notAvailable: '这个聚会已不可用。',
     findAPlace: '找个地点',
     inviteA11y: '邀请朋友参加这个聚会', inviteFriendsCap: '🤝 邀请朋友',
-    wholePlanA11y: '查看完整计划', wholePlan: '查看完整计划 →',
     fullTaken: '🔒 已满 — 已占 {n}/{cap} 个名额', spotsFilled: '已占 {n}/{cap} 个名额',
     hostedByA11y: '由{name}组织，查看资料', hostedBy: '由{name}组织',
     whyFits: '为什么适合你', whosGoing: '谁会去',
@@ -450,7 +436,6 @@ export default {
     inviteOneA11y: '邀请一位朋友参加这个聚会', inviteOne: '🤝 邀请一位朋友',
   },
   vi: {
-    couldNotOpenPlan: 'Không thể mở kế hoạch này.',
     withdrawTitle: 'Rút lại yêu cầu?', leaveTitle: 'Rời buổi gặp mặt này?',
     leaveBodyApproved: 'Nếu có người trong danh sách chờ, họ sẽ nhận chỗ của bạn.', leaveBodyPending: 'Người tổ chức sẽ không thấy yêu cầu của bạn nữa.', leaveBodyWaitlist: 'Bạn sẽ bị xóa khỏi danh sách chờ.',
     stay: 'Ở lại', withdraw: 'Rút lại',
@@ -463,7 +448,6 @@ export default {
     loading: 'Đang tải buổi gặp mặt...', loadError: 'Không thể tải buổi gặp mặt này.', notAvailable: 'Buổi gặp mặt này không còn nữa.',
     findAPlace: 'Tìm một địa điểm',
     inviteA11y: 'Mời bạn bè đến buổi gặp mặt này', inviteFriendsCap: '🤝 Mời bạn bè',
-    wholePlanA11y: 'Xem toàn bộ kế hoạch', wholePlan: 'Xem toàn bộ kế hoạch →',
     fullTaken: '🔒 Đã đủ — {n}/{cap} chỗ đã có người', spotsFilled: '{n}/{cap} chỗ đã có người',
     hostedByA11y: 'Do {name} tổ chức, xem hồ sơ', hostedBy: 'Do {name} tổ chức',
     whyFits: 'Vì sao hợp với bạn', whosGoing: 'Ai sẽ đến',
@@ -514,7 +498,6 @@ export default {
     inviteOneA11y: 'Mời một người bạn đến buổi gặp mặt này', inviteOne: '🤝 Mời một người bạn',
   },
   tl: {
-    couldNotOpenPlan: 'Hindi mabuksan ang planong ito.',
     withdrawTitle: 'Bawiin ang kahilingan mo?', leaveTitle: 'Umalis sa pagtitipong ito?',
     leaveBodyApproved: 'Kung may naghihintay sa waitlist, sila ang kukuha ng puwesto mo.', leaveBodyPending: 'Hindi na makikita ng host ang kahilingan mo.', leaveBodyWaitlist: 'Aalisin ka sa waitlist.',
     stay: 'Manatili', withdraw: 'Bawiin',
@@ -527,7 +510,6 @@ export default {
     loading: 'Nilo-load ang pagtitipon...', loadError: 'Hindi ma-load ang pagtitipong ito.', notAvailable: 'Hindi na available ang pagtitipong ito.',
     findAPlace: 'Maghanap ng lugar',
     inviteA11y: 'Mag-imbita ng mga kaibigan sa pagtitipong ito', inviteFriendsCap: '🤝 Mag-imbita ng Kaibigan',
-    wholePlanA11y: 'Tingnan ang buong plano', wholePlan: 'Tingnan ang buong plano →',
     fullTaken: '🔒 Puno — {n}/{cap} puwesto ang okupado', spotsFilled: '{n}/{cap} puwesto ang okupado',
     hostedByA11y: 'Hino-host ni {name}, tingnan ang profile', hostedBy: 'Hino-host ni {name}',
     whyFits: 'Bakit ito bagay sa iyo', whosGoing: 'Sino ang Pupunta',
@@ -578,7 +560,6 @@ export default {
     inviteOneA11y: 'Mag-imbita ng kaibigan sa pagtitipong ito', inviteOne: '🤝 Mag-imbita ng kaibigan',
   },
   ru: {
-    couldNotOpenPlan: 'Не удалось открыть этот план.',
     withdrawTitle: 'Отозвать запрос?', leaveTitle: 'Покинуть эту встречу?',
     leaveBodyApproved: 'Если кто-то ждёт в листе ожидания, он займёт ваше место.', leaveBodyPending: 'Организатор больше не увидит ваш запрос.', leaveBodyWaitlist: 'Вы будете удалены из листа ожидания.',
     stay: 'Остаться', withdraw: 'Отозвать',
@@ -591,7 +572,6 @@ export default {
     loading: 'Загружаем встречу...', loadError: 'Не удалось загрузить эту встречу.', notAvailable: 'Эта встреча больше недоступна.',
     findAPlace: 'Найти место',
     inviteA11y: 'Пригласить друзей на эту встречу', inviteFriendsCap: '🤝 Пригласить друзей',
-    wholePlanA11y: 'Посмотреть весь план', wholePlan: 'Посмотреть весь план →',
     fullTaken: '🔒 Мест нет — занято {n}/{cap}', spotsFilled: 'Занято мест: {n}/{cap}',
     hostedByA11y: 'Организатор: {name}, открыть профиль', hostedBy: 'Организатор: {name}',
     whyFits: 'Почему вам подходит', whosGoing: 'Кто идёт',
@@ -642,7 +622,6 @@ export default {
     inviteOneA11y: 'Пригласить друга на эту встречу', inviteOne: '🤝 Пригласить друга',
   },
   ko: {
-    couldNotOpenPlan: '이 계획을 열 수 없어요.',
     withdrawTitle: '요청을 취소할까요?', leaveTitle: '이 모임에서 나갈까요?',
     leaveBodyApproved: '대기자가 있으면 그 사람이 자리를 이어받아요.', leaveBodyPending: '주최자에게 더 이상 요청이 보이지 않아요.', leaveBodyWaitlist: '대기자 명단에서 빠지게 돼요.',
     stay: '남기', withdraw: '취소하기',
@@ -655,7 +634,6 @@ export default {
     loading: '모임을 불러오는 중...', loadError: '이 모임을 불러오지 못했어요.', notAvailable: '더 이상 볼 수 없는 모임이에요.',
     findAPlace: '장소 찾기',
     inviteA11y: '이 모임에 친구 초대', inviteFriendsCap: '🤝 친구 초대',
-    wholePlanA11y: '전체 계획 보기', wholePlan: '전체 계획 보기 →',
     fullTaken: '🔒 마감 — {n}/{cap}자리 찼어요', spotsFilled: '{n}/{cap}자리 찼어요',
     hostedByA11y: '{name} 주최, 프로필 보기', hostedBy: '{name} 주최',
     whyFits: '나와 잘 맞는 이유', whosGoing: '참석자',

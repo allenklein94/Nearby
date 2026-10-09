@@ -16,7 +16,7 @@ import { isAllDeclined } from '../utils/requestOutcome';
 import { requestTimeline, timelineStepLine, requestNextStep, justSentLine } from '../utils/requestTimeline';
 import { getBusinessRequestWithOffers, acceptBusinessOffer, cancelBusinessRequest, reopenBusinessRequest, completeBusinessReservation, cancelBusinessReservation, getPartnerAvgResponseTime, getPartnerOfferReputation, formatPartnerReliabilityLine, markBusinessOfferViewed, getSignedBusinessOfferMediaUrl, createPlanAddonRequest, getPlanAddons, removePlanAddon, setPlanItemTime, getPlanOrganizers, addPlanOrganizer, removePlanOrganizer } from '../services/businessFulfillment';
 import { getPlanChatInfo } from '../services/planChat';
-import { getPlanIdForResource } from '../services/plans';
+import { getMultiObjectParent } from '../services/plans';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonType } from '../constants/planAddons';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
@@ -444,14 +444,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     setSelectedCandidateIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  async function openPlanDetail() {
-    try {
-      const planId = await getPlanIdForResource('business_request', request.id);
-      if (planId) navigation.navigate('PlanDetail', { planId });
-    } catch (e) {
-      Alert.alert(t('ui.requestDetail.error'), t('ui.requestDetail.couldNotOpenThisPlan'));
-    }
-  }
+  // A request is its own plan, so there is no "whole plan" screen for it (screen-reduction audit B2). Only when it is part
+  // of something bigger (a stop of a night out, an occasion) does it link up to that plan.
+  const [parentPlan, setParentPlan] = useState(null);
+  const requestIdForPlan = request?.id ?? null;
+  useEffect(() => {
+    if (!requestIdForPlan) { setParentPlan(null); return undefined; }
+    let cancelled = false;
+    getMultiObjectParent('business_request', requestIdForPlan).then((p) => { if (!cancelled) setParentPlan(p); });
+    return () => { cancelled = true; };
+  }, [requestIdForPlan]);
 
   async function handleProposeGroupPlan() {
     if (selectedCandidateIds.length === 0) return;
@@ -986,9 +988,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             moment, with tone="business" (skips the ✨ discovery beat, settles fast, no
             springy bounce). */}
         {justAccepted && <SuccessAnimation haptic text={t('ui.requestDetail.youreBooked2')} tone="business" />}
-        {request && (
-          <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel={t('ui.requestDetail.viewTheWholePlanA11y')}>
-            <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.sm }}>{t('ui.requestDetail.viewTheWholePlan')}</Text>
+        {request && parentPlan && (
+          <TouchableOpacity onPress={() => navigation.navigate('PlanDetail', { planId: parentPlan.id })} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.partOf', { title: parentPlan.title || t('ui.planDetail.yourNight') })}>
+            <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.sm }}>{t('ui.planDetail.partOf', { title: parentPlan.title || t('ui.planDetail.yourNight') })} →</Text>
           </TouchableOpacity>
         )}
         {planSummary && (

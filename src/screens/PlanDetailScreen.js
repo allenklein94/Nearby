@@ -16,11 +16,15 @@ import { localDateParam, nightDateFromScheduledAt, nightDateToLocal, nightDateLa
 import { buildPlanJourney, statusWord } from '../utils/planJourney';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { moneyLabel } from '../utils/outcomeDisplay';
+import { canonicalPlanDestination } from '../utils/planDestination';
 
 const PLAN_STATUSES = ['draft', 'confirmed', 'completed', 'cancelled']; // shown through ui.planDetail.status.<status>
 
 // One Plan, read through get_plan_overview (20261203_plan_read_layer.sql): the whole Occasion -> People -> Activity ->
 // Business -> Offer -> Reservation picture in one place. Read-only; every action hands off to an existing screen.
+// Only for plans that combine several objects (a night out, an occasion; screen-reduction audit B2, 2026-10-08). A plan
+// that IS one gathering, request or match is replaced by that object's own screen as soon as it loads, so Back from the
+// object returns where the person came from, never to a summary of the same thing.
 export default function PlanDetailScreen({ navigation, route }) {
   const { t } = useLanguage();
   const { colors, shadow, isDark } = useTheme();
@@ -39,6 +43,11 @@ export default function PlanDetailScreen({ navigation, route }) {
     setError(false);
     try {
       const ov = await getPlanOverview(planId);
+      const destination = canonicalPlanDestination(ov);
+      if (destination) {
+        navigation.replace(destination.name, destination.params);
+        return;
+      }
       const { data: sess } = await supabase.auth.getSession();
       setMyId(sess?.session?.user?.id ?? null);
       setOverview(ov);
@@ -47,7 +56,7 @@ export default function PlanDetailScreen({ navigation, route }) {
       setError(true);
     }
     setLoading(false);
-  }, [planId]);
+  }, [planId, navigation]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -63,7 +72,7 @@ export default function PlanDetailScreen({ navigation, route }) {
     );
   }
 
-  const { plan, who, match, groupPlan, activity, businessRequest, offers, reservation, parent, children } = overview;
+  const { plan, who, groupPlan, offers, reservation, parent, children } = overview;
   const meta = OCCASION_OPTIONS.find((o) => o.key === plan.occasion_type);
   const journey = buildPlanJourney(overview);
   const nothingYet = journey.every((s) => !s.done);
@@ -71,15 +80,7 @@ export default function PlanDetailScreen({ navigation, route }) {
     ? new Date(plan.scheduled_at).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
     : null;
 
-  const isMatchPlan = !!match;
-  const matchTitle = match ? t('ui.planDetail.you', { value: match.kind === 'friend' ? '🤝' : '❤️', otherDisplayName: match.other_display_name || t('ui.planDetail.them') }) : null;
-  const matchedLabel = match?.matched_at
-    ? `${match.kind === 'friend' ? 'Friends' : 'Matched'} since ${new Date(match.matched_at).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
-    : null;
-
   const isExperiencePlan = plan.plan_type === 'experience';
-  const isGatheringPlan = activity?.kind === 'gathering' && (plan.plan_type === 'gathering' || plan.plan_type === 'friend_hangout');
-  const isRequestPlan = plan.plan_type === 'business_request' && !!businessRequest;
 
   const canEdit = isExperiencePlan && canEditNight(plan.status, !!myId && who.host?.id === myId);
 
@@ -133,7 +134,6 @@ export default function PlanDetailScreen({ navigation, route }) {
   }
 
   function startPlanning() {
-    if (match) { navigation.navigate('DateProposal', { matchId: match.id, matchName: match.other_display_name }); return; }
     if (groupPlan) navigation.navigate('GroupOccasionPlan', { planId: groupPlan.id });
     else navigation.navigate('CelebrateSomething');
   }
@@ -141,11 +141,9 @@ export default function PlanDetailScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-        <Text style={styles.title}>{isMatchPlan ? matchTitle : `${meta?.icon ? `${meta.icon} ` : ''}${plan.title || t('ui.planDetail.untitledPlan')}`}</Text>
+        <Text style={styles.title}>{`${meta?.icon ? `${meta.icon} ` : ''}${plan.title || t('ui.planDetail.untitledPlan')}`}</Text>
         <Text style={styles.muted}>
-          {isMatchPlan
-            ? matchedLabel
-            : [PLAN_STATUSES.includes(plan.status) ? t(`ui.planDetail.status.${plan.status}`) : plan.status, dateLabel, who.forName ? t('ui.planDetail.forName', { name: who.forName }) : null].filter(Boolean).join(' · ')}
+          {[PLAN_STATUSES.includes(plan.status) ? t(`ui.planDetail.status.${plan.status}`) : plan.status, dateLabel, who.forName ? t('ui.planDetail.forName', { name: who.forName }) : null].filter(Boolean).join(' · ')}
         </Text>
         {parent ? <Text style={styles.muted}>{t('ui.planDetail.partOf', { title: parent.title })}</Text> : null}
 
@@ -240,7 +238,7 @@ export default function PlanDetailScreen({ navigation, route }) {
           ))}
         </View>}
 
-        {!isMatchPlan && (who.participants.length > 0 || who.organizers.length > 0) && (
+        {(who.participants.length > 0 || who.organizers.length > 0) && (
           <>
             <Text style={styles.sectionLabel}>{t('ui.planDetail.people')}</Text>
             <View style={styles.card}>
@@ -277,19 +275,9 @@ export default function PlanDetailScreen({ navigation, route }) {
           </>
         )}
 
-        {isGatheringPlan && (
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('GatheringDetail', { gatheringId: activity.id })} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.openTheGatheringA11y')}>
-            <Text style={styles.buttonText}>{t('ui.planDetail.openTheGathering')}</Text>
-          </TouchableOpacity>
-        )}
-        {isRequestPlan && (
-          <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.openTheRequestA11y')}>
-            <Text style={styles.buttonText}>{t('ui.planDetail.openTheRequest')}</Text>
-          </TouchableOpacity>
-        )}
-        {(isMatchPlan || (nothingYet && (plan.plan_type === 'occasion' || plan.plan_type === 'group_occasion') && plan.status !== 'cancelled')) && (
-          <TouchableOpacity style={styles.button} onPress={startPlanning} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={isMatchPlan ? t('ui.planDetail.planSomethingTogetherA11y') : t('ui.planDetail.planSomethingA11y')}>
-            <Text style={styles.buttonText}>{isMatchPlan ? t('ui.planDetail.planSomethingTogether') : t('ui.planDetail.planSomething')}</Text>
+        {nothingYet && (plan.plan_type === 'occasion' || plan.plan_type === 'group_occasion') && plan.status !== 'cancelled' && (
+          <TouchableOpacity style={styles.button} onPress={startPlanning} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.planSomethingA11y')}>
+            <Text style={styles.buttonText}>{t('ui.planDetail.planSomething')}</Text>
           </TouchableOpacity>
         )}
       </ScrollView>

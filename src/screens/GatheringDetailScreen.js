@@ -35,7 +35,7 @@ import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { visibilityMeta } from '../constants/gatheringVisibility';
 import { formatPreciseBucketLine, formatInterestLine } from '../utils/groupInsightsLabels';
 import { getSignedPhotoUrl } from '../services/photos';
-import { getPlanIdForResource } from '../services/plans';
+import { getMultiObjectParent } from '../services/plans';
 import { getGatheringOffer } from '../services/brandOffers';
 import { checkGatheringInterestLimit } from '../services/gatheringLimits';
 import {
@@ -338,14 +338,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
     };
   }, [isHostViewer, gatheringId]);
 
-  async function openPlanDetail() {
-    try {
-      const planId = await getPlanIdForResource('gathering', gatheringId);
-      if (planId) navigation.navigate('PlanDetail', { planId });
-    } catch (e) {
-      Alert.alert(t('ui.common.error'), t('ui.gatheringDetail.couldNotOpenPlan'));
-    }
-  }
+  // A gathering is its own plan, so there is no "whole plan" screen for it (screen-reduction audit B2). Only when it is part
+  // of something bigger (a night out, an occasion) does it link up to that plan, for the host and approved attendees.
+  const [parentPlan, setParentPlan] = useState(null);
+  const seesPlan = !!gathering && (gathering.isHost || gathering.myStatus === 'approved');
+  useEffect(() => {
+    if (!seesPlan) { setParentPlan(null); return undefined; }
+    let cancelled = false;
+    getMultiObjectParent('gathering', gatheringId).then((p) => { if (!cancelled) setParentPlan(p); });
+    return () => { cancelled = true; };
+  }, [seesPlan, gatheringId]);
 
   const [togglingInterested, setTogglingInterested] = useState(false);
   const [showDemandDisclosure, setShowDemandDisclosure] = useState(false);
@@ -661,9 +663,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
           <Text style={styles.metaLine}>
             {displayGatheringDateTime(gathering, language)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
           </Text>
-          {(gathering.isHost || gathering.myStatus === 'approved') && (
-            <TouchableOpacity onPress={openPlanDetail} accessibilityRole="button" accessibilityLabel={t('ui.gatheringDetail.wholePlanA11y')}>
-              <Text style={{ color: colors.primary, fontWeight: '700', marginTop: spacing.xs }}>{t('ui.gatheringDetail.wholePlan')}</Text>
+          {seesPlan && parentPlan && (
+            <TouchableOpacity onPress={() => navigation.navigate('PlanDetail', { planId: parentPlan.id })} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.partOf', { title: parentPlan.title || t('ui.planDetail.yourNight') })}>
+              <Text style={{ color: colors.primary, fontWeight: '700', marginTop: spacing.xs }}>{t('ui.planDetail.partOf', { title: parentPlan.title || t('ui.planDetail.yourNight') })} →</Text>
             </TouchableOpacity>
           )}
           {/* Item 109 (CLAUDE.md, "make the visibility model explicit"): a
