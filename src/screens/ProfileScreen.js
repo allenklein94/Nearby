@@ -1,3 +1,4 @@
+import MyCommunitiesSection from '../components/MyCommunitiesSection';
 import React, { useEffect, useRef, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
@@ -164,6 +165,8 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const [draftQuestion, setDraftQuestion] = useState('');
   const [draftAnswer, setDraftAnswer] = useState('');
   const [expandedField, setExpandedField] = useState(null);
+  // Your communities open in place under Your connections (screen-reduction audit B8).
+  const [showCommunities, setShowCommunities] = useState(false);
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
   const [achievements, setAchievements] = useState([]);
   const [managesBusiness, setManagesBusiness] = useState(false);
@@ -772,7 +775,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourConnections')}</Text>
         <View style={styles.quickStatsRow}>
-          <TouchableOpacity style={styles.quickStat} onPress={() => navigation.navigate('Communities')} accessibilityLabel={countLabel(quickStats.communities, 'community', 'communities')} accessibilityRole="button">
+          <TouchableOpacity style={[styles.quickStat, showCommunities && { borderColor: colors.primary }]} onPress={() => setShowCommunities((v) => !v)} accessibilityLabel={countLabel(quickStats.communities, 'community', 'communities')} accessibilityRole="button" accessibilityState={{ expanded: showCommunities }}>
             <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
             <Text style={styles.quickStatLabel}>{t('ui.profile.communities')}</Text>
           </TouchableOpacity>
@@ -781,6 +784,8 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
             <Text style={styles.quickStatLabel}>{t('ui.profile.friends')}</Text>
           </TouchableOpacity>
         </View>
+
+        {showCommunities && <MyCommunitiesSection navigation={navigation} />}
 
         {/* Aug 23 2026 IA pass (CLAUDE.md): "Your Plans" pulled out as its
             own leading section — "what am I actually doing" is a more

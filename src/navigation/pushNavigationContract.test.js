@@ -362,7 +362,10 @@ describe('the audit: every push type has one registered destination', () => {
     expect((dest.match(/to\('MainTabs', \{ screen: 'Home' \}\)/g) ?? []).length).toBe(2);
     // Rule 14: the Rewards screen folded into Discover -> Perks, so "Almost at Silver" opens the Perks tab where the tier
     // line now lives. That is the tier's one home, not a fallback; it is the only Discover destination.
-    expect(dest.match(/'Discover'/g)).toEqual(["'Discover'"]);
+    // Screen-reduction audit B8: community_cancelled ("Find something else") opens Discover -> Communities, the one
+    // community browse home, now that the Communities screen folded into Profile.
+    expect(dest.match(/'Discover'/g)).toEqual(["'Discover'", "'Discover'"]);
+    expect(dest).toMatch(/case 'community_cancelled':[\s\S]{0,400}to\('MainTabs', \{ screen: 'Discover', params: \{ initialMode: 'things', initialTypeTab: 'communities' \} \}\)/);
     expect(dest).toMatch(/case 'reward_tier_nudge':[\s\S]{0,200}to\('MainTabs', \{ screen: 'Discover', params: \{ \.\.\.PERKS_TAB \} \}\)/);
   });
 });

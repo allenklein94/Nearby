@@ -35,7 +35,6 @@ import FriendDiscoveryScreen from '../screens/FriendDiscoveryScreen';
 import CreateHubScreen from '../screens/CreateHubScreen';
 import CelebrateSomethingScreen from '../screens/CelebrateSomethingScreen';
 import MessagesScreen from '../screens/MessagesScreen';
-import CommunitiesScreen from '../screens/CommunitiesScreen';
 import CreateCommunityScreen from '../screens/CreateCommunityScreen';
 import EditCommunityScreen from '../screens/EditCommunityScreen';
 import CommunityDetailScreen from '../screens/CommunityDetailScreen';
@@ -497,7 +496,6 @@ export default function RootNavigator() {
                 the audit found (FiltersModal itself was already a real
                 in-place modal; only this deeper "Customize" screen wasn't). */}
             <Stack.Screen name="PreferencePolls" component={PreferencePollScreen} options={{ headerShown: true, title: t('ui.nav.title.preferencePolls'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
-            <Stack.Screen name="Communities" component={CommunitiesScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CreateCommunity" component={CreateCommunityScreen} options={{ headerShown: true, title: t('ui.nav.title.createCommunity'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="EditCommunity" component={EditCommunityScreen} options={{ headerShown: true, title: t('ui.nav.title.editCommunity'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: '', headerTransparent: true, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

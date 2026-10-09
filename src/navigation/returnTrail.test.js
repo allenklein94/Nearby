@@ -182,14 +182,15 @@ describe('never traps, never duplicates', () => {
     expect(chip).toMatch(/onPress=\{clearTrail\}/);
     expect(chip).not.toMatch(/tabBar/);
   });
-  test('only the tab-destination branch starts a trail; the three tab pushes (two Home, the perk-tier nudge) go through it', () => {
+  test('only the tab-destination branch starts a trail; the four tab pushes (two Home, the perk-tier nudge, a cancelled community) go through it', () => {
     const top = fs.readFileSync(path.join(__dirname, 'openOnTop.js'), 'utf8');
     expect(top).toMatch(/if \(name === TAB_HOST\) beginTrail/);
     const n = fs.readFileSync(path.join(__dirname, 'notificationDestinations.js'), 'utf8');
     // The availability fallback to Discover was removed (item 139 audit): a gone posting opens its business instead.
-    expect((n.match(/to\('MainTabs'/g) ?? []).length).toBe(3);
-    // The one Discover push is the perk-tier nudge (rule 14: the tier lives on Perks), never a generic fallback.
-    expect(n.match(/screen: 'Discover'/g)).toHaveLength(1);
+    expect((n.match(/to\('MainTabs'/g) ?? []).length).toBe(4);
+    // Two Discover pushes, each to its one home, never a generic fallback: the perk-tier nudge (rule 14: the tier lives on
+    // Perks) and a cancelled community's "Find something else" (Discover -> Communities, screen-reduction audit B8).
+    expect(n.match(/screen: 'Discover'/g)).toHaveLength(2);
   });
   test('every label key exists in all 11 languages', () => {
     const ns = require('../i18n/ui/returnTrail').default;

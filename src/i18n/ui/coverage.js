@@ -63,7 +63,7 @@ export const LOCALIZED_FILES = [
   'src/screens/OnboardingRecommendationsScreen.js',
   'src/navigation/RootNavigator.js',
   'src/screens/CommunityDetailScreen.js',
-  'src/screens/CommunitiesScreen.js',
+  'src/components/MyCommunitiesSection.js',
   'src/screens/CreateCommunityScreen.js',
   'src/screens/EditCommunityScreen.js',
   'src/utils/unlockProgress.js',

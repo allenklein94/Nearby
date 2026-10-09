@@ -19,8 +19,11 @@ describe('one public-community discovery list: Discover -> Communities', () => {
       .map((f) => path.relative(SRC, f));
     expect(readers).toEqual([path.join('screens', 'DiscoverHubScreen.js')]);
   });
-  it('the Communities screen is Your Communities + Create, with a link to Discover and no Join buttons', () => {
-    const src = read('screens/CommunitiesScreen.js');
+  it('Your communities (in place on Profile) is Your Communities + Create, with a link to Discover and no Join buttons', () => {
+    expect(fs.existsSync(path.join(SRC, 'screens/CommunitiesScreen.js'))).toBe(false);
+    expect(read('screens/ProfileScreen.js')).toMatch(/\{showCommunities && <MyCommunitiesSection navigation=\{navigation\} \/>\}/);
+    expect(read('screens/ProfileScreen.js')).not.toMatch(/navigate\('Communities'\)/);
+    const src = read('components/MyCommunitiesSection.js');
     expect(src).not.toMatch(/joinCommunity|getPublicCommunities|ui\.community\.join'/);
     expect(src).toMatch(/navigateKeepingTrail\(navigation, 'Discover', \{ \.\.\.DISCOVER_COMMUNITIES \}\)/);
     expect(src).toMatch(/initialTypeTab: 'communities'/);

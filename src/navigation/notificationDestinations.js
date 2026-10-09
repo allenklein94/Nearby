@@ -132,7 +132,9 @@ export async function notificationDestination(data, { lookupAvailability = async
     // above — cancel_community() doesn't delete the row, but there's no
     // dedicated post-cancellation detail view to land on either way.
     case 'community_cancelled':
-      return to('Communities');
+      // "Find something else": other communities, in their one browse home (Discover -> Communities). The Communities
+      // screen folded into Profile (screen-reduction audit B8), which only lists the ones you are in.
+      return to('MainTabs', { screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'communities' } });
       break;
     case 'friend_request':
     case 'friend_accepted':

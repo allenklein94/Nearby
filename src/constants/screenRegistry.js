@@ -85,10 +85,6 @@ export const SCREEN_REGISTRY = {
   SelectGatheringLocation: { jobs: ['C'], reason: 'Pick the gathering\'s place on a map (a step of creating or editing).' },
 
   // ---- communities ----
-  Communities: {
-    jobs: ['C'],
-    reason: 'Your communities + Create (trimmed 2026-10-04: public communities are found only in Discover -> Communities).',
-  },
   CommunityDetail: { jobs: ['A', 'B', 'C'], reason: 'Decide and join; leaders manage the community here.' },
   CommunityChat: { jobs: ['D'], reason: 'The community\'s group chat.' },
   CreateCommunity: { jobs: ['C'], reason: 'Create a community.' },
@@ -160,10 +156,11 @@ export const RULE14_DECISIONS = {
     QuickFilterCustomize: 'an editor that opens in place in the dating Filters sheet and the Friends filter panel (B10)',
     BusinessAIAutomation: 'a panel that opens in place under the business dashboard Profile tab Settings (B10)',
     GatheringConfirmation: 'a one-time "Your gathering is live" panel at the top of GatheringDetail after publishing (screen-reduction audit B5, 2026-10-09)',
+    Communities: 'your own communities + Create, opened in place under Profile > Your connections; public discovery is Discover -> Communities (screen-reduction audit B8, 2026-10-09)',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).
   presentations: { Notices: 'Activity', FriendDiscovery: 'Discover -> People -> Friends' },
-  trimmed: { Communities: 'your own communities + Create; public discovery is Discover -> Communities' },
+  trimmed: {},
   borderlineKeep: ['Momentum'],
 };
