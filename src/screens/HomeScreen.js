@@ -2705,7 +2705,7 @@ export default function HomeScreen({ navigation }) {
         {dashboard?.weeklyRecap && (dashboard.weeklyRecap.gatheringsAttended > 0 || dashboard.weeklyRecap.newFriends > 0) && (
           <TouchableOpacity
             style={styles.recapCard}
-            onPress={() => navigation.navigate('Momentum')}
+            onPress={() => navigation.navigate('Momentum', { source: 'home_recap' })}
             accessibilityLabel={t('ui.home.weekRecapA11y', { recap: formatWeeklyRecap(dashboard.weeklyRecap) })}
             accessibilityRole="button"
           >

@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
+import { usePostHog } from 'posthog-react-native';
 import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity } from 'react-native';
@@ -55,7 +56,12 @@ function formatMemberSince(iso, language) {
   return translate(language, 'ui.momentum.monthYear', { month: vocabValue(language, 'date.months')[d.getMonth()], year: d.getFullYear() });
 }
 
-export default function MomentumScreen({ navigation }) {
+export default function MomentumScreen({ navigation, route }) {
+  // Audit B11 (owner, 2026-10-09): Momentum stays until usage says otherwise, so it reports, without any personal detail,
+  // that it was opened (and from where) and whether its one action was used. Nothing else about the person is sent.
+  const posthog = usePostHog();
+  const source = route?.params?.source ?? 'other';
+  useEffect(() => { posthog?.capture('momentum_viewed', { source }); }, [route?.params]);
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -284,7 +290,7 @@ export default function MomentumScreen({ navigation }) {
 
         <TouchableOpacity
           style={styles.ctaButton}
-          onPress={() => navigateKeepingTrail(navigation, 'Discover', gatheringsTabParams())}
+          onPress={() => { posthog?.capture('momentum_cta_tapped', { source }); navigateKeepingTrail(navigation, 'Discover', gatheringsTabParams()); }}
           activeOpacity={0.85}
           accessibilityLabel={momentum?.currentStreak > 0 ? t('ui.momentum.keepYourStreakGoingA11y') : t('ui.momentum.findSomethingToDoThisA11y')}
           accessibilityRole="button"

@@ -1,6 +1,6 @@
 # Screen-Reduction Audit (CLAUDE.md item 45), 2026-10-08
 
-**Status (2026-10-09):** B4, B1, B2, B6, B10, B5, B7, B8 built (see CLAUDE.md). B7 partial by design: the community partnership request and the Create-tab target choice still use RequestBusinessPartner. Open, need the owner: B3, B9, B11.
+**Status (2026-10-09):** B4, B1, B2, B6, B10, B5, B7, B8 built (see CLAUDE.md). B7 partial by design: the community partnership request and the Create-tab target choice still use RequestBusinessPartner. B3, B9 built 2026-10-09; B11 investigated 2026-10-09 (findings under B11).
 
 Audit only. No code, route or test was changed. Every finding below comes from reading the navigators,
 `src/constants/screenRegistry.js`, `src/navigation/notificationDestinations.js`, and the screen files themselves
@@ -149,6 +149,12 @@ Confidence: **H** = read the code path end to end; **M** = read entry points and
 - **GroupPlan vs GroupOccasionPlan:** two group-voting screens over different tables. Same job for the person? Needs a product look; the data stays separate.
 - **Momentum:** already borderline (Rule 14); revisit with usage data, possibly a Profile section (Profile's "Your activity" is LOCKED as its own section).
 - **Five chat screens** (Chat, GatheringChat, CommunityChat, PlanChat, BusinessConversation): each is a different conversation, so KEEP. Worth checking that they share one component, but that is code reuse, not screen count.
+
+**B11 findings (2026-10-09, investigation only, no screen changed):**
+- **DateProposal vs PlanDetail for a match:** resolved by B2. Chat's "Our plan" entry is gone; "Plan together" (DateProposal) is the one plan entry in a match chat.
+- **GroupPlan vs GroupOccasionPlan: different jobs, KEEP both, no change.** GroupPlan (`group_plan_proposals`, `services/groupPlans.js`) = connected people who each already asked businesses for the same kind of thing join into ONE jointly-owned business request: consent per person, a reconciled per-person budget, per-person dietary, confirm one offer with the group, leave. Entry: always a business request (BusinessRequestDetail, Plans, Home, Activity, the group-plan push). GroupOccasionPlan (`occasion_group_plans`, `services/occasionGroupPlans.js`) = organizing a celebration for an occasion: invite members and guest links, optional surprise for one person + reveal, vote on what to do, vote on dates, optionally vote on real businesses; the decision then becomes ONE ordinary business request owned by the organizer (BusinessRequestDetail), never a GroupPlan. Entry: Celebrate, Occasions, PlanDetail, the occasion push. Data, actions and outputs differ; the entry points never overlap, and no object can be opened in both screens, so the person never sees two destinations for one thing. Folding them would put a voting/surprise/guest workflow on a booking-consent screen (or the reverse). Revisit only if a future change lets one object appear in both.
+- **Momentum: KEPT, usage now measured.** It reports `momentum_viewed` (with `source`: profile / home_recap / push / other) and `momentum_cta_tapped` to analytics, no personal detail. Decide fold vs keep once there is real usage; prod has no users yet.
+- **Five chat screens:** KEEP (each is a different conversation); code reuse not reviewed here.
 
 ### B12. KEEPs worth stating
 - Tabs (Home, Discover, Create, Activity, Profile), Plans, Messages, Chat, ViewProfile, GatheringDetail, CommunityDetail, BusinessProfile,

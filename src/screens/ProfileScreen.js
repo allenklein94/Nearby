@@ -856,7 +856,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
             route/screen underneath, now covering both). */}
         <TouchableOpacity
           style={styles.timelineLink}
-          onPress={() => navigation.navigate('Momentum')}
+          onPress={() => navigation.navigate('Momentum', { source: 'profile' })}
           activeOpacity={0.85}
           accessibilityLabel={t('ui.profile.viewYourActivityStatsAndA11y')}
           accessibilityRole="button"
