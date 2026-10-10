@@ -29,8 +29,10 @@ test('the offer card assembly sits inside its motion tier and is arrival-driven 
 test('the server screens media before a customer sees it and refuses a video without frames', () => {
   const fn = read('supabase/functions/screen-business-content/index.ts');
   expect(fn).toMatch(/screenOfferMedia\(admin, partnerId, mediaPath/);
-  expect(fn).toMatch(/A video needs preview images/);
-  expect(fn).toMatch(/MAX_OFFER_VIDEO_BYTES/);
+  // the rules themselves live in the shared, Jest-tested step (videoDurationCheck.test.js runs it)
+  const shared = read('supabase/functions/_shared/offerMediaScreening.js');
+  expect(shared).toMatch(/A video needs preview images/);
+  expect(shared).toMatch(/MAX_OFFER_VIDEO_BYTES/);
   expect(fn).toMatch(/if \(m\.service\) return (screeningUnavailable\(\)|UNAVAILABLE)/);
   expect(fn).toMatch(/\(!mediaPath \|\| creativeRow\) && !redemptionInstructions/); // owner-typed instructions are never fast-pathed
   const sql = read('supabase/migrations/20270134_rich_offer_media_redemption.sql');

@@ -6,6 +6,7 @@
 // The draft claim is only made by callers whose form really stays populated on failure (state is cleared on success only).
 // Wording is ui.shared.errors (one sentence pair per `what` phrase); a phrase with no entry keeps the English frame.
 import { tr } from '../i18n/translate';
+import { videoProblemText, SERVER_VIDEO_MESSAGES } from './videoProblem';
 
 const whatSlug = (what) => String(what).replace(/\W+/g, '_');
 function whatLine(what, form) {
@@ -15,7 +16,8 @@ function whatLine(what, form) {
 }
 
 export function serviceError(response, result, fallback) {
-  const e = new Error(result?.error || fallback);
+  // a refused video (length / format, checked on the server) reads in the person's language
+  const e = new Error(SERVER_VIDEO_MESSAGES[result?.code] ? videoProblemText(result.code) : (result?.error || fallback));
   e.status = response?.status ?? null;
   e.code = result?.code ?? null;
   // Item 86: a refused contradictory setting carries the server's exact lines, shown inline (utils/settingConflicts.js).

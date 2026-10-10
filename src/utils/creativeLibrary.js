@@ -9,6 +9,7 @@
 import { tr } from '../i18n/translate';
 import { joinAnd } from '../i18n/list';
 import { CATEGORY_PHRASES } from './offerSubmission';
+import { videoProblemText } from './videoProblem';
 
 const L = (key, vars) => tr(`ui.bizHelp.library.${key}`, vars);
 
@@ -34,7 +35,7 @@ export function canRetry(item, now = Date.now()) {
 // The reason shown under "Needs changes": the server's own plain message, else the fixed policy categories (never the
 // classifier's free text), else a generic line.
 export function needsChangesReason(item) {
-  if (item?.problem) return item.problem;
+  if (item?.problem) return videoProblemText(item.problem);
   const phrases = (item?.matched_categories ?? []).filter((c) => CATEGORY_PHRASES[c]).map((c) => tr(`ui.bizHelp.submission.category.${c}`));
   if (phrases.length > 0) return L('involves', { list: joinAnd(phrases) });
   return L('didntPass');

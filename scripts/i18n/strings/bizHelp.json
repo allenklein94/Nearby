@@ -325,7 +325,9 @@
     "logo.uploading": "Uploading…",
     "logo.helper": "A square image works best. Your logo is checked when you save.",
     "logo.notChecked": "Not shown to customers until it passes the check.",
-    "offerForm.videoNoDuration": "We couldn't tell how long this video is. Pick a different video or record it again."
+    "offerForm.videoNoDuration": "We couldn't tell how long this video is. Pick a different video or record it again.",
+    "offerForm.videoLengthUnchecked": "We couldn't check this video's length.",
+    "offerForm.videoFormatUnsupported": "This video format isn't supported. Use an MP4 or MOV video."
   },
   "es": {
     "mostAttendedStart": "Hora de inicio con más asistencia: {hour} (de {n})",
@@ -653,7 +655,9 @@
     "logo.uploading": "Subiendo…",
     "logo.helper": "Una imagen cuadrada funciona mejor. Tu logotipo se revisa al guardar.",
     "logo.notChecked": "No se muestra a los clientes hasta que pase la revisión.",
-    "offerForm.videoNoDuration": "No pudimos saber cuánto dura este video. Elige otro video o grábalo de nuevo."
+    "offerForm.videoNoDuration": "No pudimos saber cuánto dura este video. Elige otro video o grábalo de nuevo.",
+    "offerForm.videoLengthUnchecked": "No pudimos comprobar la duración de este video.",
+    "offerForm.videoFormatUnsupported": "Este formato de video no es compatible. Usa un video MP4 o MOV."
   },
   "de": {
     "mostAttendedStart": "Bestbesuchte Startzeit: {hour} (aus {n})",
@@ -981,7 +985,9 @@
     "logo.uploading": "Wird hochgeladen…",
     "logo.helper": "Ein quadratisches Bild eignet sich am besten. Dein Logo wird beim Speichern geprüft.",
     "logo.notChecked": "Wird Kunden erst nach bestandener Prüfung gezeigt.",
-    "offerForm.videoNoDuration": "Wir konnten die Länge dieses Videos nicht erkennen. Wähle ein anderes Video oder nimm es neu auf."
+    "offerForm.videoNoDuration": "Wir konnten die Länge dieses Videos nicht erkennen. Wähle ein anderes Video oder nimm es neu auf.",
+    "offerForm.videoLengthUnchecked": "Wir konnten die Länge dieses Videos nicht prüfen.",
+    "offerForm.videoFormatUnsupported": "Dieses Videoformat wird nicht unterstützt. Verwende ein MP4- oder MOV-Video."
   },
   "fr": {
     "mostAttendedStart": "Heure de début la plus fréquentée : {hour} (sur {n})",
@@ -1309,7 +1315,9 @@
     "logo.uploading": "Importation…",
     "logo.helper": "Une image carrée convient le mieux. Votre logo est vérifié à l'enregistrement.",
     "logo.notChecked": "N'est pas montré aux clients avant d'avoir passé la vérification.",
-    "offerForm.videoNoDuration": "Nous n'avons pas pu déterminer la durée de cette vidéo. Choisissez une autre vidéo ou enregistrez-la à nouveau."
+    "offerForm.videoNoDuration": "Nous n'avons pas pu déterminer la durée de cette vidéo. Choisissez une autre vidéo ou enregistrez-la à nouveau.",
+    "offerForm.videoLengthUnchecked": "Nous n'avons pas pu vérifier la durée de cette vidéo.",
+    "offerForm.videoFormatUnsupported": "Ce format vidéo n'est pas pris en charge. Utilisez une vidéo MP4 ou MOV."
   },
   "pt": {
     "mostAttendedStart": "Horário de início com mais público: {hour} (de {n})",
@@ -1637,7 +1645,9 @@
     "logo.uploading": "Enviando…",
     "logo.helper": "Uma imagem quadrada funciona melhor. Seu logotipo é verificado ao salvar.",
     "logo.notChecked": "Não aparece para clientes até passar na verificação.",
-    "offerForm.videoNoDuration": "Não conseguimos saber a duração deste vídeo. Escolha outro vídeo ou grave de novo."
+    "offerForm.videoNoDuration": "Não conseguimos saber a duração deste vídeo. Escolha outro vídeo ou grave de novo.",
+    "offerForm.videoLengthUnchecked": "Não conseguimos verificar a duração deste vídeo.",
+    "offerForm.videoFormatUnsupported": "Este formato de vídeo não é compatível. Use um vídeo MP4 ou MOV."
   },
   "ht": {
     "mostAttendedStart": "Lè kòmansman ki gen plis moun: {hour} (sou {n})",
@@ -1948,7 +1958,9 @@
     "logo.uploading": "N ap telechaje…",
     "logo.helper": "Yon imaj kare mache pi byen. Nou verifye logo ou lè ou anrejistre.",
     "logo.notChecked": "Kliyan pa wè l jiskaske li pase verifikasyon an.",
-    "offerForm.videoNoDuration": "Nou pa t ka konnen konbyen tan videyo sa a dire. Chwazi yon lòt videyo oswa anrejistre l ankò."
+    "offerForm.videoNoDuration": "Nou pa t ka konnen konbyen tan videyo sa a dire. Chwazi yon lòt videyo oswa anrejistre l ankò.",
+    "offerForm.videoLengthUnchecked": "Nou pa t ka verifye longè videyo sa a.",
+    "offerForm.videoFormatUnsupported": "Fòma videyo sa a pa sipòte. Sèvi ak yon videyo MP4 oswa MOV."
   },
   "zh": {
     "mostAttendedStart": "到场人数最多的开始时间：{hour}（来自 {n}）",
@@ -2259,7 +2271,9 @@
     "logo.uploading": "正在上传…",
     "logo.helper": "方形图片效果最佳。保存时会检查你的标志。",
     "logo.notChecked": "通过检查之前不会向顾客显示。",
-    "offerForm.videoNoDuration": "无法确定该视频的时长。请选择其他视频或重新录制。"
+    "offerForm.videoNoDuration": "无法确定该视频的时长。请选择其他视频或重新录制。",
+    "offerForm.videoLengthUnchecked": "我们无法检查此视频的时长。",
+    "offerForm.videoFormatUnsupported": "不支持此视频格式。请使用 MP4 或 MOV 视频。"
   },
   "vi": {
     "mostAttendedStart": "Giờ bắt đầu đông khách nhất: {hour} (từ {n})",
@@ -2570,7 +2584,9 @@
     "logo.uploading": "Đang tải lên…",
     "logo.helper": "Ảnh vuông hiển thị đẹp nhất. Logo được kiểm tra khi bạn lưu.",
     "logo.notChecked": "Không hiển thị cho khách cho đến khi được duyệt.",
-    "offerForm.videoNoDuration": "Chúng tôi không xác định được độ dài của video này. Hãy chọn video khác hoặc quay lại."
+    "offerForm.videoNoDuration": "Chúng tôi không xác định được độ dài của video này. Hãy chọn video khác hoặc quay lại.",
+    "offerForm.videoLengthUnchecked": "Chúng tôi không thể kiểm tra độ dài của video này.",
+    "offerForm.videoFormatUnsupported": "Định dạng video này không được hỗ trợ. Hãy dùng video MP4 hoặc MOV."
   },
   "tl": {
     "mostAttendedStart": "Oras ng simula na pinakamaraming dumalo: {hour} (mula sa {n})",
@@ -2881,7 +2897,9 @@
     "logo.uploading": "Ina-upload…",
     "logo.helper": "Pinakamainam ang parisukat na larawan. Sinusuri ang logo mo kapag nag-save ka.",
     "logo.notChecked": "Hindi ipinapakita sa mga customer hangga't hindi pumapasa sa pagsusuri.",
-    "offerForm.videoNoDuration": "Hindi namin malaman kung gaano kahaba ang video na ito. Pumili ng ibang video o i-record ito ulit."
+    "offerForm.videoNoDuration": "Hindi namin malaman kung gaano kahaba ang video na ito. Pumili ng ibang video o i-record ito ulit.",
+    "offerForm.videoLengthUnchecked": "Hindi namin nasuri ang haba ng video na ito.",
+    "offerForm.videoFormatUnsupported": "Hindi suportado ang format ng video na ito. Gumamit ng MP4 o MOV na video."
   },
   "ru": {
     "mostAttendedStart": "Самое посещаемое время начала: {hour} (по {n})",
@@ -3258,7 +3276,9 @@
     "logo.uploading": "Загрузка…",
     "logo.helper": "Лучше всего подходит квадратное изображение. Логотип проверяется при сохранении.",
     "logo.notChecked": "Клиенты не увидят его, пока он не пройдёт проверку.",
-    "offerForm.videoNoDuration": "Не удалось определить длительность этого видео. Выберите другое видео или запишите его заново."
+    "offerForm.videoNoDuration": "Не удалось определить длительность этого видео. Выберите другое видео или запишите его заново.",
+    "offerForm.videoLengthUnchecked": "Нам не удалось проверить длительность этого видео.",
+    "offerForm.videoFormatUnsupported": "Этот формат видео не поддерживается. Используйте видео MP4 или MOV."
   },
   "ko": {
     "mostAttendedStart": "가장 많이 참석한 시작 시간: {hour} ({n} 기준)",
@@ -3569,6 +3589,8 @@
     "logo.uploading": "업로드 중…",
     "logo.helper": "정사각형 이미지가 가장 좋습니다. 저장할 때 로고를 검사합니다.",
     "logo.notChecked": "검사를 통과하기 전에는 고객에게 표시되지 않습니다.",
-    "offerForm.videoNoDuration": "이 동영상의 길이를 확인할 수 없습니다. 다른 동영상을 선택하거나 다시 녹화하세요."
+    "offerForm.videoNoDuration": "이 동영상의 길이를 확인할 수 없습니다. 다른 동영상을 선택하거나 다시 녹화하세요.",
+    "offerForm.videoLengthUnchecked": "이 동영상의 길이를 확인할 수 없었어요.",
+    "offerForm.videoFormatUnsupported": "이 동영상 형식은 지원되지 않아요. MP4 또는 MOV 동영상을 사용해 주세요."
   }
 }

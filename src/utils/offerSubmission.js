@@ -2,6 +2,7 @@
 import { replySentConfirmation } from './actionConfirmations';
 import { tr } from '../i18n/translate';
 import { joinAnd } from '../i18n/list';
+import { videoProblemText } from './videoProblem';
 
 const U = (key, vars) => tr(`ui.bizHelp.submission.${key}`, vars);
 // States are the real stored ones (`business_offer_submissions.status`, with a held row's human decision already
@@ -28,7 +29,7 @@ export const CATEGORY_PHRASES = {
 
 export function needsChangesExplanation(sub) {
   // sub.reason is the server's own validation message, shown as written.
-  if (sub?.reason) return U('reasonThenEdit', { reason: sub.reason });
+  if (sub?.reason) return U('reasonThenEdit', { reason: videoProblemText(sub.reason) });
   const phrases = (sub?.matched_categories ?? []).filter((c) => CATEGORY_PHRASES[c]).map((c) => U(`category.${c}`));
   if (phrases.length > 0) return U('involves', { list: joinAnd(phrases) });
   return U('didntPass');

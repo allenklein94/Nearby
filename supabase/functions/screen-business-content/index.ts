@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { loadCategoryVocab } from '../_shared/categoryTags.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { classifyContent, RISK_CATEGORIES } from '../_shared/contentClassifier.ts';
+import { screenOfferMedia as screenOfferMediaShared, OFFER_MEDIA_BUCKET } from '../_shared/offerMediaScreening.js';
 
 // Aug 27 2026 plan (CLAUDE.md), Decision 6 -- the real Business Trust &
 // Safety content-screening layer. This is the one real classify-then-
@@ -175,43 +176,37 @@ const SUPPORTED_IMAGE_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'im
 
 
 // Rich offers, Phase 2: offer media reaches a CONSUMER, so it is screened before it can. An image offer classifies the image
-// itself; a video offer classifies the (up to 3) preview frames the client sampled from it, and the first frame becomes its
-// poster. Limits, disclosed: the audio track and moments between sampled frames are not reviewed (playback is muted by
-// default). A screening-service failure is a 503 (fail closed), never a pass.
-const OFFER_MEDIA_BUCKET = 'business-offer-media';
-const MAX_OFFER_VIDEO_BYTES = 25 * 1024 * 1024;
-
-async function screenOfferMedia(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
-  const folder = `${partnerId}/`;
-  const own = (p: string) => typeof p === 'string' && p.startsWith(folder) && !p.includes('..') && p.length < 300;
-  if (!own(mediaPath)) return { status: 400, error: 'That photo or video is not available to send.' };
-  if (mediaType === 'video') {
-    if (framePaths.length < 1 || framePaths.length > 3 || !framePaths.every(own)) {
-      return { status: 400, error: 'A video needs preview images. Please attach it again.' };
-    }
-    const name = mediaPath.slice(folder.length);
-    const { data: listed } = await admin.storage.from(OFFER_MEDIA_BUCKET).list(partnerId, { search: name, limit: 5 });
-    const size = listed?.find((f: any) => f.name === name)?.metadata?.size;
-    if (!Number.isFinite(size)) return { status: 400, error: 'We could not read that video. Please attach it again.' };
-    if (size > MAX_OFFER_VIDEO_BYTES) return { status: 400, error: 'That video is too large (max 25MB). Try a shorter clip.' };
-  }
-  const toCheck = mediaType === 'video' ? framePaths : [mediaPath];
-  let tier = 'low';
-  const categories: string[] = [];
-  const notes: string[] = [];
-  for (const path of toCheck) {
-    const { data: signed } = await admin.storage.from(OFFER_MEDIA_BUCKET).createSignedUrl(path, 300);
-    if (!signed?.signedUrl) return { status: 400, error: 'We could not read that photo or video. Please attach it again.' };
-    const r: any = await classifyImage(signed.signedUrl);
-    if ('error' in r) {
-      if (r.service) return { status: 503, service: true };
-      return { status: 400, error: "That photo or video preview couldn't be read. Try a different one." };
-    }
-    tier = worseTier(tier, r.riskTier);
-    for (const c of r.matchedCategories) if (!categories.includes(c)) categories.push(c);
-    notes.push(r.reasoning);
-  }
-  return { tier, categories, reasoning: `Media (${mediaType}${mediaType === 'video' ? `, ${toCheck.length} sampled frame(s)` : ''}): ${notes.join(' ')}`, posterPath: mediaType === 'video' ? framePaths[0] : null };
+// itself; a video offer first has its LENGTH checked from the file on the server (MP4 / MOV only, <= 30 s, timing must
+// agree with itself; _shared/videoDuration.js), then classifies the (up to 3) preview frames the client sampled from it,
+// and the first frame becomes its poster. Limits, disclosed: the audio track and moments between sampled frames are not
+// reviewed (playback is muted by default). A storage or screening-service failure is a 503 (fail closed), never a pass.
+// The rules live in _shared/offerMediaScreening.js (pure, Jest-tested); this only supplies storage and the classifier.
+function screenOfferMedia(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
+  return screenOfferMediaShared({
+    storage: {
+      list: async (pid: string, name: string) => {
+        const { data, error } = await admin.storage.from(OFFER_MEDIA_BUCKET).list(pid, { search: name, limit: 5 });
+        if (error) throw error;
+        const size = data?.find((f: any) => f.name === name)?.metadata?.size;
+        return Number.isFinite(size) ? { size } : null;
+      },
+      signedUrl: async (path: string) => {
+        const { data } = await admin.storage.from(OFFER_MEDIA_BUCKET).createSignedUrl(path, 300);
+        return data?.signedUrl ?? null;
+      },
+    },
+    fetchFn: fetch,
+    classifyImage,
+    worseTier,
+    // service role only: the database refuses a video on a ready creative or an offer without this record
+    recordVideoCheck: async (pid: string, path: string, durationMs: number) => {
+      const { error } = await admin.from('business_video_checks')
+        .upsert({ partner_id: pid, media_path: path, duration_ms: durationMs, checked_at: new Date().toISOString() }, { onConflict: 'partner_id,media_path' });
+      if (error) console.error('screen-business-content: could not record the video check', error);
+      return !error;
+    },
+    log: (msg: string, detail?: unknown) => console.log(`screen-business-content: ${msg}`, detail ?? ''),
+  }, partnerId, mediaPath, mediaType, framePaths);
 }
 
 async function classifyImage(imageUrl: string) {
@@ -1097,7 +1092,7 @@ Body: ${updateBody || '(none)'}`;
       } else if (mediaPath) {
         const m: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType!, framePaths);
         if (m.service) return UNAVAILABLE;
-        if (m.error) return { status: m.status, body: { error: m.error } };
+        if (m.error) return { status: m.status, body: { error: m.error, ...(m.code ? { code: m.code } : {}) } };
         result = {
           riskTier: worseTier(result.riskTier, m.tier),
           matchedCategories: Array.from(new Set([...result.matchedCategories, ...m.categories])),

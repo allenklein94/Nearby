@@ -3,7 +3,9 @@
 **Status:** Not yet executed
 **Scope:** Native video upload, background screening, approval, and offer-creative selection
 **Release gate:** Physical-device verification required
-**Built in:** commit `f0fa88d1` (migration `20270288`, `screen-business-content` v40); missing/invalid-duration guard added after it
+**Built in:** commit `f0fa88d1` (migration `20270288`, `screen-business-content` v40); phone-side missing/invalid-duration guard
+after it; server-side MP4/MOV length check: migration `20270289` + `screen-business-content` v41 (2026-10-10, decision record
+`PRODUCT_AUDIT/VIDEO_LENGTH_SERVER_CHECK_DECISION_2026-10-10.md`)
 
 Do not mark video screening production-ready until the native-device tests AND the real-user edge-function end-to-end
 checks have both succeeded. A successful upload alone is not a successful screening test.
@@ -16,9 +18,20 @@ checks have both succeeded. A successful upload alone is not a successful screen
    video is. Pick a different video or record it again." (11 languages; the 10 non-English versions are machine-written).
    Covered by Jest tests (`src/utils/creativeLibrary.test.js`, mutation-checked). Not yet seen on a device: check that real
    picks from iOS and Android report a duration, so valid videos are not refused.
-2. **Misleading duration metadata: STILL OPEN.** A video could report under 30 s while the file holds a longer clip. The
-   server cannot measure length (it sees the file size, capped at 25 MB, and the sampled frames); no server-side or
-   trusted-processing duration check exists. Expect FAIL on that row until the owner decides how to enforce it.
+2. **Misleading duration metadata: ADDRESSED on the server (Option A), pending device + real-user verification.** Before any
+   content screening, `screen-business-content` reads the uploaded file's own timing boxes (MP4 / MOV only;
+   `supabase/functions/_shared/videoDuration.js`) and refuses: over 30 s ("Videos can be up to 30 seconds. Trim it on your
+   phone and try again."), missing / malformed / contradictory timing, more than one video stream, fragmented MP4, or a
+   parser resource limit ("We couldn't check this video's length."), and any other format ("This video format isn't
+   supported. Use an MP4 or MOV video."). A refused video is never sent to the classifier. The database refuses a video on
+   a ready library item or on an offer unless the server recorded a passing length check (`business_video_checks`), and on
+   an offer also unless it passed content screening, so a direct API call cannot bypass it. Verified: 68 Jest tests on real
+   encoded 29.9 / 30.0 / 30.1 s MP4 + MOV files and patched / synthetic files; live rolled-back SQL 25 checks ALL OK.
+   **Remaining limits:** the length comes from the container's metadata cross-checked against itself (movie header, every
+   track header, the video's media header and its per-sample timing table, edit lists); the server does not decode the
+   picture stream, so a file whose every timing field consistently lies is not caught (no decoder runs on the server).
+   Unsupported until explicitly added: WebM, AVI, MKV, fragmented MP4, legacy QuickTime files with no `ftyp` box, edits
+   that play at another speed.
 3. **Duplicate uploads: still possible.** "Try again" on an item whose check could not finish re-checks the same library
    row (no duplicate). Adding the same video again with "+ Add" creates a second item, because every upload is a new stored
    file. Record which path was tested.
@@ -33,8 +46,8 @@ the system trim screen appears, record it (the rule is that Nearby never trims).
 - [ ] Build and install the actual native iOS or Android app (not Jest, not a web preview).
 - [ ] Confirm the native video-screening dependency (`expo-video-thumbnails`) is installed and loads.
 - [ ] Use an authenticated test account for an approved business.
-- [ ] Confirm migration `20270288` and the `screen-business-content` edge function (v40 or later) are deployed to the
-      intended environment.
+- [ ] Confirm migrations `20270288` + `20270289` and the `screen-business-content` edge function (v41 or later) are
+      deployed to the intended environment.
 - [ ] Confirm the screening provider has working credentials and enough Anthropic credit.
 - [ ] Prepare known-good, known-rejected and ambiguous video samples.
 - [ ] Prepare videos shorter than, exactly at, and longer than 30 seconds.
@@ -76,13 +89,19 @@ the system trim screen appears, record it (the rule is that Nearby never trims).
 | Video exactly 30 seconds | Accepted for screening, if all other checks pass | |
 | Video longer than 30 seconds | Refused; screening and approval must not proceed | |
 | Duration metadata missing or invalid | Refused on the phone before upload with "We couldn't tell how long this video is. Pick a different video or record it again." (section 0, item 1) | |
-| Misleading or inconsistent duration metadata | Server or trusted processing path enforces the limit (STILL OPEN, section 0, item 2: expect FAIL) | |
+| Misleading or inconsistent duration metadata (e.g. a long clip whose header says 10 s) | Refused by the server before screening: "We couldn't check this video's length." (section 0, item 2) | |
+| Real iPhone MOV (HEVC, with its metadata tracks) under 30 s | Accepted by the server's length check (confirms the parser reads real iPhone files) | |
+| Real Android MP4 under 30 s | Accepted by the server's length check | |
+| Slow-motion or edited (trimmed in Photos) iPhone clip under 30 s | Record what happens: an edit that plays at another speed is refused by design | |
+| Unsupported format (e.g. WebM) | Refused: "This video format isn't supported. Use an MP4 or MOV video." | |
+| A file with two video streams | Refused: "We couldn't check this video's length." | |
 
 For videos longer than 30 seconds, verify the exact English message:
 
 > Videos can be up to 30 seconds. Trim it on your phone and try again.
 
-- [ ] Both messages (over 30 s, unknown length) are translated correctly in each supported language (10 non-English
+- [ ] All four messages (over 30 s, unknown length on the phone, length not checkable on the server, unsupported format)
+      are translated correctly in each supported language (10 non-English
       versions are machine-written).
 - [ ] Real videos picked on this device report a duration, so a valid video is never refused as "unknown length".
 - [ ] The app does not trim, re-encode into a shorter clip, or silently keep 30 seconds.
@@ -152,7 +171,9 @@ FAILED, by cause); never count it as a successful screening test.
 - [ ] Signed URLs and storage policies enforce the intended access.
 
 Database-level parts of this section are already covered by `scripts/live-verify/creative-library-logo-upload.sql`
-(29 checks, live ALL OK). The device test confirms them through the real app.
+(29 checks, live ALL OK) and `scripts/live-verify/server-video-length-gate.sql` (25 checks, live ALL OK: an unchecked or
+unscreened video is refused on a ready library item, on an offer, and through a direct `submit_business_offer` call by the
+owner; an admin who also owns a business gets no bypass). The device test confirms them through the real app.
 
 ## 7. Customer and business experience
 
