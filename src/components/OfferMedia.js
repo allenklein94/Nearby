@@ -5,6 +5,31 @@ import { Video, ResizeMode } from 'expo-av';
 import { getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { mediaFitMode } from '../utils/mediaFit';
+
+// Item 10: the business's own image, formatted to the frame. Shaped like the frame = fills it; any other shape (a flyer, a
+// square graphic, a phone video's poster) = shown whole over a blurred copy of itself, so nothing the business made is cut.
+function FittedImage({ uri, style, absolute = false }) {
+  const [frame, setFrame] = useState(null);
+  const [size, setSize] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    setSize(null);
+    if (uri) Image.getSize(uri, (w, h) => { if (!cancelled) setSize({ w, h }); }, () => {});
+    return () => { cancelled = true; };
+  }, [uri]);
+  const mode = mediaFitMode(size?.w, size?.h, frame?.w, frame?.h);
+  const fill = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' };
+  return (
+    <View
+      style={[absolute ? fill : style, { overflow: 'hidden' }]}
+      onLayout={(e) => setFrame({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+    >
+      {mode === 'contain' ? <Image source={{ uri }} style={fill} resizeMode="cover" blurRadius={18} accessible={false} /> : null}
+      <Image source={{ uri }} style={fill} resizeMode={mode} />
+    </View>
+  );
+}
 
 // A business's photo or video on an offer, shown INSIDE the offer card (never its own card).
 // Video plays only when it has a poster: a poster exists only for videos whose sampled frames Nearby screened (Phase 2), so an
@@ -39,7 +64,7 @@ export default function OfferMedia({ path, type, posterPath, localUri = null }) 
         </View>
       );
     }
-    return <Image source={{ uri: localUri }} style={frame} resizeMode="cover" />;
+    return <FittedImage uri={localUri} style={frame} />;
   }
 
   if (type === 'video') {
@@ -69,7 +94,7 @@ export default function OfferMedia({ path, type, posterPath, localUri = null }) 
         accessibilityRole="button"
         accessibilityLabel={t('ui.requestDetail.playTheOfferVideoA11y')}
       >
-        {poster ? <Image source={{ uri: poster }} style={{ ...StyleSheetAbsolute }} resizeMode="cover" /> : null}
+        {poster ? <FittedImage uri={poster} absolute /> : null}
         <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' }}>
           <Text style={{ color: '#fff', fontSize: 22 }}>▶</Text>
         </View>
@@ -78,7 +103,6 @@ export default function OfferMedia({ path, type, posterPath, localUri = null }) 
   }
 
   if (!poster) return null;
-  return <Image source={{ uri: poster }} style={frame} resizeMode="cover" />;
+  return <FittedImage uri={poster} style={frame} />;
 }
 
-const StyleSheetAbsolute = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' };
