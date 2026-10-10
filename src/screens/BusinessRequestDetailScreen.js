@@ -54,6 +54,9 @@ import { businessReplyStatus, acceptedReplyTitle, businessReplyKind, heardLine, 
 import { fetchFirstReplyState } from '../services/offerArrivalSource';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
+import BusinessLogoMark from '../components/BusinessLogoMark';
+import { getScreenedLogos } from '../services/businessLogos';
+import { logoFor } from '../utils/businessLogo';
 
 // Wording lives in ui.requestDetail.status.<status> / offerStatus.<status> / offerType.<type>; these list the known keys.
 const STATUS_COPY = {
@@ -198,6 +201,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // with a real offer showing, so the consumer isn't blind to whether a
   // business actually follows through before deciding whether to accept.
   const [partnerStats, setPartnerStats] = useState({});
+  // partnerId -> screened logo URL (only logos that passed screening; utils/businessLogo.js). Missing = no mark.
+  const [partnerLogos, setPartnerLogos] = useState({});
   // "Nearby V3/V4" plan, Phase D (see CLAUDE.md) -- group intent -> a real
   // jointly-consented request. Three real, independent signals sourced
   // from this exact request, none fabricated: real connected people with
@@ -386,6 +391,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
       const partnerIds = [...new Set(result.offers.filter((o) => o.status === 'offered' || o.status === 'accepted').map((o) => o.partner_id))];
       if (partnerIds.length > 0) {
+        getScreenedLogos(partnerIds).then(setPartnerLogos);
         Promise.all(
           partnerIds.map(async (id) => [id, await Promise.all([getPartnerOfferReputation(id), getPartnerAvgResponseTime(id)])])
         )
@@ -1354,7 +1360,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   "Heard your request" -> what they said -> order -> price -> when, then the button settles in as the
                   final slot (always visible and tappable) while the outline glows once. */}
               <AssemblyStep step="business">
-              <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
+              {/* The business's screened logo beside its name, nothing else of its brand: the card stays the same for every
+                  business so offers can be compared fairly. No logo = the name alone, exactly as before. */}
+              <View style={styles.offerPartnerRow}>
+                <BusinessLogoMark uri={logoFor(partnerLogos, o.partner_id)} />
+                <Text style={[styles.offerPartnerName, styles.offerPartnerNameFlex]}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
+              </View>
               {/* Item 92 ("Businesses should be able to respond specifically to
                   the occasion", CLAUDE.md): a real, named offer title -- "Special
                   Birthday Offer" -- rendered as its own headline, distinct from
@@ -1927,6 +1938,8 @@ const getStyles = (colors) => StyleSheet.create({
   // the offer this screen was opened on (destination contract): selected state, so coral per the colour rule
   offerCardFocused: { borderColor: colors.primary, borderWidth: 2 },
   offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
+  offerPartnerRow: { flexDirection: 'row', alignItems: 'center' },
+  offerPartnerNameFlex: { flexShrink: 1 },
   // Item 92 ("Businesses should be able to respond specifically to the
   // occasion", CLAUDE.md): a real, named offer reads as its own headline
   // -- "Special Birthday Offer" -- distinct from the plain business-name

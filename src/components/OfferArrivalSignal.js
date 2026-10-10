@@ -14,6 +14,9 @@ import { createOfferArrivals, arrivalDestination, emitViewedArrival } from '../s
 import { fetchMyLiveReplies, fetchFirstReplyState, subscribeToOfferChanges } from '../services/offerArrivalSource';
 import { arrivalSignalTitle, arrivalSignalA11y } from '../utils/offerCopy';
 import { startOfferTravel } from '../motion/offerTravel';
+import BusinessLogoMark from './BusinessLogoMark';
+import { getScreenedLogos } from '../services/businessLogos';
+import { pillLogoPartnerId, logoFor } from '../utils/businessLogo';
 
 // Offer arrival signal, Layer 1 (owner, 2026-10-09). The rules for WHICH replies are announced live in
 // services/offerArrivals.js; this file only listens (realtime, a push received while open, app foreground/background) and
@@ -95,6 +98,17 @@ export function OfferArrivalSignal({ signal, onPress }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const sparkle = useRef(new Animated.Value(1)).current;
   const pillRef = useRef(null);
+  // The business's screened logo, only when the pill names that one business (utils/businessLogo.js). Arrives a moment
+  // after the pill; no logo = the pill exactly as before.
+  const [logo, setLogo] = useState(null);
+  const logoPartnerId = pillLogoPartnerId(shown);
+  useEffect(() => {
+    setLogo(null);
+    if (!logoPartnerId) return undefined;
+    let live = true;
+    getScreenedLogos([logoPartnerId]).then((map) => { if (live) setLogo(logoFor(map, logoPartnerId)); });
+    return () => { live = false; };
+  }, [logoPartnerId]);
   const press = () => {
     const node = pillRef.current;
     if (!node?.measureInWindow) { onPress(null); return; }
@@ -140,6 +154,7 @@ export function OfferArrivalSignal({ signal, onPress }) {
           style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.border }, shadow?.card]}
         >
           <Animated.Text style={[styles.sparkle, { opacity: sparkle }]}>✨</Animated.Text>
+          <BusinessLogoMark uri={logo} size={20} />
           <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{title}</Text>
           <Text style={[styles.chevron, { color: colors.textSecondary }]}>›</Text>
         </TouchableOpacity>

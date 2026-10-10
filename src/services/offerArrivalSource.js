@@ -7,7 +7,7 @@ export async function fetchMyLiveReplies(userId) {
   if (!userId) return [];
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('id, request_id, status, viewed_at, offer_type, offer_title, offer_price, discount_pct, included_items, brand_partners(name), business_requests!inner(requester_id, status)')
+    .select('id, request_id, partner_id, status, viewed_at, offer_type, offer_title, offer_price, discount_pct, included_items, brand_partners(name), business_requests!inner(requester_id, status)')
     .eq('status', 'offered')
     .eq('business_requests.requester_id', userId)
     .eq('business_requests.status', 'open');

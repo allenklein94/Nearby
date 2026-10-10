@@ -84,7 +84,7 @@ export function createOfferArrivals({
       if (!isAnnounceableReply(r)) continue;
       known.add(r.id);
       if (isViewingRequest(r.request_id)) { onViewedArrival(r.request_id); continue; }
-      fresh.push({ offerId: r.id, requestId: r.request_id, partnerName: r.partner_name ?? null, offer: r });
+      fresh.push({ offerId: r.id, requestId: r.request_id, partnerId: r.partner_id ?? null, partnerName: r.partner_name ?? null, offer: r });
     }
     return fresh;
   };

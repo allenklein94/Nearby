@@ -16,6 +16,9 @@ import SettingConflictNotice from '../components/SettingConflictNotice';
 import { useSettingConflicts } from '../hooks/useSettingConflicts';
 import { conflictMessages, hasPending, shownValue } from '../utils/settingConflicts';
 import OfferCustomerBody from '../components/OfferCustomerBody';
+import BusinessLogoMark from '../components/BusinessLogoMark';
+import { getScreenedLogos } from '../services/businessLogos';
+import { logoFor } from '../utils/businessLogo';
 import { offerFunnelView } from '../utils/offerFunnel';
 import { heardYourRequest, businessReplyStatus } from '../utils/offerCopy';
 import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionConfirmations';
@@ -517,6 +520,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [resendingSubmissionId, setResendingSubmissionId] = useState(null);
   const [busySubmissionId, setBusySubmissionId] = useState(null);
   const [offerPreviewing, setOfferPreviewing] = useState(false); // Item 84: the owner's "Customer preview" step
+  // The owner's own logo as the customer would see it: only once it has passed screening (utils/businessLogo.js).
+  const [previewLogo, setPreviewLogo] = useState(null);
+  useEffect(() => {
+    setPreviewLogo(null);
+    const id = offerPreviewing ? selectedPartner?.id : null;
+    if (!id) return undefined;
+    let live = true;
+    getScreenedLogos([id]).then((map) => { if (live) setPreviewLogo(logoFor(map, id)); });
+    return () => { live = false; };
+  }, [offerPreviewing, selectedPartner?.id, selectedPartner?.logo_url]);
   const offerInFlight = useMemo(() => inFlightRequestIds(offerSubmissions), [offerSubmissions]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
   // "Demand near you" card: null = not loaded yet; otherwise the privacy-floored RPC payload.
@@ -6915,7 +6928,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
                     <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
                     <View style={styles.gatheringRow}>
-                      <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
+                      <View style={styles.previewPartnerRow}>
+                        <BusinessLogoMark uri={previewLogo} />
+                        <Text style={[styles.offerTitle, styles.previewPartnerName]}>{selectedPartner?.name}</Text>
+                      </View>
                       {/* Same lines, same order as the customer's card (components/OfferAssembly.js): heard, then what this reply is. */}
                       <Text style={styles.breakdownText}>{heardYourRequest()}</Text>
                       <Text style={styles.breakdownText}>{businessReplyStatus({ ...previewOffer, offer_type: offerTypeInput, offer_title: offerTitleInput.trim() || null, discount_pct: offerTypeInput === 'discount' ? parseDiscountPct(offerDiscountInput) : null })}</Text>
@@ -8278,6 +8294,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   replyRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   sendReplyButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, justifyContent: 'center' },
   sendReplyButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  previewPartnerRow: { flexDirection: 'row', alignItems: 'center' },
+  previewPartnerName: { flexShrink: 1 },
   gatheringRow: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,

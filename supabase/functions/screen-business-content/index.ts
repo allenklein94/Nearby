@@ -418,9 +418,13 @@ What makes them different: ${differentiator || '(none)'}`;
         reasoning = `Text: ${textResult.reasoning} Logo image: ${imageResult.reasoning}`;
       }
 
+      // logoScreened: true ONLY when the image classifier really ran on this logoUrl in this call. Offer surfaces show a
+      // logo only through get_screened_business_logos, which requires this marker (an unchanged logo carried through a
+      // text-only edit is not re-classified, so its row must not count as the logo's screening).
       const contentSnapshot = {
         name, description: description || null, address, logoUrl, category,
         attributes, cuisine, differentiator: differentiator || null, subcategory, categories,
+        logoScreened: logoChanged,
       };
 
       const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
