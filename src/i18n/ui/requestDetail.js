@@ -294,6 +294,13 @@ export default {
     addToInviteA11y: "Add {name} to the invite",
     youreHelpingPlanFor: "You're helping plan {name}'s {occasion}.",
     planWord: "plan",
+    percentOff: "{pct}% OFF",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Tonight",
+      today: "Today",
+      tomorrow: "Tomorrow",
+    },
   },
   es: {
     youreBooked: "Tienes reserva",
@@ -588,6 +595,13 @@ export default {
     addToInviteA11y: "Añadir a {name} a la invitación",
     youreHelpingPlanFor: "Estás ayudando a planear: {occasion} de {name}.",
     planWord: "plan",
+    percentOff: "{pct}% DE DESCUENTO",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Esta noche",
+      today: "Hoy",
+      tomorrow: "Mañana",
+    },
   },
   de: {
     youreBooked: "Du bist gebucht",
@@ -882,6 +896,13 @@ export default {
     addToInviteA11y: "{name} zur Einladung hinzufügen",
     youreHelpingPlanFor: "Du hilfst bei der Planung: {occasion} von {name}.",
     planWord: "Plan",
+    percentOff: "{pct} % RABATT",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Heute Abend",
+      today: "Heute",
+      tomorrow: "Morgen",
+    },
   },
   fr: {
     youreBooked: "C'est réservé",
@@ -1176,6 +1197,13 @@ export default {
     addToInviteA11y: "Ajouter {name} à l'invitation",
     youreHelpingPlanFor: "Tu aides à préparer : {occasion} de {name}.",
     planWord: "plan",
+    percentOff: "-{pct} %",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Ce soir",
+      today: "Aujourd'hui",
+      tomorrow: "Demain",
+    },
   },
   pt: {
     youreBooked: "Reserva feita",
@@ -1470,6 +1498,13 @@ export default {
     addToInviteA11y: "Adicionar {name} ao convite",
     youreHelpingPlanFor: "Você está ajudando a planejar: {occasion} de {name}.",
     planWord: "plano",
+    percentOff: "{pct}% DE DESCONTO",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Hoje à noite",
+      today: "Hoje",
+      tomorrow: "Amanhã",
+    },
   },
   ht: {
     youreBooked: "Ou gen rezèvasyon",
@@ -1764,6 +1799,13 @@ export default {
     addToInviteA11y: "Ajoute {name} nan envitasyon an",
     youreHelpingPlanFor: "W ap ede planifye {occasion} {name}.",
     planWord: "plan",
+    percentOff: "{pct}% RABÈ",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Aswè a",
+      today: "Jodi a",
+      tomorrow: "Demen",
+    },
   },
   zh: {
     youreBooked: "已预订",
@@ -2058,6 +2100,13 @@ export default {
     addToInviteA11y: "将 {name} 加入邀请",
     youreHelpingPlanFor: "你正在帮忙筹划 {name} 的{occasion}。",
     planWord: "计划",
+    percentOff: "优惠 {pct}%",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "今晚",
+      today: "今天",
+      tomorrow: "明天",
+    },
   },
   vi: {
     youreBooked: "Bạn đã đặt chỗ",
@@ -2352,6 +2401,13 @@ export default {
     addToInviteA11y: "Thêm {name} vào lời mời",
     youreHelpingPlanFor: "Bạn đang giúp lên kế hoạch {occasion} của {name}.",
     planWord: "kế hoạch",
+    percentOff: "GIẢM {pct}%",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Tối nay",
+      today: "Hôm nay",
+      tomorrow: "Ngày mai",
+    },
   },
   tl: {
     youreBooked: "Naka-book ka na",
@@ -2646,6 +2702,13 @@ export default {
     addToInviteA11y: "Idagdag si {name} sa imbitasyon",
     youreHelpingPlanFor: "Tumutulong ka sa pagpaplano ng {occasion} ni {name}.",
     planWord: "plano",
+    percentOff: "{pct}% OFF",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Mamayang gabi",
+      today: "Ngayon",
+      tomorrow: "Bukas",
+    },
   },
   ru: {
     youreBooked: "Бронь подтверждена",
@@ -2940,6 +3003,13 @@ export default {
     addToInviteA11y: "Добавить {name} в приглашение",
     youreHelpingPlanFor: "Вы помогаете планировать: {occasion}, {name}.",
     planWord: "план",
+    percentOff: "СКИДКА {pct}%",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "Сегодня вечером",
+      today: "Сегодня",
+      tomorrow: "Завтра",
+    },
   },
   ko: {
     youreBooked: "예약 완료",
@@ -3234,5 +3304,12 @@ export default {
     addToInviteA11y: "초대에 {name} 추가",
     youreHelpingPlanFor: "{name}님의 {occasion} 준비를 돕고 있어요.",
     planWord: "계획",
+    percentOff: "{pct}% 할인",
+    dayWindow: "{day} · {window}",
+    whenDay: {
+      tonight: "오늘 밤",
+      today: "오늘",
+      tomorrow: "내일",
+    },
   },
 };

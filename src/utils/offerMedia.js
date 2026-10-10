@@ -105,11 +105,17 @@ export function availableWindowFromChoice(from, to) {
 
 // "Available 6-8 PM" from the stored 'HH:MM[:SS]' values; null when there is no complete window.
 export function availableWindowLabel(from, until) {
+  const range = windowRangeLabel(from, until);
+  return range ? `Available ${range}` : null;
+}
+
+// "5–9 PM" (the window alone, no "Available"), for the one-line "Tonight · 5–9 PM".
+export function windowRangeLabel(from, until) {
   if (!from || !until) return null;
   const a = formatTimeOfDay(from);
   const b = formatTimeOfDay(until);
   if (!a || !b) return null;
-  return a.slice(-2) === b.slice(-2) ? `Available ${a.slice(0, -3)}–${b}` : `Available ${a}–${b}`;
+  return a.slice(-2) === b.slice(-2) ? `${a.slice(0, -3)}–${b}` : `${a}–${b}`;
 }
 
 // Derived Expired state lives in utils/objectState.js; re-exported so imports keep working.

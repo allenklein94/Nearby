@@ -194,7 +194,7 @@ export const INTENTIONAL_ENGLISH = {
     'Meet new people': 'stored onboarding token, matched, never shown',
   },
   'src/utils/offerMedia.js': {
-    'Available {}–{}': "availableWindowLabel's English output; other languages read OfferCustomerBody.offerWindowText (ui.requestDetail.availableWindow)",
+    'Available {}': "availableWindowLabel's English output; other languages read OfferCustomerBody.offerWindowText (ui.requestDetail.availableWindow)",
   },
   'src/components/BusinessHoursEditor.js': {
     'America/Los_Angeles': 'example IANA time zone id (placeholder), a technical value',

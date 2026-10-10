@@ -6,13 +6,14 @@
 //   heard     "Heard your request"           (true for every kind of reply)
 //   status    what they actually said: "Made you an offer" / "Can take you" / "Suggested another time", from the ONE
 //             item-121 rule (utils/offerCopy.js businessReplyKind), never re-decided here
-//   order     the offer's title, description, included items, photo/video
-//   price     the business's own price
+//   order     the offer's title, its photo/video, description, included items
+//   price     the discount headline ("20% OFF", structured discount_pct only) and the business's own price
 //   when      proposed time, available window, valid until
 // Then the finish (owner, 2026-10-10): "I'll take this one" settles in as the final slot with the same fade + rise (it never
 // drops below SEQUENCES.offerAssembly.actionRestOpacity and stays tappable the whole time, so a booking is never delayed), and
 // the card's coral outline glows once (about 300 ms). No ring, spring or background change: that is reserved for You're booked.
 import { offerPriceLabel } from './outcomeDisplay';
+import { discountHeadlinePct } from './offerPresentation';
 import { isOfferExpired } from './objectState';
 import { SEQUENCES } from '../motion/motionBudget';
 
@@ -29,7 +30,7 @@ export function assemblySteps(offer) {
     heard: true,
     status: true,
     order: filled(o.offer_title) || filled(o.offer_description) || hasItems(o) || filled(o.media_path),
-    price: offerPriceLabel(o.offer_price, o.price_is_per_person) != null,
+    price: offerPriceLabel(o.offer_price, o.price_is_per_person) != null || discountHeadlinePct(o) != null,
     when: filled(o.proposed_time) || (filled(o.available_from) && filled(o.available_until)) || filled(o.valid_until),
   };
   return ASSEMBLY_STEPS.filter((k) => present[k]);

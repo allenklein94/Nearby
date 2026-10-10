@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
 import { validityLabel, isOfferExpired, availableWindowLabel } from '../utils/offerMedia';
+import { discountHeadlinePct, offerWhenDay, offerWhenLineText } from '../utils/offerPresentation';
 import { useLanguage } from '../context/LanguageContext';
 import { tr, getCurrentLanguage } from '../i18n/translate';
 import { displayDateTime } from '../i18n/display';
@@ -43,30 +44,39 @@ export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typ
   const styles = getStyles(colors);
   const price = offerPriceLabel(o.offer_price, o.price_is_per_person);
   const window = offerWindowText(o.available_from, o.available_until, language);
+  const pct = discountHeadlinePct(o);
+  // Item 11: Nearby lays the card out from the pieces the business gave: media right under the header, then what they
+  // wrote, the discount as a headline, the price, and one "Tonight · 5–9 PM" line when the validity adds nothing to it.
+  const whenDay = offerWhenDay(o);
   return (
     <View>
       {showTypeLabel && typeLabel ? <Text style={styles.offerTypeLabel}>{typeLabel}</Text> : null}
       {/* Steps of the card assembling itself (components/OfferAssembly.js): the order, then the price, then when. Outside
           an assembly (the owner's preview, an accepted offer) they render as plain lines. */}
       <AssemblyStep step="order">
-        {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
+        {localMedia ? (
+          <OfferMedia localUri={localMedia.uri} type={localMedia.type} />
+        ) : (
+          <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
+        )}
+        {o.offer_description ? <Text style={[styles.offerDescription, { marginTop: spacing.xs }]}>{o.offer_description}</Text> : null}
         {(o.included_items ?? []).map((item, index) => (
           <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
         ))}
       </AssemblyStep>
       <AssemblyStep step="price">
+        {pct != null ? <Text style={styles.offerDiscount}>{t('ui.requestDetail.percentOff', { pct })}</Text> : null}
         {price ? <Text style={styles.offerPrice}>{price}</Text> : null}
       </AssemblyStep>
       <AssemblyStep step="when">
         {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time, language)}</Text> : null}
-        {window ? <Text style={styles.offerProposedTime}>🕒 {window}</Text> : null}
-        {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? t('ui.requestDetail.thisOfferHasExpired') : offerValidityText(o.valid_until, language)}</Text> : null}
-      </AssemblyStep>
-      <AssemblyStep step="order">
-        {localMedia ? (
-          <OfferMedia localUri={localMedia.uri} type={localMedia.type} />
+        {whenDay ? (
+          <Text style={styles.offerProposedTime}>🕒 {offerWhenLineText(whenDay, o.available_from, o.available_until, language)}</Text>
         ) : (
-          <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
+          <>
+            {window ? <Text style={styles.offerProposedTime}>🕒 {window}</Text> : null}
+            {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? t('ui.requestDetail.thisOfferHasExpired') : offerValidityText(o.valid_until, language)}</Text> : null}
+          </>
         )}
       </AssemblyStep>
     </View>
@@ -78,5 +88,6 @@ const getStyles = (colors) => StyleSheet.create({
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerIncludedItem: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
   offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },
+  offerDiscount: { ...typography.title, color: colors.textPrimary, fontWeight: '800', letterSpacing: 0.5, marginBottom: spacing.xs },
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
 });

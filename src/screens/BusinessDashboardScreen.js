@@ -6980,6 +6980,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   proposed_time: offerTypeInput === 'alt_time' && offerProposedTime ? offerProposedTime.toISOString() : null,
                   offer_price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
                   price_is_per_person: offerPriceIsPerPerson,
+                  discount_pct: offerTypeInput === 'discount' ? parseDiscountPct(offerDiscountInput) : null,
                   available_from: checked.win.from ?? null,
                   available_until: checked.win.until ?? null,
                   valid_until: checked.validity.iso ?? null,
