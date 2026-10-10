@@ -1,19 +1,9 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import { useTheme } from '../context/ThemeContext';
-import { radius, spacing, typography } from '../theme';
+import CompactRow from './CompactRow';
 
-// Phase 2 of the "Build everything" plan (CLAUDE.md) -- the third of the
-// three canonical card types (Person/Place/Plan). Photo (or a fallback
-// icon), name, one real "why now" reason line -- open-now status, price/
-// rating, a real active offer, or a matched-category signal, whatever the
-// calling screen already computed, never invented here -- and one
-// primary action (View/Get Offer/Navigate), always a whole-row tap since
-// every real call site so far is a simple "go look at the real thing"
-// row. Reuses the exact card chrome (radius/border/shadow) already
-// established by DiscoverHubScreen.js's own generic row across its
-// Gatherings/Communities/Places/Perks sections, so this genuinely
-// standardizes on what was already the de facto shared shape there.
+// A place or perk row on Discover: photo (or a tinted icon), name, one real "why now" line the calling screen already
+// computed (open-now, price/rating, the perk's own named tag; never invented here) and an optional real action word.
+// Drawn as Discover's compact row (design review 2026-10-10) through CompactRow; the props are unchanged.
 export default function PlaceCard({
   photoUrl,
   // Only needed when photoUrl came from Google's Place Photo endpoint (an
@@ -45,61 +35,20 @@ export default function PlaceCard({
   tintColor,
   accessibilityState,
 }) {
-  const { colors, shadow } = useTheme();
-  const styles = getStyles(colors, shadow);
-
+  // Discover design review (2026-10-10): a compact row (round thumbnail, title, one line, hairline divider), not a white card.
   return (
-    <TouchableOpacity
-      style={[styles.row, style]}
+    <CompactRow
+      photoUrl={photoUrl}
+      photoHeaders={photoHeaders}
+      icon={icon}
+      tintColor={tintColor}
+      title={title}
+      meta={reason}
       onPress={onPress}
-      activeOpacity={0.85}
       accessibilityLabel={accessibilityLabel ?? `${title}${reason ? `, ${reason}` : ''}`}
-      accessibilityRole="button"
       accessibilityState={accessibilityState}
-    >
-      {photoUrl ? (
-        <Image source={{ uri: photoUrl, headers: photoHeaders }} style={styles.image} />
-      ) : (
-        <View style={[styles.iconWrap, { backgroundColor: tintColor ? `${tintColor}20` : colors.surfaceElevated }]}>
-          <Text style={styles.icon}>{icon}</Text>
-        </View>
-      )}
-      <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-        {reason ? (
-          <Text style={styles.reason} numberOfLines={1}>
-            {reason}
-          </Text>
-        ) : null}
-      </View>
-      {actionLabel ? (
-        <Text style={[styles.actionLabel, actionIsState && styles.actionLabelState]} numberOfLines={1}>{actionLabel}</Text>
-      ) : (
-        <Text style={styles.chevron}>›</Text>
-      )}
-    </TouchableOpacity>
+      action={actionLabel ? { label: actionLabel, isState: actionIsState } : null}
+      style={style}
+    />
   );
 }
-
-const getStyles = (colors, shadow) =>
-  StyleSheet.create({
-    row: {
-      flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
-      borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-      padding: spacing.lg, marginBottom: spacing.md, ...shadow.card,
-    },
-    image: { width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md },
-    iconWrap: {
-      width: 44, height: 44, borderRadius: radius.md, marginRight: spacing.md,
-      alignItems: 'center', justifyContent: 'center',
-    },
-    icon: { fontSize: 22 },
-    info: { flex: 1 },
-    title: { ...typography.headline, color: colors.textPrimary },
-    reason: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
-    chevron: { color: colors.textTertiary, fontSize: 24 },
-    actionLabel: { color: colors.primary, fontWeight: '700', fontSize: 13, marginLeft: spacing.sm },
-    actionLabelState: { color: colors.textTertiary },
-  });

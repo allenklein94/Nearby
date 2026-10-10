@@ -82,7 +82,7 @@ import { localizeReason } from '../utils/reasonLocalization';
 import { localizeAskNote } from '../i18n/askNoteView';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
-import { buildDiscoverSections, buildDiscoverDateView, compareDiscover, sectionLeadReason, TIME_CHIPS } from '../utils/discoverSections';
+import { buildDiscoverSections, buildDiscoverDateView, compareDiscover, sectionLeadReason, TIME_CHIPS, discoverTileVariant, sectionHeroEyebrowCode } from '../utils/discoverSections';
 import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
@@ -95,6 +95,7 @@ import { canonicalizeInterests } from '../constants/interestGraph';
 import { lightenHex } from '../utils/colorUtils';
 import GatheringsMapView from '../components/GatheringsMapView';
 import PlaceCard from '../components/PlaceCard';
+import CompactRow from '../components/CompactRow';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
@@ -1890,6 +1891,23 @@ export default function DiscoverHubScreen({ navigation, route }) {
     return recommendationContext(contextItem('community', c, { reasons: [communityReason(c, personalization.declared)] }), { language });
   }
 
+  // A community as a compact row (design review 2026-10-10): its real reason, context and description on ONE line.
+  function renderCommunityRow(c, cc, metaParts) {
+    return (
+      <CompactRow
+        key={c.id}
+        testID={`discover-community-${c.id}`}
+        icon="🏘️"
+        photoUrl={c.interest_tag ? curatedCoverPhotoFor(c.interest_tag) : null}
+        tintColor={c.interest_tag ? categoryStyleFor(c.interest_tag).color : null}
+        title={c.name}
+        meta={metaParts.filter(Boolean).join(' · ') || null}
+        onPress={() => openDestination(navigation, cc.destination)}
+        accessibilityLabel={[c.name, cc.reason, cc.context].filter(Boolean).join(', ')}
+      />
+    );
+  }
+
   // One perk card for every Perks list (the Perks section and the category view). Compact for browsing; the selected one
   // expands in place with its redemption panel (Perk Selection State above).
   function renderPerkCard(o) {
@@ -2094,20 +2112,53 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const card = discoverCard(g, sectionKey);
     const action = gatheringActionInfo(g, card);
     const reasonLine = card.reasons[0] ?? null;
+    // Design review (2026-10-10): inside a Discover section the tile type follows the section (top of a reason section =
+    // hero, Tonight / This Weekend = compact rows); elsewhere the score-based tiers below stay as they were.
+    const variant = discoverTileVariant(sectionKey, index) ?? (g.fit.score >= HERO_SCORE ? 'hero' : 'standard');
 
-    if (g.fit.score >= HERO_SCORE) {
+    if (variant === 'compact') {
+      const fullness = gatheringFullnessLabel(g);
+      return (
+        <StaggeredReveal key={g.id} index={index}>
+          <CompactRow
+            testID={`discover-compact-${g.id}`}
+            photoUrl={coverPhotoUrls[g.id] ?? (g.interest_tag ? curatedCoverPhotoFor(g.interest_tag) : null) ?? null}
+            icon={categoryStyleFor(g.interest_tag).icon}
+            tintColor={g.interest_tag ? categoryStyleFor(g.interest_tag).color : null}
+            title={g.title}
+            meta={[reasonLine, card.meta, fullness].filter(Boolean).join(' · ') || null}
+            metaIsWarning={!!fullness?.startsWith('🔒')}
+            onPress={() => openContextFor(g)}
+            accessibilityLabel={t('ui.discover.showsMoreA11y', { text: `${g.title}${reasonLine ? `, ${reasonLine}` : ''}` })}
+            action={{
+              label: action.label,
+              isState: action.kind !== 'cta',
+              onPress: () => openDestination(navigation, card.destination),
+              accessibilityLabel: `${action.label}: ${g.title}`,
+            }}
+          />
+        </StaggeredReveal>
+      );
+    }
+
+    if (variant === 'hero') {
+      const eyebrow = sectionKey ? sectionHeroEyebrowCode(sectionKey, g) : null;
+      const eyebrowText = sectionKey
+        ? (eyebrow ? t(`ui.discover.badge.${eyebrow.replace(/ /g, '_')}`) : null)
+        : heroEyebrow(g);
       const categoryStyle = categoryStyleFor(g.interest_tag);
       return (
         <StaggeredReveal key={g.id} index={index}>
         <TouchableOpacity
           style={styles.heroCard}
+          testID={`discover-hero-${g.id}`}
           /* Phase 8 section F -- the card body no longer navigates:
              tapping it expands this screen around the gathering's own
              context. The CTA below is its own nested touchable and
              still navigates, because joining is a real task change. */
           onPress={() => openContextFor(g)}
           activeOpacity={0.85}
-          accessibilityLabel={t('ui.discover.showsMoreA11y', { text: `${g.title}, ${heroEyebrow(g)}${reasonLine ? `, ${reasonLine}` : ''}` })}
+          accessibilityLabel={t('ui.discover.showsMoreA11y', { text: [g.title, eyebrowText, reasonLine].filter(Boolean).join(', ') })}
           accessibilityRole="button"
         >
           {coverPhotoUrls[g.id] ? (
@@ -2139,7 +2190,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             style={styles.heroScrim}
             pointerEvents="none"
           />
-          <Text style={styles.heroEyebrow}>{heroEyebrow(g)}</Text>
+          {eyebrowText ? <Text style={styles.heroEyebrow}>{eyebrowText}</Text> : null}
           <View style={styles.heroBody}>
             <View style={{ flex: 1, marginRight: spacing.sm }}>
               <Text style={styles.heroTitle} numberOfLines={1}>{g.title}</Text>
@@ -2605,22 +2656,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <>
               <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.communities')}</Text>
               {contextCommunities.slice(0, 3).map((c) => { const cc = communityContext(c); return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={styles.card}
-                  onPress={() => openDestination(navigation, cc.destination)}
-                  activeOpacity={0.85}
-                  accessibilityLabel={[c.name, cc.reason, cc.context].filter(Boolean).join(', ')}
-                  accessibilityRole="button"
-                >
-                  {renderCardIcon('🏘️', c.interest_tag)}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{c.name}</Text>
-                    {cc.reason ? <Text style={styles.cardSubtitle} numberOfLines={1}>{cc.reason}</Text> : null}
-                    {cc.context ? <Text style={styles.cardSubtitle} numberOfLines={1}>{cc.context}</Text> : null}
-                  </View>
-                  <Text style={styles.cardChevron}>›</Text>
-                </TouchableOpacity>
+                renderCommunityRow(c, cc, [cc.reason, cc.context])
               ); })}
             </>
           )}
@@ -3215,22 +3251,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <StaggeredReveal index={0}>
               <View>
               {communitiesToShow.map((c) => { const cc = communityContext(c); return (
-                <TouchableOpacity
-                  key={c.id}
-                  style={styles.card}
-                  onPress={() => openDestination(navigation, cc.destination)}
-                  activeOpacity={0.85}
-                  accessibilityLabel={[c.name, cc.reason, cc.context].filter(Boolean).join(', ')}
-                  accessibilityRole="button"
-                >
-                  {renderCardIcon('🏘️', c.interest_tag)}
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.cardTitle}>{c.name}</Text>
-                    {cc.reason ? <Text style={styles.cardSubtitle} numberOfLines={1}>{cc.reason}</Text> : null}
-                    {cc.context || c.description ? <Text style={styles.cardSubtitle} numberOfLines={1}>{[cc.context, c.description].filter(Boolean).join(' · ')}</Text> : null}
-                  </View>
-                  <Text style={styles.cardChevron}>›</Text>
-                </TouchableOpacity>
+                renderCommunityRow(c, cc, [cc.reason, cc.context, c.description])
               ); })}
               </View>
               </StaggeredReveal>
@@ -3488,7 +3509,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   scrollContent: { padding: spacing.lg, paddingTop: spacing.md },
   // The selected perk: its compact card plus the redemption panel, outlined as one object (Perk Selection State).
   selectedPerk: { backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 2, borderColor: colors.primary, marginBottom: spacing.md, ...shadow.card },
-  selectedPerkCardTop: { borderWidth: 0, marginBottom: 0, shadowOpacity: 0, elevation: 0, backgroundColor: 'transparent' },
+  selectedPerkCardTop: { borderBottomWidth: 0, paddingHorizontal: spacing.md },
   headerRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
   title: { ...typography.display, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },

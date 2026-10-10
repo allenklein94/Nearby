@@ -21,6 +21,29 @@ export function sectionLeadReason(sectionKey, g, { friendInterestByTag = {} } = 
   return null;
 }
 
+// How a gathering is drawn in a Discover section (design review, owner-approved 2026-10-10; presentation only: it reads the
+// section key and the item's position in the already-built section, never its score, reasons or membership).
+//   hero     = the TOP item of a section that IS a reason (Because you like / Friends are into / Trending)
+//   compact  = every gathering in Tonight / Today and This Weekend
+//   standard = the rest of the reason sections
+//   null     = not a section tile (Happening Now has its own tile; other lists keep the score-based hero/standard tiers)
+export const HERO_SECTION_KEYS = Object.freeze(['because', 'friends', 'trending']);
+export const COMPACT_SECTION_KEYS = Object.freeze(['tonight', 'weekend']);
+
+export function discoverTileVariant(sectionKey, index) {
+  if (HERO_SECTION_KEYS.includes(sectionKey)) return index === 0 ? 'hero' : 'standard';
+  if (COMPACT_SECTION_KEYS.includes(sectionKey)) return 'compact';
+  return null;
+}
+
+// The small label on a section hero: the section's own real signal, never "Personalized" (the section heading and the
+// reason line already name the interest or the friends). Trending says Trending; the others carry the gathering's real
+// time badge (TONIGHT, TOMORROW...) or nothing.
+export function sectionHeroEyebrowCode(sectionKey, g, now = new Date()) {
+  if (sectionKey === 'trending') return 'TRENDING';
+  return gatheringTimeBadge(g?.scheduled_at, now) ?? null;
+}
+
 // Discover's contextual sections (owner item 91; order re-set 2026-09-27 to the one ranking ladder): after the search box and
 // the Browse rail, the All view reads as Happening Now -> Tonight -> Because you like X -> Friends are into X -> Trending Near
 // You -> This Weekend (Trending, popularity, sits below the two personal sections).
