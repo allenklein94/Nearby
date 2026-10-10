@@ -11,7 +11,7 @@ import { MOTION_BUDGET } from '../motion/motionBudget';
 import { navigationRef } from '../navigation/RootNavigator';
 import { openOnTop } from '../navigation/openOnTop';
 import { createOfferArrivals, arrivalDestination, emitViewedArrival } from '../services/offerArrivals';
-import { fetchMyLiveReplies, subscribeToOfferChanges } from '../services/offerArrivalSource';
+import { fetchMyLiveReplies, fetchFirstReplyState, subscribeToOfferChanges } from '../services/offerArrivalSource';
 import { arrivalSignalTitle, arrivalSignalA11y } from '../utils/offerCopy';
 import { startOfferTravel } from '../motion/offerTravel';
 
@@ -40,6 +40,7 @@ export default function OfferArrivalHost() {
     if (!userId) return undefined;
     const controller = createOfferArrivals({
       fetchReplies: () => fetchMyLiveReplies(userId),
+      fetchFirstReplyState: () => fetchFirstReplyState(userId),
       isViewingRequest,
       onViewedArrival: emitViewedArrival,
       onChange: setSignal,

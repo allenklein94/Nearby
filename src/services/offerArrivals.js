@@ -14,7 +14,12 @@
 // joins it. One signal at a time; it leaves on its own after OFFER_ARRIVAL_HOLD_MS and never needs dismissing.
 // No sound, no vibration, nothing that ranks, matches, accepts or books: this only reads and announces.
 
+import { isFirstEverReply } from '../utils/offerCopy';
+
 export const OFFER_ARRIVAL_HOLD_MS = 6000;
+// The first-ever business reply (owner, 2026-10-10) reads "A local business just responded to your request" and is held a
+// little longer. Same motion, same everything else. Only for a signal of exactly ONE reply (utils/offerCopy.isFirstEverReply).
+export const OFFER_ARRIVAL_FIRST_HOLD_MS = 9000;
 export const OFFER_ARRIVAL_DEBOUNCE_MS = 700;
 
 export function isAnnounceableReply(row) {
@@ -35,12 +40,14 @@ export function arrivalDestination(signal) {
 
 export function createOfferArrivals({
   fetchReplies, // async () => rows: { id, request_id, request_status, status, viewed_at, partner_name, ...offer fields }
+  fetchFirstReplyState = null, // async () => { seenAny, earliestReplyId } | null (server reply history); none = never first-ever
   isViewingRequest = () => false,
   onViewedArrival = () => {}, // (requestId) => the request on screen got a new reply: reload it
   onChange = () => {}, // (signal | null)
   setTimer = setTimeout,
   clearTimer = clearTimeout,
   holdMs = OFFER_ARRIVAL_HOLD_MS,
+  firstHoldMs = OFFER_ARRIVAL_FIRST_HOLD_MS,
   debounceMs = OFFER_ARRIVAL_DEBOUNCE_MS,
 } = {}) {
   const known = new Set();
@@ -58,15 +65,16 @@ export function createOfferArrivals({
     if (signal) setSignal(null);
   };
 
-  const scheduleHide = () => {
+  const scheduleHide = (ms = holdMs) => {
     if (hideTimer) clearTimer(hideTimer);
-    hideTimer = setTimer(() => { hideTimer = null; setSignal(null); }, holdMs);
+    hideTimer = setTimer(() => { hideTimer = null; setSignal(null); }, ms);
   };
 
   // The baseline: every reply that is already a reply (or already opened) when the app becomes active.
   const remember = (rows) => { for (const r of rows ?? []) if (r?.id && (r.status === 'offered' || r.viewed_at)) known.add(r.id); };
 
-  const announce = (rows) => {
+  // Which rows are genuinely new (marks them seen). Pure bookkeeping; commit() shows them.
+  const collect = (rows) => {
     const fresh = [];
     for (const r of rows ?? []) {
       if (!r?.id || known.has(r.id)) continue;
@@ -78,10 +86,26 @@ export function createOfferArrivals({
       if (isViewingRequest(r.request_id)) { onViewedArrival(r.request_id); continue; }
       fresh.push({ offerId: r.id, requestId: r.request_id, partnerName: r.partner_name ?? null, offer: r });
     }
+    return fresh;
+  };
+
+  // firstEver only for a signal that is exactly this one new reply; anything joining it makes it a normal "N replies".
+  const commit = (fresh, firstEver = false) => {
     if (fresh.length === 0) return;
     const items = signal ? [...signal.items, ...fresh.filter((f) => !signal.items.some((i) => i.offerId === f.offerId))] : fresh;
-    setSignal({ items });
-    scheduleHide();
+    const isFirst = firstEver && !signal && items.length === 1;
+    setSignal(isFirst ? { items, firstEver: true } : { items });
+    scheduleHide(isFirst ? firstHoldMs : holdMs);
+  };
+
+  // Asks the server whether this lone new reply is the person's first-ever one; a failure = the normal wording.
+  const firstEverFor = async (fresh) => {
+    if (!fetchFirstReplyState || fresh.length !== 1 || signal) return false;
+    try {
+      return isFirstEverReply(fresh[0].offerId, await fetchFirstReplyState());
+    } catch {
+      return false;
+    }
   };
 
   function pause() {
@@ -110,7 +134,11 @@ export function createOfferArrivals({
     try {
       const rows = await fetchReplies();
       if (gen !== generation || !active) return;
-      announce(rows);
+      const fresh = collect(rows);
+      if (fresh.length === 0) return;
+      const firstEver = await firstEverFor(fresh);
+      if (gen !== generation || !active) return;
+      commit(fresh, firstEver);
     } catch {
       // A failed refresh announces nothing and changes nothing.
     }

@@ -53,12 +53,26 @@ export function heardYourRequest() {
   return tr('ui.offerCopy.heardYourRequest');
 }
 
+// The first-ever business reply (owner, 2026-10-10): words, never more motion. Decided from the person's server-side reply
+// history (services/offerArrivalSource.js fetchFirstReplyState): they have never opened a business reply (viewed_at, the
+// server's read receipt) AND this is the earliest reply any business ever sent them. A failed or unknown lookup = not
+// first-ever (the normal wording), so the moment is never shown by mistake and never shown twice.
+export function isFirstEverReply(offerId, state) {
+  return !!offerId && !!state && state.seenAny === false && state.earliestReplyId === offerId;
+}
+
+// The card's second line: "Your first reply from a local business" on that one reply, else "Heard your request".
+export function heardLine(isFirstEver) {
+  return tr(isFirstEver ? 'ui.offerCopy.firstReplyHeard' : 'ui.offerCopy.heardYourRequest');
+}
+
 // The in-app arrival signal (services/offerArrivals.js). One reply = the same line Activity uses ("Coastal Coffee made you
 // an offer"); several = "2 offers came in" only when every one really is an offer, else "2 replies came in" (item 121:
 // plain availability is never called an offer).
 export function arrivalSignalTitle(signal) {
   const items = signal?.items ?? [];
   if (items.length === 0) return null;
+  if (items.length === 1 && signal.firstEver) return tr('ui.offerCopy.arrivalFirstEver');
   if (items.length === 1) return businessReplyTitle(items[0].partnerName, items[0].offer);
   const allOffers = items.every((i) => businessReplyKind(i.offer) === 'offer');
   return tr(allOffers ? 'ui.offerCopy.arrivalOffers' : 'ui.offerCopy.arrivalReplies', { count: items.length });

@@ -32,7 +32,7 @@ import StaggeredReveal from '../components/StaggeredReveal';
 import OfferMedia from '../components/OfferMedia';
 import OfferAssembly, { AssemblyStep, AssemblyGlow } from '../components/OfferAssembly';
 import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
-import { visibleRedemption, validityLabel, isOfferExpired, availableWindowLabel } from '../utils/offerMedia';
+import { visibleRedemption, validityLabel, isOfferExpired, availableWindowLabel, nextValidityRefreshMs } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { consumerOfferAction } from '../utils/primaryAction';
 import { captureRef } from 'react-native-view-shot';
@@ -50,7 +50,8 @@ import OfferOutcomeModal from '../components/OfferOutcomeModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
-import { businessReplyStatus, acceptedReplyTitle, businessReplyKind, heardYourRequest } from '../utils/offerCopy';
+import { businessReplyStatus, acceptedReplyTitle, businessReplyKind, heardLine, isFirstEverReply } from '../utils/offerCopy';
+import { fetchFirstReplyState } from '../services/offerArrivalSource';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 
@@ -263,6 +264,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // success -- never before, matching GatheringFeedbackModal's own "only
   // ask after it actually happened" convention.
   const [outcomeModalOfferId, setOutcomeModalOfferId] = useState(null);
+  // The first-ever business reply (owner, 2026-10-10): its card says "Your first reply from a local business" instead of
+  // "Heard your request". Decided from the server's reply history BEFORE this screen marks anything viewed, and kept for the
+  // rest of this visit (a reload here never takes it away mid-view; the next visit reads the history again = normal).
+  const [firstReplyOfferId, setFirstReplyOfferId] = useState(null);
+  const firstReplyDecided = useRef(false);
   const [reasonAsk, setReasonAsk] = useState(null);
 
   // "Nearby V3/V4" plan, Phase C: order the consumer's own offer list by
@@ -275,6 +281,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // created_at position, matching the plan's own "a partner below the
   // threshold is never penalized -- it's ordered exactly where it would
   // have landed today" for every row this reordering doesn't touch.
+  // Validity text on open offers updates on its own while this screen stays open ("Valid until 7 PM" -> "Ends in 30 min" ->
+  // ... -> expired, and the button follows): one re-render at each real change, text only, no animation.
+  const [, setValidityTick] = useState(0);
+  useEffect(() => {
+    const delay = nextValidityRefreshMs(offers);
+    if (delay == null) return undefined;
+    const id = setTimeout(() => setValidityTick((n) => n + 1), delay);
+    return () => clearTimeout(id);
+  });
+
   const displayOffers = useMemo(() => {
     const offeredIndices = [];
     offers.forEach((o, i) => { if (o.status === 'offered') offeredIndices.push(i); });
@@ -359,9 +375,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       // is idempotent (only ever sets viewed_at once) and internally
       // scoped to the real requester, so this is safe to fire
       // unconditionally regardless of who's viewing.
-      result.offers
-        .filter((o) => o.status === 'offered' && !o.viewed_at)
-        .forEach((o) => markBusinessOfferViewed(o.id));
+      const unviewed = result.offers.filter((o) => o.status === 'offered' && !o.viewed_at);
+      if (!firstReplyDecided.current && unviewed.length > 0 && result.request.requester_id === uid) {
+        firstReplyDecided.current = true;
+        const history = await fetchFirstReplyState(uid); // null on failure = normal wording
+        const first = unviewed.find((o) => isFirstEverReply(o.id, history));
+        if (first) setFirstReplyOfferId(first.id);
+      }
+      unviewed.forEach((o) => markBusinessOfferViewed(o.id));
 
       const partnerIds = [...new Set(result.offers.filter((o) => o.status === 'offered' || o.status === 'accepted').map((o) => o.partner_id))];
       if (partnerIds.length > 0) {
@@ -1346,7 +1367,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               ) : null}
               </AssemblyStep>
               {o.status === 'offered' ? (
-                <AssemblyStep step="heard"><Text style={styles.offerReputationLine}>{heardYourRequest()}</Text></AssemblyStep>
+                <AssemblyStep step="heard"><Text style={styles.offerReputationLine}>{heardLine(firstReplyOfferId === o.id)}</Text></AssemblyStep>
               ) : null}
               {/* Item 121 ("Business offer acceptance should feel equally tangible"): "Offer
                   Accepted ✓ -> details slide into place" -- a brief dip/recover on the whole
