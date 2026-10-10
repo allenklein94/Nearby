@@ -82,3 +82,13 @@ export function arrivalSignalA11y(signal) {
   const title = arrivalSignalTitle(signal);
   return title ? tr('ui.offerCopy.arrivalOpenA11y', { title }) : null;
 }
+
+// Owner item 16: "Coastal Coffee is responding…" while a reply that business SENT is being checked (never because it opened
+// the request: item 39). One = the name, two = both names, more = a count. Nothing in flight = no line.
+export function respondingLine(rows) {
+  const names = (rows ?? []).map((r) => r?.name || tr('ui.offerCopy.aLocalBusiness'));
+  if (names.length === 0) return null;
+  if (names.length === 1) return tr('ui.offerCopy.respondingOne', { name: names[0] });
+  if (names.length === 2) return tr('ui.offerCopy.respondingTwo', { a: names[0], b: names[1] });
+  return tr('ui.offerCopy.respondingMany', { count: names.length });
+}

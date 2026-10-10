@@ -29,6 +29,7 @@ export { default as BookedCelebration, bookedDetailsLine } from './BookedCelebra
 export { default as OfferAcceptedMorph } from './OfferAcceptedMorph';
 export { default as RequestPulse } from './RequestPulse';
 export { default as VisitConfirmed } from './VisitConfirmed';
+export { default as RespondingStatus } from './RespondingStatus';
 export { default as MatchAnimation } from './MatchAnimation';
 export { default as OccasionAnimation, OCCASION_SELECT_ANIMATIONS } from './OccasionAnimation';
 export { default as SurpriseRevealAnimation, SURPRISE_REVEAL_TOTAL_MS } from './SurpriseRevealAnimation';

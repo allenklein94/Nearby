@@ -176,7 +176,7 @@ describe('the reveal never gets in the way', () => {
   });
   test('the old two-beat reveal is gone and every open reply goes through the assembly', () => {
     expect(fs.existsSync(path.join(__dirname, '../components/OfferReveal.js'))).toBe(false);
-    expect(screen).toContain('<OfferAssembly key={o.id} offer={o}>');
+    expect(screen).toContain("<OfferAssembly key={`${o.id}:${o.status === 'pending' ? 'pending' : 'reply'}`} offer={o}>");
     expect(screen).not.toMatch(/enabled=\{!!\(o\.media_path \|\| o\.offer_title\)\}/);
   });
   test('the owner\'s Customer Preview shows the same lines (heard, then what the reply is)', () => {

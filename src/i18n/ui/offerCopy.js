@@ -13,6 +13,7 @@ export default {
     arrivalReplies: { one: '{count} reply came in', other: '{count} replies came in' },
     arrivalOpenA11y: '{title}. Opens it.',
     arrivalFirstEver: 'A local business just responded to your request', firstReplyHeard: 'Your first reply from a local business',
+    respondingOne: '{name} is responding…', respondingTwo: '{a} and {b} are responding…', respondingMany: '{count} businesses are responding…',
   },
   es: {
     replyAvailability: '{name} puede recibirte', replyAlternative: '{name} sugirió otro horario', replyOffer: '{name} te hizo una oferta',
@@ -26,6 +27,7 @@ export default {
     arrivalReplies: { one: 'Llegó {count} respuesta', other: 'Llegaron {count} respuestas' },
     arrivalOpenA11y: '{title}. Lo abre.',
     arrivalFirstEver: 'Un negocio local acaba de responder a tu solicitud', firstReplyHeard: 'Tu primera respuesta de un negocio local',
+    respondingOne: '{name} está respondiendo…', respondingTwo: '{a} y {b} están respondiendo…', respondingMany: '{count} negocios están respondiendo…',
   },
   de: {
     replyAvailability: '{name} kann dich empfangen', replyAlternative: '{name} hat eine andere Zeit vorgeschlagen', replyOffer: '{name} hat dir ein Angebot gemacht',
@@ -39,6 +41,7 @@ export default {
     arrivalReplies: { one: '{count} Antwort ist eingegangen', other: '{count} Antworten sind eingegangen' },
     arrivalOpenA11y: '{title}. Öffnet es.',
     arrivalFirstEver: 'Ein Geschäft in der Nähe hat gerade auf deine Anfrage geantwortet', firstReplyHeard: 'Deine erste Antwort von einem Geschäft in der Nähe',
+    respondingOne: '{name} antwortet gerade…', respondingTwo: '{a} und {b} antworten gerade…', respondingMany: '{count} Geschäfte antworten gerade…',
   },
   fr: {
     replyAvailability: '{name} peut vous accueillir', replyAlternative: '{name} a proposé un autre horaire', replyOffer: '{name} vous a fait une offre',
@@ -52,6 +55,7 @@ export default {
     arrivalReplies: { one: '{count} réponse est arrivée', other: '{count} réponses sont arrivées' },
     arrivalOpenA11y: "{title}. L'ouvre.",
     arrivalFirstEver: 'Un commerce local vient de répondre à votre demande', firstReplyHeard: 'Votre première réponse d’un commerce local',
+    respondingOne: '{name} est en train de répondre…', respondingTwo: '{a} et {b} sont en train de répondre…', respondingMany: '{count} commerces sont en train de répondre…',
   },
   pt: {
     replyAvailability: '{name} pode receber você', replyAlternative: '{name} sugeriu outro horário', replyOffer: '{name} fez uma oferta para você',
@@ -65,6 +69,7 @@ export default {
     arrivalReplies: { one: 'Chegou {count} resposta', other: 'Chegaram {count} respostas' },
     arrivalOpenA11y: '{title}. Abre.',
     arrivalFirstEver: 'Um estabelecimento local acabou de responder ao seu pedido', firstReplyHeard: 'Sua primeira resposta de um estabelecimento local',
+    respondingOne: '{name} está respondendo…', respondingTwo: '{a} e {b} estão respondendo…', respondingMany: '{count} estabelecimentos estão respondendo…',
   },
   ht: {
     replyAvailability: '{name} ka resevwa w', replyAlternative: '{name} pwopoze yon lòt lè', replyOffer: '{name} fè w yon òf',
@@ -78,6 +83,7 @@ export default {
     arrivalReplies: { other: '{count} repons rive' },
     arrivalOpenA11y: '{title}. Ouvri l.',
     arrivalFirstEver: 'Yon biznis nan zòn nan fèk reponn demann ou', firstReplyHeard: 'Premye repons ou resevwa nan men yon biznis nan zòn nan',
+    respondingOne: '{name} ap reponn…', respondingTwo: '{a} ak {b} ap reponn…', respondingMany: '{count} biznis ap reponn…',
   },
   zh: {
     replyAvailability: '{name} 可以接待你', replyAlternative: '{name} 建议了另一个时间', replyOffer: '{name} 给你发了一个优惠',
@@ -91,6 +97,7 @@ export default {
     arrivalReplies: { other: '收到{count}条回复' },
     arrivalOpenA11y: '{title}。点击打开。',
     arrivalFirstEver: '一家本地商家刚刚回复了你的请求', firstReplyHeard: '你收到的第一条本地商家回复',
+    respondingOne: '{name} 正在回复…', respondingTwo: '{a} 和 {b} 正在回复…', respondingMany: '{count} 家商家正在回复…',
   },
   vi: {
     replyAvailability: '{name} có thể tiếp đón bạn', replyAlternative: '{name} đã đề xuất thời gian khác', replyOffer: '{name} đã gửi bạn một ưu đãi',
@@ -104,6 +111,7 @@ export default {
     arrivalReplies: { other: 'Có {count} phản hồi mới' },
     arrivalOpenA11y: '{title}. Mở xem.',
     arrivalFirstEver: 'Một cơ sở địa phương vừa phản hồi yêu cầu của bạn', firstReplyHeard: 'Phản hồi đầu tiên của bạn từ một cơ sở địa phương',
+    respondingOne: '{name} đang trả lời…', respondingTwo: '{a} và {b} đang trả lời…', respondingMany: '{count} cơ sở đang trả lời…',
   },
   tl: {
     replyAvailability: 'Kaya kang tanggapin ng {name}', replyAlternative: 'Nagmungkahi ang {name} ng ibang oras', replyOffer: 'Binigyan ka ng {name} ng alok',
@@ -117,6 +125,7 @@ export default {
     arrivalReplies: { one: 'May {count} sagot na dumating', other: 'May {count} sagot na dumating' },
     arrivalOpenA11y: '{title}. Bubuksan ito.',
     arrivalFirstEver: 'Kakasagot lang ng isang lokal na negosyo sa kahilingan mo', firstReplyHeard: 'Ang una mong sagot mula sa isang lokal na negosyo',
+    respondingOne: 'Sumasagot ang {name}…', respondingTwo: 'Sumasagot ang {a} at {b}…', respondingMany: '{count} negosyo ang sumasagot…',
   },
   ru: {
     replyAvailability: '{name} может вас принять', replyAlternative: '{name} предлагает другое время', replyOffer: '{name} сделал(а) вам предложение',
@@ -130,6 +139,7 @@ export default {
     arrivalReplies: { one: 'Пришёл {count} ответ', few: 'Пришло {count} ответа', many: 'Пришло {count} ответов', other: 'Пришло {count} ответа' },
     arrivalOpenA11y: '{title}. Открыть.',
     arrivalFirstEver: 'Местное заведение только что ответило на ваш запрос', firstReplyHeard: 'Ваш первый ответ от местного заведения',
+    respondingOne: '{name} отвечает…', respondingTwo: '{a} и {b} отвечают…', respondingMany: 'Отвечают заведения: {count}…',
   },
   ko: {
     replyAvailability: '{name}에서 받아 줄 수 있어요', replyAlternative: '{name}에서 다른 시간을 제안했어요', replyOffer: '{name}에서 제안을 보냈어요',
@@ -143,5 +153,6 @@ export default {
     arrivalReplies: { other: '답변 {count}개가 도착했어요' },
     arrivalOpenA11y: '{title}. 열어 보기.',
     arrivalFirstEver: '동네 업체가 방금 요청에 답했어요', firstReplyHeard: '동네 업체에서 받은 첫 답장',
+    respondingOne: '{name}에서 답장 중이에요…', respondingTwo: '{a}, {b}에서 답장 중이에요…', respondingMany: '업체 {count}곳이 답장 중이에요…',
   },
 };

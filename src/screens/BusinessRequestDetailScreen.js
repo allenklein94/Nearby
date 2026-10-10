@@ -7,7 +7,8 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking } from 'react-native';
 import * as Calendar from 'expo-calendar';
-import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestPulse, VisitConfirmed, animateLayout } from '../motion';
+import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestPulse, VisitConfirmed, RespondingStatus, animateLayout } from '../motion';
+import { getRespondingBusinesses, subscribeToRespondingChanges, nextRespondingCheckMs } from '../services/offerResponding';
 import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
 import { progressKey, visitConfirmationsToAnimate } from '../utils/offerProgress';
@@ -54,7 +55,7 @@ import OfferOutcomeModal from '../components/OfferOutcomeModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
-import { businessReplyStatus, acceptedReplyTitle, businessReplyKind, heardLine, isFirstEverReply } from '../utils/offerCopy';
+import { businessReplyStatus, acceptedReplyTitle, businessReplyKind, heardLine, isFirstEverReply, respondingLine } from '../utils/offerCopy';
 import { fetchFirstReplyState } from '../services/offerArrivalSource';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
@@ -731,6 +732,45 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       supabase.removeChannel(channel);
     };
   }, [requestId, load]));
+  // Owner item 16 (2026-10-10, LOCKED): "Coastal Coffee is responding…" for the requester while a reply that business SENT
+  // is being checked, read from the server (get_responding_businesses), never from a timer or from a business opening the
+  // request (item 39). A submission change pings this request (requester RLS; the event is never read) -> re-read. When a
+  // business that was responding drops out the whole screen re-reads too, so a published reply appears and builds in
+  // (OfferAssembly); a held / refused / failed check just leaves the line quietly. The one timer re-reads at the server's
+  // own stall boundary (stale_at), so a check that died never keeps "responding…" on screen. Removed on blur.
+  const [responding, setResponding] = useState([]);
+  const respondingRef = useRef([]);
+  const watchResponding = !!request && request.status === 'open' && !!myId && request.requester_id === myId;
+  useFocusEffect(useCallback(() => {
+    if (!watchResponding) { respondingRef.current = []; setResponding([]); return undefined; }
+    let cancelled = false;
+    let debounce = null;
+    let staleTimer = null;
+    const read = async () => {
+      const rows = await getRespondingBusinesses(requestId);
+      if (cancelled) return;
+      const now = new Set(rows.map((r) => r.partnerId));
+      const dropped = respondingRef.current.some((r) => !now.has(r.partnerId));
+      respondingRef.current = rows;
+      setResponding(rows);
+      clearTimeout(staleTimer);
+      const wait = nextRespondingCheckMs(rows);
+      if (wait != null) staleTimer = setTimeout(read, wait);
+      if (dropped) { liveReloadRef.current = true; load(); }
+    };
+    read();
+    const unsubscribe = subscribeToRespondingChanges(requestId, () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(read, 400);
+    });
+    return () => {
+      cancelled = true;
+      clearTimeout(debounce);
+      clearTimeout(staleTimer);
+      unsubscribe();
+    };
+  }, [watchResponding, requestId, load]));
+
   // Offer arrival signal (services/offerArrivals.js): a reply that lands on THIS request while it is on screen is not
   // announced with a signal; the screen just reloads in place.
   useEffect(() => subscribeViewedArrivals((id) => { if (id === requestId) load(); }), [requestId, load]);
@@ -1306,6 +1346,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {timelineStepLine(step) ? <Text style={styles.timelineDetail}>{timelineStepLine(step)}</Text> : null}
             </View>
           ))}
+          {/* Owner item 16: only while a sent reply is really being checked; keyed per set so it fades in once. */}
+          {watchResponding && respondingLine(responding) ? (
+            <RespondingStatus key={responding.map((r) => r.partnerId).join(',')} label={respondingLine(responding)} />
+          ) : null}
           {requestNextStep(request, offers) ? (
             <Text style={styles.timelineDetail}>{t('ui.requestDetail.next')}{' '}{requestNextStep(request, offers)}</Text>
           ) : null}
@@ -1430,7 +1474,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               </>
             );
             return (
-            <OfferAssembly key={o.id} offer={o}>
+            // Keyed on pending vs replied: a row that was waiting (pending) and becomes a reply while this screen is open
+            // mounts fresh, so the reply builds itself in (item 16: "responding…" -> the reveal). Later status changes keep
+            // the same card (the accepted morph is its own one-time moment).
+            <OfferAssembly key={`${o.id}:${o.status === 'pending' ? 'pending' : 'reply'}`} offer={o}>
             <View collapsable={false} ref={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
             {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
             <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
