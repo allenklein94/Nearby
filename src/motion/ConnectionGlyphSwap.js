@@ -6,7 +6,7 @@ import { playHaptic, HAPTIC_MOMENTS } from './haptics';
 // Item 119 ("Friend acceptance could have a similar microinteraction"): a tiny, one-shot "+ -> ✓"
 // glyph swap for a small status badge whose underlying state just genuinely transitioned (e.g.
 // someone else accepted your outgoing friend request, discovered on refocus). Distinct from
-// useTapActivate (confirms a control the USER tapped) and from MatchAnimation's own big modal (the
+// a tap confirmation (none exist since item 15) and from MatchAnimation's own big modal (the
 // ACCEPTER's own moment, already built by the Motion & Microinteraction System pass) -- this is
 // the REQUESTER's own small, restrained confirmation that a real state change happened while they
 // weren't looking, not something caused by their own tap.

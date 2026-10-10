@@ -72,9 +72,9 @@ export const SEQUENCES = {
   requestPulse: { tier: 'medium', ringMs: 380, staggerMs: 100, rings: 2, fromScale: 0.6, toScale: 1.8, startOpacity: 0.35 },
   // Customer-side redemption (moment 6): "Visit confirmed" settles in on the booked card + one success outline glow.
   visitConfirmed: { tier: 'small', stepMs: 200, risePx: 6, glowInMs: 100, glowOutMs: 200 },
+  // Someone joined the host's gathering while the host had it open (item 15, 2026-10-10): the Going line glows once.
+  hostJoin: { tier: 'small', glowInMs: 100, glowOutMs: 200 },
   offerTravel: { tier: 'special', dimMs: 180, travelMs: 380, settleMs: 220, targetWaitMs: 1500 },
-  // Result cascades.
-  cascade: { tier: 'medium', maxDelayMs: 200, itemMs: 250 },
 };
 
 // Time from trigger to settled state for each sequence.
@@ -96,8 +96,6 @@ export function settleMs(name) {
       return s.stageMs * s.stages + s.entranceMs;
     case 'emptyInvitation':
       return s.delayMs + s.invitationMs;
-    case 'cascade':
-      return s.maxDelayMs + s.itemMs;
     case 'offerAssembly':
       // the content steps, then the finish slot (button + one outline glow) after the last of them
       return s.maxSteps * s.staggerMs + Math.max(s.stepMs, s.glowInMs + s.glowOutMs);
@@ -110,6 +108,8 @@ export function settleMs(name) {
     case 'offerProgress':
     case 'visitConfirmed':
       return Math.max(s.stepMs, s.glowInMs + s.glowOutMs);
+    case 'hostJoin':
+      return s.glowInMs + s.glowOutMs;
     case 'requestPulse':
       return s.staggerMs * (s.rings - 1) + s.ringMs;
     case 'offerTravel':

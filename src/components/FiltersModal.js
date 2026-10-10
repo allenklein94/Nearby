@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { DATING_QUICK_FILTER_CATALOG } from '../constants/quickFilterCatalog';
 import QuickFilterCustomizer from './QuickFilterCustomizer';
-import { TapActiveChip, modalAnimation } from '../motion';
+import { modalAnimation } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
 
@@ -136,8 +136,7 @@ export default function FiltersModal({
             <View style={styles.fieldSection}>
               <Text style={styles.fieldLabel}>{t('ui.dating.discovery')}</Text>
               <View style={styles.chipsWrap}>
-                <TapActiveChip
-                  active={discoveryMode !== 'browse'}
+                <TouchableOpacity
                   style={[styles.chip, discoveryMode !== 'browse' && styles.chipActive]}
                   onPress={() => onChangeDiscoveryMode('crossedPaths')}
                   accessibilityLabel={t('ui.dating.crossedPathsPeopleYouveActuallyA11y')}
@@ -145,9 +144,8 @@ export default function FiltersModal({
                   accessibilityState={{ selected: discoveryMode !== 'browse' }}
                 >
                   <Text style={[styles.chipText, discoveryMode !== 'browse' && styles.chipTextActive]}>{t('ui.dating.crossedPaths2')}</Text>
-                </TapActiveChip>
-                <TapActiveChip
-                  active={discoveryMode === 'browse'}
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[styles.chip, discoveryMode === 'browse' && styles.chipActive]}
                   onPress={() => onChangeDiscoveryMode('browse')}
                   accessibilityLabel={t('ui.dating.browseAWiderPoolOfA11y')}
@@ -155,7 +153,7 @@ export default function FiltersModal({
                   accessibilityState={{ selected: discoveryMode === 'browse' }}
                 >
                   <Text style={[styles.chipText, discoveryMode === 'browse' && styles.chipTextActive]}>{t('ui.dating.browse2')}</Text>
-                </TapActiveChip>
+                </TouchableOpacity>
               </View>
               <Text style={styles.sectionHelp}>
                 {t(`ui.dating.modeHelp.${DISCOVERY_MODES.includes(discoveryMode) ? discoveryMode : 'crossedPaths'}`)}
@@ -170,9 +168,8 @@ export default function FiltersModal({
                 {intentionOptions.map((option) => {
                   const active = intentionFilter.includes(option.value);
                   return (
-                    <TapActiveChip
+                    <TouchableOpacity
                       key={option.value}
-                      active={active}
                       style={[styles.chip, active && styles.chipActive]}
                       onPress={() => onToggleIntention(option.value)}
                       accessibilityLabel={t('ui.dating.filterByA11y', { label: t(`ui.viewProfile.intention.${option.value}`) })}
@@ -180,7 +177,7 @@ export default function FiltersModal({
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.chipText, active && styles.chipTextActive]}>{option.icon} {t(`ui.viewProfile.intention.${option.value}`)}</Text>
-                    </TapActiveChip>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -210,9 +207,8 @@ export default function FiltersModal({
                   const active = !!quickFilters?.[key];
                   const label = quickFilterChipLabel(info, quickFilterConfig, t);
                   return (
-                    <TapActiveChip
+                    <TouchableOpacity
                       key={key}
-                      active={active}
                       style={[styles.chip, active && styles.chipActive]}
                       onPress={() => onToggleQuickFilter(key)}
                       accessibilityLabel={info.a11y ? t(`ui.dating.quick.${info.key}A11y`) : label}
@@ -220,7 +216,7 @@ export default function FiltersModal({
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
-                    </TapActiveChip>
+                    </TouchableOpacity>
                   );
                 })}
               </View>

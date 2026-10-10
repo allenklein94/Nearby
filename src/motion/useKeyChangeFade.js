@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { Animated } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 
-// Shared internal mechanic behind ModeTransition and FilterTransition: a
+// Shared internal mechanic behind ModeTransition (an offer's real status change) and
+// AnticipationText (a countdown tier change): a
 // brief opacity dip-and-recover whenever `activeKey` genuinely changes from
 // what was last seen -- never on first mount (mounting isn't a "change"),
 // never a full fade-out-then-fade-in (that would require holding both old

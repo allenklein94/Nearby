@@ -8,7 +8,6 @@ import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform, Share } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
-import StaggeredReveal from '../components/StaggeredReveal';
 import { NLoader, SurpriseRevealAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -894,11 +893,8 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 )}
               </FadeInState>
             )}
-            {/* Item 124 ("Use animation when something becomes available"): the real "we found
-                options" moment following the loading caption above -- each option settles into
-                place with a small per-index cascade instead of appearing all at once. */}
             {!businessOptionsLoading && detail.options.filter((o) => o.optionKind === 'business').map((option, optionIndex) => (
-              <StaggeredReveal key={option.id} index={optionIndex} style={styles.optionCard}>
+              <View key={option.id} style={styles.optionCard}>
               <View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.optionTitle}>{option.partnerName}{option.stillActive === false ? t('ui.groupOccasionPlan.noLongerAvailable') : ''}</Text>
@@ -931,7 +927,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                   </TouchableOpacity>
                 )}
               </View>
-              </StaggeredReveal>
+              </View>
             ))}
             {!businessOptionsLoading && detail.isHost && detail.options.filter((o) => o.optionKind === 'business').length > 0 && (
               <TouchableOpacity onPress={fetchAndProposeBusinessOptions} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.findMoreOptionsA11y')}>

@@ -33,7 +33,6 @@ import { buildOccasionPlanShareCaption } from '../utils/occasionPlanShareCard';
 import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils/livingPlanHeader';
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
 import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
-import StaggeredReveal from '../components/StaggeredReveal';
 import OfferMedia from '../components/OfferMedia';
 import OfferAssembly, { AssemblyStep, AssemblyGlow } from '../components/OfferAssembly';
 import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
@@ -1404,10 +1403,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               </Text>
             </View>
           )}
-          {/* Item 124 ("Use animation when something becomes available"): a pending business
-              request's own offers are the literal "we found options for you" moment -- each
-              card settles into place with a small per-index cascade instead of appearing all at
-              once, whether the user is watching live or opened the app from a push. */}
+          {/* Item 15 (2026-10-10): no per-card cascade; each new reply builds itself in place (OfferAssembly). */}
           {displayOffers.map((o, offerIndex) => {
             const stats = partnerStats[o.partner_id];
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
@@ -1435,7 +1431,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             );
             return (
             <OfferAssembly key={o.id} offer={o}>
-            <StaggeredReveal index={offerIndex} viewRef={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
+            <View collapsable={false} ref={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
             {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
             <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
             {o.status === 'completed' ? (
@@ -1624,7 +1620,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               )}
               </ModeTransition>
             </View>
-            </StaggeredReveal>
+            </View>
             </OfferAssembly>
             );
           })}

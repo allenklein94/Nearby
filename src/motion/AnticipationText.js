@@ -13,8 +13,8 @@ import { useTheme } from '../context/ThemeContext';
 // Discrete tiers (anticipationTier.js), not a fabricated continuous progress percentage -- most
 // occasions have no honest "started N days ago" baseline to compute a true ring from.
 //
-// Plays one brief dip-and-recover (the same useKeyChangeFade mechanic ModeTransition/
-// FilterTransition already use) whenever the tier itself changes during a mounted session -- e.g.
+// Plays one brief dip-and-recover (the same useKeyChangeFade mechanic ModeTransition
+// already uses) whenever the tier itself changes during a mounted session -- e.g.
 // the app was left open across midnight and "building" became "close" -- never a continuous/
 // looping pulse (this app's own animation discipline reserves that for genuine in-flight loading).
 // Reduce Motion: re-colors with no dip, same as every other motion piece in this library.

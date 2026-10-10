@@ -2,7 +2,7 @@ import { datingCardFacts } from '../utils/datingCardReasons';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView, Switch } from 'react-native';
-import { PullToRefresh, FilterTransition, SkeletonFeed } from '../motion';
+import { PullToRefresh, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
 import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
@@ -542,18 +542,6 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     return true;
   });
 
-  // FilterTransition (the Nearby Motion System, CLAUDE.md Item 116): a
-  // results-reorganizing cue whenever the actual filter selection changes
-  // (never on pagination/refresh, which don't touch any of these values) --
-  // filteredNearby is already a pure client-side re-filter of already-fetched
-  // data, so there's no network reload to wait on; this just makes that
-  // already-instant reorganization visually read as "results changed"
-  // instead of an abrupt swap.
-  const quickFilterKey = JSON.stringify({
-    verifiedOnly, highCompatOnly, matchThreshold, onlineOnly, sharedInterestsOnly,
-    intentionFilter, ageRangeFilter, advancedFilters,
-  });
-
   const filtersSummaryCount = intentionFilter.length + activeQuickCount + totalActiveCount;
   const filtersSummaryModeLabel = discoveryMode === 'browse' ? t('ui.dating.browse') : t('ui.dating.crossedPaths');
   const filtersSummaryText = filtersSummaryCount > 0
@@ -666,7 +654,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
       {initialLoading ? (
         <SkeletonFeed count={3} />
       ) : (
-      <FilterTransition activeKey={quickFilterKey} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
       {viewStyle === 'cards' ? (
         filteredNearby.length === 0 ? (
           renderPeopleEmptyState()
@@ -710,11 +698,6 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
           const facts = datingCardFacts(item, { mode: discoveryMode, gatheringText, crossedPathsTime, mutualFreeTonight: freeTonightIds.has(item.otherUserId) });
           const storyGroup = storyByUserId[item.otherUserId] ?? null;
           return (
-          // Item 126 ("Don't animate every card"): removed this card's own per-index
-          // AnimatedListItem stagger -- FilterTransition already wraps this whole FlatList with
-          // one coordinated container settle whenever quick filters change; this candidate list
-          // has no cap and every card also independently sliding in on top of that was exactly
-          // the excess this item warns against.
           <View style={styles.card}>
             {/* Discover UX cleanup item 8: the avatar itself is now the
                 real story affordance -- a ring when a visible (in
@@ -827,7 +810,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
         }}
       />
       )}
-      </FilterTransition>
+      </View>
       )}
 
       {undoState && (

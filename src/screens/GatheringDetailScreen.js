@@ -27,6 +27,7 @@ import {
   getHostSentInvitations,
   getGatheringMessageCount,
   subscribeToGatheringMessageChanges,
+  subscribeToGatheringJoinChanges,
   getGatheringRequestsForHost,
   cancelGathering,
   stopRecurringSeries,
@@ -49,6 +50,7 @@ import { getMyPartnershipRequestForTarget } from '../services/businessPartnershi
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
+import { approvedIds, newJoinsToAnimate } from '../utils/hostLiveJoins';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import GatheringAttendingSection from '../components/GatheringAttendingSection';
@@ -158,7 +160,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
   }, [openJoinRequested, gathering]);
   const [showReasonBanner, setShowReasonBanner] = useState(!!notificationReason);
 
+  // Item 15: the host's live join update. The first read and every focus reload are the baseline; only a reload that a
+  // realtime join event triggered can play the Going line's one glow, once per person per visit to this screen.
+  const liveJoinReloadRef = useRef(false);
+  const joinBaselineRef = useRef(null);
+  const joinShownRef = useRef(new Set());
+  const [joinGlowKey, setJoinGlowKey] = useState(0);
+
   const load = useCallback(async () => {
+    const liveJoinReload = liveJoinReloadRef.current;
+    liveJoinReloadRef.current = false;
     let g;
     try {
       g = await getGatheringById(gatheringId);
@@ -176,7 +187,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       return;
     }
     setGathering(g);
-    recordBehaviorEvent('open', 'gathering', g.id, g.interest_tag);
+    if (!liveJoinReload) recordBehaviorEvent('open', 'gathering', g.id, g.interest_tag);
     setLoadError(false);
     setLoading(false);
 
@@ -209,6 +220,18 @@ export default function GatheringDetailScreen({ route, navigation }) {
           getGatheringMessageCount(gatheringId),
         ]);
         setHostMessageCount(messageCount);
+        const fresh = newJoinsToAnimate(joinRows, {
+          previousIds: joinBaselineRef.current?.ids,
+          previousGoing: joinBaselineRef.current?.going,
+          going,
+          live: liveJoinReload,
+          shown: joinShownRef.current,
+        });
+        joinBaselineRef.current = { ids: approvedIds(joinRows), going };
+        if (fresh.length > 0) {
+          fresh.forEach((id) => joinShownRef.current.add(id));
+          setJoinGlowKey((k) => k + 1);
+        }
         setCountdownStats({
           going: going ?? attendeeTotal(g),
           requests,
@@ -340,6 +363,23 @@ export default function GatheringDetailScreen({ route, navigation }) {
       unsubscribe();
     };
   }, [isHostViewer, gatheringId]);
+
+  // Item 15 (owner, 2026-10-10, LOCKED): someone joining while the host has this screen in front updates the Going line
+  // without a manual refresh. Realtime only says "a join row of this gathering changed" (host RLS; the event itself is never read);
+  // the screen re-reads the stored attendance, which stays the truth, and the focus reload covers anything missed.
+  // Removed on blur. Same pattern as items 13/14.
+  useFocusEffect(useCallback(() => {
+    if (!isHostViewer || !gatheringId) return undefined;
+    let timer = null;
+    const unsubscribe = subscribeToGatheringJoinChanges(gatheringId, () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => { liveJoinReloadRef.current = true; load(); }, 700);
+    });
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [isHostViewer, gatheringId, load]));
 
   // A gathering is its own plan, so there is no "whole plan" screen for it (screen-reduction audit B2). Only when it is part
   // of something bigger (a night out, an occasion) does it link up to that plan, for the host and approved attendees.
@@ -966,6 +1006,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 canInvite={canInvite && viewer.time !== 'past'}
                 attendeesExpanded={attendeesExpanded}
                 messageCount={hostMessageCount}
+                joinGlowKey={joinGlowKey}
                 onInvite={() => setInviteModalVisible(true)}
                 onEdit={() => navigation.navigate('EditGathering', { gathering })}
                 onMessage={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}

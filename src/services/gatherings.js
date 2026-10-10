@@ -1483,6 +1483,16 @@ export function subscribeToGatheringMessageChanges(gatheringId, onChange) {
   return () => supabase.removeChannel(channel);
 }
 
+// Item 15 (2026-10-10): the host's live join update. Host RLS decides which join rows reach this channel; the event is
+// never read, a change only triggers a re-read of the stored attendance (GatheringDetail's load). Removed on blur.
+export function subscribeToGatheringJoinChanges(gatheringId, onChange) {
+  const channel = supabase
+    .channel(`gathering_joins:${gatheringId}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'gathering_interest', filter: `gathering_id=eq.${gatheringId}` }, () => onChange())
+    .subscribe();
+  return () => supabase.removeChannel(channel);
+}
+
 // Confirmation screen's "Invite Connections" — friends only (locked
 // decision #3: no proximity/stranger surfacing here, ever), enriched
 // with real shared-context where it honestly exists: a shared

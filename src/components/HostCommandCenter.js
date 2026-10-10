@@ -4,6 +4,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
 import { hostSummaryStats, hostActions, messageBadge } from '../utils/hostCommandCenter';
+import { OfferProgressGlow } from '../motion/OfferProgressSteps';
+import { SEQUENCES } from '../motion/motionBudget';
 
 const INVITE_PREVIEW = 5;
 
@@ -18,6 +20,7 @@ export default function HostCommandCenter({
   canInvite,
   attendeesExpanded,
   messageCount,
+  joinGlowKey = 0,
   onInvite,
   onEdit,
   onMessage,
@@ -49,11 +52,20 @@ export default function HostCommandCenter({
     <View>
       {statRows.length > 0 && (
         <View style={styles.statsRow}>
-          {statRows.map((s) => (
-            <Text key={s.key} style={[styles.stat, s.key === 'going' && styles.statLead]}>
+          {statRows.map((s) => (s.key === 'going' ? (
+            // Item 15: someone joined while the host had this open -> one success-colour glow around the Going figure
+            // (keyed per join event, so it plays once). No haptic (the host did not tap). Reduce Motion = no glow.
+            <View key={s.key} style={styles.goingWrap} accessibilityLiveRegion={joinGlowKey > 0 ? 'polite' : undefined}>
+              <Text style={[styles.stat, styles.statLead]}>{t(`ui.hostCenter.stat.${s.key}`, { count: s.value })}</Text>
+              {joinGlowKey > 0 ? (
+                <OfferProgressGlow key={joinGlowKey} play color={colors.success} radius={radius.sm} timing={SEQUENCES.hostJoin} />
+              ) : null}
+            </View>
+          ) : (
+            <Text key={s.key} style={styles.stat}>
               {t(`ui.hostCenter.stat.${s.key}`, { count: s.value })}
             </Text>
-          ))}
+          )))}
         </View>
       )}
       {statRows.some((s) => s.key === 'interested') && (
@@ -119,6 +131,7 @@ export default function HostCommandCenter({
 }
 
 const getStyles = (colors) => StyleSheet.create({
+  goingWrap: { paddingHorizontal: 4, marginHorizontal: -4, borderRadius: radius.sm },
   statsRow: { flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.md, rowGap: 2, marginTop: spacing.xs },
   stat: { color: colors.textSecondary, fontSize: 14, fontWeight: '600' },
   statLead: { color: colors.textPrimary, fontWeight: '800' },

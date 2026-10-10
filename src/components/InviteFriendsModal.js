@@ -10,7 +10,6 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { supabase } from '../services/supabase';
 import { sendInvite } from '../services/invites';
 import * as Haptics from 'expo-haptics';
-import StaggeredReveal from './StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -116,7 +115,7 @@ export default function InviteFriendsModal({
             // Item 126 ("Don't animate every card"): the whole list settles into place once,
             // instead of each friend row independently staggering in -- a real friends list can
             // easily hold far more than a handful of rows.
-            <StaggeredReveal index={0}>
+            <View>
             <FlatList
               data={friends}
               keyExtractor={(item) => item.id}
@@ -148,7 +147,7 @@ export default function InviteFriendsModal({
                 </View>
               )}
             />
-            </StaggeredReveal>
+            </View>
           )}
 
           {resolvedType === 'gathering' && (

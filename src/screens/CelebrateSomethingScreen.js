@@ -48,7 +48,6 @@ import {
 import { experienceTemplateForOccasion } from '../constants/experienceTemplates';
 import { OccasionAnimation, OCCASION_SELECT_ANIMATIONS, NearbyPickBadge, NLoader, FoundLine, showSuccessToast } from '../motion';
 import FindingOptionsLoader from '../components/FindingOptionsLoader';
-import StaggeredReveal from '../components/StaggeredReveal';
 import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
@@ -1047,11 +1046,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
   // filling "Something Fun") can't be requested from a business -- it's
   // already a real, already-happening thing, so it renders as a plain
   // tap-to-view row instead of a selectable checkbox.
-  // Item 112 follow-up (CLAUDE.md, "the final options settle into place"):
-  // `index` (optional, defaults to 0 for any caller that doesn't care)
-  // drives StaggeredReveal's per-card entrance delay -- real content
-  // fetched once, revealed in a small cascade rather than dumped in all at
-  // once.
+  // `index` is kept for callers; options render with no entrance cascade (item 15).
   function renderOptionCard(item, index = 0) {
     // Item 125 ("Make 'Nearby found this for you' visually recognizable"): the single real
     // top-scored item of an already relevance-sorted list gets the "✨ Nearby Pick" badge --
@@ -1061,7 +1056,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
     const isTopPick = index === 0 && !isBundle;
     if (item.type === 'gathering') {
       return (
-        <StaggeredReveal key={`gathering-${item.id}`} index={index}>
+        <View key={`gathering-${item.id}`}>
           <TouchableOpacity
             style={styles.optionCard}
             onPress={() => navigation.navigate('GatheringDetail', { gatheringId: item.id })}
@@ -1076,12 +1071,12 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               <Text style={styles.optionHint}>{t('ui.celebrate.alreadyHappeningTapToView')}</Text>
             </View>
           </TouchableOpacity>
-        </StaggeredReveal>
+        </View>
       );
     }
     const selected = selectedIds.has(item.id);
     return (
-      <StaggeredReveal key={`business-${item.id}`} index={index}>
+      <View key={`business-${item.id}`}>
         <TouchableOpacity
           style={[styles.optionCard, selected && styles.optionCardSelected]}
           onPress={() => toggleSelected(item)}
@@ -1100,7 +1095,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             {isBundle && <Text style={styles.optionHint}>{t('ui.celebrate.covers', { parts: item.componentLabels.map((l) => planPartLabel(l, language)).join(', ') })}</Text>}
           </View>
         </TouchableOpacity>
-      </StaggeredReveal>
+      </View>
     );
   }
 
@@ -1800,19 +1795,19 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   ) : (
                     <>
                       {autoPlanSuggestion.items.map((item, i) => (
-                        <StaggeredReveal key={item.key} index={i}>
+                        <View key={item.key}>
                           <View style={styles.autoPlanRow}>
                             <Text style={styles.autoPlanRowLabel}>{planPartLabel(item.label, language)}</Text>
                             <Text style={styles.autoPlanRowDetail}>
                               {item.businessName}{item.price != null ? ` · ${moneyLabel(item.price)}` : t('ui.celebrate.priceVaries')}
                             </Text>
                           </View>
-                        </StaggeredReveal>
+                        </View>
                       ))}
                       {autoPlanSuggestion.suggestions.map((s, i) => {
                         const included = autoPlanAddonTypes.has(s.type);
                         return (
-                          <StaggeredReveal key={s.type} index={autoPlanSuggestion.items.length + i}>
+                          <View key={s.type}>
                             <TouchableOpacity
                               style={styles.autoPlanRow}
                               onPress={() => toggleAutoPlanAddonType(s.type)}
@@ -1826,7 +1821,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                               </Text>
                               <Text style={styles.autoPlanRowDetail}>{included ? t('ui.celebrate.addedToYourPlan') : t('ui.celebrate.tapToAdd')}</Text>
                             </TouchableOpacity>
-                          </StaggeredReveal>
+                          </View>
                         );
                       })}
                       {autoPlanSuggestion.items.length > 0 && (

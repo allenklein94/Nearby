@@ -99,8 +99,7 @@ import CompactRow from '../components/CompactRow';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { ModeTransition, FilterTransition, TapActiveChip, NearbyPickBadge, NLoader, FoundLine, modalAnimation, animateLayout } from '../motion';
-import StaggeredReveal from '../components/StaggeredReveal';
+import { NearbyPickBadge, NLoader, FoundLine, modalAnimation, animateLayout } from '../motion';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -692,9 +691,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
           const active = !!dateViewData && dateViewData.dateFilter === f;
           const label = active ? sectionTitle(dateViewData) : t(`ui.discover.section.${f}`);
           return (
-            <TapActiveChip
+            <TouchableOpacity
               key={f}
-              active={active}
               style={[styles.filterChip, active && styles.filterChipActive]}
               onPress={() => selectTimeChip(f)}
               accessibilityLabel={active ? t('ui.discover.selectedTapClear', { label }) : label}
@@ -702,7 +700,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               accessibilityState={{ selected: active }}
             >
               <Text style={[styles.filterChipText, active && styles.filterChipTextActive]} numberOfLines={1}>{active ? `${label} ✕` : label}</Text>
-            </TapActiveChip>
+            </TouchableOpacity>
           );
         })}
       </ScrollView>
@@ -1468,7 +1466,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (!environmentFilter || gatheringTabActive) return null; // the Gatherings tab shows it in its own filter row
     const label = t(environmentFilter === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip');
     return (
-      <TapActiveChip
+      <TouchableOpacity
         active
         style={[styles.filterChip, styles.filterChipActive]}
         onPress={() => { animateLayout(); setEnvironmentFilter(null); }}
@@ -1477,7 +1475,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         accessibilityState={{ checked: true }}
       >
         <Text style={[styles.filterChipText, styles.filterChipTextActive]}>{`${label} ✕`}</Text>
-      </TapActiveChip>
+      </TouchableOpacity>
     );
   }
 
@@ -1486,9 +1484,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // For You, Trending, ~1 mi, Indoor / Outdoor (the one environment filter), price, plan kind, and Clear filters.
   function gatheringChip(key, label, active, onPress) {
     return (
-      <TapActiveChip
+      <TouchableOpacity
         key={key}
-        active={active}
         style={[styles.filterChip, active && styles.filterChipActive]}
         onPress={() => { animateLayout(); onPress(); }}
         accessibilityLabel={t('ui.gatherings.filterBy', { label })}
@@ -1496,7 +1493,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         accessibilityState={{ selected: active }}
       >
         <Text style={[styles.filterChipText, active && styles.filterChipTextActive]} numberOfLines={1}>{label}</Text>
-      </TapActiveChip>
+      </TouchableOpacity>
     );
   }
   function renderGatheringFilterRows() {
@@ -1535,8 +1532,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   function renderOpenNowChip() {
     return (
-      <TapActiveChip
-        active={openNowOnly}
+      <TouchableOpacity
         style={[styles.filterChip, openNowOnly && styles.filterChipActive]}
         onPress={() => setOpenNowOnly((v) => !v)}
         accessibilityLabel={t('ui.discover.openNow')}
@@ -1544,7 +1540,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         accessibilityState={{ checked: openNowOnly }}
       >
         <Text style={[styles.filterChipText, openNowOnly && styles.filterChipTextActive]}>{t('ui.discover.openNowChip')}</Text>
-      </TapActiveChip>
+      </TouchableOpacity>
     );
   }
 
@@ -1767,7 +1763,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const isTopPick = pickBadge && index === 0 && item.type !== 'friend_discovery';
     const row = resultRowView(item, { language, myUserId }); // typed-ask AND Surprise Me rows: the one context object's reason / context / action
     return (
-      <StaggeredReveal key={`${item.type}-${item.id}`} index={index}>
+      <View key={`${item.type}-${item.id}`}>
       <TouchableOpacity
         style={styles.intentSearchResultRow}
         onPress={() => onPress(item)}
@@ -1789,7 +1785,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <Text style={styles.intentSearchResultChevron}>›</Text>
         )}
       </TouchableOpacity>
-      </StaggeredReveal>
+      </View>
     );
   }
 
@@ -2053,12 +2049,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // in-place depth to reveal, so opening the gathering itself is a genuine
   // task change (join, message, see the roster) -- exactly the line
   // CLAUDE.md's Progressive Depth doctrine draws.
-  //
-  // Item 126 ("Don't animate every card"): this list has no cap -- a broad
-  // category context can genuinely hold 20+ real gatherings -- so this row
-  // no longer wraps itself in its own per-card StaggeredReveal. Each real
-  // call site wraps the WHOLE mapped list in one outer StaggeredReveal
-  // instead, so the group settles into place as one coordinated block.
   function renderContextGatheringRow(g) {
     const card = discoverCard(g);
     const action = gatheringActionInfo(g, card);
@@ -2119,7 +2109,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     if (variant === 'compact') {
       const fullness = gatheringFullnessLabel(g);
       return (
-        <StaggeredReveal key={g.id} index={index}>
+        <View key={g.id}>
           <CompactRow
             testID={`discover-compact-${g.id}`}
             photoUrl={coverPhotoUrls[g.id] ?? (g.interest_tag ? curatedCoverPhotoFor(g.interest_tag) : null) ?? null}
@@ -2137,7 +2127,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               accessibilityLabel: `${action.label}: ${g.title}`,
             }}
           />
-        </StaggeredReveal>
+        </View>
       );
     }
 
@@ -2148,7 +2138,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         : heroEyebrow(g);
       const categoryStyle = categoryStyleFor(g.interest_tag);
       return (
-        <StaggeredReveal key={g.id} index={index}>
+        <View key={g.id}>
         <TouchableOpacity
           style={styles.heroCard}
           testID={`discover-hero-${g.id}`}
@@ -2218,12 +2208,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
             )}
           </View>
         </TouchableOpacity>
-        </StaggeredReveal>
+        </View>
       );
     }
 
     return (
-      <StaggeredReveal key={g.id} index={index}>
+      <View key={g.id}>
       <TouchableOpacity
         style={styles.card}
         onPress={() => openContextFor(g)}
@@ -2265,7 +2255,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
         )}
       </TouchableOpacity>
-      </StaggeredReveal>
+      </View>
     );
   }
 
@@ -2278,7 +2268,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   function renderHappeningNowTile(g, index) {
     const card = discoverCard(g);
     return (
-      <StaggeredReveal key={g.id} index={index}>
+      <View key={g.id}>
       <TouchableOpacity
         style={styles.nowCard}
         onPress={() => openContextFor(g)}
@@ -2300,7 +2290,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           </Text>
         )}
       </TouchableOpacity>
-      </StaggeredReveal>
+      </View>
     );
   }
 
@@ -2320,9 +2310,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {DISCOVER_MODES.map((m) => {
             const active = mode === m.key;
             return (
-              <TapActiveChip
+              <TouchableOpacity
                 key={m.key}
-                active={active}
                 style={[styles.modeToggleButton, active && styles.modeToggleButtonActive]}
                 onPress={() => selectMode(m.key)}
                 accessibilityLabel={t(`ui.discover.mode.${m.key}`)}
@@ -2331,7 +2320,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               >
                 <Text style={styles.modeToggleIcon}>{m.icon}</Text>
                 <Text style={[styles.modeToggleText, active && styles.modeToggleTextActive]}>{t(`ui.discover.mode.${m.key}`)}</Text>
-              </TapActiveChip>
+              </TouchableOpacity>
             );
           })}
         </View>
@@ -2365,9 +2354,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
         {mode === 'things' && expandedContext && contextCuisineChips.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }} style={{ marginBottom: spacing.sm }}>
             {contextCuisineChips.map((c) => (
-              <TapActiveChip
+              <TouchableOpacity
                 key={c.key}
-                active={c.active}
                 style={[styles.filterChip, c.active && styles.filterChipActive]}
                 onPress={() => setCuisineFilter(c.active ? null : c.key)}
                 accessibilityLabel={c.active ? t('ui.discover.selectedTapClear', { label: names.cuisine(c.key, c.label) }) : names.cuisine(c.key, c.label)}
@@ -2375,7 +2363,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 accessibilityState={{ selected: c.active }}
               >
                 <Text style={[styles.filterChipText, c.active && styles.filterChipTextActive]}>{c.active ? `${names.cuisine(c.key, c.label)} ✕` : names.cuisine(c.key, c.label)}</Text>
-              </TapActiveChip>
+              </TouchableOpacity>
             ))}
           </ScrollView>
         )}
@@ -2435,9 +2423,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {(resultTabsActive ? resultTabs : TYPE_FILTERS).map((f) => {
                   const active = resultTabsActive ? resultTab === f.key : typeFilter === f.key;
                   return (
-                    <TapActiveChip
+                    <TouchableOpacity
                       key={f.key}
-                      active={active}
                       style={[styles.filterChip, active && styles.filterChipActive]}
                       onPress={() => (resultTabsActive ? (animateLayout(), setSearchTab(f.key)) : setTypeTab(f.key))}
                       accessibilityLabel={t(`ui.discover.${resultTabsActive ? 'resultTab' : 'typeFilter'}.${f.key}`)}
@@ -2445,7 +2432,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                       accessibilityState={{ selected: active }}
                     >
                       <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{t(`ui.discover.${resultTabsActive ? 'resultTab' : 'typeFilter'}.${f.key}`)}</Text>
-                    </TapActiveChip>
+                    </TouchableOpacity>
                   );
                 })}
                 {typeFilter !== 'communities' && renderOpenNowChip()}
@@ -2472,9 +2459,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {PLACE_CATEGORIES.map((c) => {
                   const active = placesCategory === c.key;
                   return (
-                    <TapActiveChip
+                    <TouchableOpacity
                       key={c.key}
-                      active={active}
                       style={[styles.filterChip, active && styles.filterChipActive]}
                       onPress={() => setPlacesCategory(c.key)}
                       accessibilityLabel={names.group(c.key, c.label)}
@@ -2483,7 +2469,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     >
                       <Text style={styles.filterChipIcon}>{c.icon}</Text>
                       <Text style={[styles.filterChipText, active && styles.filterChipTextActive]}>{names.group(c.key, c.label)}</Text>
-                    </TapActiveChip>
+                    </TouchableOpacity>
                   );
                 })}
               </ScrollView>
@@ -2492,15 +2478,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
         )}
       </View>
 
-      {/* ModeTransition (the Nearby Motion System, CLAUDE.md Item 113): a brief
-          state-change cue on the Things-to-Do<->People switch above, same
-          mechanic MessagesScreen's own Matches<->Friends toggle already uses.
-          Deliberately deferred when Item 113 first shipped this component --
-          this ternary is structurally asymmetric (People is a plain View;
-          Things is itself a further expandedContext/map/default split) -- so
-          it's wrapped as one single outer transition around the whole
-          already-existing ternary rather than restructuring any branch. */}
-      <ModeTransition activeKey={mode} style={{ flex: 1 }}>
+      {/* Item 15 (2026-10-10): plain container, no transition (motion only marks real events). */}
+      <View style={{ flex: 1 }}>
       {mode === 'people' ? (
         // Real screens embedded in place, no navigation -- the exact same
         // "segmented toggle swaps content in place" pattern the outer
@@ -2545,9 +2524,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {PEOPLE_SUBMODES.map((pm) => {
                   const active = peopleSubMode === pm.key;
                   return (
-                    <TapActiveChip
+                    <TouchableOpacity
                       key={pm.key}
-                      active={active}
                       style={[styles.peopleSubToggleButton, active && styles.peopleSubToggleButtonActive]}
                       onPress={() => selectPeopleSubMode(pm.key)}
                       accessibilityLabel={t(`ui.discover.submode.${pm.key}`)}
@@ -2556,7 +2534,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     >
                       <Text style={styles.peopleSubToggleIcon}>{pm.icon}</Text>
                       <Text style={[styles.peopleSubToggleText, active && styles.peopleSubToggleTextActive]}>{t(`ui.discover.submode.${pm.key}`)}</Text>
-                    </TapActiveChip>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -2571,35 +2549,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </TouchableOpacity>
             </View>
           </View>
-          {/* ModeTransition (the Nearby Motion System, CLAUDE.md Item 113/115):
-              the same dip-and-recover cue as the outer Things-to-Do<->People
-              toggle above, now also on this inner Dating<->Friends switch, so
-              the two read as siblings under one Discover rather than one
-              abruptly replacing the other with unrelated content. Keyed on
-              peopleSubMode specifically (not the outer mode, which already has
-              its own ModeTransition above) so switching Dating<->Friends fires
-              its own cue independent of the outer one. */}
-          <ModeTransition activeKey={peopleSubMode} style={{ flex: 1 }}>
+          <View style={{ flex: 1 }}>
             {peopleSubMode === 'dating' ? (
               <DiscoveryScreen navigation={navigation} embedded tonight={meetTonightContext} />
             ) : (
               <FriendDiscoveryScreen navigation={navigation} embedded tonight={meetTonightContext} />
             )}
-          </ModeTransition>
+          </View>
         </View>
       ) : (
-        // FilterTransition (the Nearby Motion System, CLAUDE.md Item 113): a
-        // brief cue that these are new results whenever the active category
-        // changes -- covers both directions of the Categories row's chips
-        // (browse -> a category, one category -> another via the breadcrumb
-        // back button, and back to browse), keyed on contextLabel, which is
-        // already null while browsing and a distinct string per selected
-        // category/context. Wraps the whole expandedContext/map/default
-        // sub-switch (unlike PlacesScreen's single in-place FlatList, this
-        // one swaps entire branches) so the cue survives the branch swap the
-        // same way the outer ModeTransition above survives the People<->
-        // Things swap.
-        <FilterTransition activeKey={contextLabel ?? (dateViewData ? `date:${dateViewData.dateFilter}` : null)} style={{ flex: 1 }}>
+        // Item 15 (2026-10-10): plain container, no transition (motion only marks real events).
+        <View style={{ flex: 1 }}>
         {expandedContext ? (
         /* Phase 8 section F -- the same screen, reconfigured. Gatherings /
            Places / Perks are the primary content, all three scoped to this
@@ -2614,9 +2574,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {contextTonight.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>{t('ui.discover.happeningTonight')}</Text>
-              <StaggeredReveal index={0}>
+              <View>
                 <View>{contextTonight.map(renderContextGatheringRow)}</View>
-              </StaggeredReveal>
+              </View>
             </>
           )}
           {contextTonight.length > 0 && contextGatherings.length === 0 ? null : <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.gatherings')}</Text>}
@@ -2637,18 +2597,18 @@ export default function DiscoverHubScreen({ navigation, route }) {
           ) : (
             // Item 126 ("Don't animate every card"): an unbounded list -- one
             // coordinated container settle, not N independent per-card slides.
-            <StaggeredReveal index={0}>
+            <View>
               <View>{contextGatherings.map(renderContextGatheringRow)}</View>
-            </StaggeredReveal>
+            </View>
           )}
 
           {contextOtherTimeGatherings.length > 0 && (
             <>
               <Text style={styles.sectionHeader}>{t('ui.discover.moreNearby', { topic: names.tag(expandedContext.interestTag) })}</Text>
               <Text style={styles.contextGroupNote}>{t('ui.discover.sameInterest')}</Text>
-              <StaggeredReveal index={0}>
+              <View>
                 <View>{contextOtherTimeGatherings.map(renderContextGatheringRow)}</View>
-              </StaggeredReveal>
+              </View>
             </>
           )}
 
@@ -2684,7 +2644,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           ) : (
             contextPlacesShown.slice(0, PREVIEW_COUNT).map((p, i) => (
-              <StaggeredReveal key={p.placeId} index={i}>
+              <View key={p.placeId}>
                 <PlaceCard
                   photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
                   photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
@@ -2694,7 +2654,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   onPress={() => openPlaceInMaps(p)}
                   accessibilityLabel={p.name}
                 />
-              </StaggeredReveal>
+              </View>
             ))
           )}
 
@@ -2720,11 +2680,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
           ) : (
             // Item 126 ("Don't animate every card"): an unbounded list -- one
             // coordinated container settle, not N independent per-card slides.
-            <StaggeredReveal index={0}>
+            <View>
               <View>
                 {contextOffers.map((o) => renderPerkCard(o))}
               </View>
-            </StaggeredReveal>
+            </View>
           )}
 
           <TouchableOpacity
@@ -3182,7 +3142,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </View>
               {/* Item 126 ("Don't animate every card"): uncapped when not on the blended "All"
                   view -- one coordinated container settle, not N independent per-card slides. */}
-              <StaggeredReveal index={0}>
+              <View>
               <View>
               {gatheringsToShow.map((g) => { const card = discoverCard(g); return (
                 <TouchableOpacity
@@ -3215,7 +3175,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 </TouchableOpacity>
               ); })}
               </View>
-              </StaggeredReveal>
+              </View>
             </>
           )}
 
@@ -3248,13 +3208,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </View>
               {/* Item 126 ("Don't animate every card"): uncapped when not on the blended "All"
                   view -- one coordinated container settle, not N independent per-card slides. */}
-              <StaggeredReveal index={0}>
+              <View>
               <View>
               {communitiesToShow.map((c) => { const cc = communityContext(c); return (
                 renderCommunityRow(c, cc, [cc.reason, cc.context, c.description])
               ); })}
               </View>
-              </StaggeredReveal>
+              </View>
             </>
           )}
 
@@ -3329,7 +3289,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               ) : (
                 // Item 126 ("Don't animate every card"): uncapped when not on the blended "All"
                 // view -- one coordinated container settle, not N independent per-card slides.
-                <StaggeredReveal index={0}>
+                <View>
                 <View>
                 {placesToShow.map((p) => (
                   <PlaceCard
@@ -3344,7 +3304,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   />
                 ))}
                 </View>
-                </StaggeredReveal>
+                </View>
               )}
             </>
           )}
@@ -3386,11 +3346,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </View>
               {/* Item 126 ("Don't animate every card"): uncapped when not on the blended "All"
                   view -- one coordinated container settle, not N independent per-card slides. */}
-              <StaggeredReveal index={0}>
+              <View>
               <View>
               {withSelectedPerk(offersToShow).map((o) => renderPerkCard(o))}
               </View>
-              </StaggeredReveal>
+              </View>
             </>
           )}
 
@@ -3450,9 +3410,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
         </ScrollView>
         )}
-        </FilterTransition>
+        </View>
       )}
-      </ModeTransition>
+      </View>
 
       <Modal visible={!!gatheringStoryViewer} animationType={modalAnimation('slide')} onRequestClose={() => setGatheringStoryViewer(null)}>
         <SafeAreaView style={styles.container}>

@@ -13,9 +13,9 @@
 //     gate or slow down a real button/action.
 //
 // Import from here going forward, e.g. `import { NLoader } from
-// '../motion'`. TapActiveChip/useTapActivate (Item 117) are the control-side half of the
-// cause-and-effect pattern ModeTransition/FilterTransition (Items 114-116) started on the results
-// side: a chip/tab/toggle should visibly confirm it was the thing tapped, not just its results.
+// '../motion'`. Item 15 (2026-10-10): routine taps, tab/mode switches, filter changes and list
+// loads do not animate; motion is reserved for real events (MARKETPLACE_MOMENTS, matches,
+// confirmations, a join on the host's gathering).
 // All six of the original component locations under
 // src/components/ (BrandedLoader, PlanCreatedCelebration,
 // OccasionSelectAnimation, SurpriseRevealAnimation, MatchCelebrationModal,
@@ -33,10 +33,7 @@ export { default as MatchAnimation } from './MatchAnimation';
 export { default as OccasionAnimation, OCCASION_SELECT_ANIMATIONS } from './OccasionAnimation';
 export { default as SurpriseRevealAnimation, SURPRISE_REVEAL_TOTAL_MS } from './SurpriseRevealAnimation';
 export { default as ModeTransition } from './ModeTransition';
-export { default as FilterTransition } from './FilterTransition';
 export { default as PullToRefresh } from './PullToRefresh';
-export { default as TapActiveChip } from './TapActiveChip';
-export { default as useTapActivate } from './useTapActivate';
 export { default as ConnectionGlyphSwap } from './ConnectionGlyphSwap';
 export { default as AnticipationText } from './AnticipationText';
 export { default as NearbyPickBadge } from './NearbyPickBadge';

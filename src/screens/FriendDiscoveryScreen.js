@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { tr } from '../i18n/translate';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Switch, Alert } from 'react-native';
-import { NLoader, MatchAnimation, FilterTransition, TapActiveChip } from '../motion';
+import { NLoader, MatchAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import QuickFilterCustomizer from '../components/QuickFilterCustomizer';
 import {
@@ -263,12 +263,6 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
   });
   const filtersActive = interestFilters.length > 0 || !!distanceFilter || verifiedOnlyFilter || onlineOnlyFilter;
 
-  // FilterTransition (the Nearby Motion System, CLAUDE.md Item 116): the
-  // same results-reorganizing cue DiscoveryScreen's own quick filters just
-  // got, for Dating/Friends parity (Item 115's "siblings" framing) --
-  // filteredCandidates is already a pure client-side re-filter, no reload.
-  const friendFilterKey = JSON.stringify({ interestFilters, distanceFilter, verifiedOnlyFilter, onlineOnlyFilter });
-
   // Real values only, never an invented distance number -- distanceFilter
   // is already one of DISTANCE_BUCKETS' own real strings ("Nearby", "A few
   // miles away", "In the wider area"), matching this screen's own
@@ -418,9 +412,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                         {PERSONAL_INTEREST_OPTIONS.map((tag) => {
                           const selected = interestFilters.includes(tag);
                           return (
-                            <TapActiveChip
+                            <TouchableOpacity
                               key={tag}
-                              active={selected}
                               style={[styles.filterChip, selected && styles.filterChipActive]}
                               onPress={() => toggleInterestFilter(tag)}
                               accessibilityLabel={names.tag(tag)}
@@ -428,7 +421,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                               accessibilityState={{ selected }}
                             >
                               <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{names.tag(tag)}</Text>
-                            </TapActiveChip>
+                            </TouchableOpacity>
                           );
                         })}
                       </View>
@@ -449,9 +442,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                         {DISTANCE_BUCKETS.map((bucket) => {
                           const selected = distanceFilter === bucket;
                           return (
-                            <TapActiveChip
+                            <TouchableOpacity
                               key={bucket}
-                              active={selected}
                               style={[styles.filterChip, selected && styles.filterChipActive]}
                               onPress={() => setDistanceFilter(selected ? null : bucket)}
                               accessibilityLabel={t(`ui.friends.bucket.${DISTANCE_BUCKET_KEYS[bucket]}`)}
@@ -459,7 +451,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                               accessibilityState={{ selected }}
                             >
                               <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{t(`ui.friends.bucket.${DISTANCE_BUCKET_KEYS[bucket]}`)}</Text>
-                            </TapActiveChip>
+                            </TouchableOpacity>
                           );
                         })}
                       </View>
@@ -471,8 +463,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                     <View key={key} style={{ marginTop: spacing.sm }}>
                       <Text style={styles.accordionSubLabel}>{t('ui.friends.verified')}</Text>
                       <View style={styles.filterChipRow}>
-                        <TapActiveChip
-                          active={verifiedOnlyFilter}
+                        <TouchableOpacity
                           style={[styles.filterChip, verifiedOnlyFilter && styles.filterChipActive]}
                           onPress={() => setVerifiedOnlyFilter((prev) => !prev)}
                           accessibilityLabel={t('ui.friends.verifiedOnlyA11y')}
@@ -480,7 +471,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                           accessibilityState={{ selected: verifiedOnlyFilter }}
                         >
                           <Text style={[styles.filterChipText, verifiedOnlyFilter && styles.filterChipTextActive]}>{t('ui.friends.verifiedOnly')}</Text>
-                        </TapActiveChip>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   );
@@ -490,8 +481,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                     <View key={key} style={{ marginTop: spacing.sm }}>
                       <Text style={styles.accordionSubLabel}>{t('ui.friends.online')}</Text>
                       <View style={styles.filterChipRow}>
-                        <TapActiveChip
-                          active={onlineOnlyFilter}
+                        <TouchableOpacity
                           style={[styles.filterChip, onlineOnlyFilter && styles.filterChipActive]}
                           onPress={() => setOnlineOnlyFilter((prev) => !prev)}
                           accessibilityLabel={t('ui.friends.onlineNowA11y')}
@@ -499,7 +489,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                           accessibilityState={{ selected: onlineOnlyFilter }}
                         >
                           <Text style={[styles.filterChipText, onlineOnlyFilter && styles.filterChipTextActive]}>{t('ui.friends.onlineNow')}</Text>
-                        </TapActiveChip>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   );
@@ -523,7 +513,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
         </View>
       )}
 
-      <FilterTransition activeKey={friendFilterKey} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
       {filtersActive && filteredCandidates.length === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.explainerBody}>
@@ -558,7 +548,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
           navigation={navigation}
         />
       )}
-      </FilterTransition>
+      </View>
 
       <MatchAnimation haptic
         kind="friend"

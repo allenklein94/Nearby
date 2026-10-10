@@ -25,7 +25,6 @@ import { recordIntentSelection } from '../services/intentOutcomes';
 import DietaryPicker from '../components/DietaryPicker';
 import LoadErrorState from '../components/LoadErrorState';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
-import StaggeredReveal from '../components/StaggeredReveal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
@@ -486,10 +485,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                 const iConfirmed = confirmedForThisOffer.some((c) => c.user_id === myId);
                 const amActiveParticipant = canDo('group_participant', myParticipant?.status, 'confirm_offer');
                 return (
-                  // Item 124 ("Use animation when something becomes available"): the group's own
-                  // "we found options" moment -- each offer settles into place with a small
-                  // per-index cascade rather than appearing all at once.
-                  <StaggeredReveal key={o.id} index={offerIndex} style={styles.offerCard}>
+                  <View key={o.id} style={styles.offerCard}>
                   <View>
                     <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.groupPlan.aBusiness')}</Text>
                     <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.groupPlan.thisOfferHasExpired') : statusCopy(t, 'offerStatus', OFFER_STATUS_KEYS, o.status)}</Text>
@@ -510,7 +506,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                       </>
                     )}
                   </View>
-                  </StaggeredReveal>
+                  </View>
                 );
               })
             )}
@@ -521,7 +517,7 @@ export default function GroupPlanScreen({ navigation, route }) {
               <Text style={styles.helperText}>{t('ui.groupPlan.noOneHasOfferedTo')}</Text>
             ) : (
               socialOffers.map((o, socialOfferIndex) => (
-                <StaggeredReveal key={o.id} index={socialOfferIndex} style={styles.offerCard}>
+                <View key={o.id} style={styles.offerCard}>
                 <View>
                   <Text style={styles.offerPartnerName}>{o.profiles?.display_name ?? t('ui.groupPlan.someone')}</Text>
                   <Text style={styles.offerStatus}>{statusCopy(t, 'socialOfferStatus', SOCIAL_OFFER_STATUS_KEYS, o.status)}</Text>
@@ -549,7 +545,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                     </View>
                   )}
                 </View>
-                </StaggeredReveal>
+                </View>
               ))
             )}
             {canDo('group_participant', myParticipant?.status, 'social_offer') && !isInitiator && !socialOffers.some((o) => o.offerer_id === myId) && (

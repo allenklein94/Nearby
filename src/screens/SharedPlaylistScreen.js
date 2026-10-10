@@ -7,7 +7,6 @@ import { addPlaylistItem, getPlaylistItems } from '../services/sharedPlaylist';
 import { searchSpotifyTracks } from '../services/spotifyAuth';
 import { supabase } from '../services/supabase';
 import * as Haptics from 'expo-haptics';
-import AnimatedListItem from '../components/AnimatedListItem';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -130,7 +129,7 @@ export default function SharedPlaylistScreen({ route }) {
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ paddingHorizontal: spacing.lg }}
           renderItem={({ item, index }) => (
-            <AnimatedListItem index={index}>
+            <View>
             <TouchableOpacity
               style={styles.resultRow}
               onPress={() => handleAddTrack(item)}
@@ -150,7 +149,7 @@ export default function SharedPlaylistScreen({ route }) {
               </View>
               {adding === item.id ? <ActivityIndicator color={colors.primary} /> : <Text style={styles.addIcon}>+</Text>}
             </TouchableOpacity>
-            </AnimatedListItem>
+            </View>
           )}
         />
       ) : (

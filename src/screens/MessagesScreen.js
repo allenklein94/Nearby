@@ -5,7 +5,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MatchesScreen from './MatchesScreen';
 import FriendsScreen from './FriendsScreen';
-import { ModeTransition } from '../motion';
 import { getMyGatheringChats } from '../services/gatherings';
 import { getMyCommunities } from '../services/communities';
 import { useTheme } from '../context/ThemeContext';
@@ -130,11 +129,7 @@ export default function MessagesScreen({ navigation, route }) {
         </View>
       </View>
 
-      {/* ModeTransition (the Nearby Motion System, CLAUDE.md Item 113): a brief
-          state-change cue when the toggle above swaps real content, matching the
-          same Matches<->Friends switch DiscoverHubScreen's own header comment
-          already calls out as this pattern's origin. */}
-      <ModeTransition activeKey={mode} style={{ flex: 1 }}>
+      <View style={{ flex: 1 }}>
       {mode === 'matches' ? (
         <>
           {groupChats.length > 0 && (
@@ -176,7 +171,7 @@ export default function MessagesScreen({ navigation, route }) {
           <FriendsScreen navigation={navigation} />
         </View>
       )}
-      </ModeTransition>
+      </View>
     </SafeAreaView>
   );
 }
