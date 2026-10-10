@@ -99,8 +99,8 @@ describe('wiring (source guards)', () => {
     expect(card).toMatch(/Animated\.timing\(space, \{ toValue: 0/);
   });
   test('the screens remove it only when it says it is done (no screen-side timer pulls it out)', () => {
-    expect(detail).toMatch(/onDone=\{\(\) => setJustAccepted\(false\)\}/);
-    expect(detail).not.toMatch(/setTimeout\(\(\) => setJustAccepted\(false\)/);
+    // Item 12: the request screen no longer shows this card (its offer card morphs in place and stays).
+    expect(detail).not.toMatch(/BookedCelebration|setJustAccepted\(false\)/);
     expect(group).toMatch(/if \(kind !== 'reservation'\) successBannerTimerRef/);
     expect(group).toMatch(/<BookedCelebration haptic title=\{t\('ui\.requestDetail\.youreBooked'\)\} onDone=/);
   });
@@ -111,7 +111,7 @@ describe('wiring (source guards)', () => {
   });
   test('the booking itself never waits on the card', () => {
     const accept = detail.slice(detail.indexOf('async function handleAccept'), detail.indexOf('async function collectPayment'));
-    expect(accept.indexOf('acceptBusinessOffer')).toBeLessThan(accept.indexOf('setJustAccepted(true)'));
+    expect(accept.indexOf('acceptBusinessOffer')).toBeLessThan(accept.indexOf('setJustAcceptedOfferId(offerId)'));
     expect(accept).not.toMatch(/await[^\n]*(Booked|justAccepted)/);
   });
 });

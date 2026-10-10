@@ -7,7 +7,8 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking } from 'react-native';
 import * as Calendar from 'expo-calendar';
-import { NLoader, SuccessAnimation, ModeTransition, BookedCelebration } from '../motion';
+import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, animateLayout } from '../motion';
+import { acceptedBookingState, ACCEPTED_TITLE_KEY, acceptedWhenLine, acceptedPartySize } from '../utils/acceptedBooking';
 import { useFocusEffect } from '@react-navigation/native';
 import { subscribeViewedArrivals } from '../services/offerArrivals';
 import { isOfferTravelPending, reportOfferTravelTarget } from '../motion/offerTravel';
@@ -195,7 +196,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // brief, self-clearing celebration, distinct from the Plan Status pill's own
   // permanent "Confirmed" label just below it (that one stays forever; this one is
   // the one-time moment of it becoming true).
-  const [justAccepted, setJustAccepted] = useState(false);
+  // The offer the person just took in this visit: its card morphs in place once (item 12). Never reset, so a reload
+  // keeps the settled card and never replays the morph (it decides at mount).
+  const [justAcceptedOfferId, setJustAcceptedOfferId] = useState(null);
+  const acceptingRef = useRef(false);
   // 10/10 roadmap Part 5 (see CLAUDE.md's "10/10 roadmap" plan) --
   // partnerId -> { reputation, responseTime }, fetched for every partner
   // with a real offer showing, so the consumer isn't blind to whether a
@@ -682,14 +686,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   useEffect(() => subscribeViewedArrivals((id) => { if (id === requestId) load(); }), [requestId, load]);
 
   async function handleAccept(offerId) {
+    // One accept in flight: a second tap before the button re-renders as disabled does nothing (the server also refuses a
+    // second accept: the offer is no longer 'offered').
+    if (acceptingRef.current) return;
+    acceptingRef.current = true;
     setActingOfferId(offerId);
     try {
       const result = await acceptBusinessOffer(offerId);
       recordAcceptBehavior(request?.id, request?.category); // item 95: private ranking signal, never a profile edit
+      // Item 12: the card morphs only from the stored state the reload brings back (accepted + its reservation), never on
+      // the tap alone. The layout change (button out, booked facts in) is smoothed so nothing below jumps.
+      setJustAcceptedOfferId(offerId);
+      animateLayout();
       await load();
-      // The card times itself (hold, then shrinks away and closes its space) and calls onDone; setting this again while it
-      // is showing does not remount or replay it.
-      setJustAccepted(true);
       // accept_business_offer() itself already confirmed the real
       // reservation ('nearby' provider) regardless of payment -- this is
       // purely the follow-up payment-collection step, never a condition
@@ -698,7 +707,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         await collectPayment(offerId);
       }
     } catch (e) {
+      // Re-read so the card shows what is true now (expired, taken, request closed) rather than a stale button; a refused
+      // offer gets the server's reason with no Try again, a service failure keeps the offer and offers Try again.
+      load().catch(() => {});
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAccept(offerId) });
+    } finally {
+      acceptingRef.current = false;
     }
     setActingOfferId(null);
   }
@@ -1026,16 +1040,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             confirmed. ✓" phrasing GroupPlanScreen already uses for this exact same real
             moment, with tone="business" (skips the ✨ discovery beat, settles fast, no
             springy bounce). */}
-        {/* 2026-10-09: the booking moment is now BookedCelebration (ring + ✓ + one ripple + the real facts), still the
-            item-122 business tone: success colour, no particles, under 0.8 s. */}
-        {justAccepted && (
-          <BookedCelebration
-            haptic
-            onDone={() => setJustAccepted(false)}
-            title={t('ui.requestDetail.youreBooked')}
-            details={{ businessName: winningOffer?.brand_partners?.name ?? null, dateLabel: planSummary?.dateLabel ?? null, timeLabel: planSummary?.timeLabel ?? null }}
-          />
-        )}
+        {/* Item 12 (2026-10-10): the booking moment is the offer card itself morphing in place (OfferAcceptedMorph below);
+            no separate card above the offers. */}
         {request && parentPlan && (
           <TouchableOpacity onPress={() => navigation.navigate('PlanDetail', { planId: parentPlan.id })} accessibilityRole="button" accessibilityLabel={t('ui.planDetail.partOf', { title: parentPlan.title || t('ui.planDetail.yourNight') })}>
             <Text style={{ color: colors.primary, fontWeight: '700', marginBottom: spacing.sm }}>{t('ui.planDetail.partOf', { title: parentPlan.title || t('ui.planDetail.yourNight') })} →</Text>
@@ -1350,16 +1356,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           {displayOffers.map((o, offerIndex) => {
             const stats = partnerStats[o.partner_id];
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
-            return (
-            <OfferAssembly key={o.id} offer={o}>
-            <StaggeredReveal index={offerIndex} viewRef={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
-            {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
-            <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
-            <View>
-              {/* An open reply assembles itself once, when newly received (components/OfferAssembly.js): business ->
-                  "Heard your request" -> what they said -> order -> price -> when, then the button settles in as the
-                  final slot (always visible and tappable) while the outline glows once. */}
-              <AssemblyStep step="business">
+            // The business head (logo, name, title, record): the assembly's first step on an open reply, and the line under
+            // "You're booked" once accepted (item 12). One copy, two placements.
+            const businessHead = (
+              <>
               {/* The business's screened logo beside its name, nothing else of its brand: the card stays the same for every
                   business so offers can be compared fairly. No logo = the name alone, exactly as before. */}
               <View style={styles.offerPartnerRow}>
@@ -1376,7 +1376,41 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {reputationLine && (offerLifecycleState(o) === 'offered' || o.status === 'accepted') ? (
                 <Text style={styles.offerReputationLine}>{reputationLine}</Text>
               ) : null}
+              </>
+            );
+            return (
+            <OfferAssembly key={o.id} offer={o}>
+            <StaggeredReveal index={offerIndex} viewRef={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
+            {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
+            <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
+            <View>
+              {/* An open reply assembles itself once, when newly received (components/OfferAssembly.js): business ->
+                  "Heard your request" -> what they said -> order -> price -> when, then the button settles in as the
+                  final slot (always visible and tappable) while the outline glows once. */}
+              {o.status === 'accepted' ? (() => {
+                // Item 12: the same card, now booked. Heading from the stored reservation (acceptedBookingState), then the
+                // business, then the real facts; the button's place below goes to the business's own redeem instructions.
+                const bookingState = acceptedBookingState(o);
+                const whenLine = acceptedWhenLine({ proposedTimeLabel: o.proposed_time ? formatProposedTime(o.proposed_time, language) : null, dateLabel: planSummary?.dateLabel ?? null, timeLabel: planSummary?.timeLabel ?? null });
+                const partySize = acceptedPartySize(request);
+                return (
+                  <OfferAcceptedMorph
+                    title={t(ACCEPTED_TITLE_KEY[bookingState])}
+                    booked={bookingState === 'booked'}
+                    warn={bookingState === 'not_through'}
+                    play={justAcceptedOfferId === o.id}
+                    haptic
+                  >
+                    {businessHead}
+                    {whenLine ? <Text style={styles.acceptedFact}>{whenLine}</Text> : null}
+                    {partySize != null ? <Text style={styles.acceptedFact}>{t('ui.common.count.people', { count: partySize })}</Text> : null}
+                  </OfferAcceptedMorph>
+                );
+              })() : (
+              <AssemblyStep step="business">
+              {businessHead}
               </AssemblyStep>
+              )}
               {o.status === 'offered' ? (
                 <AssemblyStep step="heard"><Text style={styles.offerReputationLine}>{heardLine(firstReplyOfferId === o.id)}</Text></AssemblyStep>
               ) : null}
@@ -1387,9 +1421,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   switches (Items 114-117), applied here to a single offer card's own real state
                   transition. */}
               <ModeTransition activeKey={o.status}>
+              {o.status !== 'accepted' ? (
               <AssemblyStep step="status">
               <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.requestDetail.thisOfferHasExpired') : (o.status === 'offered' ? businessReplyStatus(o) : (OFFER_STATUS_COPY[o.status] ? t(`ui.requestDetail.offerStatus.${o.status}`) : o.status))}</Text>
               </AssemblyStep>
+              ) : null}
               {o.status === 'offered' && (
                 <>
                   {o.offer_title ? <AssemblyStep step="order"><Text style={styles.offerTitleHeadline}>{o.offer_title}</Text></AssemblyStep> : null}
@@ -1438,10 +1474,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   {(o.included_items ?? []).map((item, index) => (
                     <Text key={index} style={styles.offerIncludedItem}>✓ {item}</Text>
                   ))}
-                  {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time, language)}</Text> : null}
                   {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
                   <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
-                  {visibleRedemption(o) ? <Text style={styles.offerDescription}>{t('ui.requestDetail.howToRedeem')}{' '}{visibleRedemption(o)}</Text> : null}
+                  {/* Item 12: where "I'll take this one" was, the business's own instructions; none given = nothing here. */}
+                  {visibleRedemption(o) ? (
+                    <View style={styles.redeemCallout}>
+                      <Text style={styles.redeemCalloutLabel}>{t('ui.requestDetail.howToRedeem')}</Text>
+                      <Text style={styles.redeemCalloutText}>{visibleRedemption(o)}</Text>
+                    </View>
+                  ) : null}
                   {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (
                     <TouchableOpacity
                       onPress={() => openUberToDestination({
@@ -1951,7 +1992,10 @@ const getStyles = (colors) => StyleSheet.create({
   offerTypeLabel: { ...typography.caption, color: colors.info, fontWeight: '700', marginBottom: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerIncludedItem: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
-  offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },
+  acceptedFact: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
+  redeemCallout: { backgroundColor: colors.background, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginVertical: spacing.sm },
+  redeemCalloutLabel: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.xs },
+  redeemCalloutText: { ...typography.body, color: colors.textPrimary },
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
   offerViewedIndicator: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
   acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },

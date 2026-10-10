@@ -147,8 +147,12 @@ describe('everything else stays the same for every business', () => {
 
   test('the card keeps its wording, button and media: the logo sits inside the business step only', () => {
     const detail = read('src/screens/BusinessRequestDetailScreen.js');
+    // Item 12: the business head is one shared block (businessHead), placed in the business step of an open reply and
+    // under "You're booked" once accepted.
+    const head = detail.slice(detail.indexOf('const businessHead = ('), detail.indexOf('</>', detail.indexOf('const businessHead = (')));
+    expect(head).toMatch(/<BusinessLogoMark uri=\{logoFor\(partnerLogos, o\.partner_id\)\} \/>/);
     const step = detail.slice(detail.indexOf('<AssemblyStep step="business">'), detail.indexOf('</AssemblyStep>', detail.indexOf('<AssemblyStep step="business">')));
-    expect(step).toMatch(/<BusinessLogoMark uri=\{logoFor\(partnerLogos, o\.partner_id\)\} \/>/);
+    expect(step).toMatch(/\{businessHead\}/);
     expect(detail.match(/<BusinessLogoMark/g).length).toBe(1); // one mark, nowhere else on the card
     expect(read('src/components/OfferCustomerBody.js')).not.toMatch(/BusinessLogoMark/); // media untouched
   });

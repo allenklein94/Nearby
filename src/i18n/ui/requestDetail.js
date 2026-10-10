@@ -301,6 +301,11 @@ export default {
       today: "Today",
       tomorrow: "Tomorrow",
     },
+    booking: {
+      accepted: "Offer accepted",
+      confirming: "Offer accepted · confirming your booking",
+      notThrough: "Offer accepted · the booking didn't go through",
+    },
   },
   es: {
     youreBooked: "Tienes reserva",
@@ -601,6 +606,11 @@ export default {
       tonight: "Esta noche",
       today: "Hoy",
       tomorrow: "Mañana",
+    },
+    booking: {
+      accepted: "Oferta aceptada",
+      confirming: "Oferta aceptada · confirmando tu reserva",
+      notThrough: "Oferta aceptada · la reserva no se pudo completar",
     },
   },
   de: {
@@ -903,6 +913,11 @@ export default {
       today: "Heute",
       tomorrow: "Morgen",
     },
+    booking: {
+      accepted: "Angebot angenommen",
+      confirming: "Angebot angenommen · deine Buchung wird bestätigt",
+      notThrough: "Angebot angenommen · die Buchung hat nicht geklappt",
+    },
   },
   fr: {
     youreBooked: "C'est réservé",
@@ -1203,6 +1218,11 @@ export default {
       tonight: "Ce soir",
       today: "Aujourd'hui",
       tomorrow: "Demain",
+    },
+    booking: {
+      accepted: "Offre acceptée",
+      confirming: "Offre acceptée · confirmation de ta réservation",
+      notThrough: "Offre acceptée · la réservation n'a pas abouti",
     },
   },
   pt: {
@@ -1505,6 +1525,11 @@ export default {
       today: "Hoje",
       tomorrow: "Amanhã",
     },
+    booking: {
+      accepted: "Oferta aceita",
+      confirming: "Oferta aceita · confirmando sua reserva",
+      notThrough: "Oferta aceita · a reserva não foi concluída",
+    },
   },
   ht: {
     youreBooked: "Ou gen rezèvasyon",
@@ -1805,6 +1830,11 @@ export default {
       tonight: "Aswè a",
       today: "Jodi a",
       tomorrow: "Demen",
+    },
+    booking: {
+      accepted: "Òf aksepte",
+      confirming: "Òf aksepte · n ap konfime rezèvasyon ou",
+      notThrough: "Òf aksepte · rezèvasyon an pa t pase",
     },
   },
   zh: {
@@ -2107,6 +2137,11 @@ export default {
       today: "今天",
       tomorrow: "明天",
     },
+    booking: {
+      accepted: "已接受优惠",
+      confirming: "已接受优惠 · 正在确认你的预订",
+      notThrough: "已接受优惠 · 预订未成功",
+    },
   },
   vi: {
     youreBooked: "Bạn đã đặt chỗ",
@@ -2407,6 +2442,11 @@ export default {
       tonight: "Tối nay",
       today: "Hôm nay",
       tomorrow: "Ngày mai",
+    },
+    booking: {
+      accepted: "Đã nhận ưu đãi",
+      confirming: "Đã nhận ưu đãi · đang xác nhận đặt chỗ của bạn",
+      notThrough: "Đã nhận ưu đãi · đặt chỗ chưa thành công",
     },
   },
   tl: {
@@ -2709,6 +2749,11 @@ export default {
       today: "Ngayon",
       tomorrow: "Bukas",
     },
+    booking: {
+      accepted: "Tinanggap ang alok",
+      confirming: "Tinanggap ang alok · kinukumpirma ang booking mo",
+      notThrough: "Tinanggap ang alok · hindi natuloy ang booking",
+    },
   },
   ru: {
     youreBooked: "Бронь подтверждена",
@@ -3010,6 +3055,11 @@ export default {
       today: "Сегодня",
       tomorrow: "Завтра",
     },
+    booking: {
+      accepted: "Предложение принято",
+      confirming: "Предложение принято · подтверждаем бронь",
+      notThrough: "Предложение принято · бронь не прошла",
+    },
   },
   ko: {
     youreBooked: "예약 완료",
@@ -3310,6 +3360,11 @@ export default {
       tonight: "오늘 밤",
       today: "오늘",
       tomorrow: "내일",
+    },
+    booking: {
+      accepted: "제안을 수락했어요",
+      confirming: "제안을 수락했어요 · 예약을 확인하는 중이에요",
+      notThrough: "제안을 수락했어요 · 예약이 완료되지 않았어요",
     },
   },
 };

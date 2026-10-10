@@ -64,8 +64,11 @@ describe('meaningful confirmations', () => {
     // the two moments that already said what happened stay
     expect(read('components/GatheringPublishedPanel.js')).toContain("t('ui.gatheringConfirmation.yourGatheringIsLive')");
     expect(require('../i18n/ui/gatheringConfirmation').default.en.yourGatheringIsLive).toBe('Your gathering is live!');
-    // 2026-10-09: the BookedCelebration card draws its own ✓ ring, so its title is the same words without the glyph.
-    expect(read('screens/BusinessRequestDetailScreen.js')).toContain("title={t('ui.requestDetail.youreBooked')}");
+    // 2026-10-09: the booked card draws its own ✓ ring, so its title is the same words without the glyph. Item 12: the
+    // offer card morphs into it in place (utils/acceptedBooking.js maps a confirmed reservation to this key).
+    expect(read('utils/acceptedBooking.js')).toContain("booked: 'ui.requestDetail.youreBooked'");
+    expect(read('screens/BusinessRequestDetailScreen.js')).toContain('title={t(ACCEPTED_TITLE_KEY[bookingState])}');
+    expect(read('screens/GroupPlanScreen.js')).toContain("title={t('ui.requestDetail.youreBooked')}");
     expect(require('../i18n/ui/requestDetail').default.en.youreBooked).toBe("You're booked");
   });
   it('no screen confirms with a bare "Success!"', () => {

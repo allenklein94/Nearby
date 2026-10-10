@@ -60,6 +60,9 @@ export const SEQUENCES = {
   // transaction (item 122): success colour, no particles, no bounce, one ripple, done in under 0.8 s.
   booked: { tier: 'special', ringMs: 200, checkMs: 160, rippleMs: 380, textFadeMs: 220 },
   // Its exit (2026-10-09): fade + a slight shrink, then the space it took closes, so nothing below jumps.
+  // The accepted offer card morphs in place (owner item 12, 2026-10-10): the ✓ settles beside the heading (owner target
+  // 180-250 ms), then the booked facts and the rest of the card settle in (250-350 ms). Never delays the booking itself.
+  offerAccepted: { tier: 'special', checkMs: 220, morphMs: 300, risePx: 6 },
   bookedExit: { tier: 'medium', fadeMs: 180, collapseMs: 220, shrinkTo: 0.96 },
   offerTravel: { tier: 'special', dimMs: 180, travelMs: 380, settleMs: 220, targetWaitMs: 1500 },
   // Result cascades.
@@ -92,6 +95,8 @@ export function settleMs(name) {
       return s.maxSteps * s.staggerMs + Math.max(s.stepMs, s.glowInMs + s.glowOutMs);
     case 'booked':
       return s.ringMs + s.checkMs + Math.max(s.rippleMs, s.textFadeMs);
+    case 'offerAccepted':
+      return s.checkMs + s.morphMs;
     case 'bookedExit':
       return s.fadeMs + s.collapseMs;
     case 'offerTravel':

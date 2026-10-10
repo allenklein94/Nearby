@@ -29,10 +29,10 @@ describe('locked constraints (source guards)', () => {
     expect(src).toMatch(/if \(haptic\) playHaptic\(HAPTIC_MOMENTS\.success\)/);
     expect(src).toMatch(/if \(reduceMotion\) \[card, ring, check, text, ripple\]\.forEach\(\(v\) => v\.setValue\(1\)\)/);
   });
-  test('both booking moments use it, with haptic (both follow the person\'s own tap)', () => {
+  test('GroupPlan\'s reservation confirm uses it, with haptic; the request screen morphs the offer card instead (item 12)', () => {
     const detail = fs.readFileSync(path.join(__dirname, '../screens/BusinessRequestDetailScreen.js'), 'utf8');
     const group = fs.readFileSync(path.join(__dirname, '../screens/GroupPlanScreen.js'), 'utf8');
-    expect(detail).toMatch(/justAccepted && \(\s*<BookedCelebration\s+haptic/);
+    expect(detail).not.toMatch(/BookedCelebration/);
     expect(group).toMatch(/successBanner === 'reservation' && <BookedCelebration haptic/);
   });
 });
