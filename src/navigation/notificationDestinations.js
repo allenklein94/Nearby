@@ -372,9 +372,11 @@ export async function notificationDestination(data, { lookupAvailability = async
         return to('CommunityDetail', { communityId: data.community_id, notificationReason: data.body ?? null });
       }
       break;
+    // Owner item 13: opens the Opportunities tab ON the accepted offer's card (outlined, first), which re-reads its
+    // current state (Accepted, or Redeemed if the visit was already confirmed). Nothing is trusted from the push.
     case 'business_offer_accepted':
-      return to('BusinessDashboard');
-      break;
+      if (data.request_id) return to('BusinessDashboard', { initialSection: 'requests', focusRequestId: data.request_id });
+      return to('BusinessDashboard', { initialSection: 'requests' });
     // Item 50 (state consistency audit, fix 5): cancel_business_reservation()
     // notifies whichever side didn't initiate the cancellation -- two
     // distinct type strings since each role needs a different destination

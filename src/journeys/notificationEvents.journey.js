@@ -217,7 +217,7 @@ d('journey: domain events -> one notification layer (item 125)', () => {
   log := log || jsonb_build_array(jsonb_build_object('step','offer_accepted','ok',
     (select count(*) from domain_events where type = 'BUSINESS_OFFER_ACCEPTED' and object_id = v_offer) = 1
     and (select count(*) from jq where b->>'recipient_id' = v_owner::text and b->'data'->>'type' = 'business_offer_accepted'
-           and b->>'title' = 'Your offer was accepted!' and b->>'body' = 'A customer accepted your offer: ' || business_safe_request_summary(v_req)) = 1
+           and b->>'title' = 'A customer accepted your offer' and b->>'body' = business_safe_request_summary(v_req)) = 1
     and (select count(*) from jq where b->>'recipient_id' = v_a::text and b->'data'->>'type' = 'business_reservation_confirmed') = 1,
     'data', jsonb_build_object('consumer_title', (select b->>'title' from jq where b->'data'->>'type' = 'business_reservation_confirmed'
                                                     and b->'data'->>'offer_id' = v_offer::text limit 1))));

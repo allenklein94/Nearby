@@ -32,6 +32,9 @@ import BusinessHoursEditor from '../components/BusinessHoursEditor';
 import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
+import OfferProgressSteps, { OfferProgressGlow } from '../motion/OfferProgressSteps';
+import { offerProgress, offersToAnimate, progressKey } from '../utils/offerProgress';
+import { loadShownProgress, saveShownProgress } from '../services/offerProgressShown';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
@@ -623,6 +626,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [cancellingReservationOfferId, setCancellingReservationOfferId] = useState(null);
   // Visits this business marked "Didn't show up" (offer ids); they leave the visits list. Analysis only.
   const [noShowIds, setNoShowIds] = useState(() => new Set());
+  // Owner item 13: Offer sent -> Accepted -> Redeemed on each card. Which step is lit comes only from the stored status;
+  // these only decide whether a newly reached step plays its one-time animation (see utils/offerProgress.js).
+  const [progressAnimKeys, setProgressAnimKeys] = useState(() => new Set());
+  const progressPrevRef = useRef(new Map());
+  const progressShownRef = useRef({ partnerId: null, list: null });
   const [markingNoShowId, setMarkingNoShowId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   // Phase 3 -- which real Signature Experience (if any) the currently-open
@@ -1976,10 +1984,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
-  async function loadOpportunities(partnerId) {
+  async function loadOpportunities(partnerId, { live = false } = {}) {
     try {
       const results = await getBusinessOpportunities(partnerId);
       setOpportunities(results);
+      noteProgressTransitions(partnerId, results, live);
       setOpportunitiesLoaded(true);
       getMyBusinessNoShows().then(setNoShowIds).catch(() => {});
     } catch (e) {
@@ -1987,6 +1996,50 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setOpportunitiesLoaded(false);
     }
   }
+
+  // Owner item 13: after each read, decide which cards just reached Accepted/Redeemed while the business is watching
+  // (live realtime change, or the push for that request was tapped). Remembered on the device so nothing replays.
+  async function noteProgressTransitions(partnerId, results, live) {
+    try {
+      if (progressShownRef.current.partnerId !== partnerId || !progressShownRef.current.list) {
+        progressShownRef.current = { partnerId, list: await loadShownProgress(partnerId) };
+        progressPrevRef.current = new Map();
+      }
+      const toPlay = offersToAnimate(results, {
+        previous: progressPrevRef.current, live, focusRequestId, shown: new Set(progressShownRef.current.list),
+      });
+      progressPrevRef.current = new Map((results ?? []).map((o) => [o.id, o.status]));
+      if (toPlay.length === 0) return;
+      const keys = toPlay.map(progressKey);
+      progressShownRef.current.list = await saveShownProgress(partnerId, progressShownRef.current.list, keys);
+      setProgressAnimKeys((prev) => new Set([...prev, ...keys]));
+    } catch {
+      // never blocks the dashboard: worst case a step simply appears without its animation
+    }
+  }
+
+  // Owner item 13: live while the dashboard is in front. Realtime only says "something changed on one of your offer
+  // rows" (RLS: the owner's own rows; the payload is never read) and the dashboard re-reads the persisted state, which
+  // stays the source of truth. Removed when the dashboard loses focus; the focus reload above covers anything missed.
+  useFocusEffect(
+    useCallback(() => {
+      const partnerId = selectedPartner?.id;
+      if (!partnerId) return undefined;
+      let timer = null;
+      const channel = supabase
+        .channel(`biz_offer_progress:${partnerId}`)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'business_request_offers', filter: `partner_id=eq.${partnerId}` }, () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => loadOpportunities(partnerId, { live: true }), 700);
+        })
+        .subscribe();
+      return () => {
+        clearTimeout(timer);
+        supabase.removeChannel(channel);
+      };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedPartner?.id])
+  );
 
   // Item 140: opened (or re-opened in place) on one request: show the Opportunities tab and re-read its CURRENT state.
   useEffect(() => {
@@ -4497,6 +4550,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     const oppAction = opportunityPrimaryAction(o, { inFlight: offerInFlight.has(o.request_id) });
                     return (
                     <View key={o.id} style={[styles.gatheringRow, o.request_id === focusRequestId && { borderColor: colors.primary, borderWidth: 2 }]}>
+                      {offerProgress(o) && (
+                        <OfferProgressGlow key={progressKey(o)} play={progressAnimKeys.has(progressKey(o))} color={colors.success} radius={radius.lg} />
+                      )}
                       {/* Item 73: the card's action comes from the opportunity's state (utils/primaryAction.js). */}
                       {oppAction.kind === 'send_offer' ? (
                         <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
@@ -4580,7 +4636,24 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           </View>
                         </>
                       )}
-                      {o.status !== 'pending' && (
+                      {o.status !== 'pending' && offerProgress(o) && (() => {
+                        const labels = { sent: t('ui.bizDash2.progress.sent'), accepted: t('ui.bizDash2.progress.accepted'), redeemed: t('ui.bizDash2.progress.redeemed') };
+                        const { current } = offerProgress(o);
+                        return (
+                          <>
+                            <OfferProgressSteps
+                              key={progressKey(o)}
+                              current={current}
+                              labels={labels}
+                              a11yLabel={t('ui.bizDash2.progress.a11y', { state: Object.values(labels)[current] })}
+                              play={progressAnimKeys.has(progressKey(o))}
+                            />
+                            {noShowIds.has(o.id) && <Text style={[styles.breakdownText, { color: colors.textSecondary }]}>{t('ui.bizDash2.didntShowUp')}</Text>}
+                            <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
+                          </>
+                        );
+                      })()}
+                      {o.status !== 'pending' && !offerProgress(o) && (
                         <>
                           <Text style={styles.breakdownText}>
                             {{ offered: t('ui.bizDash2.youMadeAnOffer'), accepted: t('ui.bizDash2.theyAcceptedYourOffer'), declined: t('ui.bizDash2.youDeclined'), expired: t('ui.bizDash2.noLongerOpen'), cancelled: t('ui.bizDash2.theyCancelled'), completed: t('ui.bizDash2.completed') }[o.status] ?? o.status}

@@ -354,7 +354,11 @@
   "pipeline.completedSub": {
    "one": "{count} redeemed this month",
    "other": "{count} redeemed this month"
-  }
+  },
+  "progress.sent": "Offer sent",
+  "progress.accepted": "Accepted",
+  "progress.redeemed": "Redeemed",
+  "progress.a11y": "Progress: {state}"
  },
  "es": {
   "peopleLookingForCategory": {
@@ -711,7 +715,11 @@
   "pipeline.completedSub": {
    "one": "{count} canjeada este mes",
    "other": "{count} canjeadas este mes"
-  }
+  },
+  "progress.sent": "Oferta enviada",
+  "progress.accepted": "Aceptada",
+  "progress.redeemed": "Canjeada",
+  "progress.a11y": "Progreso: {state}"
  },
  "de": {
   "peopleLookingForCategory": {
@@ -1068,7 +1076,11 @@
   "pipeline.completedSub": {
    "one": "{count} diesen Monat eingelöst",
    "other": "{count} diesen Monat eingelöst"
-  }
+  },
+  "progress.sent": "Angebot gesendet",
+  "progress.accepted": "Angenommen",
+  "progress.redeemed": "Eingelöst",
+  "progress.a11y": "Fortschritt: {state}"
  },
  "fr": {
   "peopleLookingForCategory": {
@@ -1425,7 +1437,11 @@
   "pipeline.completedSub": {
    "one": "{count} utilisée ce mois-ci",
    "other": "{count} utilisées ce mois-ci"
-  }
+  },
+  "progress.sent": "Offre envoyée",
+  "progress.accepted": "Acceptée",
+  "progress.redeemed": "Utilisée",
+  "progress.a11y": "Progression : {state}"
  },
  "pt": {
   "peopleLookingForCategory": {
@@ -1782,7 +1798,11 @@
   "pipeline.completedSub": {
    "one": "{count} resgatado este mês",
    "other": "{count} resgatados este mês"
-  }
+  },
+  "progress.sent": "Oferta enviada",
+  "progress.accepted": "Aceita",
+  "progress.redeemed": "Resgatada",
+  "progress.a11y": "Progresso: {state}"
  },
  "ht": {
   "peopleLookingForCategory": {
@@ -2139,7 +2159,11 @@
   "pipeline.completedSub": {
    "one": "{count} itilize mwa sa a",
    "other": "{count} itilize mwa sa a"
-  }
+  },
+  "progress.sent": "Òf voye",
+  "progress.accepted": "Aksepte",
+  "progress.redeemed": "Itilize",
+  "progress.a11y": "Pwogrè: {state}"
  },
  "zh": {
   "peopleLookingForCategory": {
@@ -2478,7 +2502,11 @@
   },
   "pipeline.completedSub": {
    "other": "本月已兑换 {count} 个"
-  }
+  },
+  "progress.sent": "已发送优惠",
+  "progress.accepted": "已接受",
+  "progress.redeemed": "已兑换",
+  "progress.a11y": "进度：{state}"
  },
  "vi": {
   "peopleLookingForCategory": {
@@ -2817,7 +2845,11 @@
   },
   "pipeline.completedSub": {
    "other": "{count} đã đổi trong tháng này"
-  }
+  },
+  "progress.sent": "Đã gửi ưu đãi",
+  "progress.accepted": "Đã chấp nhận",
+  "progress.redeemed": "Đã sử dụng",
+  "progress.a11y": "Tiến độ: {state}"
  },
  "tl": {
   "peopleLookingForCategory": {
@@ -3174,7 +3206,11 @@
   "pipeline.completedSub": {
    "one": "{count} na-redeem ngayong buwan",
    "other": "{count} na-redeem ngayong buwan"
-  }
+  },
+  "progress.sent": "Naipadala ang alok",
+  "progress.accepted": "Tinanggap",
+  "progress.redeemed": "Nagamit na",
+  "progress.a11y": "Progreso: {state}"
  },
  "ru": {
   "peopleLookingForCategory": {
@@ -3567,7 +3603,11 @@
    "few": "{count} использовано в этом месяце",
    "many": "{count} использовано в этом месяце",
    "other": "{count} использовано в этом месяце"
-  }
+  },
+  "progress.sent": "Предложение отправлено",
+  "progress.accepted": "Принято",
+  "progress.redeemed": "Использовано",
+  "progress.a11y": "Статус: {state}"
  },
  "ko": {
   "peopleLookingForCategory": {
@@ -3906,6 +3946,10 @@
   },
   "pipeline.completedSub": {
    "other": "이번 달 사용 {count}건"
-  }
+  },
+  "progress.sent": "제안 보냄",
+  "progress.accepted": "수락됨",
+  "progress.redeemed": "사용 완료",
+  "progress.a11y": "진행 상황: {state}"
  }
 }

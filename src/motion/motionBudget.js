@@ -64,6 +64,9 @@ export const SEQUENCES = {
   // 180-250 ms), then the booked facts and the rest of the card settle in (250-350 ms). Never delays the booking itself.
   offerAccepted: { tier: 'special', checkMs: 220, morphMs: 300, risePx: 6 },
   bookedExit: { tier: 'medium', fadeMs: 180, collapseMs: 220, shrinkTo: 0.96 },
+  // The business side of it (owner item 13, 2026-10-10): on the opportunity card the newly reached step (Accepted /
+  // Redeemed) fades in with a slight rise while the card's outline glows once. Arrival-driven: no haptic.
+  offerProgress: { tier: 'small', stepMs: 200, risePx: 6, glowInMs: 100, glowOutMs: 200 },
   offerTravel: { tier: 'special', dimMs: 180, travelMs: 380, settleMs: 220, targetWaitMs: 1500 },
   // Result cascades.
   cascade: { tier: 'medium', maxDelayMs: 200, itemMs: 250 },
@@ -99,6 +102,8 @@ export function settleMs(name) {
       return s.checkMs + s.morphMs;
     case 'bookedExit':
       return s.fadeMs + s.collapseMs;
+    case 'offerProgress':
+      return Math.max(s.stepMs, s.glowInMs + s.glowOutMs);
     case 'offerTravel':
       return s.dimMs + s.travelMs + s.settleMs;
     default:

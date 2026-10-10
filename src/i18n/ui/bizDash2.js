@@ -309,6 +309,12 @@ export default {
       wonSub: { one: "{count} accepted", other: "{count} accepted" },
       completedSub: { one: "{count} redeemed this month", other: "{count} redeemed this month" },
     },
+    progress: {
+      sent: "Offer sent",
+      accepted: "Accepted",
+      redeemed: "Redeemed",
+      a11y: "Progress: {state}",
+    },
   },
   es: {
     peopleLookingForCategory: { one: "{count} persona busca {category}", other: "{count} personas buscan {category}" },
@@ -617,6 +623,12 @@ export default {
       offeredSub: { one: "{count} oferta esperando respuesta", other: "{count} ofertas esperando respuesta" },
       wonSub: { one: "{count} aceptada", other: "{count} aceptadas" },
       completedSub: { one: "{count} canjeada este mes", other: "{count} canjeadas este mes" },
+    },
+    progress: {
+      sent: "Oferta enviada",
+      accepted: "Aceptada",
+      redeemed: "Canjeada",
+      a11y: "Progreso: {state}",
     },
   },
   de: {
@@ -927,6 +939,12 @@ export default {
       wonSub: { one: "{count} angenommen", other: "{count} angenommen" },
       completedSub: { one: "{count} diesen Monat eingelöst", other: "{count} diesen Monat eingelöst" },
     },
+    progress: {
+      sent: "Angebot gesendet",
+      accepted: "Angenommen",
+      redeemed: "Eingelöst",
+      a11y: "Fortschritt: {state}",
+    },
   },
   fr: {
     peopleLookingForCategory: { one: "{count} personne cherche {category}", other: "{count} personnes cherchent {category}" },
@@ -1235,6 +1253,12 @@ export default {
       offeredSub: { one: "{count} offre en attente d'acceptation", other: "{count} offres en attente d'acceptation" },
       wonSub: { one: "{count} acceptée", other: "{count} acceptées" },
       completedSub: { one: "{count} utilisée ce mois-ci", other: "{count} utilisées ce mois-ci" },
+    },
+    progress: {
+      sent: "Offre envoyée",
+      accepted: "Acceptée",
+      redeemed: "Utilisée",
+      a11y: "Progression : {state}",
     },
   },
   pt: {
@@ -1545,6 +1569,12 @@ export default {
       wonSub: { one: "{count} aceito", other: "{count} aceitos" },
       completedSub: { one: "{count} resgatado este mês", other: "{count} resgatados este mês" },
     },
+    progress: {
+      sent: "Oferta enviada",
+      accepted: "Aceita",
+      redeemed: "Resgatada",
+      a11y: "Progresso: {state}",
+    },
   },
   ht: {
     peopleLookingForCategory: { one: "{count} moun ap chèche {category}", other: "{count} moun ap chèche {category}" },
@@ -1853,6 +1883,12 @@ export default {
       offeredSub: { one: "{count} òf ap tann akseptasyon", other: "{count} òf ap tann akseptasyon" },
       wonSub: { one: "{count} aksepte", other: "{count} aksepte" },
       completedSub: { one: "{count} itilize mwa sa a", other: "{count} itilize mwa sa a" },
+    },
+    progress: {
+      sent: "Òf voye",
+      accepted: "Aksepte",
+      redeemed: "Itilize",
+      a11y: "Pwogrè: {state}",
     },
   },
   zh: {
@@ -2163,6 +2199,12 @@ export default {
       wonSub: { other: "{count} 个已接受" },
       completedSub: { other: "本月已兑换 {count} 个" },
     },
+    progress: {
+      sent: "已发送优惠",
+      accepted: "已接受",
+      redeemed: "已兑换",
+      a11y: "进度：{state}",
+    },
   },
   vi: {
     peopleLookingForCategory: { other: "{count} người đang tìm {category}" },
@@ -2471,6 +2513,12 @@ export default {
       offeredSub: { other: "{count} ưu đãi đang chờ chấp nhận" },
       wonSub: { other: "{count} đã chấp nhận" },
       completedSub: { other: "{count} đã đổi trong tháng này" },
+    },
+    progress: {
+      sent: "Đã gửi ưu đãi",
+      accepted: "Đã chấp nhận",
+      redeemed: "Đã sử dụng",
+      a11y: "Tiến độ: {state}",
     },
   },
   tl: {
@@ -2781,6 +2829,12 @@ export default {
       wonSub: { one: "{count} tinanggap", other: "{count} tinanggap" },
       completedSub: { one: "{count} na-redeem ngayong buwan", other: "{count} na-redeem ngayong buwan" },
     },
+    progress: {
+      sent: "Naipadala ang alok",
+      accepted: "Tinanggap",
+      redeemed: "Nagamit na",
+      a11y: "Progreso: {state}",
+    },
   },
   ru: {
     peopleLookingForCategory: { one: "{count} человек ищет: {category}", few: "{count} человека ищут: {category}", many: "{count} человек ищут: {category}", other: "{count} человека ищут: {category}" },
@@ -3090,6 +3144,12 @@ export default {
       wonSub: { one: "{count} принято", few: "{count} принято", many: "{count} принято", other: "{count} принято" },
       completedSub: { one: "{count} использовано в этом месяце", few: "{count} использовано в этом месяце", many: "{count} использовано в этом месяце", other: "{count} использовано в этом месяце" },
     },
+    progress: {
+      sent: "Предложение отправлено",
+      accepted: "Принято",
+      redeemed: "Использовано",
+      a11y: "Статус: {state}",
+    },
   },
   ko: {
     peopleLookingForCategory: { other: "{count}명이 {category}을(를) 찾고 있습니다" },
@@ -3398,6 +3458,12 @@ export default {
       offeredSub: { other: "수락 대기 중인 제안 {count}건" },
       wonSub: { other: "수락됨 {count}건" },
       completedSub: { other: "이번 달 사용 {count}건" },
+    },
+    progress: {
+      sent: "제안 보냄",
+      accepted: "수락됨",
+      redeemed: "사용 완료",
+      a11y: "진행 상황: {state}",
     },
   },
 };
