@@ -59,3 +59,4 @@ export function subscribeToOfferChanges(userId, onChange) {
     .subscribe();
   return () => supabase.removeChannel(channel);
 }
+

@@ -12,7 +12,8 @@ import { navigationRef } from '../navigation/RootNavigator';
 import { openOnTop } from '../navigation/openOnTop';
 import { createOfferArrivals, arrivalDestination, emitViewedArrival } from '../services/offerArrivals';
 import { fetchMyLiveReplies, fetchFirstReplyState, subscribeToOfferChanges } from '../services/offerArrivalSource';
-import { arrivalSignalTitle, arrivalSignalA11y } from '../utils/offerCopy';
+import { fetchReplyGlyphs } from '../services/replyGlyphs';
+import { arrivalSignalTitle, arrivalSignalA11y, pillGlyph } from '../utils/offerCopy';
 import { startOfferTravel } from '../motion/offerTravel';
 import BusinessLogoMark from './BusinessLogoMark';
 import { getScreenedLogos } from '../services/businessLogos';
@@ -20,7 +21,7 @@ import { pillLogoPartnerId, logoFor } from '../utils/businessLogo';
 
 // Offer arrival signal, Layer 1 (owner, 2026-10-09). The rules for WHICH replies are announced live in
 // services/offerArrivals.js; this file only listens (realtime, a push received while open, app foreground/background) and
-// draws one small pill near the top. Restrained on purpose: a short fade, two soft pulses of the ✨, then it rests and
+// draws one small pill near the top. Restrained on purpose: a short fade, two soft pulses of the glyph (the push's, item 18), then it rests and
 // leaves by itself. Never sound or vibration (the operating system handles the push itself), never blocks: the pill is the
 // only touchable area, the rest of the screen stays usable. Reduce Motion: it simply appears and disappears.
 // The sequential offer reveal and the "You're booked" celebration are deferred until the flow has been seen on a device.
@@ -109,6 +110,18 @@ export function OfferArrivalSignal({ signal, onPress }) {
     getScreenedLogos([logoPartnerId]).then((map) => { if (live) setLogo(logoFor(map, logoPartnerId)); });
     return () => { live = false; };
   }, [logoPartnerId]);
+  // Owner item 18: the same glyph as the push for this request (one source, the server). Until it is known the slot keeps
+  // its width and stays blank for a moment; a failed read or mixed replies = ✨. The pulse below is unchanged.
+  const [glyphs, setGlyphs] = useState(null);
+  const glyphKey = (shown?.items ?? []).map((i) => i.requestId).join(',');
+  useEffect(() => {
+    setGlyphs(null);
+    if (!glyphKey) return undefined;
+    let live = true;
+    fetchReplyGlyphs(glyphKey.split(',')).then((map) => { if (live) setGlyphs(map); });
+    return () => { live = false; };
+  }, [glyphKey]);
+  const glyph = pillGlyph(shown?.items, glyphs);
   const press = () => {
     const node = pillRef.current;
     if (!node?.measureInWindow) { onPress(null); return; }
@@ -153,7 +166,7 @@ export function OfferArrivalSignal({ signal, onPress }) {
           accessibilityLabel={arrivalSignalA11y(shown)}
           style={[styles.pill, { backgroundColor: colors.surface, borderColor: colors.border }, shadow?.card]}
         >
-          <Animated.Text style={[styles.sparkle, { opacity: sparkle }]}>✨</Animated.Text>
+          <Animated.Text style={[styles.sparkle, { opacity: glyphs ? sparkle : 0 }]}>{glyph}</Animated.Text>
           <BusinessLogoMark uri={logo} size={20} />
           <Text style={[styles.title, { color: colors.textPrimary }]} numberOfLines={1}>{title}</Text>
           <Text style={[styles.chevron, { color: colors.textSecondary }]}>›</Text>

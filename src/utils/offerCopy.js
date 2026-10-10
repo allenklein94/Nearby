@@ -92,3 +92,15 @@ export function respondingLine(rows) {
   if (names.length === 2) return tr('ui.offerCopy.respondingTwo', { a: names[0], b: names[1] });
   return tr('ui.offerCopy.respondingMany', { count: names.length });
 }
+
+// Owner item 18 (2026-10-10, LOCKED): the arrival pill's glyph = the business-response push's glyph for that request
+// (server _offer_push_emoji over the request's category + occasion, read through get_reply_glyphs, so the two can never
+// disagree). One glyph only when every reply in the pill maps to the same known one; mixed, unknown or not loaded = ✨.
+// The pill's motion is the same whatever the glyph.
+export const DEFAULT_REPLY_GLYPH = '✨';
+export function pillGlyph(items, glyphByRequest) {
+  const glyphs = new Set((items ?? []).map((i) => glyphByRequest?.[i?.requestId] ?? null));
+  if (glyphs.size !== 1) return DEFAULT_REPLY_GLYPH;
+  const [g] = glyphs;
+  return typeof g === 'string' && g.trim() ? g : DEFAULT_REPLY_GLYPH;
+}
