@@ -7,7 +7,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
 import { requireUserLocation, getUserLocation } from './userLocation';
-import { videoFrameTimes } from '../utils/offerMedia';
+import { videoFrameTimes, videoLimitProblem } from '../utils/offerMedia';
 import { throwSingleError } from '../utils/notFound';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -59,7 +59,7 @@ export async function pickBusinessOfferMedia({ imagesOnly = false } = {}) {
 // uploadGatheringCoverPhoto() in gatherings.js).
 export async function uploadBusinessOfferMedia(partnerId, asset, kind) {
   const isVideo = asset.type === 'video';
-  const prefix = kind === 'experience' ? 'experience' : 'offer';
+  const prefix = kind === 'experience' ? 'experience' : kind === 'creative' ? 'creative' : 'offer';
 
   // Phase 7 (Business Web, CLAUDE.md) -- expo-file-system has no web
   // implementation at all. The base64 round-trip below only exists to
@@ -105,13 +105,13 @@ export async function uploadBusinessOfferMedia(partnerId, asset, kind) {
 // Rich offers, Phase 2: a video is screened through preview frames sampled from it (never the whole clip), so the sender
 // pulls up to three stills on the device and uploads them beside the video. The server classifies them before any customer
 // can see the video, and the first becomes its poster. Native only (the website sends photos, not video).
-export async function uploadOfferVideoFrames(partnerId, asset) {
+export async function uploadOfferVideoFrames(partnerId, asset, kind = 'offer') {
   if (Platform.OS === 'web') throw new Error('Videos can be added from the Nearby app. Photos work here.');
   const VideoThumbnails = require('expo-video-thumbnails');
   const paths = [];
   for (const time of videoFrameTimes(asset.duration)) {
     const frame = await VideoThumbnails.getThumbnailAsync(asset.uri, { time, quality: 0.6 });
-    const uploaded = await uploadBusinessOfferMedia(partnerId, { uri: frame.uri, type: 'image' }, 'offer');
+    const uploaded = await uploadBusinessOfferMedia(partnerId, { uri: frame.uri, type: 'image' }, kind);
     paths.push(uploaded.path);
   }
   if (paths.length === 0) throw new Error('We could not read that video. Try a different one.');
@@ -152,17 +152,74 @@ export async function rewriteOfferPlainLanguage(partnerId, { title, description,
   return { suggestion: result?.suggestion ?? null, message: result?.message ?? null };
 }
 
-// The owner's saved creatives (added automatically when an offer's media passes screening). RLS scopes it to their business.
+// The owner's creative library: items saved automatically when an offer's media passed screening, and items added on
+// "Your photos & videos" (each with its screening state). RLS scopes it to their business. The offer form's picker shows
+// only the ready ones (utils/creativeLibrary.js pickerCreatives); the database refuses any other on an offer.
 export async function getMyCreatives(partnerId) {
   const { data, error } = await supabase
     .from('business_creatives')
-    .select('id, media_type, media_path, poster_path, created_at')
+    .select('id, media_type, media_path, poster_path, created_at, status, matched_categories, problem, screening_id, reviewing_since, archived_at')
     .eq('partner_id', partnerId)
     .is('archived_at', null)
     .order('created_at', { ascending: false })
-    .limit(12);
+    .limit(24);
   if (error) throw new Error(error.message);
   return data ?? [];
+}
+
+async function callCreativeScreening(partnerId, payload) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ partnerId, targetType: 'creative', ...payload }),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok) throw serviceError(response, result, "We couldn't add that right now.");
+  return result; // { creativeId, status: 'reviewing' }
+}
+
+// "Your photos & videos": add a photo, video, graphic or offer image the business already has. Same limits as offer media
+// (video up to 30 seconds and 25MB, never trimmed by Nearby); a video is checked through frames sampled on the phone, so
+// the website adds photos and graphics only. Answers at once with the item in "Reviewing…"; the check runs on the server.
+export async function addCreativeToLibrary(partnerId, asset) {
+  const problem = videoLimitProblem(asset);
+  if (problem) throw new Error(problem);
+  const uploaded = await uploadBusinessOfferMedia(partnerId, asset, 'creative');
+  const framePaths = uploaded.mediaType === 'video' ? await uploadOfferVideoFrames(partnerId, asset, 'creative') : [];
+  return callCreativeScreening(partnerId, { mediaPath: uploaded.path, mediaType: uploaded.mediaType, framePaths });
+}
+
+// Check an item again after the check could not finish (the server only accepts this for such an item).
+export async function retryCreativeCheck(partnerId, creativeId) {
+  return callCreativeScreening(partnerId, { creativeId });
+}
+
+// Logo upload: the image is stored by Nearby (public bucket business-logos, write-once: a new logo is a new file), so the
+// screened image can never change behind the address. Returns its public address, which the profile save then screens.
+export async function uploadBusinessLogo(partnerId, asset) {
+  if (!asset || asset.type === 'video') throw new Error('Pick an image for your logo.');
+  let body;
+  let contentType;
+  if (Platform.OS === 'web') {
+    const response = await fetch(asset.uri);
+    body = await response.blob();
+    if (!body || body.size === 0) throw new Error('Could not read the selected file. Please try a different one.');
+    contentType = body.type || 'image/jpeg';
+  } else {
+    const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: 'base64' });
+    if (!base64) throw new Error('Could not read the selected file. Please try a different one.');
+    body = base64ToUint8Array(base64);
+    const ext = (asset.uri.split('.').pop()?.split('?')[0] || 'jpg').toLowerCase();
+    contentType = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : ext === 'gif' ? 'image/gif' : 'image/jpeg';
+  }
+  const ext = contentType.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+  const path = `${partnerId}/logo-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage.from('business-logos').upload(path, body, { contentType, upsert: false });
+  if (error) throw error;
+  return supabase.storage.from('business-logos').getPublicUrl(path).data.publicUrl;
 }
 
 export async function archiveBusinessCreative(creativeId) {

@@ -119,7 +119,7 @@ const OFFER_TYPE_OPTIONS = ['standard', 'discount', 'perk', 'upgrade', 'alt_time
 // vocabulary above is.
 const BUNDLE_OCCASION_OPTIONS = ['date_night', 'anniversary', 'birthday', 'celebration', 'family_gathering'];
 const BUNDLE_COMPONENT_OPTIONS = ['dinner', 'something_to_do', 'finish_the_night', 'something_fun', 'sweet_treat', 'food', 'family_fun'];
-const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response'];
+const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response', 'creative'];
 
 // The screening SERVICE failed (classifier unreachable/out of credit/bad reply, or the audit log write failed) -- not a
 // verdict on the content and not a validation problem (those return 400 with their own message, and a real policy hit is a
@@ -219,10 +219,10 @@ async function classifyImage(imageUrl: string) {
   try {
     imageResponse = await fetch(imageUrl);
   } catch (_e) {
-    return { error: "Couldn't reach that logo image URL — check the link and try again." };
+    return { error: "We couldn't read that logo image. Try a different file." };
   }
   if (!imageResponse.ok) {
-    return { error: "Couldn't reach that logo image URL — check the link and try again." };
+    return { error: "We couldn't read that logo image. Try a different file." };
   }
 
   const contentType = (imageResponse.headers.get('content-type') || '').split(';')[0].trim();
@@ -232,7 +232,7 @@ async function classifyImage(imageUrl: string) {
 
   const buffer = await imageResponse.arrayBuffer();
   if (buffer.byteLength === 0) {
-    return { error: "Couldn't read that logo image — check the link and try again." };
+    return { error: "We couldn't read that logo image. Try a different file." };
   }
   if (buffer.byteLength > MAX_IMAGE_BYTES) {
     return { error: 'That logo image is too large (max 5MB) — try a smaller file.' };
@@ -348,6 +348,90 @@ serve(async (req) => {
       global: { headers: { Authorization: authHeader } },
     });
 
+    // "Your photos & videos" (owner, 2026-10-10): the business adds media it already has to its creative library without
+    // sending an offer. Same media screening as offer media (screenOfferMedia: an image is classified itself, a video
+    // through up to 3 device-sampled frames, first frame = poster). The row is saved as 'reviewing' and screened in the
+    // background: low = 'ready', high = 'needs_changes' with the policy categories, medium/uncertain = stays 'reviewing'
+    // until the team decides (trigger creative_follows_review), a malformed file = 'needs_changes' with a plain reason,
+    // a service failure = 'retry' (never ready). Only 'ready' items can be attached to an offer.
+    if (targetType === 'creative') {
+      const STALE_MS = 3 * 60 * 1000;
+      let rowId: string | null = null;
+      let cMediaPath: string;
+      let cMediaType: string;
+      let cFrames: string[];
+      if (typeof body.creativeId === 'string' && body.creativeId) {
+        // Try again: only an item whose review could not finish (service failure, or a review that stalled).
+        const { data: row } = await admin.from('business_creatives')
+          .select('id, media_path, media_type, status, screening_id, reviewing_since, frame_paths')
+          .eq('id', body.creativeId).eq('partner_id', partnerId).is('archived_at', null).maybeSingle();
+        const stalled = row && row.status === 'reviewing' && !row.screening_id && row.reviewing_since && Date.now() - new Date(row.reviewing_since).getTime() > STALE_MS;
+        if (!row || !(row.status === 'retry' || stalled)) return json({ error: 'That item is not waiting to be checked again.' }, 400);
+        rowId = row.id;
+        cMediaPath = row.media_path;
+        cMediaType = row.media_type;
+        cFrames = Array.isArray(row.frame_paths) ? row.frame_paths : [];
+      } else {
+        cMediaType = body.mediaType === 'video' ? 'video' : body.mediaType === 'image' ? 'image' : '';
+        cMediaPath = typeof body.mediaPath === 'string' ? body.mediaPath : '';
+        cFrames = Array.isArray(body.framePaths) ? body.framePaths.filter((f: unknown) => typeof f === 'string').slice(0, 3) : [];
+        if (!cMediaType || !cMediaPath) return json({ error: 'Pick a photo or video to add.' }, 400);
+      }
+      const folder = `${partnerId}/`;
+      if (!cMediaPath.startsWith(folder) || cMediaPath.includes('..')) return json({ error: 'That photo or video is not available to add.' }, 400);
+      if (cMediaType === 'video' && (cFrames.length < 1 || !cFrames.every((f) => f.startsWith(folder) && !f.includes('..')))) {
+        return json({ error: 'A video needs preview images. Please add it again.' }, 400);
+      }
+
+      const now = new Date().toISOString();
+      if (rowId) {
+        await admin.from('business_creatives').update({ status: 'reviewing', reviewing_since: now, problem: null, matched_categories: [] }).eq('id', rowId);
+      } else {
+        const { data: created, error: createError } = await admin.from('business_creatives').insert({
+          partner_id: partnerId, media_type: cMediaType, media_path: cMediaPath,
+          // a video's poster is its first sampled frame; it is only shown once the item is ready
+          poster_path: cMediaType === 'video' ? cFrames[0] : null,
+          frame_paths: cMediaType === 'video' ? cFrames : [],
+          status: 'reviewing', source: 'library', reviewing_since: now,
+        }).select('id').single();
+        if (createError) {
+          if ((createError as any).code === '23505') return json({ error: 'That photo or video is already in your library.' }, 409);
+          console.error('screen-business-content: could not save the creative', createError);
+          return json({ error: "We couldn't save that right now. Please try again.", code: 'screening_unavailable' }, 503);
+        }
+        rowId = created.id;
+      }
+      const id = rowId!;
+      const work = (async () => {
+        let patch: Record<string, unknown>;
+        try {
+          const m: any = await screenOfferMedia(admin, partnerId, cMediaPath, cMediaType, cFrames);
+          if (m.service) patch = { status: 'retry' };
+          else if (m.error) patch = { status: 'needs_changes', problem: String(m.error).slice(0, 300) };
+          else {
+            const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+              partner_id_param: partnerId, target_type_param: 'creative', target_id_param: id, submitted_by_param: myId,
+              content_snapshot_param: { mediaPath: cMediaPath, mediaType: cMediaType, posterPath: m.posterPath, framePaths: cFrames },
+              risk_tier_param: m.tier, matched_categories_param: m.categories, model_reasoning_param: m.reasoning,
+            });
+            if (logError) patch = { status: 'retry' };
+            else if (m.tier === 'low') patch = { status: 'ready', screening_id: screeningId, poster_path: m.posterPath ?? null };
+            else if (m.tier === 'high') patch = { status: 'needs_changes', screening_id: screeningId, matched_categories: m.categories };
+            else patch = { status: 'reviewing', screening_id: screeningId }; // held for the team
+          }
+        } catch (e) {
+          console.error('screen-business-content: creative screening crashed', e);
+          patch = { status: 'retry' };
+        }
+        const { error: upErr } = await admin.from('business_creatives').update(patch).eq('id', id).eq('status', 'reviewing');
+        if (upErr) console.error('screen-business-content: could not record the creative result', upErr);
+      })();
+      // deno-lint-ignore no-explicit-any
+      const rt = (globalThis as any).EdgeRuntime;
+      if (rt?.waitUntil) rt.waitUntil(work); else await work;
+      return json({ creativeId: id, status: 'reviewing', queued: true }, 202);
+    }
+
     if (targetType === 'business_profile') {
       const name = typeof body.name === 'string' ? body.name.trim().slice(0, 200) : '';
       if (!name) return json({ error: 'Business name cannot be empty' }, 400);
@@ -410,6 +494,11 @@ What makes them different: ${differentiator || '(none)'}`;
       let matchedCategories = textResult.matchedCategories;
       let reasoning = textResult.reasoning;
       const logoChanged = logoUrl !== null && logoUrl !== (currentPartner?.logo_url ?? null);
+      // Logo upload (2026-10-10): a new logo must be a file Nearby stores for this business (public bucket business-logos,
+      // write-once), never a typed external address, so the screened image cannot change after approval.
+      if (logoChanged && !logoUrl!.startsWith(`${SUPABASE_URL}/storage/v1/object/public/business-logos/${partnerId}/`)) {
+        return json({ error: 'Upload your logo as an image file.' }, 400);
+      }
       if (logoChanged) {
         const imageResult = await classifyImage(logoUrl);
         if ('error' in imageResult) return json({ error: imageResult.error }, 400);
@@ -949,7 +1038,7 @@ Body: ${updateBody || '(none)'}`;
     let creativeRow: { media_path: string; media_type: string; poster_path: string | null } | null = null;
     if (creativeId) {
       const { data: c } = await admin.from('business_creatives').select('media_path, media_type, poster_path')
-        .eq('id', creativeId).eq('partner_id', partnerId).is('archived_at', null).maybeSingle();
+        .eq('id', creativeId).eq('partner_id', partnerId).eq('status', 'ready').is('archived_at', null).maybeSingle();
       if (!c) return json({ error: 'That saved creative is not available anymore. Pick another or attach it again.' }, 400);
       creativeRow = c;
       mediaPath = c.media_path;
@@ -1018,7 +1107,7 @@ Body: ${updateBody || '(none)'}`;
         // The media itself passed cleanly: save it to the owner's library so the next offer can reuse it (no re-upload, no re-screen).
         if (m.tier === 'low') {
           const { data: saved } = await admin.from('business_creatives')
-            .upsert({ partner_id: partnerId, media_type: mediaType, media_path: mediaPath, poster_path: posterPath }, { onConflict: 'partner_id,media_path' })
+            .upsert({ partner_id: partnerId, media_type: mediaType, media_path: mediaPath, poster_path: posterPath, status: 'ready' }, { onConflict: 'partner_id,media_path' })
             .select('id').maybeSingle();
           creativeId = saved?.id ?? null;
         }

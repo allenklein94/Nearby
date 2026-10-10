@@ -51,7 +51,7 @@ import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCr
 import { sanitizePlainLanguageSuggestion, plainLanguageDiffers, plainLanguageContext, claimProblem, acceptPlainLanguage } from '../utils/plainLanguageOffer';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
 import { priorityTimeRangeFromChoice, priorityTimeStringToDate, priorityTimeRangeLabel } from '../utils/priorityTimeRange';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, markBusinessNoShow, getMyBusinessNoShows, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue, getPartnerOfferFunnel } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, markBusinessNoShow, getMyBusinessNoShows, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, uploadBusinessLogo, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue, getPartnerOfferFunnel } from '../services/businessFulfillment';
 import { submissionView, inFlightRequestIds, payloadToForm } from '../utils/offerSubmission';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
@@ -89,6 +89,8 @@ import { computeOfferTypeAcceptanceRates, bestAcceptedOfferType, rankExperiences
 import { BUSINESS_CATEGORIES } from './BusinessPartnerApplyScreen';
 import DemandNearYouCard from '../components/DemandNearYouCard';
 import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
+import CreativeLibrarySection from '../components/CreativeLibrarySection';
+import { pickerCreatives } from '../utils/creativeLibrary';
 import { describeDemandSignals } from '../utils/demandSignals';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
@@ -314,6 +316,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const mainScrollRef = useRef(null);
   const scrollToPerformanceRef = useRef(false);
   const performanceYRef = useRef(null);
+  // The welcome card's "Add your photos & videos" step opens the Profile tab at the library.
+  const libraryYRef = useRef(null);
+  const scrollToLibraryRef = useRef(false);
+  function openCreativeLibrary() {
+    if (section === 'profile' && libraryYRef.current != null) {
+      mainScrollRef.current?.scrollTo({ y: libraryYRef.current, animated: true });
+    } else {
+      scrollToLibraryRef.current = true;
+      setSection('profile');
+    }
+  }
   function openHomeTile(target) {
     if (target === 'performance' && section === 'home' && openTool === 'analytics' && performanceYRef.current != null) {
       mainScrollRef.current?.scrollTo({ y: performanceYRef.current, animated: true }); // already open: just go there
@@ -351,6 +364,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [editNameInput, setEditNameInput] = useState('');
   const [editDescriptionInput, setEditDescriptionInput] = useState('');
   const [editLogoUrlInput, setEditLogoUrlInput] = useState('');
+  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [editCategoryInput, setEditCategoryInput] = useState(null);
   const [editAttributesInput, setEditAttributesInput] = useState([]);
   const [editCuisineInput, setEditCuisineInput] = useState(null);
@@ -1097,6 +1111,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setEditSubcategoryInput(selectedPartner?.subcategory ?? null);
     setEditCategoriesInput(selectedPartner?.categories ?? []);
     setEditProfileModalVisible(true);
+  }
+
+  async function handleUploadLogo() {
+    if (!selectedPartner?.id || uploadingLogo) return;
+    try {
+      const asset = await pickBusinessOfferMedia({ imagesOnly: true });
+      if (!asset) return;
+      setUploadingLogo(true);
+      // A new logo is always a new stored file; the old one stays as it was screened. Saving the profile screens it.
+      setEditLogoUrlInput(await uploadBusinessLogo(selectedPartner.id, asset));
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'complete that', error: e });
+    } finally {
+      setUploadingLogo(false);
+    }
   }
 
   async function handleSaveProfile() {
@@ -3597,6 +3626,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     >
                       <Text style={styles.welcomeCardStepText}>{t('ui.bizDash1.completeYourProfile')}</Text>
                     </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.welcomeCardStep}
+                      onPress={openCreativeLibrary}
+                      accessibilityLabel={t('ui.bizHelp.library.title')}
+                      accessibilityRole="button"
+                    >
+                      <Text style={styles.welcomeCardStepText}>{t('ui.bizHelp.library.welcomeStep')}</Text>
+                    </TouchableOpacity>
                   </View>
                 )}
                 {/* CLAUDE.md item 10: the real discovery-stats signal already
@@ -5276,6 +5313,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   })()}
                 </View>
 
+                {/* "Your photos & videos" (owner, 2026-10-10): the creative library, screened item by item. */}
+                <CreativeLibrarySection
+                  partnerId={selectedPartner?.id ?? null}
+                  onLayout={(e) => {
+                    libraryYRef.current = e.nativeEvent.layout.y;
+                    if (scrollToLibraryRef.current) {
+                      scrollToLibraryRef.current = false;
+                      mainScrollRef.current?.scrollTo({ y: libraryYRef.current, animated: true });
+                    }
+                  }}
+                />
+
                 {/* "Business Profile Phase 1" addendum -- AI Category
                     Classification. A real, deterministic keyword match
                     against the business's own real name/description, never
@@ -6547,15 +6596,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 multiline
                 accessibilityLabel={t('ui.bizDash3.businessDescriptionA11y')}
               />
-              <TextInput
-                style={[styles.input, { marginTop: spacing.sm }]}
-                placeholder={t('ui.bizDash3.logoImageUrlOptional')}
-                placeholderTextColor={colors.textTertiary}
-                value={editLogoUrlInput}
-                onChangeText={setEditLogoUrlInput}
-                autoCapitalize="none"
-                accessibilityLabel={t('ui.bizDash3.logoUrlA11y')}
-              />
+              {/* Logo upload (owner, 2026-10-10): the image is stored by Nearby, never a typed address, and is screened
+                  when the profile is saved. Customers see it only once it passed (get_screened_business_logos). */}
+              <Text style={[styles.notesLabel, { marginTop: spacing.sm }]}>{t('ui.bizHelp.logo.label')}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
+                {editLogoUrlInput ? (
+                  <Image source={{ uri: editLogoUrlInput }} style={{ width: 48, height: 48, borderRadius: 24, marginRight: spacing.md, backgroundColor: colors.surface }} />
+                ) : null}
+                <TouchableOpacity
+                  onPress={handleUploadLogo}
+                  disabled={uploadingLogo}
+                  style={{ marginRight: spacing.lg, opacity: uploadingLogo ? 0.6 : 1 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={editLogoUrlInput ? t('ui.bizHelp.logo.replace') : t('ui.bizHelp.logo.upload')}
+                >
+                  <Text style={{ color: colors.primary, fontWeight: '600' }}>
+                    {uploadingLogo ? t('ui.bizHelp.logo.uploading') : editLogoUrlInput ? t('ui.bizHelp.logo.replace') : t('ui.bizHelp.logo.upload')}
+                  </Text>
+                </TouchableOpacity>
+                {editLogoUrlInput && !uploadingLogo ? (
+                  <TouchableOpacity onPress={() => setEditLogoUrlInput('')} accessibilityRole="button" accessibilityLabel={t('ui.bizHelp.logo.remove')}>
+                    <Text style={{ color: colors.danger, fontWeight: '600' }}>{t('ui.bizHelp.logo.remove')}</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+              <Text style={[styles.breakdownText, { marginTop: spacing.xs }]}>{t('ui.bizHelp.logo.helper')} {t('ui.bizHelp.logo.notChecked')}</Text>
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.category')}</Text>
               <View style={styles.chipRow}>
                 {BUSINESS_CATEGORIES.map((c) => (
@@ -7263,11 +7328,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
               ) : null}
-              {creatives.length > 0 && !offerPickedMediaAsset ? (
+              {pickerCreatives(creatives).length > 0 && !offerPickedMediaAsset ? (
                 <View style={{ marginTop: spacing.sm }}>
                   <Text style={styles.notesLabel}>{t('ui.bizDash3.useYourSavedCreative')}</Text>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    {creatives.map((c) => (
+                    {pickerCreatives(creatives).map((c) => (
                       <CreativeThumb
                         key={c.id}
                         creative={c}

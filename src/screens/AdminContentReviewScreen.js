@@ -1,7 +1,8 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image } from 'react-native';
+import { getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { PullToRefresh } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
@@ -53,7 +54,26 @@ export const TARGET_TYPE_LABELS = {
   availability: 'Availability posting',
   update: 'Broadcast update',
   offer_response: 'Offer response',
+  creative: 'Photo or video (library)',
 };
+
+// A held library photo/video: the reviewer sees the image itself (a video through its first sampled frame) before deciding.
+function SnapshotMedia({ snapshot, colors }) {
+  const path = snapshot.mediaType === 'video' ? (snapshot.posterPath ?? snapshot.framePaths?.[0]) : snapshot.mediaPath;
+  const [uri, setUri] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
+    if (path) getSignedBusinessOfferMediaUrl(path).then((u) => { if (!cancelled) setUri(u); });
+    return () => { cancelled = true; };
+  }, [path]);
+  if (!uri) return null;
+  return (
+    <View style={{ marginTop: spacing.sm }}>
+      <Image source={{ uri }} style={{ width: '100%', height: 180, borderRadius: radius.md, backgroundColor: colors.surface }} resizeMode="contain" />
+      {snapshot.mediaType === 'video' ? <Text style={{ color: colors.textSecondary, marginTop: spacing.xs }}>Video (first frame shown; {snapshot.framePaths?.length ?? 1} frame(s) were checked)</Text> : null}
+    </View>
+  );
+}
 
 const CATEGORY_LABELS = {
   illegal_drugs: 'Illegal drugs',
@@ -163,6 +183,7 @@ export default function AdminContentReviewScreen() {
               {snapshot.body ? <Text style={styles.snapshotBody}>{snapshot.body}</Text> : null}
               {snapshot.offerDescription ? <Text style={styles.snapshotBody}>{snapshot.offerDescription}</Text> : null}
               {snapshot.differentiator ? <Text style={styles.snapshotBody}>"{snapshot.differentiator}"</Text> : null}
+              {item.target_type === 'creative' ? <SnapshotMedia snapshot={snapshot} colors={colors} /> : null}
 
               {item.matched_categories?.length > 0 && (
                 <View style={styles.categoryRow}>
