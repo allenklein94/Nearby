@@ -59,7 +59,8 @@ export default function OfferProgressSteps({ current, labels, a11yLabel, play = 
 }
 
 // The card's outline glows once as the step lands (touch-free). Mount it inside the card with the same `key`.
-export function OfferProgressGlow({ play = false, color, radius = 12 }) {
+// Also the customer's "Visit confirmed" glow (`timing` = SEQUENCES.visitConfirmed): one glow, one look, both sides.
+export function OfferProgressGlow({ play = false, color, radius = 12, timing = T }) {
   const reduceMotion = useReduceMotion();
   const animate = useRef(play && !reduceMotion).current;
   const glow = useRef(new Animated.Value(0)).current;
@@ -67,8 +68,8 @@ export function OfferProgressGlow({ play = false, color, radius = 12 }) {
   useEffect(() => {
     if (!animate) return undefined;
     const anim = Animated.sequence([
-      Animated.timing(glow, { toValue: 1, duration: T.glowInMs, easing: ease, useNativeDriver: true }),
-      Animated.timing(glow, { toValue: 0, duration: T.glowOutMs, easing: ease, useNativeDriver: true }),
+      Animated.timing(glow, { toValue: 1, duration: timing.glowInMs, easing: ease, useNativeDriver: true }),
+      Animated.timing(glow, { toValue: 0, duration: timing.glowOutMs, easing: ease, useNativeDriver: true }),
     ]);
     anim.start();
     return () => anim.stop();

@@ -74,7 +74,7 @@ describe('screen wiring (BusinessRequestDetail)', () => {
   const src = strip(read('screens/BusinessRequestDetailScreen.js'));
   test('no separate card above the offers; the accepted offer card morphs in place', () => {
     expect(src).not.toMatch(/BookedCelebration/);
-    expect(src).toMatch(/o\.status === 'accepted' \? \(\(\) => \{/);
+    expect(src).toMatch(/\(o\.status === 'accepted' \|\| o\.status === 'completed'\) \? \(\(\) => \{/);
     expect(src).toMatch(/<OfferAcceptedMorph[\s\S]*?play=\{justAcceptedOfferId === o\.id\}/);
   });
   test('submitting: one accept in flight; the morph only follows a successful server accept and a reload', () => {

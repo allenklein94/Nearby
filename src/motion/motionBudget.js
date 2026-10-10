@@ -67,6 +67,11 @@ export const SEQUENCES = {
   // The business side of it (owner item 13, 2026-10-10): on the opportunity card the newly reached step (Accepted /
   // Redeemed) fades in with a slight rise while the card's outline glows once. Arrival-driven: no haptic.
   offerProgress: { tier: 'small', stepMs: 200, risePx: 6, glowInMs: 100, glowOutMs: 200 },
+  // Request sent (2026-10-10, moment 1 of the marketplace sequence): one or two soft rings go out from the confirmation
+  // line and fade, only when at least one business was really reached. Arrival of nothing yet: no haptic of its own.
+  requestPulse: { tier: 'medium', ringMs: 380, staggerMs: 100, rings: 2, fromScale: 0.6, toScale: 1.8, startOpacity: 0.35 },
+  // Customer-side redemption (moment 6): "Visit confirmed" settles in on the booked card + one success outline glow.
+  visitConfirmed: { tier: 'small', stepMs: 200, risePx: 6, glowInMs: 100, glowOutMs: 200 },
   offerTravel: { tier: 'special', dimMs: 180, travelMs: 380, settleMs: 220, targetWaitMs: 1500 },
   // Result cascades.
   cascade: { tier: 'medium', maxDelayMs: 200, itemMs: 250 },
@@ -103,7 +108,10 @@ export function settleMs(name) {
     case 'bookedExit':
       return s.fadeMs + s.collapseMs;
     case 'offerProgress':
+    case 'visitConfirmed':
       return Math.max(s.stepMs, s.glowInMs + s.glowOutMs);
+    case 'requestPulse':
+      return s.staggerMs * (s.rings - 1) + s.ringMs;
     case 'offerTravel':
       return s.dimMs + s.travelMs + s.settleMs;
     default:

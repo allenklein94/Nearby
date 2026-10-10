@@ -6,7 +6,8 @@
 //   requested -> 'confirming'  "Offer accepted · confirming your booking"
 //   failed    -> 'not_through' "Offer accepted · the booking didn't go through"
 //   no row    -> 'accepted'    "Offer accepted"
-// A completed offer was booked and redeemed; it keeps its own "Completed" status and never reaches this card.
+// A completed offer (the business confirmed the visit) stays on this same card: its reservation is still 'confirmed',
+// so the heading stays as it was and the card adds its final step, "✓ Visit confirmed" (marketplace moment 6).
 export function acceptedBookingState(offer) {
   const status = offer?.business_reservations?.[0]?.status ?? null;
   if (status === 'confirmed') return 'booked';

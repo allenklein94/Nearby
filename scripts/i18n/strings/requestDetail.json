@@ -272,7 +272,8 @@
   "whenDay.tomorrow": "Tomorrow",
   "booking.accepted": "Offer accepted",
   "booking.confirming": "Offer accepted · confirming your booking",
-  "booking.notThrough": "Offer accepted · the booking didn't go through"
+  "booking.notThrough": "Offer accepted · the booking didn't go through",
+  "visitConfirmed": "Visit confirmed"
  },
  "es": {
   "youreBooked": "Tienes reserva",
@@ -547,7 +548,8 @@
   "whenDay.tomorrow": "Mañana",
   "booking.accepted": "Oferta aceptada",
   "booking.confirming": "Oferta aceptada · confirmando tu reserva",
-  "booking.notThrough": "Oferta aceptada · la reserva no se pudo completar"
+  "booking.notThrough": "Oferta aceptada · la reserva no se pudo completar",
+  "visitConfirmed": "Visita confirmada"
  },
  "de": {
   "youreBooked": "Du bist gebucht",
@@ -822,7 +824,8 @@
   "whenDay.tomorrow": "Morgen",
   "booking.accepted": "Angebot angenommen",
   "booking.confirming": "Angebot angenommen · deine Buchung wird bestätigt",
-  "booking.notThrough": "Angebot angenommen · die Buchung hat nicht geklappt"
+  "booking.notThrough": "Angebot angenommen · die Buchung hat nicht geklappt",
+  "visitConfirmed": "Besuch bestätigt"
  },
  "fr": {
   "youreBooked": "C'est réservé",
@@ -1097,7 +1100,8 @@
   "whenDay.tomorrow": "Demain",
   "booking.accepted": "Offre acceptée",
   "booking.confirming": "Offre acceptée · confirmation de ta réservation",
-  "booking.notThrough": "Offre acceptée · la réservation n'a pas abouti"
+  "booking.notThrough": "Offre acceptée · la réservation n'a pas abouti",
+  "visitConfirmed": "Visite confirmée"
  },
  "pt": {
   "youreBooked": "Reserva feita",
@@ -1372,7 +1376,8 @@
   "whenDay.tomorrow": "Amanhã",
   "booking.accepted": "Oferta aceita",
   "booking.confirming": "Oferta aceita · confirmando sua reserva",
-  "booking.notThrough": "Oferta aceita · a reserva não foi concluída"
+  "booking.notThrough": "Oferta aceita · a reserva não foi concluída",
+  "visitConfirmed": "Visita confirmada"
  },
  "ht": {
   "youreBooked": "Ou gen rezèvasyon",
@@ -1647,7 +1652,8 @@
   "whenDay.tomorrow": "Demen",
   "booking.accepted": "Òf aksepte",
   "booking.confirming": "Òf aksepte · n ap konfime rezèvasyon ou",
-  "booking.notThrough": "Òf aksepte · rezèvasyon an pa t pase"
+  "booking.notThrough": "Òf aksepte · rezèvasyon an pa t pase",
+  "visitConfirmed": "Vizit konfime"
  },
  "zh": {
   "youreBooked": "已预订",
@@ -1919,7 +1925,8 @@
   "whenDay.tomorrow": "明天",
   "booking.accepted": "已接受优惠",
   "booking.confirming": "已接受优惠 · 正在确认你的预订",
-  "booking.notThrough": "已接受优惠 · 预订未成功"
+  "booking.notThrough": "已接受优惠 · 预订未成功",
+  "visitConfirmed": "已确认到店"
  },
  "vi": {
   "youreBooked": "Bạn đã đặt chỗ",
@@ -2191,7 +2198,8 @@
   "whenDay.tomorrow": "Ngày mai",
   "booking.accepted": "Đã chấp nhận ưu đãi",
   "booking.confirming": "Đã chấp nhận ưu đãi · đang xác nhận đặt chỗ của bạn",
-  "booking.notThrough": "Đã chấp nhận ưu đãi · đặt chỗ chưa thành công"
+  "booking.notThrough": "Đã chấp nhận ưu đãi · đặt chỗ chưa thành công",
+  "visitConfirmed": "Đã xác nhận lượt ghé"
  },
  "tl": {
   "youreBooked": "Naka-book ka na",
@@ -2466,7 +2474,8 @@
   "whenDay.tomorrow": "Bukas",
   "booking.accepted": "Tinanggap ang alok",
   "booking.confirming": "Tinanggap ang alok · kinukumpirma ang booking mo",
-  "booking.notThrough": "Tinanggap ang alok · hindi natuloy ang booking"
+  "booking.notThrough": "Tinanggap ang alok · hindi natuloy ang booking",
+  "visitConfirmed": "Kumpirmado ang pagbisita"
  },
  "ru": {
   "youreBooked": "Бронь подтверждена",
@@ -2747,7 +2756,8 @@
   "whenDay.tomorrow": "Завтра",
   "booking.accepted": "Предложение принято",
   "booking.confirming": "Предложение принято · подтверждаем бронь",
-  "booking.notThrough": "Предложение принято · бронь не прошла"
+  "booking.notThrough": "Предложение принято · бронь не прошла",
+  "visitConfirmed": "Визит подтверждён"
  },
  "ko": {
   "youreBooked": "예약 완료",
@@ -3019,6 +3029,7 @@
   "whenDay.tomorrow": "내일",
   "booking.accepted": "제안을 수락했어요",
   "booking.confirming": "제안을 수락했어요 · 예약을 확인하는 중이에요",
-  "booking.notThrough": "제안을 수락했어요 · 예약이 완료되지 않았어요"
+  "booking.notThrough": "제안을 수락했어요 · 예약이 완료되지 않았어요",
+  "visitConfirmed": "방문 확인됨"
  }
 }

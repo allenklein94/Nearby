@@ -306,6 +306,7 @@ export default {
       confirming: "Offer accepted · confirming your booking",
       notThrough: "Offer accepted · the booking didn't go through",
     },
+    visitConfirmed: "Visit confirmed",
   },
   es: {
     youreBooked: "Tienes reserva",
@@ -612,6 +613,7 @@ export default {
       confirming: "Oferta aceptada · confirmando tu reserva",
       notThrough: "Oferta aceptada · la reserva no se pudo completar",
     },
+    visitConfirmed: "Visita confirmada",
   },
   de: {
     youreBooked: "Du bist gebucht",
@@ -918,6 +920,7 @@ export default {
       confirming: "Angebot angenommen · deine Buchung wird bestätigt",
       notThrough: "Angebot angenommen · die Buchung hat nicht geklappt",
     },
+    visitConfirmed: "Besuch bestätigt",
   },
   fr: {
     youreBooked: "C'est réservé",
@@ -1224,6 +1227,7 @@ export default {
       confirming: "Offre acceptée · confirmation de ta réservation",
       notThrough: "Offre acceptée · la réservation n'a pas abouti",
     },
+    visitConfirmed: "Visite confirmée",
   },
   pt: {
     youreBooked: "Reserva feita",
@@ -1530,6 +1534,7 @@ export default {
       confirming: "Oferta aceita · confirmando sua reserva",
       notThrough: "Oferta aceita · a reserva não foi concluída",
     },
+    visitConfirmed: "Visita confirmada",
   },
   ht: {
     youreBooked: "Ou gen rezèvasyon",
@@ -1836,6 +1841,7 @@ export default {
       confirming: "Òf aksepte · n ap konfime rezèvasyon ou",
       notThrough: "Òf aksepte · rezèvasyon an pa t pase",
     },
+    visitConfirmed: "Vizit konfime",
   },
   zh: {
     youreBooked: "已预订",
@@ -2142,6 +2148,7 @@ export default {
       confirming: "已接受优惠 · 正在确认你的预订",
       notThrough: "已接受优惠 · 预订未成功",
     },
+    visitConfirmed: "已确认到店",
   },
   vi: {
     youreBooked: "Bạn đã đặt chỗ",
@@ -2448,6 +2455,7 @@ export default {
       confirming: "Đã chấp nhận ưu đãi · đang xác nhận đặt chỗ của bạn",
       notThrough: "Đã chấp nhận ưu đãi · đặt chỗ chưa thành công",
     },
+    visitConfirmed: "Đã xác nhận lượt ghé",
   },
   tl: {
     youreBooked: "Naka-book ka na",
@@ -2754,6 +2762,7 @@ export default {
       confirming: "Tinanggap ang alok · kinukumpirma ang booking mo",
       notThrough: "Tinanggap ang alok · hindi natuloy ang booking",
     },
+    visitConfirmed: "Kumpirmado ang pagbisita",
   },
   ru: {
     youreBooked: "Бронь подтверждена",
@@ -3060,6 +3069,7 @@ export default {
       confirming: "Предложение принято · подтверждаем бронь",
       notThrough: "Предложение принято · бронь не прошла",
     },
+    visitConfirmed: "Визит подтверждён",
   },
   ko: {
     youreBooked: "예약 완료",
@@ -3366,5 +3376,6 @@ export default {
       confirming: "제안을 수락했어요 · 예약을 확인하는 중이에요",
       notThrough: "제안을 수락했어요 · 예약이 완료되지 않았어요",
     },
+    visitConfirmed: "방문 확인됨",
   },
 };

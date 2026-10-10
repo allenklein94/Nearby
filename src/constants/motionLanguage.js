@@ -45,3 +45,24 @@
 // roughly half the duration, no springy overshoot). Same content/meaning either way -- only how
 // loud the motion is changes with the context.
 export const NEARBY_MOTION_LANGUAGE_DOC_ONLY = true;
+
+// The marketplace sequence (2026-10-10, owner-approved; one transaction told in six moments, never random effects).
+// Every animation on the request -> offer -> booking -> visit path belongs to exactly ONE of these, in this order; a new
+// marketplace animation must slot into one of them (extend it) instead of inventing another effect. Shared rules: one
+// timing budget (src/motion/motionBudget.js, each moment's SEQUENCES token below), Reduce Motion = the settled state,
+// vibration only after the person's own tap, transaction tone (success colour, no confetti, no bounce, no loop), and
+// every moment shows a state that is already stored, never one the animation implies.
+//   1 Request sent         -- an outward pulse from the confirmation line, only when a business was really reached.
+//   2 Business response    -- the arrival signal (pill) travels into the offer card.
+//   3 Offer reveal         -- the offer card builds itself step by step, ending on "I'll take this one".
+//   4 Offer acceptance     -- the same card transforms into its booked state ("You're booked" only when confirmed).
+//   5 Business progress    -- Offer sent -> Accepted -> Redeemed on the business's card, live, one glow per step.
+//   6 Customer redemption  -- the booked card's final step, "✓ Visit confirmed", one glow when it arrives live.
+export const MARKETPLACE_MOMENTS = Object.freeze([
+  { key: 'request_sent', component: 'motion/RequestPulse.js', sequence: 'requestPulse' },
+  { key: 'business_response', component: 'motion/OfferTravelOverlay.js', sequence: 'offerTravel' },
+  { key: 'offer_reveal', component: 'components/OfferAssembly.js', sequence: 'offerAssembly' },
+  { key: 'offer_acceptance', component: 'motion/OfferAcceptedMorph.js', sequence: 'offerAccepted' },
+  { key: 'business_progress', component: 'motion/OfferProgressSteps.js', sequence: 'offerProgress' },
+  { key: 'customer_redemption', component: 'motion/VisitConfirmed.js', sequence: 'visitConfirmed' },
+]);

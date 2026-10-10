@@ -38,6 +38,12 @@ export function offersToAnimate(offers, { previous = new Map(), live = false, fo
   return out;
 }
 
+// The customer side (marketplace moment 6): only a visit confirmation that arrives LIVE while the request screen is
+// open plays, once; a revisit, a reload or a duplicate realtime event never does (same `shown` memory).
+export function visitConfirmationsToAnimate(offers, { previous = new Map(), live = false, shown = new Set() } = {}) {
+  return offersToAnimate(offers, { previous, live, shown }).filter((o) => o.status === 'completed');
+}
+
 // Keeps the remembered set bounded (newest last).
 export function rememberShown(list, keys, max = 300) {
   const next = [...(list ?? []).filter((k) => !keys.includes(k)), ...keys];

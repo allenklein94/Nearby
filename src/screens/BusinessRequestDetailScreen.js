@@ -7,7 +7,11 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking } from 'react-native';
 import * as Calendar from 'expo-calendar';
-import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, animateLayout } from '../motion';
+import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestPulse, VisitConfirmed, animateLayout } from '../motion';
+import { OfferProgressGlow } from '../motion/OfferProgressSteps';
+import { SEQUENCES } from '../motion/motionBudget';
+import { progressKey, visitConfirmationsToAnimate } from '../utils/offerProgress';
+import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgressShown';
 import { acceptedBookingState, ACCEPTED_TITLE_KEY, acceptedWhenLine, acceptedPartySize } from '../utils/acceptedBooking';
 import { useFocusEffect } from '@react-navigation/native';
 import { subscribeViewedArrivals } from '../services/offerArrivals';
@@ -112,6 +116,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const requestId = route.params?.requestId;
   const justSubmitted = route.params?.justSubmitted ?? false;
   const notifiedCount = route.params?.notifiedCount ?? 0;
+  // Marketplace moment 6 ("Visit confirmed"): which offers just reached `completed` while this screen was open.
+  const [visitPlayKeys, setVisitPlayKeys] = useState(() => new Set());
+  const visitPrevRef = useRef(null);
+  const visitShownRef = useRef({ userId: null, list: null });
+  const liveReloadRef = useRef(false);
   const targetPartnerName = route.params?.targetPartnerName ?? null;
   const isDuplicate = route.params?.duplicate ?? false;
   // Item 55 fast-follow ("deep links should preserve context too" --
@@ -332,6 +341,28 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     return displayOffers.filter((o) => o.status === 'offered').length >= 2 && hasEstablishedRecord(rep) ? first.id : null;
   }, [displayOffers, partnerStats]);
 
+  // Plays only a confirmation that arrived live (a realtime-triggered re-read saw accepted -> completed); the first read
+  // of this visit is the baseline, and anything already played on this device is never replayed.
+  async function noteVisitConfirmations(uid, list) {
+    const live = liveReloadRef.current;
+    liveReloadRef.current = false;
+    try {
+      const previous = visitPrevRef.current;
+      visitPrevRef.current = new Map((list ?? []).map((o) => [o.id, o.status]));
+      if (!uid || !previous) return;
+      if (visitShownRef.current.userId !== uid || !visitShownRef.current.list) {
+        visitShownRef.current = { userId: uid, list: await loadShown(visitConfirmedKey(uid)) };
+      }
+      const toPlay = visitConfirmationsToAnimate(list, { previous, live, shown: new Set(visitShownRef.current.list) });
+      if (toPlay.length === 0) return;
+      const keys = toPlay.map(progressKey);
+      visitShownRef.current.list = await saveShown(visitConfirmedKey(uid), visitShownRef.current.list, keys);
+      setVisitPlayKeys((prev) => new Set([...prev, ...keys]));
+    } catch {
+      // never blocks the screen: worst case the line appears without its animation
+    }
+  }
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
@@ -342,6 +373,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const result = await getBusinessRequestWithOffers(requestId);
       setRequest(result.request);
       setOffers(result.offers);
+      noteVisitConfirmations(uid, result.offers);
       setLoadError(false);
 
       // Item 88: awaited (not fire-and-forget) because the Invite-Someone
@@ -681,6 +713,25 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   }
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  // Marketplace moment 6: the business confirming the visit reaches this card live while the screen is in front.
+  // Realtime only says "one of this request's offer rows changed" (requester RLS; the payload is never read) and the
+  // screen re-reads the stored state, which stays the truth; the focus reload above covers anything missed. Removed on
+  // blur. Same pattern as the business dashboard (owner item 13).
+  useFocusEffect(useCallback(() => {
+    let timer = null;
+    const channel = supabase
+      .channel(`visit_confirmed:${requestId}`)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'business_request_offers', filter: `request_id=eq.${requestId}` }, () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => { liveReloadRef.current = true; load(); }, 700);
+      })
+      .subscribe();
+    return () => {
+      clearTimeout(timer);
+      supabase.removeChannel(channel);
+    };
+  }, [requestId, load]));
   // Offer arrival signal (services/offerArrivals.js): a reply that lands on THIS request while it is on screen is not
   // announced with a signal; the screen just reloads in place.
   useEffect(() => subscribeViewedArrivals((id) => { if (id === requestId) load(); }), [requestId, load]);
@@ -1221,6 +1272,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 wizard's business-destined submit, GroupOccasionPlanScreen's
                 "Book It") -- one shared success moment, not three copies. */}
             {!isDuplicate && notifiedCount > 0 && <SuccessAnimation haptic />}
+            {/* Marketplace moment 1: the request going out. Rings only when it really reached a business (never for a
+                duplicate or nobody reached); the line itself shows at once and never waits for them. */}
+            <RequestPulse play={!isDuplicate && notifiedCount > 0} color={colors.info}>
             <Text style={styles.bannerText}>
               {isDuplicate
                 ? t('ui.requestDetail.youAlreadyHaveAnOpen')
@@ -1228,6 +1282,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 ? justSentLine(notifiedCount, targetPartnerName)
                 : t('ui.requestDetail.weCouldntFindANearby2', { priorRadiusMiles: priorRadiusMiles })}
             </Text>
+            </RequestPulse>
             {!isDuplicate && notifiedCount === 0 && (
               <TouchableOpacity
                 style={styles.widerRadiusButton}
@@ -1383,11 +1438,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             <StaggeredReveal index={offerIndex} viewRef={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
             {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
             <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
+            {o.status === 'completed' ? (
+              <OfferProgressGlow key={progressKey(o)} play={visitPlayKeys.has(progressKey(o))} color={colors.success} radius={radius.lg} timing={SEQUENCES.visitConfirmed} />
+            ) : null}
             <View>
               {/* An open reply assembles itself once, when newly received (components/OfferAssembly.js): business ->
                   "Heard your request" -> what they said -> order -> price -> when, then the button settles in as the
                   final slot (always visible and tappable) while the outline glows once. */}
-              {o.status === 'accepted' ? (() => {
+              {(o.status === 'accepted' || o.status === 'completed') ? (() => {
                 // Item 12: the same card, now booked. Heading from the stored reservation (acceptedBookingState), then the
                 // business, then the real facts; the button's place below goes to the business's own redeem instructions.
                 const bookingState = acceptedBookingState(o);
@@ -1404,6 +1462,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     {businessHead}
                     {whenLine ? <Text style={styles.acceptedFact}>{whenLine}</Text> : null}
                     {partySize != null ? <Text style={styles.acceptedFact}>{t('ui.common.count.people', { count: partySize })}</Text> : null}
+                    {/* Marketplace moment 6: the business confirmed the visit. A fact, never something to do. */}
+                    {o.status === 'completed' ? (
+                      <VisitConfirmed key={progressKey(o)} label={t('ui.requestDetail.visitConfirmed')} play={visitPlayKeys.has(progressKey(o))} />
+                    ) : null}
                   </OfferAcceptedMorph>
                 );
               })() : (
@@ -1421,7 +1483,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   switches (Items 114-117), applied here to a single offer card's own real state
                   transition. */}
               <ModeTransition activeKey={o.status}>
-              {o.status !== 'accepted' ? (
+              {(o.status !== 'accepted' && o.status !== 'completed') ? (
               <AssemblyStep step="status">
               <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.requestDetail.thisOfferHasExpired') : (o.status === 'offered' ? businessReplyStatus(o) : (OFFER_STATUS_COPY[o.status] ? t(`ui.requestDetail.offerStatus.${o.status}`) : o.status))}</Text>
               </AssemblyStep>
