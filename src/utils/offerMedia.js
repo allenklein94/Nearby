@@ -21,9 +21,14 @@ export function videoFrameTimes(durationMs) {
 }
 
 // A plain-words problem with a picked video, or null when it is fine. Images are never limited here.
+// The length must be known (owner, 2026-10-10): a video whose duration is missing or not a real positive number
+// (undefined, null, NaN, Infinity, a string, 0 or less) is refused before upload, never let through unchecked.
+// Up to and including 30 seconds passes; longer is refused, never trimmed by Nearby.
 export function videoLimitProblem(asset) {
   if (!asset || asset.type !== 'video') return null;
-  if (Number.isFinite(asset.duration) && asset.duration > MAX_OFFER_VIDEO_MS) return M('videoTooLong');
+  const d = asset.duration;
+  if (typeof d !== 'number' || !Number.isFinite(d) || d <= 0) return M('videoNoDuration');
+  if (d > MAX_OFFER_VIDEO_MS) return M('videoTooLong');
   if (Number.isFinite(asset.fileSize) && asset.fileSize > MAX_OFFER_VIDEO_BYTES) return M('videoTooBig');
   return null;
 }

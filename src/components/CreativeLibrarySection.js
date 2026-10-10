@@ -78,7 +78,7 @@ export default function CreativeLibrarySection({ partnerId, onLayout }) {
       // The website adds photos and graphics only: a video is checked through frames sampled on the phone.
       const asset = await pickBusinessOfferMedia({ imagesOnly: Platform.OS === 'web' });
       if (!asset) return;
-      const problem = videoLimitProblem(asset); // over 30 seconds: refused, never trimmed by Nearby
+      const problem = videoLimitProblem(asset); // unknown length or over 30 seconds: refused, never trimmed by Nearby
       if (problem) { Alert.alert(problem); return; }
       setAdding(true);
       await addCreativeToLibrary(partnerId, asset);

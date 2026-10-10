@@ -11,7 +11,7 @@ test('frame sampling: start/middle/end for a normal clip, fewer for short or unk
 });
 test('video limits: 30s and 25MB, images and unknown sizes pass', () => {
   expect(videoLimitProblem({ type: 'video', duration: 31000 })).toMatch(/30 seconds/);
-  expect(videoLimitProblem({ type: 'video', fileSize: MAX_OFFER_VIDEO_BYTES + 1 })).toMatch(/25MB/);
+  expect(videoLimitProblem({ type: 'video', duration: 10000, fileSize: MAX_OFFER_VIDEO_BYTES + 1 })).toMatch(/25MB/);
   expect(videoLimitProblem({ type: 'video', duration: 20000, fileSize: 1000 })).toBeNull();
   expect(videoLimitProblem({ type: 'image', fileSize: 999999999 })).toBeNull();
 });

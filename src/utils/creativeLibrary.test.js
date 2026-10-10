@@ -132,6 +132,45 @@ describe('uploads', () => {
     expect(svc).not.toMatch(/trimVideo|ffmpeg|VideoTrimmer/i);
   });
 
+  test('a video whose length is missing or invalid is refused on the phone, before any upload or screening', async () => {
+    const NO_LEN = "We couldn't tell how long this video is. Pick a different video or record it again.";
+    for (const duration of [undefined, null, NaN, Infinity, -Infinity, '20000', '', {}, [], true, 0, -5]) {
+      expect(videoLimitProblem({ type: 'video', duration })).toBe(NO_LEN);
+    }
+    expect(videoLimitProblem({ type: 'video' })).toBe(NO_LEN); // no duration field at all
+    await expect(addCreativeToLibrary('p1', { type: 'video', uri: 'file:///nolen.mov' })).rejects.toThrow(NO_LEN);
+    await expect(addCreativeToLibrary('p1', { type: 'video', uri: 'file:///nan.mov', duration: NaN })).rejects.toThrow(NO_LEN);
+    expect(mockUpload).not.toHaveBeenCalled();
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test('valid lengths up to and including 30 seconds pass; over 30 is refused with the existing message', () => {
+    const LONG = 'Videos can be up to 30 seconds. Trim it on your phone and try again.';
+    for (const ms of [1, 500, 15_000, 29_999, 30_000]) expect(videoLimitProblem({ type: 'video', duration: ms })).toBeNull();
+    for (const ms of [30_001, 31_000, 600_000]) expect(videoLimitProblem({ type: 'video', duration: ms })).toBe(LONG);
+    // images have no length and are never limited by it
+    expect(videoLimitProblem({ type: 'image' })).toBeNull();
+    expect(videoLimitProblem(null)).toBeNull();
+  });
+
+  test('the missing-length message exists in all 11 languages', () => {
+    const ui = require('../i18n/ui/bizHelp').default;
+    const langs = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
+    for (const l of langs) {
+      expect(typeof ui[l].offerForm.videoNoDuration).toBe('string');
+      expect(ui[l].offerForm.videoNoDuration.length).toBeGreaterThan(10);
+      expect(typeof ui[l].offerForm.videoTooLong).toBe('string');
+    }
+    expect(new Set(langs.map((l) => ui[l].offerForm.videoNoDuration)).size).toBe(11);
+  });
+
+  test('both pickers run the same check before anything is uploaded', () => {
+    const dash = read('src/screens/BusinessDashboardScreen.js');
+    expect(dash).toMatch(/const problem = videoLimitProblem\(asset\);\s*if \(problem\) \{ Alert\.alert\(/);
+    const section = read('src/components/CreativeLibrarySection.js');
+    expect(section.indexOf('videoLimitProblem(asset)')).toBeLessThan(section.indexOf('addCreativeToLibrary(partnerId, asset)'));
+  });
+
   test('a refused file reaches the owner as the server\'s message', async () => {
     mockFetch.mockResolvedValue({ ok: false, status: 400, json: async () => ({ error: 'That photo or video is not available to add.' }) });
     await expect(addCreativeToLibrary('p1', { type: 'image', uri: 'file:///a.jpg' })).rejects.toThrow(/not available to add/);

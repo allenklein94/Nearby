@@ -94,6 +94,7 @@ export default {
       endLaterThanNow: "Pick an end time that is later than now.",
       windowBothEnds: "Set both a start and an end for the available window, or clear it.",
       windowEndAfterStart: "The available window must end after it starts.",
+      videoNoDuration: "We couldn't tell how long this video is. Pick a different video or record it again.",
     },
     priorityTime: {
       bothEnds: "Set both a start and an end time, or clear both.",
@@ -470,6 +471,7 @@ export default {
       endLaterThanNow: "Elige una hora de fin posterior a ahora.",
       windowBothEnds: "Pon un inicio y un fin para el horario disponible, o bórralo.",
       windowEndAfterStart: "El horario disponible debe terminar después de empezar.",
+      videoNoDuration: "No pudimos saber cuánto dura este video. Elige otro video o grábalo de nuevo.",
     },
     priorityTime: {
       bothEnds: "Pon una hora de inicio y una de fin, o borra ambas.",
@@ -846,6 +848,7 @@ export default {
       endLaterThanNow: "Wähle eine Endzeit, die später als jetzt ist.",
       windowBothEnds: "Lege Beginn und Ende für das verfügbare Zeitfenster fest oder lösche es.",
       windowEndAfterStart: "Das verfügbare Zeitfenster muss nach dem Beginn enden.",
+      videoNoDuration: "Wir konnten die Länge dieses Videos nicht erkennen. Wähle ein anderes Video oder nimm es neu auf.",
     },
     priorityTime: {
       bothEnds: "Lege eine Start- und eine Endzeit fest oder lösche beide.",
@@ -1222,6 +1225,7 @@ export default {
       endLaterThanNow: "Choisissez une heure de fin postérieure à maintenant.",
       windowBothEnds: "Indiquez un début et une fin pour le créneau disponible, ou effacez-le.",
       windowEndAfterStart: "Le créneau disponible doit se terminer après son début.",
+      videoNoDuration: "Nous n'avons pas pu déterminer la durée de cette vidéo. Choisissez une autre vidéo ou enregistrez-la à nouveau.",
     },
     priorityTime: {
       bothEnds: "Indiquez une heure de début et une heure de fin, ou effacez les deux.",
@@ -1598,6 +1602,7 @@ export default {
       endLaterThanNow: "Escolha um horário de término depois de agora.",
       windowBothEnds: "Defina o início e o fim do horário disponível, ou limpe-o.",
       windowEndAfterStart: "O horário disponível precisa terminar depois de começar.",
+      videoNoDuration: "Não conseguimos saber a duração deste vídeo. Escolha outro vídeo ou grave de novo.",
     },
     priorityTime: {
       bothEnds: "Defina um horário de início e um de término, ou limpe os dois.",
@@ -1974,6 +1979,7 @@ export default {
       endLaterThanNow: "Chwazi yon lè fen ki pita pase kounye a.",
       windowBothEnds: "Mete yon kòmansman ak yon fen pou orè disponib la, oswa efase l.",
       windowEndAfterStart: "Orè disponib la dwe fini apre li kòmanse.",
+      videoNoDuration: "Nou pa t ka konnen konbyen tan videyo sa a dire. Chwazi yon lòt videyo oswa anrejistre l ankò.",
     },
     priorityTime: {
       bothEnds: "Mete yon lè kòmansman ak yon lè fen, oswa efase tou de.",
@@ -2350,6 +2356,7 @@ export default {
       endLaterThanNow: "请选择晚于现在的结束时间。",
       windowBothEnds: "请为可用时段设置开始和结束时间，或将其清除。",
       windowEndAfterStart: "可用时段的结束时间必须晚于开始时间。",
+      videoNoDuration: "无法确定该视频的时长。请选择其他视频或重新录制。",
     },
     priorityTime: {
       bothEnds: "请同时设置开始和结束时间，或全部清除。",
@@ -2726,6 +2733,7 @@ export default {
       endLaterThanNow: "Chọn giờ kết thúc muộn hơn bây giờ.",
       windowBothEnds: "Đặt cả giờ bắt đầu và kết thúc cho khung giờ có sẵn, hoặc xóa nó.",
       windowEndAfterStart: "Khung giờ có sẵn phải kết thúc sau khi bắt đầu.",
+      videoNoDuration: "Chúng tôi không xác định được độ dài của video này. Hãy chọn video khác hoặc quay lại.",
     },
     priorityTime: {
       bothEnds: "Đặt cả giờ bắt đầu và giờ kết thúc, hoặc xóa cả hai.",
@@ -3102,6 +3110,7 @@ export default {
       endLaterThanNow: "Pumili ng oras ng pagtatapos na mas huli sa ngayon.",
       windowBothEnds: "Itakda ang simula at pagtatapos ng available na oras, o burahin ito.",
       windowEndAfterStart: "Dapat matapos ang available na oras pagkatapos itong magsimula.",
+      videoNoDuration: "Hindi namin malaman kung gaano kahaba ang video na ito. Pumili ng ibang video o i-record ito ulit.",
     },
     priorityTime: {
       bothEnds: "Itakda ang oras ng simula at pagtatapos, o burahin ang dalawa.",
@@ -3478,6 +3487,7 @@ export default {
       endLaterThanNow: "Выберите время окончания позже текущего.",
       windowBothEnds: "Укажите начало и конец доступного времени или очистите его.",
       windowEndAfterStart: "Доступное время должно заканчиваться после начала.",
+      videoNoDuration: "Не удалось определить длительность этого видео. Выберите другое видео или запишите его заново.",
     },
     priorityTime: {
       bothEnds: "Укажите время начала и окончания или очистите оба.",
@@ -3854,6 +3864,7 @@ export default {
       endLaterThanNow: "지금보다 늦은 종료 시간을 선택하세요.",
       windowBothEnds: "이용 가능 시간의 시작과 끝을 모두 정하거나 지우세요.",
       windowEndAfterStart: "이용 가능 시간은 시작 후에 끝나야 합니다.",
+      videoNoDuration: "이 동영상의 길이를 확인할 수 없습니다. 다른 동영상을 선택하거나 다시 녹화하세요.",
     },
     priorityTime: {
       bothEnds: "시작 시간과 종료 시간을 모두 정하거나 둘 다 지우세요.",

@@ -324,7 +324,8 @@
     "logo.remove": "Remove logo",
     "logo.uploading": "Uploading…",
     "logo.helper": "A square image works best. Your logo is checked when you save.",
-    "logo.notChecked": "Not shown to customers until it passes the check."
+    "logo.notChecked": "Not shown to customers until it passes the check.",
+    "offerForm.videoNoDuration": "We couldn't tell how long this video is. Pick a different video or record it again."
   },
   "es": {
     "mostAttendedStart": "Hora de inicio con más asistencia: {hour} (de {n})",
@@ -651,7 +652,8 @@
     "logo.remove": "Quitar logotipo",
     "logo.uploading": "Subiendo…",
     "logo.helper": "Una imagen cuadrada funciona mejor. Tu logotipo se revisa al guardar.",
-    "logo.notChecked": "No se muestra a los clientes hasta que pase la revisión."
+    "logo.notChecked": "No se muestra a los clientes hasta que pase la revisión.",
+    "offerForm.videoNoDuration": "No pudimos saber cuánto dura este video. Elige otro video o grábalo de nuevo."
   },
   "de": {
     "mostAttendedStart": "Bestbesuchte Startzeit: {hour} (aus {n})",
@@ -978,7 +980,8 @@
     "logo.remove": "Logo entfernen",
     "logo.uploading": "Wird hochgeladen…",
     "logo.helper": "Ein quadratisches Bild eignet sich am besten. Dein Logo wird beim Speichern geprüft.",
-    "logo.notChecked": "Wird Kunden erst nach bestandener Prüfung gezeigt."
+    "logo.notChecked": "Wird Kunden erst nach bestandener Prüfung gezeigt.",
+    "offerForm.videoNoDuration": "Wir konnten die Länge dieses Videos nicht erkennen. Wähle ein anderes Video oder nimm es neu auf."
   },
   "fr": {
     "mostAttendedStart": "Heure de début la plus fréquentée : {hour} (sur {n})",
@@ -1305,7 +1308,8 @@
     "logo.remove": "Retirer le logo",
     "logo.uploading": "Importation…",
     "logo.helper": "Une image carrée convient le mieux. Votre logo est vérifié à l'enregistrement.",
-    "logo.notChecked": "N'est pas montré aux clients avant d'avoir passé la vérification."
+    "logo.notChecked": "N'est pas montré aux clients avant d'avoir passé la vérification.",
+    "offerForm.videoNoDuration": "Nous n'avons pas pu déterminer la durée de cette vidéo. Choisissez une autre vidéo ou enregistrez-la à nouveau."
   },
   "pt": {
     "mostAttendedStart": "Horário de início com mais público: {hour} (de {n})",
@@ -1632,7 +1636,8 @@
     "logo.remove": "Remover logotipo",
     "logo.uploading": "Enviando…",
     "logo.helper": "Uma imagem quadrada funciona melhor. Seu logotipo é verificado ao salvar.",
-    "logo.notChecked": "Não aparece para clientes até passar na verificação."
+    "logo.notChecked": "Não aparece para clientes até passar na verificação.",
+    "offerForm.videoNoDuration": "Não conseguimos saber a duração deste vídeo. Escolha outro vídeo ou grave de novo."
   },
   "ht": {
     "mostAttendedStart": "Lè kòmansman ki gen plis moun: {hour} (sou {n})",
@@ -1942,7 +1947,8 @@
     "logo.remove": "Retire logo",
     "logo.uploading": "N ap telechaje…",
     "logo.helper": "Yon imaj kare mache pi byen. Nou verifye logo ou lè ou anrejistre.",
-    "logo.notChecked": "Kliyan pa wè l jiskaske li pase verifikasyon an."
+    "logo.notChecked": "Kliyan pa wè l jiskaske li pase verifikasyon an.",
+    "offerForm.videoNoDuration": "Nou pa t ka konnen konbyen tan videyo sa a dire. Chwazi yon lòt videyo oswa anrejistre l ankò."
   },
   "zh": {
     "mostAttendedStart": "到场人数最多的开始时间：{hour}（来自 {n}）",
@@ -2252,7 +2258,8 @@
     "logo.remove": "移除标志",
     "logo.uploading": "正在上传…",
     "logo.helper": "方形图片效果最佳。保存时会检查你的标志。",
-    "logo.notChecked": "通过检查之前不会向顾客显示。"
+    "logo.notChecked": "通过检查之前不会向顾客显示。",
+    "offerForm.videoNoDuration": "无法确定该视频的时长。请选择其他视频或重新录制。"
   },
   "vi": {
     "mostAttendedStart": "Giờ bắt đầu đông khách nhất: {hour} (từ {n})",
@@ -2562,7 +2569,8 @@
     "logo.remove": "Xóa logo",
     "logo.uploading": "Đang tải lên…",
     "logo.helper": "Ảnh vuông hiển thị đẹp nhất. Logo được kiểm tra khi bạn lưu.",
-    "logo.notChecked": "Không hiển thị cho khách cho đến khi được duyệt."
+    "logo.notChecked": "Không hiển thị cho khách cho đến khi được duyệt.",
+    "offerForm.videoNoDuration": "Chúng tôi không xác định được độ dài của video này. Hãy chọn video khác hoặc quay lại."
   },
   "tl": {
     "mostAttendedStart": "Oras ng simula na pinakamaraming dumalo: {hour} (mula sa {n})",
@@ -2872,7 +2880,8 @@
     "logo.remove": "Alisin ang logo",
     "logo.uploading": "Ina-upload…",
     "logo.helper": "Pinakamainam ang parisukat na larawan. Sinusuri ang logo mo kapag nag-save ka.",
-    "logo.notChecked": "Hindi ipinapakita sa mga customer hangga't hindi pumapasa sa pagsusuri."
+    "logo.notChecked": "Hindi ipinapakita sa mga customer hangga't hindi pumapasa sa pagsusuri.",
+    "offerForm.videoNoDuration": "Hindi namin malaman kung gaano kahaba ang video na ito. Pumili ng ibang video o i-record ito ulit."
   },
   "ru": {
     "mostAttendedStart": "Самое посещаемое время начала: {hour} (по {n})",
@@ -3248,7 +3257,8 @@
     "logo.remove": "Удалить логотип",
     "logo.uploading": "Загрузка…",
     "logo.helper": "Лучше всего подходит квадратное изображение. Логотип проверяется при сохранении.",
-    "logo.notChecked": "Клиенты не увидят его, пока он не пройдёт проверку."
+    "logo.notChecked": "Клиенты не увидят его, пока он не пройдёт проверку.",
+    "offerForm.videoNoDuration": "Не удалось определить длительность этого видео. Выберите другое видео или запишите его заново."
   },
   "ko": {
     "mostAttendedStart": "가장 많이 참석한 시작 시간: {hour} ({n} 기준)",
@@ -3558,6 +3568,7 @@
     "logo.remove": "로고 삭제",
     "logo.uploading": "업로드 중…",
     "logo.helper": "정사각형 이미지가 가장 좋습니다. 저장할 때 로고를 검사합니다.",
-    "logo.notChecked": "검사를 통과하기 전에는 고객에게 표시되지 않습니다."
+    "logo.notChecked": "검사를 통과하기 전에는 고객에게 표시되지 않습니다.",
+    "offerForm.videoNoDuration": "이 동영상의 길이를 확인할 수 없습니다. 다른 동영상을 선택하거나 다시 녹화하세요."
   }
 }

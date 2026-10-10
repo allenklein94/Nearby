@@ -3,28 +3,30 @@
 **Status:** Not yet executed
 **Scope:** Native video upload, background screening, approval, and offer-creative selection
 **Release gate:** Physical-device verification required
-**Built in:** commit `f0fa88d1` (migration `20270288`, `screen-business-content` v40)
+**Built in:** commit `f0fa88d1` (migration `20270288`, `screen-business-content` v40); missing/invalid-duration guard added after it
 
 Do not mark video screening production-ready until the native-device tests AND the real-user edge-function end-to-end
 checks have both succeeded. A successful upload alone is not a successful screening test.
 
-## 0. Known gaps going in (as built, 2026-10-10)
+## 0. Known gaps going in (as built, updated 2026-10-10)
 
-The current build is expected to fail or only partly meet these items. They are known gaps, not new findings:
+1. **Missing or invalid duration metadata: ADDRESSED by a phone-side guard, pending device verification.** `videoLimitProblem`
+   (`src/utils/offerMedia.js`) now refuses a video whose duration is missing or not a real positive number (undefined, null,
+   NaN, infinite, non-numeric, 0 or less) before anything is uploaded or screened, with "We couldn't tell how long this
+   video is. Pick a different video or record it again." (11 languages; the 10 non-English versions are machine-written).
+   Covered by Jest tests (`src/utils/creativeLibrary.test.js`, mutation-checked). Not yet seen on a device: check that real
+   picks from iOS and Android report a duration, so valid videos are not refused.
+2. **Misleading duration metadata: STILL OPEN.** A video could report under 30 s while the file holds a longer clip. The
+   server cannot measure length (it sees the file size, capped at 25 MB, and the sampled frames); no server-side or
+   trusted-processing duration check exists. Expect FAIL on that row until the owner decides how to enforce it.
+3. **Duplicate uploads: still possible.** "Try again" on an item whose check could not finish re-checks the same library
+   row (no duplicate). Adding the same video again with "+ Add" creates a second item, because every upload is a new stored
+   file. Record which path was tested.
+4. **Screening provider unavailable: BLOCKED.** Anthropic credit is exhausted, so every check ends in "Try again". Record
+   screening attempts as BLOCKED, never as a pass.
 
-- **Missing or invalid duration metadata (section 3):** the 30-second check runs only on the phone (`videoLimitProblem`,
-  `src/utils/offerMedia.js`) and refuses a video only when its duration is a real number over 30 s. A video with no
-  duration currently **passes**. Expect FAIL on that row.
-- **Misleading duration metadata (section 3):** the server cannot measure video length (it sees the file size, capped at
-  25 MB, and the sampled frames). No server-side or trusted-processing duration check exists. Expect FAIL. Fixing it
-  needs a decision on media processing.
-- **Duplicate entries on re-upload (section 2):** "Try again" on an item whose check could not finish re-checks the same
-  library row (no duplicate). Adding the same video a second time with "+ Add" creates a **second** library item, because
-  every upload is a new stored file. Record which of the two cases was tested.
-- **Screening provider (section 4D):** Anthropic credit is exhausted, so every check currently ends in "Try again". Record
-  that as BLOCKED, never as a pass.
-- **iOS picker:** the picker still passes `videoMaxDuration: 30`. On iOS photo-library picks this is expected to have no
-  effect. If the system trim screen appears, record it: the rule is that Nearby never trims.
+Also note: the picker still passes `videoMaxDuration: 30`. It is expected to have no effect on iOS photo-library picks; if
+the system trim screen appears, record it (the rule is that Nearby never trims).
 
 ## 1. Prerequisites
 
@@ -64,7 +66,7 @@ The current build is expected to fail or only partly meet these items. They are 
 - [ ] Test a large but otherwise valid video (near the 25 MB cap, and just over it).
 - [ ] Test a supported video format and an unsupported or corrupted file.
 - [ ] Confirm the app stays responsive during upload.
-- [ ] Confirm retrying an upload does not create duplicate library entries (see section 0).
+- [ ] Confirm retrying an upload does not create duplicate library entries (see section 0, item 3; note which path).
 
 ## 3. Video-duration enforcement
 
@@ -73,14 +75,16 @@ The current build is expected to fail or only partly meet these items. They are 
 | Video shorter than 30 seconds | Accepted for screening, if all other checks pass | |
 | Video exactly 30 seconds | Accepted for screening, if all other checks pass | |
 | Video longer than 30 seconds | Refused; screening and approval must not proceed | |
-| Duration metadata missing or invalid | Fail safely; do not bypass the duration check (known gap, section 0) | |
-| Misleading or inconsistent duration metadata | Server or trusted processing path enforces the limit (known gap, section 0) | |
+| Duration metadata missing or invalid | Refused on the phone before upload with "We couldn't tell how long this video is. Pick a different video or record it again." (section 0, item 1) | |
+| Misleading or inconsistent duration metadata | Server or trusted processing path enforces the limit (STILL OPEN, section 0, item 2: expect FAIL) | |
 
 For videos longer than 30 seconds, verify the exact English message:
 
 > Videos can be up to 30 seconds. Trim it on your phone and try again.
 
-- [ ] The message is translated correctly in each supported language (10 non-English versions are machine-written).
+- [ ] Both messages (over 30 s, unknown length) are translated correctly in each supported language (10 non-English
+      versions are machine-written).
+- [ ] Real videos picked on this device report a duration, so a valid video is never refused as "unknown length".
 - [ ] The app does not trim, re-encode into a shorter clip, or silently keep 30 seconds.
 - [ ] A refused long video cannot enter the "Use your saved creative" picker.
 - [ ] The same refusal applies in the offer form's own media picker, not only in "Your photos & videos".
