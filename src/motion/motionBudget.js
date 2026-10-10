@@ -33,6 +33,15 @@ export function isWithinBudget(ms, tier) {
 
 // Per-sequence timing tokens, shared by the components AND the budget test so the numbers that
 // run are the numbers that are checked.
+// Owner item 19 (2026-10-10, LOCKED): animation never delays the person. Any text that carries information (a price, a
+// time, a status, a confirmation) is readable from the FIRST frame: it never starts below INFO_REST_OPACITY and is never
+// held back waiting for another animation; motion only settles it the rest of the way. Pure decoration (a ring, a ✓, a
+// ripple, a glow, a pulse) may start from nothing. Use infoOpacity(v) for any information-carrying Animated.View.
+export const INFO_REST_OPACITY = 0.6;
+export function infoOpacity(v) {
+  return v.interpolate({ inputRange: [0, 1], outputRange: [INFO_REST_OPACITY, 1] });
+}
+
 export const SEQUENCES = {
   // N -> ✨ -> ✓ then text. Celebratory = occasion/plan creation; business = a transaction
   // confirming (plan/reservation confirmed).
@@ -53,7 +62,7 @@ export const SEQUENCES = {
   // gentle fades + a slight upward settle, no bounce, no haptic. Starts after an offer travel into this card has finished.
   // Then the finish (2026-10-10): "I'll take this one" settles in as the final slot (same fade + rise, never below
   // actionRestOpacity, always tappable) while the card's coral outline glows once: in glowInMs, back out glowOutMs.
-  offerAssembly: { tier: 'special', stepMs: 160, staggerMs: 100, maxSteps: 6, risePx: 6, actionRestOpacity: 0.6, glowInMs: 100, glowOutMs: 200 },
+  offerAssembly: { tier: 'special', stepMs: 160, staggerMs: 100, maxSteps: 6, risePx: 6, actionRestOpacity: 0.6 /* = INFO_REST_OPACITY */, glowInMs: 100, glowOutMs: 200 },
   // Offer travel (2026-10-09): dim in, the light travels from the arrival signal while the frame grows into the offer card,
   // then frame + dim fade into the real card. Waiting for the card to be on screen is a hold, not part of the transition.
   // You're booked (2026-10-09): the ring closes, the ✓ settles, one soft ripple while the facts fade in. A booking is a

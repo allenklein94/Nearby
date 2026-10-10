@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, typography, radius } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
-import { SEQUENCES } from './motionBudget';
+import { SEQUENCES, infoOpacity } from './motionBudget';
 import { bookedDetailsLine } from '../utils/bookedDetails';
 import { createBookedLifecycle } from '../utils/bookedLifecycle';
 
@@ -88,7 +88,7 @@ export default function BookedCelebration({ title, details = null, haptic = fals
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
       accessibilityLabel={a11y}
-      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.success, opacity: Animated.multiply(card, exitFade),
+      style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.success, opacity: Animated.multiply(infoOpacity(card), exitFade),
         transform: [{ translateY: card.interpolate({ inputRange: [0, 1], outputRange: [6, 0] }) }, { scale: exitScale }] }, shadow?.card]}
     >
       <View style={styles.badge}>
@@ -105,7 +105,7 @@ export default function BookedCelebration({ title, details = null, haptic = fals
             transform: [{ scale: check.interpolate({ inputRange: [0, 1], outputRange: [0.7, 1] }) }] }]}>✓</Animated.Text>
         </Animated.View>
       </View>
-      <Animated.View style={[styles.textCol, { opacity: text }]}>
+      <Animated.View style={[styles.textCol, { opacity: infoOpacity(text) }]}>
         <Text style={[styles.title, { color: colors.textPrimary }]}>{title}</Text>
         {line ? <Text style={[styles.details, { color: colors.textSecondary }]} numberOfLines={2}>{line}</Text> : null}
       </Animated.View>

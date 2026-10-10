@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
-import { SEQUENCES } from './motionBudget';
+import { SEQUENCES, infoOpacity } from './motionBudget';
 import { NearbyMark } from '../components/brand';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
@@ -92,7 +92,7 @@ export default function SuccessAnimation({ text = "It's happening. 🎉", tone =
           <Text style={styles.glyph}>{stage === 'sparkle' ? '✨' : '✓'}</Text>
         )}
       </Animated.View>
-      {!!text && <Animated.Text style={[styles.text, { opacity: textOpacity }]}>{text}</Animated.Text>}
+      {!!text && <Animated.Text style={[styles.text, { opacity: infoOpacity(textOpacity) }]}>{text}</Animated.Text>}
     </View>
   );
 }

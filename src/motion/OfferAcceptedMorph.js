@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
-import { SEQUENCES } from './motionBudget';
+import { SEQUENCES, infoOpacity } from './motionBudget';
 
 // The offer card morphs in place once the booking is real (owner item 12, 2026-10-10). Replaces the separate
 // "You're booked" card that used to appear above the offers and shrink away: the SAME card turns into its accepted
@@ -45,7 +45,7 @@ export default function OfferAcceptedMorph({ title, booked = true, warn = false,
       <Animated.View
         accessibilityRole={play ? 'alert' : undefined}
         accessibilityLiveRegion={play ? 'polite' : undefined}
-        style={[styles.header, { opacity: check, transform: [{ scale: check.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }] }]}
+        style={[styles.header, { opacity: infoOpacity(check), transform: [{ scale: check.interpolate({ inputRange: [0, 1], outputRange: [0.92, 1] }) }] }]}
       >
         {booked ? (
           <View style={[styles.ring, { borderColor: colors.success }]}>
@@ -54,7 +54,7 @@ export default function OfferAcceptedMorph({ title, booked = true, warn = false,
         ) : null}
         <Text style={[styles.title, { color: booked ? colors.textPrimary : accent }]}>{title}</Text>
       </Animated.View>
-      <Animated.View style={{ opacity: body, transform: [{ translateY: body.interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }] }}>
+      <Animated.View style={{ opacity: infoOpacity(body), transform: [{ translateY: body.interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }] }}>
         {children}
       </Animated.View>
     </View>

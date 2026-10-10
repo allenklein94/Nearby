@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
-import { SEQUENCES } from './motionBudget';
+import { SEQUENCES, infoOpacity } from './motionBudget';
 
 // Owner item 16 (2026-10-10, LOCKED): "Coastal Coffee is responding…" on the customer's request while a reply that business
 // SENT is being checked. It extends marketplace moment 2 (business response): when the reply is published the screen re-reads,
@@ -32,7 +32,7 @@ export default function RespondingStatus({ label }) {
 
   if (!label) return null;
   return (
-    <Animated.View style={[styles.row, { opacity: fade }]} accessibilityLiveRegion="polite" accessibilityLabel={label}>
+    <Animated.View style={[styles.row, { opacity: infoOpacity(fade) }]} accessibilityLiveRegion="polite" accessibilityLabel={label}>
       <View style={styles.dotWrap}>
         <Animated.View
           pointerEvents="none"

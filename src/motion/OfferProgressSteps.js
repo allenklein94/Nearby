@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
-import { SEQUENCES } from './motionBudget';
+import { SEQUENCES, infoOpacity } from './motionBudget';
 import { PROGRESS_STEPS } from '../utils/offerProgress';
 
 // Owner item 13 (2026-10-10): Offer sent -> Accepted -> Redeemed on the business's opportunity card. What is lit comes
@@ -47,7 +47,7 @@ export default function OfferProgressSteps({ current, labels, a11yLabel, play = 
           <View key={key} style={styles.item}>
             {i > 0 ? <Text style={[styles.arrow, { color: colors.textTertiary }]}>→</Text> : null}
             {isCurrent && animate ? (
-              <Animated.View style={{ opacity: step, transform: [{ translateY: step.interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }] }}>
+              <Animated.View style={{ opacity: infoOpacity(step), transform: [{ translateY: step.interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }] }}>
                 {text}
               </Animated.View>
             ) : text}

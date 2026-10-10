@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
-import { SEQUENCES } from '../motion/motionBudget';
+import { SEQUENCES, infoOpacity } from '../motion/motionBudget';
 import { afterOfferTravel } from '../motion/offerTravel';
 import { ASSEMBLY_STEPS, assemblySteps, shouldAssemble, markAssembled, stepDelay, finishDelay } from '../utils/offerAssembly';
 
@@ -72,7 +72,9 @@ export function AssemblyStep({ step, children }) {
   const v = values?.[step];
   if (!v) return <>{children}</>;
   const translateY = v.interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] });
-  const opacity = step === 'action' ? v.interpolate({ inputRange: [0, 1], outputRange: [T.actionRestOpacity, 1] }) : v;
+  // Item 19: every step (the business, the status, the order, the price, the time, the button) is readable from the first
+  // frame; the assembly only settles it from INFO_REST_OPACITY with the rise.
+  const opacity = infoOpacity(v);
   return <Animated.View pointerEvents="box-none" style={{ opacity, transform: [{ translateY }] }}>{children}</Animated.View>;
 }
 

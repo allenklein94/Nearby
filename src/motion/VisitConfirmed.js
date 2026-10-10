@@ -3,7 +3,7 @@ import { Animated, Easing, StyleSheet, Text } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
-import { SEQUENCES } from './motionBudget';
+import { SEQUENCES, infoOpacity } from './motionBudget';
 
 // Marketplace moment 6, the customer side of redemption (2026-10-10): the booked card's final step, "✓ Visit confirmed",
 // shown whenever the offer is stored as `completed` (the business confirmed the visit). `play` (decided once at mount)
@@ -28,7 +28,7 @@ export default function VisitConfirmed({ label, play = false }) {
   return (
     <Animated.View
       accessibilityLiveRegion={play ? 'polite' : undefined}
-      style={[styles.row, { opacity: v, transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }] }]}
+      style={[styles.row, { opacity: infoOpacity(v), transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }] }]}
     >
       <Text style={[styles.text, { color: colors.success }]}>✓ {label}</Text>
     </Animated.View>

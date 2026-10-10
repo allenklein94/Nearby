@@ -207,7 +207,7 @@ describe('the finish: the button settles in last and the outline glows once (own
     expect(actionOpacity(0)).toBe(SEQUENCES.offerAssembly.actionRestOpacity);
     expect(actionOpacity(1)).toBe(1);
     // the action step never blocks touches and never starts invisible
-    expect(src).toMatch(/step === 'action' \? v\.interpolate\(\{ inputRange: \[0, 1\], outputRange: \[T\.actionRestOpacity, 1\] \}\)/);
+    expect(src).toMatch(/const opacity = infoOpacity\(v\);/);
     expect(src).toMatch(/<Animated\.View pointerEvents="box-none"/);
     expect(src).not.toMatch(/pointerEvents="none"[^/]*AssemblyStep/);
   });
