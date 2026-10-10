@@ -2444,9 +2444,9 @@ export default {
       tomorrow: "Ngày mai",
     },
     booking: {
-      accepted: "Đã nhận ưu đãi",
-      confirming: "Đã nhận ưu đãi · đang xác nhận đặt chỗ của bạn",
-      notThrough: "Đã nhận ưu đãi · đặt chỗ chưa thành công",
+      accepted: "Đã chấp nhận ưu đãi",
+      confirming: "Đã chấp nhận ưu đãi · đang xác nhận đặt chỗ của bạn",
+      notThrough: "Đã chấp nhận ưu đãi · đặt chỗ chưa thành công",
     },
   },
   tl: {

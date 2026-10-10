@@ -2189,9 +2189,9 @@
   "whenDay.tonight": "Tối nay",
   "whenDay.today": "Hôm nay",
   "whenDay.tomorrow": "Ngày mai",
-  "booking.accepted": "Đã nhận ưu đãi",
-  "booking.confirming": "Đã nhận ưu đãi · đang xác nhận đặt chỗ của bạn",
-  "booking.notThrough": "Đã nhận ưu đãi · đặt chỗ chưa thành công"
+  "booking.accepted": "Đã chấp nhận ưu đãi",
+  "booking.confirming": "Đã chấp nhận ưu đãi · đang xác nhận đặt chỗ của bạn",
+  "booking.notThrough": "Đã chấp nhận ưu đãi · đặt chỗ chưa thành công"
  },
  "tl": {
   "youreBooked": "Naka-book ka na",
