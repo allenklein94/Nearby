@@ -30,7 +30,7 @@ import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
 import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import StaggeredReveal from '../components/StaggeredReveal';
 import OfferMedia from '../components/OfferMedia';
-import OfferAssembly, { AssemblyStep } from '../components/OfferAssembly';
+import OfferAssembly, { AssemblyStep, AssemblyGlow } from '../components/OfferAssembly';
 import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
 import { visibleRedemption, validityLabel, isOfferExpired, availableWindowLabel } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
@@ -1324,11 +1324,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             const stats = partnerStats[o.partner_id];
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
             return (
-            <StaggeredReveal key={o.id} index={offerIndex} viewRef={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
-            <OfferAssembly offer={o}>
+            <OfferAssembly key={o.id} offer={o}>
+            <StaggeredReveal index={offerIndex} viewRef={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
+            {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
+            <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
             <View>
               {/* An open reply assembles itself once, when newly received (components/OfferAssembly.js): business ->
-                  "Heard your request" -> what they said -> order -> price -> when. The button below is never part of it. */}
+                  "Heard your request" -> what they said -> order -> price -> when, then the button settles in as the
+                  final slot (always visible and tappable) while the outline glows once. */}
               <AssemblyStep step="business">
               <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
               {/* Item 92 ("Businesses should be able to respond specifically to
@@ -1368,6 +1371,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     const action = consumerOfferAction(o, { request, hasWinner, isGroupPlanRequest });
                     if (action.kind === 'confirm_with_group') {
                       return (
+                        <AssemblyStep step="action">
                         <TouchableOpacity
                           style={styles.acceptButton}
                           onPress={() => navigation.navigate('GroupPlan', { proposalId: request.group_plan_id })}
@@ -1376,10 +1380,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         >
                           <Text style={styles.acceptButtonText}>{action.label}</Text>
                         </TouchableOpacity>
+                        </AssemblyStep>
                       );
                     }
                     if (action.kind !== 'accept_offer') return null;
                     return (
+                      <AssemblyStep step="action">
                       <TouchableOpacity
                         style={styles.acceptButton}
                         onPress={() => handleAccept(o.id)}
@@ -1389,6 +1395,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       >
                         {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{action.label}</Text>}
                       </TouchableOpacity>
+                      </AssemblyStep>
                     );
                   })()}
                 </>
@@ -1482,8 +1489,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               )}
               </ModeTransition>
             </View>
-            </OfferAssembly>
             </StaggeredReveal>
+            </OfferAssembly>
             );
           })}
           </>

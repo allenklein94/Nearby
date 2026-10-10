@@ -9,6 +9,9 @@
 //   order     the offer's title, description, included items, photo/video
 //   price     the business's own price
 //   when      proposed time, available window, valid until
+// Then the finish (owner, 2026-10-10): "I'll take this one" settles in as the final slot with the same fade + rise (it never
+// drops below SEQUENCES.offerAssembly.actionRestOpacity and stays tappable the whole time, so a booking is never delayed), and
+// the card's coral outline glows once (about 300 ms). No ring, spring or background change: that is reserved for You're booked.
 import { offerPriceLabel } from './outcomeDisplay';
 import { isOfferExpired } from './objectState';
 import { SEQUENCES } from '../motion/motionBudget';
@@ -38,8 +41,24 @@ export function stepDelay(steps, key, timing = SEQUENCES.offerAssembly) {
   return i < 0 ? null : i * timing.staggerMs;
 }
 
+// The finish slot: right after the last content step's slot (the button + the outline glow start together).
+export function finishDelay(steps, timing = SEQUENCES.offerAssembly) {
+  return steps.length === 0 ? null : steps.length * timing.staggerMs;
+}
+
+export function glowDurationMs(timing = SEQUENCES.offerAssembly) {
+  return timing.glowInMs + timing.glowOutMs;
+}
+
 export function assemblyDurationMs(steps, timing = SEQUENCES.offerAssembly) {
-  return steps.length === 0 ? 0 : (steps.length - 1) * timing.staggerMs + timing.stepMs;
+  return steps.length === 0 ? 0 : finishDelay(steps, timing) + Math.max(timing.stepMs, glowDurationMs(timing));
+}
+
+// The button's opacity at any point of the finish (0 = not started, 1 = settled): never below the rest opacity, so it is
+// always visible enough to read and tap.
+export function actionOpacity(progress, timing = SEQUENCES.offerAssembly) {
+  const p = Math.min(1, Math.max(0, Number(progress) || 0));
+  return timing.actionRestOpacity + (1 - timing.actionRestOpacity) * p;
 }
 
 // Assemble only a NEWLY received open reply, once: status offered, not expired, not yet seen by the person (viewed_at is

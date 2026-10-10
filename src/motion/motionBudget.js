@@ -51,7 +51,9 @@ export const SEQUENCES = {
   // An open reply's card assembling itself (2026-10-09, replaces the two-beat offerReveal): business -> "Heard your request"
   // -> what they said -> the order -> price -> when, one step at a time (only the steps the reply really has). Business tone:
   // gentle fades + a slight upward settle, no bounce, no haptic. Starts after an offer travel into this card has finished.
-  offerAssembly: { tier: 'special', stepMs: 160, staggerMs: 100, maxSteps: 6, risePx: 6 },
+  // Then the finish (2026-10-10): "I'll take this one" settles in as the final slot (same fade + rise, never below
+  // actionRestOpacity, always tappable) while the card's coral outline glows once: in glowInMs, back out glowOutMs.
+  offerAssembly: { tier: 'special', stepMs: 160, staggerMs: 100, maxSteps: 6, risePx: 6, actionRestOpacity: 0.6, glowInMs: 100, glowOutMs: 200 },
   // Offer travel (2026-10-09): dim in, the light travels from the arrival signal while the frame grows into the offer card,
   // then frame + dim fade into the real card. Waiting for the card to be on screen is a hold, not part of the transition.
   // You're booked (2026-10-09): the ring closes, the ✓ settles, one soft ripple while the facts fade in. A booking is a
@@ -86,7 +88,8 @@ export function settleMs(name) {
     case 'cascade':
       return s.maxDelayMs + s.itemMs;
     case 'offerAssembly':
-      return (s.maxSteps - 1) * s.staggerMs + s.stepMs;
+      // the content steps, then the finish slot (button + one outline glow) after the last of them
+      return s.maxSteps * s.staggerMs + Math.max(s.stepMs, s.glowInMs + s.glowOutMs);
     case 'booked':
       return s.ringMs + s.checkMs + Math.max(s.rippleMs, s.textFadeMs);
     case 'bookedExit':
