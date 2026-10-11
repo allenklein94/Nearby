@@ -28,5 +28,23 @@ locally from `docs/`, desktop 1280x800 and phone 375x812. **Every request to Sup
    caption "not a mockup with invented numbers". It is an invented figure (truthfulness rule), and it shows an Interested count
    to a viewer, which the locked privacy rule forbids (Interested is never shown or counted to another viewer).
 
+## Follow-up: both findings fixed (owner approved, 2026-10-11)
+
+1. **Phone header:** at <= 600 px the nav sits on its own row under the logo; each label is `white-space: nowrap`
+   (so "How it works" never breaks); the row wraps only between labels (at 320 px "FAQ" moves to a second row). Font size
+   unchanged; links got 6 px vertical padding for a larger tap area. Desktop layout unchanged.
+2. **"6 interested" removed** from the preview mock; the line now reads "7:00 PM" only. No number or other interest
+   representation put in its place.
+
+**Re-run: 100/100 pass** (the original 56 + 4 mock checks on desktop/phone + 4 header checks at each of 320, 360, 375, 390,
+414, 600, 601, 768, 1024, 1280 px: every label on one line, no overlap with the logo, every label on screen, no horizontal
+scroll). The same script against the previous page fails 6 of them (the mock count on both viewports, "How it works" split at
+360 and 375), so the new checks do catch the old problems. Unit tests 419 suites / 5,663 pass. Journeys not re-run: the page
+is static HTML outside every journey.
+
+**Still open, not claimed by this check:** the owner's own review in a real browser (desktop and phone); nothing here
+is a phone verification. Seen and NOT changed (out of scope): the logo text renders as "Near by" with a gap at all widths
+(the brand's flex `gap` also applies between "Near" and the "by" span).
+
 **Not covered (still open):** a real browser (Safari / Chrome on a phone and a desktop) by the owner; real email/phone formats
 the server rejects; the live submit path end to end (deliberately never called).

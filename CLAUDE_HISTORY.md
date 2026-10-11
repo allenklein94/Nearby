@@ -1,3 +1,12 @@
+# docs/business.html: both headless findings fixed (2026-10-11, owner approved) - real-browser review still OPEN
+
+Phone header: at <= 600 px the nav takes its own row under the logo, labels never break (`white-space: nowrap`), the row wraps
+only between labels (320 px: FAQ on a second row), font size unchanged, 6 px tap padding. Preview mock: "6 interested" removed,
+the line reads "7:00 PM" only (no replacement figure). Headless script extended (mock has no Interested count; header at 10
+widths 320-1280: one line per label, no logo overlap, on screen, no horizontal scroll): 100/100; the old page fails 6 of the new
+checks. Jest 419/5,663. Journeys not re-run (static page, no journey covers it). Not a phone or real-browser verification.
+Seen, not changed: the brand reads "Near by" (flex gap between "Near" and the span), all widths.
+
 # docs/business.html headless check (2026-10-11, owner scope) - real-browser review still OPEN
 
 `scripts/web-check/business-page-headless.py` (Playwright/Chromium in Docker, page served from `docs/`, every Supabase request

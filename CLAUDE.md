@@ -121,9 +121,8 @@ without approval; (4) offer value only from saved offer + redemption data: shown
 redemption; never estimated revenue or invented value.
 
 **Owner scope of 2026-10-11 finished** (records in CLAUDE_HISTORY.md): plan-chat push live; item 41 "See gatherings" dedupe; item 35
-closed; `docs/business.html` headless 56/56. Left open from it: native review of the reworded Messages hint (10 languages); owner to
-decide on two business-page findings (phone header wraps; preview mock's "6 interested" is invented and shows an Interested count);
-the owner's own real-browser review of that page. (b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
+closed; `docs/business.html` headless 56/56. Left open from it: native review of the reworded Messages hint (10 languages); the owner's own
+real-browser review of that page (its two headless findings, phone header wrap and the invented "6 interested", are FIXED, headless 100/100). (b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
 
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id

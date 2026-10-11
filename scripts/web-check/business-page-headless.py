@@ -15,6 +15,35 @@ def check(name, ok, detail=''):
     results.append({'check': name, 'ok': bool(ok), 'detail': detail})
     print(('PASS ' if ok else 'FAIL ') + name + (f'  [{detail}]' if detail else ''))
 
+HEADER_JS = """() => {
+  const brand = document.querySelector('header.top .brand').getBoundingClientRect();
+  const links = [...document.querySelectorAll('nav.top a')].map(a => {
+    const r = a.getBoundingClientRect(); const lh = parseFloat(getComputedStyle(a).lineHeight) || 21;
+    return { text: a.textContent, lines: a.getClientRects().length, h: r.height, lh, top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+  });
+  return { brand: { top: brand.top, bottom: brand.bottom, left: brand.left, right: brand.right }, links, vw: document.documentElement.clientWidth };
+}"""
+
+def header_layout(browser, width, height=800):
+    # owner 2026-10-11: logo and nav must not collide; every nav label (incl. "How it works") stays on one line; nothing off-screen
+    ctx = browser.new_context(viewport={'width': width, 'height': height})
+    page = ctx.new_page()
+    page.route('**/*supabase.co/**', lambda r: r.fulfill(status=201, content_type='application/json', body='{}'))
+    page.goto(BASE + 'business.html', wait_until='networkidle')
+    h = page.evaluate(HEADER_JS)
+    p = f'[header {width}px] '
+    split = [l['text'] for l in h['links'] if l['lines'] > 1 or (l['h'] - 12) > l['lh'] * 1.2]
+    check(p + 'every nav label on one line', not split, ', '.join(split))
+    b = h['brand']
+    hit = [l['text'] for l in h['links'] if not (l['right'] <= b['left'] or l['left'] >= b['right'] or l['bottom'] <= b['top'] or l['top'] >= b['bottom'])]
+    check(p + 'nav never overlaps the logo', not hit, ', '.join(hit))
+    off = [l['text'] for l in h['links'] if l['left'] < 0 or l['right'] > h['vw']]
+    check(p + 'every nav label fully on screen', not off, ', '.join(off))
+    sw = page.evaluate('document.documentElement.scrollWidth')
+    check(p + 'no horizontal page scroll', sw <= h['vw'], f'scrollWidth {sw} / clientWidth {h["vw"]}')
+    page.screenshot(path=f'/out/header-{width}.png', clip={'x': 0, 'y': 0, 'width': width, 'height': 160})
+    ctx.close()
+
 def run(browser, width, height, label, mode='ok'):
     ctx = browser.new_context(viewport={'width': width, 'height': height})
     page = ctx.new_page()
@@ -42,6 +71,11 @@ def run(browser, width, height, label, mode='ok'):
         check(p + 'no horizontal page scroll', sw <= cw, f'scrollWidth {sw} / clientWidth {cw}')
         page.screenshot(path=f'/out/{label}-top.png')
         page.screenshot(path=f'/out/{label}-full.png', full_page=True)
+        # owner 2026-10-11: the customer-preview mock shows no invented figure and no Interested count
+        mock = page.inner_text('.phone')
+        check(p + 'preview mock shows no Interested count', 'interested' not in mock.lower(), next((l for l in mock.splitlines() if 'interested' in l.lower()), ''))
+        meta = page.inner_text('.mock-gathering-meta').strip()
+        check(p + 'preview gathering line is the time only (no count)', meta == '7:00 PM', meta)
         # in-page anchors resolve
         anchors = page.evaluate("[...document.querySelectorAll('a[href^=\"#\"]')].map(a => a.getAttribute('href'))")
         missing = [a for a in set(anchors) if a != '#' and not page.query_selector(a)]
@@ -140,6 +174,8 @@ with sync_playwright() as pw:
     run(browser, 375, 812, 'phone')
     run(browser, 1280, 800, 'desktop-error', mode='error')
     run(browser, 1280, 800, 'desktop-offline', mode='offline')
+    for w in [320, 360, 375, 390, 414, 600, 601, 768, 1024, 1280]:
+        header_layout(browser, w)
     browser.close()
 srv.terminate()
 json.dump(results, open('/out/results.json', 'w'), indent=1)
