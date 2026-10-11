@@ -62,6 +62,17 @@ describe('experience feedback in typed asks', () => {
     expect(items[0].reasons).toContain('You loved a gathering with this host before');
   });
 
+  it('a new account\'s rating moves the score less (same maturity as its learned affinity)', async () => {
+    const { getMyLearnedAffinity } = require('./behaviorSignals');
+    const plain = await search('something fun', list(), EMPTY_EXPERIENCE_FEEDBACK);
+    const f = experienceFeedbackFromRow({ not_for_me_host_ids: ['h1'] });
+    const full = (await search('something fun', list(), f)).find((i) => i.id === 'a').score;
+    getMyLearnedAffinity.mockResolvedValueOnce({ behavior: {}, maturity: 0.2 });
+    const young = (await search('something fun', list(), f)).find((i) => i.id === 'a').score;
+    const base = plain.find((i) => i.id === 'a').score;
+    expect(base - young).toBeCloseTo((base - full) * 0.2);
+  });
+
   it('a failed lookup = the same results in the same order', async () => {
     const plain = await search('something fun', list(), EMPTY_EXPERIENCE_FEEDBACK);
     getMyExperienceFeedback.mockRejectedValueOnce(new Error('down'));

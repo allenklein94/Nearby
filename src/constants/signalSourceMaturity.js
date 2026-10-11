@@ -48,12 +48,12 @@
 //                   actively less useful on day one, the opposite of the
 //                   "don't overwhelm a new user" goal this whole model
 //                   exists to serve.
-//   TRANSACTIONAL -- a specific, single past completed interaction (no
-//                   current caller). Dampened for a low-maturity account.
-//                   NOT the "How was it?" rating: owner item 35 (2026-10-11,
-//                   "explicit feedback > guessing") made the person's own
-//                   loved / Not for me word EXPLICIT (utils/experienceFeedback.js),
-//                   never dampened.
+//   TRANSACTIONAL -- a specific, single past completed interaction the
+//                   caller explicitly rated: the "How was it?" loved / Not for
+//                   me word (item 35, utils/experienceFeedback.js feedbackWeight,
+//                   every surface). One early rating is real but can be noise,
+//                   so it is dampened for a low-maturity account (owner kept
+//                   this, 2026-10-11).
 export const SIGNAL_SOURCES = {
   EXPLICIT: 'explicit',
   BEHAVIORAL: 'behavioral',

@@ -54,6 +54,9 @@ completed plan, screened source only, missing or failed logo falls back to 📍;
 travels, logo and line wait for it to land, text always readable, no flicker/shift/flash, under 0.9 s, Reduce Motion = finished
 card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests intact. Item 33 (reservation confirmation) is covered by item 32 as built (owner, 2026-10-11).
 
+**Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
+weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -194,8 +197,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - Declared interest (5) > learned behavior (0-4, needs 2+ separate pieces of evidence) > single click (0).
   Under any stated constraint, learned affinity and history are only literal tie-breakers.
 - **"How was it?" ranks both ways (item 35):** the latest word per host/business/kind (`get_my_experience_feedback`, read only via
-  `utils/experienceFeedback.js`): loved +5 / Not for me -5 in the interest tier, explicit (never dampened), most specific wins,
-  cancels learned behavior for a Not-for-me kind; reorders only; Not for me shows no reason. Home, Picked For You, Discover, typed asks.
+  `utils/experienceFeedback.js`): loved +5 / Not for me -5 in the interest tier, scaled by account maturity (`feedbackWeight`:
+  one early rating weighs less), most specific wins, cancels learned behavior for a Not-for-me kind; reorders only; Not for me
+  shows no reason. Home, Picked For You, Discover gatherings, typed asks; NOT Discover business/perk lists, communities, people.
 - **One object, once per surface, all its real reasons.** Home priority: firstRun > yourPlans > expanded
   insight > weather > bestPick > pickedForYou > nearbyRightNow (`HOME_SECTION_PRIORITY`). Discover: one dedupe chain.
 - **Cards** (`recommendationContext.js`, `gatheringCardModel`): What / Why (max 2 strongest reasons, section

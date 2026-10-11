@@ -1,5 +1,7 @@
 // Owner item 35: "How was it?" feedback ranks both ways. Explicit feedback > guessing.
-import { feedbackFor, feedbackPoints, experienceFeedbackFromRow, applyExperienceFeedback, FEEDBACK_POINTS, EMPTY_EXPERIENCE_FEEDBACK, LOVED_REASONS } from './experienceFeedback';
+import { feedbackFor, feedbackPoints, feedbackWeight, experienceFeedbackFromRow, applyExperienceFeedback, FEEDBACK_POINTS, EMPTY_EXPERIENCE_FEEDBACK, LOVED_REASONS } from './experienceFeedback';
+import { computeAccountMaturity } from '../constants/signalSourceMaturity';
+import { behaviorNudge } from '../constants/blendedRanking';
 import { EXPLICIT_POINTS, BEHAVIOR_MAX_POINTS } from '../constants/blendedRanking';
 import { applyLearnedAffinity, comparePersonalTieBreak } from './learnedAffinity';
 import { selectHomeAttention } from './homeAttention';
@@ -37,6 +39,19 @@ describe('feedbackFor (the one reader)', () => {
     expect(FEEDBACK_POINTS).toBeGreaterThan(BEHAVIOR_MAX_POINTS);
   });
 
+  it('a single rating weighs less for a new account (owner kept Phase J dampening); unknown maturity = full', () => {
+    const f = fb({ loved_categories: ['Coffee'] });
+    const newbie = computeAccountMaturity({ accountAgeDays: 2, hasBehavioralHistory: false });
+    const mature = computeAccountMaturity({ accountAgeDays: 30, hasBehavioralHistory: true });
+    expect(feedbackPoints({ category: 'Coffee' }, f, newbie)).toBeLessThan(feedbackPoints({ category: 'Coffee' }, f, mature));
+    expect(feedbackPoints({ category: 'Coffee' }, f, newbie)).toBeGreaterThan(0);
+    expect(feedbackPoints({ category: 'Coffee' }, f, mature)).toBe(FEEDBACK_POINTS);
+    expect(feedbackPoints({ category: 'Coffee' }, f, null)).toBe(FEEDBACK_POINTS);
+    expect(feedbackWeight(0)).toBe(0);
+    // at the same maturity it still beats a fully learned guess (5 x m > 4 x m)
+    expect(feedbackWeight(0.5)).toBeGreaterThan(behaviorNudge('Coffee', { behavior: { Coffee: 12 }, maturity: 0.5 }));
+  });
+
   it('the loved reasons are personal (interest tier), stronger than distance or popularity', () => {
     for (const r of LOVED_REASONS) expect(reasonTier(r)).toBe(SIGNAL_TIERS.interest);
   });
@@ -61,6 +76,14 @@ describe('typed asks (applyExperienceFeedback)', () => {
     );
     expect(g1.score).toBe(-FEEDBACK_POINTS);
     expect(g2.score).toBe(FEEDBACK_POINTS);
+  });
+
+  it('typed asks scale it by the same maturity (half for a half-mature account; none at zero)', () => {
+    const [a] = applyExperienceFeedback(pool(), fb({ not_for_me_partner_ids: ['p1'] }), { maturity: 0.5 });
+    expect(a.score).toBe(10 - FEEDBACK_POINTS / 2);
+    const [z] = applyExperienceFeedback(pool(), fb({ loved_partner_ids: ['p1'] }), { maturity: 0 });
+    expect(z.score).toBe(10);
+    expect(z.reasons ?? []).toEqual([]);
   });
 
   it('under a stated constraint it is only a literal tie-breaker (score untouched)', () => {
@@ -97,6 +120,13 @@ describe('Home Picked For You (selectHomeAttention)', () => {
     const cards = [card('a', { host_id: 'h1' }), card('b', { host_id: 'h2' }), card('c', { host_id: 'h3' })];
     const ids = selectHomeAttention({ cards, now, feedback: fb({ not_for_me_host_ids: ['h1'], loved_host_ids: ['h3'] }) }).items.map((i) => i.gathering.id);
     expect(ids).toEqual(['c', 'b', 'a']);
+  });
+
+  it('a brand-new account (maturity 0) is not reordered by one rating; any maturity above 0 still is', () => {
+    const cards = [card('a', { host_id: 'h1' }), card('b', { host_id: 'h2' })];
+    const f = fb({ not_for_me_host_ids: ['h1'] });
+    expect(selectHomeAttention({ cards, now, feedback: f, maturity: 0 }).items.map((i) => i.gathering.id)).toEqual(['a', 'b']);
+    expect(selectHomeAttention({ cards, now, feedback: f, maturity: 0.5 }).items.map((i) => i.gathering.id)).toEqual(['b', 'a']);
   });
 
   it('without feedback the order is unchanged', () => {

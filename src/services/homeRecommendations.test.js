@@ -181,7 +181,7 @@ describe('buildHomeRecommendations', () => {
     expect(withoutMaturity[0].score).toBe(withFullMaturity[0].score);
   });
 
-  it('item 35: a loved host is explicit feedback, never dampened for a brand-new account (explicit feedback > guessing)', () => {
+  it('Phase J / item 35 (owner kept it): a single rating weighs less for a brand-new, no-history account', () => {
     const mature = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'host1' })],
       feedback: fbk({ loved_host_ids: ['host1'] }),
@@ -192,8 +192,17 @@ describe('buildHomeRecommendations', () => {
       accountAgeDays: 0,
       hasBehavioralHistory: false,
     });
-    expect(brandNew[0].score).toBe(mature[0].score);
+    expect(brandNew[0].score).toBeLessThan(mature[0].score);
+    // the reason itself stays: it is still true, only its ranking weight is smaller
     expect(brandNew[0].reasons).toContain('You loved a gathering with this host before');
+    // and a Not for me from a new account lowers less than the same word from a mature one
+    const today = new Date().toISOString();
+    const g = gathering({ host_id: 'h9', matchesYourInterests: true, scheduled_at: today });
+    const plain = buildHomeRecommendations({ gatherings: [g] })[0].score;
+    const newDown = buildHomeRecommendations({ gatherings: [g], feedback: fbk({ not_for_me_host_ids: ['h9'] }), accountAgeDays: 3, hasBehavioralHistory: false })[0].score;
+    const matureDown = buildHomeRecommendations({ gatherings: [g], feedback: fbk({ not_for_me_host_ids: ['h9'] }), accountAgeDays: 30, hasBehavioralHistory: true })[0].score;
+    expect(matureDown).toBeLessThan(newDown);
+    expect(newDown).toBeLessThan(plain);
   });
 
   it('item 35: Not for me lowers that host, business or kind, with no reason line', () => {

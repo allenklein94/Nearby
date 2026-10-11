@@ -7,14 +7,17 @@
 // ladder, typed asks); no surface interprets the feedback tables itself.
 //
 //   - Most specific wins: the host's (or business's) own word beats the word on the kind; one decision per item, never stacked.
-//   - Loved lifts by FEEDBACK_POINTS, Not for me lowers by the same, in the personal-interest tier (6). Equal to a declared
-//     interest (EXPLICIT_POINTS), so it always outweighs learned behavior (at most BEHAVIOR_MAX_POINTS) at any account maturity,
-//     and a declared interest the person then called Not for me nets to neutral (ranked like any other category).
+//   - Loved lifts by FEEDBACK_POINTS, Not for me lowers by the same, in the personal-interest tier (6), scaled by account
+//     maturity (owner, 2026-10-11: a single rating from a new account with little other data must not carry full weight;
+//     TRANSACTIONAL, signalSourceMaturity.js; unknown maturity = full, the shared weightSignal rule). At the same maturity it
+//     still outweighs learned behavior (5 x m > 4 x m), and for a mature account a declared interest the person then called
+//     Not for me nets to neutral (ranked like any other category).
 //   - It REORDERS only: nothing is hidden, filtered or removed, and no hard constraint or ask is overridden.
 //   - Loved says why ("You loved this kind of experience last time"); Not for me never shows a reason (the item just ranks lower).
 //   - A kind called Not for me also cancels the learned-behavior lift for that kind (`dropsLearned`): the person's explicit word
 //     beats Nearby's guess from their activity.
 import { EXPLICIT_POINTS } from '../constants/blendedRanking';
+import { SIGNAL_SOURCES, weightSignal } from '../constants/signalSourceMaturity';
 import { reasonText, appendReason } from '../constants/recommendationReasonVocabulary';
 
 export const FEEDBACK_POINTS = EXPLICIT_POINTS;
@@ -50,9 +53,14 @@ export function feedbackFor({ hostId = null, partnerId = null, category = null }
   return NONE;
 }
 
+// The weight of one feedback word for this account: FEEDBACK_POINTS scaled by maturity (the one place this is decided).
+export function feedbackWeight(maturity = null, points = FEEDBACK_POINTS) {
+  return weightSignal(points, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
+}
+
 // The ranked delta (personal-interest tier) for an item.
-export function feedbackPoints(item, feedback) {
-  return feedbackFor(item, feedback).direction * FEEDBACK_POINTS;
+export function feedbackPoints(item, feedback, maturity = null) {
+  return feedbackFor(item, feedback).direction * feedbackWeight(maturity);
 }
 
 // The three loved reasons, so a ranker that counts reason lines does not count the feedback twice.
@@ -62,12 +70,13 @@ export const LOVED_REASONS = Object.freeze(['lovedHost', 'lovedBusiness', 'loved
 // learnedAffinity.js). Only results the ask already returned are touched. Counted as HISTORY (historyScore), so the
 // session-intent pass still moves it out of the score when the ask states a mood; when the ask states ANY explicit constraint
 // it is a LITERAL tie-breaker (learnedTieBreak, comparePersonalTieBreak) and never moves a result past a better match.
-export function applyExperienceFeedback(candidates, feedback, { constrained = false } = {}) {
+export function applyExperienceFeedback(candidates, feedback, { constrained = false, maturity = null } = {}) {
   if (!Array.isArray(candidates) || !feedback) return candidates;
   return candidates.map((c) => {
     const fb = feedbackFor({ hostId: c?.host_id ?? null, partnerId: c?.partnerId ?? c?.hostingPartnerId ?? null, category: c?.category ?? null }, feedback);
     if (fb.direction === 0) return c;
-    const delta = fb.direction * FEEDBACK_POINTS;
+    const delta = fb.direction * feedbackWeight(maturity);
+    if (delta === 0) return c;
     const reasons = fb.reason ? appendReason(c.reasons, fb.reason) : c.reasons;
     if (constrained) return { ...c, learnedTieBreak: (Number.isFinite(c.learnedTieBreak) ? c.learnedTieBreak : 0) + delta, reasons };
     return {

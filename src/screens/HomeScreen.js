@@ -22,6 +22,7 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { getMyExperienceFeedback } from '../services/experienceFeedback';
 import { EMPTY_EXPERIENCE_FEEDBACK } from '../utils/experienceFeedback';
+import { computeAccountMaturity } from '../constants/signalSourceMaturity';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { askBusinessFromAsk } from '../services/askToBusiness';
 import { resolveClassifiedAsk, resolveCommunityIntent, navigateToIntentResultItem } from '../services/intentResolver';
@@ -356,6 +357,7 @@ export default function HomeScreen({ navigation }) {
   // getActiveOffers() call, scored on the shared intent-resolver axis.
   const [homeRecommendations, setHomeRecommendations] = useState([]);
   const [experienceFeedback, setExperienceFeedback] = useState(EMPTY_EXPERIENCE_FEEDBACK); // item 35
+  const [experienceMaturity, setExperienceMaturity] = useState(null);
   const period = getTimePeriod();
   // Impression analytics dedupe: this screen's own useFocusEffect re-runs the
   // "should I show a nudge" check on every focus, so a plain "log shown here"
@@ -486,6 +488,7 @@ export default function HomeScreen({ navigation }) {
     recommended: homeRecommendations,
     soon: (dashboard?.happeningNow ?? []).filter((g) => !shownInMergeIds.has(g.id)),
     feedback: experienceFeedback, // item 35: loved ranks up, Not for me ranks down (personal-interest tier)
+    maturity: experienceMaturity, // scaled down for a new account, like every feedback weight
   });
   // Nearby Right Now (item 33): the time view, below everything personal; never repeats a gathering shown above it.
   const rightNow = selectRightNow({
@@ -934,6 +937,8 @@ export default function HomeScreen({ navigation }) {
           ? (Date.now() - new Date(profile.created_at).getTime()) / (1000 * 60 * 60 * 24)
           : null;
         const hasBehavioralHistory = (result?.learnedCategories?.length ?? 0) > 0; // item 158: the learned signal only
+        // item 35: Picked For You weighs feedback with the same maturity as the candidate pool
+        setExperienceMaturity(computeAccountMaturity({ accountAgeDays, hasBehavioralHistory }));
         setHomeRecommendations(
           buildHomeRecommendations({
             gatherings: result?.nearbyGatherings ?? [],

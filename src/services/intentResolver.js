@@ -956,12 +956,13 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // tie-breaker when the ask states any explicit constraint (time, budget, environment, vibe...). Never adds, removes or
   // narrows anything (utils/learnedAffinity.js).
   const feedback = await experienceFeedbackPromise;
+  const learned = await learnedAffinityPromise;
   const constrained = askStatesConstraint(rawText, { dateWindow, priceLevel, budgetMax, openNowChip, narrowGroup });
-  deduped = applyLearnedAffinity(deduped, await learnedAffinityPromise, { constrained, notForMeKinds: feedback?.notForMeKinds });
+  deduped = applyLearnedAffinity(deduped, learned, { constrained, notForMeKinds: feedback?.notForMeKinds });
   step('learned_affinity');
   // Item 35: the person's latest "How was it?" word (utils/experienceFeedback.js): loved lifts, Not for me lowers, same rules
   // as the learned affinity above (history; a literal tie-breaker under a stated constraint). Only reorders what the ask returned.
-  deduped = applyExperienceFeedback(deduped, feedback, { constrained });
+  deduped = applyExperienceFeedback(deduped, feedback, { constrained, maturity: learned?.maturity ?? null }); // same maturity as Home/Discover
   step('experience_feedback');
   // Item 114: what the person asked for tonight outranks who they usually are (constants/sessionIntent.js).
   deduped = applySessionIntent(deduped, sessionIntentFromText(rawText));
