@@ -251,10 +251,10 @@ export default function HomeScreen({ navigation }) {
   const [friendNearbySharing, setFriendNearbySharingState] = useState(false);
   const [nearbyFriend, setNearbyFriend] = useState(null);
   const [nearbyFriendPhoto, setNearbyFriendPhoto] = useState(null);
-  const [myPhotoUrl, setMyPhotoUrl] = useState(null);
+  const [myPhotoUrl, setMyPhotoUrl] = useState(null); // item 40: your face beside the friend's on "You + {Name} might like this"
   // Item 41: the friends-planning line's faces (signed photo per friend id) and its play key (set only when the plans are new).
   const [friendsPlanningPhotos, setFriendsPlanningPhotos] = useState({});
-  const [friendsPlanningPlay, setFriendsPlanningPlay] = useState(null); // item 40: your face beside the friend's on "You + {Name} might like this"
+  const [friendsPlanningPlay, setFriendsPlanningPlay] = useState(null);
   const [insightExpanded, setInsightExpanded] = useState(null); // which insight line's gatherings are listed inline (item 136)
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
