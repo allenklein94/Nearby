@@ -28,7 +28,8 @@ import { getMultiObjectParent } from '../services/plans';
 import { relevantAddonTypesForOccasion, planAddonIcon, planAddonType } from '../constants/planAddons';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
-import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy } from '../utils/planAddonReadiness';
+import { buildPlanTimeline, summarizePlanTimelineReadiness, buildPlanSummary, addonStateCopy, isPlanFullyConfirmed, planComesTogetherNow } from '../utils/planAddonReadiness';
+import PlanComesTogether, { PlanPiece } from '../motion/PlanComesTogether';
 import { buildPlanCalendarEvent, buildDirectionsUrl } from '../utils/planLogisticsActions';
 import { buildOccasionPlanShareCaption } from '../utils/occasionPlanShareCard';
 import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils/livingPlanHeader';
@@ -106,6 +107,8 @@ const OFFER_TYPE_LABELS = { standard: true, discount: true, perk: true, upgrade:
 // same as this app's established gathering_invite precedent.
 // How long the focus scroll takes before the offer card's on-screen position is read for the offer travel.
 const OFFER_SCROLL_SETTLE_MS = 380;
+// Item 25 #4: plans whose coming-together already played in this session (never twice for the same plan).
+const PLAN_TOGETHER_PLAYED = new Set();
 
 export default function BusinessRequestDetailScreen({ navigation, route }) {
   const { t, language } = useLanguage();
@@ -246,6 +249,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // a screen-wide loading lock, since one add-on's action must never
   // block another's independent lifecycle.
   const [addons, setAddons] = useState([]);
+  // Item 25 #4: the plan coming together is judged only once the add-ons have really loaded (before that the timeline is
+  // missing pieces); the first judged read is the baseline.
+  const addonsLoadedRef = useRef(false);
+  const planReadyRef = useRef(null);
+  const [planTogetherKey, setPlanTogetherKey] = useState(0);
   const [addonActionKey, setAddonActionKey] = useState(null);
   // The one shared inline "add a new entry" / "retime an existing one"
   // compose panel -- only one open at a time, per this app's own
@@ -413,7 +421,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       // request fetches its real add-ons.
       if (!result.request.addon_type) {
         getPlanAddons(requestId)
-          .then((rows) => setAddons(rows))
+          .then((rows) => { addonsLoadedRef.current = true; setAddons(rows); })
           .catch((e) => console.error('getPlanAddons failed', e));
       } else {
         setAddons([]);
@@ -918,6 +926,63 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     ]);
   }
 
+  // Every hook runs before the early returns below (rules of hooks: a screen that first renders its loader and then the
+  // request must call the same hooks both times). Moved here 2026-10-11 (item 25 #4); each is null-safe for the loader pass.
+  const planTimeline = useMemo(
+    () => (request ? buildPlanTimeline({ primary: request, primaryOffers: offers, addons }) : []),
+    [request, offers, addons]
+  );
+  const planReady = isPlanFullyConfirmed(planTimeline);
+  useEffect(() => {
+    if (!addonsLoadedRef.current || request?.addon_type) return;
+    if (planComesTogetherNow({ previousReady: planReadyRef.current, ready: planReady, planId: request?.id, played: PLAN_TOGETHER_PLAYED })) {
+      PLAN_TOGETHER_PLAYED.add(request.id);
+      setPlanTogetherKey((k) => k + 1);
+    }
+    planReadyRef.current = planReady;
+  }, [planReady, addons]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Item 90 ("the Plan itself becomes the source of truth" -- CLAUDE.md):
+  // one real, single canonical summary block -- shown only on the
+  // primary's own screen, same as "Your Plan" below, since an add-on
+  // already links back to the full plan via the banner above.
+  const planSummary = useMemo(
+    () => (!request || request.addon_type ? null : buildPlanSummary({
+      primary: request,
+      primaryOffers: offers,
+      planTitle: planChatInfo?.title ?? null,
+      // Item 120 ("Plan creation should feel like a major achievement"): the mock's own Who,
+      // sourced from the plan's own already-fetched real roster/occasion who-for -- never a new
+      // query.
+      participants: planChatInfo?.participants ?? null,
+      myId,
+      whoForName: planChatInfo?.whoForName ?? null,
+    })),
+    [request, offers, planChatInfo, myId]
+  );
+
+  // Item 112 follow-up (CLAUDE.md, "the finished plan could have a living
+  // header... 🎂 Sarah's 30th Birthday"): only once the plan is genuinely
+  // finished (statusKind 'confirmed', the same gate the share-card action
+  // below already uses) -- a plan still in progress keeps the plain
+  // static title, since "finished" is the whole premise of this treatment.
+  const planHeaderIcon = useMemo(
+    () => occasionIcon(planChatInfo?.occasionType ?? request?.occasion ?? null) ?? '🎉',
+    [planChatInfo, request?.occasion]
+  );
+  const planHeaderLabel = useMemo(
+    () => (planSummary ? stripTrailingCelebrationIcon(planSummary.title, planHeaderIcon) : ''),
+    [planSummary, planHeaderIcon]
+  );
+  const planHeaderChangeKey = useMemo(() => buildPlanHeaderChangeKey(planSummary), [planSummary]);
+  const shareCardRef = useRef(null);
+  const [sharingPlanCard, setSharingPlanCard] = useState(false);
+  const scrollViewRef = useRef(null);
+  const organizersSectionYRef = useRef(0);
+  const focusScrolledRef = useRef(false);
+  const focusCardRef = useRef(null);
+  const cardRefs = useRef({});
+  const [addingToCalendar, setAddingToCalendar] = useState(false);
+
   if (loading && !request) {
     return (
       <SafeAreaView style={styles.container}>
@@ -970,44 +1035,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // at a different time is a real, intended case now, not a mistake to
   // block.
   const relevantAddonTypes = relevantAddonTypesForOccasion(request.occasion ?? null);
-  const planTimeline = useMemo(
-    () => buildPlanTimeline({ primary: request, primaryOffers: offers, addons }),
-    [request, offers, addons]
-  );
   const planReadinessLabel = summarizePlanTimelineReadiness(planTimeline);
-  // Item 90 ("the Plan itself becomes the source of truth" -- CLAUDE.md):
-  // one real, single canonical summary block -- shown only on the
-  // primary's own screen, same as "Your Plan" below, since an add-on
-  // already links back to the full plan via the banner above.
-  const planSummary = useMemo(
-    () => (request.addon_type ? null : buildPlanSummary({
-      primary: request,
-      primaryOffers: offers,
-      planTitle: planChatInfo?.title ?? null,
-      // Item 120 ("Plan creation should feel like a major achievement"): the mock's own Who,
-      // sourced from the plan's own already-fetched real roster/occasion who-for -- never a new
-      // query.
-      participants: planChatInfo?.participants ?? null,
-      myId,
-      whoForName: planChatInfo?.whoForName ?? null,
-    })),
-    [request, offers, planChatInfo, myId]
-  );
-
-  // Item 112 follow-up (CLAUDE.md, "the finished plan could have a living
-  // header... 🎂 Sarah's 30th Birthday"): only once the plan is genuinely
-  // finished (statusKind 'confirmed', the same gate the share-card action
-  // below already uses) -- a plan still in progress keeps the plain
-  // static title, since "finished" is the whole premise of this treatment.
-  const planHeaderIcon = useMemo(
-    () => occasionIcon(planChatInfo?.occasionType ?? request.occasion ?? null) ?? '🎉',
-    [planChatInfo, request.occasion]
-  );
-  const planHeaderLabel = useMemo(
-    () => (planSummary ? stripTrailingCelebrationIcon(planSummary.title, planHeaderIcon) : ''),
-    [planSummary, planHeaderIcon]
-  );
-  const planHeaderChangeKey = useMemo(() => buildPlanHeaderChangeKey(planSummary), [planSummary]);
   // Item 88: this used to be visible to ANY viewer who could load this
   // screen at all (including a match participant or gathering-interest-
   // approved attendee who could never actually succeed at the underlying
@@ -1024,8 +1052,6 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // 'confirmed' status, the same real state this card's own pill already
   // shows), render it off-screen and let the user share the captured
   // image through the native share sheet ("Messages, text, etc.").
-  const shareCardRef = useRef(null);
-  const [sharingPlanCard, setSharingPlanCard] = useState(false);
   // Item 120 ("Plan creation should feel like a major achievement"): "Invite / Share Plan"
   // co-located as the finale's two actions. Share already existed; Invite is real and unblocked
   // regardless of status via add_plan_organizer (organizing authority, not "grow the reservation
@@ -1034,14 +1060,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // silently letting more people claim a seat on it would misrepresent a real booking to the
   // business). This quick-link reuses that already-built, already-safe Organizers section below
   // rather than inventing a second invite mechanism.
-  const scrollViewRef = useRef(null);
-  const organizersSectionYRef = useRef(0);
   // Destination contract (item 136): an offer row or offer push opens this screen ON that offer -- scrolled to it once and
   // outlined, so "Coastal Coffee made you an offer" lands on Coastal Coffee's offer, not the top of the request.
   const focusOfferId = route.params?.focusOfferId ?? null;
-  const focusScrolledRef = useRef(false);
-  const focusCardRef = useRef(null);
-  const cardRefs = useRef({});
   function onOfferLayout(offerId, e) {
     // Item 23: an in-place reply's travel lands on its card if the card is on screen; below the fold it simply ends (the
     // card builds in at once). Only a travel that started from the request line; the arrival signal's keeps its path below.
@@ -1074,7 +1095,6 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // CLAUDE.md's own locked "Calendar = when, Nearby = what+who+where+how" read-only boundary (a
   // single, user-confirmed export of one already-real commitment, not Nearby becoming a calendar
   // management surface).
-  const [addingToCalendar, setAddingToCalendar] = useState(false);
   async function handleAddToCalendar() {
     const event = buildPlanCalendarEvent({
       title: planSummary?.title,
@@ -1798,12 +1818,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 "Anytime"). Two entries of the same type (two rides, at
                 two different times) each get their own row. */}
             <Text style={styles.groupPlanSectionTitle}>{t('ui.requestDetail.yourPlan')}</Text>
-            <Text style={styles.helperText}>{planReadinessLabel}</Text>
-            {planTimeline.map((entry) => {
+            {/* Item 25 #4: the plan comes together -- its pieces settle in one after another, then one success glow. */}
+            <PlanComesTogether playKey={planTogetherKey} pieces={planTimeline.length} color={colors.success} radius={radius.md}>
+            <Text style={[styles.helperText, planReady && { color: colors.success }]}>{planReadinessLabel}</Text>
+            {planTimeline.map((entry, entryIndex) => {
               const busy = addonActionKey === entry.requestId;
               const copy = addonStateCopy(entry.state);
               return (
-                <View key={entry.id} style={styles.timelineRow}>
+                <PlanPiece key={entry.id} index={entryIndex}>
+                <View style={styles.timelineRow}>
                   <View style={styles.timelineTimeCol}>
                     <Text style={[styles.timelineTimeText, !entry.hasTime && styles.timelineTimeTextMuted]}>{entry.planTimeLabel}</Text>
                   </View>
@@ -1856,8 +1879,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     </View>
                   </View>
                 </View>
+                </PlanPiece>
               );
             })}
+            </PlanComesTogether>
 
             {canAddAddons && (
               <>

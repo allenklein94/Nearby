@@ -68,6 +68,7 @@ export function OfferProgressGlow({ play = false, color, radius = 12, timing = T
   useEffect(() => {
     if (!animate) return undefined;
     const anim = Animated.sequence([
+      Animated.delay(timing.delayMs ?? 0), // item 25 #4: the plan's glow waits for its pieces to settle
       Animated.timing(glow, { toValue: 1, duration: timing.glowInMs, easing: ease, useNativeDriver: true }),
       Animated.timing(glow, { toValue: 0, duration: timing.glowOutMs, easing: ease, useNativeDriver: true }),
     ]);

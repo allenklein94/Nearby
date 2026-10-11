@@ -240,6 +240,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   preloaded/autoplayed. Guard `motionPerformance.test.js`.
 - **Request -> reply transition (owner item 23):** a reply arriving while its request is on screen travels from the request
   line into its card (no dim, both ends visible, never scrolls), then builds in (`replyToTravel`/`landOfferTravel` in `offerTravel.js`).
+- **Wow moments (owner item 25):** a business responding is the ONE signature moment (`signature` tier, <= 1.5 s, calm,
+  same for every business; no other sequence may use it). Join on the host's gathering = count roll + avatar + named line;
+  "plan comes together" = every piece confirmed (`isPlanFullyConfirmed`), never an attendee count. No hook after an early return (guard).
 
 ### Copy, colour, errors
 - Coral = primary action or selected state; status colours have their own tokens (`theme.js`).

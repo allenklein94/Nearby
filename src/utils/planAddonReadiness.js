@@ -200,6 +200,25 @@ export function buildPlanTimeline({ primary, primaryOffers = [], addons = [] }) 
 // add-ons are already absent from the timeline entirely, so there's no
 // "skipped" state left to special-case here the way Item 80's original
 // version had to.
+// Owner item 25 #4 (2026-10-11, LOCKED meaning): "the plan comes together" = every required piece is ready -- the primary's
+// reservation confirmed AND every live add-on confirmed -- with at least one add-on (a one-piece plan is just "You're
+// booked", its own moment). Attendance is a separate fact and never part of this. The same rule the "Ready — everything is
+// confirmed" line uses below, so the words and the moment can never disagree.
+export function isPlanFullyConfirmed(timeline) {
+  const list = Array.isArray(timeline) ? timeline : [];
+  const primary = list.find((e) => e.kind === 'primary');
+  const addons = list.filter((e) => e.kind === 'addon');
+  return primary?.state === 'confirmed' && addons.length > 0 && addons.every((e) => e.state === 'confirmed');
+}
+
+// Plays the moment only for a transition seen on this screen: a judged previous state that was not ready, now ready, not
+// already played for this plan in this session. The first judged read is the baseline (opening a plan that was already
+// complete plays nothing).
+export function planComesTogetherNow({ previousReady, ready, planId, played }) {
+  if (previousReady !== false || ready !== true || !planId) return false;
+  return !(played && played.has(planId));
+}
+
 export function summarizePlanTimelineReadiness(timeline) {
   const primaryEntry = timeline.find((e) => e.kind === 'primary');
   const primaryConfirmed = primaryEntry?.state === 'confirmed';
@@ -212,7 +231,7 @@ export function summarizePlanTimelineReadiness(timeline) {
   }
   const confirmedCount = addonEntries.filter((e) => e.state === 'confirmed').length;
   const needsAttention = addonEntries.some((e) => e.state === 'declined' || e.state === 'no_response' || e.state === 'expired_with_offer');
-  if (confirmedCount === addonEntries.length) return txt('allConfirmed');
+  if (isPlanFullyConfirmed(timeline)) return txt('allConfirmed');
   if (needsAttention) return txt('extrasConfirmedAttention', { done: confirmedCount, count: addonEntries.length });
   return txt('extrasConfirmed', { done: confirmedCount, count: addonEntries.length });
 }

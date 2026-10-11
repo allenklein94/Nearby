@@ -94,6 +94,10 @@ export const SEQUENCES = {
   // Owner item 25 #3: the same live join, as a moment. The Going figure rolls (the old number lifts away, the new one rises
   // in, readable from frame one), the new person's avatar settles into the front of Who's going (fade + slight grow, no
   // bounce), and a "Maya joined" line settles in under the figure. Host only, live only, no haptic (the host did not tap).
+  // Owner item 25 #4: the plan comes together (every piece confirmed, seen happen). Its pieces settle in one after another
+  // (slight rise, readable from frame one), then the plan's outline glows once in the success colour. Reservations are
+  // business transactions, so calm (item 122): no bounce, particles or confetti.
+  planTogether: { tier: 'special', staggerMs: 90, pieceMs: 200, maxPieces: 4, risePx: 4, glowInMs: 100, glowOutMs: 200 },
   friendJoin: { tier: 'medium', rollMs: 260, risePx: 8, avatarMs: 320, avatarFromScale: 0.8, lineDelayMs: 80, lineMs: 220 },
   // Item 25: the travel is part of the signature moment. The light follows a gentle arc (arcPx at most, never more than
   // arcShare of the distance) with a soft halo; the frame is an outline only (never covers the card's text); on landing one
@@ -140,6 +144,8 @@ export function settleMs(name) {
       return Math.max(s.fadeMs, s.pulseMs);
     case 'hostJoin':
       return s.glowInMs + s.glowOutMs;
+    case 'planTogether':
+      return s.maxPieces * s.staggerMs + Math.max(s.pieceMs, s.glowInMs + s.glowOutMs);
     case 'friendJoin':
       return Math.max(s.rollMs, s.avatarMs, s.lineDelayMs + s.lineMs);
     case 'requestPulse':
