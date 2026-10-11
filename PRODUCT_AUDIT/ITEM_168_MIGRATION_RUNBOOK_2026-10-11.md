@@ -112,3 +112,7 @@ canonical change) is then the right tool, not this rollback.
 | 8 Journeys | 20/20 suites, 234 tests, on the migrated database; Jest 408 suites pass |
 
 `item168_backup` is kept until the owner signs off on the live result.
+
+**Owner decision (2026-10-11): keep `item168_backup` for now.** Do not run `drop schema item168_backup cascade;` yet.
+Revisit only after the four open follow-ups are done (native review of the labels in 11 languages, `docs/business.html`
+in a real browser, on-device check, from-scratch migration replay on an empty DB) and the owner explicitly orders the drop.

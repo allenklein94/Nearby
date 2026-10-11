@@ -77,7 +77,7 @@ card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests 
 **Item 168 (V1 category set) is LIVE (2026-10-11):** migration 20270294 applied, 3 edge functions deployed, merged; journeys
 20/20 on the migrated DB. Still open, each tracked on its own: (1) native review of its labels in 11 languages; (2) the
 business signup page (`docs/business.html`) in a real browser; (3) on-device check; (4) a from-scratch migration replay on an
-empty DB (never done). `item168_backup` (the rollback snapshot) stays until the owner explicitly orders its drop; dropping it
+empty DB (never done). `item168_backup` (the rollback snapshot) stays (owner re-confirmed 2026-10-11: keep it until the four follow-ups are done) until the owner explicitly orders its drop; dropping it
 ends the clean rollback (`PRODUCT_AUDIT/ITEM_168_MIGRATION_RUNBOOK_2026-10-11.md`). Later: relevance review of a broad
 Travel & Getaways interest weakly matching the 10 lodging categories.
 
