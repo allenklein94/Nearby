@@ -120,12 +120,10 @@ use the existing age/safety rules; inspect current rules and applicable requirem
 without approval; (4) offer value only from saved offer + redemption data: shown only with a real price/discount AND a confirmed
 redemption; never estimated revenue or invented value.
 
-**In progress (owner scope, 2026-10-11):** (a) plan messages send no push -- trace + fix + tests, no real pushes; (b) item 41
-"See gatherings" must not repeat the chips' plans; (c) item 35 sign-off check; (d) `docs/business.html` headless-browser check
-(real-browser review stays open). Status per step lands here as each finishes. (a) DONE: migration 20270298 live, send-push
-redeployed, journey `planMessagePush` 5/5; the Messages hint now names plan group chats (11 languages, native review pending).
-(c) DONE: item 35 signed off and closed. (d) DONE headless: `docs/business.html` 56/56 (`PRODUCT_AUDIT/BUSINESS_PAGE_HEADLESS_CHECK_2026-10-11.md`);
-found, owner to decide: the phone header wraps; the preview mock's "6 interested" (invented + shows an Interested count). Real-browser review OPEN. (b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
+**Owner scope of 2026-10-11 finished** (records in CLAUDE_HISTORY.md): plan-chat push live; item 41 "See gatherings" dedupe; item 35
+closed; `docs/business.html` headless 56/56. Left open from it: native review of the reworded Messages hint (10 languages); owner to
+decide on two business-page findings (phone header wraps; preview mock's "6 interested" is invented and shows an Interested count);
+the owner's own real-browser review of that page. (b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
 
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
