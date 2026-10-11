@@ -1,6 +1,7 @@
 jest.mock('expo-location', () => ({}));
 jest.mock('@react-native-async-storage/async-storage', () => ({}));
 jest.mock('./notificationArea', () => ({ reportNotificationArea: () => {} }));
+jest.mock('./friendNearby', () => ({ reportFriendNearbyFix: () => {} }));
 const { createLocationProvider } = require('./userLocation');
 
 function fakes(over = {}) {

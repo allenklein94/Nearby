@@ -132,7 +132,11 @@ describe('storage and privacy (migration 20270255)', () => {
     const sqlUsers = walk(path.join(root, 'supabase')).filter((f) => /\.(sql|ts)$/.test(f) && fs.readFileSync(f, 'utf8').includes('trip_miles'));
     // 20270273 (item 156 accept guard) and 20270280 (item 183 never-learned categories) re-create the same
     // record_behavior_event; its trip logic is unchanged
-    expect(sqlUsers.map((f) => path.basename(f)).sort()).toEqual(['20270255_learned_trip_distances.sql', '20270273_behavior_learn_from_redemption.sql', '20270280_ies_plurals_never_learn_faith.sql']);
+    // 20270296 (item 39, friend nearby) calls only the pure distance helper _trip_miles(lat, lng, lat, lng), never the
+    // learned trip_miles data (checked below)
+    expect(sqlUsers.map((f) => path.basename(f)).sort()).toEqual(['20270255_learned_trip_distances.sql', '20270273_behavior_learn_from_redemption.sql', '20270280_ies_plurals_never_learn_faith.sql', '20270296_friend_nearby.sql']);
+    const fn = fs.readFileSync(sqlUsers.find((f) => /20270296/.test(f)), 'utf8').replace(/--.*$/gm, '');
+    expect(fn.replace(/_trip_miles\(/g, '')).not.toMatch(/trip_miles|behavior_events|get_my_trip_choices/);
     const src = walk(path.join(root, 'src')).filter((f) => /\.js$/.test(f) && !/\.test\.js$/.test(f));
     const appUsers = src.filter((f) => /trip_miles|get_my_trip_choices/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(path.join(root, 'src'), f)).sort();
     expect(appUsers).toEqual(['services/learnedProximity.js', 'utils/learnedProximity.js']);

@@ -14,6 +14,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
+import { getMyFriendNearbySharing, setFriendNearbySharing } from '../services/friendNearby';
+import { getUserLocation } from '../services/userLocation';
 import { clearMyBehaviorHistory, getMyBehaviorCategories, forgetBehaviorCategory, addLearnedInterestToProfile, removeAddedInterestFromProfile } from '../services/behaviorSignals';
 import { learnedAffinities } from '../utils/learnedAffinity';
 import { usualTripRows } from '../utils/learnedProximity';
@@ -92,6 +94,9 @@ export default function SettingsScreen({ navigation, route }) {
   const [showBlocked, setShowBlocked] = useState(false); // Blocked users open in place (audit B10)
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
+  // Item 39: "Let friends know when I'm nearby" -- OFF by default; this toggle is the ONLY way to turn it on.
+  const [friendNearbyOn, setFriendNearbyOn] = useState(false);
+  const [friendNearbyNoLocation, setFriendNearbyNoLocation] = useState(false);
   const [shareInterestInDemand, setShareInterestInDemand] = useState(true);
   const [showSponsoredPlaces, setShowSponsoredPlaces] = useState(true);
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
@@ -140,9 +145,30 @@ export default function SettingsScreen({ navigation, route }) {
   const scrollRef = useRef(null);
   const preferencesYRef = useRef(0);
 
+  // Item 39: while it's on, a real fresh fix (asked only when the person turns it on) is what makes them visible; with
+  // location off nothing is reported and the row says so.
+  async function checkFriendNearbyLocation(ask) {
+    const fix = await getUserLocation({ fresh: true, ask, force: ask });
+    setFriendNearbyNoLocation(!fix);
+  }
+
+  async function toggleFriendNearby(on) {
+    try {
+      const now = await setFriendNearbySharing(on);
+      setFriendNearbyOn(now);
+      if (now) await checkFriendNearbyLocation(true);
+      else setFriendNearbyNoLocation(false);
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'complete that', error: e });
+    }
+  }
+
   useEffect(() => {
     load();
     checkOsPermission();
+    getMyFriendNearbySharing()
+      .then((on) => { setFriendNearbyOn(on); if (on) checkFriendNearbyLocation(false); })
+      .catch(() => {});
 
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active') checkOsPermission();
@@ -814,6 +840,20 @@ export default function SettingsScreen({ navigation, route }) {
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.privacy')}</Text>
         <View style={styles.card}>
+          <View style={styles.settingRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>{t('ui.friendNearby.settingTitle')}</Text>
+              <Text style={styles.helperText}>{t('ui.friendNearby.settingHelper')}</Text>
+              {friendNearbyOn && friendNearbyNoLocation ? <Text style={styles.helperText}>{t('ui.friendNearby.locationOff')}</Text> : null}
+            </View>
+            <Switch
+              value={friendNearbyOn}
+              onValueChange={toggleFriendNearby}
+              trackColor={{ true: colors.primary, false: colors.border }}
+              accessibilityLabel={t('ui.friendNearby.settingTitle')}
+            />
+          </View>
+          <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>{t('ui.settings.activityThatShapesYourPicks')}</Text>

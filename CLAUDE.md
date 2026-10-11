@@ -61,9 +61,9 @@ card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests 
 `PRODUCT_AUDIT/ITEM_37_STRONG_MATCH_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device AND native review of `vocab.confidence.high`
 is done; then close it without expanding scope (owner: wording, ticks-as-intent, interaction LOCKED; ranking/device not verified by this item).
 
-**Item 39 (friend is nearby) is DESIGN ONLY, NOT BUILT: do not build until the owner reviews**
-`PRODUCT_AUDIT/ITEM_39_FRIEND_NEARBY_DESIGN_2026-10-11.md` and answers its section 9 (owner approved: mutual opt-in, off by default;
-accepted friends only, never matches; yes/no only, fresh <30 min, ~1 mi, nothing else leaves the server; Home social line only, no push).
+**Item 39 (friend is nearby) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_39_FRIEND_NEARBY_DEVICE_CHECKLIST_2026-10-11.md` is recorded on two real phones AND native review of the 8
+`ui.friendNearby.*` strings is done (migration 20270296; journey `friendNearby` passes).
 
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
@@ -182,6 +182,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   needs live only in the request/search (stripped from search logs). Never-learned categories
   (`NEVER_LEARNED_CATEGORIES` = `_category_never_learned`, e.g. Faith & Spirituality) resolve a search but are
   never stored, learned or counted. Raw typed ask text expires after 180 days (any new column holding it joins the purge).
+- **Friend is nearby (owner item 39):** mutual opt-in, OFF by default, only the Settings toggle turns it on (Home may only turn
+  it off); accepted friends only, never matches; yes/no, fresh < 30 min, ~1 mi, decided in `get_nearby_friends()` (ONE friend,
+  id/name/photo only, every "not nearby" cause = no row); foreground fixes only via `userLocation.js`; Home social line LAST,
+  no push/event/analytics. Guards: `friendNearby.test.js`, journey `friendNearby`.
 - Not LinkedIn: no professional search, graph, résumé or job fields; Job Title is never compared.
 
 ### Understanding asks

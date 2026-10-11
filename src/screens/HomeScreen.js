@@ -19,6 +19,8 @@ import RightNowMark from '../components/RightNowMark';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
+import { getMyFriendNearbySharing, getNearbyFriend, setFriendNearbySharing } from '../services/friendNearby';
+import { getSignedPhotoUrl } from '../services/photos';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
 import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { getMyExperienceFeedback } from '../services/experienceFeedback';
@@ -243,6 +245,10 @@ export default function HomeScreen({ navigation }) {
   const [bestPickCoverUrl, setBestPickCoverUrl] = useState(null);
   const [myName, setMyName] = useState('');
   const [myUserId, setMyUserId] = useState(null);
+  // Item 39: a friend is nearby (one friend or null) and whether this person shares it (the quiet reminder). Server-decided.
+  const [friendNearbySharing, setFriendNearbySharingState] = useState(false);
+  const [nearbyFriend, setNearbyFriend] = useState(null);
+  const [nearbyFriendPhoto, setNearbyFriendPhoto] = useState(null);
   const [insightExpanded, setInsightExpanded] = useState(null); // which insight line's gatherings are listed inline (item 136)
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -462,7 +468,7 @@ export default function HomeScreen({ navigation }) {
   ].map((g) => g?.id).concat(dashboard?.upcomingPlanIds ?? [], dashboard?.interestedIds ?? []).filter(Boolean);
   // An insight list the person opened (item 136) sits above the recommendation placements: shown in full, and its
   // gatherings leave weather / Best Pick / Picked For You while it is open.
-  const homeInsight = getHomeInsight(dashboard);
+  const homeInsight = getHomeInsight(dashboard ? { ...dashboard, nearbyFriend } : dashboard);
   const expandedIds = expandedListIds(homeInsight, insightExpanded);
   const aboveWeather = new Set([...firstRunIds, ...yourPlansIds, ...expandedIds]);
   const weatherCardRaw = socialForecast ? (() => {
@@ -972,10 +978,36 @@ export default function HomeScreen({ navigation }) {
     }
   }, []);
 
+  // Item 39: re-read on every focus (the service caches a minute); off or any failure = nothing shown, never a stale friend.
+  const loadFriendNearby = useCallback(async () => {
+    try {
+      const on = await getMyFriendNearbySharing();
+      setFriendNearbySharingState(on);
+      const friend = on ? await getNearbyFriend() : null;
+      setNearbyFriend(friend);
+      setNearbyFriendPhoto(friend?.photoPath ? await getSignedPhotoUrl(friend.photoPath).catch(() => null) : null);
+    } catch {
+      setNearbyFriend(null);
+      setNearbyFriendPhoto(null);
+    }
+  }, []);
+
+  async function turnOffFriendNearby() {
+    try {
+      await setFriendNearbySharing(false);
+      setFriendNearbySharingState(false);
+      setNearbyFriend(null);
+      setNearbyFriendPhoto(null);
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'complete that', error: e });
+    }
+  }
+
   useFocusEffect(
     useCallback(() => {
       load();
-    }, [load])
+      loadFriendNearby();
+    }, [load, loadFriendNearby])
   );
 
   async function onRefresh() {
@@ -2175,10 +2207,28 @@ export default function HomeScreen({ navigation }) {
 
         {(() => {
           const insight = homeInsight;
-          if (!insight) return null;
+          // Item 39: while this person shares "I'm nearby", a quiet reminder that it is ON (never that anyone is looking).
+          const sharingReminder = friendNearbySharing ? (
+            <View style={styles.friendNearbyReminder}>
+              <Text style={styles.trendingMeta}>{t('ui.friendNearby.reminder')} · </Text>
+              <TouchableOpacity onPress={turnOffFriendNearby} accessibilityRole="button" accessibilityLabel={t('ui.friendNearby.turnOffA11y')}>
+                <Text style={[styles.trendingMeta, { textDecorationLine: 'underline' }]}>{t('ui.friendNearby.turnOff')}</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null;
+          if (!insight) return sharingReminder ? <View style={{ marginBottom: spacing.lg }}>{sharingReminder}</View> : null;
           return (
             <View style={{ marginBottom: spacing.lg }}>
-              <Text style={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]}>{insight.text}</Text>
+              {insight.person ? (
+                <View style={styles.friendNearbyRow}>
+                  {nearbyFriendPhoto
+                    ? <Image source={{ uri: nearbyFriendPhoto }} style={styles.friendNearbyAvatar} accessibilityIgnoresInvertColors />
+                    : <View style={[styles.friendNearbyAvatar, styles.friendNearbyAvatarEmpty]}><Ionicons name="person" size={12} color={colors.textTertiary} /></View>}
+                  <Text style={[styles.insightLine, { marginBottom: 0, flex: 1 }]}>{insight.text}</Text>
+                </View>
+              ) : (
+                <Text style={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]}>{insight.text}</Text>
+              )}
               {insight.basis ? <Text style={styles.trendingMeta}>{insight.basis}</Text> : null}
               {insight.cta ? (() => {
                 // Destination contract (item 136): one gathering opens it; several are listed here, exactly those (rule 5).
@@ -2217,6 +2267,7 @@ export default function HomeScreen({ navigation }) {
                   </>
                 );
               })() : null}
+              {sharingReminder}
             </View>
           );
         })()}
@@ -2841,6 +2892,10 @@ const getStyles = (colors) => StyleSheet.create({
   subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
   loadingText: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: spacing.md },
   insightLine: { color: colors.textPrimary, fontSize: 14, fontWeight: '600', marginBottom: spacing.lg, lineHeight: 19 },
+  friendNearbyRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  friendNearbyAvatar: { width: 24, height: 24, borderRadius: 12 },
+  friendNearbyAvatarEmpty: { backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  friendNearbyReminder: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', marginTop: spacing.xs },
   // Home Visual Hierarchy Audit, recommendation #1 (2026-08-14): this is
   // Home's one hero element -- "This is where I start," not "here's
   // another card." primaryMuted + a colors.primary border is the same

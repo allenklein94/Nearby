@@ -7,6 +7,7 @@
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { reportNotificationArea } from './notificationArea';
+import { reportFriendNearbyFix } from './friendNearby';
 
 const STORED_KEY = 'nearby_last_location';
 export const DEFAULT_MAX_AGE_MS = 2 * 60 * 1000;
@@ -78,7 +79,10 @@ export function createLocationProvider({ loc, storage, now = () => Date.now(), m
   };
 }
 
-const provider = createLocationProvider({ loc: Location, storage: AsyncStorage, onFix: reportNotificationArea });
+// A real fresh fix feeds the coarse push area and (item 39, only while the person shares it and the app is active) the
+// friend-nearby check. Each decides for itself; neither ever runs from a background task.
+const onFix = (coords) => Promise.all([reportNotificationArea(coords), reportFriendNearbyFix(coords)]);
+const provider = createLocationProvider({ loc: Location, storage: AsyncStorage, onFix });
 export const getUserLocation = provider.getUserLocation;
 export const requireUserLocation = provider.requireUserLocation;
 export const getLocationPermissionStatus = provider.getLocationPermissionStatus;

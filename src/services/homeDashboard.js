@@ -787,5 +787,17 @@ export function getHomeInsight(dashboard, now = new Date()) {
     const destination = gatheringSetDestination(dashboard.happeningNow, () => null);
     return { kind: 'starting_soon', text: tr('ui.homeParts.insight.startingSoon', { count: dashboard.happeningNow.length }), cta: destination ? { label: tr('ui.homeParts.insight.seeStarting'), destination } : null };
   }
+  // Item 39 (owner, 2026-10-11): a friend is nearby -- LAST, only when nothing above has anything to say (a real plan or
+  // gathering is more actionable). ONE friend, never a count; no distance, place or time (the server returns none).
+  // Invite opens Create with them preselected in Who; nothing is created or sent until the person publishes.
+  const friend = dashboard.nearbyFriend;
+  if (friend?.id && friend.name) {
+    return {
+      kind: 'friend_nearby',
+      text: tr('ui.friendNearby.line', { name: friend.name }),
+      person: { id: friend.id, photoPath: friend.photoPath ?? null },
+      cta: { label: tr('ui.friendNearby.invite', { name: friend.name }), destination: { kind: 'navigate', screen: 'CreateGathering', params: { suggestedInviteeIds: [friend.id] } } },
+    };
+  }
   return null;
 }

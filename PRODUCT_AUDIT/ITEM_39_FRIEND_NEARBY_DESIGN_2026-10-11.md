@@ -1,9 +1,13 @@
 # Item 39 - "A friend is nearby": design for review (2026-10-11)
 
-Status: **DESIGN ONLY, NOT BUILT.** The owner approved the direction (mutual opt-in, accepted friends only, yes/no + fresh
-only, Home social line with no push) and asked that the precision, surface, update behaviour, data flow, permissions,
-retention and tests be written down and reviewed **before any code**. Nothing below exists yet. The decisions still open
-are listed in section 9.
+Status: **BUILT, LIVE ON THE DATABASE, NOT DEVICE-VERIFIED** (migration 20270296, `services/friendNearby.js`, Settings toggle,
+Home line; journey `friendNearby` 14/14). The owner answered section 9 before the build:
+(1) spoofing residual ACCEPTED with the mitigations (5 min / 0.25 mi throttle, 30 s minimum gap, > 100 mph jumps rejected,
+20 fixes per hour, 20 reads per 10 min); (2) ONE friend only, never "and N others" or a count; (3) the line comes LAST in
+`getHomeInsight` (friends planning, meet tonight and starting soon all outrank it), not first as proposed; (4) the quiet
+"Friends can see you're nearby · Turn off" reminder shows on Home while sharing is on (Home may only turn it OFF);
+(5) parameters confirmed as initial values (30 min, ~1 mi, 5 min / 0.25 mi). Device checks:
+`ITEM_39_FRIEND_NEARBY_DEVICE_CHECKLIST_2026-10-11.md`. The sections below are the design as reviewed.
 
 This would be the first Nearby feature that tells one person anything about where another person is. The core principle
 (owner): **mutual, revocable consent, never passive tracking.**

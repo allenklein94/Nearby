@@ -1,0 +1,112 @@
+{
+ "en": {
+  "settingTitle": "Let friends know when I'm nearby",
+  "settingHelper": "Friends who also turn this on can see that you're nearby, never where you are. It only works while you're using Nearby. Turn it off any time.",
+  "locationOff": "Location is off, so friends can't see you're nearby.",
+  "line": "{name} is nearby",
+  "invite": "Invite {name}",
+  "reminder": "Friends can see you're nearby",
+  "turnOff": "Turn off",
+  "turnOffA11y": "Stop letting friends know when you're nearby"
+ },
+ "es": {
+  "settingTitle": "Avisar a mis amigos cuando esté cerca",
+  "settingHelper": "Los amigos que también lo activen pueden ver que estás cerca, nunca dónde estás. Solo funciona mientras usas Nearby. Desactívalo cuando quieras.",
+  "locationOff": "La ubicación está desactivada, así que tus amigos no pueden ver que estás cerca.",
+  "line": "{name} está cerca",
+  "invite": "Invitar a {name}",
+  "reminder": "Tus amigos pueden ver que estás cerca",
+  "turnOff": "Desactivar",
+  "turnOffA11y": "Dejar de avisar a tus amigos cuando estés cerca"
+ },
+ "de": {
+  "settingTitle": "Freunden zeigen, wenn ich in der Nähe bin",
+  "settingHelper": "Freunde, die das ebenfalls aktivieren, sehen, dass du in der Nähe bist, aber nie, wo du bist. Es funktioniert nur, während du Nearby nutzt. Jederzeit abschaltbar.",
+  "locationOff": "Der Standort ist aus, daher sehen Freunde nicht, dass du in der Nähe bist.",
+  "line": "{name} ist in der Nähe",
+  "invite": "{name} einladen",
+  "reminder": "Freunde sehen, dass du in der Nähe bist",
+  "turnOff": "Ausschalten",
+  "turnOffA11y": "Freunden nicht mehr zeigen, wenn du in der Nähe bist"
+ },
+ "fr": {
+  "settingTitle": "Prévenir mes amis quand je suis à proximité",
+  "settingHelper": "Les amis qui l'activent aussi voient que tu es à proximité, jamais où tu es. Cela ne fonctionne que pendant que tu utilises Nearby. Désactivable à tout moment.",
+  "locationOff": "La localisation est désactivée : tes amis ne peuvent pas voir que tu es à proximité.",
+  "line": "{name} est à proximité",
+  "invite": "Inviter {name}",
+  "reminder": "Tes amis peuvent voir que tu es à proximité",
+  "turnOff": "Désactiver",
+  "turnOffA11y": "Ne plus prévenir tes amis quand tu es à proximité"
+ },
+ "pt": {
+  "settingTitle": "Avisar amigos quando eu estiver por perto",
+  "settingHelper": "Amigos que também ativarem isso podem ver que você está por perto, nunca onde você está. Só funciona enquanto você usa o Nearby. Desative quando quiser.",
+  "locationOff": "A localização está desativada, então seus amigos não podem ver que você está por perto.",
+  "line": "{name} está por perto",
+  "invite": "Convidar {name}",
+  "reminder": "Seus amigos podem ver que você está por perto",
+  "turnOff": "Desativar",
+  "turnOffA11y": "Parar de avisar amigos quando você estiver por perto"
+ },
+ "ht": {
+  "settingTitle": "Fè zanmi m konnen lè m toupre",
+  "settingHelper": "Zanmi ki aktive sa tou ka wè ou toupre, men yo pa janm wè kote ou ye. Li mache sèlman pandan w ap itilize Nearby. Ou ka fèmen l nenpòt lè.",
+  "locationOff": "Lokalizasyon an fèmen, kidonk zanmi ou pa ka wè ou toupre.",
+  "line": "{name} toupre",
+  "invite": "Envite {name}",
+  "reminder": "Zanmi ou ka wè ou toupre",
+  "turnOff": "Fèmen",
+  "turnOffA11y": "Sispann fè zanmi ou konnen lè ou toupre"
+ },
+ "zh": {
+  "settingTitle": "我在附近时让朋友知道",
+  "settingHelper": "同样开启此功能的朋友可以看到你在附近，但永远看不到你的具体位置。仅在你使用 Nearby 时有效。可随时关闭。",
+  "locationOff": "位置已关闭，朋友无法看到你在附近。",
+  "line": "{name} 就在附近",
+  "invite": "邀请 {name}",
+  "reminder": "朋友可以看到你在附近",
+  "turnOff": "关闭",
+  "turnOffA11y": "不再让朋友知道你在附近"
+ },
+ "vi": {
+  "settingTitle": "Cho bạn bè biết khi tôi ở gần",
+  "settingHelper": "Những người bạn cũng bật tính năng này có thể thấy bạn đang ở gần, nhưng không bao giờ thấy bạn ở đâu. Chỉ hoạt động khi bạn đang dùng Nearby. Tắt bất cứ lúc nào.",
+  "locationOff": "Vị trí đang tắt nên bạn bè không thể thấy bạn ở gần.",
+  "line": "{name} đang ở gần",
+  "invite": "Mời {name}",
+  "reminder": "Bạn bè có thể thấy bạn đang ở gần",
+  "turnOff": "Tắt",
+  "turnOffA11y": "Ngừng cho bạn bè biết khi bạn ở gần"
+ },
+ "tl": {
+  "settingTitle": "Ipaalam sa mga kaibigan kapag malapit ako",
+  "settingHelper": "Makikita ng mga kaibigang nag-on din nito na malapit ka, pero hindi kailanman kung nasaan ka. Gumagana lang ito habang ginagamit mo ang Nearby. I-off anumang oras.",
+  "locationOff": "Naka-off ang lokasyon, kaya hindi makikita ng mga kaibigan na malapit ka.",
+  "line": "Malapit si {name}",
+  "invite": "Imbitahan si {name}",
+  "reminder": "Nakikita ng mga kaibigan na malapit ka",
+  "turnOff": "I-off",
+  "turnOffA11y": "Itigil ang pagpapaalam sa mga kaibigan kapag malapit ka"
+ },
+ "ru": {
+  "settingTitle": "Сообщать друзьям, когда я рядом",
+  "settingHelper": "Друзья, которые тоже включили эту функцию, видят, что вы рядом, но никогда не видят, где вы. Работает, только пока вы пользуетесь Nearby. Можно выключить в любой момент.",
+  "locationOff": "Геолокация выключена, поэтому друзья не видят, что вы рядом.",
+  "line": "{name} рядом",
+  "invite": "Пригласить: {name}",
+  "reminder": "Друзья видят, что вы рядом",
+  "turnOff": "Выключить",
+  "turnOffA11y": "Больше не сообщать друзьям, когда вы рядом"
+ },
+ "ko": {
+  "settingTitle": "내가 근처에 있을 때 친구에게 알리기",
+  "settingHelper": "이 기능을 함께 켠 친구는 내가 근처에 있다는 것만 볼 수 있고, 정확한 위치는 절대 볼 수 없어요. Nearby를 사용하는 동안에만 작동해요. 언제든지 끌 수 있어요.",
+  "locationOff": "위치가 꺼져 있어 친구가 내가 근처에 있는지 볼 수 없어요.",
+  "line": "{name}님이 근처에 있어요",
+  "invite": "{name}님 초대하기",
+  "reminder": "친구가 내가 근처에 있다는 것을 볼 수 있어요",
+  "turnOff": "끄기",
+  "turnOffA11y": "근처에 있을 때 친구에게 알리지 않기"
+ }
+}

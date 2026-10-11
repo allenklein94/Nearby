@@ -1,3 +1,22 @@
+# Item 39 (2026-10-11) - "A friend is nearby" - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+**Owner answers to the design's section 9 (before the build):** spoofing residual accepted with the mitigations; ONE friend only;
+the line comes LAST in `getHomeInsight`; the quiet sharing reminder shows on Home; parameters confirmed (30 min, ~1 mi, 5 min / 0.25 mi).
+**Built:** migration `20270296_friend_nearby.sql` (applied live): `friend_nearby_sharing` (consent), `friend_nearby_fixes` (one
+overwritten fix per person, 3 decimals), `friend_nearby_reads` (read limit), all unreadable by any client; `friend_nearby_params()`;
+`set_friend_nearby_sharing` (off deletes the fix at once), `get_my_friend_nearby_sharing`, `report_friend_nearby_fix` (throttle,
+impossible speed, hourly cap; silent), `get_nearby_friends()` (both on, accepted friendship, no block either way, both fresh,
+< 1 mi; at most one row of id/name/photo; read limit 20 per 10 min), `purge_friend_nearby()` on a 10-minute cron. No push, event or
+analytics. Client: `constants/friendNearby.js`, `services/friendNearby.js` (throttle + foreground-only reporter fed by
+`userLocation.js` onFix; 1-minute read cache), Settings > Privacy toggle (asks for location only on turning on; "Location is off"
+note), Home social line (avatar + "{Name} is nearby", "Invite {Name}" -> Create with `suggestedInviteeIds`) and reminder with
+Turn off. 8 new strings in 11 languages (`ui.friendNearby`, machine-authored; native review open).
+**Verified:** Jest 414 suites / 5617 pass; journeys 23/23 (259), including `friendNearby` 14/14 (consent, mutual, off ends both
+ways, stale, far, blocks both ways, pending/declined/unfriended, dating match never, identical empty result, read limit,
+throttle/jump/hour cap, 3-decimal storage, anon refused, tables unreadable, purge, params match client). Parse check on edited
+files. Not covered: permission prompt, foreground-only reporting and the Home line's look on a phone (device checklist
+`PRODUCT_AUDIT/ITEM_39_FRIEND_NEARBY_DEVICE_CHECKLIST_2026-10-11.md`). No from-scratch migration replay.
+
 # Item 39 (2026-10-11) - "A friend is nearby" - DESIGN ONLY, NOT BUILT (awaiting owner review)
 
 **Owner decisions (same day):** (1) consent: mutual opt-in, off by default ("Let friends know when I'm nearby"); never enabled by
