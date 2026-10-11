@@ -76,6 +76,9 @@ from-scratch migration replay is done before claiming fresh-install verification
 **Item 43 (Create: formation on publish) is APPROVED (owner, 2026-10-11, LOCKED), READY FOR DEVICE VERIFICATION until** every check in
 `PRODUCT_AUDIT/ITEM_43_GATHERING_FORMATION_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (journey `gatheringFormation`; no new strings). Do not expand scope.
 
+**Item 44 (map pin grows into the business sheet) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_44_PIN_TO_SHEET_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real iOS and Android phone (no new strings; awaiting owner review).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -343,6 +346,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   pieces, from the stored row + real publish result; Where follows the review step's rule) settling in via the shared
   `PlanComesTogether` (one glow, special tier); "first gathering" is decided by Create before the panel shows. Owner LOCKED: headline "Your gathering is live!" (never "Your plan is ready":
   publishing is not acceptance); four pieces only; no new motion.
+- **Pin -> sheet (owner item 44):** a Discover map business pin opens the item-17 sheet growing out of the pin (`motion/PinToSheetFrame.js`,
+  `motion/pinToSheet.js`, `SEQUENCES.pinToSheet`, medium): sheet rises/grows (info floor, buttons live at once) while a pin-coloured outline
+  travels from the pin into its edge. Replaces the slide, adds no other motion; rows and Reduce Motion keep the plain modal animation.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

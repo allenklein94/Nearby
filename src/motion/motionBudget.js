@@ -151,6 +151,13 @@ export const SEQUENCES = {
   friendCollision: { tier: 'medium', avatarMs: 280, travelPx: 10, textDelayMs: 160, textMs: 200 },
   // Owner item 41: "Your people are doing things" -- the friends' faces appear one after another, each plan's activity glyph
   // lands on its face, then the line settles (motion/FriendsPlanning.js). Only when the set of friends' plans has something new.
+  // Owner item 44 (2026-10-11): a business pin tapped on Discover's map grows into its business sheet. The sheet still opens at
+  // the tap (its text readable from frame one, never below the info floor; its buttons live at once): it rises risePx and
+  // grows from fromScale while the backdrop dims (sheetMs), and a pin-coloured outline frame grows from the pin's spot into
+  // the sheet's outline and fades as it lands (frameMs). Outline only, takes no touches. The pin's on-screen spot is read from
+  // the map; if it is not known within originWaitMs (a hold, not counted) the sheet just rises without the frame.
+  // Replaces the sheet's plain slide (no added motion); Reduce Motion = the plain fade every modal uses.
+  pinToSheet: { tier: 'medium', originWaitMs: 120, sheetMs: 260, frameMs: 320, risePx: 16, fromScale: 0.96, pinSize: 28, framePeakOpacity: 0.9 },
   friendsPlanning: { tier: 'medium', maxPeople: 3, avatarMs: 200, staggerMs: 60, fromScale: 0.85, chipDelayMs: 160, chipMs: 180, chipRise: 6, lineDelayMs: 340, lineMs: 160 },
 };
 
@@ -217,6 +224,8 @@ export function settleMs(name) {
       return s.washMs;
     case 'strongMatch':
       return Math.max(s.staggerMs * (s.pieces.length - 1) + s.pieceMs, s.badgeDelayMs + s.badgeMs);
+    case 'pinToSheet':
+      return Math.max(s.sheetMs, s.frameMs);
     case 'friendCollision':
       return Math.max(s.avatarMs, s.textDelayMs + s.textMs);
     case 'friendsPlanning':

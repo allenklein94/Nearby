@@ -70,15 +70,16 @@ describe('the action is the business\'s own (items 72/73), never hardcoded', () 
 describe('where the sheet is used (business browsing on Discover only)', () => {
   const discover = read('src/screens/DiscoverHubScreen.js');
   test('Discover business rows and map pins open the sheet, not the full profile', () => {
-    expect(discover).toMatch(/onSelectBusiness=\{\(b\) => setPreviewBusiness\(b\)\}/);
-    expect(discover).toMatch(/key=\{`biz-\$\{b\.id\}`\}[\s\S]{0,120}onPress=\{\(\) => setPreviewBusiness\(b\)\}/);
+    // item 44: a pin also hands over its on-screen spot; a row never does
+    expect(discover).toMatch(/onSelectBusiness=\{\(b, spot\) => \{ setPreviewPinSpot\(spot \?\? null\); setPreviewBusiness\(b\); \}\}/);
+    expect(discover).toMatch(/key=\{`biz-\$\{b\.id\}`\}[\s\S]{0,120}onPress=\{\(\) => \{ setPreviewPinSpot\(null\); setPreviewBusiness\(b\); \}\}/);
     expect(discover).toMatch(/<BusinessPreviewSheet partner=\{previewBusiness\}/);
-    expect(discover).toMatch(/useFocusEffect\(useCallback\(\(\) => \(\) => setPreviewBusiness\(null\), \[\]\)\)/); // never left over another screen
+    expect(discover).toMatch(/useFocusEffect\(useCallback\(\(\) => \(\) => \{ setPreviewBusiness\(null\); setPreviewPinSpot\(null\); \}, \[\]\)\)/); // never left over another screen
   });
   test('a business map pin opens the sheet in one tap (no label step promising a profile)', () => {
     const map = read('src/components/GatheringsMapView.js');
     const block = map.slice(map.indexOf('key={`business-${b.id}`}'), map.indexOf('pinnableStories.map'));
-    expect(block).toMatch(/onPress=\{\(\) => onSelectBusiness\(b\)\}/);
+    expect(block).toMatch(/onPress=\{\(\) => onSelectBusiness\(b, pinSpot\(\{ latitude: b\.latitude, longitude: b\.longitude \}\)\)\}/);
     expect(block).not.toMatch(/<Callout|tapToViewProfile/);
   });
   test('Discover is the only user: Home typed-ask results, perks and gatherings keep their own patterns', () => {

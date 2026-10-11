@@ -5,6 +5,8 @@ import MapView, { Marker, Callout } from 'react-native-maps';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { BUSINESS_PIN_COLOR } from '../motion/PinToSheetFrame';
+import { PIN_HEAD_LIFT } from '../motion/pinToSheet';
 
 // Shows gatherings, brand deals, businesses, and public stories together
 // on one map. Gatherings use fuzzed_lat/fuzzed_lng (server-computed,
@@ -32,6 +34,19 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
   const { colors } = useTheme();
   const styles = getStyles(colors);
   const mapRef = useRef(null);
+  const boxRef = useRef(null);
+
+  // Owner item 44: where a tapped pin is on screen (window coordinates, the pin's head), so the business sheet can grow out of
+  // it. A promise the sheet waits on only briefly; anything unknown resolves to null and the sheet simply rises.
+  function pinSpot(coordinate) {
+    const map = mapRef.current;
+    const box = boxRef.current;
+    if (!map?.pointForCoordinate || !box?.measureInWindow) return null;
+    const offset = new Promise((resolve) => box.measureInWindow((x, y) => resolve({ x, y })));
+    return Promise.all([map.pointForCoordinate(coordinate), offset])
+      .then(([pt, off]) => (pt && off ? { x: off.x + pt.x, y: off.y + pt.y - PIN_HEAD_LIFT } : null))
+      .catch(() => null);
+  }
 
   const pinnableGatherings = gatherings.filter((g) => g.latitude != null && g.longitude != null);
   const pinnableDeals = deals.filter((d) => d.latitude != null && d.longitude != null);
@@ -63,9 +78,10 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
         };
 
   return (
+    <View ref={boxRef} style={styles.map} collapsable={false}>
     <MapView
       ref={mapRef}
-      style={styles.map}
+      style={StyleSheet.absoluteFill}
       initialRegion={initialRegion}
       showsUserLocation
       showsMyLocationButton
@@ -115,11 +131,12 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
         <Marker
           key={`business-${b.id}`}
           coordinate={{ latitude: b.latitude, longitude: b.longitude }}
-          pinColor="#5B9AA0"
+          pinColor={BUSINESS_PIN_COLOR}
           accessibilityLabel={t('ui.mapView.businessA11y', { name: b.name })}
           accessibilityRole="button"
           // Items 17-19: a business pin opens the business sheet in one tap (the sheet is its quick look; no label step first).
-          onPress={() => onSelectBusiness(b)}
+          // Item 44: the sheet opens at once and grows out of this pin once its spot is known.
+          onPress={() => onSelectBusiness(b, pinSpot({ latitude: b.latitude, longitude: b.longitude }))}
         />
       ))}
       {pinnableStories.map((s) => (
@@ -144,6 +161,7 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
         </Marker>
       ))}
     </MapView>
+    </View>
   );
 }
 

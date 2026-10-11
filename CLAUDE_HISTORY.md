@@ -1,3 +1,18 @@
+# Item 44 (2026-10-11) - map pin grows into the business sheet - BUILT, NOT DEVICE-VERIFIED
+
+**Owner ask:** tapping a business on the map, the pin could transition into the business card; "View Business" then goes deeper,
+so map navigation feels connected rather than two unrelated modes.
+**Already there:** items 17-19 (map pin -> the business sheet in one tap -> "View business" -> BusinessProfile). Only the spatial
+link was missing. **Built:** `GatheringsMapView` hands `onSelectBusiness(b, pinSpot)` a promise of the pin's window spot
+(`pointForCoordinate` + the map box's `measureInWindow`, head lifted `PIN_HEAD_LIFT` 18 px). `BusinessPreviewSheet` takes `pinSpot`:
+when present and Reduce Motion is off, the modal uses no slide; the sheet opens at the tap at the info floor, rises 16 px and grows from
+0.96 while the backdrop dims (260 ms); `motion/PinToSheetFrame.js` grows a pin-coloured outline (no fill, no touches) from the pin into
+the sheet's rect and fades (320 ms). Spot unknown after 120 ms (`originWaitMs`, a hold) = the sheet just rises. Pure geometry in
+`motion/pinToSheet.js`; token `SEQUENCES.pinToSheet` (medium). Pin colour one source (`BUSINESS_PIN_COLOR`). Discover: rows pass no spot;
+close/blur clears it. Motion-rule fit: it replaces the sheet's existing open transition (no new motion elsewhere), data already final.
+**Verified:** `motion/pinToSheet.test.js` (12), item-17 tests updated to the new call shapes, Jest 420 suites / 5,675 pass, babel parse
+of the 5 changed files. No journey (no data/flow change). NOT device-verified: `PRODUCT_AUDIT/ITEM_44_PIN_TO_SHEET_DEVICE_CHECKLIST_2026-10-11.md`.
+
 # docs/business.html: both headless findings fixed (2026-10-11, owner approved) - real-browser review still OPEN
 
 Phone header: at <= 600 px the nav takes its own row under the logo, labels never break (`white-space: nowrap`), the row wraps
