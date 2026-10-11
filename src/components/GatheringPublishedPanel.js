@@ -4,7 +4,10 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
-import { getFriendsWithSharedContext, isFirstGatheringHosted, gatheringInviteShareUrl } from '../services/gatherings';
+import PlanComesTogether, { PlanPiece } from '../motion/PlanComesTogether';
+import { formationPieces } from '../utils/gatheringFormation';
+import { displayGatheringWhen } from '../i18n/display';
+import { getFriendsWithSharedContext, gatheringInviteShareUrl } from '../services/gatherings';
 import { getSignedPhotoUrl } from '../services/photos';
 import { sendInvite } from '../services/invites';
 import { getMyCircles } from '../services/friendCircles';
@@ -27,14 +30,16 @@ import { inviteSentConfirmation } from '../utils/actionConfirmations';
 // with, and its Done then replaced it with the gathering. Publishing now lands on GatheringDetail, which shows this panel
 // once at the top (route param justPublished); Done / "I'll do this later" just closes it, so the host is already on
 // their gathering and Back returns where they started Create from.
-export default function GatheringPublishedPanel({ gathering, gatheringId, placeName, businessesAsked, preInviteResult, onDone, navigation }) {
+export default function GatheringPublishedPanel({ gathering, gatheringId, placeName, customLocation = false, communityName = null, firstHosted = false, businessesAsked, preInviteResult, onDone, navigation }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
   // Celebrate Something's suggested friends are preselected on Create's own invite step (item 109) and sent at publish,
   // so they arrive here as preInviteResult, not as a second suggestion.
 
-  const [isFirstHosted, setIsFirstHosted] = useState(false);
+  // Decided by Create right after the publish returned and handed over with it, so the headline never switches from
+  // "Your gathering is live!" to "Your First Gathering Is Live!" while the formation plays (motion amplifies correct data).
+  const isFirstHosted = !!firstHosted;
   const [showInvite, setShowInvite] = useState(false);
   const [friends, setFriends] = useState([]);
   const [photoUrls, setPhotoUrls] = useState({});
@@ -58,7 +63,6 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
       Animated.spring(markScale, { toValue: 1, friction: 6, useNativeDriver: true }),
       Animated.timing(markOpacity, { toValue: 1, duration: MOTION_BUDGET.medium.ms, useNativeDriver: true }),
     ]).start();
-    isFirstGatheringHosted().then(setIsFirstHosted);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gatheringId]);
 
@@ -164,6 +168,9 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
   }
 
   const categoryStyle = categoryStyleFor(gathering?.interest_tag);
+  const pieces = formationPieces({
+    gathering, whenLabel: displayGatheringWhen(gathering, language), placeName, customLocation, preInviteResult, communityName, t,
+  });
 
   return (
     <View style={styles.container}>
@@ -176,9 +183,26 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
           {isFirstHosted ? t('ui.gatheringConfirmation.youreOfficiallyAHostLets') : t('ui.gatheringConfirmation.nowLetsHelpPeopleDiscover')}
         </Text>
 
-        <View style={[styles.summaryCard, { borderColor: categoryStyle.color }]}>
-          <Text style={styles.summaryIcon}>{categoryStyle.icon}</Text>
-          <Text style={styles.summaryTitle}>{gathering?.title}</Text>
+        {/* Owner item 43: the formation. What, when, who and where -- only the pieces that really exist, from the stored
+            gathering and the real publish result (utils/gatheringFormation.js) -- settle into one card one after another,
+            then it glows once (the shared PlanComesTogether motion, special tier, Reduce Motion = settled card). Readable
+            from the first frame; plays once, when this panel first appears after the host's own Publish. */}
+        <View style={styles.formation}>
+        <PlanComesTogether playKey={1} pieces={pieces.length} color={colors.success} radius={radius.lg}>
+          <View style={[styles.summaryCard, { borderColor: categoryStyle.color }]}>
+            {pieces.map((p, i) => (
+              <PlanPiece key={p.key} index={i}>
+                <View style={[styles.pieceRow, i > 0 && styles.pieceRowGap]}>
+                  <Text style={p.key === 'what' ? styles.summaryIcon : styles.pieceIcon}>{p.icon}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={p.key === 'what' ? styles.summaryTitle : styles.pieceText}>{p.text}</Text>
+                    {p.note ? <Text style={styles.pieceNote}>{p.note}</Text> : null}
+                  </View>
+                </View>
+              </PlanPiece>
+            ))}
+          </View>
+        </PlanComesTogether>
         </View>
 
         {businessesAsked && (
@@ -191,11 +215,7 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
             "invites sent!" claim, since a partial failure among the
             selected friends is a real, disclosed possibility (this whole
             phase deliberately isn't one atomic transaction). */}
-        {preInviteResult && (
-          <Text style={styles.businessAskedNote}>
-            {t('ui.gatheringConfirmation.weInvited', { sent: preInviteResult.sent, count: preInviteResult.total })}
-          </Text>
-        )}
+        {/* The invite result ("We invited 2 of 3 people you picked") now sits in the formation's Who piece. */}
 
         {!showInvite ? (
           <View style={{ width: '100%' }}>
@@ -298,10 +318,16 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   title: { ...typography.title, color: colors.textPrimary, textAlign: 'center' },
   subtitle: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginTop: 4, marginBottom: spacing.lg },
   summaryCard: {
-    width: '100%', flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface,
-    borderRadius: radius.lg, borderWidth: 1.5, padding: spacing.lg, marginBottom: spacing.xl, ...shadow.card,
+    width: '100%', backgroundColor: colors.surface,
+    borderRadius: radius.lg, borderWidth: 1.5, padding: spacing.lg, ...shadow.card,
   },
-  summaryIcon: { fontSize: 28, marginRight: spacing.md },
+  pieceRow: { flexDirection: 'row', alignItems: 'center' },
+  pieceRowGap: { marginTop: spacing.sm },
+  pieceIcon: { fontSize: 18, width: 28, marginRight: spacing.md, textAlign: 'center' },
+  pieceText: { ...typography.body, color: colors.textPrimary },
+  pieceNote: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
+  formation: { width: '100%', marginBottom: spacing.xl },
+  summaryIcon: { fontSize: 28, width: 28, marginRight: spacing.md, textAlign: 'center' },
   summaryTitle: { ...typography.headline, color: colors.textPrimary, flex: 1 },
   businessAskedNote: { ...typography.body, color: colors.textSecondary, textAlign: 'center', marginBottom: spacing.lg },
   actionButton: {

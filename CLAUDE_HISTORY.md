@@ -1,3 +1,19 @@
+# Item 43 (2026-10-11) - Create: "formation" when a gathering is published - BUILT, NOT DEVICE-VERIFIED
+
+**Owner ask:** Intent -> Details -> People -> Place -> "Your plan is ready", the pieces visually come together; very subtle.
+**Built:** `utils/gatheringFormation.js` `formationPieces()` is the one source of the pieces: what (activity icon + stored title),
+when (`displayGatheringWhen`, the one when engine, on the stored row), who (stored visibility label, the community's name, and
+the real "We invited N of M" when invites were sent at publish -- moved here from its own line), where (the review step's own
+rule: picked name / "Custom location set" / "Your current location"). Only real pieces; none is invented. The published panel's
+summary card now holds those pieces inside the existing `PlanComesTogether`/`PlanPiece` motion (4 px rise, staggered, one success
+glow; special tier, 660 ms; info floor; Reduce Motion settled) -- reused, not a new motion. Plays once when the panel first shows.
+**Truth fix found on the way:** the panel looked up "is this your first gathering?" after appearing, so the headline and 🎉 could
+switch mid-moment; Create now decides it after the publish returns and hands it over (`justPublished.firstHosted`).
+**Deviation (owner to confirm):** the headline stays "Your gathering is live!" -- "Your plan is ready" would claim more than
+publishing did (nobody has accepted). No new strings.
+**Verified:** `utils/gatheringFormation.test.js` (8), panel/invite-step tests updated; new journey `gatheringFormation` (2, live,
+rolled back: insert under RLS, real send_social_invite, pieces built from the row read back). Jest 419 suites / 5661 pass; journeys 25 / 267. NOT device-verified.
+
 # Motion truth audit (2026-10-11) - every moment checked against "motion amplifies correct data"
 
 All 23 data-carrying moments audited (`PRODUCT_AUDIT/MOTION_TRUTH_AUDIT_2026-10-11.md`). 5 violations fixed:

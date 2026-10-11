@@ -12,7 +12,7 @@ test('the GatheringConfirmation route and screen are gone from both navigators',
 
 test('Create replaces itself with the gathering and hands over what the panel says', () => {
   const src = read('screens/CreateGatheringScreen.js');
-  expect(src).toMatch(/navigation\.replace\('GatheringDetail', \{\s*gatheringId: created\.id,\s*justPublished: \{ placeName, businessesAsked: askLocalBusinesses, preInviteResult \},/);
+  expect(src).toMatch(/navigation\.replace\('GatheringDetail', \{\s*gatheringId: created\.id,\s*justPublished: \{\s*placeName, businessesAsked: askLocalBusinesses, preInviteResult,/);
 });
 
 test('GatheringDetail shows the panel only to the host, once, and Done just closes it', () => {
@@ -22,7 +22,8 @@ test('GatheringDetail shows the panel only to the host, once, and Done just clos
   const panel = read('components/GatheringPublishedPanel.js');
   expect(panel).toMatch(/function handleDone\(\) \{\s*onDone\?\.\(\);\s*\}/);
   expect(panel).not.toMatch(/navigation\.replace/);
-  for (const re of [/handleShare/, /handleOpenInvite/, /handleInviteCircle/, /weInvited/, /wellLookForLocalBusiness/]) expect(panel).toMatch(re);
+  for (const re of [/handleShare/, /handleOpenInvite/, /handleInviteCircle/, /formationPieces\(/, /wellLookForLocalBusiness/]) expect(panel).toMatch(re);
+  expect(read('utils/gatheringFormation.js')).toMatch(/weInvited/); // the invite result moved into item 43's Who piece
 });
 
 test('Back from the published gathering returns where Create was started from', () => {

@@ -80,7 +80,7 @@ describe('4-5, 10. invitations only after a successful publish; the gathering it
     expect(send).toBeGreaterThan(created);
     expect(send).toBeLessThan(submit.indexOf("navigation.replace('GatheringDetail'"));
     expect(send).toBeLessThan(catchAt);
-    expect(submit).toMatch(/preInviteResult \}/); // the existing "We invited N of M" line on the confirmation screen
+    expect(submit).toMatch(/businessesAsked: askLocalBusinesses, preInviteResult,/); // "We invited N of M", now in item 43's Who piece
   });
   it('the gathering payload does not change: no invites, no party type or friend data added for it', () => {
     const payload = submit.slice(submit.indexOf('await createGathering({'), submit.indexOf('});', submit.indexOf('await createGathering({')));

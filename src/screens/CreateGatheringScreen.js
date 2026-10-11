@@ -5,7 +5,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
-import { createGathering } from '../services/gatherings';
+import { createGathering, isFirstGatheringHosted } from '../services/gatherings';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { linkOccasionToPlan } from '../services/occasions';
 import { linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
@@ -558,10 +558,20 @@ export default function CreateGatheringScreen({ navigation, route }) {
         linkOccasionToPlan({ occasionId: route.params.linkOccasionId, resultingGatheringId: created.id }).catch(() => {});
       }
 
+      // Item 43: whether this is the host's first gathering is settled HERE, after the publish returned, so the panel's
+      // headline is final before its formation plays (it used to be looked up after the panel appeared and could switch).
+      const firstHosted = await isFirstGatheringHosted().catch(() => false);
+
       // Lands on the gathering itself, with a one-time "Your gathering is live" panel (screen-reduction audit B5).
       navigation.replace('GatheringDetail', {
         gatheringId: created.id,
-        justPublished: { placeName, businessesAsked: askLocalBusinesses, preInviteResult },
+        justPublished: {
+          placeName, businessesAsked: askLocalBusinesses, preInviteResult,
+          // item 43's Where piece follows the review step's own rule; Who names the community the host picked
+          customLocation: !placeName && !!customLocation,
+          communityName: visibility === 'community' ? selectedCommunity?.name ?? null : null,
+          firstHosted,
+        },
       });
     } catch (e) {
       presentRecoverableError(Alert, { what: 'create your gathering', error: e, draftKept: true, onRetry: () => submit() });

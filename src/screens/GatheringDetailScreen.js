@@ -712,6 +712,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
             gathering={gathering}
             gatheringId={gatheringId}
             placeName={justPublished.placeName ?? null}
+            customLocation={!!justPublished.customLocation}
+            communityName={justPublished.communityName ?? null}
+            firstHosted={!!justPublished.firstHosted}
             businessesAsked={!!justPublished.businessesAsked}
             preInviteResult={justPublished.preInviteResult ?? null}
             onDone={() => navigation.setParams({ justPublished: undefined })}
