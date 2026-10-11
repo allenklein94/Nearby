@@ -1,3 +1,10 @@
+# Item 43 approved (2026-10-11, owner, LOCKED)
+
+Approved as built. Headline stays "Your gathering is live!" (accurate to the publish state; nobody has accepted yet). Keep the four
+pieces (what/when/who/where) and the shared plan-comes-together motion; first-gathering state stays decided before the panel shows so
+nothing changes mid-animation. Automated verification accepted for code-level approval; sign-off waits only on the device checklist
+(`PRODUCT_AUDIT/ITEM_43_GATHERING_FORMATION_DEVICE_CHECKLIST_2026-10-11.md`). No additional scope.
+
 # Item 43 (2026-10-11) - Create: "formation" when a gathering is published - BUILT, NOT DEVICE-VERIFIED
 
 **Owner ask:** Intent -> Details -> People -> Place -> "Your plan is ready", the pieces visually come together; very subtle.

@@ -73,8 +73,8 @@ from-scratch migration replay is done before claiming fresh-install verification
 **Item 41 (friends are making plans) is APPROVED (owner, 2026-10-11), READY FOR DEVICE VERIFICATION until** every check in
 `PRODUCT_AUDIT/ITEM_41_FRIENDS_PLANNING_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (journey `friendsPlanning`; no new strings).
 
-**Item 43 (Create: formation on publish) is BUILT, NOT DEVICE-VERIFIED** (`PRODUCT_AUDIT/ITEM_43_GATHERING_FORMATION_DEVICE_CHECKLIST_2026-10-11.md`;
-journey `gatheringFormation`; no new strings). Owner to confirm: headline kept as "Your gathering is live!", not "Your plan is ready".
+**Item 43 (Create: formation on publish) is APPROVED (owner, 2026-10-11, LOCKED), READY FOR DEVICE VERIFICATION until** every check in
+`PRODUCT_AUDIT/ITEM_43_GATHERING_FORMATION_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (journey `gatheringFormation`; no new strings). Do not expand scope.
 
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
@@ -338,7 +338,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   "no animated cards"). Wording never "nearby" (not distance-filtered; no radius filter added for it). Query: `selectFriendsActivity`.
 - **Formation on publish (owner item 43):** the published panel's card is what/when/who/where (`formationPieces`, only real
   pieces, from the stored row + real publish result; Where follows the review step's rule) settling in via the shared
-  `PlanComesTogether` (one glow, special tier); "first gathering" is decided by Create before the panel shows.
+  `PlanComesTogether` (one glow, special tier); "first gathering" is decided by Create before the panel shows. Owner LOCKED: headline "Your gathering is live!" (never "Your plan is ready":
+  publishing is not acceptance); four pieces only; no new motion.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).
