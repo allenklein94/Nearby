@@ -248,6 +248,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Item 28: the joining face flows in from the side while the others ease aside (no arc); several in one update arrive one
   after another (`arrivalDelayMs`) into Who's going's overlapping cluster (host + joined faces + "+N", `attendeeCluster`); the line says "X accepted your
   invite" only for the host's own accepted invite to that person for that gathering (`acceptedInviteeIds`).
+- **Interested (owner item 30):** marking it by your own tap shows "✓ Saved" with one small pulse, then returns to
+  "★ Interested" (`motion/InterestedSaved.js`, detail + Home card; toast with Undo kept; one save in flight per button).
 - **Something is happening near you (owner item 26):** one ring from the happening-now heading glyph (Home Nearby Right Now,
   Discover Happening Now; `motion/HappeningRipple.js`) only when the section shows a gathering not yet shown this session
   (`utils/happeningSeen.js`, one store for both surfaces, judged only while focused). Rows never move (item 15 stands).

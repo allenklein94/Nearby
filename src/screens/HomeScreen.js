@@ -9,6 +9,7 @@ import { categoryName } from '../i18n/categoryNames';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { resultRowView, contextItem } from '../utils/recommendationContext';
 import React, { useState, useCallback, useRef, useMemo } from 'react';
+import InterestedSaved from '../motion/InterestedSaved';
 import { presentRecoverableError } from '../utils/recoverableError';
 import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
@@ -378,28 +379,40 @@ export default function HomeScreen({ navigation }) {
     Object.entries(interestedOverride).forEach(([id, on]) => (on ? set.add(id) : set.delete(id)));
     return set;
   }, [dashboard?.interestedIds, interestedOverride]);
+  // Item 30: one save per card at a time (a second tap while it runs is ignored), and the brief "✓ Saved" moment per card.
+  const interestedBusyRef = useRef(new Set());
+  const [interestedFlash, setInterestedFlash] = useState({});
   async function toggleCardInterested(g, on) {
-    if (!on) {
-      const prefs = await getInterestedDemandPrefs().catch(() => null);
-      if (prefs && prefs.share && !prefs.acknowledged) {
-        navigation.navigate('GatheringDetail', { gatheringId: g.id });
-        showSuccessToast(t('ui.home.oneQuickStep'), t('ui.home.oneQuickStepBody'));
-        return;
-      }
-    }
-    setInterestedOverride((o) => ({ ...o, [g.id]: !on }));
+    if (interestedBusyRef.current.has(g.id)) return;
+    interestedBusyRef.current.add(g.id);
     try {
-      await setGatheringInterested(g.id, !on);
-      // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
-      showSuccessToast(...interestedConfirmation(!on), { undo: () => undoCardInterested(g, on) });
-    } catch (e) {
-      setInterestedOverride((o) => ({ ...o, [g.id]: on }));
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleCardInterested(g, on) });
+      if (!on) {
+        const prefs = await getInterestedDemandPrefs().catch(() => null);
+        if (prefs && prefs.share && !prefs.acknowledged) {
+          navigation.navigate('GatheringDetail', { gatheringId: g.id });
+          showSuccessToast(t('ui.home.oneQuickStep'), t('ui.home.oneQuickStepBody'));
+          return;
+        }
+      }
+      setInterestedOverride((o) => ({ ...o, [g.id]: !on }));
+      setInterestedFlash((f) => ({ ...f, [g.id]: on ? 0 : (f[g.id] ?? 0) + 1 }));
+      try {
+        await setGatheringInterested(g.id, !on);
+        // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
+        showSuccessToast(...interestedConfirmation(!on), { undo: () => undoCardInterested(g, on) });
+      } catch (e) {
+        setInterestedOverride((o) => ({ ...o, [g.id]: on }));
+        setInterestedFlash((f) => ({ ...f, [g.id]: 0 }));
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleCardInterested(g, on) });
+      }
+    } finally {
+      interestedBusyRef.current.delete(g.id);
     }
   }
 
   async function undoCardInterested(g, previous) {
     setInterestedOverride((o) => ({ ...o, [g.id]: previous }));
+    if (!previous) setInterestedFlash((f) => ({ ...f, [g.id]: 0 }));
     try {
       await setGatheringInterested(g.id, previous);
     } catch (e) {
@@ -554,7 +567,8 @@ export default function HomeScreen({ navigation }) {
       <View style={styles.ctaRow}>
         {action.kind === 'interested' ? (
           <TouchableOpacity style={action.on ? styles.rowCtaGhost : primaryStyle} onPress={() => toggleCardInterested(g, action.on)} accessibilityRole="button" accessibilityState={{ selected: action.on }} accessibilityLabel={t(action.on ? 'ui.home.removeInterestedA11y' : 'ui.home.markInterestedA11y', { title: g.title })}>
-            <Text style={action.on ? styles.rowCtaGhostText : primaryText}>{action.label}</Text>
+            {/* Item 30: "✓ Saved" with one small pulse, then back to "★ Interested". */}
+            <InterestedSaved flashKey={interestedFlash[g.id]} style={action.on ? styles.rowCtaGhostText : primaryText} label={action.label} savedLabel={t('ui.actions.interestedSaved')} />
           </TouchableOpacity>
         ) : action.kind === 'join' ? (
           <TouchableOpacity style={primaryStyle} onPress={() => openDetail({ openJoin: true })} accessibilityRole="button" accessibilityLabel={`${action.label}: ${g.title}`}>

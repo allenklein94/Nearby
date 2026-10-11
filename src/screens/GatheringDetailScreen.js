@@ -52,6 +52,7 @@ import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
 import { approvedIds, newJoinsToAnimate, joinedNote, acceptedInviteeIds, arrivalDelayMs, asideMs } from '../utils/hostLiveJoins';
 import { AvatarArrive } from '../motion/JoinArrival';
+import InterestedSaved from '../motion/InterestedSaved';
 import { filterToMyFriends } from '../services/friends';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
@@ -413,10 +414,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
   const [togglingInterested, setTogglingInterested] = useState(false);
   const [showDemandDisclosure, setShowDemandDisclosure] = useState(false);
+  // Item 30: the button answers the tap at once (optimistic state + the brief "✓ Saved" moment) while the save runs; a second
+  // tap is ignored until it returns (no duplicate save); a failure puts it back. The stored state stays the truth on reload.
+  const [interestedPending, setInterestedPending] = useState(null);
+  const [interestedFlash, setInterestedFlash] = useState(0);
+  const myInterested = interestedPending ?? gathering?.myInterested === true;
   async function toggleInterested() {
     if (togglingInterested) return;
-    const next = !gathering.myInterested;
+    const next = !myInterested;
     setTogglingInterested(true);
+    setInterestedPending(next);
+    setInterestedFlash((k) => (next ? k + 1 : 0));
     try {
       await setGatheringInterested(gatheringId, next);
       // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
@@ -428,15 +436,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
       }
       await load();
     } catch (e) {
+      setInterestedFlash(0);
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleInterested() });
     }
+    setInterestedPending(null);
     setTogglingInterested(false);
   }
 
   async function undoInterested(previous) {
     try {
       await setGatheringInterested(gatheringId, previous);
-      if (previous === false) setShowDemandDisclosure(false);
+      if (previous === false) { setShowDemandDisclosure(false); setInterestedFlash(0); }
       await load();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'undo that', error: e, onRetry: () => undoInterested(previous) });
@@ -1302,14 +1312,18 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   onPress={toggleInterested}
                   disabled={togglingInterested}
                   style={{ marginTop: spacing.sm, alignItems: 'center' }}
-                  accessibilityLabel={t(gathering.myInterested ? 'ui.gatheringDetail.removeInterestedA11y' : 'ui.gatheringDetail.markInterestedA11y')}
+                  accessibilityLabel={t(myInterested ? 'ui.gatheringDetail.removeInterestedA11y' : 'ui.gatheringDetail.markInterestedA11y')}
                   accessibilityRole="button"
-                  accessibilityState={{ selected: !!gathering.myInterested }}
+                  accessibilityState={{ selected: myInterested, busy: togglingInterested }}
                 >
-                  <Text style={styles.sayHelloLink}>
-                    {t(gathering.myInterested ? 'ui.gatheringDetail.interestedOn' : 'ui.gatheringDetail.interestedOff')}
-                  </Text>
-                  {gathering.myInterested && (
+                  {/* Item 30: "✓ Saved" with one small pulse, then back to the normal label. */}
+                  <InterestedSaved
+                    flashKey={interestedFlash}
+                    style={styles.sayHelloLink}
+                    label={t(myInterested ? 'ui.gatheringDetail.interestedOn' : 'ui.gatheringDetail.interestedOff')}
+                    savedLabel={t('ui.actions.interestedSaved')}
+                  />
+                  {myInterested && (
                     <Text style={{ color: colors.textTertiary, fontSize: 12, marginTop: 2, textAlign: 'center' }}>
                       {t('ui.gatheringDetail.interestedNote')}
                     </Text>

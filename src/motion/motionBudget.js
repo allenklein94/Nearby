@@ -113,6 +113,10 @@ export const SEQUENCES = {
   businessResponds: { tier: 'signature' },
   // Owner item 26: something is happening near you. One soft ring from the happening-now heading icon, only when that section
   // shows a gathering not yet shown this session (Home + Discover share the record). The rows never move.
+  // Owner item 30 (2026-10-11): marking Interested by your own tap. The label scales back from pulseFrom once (a small pulse,
+  // no bounce) and reads "✓ Saved" for savedHoldMs (a dwell, not counted), then returns to "★ Interested". No haptic
+  // (item 129: low-commitment and private, not an important state change).
+  interestedSaved: { tier: 'small', pulseMs: 240, pulseFrom: 1.12, savedHoldMs: 1200 },
   happeningRipple: { tier: 'medium', ringMs: 400, fromScale: 0.6, toScale: 2.2, startOpacity: 0.35, size: 24 },
 };
 
@@ -160,6 +164,8 @@ export function settleMs(name) {
       return s.staggerMs * (s.rings - 1) + s.ringMs;
     case 'happeningRipple':
       return s.ringMs;
+    case 'interestedSaved':
+      return s.pulseMs;
     case 'offerTravel':
       return s.dimMs + s.travelMs + s.settleMs;
     case 'businessResponds': {
