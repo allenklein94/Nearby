@@ -36,9 +36,12 @@ check('every live tag mapped exactly once', eqSet(before.map((t) => t.tag), live
 check('mapped "before" groups equal the live groups', before.every((t) => live.find((l) => l.tag === t.tag)?.group_key === t.group_before));
 check('no duplicate tag names after the pass', new Set(after.map((t) => t.tag)).size === after.length);
 
-// 2. The app's CATEGORY_GROUPS (the client copy) equals the live table today (so the "before" side is one truth).
+// 2. The "before" side is one truth: the mapping's before = the live table. Since the pass was implemented in code
+//    (branch item-168-category-pass), the app's CATEGORY_GROUPS must equal the mapping's AFTER side instead.
 const codeTags = CATEGORY_GROUPS.flatMap((g) => [...g.tags, ...(g.businessOnlyTags ?? [])].map((tag) => ({ tag, group: g.key })));
-check('app CATEGORY_GROUPS equals the live table (before)', eqSet(codeTags.map((t) => `${t.group}|${t.tag}`), live.map((t) => `${t.group_key}|${t.tag}`)));
+check('mapping before equals the live table', eqSet(before.map((t) => `${t.group_before}|${t.tag}`), live.map((t) => `${t.group_key}|${t.tag}`)));
+check('app CATEGORY_GROUPS equals the mapping after the pass', eqSet(codeTags.map((t) => `${t.group}|${t.tag}`), after.map((t) => `${t.group_after}|${t.tag}`)),
+  `app-only: ${diff(codeTags.map((t) => `${t.group}|${t.tag}`), after.map((t) => `${t.group_after}|${t.tag}`)).join(', ')}`);
 
 // 3. Final membership equals every count the spec states.
 const expected = { sports_fitness: 19, activities_recreation: 11, outdoors_nature: 19, travel_experiences: 17, entertainment_nightlife: 23, arts_culture_learning: 13 };
