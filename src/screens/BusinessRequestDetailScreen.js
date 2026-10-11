@@ -979,7 +979,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     })),
     [request, offers, planChatInfo, myId]
   );
-  const planLogoUri = planSummary?.joinLine === 'settled' && planBookedOffer ? logoFor(partnerLogos, planBookedOffer.partner_id) : null;
+  // A logo that fails to load falls back to the pin (never a place line with neither).
+  const [planLogoFailedUri, setPlanLogoFailedUri] = useState(null);
+  const planLogoCandidate = planSummary?.joinLine === 'settled' && planBookedOffer ? logoFor(partnerLogos, planBookedOffer.partner_id) : null;
+  const planLogoUri = planLogoCandidate && planLogoCandidate !== planLogoFailedUri ? planLogoCandidate : null;
 
   // Item 112 follow-up (CLAUDE.md, "the finished plan could have a living
   // header... 🎂 Sarah's 30th Birthday"): only once the plan is genuinely
@@ -1302,7 +1305,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {planSummary.location && (
                 <PlanAssemblyLine index={2} style={styles.planPlaceRow}>
                   {planLogoUri ? (
-                    <PlanAssemblyLogo><BusinessLogoMark uri={planLogoUri} size={18} /></PlanAssemblyLogo>
+                    <PlanAssemblyLogo><BusinessLogoMark uri={planLogoUri} size={18} onFailed={setPlanLogoFailedUri} /></PlanAssemblyLogo>
                   ) : null}
                   <Text style={[styles.planSummaryLine, styles.planPlaceText]}>{planLogoUri ? '' : '📍 '}{planSummary.location}</Text>
                 </PlanAssemblyLine>

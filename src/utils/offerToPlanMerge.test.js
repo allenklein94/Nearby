@@ -218,8 +218,11 @@ describe('confirmed-plan look: the connecting line is the plan\'s lasting state 
     const idx = [0, 1, 2, 3].map((i) => screen.indexOf(`<PlanAssemblyLine index={${i}}`));
     expect(idx.every((i) => i > 0)).toBe(true);
     expect([...idx].sort((a, b) => a - b)).toEqual(idx);
-    expect(screen).toMatch(/<PlanAssemblyLogo><BusinessLogoMark uri=\{planLogoUri\} size=\{18\} \/><\/PlanAssemblyLogo>/);
-    expect(screen).toMatch(/const planLogoUri = planSummary\?\.joinLine === 'settled' && planBookedOffer \?/);
+    expect(screen).toMatch(/<PlanAssemblyLogo><BusinessLogoMark uri=\{planLogoUri\} size=\{18\} onFailed=\{setPlanLogoFailedUri\} \/><\/PlanAssemblyLogo>/);
+    expect(screen).toMatch(/const planLogoCandidate = planSummary\?\.joinLine === 'settled' && planBookedOffer \?/);
+    // no logo, or one that fails to load = the pin
+    expect(screen).toMatch(/const planLogoUri = planLogoCandidate && planLogoCandidate !== planLogoFailedUri \? planLogoCandidate : null;/);
+    expect(screen).toMatch(/\{planLogoUri \? '' : '📍 '\}\{planSummary\.location\}/);
   });
 });
 

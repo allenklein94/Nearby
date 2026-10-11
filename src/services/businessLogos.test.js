@@ -70,7 +70,7 @@ describe('missing logos', () => {
   test('the mark renders nothing without a logo or after the image fails: no placeholder, no initials', () => {
     const src = read('src/components/BusinessLogoMark.js');
     expect(src).toMatch(/if \(!uri \|\| failed\) return null;/);
-    expect(src).toMatch(/onError=\{\(\) => setFailed\(true\)\}/);
+    expect(src).toMatch(/onError=\{\(\) => \{ setFailed\(true\); onFailed\?\.\(uri\); \}\}/);
   });
 });
 
@@ -156,7 +156,7 @@ describe('everything else stays the same for every business', () => {
     // One mark on the offer card, nowhere else on it. The only other mark on the screen is the booked business's in Your
     // Plan's place line (confirmed-plan look, 2026-10-11): after the choice, so it never sways a comparison.
     expect(detail.match(/<BusinessLogoMark/g).length).toBe(2);
-    expect(detail.match(/<BusinessLogoMark uri=\{planLogoUri\} size=\{18\} \/>/g)).toHaveLength(1);
+    expect(detail.match(/<BusinessLogoMark uri=\{planLogoUri\} size=\{18\} onFailed=\{setPlanLogoFailedUri\} \/>/g)).toHaveLength(1);
     expect(read('src/components/OfferCustomerBody.js')).not.toMatch(/BusinessLogoMark/); // media untouched
   });
 });

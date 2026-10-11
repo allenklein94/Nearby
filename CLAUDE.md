@@ -44,7 +44,15 @@ Anthropic credit first).
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
-**Item 32 (offer merges into Your Plan)** built and journey-verified, plus the confirmed-plan look (connecting line + combined assembly); needs the device check (incl. the line, logo and assembly) and native review of `titleAtBusiness` (see CLAUDE_HISTORY.md).
+**Item 32 (offer merges into Your Plan + confirmed-plan look) is OPEN until** every check in
+`PRODUCT_AUDIT/ITEM_32_DEVICE_CHECKLIST_2026-10-11.md` is recorded as passed on a real device (device, OS, appearance mode,
+results), and `titleAtBusiness` has native review. Tests and parse checks are not visual sign-off. The checks:
+(1) connecting line: faint and broken before booking, solid success green after, draws smoothly top to bottom, lines in order
+activity/time/place/people, still solid after navigating away and reloading, visible in light and dark; (2) logo: none on the plan
+before acceptance (no bias between offers), screened logo replaces the 📍 after booking, recognizable at 18 px, still there on a
+completed plan, screened source only, missing or failed logo falls back to 📍; (3) assembly: the card waits while the chip
+travels, logo and line wait for it to land, text always readable, no flicker/shift/flash, under 0.9 s, Reduce Motion = finished
+card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests intact.
 
 **Blocked on the owner:**
 - **Anthropic credit:** every AI edge function returns 500 ("credit balance is too low"). Never run live:

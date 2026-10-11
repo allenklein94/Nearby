@@ -1,3 +1,7 @@
+# Item 32 device checklist (2026-10-11) - item stays OPEN until visual sign-off
+
+Owner: the code-level tests don't count as visual verification; item 32 stays open until the connecting line, the logo and the assembly are checked on a real device. Added `PRODUCT_AUDIT/ITEM_32_DEVICE_CHECKLIST_2026-10-11.md` (21 checks in 3 sections, light/dark columns, a run record with device/OS/appearance/Reduce Motion) and an OPEN entry in CLAUDE.md. Fixed while writing it (check 2.6): a screened logo URL that failed to load left the place line with neither logo nor pin; `BusinessLogoMark` got an optional `onFailed` callback and the plan card now falls back to 📍 (`planLogoFailedUri`). Tests updated (offerToPlanMerge + businessLogos guards); full Jest suite green.
+
 # Confirmed-plan look (2026-10-11) - item 32's plan card: connecting line + one combined assembly
 
 Owner decisions: A keep "You're booked" (locked wording; items 122/123 not reopened, no new strings). B one moment: the assembly folds INTO item 32's merge (no second "lock" moment). C the connecting line is the plan's permanent look, derived from its status (no DB field).
