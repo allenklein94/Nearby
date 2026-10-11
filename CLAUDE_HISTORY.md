@@ -1,3 +1,12 @@
+# docs/business.html headless check (2026-10-11, owner scope) - real-browser review still OPEN
+
+`scripts/web-check/business-page-headless.py` (Playwright/Chromium in Docker, page served from `docs/`, every Supabase request
+intercepted: no application submitted, no funnel row written): 56/56 on desktop, phone, server-error and offline runs (rendering,
+links, console, CTAs, validation order, category search + 5-cap + no customer-only tags, submit payload, success/error/offline
+states, funnel events). Found and NOT changed: the phone header nav wraps beside the logo; the customer-preview mock says
+"6 interested" under a "not a mockup with invented numbers" caption (invented figure, and an Interested count shown to a viewer).
+Report: `PRODUCT_AUDIT/BUSINESS_PAGE_HEADLESS_CHECK_2026-10-11.md`. Item 168 follow-up 2 (real browser) stays open.
+
 # Item 35 signed off (2026-10-11, owner) - CLOSED
 
 Owner approved sign-off provided the live behaviour and the review notes check out, without reopening the design. Checked the same day:

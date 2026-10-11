@@ -124,7 +124,8 @@ redemption; never estimated revenue or invented value.
 "See gatherings" must not repeat the chips' plans; (c) item 35 sign-off check; (d) `docs/business.html` headless-browser check
 (real-browser review stays open). Status per step lands here as each finishes. (a) DONE: migration 20270298 live, send-push
 redeployed, journey `planMessagePush` 5/5; the Messages hint now names plan group chats (11 languages, native review pending).
-(c) DONE: item 35 signed off and closed. (b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
+(c) DONE: item 35 signed off and closed. (d) DONE headless: `docs/business.html` 56/56 (`PRODUCT_AUDIT/BUSINESS_PAGE_HEADLESS_CHECK_2026-10-11.md`);
+found, owner to decide: the phone header wraps; the preview mock's "6 interested" (invented + shows an Interested count). Real-browser review OPEN. (b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
 
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
