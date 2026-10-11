@@ -85,7 +85,10 @@ card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests 
   ranking/routing/privacy change. Any later item that touches the taxonomy must flag its conflict with 168.
   Locksmith is flagged for that review, not created.
   **Prep done 2026-10-11, awaiting owner review:** `PRODUCT_AUDIT/ITEM_168_MIGRATION_PREP_2026-10-11.md` (mapping, impact,
-  surface checklist, decisions D1-D6; `node PRODUCT_AUDIT/item168_prep/crosscheck.js` 32/32). Nothing migrated.
+  surface checklist, decisions D1-D6; `node PRODUCT_AUDIT/item168_prep/crosscheck.js` 33/33). D1-D6 approved 2026-10-11.
+  **Built on branch `item-168-category-pass`, NOT applied/deployed/merged:** migration 20270294, client, 3 edge functions,
+  translations, web export, tests (jest + journeys pass), rollback rehearsed. Release gate + steps:
+  `PRODUCT_AUDIT/ITEM_168_MIGRATION_RUNBOOK_2026-10-11.md` (owner signs off, then applies with the owner present).
 
 **Waiting on evidence (do not build without it):** Momentum fold decision (`momentum_viewed` /
 `momentum_cta_tapped` usage); removal of any relationship tool (B9 usage review); item 152 intent ->
