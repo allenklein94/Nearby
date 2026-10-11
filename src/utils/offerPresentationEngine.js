@@ -22,7 +22,7 @@ import { businessReplyKind, businessReplyStatus, heardLine } from './offerCopy';
 import { assemblySteps, shouldAssemble } from './offerAssembly';
 import { acceptedBookingState, ACCEPTED_TITLE_KEY } from './acceptedBooking';
 import { offerLifecycleState } from './objectLifecycle';
-import { discountHeadlinePct } from './offerPresentation';
+import { discountHeadlinePct, offerCountdown } from './offerPresentation';
 import { visibleRedemption } from './offerMedia';
 import { tr } from '../i18n/translate';
 
@@ -94,6 +94,8 @@ export function presentOffer(offer, { business = {}, context = {} } = {}) {
     statusLine: preview ? businessReplyStatus(offer) : statusLine(offer, card, now),
     steps: card === 'open' ? assemblySteps(offer) : [],
     discountPct: discountHeadlinePct(offer),
+    // Item 47: the last-30-minutes countdown, only on an open reply (a booked or closed one no longer runs out).
+    countdown: card === 'open' ? offerCountdown(offer, now) : null,
     confirmation: bookingState ? {
       state: bookingState,
       titleKey: ACCEPTED_TITLE_KEY[bookingState],

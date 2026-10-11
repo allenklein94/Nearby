@@ -158,6 +158,9 @@ export const SEQUENCES = {
   // Owner item 46 (2026-10-11): after the person's own refinement tap lands, the soft emphasis on the next refinement step's
   // chips (components/AskRefinementChips.js) fades in. Pure decoration behind the label (the label never moves or fades).
   refineNextStep: { tier: 'small', fadeMs: 200 },
+  // Owner item 47 (2026-10-11): an open offer's countdown bar (components/OfferCountdown.js) eases to its new length when the
+  // real minute changes (the screen re-renders at each change). No loop, no pulse, no flash; the text itself never animates.
+  offerCountdown: { tier: 'small', easeMs: 240, barPx: 3 },
   // Owner item 44 (2026-10-11): a business pin tapped on Discover's map grows into its business sheet. The sheet still opens at
   // the tap (its text readable from frame one, never below the info floor; its buttons live at once): it rises risePx and
   // grows from fromScale while the backdrop dims (sheetMs), and a pin-coloured outline frame grows from the pin's spot into
@@ -231,6 +234,8 @@ export function settleMs(name) {
       return s.washMs;
     case 'strongMatch':
       return Math.max(s.staggerMs * (s.pieces.length - 1) + s.pieceMs, s.badgeDelayMs + s.badgeMs);
+    case 'offerCountdown':
+      return s.easeMs;
     case 'refineNextStep':
       return s.fadeMs;
     case 'askUnderstood':

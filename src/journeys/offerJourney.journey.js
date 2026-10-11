@@ -50,7 +50,8 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
 
   -- 4. the business creates an offer (the writer the edge function calls after screening)
   v_res := submit_business_offer(request_id_param := v_req, offer_type_param := 'standard',
-     offer_description_param := 'We can accommodate this as requested.', offer_price_param := 12.5);
+     offer_description_param := 'We can accommodate this as requested.', offer_price_param := 12.5,
+     valid_until_param := now() + interval '18 minutes'); -- item 47: a time-sensitive offer (its last 30 minutes)
   select id into v_offer from business_request_offers where request_id = v_req and partner_id = v_partner;
   log := log || jsonb_build_array(jsonb_build_object('step','offer_submitted','ok', coalesce((v_res->>'success')::boolean,false),
      'data', (select to_jsonb(o) - 'partner_id' from (select status, offer_type, offer_price from business_request_offers where id = v_offer) o)));
@@ -142,6 +143,17 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(offerPrimaryAction(offered)).toBeTruthy();
     expect(canDo('offer', 'accepted', 'accept')).toBe(false);
     expect(canDo('offer', 'completed', 'accept')).toBe(false);
+  });
+  // Item 47: the time-sensitive offer the host reads gets the countdown, from the stored valid_until alone.
+  test('item 47: an offer valid for 18 more minutes reads "Ends in 18 min" with its countdown; once accepted, none', () => {
+    const { presentOffer } = require('../utils/offerPresentationEngine');
+    const { validityLabel } = require('../utils/offerMedia');
+    const until = s.offer_reaches_host.data.valid_until;
+    const now = new Date(new Date(until).getTime() - 18 * 60000 + 1000); // the moment the host opens it
+    const offered = { status: 'offered', valid_until: until };
+    expect(validityLabel(until, now)).toBe('Ends in 18 min');
+    expect(presentOffer(offered, { context: { now } }).countdown).toEqual({ minutesLeft: 18, fraction: 0.6 });
+    expect(presentOffer({ ...offered, status: s.host_accepts.data.offer }, { context: { now } }).countdown).toBeNull();
   });
   // Item 32, applied to the very rows the database produced: the booking merges into Your Plan exactly once, the plan card
   // reads "<what> at <business>" with the party size, and the plan stays where Plans lists it (Home is not touched).

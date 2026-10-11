@@ -314,7 +314,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // threshold is never penalized -- it's ordered exactly where it would
   // have landed today" for every row this reordering doesn't touch.
   // Validity text on open offers updates on its own while this screen stays open ("Valid until 7 PM" -> "Ends in 30 min" ->
-  // ... -> expired, and the button follows): one re-render at each real change, text only, no animation.
+  // ... -> expired, and the button follows): one re-render at each real change. The text never animates; item 47's countdown
+  // bar (shown.countdown) eases to its new length on each of these re-renders.
   const [, setValidityTick] = useState(0);
   useEffect(() => {
     const delay = nextValidityRefreshMs(offers);
@@ -1686,7 +1687,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {o.status === 'offered' && (
                 <>
                   {o.offer_title ? <AssemblyStep step="order"><Text style={styles.offerTitleHeadline}>{o.offer_title}</Text></AssemblyStep> : null}
-                  <OfferCustomerBody offer={o} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ? t(`ui.requestDetail.offerType.${o.offer_type}`) : o.offer_type} />
+                  <OfferCustomerBody offer={o} countdown={shown.countdown} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ? t(`ui.requestDetail.offerType.${o.offer_type}`) : o.offer_type} />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>{t('ui.requestDetail.youveSeenThis')}</Text>
                   ) : null}

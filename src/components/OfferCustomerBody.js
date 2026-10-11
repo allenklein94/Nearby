@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import OfferMedia from './OfferMedia';
+import OfferCountdown from './OfferCountdown';
 import { AssemblyStep } from './OfferAssembly';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing } from '../theme';
@@ -37,8 +38,9 @@ export function offerWindowText(from, until, language) {
 // The body of an offer exactly as the CUSTOMER sees it (description, included items, proposed time, price, available
 // window, validity, media; price comes before time, the order the card assembles in). One component used by the customer's offer card AND the owner's "Customer Preview", so the
 // preview cannot drift from what is actually shown. `offer` uses the stored row's field names. `localMedia` (owner
-// preview only) = { uri, type } for a file not uploaded yet.
-export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null }) {
+// preview only) = { uri, type } for a file not uploaded yet. `countdown` (item 47) = presentOffer()'s countdown: in an open
+// offer's last 30 minutes the validity line takes the amber in-progress tone with a thin bar of the time left under it.
+export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null, countdown = null }) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const styles = getStyles(colors);
@@ -75,7 +77,8 @@ export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typ
         ) : (
           <>
             {window ? <Text style={styles.offerProposedTime}>🕒 {window}</Text> : null}
-            {o.valid_until ? <Text style={styles.offerProposedTime}>⏳ {isOfferExpired(o) ? t('ui.requestDetail.thisOfferHasExpired') : offerValidityText(o.valid_until, language)}</Text> : null}
+            {o.valid_until ? <Text style={[styles.offerProposedTime, !!countdown && styles.offerEndingSoon]}>⏳ {isOfferExpired(o) ? t('ui.requestDetail.thisOfferHasExpired') : offerValidityText(o.valid_until, language)}</Text> : null}
+            {o.valid_until && !isOfferExpired(o) ? <OfferCountdown countdown={countdown} /> : null}
           </>
         )}
       </AssemblyStep>
@@ -88,6 +91,7 @@ const getStyles = (colors) => StyleSheet.create({
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerIncludedItem: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
   offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },
+  offerEndingSoon: { color: colors.inProgress },
   offerDiscount: { ...typography.title, color: colors.textPrimary, fontWeight: '800', letterSpacing: 0.5, marginBottom: spacing.xs },
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
 });

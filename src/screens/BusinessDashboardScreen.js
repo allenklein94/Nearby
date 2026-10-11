@@ -7081,7 +7081,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         );
                       })()}
                       {!!offerTitleInput.trim() && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{offerTitleInput.trim()}</Text>}
-                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} />
+                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={presentOffer(previewOffer, { context: { viewer: 'owner_preview' } }).countdown} />
                       <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
                         <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
                       </View>

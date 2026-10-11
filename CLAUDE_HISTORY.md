@@ -1,3 +1,18 @@
+# Item 47 (2026-10-11) - offer countdown - BUILT, NOT DEVICE-VERIFIED
+
+Owner spec: "Offer expires in 18 min", a subtle animation, never obnoxious flashing red; urgency informative, not manipulative.
+Found: the countdown text already existed ("Ends in N min" in an offer's last 30 minutes, `timeWindow.js` ENDING_SOON_MIN, refreshed
+each minute by `nextValidityRefreshMs`, translated). Built on it, no new wording: `offerCountdown(offer, now)` in
+`utils/offerPresentation.js` ({ minutesLeft, fraction of the last 30 min } only in the real ending_soon phase; null otherwise);
+`presentOffer().countdown` (open card only; owner preview included; booked/closed null; same for every business);
+`components/OfferCountdown.js` (3 px bar, `colors.inProgress` amber, scaleX from the left eased 240 ms on each real minute change,
+native driver, `SEQUENCES.offerCountdown` small tier, Reduce Motion = step, hidden from screen readers); `OfferCustomerBody` takes
+`countdown` (line turns amber + bar), passed by BusinessRequestDetailScreen (`shown.countdown`) and the dashboard Customer Preview.
+Kept "Ends in N min" rather than "Offer expires in" (existing translated string). Verified: Jest 423 suites / 5714 tests (new
+`utils/offerCountdown.test.js`); journeys 26/26 (275): the `offer` journey now submits a real offer with valid_until = now + 18 min
+and checks the host's row -> "Ends in 18 min" + countdown {18, 0.6}, none once accepted. Business web export regenerated.
+Checklist: `PRODUCT_AUDIT/ITEM_47_OFFER_COUNTDOWN_DEVICE_CHECKLIST_2026-10-11.md` (not run).
+
 # Item 46 (2026-10-11) - intent refinement shows its next step - BUILT, NOT DEVICE-VERIFIED
 
 Owner spec: "Dinner" -> Tonight? -> With friends? -> Under $30? as animated progressive disclosure. Owner decisions (asked before

@@ -1,7 +1,7 @@
 // Item 11 (owner, 2026-10-10): the business gives Nearby the pieces (a video, "20% off tonight", valid 5-9 PM) and Nearby
 // lays out the offer card: header -> media -> 20% OFF -> Tonight · 5–9 PM -> I'll take this one. Pure decisions only, all
 // from STRUCTURED offer fields; nothing is parsed out of the business's free text and nothing is invented.
-import { timeWindowState } from './timeWindow';
+import { timeWindowState, ENDING_SOON_MIN } from './timeWindow';
 import { TONIGHT_START_HOUR } from './gatheringDateFilter';
 import { windowRangeLabel } from './offerMedia';
 import { translate, getCurrentLanguage } from '../i18n/translate';
@@ -42,4 +42,18 @@ export function offerWhenLineText(day, from, until, language = getCurrentLanguag
   const english = !language || language === 'en';
   const range = english ? windowRangeLabel(from, until) : `${localClock(minutesOf(from), language)}–${localClock(minutesOf(until), language)}`;
   return translate(language, 'ui.requestDetail.dayWindow', { day: translate(language, `ui.requestDetail.whenDay.${day}`), window: range });
+}
+
+// Owner item 47 (2026-10-11): the offer countdown. Only in an offer's real last ENDING_SOON_MIN minutes (the same "Ends in 18 min"
+// phase the validity line already shows; nothing earlier, nothing invented): { minutesLeft, fraction } where fraction is the
+// share of that last stretch still left (1 = 30 min, 0 = gone), drawn as a thin bar that eases down each minute. Informative,
+// never manipulative: no red, no flashing, no pulse, no haptic, no new wording. null = no countdown (no end, a bad date, not
+// ending soon yet, already over). presentOffer() gates it to an open reply.
+export function offerCountdown(offer, now = new Date()) {
+  if (!offer?.valid_until) return null;
+  const end = new Date(offer.valid_until);
+  if (Number.isNaN(end.getTime())) return null;
+  const st = timeWindowState({ end: end.toISOString() }, now, 'offer');
+  if (st.phase !== 'ending_soon') return null;
+  return { minutesLeft: st.minutesLeft, fraction: Math.max(0, Math.min(1, st.minutesLeft / ENDING_SOON_MIN)) };
 }
