@@ -51,11 +51,13 @@ Also still open for item 32: native-speaker review of `ui.requestDetail.plan.tit
 | 3.2 | The logo and the connecting line appear only after the chip lands, not before. | | |
 | 3.3 | All plan text stays readable throughout (it never fades out or disappears). | | |
 | 3.4 | No flicker, layout shift, or flash of the finished card between "You're booked", the chip landing and the assembly. | | |
-| 3.5 | The whole sequence, from the booked card to the end of the glow, feels under 0.9 s (screen recording: count frames). | | |
+| 3.5 | MEASURE the rendered duration on the phone, from the booked card to the end of the glow, with a screen recording (count frames; record the fps and the measured ms). It must be under 0.9 s. The 845 ms code timing is not proof. | | |
 | 3.6 | One glow only; no second celebration and no extra vibration (the accept's own success vibration only). | | |
 | 3.7 | Touching the screen during the moment stops the scroll; the assembly still completes. | | |
 | 3.8 | Reduce Motion on: the finished card appears at once (solid line, logo in, no chip, no glow). | | |
 
 ## Results
+
+A documented check is not a passed check: only a recorded result closes it.
 
 (Record failures here with a screenshot or recording, the device row, and the fix commit.)
