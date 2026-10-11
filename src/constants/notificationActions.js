@@ -20,7 +20,7 @@ export const NOTIFICATION_ACTION_KEYS = [
 
 export const NOTIFICATION_ACTION_BY_TYPE = {
   // a match or a conversation
-  match: 'open_chat', new_match: 'open_chat', friend_discovery_match: 'open_chat', message: 'reply',
+  match: 'open_chat', new_match: 'open_chat', friend_discovery_match: 'open_chat', message: 'reply', plan_message: 'reply',
   playlist_addition: 'open_chat', trip_idea_addition: 'open_chat', shared_decision_addition: 'open_chat',
   constitution_addition: 'open_chat', memory_addition: 'open_chat', stress_test_addition: 'open_chat',
   timeline_addition: 'open_chat', match_reminder: 'open_chat', screenshot: 'open_chat', video_call: 'open_chat',

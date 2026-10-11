@@ -125,7 +125,8 @@ redemption; never estimated revenue or invented value.
 
 **In progress (owner scope, 2026-10-11):** (a) plan messages send no push -- trace + fix + tests, no real pushes; (b) item 41
 "See gatherings" must not repeat the chips' plans; (c) item 35 sign-off check; (d) `docs/business.html` headless-browser check
-(real-browser review stays open). Status per step lands here as each finishes.
+(real-browser review stays open). Status per step lands here as each finishes. (a) DONE: migration 20270298 live, send-push
+redeployed, journey `planMessagePush` 5/5; the Messages hint now names plan group chats (11 languages, native review pending).
 
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
@@ -136,7 +137,7 @@ business owner can open a known person's verified profile like any user; a scree
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
 network failure between its writes; `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
-no push for `plan_messages`; gathering stops create no child plans.
+gathering stops create no child plans.
 
 ## Backlog (not started; do not build without a direct ask)
 
@@ -366,6 +367,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 ### Notifications
 - Every push goes through `_send_push` (outbox, dedupe, retry); only `_push_outbox_deliver` calls send-push.
   New notifications for registry events are decided in that event's handler (`constants/domainEvents.js`).
+- Plan group chat pushes (`plan_message`): recipients = `_plan_participant_rows()` (the chat roster's one source) minus the writer and
+  blocks either way; the Messages switch; at most one per person per plan per 2 min; tap opens PlanChat.
 - Each push type has one priority (`notificationTier.js`), one navigation-only action button
   (`notificationActions.js`) and one mute group (`notificationPreferences.js`, one store `profiles.notification_mutes`).
 

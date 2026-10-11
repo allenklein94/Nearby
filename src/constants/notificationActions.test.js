@@ -21,7 +21,7 @@ const actionsNs = require('../i18n/ui/notificationActions').default;
 
 const destSrc = fs.readFileSync(path.join(__dirname, '..', 'navigation', 'notificationDestinations.js'), 'utf8');
 const PUSH_TYPES = [...destSrc.matchAll(/case '(\w+)':/g)].map((m) => m[1]);
-const FULL = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o', proposal_id: 'p', plan_id: 'pl', partner_id: 'b',
+const FULL = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o', proposal_id: 'p', plan_id: 'pl', partner_id: 'b', business_request_id: 'br',
   availability_id: 'a', community_id: 'c', birthday_user_id: 'u', other_user_id: 'u', story_user_id: 'u', owner_id: 'u',
   target_type: 'gathering', target_id: 't', occasion_type: 'birthday', who_for_name: 'Sam', has_recall: false };
 
@@ -33,7 +33,7 @@ const ACTION_OPENS = {
   view_gathering: ['GatheringDetail'],
   view_invite: ['GatheringDetail', 'GroupPlan', 'GroupOccasionPlan'],
   view_attendees: ['GatheringDetail'],
-  reply: ['Chat'], open_chat: ['Chat'], view_notices: ['Notices'],
+  reply: ['Chat', 'PlanChat'], open_chat: ['Chat'], view_notices: ['Notices'],
   see_details: ['AskBusiness', 'BusinessProfile', 'GatheringDetail', 'CommunityDetail'],
   browse_gatherings: ['MainTabs'], find_something_else: ['MainTabs'], // Discover -> Gatherings / Communities (B3, B8)
   view_friend_request: ['Friends'], view_friends: ['Friends'], view_profile: ['ViewProfile'],
@@ -46,7 +46,7 @@ const ACTION_OPENS = {
 
 describe('every notification has one next action', () => {
   test('every push type the app handles has an action, and nothing else does', () => {
-    expect(PUSH_TYPES).toHaveLength(88);
+    expect(PUSH_TYPES).toHaveLength(89);
     expect(Object.keys(NOTIFICATION_ACTION_BY_TYPE).sort()).toEqual([...PUSH_TYPES].sort());
     for (const a of Object.values(NOTIFICATION_ACTION_BY_TYPE)) expect(NOTIFICATION_ACTION_KEYS).toContain(a);
     expect(new Set(Object.values(NOTIFICATION_ACTION_BY_TYPE))).toEqual(new Set(NOTIFICATION_ACTION_KEYS)); // no unused labels

@@ -35,6 +35,9 @@ export async function notificationDestination(data, { lookupAvailability = async
         return to('Chat', { matchId: data.match_id });
       }
       break;
+    // A plan's group chat (business-request plans): PlanChat opens from the request id and re-checks access itself.
+    case 'plan_message':
+      return data.business_request_id ? to('PlanChat', { businessRequestId: data.business_request_id }) : null;
     // Item 140: "You're approved" / "A spot opened up and you're in" opens the PLAN (the group chat is one tap away there).
     // Pushes sent before the payload carried gathering_id still open the chat, as they did.
     case 'gathering_approved':

@@ -1,3 +1,21 @@
+# Plan group chat push (2026-10-11, owner: "plan messages send no push -- investigate and fix") - LIVE
+
+**Cause:** not a broken path. Item 89 (`20261109_plan_group_chat.sql`) shipped `plan_messages` live-while-open only and disclosed
+the push as a fast-follow; no trigger ever existed (live `information_schema.triggers`: only `messages` had one).
+**Fix (migration `20270298_plan_message_push.sql`, applied live):** `on_plan_message_created` -> `notify_plan_message()` ->
+`_send_push` for every participant except the writer and anyone blocked either way with the writer (`is_blocked`). Recipients come
+from the new internal `_plan_participant_rows()`, which `get_plan_participants()` now also reads (same rows/roles/order: checked on
+all 28 live plans in a rolled-back comparison, 0 mismatches), so the chat roster and the recipients cannot drift; a
+surprise-excluded person is never a participant, so never a recipient. New type `plan_message` in the existing `messages` group
+(one Messages switch; `notification_type_groups` row; parity test now also reads types added by later migrations), priority high,
+action Reply, tap -> `PlanChat {businessRequestId}` (PlanChat re-checks access). A burst is one push per person per plan per 2 min
+(outbox dedupe key). Payload: type, plan_id, business_request_id only. Title = plan title, body = "Name: first 100 chars".
+`send-push` redeployed (its copies of the priority/action tables). The Messages switch's hint said "one-on-one chats", now false:
+reworded in all 11 languages ("...and in your plans' group chats"; 10 machine-authored, native review pending).
+**Verified:** journey `planMessagePush` 5/5 (proved first with the migration as an unapplied prelude, then again live; throwaway
+users; `app.push_handoff_test_failure` keeps every push in the outbox, never handed to send-push; rolled back: no real push).
+Jest 419 suites / 5661 pass; journeys 26 / 272. NOT device-verified (a real push on a phone, the Reply button, the tap).
+
 # Item 43 approved (2026-10-11, owner, LOCKED)
 
 Approved as built. Headline stays "Your gathering is live!" (accurate to the publish state; nobody has accepted yet). Keep the four

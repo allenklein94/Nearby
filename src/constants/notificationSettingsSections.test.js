@@ -33,7 +33,7 @@ describe('sections reflect the central mapping', () => {
   test('the separate switches the owner asked to keep are still their own switches', () => {
     const where = (g) => SETTINGS_SECTIONS.find((s) => s.groups.includes(g)).key;
     expect(typesForGroup('friends_occasions')).toEqual(expect.arrayContaining(['birthday', 'birthday_upcoming']));
-    expect(typesForGroup('messages')).toEqual(['message']);
+    expect(typesForGroup('messages')).toEqual(['message', 'plan_message']);
     expect(typesForGroup('video_calls')).toEqual(['video_call']);
     expect(typesForGroup('dating')).toEqual(expect.arrayContaining(['new_match', 'wave']));
     expect(typesForGroup('dating')).not.toContain('message');

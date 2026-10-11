@@ -71,7 +71,7 @@ export default {
       },
       messages: {
         label: "Messages",
-        hint: "New messages in your one-on-one chats, with friends and matches.",
+        hint: "New messages in your chats with friends and matches, and in your plans' group chats.",
       },
       video_calls: {
         label: "Video calls",
@@ -154,7 +154,7 @@ export default {
       },
       messages: {
         label: "Mensajes",
-        hint: "Mensajes nuevos en tus chats individuales, con amigos y matches.",
+        hint: "Mensajes nuevos en tus chats con amigos y matches, y en los chats grupales de tus planes.",
       },
       video_calls: {
         label: "Videollamadas",
@@ -237,7 +237,7 @@ export default {
       },
       messages: {
         label: "Nachrichten",
-        hint: "Neue Nachrichten in deinen Einzelchats, mit Freunden und Matches.",
+        hint: "Neue Nachrichten in deinen Chats mit Freunden und Matches und in den Gruppenchats deiner Pläne.",
       },
       video_calls: {
         label: "Videoanrufe",
@@ -320,7 +320,7 @@ export default {
       },
       messages: {
         label: "Messages",
-        hint: "Nouveaux messages dans vos discussions privées, avec vos amis et vos matchs.",
+        hint: "Nouveaux messages dans tes discussions avec tes amis et tes matchs, et dans les discussions de groupe de tes plans.",
       },
       video_calls: {
         label: "Appels vidéo",
@@ -403,7 +403,7 @@ export default {
       },
       messages: {
         label: "Mensagens",
-        hint: "Novas mensagens nas suas conversas individuais, com amigos e matches.",
+        hint: "Novas mensagens nas suas conversas com amigos e matches, e nos chats em grupo dos seus planos.",
       },
       video_calls: {
         label: "Chamadas de vídeo",
@@ -486,7 +486,7 @@ export default {
       },
       messages: {
         label: "Mesaj",
-        hint: "Nouvo mesaj nan chat youn-a-youn ou, ak zanmi ak match.",
+        hint: "Nouvo mesaj nan chat ou ak zanmi ak match ou yo, ak nan chat gwoup plan ou yo.",
       },
       video_calls: {
         label: "Apèl videyo",
@@ -569,7 +569,7 @@ export default {
       },
       messages: {
         label: "消息",
-        hint: "你一对一聊天中的新消息，包括好友和配对。",
+        hint: "你与朋友和配对对象的聊天中的新消息，以及你的计划群聊中的新消息。",
       },
       video_calls: {
         label: "视频通话",
@@ -652,7 +652,7 @@ export default {
       },
       messages: {
         label: "Tin nhắn",
-        hint: "Tin nhắn mới trong các cuộc trò chuyện riêng, với bạn bè và người ghép đôi.",
+        hint: "Tin nhắn mới trong các cuộc trò chuyện với bạn bè và người tương hợp, và trong nhóm chat của các kế hoạch của bạn.",
       },
       video_calls: {
         label: "Cuộc gọi video",
@@ -735,7 +735,7 @@ export default {
       },
       messages: {
         label: "Mga mensahe",
-        hint: "Mga bagong mensahe sa one-on-one chats mo, kasama ang mga kaibigan at match.",
+        hint: "Mga bagong mensahe sa chats mo kasama ang mga kaibigan at match, at sa group chats ng mga plano mo.",
       },
       video_calls: {
         label: "Mga video call",
@@ -818,7 +818,7 @@ export default {
       },
       messages: {
         label: "Сообщения",
-        hint: "Новые сообщения в личных чатах с друзьями и совпадениями.",
+        hint: "Новые сообщения в твоих чатах с друзьями и мэтчами, а также в групповых чатах твоих планов.",
       },
       video_calls: {
         label: "Видеозвонки",
@@ -901,7 +901,7 @@ export default {
       },
       messages: {
         label: "메시지",
-        hint: "친구와 매치와의 1:1 채팅 새 메시지.",
+        hint: "친구 및 매치와의 채팅, 그리고 내 계획의 그룹 채팅에 온 새 메시지.",
       },
       video_calls: {
         label: "영상 통화",

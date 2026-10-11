@@ -99,6 +99,8 @@ export const NOTIFICATION_GROUP_BY_TYPE = {
   // Dating
   // Messages: the one chat push, sent for every match (dating, gathering and friend matches alike)
   message: 'messages',
+  // ...and a plan's group chat (a business-request plan's host, organizers and accepted guests): the same one switch
+  plan_message: 'messages',
   // Video calls: the one call push (video or voice), sent for every match, dating and friend matches alike
   video_call: 'video_calls',
   match: 'dating', new_match: 'dating', wave: 'dating', screenshot: 'dating',

@@ -23,7 +23,7 @@ const HIGH = [
   'gathering_reminder', 'gathering_updated', 'gathering_cancelled', 'community_cancelled', 'plan_item_time_changed',
   'plan_reservation_cancelled', 'plan_cancelled', 'occasion_group_plan_cancelled', 'business_reservation_cancelled',
   // a person is talking to you right now
-  'message', 'video_call',
+  'message', 'plan_message', 'video_call',
   // business owner: a same-day/next-day request (only urgent requests push individually), a booking, a customer cancelling
   'business_opportunity_received', 'business_offer_accepted', 'reservation_cancelled_by_customer',
 ];
