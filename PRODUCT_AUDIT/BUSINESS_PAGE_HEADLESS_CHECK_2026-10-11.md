@@ -45,8 +45,12 @@ is static HTML outside every journey.
 **Still open, not claimed by this check:** the owner's own review in a real browser (desktop and phone); nothing here
 is a phone verification. Logo (owner approved, same day): it rendered as "Near by" at all widths (the brand's flex `gap`
 also applied between "Near" and the "by" span); FIXED by moving the 8 px to the icon's right margin. A check per header width
-(10 widths) measures 0.0 px between "Near" and "by": **110/110 pass**. The same markup still shows "Near by" on
-`docs/invite.html`, `docs/occasion-invite.html` and `docs/shared-night.html` (not changed; owner to decide).
+(10 widths) measures 0.0 px between "Near" and "by": **110/110 pass**. The same gap on
+`docs/invite.html`, `docs/occasion-invite.html` and `docs/shared-night.html` was then FIXED the same way (owner approved):
+`scripts/web-check/public-pages-logo-headless.py`, 3 pages x 5 widths (320, 375, 414, 768, 1280) x 5 checks (one word,
+icon keeps 8 px, logo on screen, no horizontal scroll, no console/JS errors): **75/75**; the old pages fail only the
+one-word check (15/15 widths). Those pages were loaded without an invite link (Supabase intercepted, empty data), so
+only their shell and logo were checked, not a real invitation.
 
 **Not covered (still open):** a real browser (Safari / Chrome on a phone and a desktop) by the owner; real email/phone formats
 the server rejects; the live submit path end to end (deliberately never called).

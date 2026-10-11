@@ -5,7 +5,7 @@ only between labels (320 px: FAQ on a second row), font size unchanged, 6 px tap
 the line reads "7:00 PM" only (no replacement figure). Headless script extended (mock has no Interested count; header at 10
 widths 320-1280: one line per label, no logo overlap, on screen, no horizontal scroll): 100/100; the old page fails 6 of the new
 checks. Jest 419/5,663. Journeys not re-run (static page, no journey covers it). Not a phone or real-browser verification.
-Logo "Near by" gap (flex gap between "Near" and the span) then FIXED on owner approval (gap moved to the icon margin; per-width check, 110/110). Same gap still on invite/occasion-invite/shared-night pages (not changed).
+Logo "Near by" gap (flex gap between "Near" and the span) then FIXED on owner approval (gap moved to the icon margin; per-width check, 110/110). Same fix then applied to invite/occasion-invite/shared-night on owner approval (`scripts/web-check/public-pages-logo-headless.py`, 5 widths: 75/75; old pages fail only the one-word check; pages loaded without an invite link, so shell + logo only).
 
 # docs/business.html headless check (2026-10-11, owner scope) - real-browser review still OPEN
 
