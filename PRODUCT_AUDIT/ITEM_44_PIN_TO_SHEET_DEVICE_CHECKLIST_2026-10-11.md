@@ -1,5 +1,11 @@
 # Item 44 - map pin grows into the business sheet: device checklist (2026-10-11)
 
+**Owner APPROVED as built (2026-10-11); device verification PENDING.** This is the sign-off checklist: item 44 closes only when
+every line passes on a real iPhone AND a real Android phone (anchor, timing, interaction, Reduce Motion). Keep the implementation
+as is: it replaces the slide (no stacked animation), medium tier under 0.35 s, text readable from frame one, no delayed or blocked
+tap, Reduce Motion respected, item 17's one-tap behaviour preserved. Do not change `PIN_HEAD_LIFT` (18 px, an estimate) without
+evidence from checks 1 and 8: record the measured offset there if the outline misses the pin.
+
 **Built, NOT device-verified.** Nothing below has been seen on a phone. Record device, OS, appearance mode and result per line.
 
 What was built: on Discover's map, tapping a business pin opens the existing business sheet (item 17) as before, but instead of

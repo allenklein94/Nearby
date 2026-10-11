@@ -76,8 +76,9 @@ from-scratch migration replay is done before claiming fresh-install verification
 **Item 43 (Create: formation on publish) is APPROVED (owner, 2026-10-11, LOCKED), READY FOR DEVICE VERIFICATION until** every check in
 `PRODUCT_AUDIT/ITEM_43_GATHERING_FORMATION_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (journey `gatheringFormation`; no new strings). Do not expand scope.
 
-**Item 44 (map pin grows into the business sheet) is BUILT, NOT DEVICE-VERIFIED until** every check in
-`PRODUCT_AUDIT/ITEM_44_PIN_TO_SHEET_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real iOS and Android phone (no new strings; awaiting owner review).
+**Item 44 (map pin grows into the business sheet) is APPROVED (owner, 2026-10-11), BUILT, DEVICE VERIFICATION PENDING until** every check in
+`PRODUCT_AUDIT/ITEM_44_PIN_TO_SHEET_DEVICE_CHECKLIST_2026-10-11.md` passes on a real iPhone AND a real Android phone (anchor alignment incl.
+Android status bar, timing, interaction, Reduce Motion); then close it. Keep as built; `PIN_HEAD_LIFT` (18 px) changes only on device evidence. No new strings.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).

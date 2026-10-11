@@ -1,3 +1,10 @@
+# Item 44 approved (2026-10-11, owner) - device verification pending
+
+Approved as built: replaces the slide (no stacked animation), medium tier < 0.35 s, readable from frame one, no delayed/blocked
+interaction, Reduce Motion respected, item 17 one-tap behaviour preserved. `PIN_HEAD_LIFT` (18 px) changes only on device evidence.
+Closes when `PRODUCT_AUDIT/ITEM_44_PIN_TO_SHEET_DEVICE_CHECKLIST_2026-10-11.md` passes on a real iPhone and a real Android phone
+(anchor incl. Android status bar, timing, interaction, Reduce Motion). No code change.
+
 # Item 44 (2026-10-11) - map pin grows into the business sheet - BUILT, NOT DEVICE-VERIFIED
 
 **Owner ask:** tapping a business on the map, the pin could transition into the business card; "View Business" then goes deeper,
