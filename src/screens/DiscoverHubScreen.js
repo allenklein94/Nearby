@@ -99,7 +99,7 @@ import CompactRow from '../components/CompactRow';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { NearbyPickBadge, NLoader, FoundLine, modalAnimation, animateLayout } from '../motion';
+import { NearbyPickBadge, NLoader, FoundLine, modalAnimation, animateLayout, HappeningRipple } from '../motion';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -2841,7 +2841,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <React.Fragment key={section.key}>
               {section.key === 'now' ? (
                 <>
-                  <Text style={styles.sectionHeader}>{sectionTitle(section)}</Text>
+                  {/* Item 26: one ring from the ⚡ when this row shows something new (shared with Home); tiles never move. */}
+                  <HappeningRipple leading ids={section.items.map((g) => g.id)} color={colors.info} style={styles.sectionHeaderAnchor}>
+                    <Text style={[styles.sectionHeader, styles.sectionHeaderInAnchor]}>{sectionTitle(section)}</Text>
+                  </HappeningRipple>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
                     {section.items.map(renderHappeningNowTile)}
                   </ScrollView>
@@ -3657,6 +3660,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   contextGroupNote: { color: colors.textTertiary, fontSize: 12, marginTop: -spacing.xs, marginBottom: spacing.sm },
   connectionAvatar: { width: 44, height: 44, borderRadius: 22, marginRight: spacing.md },
   connectionAvatarPlaceholder: { backgroundColor: colors.surfaceElevated },
+  // Item 26: the happening-now heading's margins sit on its ripple anchor so the ring centres on the text line.
+  sectionHeaderAnchor: { marginTop: spacing.lg, marginBottom: spacing.sm },
+  sectionHeaderInAnchor: { marginTop: 0, marginBottom: 0 },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.lg, marginBottom: spacing.sm },
   // Item 43 (CLAUDE.md, "Things To Do feels busy"): a title + its own
   // "See all" both live on one row instead of title-content-See-all

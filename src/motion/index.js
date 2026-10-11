@@ -28,6 +28,7 @@ export { default as SuccessAnimation } from './SuccessAnimation';
 export { default as BookedCelebration, bookedDetailsLine } from './BookedCelebration';
 export { default as OfferAcceptedMorph } from './OfferAcceptedMorph';
 export { default as RequestPulse } from './RequestPulse';
+export { default as HappeningRipple } from './HappeningRipple';
 export { default as VisitConfirmed } from './VisitConfirmed';
 export { default as RespondingStatus } from './RespondingStatus';
 export { default as MatchAnimation } from './MatchAnimation';

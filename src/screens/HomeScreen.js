@@ -12,7 +12,7 @@ import React, { useState, useCallback, useRef, useMemo } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine, showSuccessToast } from '../motion';
+import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -2174,7 +2174,10 @@ export default function HomeScreen({ navigation }) {
         {rightNow.length > 0 && (
           <>
             <View style={styles.sectionHeaderRow}>
-              <Ionicons name="time-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
+              {/* Item 26: one ring from the icon when this section shows something new (shared with Discover); rows never move. */}
+              <HappeningRipple ids={rightNow.map((g) => g.id)} color={colors.info}>
+                <Ionicons name="time-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
+              </HappeningRipple>
               <Text style={styles.sectionHeaderText}>{t('ui.home.nearbyRightNow')}</Text>
             </View>
             {rightNow.map((g) => renderAttentionEntry({ kind: 'gathering', gathering: g, signals: [], hasFriend: false, trendingOnly: false }))}

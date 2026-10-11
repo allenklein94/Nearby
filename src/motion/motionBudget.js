@@ -107,6 +107,9 @@ export const SEQUENCES = {
   // The signature moment (item 25): the travel, then -- starting the moment it lands, overlapping its settle -- the card
   // building itself in (offerAssembly), whose price step gets one soft coral wash (washInMs + washOutMs, washOpacity).
   businessResponds: { tier: 'signature' },
+  // Owner item 26: something is happening near you. One soft ring from the happening-now heading icon, only when that section
+  // shows a gathering not yet shown this session (Home + Discover share the record). The rows never move.
+  happeningRipple: { tier: 'medium', ringMs: 400, fromScale: 0.6, toScale: 2.2, startOpacity: 0.35, size: 24, glyphCenterPx: 8 },
 };
 
 // Time from trigger to settled state for each sequence.
@@ -150,6 +153,8 @@ export function settleMs(name) {
       return Math.max(s.rollMs, s.avatarMs, s.lineDelayMs + s.lineMs);
     case 'requestPulse':
       return s.staggerMs * (s.rings - 1) + s.ringMs;
+    case 'happeningRipple':
+      return s.ringMs;
     case 'offerTravel':
       return s.dimMs + s.travelMs + s.settleMs;
     case 'businessResponds': {
