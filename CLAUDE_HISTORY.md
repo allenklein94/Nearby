@@ -1,3 +1,18 @@
+# Item 41 follow-up (2026-10-11) - friends-planning query coverage + Link-only leak fixed
+
+Owner asked for targeted coverage of the friends-planning query (3-day window, visibility rules, "See gatherings").
+- `services/homeDashboard.js`: the rules moved into ONE exported helper, `selectFriendsActivity(rows, {visibilityContext,
+  upcomingPlanIds, now})` (3-day window enforced again client-side, `applyGatheringVisibilityFilters`, skip Your Plans, one plan per
+  host, max 3), with `FRIENDS_ACTIVITY_FIELDS` / `friendsActivitySince()` / `FRIENDS_ACTIVITY_DAYS|MAX`; `getHomeDashboard` calls it.
+- **Leak found and fixed:** the select lacked `discoverable`, so a friend's Link-only gathering (item 74) passed the gate
+  (`undefined !== false`) and was counted/shown. A guard test now checks the select carries every column the gate reads.
+- Tests: `utils/friendsPlanningMoment.test.js` +6 (window 71 h in / 73 h out; invite_only, Link-only, women-only, blocked, other
+  community hidden; everyone/friends/own community shown; one per friend, Your Plans skipped, cap 3; select-columns guard;
+  "See gatherings" = exactly those plans inline, each to its GatheringDetail).
+- New journey `src/journeys/friendsPlanning.journey.js` (live, RLS as the viewer, rolled back): 5/5.
+**Verified:** Jest 417 suites / 5645 pass; journeys 24 suites / 265 pass. Not covered: the moment's look and tapping on a device.
+Owner review of item 41's two deviations still pending.
+
 # Item 41 (2026-10-11) - "Your people are doing things" - BUILT, AWAITING OWNER REVIEW, NOT DEVICE-VERIFIED (+ 4 latent crashes fixed)
 
 **Owner ask:** instead of only changing a number on "3 friends are making plans": avatars appear -> gathering cards appear ->

@@ -72,7 +72,7 @@ from-scratch migration replay is done before claiming fresh-install verification
 
 **Item 41 (friends are making plans, motion) is BUILT, AWAITING OWNER REVIEW** of two deviations (no "nearby": the plans aren't
 distance-filtered; plans shown as glyphs on faces, not cards) and NOT DEVICE-VERIFIED
-(`PRODUCT_AUDIT/ITEM_41_FRIENDS_PLANNING_DEVICE_CHECKLIST_2026-10-11.md`). No journey covers the line (client query); no new strings.
+(`PRODUCT_AUDIT/ITEM_41_FRIENDS_PLANNING_DEVICE_CHECKLIST_2026-10-11.md`). Query now one helper (`selectFriendsActivity`), journey `friendsPlanning` 5/5; a Link-only leak fixed; no new strings.
 
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.

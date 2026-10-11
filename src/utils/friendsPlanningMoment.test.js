@@ -2,13 +2,19 @@
 // (only for plans not seen before), the motion budget, and the guards (no "nearby" claim the data does not support).
 jest.mock('../services/supabase', () => ({ supabase: {} }));
 jest.mock('../services/proximity', () => ({}));
-jest.mock('../services/gatherings', () => ({}));
-jest.mock('../services/userLocation', () => ({ getUserLocation: jest.fn() }));
+// the REAL gatherings.js (its visibility gate is what is tested), with its native dependencies stubbed
+jest.mock('expo-crypto', () => ({ randomUUID: () => 'x' }));
+jest.mock('expo-location', () => ({}));
+jest.mock('expo-image-picker', () => ({}));
+jest.mock('expo-file-system/legacy', () => ({}));
+jest.mock('../services/friends', () => ({ getMyFriends: jest.fn() }));
+jest.mock('../services/communities', () => ({ getMyCommunities: jest.fn() }));
+jest.mock('../services/userLocation', () => ({ getUserLocation: jest.fn(), requireUserLocation: jest.fn() }));
 jest.mock('react-native', () => ({ AppState: { currentState: 'active' } }));
 const fs = require('fs');
 const path = require('path');
 import { takeFriendsPlanningMoment, FRIENDS_PLANNING_SEEN_KEY, FRIENDS_PLANNING_KEEP } from './friendsPlanningMoment';
-import { getHomeInsight } from '../services/homeDashboard';
+import { getHomeInsight, selectFriendsActivity, friendsActivitySince, FRIENDS_ACTIVITY_FIELDS } from '../services/homeDashboard';
 import { SEQUENCES, settleMs, tierOf } from '../motion/motionBudget';
 
 const read = (r) => fs.readFileSync(path.join(__dirname, '..', r), 'utf8');
@@ -82,5 +88,54 @@ describe('the moment', () => {
     const home = read('screens/HomeScreen.js');
     expect(home).toMatch(/takeFriendsPlanningMoment\(/);
     expect(home).toMatch(/if \(!cancelled && isNew\) setFriendsPlanningPlay/);
+  });
+});
+
+// Item 41 owner decision (2026-10-11): targeted coverage for the friends-planning query -- the three-day window, the visibility
+// rules and "See gatherings". The live side (RLS, the real select) is the friendsPlanning journey.
+describe('the friends-planning query (selectFriendsActivity)', () => {
+  const now = new Date(2026, 9, 11, 12, 0, 0);
+  const ago = (h) => new Date(now.getTime() - h * 3600 * 1000).toISOString();
+  const ctx = { excludedHostIds: new Set(), isWoman: false, friendIds: new Set(['a', 'b', 'c', 'd']), communityIds: new Set(['club']) };
+  const row = (over) => ({ id: over.id, host_id: 'a', created_at: ago(1), visibility: 'everyone', discoverable: true, women_only: false, ...over });
+  const ids = (rows, opts = {}) => selectFriendsActivity(rows, { visibilityContext: ctx, now, ...opts }).map((g) => g.id);
+
+  test('three-day window: 71 h in, 73 h out (the query\'s own bound, enforced again)', () => {
+    expect(ids([row({ id: 'in', created_at: ago(71) }), row({ id: 'out', host_id: 'b', created_at: ago(73) })])).toEqual(['in']);
+    expect(friendsActivitySince(now)).toBe(new Date(now.getTime() - 72 * 3600 * 1000).toISOString());
+  });
+  test('visibility: invite_only, Link-only, women-only (for a non-woman), a blocked host, a community you are not in -> never', () => {
+    const rows = [
+      row({ id: 'invite', host_id: 'a', visibility: 'invite_only' }),
+      row({ id: 'link', host_id: 'b', discoverable: false }),
+      row({ id: 'women', host_id: 'c', women_only: true }),
+      row({ id: 'otherClub', host_id: 'd', visibility: 'community', community_id: 'x' }),
+    ];
+    expect(ids(rows)).toEqual([]);
+    expect(ids([row({ id: 'blocked' })], { visibilityContext: { ...ctx, excludedHostIds: new Set(['a']) } })).toEqual([]);
+  });
+  test('visible: everyone, friends-only from a friend, your own community', () => {
+    expect(ids([row({ id: 'e' }), row({ id: 'f', host_id: 'b', visibility: 'friends' }), row({ id: 'c1', host_id: 'c', visibility: 'community', community_id: 'club' })])).toEqual(['e', 'f', 'c1']);
+  });
+  test('one plan per friend, never one already in Your Plans, at most 3; no context = nothing', () => {
+    expect(ids([row({ id: 'a1' }), row({ id: 'a2' }), row({ id: 'b1', host_id: 'b' })])).toEqual(['a1', 'b1']);
+    expect(ids([row({ id: 'a1' }), row({ id: 'b1', host_id: 'b' })], { upcomingPlanIds: new Set(['a1']) })).toEqual(['b1']);
+    expect(ids(['a', 'b', 'c', 'd'].map((h) => row({ id: `${h}1`, host_id: h })))).toHaveLength(3);
+    expect(selectFriendsActivity([row({ id: 'x' })], { now })).toEqual([]);
+  });
+  test('the select carries every column the visibility gate reads (the Link-only leak found here)', () => {
+    const gate = read('services/gatherings.js');
+    const body = gate.slice(gate.indexOf('export function applyGatheringVisibilityFilters'), gate.indexOf('async function enrichGatheringsWithDistanceAndSort'));
+    const cols = [...new Set([...body.matchAll(/gathering\.(\w+)/g)].map((m) => m[1]))];
+    expect(cols.length).toBeGreaterThan(3);
+    for (const c of cols) expect([c, new RegExp(`\\b${c}\\b`).test(FRIENDS_ACTIVITY_FIELDS)]).toEqual([c, true]);
+  });
+  test('"See gatherings" lists exactly those plans inline, each opening its own detail', () => {
+    const friendsActivity = [row({ id: 'g1' }), row({ id: 'g2', host_id: 'b' })];
+    const r = getHomeInsight({ friendsActivity }, now);
+    expect(r.cta.label).toBe('See gatherings');
+    expect(r.cta.destination.kind).toBe('inline');
+    expect(r.cta.destination.items.map((it) => it.gathering.id)).toEqual(['g1', 'g2']);
+    for (const it of r.cta.destination.items) expect(it.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: it.gathering.id } });
   });
 });

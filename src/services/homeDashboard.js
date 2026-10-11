@@ -624,41 +624,17 @@ export async function getHomeDashboard() {
 
   let friendsActivity = [];
   if (friendIds.length > 0) {
-    const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
-    // Fetch a wider batch than we'll actually show, then dedupe to one row
-    // per distinct host before capping -- a single friend who created 3
-    // gatherings must never read as "3 friends are already making plans"
-    // (getHomeInsight() below counts friendsActivity.length as the number
-    // of *people*, not the number of gathering rows) or render as the same
-    // host's name repeated 3 times in a row.
-    //
-    // Item 108 (CLAUDE.md, "don't make the app socially noisy"): this used
-    // to select ANY gathering a friend hosted with no visibility check at
-    // all -- a real, confirmed leak (gatherings' own RLS SELECT policy is
-    // `true`, so nothing at the DB layer protected this either) that would
-    // have rendered "{friend} is hosting" / "Sarah's Birthday 🎂" for a
-    // genuinely invite_only (e.g. surprise) plan to any OTHER friend of
-    // that host, spoiling exactly the kind of private planning object this
-    // item asks to keep default-private. Now runs through the exact same
-    // applyGatheringVisibilityFilters() gate getNearbyGatherings()/
-    // searchGatherings() already use, instead of a second, ungated query
-    // that could (and did) drift from that established rule.
+    // The rules (3-day window, the shared visibility gate, one plan per friend, max 3) live in selectFriendsActivity below,
+    // so the query and the filter cannot drift; FRIENDS_ACTIVITY_FIELDS carries every column that gate reads.
     const { data: friendGatherings } = await supabase
       .from('gatherings')
-      .select('id, title, host_id, interest_tag, created_at, scheduled_at, visibility, community_id, women_only, is_public, requires_approval, capacity, attendees:gathering_interest(status, user_id), profiles!gatherings_host_id_fkey(display_name, photo_url)')
+      .select(FRIENDS_ACTIVITY_FIELDS)
       .in('host_id', friendIds)
-      .gte('created_at', threeDaysAgo)
+      .gte('created_at', friendsActivitySince())
       .order('created_at', { ascending: false })
       .limit(15);
     const visibilityContext = await fetchGatheringVisibilityContext(myId);
-    const visibleFriendGatherings = applyGatheringVisibilityFilters(friendGatherings ?? [], visibilityContext);
-    const seenHosts = new Set();
-    friendsActivity = visibleFriendGatherings.filter((g) => {
-      if (upcomingPlanIds.has(g.id)) return false;
-      if (seenHosts.has(g.host_id)) return false;
-      seenHosts.add(g.host_id);
-      return true;
-    }).slice(0, 3);
+    friendsActivity = selectFriendsActivity(friendGatherings ?? [], { visibilityContext, upcomingPlanIds });
   }
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -757,6 +733,31 @@ export async function getHomeDashboard() {
 // AI-flavored sentence up here saying the same thing in fuzzier words
 // would just be a synthetic-feeling line for a card that already
 // explains itself. Don't generate one just because the card exists.
+// "{count} of your friends are already making plans" (Home's friends_planning line; item 41 assembles it). Item 108 (CLAUDE.md,
+// "don't make the app socially noisy"): this used to select ANY gathering a friend hosted with no visibility check -- a real leak
+// (gatherings' RLS SELECT is `true`) that would have shown a friend's invite_only (e.g. surprise) plan to their other friends. It
+// runs through the same applyGatheringVisibilityFilters() gate as every gathering list. Item 41 (2026-10-11): the select now
+// includes `discoverable` -- without it a friend's Link-only gathering (item 74) passed the gate (undefined !== false) and was
+// counted here. One plan per distinct host before capping: one friend who created 3 gatherings must never read as "3 friends".
+export const FRIENDS_ACTIVITY_DAYS = 3;
+export const FRIENDS_ACTIVITY_MAX = 3;
+export const FRIENDS_ACTIVITY_FIELDS = 'id, title, host_id, interest_tag, created_at, scheduled_at, visibility, community_id, women_only, discoverable, is_public, requires_approval, capacity, attendees:gathering_interest(status, user_id), profiles!gatherings_host_id_fkey(display_name, photo_url)';
+export function friendsActivitySince(now = new Date()) {
+  return new Date(now.getTime() - FRIENDS_ACTIVITY_DAYS * 24 * 60 * 60 * 1000).toISOString();
+}
+export function selectFriendsActivity(rows, { visibilityContext, upcomingPlanIds = new Set(), now = new Date() } = {}) {
+  if (!visibilityContext) return [];
+  const since = Date.parse(friendsActivitySince(now));
+  const recent = (rows ?? []).filter((g) => g?.id && g.host_id && Date.parse(g.created_at) >= since); // the query's window, again
+  const seenHosts = new Set();
+  return applyGatheringVisibilityFilters(recent, visibilityContext).filter((g) => {
+    if (upcomingPlanIds.has(g.id)) return false; // already in Your Plans
+    if (seenHosts.has(g.host_id)) return false;
+    seenHosts.add(g.host_id);
+    return true;
+  }).slice(0, FRIENDS_ACTIVITY_MAX);
+}
+
 // Destination contract (item 136, constants/destinationContract.js): a statement about specific gatherings goes to THOSE
 // gatherings -- one = its detail, several = the exact ones listed inline (global rule 5), never the whole Discover list.
 function gatheringDestination(g) {
