@@ -1,3 +1,16 @@
+# Item 20 (2026-10-11) - Animation is interruptible
+
+Owner: "If the user taps Accept while the animation is still playing: immediately accept. If they swipe away: immediately dismiss. The animation is decorative. The functionality is primary."
+
+Audit: "I'll take this one" was already tappable through the offer travel + assembly (handleAccept reads no animation state); the offer travel, occasion overlay, request pulse, responding line and progress glow were already pointerEvents none; nothing navigated after an animation. Gaps fixed:
+- Shared `src/motion/swipeDismiss.js` (`useSwipeToDismiss`; pure rule in `swipeDecision.js`): claims only after an 8 px move so taps still reach buttons inside, follows the finger along allowed directions (no follow under Reduce Motion), dismisses on >= 40 px or a fast flick, else settles back (tiny tier).
+- Offer arrival pill: swipe up/left/right dismisses at once (controller.dismiss, nothing opens). Supersedes the 2026-10-09 "it leaves on its own, no dismissal".
+- Undo toast: swipe down/sideways removes it at once (non-Undo toasts stay pointerEvents none).
+- Match modal (dating + friend): swipe down dismisses at once; during the heart -> N intro the content (still invisible) takes no touches and a tap anywhere skips straight to the settled content (`skipIntro`: intro.skip + entrance settle).
+- Surprise reveal: a tap shows the end state and calls onDone once; GroupOccasionPlan no longer keeps every plan button disabled (`acting`) for the ~1.1 s reveal.
+Not changed: BookedCelebration (inline, blocks nothing, removes itself), OfferAcceptedMorph / VisitConfirmed / OfferAssembly (inline, nothing covered).
+Guard `src/motion/animationInterruptible.test.js`. Jest 5377 passed (397 suites); business web export regenerated; parse-checked. Not device-tested: gesture feel, PanResponder inside a native Modal, web pointer drag.
+
 # CLAUDE.md full snapshot (archived 2026-10-11, before the slim-down)
 
 Everything below is the complete CLAUDE.md as it stood on 2026-10-11 (commit 71c93869), unedited. Every "Active / unfinished work" entry, every Standing Convention in full, and the item-by-item build/verification trail live here. Grep by item number, migration number or feature name.

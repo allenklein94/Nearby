@@ -6,6 +6,7 @@ import useReduceMotion from '../hooks/useReduceMotion';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
 import { MOTION_BUDGET } from './motionBudget';
 import { toastHoldMs } from './toastTiming';
+import { useSwipeToDismiss } from './swipeDismiss';
 
 export { toastHoldMs, UNDO_HOLD_MS } from './toastTiming';
 
@@ -43,6 +44,14 @@ export function SuccessToastHost() {
     Animated.timing(opacity, { toValue: 0, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start(() => setToast(null));
   };
 
+  // Owner item 20: an Undo toast (the only touchable kind) can be swiped away; it goes at once, mid-fade or not.
+  const swipe = useSwipeToDismiss(() => {
+    clearTimeout(timer.current);
+    opacity.stopAnimation();
+    opacity.setValue(0);
+    setToast(null);
+  }, { directions: ['down', 'left', 'right'], enabled: !!toast?.undo });
+
   const runUndo = () => {
     const undo = toast?.undo;
     if (!undo) return;
@@ -54,6 +63,7 @@ export function SuccessToastHost() {
   useEffect(() => {
     emit = (next) => {
       clearTimeout(timer.current);
+      swipe.reset();
       setToast(next);
       playHaptic(HAPTIC_MOMENTS.success);
       opacity.setValue(reduceMotion ? 1 : 0);
@@ -72,7 +82,8 @@ export function SuccessToastHost() {
       <Animated.View
         accessibilityRole="alert"
         accessibilityLiveRegion="polite"
-        style={[styles.pill, toast.undo && styles.pillWithAction, { opacity, backgroundColor: colors.surface, borderColor: colors.border }, shadow?.card]}
+        style={[styles.pill, toast.undo && styles.pillWithAction, { opacity, backgroundColor: colors.surface, borderColor: colors.border }, shadow?.card, swipe.style]}
+        {...swipe.panHandlers}
       >
         <View style={toast.undo ? styles.textWithAction : null}>
           <Text style={[styles.title, { color: colors.textPrimary }]}>

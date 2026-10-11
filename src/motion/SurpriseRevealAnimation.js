@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { Text, StyleSheet, Animated, TouchableWithoutFeedback, View } from 'react-native';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
 import { SEQUENCES } from './motionBudget';
 import { useTheme } from '../context/ThemeContext';
@@ -30,17 +30,33 @@ export default function SurpriseRevealAnimation({ text, onDone, haptic = false }
   const glyphOpacity = useRef(new Animated.Value(1)).current;
   const glyphScale = useRef(new Animated.Value(1)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
+  const timersRef = useRef([]);
+  const doneRef = useRef(false);
+  const finish = () => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    onDone?.();
+  };
+  // Owner item 20: the reveal already happened on the server; this is decoration. A tap shows the end state and
+  // finishes at once.
+  const skip = () => {
+    timersRef.current.forEach(clearTimeout);
+    setStage('party');
+    [glyphOpacity, glyphScale, textOpacity].forEach((v) => { v.stopAnimation(); v.setValue(1); });
+    finish();
+  };
 
   useEffect(() => {
     if (haptic) playHaptic(HAPTIC_MOMENTS.success);
     const timers = [];
+    timersRef.current = timers;
 
     if (reduceMotion) {
       setStage('party');
       glyphOpacity.setValue(1);
       glyphScale.setValue(1);
       textOpacity.setValue(1);
-      timers.push(setTimeout(() => onDone?.(), REDUCED_HOLD_MS));
+      timers.push(setTimeout(finish, REDUCED_HOLD_MS));
       return () => timers.forEach(clearTimeout);
     }
 
@@ -58,7 +74,7 @@ export default function SurpriseRevealAnimation({ text, onDone, haptic = false }
       playStage('party');
       Animated.timing(textOpacity, { toValue: 1, duration: SEQUENCES.surpriseReveal.textFadeMs, useNativeDriver: true }).start();
     }, STAGE_MS * 2));
-    timers.push(setTimeout(() => onDone?.(), STAGE_MS * 2 + HOLD_MS));
+    timers.push(setTimeout(finish, STAGE_MS * 2 + HOLD_MS));
     return () => timers.forEach(clearTimeout);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reduceMotion]);
@@ -66,12 +82,14 @@ export default function SurpriseRevealAnimation({ text, onDone, haptic = false }
   const glyph = stage === 'lock' ? '🔒' : stage === 'sparkle' ? '✨' : '🎉';
 
   return (
-    <View style={styles.container}>
-      <Animated.Text style={[styles.glyph, { opacity: glyphOpacity, transform: [{ scale: glyphScale }] }]}>
-        {glyph}
-      </Animated.Text>
-      {!!text && <Animated.Text style={[styles.text, { opacity: textOpacity }]}>{text}</Animated.Text>}
-    </View>
+    <TouchableWithoutFeedback onPress={skip} accessibilityRole="button" accessibilityLabel={text || 'Surprise revealed'}>
+      <View style={styles.container}>
+        <Animated.Text style={[styles.glyph, { opacity: glyphOpacity, transform: [{ scale: glyphScale }] }]}>
+          {glyph}
+        </Animated.Text>
+        {!!text && <Animated.Text style={[styles.text, { opacity: textOpacity }]}>{text}</Animated.Text>}
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

@@ -16,13 +16,14 @@ import { fetchReplyGlyphs } from '../services/replyGlyphs';
 import { arrivalSignalTitle, arrivalSignalA11y, pillGlyph } from '../utils/offerCopy';
 import { startOfferTravel } from '../motion/offerTravel';
 import BusinessLogoMark from './BusinessLogoMark';
+import { useSwipeToDismiss } from '../motion/swipeDismiss';
 import { getScreenedLogos } from '../services/businessLogos';
 import { pillLogoPartnerId, logoFor } from '../utils/businessLogo';
 
 // Offer arrival signal, Layer 1 (owner, 2026-10-09). The rules for WHICH replies are announced live in
 // services/offerArrivals.js; this file only listens (realtime, a push received while open, app foreground/background) and
 // draws one small pill near the top. Restrained on purpose: a short fade, two soft pulses of the glyph (the push's, item 18), then it rests and
-// leaves by itself. Never sound or vibration (the operating system handles the push itself), never blocks: the pill is the
+// leaves by itself (or at once when swiped away, owner item 20). Never sound or vibration (the operating system handles the push itself), never blocks: the pill is the
 // only touchable area, the rest of the screen stays usable. Reduce Motion: it simply appears and disappears.
 // The sequential offer reveal and the "You're booked" celebration are deferred until the flow has been seen on a device.
 
@@ -88,10 +89,13 @@ export default function OfferArrivalHost() {
     openOnTop(navigationRef, dest.name, dest.params);
   };
 
-  return <OfferArrivalSignal signal={signal} onPress={open} />;
+  // Owner item 20: swiping the pill away dismisses it at once (nothing opens).
+  const dismiss = () => controllerRef.current?.dismiss();
+
+  return <OfferArrivalSignal signal={signal} onPress={open} onDismiss={dismiss} />;
 }
 
-export function OfferArrivalSignal({ signal, onPress }) {
+export function OfferArrivalSignal({ signal, onPress, onDismiss }) {
   const { colors, shadow } = useTheme();
   const { language } = useLanguage();
   const reduceMotion = useReduceMotion();
@@ -99,6 +103,12 @@ export function OfferArrivalSignal({ signal, onPress }) {
   const opacity = useRef(new Animated.Value(0)).current;
   const sparkle = useRef(new Animated.Value(1)).current;
   const pillRef = useRef(null);
+  // Owner item 20: a swipe up or sideways dismisses the pill immediately, even mid-fade or mid-pulse.
+  const swipe = useSwipeToDismiss(() => {
+    opacity.stopAnimation();
+    opacity.setValue(0);
+    onDismiss?.();
+  }, { directions: ['up', 'left', 'right'], enabled: !!onDismiss });
   // The business's screened logo, only when the pill names that one business (utils/businessLogo.js). Arrives a moment
   // after the pill; no logo = the pill exactly as before.
   const [logo, setLogo] = useState(null);
@@ -134,6 +144,7 @@ export function OfferArrivalSignal({ signal, onPress }) {
   useEffect(() => {
     if (signal) {
       const wasHidden = !shown;
+      if (wasHidden) swipe.reset();
       setShown(signal);
       if (reduceMotion) { opacity.setValue(1); sparkle.setValue(1); return; }
       if (wasHidden) {
@@ -155,7 +166,7 @@ export function OfferArrivalSignal({ signal, onPress }) {
   if (!title) return null;
   return (
     <View pointerEvents="box-none" style={[styles.wrap, { top: (initialWindowMetrics?.insets?.top ?? 0) + spacing.xl * 2 }]}>
-      <Animated.View style={{ opacity }}>
+      <Animated.View style={[{ opacity }, swipe.style]} {...swipe.panHandlers}>
         <TouchableOpacity
           key={language}
           ref={pillRef}

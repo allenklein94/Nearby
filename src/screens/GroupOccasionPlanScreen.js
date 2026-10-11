@@ -463,6 +463,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
     try {
       await revealOccasionGroupPlan(planId);
       setRevealAnimating(true);
+      setActing(false); // owner item 20: the plan's buttons never wait for the decorative reveal
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => performReveal() });
       setActing(false);
@@ -471,7 +472,6 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
 
   async function handleRevealAnimationDone() {
     setRevealAnimating(false);
-    setActing(false);
     await load();
   }
 

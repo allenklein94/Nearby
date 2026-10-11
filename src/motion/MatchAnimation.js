@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Modal, Animated } from 'react-native';
+import { View, Text, Image, TouchableOpacity, TouchableWithoutFeedback, StyleSheet, Modal, Animated } from 'react-native';
+import { useSwipeToDismiss } from './swipeDismiss';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
 import { SEQUENCES } from './motionBudget';
 import { NearbyMark } from '../components/brand';
@@ -21,6 +22,7 @@ function useModalEntrance(visible, { delay = 0 } = {}) {
   const reduceMotion = useReduceMotion();
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
+  const timerRef = useRef(null);
 
   useEffect(() => {
     if (visible) {
@@ -37,6 +39,7 @@ function useModalEntrance(visible, { delay = 0 } = {}) {
           Animated.timing(opacityAnim, { toValue: 1, duration: SEQUENCES.matchIntro.entranceMs, useNativeDriver: true }),
         ]).start();
       }, delay);
+      timerRef.current = timer;
       return () => clearTimeout(timer);
     }
     scaleAnim.setValue(reduceMotion ? 1 : 0.7);
@@ -44,7 +47,16 @@ function useModalEntrance(visible, { delay = 0 } = {}) {
     return undefined;
   }, [visible, reduceMotion, delay]);
 
-  return { scaleAnim, opacityAnim };
+  // Owner item 20: jump straight to the settled content (a tap during the intro).
+  const settle = () => {
+    clearTimeout(timerRef.current);
+    scaleAnim.stopAnimation();
+    opacityAnim.stopAnimation();
+    scaleAnim.setValue(1);
+    opacityAnim.setValue(1);
+  };
+
+  return { scaleAnim, opacityAnim, settle };
 }
 
 // Item 118 ("match animations should be restrained"): the ❤️ briefly animates into the Nearby N
@@ -66,6 +78,7 @@ function useHeartToMarkIntro(visible) {
   const [show, setShow] = useState(false);
   const opacity = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(0.6)).current;
+  const timersRef = useRef([]);
 
   useEffect(() => {
     if (!visible || reduceMotion) {
@@ -87,13 +100,21 @@ function useHeartToMarkIntro(visible) {
     const toHide = setTimeout(() => {
       Animated.timing(opacity, { toValue: 0, duration: 120, useNativeDriver: true }).start(() => setShow(false));
     }, MATCH_INTRO_TOTAL_MS);
+    timersRef.current = [toMark, toHide];
     return () => {
       clearTimeout(toMark);
       clearTimeout(toHide);
     };
   }, [visible, reduceMotion]);
 
-  return { show, stage, opacity, scale };
+  const skip = () => {
+    timersRef.current.forEach(clearTimeout);
+    opacity.stopAnimation();
+    opacity.setValue(0);
+    setShow(false);
+  };
+
+  return { show, stage, opacity, scale, skip };
 }
 
 export default function MatchAnimation(props) {
@@ -115,7 +136,12 @@ function DatingVariant({
   // (which only flips true a render later, inside an effect) -- avoids a race where the content's
   // own entrance would briefly start with delay=0 before the intro's own effect has a chance to
   // set delay=MATCH_INTRO_TOTAL_MS.
-  const { scaleAnim, opacityAnim } = useModalEntrance(visible, { delay: reduceMotion ? 0 : MATCH_INTRO_TOTAL_MS });
+  const { scaleAnim, opacityAnim, settle } = useModalEntrance(visible, { delay: reduceMotion ? 0 : MATCH_INTRO_TOTAL_MS });
+  // Owner item 20: the intro is decorative. A tap while it plays shows the real content at once (its buttons are never
+  // tapped while still invisible); a swipe down dismisses the whole moment immediately.
+  const skipIntro = () => { intro.skip(); settle(); };
+  const swipe = useSwipeToDismiss(onDismiss, { directions: ['down'], enabled: visible && !!onDismiss });
+  useEffect(() => { if (visible) swipe.reset(); }, [visible]);
 
   const subtitle = gatheringTitle
     ? `You met through "${gatheringTitle}"`
@@ -125,7 +151,7 @@ function DatingVariant({
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
-      <View style={styles.overlay}>
+      <View style={styles.overlay} {...swipe.panHandlers}>
         {intro.show && (
           <Animated.View style={[styles.introGlyph, { opacity: intro.opacity, transform: [{ scale: intro.scale }] }]}>
             {intro.stage === 'heart' ? (
@@ -135,6 +161,7 @@ function DatingVariant({
             )}
           </Animated.View>
         )}
+        <Animated.View pointerEvents={intro.show ? 'none' : 'auto'} style={[styles.swipeLayer, swipe.style]}>
         <Animated.View style={[styles.content, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
           {/* ❤️ = connection (romantic), per the Nearby Motion Language -- not 🎉, which is
               reserved for occasion/plan/milestone celebration. */}
@@ -177,6 +204,12 @@ function DatingVariant({
             <Text style={styles.dismissText}>Keep Browsing</Text>
           </TouchableOpacity>
         </Animated.View>
+        </Animated.View>
+        {intro.show && (
+          <TouchableWithoutFeedback onPress={skipIntro} accessibilityRole="button" accessibilityLabel="Skip">
+            <View style={StyleSheet.absoluteFill} />
+          </TouchableWithoutFeedback>
+        )}
       </View>
     </Modal>
   );
@@ -190,12 +223,16 @@ function FriendVariant({ haptic = false, visible, theirPhotoUrl, theirName, onSa
   const { colors, shadow } = useTheme();
   const styles = getFriendStyles(colors, shadow);
   const { scaleAnim, opacityAnim } = useModalEntrance(visible);
+  // Owner item 20: a swipe down dismisses at once, mid-entrance or not.
+  const swipe = useSwipeToDismiss(onDismiss, { directions: ['down'], enabled: visible && !!onDismiss });
+  useEffect(() => { if (visible) swipe.reset(); }, [visible]);
   // Item 129: one subtle haptic when a friendship becomes real.
   useEffect(() => { if (visible && haptic) playHaptic(HAPTIC_MOMENTS.friendAccepted); }, [visible]);
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onDismiss}>
-      <View style={styles.overlay}>
+      <View style={styles.overlay} {...swipe.panHandlers}>
+        <Animated.View style={[styles.swipeLayer, swipe.style]}>
         <Animated.View style={[styles.content, { opacity: opacityAnim, transform: [{ scale: scaleAnim }] }]}>
           {/* 🤝 = connection (platonic), per the Nearby Motion Language -- not 🎉, which is
               reserved for occasion/plan/milestone celebration. */}
@@ -216,6 +253,7 @@ function FriendVariant({ haptic = false, visible, theirPhotoUrl, theirName, onSa
             <Text style={styles.secondaryButtonText}>Keep Browsing</Text>
           </TouchableOpacity>
         </Animated.View>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -224,6 +262,7 @@ function FriendVariant({ haptic = false, visible, theirPhotoUrl, theirName, onSa
 const getDatingStyles = (colors, shadow) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
   introGlyph: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
+  swipeLayer: { width: '100%', alignItems: 'center' },
   content: { alignItems: 'center', width: '100%' },
   emoji: { fontSize: 48, marginBottom: spacing.sm },
   title: { ...typography.display, color: '#fff', marginBottom: spacing.xs, textAlign: 'center' },
@@ -252,6 +291,7 @@ const getDatingStyles = (colors, shadow) => StyleSheet.create({
 
 const getFriendStyles = (colors, shadow) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'center', alignItems: 'center', padding: spacing.lg },
+  swipeLayer: { width: '100%', alignItems: 'center' },
   content: {
     width: '100%', backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl,
     alignItems: 'center', ...shadow.card,
