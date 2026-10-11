@@ -42,7 +42,8 @@ test('the server screens media before a customer sees it and refuses a video wit
 });
 test('a video only plays when it has a screened poster; it never autoplays with sound', () => {
   const c = read('src/components/OfferMedia.js');
-  expect(c).toMatch(/if \(!posterPath\)/);
+  expect(c).toMatch(/offerMediaView\(/);
+  expect(read('src/utils/offerPresentationEngine.js')).toMatch(/offer\.media_poster_path \? \{ kind: 'video'/);
   expect(c).toMatch(/isMuted/);
   expect(c).toMatch(/onPress=\{\(\) => setPlaying\(true\)\}/);
 });

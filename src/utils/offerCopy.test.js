@@ -76,7 +76,7 @@ describe('business reply kinds', () => {
     expect(activity).toMatch(/businessReplyTitle\(/);
     expect(activity).toMatch(/acceptedReplyTitle\(/);
     expect(activity).not.toMatch(/You accepted \$\{partnerName\}'s offer/);
-    expect(read('screens/BusinessRequestDetailScreen.js')).toMatch(/businessReplyStatus\(o\)/);
+    expect(read('utils/offerPresentationEngine.js')).toMatch(/businessReplyStatus\(offer\)/);
     expect(read('utils/primaryAction.js')).toMatch(/businessReplyKind\(offer\)/);
     const loader = read('services/businessFulfillment.js');
     const sel = loader.match(/id, request_id, offer_type, offer_price[^']*/)[0];

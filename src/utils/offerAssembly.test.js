@@ -39,7 +39,8 @@ describe('the status step says what the business actually replied (item 121, the
   test('the card reads the status from the one rule, never a second classifier', () => {
     const screen = read('screens/BusinessRequestDetailScreen.js');
     const status = screen.slice(screen.indexOf('<AssemblyStep step="status">'), screen.indexOf('</AssemblyStep>', screen.indexOf('<AssemblyStep step="status">')));
-    expect(status).toContain('businessReplyStatus(o)');
+    expect(status).toContain('shown.statusLine');
+    expect(read('utils/offerPresentationEngine.js')).toMatch(/if \(card === 'open'\) return businessReplyStatus\(offer\)/);
     expect(read('utils/offerAssembly.js')).not.toMatch(/offer_type|businessReplyKind\(/);
   });
 });
@@ -149,7 +150,8 @@ describe('once per newly received reply; Reduce Motion = the finished card', () 
   });
   test('the component decides once per mount and never re-runs on a reload', () => {
     const src = read('components/OfferAssembly.js');
-    expect(src).toMatch(/useState\(\(\) => shouldAssemble\(offer, \{ reduceMotion \}\)\)/);
+    expect(src).toMatch(/useState\(\(\) => assemblesNow\(offer, \{ reduceMotion \}\)\)/);
+    expect(read('utils/offerPresentationEngine.js')).toMatch(/shouldAssemble\(offer,/);
     expect(src).toMatch(/markAssembled\(offer\.id\)/);
     expect(src).toMatch(/cancel\(\);\s*\n\s*if \(running\) running\.stop\(\);/);
   });
@@ -181,8 +183,9 @@ describe('the reveal never gets in the way', () => {
   });
   test('the owner\'s Customer Preview shows the same lines (heard, then what the reply is)', () => {
     const dash = read('screens/BusinessDashboardScreen.js');
-    expect(dash).toContain('{heardYourRequest()}');
-    expect(dash).toMatch(/businessReplyStatus\(\{ \.\.\.previewOffer/);
+    expect(dash).toMatch(/presentOffer\(\{ \.\.\.previewOffer/);
+    expect(dash).toContain("context: { viewer: 'owner_preview' }");
+    expect(dash).toMatch(/\{shown\.heard\}[\s\S]{0,120}\{shown\.statusLine\}/);
   });
 });
 

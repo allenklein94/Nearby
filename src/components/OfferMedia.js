@@ -6,6 +6,7 @@ import { getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment'
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { mediaFitMode } from '../utils/mediaFit';
+import { offerMediaView } from '../utils/offerPresentationEngine';
 
 // Item 10: the business's own image, formatted to the frame. Shaped like the frame = fills it; any other shape (a flyer, a
 // square graphic, a phone video's poster) = shown whole over a blurred copy of itself, so nothing the business made is cut.
@@ -72,8 +73,10 @@ export default function OfferMedia({ path, type, posterPath, localUri = null }) 
     return failed ? null : <FittedImage uri={localUri} style={frame} onFail={() => setFailed(true)} />;
   }
 
-  if (type === 'video') {
-    if (!posterPath) {
+  // Item 21: what this media is (image / tap-to-play video / "Video attached") comes from the presentation engine.
+  const view = offerMediaView({ media_path: path, media_type: type, media_poster_path: posterPath });
+  if (view?.kind === 'video' || view?.kind === 'video_label') {
+    if (view.kind === 'video_label') {
       return <Text style={{ ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs }}>{t('ui.requestDetail.videoAttached')}</Text>;
     }
     if (playing && url) {

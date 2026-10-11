@@ -13,7 +13,7 @@ import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
 import { progressKey, visitConfirmationsToAnimate } from '../utils/offerProgress';
 import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgressShown';
-import { acceptedBookingState, ACCEPTED_TITLE_KEY, acceptedWhenLine, acceptedPartySize } from '../utils/acceptedBooking';
+import { acceptedWhenLine, acceptedPartySize } from '../utils/acceptedBooking';
 import { useFocusEffect } from '@react-navigation/native';
 import { subscribeViewedArrivals } from '../services/offerArrivals';
 import { isOfferTravelPending, reportOfferTravelTarget } from '../motion/offerTravel';
@@ -37,7 +37,8 @@ import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import OfferMedia from '../components/OfferMedia';
 import OfferAssembly, { AssemblyStep, AssemblyGlow } from '../components/OfferAssembly';
 import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
-import { visibleRedemption, validityLabel, isOfferExpired, availableWindowLabel, nextValidityRefreshMs } from '../utils/offerMedia';
+import { presentOffer } from '../utils/offerPresentationEngine';
+import { validityLabel, isOfferExpired, availableWindowLabel, nextValidityRefreshMs } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { consumerOfferAction } from '../utils/primaryAction';
 import { captureRef } from 'react-native-view-shot';
@@ -55,7 +56,7 @@ import OfferOutcomeModal from '../components/OfferOutcomeModal';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
-import { businessReplyStatus, acceptedReplyTitle, businessReplyKind, heardLine, isFirstEverReply, respondingLine } from '../utils/offerCopy';
+import { acceptedReplyTitle, businessReplyKind, isFirstEverReply, respondingLine } from '../utils/offerCopy';
 import { fetchFirstReplyState } from '../services/offerArrivalSource';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
@@ -72,8 +73,7 @@ const STATUS_COPY = {
   merged: { color: 'info' },
 };
 
-// display of 'offered' uses businessReplyStatus (item 121); withdrawn is withdraw_business_offer() (item 50)
-const OFFER_STATUS_COPY = { pending: true, offered: true, accepted: true, declined: true, withdrawn: true, expired: true, cancelled: true, completed: true };
+// An offer's status line comes from the Offer Presentation Engine (utils/offerPresentationEngine.js, item 21).
 
 // Offer System Phase 3 (see CLAUDE.md's own plan, Gap 3): offer_type was
 // already real and stored (never hard-coded to a discount, per the
@@ -1451,6 +1451,12 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           {displayOffers.map((o, offerIndex) => {
             const stats = partnerStats[o.partner_id];
             const reputationLine = formatPartnerReliabilityLine(stats?.reputation, stats?.responseTime);
+            // Item 21: the Offer Presentation Engine decides which card this reply is and how it is presented (static,
+            // building itself in, or the booked confirmation); this screen only lays out what it returns.
+            const shown = presentOffer(o, {
+              business: { name: o.brand_partners?.name ?? null, logoUri: logoFor(partnerLogos, o.partner_id) },
+              context: { isFirstEverReply: firstReplyOfferId === o.id, justAccepted: justAcceptedOfferId === o.id },
+            });
             // The business head (logo, name, title, record): the assembly's first step on an open reply, and the line under
             // "You're booked" once accepted (item 12). One copy, two placements.
             const businessHead = (
@@ -1488,25 +1494,25 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {/* An open reply assembles itself once, when newly received (components/OfferAssembly.js): business ->
                   "Heard your request" -> what they said -> order -> price -> when, then the button settles in as the
                   final slot (always visible and tappable) while the outline glows once. */}
-              {(o.status === 'accepted' || o.status === 'completed') ? (() => {
-                // Item 12: the same card, now booked. Heading from the stored reservation (acceptedBookingState), then the
-                // business, then the real facts; the button's place below goes to the business's own redeem instructions.
-                const bookingState = acceptedBookingState(o);
+              {shown.confirmation ? (() => {
+                // Item 12: the same card, now booked. Heading from the stored reservation (the engine's confirmation), then
+                // the business, then the real facts; the button's place below goes to the business's own redeem instructions.
+                const confirmation = shown.confirmation;
                 const whenLine = acceptedWhenLine({ proposedTimeLabel: o.proposed_time ? formatProposedTime(o.proposed_time, language) : null, dateLabel: planSummary?.dateLabel ?? null, timeLabel: planSummary?.timeLabel ?? null });
                 const partySize = acceptedPartySize(request);
                 return (
                   <OfferAcceptedMorph
-                    title={t(ACCEPTED_TITLE_KEY[bookingState])}
-                    booked={bookingState === 'booked'}
-                    warn={bookingState === 'not_through'}
-                    play={justAcceptedOfferId === o.id}
+                    title={t(confirmation.titleKey)}
+                    booked={confirmation.booked}
+                    warn={confirmation.warn}
+                    play={confirmation.plays}
                     haptic
                   >
                     {businessHead}
                     {whenLine ? <Text style={styles.acceptedFact}>{whenLine}</Text> : null}
                     {partySize != null ? <Text style={styles.acceptedFact}>{t('ui.common.count.people', { count: partySize })}</Text> : null}
                     {/* Marketplace moment 6: the business confirmed the visit. A fact, never something to do. */}
-                    {o.status === 'completed' ? (
+                    {confirmation.visitConfirmed ? (
                       <VisitConfirmed key={progressKey(o)} label={t('ui.requestDetail.visitConfirmed')} play={visitPlayKeys.has(progressKey(o))} />
                     ) : null}
                   </OfferAcceptedMorph>
@@ -1516,8 +1522,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {businessHead}
               </AssemblyStep>
               )}
-              {o.status === 'offered' ? (
-                <AssemblyStep step="heard"><Text style={styles.offerReputationLine}>{heardLine(firstReplyOfferId === o.id)}</Text></AssemblyStep>
+              {shown.heard ? (
+                <AssemblyStep step="heard"><Text style={styles.offerReputationLine}>{shown.heard}</Text></AssemblyStep>
               ) : null}
               {/* Item 121 ("Business offer acceptance should feel equally tangible"): "Offer
                   Accepted ✓ -> details slide into place" -- a brief dip/recover on the whole
@@ -1526,9 +1532,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   switches (Items 114-117), applied here to a single offer card's own real state
                   transition. */}
               <ModeTransition activeKey={o.status}>
-              {(o.status !== 'accepted' && o.status !== 'completed') ? (
+              {shown.statusLine ? (
               <AssemblyStep step="status">
-              <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.requestDetail.thisOfferHasExpired') : (o.status === 'offered' ? businessReplyStatus(o) : (OFFER_STATUS_COPY[o.status] ? t(`ui.requestDetail.offerStatus.${o.status}`) : o.status))}</Text>
+              <Text style={styles.offerStatus}>{shown.statusLine}</Text>
               </AssemblyStep>
               ) : null}
               {o.status === 'offered' && (
@@ -1582,10 +1588,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
                   <OfferMedia path={o.media_path} type={o.media_type} posterPath={o.media_poster_path} />
                   {/* Item 12: where "I'll take this one" was, the business's own instructions; none given = nothing here. */}
-                  {visibleRedemption(o) ? (
+                  {shown.redemption ? (
                     <View style={styles.redeemCallout}>
                       <Text style={styles.redeemCalloutLabel}>{t('ui.requestDetail.howToRedeem')}</Text>
-                      <Text style={styles.redeemCalloutText}>{visibleRedemption(o)}</Text>
+                      <Text style={styles.redeemCalloutText}>{shown.redemption}</Text>
                     </View>
                   ) : null}
                   {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (

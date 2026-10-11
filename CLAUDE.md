@@ -240,6 +240,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - Empty states from `constants/emptyStates.js`, each with a real next step. Errors via
   `presentRecoverableError` (service failure = Try Again; input problem = the fix). Confirmations say what
   happened (`actionConfirmations.js`). Undo only for private, local, reversible actions (allowlist guard).
+- **Offer Presentation Engine (owner item 21):** `presentOffer()` in `utils/offerPresentationEngine.js` decides how a
+  reply is shown (card waiting/open/closed/booked/visited; rendering static/animated/confirmation; media image/video/
+  "Video attached") from offer data + name/screened logo + context. The customer card, the owner's Customer Preview,
+  `OfferAssembly` and `OfferMedia` read it; screens never decide an offer's presentation. It reads no payment/sponsor/rank
+  fields and same content = same presentation for every business (item 17). Improve motion there, not per screen.
 - Offers read as a personal response ("X made you an offer"), never an ad; sponsored is always labeled and
   separate. "I'll take this one" and "You're booked" wording are locked.
 

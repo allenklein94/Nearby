@@ -1,3 +1,12 @@
+# Item 21 (2026-10-11) - Offer Presentation Engine
+
+Owner: build offer presentation as one reusable engine (offer data + business brand assets + offer type + consumer context -> static card / animated card / video offer / confirmation animation) so the animation system can improve later without rebuilding the marketplace.
+
+Built `src/utils/offerPresentationEngine.js` (pure, no React Native): `presentOffer(offer, { business: {name, logoUri}, context: {viewer customer|owner_preview, reduceMotion, now, isFirstEverReply, justAccepted, playedIds} })` -> `{ card (waiting/open/closed/booked/visited), rendering (static/animated/confirmation), replyKind, business, media (image/video/video_label via offerMediaView), heard, statusLine, steps, discountPct, confirmation {state, titleKey, booked, warn, plays, visitConfirmed}, redemption }`, plus `assemblesNow`, `offerCard`, `offerMediaView`. It composes the existing single sources (offerCopy item 121, offerAssembly, acceptedBooking item 12, objectLifecycle, offerPresentation item 11, offerMedia) and adds no rule of its own.
+Wired: BusinessRequestDetailScreen (which card, heard line, status line, booked confirmation, Visit confirmed, redeem callout; the local OFFER_STATUS_COPY table removed), the owner's Customer Preview (viewer owner_preview: always the open card, never the first-ever wording), OfferAssembly (assemblesNow) and OfferMedia (offerMediaView for the video/label branch). Layout, wording, timings and motion are unchanged; one small visible difference: an open reply that has EXPIRED no longer shows "Heard your request" (it is a closed card now).
+Fairness: the engine never reads payment/sponsorship/ranking/plan fields (guard); two businesses with the same content get identical output apart from name/logo (test). Old source-pinning guards in offerAssembly, offerCopy, offerMedia, firstReplyMoment, actionConfirmations, offerAcceptedMorph and marketplaceMoments tests now point at the engine. Not changed: GroupPlan's offer rendering and AcceptedBusinessOfferCard (other surfaces, own layouts) - candidates to move onto the engine when touched.
+Tests `src/utils/offerPresentationEngine.test.js` (19). Jest 5396 passed (398 suites); business web export regenerated; parse-checked; not device-tested.
+
 # Item 20 (2026-10-11) - Animation is interruptible
 
 Owner: "If the user taps Accept while the animation is still playing: immediately accept. If they swipe away: immediately dismiss. The animation is decorative. The functionality is primary."

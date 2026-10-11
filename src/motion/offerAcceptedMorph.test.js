@@ -74,8 +74,10 @@ describe('screen wiring (BusinessRequestDetail)', () => {
   const src = strip(read('screens/BusinessRequestDetailScreen.js'));
   test('no separate card above the offers; the accepted offer card morphs in place', () => {
     expect(src).not.toMatch(/BookedCelebration/);
-    expect(src).toMatch(/\(o\.status === 'accepted' \|\| o\.status === 'completed'\) \? \(\(\) => \{/);
-    expect(src).toMatch(/<OfferAcceptedMorph[\s\S]*?play=\{justAcceptedOfferId === o\.id\}/);
+    // Item 21: the booked card comes from the Offer Presentation Engine's confirmation (accepted or completed).
+    expect(src).toMatch(/\{shown\.confirmation \? \(\(\) => \{/);
+    expect(src).toMatch(/justAccepted: justAcceptedOfferId === o\.id/);
+    expect(src).toMatch(/<OfferAcceptedMorph[\s\S]*?play=\{confirmation\.plays\}/);
   });
   test('submitting: one accept in flight; the morph only follows a successful server accept and a reload', () => {
     expect(src).toMatch(/if \(acceptingRef\.current\) return;/);
@@ -92,7 +94,7 @@ describe('screen wiring (BusinessRequestDetail)', () => {
     expect(handler).toMatch(/setActingOfferId\(null\)/);
   });
   test('redeem: the business\'s own instructions, no Redeem button; Mark as completed unchanged', () => {
-    expect(src).toMatch(/visibleRedemption\(o\) \? \(\s*<View style=\{styles\.redeemCallout\}>/);
+    expect(src).toMatch(/shown\.redemption \? \(\s*<View style=\{styles\.redeemCallout\}>/);
     expect(src).not.toMatch(/t\('ui\.requestDetail\.redeem'\)/);
     expect(src).toMatch(/onPress=\{\(\) => handleComplete\(o\.id\)\}/);
     expect(src).toMatch(/t\('ui\.requestDetail\.markAsCompleted'\)/);

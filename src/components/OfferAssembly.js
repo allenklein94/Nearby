@@ -3,7 +3,8 @@ import { Animated, Easing, StyleSheet } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { SEQUENCES, infoOpacity } from '../motion/motionBudget';
 import { afterOfferTravel } from '../motion/offerTravel';
-import { ASSEMBLY_STEPS, assemblySteps, shouldAssemble, markAssembled, stepDelay, finishDelay } from '../utils/offerAssembly';
+import { ASSEMBLY_STEPS, assemblySteps, markAssembled, stepDelay, finishDelay } from '../utils/offerAssembly';
+import { assemblesNow } from '../utils/offerPresentationEngine';
 
 // An open business reply's card assembling itself (owner, 2026-10-09; decisions in utils/offerAssembly.js): business ->
 // "Heard your request" -> what they said -> the order -> price -> when, each a gentle fade with a slight upward settle.
@@ -17,7 +18,8 @@ const T = SEQUENCES.offerAssembly;
 
 export default function OfferAssembly({ offer, children }) {
   const reduceMotion = useReduceMotion();
-  const [animate] = useState(() => shouldAssemble(offer, { reduceMotion }));
+  // The Offer Presentation Engine (item 21) decides whether this reply builds itself in.
+  const [animate] = useState(() => assemblesNow(offer, { reduceMotion }));
   const values = useRef(null);
   if (!values.current) {
     values.current = Object.fromEntries([...ASSEMBLY_STEPS, 'action'].map((k) => [k, new Animated.Value(animate ? 0 : 1)]));

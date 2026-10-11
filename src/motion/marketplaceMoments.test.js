@@ -68,8 +68,8 @@ describe('moment 6: Visit confirmed', () => {
   it('keeps "You\'re booked" only for a confirmed reservation; a completed visit keeps the booked card', () => {
     expect(acceptedBookingState(o('completed'))).toBe('booked');
     expect(acceptedBookingState({ status: 'completed', business_reservations: [] })).toBe('accepted');
-    expect(screen).toMatch(/\(o\.status === 'accepted' \|\| o\.status === 'completed'\) \? \(\(\) =>/);
-    expect(screen).toMatch(/o\.status === 'completed' \? \(\s*<VisitConfirmed/);
+    expect(screen).toMatch(/\{shown\.confirmation \? \(\(\) =>/);
+    expect(screen).toMatch(/confirmation\.visitConfirmed \? \(\s*<VisitConfirmed/);
   });
   it('wording is a fact, never an action', () => {
     const strings = JSON.parse(src('../scripts/i18n/strings/requestDetail.json'));

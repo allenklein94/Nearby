@@ -16,11 +16,11 @@ import SettingConflictNotice from '../components/SettingConflictNotice';
 import { useSettingConflicts } from '../hooks/useSettingConflicts';
 import { conflictMessages, hasPending, shownValue } from '../utils/settingConflicts';
 import OfferCustomerBody from '../components/OfferCustomerBody';
+import { presentOffer } from '../utils/offerPresentationEngine';
 import BusinessLogoMark from '../components/BusinessLogoMark';
 import { getScreenedLogos } from '../services/businessLogos';
 import { logoFor } from '../utils/businessLogo';
 import { offerFunnelView } from '../utils/offerFunnel';
-import { heardYourRequest, businessReplyStatus } from '../utils/offerCopy';
 import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionConfirmations';
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
@@ -7071,9 +7071,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         <BusinessLogoMark uri={previewLogo} />
                         <Text style={[styles.offerTitle, styles.previewPartnerName]}>{selectedPartner?.name}</Text>
                       </View>
-                      {/* Same lines, same order as the customer's card (components/OfferAssembly.js): heard, then what this reply is. */}
-                      <Text style={styles.breakdownText}>{heardYourRequest()}</Text>
-                      <Text style={styles.breakdownText}>{businessReplyStatus({ ...previewOffer, offer_type: offerTypeInput, offer_title: offerTitleInput.trim() || null, discount_pct: offerTypeInput === 'discount' ? parseDiscountPct(offerDiscountInput) : null })}</Text>
+                      {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
+                      {(() => {
+                        const shown = presentOffer({ ...previewOffer, offer_type: offerTypeInput, offer_title: offerTitleInput.trim() || null, discount_pct: offerTypeInput === 'discount' ? parseDiscountPct(offerDiscountInput) : null }, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } });
+                        return (
+                          <>
+                            <Text style={styles.breakdownText}>{shown.heard}</Text>
+                            <Text style={styles.breakdownText}>{shown.statusLine}</Text>
+                          </>
+                        );
+                      })()}
                       {!!offerTitleInput.trim() && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{offerTitleInput.trim()}</Text>}
                       <OfferCustomerBody offer={previewOffer} localMedia={localMedia} />
                       <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>

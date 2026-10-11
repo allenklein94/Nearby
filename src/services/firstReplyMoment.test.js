@@ -173,7 +173,8 @@ describe('the card', () => {
     expect(mark).toBeGreaterThan(decide);
     expect(screen).toMatch(/if \(!firstReplyDecided\.current && unviewed\.length > 0 && result\.request\.requester_id === uid\)/);
     expect(screen).toMatch(/unviewed\.find\(\(o\) => isFirstEverReply\(o\.id, history\)\)/);
-    expect(screen).toContain('{heardLine(firstReplyOfferId === o.id)}');
+    expect(screen).toContain('isFirstEverReply: firstReplyOfferId === o.id');
+    expect(screen).toContain('{shown.heard}');
   });
 
   test('no new motion: the moment changes only words (and the pill hold)', () => {
