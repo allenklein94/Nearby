@@ -1,3 +1,14 @@
+# Item 35 signed off (2026-10-11, owner) - CLOSED
+
+Owner approved sign-off provided the live behaviour and the review notes check out, without reopening the design. Checked the same day:
+`scripts/live-verify/experience-feedback-ranking.sql` 12/12 live (latest word per host/business/kind, Not for me lowers, neutral
+words clear, skipped prompt is no word, never-learned categories never returned, own gathering never counts, old positive-only
+function gone, single overload, not anon-executable); the review change is in place: ONE `feedbackWeight(maturity)` used by Home's
+candidate pool, Picked For You (`homeAttention.js`), Discover gatherings (`DiscoverHubScreen.js`) and typed asks
+(`utils/experienceFeedback.js` resolver pass); +/-5 (`FEEDBACK_POINTS` = `EXPLICIT_POINTS`); Discover applies it to gatherings only.
+Unit tests 42/42 (experienceFeedback, resolver, homeRecommendations); journey `planComplete` passes. Still not covered, as stated
+at approval: Discover business/perk lists, communities, people. No device check needed (ranking only, no UI change).
+
 # Item 41 follow-up (2026-10-11, owner): "See gatherings" never repeats the chips
 
 **Cause:** `friendsActivity` was capped at 3 = exactly the chips, and "See gatherings" listed that same set, so it always repeated them.

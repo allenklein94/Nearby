@@ -76,9 +76,6 @@ from-scratch migration replay is done before claiming fresh-install verification
 **Item 43 (Create: formation on publish) is APPROVED (owner, 2026-10-11, LOCKED), READY FOR DEVICE VERIFICATION until** every check in
 `PRODUCT_AUDIT/ITEM_43_GATHERING_FORMATION_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (journey `gatheringFormation`; no new strings). Do not expand scope.
 
-**Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
-weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
-
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -127,7 +124,7 @@ redemption; never estimated revenue or invented value.
 "See gatherings" must not repeat the chips' plans; (c) item 35 sign-off check; (d) `docs/business.html` headless-browser check
 (real-browser review stays open). Status per step lands here as each finishes. (a) DONE: migration 20270298 live, send-push
 redeployed, journey `planMessagePush` 5/5; the Messages hint now names plan group chats (11 languages, native review pending).
-(b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
+(c) DONE: item 35 signed off and closed. (b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
 
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
@@ -230,7 +227,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `compareRanked`). All five consumer surfaces use it; business routing stays separate.
 - Declared interest (5) > learned behavior (0-4, needs 2+ separate pieces of evidence) > single click (0).
   Under any stated constraint, learned affinity and history are only literal tie-breakers.
-- **"How was it?" ranks both ways (item 35):** the latest word per host/business/kind (`get_my_experience_feedback`, read only via
+- **"How was it?" ranks both ways (item 35, SIGNED OFF 2026-10-11):** the latest word per host/business/kind (`get_my_experience_feedback`, read only via
   `utils/experienceFeedback.js`): loved +5 / Not for me -5 in the interest tier, scaled by account maturity (`feedbackWeight`:
   one early rating weighs less), most specific wins, cancels learned behavior for a Not-for-me kind; reorders only; Not for me
   shows no reason. Home, Picked For You, Discover gatherings, typed asks; NOT Discover business/perk lists, communities, people.
