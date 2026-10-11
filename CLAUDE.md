@@ -57,8 +57,9 @@ card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests 
 **Item 36 (weather contextual layer) is APPROVED, READY FOR DEVICE VERIFICATION (not device-verified) until** every check in
 `PRODUCT_AUDIT/ITEM_36_WEATHER_LAYER_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (owner: wording and card-only scope locked).
 
-**Item 37 (strong match) is READY FOR OWNER REVIEW AND DEVICE VERIFICATION** until every check in
-`PRODUCT_AUDIT/ITEM_37_STRONG_MATCH_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (built; tests, `strongMatch` journey pass; no new strings).
+**Item 37 (strong match) is APPROVED, READY FOR DEVICE VERIFICATION (not device-verified) until** every check in
+`PRODUCT_AUDIT/ITEM_37_STRONG_MATCH_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device AND native review of `vocab.confidence.high`
+is done; then close it without expanding scope (owner: wording, ticks-as-intent, interaction LOCKED; ranking/device not verified by this item).
 
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
@@ -299,6 +300,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Strong match (owner item 37):** a typed ask's top pick (Home, Discover) whose activity, stated time AND close distance all really
   match (`utils/strongMatch.js`, the one rule; unknown never counts) shows those pieces ticking ✓ then "A strong match for you"
   (item 61 wording, never "perfect") in place of Nearby Pick (`motion/StrongMatch.js`, medium tier). Never reorders, never elsewhere.
+  Owner LOCKED: it explains why the result fits, never that it is the best; no separate "Your intent" step; never tick an unmet constraint.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).
