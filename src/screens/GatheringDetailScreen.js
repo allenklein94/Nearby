@@ -1,6 +1,6 @@
 import GatheringPublishedPanel from '../components/GatheringPublishedPanel';
 import { practicalFactsIn } from '../i18n/gatheringFactsDisplay';
-import { attendeeSummary } from '../utils/gatheringAttendeeDisplay';
+import { attendeeSummary, attendeeCluster, CLUSTER_MAX_FACES } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
@@ -50,7 +50,7 @@ import { getMyPartnershipRequestForTarget } from '../services/businessPartnershi
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
-import { approvedIds, newJoinsToAnimate, joinedNote, attendeesNewFirst, acceptedInviteeIds } from '../utils/hostLiveJoins';
+import { approvedIds, newJoinsToAnimate, joinedNote, acceptedInviteeIds, arrivalDelayMs, asideMs } from '../utils/hostLiveJoins';
 import { AvatarArrive } from '../motion/JoinArrival';
 import { filterToMyFriends } from '../services/friends';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
@@ -71,7 +71,7 @@ import { useTheme } from '../context/ThemeContext';
 import { displayDateTime, displayGatheringDateTime } from '../i18n/display';
 import { useLanguage } from '../context/LanguageContext';
 import useCategoryNames from '../hooks/useCategoryNames';
-import { attendeeTotal, getGatheringFullness, gatheringBusinessPartySize } from '../utils/gatheringFullness';
+import { attendeeTotal, attendingFigure, getGatheringFullness, gatheringBusinessPartySize } from '../utils/gatheringFullness';
 import { gatheringRequestText } from '../utils/gatheringBusinessAsk';
 import { countLabel } from '../utils/plural';
 import { spacing, radius, typography } from '../theme';
@@ -83,6 +83,10 @@ import { interestedConfirmation } from '../utils/actionConfirmations';
 
 // Labels: ui.gatheringVocab.vibe.<key>.{label, low, high} (shared with Create/Edit).
 const VIBE_SCALES = [{ key: 'energy_level' }, { key: 'conversation_level' }, { key: 'group_size_feel' }];
+// Who's going cluster (item 28 follow-up): 36 px faces overlapping by CLUSTER_OVERLAP_PX, so one arrival moves the others
+// aside by one slot (AVATAR_SLOT_PX).
+const CLUSTER_OVERLAP_PX = 12;
+const AVATAR_SLOT_PX = 36 - CLUSTER_OVERLAP_PX;
 
 export default function GatheringDetailScreen({ route, navigation }) {
   const { gatheringId } = route.params;
@@ -245,8 +249,10 @@ export default function GatheringDetailScreen({ route, navigation }) {
             .catch(() => new Set())
             .then((friendIds) => setLiveJoin((cur) => (cur.ids === fresh ? { ...cur, note: joinedNote(fresh, joinRows, friendIds, acceptedInviteeIds(invites)) } : cur)));
         }
+        // Item 28 follow-up: the host's Going figure counts the host too (host + 3 joined = "4 attending"); the join detection
+        // above keeps comparing the server's guest counts.
         setCountdownStats({
-          going: going ?? attendeeTotal(g),
+          going: attendingFigure(g, going ?? attendeeTotal(g)),
           requests,
           waitlisted: g.waitlistCount ?? null,
           interested: g.interestedCount ?? null,
@@ -801,34 +807,44 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>{t('ui.gatheringDetail.whosGoing')}</Text>
               <View style={styles.attendeesRow}>
-                <View style={styles.attendeeAvatars}>
-                  {/* Item 25 #3: on the host's live join, the new face is at the front and settles in (keyed per join event). */}
-                  {/* Item 28: it flows in from the leading edge and the faces already there ease aside to make room. */}
+                {/* Item 28 follow-up: ONE overlapping cluster of the whole group, host included, "+N" for everyone else (a count). */}
+                {/* Item 25 #3 / 28: on the host's live join the new faces lead and flow in, one after another (keyed per join event), */}
+                {/* while the faces already there ease aside for the whole sequence. */}
+                <View style={styles.attendeeAvatars} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
                   {(() => {
-                    const shown = attendeesNewFirst(gathering.approvedAttendees, liveJoin.ids).slice(0, 6);
-                    const arrivals = shown.filter((a) => liveJoin.ids.includes(a.user_id)).length;
-                    return shown.map((attendee, i) => {
-                    const url = attendeePhotoUrls[attendee.user_id];
-                    const arriving = liveJoin.ids.includes(attendee.user_id);
-                    const aside = !arriving && arrivals > 0;
-                    return (
-                      <AvatarArrive
-                        key={arriving || aside ? `${attendee.user_id}:${joinGlowKey}` : attendee.user_id}
-                        play={arriving}
-                        asideBy={aside ? arrivals * AVATAR_SLOT_PX : 0}
-                        style={{ marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }}
-                      >
-                        {url ? (
-                          <Image source={{ uri: url }} style={styles.attendeeAvatar} />
-                        ) : (
-                          <View style={[styles.attendeeAvatar, styles.attendeeAvatarPlaceholder]} />
-                        )}
-                      </AvatarArrive>
-                    );
+                    const cluster = attendeeCluster(gathering, liveJoin.ids, { maxFaces: CLUSTER_MAX_FACES });
+                    if (!cluster) return null;
+                    const arrivals = cluster.faces.filter((a) => liveJoin.ids.includes(a.user_id)).length;
+                    let order = 0;
+                    const faces = cluster.faces.map((attendee, i) => {
+                      const url = attendee.isHost ? hostPhotoUrl : attendeePhotoUrls[attendee.user_id];
+                      const arriving = liveJoin.ids.includes(attendee.user_id);
+                      const aside = !arriving && arrivals > 0;
+                      return (
+                        <AvatarArrive
+                          key={arriving || aside ? `${attendee.user_id}:${joinGlowKey}` : attendee.user_id}
+                          play={arriving}
+                          delayMs={arriving ? arrivalDelayMs(order++) : 0}
+                          asideBy={aside ? arrivals * AVATAR_SLOT_PX : 0}
+                          asideMs={asideMs(arrivals)}
+                          style={{ marginLeft: i > 0 ? -CLUSTER_OVERLAP_PX : 0, zIndex: 20 - i }}
+                        >
+                          {url ? (
+                            <Image source={{ uri: url }} style={styles.attendeeAvatar} />
+                          ) : (
+                            <View style={[styles.attendeeAvatar, styles.attendeeAvatarPlaceholder]} />
+                          )}
+                        </AvatarArrive>
+                      );
                     });
+                    return cluster.overflow > 0 ? [...faces, (
+                      <View key="more" style={[styles.attendeeAvatar, styles.attendeeMore, { marginLeft: -CLUSTER_OVERLAP_PX, zIndex: 0 }]}>
+                        <Text style={styles.attendeeMoreText}>+{cluster.overflow}</Text>
+                      </View>
+                    )] : faces;
                   })()}
                 </View>
-                <Text style={styles.attendeesText}>{attendeeSummary(gathering, { verb: 'going', maxAvatars: 6 })?.text}</Text>
+                <Text style={styles.attendeesText}>{attendeeSummary(gathering, { verb: 'going', maxAvatars: CLUSTER_MAX_FACES })?.text}</Text>
               </View>
               {firstTimerCount > 0 && (
                 <Text style={styles.firstTimerText}>
@@ -1030,7 +1046,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 attendeesExpanded={attendeesExpanded}
                 messageCount={hostMessageCount}
                 joinGlowKey={joinGlowKey}
-                joinPreviousGoing={liveJoin.previousGoing}
+                joinPreviousGoing={attendingFigure(gathering, liveJoin.previousGoing)}
                 joinedNote={liveJoin.note}
                 onInvite={() => setInviteModalVisible(true)}
                 onEdit={() => navigation.navigate('EditGathering', { gathering })}
@@ -1416,6 +1432,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   attendeeAvatars: { flexDirection: 'row', alignItems: 'center' },
   attendeeAvatar: { width: 36, height: 36, borderRadius: 18, borderWidth: 2, borderColor: colors.background },
   attendeeAvatarPlaceholder: { backgroundColor: colors.border },
+  attendeeMore: { backgroundColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  attendeeMoreText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700' },
   attendeesText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginLeft: spacing.sm },
   firstTimerText: { color: colors.textTertiary, fontSize: 12, marginTop: spacing.sm },
   groupInsightsLine: { color: colors.textSecondary, fontSize: 14, marginBottom: 4 },

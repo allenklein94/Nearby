@@ -73,7 +73,7 @@ import { homeLoadNotice } from '../utils/homeLoadNotice';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, describeFriendGatheringTiming } from '../utils/timeContext';
 import { firstRunInterestLine } from '../utils/firstRunInterests';
 import { homeWeatherCard, goodWeatherCardAllowed, localDayKey } from '../constants/weatherRelevance';
-import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { attendingFigure, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
@@ -521,7 +521,7 @@ export default function HomeScreen({ navigation }) {
         {confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
         {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
         <Text style={styles.trendingMeta}>
-          {[card.meta, g.approvedAttendees ? translate(language, 'reasons.attendingCount', { count: attendeeTotal(g) }) : null].filter(Boolean).join(' · ')}
+          {[card.meta, g.approvedAttendees ? translate(language, 'reasons.attendingCount', { count: attendingFigure(g) }) : null].filter(Boolean).join(' · ')}
         </Text>
         {card.social ? <Text style={styles.trendingMeta}>{card.social}</Text> : null}
         {gatheringFullnessLabel(g) && (

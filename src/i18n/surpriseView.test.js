@@ -140,6 +140,6 @@ describe('wiring', () => {
   it('the Picked For You attending count uses the shared translated count', () => {
     const home = read('screens/HomeScreen.js');
     expect(home).not.toMatch(/\} attending`/);
-    expect(home).toMatch(/translate\(language, 'reasons\.attendingCount', \{ count: attendeeTotal\(g\) \}\)/);
+    expect(home).toMatch(/translate\(language, 'reasons\.attendingCount', \{ count: attendingFigure\(g\) \}\)/);
   });
 });

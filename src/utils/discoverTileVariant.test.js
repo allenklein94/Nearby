@@ -104,9 +104,9 @@ describe('hero reasons and actions stay real', () => {
     expect(card.action?.label).toBe('Join');
   });
 
-  it('a Trending hero leads with the real attendance count', () => {
+  it('a Trending hero leads with the real attendance count (host included: 12 joined + host = 13)', () => {
     const item = g('hot1', { approvedCount: 12 });
-    expect(sectionLeadReason('trending', item)).toBe(reasonText('attendingCount', { count: 12 }));
+    expect(sectionLeadReason('trending', item)).toBe(reasonText('attendingCount', { count: 13 }));
   });
 
   it('hero labels are the section\'s own signal, never "Personalized"', () => {

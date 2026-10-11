@@ -108,7 +108,7 @@ const withoutLeadGlyph = (title) => String(title ?? '').replace(/^⚡\s*/u, '');
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { attendeeTotal, gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { attendeeTotal, attendingFigure, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringSignalLine, PARTY_TYPE_LABELS } from '../constants/gatheringDisplaySignals';
 // P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
 // the business/perk half of the same fix.
@@ -1904,7 +1904,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       friendGoingReason(g, myFriendIds, myUserId),
       g.matchesYourInterests && g.interest_tag ? becauseYouLikeReason(g.interest_tag) : null,
       friendsInterestReason(g.interest_tag, friendInterestByTag[g.interest_tag]),
-      attendeeCount >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: attendeeCount }) : null,
+      attendeeCount >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: attendingFigure(g, attendeeCount) }) : null,
       ...(g.fit?.reasons ?? []),
     ].filter(Boolean);
   }

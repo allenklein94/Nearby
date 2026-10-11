@@ -1,7 +1,7 @@
 import { isWithinRightNowWindow } from './rightNowWindow';
 import { matchesDateFilter, TONIGHT_START_HOUR } from './gatheringDateFilter';
 import { gatheringTimeBadge } from './gatheringTimeLabel';
-import { attendeeTotal } from './gatheringFullness';
+import { attendeeTotal, attendingFigure } from './gatheringFullness';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { friendsInterestReason } from './friendInterests';
 import { compareTierVectors } from '../constants/signalPriority';
@@ -16,7 +16,7 @@ export function sectionLeadReason(sectionKey, g, { friendInterestByTag = {} } = 
   if (sectionKey === 'friends') return g.interest_tag ? friendsInterestReason(g.interest_tag, friendInterestByTag?.[g.interest_tag]) : null;
   if (sectionKey === 'trending') {
     const n = attendeeTotal(g);
-    return n >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: n }) : null;
+    return n >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: attendingFigure(g, n) }) : null;
   }
   return null;
 }

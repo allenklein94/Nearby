@@ -1,3 +1,5 @@
+import { SEQUENCES } from '../motion/motionBudget';
+
 // Item 15 (owner, 2026-10-10, LOCKED): someone joining while the host has the gathering open is a real event, so the
 // Going line updates live and glows once. This decides WHICH reads earn that glow; the stored attendance stays the truth.
 //
@@ -42,6 +44,17 @@ export function joinedNote(freshIds, rows, friendIds, acceptedInviteIds = null) 
 // with inviter = the viewer, this gathering; RLS lets only the inviter or invitee read them). Unknown (a failed read) = none.
 export function acceptedInviteeIds(sentInvites) {
   return new Set((sentInvites ?? []).filter((r) => r?.status === 'accepted' && r.invitee_id).map((r) => r.invitee_id));
+}
+
+// Item 28 follow-up (owner, 2026-10-11): several joins in ONE update arrive one after another (the lead first), never all
+// at once; separate updates stay separate moments (the screen's 700 ms realtime debounce). `order` = the arrival's place among
+// this update's arrivals. The faces already shown ease aside for the whole sequence, finishing as the last one lands.
+export function arrivalDelayMs(order) {
+  const J = SEQUENCES.friendJoin;
+  return Math.min(Math.max(order, 0), J.maxStaggered - 1) * J.staggerMs;
+}
+export function asideMs(arrivals) {
+  return arrivals > 0 ? arrivalDelayMs(arrivals - 1) + SEQUENCES.friendJoin.avatarMs : 0;
 }
 
 // The Who's going avatar row with the people who just joined at the front, so the new face is the one that arrives.

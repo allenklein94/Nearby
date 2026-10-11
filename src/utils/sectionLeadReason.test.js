@@ -10,7 +10,7 @@ import { gatheringCardModel } from './recommendationCard';
 
 const going = 'Sam is going';
 const because = becauseYouLikeReason('Coffee');
-const attending = reasonText('attendingCount', { count: 12 });
+const attending = reasonText('attendingCount', { count: 13 }); // 12 joined + the host (item 28 follow-up)
 const friendsInto = friendsInterestReason('Coffee', { friend_count: 1, names: ['Alex'] });
 
 describe('strongestReasons with a section lead', () => {

@@ -35,6 +35,13 @@ export function attendeeTotal(gathering) {
 export function peopleGoing(gathering, guests = attendeeTotal(gathering)) {
   return guests + 1;
 }
+// Owner item 28 follow-up (2026-10-11): every attending/going FIGURE a person reads counts the host too (host + 3 joined =
+// "4 attending"), on every surface. Only approved attendees + the host: never invitees, Interested, requests or the waitlist.
+// The host never has an attendee row (join_gathering refuses the host), so nobody is counted twice. Thresholds (Trending,
+// fullness, ranking points) keep comparing guests. An unknown guest count stays unknown (null), never a guess.
+export function attendingFigure(gathering, guests = attendeeTotal(gathering)) {
+  return Number.isFinite(guests) ? peopleGoing(gathering, guests) : null;
+}
 export function guestLimit(capacity) {
   return capacity == null ? null : Math.max(capacity - 1, 0);
 }

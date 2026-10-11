@@ -16,7 +16,7 @@ import { getMyLearnedAffinity } from './behaviorSignals';
 import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from './friendInterests';
 import { isGatheringPast } from '../utils/objectState';
-import { attendeeTotal } from '../utils/gatheringFullness';
+import { attendeeTotal, attendingFigure } from '../utils/gatheringFullness';
 import { SIGNAL_TEXT } from '../utils/homeSignalMerge';
 import { intentResultDestination } from '../utils/recommendationContext';
 
@@ -549,8 +549,9 @@ export async function getHomeDashboard() {
   const committedIds = new Set([...hostedIds, ...(attendingUpcoming ?? []).map((row) => row.gatherings?.id)]);
   const plansInterested = allInterested.filter((g) => !committedIds.has(g.id)).slice(0, 3);
   const interestedIds = allInterested.map((g) => g.id);
-  const plansGoing = plansGoingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));
-  const plansHosting = plansHostingRaw.map((p) => ({ ...p, peopleCount: approvedCountByGathering[p.id] ?? 0 }));
+  // Item 28 follow-up: the people figure counts the host too (attendingFigure).
+  const plansGoing = plansGoingRaw.map((p) => ({ ...p, peopleCount: attendingFigure(p, approvedCountByGathering[p.id] ?? 0) }));
+  const plansHosting = plansHostingRaw.map((p) => ({ ...p, peopleCount: attendingFigure(p, approvedCountByGathering[p.id] ?? 0) }));
 
   // Finding G.1 (Aug 15 2026 connectivity audit): a confirmed group
   // plan's own resulting business_requests row was a real, already-

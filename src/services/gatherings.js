@@ -15,7 +15,7 @@ import { REASON_TEXT, becauseYouLikeReason, reasonText } from '../constants/reco
 import { SIGNAL_TIERS, tierVector, compareRanked } from '../constants/signalPriority';
 import { getUserLocation, requireUserLocation } from './userLocation';
 import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
-import { attendeeTotal, isGatheringFull } from '../utils/gatheringFullness';
+import { attendeeTotal, attendingFigure, isGatheringFull } from '../utils/gatheringFullness';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { cleanAgeRange } from '../utils/suitedAges';
 
@@ -1163,7 +1163,8 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
   const attendeeCount = attendeeTotal(gathering);
 
   if (attendeeCount > 0) {
-    add('attendance', Math.min(attendeeCount, 10), attendeeCount === 1 ? reasonText('onePersonAttending') : reasonText('peopleAttending', { count: attendeeCount }));
+    // The points stay on guests; the words count the host too (item 28 follow-up), so never "1 person" once someone joined.
+    add('attendance', Math.min(attendeeCount, 10), reasonText('peopleAttending', { count: attendingFigure(gathering, attendeeCount) }));
   }
   if (gathering.matchesYourInterests) {
     // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared,

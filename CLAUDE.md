@@ -220,6 +220,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `objectLifecycle.js` (`canDo`); CTAs from `primaryActionFor` in `primaryAction.js`. Never a CTA label or
   availability condition inline in a screen; fix "wrong button" bugs in the table. One explicit action per card.
 - Capacity = TOTAL people including the host (`_gathering_guest_limit`, `gatheringFullness.js`).
+  Every shown attending/going figure includes the host too (`attendingFigure`; host + 3 joined = "4 attending");
+  thresholds (Trending >= 5) still compare joined guests.
   Events are gatherings + `format`; `ticket_required` is informational only.
 - Each actor reports only its own side's state; server RPCs compute derived state.
 
@@ -243,7 +245,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Wow moments (owner item 25):** a business responding is the ONE signature moment (`signature` tier, <= 1.5 s, calm,
   same for every business; no other sequence may use it). Join on the host's gathering = count roll + avatar + named line;
   "plan comes together" = every piece confirmed (`isPlanFullyConfirmed`), never an attendee count. No hook after an early return (guard).
-  Item 28: the joining face flows in from the side while the others ease aside (no arc); the line says "X accepted your
+  Item 28: the joining face flows in from the side while the others ease aside (no arc); several in one update arrive one
+  after another (`arrivalDelayMs`) into Who's going's overlapping cluster (host + joined faces + "+N", `attendeeCluster`); the line says "X accepted your
   invite" only for the host's own accepted invite to that person for that gathering (`acceptedInviteeIds`).
 - **Something is happening near you (owner item 26):** one ring from the happening-now heading glyph (Home Nearby Right Now,
   Discover Happening Now; `motion/HappeningRipple.js`) only when the section shows a gathering not yet shown this session

@@ -62,7 +62,8 @@ describe('Best Pick follows the one ranking ladder', () => {
       interest_match: SIGNAL_TIERS.interest, attendance: SIGNAL_TIERS.popularity, close_distance: SIGNAL_TIERS.discovery,
     });
     const fit = getGatheringFitReasons(g('r', { matchesYourInterests: true, approvedCount: 3, approvedAttendees: attendees(3) }), { friendAttendeeCount: 1 });
-    expect(fit.reasons).toEqual(['3 people attending', 'Because you like Coffee', '1 of your friends is attending']);
+    expect(fit.reasons).toEqual(['4 people attending', // 3 joined + the host (item 28 follow-up)
+      'Because you like Coffee', '1 of your friends is attending']);
     expect(fit.score).toBe(3 + 5 + 4);
     expect(fit.rankVector).toHaveLength(10);
   });

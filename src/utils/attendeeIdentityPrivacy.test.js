@@ -42,27 +42,27 @@ describe('attendee identities: friends see names, strangers see counts (item 75)
     const g = (approvedAttendees, approvedCount) => ({ approvedAttendees, approvedCount });
     it('stranger viewer + one stranger attendee: count only, no name, no avatar', () => {
       const s = attendeeSummary(g([], 1));
-      expect(s.text).toBe('1 person going');
+      expect(s.text).toBe('2 people going'); // the host counts too (item 28 follow-up)
       expect(s.avatars).toEqual([]);
     });
     it('several stranger attendees: count only', () => {
       const s = attendeeSummary(g([], 4), { verb: 'attending' });
-      expect(s.text).toBe('4 people attending');
+      expect(s.text).toBe('5 people attending');
       expect(s.avatars).toHaveLength(0);
     });
-    it('a single friend attendee reads "Sam is going"', () => {
-      expect(attendeeSummary(g([att('f', 'Sam')], 1)).text).toBe('Sam is going');
+    it('a single visible friend attendee: the host + Sam, everyone visible = a plain count (item 28 follow-up)', () => {
+      expect(attendeeSummary(g([att('f', 'Sam')], 1)).text).toBe('2 people going');
     });
     it('a single visible row is NOT "X is going" when the total says others exist', () => {
-      expect(attendeeSummary(g([att('f', 'Sam')], 3)).text).toBe('3 people going · including Sam');
+      expect(attendeeSummary(g([att('f', 'Sam')], 3)).text).toBe('4 people going · including Sam');
     });
     it('mixed friends + strangers: friend identity + aggregate count, never a stranger', () => {
       const s = attendeeSummary(g([att('f', 'Sam'), att('h', 'Alex')], 5));
-      expect(s.text).toBe('5 people going · including Sam and Alex');
+      expect(s.text).toBe('6 people going · including Sam and Alex');
       expect(s.avatars.map((a) => a.user_id)).toEqual(['f', 'h']);
     });
     it('a member sees everyone: plain count', () => {
-      expect(attendeeSummary(g([att('a', 'A'), att('b', 'B'), att('c', 'C')], 3)).text).toBe('3 people going');
+      expect(attendeeSummary(g([att('a', 'A'), att('b', 'B'), att('c', 'C')], 3)).text).toBe('4 people going');
     });
     it('no attendees = nothing to say', () => {
       expect(attendeeSummary(g([], 0))).toBeNull();

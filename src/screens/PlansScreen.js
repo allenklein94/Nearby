@@ -18,7 +18,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { mergePlanRows } from '../utils/planRows';
-import { attendeeTotal } from '../utils/gatheringFullness';
+import { attendingFigure } from '../utils/gatheringFullness';
 // Tab labels are ui.plans.tab<Key> (display only; the key is the state).
 const TABS = [{ key: 'upcoming', labelKey: 'tabUpcoming' }, { key: 'hosting', labelKey: 'tabHosting' }, { key: 'past', labelKey: 'tabPast' }];
 
@@ -183,10 +183,10 @@ export default function PlansScreen({ navigation, route }) {
   // neither fetched (this pass didn't add a new query for it) -- PlanCard
   // already renders correctly with peopleCount omitted.
   const peopleCountFor = (item) => {
-    if (item.status === 'going') return Array.isArray(item.gathering.approvedAttendees) || typeof item.gathering.approvedCount === 'number' ? attendeeTotal(item.gathering) : null;
+    if (item.status === 'going') return Array.isArray(item.gathering.approvedAttendees) || typeof item.gathering.approvedCount === 'number' ? attendingFigure(item.gathering) : null;
     if (item.status === 'hosting' || item.status === 'hosted') {
       return Array.isArray(item.gathering.interested)
-        ? item.gathering.interested.filter((i) => i.status === 'approved').length
+        ? attendingFigure(item.gathering, item.gathering.interested.filter((i) => i.status === 'approved').length)
         : null;
     }
     return null;
