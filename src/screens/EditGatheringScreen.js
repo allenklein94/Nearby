@@ -15,6 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { showSuccessToast } from '../motion';
+import * as Haptics from 'expo-haptics';
 import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { useLanguage } from '../context/LanguageContext';

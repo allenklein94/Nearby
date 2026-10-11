@@ -1,3 +1,28 @@
+# Item 41 (2026-10-11) - "Your people are doing things" - BUILT, AWAITING OWNER REVIEW, NOT DEVICE-VERIFIED (+ 4 latent crashes fixed)
+
+**Owner ask:** instead of only changing a number on "3 friends are making plans": avatars appear -> gathering cards appear ->
+"3 friends are making plans nearby". Motion tells the story.
+**Built:** `getHomeInsight` friends_planning now carries `people` (one per friend behind the count: host id, gathering id, photo, the
+plan's interest tag; the query also selects `interest_tag` and the host's `photo_url`). `motion/FriendsPlanning.js` replaces the line's
+text on Home: faces appear one after another (overlapping, scale 0.85 -> 1, never below 0.6 opacity), each plan's activity glyph lands on
+its face, then the line settles (`SEQUENCES.friendsPlanning`, medium, 500 ms; line >= 0.6 opacity from frame one; pointerEvents none; no
+haptic; Reduce Motion settled). It plays only when the set of plans contains a gathering id not shown before
+(`utils/friendsPlanningMoment.js`, AsyncStorage, 50 most recent kept): refresh/Back/restart with the same plans = settled; a new plan =
+plays once more. No new strings; wording unchanged.
+**Deviations kept for the owner:** (1) no "nearby" -- the friends' plans are not distance-filtered (any visible gathering a friend created
+in the last 3 days), so it would be an unbacked claim; (2) plans appear as activity glyphs on the faces, not cards -- Home never expands in
+place and "See gatherings" already lists exactly those plans inline (item 136).
+**Latent crashes found and fixed (pre-existing, never caught because the app has never run on a device):** a scope-analysis sweep of
+every source file for names read but never declared found four: `HomeScreen` called `useEffect` without importing it (since 2026-09-20;
+Home would throw on render); `HomeScreen` read `profile` outside the block that declared it (a ReferenceError its try swallowed, so Picked
+For You's recommendations never built and account maturity never applied); `SettingsScreen` called `toggleNotifPref`, removed by item 142,
+from four Privacy switches (restored, allow-listed to those four non-notification columns so item 142's guard still holds);
+`EditGatheringScreen` called `Haptics.selectionAsync` without importing `expo-haptics` (every chip tap threw). New guard
+`screens/undefinedNames.test.js` (Babel scope analysis; verified to catch all four on the old code).
+**Verified:** Jest 417 suites / 5639 pass (new `utils/friendsPlanningMoment.test.js` 9, `screens/undefinedNames.test.js`); journeys
+23/23 (260). Parse check on edited files. Not covered: no journey covers the friends-planning line (client query); not device-checked
+(`PRODUCT_AUDIT/ITEM_41_FRIENDS_PLANNING_DEVICE_CHECKLIST_2026-10-11.md`).
+
 # Item 40 (2026-10-11) - Friend + activity collision - APPROVED (LOCKED), READY FOR DEVICE VERIFICATION
 
 **Owner approval (same day, LOCKED, do not expand scope):** (1) Placement: Home only, one card, Best Pick first then Picked For You;

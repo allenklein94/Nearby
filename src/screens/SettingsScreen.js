@@ -291,6 +291,20 @@ export default function SettingsScreen({ navigation, route }) {
     }
   }
 
+  // A plain on/off profile column behind one of four Privacy switches. Restored 2026-10-11: item 142 removed it while these
+  // switches still called it (a ReferenceError on every tap). Allow-listed so it can never write a notification column
+  // (those go through the one store, setMyNotificationGroup).
+  const PRIVACY_SWITCH_COLUMNS = ['share_interest_in_demand', 'show_sponsored_places', 'read_receipts_enabled', 'women_message_first'];
+  async function toggleNotifPref(column, value, setter) {
+    if (!PRIVACY_SWITCH_COLUMNS.includes(column)) return;
+    setter(value);
+    const { error } = await supabase.from('profiles').update({ [column]: value }).eq('id', userId);
+    if (error) {
+      setter(!value);
+      presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => toggleNotifPref(column, value, setter) });
+    }
+  }
+
   async function saveRecPref(column, value, setter) {
     setter(value);
     const { error } = await supabase.from('profiles').update({ [column]: value }).eq('id', userId);

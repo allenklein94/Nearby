@@ -8,13 +8,14 @@ import { displayHeroWhen, displayGatheringWhen } from '../i18n/display';
 import { categoryName } from '../i18n/categoryNames';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { resultRowView, contextItem } from '../utils/recommendationContext';
-import React, { useState, useCallback, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import InterestedSaved from '../motion/InterestedSaved';
 import { presentRecoverableError } from '../utils/recoverableError';
 import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, StrongMatch, FriendCollision, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
+import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, StrongMatch, FriendCollision, FriendsPlanning, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
 import { friendCollision } from '../utils/friendCollision';
+import { takeFriendsPlanningMoment } from '../utils/friendsPlanningMoment';
 import { strongMatchPieces } from '../utils/strongMatch';
 import RightNowMark from '../components/RightNowMark';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -250,7 +251,10 @@ export default function HomeScreen({ navigation }) {
   const [friendNearbySharing, setFriendNearbySharingState] = useState(false);
   const [nearbyFriend, setNearbyFriend] = useState(null);
   const [nearbyFriendPhoto, setNearbyFriendPhoto] = useState(null);
-  const [myPhotoUrl, setMyPhotoUrl] = useState(null); // item 40: your face beside the friend's on "You + {Name} might like this"
+  const [myPhotoUrl, setMyPhotoUrl] = useState(null);
+  // Item 41: the friends-planning line's faces (signed photo per friend id) and its play key (set only when the plans are new).
+  const [friendsPlanningPhotos, setFriendsPlanningPhotos] = useState({});
+  const [friendsPlanningPlay, setFriendsPlanningPlay] = useState(null); // item 40: your face beside the friend's on "You + {Name} might like this"
   const [insightExpanded, setInsightExpanded] = useState(null); // which insight line's gatherings are listed inline (item 136)
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -472,6 +476,19 @@ export default function HomeScreen({ navigation }) {
   // gatherings leave weather / Best Pick / Picked For You while it is open.
   const homeInsight = getHomeInsight(dashboard ? { ...dashboard, nearbyFriend } : dashboard);
   const expandedIds = expandedListIds(homeInsight, insightExpanded);
+  // Item 41: sign the friends' photos and ask (once per new set of plans) whether the line assembles.
+  const friendsPlanningKey = homeInsight?.kind === 'friends_planning' ? (homeInsight.people ?? []).map((p) => p.gatheringId).join('|') : '';
+  useEffect(() => {
+    if (!friendsPlanningKey) return undefined;
+    let cancelled = false;
+    const people = homeInsight.people ?? [];
+    Promise.all(people.map((p) => (p.photoPath ? getSignedPhotoUrl(p.photoPath).then((u) => [p.id, u]).catch(() => [p.id, null]) : [p.id, null])))
+      .then((pairs) => { if (!cancelled) setFriendsPlanningPhotos(Object.fromEntries(pairs)); });
+    takeFriendsPlanningMoment(people.map((p) => p.gatheringId), AsyncStorage)
+      .then((isNew) => { if (!cancelled && isNew) setFriendsPlanningPlay(friendsPlanningKey); });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendsPlanningKey]);
   const aboveWeather = new Set([...firstRunIds, ...yourPlansIds, ...expandedIds]);
   const weatherCardRaw = socialForecast ? (() => {
     const nowMs = Date.now();
@@ -619,11 +636,14 @@ export default function HomeScreen({ navigation }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const myId = sessionData?.session?.user?.id;
       setMyUserId(myId ?? null);
+      // Read again further down this load() (account maturity, recommendations): declared here, not inside the if-block,
+      // or that later read is a ReferenceError the surrounding try swallows and Picked For You never builds (found 2026-10-11).
+      let profile = null;
       if (myId) {
         // Phase J (CLAUDE.md) -- created_at is the one new column this
         // whole phase needs; a plain, already-fetched real timestamp, zero
         // new query, used below to compute real account-age maturity.
-        const { data: profile } = await supabase.from('profiles').select('display_name, photo_url, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences, interest_groups').eq('id', myId).single();
+        ({ data: profile } = await supabase.from('profiles').select('display_name, photo_url, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences, interest_groups').eq('id', myId).single());
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setMyPhotoUrl(profile?.photo_url ? await getSignedPhotoUrl(profile.photo_url).catch(() => null) : null);
         setMyDeclaredInterests(Array.isArray(profile?.interests) ? profile.interests : []);
@@ -2241,6 +2261,8 @@ export default function HomeScreen({ navigation }) {
                     : <View style={[styles.friendNearbyAvatar, styles.friendNearbyAvatarEmpty]}><Ionicons name="person" size={12} color={colors.textTertiary} /></View>}
                   <Text style={[styles.insightLine, { marginBottom: 0, flex: 1 }]}>{insight.text}</Text>
                 </View>
+              ) : insight.kind === 'friends_planning' ? (
+                <FriendsPlanning people={insight.people} photoUrls={friendsPlanningPhotos} text={insight.text} textStyle={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]} playKey={friendsPlanningPlay} />
               ) : (
                 <Text style={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]}>{insight.text}</Text>
               )}

@@ -645,7 +645,7 @@ export async function getHomeDashboard() {
     // that could (and did) drift from that established rule.
     const { data: friendGatherings } = await supabase
       .from('gatherings')
-      .select('id, title, host_id, created_at, scheduled_at, visibility, community_id, women_only, is_public, requires_approval, capacity, attendees:gathering_interest(status, user_id), profiles!gatherings_host_id_fkey(display_name)')
+      .select('id, title, host_id, interest_tag, created_at, scheduled_at, visibility, community_id, women_only, is_public, requires_approval, capacity, attendees:gathering_interest(status, user_id), profiles!gatherings_host_id_fkey(display_name, photo_url)')
       .in('host_id', friendIds)
       .gte('created_at', threeDaysAgo)
       .order('created_at', { ascending: false })
@@ -774,7 +774,11 @@ export function getHomeInsight(dashboard, now = new Date()) {
 
   if (dashboard.friendsActivity?.length >= 2) {
     const destination = gatheringSetDestination(dashboard.friendsActivity, (g) => SIGNAL_TEXT.friend(g, isGatheringPast(g, now)));
-    return { kind: 'friends_planning', text: tr('ui.homeParts.insight.friendsPlanning', { count: dashboard.friendsActivity.length }), cta: destination ? { label: tr('ui.homeParts.insight.seeGatherings'), destination } : null };
+    // Item 41: the faces behind the count, one per friend (friendsActivity is already one gathering per distinct host), each
+    // with its plan's activity -- what motion/FriendsPlanning.js assembles. Only what the line already rests on.
+    const people = dashboard.friendsActivity.filter((g) => g?.host_id && g?.id)
+      .map((g) => ({ id: g.host_id, gatheringId: g.id, photoPath: g.profiles?.photo_url ?? null, tag: g.interest_tag ?? null }));
+    return { kind: 'friends_planning', text: tr('ui.homeParts.insight.friendsPlanning', { count: dashboard.friendsActivity.length }), people, cta: destination ? { label: tr('ui.homeParts.insight.seeGatherings'), destination } : null };
   }
   // Previously ANY Best Pick produced "a great night to meet someone new" -- a People claim with a gathering as its
   // only evidence. It now needs the substantiated People trigger (utils/meetTonight.js), else nothing is said.

@@ -70,6 +70,10 @@ is done; then close it without expanding scope (owner: wording, ticks-as-intent,
 interest, nearby and attending stay three distinct facts), native review of `ui.friendNearby.together` / `togetherA11y` is done, and a
 from-scratch migration replay is done before claiming fresh-install verification (migration 20270297; journey `friendNearby` 15/15). Do not expand scope.
 
+**Item 41 (friends are making plans, motion) is BUILT, AWAITING OWNER REVIEW** of two deviations (no "nearby": the plans aren't
+distance-filtered; plans shown as glyphs on faces, not cards) and NOT DEVICE-VERIFIED
+(`PRODUCT_AUDIT/ITEM_41_FRIENDS_PLANNING_DEVICE_CHECKLIST_2026-10-11.md`). No journey covers the line (client query); no new strings.
+
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
 
@@ -322,6 +326,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Explanation only: never reorders, never touches Best Pick selection or scoring, separate from item 37. Suppressed when either hosts or
   joined. Never implies the friend attends or is present beyond what attendance/item 39 state confirms; never the friend's other or
   inferred interests; nothing to any AI service. Item 39's "{Name} is nearby · Invite" stays the only Invite; not merged into sharing.
+- **Friends planning (owner item 41):** Home's friends-planning line assembles (faces one after another, each plan's activity
+  glyph on its face, then the line; `motion/FriendsPlanning.js`, medium) only when its set of plans has an id not shown before
+  (`utils/friendsPlanningMoment.js`, stored ids); wording unchanged, never "nearby" unless the data is distance-filtered.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).
@@ -351,6 +358,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - `CREATE OR REPLACE` with a changed parameter list creates a second overload: check
   `pg_get_function_identity_arguments`, drop the old signature in the migration. New functions:
   `revoke ... from public, anon`. Trusted writes to guarded profile columns set `app.trusted_update`.
+- Every name a source file reads is declared or imported (`screens/undefinedNames.test.js`; no device has ever run the app,
+  so this guard stands in for a runtime check).
 - Tests that depend on "now" freeze it; local-day fixtures use local wall-clock, never a UTC `Z` string.
 - Location only through `services/userLocation.js`; location-targeted pushes join `push_target_areas`.
 - Business web export (`docs/business/`): regenerate after any business-facing screen change
