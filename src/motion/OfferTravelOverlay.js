@@ -29,12 +29,12 @@ export default function OfferTravelOverlay() {
     [frame, light].forEach((v) => v.setValue(0));
     frameOpacity.setValue(0.9);
     lightOpacity.setValue(1);
-    Animated.timing(dim, { toValue: 1, duration: T.dimMs, useNativeDriver: false }).start();
+    Animated.timing(dim, { toValue: 1, duration: T.dimMs, useNativeDriver: true }).start();
     clearTimeout(waitTimer.current);
     const id = travel.id;
     waitTimer.current = setTimeout(() => {
       Animated.parallel([
-        Animated.timing(dim, { toValue: 0, duration: T.settleMs, useNativeDriver: false }),
+        Animated.timing(dim, { toValue: 0, duration: T.settleMs, useNativeDriver: true }),
         Animated.timing(frameOpacity, { toValue: 0, duration: T.settleMs, useNativeDriver: false }),
         Animated.timing(lightOpacity, { toValue: 0, duration: T.settleMs, useNativeDriver: false }),
       ]).start(() => endOfferTravel(id));
@@ -54,7 +54,7 @@ export default function OfferTravelOverlay() {
         Animated.timing(light, { toValue: 1, duration: T.travelMs, easing: ease, useNativeDriver: false }),
       ]),
       Animated.parallel([
-        Animated.timing(dim, { toValue: 0, duration: T.settleMs, useNativeDriver: false }),
+        Animated.timing(dim, { toValue: 0, duration: T.settleMs, useNativeDriver: true }),
         Animated.timing(frameOpacity, { toValue: 0, duration: T.settleMs, useNativeDriver: false }),
         Animated.timing(lightOpacity, { toValue: 0, duration: T.settleMs, useNativeDriver: false }),
       ]),

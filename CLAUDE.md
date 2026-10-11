@@ -234,6 +234,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   animation; a tap during the match intro or the surprise reveal jumps to the end state), a swipe dismisses at
   once (arrival pill up/sideways, Undo toast, match modal down) via `motion/swipeDismiss.js`; pure overlays are
   `pointerEvents="none"`. Guard `animationInterruptible.test.js`.
+- **Performance (owner item 22):** transform/opacity on the native driver (JS driver only where allow-listed: layout or
+  PanResponder); loops only in ambient loaders, each capped at `AMBIENT.maxLoopMs` and paused in the background (`governLoop`);
+  photos/logos shrink on the phone before upload (`utils/mediaBudget.js`); signed media addresses reused; video never
+  preloaded/autoplayed. Guard `motionPerformance.test.js`.
 
 ### Copy, colour, errors
 - Coral = primary action or selected state; status colours have their own tokens (`theme.js`).

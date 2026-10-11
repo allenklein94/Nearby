@@ -1,4 +1,5 @@
-import { AccessibilityInfo } from 'react-native';
+import { AccessibilityInfo, AppState } from 'react-native';
+import { AMBIENT } from './motionBudget';
 
 // Item 127 ("Respect Reduce Motion"): the ONE shared place Nearby reads and enforces the OS-level
 // Reduce Motion setting. Two layers, so a future animation is covered even if its author forgets:
@@ -6,6 +7,7 @@ import { AccessibilityInfo } from 'react-native';
 //   1. A single module-level store (`getReduceMotion` / `subscribeReduceMotion`) -- one
 //      AccessibilityInfo subscription for the whole app instead of one per mounted component;
 //      `src/hooks/useReduceMotion.js` is now a thin hook over it.
+//   (Item 22 adds a third rule here: every loop is governed -- capped and paused in the background; see governLoop.)
 //   2. `installReducedMotionPolicy(Animated)` -- patched once at app start (App.js). While Reduce
 //      Motion is on, every `Animated.spring` degrades to an instant (0ms) timing -- no bounce,
 //      no overshoot, the value simply lands -- and every `Animated.loop` is a no-op that never
@@ -70,6 +72,90 @@ export function createInertAnimation() {
   };
 }
 
+// Owner item 22 (2026-10-11, battery): every ambient loop is governed. It stops for good after AMBIENT.maxLoopMs of running
+// time (a loader still on screen then holds its static state; it was never information, the caption is), and it pauses
+// while the app is in the background, resuming with the time it had left. Delegates the internal hooks so it still composes
+// inside Animated.parallel/sequence. A pause/resume never calls the owner's start callback; only the real end does.
+const liveLoops = new Set();
+let appStateWatched = false;
+
+function watchAppState() {
+  if (appStateWatched) return;
+  appStateWatched = true;
+  try {
+    AppState?.addEventListener?.('change', (next) => {
+      const active = next === 'active';
+      [...liveLoops].forEach((l) => (active ? l._resume() : l._pause()));
+    });
+  } catch {
+    // No AppState (tests, web without it): loops are still capped.
+  }
+}
+
+export function governLoop(inner, { maxMs = AMBIENT.maxLoopMs, schedule = setTimeout, cancel = clearTimeout, now = () => Date.now() } = {}) {
+  let state = 'idle'; // idle | running | paused | halting | done
+  let remaining = maxMs;
+  let startedAt = 0;
+  let timer = null;
+  let ownerCallback = null;
+  const clear = () => { if (timer != null) cancel(timer); timer = null; };
+  const finish = (result) => {
+    clear();
+    state = 'done';
+    liveLoops.delete(governed);
+    const cb = ownerCallback;
+    ownerCallback = null;
+    cb?.(result);
+  };
+  const run = () => {
+    state = 'running';
+    startedAt = now();
+    timer = schedule(() => { timer = null; state = 'halting'; inner.stop(); finish({ finished: true }); }, remaining);
+    inner.start((result) => { if (state === 'running') finish(result); });
+  };
+  const governed = {
+    start(callback) {
+      if (state === 'running' || state === 'paused') return;
+      ownerCallback = callback ?? null;
+      remaining = maxMs;
+      liveLoops.add(governed);
+      watchAppState();
+      if (state === 'done') inner.reset?.();
+      run();
+    },
+    stop() {
+      if (state === 'idle' || state === 'done') { inner.stop(); return; }
+      const wasRunning = state === 'running';
+      state = 'halting';
+      if (wasRunning) inner.stop();
+      finish({ finished: false });
+    },
+    reset() {
+      clear();
+      liveLoops.delete(governed);
+      state = 'idle';
+      ownerCallback = null;
+      inner.reset?.();
+    },
+    _pause() {
+      if (state !== 'running') return;
+      clear();
+      remaining = Math.max(0, remaining - (now() - startedAt));
+      state = 'paused'; // before stop(): the inner end callback must not count as the real end
+      inner.stop();
+    },
+    _resume() {
+      if (state !== 'paused') return;
+      if (remaining <= 0) { finish({ finished: true }); return; }
+      inner.reset?.();
+      run();
+    },
+    _startNativeLoop(...args) { return inner._startNativeLoop?.(...args); },
+    _isUsingNativeDriver() { return !!inner._isUsingNativeDriver?.(); },
+  };
+  return governed;
+}
+
 let installed = false;
 
 export function installReducedMotionPolicy(Animated) {
@@ -90,7 +176,7 @@ export function installReducedMotionPolicy(Animated) {
   };
 
   Animated.loop = (animation, config) => {
-    if (!getReduceMotion()) return originalLoop(animation, config);
+    if (!getReduceMotion()) return governLoop(originalLoop(animation, config));
     return createInertAnimation();
   };
 }

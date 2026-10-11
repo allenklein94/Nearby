@@ -134,4 +134,6 @@ export function settleMs(name) {
 
 // Ambient (non-transition) loops sit outside the tiers -- a loop isn't a transition, it runs as
 // long as real loading does. One token so skeletons can't drift apart.
-export const AMBIENT = { skeletonPulseMs: 700 };
+// Owner item 22 (2026-10-11, battery): an ambient loop never runs for ever. motionPolicy.js stops every Animated.loop after
+// maxLoopMs of running (the loader then simply sits still, its static state) and pauses it while the app is in the background.
+export const AMBIENT = { skeletonPulseMs: 700, maxLoopMs: 20000 };

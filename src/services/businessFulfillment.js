@@ -8,6 +8,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
 import { requireUserLocation, getUserLocation } from './userLocation';
 import { videoFrameTimes, videoLimitProblem } from '../utils/offerMedia';
+import { uploadResize, OFFER_IMAGE_MAX_PX, LOGO_MAX_PX, UPLOAD_JPEG_QUALITY, createSignedUrlCache, SIGNED_URL_LIFETIME_S } from '../utils/mediaBudget';
 import { throwSingleError } from '../utils/notFound';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -57,7 +58,27 @@ export async function pickBusinessOfferMedia({ imagesOnly = false } = {}) {
 // Never fetch().blob() -- silently produces 0-byte files on iOS for
 // local file:// URIs, this codebase's own already-learned lesson (see
 // uploadGatheringCoverPhoto() in gatherings.js).
-export async function uploadBusinessOfferMedia(partnerId, asset, kind) {
+// Item 22: shrink a picked photo on the phone before upload (utils/mediaBudget.js). Video untouched. Any failure keeps the
+// original file, so a resize problem never stops a business from sending.
+export async function shrinkImageForUpload(asset, { maxPx = OFFER_IMAGE_MAX_PX, keepPng = false } = {}) {
+  if (!asset || asset.type === 'video') return asset;
+  const resize = uploadResize(asset.width, asset.height, maxPx);
+  if (!resize) return asset;
+  try {
+    const ImageManipulator = require('expo-image-manipulator');
+    const png = keepPng && /\.png($|\?)|image\/png/i.test(`${asset.uri} ${asset.mimeType ?? ''}`);
+    const out = await ImageManipulator.manipulateAsync(asset.uri, [{ resize }], {
+      compress: UPLOAD_JPEG_QUALITY,
+      format: png ? ImageManipulator.SaveFormat.PNG : ImageManipulator.SaveFormat.JPEG,
+    });
+    return { ...asset, uri: out.uri, width: out.width, height: out.height, mimeType: png ? 'image/png' : 'image/jpeg' };
+  } catch (_e) {
+    return asset;
+  }
+}
+
+export async function uploadBusinessOfferMedia(partnerId, pickedAsset, kind) {
+  const asset = await shrinkImageForUpload(pickedAsset);
   const isVideo = asset.type === 'video';
   const prefix = kind === 'experience' ? 'experience' : kind === 'creative' ? 'creative' : 'offer';
 
@@ -111,7 +132,7 @@ export async function uploadOfferVideoFrames(partnerId, asset, kind = 'offer') {
   const paths = [];
   for (const time of videoFrameTimes(asset.duration)) {
     const frame = await VideoThumbnails.getThumbnailAsync(asset.uri, { time, quality: 0.6 });
-    const uploaded = await uploadBusinessOfferMedia(partnerId, { uri: frame.uri, type: 'image' }, kind);
+    const uploaded = await uploadBusinessOfferMedia(partnerId, { uri: frame.uri, type: 'image', width: frame.width, height: frame.height }, kind);
     paths.push(uploaded.path);
   }
   if (paths.length === 0) throw new Error('We could not read that video. Try a different one.');
@@ -199,8 +220,9 @@ export async function retryCreativeCheck(partnerId, creativeId) {
 
 // Logo upload: the image is stored by Nearby (public bucket business-logos, write-once: a new logo is a new file), so the
 // screened image can never change behind the address. Returns its public address, which the profile save then screens.
-export async function uploadBusinessLogo(partnerId, asset) {
-  if (!asset || asset.type === 'video') throw new Error('Pick an image for your logo.');
+export async function uploadBusinessLogo(partnerId, pickedAsset) {
+  if (!pickedAsset || pickedAsset.type === 'video') throw new Error('Pick an image for your logo.');
+  const asset = await shrinkImageForUpload(pickedAsset, { maxPx: LOGO_MAX_PX, keepPng: true });
   let body;
   let contentType;
   if (Platform.OS === 'web') {
@@ -227,13 +249,16 @@ export async function archiveBusinessCreative(creativeId) {
   if (error) throw new Error(error.message);
 }
 
-export async function getSignedBusinessOfferMediaUrl(path) {
-  if (!path) return null;
-  const { data, error } = await supabase.storage
-    .from('business-offer-media')
-    .createSignedUrl(path, 3600);
-  if (error) return null;
-  return data.signedUrl;
+// Item 22: one signed address per file, reused while it has life left (utils/mediaBudget.js), so the image cache hits.
+const signedOfferMediaUrl = createSignedUrlCache();
+export function getSignedBusinessOfferMediaUrl(path) {
+  return signedOfferMediaUrl(path, async (p) => {
+    const { data, error } = await supabase.storage
+      .from('business-offer-media')
+      .createSignedUrl(p, SIGNED_URL_LIFETIME_S);
+    if (error) return null;
+    return data?.signedUrl ?? null;
+  });
 }
 
 // Intent Layer + Business Fulfillment, Phase 2 (see CLAUDE.md). The 1:1
