@@ -59,13 +59,18 @@ Native reviewer sign-off: _not yet_ (name, date, per language).
   - the contrast tokens and wrapping
 - Not coverable here: the rendered pixels and real timing. No React Native render or device runner exists in this repo.
 
-## 3. Contrast (computed from `theme.js`, WCAG 2.x)
+## 3. Contrast (computed from `theme.js`, WCAG 2.x, on the panel surface; owner decision 2026-10-11: 4.5:1 for the struck label, no exception)
 
 | Element | Light | Dark | Requirement |
 |---|---|---|---|
-| "✓ Attending" (success on its 10% success tint) | 3.78:1 | 7.62:1 | large text 3:1 → met because the label is **19 px bold** (large text); at the original 14 px light failed 4.5:1 |
+| struck "★ Interested" (textSecondary, fades 1 → **0.88**) | 6.33:1 → **4.76:1** | 7.03:1 → **5.76:1** | 4.5:1 small text, met at every frame. 0.85 would be 4.45:1 in light (fails); the earlier 0.75 was 3.56:1 |
+| arrow "→" (textSecondary, never fades) | 6.33:1 | 7.03:1 | 4.5:1, met |
+| "✓ Attending" (success on its 10% success tint, **never faded**) | 3.78:1 | 7.65:1 | large text 3:1, met at every frame: **20 px bold** and the entrance starts at scale **0.94** (smallest frame 18.8 px ≥ 18.66 px). The earlier 19 px × 0.92 = 17.5 px fell below large text for about 320 ms |
 | success token on plain white (for reference) | 4.28:1 | — | the shared token is under 4.5:1 for small text app-wide: a theme-level finding, not changed here |
-| struck "★ Interested" (textSecondary at 0.75) | 3.56:1 | 4.60:1 | the original textTertiary at 0.45 was 1.5:1 / 1.7:1. Now ≥ 3:1. Under 4.5:1 for 14 px in light: it is the superseded state (struck through, also in the spoken line). **Owner call:** accept, or fade less (0.85+) |
+
+Intermediate frames: every value moves on `Easing.bezier(0.2, 0, 0, 1)`, which does not overshoot, so the rest values above are the
+minimums. Attending used to start at 0.6 opacity (`infoOpacity`). It now enters by slide and grow only, at full opacity. Timing is unchanged
+(about 0.76 s: 120 ms delay + 320 ms arrival + 100/220 ms glow); no bounce or confetti. Guarded in `interestedToAttending.test.js`.
 
 ## 4. Device verification (NOT DONE: needs a phone)
 
@@ -90,5 +95,6 @@ Device sign-off: _not yet_ (device, OS, date, findings).
 - **A pending or waitlisted join loses the Interested mark at once** (existing server behaviour, kept as required).
   When the host later approves, there is no moment: the person isn't on the screen, and the client keeps no record
   that they were Interested (`gathering_interested_joins` is internal-only by design). Showing a moment then would need
-  a new readable fact. Not built.
-- Struck-label contrast (section 3).
+  a new readable fact. **Owner decision 2026-10-11: keep it that way.** No stored field or persistence just for an animation; the
+  moment shows only when an Interested person is admitted at once.
+- Struck-label contrast: **decided 2026-10-11:** must reach 4.5:1. Now 4.76:1 / 5.76:1 (section 3).

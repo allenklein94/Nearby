@@ -20,7 +20,7 @@ test('bigger than item 30, still inside the budget, calm and on the native drive
 test('shows the move: Interested dims and is struck through, Attending flows in readable from frame one, one glow', () => {
   expect(motion).toMatch(/textDecorationLine: 'line-through'/);
   expect(motion).toMatch(/outputRange: \[1, M\.oldRestOpacity\]/);
-  expect(motion).toMatch(/opacity: infoOpacity\(arrive\)/);
+  expect(motion).not.toMatch(/infoOpacity/); // full opacity from frame one (stronger than the >= 0.6 info rule)
   expect(motion).toMatch(/outputRange: \[-M\.flowPx, 0\]/);
   expect(motion).toMatch(/Animated\.timing\(glow, \{ toValue: 1/);
   expect(motion).toMatch(/pointerEvents="none"/); // never in the way of a tap
@@ -76,10 +76,14 @@ describe('regression: the other join outcomes and the success vibration are unch
   });
 });
 
-test('contrast: Attending is large text (>= 18.66 px bold), the struck former state stays >= 3:1 (textSecondary at 0.75)', () => {
-  expect(motion).toMatch(/toText: \{ fontSize: 19, fontWeight: '700' \}/);
+test('contrast at every frame: struck label >= 4.5:1 (textSecondary, fades only to >= 0.88), Attending large text even at its smallest frame and never faded', () => {
+  const M = SEQUENCES.interestedToAttending;
+  const fontSize = Number(motion.match(/toText: \{ fontSize: (\d+), fontWeight: '700' \}/)[1]);
+  expect(fontSize * M.fromScale).toBeGreaterThanOrEqual(18.66);
   expect(motion).toMatch(/color: colors\.textSecondary, opacity:/);
-  expect(SEQUENCES.interestedToAttending.oldRestOpacity).toBeGreaterThanOrEqual(0.75);
+  expect(M.oldRestOpacity).toBeGreaterThanOrEqual(0.88); // 4.76:1 light / 5.76:1 dark on the panel surface; 0.85 = 4.45:1
+  expect(motion).not.toMatch(/infoOpacity\(arrive\)/); // Attending arrives by slide + grow, never a fade
+  expect(motion).toMatch(/Easing\.bezier\(0\.2, 0, 0, 1\)/); // no overshoot: rest values are the minimums
   expect(motion).toMatch(/flexWrap: 'wrap'/); // long languages wrap instead of overflowing the panel
 });
 

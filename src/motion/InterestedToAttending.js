@@ -3,13 +3,14 @@ import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { radius, spacing } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
-import { SEQUENCES, infoOpacity } from './motionBudget';
+import { SEQUENCES } from './motionBudget';
 
 // Owner item 31 (2026-10-11): Interested -> Attending is a bigger moment than marking Interested (item 30), so the difference
 // between the two states is obvious. Mounted by GatheringDetail only when the person's OWN join from Interested came back
 // approved in this visit (the stored attendance after the reload says attending; the server's clear_interested_on_join has
 // already removed the Interested mark). The row shows the move: "★ Interested" dims and is struck through, "✓ Attending" flows
-// in beside it and glows once in the success colour, then the row stays settled for this visit. Reduce Motion = the settled
+// in beside it and glows once in the success colour, then the row stays settled for this visit. Contrast holds at every frame
+// (owner, 2026-10-11): the struck label fades only to 0.88 (>= 4.5:1), Attending is never faded. Reduce Motion = the settled
 // row at once (still reads Interested -> Attending). Not touchable, never delays anything (information at >= info opacity).
 // The success vibration is the join's own (already played by the screen after the tap); none here.
 const M = SEQUENCES.interestedToAttending;
@@ -53,8 +54,9 @@ export default function InterestedToAttending({ fromLabel, toLabel, a11yLabel, p
       >
         {fromLabel}
       </Animated.Text>
-      <Text style={[styles.arrow, { color: colors.textTertiary }]}>→</Text>
-      <Animated.View style={{ opacity: infoOpacity(arrive), transform: [
+      <Text style={[styles.arrow, { color: colors.textSecondary }]}>→</Text>
+      {/* Full opacity at every frame (contrast): Attending arrives by sliding and growing, never by fading. */}
+      <Animated.View style={{ transform: [
         { translateX: arrive.interpolate({ inputRange: [0, 1], outputRange: [-M.flowPx, 0] }) },
         { scale: arrive.interpolate({ inputRange: [0, 1], outputRange: [M.fromScale, 1] }) },
       ] }}>
@@ -76,8 +78,9 @@ const styles = StyleSheet.create({
   from: { fontSize: 14, fontWeight: '600', textDecorationLine: 'line-through' },
   arrow: { fontSize: 14, marginHorizontal: spacing.sm },
   to: { borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  // 19 px bold = WCAG large text: the success token reaches 3.78:1 on its tint in light mode (4.28:1 even on plain white,
-  // under 4.5:1 for small text), so the label is large rather than tinted darker (the token is shared app-wide).
-  toText: { fontSize: 19, fontWeight: '700' },
+  // 20 px bold = WCAG large text at every frame (x fromScale 0.94 = 18.8 px >= 18.66): the success token reaches 3.78:1 on its
+  // tint in light mode (4.28:1 even on plain white, under 4.5:1 for small text), so the label is large rather than tinted
+  // darker (the token is shared app-wide).
+  toText: { fontSize: 20, fontWeight: '700' },
   glow: { top: -2, left: -2, right: -2, bottom: -2, borderRadius: radius.sm + 2, borderWidth: 2, shadowOpacity: 0.45, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
 });

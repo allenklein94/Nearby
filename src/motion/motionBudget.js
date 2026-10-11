@@ -118,10 +118,13 @@ export const SEQUENCES = {
   // (item 129: low-commitment and private, not an important state change).
   interestedSaved: { tier: 'small', pulseMs: 240, pulseFrom: 1.12, savedHoldMs: 1200 },
   // Owner item 31 (2026-10-11): Interested -> Attending, the person's own commitment (auto-approved join from Interested).
-  // (Contrast, follow-up: oldRestOpacity 0.75 on textSecondary keeps the struck former state >= 3:1 in both themes.)
+  // Contrast (owner, 2026-10-11): the struck former label (textSecondary) never drops below 4.5:1 on the panel in either theme
+  // at ANY frame: it fades only to oldRestOpacity 0.88 (0.85 measured 4.47:1 in light). "✓ Attending" never fades: full opacity
+  // from frame one (large text: 20 px bold, and fromScale 0.94 keeps even its first frame at 18.8 px >= 18.66, 3.78:1 light /
+  // 7.65:1 dark); its motion is the slide, the grow and the glow. Easing never overshoots, so the rest values are the minimums.
   // "★ Interested" dims to oldRestOpacity and is struck through while "✓ Attending" flows in flowPx from beside it (scale
   // fromScale -> 1, readable from frame one), then one success glow around it. Calm: no bounce, confetti or loop.
-  interestedToAttending: { tier: 'special', dimMs: 220, arriveDelayMs: 120, arriveMs: 320, flowPx: 12, fromScale: 0.92, oldRestOpacity: 0.75,
+  interestedToAttending: { tier: 'special', dimMs: 220, arriveDelayMs: 120, arriveMs: 320, flowPx: 12, fromScale: 0.94, oldRestOpacity: 0.88,
     glowInMs: 100, glowOutMs: 220 },
   happeningRipple: { tier: 'medium', ringMs: 400, fromScale: 0.6, toScale: 2.2, startOpacity: 0.35, size: 24 },
 };
