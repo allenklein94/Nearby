@@ -10,10 +10,11 @@ const ALL_TAGS = new Set(CATEGORY_GROUPS.flatMap((g) => g.tags));
 const ROOT = path.join(__dirname, '../..');
 
 describe('activity format vocabulary (item 66)', () => {
-  it('is the owner\'s 16 formats, one list, matching the database CHECK', () => {
-    expect(ACTIVITY_FORMAT_KEYS).toEqual(['drop_in', 'class', 'tournament', 'meetup', 'concert', 'show', 'festival', 'tour', 'workshop', 'appointment', 'reservation', 'open_play', 'competition', 'exhibition', 'market', 'party']);
-    const sql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20270205_gathering_activity_format.sql'), 'utf8');
-    const inSql = [...sql.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
+  it('is the owner\'s 16 formats plus league (item 171), one list, matching the latest database CHECK', () => {
+    expect(ACTIVITY_FORMAT_KEYS).toEqual(['drop_in', 'class', 'tournament', 'meetup', 'concert', 'show', 'festival', 'tour', 'workshop', 'appointment', 'reservation', 'open_play', 'competition', 'exhibition', 'market', 'party', 'league']);
+    const sql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20270294_v1_category_pass.sql'), 'utf8');
+    const check = sql.slice(sql.indexOf('add constraint gatherings_format_check'), sql.indexOf(';', sql.indexOf('add constraint gatherings_format_check')));
+    const inSql = [...check.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
     expect([...new Set(inSql)].sort()).toEqual([...ACTIVITY_FORMAT_KEYS].sort());
     expect(FORMAT_OPTIONS[0]).toEqual({ key: null, label: 'Not specified' });
   });

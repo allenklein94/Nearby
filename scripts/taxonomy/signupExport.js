@@ -5,9 +5,10 @@ function embedded(html, name) {
   return m ? JSON.parse(m[1]) : null;
 }
 
+// What a business may declare: consumer tags minus customer-only ones (item 185) plus business-only tags (subcategoryOptionsFor).
 function renderTags(groups) {
   const out = {};
-  for (const g of groups) out[g.key] = [...g.tags, ...(g.businessOnlyTags ?? [])];
+  for (const g of groups) out[g.key] = [...g.tags.filter((t) => !(g.customerOnlyTags ?? []).includes(t)), ...(g.businessOnlyTags ?? [])];
   return out;
 }
 
@@ -29,7 +30,7 @@ function staleness(html, snapshot) {
   const exported = embedded(html, 'APPLY_TAGS') ?? {};
   const place = new Map();
   for (const [group, tags] of Object.entries(exported)) for (const t of tags) place.set(t, group);
-  const live = (snapshot?.tags ?? []).filter((t) => !t.retired);
+  const live = (snapshot?.tags ?? []).filter((t) => !t.retired && !t.customer_only);
   const retired = new Set((snapshot?.tags ?? []).filter((t) => t.retired).map((t) => t.tag));
   const former = new Set((snapshot?.former_names ?? []).map((f) => f.name));
   const missing = live.filter((t) => !place.has(t.tag)).map((t) => t.tag);

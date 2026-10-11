@@ -82,8 +82,8 @@ const ASKS = [
   ['coffee walking', { rawText: 'coffee tonight, walking distance', category: 'Coffee', dateWindow: 'tonight' }],
   ['quiet drink', { rawText: 'a quiet drink tonight', dateWindow: 'tonight' }],
   ['no alcohol fun', { rawText: 'something fun tonight, no alcohol', dateWindow: 'tonight' }],
-  ['narrowed to activities', { rawText: 'something fun tonight', dateWindow: 'tonight', narrowGroup: 'activities_recreation' }],
-  ['narrowed + walking', { rawText: 'something fun tonight within walking distance', dateWindow: 'tonight', narrowGroup: 'activities_recreation' }],
+  ['narrowed to activities', { rawText: 'something fun tonight', dateWindow: 'tonight', narrowGroup: 'sports_fitness' }], // item 168: yoga and soccer sit in Sports & Fitness
+  ['narrowed + walking', { rawText: 'something fun tonight within walking distance', dateWindow: 'tonight', narrowGroup: 'sports_fitness' }],
   ['party of 12', { rawText: 'somewhere for 12 of us tonight', partySize: 12, dateWindow: 'tonight' }],
   ['one hour', { rawText: 'I only have an hour tonight, something fun', dateWindow: 'tonight' }],
   ['vegan dinner', { rawText: 'vegan dinner tonight', category: 'Restaurants', dateWindow: 'tonight' }],

@@ -28,13 +28,15 @@ describe('business type search', () => {
 describe('public web signup form parity', () => {
   const fs = require('fs');
   const html = fs.readFileSync(require.resolve('../../docs/business.html'), 'utf8');
-  it('its embedded taxonomy equals the app taxonomy (consumer + business-only tags)', () => {
+  it('its embedded taxonomy equals what a business may declare (consumer tags minus customer-only, plus business-only)', () => {
     const m = html.match(/var APPLY_TAGS = (\{.*\});/);
     expect(m).toBeTruthy();
     const web = JSON.parse(m[1]);
     const app = {};
-    CATEGORY_GROUPS.forEach((g) => { app[g.key] = [...g.tags, ...(g.businessOnlyTags ?? [])]; });
+    const { subcategoryOptionsFor } = require('../constants/gatheringCategories');
+    CATEGORY_GROUPS.forEach((g) => { app[g.key] = subcategoryOptionsFor(g.key); });
     expect(web).toEqual(app);
+    expect(Object.values(web).flat()).not.toContain('Date Night'); // item 185: customer-only
   });
   it('its embedded synonyms equal the app synonyms', () => {
     const { seedRows } = require('../constants/categorySynonyms');
@@ -111,7 +113,10 @@ describe('web signup checklist is a faithful copy of the app checklist', () => {
     expect(JSON.parse(m[1])).toEqual(BUSINESS_ATTRIBUTE_OPTIONS.map((o) => o.key));
     // Secondary tags are checked against the registry only (real, not retired), never limited to the main group, so a museum can
     // also be Kids Museums, as the app's apply screen and dashboard editor already allow.
-    expect(fn).toMatch(/from\('category_tag_groups'\)\.select\('tag'\)\.is\('retired_at', null\)\.in\('tag', wanted\)/);
+    expect(fn).toMatch(/from\('category_tag_groups'\)\.select\('tag'\)\.is\('retired_at', null\)\.eq\('customer_only', false\)\.in\('tag', wanted\)/);
+    // Item 185/186: never a customer-only tag, at most five secondary categories.
+    expect(fn).toMatch(/const MAX_SECONDARY_CATEGORIES = 5;/);
+    expect(fn).toMatch(/\.slice\(0, MAX_SECONDARY_CATEGORIES\)/);
     expect(fn).not.toMatch(/eq\('group_key', category\)\.is\('retired_at', null\)\.in\('tag', wanted\)/);
     expect(html).toContain('attributes: selectedApplyCategory ? applyAttributes : []');
     // The web form offers "Also classify as" over the whole taxonomy and sends those tags with the checklist's own.

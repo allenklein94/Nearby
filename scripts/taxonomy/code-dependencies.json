@@ -5,14 +5,14 @@
    "tag": "Adult Education",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "education_classes"
   },
   {
    "tag": "Adventure",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "activities_recreation"
   },
   {
@@ -26,14 +26,14 @@
    "tag": "Amusement Park",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
    "tag": "Aquariums",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
@@ -47,29 +47,43 @@
    "tag": "Art",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "arts_culture_learning"
   },
   {
    "tag": "Art Classes",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "arts_culture_learning"
   },
   {
    "tag": "Art Galleries",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "arts_culture_learning"
+  },
+  {
+   "tag": "Auto Parts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "auto_transportation"
   },
   {
    "tag": "Auto Repair",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 5,
+   "occurrences": 11,
    "group": "auto_transportation"
+  },
+  {
+   "tag": "Axe Throwing",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
   },
   {
    "tag": "Bakeries",
@@ -97,7 +111,7 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Beaches",
@@ -105,6 +119,13 @@
    "consumer": "static_signup_export",
    "occurrences": 1,
    "group": "outdoors_nature"
+  },
+  {
+   "tag": "Beauty Supply",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "shopping"
   },
   {
    "tag": "Birthday Activities",
@@ -124,7 +145,7 @@
    "tag": "Boat Tours",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 5,
    "group": "travel_experiences"
   },
   {
@@ -132,7 +153,14 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Bookstores",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "shopping"
   },
   {
    "tag": "Boutiques",
@@ -180,7 +208,7 @@
    "tag": "Camping",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "outdoors_nature"
   },
   {
@@ -194,7 +222,7 @@
    "tag": "Car Rental",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "auto_transportation"
   },
   {
@@ -208,7 +236,7 @@
    "tag": "Career Events",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "business_networking"
   },
   {
@@ -243,7 +271,7 @@
    "tag": "Charity",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "community_volunteering"
   },
   {
@@ -264,7 +292,7 @@
    "tag": "Cleaning",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 4,
+   "occurrences": 7,
    "group": "home_local_services"
   },
   {
@@ -279,13 +307,13 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 4,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Clothing",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "shopping"
   },
   {
@@ -306,14 +334,14 @@
    "tag": "Comedy",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "entertainment_nightlife"
   },
   {
    "tag": "Community Events",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 8,
    "group": "community_volunteering"
   },
   {
@@ -331,6 +359,13 @@
    "group": "business_networking"
   },
   {
+   "tag": "Contractors",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 8,
+   "group": "home_local_services"
+  },
+  {
    "tag": "Cooking",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
@@ -345,17 +380,10 @@
    "group": "education_classes"
   },
   {
-   "tag": "Couples",
-   "file": "docs/business.html",
-   "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "dating_social"
-  },
-  {
    "tag": "Coworking",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 2,
+   "occurrences": 5,
    "group": "business_networking"
   },
   {
@@ -377,7 +405,7 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "D&D",
@@ -397,7 +425,7 @@
    "tag": "Dance Classes",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "education_classes"
   },
   {
@@ -408,25 +436,18 @@
    "group": "entertainment_nightlife"
   },
   {
-   "tag": "Date Night",
-   "file": "docs/business.html",
-   "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "dating_social"
-  },
-  {
-   "tag": "Dating",
-   "file": "docs/business.html",
-   "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "dating_social"
-  },
-  {
    "tag": "Day Trip",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
    "group": "travel_experiences"
+  },
+  {
+   "tag": "Dealerships",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "auto_transportation"
   },
   {
    "tag": "Dental",
@@ -450,6 +471,13 @@
    "group": "auto_transportation"
   },
   {
+   "tag": "Distilleries",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
+   "group": "food_drink"
+  },
+  {
    "tag": "Diving",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
@@ -460,7 +488,7 @@
    "tag": "Dog Meetup",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
@@ -474,7 +502,7 @@
    "tag": "Dog Walking",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
@@ -488,21 +516,14 @@
    "tag": "Donation Drives",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 6,
    "group": "community_volunteering"
-  },
-  {
-   "tag": "Double Date",
-   "file": "docs/business.html",
-   "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "dating_social"
   },
   {
    "tag": "EV Charging",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "auto_transportation"
   },
   {
@@ -523,7 +544,7 @@
    "tag": "Entrepreneurship",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 6,
    "group": "business_networking"
   },
   {
@@ -544,14 +565,14 @@
    "tag": "Exhibits",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "attractions_things_to_see"
   },
   {
    "tag": "Faith & Spirituality",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 5,
    "group": "community_volunteering"
   },
   {
@@ -579,8 +600,8 @@
    "tag": "Family Resorts",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 3,
+   "group": "travel_experiences"
   },
   {
    "tag": "Farmers Markets",
@@ -614,7 +635,7 @@
    "tag": "Finance",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 7,
    "group": "business_networking"
   },
   {
@@ -623,13 +644,6 @@
    "consumer": "static_signup_export",
    "occurrences": 4,
    "group": "food_drink"
-  },
-  {
-   "tag": "First Date",
-   "file": "docs/business.html",
-   "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "dating_social"
   },
   {
    "tag": "Fishing",
@@ -642,8 +656,8 @@
    "tag": "Fitness",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 8,
-   "group": "activities_recreation"
+   "occurrences": 11,
+   "group": "sports_fitness"
   },
   {
    "tag": "Florist",
@@ -695,6 +709,13 @@
    "group": "outdoors_nature"
   },
   {
+   "tag": "Gas Stations",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "auto_transportation"
+  },
+  {
    "tag": "General Wellness",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
@@ -705,7 +726,7 @@
    "tag": "Gift Shop",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 3,
+   "occurrences": 4,
    "group": "shopping"
   },
   {
@@ -713,14 +734,28 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "stay_getaway"
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Go-Karts",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
   },
   {
    "tag": "Golf",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 5,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
+  },
+  {
+   "tag": "Grocery",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 6,
+   "group": "shopping"
   },
   {
    "tag": "Grooming",
@@ -730,24 +765,17 @@
    "group": "pets"
   },
   {
-   "tag": "Group Hangouts",
-   "file": "docs/business.html",
-   "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "dating_social"
-  },
-  {
    "tag": "Gyms",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 8,
-   "group": "activities_recreation"
+   "occurrences": 9,
+   "group": "sports_fitness"
   },
   {
    "tag": "HVAC",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 7,
    "group": "home_local_services"
   },
   {
@@ -775,7 +803,7 @@
    "tag": "Historic Sites",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
@@ -789,15 +817,36 @@
    "tag": "Home & Furniture",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "shopping"
+  },
+  {
+   "tag": "Home Security",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Horseback Riding",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
   },
   {
    "tag": "Hotels",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 6,
-   "group": "stay_getaway"
+   "occurrences": 8,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "House Painting",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 5,
+   "group": "home_local_services"
   },
   {
    "tag": "Indoor Play",
@@ -838,14 +887,14 @@
    "tag": "Kids Activity",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "family_kids"
   },
   {
    "tag": "Kids Education",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "education_classes"
   },
   {
@@ -866,21 +915,21 @@
    "tag": "Landmarks",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
    "tag": "Landscaping",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 8,
    "group": "home_local_services"
   },
   {
    "tag": "Language Classes",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 6,
    "group": "education_classes"
   },
   {
@@ -891,10 +940,17 @@
    "group": "education_classes"
   },
   {
-   "tag": "Lectures",
+   "tag": "Laser Tag",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Lectures",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 2,
    "group": "education_classes"
   },
   {
@@ -915,7 +971,7 @@
    "tag": "Local Attractions",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
@@ -933,17 +989,10 @@
    "group": "shopping"
   },
   {
-   "tag": "Make New Friends",
-   "file": "docs/business.html",
-   "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "dating_social"
-  },
-  {
    "tag": "Markets",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "shopping"
   },
   {
@@ -951,7 +1000,7 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 9,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Massage",
@@ -985,21 +1034,21 @@
    "tag": "Movies",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "entertainment_nightlife"
   },
   {
    "tag": "Moving",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
    "tag": "Museums",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 3,
+   "occurrences": 5,
    "group": "attractions_things_to_see"
   },
   {
@@ -1013,7 +1062,7 @@
    "tag": "Music Lessons",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 6,
    "group": "arts_culture_learning"
   },
   {
@@ -1027,7 +1076,7 @@
    "tag": "Neighborhood Events",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "community_volunteering"
   },
   {
@@ -1048,7 +1097,7 @@
    "tag": "Nightlife",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "entertainment_nightlife"
   },
   {
@@ -1062,7 +1111,7 @@
    "tag": "Observation Decks",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
@@ -1091,6 +1140,13 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 4,
+   "group": "sports_fitness"
+  },
+  {
+   "tag": "Paintball",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
    "group": "activities_recreation"
   },
   {
@@ -1104,7 +1160,7 @@
    "tag": "Parks",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "outdoors_nature"
   },
   {
@@ -1136,52 +1192,52 @@
    "group": "health_personal_care"
   },
   {
-   "tag": "Pest Control",
+   "tag": "Personal Training",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
+   "group": "sports_fitness"
+  },
+  {
+   "tag": "Pest Control",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
    "group": "home_local_services"
   },
   {
    "tag": "Pet Boarding",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 5,
    "group": "pets"
   },
   {
    "tag": "Pet Events",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
-   "tag": "Pet Friendly Places",
+   "tag": "Pet Sitting",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "pets"
-  },
-  {
-   "tag": "Pet Friendly Stays",
-   "file": "docs/business.html",
-   "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "stay_getaway"
   },
   {
    "tag": "Pet Stores",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "pets"
   },
   {
    "tag": "Pet Training",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
@@ -1210,7 +1266,7 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 4,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Picnics",
@@ -1224,7 +1280,7 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 3,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Playgrounds",
@@ -1258,28 +1314,28 @@
    "tag": "Professional Development",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 6,
    "group": "education_classes"
   },
   {
    "tag": "Professional Events",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 10,
    "group": "business_networking"
   },
   {
    "tag": "Reading",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 5,
    "group": "arts_culture_learning"
   },
   {
    "tag": "Real Estate",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "business_networking"
   },
   {
@@ -1288,6 +1344,13 @@
    "consumer": "static_signup_export",
    "occurrences": 1,
    "group": "wellness_beauty"
+  },
+  {
+   "tag": "Recreation Centers",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
   },
   {
    "tag": "Repairs",
@@ -1301,7 +1364,7 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "stay_getaway"
+   "group": "travel_experiences"
   },
   {
    "tag": "Restaurants",
@@ -1315,27 +1378,27 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "stay_getaway"
+   "group": "travel_experiences"
   },
   {
    "tag": "Romantic Getaways",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "stay_getaway"
+   "group": "travel_experiences"
   },
   {
    "tag": "Running",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Salons",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 6,
+   "occurrences": 7,
    "group": "wellness_beauty"
   },
   {
@@ -1349,7 +1412,7 @@
    "tag": "Scenic Views",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 5,
    "group": "outdoors_nature"
   },
   {
@@ -1363,14 +1426,14 @@
    "tag": "Sightseeing",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
    "tag": "Singles Events",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "dating_social"
   },
   {
@@ -1378,13 +1441,13 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Skin Care",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "wellness_beauty"
   },
   {
@@ -1399,13 +1462,13 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Social Clubs",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "dating_social"
   },
   {
@@ -1420,7 +1483,7 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "stay_getaway"
+   "group": "travel_experiences"
   },
   {
    "tag": "Special Events",
@@ -1437,18 +1500,32 @@
    "group": "dating_social"
   },
   {
+   "tag": "Sporting Goods",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "shopping"
+  },
+  {
    "tag": "Sports",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "activities_recreation"
+   "occurrences": 6,
+   "group": "sports_fitness"
   },
   {
    "tag": "Staycation",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "stay_getaway"
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Storage",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
+   "group": "home_local_services"
   },
   {
    "tag": "Street Events",
@@ -1476,13 +1553,20 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Takeout & Delivery",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 2,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Tea",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 4,
    "group": "food_drink"
   },
   {
@@ -1503,7 +1587,7 @@
    "tag": "Technology Classes",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 5,
    "group": "education_classes"
   },
   {
@@ -1511,7 +1595,7 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 3,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Theater",
@@ -1524,7 +1608,7 @@
    "tag": "Thrift & Vintage",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 5,
    "group": "shopping"
   },
   {
@@ -1538,7 +1622,7 @@
    "tag": "Tourist Attractions",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
@@ -1552,8 +1636,15 @@
    "tag": "Towing",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "auto_transportation"
+  },
+  {
+   "tag": "Toys",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 3,
+   "group": "shopping"
   },
   {
    "tag": "Trails",
@@ -1561,6 +1652,20 @@
    "consumer": "static_signup_export",
    "occurrences": 1,
    "group": "outdoors_nature"
+  },
+  {
+   "tag": "Trampoline Parks",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Transportation Services",
+   "file": "docs/business.html",
+   "consumer": "static_signup_export",
+   "occurrences": 9,
+   "group": "auto_transportation"
   },
   {
    "tag": "Travel",
@@ -1580,21 +1685,21 @@
    "tag": "Tutoring",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 4,
    "group": "education_classes"
   },
   {
    "tag": "Vacation Rentals",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 4,
+   "group": "travel_experiences"
   },
   {
    "tag": "Veterinary",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 6,
    "group": "pets"
   },
   {
@@ -1609,13 +1714,13 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Volunteering",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 7,
    "group": "community_volunteering"
   },
   {
@@ -1629,15 +1734,15 @@
    "tag": "Water Sports",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "activities_recreation"
+   "occurrences": 2,
+   "group": "outdoors_nature"
   },
   {
    "tag": "Weekend Getaway",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 3,
+   "group": "travel_experiences"
   },
   {
    "tag": "Wellness Centers",
@@ -1650,7 +1755,7 @@
    "tag": "Wildlife",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "outdoors_nature"
   },
   {
@@ -1679,13 +1784,13 @@
    "file": "docs/business.html",
    "consumer": "static_signup_export",
    "occurrences": 4,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Zoos",
    "file": "docs/business.html",
    "consumer": "static_signup_export",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": "attractions_things_to_see"
   },
   {
@@ -2130,6 +2235,13 @@
    "group": null
   },
   {
+   "tag": "Tea",
+   "file": "src/constants/businessAttributes.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Nightlife",
    "file": "src/constants/businessRestrictions.js",
    "consumer": "code",
@@ -2144,7 +2256,63 @@
    "group": null
   },
   {
+   "tag": "Adult Education",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Adventure",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Amusement Park",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Aquariums",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Arcade",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art Classes",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Art Galleries",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Auto Parts",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2154,7 +2322,7 @@
    "tag": "Auto Repair",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": null
   },
   {
@@ -2179,6 +2347,27 @@
    "group": null
   },
   {
+   "tag": "Beauty Supply",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Boat Tours",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bookstores",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Bowling",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
@@ -2200,7 +2389,28 @@
    "group": null
   },
   {
+   "tag": "Camping",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Car Rental",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Car Wash",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Career Events",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2214,14 +2424,28 @@
    "group": null
   },
   {
-   "tag": "Cleaning",
+   "tag": "Charity",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
    "group": null
   },
   {
+   "tag": "Cleaning",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
    "tag": "Climbing",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Clothing",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2235,7 +2459,49 @@
    "group": null
   },
   {
+   "tag": "Comedy",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Community Events",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Contractors",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Cooking Class",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Coworking",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dance Classes",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dealerships",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2249,7 +2515,28 @@
    "group": null
   },
   {
+   "tag": "Distilleries",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dog Meetup",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Dog Parks",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Dog Walking",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2263,7 +2550,28 @@
    "group": null
   },
   {
+   "tag": "Donation Drives",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "EV Charging",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Electrical",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Entrepreneurship",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2277,7 +2585,35 @@
    "group": null
   },
   {
+   "tag": "Exhibits",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Faith & Spirituality",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Family Resorts",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Fast Casual",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Finance",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2294,7 +2630,7 @@
    "tag": "Fitness",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
-   "occurrences": 1,
+   "occurrences": 3,
    "group": null
   },
   {
@@ -2312,14 +2648,28 @@
    "group": null
   },
   {
-   "tag": "Gift Shop",
+   "tag": "Gas Stations",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
    "group": null
   },
   {
+   "tag": "Gift Shop",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
    "tag": "Golf",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Grocery",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2334,6 +2684,13 @@
   },
   {
    "tag": "Gyms",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "HVAC",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2354,7 +2711,35 @@
    "group": null
   },
   {
+   "tag": "Historic Sites",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Home & Furniture",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Home Security",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Hotels",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "House Painting",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2368,10 +2753,66 @@
    "group": null
   },
   {
+   "tag": "Kids Activity",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Kids Education",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Landmarks",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Landscaping",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Language Classes",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Lectures",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Live Music",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Local Attractions",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Markets",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
    "group": null
   },
   {
@@ -2396,7 +2837,28 @@
    "group": null
   },
   {
+   "tag": "Movies",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Moving",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Museums",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Music Lessons",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2410,7 +2872,28 @@
    "group": null
   },
   {
+   "tag": "Neighborhood Events",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Nightclubs",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Nightlife",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Observation Decks",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2425,6 +2908,55 @@
   },
   {
    "tag": "Padel",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Parks",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pest Control",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Boarding",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Events",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Sitting",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Stores",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Pet Training",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2459,6 +2991,34 @@
    "group": null
   },
   {
+   "tag": "Professional Development",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Professional Events",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Reading",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Real Estate",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Restaurants",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
@@ -2469,7 +3029,42 @@
    "tag": "Salons",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
-   "occurrences": 2,
+   "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Scenic Views",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sightseeing",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Singles Events",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Skin Care",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Social Clubs",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
    "group": null
   },
   {
@@ -2480,7 +3075,126 @@
    "group": null
   },
   {
+   "tag": "Sporting Goods",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Sports",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Storage",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tea",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Technology Classes",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Tennis",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Thrift & Vintage",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tourist Attractions",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Towing",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Toys",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Transportation Services",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tutoring",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Vacation Rentals",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Veterinary",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Volunteering",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Water Sports",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Weekend Getaway",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Wildlife",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -2502,6 +3216,13 @@
   },
   {
    "tag": "Yoga",
+   "file": "src/constants/categorySynonyms.js",
+   "consumer": "synonyms",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Zoos",
    "file": "src/constants/categorySynonyms.js",
    "consumer": "synonyms",
    "occurrences": 1,
@@ -3943,11 +4664,25 @@
    "group": "arts_culture_learning"
   },
   {
+   "tag": "Auto Parts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "auto_transportation"
+  },
+  {
    "tag": "Auto Repair",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
+  },
+  {
+   "tag": "Axe Throwing",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
   },
   {
    "tag": "Bakeries",
@@ -3975,7 +4710,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Beaches",
@@ -3983,6 +4718,13 @@
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
    "group": "outdoors_nature"
+  },
+  {
+   "tag": "Beauty Supply",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
   },
   {
    "tag": "Birthday Activities",
@@ -4010,7 +4752,14 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "outdoors_nature"
+  },
+  {
+   "tag": "Bookstores",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
   },
   {
    "tag": "Boutiques",
@@ -4072,14 +4821,14 @@
    "tag": "Car Rental",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
   },
   {
    "tag": "Car Wash",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
   },
   {
@@ -4114,7 +4863,7 @@
    "tag": "Certifications",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 3,
+   "occurrences": 2,
    "group": "education_classes"
   },
   {
@@ -4142,7 +4891,7 @@
    "tag": "Cleaning",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
@@ -4157,7 +4906,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Clothing",
@@ -4209,6 +4958,13 @@
    "group": "business_networking"
   },
   {
+   "tag": "Contractors",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "home_local_services"
+  },
+  {
    "tag": "Cooking",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
@@ -4226,7 +4982,7 @@
    "tag": "Couples",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "dating_social"
   },
   {
@@ -4255,7 +5011,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "D&D",
@@ -4289,14 +5045,14 @@
    "tag": "Date Night",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "dating_social"
   },
   {
    "tag": "Dating",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 3,
+   "occurrences": 4,
    "group": "dating_social"
   },
   {
@@ -4305,6 +5061,13 @@
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
    "group": "travel_experiences"
+  },
+  {
+   "tag": "Dealerships",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "auto_transportation"
   },
   {
    "tag": "Dental",
@@ -4324,8 +5087,15 @@
    "tag": "Detailing",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
+  },
+  {
+   "tag": "Distilleries",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
   },
   {
    "tag": "Diving",
@@ -4352,7 +5122,7 @@
    "tag": "Dog Walking",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
@@ -4373,21 +5143,21 @@
    "tag": "Double Date",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "dating_social"
   },
   {
    "tag": "EV Charging",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
   },
   {
    "tag": "Electrical",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
@@ -4457,8 +5227,8 @@
    "tag": "Family Resorts",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 3,
+   "group": "travel_experiences"
   },
   {
    "tag": "Farmers Markets",
@@ -4506,7 +5276,7 @@
    "tag": "First Date",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "dating_social"
   },
   {
@@ -4521,7 +5291,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Florist",
@@ -4573,6 +5343,13 @@
    "group": "outdoors_nature"
   },
   {
+   "tag": "Gas Stations",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "auto_transportation"
+  },
+  {
    "tag": "General Wellness",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
@@ -4590,15 +5367,29 @@
    "tag": "Glamping",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
+   "occurrences": 3,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Go-Karts",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "stay_getaway"
+   "group": "activities_recreation"
   },
   {
    "tag": "Golf",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
+  },
+  {
+   "tag": "Grocery",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "shopping"
   },
   {
    "tag": "Grooming",
@@ -4611,7 +5402,7 @@
    "tag": "Group Hangouts",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "dating_social"
   },
   {
@@ -4619,20 +5410,20 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "HVAC",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
    "tag": "Handyman",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
@@ -4671,11 +5462,32 @@
    "group": "shopping"
   },
   {
-   "tag": "Hotels",
+   "tag": "Home Security",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "home_local_services"
+  },
+  {
+   "tag": "Horseback Riding",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "stay_getaway"
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Hotels",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 3,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "House Painting",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "home_local_services"
   },
   {
    "tag": "Indoor Play",
@@ -4688,7 +5500,7 @@
    "tag": "Interior Design",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
@@ -4751,7 +5563,7 @@
    "tag": "Landscaping",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
@@ -4767,6 +5579,13 @@
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
    "group": "education_classes"
+  },
+  {
+   "tag": "Laser Tag",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
   },
   {
    "tag": "Lectures",
@@ -4814,7 +5633,7 @@
    "tag": "Make New Friends",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "dating_social"
   },
   {
@@ -4829,7 +5648,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Massage",
@@ -4870,7 +5689,7 @@
    "tag": "Moving",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
@@ -4898,7 +5717,7 @@
    "tag": "Nails",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "wellness_beauty"
   },
   {
@@ -4947,7 +5766,7 @@
    "tag": "Oil Change",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
   },
   {
@@ -4969,13 +5788,20 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
+   "group": "sports_fitness"
+  },
+  {
+   "tag": "Paintball",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
    "group": "activities_recreation"
   },
   {
    "tag": "Parking",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
   },
   {
@@ -5014,17 +5840,24 @@
    "group": "health_personal_care"
   },
   {
-   "tag": "Pest Control",
+   "tag": "Personal Training",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
+   "group": "sports_fitness"
+  },
+  {
+   "tag": "Pest Control",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
    "tag": "Pet Boarding",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
@@ -5035,31 +5868,24 @@
    "group": "pets"
   },
   {
-   "tag": "Pet Friendly Places",
+   "tag": "Pet Sitting",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
-  },
-  {
-   "tag": "Pet Friendly Stays",
-   "file": "src/constants/gatheringCategories.js",
-   "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
   },
   {
    "tag": "Pet Stores",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
    "tag": "Pet Training",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
@@ -5088,7 +5914,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Picnics",
@@ -5102,7 +5928,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Playgrounds",
@@ -5115,7 +5941,7 @@
    "tag": "Plumbing",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
@@ -5168,18 +5994,25 @@
    "group": "wellness_beauty"
   },
   {
-   "tag": "Repairs",
+   "tag": "Recreation Centers",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Repairs",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
    "group": "home_local_services"
   },
   {
    "tag": "Resorts",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 3,
+   "group": "travel_experiences"
   },
   {
    "tag": "Restaurants",
@@ -5192,22 +6025,22 @@
    "tag": "Road Trip",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 2,
+   "group": "travel_experiences"
   },
   {
    "tag": "Romantic Getaways",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 2,
+   "group": "travel_experiences"
   },
   {
    "tag": "Running",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Salons",
@@ -5256,7 +6089,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Skin Care",
@@ -5277,7 +6110,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Social Clubs",
@@ -5297,8 +6130,8 @@
    "tag": "Spa Resorts",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 3,
+   "group": "travel_experiences"
   },
   {
    "tag": "Special Events",
@@ -5315,18 +6148,32 @@
    "group": "dating_social"
   },
   {
+   "tag": "Sporting Goods",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
+  },
+  {
    "tag": "Sports",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Staycation",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 2,
+   "group": "travel_experiences"
+  },
+  {
+   "tag": "Storage",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "home_local_services"
   },
   {
    "tag": "Street Events",
@@ -5354,10 +6201,17 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Takeout & Delivery",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "food_drink"
+  },
+  {
+   "tag": "Tea",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
@@ -5389,7 +6243,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Theater",
@@ -5409,7 +6263,7 @@
    "tag": "Tires",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
   },
   {
@@ -5430,8 +6284,15 @@
    "tag": "Towing",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "auto_transportation"
+  },
+  {
+   "tag": "Toys",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "shopping"
   },
   {
    "tag": "Trails",
@@ -5439,6 +6300,20 @@
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
    "group": "outdoors_nature"
+  },
+  {
+   "tag": "Trampoline Parks",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 1,
+   "group": "activities_recreation"
+  },
+  {
+   "tag": "Transportation Services",
+   "file": "src/constants/gatheringCategories.js",
+   "consumer": "baseline_taxonomy",
+   "occurrences": 2,
+   "group": "auto_transportation"
   },
   {
    "tag": "Travel",
@@ -5465,14 +6340,14 @@
    "tag": "Vacation Rentals",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 3,
+   "group": "travel_experiences"
   },
   {
    "tag": "Veterinary",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
+   "occurrences": 2,
    "group": "pets"
   },
   {
@@ -5487,7 +6362,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Volunteering",
@@ -5508,14 +6383,14 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "outdoors_nature"
   },
   {
    "tag": "Weekend Getaway",
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
-   "occurrences": 1,
-   "group": "stay_getaway"
+   "occurrences": 2,
+   "group": "travel_experiences"
   },
   {
    "tag": "Wellness Centers",
@@ -5557,7 +6432,7 @@
    "file": "src/constants/gatheringCategories.js",
    "consumer": "baseline_taxonomy",
    "occurrences": 1,
-   "group": "activities_recreation"
+   "group": "sports_fitness"
   },
   {
    "tag": "Zoos",
@@ -7499,6 +8374,13 @@
    "group": null
   },
   {
+   "tag": "Fitness",
+   "file": "src/constants/skillLevel.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Golf",
    "file": "src/constants/skillLevel.js",
    "consumer": "code",
@@ -7968,7 +8850,21 @@
    "group": null
   },
   {
+   "tag": "Auto Parts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Auto Repair",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Axe Throwing",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 1,
@@ -8010,6 +8906,13 @@
    "group": null
   },
   {
+   "tag": "Beauty Supply",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Birthday Activities",
    "file": "src/i18n/translations.js",
    "consumer": "code",
@@ -8032,6 +8935,13 @@
   },
   {
    "tag": "Boating",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Bookstores",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 1,
@@ -8234,6 +9144,13 @@
    "group": null
   },
   {
+   "tag": "Contractors",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Cooking",
    "file": "src/i18n/translations.js",
    "consumer": "code",
@@ -8332,6 +9249,13 @@
    "group": null
   },
   {
+   "tag": "Dealerships",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Dental",
    "file": "src/i18n/translations.js",
    "consumer": "code",
@@ -8350,6 +9274,13 @@
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Distilleries",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
    "group": null
   },
   {
@@ -8598,6 +9529,13 @@
    "group": null
   },
   {
+   "tag": "Gas Stations",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "General Wellness",
    "file": "src/i18n/translations.js",
    "consumer": "code",
@@ -8619,10 +9557,24 @@
    "group": null
   },
   {
+   "tag": "Go-Karts",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Golf",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 6,
+   "group": null
+  },
+  {
+   "tag": "Grocery",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
    "group": null
   },
   {
@@ -8696,10 +9648,31 @@
    "group": null
   },
   {
+   "tag": "Home Security",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Horseback Riding",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Hotels",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "House Painting",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
    "group": null
   },
   {
@@ -8788,6 +9761,13 @@
   },
   {
    "tag": "Language Exchange",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Laser Tag",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 1,
@@ -8997,6 +9977,13 @@
    "group": null
   },
   {
+   "tag": "Paintball",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 6,
+   "group": null
+  },
+  {
    "tag": "Parking",
    "file": "src/i18n/translations.js",
    "consumer": "code",
@@ -9039,6 +10026,13 @@
    "group": null
   },
   {
+   "tag": "Personal Training",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
+   "group": null
+  },
+  {
    "tag": "Pest Control",
    "file": "src/i18n/translations.js",
    "consumer": "code",
@@ -9060,14 +10054,7 @@
    "group": null
   },
   {
-   "tag": "Pet Friendly Places",
-   "file": "src/i18n/translations.js",
-   "consumer": "code",
-   "occurrences": 1,
-   "group": null
-  },
-  {
-   "tag": "Pet Friendly Stays",
+   "tag": "Pet Sitting",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 1,
@@ -9190,6 +10177,13 @@
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 2,
+   "group": null
+  },
+  {
+   "tag": "Recreation Centers",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
    "group": null
   },
   {
@@ -9340,6 +10334,13 @@
    "group": null
   },
   {
+   "tag": "Sporting Goods",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Sports",
    "file": "src/i18n/translations.js",
    "consumer": "code",
@@ -9351,6 +10352,13 @@
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 3,
+   "group": null
+  },
+  {
+   "tag": "Storage",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 2,
    "group": null
   },
   {
@@ -9383,6 +10391,13 @@
   },
   {
    "tag": "Takeout & Delivery",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tea",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 1,
@@ -9459,7 +10474,28 @@
    "group": null
   },
   {
+   "tag": "Toys",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
    "tag": "Trails",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Trampoline Parks",
+   "file": "src/i18n/translations.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Transportation Services",
    "file": "src/i18n/translations.js",
    "consumer": "code",
    "occurrences": 1,
@@ -9607,6 +10643,13 @@
   },
   {
    "tag": "Pastries",
+   "file": "src/i18n/ui/bizHelp.js",
+   "consumer": "code",
+   "occurrences": 1,
+   "group": null
+  },
+  {
+   "tag": "Tea",
    "file": "src/i18n/ui/bizHelp.js",
    "consumer": "code",
    "occurrences": 1,

@@ -21,13 +21,13 @@ describe('nearby canonical taxonomy', () => {
     expect(INTENT_ROUTES.length).toBeGreaterThan(20);
   });
   it('teach once: a new tag plus its synonyms is understood by search with no other change', () => {
-    expect(tagsForPhrase('axe throwing')).toEqual([]);
-    registerCategoryTag('Axe Throwing', 'activities_recreation');
-    registerSynonyms([{ phrase: 'axe throwing court', tag: 'Axe Throwing' }, { phrase: 'Axe Throwing Club', tag: 'Axe Throwing' }, { phrase: 'x', tag: 'Not A Tag' }]);
-    expect(tagsForPhrase('axe throwing')).toEqual(['Axe Throwing']);
-    expect(tagsForPhrase('axe throwing courts')).toEqual(['Axe Throwing']);
-    expect(tagsForPhrase('the best axe throwing club in town')).toContain('Axe Throwing');
-    expect(describeTag('Axe Throwing').group).toBe('activities_recreation');
+    expect(tagsForPhrase('curling')).toEqual([]);
+    registerCategoryTag('Curling', 'activities_recreation');
+    registerSynonyms([{ phrase: 'curling court', tag: 'Curling' }, { phrase: 'Curling Club', tag: 'Curling' }, { phrase: 'x', tag: 'Not A Tag' }]);
+    expect(tagsForPhrase('curling')).toEqual(['Curling']);
+    expect(tagsForPhrase('curling courts')).toEqual(['Curling']);
+    expect(tagsForPhrase('the best curling club in town')).toContain('Curling');
+    expect(describeTag('Curling').group).toBe('activities_recreation');
     expect(tagsForPhrase('x')).toEqual([]);
   });
   it('synonyms are data: hydrated on sign-in and taught by an admin without a release', () => {

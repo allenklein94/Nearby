@@ -24,6 +24,8 @@ export const ACTIVITY_FORMATS = [
   { key: 'market', label: 'Market', icon: '🧺', ask: /\bmarkets?\b/i, commitment: 'easy' },
   // "a party of 6" is a headcount, not a party.
   { key: 'party', label: 'Party', icon: '🎉', ask: /\bpart(y|ies)\b(?!\s+of\b)/i, commitment: null },
+  // Item 171 (owner, LOCKED; added in the item-168 pass): a recurring league is a format, never a category.
+  { key: 'league', label: 'League', icon: '🏅', ask: /\bleagues?\b/i, commitment: 'planned_event' },
 ];
 export const ACTIVITY_FORMAT_KEYS = ACTIVITY_FORMATS.map((f) => f.key);
 

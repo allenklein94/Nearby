@@ -9,9 +9,10 @@ import { currentTagName } from './categoryRegistry';
 
 // Groups that make sense as "what I'm into." Excluded: groups with no leaf tags (services), Dating &
 // Social (handled by the mode/intent questions, not an interest), and business/lodging/health/shopping
-// groups that describe supply rather than a personal pastime.
+// groups that describe supply rather than a personal pastime. (Stay & Getaway was listed here until item 168 merged it into
+// Travel & Getaways, which stays a pastime group.)
 const NOT_PERSONAL_GROUPS = new Set([
-  'dating_social', 'shopping', 'business_networking', 'stay_getaway', 'health_personal_care',
+  'dating_social', 'shopping', 'business_networking', 'health_personal_care',
   'home_local_services', 'auto_transportation',
 ]);
 

@@ -121,6 +121,7 @@ export const CATEGORY_STYLES = {
 const GROUP_FALLBACK_STYLES = {
   food_drink: { icon: '🍔' },
   activities_recreation: { icon: '🏃' },
+  sports_fitness: { icon: '🏋️' },
   entertainment_nightlife: { icon: '🎵' },
   dating_social: { icon: '❤️' },
   arts_culture_learning: { icon: '🎨' },
@@ -134,7 +135,6 @@ const GROUP_FALLBACK_STYLES = {
   business_networking: { icon: '💼' },
   community_volunteering: { icon: '🤝' },
   travel_experiences: { icon: '✈️' },
-  stay_getaway: { icon: '🏨' },
   health_personal_care: { icon: '🩺' },
   education_classes: { icon: '🎓' },
   attractions_things_to_see: { icon: '🎟️' },

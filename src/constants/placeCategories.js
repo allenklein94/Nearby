@@ -26,17 +26,17 @@
 // category. Two categories have no well-matched Google type at all
 // (Business & Networking, Community & Volunteering) and fall back to
 // `point_of_interest` — an honest gap, not a fabricated one. Attractions &
-// Things to See intentionally reuses Travel & Experiences' own
-// `tourist_attraction` type (same precedent already set by Dating & Social
-// reusing Food & Drink's `restaurant`) — the two categories' real-world
-// venues overlap heavily and Google has no separate, narrower type for
-// "local attraction" distinct from "tourist attraction."
+// Things to See browses `tourist_attraction`; Travel & Experiences shared
+// it until the item-168 pass merged Stay & Getaway into Travel & Getaways,
+// which now browses Stay's old `lodging` type (Dating & Social still
+// reuses Food & Drink's `restaurant`).
 export const PLACE_CATEGORIES = [
   { key: 'food_drink', icon: '🍔', label: 'Food & Drink' },
   { key: 'activities_recreation', icon: '🏃', label: 'Activities & Recreation' },
+  { key: 'sports_fitness', icon: '🏋️', label: 'Sports & Fitness' },
   { key: 'entertainment_nightlife', icon: '🎵', label: 'Entertainment & Nightlife' },
   { key: 'dating_social', icon: '❤️', label: 'Dating & Social' },
-  { key: 'arts_culture_learning', icon: '🎨', label: 'Arts, Culture & Learning' },
+  { key: 'arts_culture_learning', icon: '🎨', label: 'Arts, Culture & Events' },
   { key: 'shopping', icon: '🛍️', label: 'Shopping' },
   { key: 'wellness_beauty', icon: '💆', label: 'Wellness & Beauty' },
   { key: 'family_kids', icon: '👨‍👩‍👧', label: 'Family & Kids' },
@@ -46,8 +46,7 @@ export const PLACE_CATEGORIES = [
   { key: 'auto_transportation', icon: '🚗', label: 'Auto & Transportation' },
   { key: 'business_networking', icon: '💼', label: 'Business & Networking' },
   { key: 'community_volunteering', icon: '🤝', label: 'Community & Volunteering' },
-  { key: 'travel_experiences', icon: '✈️', label: 'Travel & Experiences' },
-  { key: 'stay_getaway', icon: '🏨', label: 'Stay & Getaway' },
+  { key: 'travel_experiences', icon: '✈️', label: 'Travel & Getaways' },
   { key: 'health_personal_care', icon: '🩺', label: 'Health & Personal Care' },
   { key: 'education_classes', icon: '🎓', label: 'Education & Classes' },
   { key: 'attractions_things_to_see', icon: '🎟️', label: 'Attractions & Things to See' },
@@ -55,7 +54,9 @@ export const PLACE_CATEGORIES = [
 
 export const PLACE_TYPES = {
   food_drink: 'restaurant',
-  activities_recreation: 'gym',
+  // Item 168: gyms moved to Sports & Fitness with their tags; Activities keeps the recreation venues.
+  activities_recreation: 'bowling_alley',
+  sports_fitness: 'gym',
   entertainment_nightlife: 'night_club',
   // Dates happen at restaurants/bars in practice — reusing food_drink's
   // real type rather than inventing a "dating" venue type Google doesn't
@@ -71,8 +72,9 @@ export const PLACE_TYPES = {
   auto_transportation: 'car_repair',
   business_networking: 'point_of_interest',
   community_volunteering: 'point_of_interest',
-  travel_experiences: 'tourist_attraction',
-  stay_getaway: 'lodging',
+  // Item 168: Travel & Getaways absorbed Stay & Getaway. One type per call: `lodging` (the old Stay type), because
+  // Attractions & Things to See already browses `tourist_attraction`.
+  travel_experiences: 'lodging',
   health_personal_care: 'health',
   education_classes: 'school',
   attractions_things_to_see: 'tourist_attraction',

@@ -59,7 +59,7 @@ describe('the lookup', () => {
     expect(categoryNames(['Coffee', 'Movies'], 'zh')).toBe('咖啡 + 电影');
   });
   it('a name the app does not know (added after this release, or a person\'s own words) is shown as stored', () => {
-    expect(categoryName('Axe Throwing', 'de')).toBe('Axe Throwing');
+    expect(categoryName('Curling', 'de')).toBe('Curling');
     expect(categoryName('Taco Tuesday at the park', 'es')).toBe('Taco Tuesday at the park');
   });
   it('an admin rename keeps its translation: the key comes from the synced taxonomy, not the new name', () => {

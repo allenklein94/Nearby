@@ -36,9 +36,13 @@ const CORS_HEADERS: Record<string, string> = {
 // The one attribute vocabulary (src/constants/businessAttributes.js; a Jest test keeps this list identical to it).
 const VALID_ATTRIBUTES = ["outdoor_seating","date_friendly","group_friendly","live_music","kid_friendly","quiet","casual","upscale","specialty_coffee","laptop_friendly","dog_friendly","waterfront","late_night","board_game_friendly","photography_friendly","book_lovers","craft_friendly","fitness_focused","private_dining","corporate_events","wifi","food_available","beginner_friendly","reservation_required","wheelchair_accessible","accessible_parking","accessible_restroom","service_animal_friendly","stroller_friendly","family_seating","kid_menu","pet_friendly","romantic","catering","lively","trendy","cozy","relaxed","social","professional"];
 
+// Item 186 (owner, LOCKED): one primary category plus at most 5 secondary (src/constants/gatheringCategories.js).
+const MAX_SECONDARY_CATEGORIES = 5;
+
 const VALID_CATEGORIES = [
   'food_drink',
   'activities_recreation',
+  'sports_fitness',
   'entertainment_nightlife',
   'dating_social',
   'arts_culture_learning',
@@ -52,7 +56,6 @@ const VALID_CATEGORIES = [
   'business_networking',
   'community_volunteering',
   'travel_experiences',
-  'stay_getaway',
   'health_personal_care',
   'education_classes',
   'attractions_things_to_see',
@@ -187,14 +190,15 @@ serve(async (req) => {
   if (category && subcategoryRaw) {
     const wantedSub = await currentName(subcategoryRaw);
     const { data: tagRow } = wantedSub ? await supabase
-      .from('category_tag_groups').select('tag').eq('tag', wantedSub).eq('group_key', category).is('retired_at', null).maybeSingle()
+      .from('category_tag_groups').select('tag').eq('tag', wantedSub).eq('group_key', category).is('retired_at', null).eq('customer_only', false).maybeSingle()
       : { data: null };
     subcategory = tagRow?.tag ?? null;
   }
 
   // "What can customers do here?" additions + "Also classify as": attributes must be in the closed vocabulary, extra tags must
   // be real, current tags of ANY group (owner item 177: a museum can also be Kids Museums; the same universe the app's apply
-  // screen and dashboard editor offer). Anything else is dropped, never an error (both are optional).
+  // screen and dashboard editor offer). Anything else is dropped, never an error (both are optional). Item 185/186: never a
+  // customer-only tag, and at most MAX_SECONDARY_CATEGORIES (the database trigger refuses a sixth).
   const attributes = Array.isArray(body.attributes)
     ? [...new Set(body.attributes.filter((a: unknown): a is string => typeof a === 'string' && VALID_ATTRIBUTES.includes(a)))].slice(0, VALID_ATTRIBUTES.length)
     : [];
@@ -203,8 +207,9 @@ serve(async (req) => {
     const asked = [...new Set(body.categories.filter((t: unknown): t is string => typeof t === 'string'))].slice(0, 10);
     const wanted = (await Promise.all(asked.map(currentName))).filter((t): t is string => !!t);
     const { data: tagRows } = await supabase
-      .from('category_tag_groups').select('tag').is('retired_at', null).in('tag', wanted);
-    categories = (tagRows ?? []).map((r: { tag: string }) => r.tag).filter((t: string) => t !== subcategory);
+      .from('category_tag_groups').select('tag').is('retired_at', null).eq('customer_only', false).in('tag', wanted);
+    const real = new Set((tagRows ?? []).map((r: { tag: string }) => r.tag));
+    categories = wanted.filter((t) => real.has(t) && t !== subcategory).slice(0, MAX_SECONDARY_CATEGORIES);
   }
 
   const { data: inserted, error } = await supabase

@@ -53,7 +53,7 @@ const PLAN_PARTS = ['dinner', 'lunch', 'brunch', 'breakfast', 'eat', 'eating', '
 const WX = ['storm', 'snow', 'wet', 'heat', 'cold', 'outdoor'];
 const WEEKDAYS = [0, 1, 2, 3, 4, 5, 6];
 
-// "A, B and C" against a map of known items (longest first; an item may itself contain ", " like "Arts, Culture & Learning").
+// "A, B and C" against a map of known items (longest first; an item may itself contain ", " like "Arts, Culture & Events").
 function parseList(text, map) {
   const labels = [...map.keys()].sort((a, b) => b.length - a.length);
   const out = [];

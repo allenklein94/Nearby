@@ -4,12 +4,13 @@
 // (a) drops results whose own category belongs to a non-social group and (b) gives a small lift to the ones that fit. Only
 // candidates with a KNOWN category are ever dropped; uncategorized ones are kept, and a real category in the ask turns all of this off.
 import { parseAskFacets } from '../constants/askFacets';
-import { CATEGORY_GROUPS, groupForTag, isNeedGroup } from '../constants/gatheringCategories';
+import { CATEGORY_GROUPS, groupForTag, isOpenEndedExcludedGroup, OPEN_ENDED_EXCLUDED_TAGS } from '../constants/gatheringCategories';
 import { energiesFromText } from '../constants/energyLevel';
 import { detectIntentRoute, ROUTE_SURFACES } from '../constants/intentRoutes';
 import { undecidedAskFromText } from '../constants/undecidedAsk';
 
-// Need groups (services, errands, supply) are never part of a "something fun" ask: the one list, NEED_GROUP_KEYS (item 161).
+// Services, errands, supply and places to stay are never part of a "something fun" ask: the one list,
+// OPEN_ENDED_EXCLUDED_GROUP_KEYS + OPEN_ENDED_EXCLUDED_TAGS (item 161; its own list since the item-168 pass, owner decision D3).
 const FAMILY_GROUP = 'family_kids';
 
 // Phrases that mean "I have no specific activity yet": something fun / to do / interesting, bored, hang out, go out, what should we do.
@@ -33,7 +34,7 @@ export function openEndedAskGroups({ category = null, rawText = '', occasion = n
   const kidFriendly = Array.isArray(attributes) && attributes.includes('kid_friendly');
   return CATEGORY_GROUPS
     .map((g) => g.key)
-    .filter((k) => !isNeedGroup(k) && (k !== FAMILY_GROUP || kidFriendly));
+    .filter((k) => !isOpenEndedExcludedGroup(k) && (k !== FAMILY_GROUP || kidFriendly));
 }
 
 export function groupKeyOf(candidate) {
@@ -49,7 +50,7 @@ export function groupKeyOf(candidate) {
 // to go and do, and a date leans a little to dating & social. Stacks with the base lift but stays far below a real match (5).
 export const TIME_TILT_POINTS = 1;
 const EVENING_GROUPS = ['entertainment_nightlife', 'food_drink'];
-const DAYTIME_GROUPS = ['activities_recreation', 'outdoors_nature', 'attractions_things_to_see', 'arts_culture_learning'];
+const DAYTIME_GROUPS = ['activities_recreation', 'sports_fitness', 'outdoors_nature', 'attractions_things_to_see', 'arts_culture_learning'];
 
 export function timeTiltGroups({ dateWindow = null, partyType = null, hour = null } = {}) {
   const evening = dateWindow === 'tonight' || (dateWindow === 'today' && Number.isFinite(hour) && hour >= 17);
@@ -62,11 +63,13 @@ export function timeTiltGroups({ dateWindow = null, partyType = null, hour = nul
 // Filters and lifts a scored candidate list for an open-ended ask. `groups` from openEndedAskGroups (null = untouched);
 // `ctx` = { dateWindow, partyType, hour } for the time tilt.
 // Item 118: the eligibility half (typed-ask Stage 1, utils/askEligibility.js): only inventory in the ask's groups stays; an
-// unknown category is kept, never dropped.
+// unknown category is kept, never dropped. A place to stay (OPEN_ENDED_EXCLUDED_TAGS) is dropped even inside Travel & Getaways,
+// exactly as its former Stay & Getaway group was (no route names that group, so it was never part of an open-ended ask).
 export function openEndedEligible(candidates, groups) {
   if (!Array.isArray(groups)) return candidates;
   const eligible = new Set(groups);
   return candidates.filter((c) => {
+    if (OPEN_ENDED_EXCLUDED_TAGS.includes(c?.category)) return false;
     const k = groupKeyOf(c);
     return k == null || eligible.has(k);
   });

@@ -60,6 +60,112 @@ export const SYNONYM_GROUPS = [
   { tags: ['Cooking Class'], phrases: ['cooking lesson', 'culinary class'] },
   // Item 182 (owner, LOCKED): "I need to get CPR certified" reaches Certifications (the tag's own name covers certification).
   { tags: ['Certifications'], phrases: ['certified'] },
+  // Item 168 V1 pass (owner items 169-185, LOCKED): the approved wordings, exactly as the spec words them (where it writes
+  // "..." nothing was added). Phrases that already land on their approved category (own name, or an earlier row) are not
+  // repeated; v1Wordings.regression.test.js checks all 275 against PRODUCT_AUDIT/item168_prep/approved_wordings.json.
+  // Item 169
+  { tags: ['Tea'], phrases: ['tea house', 'tea room', 'bubble tea'] },
+  { tags: ['Distilleries'], phrases: ['craft spirits'] },
+  // Item 170
+  { tags: ['Adventure'], phrases: ['adventure park', 'ropes course', 'zipline'] },
+  // Item 171
+  { tags: ['Sports'], phrases: ['baseball', 'softball', 'hockey', 'sports club', 'athletic club'] },
+  { tags: ['Gyms', 'Fitness'], phrases: ['crossfit'] },
+  { tags: ['Fitness'], phrases: ['dance fitness', 'zumba'] },
+  // Item 172
+  { tags: ['Scenic Views'], phrases: ['scenic area', 'scenic spot', 'viewpoint', 'overlook'] },
+  { tags: ['Water Sports'], phrases: ['water activities'] },
+  { tags: ['Parks', 'Wildlife'], phrases: ['nature center', 'nature preserve'] },
+  // Item 173
+  { tags: ['Markets'], phrases: ['night market'] },
+  { tags: ['Movies'], phrases: ['cinema', 'movie theater'] },
+  { tags: ['Comedy'], phrases: ['stand-up', 'standup'] },
+  { tags: ['Nightlife'], phrases: ['nightlife event'] },
+  // Item 174
+  { tags: ['Art Galleries'], phrases: ['gallery'] },
+  { tags: ['Exhibits'], phrases: ['exhibition'] },
+  { tags: ['Art'], phrases: ['art show', 'art fair'] },
+  { tags: ['Community Events'], phrases: ['local event'] },
+  { tags: ['Reading'], phrases: ['book event', 'book signing', 'author talk', 'book club'] },
+  // Item 175
+  { tags: ['Gift Shop'], phrases: ['gift store'] },
+  { tags: ['Thrift & Vintage'], phrases: ['thrift store', 'thrift shop', 'vintage store', 'consignment'] },
+  { tags: ['Home & Furniture'], phrases: ['furniture', 'home decor', 'home goods'] },
+  { tags: ['Clothing'], phrases: ['shoe store', 'shoes', 'sneakers'] },
+  { tags: ['Markets'], phrases: ['flea market', 'swap meet'] },
+  { tags: ['Grocery'], phrases: ['grocery store', 'supermarket', 'convenience store', 'bodega', 'corner store'] },
+  { tags: ['Sporting Goods'], phrases: ['sports store', 'sporting goods store'] },
+  { tags: ['Toys'], phrases: ['toy store', 'toy shop'] },
+  { tags: ['Bookstores'], phrases: ['book shop', 'bookshop'] },
+  { tags: ['Beauty Supply'], phrases: ['cosmetics', 'makeup store', 'beauty store'] },
+  // Item 176
+  { tags: ['Skin Care'], phrases: ['facial', 'skincare'] },
+  { tags: ['Salons'], phrases: ['beauty salon'] },
+  // Item 177
+  { tags: ['Kids Activity'], phrases: ['children\'s activities'] },
+  { tags: ['Kids Education'], phrases: ['kids classes', 'educational activities'] },
+  // Item 178
+  { tags: ['Pet Stores'], phrases: ['pet shop', 'pet supply', 'pet food'] },
+  { tags: ['Veterinary'], phrases: ['vet', 'vets', 'veterinarian', 'animal hospital', 'pet clinic'] },
+  { tags: ['Pet Boarding'], phrases: ['kennel', 'doggy daycare', 'dog daycare', 'pet hotel'] },
+  { tags: ['Dog Walking'], phrases: ['dog walker'] },
+  { tags: ['Pet Sitting'], phrases: ['pet sitter', 'cat sitter', 'house sitting for pets'] },
+  { tags: ['Pet Events', 'Dog Meetup'], phrases: ['pet activities'] },
+  { tags: ['Pet Training'], phrases: ['dog training'] },
+  // Item 179
+  { tags: ['Family Resorts'], phrases: ['family getaway', 'family vacation'] },
+  { tags: ['Boat Tours'], phrases: ['cruise', 'sunset cruise', 'dinner cruise', 'harbor cruise'] },
+  { tags: ['Vacation Rentals'], phrases: ['cabin', 'vacation home', 'beach house'] },
+  { tags: ['Weekend Getaway'], phrases: ['weekend trip', 'weekend away'] },
+  { tags: ['Camping'], phrases: ['campground', 'campsite'] },
+  { tags: ['Hotels'], phrases: ['bed and breakfast', 'b&b'] },
+  { tags: ['Amusement Park', 'Aquariums', 'Exhibits', 'Historic Sites', 'Landmarks', 'Local Attractions', 'Museums', 'Observation Decks', 'Sightseeing', 'Tourist Attractions', 'Zoos'], phrases: ['attractions', 'things to see'] },
+  // Item 180
+  { tags: ['Cleaning'], phrases: ['maid', 'housekeeping', 'house cleaner'] },
+  { tags: ['Landscaping'], phrases: ['landscaper', 'gardener', 'lawn care', 'lawn mowing', 'mow my lawn', 'yard work', 'lawn service'] },
+  { tags: ['Moving'], phrases: ['movers'] },
+  { tags: ['Pest Control'], phrases: ['exterminator', 'bed bugs', 'termites'] },
+  { tags: ['HVAC'], phrases: ['ac repair', 'air conditioning', 'heating', 'furnace', 'ac', 'heat pump'] },
+  { tags: ['House Painting'], phrases: ['house painter', 'painter', 'interior painting', 'exterior painting'] },
+  { tags: ['Storage'], phrases: ['storage unit', 'self storage', 'storage space'] },
+  { tags: ['Contractors'], phrases: ['general contractor', 'home improvement', 'remodel', 'remodeling', 'renovation', 'roofer', 'roofing'] },
+  { tags: ['Home Security'], phrases: ['security system', 'alarm system', 'security cameras'] },
+  // Item 181
+  { tags: ['Auto Repair'], phrases: ['body shop', 'collision repair', 'brakes', 'smog check', 'car inspection', 'windshield'] },
+  { tags: ['Towing'], phrases: ['tow truck', 'roadside assistance'] },
+  { tags: ['Auto Parts'], phrases: ['car parts', 'auto parts store'] },
+  { tags: ['Dealerships'], phrases: ['car dealer', 'used cars', 'new cars', 'buy a car'] },
+  { tags: ['Car Rental'], phrases: ['rental car', 'rent a car'] },
+  { tags: ['EV Charging'], phrases: ['charging station', 'ev charger', 'car charger'] },
+  { tags: ['Gas Stations'], phrases: ['gas', 'fuel', 'fill up'] },
+  { tags: ['Transportation Services'], phrases: ['taxi service', 'car service', 'airport shuttle', 'shuttle service', 'limo', 'limousine', 'chauffeur', 'party bus'] },
+  // Item 182
+  { tags: ['Art Classes'], phrases: ['painting class', 'drawing class'] },
+  { tags: ['Music Lessons'], phrases: ['music class', 'guitar lessons', 'piano lessons', 'voice lessons', 'singing lessons'] },
+  { tags: ['Dance Classes'], phrases: ['dance lessons', 'salsa lessons', 'ballet class'] },
+  { tags: ['Language Classes'], phrases: ['language lessons', 'esl', 'english class', 'spanish class', 'spanish lessons'] },
+  { tags: ['Technology Classes'], phrases: ['coding class', 'coding bootcamp', 'computer class', 'programming class'] },
+  { tags: ['Professional Development'], phrases: ['business course', 'business workshop', 'entrepreneurship class', 'job training', 'skills training'] },
+  { tags: ['Tutoring'], phrases: ['tutor', 'math tutor', 'homework help'] },
+  { tags: ['Adult Education'], phrases: ['adult classes'] },
+  // Item 183
+  { tags: ['Volunteering'], phrases: ['volunteer', 'volunteer opportunities', 'volunteer work', 'community service', 'give back', 'giving back'] },
+  { tags: ['Charity'], phrases: ['nonprofit', 'non profit'] },
+  { tags: ['Donation Drives'], phrases: ['food drive', 'food bank', 'toy drive', 'clothing drive', 'blood drive'] },
+  { tags: ['Community Events'], phrases: ['community meeting', 'town hall', 'public meeting', 'civic event', 'city council meeting', 'public hearing'] },
+  { tags: ['Neighborhood Events'], phrases: ['neighborhood meeting', 'hoa meeting', 'block party'] },
+  { tags: ['Faith & Spirituality'], phrases: ['church', 'temple', 'mosque', 'synagogue'] },
+  // Item 184
+  { tags: ['Coworking'], phrases: ['co-working', 'shared office', 'shared workspace'] },
+  { tags: ['Professional Events', 'Lectures'], phrases: ['seminar'] },
+  { tags: ['Professional Events'], phrases: ['business event', 'industry event', 'trade show', 'trade expo', 'business expo', 'professional group', 'professional association', 'industry group'] },
+  { tags: ['Entrepreneurship'], phrases: ['entrepreneur', 'startup event', 'startup meetup', 'founders meetup', 'pitch night'] },
+  { tags: ['Career Events'], phrases: ['career fair', 'job fair', 'hiring event'] },
+  { tags: ['Finance'], phrases: ['accountant', 'accounting', 'bookkeeping', 'tax preparation', 'tax prep', 'financial advisor'] },
+  { tags: ['Real Estate'], phrases: ['realtor', 'real estate agent'] },
+  // Item 185
+  { tags: ['Singles Events'], phrases: ['singles mixer', 'singles night', 'singles meetup'] },
+  { tags: ['Social Clubs'], phrases: ['social group'] },
 ];
 
 // Distinct named sports Nearby has NO category for (owner rule, item 75): a specific multi-word phrase beats a broad

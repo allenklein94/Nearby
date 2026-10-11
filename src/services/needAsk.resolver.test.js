@@ -93,7 +93,8 @@ describe('classification: a need/service category AND task framing in the words 
     expect(askKind({ category: 'Car Wash' })).toBe('want');
     expect(isNeedCategory('Barbers')).toBe(true);
     expect(isNeedCategory('Coffee')).toBe(false);
-    expect(isNeedCategory('home_local_services')).toBe(true);
+    expect(isNeedCategory('home_local_services')).toBe(false); // item 168 pass (items 175-184): a parent group is never a need...
+    expect(isNeedCategory('Plumbing')).toBe(true); // ...its resolved service tag is
     const src = require('fs').readFileSync(require('path').join(__dirname, '../utils/needAsk.js'), 'utf8');
     expect(src).not.toMatch(/classifyCreateRequest|supabase|historyScore\s*[><]/);
   });

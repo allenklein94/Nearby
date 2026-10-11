@@ -181,9 +181,16 @@ describe('category narrows the ask (item 108)', () => {
     const n = await narrowTypedAsk('discover', s, ACTIVITIES);
     expect(n.classifyResult).toEqual({ ...FUN_CLASSIFY, narrowGroup: ACTIVITIES });
     expect(n.typedText).toBe(FUN);
-    expect(n.items.map((i) => i.id).sort()).toEqual(['bowl', 'pickle']);
+    // Item 168: Pickleball moved to Sports & Fitness, which now has its own chip; Activities keeps Bowling.
+    expect(n.items.map((i) => i.id).sort()).toEqual(['bowl']);
     const p = payloads()[0];
     expect(p.interpretation).toMatchObject({ date_window: 'tonight', party_type: 'friends', budget_max: 30, price_level: '$', attributes: ['quiet'], narrow_group: ACTIVITIES });
+  });
+
+  it('1a. narrowing to Sports & Fitness (item 168 split) keeps the sports results', async () => {
+    const s = await firstSearch('discover', FUN_CLASSIFY, FUN);
+    const n = await narrowTypedAsk('discover', s, 'sports_fitness');
+    expect(n.items.map((i) => i.id)).toEqual(['pickle']);
   });
 
   it('1b. a tentative preference stays a preference under the category (never a hard filter)', async () => {
@@ -260,7 +267,7 @@ describe('category narrows the ask (item 108)', () => {
     classifyCreateRequest.mockClear();
     const n = await narrowTypedAsk('discover', s, ACTIVITIES);
     expect(classifyCreateRequest).not.toHaveBeenCalled();
-    const before = s.items.filter((i) => ['bowl', 'pickle'].includes(i.id));
+    const before = s.items.filter((i) => ['bowl'].includes(i.id));
     expect(n.items.map((i) => [i.id, i.score])).toEqual(before.map((i) => [i.id, i.score]));
   });
 

@@ -11,20 +11,20 @@ const read = (p) => fs.readFileSync(path.join(root, p), 'utf8');
 
 describe('a new category flows into every vocabulary the app reads', () => {
   test('registerCategoryTag merges in place and everything downstream sees it', () => {
-    expect(INTEREST_OPTIONS).not.toContain('Axe Throwing');
-    expect(registerCategoryTag('Axe Throwing', 'activities_recreation')).toBe(true);
-    expect(INTEREST_OPTIONS).toContain('Axe Throwing');
-    expect(PERSONAL_INTEREST_OPTIONS).toContain('Axe Throwing');
-    expect(subcategoryOptionsFor('activities_recreation')).toContain('Axe Throwing');
-    expect(groupForTag('Axe Throwing').key).toBe('activities_recreation');
-    expect(canonicalizeInterests(['axe throwing'])).toEqual(['Axe Throwing']); // profile interests / intent canonicalization
-    expect(canonicalGroupForTag('Axe Throwing')).toBe('activities_recreation'); // business <-> tag mapping
-    expect(servedTags({ category: 'activities_recreation' })).toContain('Axe Throwing'); // a tagless business serves its group
-    expect(categoryStyleFor('Axe Throwing').icon).toBeTruthy(); // falls back to the group's icon
+    expect(INTEREST_OPTIONS).not.toContain('Curling');
+    expect(registerCategoryTag('Curling', 'activities_recreation')).toBe(true);
+    expect(INTEREST_OPTIONS).toContain('Curling');
+    expect(PERSONAL_INTEREST_OPTIONS).toContain('Curling');
+    expect(subcategoryOptionsFor('activities_recreation')).toContain('Curling');
+    expect(groupForTag('Curling').key).toBe('activities_recreation');
+    expect(canonicalizeInterests(['curling'])).toEqual(['Curling']); // profile interests / intent canonicalization
+    expect(canonicalGroupForTag('Curling')).toBe('activities_recreation'); // business <-> tag mapping
+    expect(servedTags({ category: 'activities_recreation' })).toContain('Curling'); // a tagless business serves its group
+    expect(categoryStyleFor('Curling').icon).toBeTruthy(); // falls back to the group's icon
   });
   test('idempotent, and never invents a group or accepts junk', () => {
     const before = INTEREST_OPTIONS.length;
-    expect(registerCategoryTag('Axe Throwing', 'activities_recreation')).toBe(false);
+    expect(registerCategoryTag('Curling', 'activities_recreation')).toBe(false);
     expect(registerCategoryTag('Pickleball', 'pets')).toBe(false); // existing tag is never moved
     expect(registerCategoryTag('Zumba', 'made_up_group')).toBe(false);
     expect(registerCategoryTag('', 'pets')).toBe(false);
@@ -37,7 +37,10 @@ describe('a new category flows into every vocabulary the app reads', () => {
 describe('single source of truth', () => {
   const migration = read('supabase/migrations/20270160_category_tags_single_source.sql');
   test('the migration major list equals the client group keys', () => {
-    const sql = migration.match(/category_major_keys\(\)[\s\S]*?array\[([\s\S]*?)\]/)[1];
+    // the latest definition: the item-168 pass (20270294) redefines it last, without stay_getaway and with sports_fitness
+    const v1 = read('supabase/migrations/20270294_v1_category_pass.sql');
+    const defs = [...v1.matchAll(/category_major_keys\(\)\s*returns text\[\][\s\S]*?array\[([\s\S]*?)\]/g)];
+    const sql = defs[defs.length - 1][1];
     const keys = [...sql.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]);
     expect(keys).toEqual(CATEGORY_GROUPS.map((g) => g.key));
   });

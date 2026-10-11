@@ -61,6 +61,7 @@ export const ACTIVITIES = [
 ];
 
 import { activityReason, friendsPlanActivityReason } from './recommendationReasonVocabulary';
+import { MAX_SECONDARY_CATEGORIES } from './gatheringCategories';
 import { BUSINESS_ATTRIBUTE_OPTIONS, OCCASION_OPTIONS, OFFERED_OCCASION_KEYS, ACCOMMODATE_PARTY_TYPE_OPTIONS } from './businessAttributes';
 
 const asArray = (v) => (Array.isArray(v) ? v : []);
@@ -204,7 +205,9 @@ export function toggleActivity(row, activityKey, tagOptions = []) {
   const fits = (A, C) => a.fits(sig(row, A, C));
   if (!fits(attrs, cats)) {
     const add = additionsThatMakeFit(a, row, tagOptions);
-    return add ? { attributes: [...attrs, ...add.attributes], categories: [...cats, ...add.categories] } : unchanged;
+    // Item 186: never past the 5-secondary-category cap (the activity is then left unchecked; the business can free a slot).
+    if (!add || cats.length + add.categories.length > MAX_SECONDARY_CATEGORIES) return unchanged;
+    return { attributes: [...attrs, ...add.attributes], categories: [...cats, ...add.categories] };
   }
   if (a.fits({ ...businessSignals(row), attributes: [], tags: [row?.subcategory, row?.category].filter(Boolean) })) return unchanged;
   const needA = attrs.filter((k) => !fits(attrs.filter((x) => x !== k), cats));
