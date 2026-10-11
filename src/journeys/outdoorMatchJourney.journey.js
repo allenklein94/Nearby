@@ -183,6 +183,25 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     expect(understoodPieces(finding, text)).toEqual(shown);
   });
 
+  // Owner item 46: the refinement row's next step follows the real ask through real re-runs (Who, then Budget, then nothing).
+  test('item 46: "something outside tonight" -> Who is next; With friends -> Budget; Under $25 -> done; the time is never touched', async () => {
+    const { applyRefinement, nextRefinementStep } = require('../utils/askRefinements');
+    const { resolveClassifiedAsk } = require('../services/intentResolver');
+    const text = 'something outside tonight';
+    const r = await runIntentSearch(text);
+    let c = r.classifyResult;
+    expect(c.dateWindow).toBe('tonight');
+    expect(nextRefinementStep(c)).toBe('who');
+    c = applyRefinement(c, 'friends');
+    await resolveClassifiedAsk(c, text);
+    expect(nextRefinementStep(c)).toBe('budget');
+    c = applyRefinement(c, 'under_25');
+    const last = await resolveClassifiedAsk(c, text);
+    expect(nextRefinementStep(c)).toBeNull();
+    expect(c.dateWindow).toBe('tonight');
+    expect(Array.isArray(last.items)).toBe(true);
+  });
+
   test('without the declaration the same business is NOT returned (the outdoor rule, not the category, includes it)', async () => {
     const saved = db.operatingRows;
     const savedAvail = db.availabilityRows;

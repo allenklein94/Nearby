@@ -14,11 +14,23 @@ export function refinementChips(classify) {
   const c = classify ?? {};
   const evening = c.dateWindow === 'tonight' || c.dateWindow === 'now';
   return [
-    { key: 'friends', label: 'With friends', selected: c.partyType === 'friends' },
-    { key: 'date', label: evening ? 'Date night' : 'Date', selected: c.partyType === 'date' },
-    { key: 'solo', label: 'Solo', selected: c.partyType === 'solo' },
-    { key: 'under_25', label: 'Under $25', selected: c.budgetMax != null && c.budgetMax <= UNDER_BUDGET.budgetMax },
+    { key: 'friends', step: 'who', label: 'With friends', selected: c.partyType === 'friends' },
+    { key: 'date', step: 'who', label: evening ? 'Date night' : 'Date', selected: c.partyType === 'date' },
+    { key: 'solo', step: 'who', label: 'Solo', selected: c.partyType === 'solo' },
+    { key: 'under_25', step: 'budget', label: 'Under $25', selected: c.budgetMax != null && c.budgetMax <= UNDER_BUDGET.budgetMax },
   ];
+}
+
+// Owner item 46 (2026-10-11, owner chose: keep the row, highlight the next step): the same four chips stay; only the next
+// useful refinement step is quietly emphasized -- Who first, then Budget. A step counts as answered when the ask already holds
+// it, from the words or a tap: any party type (family, a big group... included) answers Who; any budget or price tier answers
+// Budget. Both answered = no emphasis. No time step (a search never asks; item 107 stays locked: no new chips, no new values).
+export const REFINEMENT_STEPS = ['who', 'budget'];
+export function nextRefinementStep(classify) {
+  const c = classify ?? {};
+  if (!c.partyType) return 'who';
+  if (c.budgetMax == null && !c.priceLevel) return 'budget';
+  return null;
 }
 
 // Returns the classification with one chip toggled. Who-for chips are one choice; budget is independent. The Date chip sets only

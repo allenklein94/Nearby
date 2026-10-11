@@ -1,3 +1,16 @@
+# Item 46 (2026-10-11) - intent refinement shows its next step - BUILT, NOT DEVICE-VERIFIED
+
+Owner spec: "Dinner" -> Tonight? -> With friends? -> Under $30? as animated progressive disclosure. Owner decisions (asked before
+building): NO time step / "Tonight?" chip (item 107 stays LOCKED, a search never asks); keep Under $25 (the $ tier, no $30); keep the
+four-chip row and only emphasize the next useful existing chip (no questionnaire, no new chips, no screens). Built:
+`nextRefinementStep(classify)` + `REFINEMENT_STEPS` (['who','budget']) and a `step` field per chip in `utils/askRefinements.js`;
+any party type answers Who, any budgetMax/priceLevel answers Budget, both = null. `components/AskRefinementChips.js` puts a
+`primaryMuted` wash (pointerEvents none, behind the label) on the unselected chips of that step; it fades in (small tier,
+`SEQUENCES.refineNextStep` 200 ms, native driver) when the step changes after the person's tap; static on first render; Reduce
+Motion = at once; none while refining or after an empty refinement. Verified: Jest 422 suites / 5703 tests (new
+`utils/refineNextStep.test.js`); journeys 26/26 (274) incl. new `outdoorMatch` step "item 46". Checklist:
+`PRODUCT_AUDIT/ITEM_46_REFINE_NEXT_STEP_DEVICE_CHECKLIST_2026-10-11.md` (not run). No new strings.
+
 # Item 45 (2026-10-11) - the search "understanding" moment - BUILT, NOT DEVICE-VERIFIED
 
 (Owner item 45 of the motion series; unrelated to the older "screen reduction (item 45)".) A typed ask shows quiet chips of what
