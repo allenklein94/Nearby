@@ -84,8 +84,23 @@ describe('canonical category mapping', () => {
       else if (c.type === 'moved') seeded = seeded.map(([t, g]) => [t, t === c.old_name ? c.new_group : g]);
       else if (c.type === 'retired') seeded = seeded.filter(([t]) => t !== c.old_name);
     }
+    // Item 168 V1 pass (20270294): its new tags, its 31 moves (through the engine) and its 2 retirements.
+    const v1 = fs.readFileSync(path.join(dir, '20270294_v1_category_pass.sql'), 'utf8');
+    const v1Insert = v1.slice(v1.indexOf('insert into public.category_tag_groups (tag, group_key, key) values'), v1.indexOf("select set_config('app.taxonomy_reason', '', true);", v1.indexOf('insert into public.category_tag_groups (tag, group_key, key) values')));
+    const v1Added = [...v1Insert.matchAll(/\('((?:[^']|'')+)', '([a-z_]+)', '[a-z0-9_]+'\)/g)].map((m) => [m[1].replace(/''/g, "'"), m[2]]);
+    const v1MoveBlock = v1.slice(v1.indexOf('-- 3. The 30 moves'), v1.indexOf('-- 3b.'));
+    const v1Moves = [...v1MoveBlock.matchAll(/\('((?:[^']|'')+)', '([a-z_]+)', '([a-z_]+)'\)/g)].map((m) => ({ tag: m[1].replace(/''/g, "'"), to: m[3] }));
+    const v1Retired = [...v1.slice(v1.indexOf('foreach t in array array['), v1.indexOf('] loop', v1.indexOf('foreach t in array array['))).matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    expect([v1Added.length, v1Moves.length, v1Retired.length]).toEqual([24, 30, 2]);
+    seeded = [...seeded, ...v1Added]
+      .map(([t, g]) => [t, v1Moves.find((m) => m.tag === t)?.to ?? g])
+      .filter(([t]) => !v1Retired.includes(t));
     expect(seeded.map(key).sort()).toEqual(expected.map(key).sort());
-    // the original seed keeps its exact order within the file
-    expect(base.map(key)).toEqual(expected.filter((r) => base.some((b) => key(b) === key(r))).map(key));
+    // the original seed keeps its exact order within each group (a tag moved by item 168 takes its new group's place)
+    const moved = new Set(v1Moves.map((m) => m.tag));
+    for (const g of CATEGORY_GROUPS) {
+      const fromSeed = base.filter(([t, k]) => k === g.key && !moved.has(t) && !v1Retired.includes(t)).map(([t]) => t);
+      expect([g.key, g.tags.concat(g.businessOnlyTags ?? []).filter((t) => fromSeed.includes(t))]).toEqual([g.key, fromSeed]);
+    }
   });
 });

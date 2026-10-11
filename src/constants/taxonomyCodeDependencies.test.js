@@ -38,9 +38,12 @@ describe('code-dependency inventory', () => {
   });
 
   test('the baseline list and the static signup export register every category with its group', () => {
-    for (const consumer of ['baseline_taxonomy', 'static_signup_export']) {
+    // The signup page offers what a business may declare, so it never lists a customer-only category (item 185).
+    const { isCustomerOnlyTag } = require('./gatheringCategories');
+    const declarable = new Set([...canonical].filter((t) => !isCustomerOnlyTag(t)));
+    for (const [consumer, expected] of [['baseline_taxonomy', canonical], ['static_signup_export', declarable]]) {
       const rows = committed.rows.filter((r) => r.consumer === consumer);
-      expect(new Set(rows.map((r) => r.tag))).toEqual(canonical);
+      expect(new Set(rows.map((r) => r.tag))).toEqual(expected);
       expect(rows.every((r) => typeof r.group === 'string')).toBe(true);
     }
   });

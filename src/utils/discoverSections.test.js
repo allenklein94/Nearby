@@ -125,10 +125,12 @@ describe('Discover contextual sections (item 91)', () => {
     expect(d).toMatch(/railGroups\(CATEGORY_GROUPS\)/);
     expect(d).toMatch(/\.\.\.\(showMoreCategories \? rail\.more : \[\]\)/);
   });
-  it('the rail keeps seven visible categories with "Activities"', () => {
+  it('the rail keeps eight visible categories with "Activities" then "Sports & Fitness" (item 168, D5)', () => {
     const { DISCOVER_RAIL_PRIMARY } = require('../constants/discoverCategoryRail');
-    expect(DISCOVER_RAIL_PRIMARY).toHaveLength(7);
-    expect(DISCOVER_RAIL_PRIMARY.map((p) => p.label)).toContain('Activities');
+    expect(DISCOVER_RAIL_PRIMARY).toHaveLength(8);
+    const labels = DISCOVER_RAIL_PRIMARY.map((p) => p.label);
+    expect(labels).toContain('Activities');
+    expect(labels[labels.indexOf('Activities') + 1]).toBe('Sports & Fitness');
     expect(DISCOVER_RAIL_PRIMARY.map((p) => p.label)).not.toContain('Things To Do');
   });
 });

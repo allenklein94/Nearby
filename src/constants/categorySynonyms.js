@@ -105,7 +105,7 @@ export const SYNONYM_GROUPS = [
   { tags: ['Kids Activity'], phrases: ['children\'s activities'] },
   { tags: ['Kids Education'], phrases: ['kids classes', 'educational activities'] },
   // Item 178
-  { tags: ['Pet Stores'], phrases: ['pet shop', 'pet supply', 'pet supplies', 'pet food'] },
+  { tags: ['Pet Stores'], phrases: ['pet shop', 'pet supply', 'pet food'] },
   { tags: ['Veterinary'], phrases: ['vet', 'vets', 'veterinarian', 'animal hospital', 'pet clinic'] },
   { tags: ['Pet Boarding'], phrases: ['kennel', 'doggy daycare', 'dog daycare', 'pet hotel'] },
   { tags: ['Dog Walking'], phrases: ['dog walker'] },

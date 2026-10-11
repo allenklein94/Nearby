@@ -52,7 +52,9 @@ describe('database seed', () => {
     const dictRows = rowsIn(dict.slice(dict.indexOf('insert into public.category_synonyms'), dict.indexOf('create or replace')));
     const needs = rowsIn(read('20270276_need_synonyms.sql'));
     const certified = rowsIn(read('20270279_plural_rule_and_certified.sql'));
-    const rows = [...rowsIn(read('20270190_category_synonyms.sql')).filter((r) => !removed.includes(r)), ...added, ...dictRows, ...needs, ...certified];
+    const v1 = read('20270294_v1_category_pass.sql');
+    const v1Rows = rowsIn(v1.slice(v1.indexOf('insert into public.category_synonyms'), v1.indexOf('on conflict do nothing', v1.indexOf('insert into public.category_synonyms'))));
+    const rows = [...rowsIn(read('20270190_category_synonyms.sql')).filter((r) => !removed.includes(r)), ...added, ...dictRows, ...needs, ...certified, ...v1Rows];
     const expected = seedRows().map((r) => `${r.phrase}|${r.tag}`);
     expect(rows.sort()).toEqual(expected.sort());
   });

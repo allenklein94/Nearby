@@ -119,9 +119,11 @@ describe('scope and taxonomy guards', () => {
 
   it('no genre is a category, and no genre + activity category exists', () => {
     expect(labels).toContain('techno');
+    // House Painting (item 180) is a home service whose first word happens to be a genre name, not a genre + activity tag.
+    const notGenreCombos = new Set(['house painting']);
     for (const l of [...labels, 'edm', 'house']) {
       expect(tags).not.toContain(l);
-      expect(tags.some((t) => t.startsWith(`${l} `) || t.endsWith(` ${l}`))).toBe(false);
+      expect(tags.filter((t) => !notGenreCombos.has(t)).some((t) => t.startsWith(`${l} `) || t.endsWith(` ${l}`))).toBe(false);
     }
   });
 

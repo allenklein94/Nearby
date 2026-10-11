@@ -140,6 +140,7 @@ export const translations = {
         "rail": {
           "food_drink": "Food & Drink",
           "activities_recreation": "Activities",
+          "sports_fitness": "Sports & Fitness",
           "entertainment_nightlife": "Entertainment",
           "outdoors_nature": "Outdoors",
           "shopping": "Shopping",
@@ -481,7 +482,8 @@ export const translations = {
         "competition": "Competition",
         "exhibition": "Exhibition",
         "market": "Market",
-        "party": "Party"
+        "party": "Party",
+        "league": "League"
       },
       "skills": {
         "beginner": "Beginner",
@@ -1241,6 +1243,7 @@ export const translations = {
         "rail": {
           "food_drink": "Comida y bebida",
           "activities_recreation": "Actividades",
+          "sports_fitness": "Deportes y fitness",
           "entertainment_nightlife": "Entretenimiento",
           "outdoors_nature": "Aire libre",
           "shopping": "Compras",
@@ -1582,7 +1585,8 @@ export const translations = {
         "competition": "Competencia",
         "exhibition": "Exposición",
         "market": "Mercado",
-        "party": "Fiesta"
+        "party": "Fiesta",
+        "league": "Liga"
       },
       "skills": {
         "beginner": "Principiante",
@@ -2366,6 +2370,7 @@ export const translations = {
         "rail": {
           "food_drink": "Essen & Trinken",
           "activities_recreation": "Aktivitäten",
+          "sports_fitness": "Sport & Fitness",
           "entertainment_nightlife": "Unterhaltung",
           "outdoors_nature": "Draußen",
           "shopping": "Shopping",
@@ -2707,7 +2712,8 @@ export const translations = {
         "competition": "Wettbewerb",
         "exhibition": "Ausstellung",
         "market": "Markt",
-        "party": "Party"
+        "party": "Party",
+        "league": "Liga"
       },
       "skills": {
         "beginner": "Anfänger",
@@ -3462,6 +3468,7 @@ export const translations = {
         "rail": {
           "food_drink": "Cuisine et boissons",
           "activities_recreation": "Activités",
+          "sports_fitness": "Sport et fitness",
           "entertainment_nightlife": "Divertissement",
           "outdoors_nature": "Plein air",
           "shopping": "Shopping",
@@ -3803,7 +3810,8 @@ export const translations = {
         "competition": "Compétition",
         "exhibition": "Exposition",
         "market": "Marché",
-        "party": "Fête"
+        "party": "Fête",
+        "league": "Ligue"
       },
       "skills": {
         "beginner": "Débutant",
@@ -4567,6 +4575,7 @@ export const translations = {
         "rail": {
           "food_drink": "Comida e bebida",
           "activities_recreation": "Atividades",
+          "sports_fitness": "Esportes e fitness",
           "entertainment_nightlife": "Entretenimento",
           "outdoors_nature": "Ar livre",
           "shopping": "Compras",
@@ -4908,7 +4917,8 @@ export const translations = {
         "competition": "Competição",
         "exhibition": "Exposição",
         "market": "Feira",
-        "party": "Festa"
+        "party": "Festa",
+        "league": "Liga"
       },
       "skills": {
         "beginner": "Iniciante",
@@ -5678,6 +5688,7 @@ export const translations = {
         "rail": {
           "food_drink": "Manje ak bwason",
           "activities_recreation": "Aktivite",
+          "sports_fitness": "Espò ak fòm fizik",
           "entertainment_nightlife": "Divètisman",
           "outdoors_nature": "Deyò",
           "shopping": "Fè makèt",
@@ -6019,7 +6030,8 @@ export const translations = {
         "competition": "Konpetisyon",
         "exhibition": "Egzibisyon",
         "market": "Mache",
-        "party": "Fèt"
+        "party": "Fèt",
+        "league": "Lig"
       },
       "skills": {
         "beginner": "Debitan",
@@ -6776,6 +6788,7 @@ export const translations = {
         "rail": {
           "food_drink": "餐饮",
           "activities_recreation": "活动",
+          "sports_fitness": "运动与健身",
           "entertainment_nightlife": "娱乐",
           "outdoors_nature": "户外",
           "shopping": "购物",
@@ -7117,7 +7130,8 @@ export const translations = {
         "competition": "比赛",
         "exhibition": "展览",
         "market": "市集",
-        "party": "派对"
+        "party": "派对",
+        "league": "联赛"
       },
       "skills": {
         "beginner": "新手",
@@ -7874,6 +7888,7 @@ export const translations = {
         "rail": {
           "food_drink": "Ăn uống",
           "activities_recreation": "Hoạt động",
+          "sports_fitness": "Thể thao & thể hình",
           "entertainment_nightlife": "Giải trí",
           "outdoors_nature": "Ngoài trời",
           "shopping": "Mua sắm",
@@ -8215,7 +8230,8 @@ export const translations = {
         "competition": "Cuộc thi",
         "exhibition": "Triển lãm",
         "market": "Chợ phiên",
-        "party": "Tiệc"
+        "party": "Tiệc",
+        "league": "Giải đấu thường kỳ"
       },
       "skills": {
         "beginner": "Người mới",
@@ -8970,6 +8986,7 @@ export const translations = {
         "rail": {
           "food_drink": "Pagkain at inumin",
           "activities_recreation": "Mga aktibidad",
+          "sports_fitness": "Sports at fitness",
           "entertainment_nightlife": "Libangan",
           "outdoors_nature": "Labas",
           "shopping": "Pamimili",
@@ -9311,7 +9328,8 @@ export const translations = {
         "competition": "Kompetisyon",
         "exhibition": "Eksibit",
         "market": "Palengke",
-        "party": "Party"
+        "party": "Party",
+        "league": "Liga"
       },
       "skills": {
         "beginner": "Baguhan",
@@ -10071,6 +10089,7 @@ export const translations = {
         "rail": {
           "food_drink": "Еда и напитки",
           "activities_recreation": "Активности",
+          "sports_fitness": "Спорт и фитнес",
           "entertainment_nightlife": "Развлечения",
           "outdoors_nature": "На природе",
           "shopping": "Покупки",
@@ -10412,7 +10431,8 @@ export const translations = {
         "competition": "Соревнование",
         "exhibition": "Выставка",
         "market": "Ярмарка",
-        "party": "Вечеринка"
+        "party": "Вечеринка",
+        "league": "Лига"
       },
       "skills": {
         "beginner": "Новичок",
@@ -11196,6 +11216,7 @@ export const translations = {
         "rail": {
           "food_drink": "음식 & 음료",
           "activities_recreation": "액티비티",
+          "sports_fitness": "스포츠 & 피트니스",
           "entertainment_nightlife": "엔터테인먼트",
           "outdoors_nature": "아웃도어",
           "shopping": "쇼핑",
@@ -11537,7 +11558,8 @@ export const translations = {
         "competition": "대회",
         "exhibition": "전시",
         "market": "마켓",
-        "party": "파티"
+        "party": "파티",
+        "league": "리그"
       },
       "skills": {
         "beginner": "초급",

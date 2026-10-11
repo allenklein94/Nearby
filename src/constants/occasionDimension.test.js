@@ -33,7 +33,7 @@ describe('occasion as a first-class dimension (owner item 42)', () => {
   it('a vacation recipe reaches stays, sights and food (three different groups)', () => {
     const { groupForTag } = require('./gatheringCategories');
     const groupsOf = (key) => new Set(EXPERIENCE_TEMPLATES.vacation.components.find((c) => c.key === key).categories.map((t) => groupForTag(t)?.key));
-    expect(groupsOf('stay').has('stay_getaway')).toBe(true);
+    expect(groupsOf('stay').has('travel_experiences')).toBe(true); // Stay & Getaway merged into Travel & Getaways (item 168)
     expect(groupsOf('dinner').has('food_drink')).toBe(true);
     expect(groupsOf('explore').size).toBeGreaterThan(0);
   });

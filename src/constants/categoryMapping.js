@@ -3,7 +3,7 @@
 // business's subcategory/secondary categories. It is the SAME explicit list as CATEGORY_GROUPS -- nothing is inferred,
 // no fuzzy or AI matching. Mirrored in SQL by public.category_tag_groups + business_served_tags() (migration
 // 20270118); categoryMapping.test.js fails if the two drift. Neither taxonomy's stored values are changed.
-import { CATEGORY_GROUPS, groupForTag } from './gatheringCategories';
+import { CATEGORY_GROUPS, groupForTag, isCustomerOnlyTag } from './gatheringCategories';
 
 // One lookup (gatheringCategories.groupForTag); this is its key form.
 export function canonicalGroupForTag(tag) {
@@ -15,12 +15,13 @@ export function tagsForGroup(groupKey) {
 }
 
 // The leaf tags a business serves. What the owner explicitly declared (subcategory, secondary categories, posting
-// categories) wins; only a business that declared NO leaf tag serves its whole major group.
+// categories) wins; only a business that declared NO leaf tag serves its whole major group -- minus its customer-only tags
+// (item 185: Date Night, First Date...), exactly like business_served_tags since migration 20270294.
 export function servedTags({ category = null, subcategory = null, categories = [], availabilityCategories = [] } = {}) {
   const declared = [subcategory, ...(categories ?? []), ...(availabilityCategories ?? [])].filter(Boolean);
   const set = new Set(declared);
   if (!subcategory && (categories ?? []).length === 0) {
-    for (const t of tagsForGroup(category)) set.add(t);
+    for (const t of tagsForGroup(category)) if (!isCustomerOnlyTag(t)) set.add(t);
   }
   return [...set];
 }

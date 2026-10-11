@@ -15,7 +15,13 @@ describe('Discover category rail', () => {
   });
   it('the long tail sits under More', () => {
     const { more } = railGroups(CATEGORY_GROUPS);
-    expect(more.map((m) => m.group.key)).toEqual(expect.arrayContaining(['pets', 'home_local_services', 'auto_transportation', 'stay_getaway']));
+    expect(more.map((m) => m.group.key)).toEqual(expect.arrayContaining(['pets', 'home_local_services', 'auto_transportation', 'travel_experiences']));
+  });
+  it('owner decision D5 (item 168): Sports & Fitness is a primary chip right after Activities, so gyms, yoga and tennis stay one tap away', () => {
+    const keys = DISCOVER_RAIL_PRIMARY.map((p) => p.key);
+    expect(keys.indexOf('sports_fitness')).toBe(keys.indexOf('activities_recreation') + 1);
+    const { primary } = railGroups(CATEGORY_GROUPS);
+    expect(primary.find((p) => p.group.key === 'sports_fitness').group.tags).toEqual(expect.arrayContaining(['Gyms', 'Yoga', 'Tennis']));
   });
   it('Discover renders the rail from this file, not the raw 19-group list', () => {
     const src = require('fs').readFileSync(require('path').join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
