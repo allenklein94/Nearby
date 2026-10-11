@@ -301,7 +301,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   match (`utils/strongMatch.js`, the one rule; unknown never counts) shows those pieces ticking ✓ then "A strong match for you"
   (item 61 wording, never "perfect") in place of Nearby Pick (`motion/StrongMatch.js`, medium tier). Never reorders, never elsewhere.
   Owner LOCKED: it explains why the result fits, never that it is the best; no separate "Your intent" step; never tick an unmet constraint.
-  Item 38: the phrase is reserved for that rule; item 61's 'high' card headline speaks at medium's words (`CARD_HEADLINE_LEVEL`, guard in `strongMatch.test.js`).
+  Item 38 (owner LOCKED): the phrase is reserved for that rule; personalization never qualifies. Item 61's Home cards (incl. 'high')
+  say "You might like this" (`CARD_HEADLINE_LEVEL`, leak guard in `strongMatch.test.js`); no new strength wording without a product decision.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

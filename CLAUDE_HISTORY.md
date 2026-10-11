@@ -1,5 +1,13 @@
 # Item 38 (2026-10-11) - don't call everything a strong match - DONE (no new strings, no migration)
 
+**Owner approval (same day, LOCKED, wording decision closed):** (1) "A strong match for you" (badge + its screen-reader labels) only for
+a typed ask's top result whose activity, explicitly stated time AND close distance all genuinely match; general personalization
+reasons never qualify a result for it. (2) Home Picked For You cards and the Best Pick hero say "You might like this", including those
+with the strongest personalization reasons; the real reasons (friend going, interest) stay underneath. (3) No new string or extra
+confidence headline to separate strength levels. (4) Keep the leak guard in `strongMatch.test.js`. (5) Item 61's three internal levels
+may stay for logic (today only the headline reads them; nothing ranks on them) but are never exposed through stronger wording without
+a separate product decision. Verification: item 61's headline has unit-test coverage only, no dedicated journey and no device check.
+
 **Owner ask:** if every recommendation says "Perfect Match!" the phrase means nothing; reserve it for genuinely high-confidence picks.
 **Found:** the phrase ("A strong match for you", `vocab.confidence.high`; "perfect" was already never used) had TWO sources with very
 different bars: item 37's strict rule (`utils/strongMatch.js`: a typed ask's top result whose activity, stated time AND close distance
