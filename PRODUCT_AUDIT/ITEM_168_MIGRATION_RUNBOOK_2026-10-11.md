@@ -30,7 +30,9 @@ merge. The window between steps 3 and 5 should be minutes. Rollback reverses the
   declarations, none loses coverage; Coastal Coffee (group-only Food & Drink) starts serving Tea and Distilleries.
 - **Tests:** `npx jest`: 407 suites pass, including the new `src/constants/v1CategoryPass.regression.test.js`
   (19 groups, customer-only never offered or served to a business, max 5 secondary, D6 reach). `npm run journeys`: 20/20
-  (against today's schema; the journeys do not yet run on the V1 schema, see section 6).
+  against today's schema AND 20/20 (234 tests) on the V1 schema:
+  `JOURNEY_PRELUDE_FILE=supabase/migrations/20270294_v1_category_pass.sql npm run journeys` (the migration runs inside
+  each journey's transaction, which is always rolled back). Re-run plain `npm run journeys` after the real apply (step 7).
 
 ## 3. Apply (owner present)
 
@@ -81,9 +83,17 @@ The rollback stays clean only while nothing has adopted the new world: no gather
 categories. Once real data uses them, undoing the pass means deciding per row what replaces it. A forward fix (one more
 canonical change) is then the right tool, not this rollback.
 
-## 6. Open, honestly
+## 6. Product decisions kept separate from the migration approval (owner, pending)
 
-- The journeys and the client run against today's schema; they have not been run on the V1 schema end to end (only the
-  SQL assertions and Jest have). After step 3 the journeys must be re-run (step 7).
+- **Places browse types** (`src/constants/placeCategories.js`): Activities -> `bowling_alley`, Sports & Fitness -> `gym`,
+  Travel & Getaways -> `lodging`. Tourist attractions stay reachable: Attractions & Things to See browses
+  `tourist_attraction`, and a Places `tourist_attraction` result classifies to that group (`services/places.js`).
+- **Broad Travel & Getaways interest** weakly matches (the existing broad-interest weak signal, never a strong match)
+  the 10 former Stay & Getaway categories. Proposed: keep as is, record for a later relevance review; not in this pass.
+
+## 7. Open, honestly
+
+- The journeys pass on the V1 schema in a rolled-back rehearsal; item 168 is verified only after they pass again on the
+  really migrated database (step 7).
 - Never run: the business web signup page in a real browser, any of it on a phone (no device exists).
 - 2026-10-11 machine-authored translations for the new labels need native-speaker review (standing item).
