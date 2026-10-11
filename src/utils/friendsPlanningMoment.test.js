@@ -49,7 +49,7 @@ describe('the line\'s data', () => {
   const friendsActivity = [
     { id: 'g1', host_id: 'a', title: 'Pickleball at 6', interest_tag: 'Pickleball', profiles: { display_name: 'Ann', photo_url: 'p/a.jpg' } },
     { id: 'g2', host_id: 'b', title: 'Board games', interest_tag: null, profiles: { display_name: 'Bo' } },
-    { id: 'g3', host_id: 'c', interest_tag: 'Coffee', profiles: null },
+    { id: 'g3', host_id: 'c', title: 'Coffee run', interest_tag: 'Coffee', profiles: null },
   ];
   test('one face per friend behind the count, each with its plan\'s activity; the count and wording unchanged', () => {
     const r = getHomeInsight({ friendsActivity });
@@ -59,7 +59,7 @@ describe('the line\'s data', () => {
     expect(r.people).toEqual([
       { id: 'a', gatheringId: 'g1', photoPath: 'p/a.jpg', tag: 'Pickleball', title: 'Pickleball at 6', destination: open('g1') },
       { id: 'b', gatheringId: 'g2', photoPath: null, tag: null, title: 'Board games', destination: open('g2') },
-      { id: 'c', gatheringId: 'g3', photoPath: null, tag: 'Coffee', title: null, destination: open('g3') },
+      { id: 'c', gatheringId: 'g3', photoPath: null, tag: 'Coffee', title: 'Coffee run', destination: open('g3') },
     ]);
     expect(r.people).toHaveLength(r.text.match(/\d+/)[0] * 1);
   });
@@ -101,7 +101,7 @@ describe('the moment', () => {
   test('plays only from the stored-ids rule, only on Home', () => {
     const home = read('screens/HomeScreen.js');
     expect(home).toMatch(/takeFriendsPlanningMoment\(/);
-    expect(home).toMatch(/if \(!cancelled && isNew\) setFriendsPlanningPlay/);
+    expect(home).toMatch(/if \(cancelled\) return;[\s\S]{0,80}if \(isNew\) setFriendsPlanningPlay\(friendsPlanningKey\)/);
   });
 });
 
@@ -111,7 +111,7 @@ describe('the friends-planning query (selectFriendsActivity)', () => {
   const now = new Date(2026, 9, 11, 12, 0, 0);
   const ago = (h) => new Date(now.getTime() - h * 3600 * 1000).toISOString();
   const ctx = { excludedHostIds: new Set(), isWoman: false, friendIds: new Set(['a', 'b', 'c', 'd']), communityIds: new Set(['club']) };
-  const row = (over) => ({ id: over.id, host_id: 'a', created_at: ago(1), visibility: 'everyone', discoverable: true, women_only: false, ...over });
+  const row = (over) => ({ id: over.id, host_id: 'a', title: `Plan ${over.id}`, created_at: ago(1), visibility: 'everyone', discoverable: true, women_only: false, ...over });
   const ids = (rows, opts = {}) => selectFriendsActivity(rows, { visibilityContext: ctx, now, ...opts }).map((g) => g.id);
 
   test('three-day window: 71 h in, 73 h out (the query\'s own bound, enforced again)', () => {
@@ -151,5 +151,26 @@ describe('the friends-planning query (selectFriendsActivity)', () => {
     expect(r.cta.destination.kind).toBe('inline');
     expect(r.cta.destination.items.map((it) => it.gathering.id)).toEqual(['g1', 'g2']);
     for (const it of r.cta.destination.items) expect(it.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: it.gathering.id } });
+  });
+});
+
+// Owner rule (2026-10-11): motion amplifies correct data, never hides incorrect data.
+describe('motion amplifies correct data', () => {
+  const now = new Date(2026, 9, 11, 12, 0, 0);
+  const ctx = { excludedHostIds: new Set(), isWoman: false, friendIds: new Set(['a', 'b', 'c']), communityIds: new Set() };
+  const g = (id, host, title) => ({ id, host_id: host, title, created_at: new Date(now.getTime() - 3600000).toISOString(), visibility: 'everyone', discoverable: true, women_only: false });
+  test('a plan the line cannot fully show (no title) is not counted: count = faces = chips by construction', () => {
+    const friendsActivity = selectFriendsActivity([g('g1', 'a', 'Pickleball'), g('g2', 'b', '  '), g('g3', 'c', 'Coffee')], { visibilityContext: ctx, now });
+    const r = getHomeInsight({ friendsActivity }, now);
+    expect(r.text).toBe('2 of your friends are already making plans.');
+    expect(r.people.map((p) => p.title)).toEqual(['Pickleball', 'Coffee']);
+  });
+  test('the component draws a chip for every person it is given (no silent filter between the count and what moves)', () => {
+    const src = read('motion/FriendsPlanning.js');
+    expect(src).not.toMatch(/shown\.filter\(/);
+  });
+  test('Home starts the moment only once the faces are final (photos and play land in the same update)', () => {
+    const home = read('screens/HomeScreen.js');
+    expect(home).toMatch(/\]\)\.then\(\(\[pairs, isNew\]\) => \{[\s\S]{0,120}setFriendsPlanningPhotos\(Object\.fromEntries\(pairs\)\);\s*if \(isNew\) setFriendsPlanningPlay/);
   });
 });

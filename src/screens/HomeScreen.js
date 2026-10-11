@@ -476,16 +476,22 @@ export default function HomeScreen({ navigation }) {
   // gatherings leave weather / Best Pick / Picked For You while it is open.
   const homeInsight = getHomeInsight(dashboard ? { ...dashboard, nearbyFriend } : dashboard);
   const expandedIds = expandedListIds(homeInsight, insightExpanded);
-  // Item 41: sign the friends' photos and ask (once per new set of plans) whether the line assembles.
+  // Item 41: sign the friends' photos and ask (once per new set of plans) whether the line assembles. Motion amplifies correct
+  // data, never covers its arrival: the moment starts only once the faces it animates are final (photos and play land together),
+  // so a placeholder never animates in and then swaps to the real photo mid-moment.
   const friendsPlanningKey = homeInsight?.kind === 'friends_planning' ? (homeInsight.people ?? []).map((p) => p.gatheringId).join('|') : '';
   useEffect(() => {
     if (!friendsPlanningKey) return undefined;
     let cancelled = false;
     const people = homeInsight.people ?? [];
-    Promise.all(people.map((p) => (p.photoPath ? getSignedPhotoUrl(p.photoPath).then((u) => [p.id, u]).catch(() => [p.id, null]) : [p.id, null])))
-      .then((pairs) => { if (!cancelled) setFriendsPlanningPhotos(Object.fromEntries(pairs)); });
-    takeFriendsPlanningMoment(people.map((p) => p.gatheringId), AsyncStorage)
-      .then((isNew) => { if (!cancelled && isNew) setFriendsPlanningPlay(friendsPlanningKey); });
+    Promise.all([
+      Promise.all(people.map((p) => (p.photoPath ? getSignedPhotoUrl(p.photoPath).then((u) => [p.id, u]).catch(() => [p.id, null]) : [p.id, null]))),
+      takeFriendsPlanningMoment(people.map((p) => p.gatheringId), AsyncStorage),
+    ]).then(([pairs, isNew]) => {
+      if (cancelled) return;
+      setFriendsPlanningPhotos(Object.fromEntries(pairs));
+      if (isNew) setFriendsPlanningPlay(friendsPlanningKey);
+    });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [friendsPlanningKey]);

@@ -748,7 +748,9 @@ export function friendsActivitySince(now = new Date()) {
 export function selectFriendsActivity(rows, { visibilityContext, upcomingPlanIds = new Set(), now = new Date() } = {}) {
   if (!visibilityContext) return [];
   const since = Date.parse(friendsActivitySince(now));
-  const recent = (rows ?? []).filter((g) => g?.id && g.host_id && Date.parse(g.created_at) >= since); // the query's window, again
+  // the query's window, again; and only a plan the line can fully show (a title for its chip), so the count, the faces and the
+  // chips are the same set by construction -- the moment never has to paper over a plan it cannot show
+  const recent = (rows ?? []).filter((g) => g?.id && g.host_id && String(g.title ?? '').trim() && Date.parse(g.created_at) >= since);
   const seenHosts = new Set();
   return applyGatheringVisibilityFilters(recent, visibilityContext).filter((g) => {
     if (upcomingPlanIds.has(g.id)) return false; // already in Your Plans

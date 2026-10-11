@@ -1,3 +1,14 @@
+# Owner rule (2026-10-11): motion amplifies correct data, never hides incorrect data - applied to item 41
+
+Locked in CLAUDE.md (Motion). Applied to the friends-planning moment:
+- `selectFriendsActivity` drops a plan with a blank title, so the count, the faces and the chips are one set by construction
+  (`gatherings.title` is NOT NULL and none are blank live, but the chip used to filter silently, which would have read
+  "3 friends" over 2 chips). `FriendsPlanning.js` now draws a chip for every person it is given (no filter).
+- Home starts the moment only once the signed photos AND the play decision are both in (one update), so a placeholder face never
+  animates in and then swaps to the real photo mid-moment.
+- Tests +3 in `friendsPlanningMoment.test.js` (19 there). Jest 417 / 5649 pass; journeys 24 / 265. Not device-verified.
+Other moments (items 20-40) have NOT been audited against this rule yet.
+
 # Item 41 approved (2026-10-11) - avatars -> gathering chips -> line
 
 **Owner decisions:** (1) keep "{count} of your friends are already making plans" -- no "nearby", no Discover-radius filter added just

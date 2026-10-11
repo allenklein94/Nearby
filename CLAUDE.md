@@ -275,6 +275,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   durations. Reduce Motion = settled state. Haptics only after the person's own tap. Business transactions
   use the calm tone; no confetti. **Animation never delays information:** info text starts >= 0.6 opacity
   (`infoOpacity`, guard `animationNeverDelays.test.js`). No category animations; no offer templates; offer video is tap-to-play.
+- **Motion amplifies correct data, never hides incorrect data (owner, 2026-10-11):** a moment animates only data that is
+  already final and agrees with its static view (same set, same count); a mismatch is fixed in the shared source, never covered
+  by motion; a moment never starts on placeholders that swap mid-play. Item 41 guard: `friendsPlanningMoment.test.js`.
 - **Animation is interruptible (owner item 20):** a tap acts at once (no button waits on, or is hidden by, an
   animation; a tap during the match intro or the surprise reveal jumps to the end state), a swipe dismisses at
   once (arrival pill up/sideways, Undo toast, match modal down) via `motion/swipeDismiss.js`; pure overlays are

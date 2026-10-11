@@ -55,7 +55,7 @@ export default function FriendsPlanning({ people, photoUrls = {}, text, textStyl
           ))}
         </View>
       ) : null}
-      {shown.filter((p) => p.title).map((p, i) => (
+      {shown.map((p, i) => (
         <Animated.View
           key={p.gatheringId}
           style={{ opacity: infoOpacity(chips[i]), transform: [{ translateY: chips[i].interpolate({ inputRange: [0, 1], outputRange: [T.chipRise, 0] }) }] }}
