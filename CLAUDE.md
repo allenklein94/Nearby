@@ -65,10 +65,10 @@ is done; then close it without expanding scope (owner: wording, ticks-as-intent,
 `PRODUCT_AUDIT/ITEM_39_FRIEND_NEARBY_DEVICE_CHECKLIST_2026-10-11.md` is recorded on two real phones AND native review of the 8
 `ui.friendNearby.*` strings is done (migration 20270296; journey `friendNearby` passes).
 
-**Item 40 (friend + activity collision) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
-`PRODUCT_AUDIT/ITEM_40_FRIEND_ACTIVITY_COLLISION_DEVICE_CHECKLIST_2026-10-11.md` is recorded on two real phones AND native review of
-`ui.friendNearby.together` / `togetherA11y` is done (migration 20270297; journey `friendNearby` 15/15). Built with defaults the owner
-has not yet confirmed: Home only (Best Pick + Picked For You), one card, explains never ranks, skipped when either of you hosts/attends.
+**Item 40 (friend + activity collision) is APPROVED (owner, LOCKED), READY FOR DEVICE VERIFICATION until** every check in
+`PRODUCT_AUDIT/ITEM_40_FRIEND_ACTIVITY_COLLISION_DEVICE_CHECKLIST_2026-10-11.md` is recorded on two real phones (incl. #15: shared
+interest, nearby and attending stay three distinct facts), native review of `ui.friendNearby.together` / `togetherA11y` is done, and a
+from-scratch migration replay is done before claiming fresh-install verification (migration 20270297; journey `friendNearby` 15/15). Do not expand scope.
 
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
@@ -316,9 +316,12 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Owner LOCKED: it explains why the result fits, never that it is the best; no separate "Your intent" step; never tick an unmet constraint.
   Item 38 (owner LOCKED): the phrase is reserved for that rule; personalization never qualifies. Item 61's Home cards (incl. 'high')
   say "You might like this" (`CARD_HEADLINE_LEVEL`, leak guard in `strongMatch.test.js`); no new strength wording without a product decision.
-- **Friend + activity collision (owner item 40):** the ONE Home card (Best Pick, then Picked For You) whose interest the nearby friend
-  (item 39) and you BOTH declared (`shared_tags`, server) says "You + {Name} might like this" (`utils/friendCollision.js`), faces
-  converge (`motion/FriendCollision.js`, medium, once per friend+gathering per session); never reorders, never when either hosts/attends.
+- **Friend + activity collision (owner item 40, LOCKED):** the ONE Home card (Best Pick, then Picked For You; never Discover or Nearby
+  Right Now) whose interest the nearby friend (item 39) and you BOTH explicitly declared (`shared_tags`, server) says "You + {Name} might
+  like this" (`utils/friendCollision.js`), faces converge (`motion/FriendCollision.js`, medium, once per friend+gathering per session).
+  Explanation only: never reorders, never touches Best Pick selection or scoring, separate from item 37. Suppressed when either hosts or
+  joined. Never implies the friend attends or is present beyond what attendance/item 39 state confirms; never the friend's other or
+  inferred interests; nothing to any AI service. Item 39's "{Name} is nearby · Invite" stays the only Invite; not merged into sharing.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

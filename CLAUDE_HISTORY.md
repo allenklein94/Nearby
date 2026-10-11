@@ -1,4 +1,16 @@
-# Item 40 (2026-10-11) - Friend + activity collision - BUILT, LIVE, NOT DEVICE-VERIFIED
+# Item 40 (2026-10-11) - Friend + activity collision - APPROVED (LOCKED), READY FOR DEVICE VERIFICATION
+
+**Owner approval (same day, LOCKED, do not expand scope):** (1) Placement: Home only, one card, Best Pick first then Picked For You;
+never Discover or Nearby Right Now; no new card or screen. (2) Ranking: explanation only; never reorders, never alters Best Pick
+selection or scoring; separate from item 37's strong-match criteria; never implies the friend is attending or present unless attendance
+or item 39 location state independently confirms it. (3) Suppressed when either person hosts or has joined. (4) Privacy: only interests
+both explicitly declared; never the friend's other interests or behaviour-inferred ones; no new private data to Claude or any external AI
+service; sharing an interest is not attending. (5) Item 39's "{Name} is nearby · Invite {Name}" stays the only Invite for nearby
+presence; the explanation is not merged into location sharing; item 39's opt-in/friendship/freshness/revocation rules stand.
+(6) Open gates: the two-phone checklist (owner: pay particular attention that shared interest, nearby and attending stay three distinct
+facts; added as check #15), native review of the 2 strings in 10 languages, a from-scratch migration replay before claiming
+fresh-install verification; keep the unit tests and all 23 journeys passing. Built as approved: no code change was needed.
+
 
 **Owner ask:** Claude is nearby, Claude likes pickleball, there's a pickleball activity nearby -> "You + Claude might like this", the
 two signals visually converging into the activity.

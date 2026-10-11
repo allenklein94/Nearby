@@ -1,8 +1,9 @@
 # Item 40 - Friend + activity collision ("You + {Name} might like this"): device checklist (2026-10-11)
 
-Status: BUILT, LIVE (migration 20270297), NOT device-verified. Rule: `utils/friendCollision.js` (unit-tested); server fact
+Status: APPROVED by the owner (2026-10-11, decisions LOCKED, no scope expansion), LIVE (migration 20270297), NOT device-verified. Rule: `utils/friendCollision.js` (unit-tested); server fact
 (`shared_tags` = interests BOTH declared, nothing else) proven by the `friendNearby` journey (15/15). Item 40 stays OPEN until
-every check below is recorded on real devices AND the 2 new strings (`ui.friendNearby.together`, `togetherA11y`) have native review.
+every check below is recorded on real devices AND the 2 new strings (`ui.friendNearby.together`, `togetherA11y`) have native review,
+and a from-scratch migration replay on an empty database is done before claiming fresh-install verification.
 
 Setup: item 39's setup (two phones, accepted friends, both sharing, both apps open, < ~1 mi apart), both have declared
 Pickleball in their profile interests, and a public Pickleball gathering nearby that neither hosts nor has joined, showing as
@@ -24,5 +25,6 @@ Best Pick or in Picked For You on Home.
 | 12 | Best Pick hero variant: white text readable on the scrim | | |
 | 13 | VoiceOver/TalkBack reads "You and {Name} might both like this" | | |
 | 14 | Non-English (e.g. es, zh): reads naturally (native review pending) | | |
+| 15 | Three distinct facts (owner): with Claude nearby but NOT joined, nothing on the card, the "{Name} is nearby" line or the a11y text says or implies Claude is going, attending or at the gathering; with Claude joined, only "Claude is going" (attendance) speaks; the nearby line never names a gathering | | |
 
 Device: ____  OS: ____  Date: ____  Result: ____
