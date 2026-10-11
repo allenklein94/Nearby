@@ -76,8 +76,11 @@ describe('timing', () => {
     expect(delays).toEqual([...delays].sort((a, b) => a - b));
     expect(new Set(delays).size).toBe(ASSEMBLY_STEPS.length);
   });
-  test('arrival travel + assembly + finish together stay under 1.7 s (the button is tappable throughout)', () => {
-    expect(settleMs('offerTravel') + settleMs('offerAssembly')).toBeLessThanOrEqual(1700);
+  // Item 25: the signature moment. The card builds in from the moment the light lands (overlapping the ring and the fade),
+  // so dim + flight + the full assembly + finish stay inside the owner's ~1.5 s (the button is tappable throughout).
+  test('the signature moment (dim, flight, assembly, finish) stays within 1.5 s', () => {
+    expect(SEQUENCES.offerTravel.dimMs + settleMs('businessResponds')).toBeLessThanOrEqual(1500);
+    expect(isWithinBudget(settleMs('businessResponds'), 'signature')).toBe(true);
   });
 });
 
@@ -234,14 +237,16 @@ describe('the finish: the button settles in last and the outline glows once (own
     expect(src).toMatch(/if \(!animate\) return undefined;/);
   });
   test('only a glow: no ring, spring, loop, scale or background change; the locked wording is untouched', () => {
-    const code = src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    // Item 25 (owner-approved richer build-in): the price step's one soft wash (WashBehind) is the only background colour.
+    const code = src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n').replace(/function WashBehind[\s\S]*?\n}\n/, '');
     expect(code).not.toMatch(/Animated\.spring|Animated\.loop|scale|ripple|ring|backgroundColor/);
+    expect((src.match(/backgroundColor/g) || []).length).toBe(1);
     expect(screen).toMatch(/<AssemblyGlow color=\{colors\.primary\}/);
     expect(screen).not.toMatch(/Accept Offer/);
     const copy = read('utils/primaryAction.js');
     expect(copy).toContain("I'll take this one");
   });
-  test('the booking celebration is unchanged and stays the only ring', () => {
+  test('the booking celebration is unchanged and stays the only ring on a card (the arrival ring lives in the travel overlay)', () => {
     expect(fs.existsSync(path.join(__dirname, '../motion/BookedCelebration.js'))).toBe(true);
     expect(SEQUENCES.booked).toEqual({ tier: 'special', ringMs: 200, checkMs: 160, rippleMs: 380, textFadeMs: 220 });
   });

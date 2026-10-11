@@ -56,3 +56,17 @@ test('no literal Animated duration exceeds the special tier', () => {
   }
   expect(offenders).toEqual([]);
 });
+
+// Owner item 25: the signature tier is an exception for ONE moment, not permission for more motion.
+test('exactly one sequence uses the signature tier: a business responding', () => {
+  const { SIGNATURE_MOMENT } = require('./motionBudget');
+  const signature = Object.entries(SEQUENCES).filter(([, s]) => s.tier === 'signature').map(([k]) => k);
+  expect(signature).toEqual([SIGNATURE_MOMENT]);
+  expect(SIGNATURE_MOMENT).toBe('businessResponds');
+  expect(MOTION_BUDGET.signature.max).toBeLessThanOrEqual(1500);
+  expect(isWithinBudget(settleMs('businessResponds'), 'signature')).toBe(true);
+  // acceptance and redemption stay in their calm, smaller tiers
+  expect(SEQUENCES.offerAccepted.tier).toBe('special');
+  expect(SEQUENCES.visitConfirmed.tier).toBe('small');
+  expect(settleMs('offerAccepted')).toBeLessThanOrEqual(MOTION_BUDGET.special.max);
+});

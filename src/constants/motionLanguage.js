@@ -60,7 +60,7 @@ export const NEARBY_MOTION_LANGUAGE_DOC_ONLY = true;
 //   6 Customer redemption  -- the booked card's final step, "✓ Visit confirmed", one glow when it arrives live.
 export const MARKETPLACE_MOMENTS = Object.freeze([
   { key: 'request_sent', component: 'motion/RequestPulse.js', sequence: 'requestPulse' },
-  { key: 'business_response', component: 'motion/OfferTravelOverlay.js', sequence: 'offerTravel' },
+  { key: 'business_response', component: 'motion/OfferTravelOverlay.js', sequence: 'businessResponds' },
   { key: 'offer_reveal', component: 'components/OfferAssembly.js', sequence: 'offerAssembly' },
   { key: 'offer_acceptance', component: 'motion/OfferAcceptedMorph.js', sequence: 'offerAccepted' },
   { key: 'business_progress', component: 'motion/OfferProgressSteps.js', sequence: 'offerProgress' },

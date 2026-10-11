@@ -16,7 +16,12 @@ export const MOTION_BUDGET = {
   small: { min: 150, max: 300, ms: 220 },
   medium: { min: 300, max: 500, ms: 400 },
   special: { min: 500, max: 900, ms: 700 },
+  // Owner item 25 (2026-10-11): ONE exception, for ONE moment -- a business responding to your request (SIGNATURE_MOMENT).
+  // Up to ~1.5 s, still calm (no confetti, particles, bounce), information readable from the first frame, identical for every
+  // business. Not permission for category animations or more motion anywhere else (guard: motionBudget.test.js).
+  signature: { min: 900, max: 1500, ms: 1300 },
 };
+export const SIGNATURE_MOMENT = 'businessResponds';
 
 export function tierOf(ms) {
   if (ms <= MOTION_BUDGET.tiny.max) return 'tiny';
@@ -62,7 +67,8 @@ export const SEQUENCES = {
   // gentle fades + a slight upward settle, no bounce, no haptic. Starts after an offer travel into this card has finished.
   // Then the finish (2026-10-10): "I'll take this one" settles in as the final slot (same fade + rise, never below
   // actionRestOpacity, always tappable) while the card's coral outline glows once: in glowInMs, back out glowOutMs.
-  offerAssembly: { tier: 'special', stepMs: 160, staggerMs: 100, maxSteps: 6, risePx: 6, actionRestOpacity: 0.6 /* = INFO_REST_OPACITY */, glowInMs: 100, glowOutMs: 200 },
+  offerAssembly: { tier: 'special', stepMs: 160, staggerMs: 100, maxSteps: 6, risePx: 6, actionRestOpacity: 0.6 /* = INFO_REST_OPACITY */, glowInMs: 100, glowOutMs: 200,
+    washInMs: 180, washOutMs: 320, washOpacity: 0.14 },
   // Offer travel (2026-10-09): dim in, the light travels from the arrival signal while the frame grows into the offer card,
   // then frame + dim fade into the real card. Waiting for the card to be on screen is a hold, not part of the transition.
   // You're booked (2026-10-09): the ring closes, the ✓ settles, one soft ripple while the facts fade in. A booking is a
@@ -85,7 +91,14 @@ export const SEQUENCES = {
   responding: { tier: 'small', fadeMs: 200, pulseMs: 260 },
   // Someone joined the host's gathering while the host had it open (item 15, 2026-10-10): the Going line glows once.
   hostJoin: { tier: 'small', glowInMs: 100, glowOutMs: 200 },
-  offerTravel: { tier: 'special', dimMs: 180, travelMs: 380, settleMs: 220, targetWaitMs: 1500 },
+  // Item 25: the travel is part of the signature moment. The light follows a gentle arc (arcPx at most, never more than
+  // arcShare of the distance) with a soft halo; the frame is an outline only (never covers the card's text); on landing one
+  // ring converges onto the card (the request's rings went out, the answer's ring comes back in) while the dim and frame fade.
+  offerTravel: { tier: 'special', dimMs: 180, travelMs: 420, settleMs: 300, targetWaitMs: 1500, arcPx: 72, arcShare: 0.25,
+    ringMs: 380, ringFromScale: 2.2, ringToScale: 0.6, ringPeakOpacity: 0.35, ringSize: 64, haloOpacity: 0.3 },
+  // The signature moment (item 25): the travel, then -- starting the moment it lands, overlapping its settle -- the card
+  // building itself in (offerAssembly), whose price step gets one soft coral wash (washInMs + washOutMs, washOpacity).
+  businessResponds: { tier: 'signature' },
 };
 
 // Time from trigger to settled state for each sequence.
@@ -127,6 +140,11 @@ export function settleMs(name) {
       return s.staggerMs * (s.rings - 1) + s.ringMs;
     case 'offerTravel':
       return s.dimMs + s.travelMs + s.settleMs;
+    case 'businessResponds': {
+      // from the card's position being known: travel, then the longest of (ring, settle, the full card assembly)
+      const t = SEQUENCES.offerTravel;
+      return t.travelMs + Math.max(t.ringMs, t.settleMs, settleMs('offerAssembly'));
+    }
     default:
       return NaN;
   }

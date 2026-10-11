@@ -162,3 +162,55 @@ describe('item 23: the in-place reply travel (request line -> reply card)', () =
     expect(overlay).toMatch(/if \(travel\.dim\) Animated\.timing\(dim/);
   });
 });
+
+// Owner item 25 (2026-10-11): the signature moment, a business responding. Up to ~1.5 s, calm, readable, fair.
+describe('item 25: the signature moment', () => {
+  const { arcPoints } = require('./travelArc');
+  const { afterOfferTravel, markOfferTravelLanded } = require('./offerTravel');
+  const overlay = fs.readFileSync(path.join(__dirname, 'OfferTravelOverlay.js'), 'utf8');
+  const code = (s) => s.split('\n').filter((l) => !l.trim().startsWith('//') && !l.trim().startsWith('{/*')).join('\n');
+
+  test('the light arcs gently: leaves and lands exactly on its points, bows at most arcPx, short hops stay nearly straight', () => {
+    const a = { x: 0, y: 600 };
+    const b = { x: 200, y: 200 };
+    const p = arcPoints(a, b, { arcPx: 72, arcShare: 0.25 });
+    expect([p.x[0], p.y[0]]).toEqual([0, 600]);
+    expect([p.x[p.x.length - 1], p.y[p.y.length - 1]]).toEqual([200, 200]);
+    expect(p.bow).toBe(72);
+    expect(p.t).toEqual([...p.t].sort((m, n) => m - n));
+    expect(arcPoints({ x: 0, y: 0 }, { x: 40, y: 0 }).bow).toBe(10);
+    expect(arcPoints(a, a).bow).toBe(0);
+  });
+
+  test('the card builds in the moment the light lands (overlapping the ring and fade), not after the fade', () => {
+    jest.useFakeTimers();
+    startOfferTravel({ offerId: 'o9', from: pill }, { reduceMotion: false, now: 0 });
+    reportOfferTravelTarget('o9', card, 10);
+    let started = 0;
+    const cancel = afterOfferTravel('o9', () => { started += 1; });
+    expect(started).toBe(0); // in flight
+    markOfferTravelLanded(getOfferTravel().id);
+    expect(started).toBe(1); // landed: build-in starts while the travel is still settling
+    expect(getOfferTravel()).toMatchObject({ offerId: 'o9', landed: true });
+    endOfferTravel();
+    expect(started).toBe(1);
+    cancel();
+    jest.useRealTimers();
+  });
+
+  test('calm: no spring, loop, bounce, particles, confetti or haptic; one converging ring; frame never covers the card', () => {
+    expect(code(overlay)).not.toMatch(/Animated\.spring|Animated\.loop|bounce|particle|confetti|playHaptic|expo-haptics/i);
+    expect(overlay).toMatch(/backgroundColor: 'transparent'/);
+    expect(overlay).not.toMatch(/primaryMuted/);
+    expect(overlay).toMatch(/markOfferTravelLanded\(id\)/);
+    expect((overlay.match(/borderRadius: T\.ringSize \/ 2/g) || []).length).toBe(1);
+  });
+
+  test('fair: the moment reads only positions and timing, never who the business is or what it pays', () => {
+    const files = ['OfferTravelOverlay.js', 'offerTravel.js', 'travelArc.js', '../components/OfferAssembly.js'];
+    for (const f of files) {
+      const s = code(fs.readFileSync(path.join(__dirname, f), 'utf8'));
+      expect(s).not.toMatch(/sponsor|is_sponsored|billing|fee|stripe|category|cuisine|tier_|plan_tier|partner_id|brand_partners/i);
+    }
+  });
+});

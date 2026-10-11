@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
+import { useTheme } from '../context/ThemeContext';
 import { SEQUENCES, infoOpacity } from '../motion/motionBudget';
 import { afterOfferTravel } from '../motion/offerTravel';
 import { ASSEMBLY_STEPS, assemblySteps, markAssembled, stepDelay, finishDelay } from '../utils/offerAssembly';
@@ -24,6 +25,7 @@ export default function OfferAssembly({ offer, children }) {
   if (!values.current) {
     values.current = Object.fromEntries([...ASSEMBLY_STEPS, 'action'].map((k) => [k, new Animated.Value(animate ? 0 : 1)]));
     values.current.glow = new Animated.Value(0); // the outline glow rests at 0 (never shown without an assembly)
+    values.current.wash = new Animated.Value(0); // item 25: the price step's one soft coral wash (decoration, rests at 0)
   }
 
   useEffect(() => {
@@ -43,6 +45,12 @@ export default function OfferAssembly({ offer, children }) {
         Animated.timing(values.current.action, {
           toValue: 1, duration: T.stepMs, delay: finishAt, easing: Easing.out(Easing.cubic), useNativeDriver: true,
         }),
+        // item 25: as the price settles, one soft coral wash behind it (only when the reply has a price)
+        ...(steps.includes('price') ? [Animated.sequence([
+          Animated.delay(stepDelay(steps, 'price')),
+          Animated.timing(values.current.wash, { toValue: 1, duration: T.washInMs, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(values.current.wash, { toValue: 0, duration: T.washOutMs, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        ])] : []),
         // and at the same moment the outline glows once and fades back
         Animated.sequence([
           Animated.delay(finishAt),
@@ -77,7 +85,29 @@ export function AssemblyStep({ step, children }) {
   // Item 19: every step (the business, the status, the order, the price, the time, the button) is readable from the first
   // frame; the assembly only settles it from INFO_REST_OPACITY with the rise.
   const opacity = infoOpacity(v);
+  if (step === 'price' && values.wash) {
+    // Item 25: the price gets one soft coral wash behind it as it settles (behind the text, never over it; no touches).
+    return (
+      <Animated.View pointerEvents="box-none" style={{ opacity, transform: [{ translateY }] }}>
+        <WashBehind wash={values.wash} />
+        {children}
+      </Animated.View>
+    );
+  }
   return <Animated.View pointerEvents="box-none" style={{ opacity, transform: [{ translateY }] }}>{children}</Animated.View>;
+}
+
+function WashBehind({ wash }) {
+  const { colors } = useTheme();
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFillObject, {
+        top: -2, bottom: -2, left: -4, right: -4, borderRadius: 6, backgroundColor: colors.primary,
+        opacity: wash.interpolate({ inputRange: [0, 1], outputRange: [0, T.washOpacity] }),
+      }]}
+    />
+  );
 }
 
 // The card's one outline glow: a coral border laid over the card's own edge, never taking touches. Renders nothing outside
