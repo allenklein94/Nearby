@@ -106,7 +106,7 @@ import { deriveSignatureExperienceSuggestions } from '../constants/businessExper
 import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../constants/experienceTemplates';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
 import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
-import { INTEREST_OPTIONS, subcategoryOptionsFor, businessTagOptions } from '../constants/gatheringCategories';
+import { INTEREST_OPTIONS, subcategoryOptionsFor, businessTagOptions, toggleSecondaryCategory, isCustomerOnlyTag } from '../constants/gatheringCategories';
 import SponsoredPromotionsPanel from '../components/SponsoredPromotionsPanel';
 import LoadErrorState from '../components/LoadErrorState';
 import BusinessNotificationPreferences from '../components/BusinessNotificationPreferences';
@@ -165,7 +165,8 @@ const RESERVATION_PROVIDER_OPTIONS = [
 // Same canonical 26-tag list business_requests/business_availability's own
 // (now-widened) category CHECK constraints validate against -- see
 // CLAUDE.md's "Category/filter taxonomy pass" section.
-const AVAILABILITY_CATEGORY_OPTIONS = INTEREST_OPTIONS;
+// Item 185: a business never posts or boosts a customer-only category (Date Night, First Date...); the server refuses it too.
+const AVAILABILITY_CATEGORY_OPTIONS = INTEREST_OPTIONS.filter((c) => !isCustomerOnlyTag(c));
 
 // "Time-boxed... right now" per the plan's own framing -- starts_at is
 // always the moment of posting, the business only ever picks how long it
@@ -5644,7 +5645,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </View>
                 )}
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {INTEREST_OPTIONS.map((c) => {
+                  {AVAILABILITY_CATEGORY_OPTIONS.map((c) => {
                     const selected = boostCategoryInput === c;
                     return (
                       <TouchableOpacity
@@ -6741,7 +6742,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   already uses, but as a real multi-select toggle. */}
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.alsoClassifyAsOptional')}</Text>
               <Text style={styles.helperText}>
-                {t('ui.bizDash3.alsoShowUpUnderAny')}
+                {t('ui.bizDash3.alsoShowUpUnderAny')} {t('ui.bizDash3.upToFiveCategories')}
               </Text>
               <View style={styles.chipRow}>
                 {businessTagOptions().map((c) => {
@@ -6751,9 +6752,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       key={c}
                       style={[styles.chip, selected && styles.chipSelected]}
                       onPress={() => {
-                        setEditCategoriesInput((prev) =>
-                          prev.includes(c) ? prev.filter((v) => v !== c) : [...prev, c]
-                        );
+                        setEditCategoriesInput((prev) => toggleSecondaryCategory(prev, c)); // item 186: at most 5
                       }}
                       accessibilityRole="button"
                       accessibilityLabel={c}

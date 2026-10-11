@@ -1,4 +1,4 @@
-// Discover's category rail (owner item 34, 2026-09-21). The BACKEND keeps every major (19 today: the owner's 16 plus
+// Discover's category rail (owner item 34, 2026-09-21). The BACKEND keeps every major (19 since the item-168 V1 pass, with
 // Health & Personal Care, Education & Classes and Attractions, which stay majors until supply says otherwise); the
 // UI must not read as a directory. Discover leads with a short "Browse" rail (item 91: right under the search box, above the contextual sections) and tucks the long tail
 // behind "More", which expands in place (global rule 5: exploring populates inline). Labels here are display-only
@@ -6,6 +6,7 @@
 export const DISCOVER_RAIL_PRIMARY = [
   { key: 'food_drink', label: 'Food & Drink' },
   { key: 'activities_recreation', label: 'Activities' },
+  { key: 'sports_fitness', label: 'Sports & Fitness' }, // owner decision D5 (item 168): gyms, yoga and tennis stay one tap away
   { key: 'entertainment_nightlife', label: 'Entertainment' },
   { key: 'outdoors_nature', label: 'Outdoors' },
   { key: 'shopping', label: 'Shopping' },

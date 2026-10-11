@@ -41,7 +41,7 @@ export const INTENT_ROUTES = [
   { key: 'meet_new_people', family: 'social', phrases: [/\bmeet\s+(new\s+|other\s+)?(people|someone|folks|friends)\b/i, /\bmake\s+(new\s+)?friends\b/i, /\bfind\s+(new\s+)?friends\b/i, /\bmeet\s+people\s+who\b/i], route: { surface: ROUTE_SURFACES.PEOPLE, subMode: 'friends' } },
   { key: 'meet_friends', family: 'social', phrases: [/\b(catch\s+up|meet\s+up|get\s+together)\s+with\s+(my\s+|some\s+)?friends\b/i, /\bsee\s+my\s+friends\b/i], route: recipe('friends_out') },
   { key: 'hang_out', family: 'social', phrases: [/\bhang\s?out\b/i, /\bchill\s+with\b/i], route: recipe('friends_out') },
-  { key: 'group_activity', family: 'social', phrases: [/\bgroup\s+(activity|outing|thing)\b/i, /\bsomething\s+(for|with)\s+(a\s+|the\s+)?group\b/i], route: groups('activities_recreation', 'entertainment_nightlife', 'outdoors_nature') },
+  { key: 'group_activity', family: 'social', phrases: [/\bgroup\s+(activity|outing|thing)\b/i, /\bsomething\s+(for|with)\s+(a\s+|the\s+)?group\b/i], route: groups('activities_recreation', 'sports_fitness', 'entertainment_nightlife', 'outdoors_nature') },
   { key: 'make_plans', family: 'social', phrases: [/\bmake\s+(some\s+)?plans\b/i, /\bplan\s+something\b/i], route: { surface: ROUTE_SURFACES.CREATE_GATHERING } },
 
   // Entertainment (specific tags before the general "go out")
@@ -59,8 +59,8 @@ export const INTENT_ROUTES = [
   { key: 'eat', family: 'food', phrases: [/\b(eat|dinner|lunch|brunch|hungry|food)\b/i], route: groups('food_drink') },
 
   // Activity
-  { key: 'exercise', family: 'activity', phrases: [/\b(exercise|work\s?out|workout)\b/i], route: groups('activities_recreation') },
-  { key: 'play_sports', family: 'activity', phrases: [/\bplay\s+(some\s+)?(sports?|basketball|soccer|volleyball|pickleball|tennis)\b/i], route: groups('activities_recreation') },
+  { key: 'exercise', family: 'activity', phrases: [/\b(exercise|work\s?out|workout)\b/i], route: groups('activities_recreation', 'sports_fitness') },
+  { key: 'play_sports', family: 'activity', phrases: [/\bplay\s+(some\s+)?(sports?|basketball|soccer|volleyball|pickleball|tennis)\b/i], route: groups('activities_recreation', 'sports_fitness') },
   { key: 'be_outdoors', family: 'activity', phrases: [/\b(be\s+outdoors|outside|outdoors|go\s+for\s+a\s+(hike|walk))\b/i], route: groups('outdoors_nature') },
   { key: 'learn_something', family: 'activity', phrases: [/\blearn\s+(something|how)\b/i, /\btake\s+a\s+class\b/i], route: groups('education_classes', 'arts_culture_learning') },
   { key: 'relax', family: 'activity', phrases: [/\b(relax|unwind|de-?stress)\b/i], route: groups('wellness_beauty', 'outdoors_nature') },

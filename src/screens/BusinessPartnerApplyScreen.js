@@ -13,7 +13,7 @@ import { classifyBusinessDescription } from '../services/businessOnboardingAssis
 import { suggestBusinessCategory } from '../services/businessCategorySuggestion';
 import { activityChoices, toggleActivity } from '../constants/activityLayer';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
-import { CATEGORY_GROUPS, subcategoryOptionsFor, businessTagOptions } from '../constants/gatheringCategories';
+import { CATEGORY_GROUPS, subcategoryOptionsFor, businessTagOptions, toggleSecondaryCategory, MAX_SECONDARY_CATEGORIES } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -143,7 +143,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   }
 
   function toggleCategory(key) {
-    setCategories((prev) => (prev.includes(key) ? prev.filter((c) => c !== key) : [...prev, key]));
+    setCategories((prev) => toggleSecondaryCategory(prev, key)); // item 186: at most 5
   }
 
   // "Intelligent demand inbox" Phase 3: the real, optional AI fast-path --
@@ -551,7 +551,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
 
           {category && subcategoryOptionsFor(category).filter((t) => t !== subcategory).length > 0 ? (
             <>
-              <Text style={styles.label}>Anything else you are? (optional)</Text>
+              <Text style={styles.label}>Anything else you are? (optional, up to {MAX_SECONDARY_CATEGORIES})</Text>
               <View style={styles.chipRow}>
                 {subcategoryOptionsFor(category).filter((t) => t !== subcategory).slice(0, 14).map((t) => (
                   <TouchableOpacity
@@ -624,7 +624,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               self-classification, distinct from the single subcategory
               above (e.g. a food_drink bar that's also an entertainment_
               nightlife live-music venue). */}
-          <Text style={styles.label}>Also Classify As (optional)</Text>
+          <Text style={styles.label}>Also Classify As (optional, up to {MAX_SECONDARY_CATEGORIES} in all)</Text>
           <View style={styles.chipRow}>
             {businessTagOptions().map((c) => (
               <TouchableOpacity

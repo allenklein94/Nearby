@@ -169,7 +169,7 @@ export async function searchPlacesByText(query, latitude = null, longitude = nul
 // staying duplicated.
 const GOOGLE_TYPE_TO_BUSINESS_CATEGORY = {
   restaurant: 'food_drink', cafe: 'food_drink', bar: 'food_drink', bakery: 'food_drink', food: 'food_drink', meal_takeaway: 'food_drink',
-  gym: 'activities_recreation', stadium: 'activities_recreation', bowling_alley: 'activities_recreation',
+  gym: 'sports_fitness', stadium: 'sports_fitness', bowling_alley: 'activities_recreation', // item 168 split
   night_club: 'entertainment_nightlife', movie_theater: 'entertainment_nightlife', casino: 'entertainment_nightlife',
   art_gallery: 'arts_culture_learning', museum: 'arts_culture_learning', library: 'arts_culture_learning',
   clothing_store: 'shopping', store: 'shopping', shopping_mall: 'shopping', shoe_store: 'shopping', jewelry_store: 'shopping', book_store: 'shopping',
@@ -182,7 +182,7 @@ const GOOGLE_TYPE_TO_BUSINESS_CATEGORY = {
   lawyer: 'business_networking', accounting: 'business_networking', real_estate_agency: 'business_networking', insurance_agency: 'business_networking',
   church: 'community_volunteering', hindu_temple: 'community_volunteering', mosque: 'community_volunteering', synagogue: 'community_volunteering',
   travel_agency: 'travel_experiences',
-  lodging: 'stay_getaway', rv_park: 'stay_getaway',
+  lodging: 'travel_experiences', rv_park: 'travel_experiences', // item 168: Stay & Getaway merged into Travel & Getaways
   dentist: 'health_personal_care', doctor: 'health_personal_care', pharmacy: 'health_personal_care', physiotherapist: 'health_personal_care', hospital: 'health_personal_care',
   school: 'education_classes',
   zoo: 'attractions_things_to_see', aquarium: 'attractions_things_to_see', tourist_attraction: 'attractions_things_to_see',

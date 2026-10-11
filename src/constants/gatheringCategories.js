@@ -46,11 +46,19 @@
 export const CATEGORY_GROUPS = [
   {
     key: 'food_drink', icon: '🍔', label: 'Food & Drink',
-    tags: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Breakfast', 'Pastries', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Restaurants', 'Dessert & Ice Cream', 'Fine Dining', 'Fast Casual', 'Takeout & Delivery', 'Wineries'],
+    tags: ['Coffee', 'Foodie', 'Cooking', 'Wine', 'Brunch', 'Breakfast', 'Pastries', 'Bakeries', 'Bars & Lounges', 'Breweries', 'Food Trucks', 'Happy Hour', 'Restaurants', 'Dessert & Ice Cream', 'Fine Dining', 'Fast Casual', 'Takeout & Delivery', 'Wineries', 'Tea', 'Distilleries'],
   },
   {
+    // Item 168 V1 pass (owner, LOCKED): the gym / racquet / team / fitness tags moved to Sports & Fitness (item 171), Boating
+    // and Water Sports to Outdoors & Nature (item 172); item 170 added seven recreation categories.
     key: 'activities_recreation', icon: '🏃', label: 'Activities & Recreation',
-    tags: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Padel', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Bowling', 'Gyms', 'Pilates', 'Walking', 'Basketball', 'Soccer', 'Volleyball', 'Skating', 'Martial Arts', 'Water Sports', 'Boating', 'Adventure', 'Cars'],
+    tags: ['Bowling', 'Walking', 'Adventure', 'Cars', 'Axe Throwing', 'Laser Tag', 'Go-Karts', 'Paintball', 'Trampoline Parks', 'Horseback Riding', 'Recreation Centers'],
+  },
+  {
+    // Item 168 V1 pass: split out of Activities & Recreation (stored key sports_fitness, owner decision D1). Personal
+    // Training is new (item 171). Kids Sports stays in Family & Kids.
+    key: 'sports_fitness', icon: '🏋️', label: 'Sports & Fitness',
+    tags: ['Fitness', 'Yoga', 'Sports', 'Running', 'Pickleball', 'Padel', 'Tennis', 'Cycling', 'Swimming', 'Climbing', 'Golf', 'Gyms', 'Pilates', 'Basketball', 'Soccer', 'Volleyball', 'Skating', 'Martial Arts', 'Personal Training'],
   },
   {
     key: 'entertainment_nightlife', icon: '🎵', label: 'Entertainment & Nightlife',
@@ -59,9 +67,13 @@ export const CATEGORY_GROUPS = [
   {
     key: 'dating_social', icon: '❤️', label: 'Dating & Social',
     tags: ['Dating', 'Speed Dating', 'Singles Events', 'Group Hangouts', 'Date Night', 'First Date', 'Double Date', 'Make New Friends', 'Couples', 'Social Clubs'],
+    // CUSTOMER-ONLY tags (item 185, category_tag_groups.customer_only; the opposite of businessOnlyTags): a person can ask for
+    // them, but no business may declare one as its primary or secondary category. They stay in `tags` for every consumer
+    // surface; business pickers (subcategoryOptionsFor, businessTagOptions) leave them out and the server refuses them.
+    customerOnlyTags: ['Dating', 'Date Night', 'First Date', 'Double Date', 'Couples', 'Group Hangouts', 'Make New Friends'],
   },
   {
-    key: 'arts_culture_learning', icon: '🎨', label: 'Arts, Culture & Learning',
+    key: 'arts_culture_learning', icon: '🎨', label: 'Arts, Culture & Events', // label only (item 168); the stored key is kept
     tags: ['Reading', 'Art', 'Photography', 'Crafts', 'Art Galleries', 'Art Classes', 'Pottery', 'Cultural Events', 'History', 'Libraries', 'Music Lessons', 'Collecting', 'Fashion'],
   },
   {
@@ -74,7 +86,7 @@ export const CATEGORY_GROUPS = [
     // major-only precedent. Widened together with the 7 CHECK constraints
     // that mirror this exact array (20261104_plan_addons.sql).
     key: 'shopping', icon: '🛍️', label: 'Shopping',
-    tags: ['Farmers Markets', 'Thrift & Vintage', 'Florist', 'Party & Event Decor', 'Gift Shop', 'Boutiques', 'Clothing', 'Jewelry', 'Home & Furniture', 'Electronics', 'Markets', 'Pop-Ups', 'Local Shopping', 'Camera Shops'],
+    tags: ['Farmers Markets', 'Thrift & Vintage', 'Florist', 'Party & Event Decor', 'Gift Shop', 'Boutiques', 'Clothing', 'Jewelry', 'Home & Furniture', 'Electronics', 'Markets', 'Pop-Ups', 'Local Shopping', 'Camera Shops', 'Grocery', 'Sporting Goods', 'Toys', 'Bookstores', 'Beauty Supply'],
   },
   {
     key: 'wellness_beauty', icon: '💆', label: 'Wellness & Beauty',
@@ -86,19 +98,19 @@ export const CATEGORY_GROUPS = [
   },
   {
     key: 'outdoors_nature', icon: '🌳', label: 'Outdoors & Nature',
-    tags: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking', 'Parks', 'Beaches', 'Trails', 'Paddleboarding', 'Wildlife', 'Gardens', 'Scenic Views', 'Picnics', 'Surfing', 'Snorkeling', 'Diving', 'Gardening'],
+    tags: ['Hiking', 'Outdoors', 'Camping', 'Fishing', 'Kayaking', 'Parks', 'Beaches', 'Trails', 'Paddleboarding', 'Wildlife', 'Gardens', 'Scenic Views', 'Picnics', 'Surfing', 'Snorkeling', 'Diving', 'Gardening', 'Water Sports', 'Boating'],
   },
   {
     key: 'pets', icon: '🐕', label: 'Pets',
-    tags: ['Dogs', 'Cats', 'Dog Meetup', 'Dog Parks', 'Pet Friendly Places', 'Pet Events', 'Grooming', 'Pet Stores', 'Pet Boarding', 'Dog Walking', 'Pet Training', 'Veterinary'],
+    tags: ['Dogs', 'Cats', 'Dog Meetup', 'Dog Parks', 'Pet Events', 'Grooming', 'Pet Stores', 'Pet Boarding', 'Dog Walking', 'Pet Training', 'Veterinary', 'Pet Sitting'], // Pet Friendly Places retired (item 178): pet-friendliness is the attribute
   },
   {
     key: 'home_local_services', icon: '🏠', label: 'Home & Local Services',
-    tags: ['Cleaning', 'Landscaping', 'Plumbing', 'Electrical', 'HVAC', 'Handyman', 'Moving', 'Pest Control', 'Repairs', 'Interior Design'],
+    tags: ['Cleaning', 'Landscaping', 'Plumbing', 'Electrical', 'HVAC', 'Handyman', 'Moving', 'Pest Control', 'Repairs', 'Interior Design', 'House Painting', 'Storage', 'Contractors', 'Home Security'],
   },
   {
     key: 'auto_transportation', icon: '🚗', label: 'Auto & Transportation',
-    tags: ['Car Wash', 'Detailing', 'Auto Repair', 'Tires', 'Oil Change', 'EV Charging', 'Car Rental', 'Parking', 'Towing'],
+    tags: ['Car Wash', 'Detailing', 'Auto Repair', 'Tires', 'Oil Change', 'EV Charging', 'Car Rental', 'Parking', 'Towing', 'Auto Parts', 'Dealerships', 'Gas Stations', 'Transportation Services'],
   },
   {
     key: 'business_networking', icon: '💼', label: 'Business & Networking',
@@ -109,12 +121,10 @@ export const CATEGORY_GROUPS = [
     tags: ['Volunteering', 'Faith & Spirituality', 'Fundraiser', 'Charity', 'Community Events', 'Neighborhood Events', 'Cleanups', 'Donation Drives'],
   },
   {
-    key: 'travel_experiences', icon: '✈️', label: 'Travel & Experiences',
-    tags: ['Travel', 'Day Trip', 'Tours', 'Excursions', 'Boat Tours', 'Adventure Experiences', 'Local Experiences'],
-  },
-  {
-    key: 'stay_getaway', icon: '🏨', label: 'Stay & Getaway',
-    tags: ['Weekend Getaway', 'Staycation', 'Road Trip', 'Resorts', 'Hotels', 'Vacation Rentals', 'Romantic Getaways', 'Spa Resorts', 'Family Resorts', 'Pet Friendly Stays', 'Glamping'],
+    // Item 168 V1 pass: Travel & Experiences + Stay & Getaway merged into Travel & Getaways (the travel_experiences key
+    // survives, owner decision D2; stay_getaway no longer exists). Pet Friendly Stays retired (item 178).
+    key: 'travel_experiences', icon: '✈️', label: 'Travel & Getaways',
+    tags: ['Travel', 'Day Trip', 'Tours', 'Excursions', 'Boat Tours', 'Adventure Experiences', 'Local Experiences', 'Weekend Getaway', 'Staycation', 'Road Trip', 'Resorts', 'Hotels', 'Vacation Rentals', 'Romantic Getaways', 'Spa Resorts', 'Family Resorts', 'Glamping'],
   },
   {
     key: 'health_personal_care', icon: '🩺', label: 'Health & Personal Care',
@@ -137,39 +147,40 @@ export const CATEGORY_GROUPS = [
 // Flattened union of every group's tags -- the flat vocabulary consumed by
 // every "what kind of event is this" picker that doesn't need the group
 // structure (community/offer/automation-rule creation, Quick Picks, etc.).
-// Needs vs things to do (owner item 161, 2026-10-03): the category groups that describe a NEED (a service, an errand,
-// supply: a car wash, a plumber, a groomer) rather than something to go and do. The ONE list every surface reads; not a new
-// taxonomy layer or a second classification: each group stays exactly where it is. Today it keeps them out of an open-ended
-// "something fun" ask (utils/openEndedAsk.js). Shopping, Wellness & Beauty and Food & Drink are deliberately NOT here: they
-// can be an outing as well as a need, and the open-ended rule has always kept them.
-export const NEED_GROUP_KEYS = Object.freeze(['home_local_services', 'auto_transportation', 'business_networking', 'health_personal_care', 'stay_getaway', 'pets', 'education_classes']);
+// Needs vs things to do (owner item 161, 2026-10-03). Owner items 175-184 (LOCKED, applied in the item-168 pass): a parent
+// group is never a need; the RESOLVED TAG decides. The one exception is Health & Personal Care, which stays a whole need
+// group (owner decision D4, 2026-10-11). Only the need/want classification (utils/needAsk.js) reads these two lists.
+export const NEED_GROUP_KEYS = Object.freeze(['health_personal_care']);
 
 export function isNeedGroup(groupKey) {
   return NEED_GROUP_KEYS.includes(groupKey);
 }
 
-// Item 162 (owner, 2026-10-03, LOCKED): service/errand TAGS that sit in a non-need group (Barbers and Salons under Wellness &
-// Beauty, Florist and Gift Shop under Shopping) but are needs when asked for as a task ("I need a haircut today"). Only the
-// need/want classification reads this; the open-ended rule keeps reading the groups alone (its behavior is unchanged).
-// Item 182 adds Tutoring and Certifications: the only need-capable categories of Education & Classes.
-// Item 184 adds Coworking, Finance and Real Estate: the only need-capable categories of Business & Networking.
-export const NEED_TAG_KEYS = Object.freeze(['Barbers', 'Salons', 'Florist', 'Gift Shop', 'Grooming', 'Tutoring', 'Certifications', 'Coworking', 'Finance', 'Real Estate']);
-
-// Owner items 175-182 (LOCKED): a parent group is never a need; only the resolved TAG decides. Groups listed here have
-// already moved to per-tag needs (item 182, applied before the item-168 migration): their tags count as needs only when
-// they are in NEED_TAG_KEYS, and the bare group key is never a need. They stay in NEED_GROUP_KEYS for the open-ended
-// "something fun" rule, which is unchanged until the item-168 pass revisits it. Every other need group moves here in
-// that pass.
-export const TAG_LEVEL_NEED_GROUP_KEYS = Object.freeze(['education_classes', 'business_networking']); // item 184 adds Business & Networking
+// Service/errand/supply TAGS that are needs when asked for as a task ("I need a haircut today", "I need a hotel tonight").
+// Item 162: Barbers, Salons, Florist, Gift Shop, Grooming. Items 182/184: Tutoring, Certifications, Coworking, Finance, Real
+// Estate. Item 175: Grocery and the places to stay. Item 176: Nails. Item 178: the pet services. Items 180/181: every home and
+// auto service. Camping, Massage and Spa Day stay wants.
+export const NEED_TAG_KEYS = Object.freeze(['Barbers', 'Salons', 'Florist', 'Gift Shop', 'Grooming', 'Tutoring', 'Certifications', 'Coworking', 'Finance', 'Real Estate', 'Grocery', 'Nails', 'Hotels', 'Resorts', 'Vacation Rentals', 'Spa Resorts', 'Family Resorts', 'Glamping', 'Veterinary', 'Pet Boarding', 'Dog Walking', 'Pet Sitting', 'Pet Training', 'Pet Stores', 'Cleaning', 'Landscaping', 'Plumbing', 'Electrical', 'HVAC', 'Handyman', 'Moving', 'Pest Control', 'Repairs', 'Interior Design', 'House Painting', 'Storage', 'Contractors', 'Home Security', 'Car Wash', 'Detailing', 'Auto Repair', 'Tires', 'Oil Change', 'EV Charging', 'Car Rental', 'Parking', 'Towing', 'Auto Parts', 'Dealerships', 'Gas Stations', 'Transportation Services']);
 
 // Is this resolved category (a tag or a group key) a need/service category?
 export function isNeedCategory(category) {
   if (!category) return false;
   if (NEED_TAG_KEYS.includes(category)) return true;
-  const groupNeed = (key) => isNeedGroup(key) && !TAG_LEVEL_NEED_GROUP_KEYS.includes(key);
-  if (CATEGORY_GROUPS.some((g) => g.key === category)) return groupNeed(category);
+  if (CATEGORY_GROUPS.some((g) => g.key === category)) return isNeedGroup(category);
   const group = groupForTag(category) ?? CATEGORY_GROUPS.find((g) => (g.businessOnlyTags ?? []).includes(category));
-  return !!group && groupNeed(group.key);
+  return !!group && isNeedGroup(group.key);
+}
+
+// "Something fun" (owner decision D3, 2026-10-11): what an open-ended ask ("something fun tonight") never offers. Before the
+// item-168 pass this was NEED_GROUP_KEYS; the need list became per-tag, so this is its own list and keeps the open-ended
+// results exactly as they were: the same six groups (services, errands, supply, health, pets, classes) plus, by tag, every
+// category of the former Stay & Getaway group, which now sits inside Travel & Getaways beside outings that DO stay in.
+// Shopping, Wellness & Beauty and Food & Drink are deliberately not here: they can be an outing as well as a need.
+export const OPEN_ENDED_EXCLUDED_GROUP_KEYS = Object.freeze(['home_local_services', 'auto_transportation', 'business_networking', 'health_personal_care', 'pets', 'education_classes']);
+export const OPEN_ENDED_EXCLUDED_TAGS = Object.freeze(['Weekend Getaway', 'Staycation', 'Road Trip', 'Resorts', 'Hotels', 'Vacation Rentals', 'Romantic Getaways', 'Spa Resorts', 'Family Resorts', 'Glamping']);
+
+export function isOpenEndedExcludedGroup(groupKey) {
+  return OPEN_ENDED_EXCLUDED_GROUP_KEYS.includes(groupKey);
 }
 
 export const INTEREST_OPTIONS = CATEGORY_GROUPS.flatMap((g) => g.tags);
@@ -194,12 +205,28 @@ export function groupForTag(tag) {
 // health_personal_care's clinical tags are BUSINESS-ONLY (see businessOnlyTags): a business can pick them here, a consumer never can.
 export function subcategoryOptionsFor(categoryKey) {
   const g = CATEGORY_GROUPS.find((x) => x.key === categoryKey);
-  return g ? [...g.tags, ...(g.businessOnlyTags ?? [])] : [];
+  return g ? [...g.tags.filter((t) => !(g.customerOnlyTags ?? []).includes(t)), ...(g.businessOnlyTags ?? [])] : [];
 }
 
 // Every tag a BUSINESS may declare about itself (consumer tags + business-only). Consumer surfaces use INTEREST_OPTIONS.
+// Customer-only tags (item 185) are never offered to a business, as primary or secondary.
 export function businessTagOptions() {
-  return [...INTEREST_OPTIONS, ...CATEGORY_GROUPS.flatMap((g) => g.businessOnlyTags ?? [])];
+  return [...INTEREST_OPTIONS.filter((t) => !isCustomerOnlyTag(t)), ...CATEGORY_GROUPS.flatMap((g) => g.businessOnlyTags ?? [])];
+}
+
+export function isCustomerOnlyTag(tag) {
+  return CATEGORY_GROUPS.some((g) => (g.customerOnlyTags ?? []).includes(tag));
+}
+
+// Item 186 (owner, LOCKED): one primary category plus at most this many secondary categories per business (a business-assignment
+// rule, not a property of any category; attributes stay unlimited). The server trigger enforces the same number.
+export const MAX_SECONDARY_CATEGORIES = 5;
+
+// Adds or removes one secondary category; adding a sixth does nothing (the picker says "up to 5").
+export function toggleSecondaryCategory(list, tag) {
+  const cur = Array.isArray(list) ? list : [];
+  if (cur.includes(tag)) return cur.filter((t) => t !== tag);
+  return cur.length >= MAX_SECONDARY_CATEGORIES ? cur : [...cur, tag];
 }
 
 export function isBusinessOnlyTag(tag) {

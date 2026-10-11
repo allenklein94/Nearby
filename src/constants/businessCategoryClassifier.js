@@ -16,7 +16,10 @@
 
 const KEYWORDS_BY_CATEGORY = {
   food_drink: ['coffee', 'cafe', 'café', 'restaurant', 'bakery', 'bar', 'brewery', 'diner', 'bistro', 'kitchen', 'eatery', 'pizzeria', 'grill', 'tea', 'juice', 'deli', 'pub', 'winery', 'taco', 'sushi', 'donut', 'ice cream'],
-  activities_recreation: ['gym', 'fitness', 'studio', 'crossfit', 'martial arts', 'boxing', 'climbing', 'personal training', 'health club', 'cycling', 'tennis', 'bowling', 'swim'],
+  // Item 168: the gym / fitness / racquet words follow their tags to Sports & Fitness; Activities keeps bowling and gains the
+  // item-170 recreation categories' own names.
+  activities_recreation: ['bowling', 'axe throwing', 'laser tag', 'go-kart', 'paintball', 'trampoline park', 'horseback riding', 'recreation center'],
+  sports_fitness: ['gym', 'fitness', 'studio', 'crossfit', 'martial arts', 'boxing', 'climbing', 'personal training', 'health club', 'cycling', 'tennis', 'swim'],
   entertainment_nightlife: ['cinema', 'theater', 'theatre', 'arcade', 'bowling alley', 'comedy club', 'music hall', 'night club', 'nightclub', 'karaoke', 'venue', 'performance'],
   dating_social: ['singles', 'matchmaking', 'speed dating'],
   arts_culture_learning: ['gallery', 'museum', 'art space', 'studio', 'library'],
@@ -29,12 +32,8 @@ const KEYWORDS_BY_CATEGORY = {
   auto_transportation: ['auto', 'car wash', 'tire', 'mechanic', 'garage', 'detailing', 'car repair'],
   business_networking: ['office', 'consulting', 'law firm', 'accounting', 'agency', 'practice', 'coworking', 'networking'],
   community_volunteering: ['nonprofit', 'charity', 'volunteer', 'community center', 'church', 'temple', 'mosque', 'synagogue'],
-  travel_experiences: ['tour', 'travel agency', 'excursion', 'sightseeing'],
-  // Added this same day, alongside the 4 new major categories -- 'hotel'/
-  // 'resort' moved here from travel_experiences (a more precise home), and
-  // 'tutoring' moved here from family_kids (tutoring isn't inherently a
-  // kids-only service).
-  stay_getaway: ['hotel', 'resort', 'inn', 'motel', 'bed and breakfast', 'vacation rental', 'glamping'],
+  // Item 168: Stay & Getaway's words joined Travel & Getaways with its tags.
+  travel_experiences: ['tour', 'travel agency', 'excursion', 'sightseeing', 'hotel', 'resort', 'inn', 'motel', 'bed and breakfast', 'vacation rental', 'glamping'],
   // Deliberately medical-specific, distinct from wellness_beauty's spa/
   // salon/yoga words -- per direct user guidance, this category should
   // never become an algorithmically-recommended surface the way a

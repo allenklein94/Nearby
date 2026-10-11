@@ -58,7 +58,7 @@ export function moodToParams(moodKey) {
     case 'chill':
       return { occasion: 'casual_hangout', attributes: ['quiet', 'casual'], partyType: null, categoryPool: null };
     case 'active':
-      return { occasion: null, attributes: ['fitness_focused'], partyType: null, categoryPool: groupTags('activities_recreation') };
+      return { occasion: null, attributes: ['fitness_focused'], partyType: null, categoryPool: [...groupTags('activities_recreation'), ...groupTags('sports_fitness')] }; // both halves of the item-168 split
     case 'foodie':
       return { occasion: null, attributes: [], partyType: null, categoryPool: groupTags('food_drink') };
     case 'date':
@@ -213,7 +213,7 @@ export const SURPRISE_PICK_COUNT = 3;
 //   { level: 'groups', groups: [...] }          "with something to do" / "with food" -> those category groups only
 // Deterministic: synonym table, declared cuisines, group names, the intent-route table. Never the AI's category.
 const THINGS_TO_DO = /\b(something|anything|things?)\s+to\s+do\b|\ban?\s+activit(y|ies)\b/i;
-export const THINGS_TO_DO_GROUPS = ['activities_recreation', 'entertainment_nightlife', 'outdoors_nature', 'attractions_things_to_see', 'arts_culture_learning'];
+export const THINGS_TO_DO_GROUPS = ['activities_recreation', 'sports_fitness', 'entertainment_nightlife', 'outdoors_nature', 'attractions_things_to_see', 'arts_culture_learning'];
 export function surpriseScope(rest) {
   if (typeof rest !== 'string' || !rest.trim()) return { level: 'broad' };
   const cuisine = cuisineFromText(rest);

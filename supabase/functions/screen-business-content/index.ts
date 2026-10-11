@@ -78,11 +78,11 @@ const DAILY_AI_LIMIT = 150;
 // can never reach the RPC, matching create-assistant's own convention of
 // never trusting a client-supplied enum value.
 const CATEGORY_OPTIONS = [
-  'food_drink', 'activities_recreation', 'entertainment_nightlife', 'dating_social',
+  'food_drink', 'activities_recreation', 'sports_fitness', 'entertainment_nightlife', 'dating_social',
   'arts_culture_learning', 'shopping', 'wellness_beauty', 'family_kids',
   'outdoors_nature', 'pets', 'home_local_services', 'auto_transportation',
   'business_networking', 'community_volunteering', 'travel_experiences',
-  'stay_getaway', 'health_personal_care', 'education_classes', 'attractions_things_to_see', 'other',
+  'health_personal_care', 'education_classes', 'attractions_things_to_see', 'other',
 ];
 // Intent engine vision, layer 3 (semantic tags) -- widened per
 // 20260927_business_semantic_tags_expansion.sql; keep in sync with that

@@ -88,7 +88,8 @@ export default {
       "competition": "Competition",
       "exhibition": "Exhibition",
       "market": "Market",
-      "party": "Party"
+      "party": "Party",
+      "league": "League"
     },
     "skill": {
       "beginner": "Beginner",
@@ -189,7 +190,8 @@ export default {
       "competition": "Competencia",
       "exhibition": "Exposición",
       "market": "Mercado",
-      "party": "Fiesta"
+      "party": "Fiesta",
+      "league": "Liga"
     },
     "skill": {
       "beginner": "Principiante",
@@ -290,7 +292,8 @@ export default {
       "competition": "Wettbewerb",
       "exhibition": "Ausstellung",
       "market": "Markt",
-      "party": "Party"
+      "party": "Party",
+      "league": "Liga"
     },
     "skill": {
       "beginner": "Anfänger",
@@ -391,7 +394,8 @@ export default {
       "competition": "Compétition",
       "exhibition": "Exposition",
       "market": "Marché",
-      "party": "Fête"
+      "party": "Fête",
+      "league": "Ligue"
     },
     "skill": {
       "beginner": "Débutant",
@@ -492,7 +496,8 @@ export default {
       "competition": "Competição",
       "exhibition": "Exposição",
       "market": "Feira",
-      "party": "Festa"
+      "party": "Festa",
+      "league": "Liga"
     },
     "skill": {
       "beginner": "Iniciante",
@@ -593,7 +598,8 @@ export default {
       "competition": "Konpetisyon",
       "exhibition": "Ekspozisyon",
       "market": "Mache",
-      "party": "Fèt"
+      "party": "Fèt",
+      "league": "Lig"
     },
     "skill": {
       "beginner": "Debitan",
@@ -694,7 +700,8 @@ export default {
       "competition": "比赛",
       "exhibition": "展览",
       "market": "市集",
-      "party": "派对"
+      "party": "派对",
+      "league": "联赛"
     },
     "skill": {
       "beginner": "初学者",
@@ -795,7 +802,8 @@ export default {
       "competition": "Cuộc thi",
       "exhibition": "Triển lãm",
       "market": "Chợ phiên",
-      "party": "Tiệc"
+      "party": "Tiệc",
+      "league": "Giải đấu thường kỳ"
     },
     "skill": {
       "beginner": "Người mới",
@@ -896,7 +904,8 @@ export default {
       "competition": "Kompetisyon",
       "exhibition": "Eksibisyon",
       "market": "Palengke",
-      "party": "Party"
+      "party": "Party",
+      "league": "Liga"
     },
     "skill": {
       "beginner": "Baguhan",
@@ -997,7 +1006,8 @@ export default {
       "competition": "Соревнование",
       "exhibition": "Выставка",
       "market": "Рынок",
-      "party": "Вечеринка"
+      "party": "Вечеринка",
+      "league": "Лига"
     },
     "skill": {
       "beginner": "Новичок",
@@ -1098,7 +1108,8 @@ export default {
       "competition": "대회",
       "exhibition": "전시",
       "market": "마켓",
-      "party": "파티"
+      "party": "파티",
+      "league": "리그"
     },
     "skill": {
       "beginner": "초급",
