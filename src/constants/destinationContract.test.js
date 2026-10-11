@@ -59,12 +59,13 @@ describe('Home statements', () => {
     expect(r.cta.destination.items.map((i) => i.gathering.id)).toEqual(['g1', 'g2']);
     expect(satisfiesContract('gathering_set', r.cta.destination)).toBe(true);
   });
-  test('"2 of your friends are making plans" lists their gatherings with who is hosting', () => {
+  test('"2 of your friends are making plans": "See gatherings" lists the plans beyond the chips, with who is hosting', () => {
+    const chips = [{ id: 'c1', host_id: 'x', title: 'Pickleball', scheduled_at: soon }, { id: 'c2', host_id: 'y', title: 'Yoga', scheduled_at: soon }];
     const friends = [
       { id: 'g1', title: 'Coffee', scheduled_at: soon, profiles: { display_name: 'Sam' } },
       { id: 'g2', title: 'Run', scheduled_at: soon, profiles: { display_name: 'Alex' } },
     ];
-    const r = getHomeInsight({ friendsActivity: friends }, evening);
+    const r = getHomeInsight({ friendsActivity: chips, friendsActivityMore: friends }, evening);
     expect(satisfiesContract('gathering_set', r.cta.destination)).toBe(true);
     expect(r.cta.destination.items[0].reasons).toEqual(['Sam is hosting this']);
   });

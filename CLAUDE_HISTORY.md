@@ -1,3 +1,15 @@
+# Item 41 follow-up (2026-10-11, owner): "See gatherings" never repeats the chips
+
+**Cause:** `friendsActivity` was capped at 3 = exactly the chips, and "See gatherings" listed that same set, so it always repeated them.
+**Fix:** `splitFriendsActivity()` (services/homeDashboard.js) returns `shown` (the chips: one plan per friend, max 3; unchanged, so
+count = faces = chips still holds) and `more` (every other friends' plan passing the same window/visibility/Your-Plans rules: a 4th
+friend's, or a friend's second plan). `selectFriendsActivity` = its `shown`. The dashboard carries `friendsActivityMore`; `getHomeInsight`
+builds "See gatherings" from it only (one = that detail, several = inline, item 136's contract), and no link at all when it is empty
+(the chips are then the line's links). Wording, chips and motion unchanged; no new strings.
+**Verified:** journey `friendsPlanning` extended (a friend's second plan is `more`, never a chip; no link without it); unit tests
+updated (`friendsPlanningMoment`, `homeExpandedList`, `homeInsight`, `destinationContract`). Jest 419 / 5663; journeys 26 / 272.
+Device checklist row 6 rewritten. NOT device-verified.
+
 # Plan group chat push (2026-10-11, owner: "plan messages send no push -- investigate and fix") - LIVE
 
 **Cause:** not a broken path. Item 89 (`20261109_plan_group_chat.sql`) shipped `plan_messages` live-while-open only and disclosed

@@ -15,8 +15,9 @@ const g = (id, host, extra = {}) => ({ id, title: `T-${id}`, scheduled_at: at(12
 const card = (gathering, reasons = ['Because you like Coffee']) => ({ gathering, reasons, signals: reasons.map((text) => ({ kind: 'interest', text })) });
 
 // The same composition HomeScreen performs: placements above weather, then the attention list.
-function home({ friends = [], soon = [], hero = null, cards = [], weather = null, expanded = null, yourPlans = [] }) {
-  const insight = getHomeInsight({ friendsActivity: friends, happeningNow: soon }, now);
+// `friends` = the line's chips; `more` = the friends' plans beyond them (what "See gatherings" lists; owner 2026-10-11).
+function home({ friends = [], more = [], soon = [], hero = null, cards = [], weather = null, expanded = null, yourPlans = [] }) {
+  const insight = getHomeInsight({ friendsActivity: friends, friendsActivityMore: more, happeningNow: soon }, now);
   const ids = expandedListIds(insight, expanded);
   const above = new Set([...yourPlans, ...ids]);
   const weatherCard = cardWithoutIds(weather, above);
@@ -25,52 +26,59 @@ function home({ friends = [], soon = [], hero = null, cards = [], weather = null
 }
 
 describe('expanded friends list on Home', () => {
-  const friends = [g('a', 'Sam'), g('b', 'Alex'), g('c', 'Jo')];
+  const chips = [g('k1', 'Kai'), g('k2', 'Lou')];
+  const friends = [g('a', 'Sam'), g('b', 'Alex'), g('c', 'Jo')]; // the plans beyond the chips (passed as `more`)
+  const home2 = (o) => home({ ...o, friends: chips, more: friends });
 
-  test('expanded: every friend gathering is listed, none trimmed', () => {
-    const { insight, ids } = home({ friends, expanded: 'friends_planning' });
+  test('expanded: every plan beyond the chips is listed, none trimmed, never a chip again', () => {
+    const { insight, ids } = home2({ expanded: 'friends_planning' });
     expect(insight.cta.destination.items.map((i) => i.gathering.id)).toEqual(['a', 'b', 'c']);
     expect([...ids]).toEqual(['a', 'b', 'c']);
+  });
+  test('no plans beyond the chips: no "See gatherings", nothing to expand', () => {
+    const { insight, ids } = home({ friends: chips, expanded: 'friends_planning' });
+    expect(insight.cta).toBeNull();
+    expect(ids.size).toBe(0);
   });
 
   test('overlapping gatherings leave Picked For You while expanded, and come back when collapsed', () => {
     const cards = [card(friends[0]), card(g('x', 'Kim')), card(friends[2])];
-    const open = home({ friends, cards, expanded: 'friends_planning' });
+    const open = home2({ cards, expanded: 'friends_planning' });
     expect(open.attention.items.map((c) => c.gathering.id)).toEqual(['x']);
-    const closed = home({ friends, cards, expanded: null });
+    const closed = home2({ cards, expanded: null });
     expect(closed.attention.items.map((c) => c.gathering.id).sort()).toEqual(['a', 'c', 'x']);
   });
 
   test('Best Pick conflict: a Best Pick already in the expanded list is dropped and the slot refills', () => {
     const hero = { ...friends[1], reasons: ['Sam is going'] };
-    const open = home({ friends, hero, cards: [card(g('y', 'Lee'))], expanded: 'friends_planning' });
+    const open = home2({ hero, cards: [card(g('y', 'Lee'))], expanded: 'friends_planning' });
     expect(open.attention.hero).toBeNull();
     expect(open.attention.items.map((c) => c.gathering.id)).toEqual(['y']);
-    const closed = home({ friends, hero, cards: [card(g('y', 'Lee'))], expanded: null });
+    const closed = home2({ hero, cards: [card(g('y', 'Lee'))], expanded: null });
     expect(closed.attention.hero.id).toBe('b');
   });
 
   test('weather rows drop gatherings the expanded list shows', () => {
     const weather = { bias: 'indoor', gatherings: [friends[0], g('w', 'Pat')] };
-    const open = home({ friends, weather, expanded: 'friends_planning' });
+    const open = home2({ weather, expanded: 'friends_planning' });
     expect(open.weatherCard.gatherings.map((x) => x.id)).toEqual(['w']);
   });
 
   test('dedupe is by id only: same title or same host is not a duplicate', () => {
     const twin = g('z', 'Sam', { title: friends[0].title });
-    const open = home({ friends, cards: [card(twin)], expanded: 'friends_planning' });
+    const open = home2({ cards: [card(twin)], expanded: 'friends_planning' });
     expect(open.attention.items.map((c) => c.gathering.id)).toEqual(['z']);
   });
 
   test('ranking of what remains is unchanged', () => {
     const cards = [card(g('p', 'A'), ['Because you like Coffee', 'Sam is going']), card(friends[0]), card(g('q', 'B'))];
-    const open = home({ friends, cards, expanded: 'friends_planning' });
+    const open = home2({ cards, expanded: 'friends_planning' });
     const base = selectHomeAttention({ cards: cards.filter((c) => c.gathering.id !== 'a'), now });
     expect(open.attention.items.map((c) => c.gathering.id)).toEqual(base.items.map((c) => c.gathering.id));
   });
 
   test('navigation: each listed gathering opens its own detail', () => {
-    const { insight } = home({ friends, expanded: 'friends_planning' });
+    const { insight } = home2({ expanded: 'friends_planning' });
     for (const it of insight.cta.destination.items) {
       expect(it.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: it.gathering.id } });
     }
@@ -78,7 +86,7 @@ describe('expanded friends list on Home', () => {
 
   test('a stale expanded kind (the line changed) suppresses nothing', () => {
     expect(expandedListIds(getHomeInsight({ happeningNow: [g('s1'), g('s2')] }, now), 'friends_planning').size).toBe(0);
-    expect(expandedListIds(getHomeInsight({ friendsActivity: friends }, now), null).size).toBe(0);
+    expect(expandedListIds(getHomeInsight({ friendsActivity: chips, friendsActivityMore: friends }, now), null).size).toBe(0);
   });
 
   test('the starting-soon list behaves the same way', () => {

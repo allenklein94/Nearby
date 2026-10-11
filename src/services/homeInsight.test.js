@@ -27,8 +27,13 @@ describe('getHomeInsight', () => {
     const f = getHomeInsight({ friendsActivity: [1, 2] }, evening);
     expect(f.text).toBe('2 of your friends are already making plans.');
     // a set of specific gatherings: one opens it, several are listed (destination contract, item 136)
-    const two = getHomeInsight({ friendsActivity: [{ id: 'a' }, { id: 'b' }] }, evening);
-    expect(two.cta.destination.kind).toBe('inline');
+    // The friends line's own links are its chips (each opens its gathering); "See gatherings" exists only for the plans
+    // beyond them (owner, 2026-10-11), and then follows the same contract.
+    const two = getHomeInsight({ friendsActivity: [{ id: 'a', host_id: 'x' }, { id: 'b', host_id: 'y' }] }, evening);
+    expect(two.cta).toBeNull();
+    expect(two.people.map((p) => p.destination.screen)).toEqual(['GatheringDetail', 'GatheringDetail']);
+    const more = getHomeInsight({ friendsActivity: [{ id: 'a' }, { id: 'b' }], friendsActivityMore: [{ id: 'c' }, { id: 'd' }] }, evening);
+    expect(more.cta.destination.kind).toBe('inline');
     expect(getHomeInsight({ happeningNow: [{ id: 'g' }] }, evening).cta.destination.screen).toBe('GatheringDetail');
     expect(getHomeInsight({ happeningNow: [{ id: 'g' }] }, evening).text).toBe('1 thing starts near you in the next 30 minutes.');
   });

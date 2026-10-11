@@ -623,6 +623,7 @@ export async function getHomeDashboard() {
   bestPick = pickBestGathering(bestPickPool, { friendIds, myUserId: myId });
 
   let friendsActivity = [];
+  let friendsActivityMore = [];
   if (friendIds.length > 0) {
     // The rules (3-day window, the shared visibility gate, one plan per friend, max 3) live in selectFriendsActivity below,
     // so the query and the filter cannot drift; FRIENDS_ACTIVITY_FIELDS carries every column that gate reads.
@@ -634,7 +635,7 @@ export async function getHomeDashboard() {
       .order('created_at', { ascending: false })
       .limit(15);
     const visibilityContext = await fetchGatheringVisibilityContext(myId);
-    friendsActivity = selectFriendsActivity(friendGatherings ?? [], { visibilityContext, upcomingPlanIds });
+    ({ shown: friendsActivity, more: friendsActivityMore } = splitFriendsActivity(friendGatherings ?? [], { visibilityContext, upcomingPlanIds }));
   }
 
   const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -712,6 +713,7 @@ export async function getHomeDashboard() {
     plansHosting,
     plansGroup,
     friendsActivity,
+    friendsActivityMore,
     friendIds,
     friendInterestByTag,
     loadFailures,
@@ -745,19 +747,31 @@ export const FRIENDS_ACTIVITY_FIELDS = 'id, title, host_id, interest_tag, create
 export function friendsActivitySince(now = new Date()) {
   return new Date(now.getTime() - FRIENDS_ACTIVITY_DAYS * 24 * 60 * 60 * 1000).toISOString();
 }
-export function selectFriendsActivity(rows, { visibilityContext, upcomingPlanIds = new Set(), now = new Date() } = {}) {
-  if (!visibilityContext) return [];
+// Owner (2026-10-11): `shown` is the line's set (count = faces = chips, unchanged); `more` is every other friends' plan that passes
+// the same rules but is not a chip (a fourth friend's, or a friend's second plan). "See gatherings" lists only `more`, and only
+// exists when it is non-empty, so it never repeats the chips.
+export function splitFriendsActivity(rows, { visibilityContext, upcomingPlanIds = new Set(), now = new Date() } = {}) {
+  if (!visibilityContext) return { shown: [], more: [] };
   const since = Date.parse(friendsActivitySince(now));
   // the query's window, again; and only a plan the line can fully show (a title for its chip), so the count, the faces and the
   // chips are the same set by construction -- the moment never has to paper over a plan it cannot show
   const recent = (rows ?? []).filter((g) => g?.id && g.host_id && String(g.title ?? '').trim() && Date.parse(g.created_at) >= since);
   const seenHosts = new Set();
-  return applyGatheringVisibilityFilters(recent, visibilityContext).filter((g) => {
-    if (upcomingPlanIds.has(g.id)) return false; // already in Your Plans
-    if (seenHosts.has(g.host_id)) return false;
-    seenHosts.add(g.host_id);
-    return true;
-  }).slice(0, FRIENDS_ACTIVITY_MAX);
+  const shown = [];
+  const more = [];
+  for (const g of applyGatheringVisibilityFilters(recent, visibilityContext)) {
+    if (upcomingPlanIds.has(g.id)) continue; // already in Your Plans
+    if (!seenHosts.has(g.host_id) && shown.length < FRIENDS_ACTIVITY_MAX) {
+      seenHosts.add(g.host_id);
+      shown.push(g);
+    } else {
+      more.push(g);
+    }
+  }
+  return { shown, more };
+}
+export function selectFriendsActivity(rows, opts) {
+  return splitFriendsActivity(rows, opts).shown;
 }
 
 // Destination contract (item 136, constants/destinationContract.js): a statement about specific gatherings goes to THOSE
@@ -776,7 +790,8 @@ export function getHomeInsight(dashboard, now = new Date()) {
   if (!dashboard) return null;
 
   if (dashboard.friendsActivity?.length >= 2) {
-    const destination = gatheringSetDestination(dashboard.friendsActivity, (g) => SIGNAL_TEXT.friend(g, isGatheringPast(g, now)));
+    // "See gatherings" lists only the friends' plans the chips do not already show; none left = no link.
+    const destination = gatheringSetDestination(dashboard.friendsActivityMore, (g) => SIGNAL_TEXT.friend(g, isGatheringPast(g, now)));
     // Item 41: the faces behind the count, one per friend (friendsActivity is already one gathering per distinct host), each
     // with its plan (activity, title, where a tap goes) -- what motion/FriendsPlanning.js assembles as face + one-line chip.
     // Only what the line already rests on.

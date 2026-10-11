@@ -10,7 +10,7 @@ Owner decisions (locked):
    no Discover-radius filter added just to justify the word).
 2. Avatars first, then up to 3 one-line gathering chips (activity glyph + the plan's real title, nothing else), then the line.
    The chips move once, when the plans are genuinely new, then stay static: a narrow exception to "no animated cards" for
-   this moment only. A chip opens that gathering's existing detail; "See gatherings" is unchanged. No new screen.
+   this moment only. A chip opens that gathering's existing detail; "See gatherings" appears only when friends have plans beyond the chips, and lists only those (owner, 2026-10-11). No new screen.
 
 Setup: an account with 0, 1, 2 and 3+ accepted friends who each created a visible gathering in the last 3 days, and no stronger Home line.
 
@@ -21,7 +21,7 @@ Setup: an account with 0, 1, 2 and 3+ accepted friends who each created a visibl
 | 3 | Back, tab switch, pull to refresh, app restart with the same plans: settled row, no replay | | |
 | 4 | A friend creates a new plan: plays once more; afterwards the chips are static (no pulse, loop or expand) | | |
 | 5 | Tapping a chip (also mid-motion) opens that gathering's detail at once; Back returns to Home where it was | | |
-| 6 | "See gatherings" behaves as before, at once, even during the moment | | |
+| 6 | With only the chip plans: no "See gatherings". With a further friends' plan (a 4th friend, or a friend's second plan): "See gatherings" shows, lists only that/those plans (never a chip's), opens at once, even during the moment | | |
 | 7 | 0 or 1 eligible friend: no line, no chips; 2 or 3: count = faces = chips; never more than 3 chips | | |
 | 8 | A long title truncates on one line; a plan without an activity: chip shows title only; missing photo: the person glyph | | |
 | 9 | Reduce Motion: the settled row at once | | |

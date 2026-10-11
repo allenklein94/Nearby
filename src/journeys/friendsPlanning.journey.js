@@ -16,7 +16,7 @@ jest.mock('../services/communities', () => ({ getMyCommunities: jest.fn() }));
 jest.mock('../services/userLocation', () => ({ getUserLocation: jest.fn(), requireUserLocation: jest.fn() }));
 const { runSql } = require('../../scripts/live-verify/lib/db');
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
-const { selectFriendsActivity, getHomeInsight, friendsActivitySince } = require('../services/homeDashboard');
+const { selectFriendsActivity, splitFriendsActivity, getHomeInsight, friendsActivitySince } = require('../services/homeDashboard');
 
 const d = hasToken ? describe : describe.skip;
 const as = (who) => `perform set_config('request.jwt.claims', json_build_object('sub', ${who}, 'role', 'authenticated')::text, true); set local role authenticated;`;
@@ -34,6 +34,7 @@ d('journey: friends are making plans - the 3-day window, visibility, one per fri
   delete from blocks where blocker_id in (v_a, v_b, v_c) and blocked_id in (v_a, v_b, v_c);
   insert into friendships (user_a, user_b, status, requested_by) values (v_a, v_b, 'accepted', v_a), (v_a, v_c, 'accepted', v_a);
   ${g('v_b', 'J41 recent', '1 day')}
+  ${g('v_b', 'J41 second', '2 days')}
   ${g('v_b', 'J41 old', '4 days')}
   ${g('v_b', 'J41 link', '2 hours', 'discoverable=false')}
   ${g('v_b', 'J41 invite', '3 hours')}
@@ -56,7 +57,7 @@ d('journey: friends are making plans - the 3-day window, visibility, one per fri
   const titles = (rows) => rows.map((r) => r.title).sort();
 
   test('the 3-day window: the 4-day-old plan never comes back; the query\'s bound matches the client\'s', () => {
-    expect(titles(s.rows.data)).toEqual(['J41 friends', 'J41 invite', 'J41 link', 'J41 recent']);
+    expect(titles(s.rows.data)).toEqual(['J41 friends', 'J41 invite', 'J41 link', 'J41 recent', 'J41 second']);
     expect(Date.parse(friendsActivitySince()) - Date.now()).toBeGreaterThan(-(3 * 86400000 + 60000));
   });
   test('the client gate drops invite_only and Link-only (RLS returns them); one plan per friend', () => {
@@ -71,14 +72,19 @@ d('journey: friends are making plans - the 3-day window, visibility, one per fri
     const picked = selectFriendsActivity(s.rows.data, { visibilityContext: { ...ctx(), excludedHostIds: new Set([ids.b]) } });
     expect(titles(picked)).toEqual(['J41 friends']);
   });
-  test('the line: "2 of your friends", one face per friend with the host\'s readable name, "See gatherings" -> exactly those two', () => {
-    const friendsActivity = selectFriendsActivity(s.rows.data, { visibilityContext: ctx() });
-    const r = getHomeInsight({ friendsActivity });
+  test('the line: "2 of your friends", one face per friend with the host\'s readable name; "See gatherings" -> only the plan the chips do not show', () => {
+    const { shown: friendsActivity, more: friendsActivityMore } = splitFriendsActivity(s.rows.data, { visibilityContext: ctx() });
+    expect(friendsActivity).toEqual(selectFriendsActivity(s.rows.data, { visibilityContext: ctx() }));
+    expect(titles(friendsActivityMore)).toEqual(['J41 second']); // B's second plan: same rules, not a chip
+    const r = getHomeInsight({ friendsActivity, friendsActivityMore });
     expect(r.text).toBe('2 of your friends are already making plans.');
     expect(r.people.map((p) => p.id).sort()).toEqual([ids.b, ids.c].sort());
     for (const row of friendsActivity) expect(row.profiles).not.toBeNull(); // the host's profile row is readable by a friend
-    expect(r.cta.destination.items.map((it) => it.gathering.id).sort()).toEqual(friendsActivity.map((x) => x.id).sort());
-    for (const it of r.cta.destination.items) expect(it.destination.screen).toBe('GatheringDetail');
+    // one leftover plan = its own detail (the destination contract); never a chip's plan again
+    expect(r.cta.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: friendsActivityMore[0].id } });
+    expect(friendsActivity.map((x) => x.id)).not.toContain(friendsActivityMore[0].id);
+    // nothing beyond the chips: no "See gatherings" at all
+    expect(getHomeInsight({ friendsActivity, friendsActivityMore: [] }).cta).toBeNull();
     // item 41's chips: one per plan behind the count, the plan's real title, opening that gathering's detail
     expect(r.people.map((p) => p.title).sort()).toEqual(['J41 friends', 'J41 recent']);
     for (const p of r.people) expect(p.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: p.gatheringId } });

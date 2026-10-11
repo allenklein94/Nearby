@@ -14,7 +14,7 @@ jest.mock('react-native', () => ({ AppState: { currentState: 'active' } }));
 const fs = require('fs');
 const path = require('path');
 import { takeFriendsPlanningMoment, FRIENDS_PLANNING_SEEN_KEY, FRIENDS_PLANNING_KEEP } from './friendsPlanningMoment';
-import { getHomeInsight, selectFriendsActivity, friendsActivitySince, FRIENDS_ACTIVITY_FIELDS } from '../services/homeDashboard';
+import { getHomeInsight, selectFriendsActivity, splitFriendsActivity, friendsActivitySince, FRIENDS_ACTIVITY_FIELDS } from '../services/homeDashboard';
 import { SEQUENCES, settleMs, tierOf } from '../motion/motionBudget';
 
 const read = (r) => fs.readFileSync(path.join(__dirname, '..', r), 'utf8');
@@ -144,13 +144,28 @@ describe('the friends-planning query (selectFriendsActivity)', () => {
     expect(cols.length).toBeGreaterThan(3);
     for (const c of cols) expect([c, new RegExp(`\\b${c}\\b`).test(FRIENDS_ACTIVITY_FIELDS)]).toEqual([c, true]);
   });
-  test('"See gatherings" lists exactly those plans inline, each opening its own detail', () => {
+  test('"See gatherings" never repeats the chips: it lists only the plans beyond them, and is absent when there are none', () => {
     const friendsActivity = [row({ id: 'g1' }), row({ id: 'g2', host_id: 'b' })];
-    const r = getHomeInsight({ friendsActivity }, now);
+    expect(getHomeInsight({ friendsActivity }, now).cta).toBeNull();
+    expect(getHomeInsight({ friendsActivity, friendsActivityMore: [] }, now).cta).toBeNull();
+    const friendsActivityMore = [row({ id: 'g3' }), row({ id: 'g4', host_id: 'b' })];
+    const r = getHomeInsight({ friendsActivity, friendsActivityMore }, now);
     expect(r.cta.label).toBe('See gatherings');
     expect(r.cta.destination.kind).toBe('inline');
-    expect(r.cta.destination.items.map((it) => it.gathering.id)).toEqual(['g1', 'g2']);
+    expect(r.cta.destination.items.map((it) => it.gathering.id)).toEqual(['g3', 'g4']);
     for (const it of r.cta.destination.items) expect(it.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: it.gathering.id } });
+    expect(r.people.map((p) => p.gatheringId)).toEqual(['g1', 'g2']); // chips and line unchanged
+    expect(r.text).toBe('2 of your friends are already making plans.');
+  });
+  test('the split: chips = one plan per friend (max 3); the rest that pass the same rules are "more"; Your Plans and hidden plans are neither', () => {
+    const ctx = { excludedHostIds: new Set(), isWoman: false, friendIds: new Set(['a', 'b', 'c', 'd']), communityIds: new Set() };
+    const rows = [row({ id: 'a1' }), row({ id: 'a2' }), row({ id: 'b1', host_id: 'b' }), row({ id: 'c1', host_id: 'c' }),
+      row({ id: 'd1', host_id: 'd' }), row({ id: 'p1', host_id: 'd' }), row({ id: 'x1', host_id: 'b', visibility: 'invite_only' })];
+    const { shown, more } = splitFriendsActivity(rows, { visibilityContext: ctx, upcomingPlanIds: new Set(['p1']), now });
+    expect(shown.map((g) => g.id)).toEqual(['a1', 'b1', 'c1']);
+    expect(more.map((g) => g.id)).toEqual(['a2', 'd1']);
+    expect(selectFriendsActivity(rows, { visibilityContext: ctx, upcomingPlanIds: new Set(['p1']), now })).toEqual(shown);
+    expect(splitFriendsActivity(rows, { now })).toEqual({ shown: [], more: [] });
   });
 });
 

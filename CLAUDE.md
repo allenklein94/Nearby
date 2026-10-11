@@ -127,6 +127,7 @@ redemption; never estimated revenue or invented value.
 "See gatherings" must not repeat the chips' plans; (c) item 35 sign-off check; (d) `docs/business.html` headless-browser check
 (real-browser review stays open). Status per step lands here as each finishes. (a) DONE: migration 20270298 live, send-push
 redeployed, journey `planMessagePush` 5/5; the Messages hint now names plan group chats (11 languages, native review pending).
+(b) DONE: "See gatherings" lists only friends' plans beyond the chips (`splitFriendsActivity` -> `friendsActivityMore`), absent when none.
 
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
@@ -342,7 +343,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Friends planning (owner item 41, approved):** Home's friends-planning line assembles (faces one after another, then up to 3
   one-line chips: glyph + real title, each opening its gathering's detail; then the line; `motion/FriendsPlanning.js`, medium) only
   when its set of plans has an id not shown before (`utils/friendsPlanningMoment.js`); chips static otherwise (the ONE exception to
-  "no animated cards"). Wording never "nearby" (not distance-filtered; no radius filter added for it). Query: `selectFriendsActivity`.
+  "no animated cards"). "See gatherings" = only the plans beyond the chips (`splitFriendsActivity`), absent when none. Wording never "nearby" (not distance-filtered; no radius filter added for it). Query: `selectFriendsActivity`.
 - **Formation on publish (owner item 43):** the published panel's card is what/when/who/where (`formationPieces`, only real
   pieces, from the stored row + real publish result; Where follows the review step's rule) settling in via the shared
   `PlanComesTogether` (one glow, special tier); "first gathering" is decided by Create before the panel shows. Owner LOCKED: headline "Your gathering is live!" (never "Your plan is ready":
