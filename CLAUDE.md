@@ -41,6 +41,9 @@ Locked items say "do not reopen": respect that unless the owner reopens them.
 not more features: `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (not yet run; needs
 Anthropic credit first).
 
+**Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
+recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
+
 **Blocked on the owner:**
 - **Anthropic credit:** every AI edge function returns 500 ("credit balance is too low"). Never run live:
   the intent extractor, offer/creative/logo/video screening (owner-typed content fails closed to "Try
@@ -251,7 +254,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Interested (owner item 30):** marking it by your own tap shows "✓ Saved" with one small pulse, then returns to
   "★ Interested" (`motion/InterestedSaved.js`, detail + Home card; toast with Undo kept; one save in flight per button).
   Item 31: your own auto-approved join FROM Interested shows "★ ~~Interested~~ → ✓ Attending" (one glow) atop You're in
-  (`motion/InterestedToAttending.js`); pending/waitlist/plain joins get no such moment.
+  (`motion/InterestedToAttending.js`), only via `interestedToAttendingMoment` (confirmed attendance; pending/waitlist/plain: none).
 - **Something is happening near you (owner item 26):** one ring from the happening-now heading glyph (Home Nearby Right Now,
   Discover Happening Now; `motion/HappeningRipple.js`) only when the section shows a gathering not yet shown this session
   (`utils/happeningSeen.js`, one store for both surfaces, judged only while focused). Rows never move (item 15 stands).

@@ -6,7 +6,7 @@ export default {
   en: {
     view: 'View', viewPlan: 'View Plan', viewPastEvent: 'View Past Event', expired: 'Expired', past: 'Past', requestExpired: 'Request expired',
     hosting: 'Hosting', going: 'Going', requested: 'Requested', onWaitlist: 'On waitlist', inviteOnly: 'Invite only',
-    interestedOn: '★ Interested', interestedSaved: '✓ Saved', attendingNow: '✓ Attending', interestedToAttendingA11y: 'No longer just Interested: you are attending', interestedOff: "I'm Interested", joinWaitlist: 'Join Waitlist', requestToJoin: 'Request to Join', imGoing: "I'm Going", join: 'Join',
+    interestedOn: '★ Interested', interestedSaved: '✓ Saved', attendingNow: '✓ Attending', interestedToAttendingA11y: 'No longer just interested: you\'re attending', interestedOff: "I'm Interested", joinWaitlist: 'Join Waitlist', requestToJoin: 'Request to Join', imGoing: "I'm Going", join: 'Join',
     meetPeople: 'Meet People', viewOffer: 'View Offer', goNow: 'Go now', getDirections: 'Get Directions', reserve: 'Reserve', book: 'Book', request: 'Request',
     youreBooked: "You're booked", completed: 'Completed', noLongerAvailable: 'No longer available', anotherChosen: 'Another offer was chosen', requestClosed: 'Request closed',
     confirmWithGroup: 'Confirm With the Group →', takeThisOne: "I'll take this one", accept: 'Accept', decline: 'Decline', dismiss: 'Dismiss',
@@ -16,7 +16,7 @@ export default {
   es: {
     view: 'Ver', viewPlan: 'Ver plan', viewPastEvent: 'Ver evento pasado', expired: 'Vencido', past: 'Pasado', requestExpired: 'Solicitud vencida',
     hosting: 'Organizas', going: 'Vas', requested: 'Solicitado', onWaitlist: 'En lista de espera', inviteOnly: 'Solo con invitación',
-    interestedOn: '★ Me interesa', interestedSaved: '✓ Guardado', attendingNow: '✓ Asistes', interestedToAttendingA11y: 'Ya no solo te interesa: asistes', interestedOff: 'Me interesa', joinWaitlist: 'Unirme a la lista de espera', requestToJoin: 'Pedir unirme', imGoing: 'Voy', join: 'Unirme',
+    interestedOn: '★ Me interesa', interestedSaved: '✓ Guardado', attendingNow: '✓ Asistiré', interestedToAttendingA11y: 'Ya no solo te interesa: vas a asistir', interestedOff: 'Me interesa', joinWaitlist: 'Unirme a la lista de espera', requestToJoin: 'Pedir unirme', imGoing: 'Voy', join: 'Unirme',
     meetPeople: 'Conocer gente', viewOffer: 'Ver oferta', goNow: 'Ir ahora', getDirections: 'Cómo llegar', reserve: 'Reservar', book: 'Reservar', request: 'Solicitar',
     youreBooked: 'Tienes tu reserva', completed: 'Completado', noLongerAvailable: 'Ya no está disponible', anotherChosen: 'Se eligió otra oferta', requestClosed: 'Solicitud cerrada',
     confirmWithGroup: 'Confirmar con el grupo →', takeThisOne: 'Me quedo con esta', accept: 'Aceptar', decline: 'Rechazar', dismiss: 'Descartar',
@@ -36,7 +36,7 @@ export default {
   fr: {
     view: 'Voir', viewPlan: 'Voir le projet', viewPastEvent: "Voir l'événement passé", expired: 'Expiré', past: 'Passé', requestExpired: 'Demande expirée',
     hosting: "Vous l'organisez", going: "J'y vais", requested: 'Demandé', onWaitlist: "Sur liste d'attente", inviteOnly: 'Sur invitation',
-    interestedOn: '★ Intéressé', interestedSaved: '✓ Enregistré', attendingNow: '✓ Participe', interestedToAttendingA11y: 'Plus seulement intéressé : vous participez', interestedOff: 'Ça m’intéresse', joinWaitlist: "Rejoindre la liste d'attente", requestToJoin: 'Demander à participer', imGoing: "J'y vais", join: 'Participer',
+    interestedOn: '★ Intéressé', interestedSaved: '✓ Enregistré', attendingNow: '✓ Je participe', interestedToAttendingA11y: 'Ce n\'est plus un simple intérêt : vous participez', interestedOff: 'Ça m’intéresse', joinWaitlist: "Rejoindre la liste d'attente", requestToJoin: 'Demander à participer', imGoing: "J'y vais", join: 'Participer',
     meetPeople: 'Rencontrer des gens', viewOffer: "Voir l'offre", goNow: 'Y aller', getDirections: 'Itinéraire', reserve: 'Réserver', book: 'Réserver', request: 'Demander',
     youreBooked: 'Votre réservation est faite', completed: 'Terminé', noLongerAvailable: "N'est plus disponible", anotherChosen: 'Une autre offre a été choisie', requestClosed: 'Demande fermée',
     confirmWithGroup: 'Confirmer avec le groupe →', takeThisOne: 'Je prends celle-ci', accept: 'Accepter', decline: 'Refuser', dismiss: 'Ignorer',
@@ -46,7 +46,7 @@ export default {
   pt: {
     view: 'Ver', viewPlan: 'Ver plano', viewPastEvent: 'Ver evento passado', expired: 'Expirado', past: 'Passado', requestExpired: 'Pedido expirado',
     hosting: 'Você organiza', going: 'Vou', requested: 'Pedido enviado', onWaitlist: 'Na lista de espera', inviteOnly: 'Só com convite',
-    interestedOn: '★ Tenho interesse', interestedSaved: '✓ Salvo', attendingNow: '✓ Participando', interestedToAttendingA11y: 'Não só interessado: você vai participar', interestedOff: 'Tenho interesse', joinWaitlist: 'Entrar na lista de espera', requestToJoin: 'Pedir para participar', imGoing: 'Eu vou', join: 'Participar',
+    interestedOn: '★ Tenho interesse', interestedSaved: '✓ Salvo', attendingNow: '✓ Vou participar', interestedToAttendingA11y: 'Não é mais só interesse: você vai participar', interestedOff: 'Tenho interesse', joinWaitlist: 'Entrar na lista de espera', requestToJoin: 'Pedir para participar', imGoing: 'Eu vou', join: 'Participar',
     meetPeople: 'Conhecer pessoas', viewOffer: 'Ver oferta', goNow: 'Ir agora', getDirections: 'Como chegar', reserve: 'Reservar', book: 'Reservar', request: 'Pedir',
     youreBooked: 'Sua reserva está feita', completed: 'Concluído', noLongerAvailable: 'Não está mais disponível', anotherChosen: 'Outra oferta foi escolhida', requestClosed: 'Pedido encerrado',
     confirmWithGroup: 'Confirmar com o grupo →', takeThisOne: 'Vou ficar com esta', accept: 'Aceitar', decline: 'Recusar', dismiss: 'Dispensar',
@@ -56,7 +56,7 @@ export default {
   ht: {
     view: 'Gade', viewPlan: 'Gade plan an', viewPastEvent: 'Gade evènman ki pase a', expired: 'Ekspire', past: 'Pase', requestExpired: 'Demann nan ekspire',
     hosting: 'Se ou k ap òganize', going: 'Mwen prale', requested: 'Demann voye', onWaitlist: 'Sou lis datant', inviteOnly: 'Sèlman ak envitasyon',
-    interestedOn: '★ Enterese', interestedSaved: '✓ Anrejistre', attendingNow: '✓ W ap patisipe', interestedToAttendingA11y: 'Ou pa sèlman enterese ankò: w ap patisipe', interestedOff: 'Mwen enterese', joinWaitlist: 'Antre sou lis datant', requestToJoin: 'Mande pou patisipe', imGoing: 'Mwen prale', join: 'Patisipe',
+    interestedOn: '★ Enterese', interestedSaved: '✓ Anrejistre', attendingNow: '✓ M ap patisipe', interestedToAttendingA11y: 'Ou pa sèlman enterese ankò: w ap patisipe', interestedOff: 'Mwen enterese', joinWaitlist: 'Antre sou lis datant', requestToJoin: 'Mande pou patisipe', imGoing: 'Mwen prale', join: 'Patisipe',
     meetPeople: 'Rankontre moun', viewOffer: 'Gade òf la', goNow: 'Ale kounye a', getDirections: 'Chemen pou ale', reserve: 'Rezève', book: 'Rezève', request: 'Mande',
     youreBooked: 'Rezèvasyon ou fèt', completed: 'Fini', noLongerAvailable: 'Pa disponib ankò', anotherChosen: 'Yo te chwazi yon lòt òf', requestClosed: 'Demann nan fèmen',
     confirmWithGroup: 'Konfime ak gwoup la →', takeThisOne: 'Mwen pran sa a', accept: 'Aksepte', decline: 'Refize', dismiss: 'Retire',
@@ -66,7 +66,7 @@ export default {
   zh: {
     view: '查看', viewPlan: '查看计划', viewPastEvent: '查看过去的活动', expired: '已过期', past: '已结束', requestExpired: '请求已过期',
     hosting: '你在组织', going: '参加', requested: '已申请', onWaitlist: '在候补名单中', inviteOnly: '仅限受邀',
-    interestedOn: '★ 感兴趣', interestedSaved: '✓ 已保存', attendingNow: '✓ 已参加', interestedToAttendingA11y: '不再只是感兴趣：你已参加', interestedOff: '我感兴趣', joinWaitlist: '加入候补名单', requestToJoin: '申请加入', imGoing: '我要去', join: '加入',
+    interestedOn: '★ 感兴趣', interestedSaved: '✓ 已保存', attendingNow: '✓ 确定参加', interestedToAttendingA11y: '不再只是感兴趣：你已确定参加', interestedOff: '我感兴趣', joinWaitlist: '加入候补名单', requestToJoin: '申请加入', imGoing: '我要去', join: '加入',
     meetPeople: '认识新朋友', viewOffer: '查看优惠', goNow: '现在就去', getDirections: '获取路线', reserve: '预订', book: '预约', request: '发送请求',
     youreBooked: '已为你预订', completed: '已完成', noLongerAvailable: '已不可用', anotherChosen: '已选择了其他优惠', requestClosed: '请求已关闭',
     confirmWithGroup: '与小组确认 →', takeThisOne: '我选这个', accept: '接受', decline: '拒绝', dismiss: '忽略',
@@ -76,7 +76,7 @@ export default {
   vi: {
     view: 'Xem', viewPlan: 'Xem kế hoạch', viewPastEvent: 'Xem sự kiện đã qua', expired: 'Đã hết hạn', past: 'Đã qua', requestExpired: 'Yêu cầu đã hết hạn',
     hosting: 'Bạn tổ chức', going: 'Sẽ đi', requested: 'Đã gửi yêu cầu', onWaitlist: 'Trong danh sách chờ', inviteOnly: 'Chỉ khi được mời',
-    interestedOn: '★ Quan tâm', interestedSaved: '✓ Đã lưu', attendingNow: '✓ Tham gia', interestedToAttendingA11y: 'Không chỉ quan tâm nữa: bạn đã tham gia', interestedOff: 'Tôi quan tâm', joinWaitlist: 'Vào danh sách chờ', requestToJoin: 'Xin tham gia', imGoing: 'Tôi sẽ đi', join: 'Tham gia',
+    interestedOn: '★ Quan tâm', interestedSaved: '✓ Đã lưu', attendingNow: '✓ Sẽ tham gia', interestedToAttendingA11y: 'Không chỉ quan tâm nữa: bạn sẽ tham gia', interestedOff: 'Tôi quan tâm', joinWaitlist: 'Vào danh sách chờ', requestToJoin: 'Xin tham gia', imGoing: 'Tôi sẽ đi', join: 'Tham gia',
     meetPeople: 'Gặp gỡ mọi người', viewOffer: 'Xem ưu đãi', goNow: 'Đi ngay', getDirections: 'Chỉ đường', reserve: 'Đặt chỗ', book: 'Đặt lịch', request: 'Gửi yêu cầu',
     youreBooked: 'Bạn đã đặt xong', completed: 'Đã hoàn tất', noLongerAvailable: 'Không còn nữa', anotherChosen: 'Một ưu đãi khác đã được chọn', requestClosed: 'Yêu cầu đã đóng',
     confirmWithGroup: 'Xác nhận với nhóm →', takeThisOne: 'Tôi chọn cái này', accept: 'Chấp nhận', decline: 'Từ chối', dismiss: 'Bỏ qua',
@@ -106,7 +106,7 @@ export default {
   ko: {
     view: '보기', viewPlan: '계획 보기', viewPastEvent: '지난 모임 보기', expired: '만료됨', past: '지난 일정', requestExpired: '요청 만료됨',
     hosting: '주최 중', going: '참석', requested: '요청함', onWaitlist: '대기 중', inviteOnly: '초대 전용',
-    interestedOn: '★ 관심 있음', interestedSaved: '✓ 저장됨', attendingNow: '✓ 참석', interestedToAttendingA11y: '관심에서 참석으로 바뀌었어요', interestedOff: '관심 있어요', joinWaitlist: '대기자 명단에 등록', requestToJoin: '참여 요청', imGoing: '갈게요', join: '참여하기',
+    interestedOn: '★ 관심 있음', interestedSaved: '✓ 저장됨', attendingNow: '✓ 참석 확정', interestedToAttendingA11y: '관심에서 참석으로 바뀌었어요', interestedOff: '관심 있어요', joinWaitlist: '대기자 명단에 등록', requestToJoin: '참여 요청', imGoing: '갈게요', join: '참여하기',
     meetPeople: '사람 만나기', viewOffer: '제안 보기', goNow: '지금 가기', getDirections: '길찾기', reserve: '예약하기', book: '예약', request: '요청하기',
     youreBooked: '예약되었어요', completed: '완료됨', noLongerAvailable: '더 이상 이용할 수 없어요', anotherChosen: '다른 제안이 선택되었어요', requestClosed: '요청 마감',
     confirmWithGroup: '그룹과 확정하기 →', takeThisOne: '이걸로 할게요', accept: '수락', decline: '거절', dismiss: '닫기',

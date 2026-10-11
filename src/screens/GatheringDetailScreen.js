@@ -54,6 +54,7 @@ import { approvedIds, newJoinsToAnimate, joinedNote, acceptedInviteeIds, arrival
 import { AvatarArrive } from '../motion/JoinArrival';
 import InterestedSaved from '../motion/InterestedSaved';
 import InterestedToAttending from '../motion/InterestedToAttending';
+import { interestedToAttendingMoment } from '../utils/interestedMoment';
 import { filterToMyFriends } from '../services/friends';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
@@ -116,8 +117,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [joining, setJoining] = useState(false);
   // Set by an auto-approved join on THIS screen: the attending section shows "You're in" then "bring someone" (audit B1).
   const [justJoined, setJustJoined] = useState(false);
-  // Item 31: this visit's own auto-approved join came from Interested -> the Interested -> Attending moment in the You're in panel.
-  const [joinedFromInterested, setJoinedFromInterested] = useState(false);
+  // Item 31: this visit's own join, kept in memory only ({ wasInterested, joinStatus }); the Interested -> Attending moment
+  // shows when it was an approved join from Interested AND the stored attendance says approved (interestedToAttendingMoment).
+  const [ownJoin, setOwnJoin] = useState(null);
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
@@ -476,6 +478,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
     const wasInterested = myInterested;
     try {
       const result = await expressInterest(gatheringId);
+      setOwnJoin({ wasInterested, joinStatus: result.status });
       recordBehaviorEvent('join', 'gathering', gatheringId, gathering?.interest_tag);
       posthog.capture('gathering_interest_expressed', { source: 'detail_screen', status: result.status });
       // Joining changes the viewer's state on THIS screen; it never moves them to another one (screen-reduction audit B1:
@@ -485,7 +488,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
       if (result.status === 'approved') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setJustJoined(true);
-        if (wasInterested) setJoinedFromInterested(true);
       } else {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
@@ -1215,7 +1217,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
           ) : gathering.myStatus === 'approved' ? (
             <View style={styles.youreInPanel}>
               {/* Item 31: the person's own commitment from Interested, shown as the move between the two states. */}
-              {joinedFromInterested && (
+              {interestedToAttendingMoment({ ...ownJoin, storedStatus: gathering.myStatus }) && (
                 <InterestedToAttending
                   fromLabel={t('ui.actions.interestedOn')}
                   toLabel={t('ui.actions.attendingNow')}

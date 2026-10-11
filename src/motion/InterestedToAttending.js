@@ -49,7 +49,7 @@ export default function InterestedToAttending({ fromLabel, toLabel, a11yLabel, p
       accessibilityLabel={a11yLabel}
     >
       <Animated.Text
-        style={[styles.from, { color: colors.textTertiary, opacity: dim.interpolate({ inputRange: [0, 1], outputRange: [1, M.oldRestOpacity] }) }]}
+        style={[styles.from, { color: colors.textSecondary, opacity: dim.interpolate({ inputRange: [0, 1], outputRange: [1, M.oldRestOpacity] }) }]}
       >
         {fromLabel}
       </Animated.Text>
@@ -72,10 +72,12 @@ export default function InterestedToAttending({ fromLabel, toLabel, a11yLabel, p
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.sm },
+  row: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', marginBottom: spacing.sm },
   from: { fontSize: 14, fontWeight: '600', textDecorationLine: 'line-through' },
   arrow: { fontSize: 14, marginHorizontal: spacing.sm },
   to: { borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  toText: { fontSize: 14, fontWeight: '700' },
+  // 19 px bold = WCAG large text: the success token reaches 3.78:1 on its tint in light mode (4.28:1 even on plain white,
+  // under 4.5:1 for small text), so the label is large rather than tinted darker (the token is shared app-wide).
+  toText: { fontSize: 19, fontWeight: '700' },
   glow: { top: -2, left: -2, right: -2, bottom: -2, borderRadius: radius.sm + 2, borderWidth: 2, shadowOpacity: 0.45, shadowRadius: 8, shadowOffset: { width: 0, height: 0 } },
 });
