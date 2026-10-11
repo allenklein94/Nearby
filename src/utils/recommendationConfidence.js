@@ -6,6 +6,10 @@
 //   medium  exactly one strong reason, or activity-only interest plus another kind
 //   low     nothing strong: only popularity, timing, activity or facts (distance, weather...)
 // A card with no real reason gets no confidence and no headline (nothing is said).
+//
+// Owner item 38 (2026-10-11): "A strong match for you" (vocab.confidence.high) is reserved for item 37's strict rule
+// (utils/strongMatch.js: a typed ask's top result whose activity, stated time AND close distance all really match). A card
+// whose reasons only reach 'high' here speaks at medium's wording, so the phrase keeps its meaning. The levels are unchanged.
 import { reasonKind, REASON_KINDS } from '../constants/signalPriority';
 import { translate } from '../i18n/translate';
 
@@ -37,9 +41,13 @@ export function recommendationConfidence(signals = [], { intent = false } = {}) 
   return 'low';
 }
 
+// The wording each level speaks at on a card ('high' -> medium's words; see item 38 above).
+export const CARD_HEADLINE_LEVEL = { high: 'medium', medium: 'medium', low: 'low' };
+
 // The headline in the person's language (opts.language; the English CONFIDENCE_HEADLINE is the canonical form and the key).
 export function confidenceHeadline(signals, opts) {
-  const c = recommendationConfidence(signals, opts);
-  if (!c) return null;
+  const level = recommendationConfidence(signals, opts);
+  if (!level) return null;
+  const c = CARD_HEADLINE_LEVEL[level];
   return opts?.language && opts.language !== 'en' ? translate(opts.language, `vocab.confidence.${c}`) : CONFIDENCE_HEADLINE[c];
 }

@@ -358,8 +358,8 @@ describe('the context line, notes and headline on the shared layer', () => {
   });
   it('the confidence headline is translated, decided on the same signals', () => {
     const signals = [{ text: becauseYouLikeReason('Coffee') }, { text: reasonText('friendGoingOne', { name: 'Sam' }) }];
-    expect(confidenceHeadline(signals)).toBe('A strong match for you');
-    for (const lang of OTHER_LANGS) expect(confidenceHeadline(signals, { language: lang })).toBe(translations[lang].vocab.confidence.high);
+    expect(confidenceHeadline(signals)).toBe('You might like this'); // item 38: 'high' speaks at medium's words on a card
+    for (const lang of OTHER_LANGS) expect(confidenceHeadline(signals, { language: lang })).toBe(translations[lang].vocab.confidence.medium);
   });
   it.each(['es', 'ko', 'de', 'en'])('the same match reads the same on every converted surface (%s)', (language) => {
     const reason = becauseYouLikeReason('Coffee');

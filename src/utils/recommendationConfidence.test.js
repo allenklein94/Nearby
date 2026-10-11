@@ -6,9 +6,10 @@ describe('recommendationConfidence (item 61)', () => {
     expect(conf([])).toBeNull();
     expect(confidenceHeadline([])).toBeNull();
   });
-  it('declared interest + a friend = high', () => {
+  it('declared interest + a friend = high, but a card speaks at medium\'s words (item 38: the strong-match phrase is item 37\'s alone)', () => {
     expect(conf([s('Because you like Coffee'), s('Sam is going')])).toBe('high');
-    expect(confidenceHeadline([s('Because you like Coffee'), s('Sam is going')])).toBe('A strong match for you');
+    expect(confidenceHeadline([s('Because you like Coffee'), s('Sam is going')])).toBe('You might like this');
+    expect(confidenceHeadline([s('Trending nearby')], { intent: true })).toBe('You might like this');
   });
   it('one strong reason = medium', () => {
     expect(conf([s('Because you like Coffee')])).toBe('medium');

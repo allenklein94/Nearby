@@ -1,3 +1,17 @@
+# Item 38 (2026-10-11) - don't call everything a strong match - DONE (no new strings, no migration)
+
+**Owner ask:** if every recommendation says "Perfect Match!" the phrase means nothing; reserve it for genuinely high-confidence picks.
+**Found:** the phrase ("A strong match for you", `vocab.confidence.high`; "perfect" was already never used) had TWO sources with very
+different bars: item 37's strict rule (`utils/strongMatch.js`: a typed ask's top result whose activity, stated time AND close distance
+all really match) and item 61's card headline (`recommendationConfidence` 'high' = one strong reason + any second kind, e.g. "Because you
+like Coffee" + a time), shown on every qualifying Home Picked For You card (max 3) and the Best Pick hero, so several cards could say it at once.
+**Built:** `CARD_HEADLINE_LEVEL` in `utils/recommendationConfidence.js`: item 61 keeps its three levels (nothing else reads them), but a
+card at 'high' now speaks at medium's existing words ("You might like this"). The phrase is item 37's alone. Guard in
+`motion/strongMatch.test.js`: only `StrongMatch.js` and the two screens' a11y labels (each gated by `strongPieces ?`) may use
+`vocab.confidence.high` / the English phrase, and no card level maps to 'high'. Tests updated: `recommendationConfidence.test.js`,
+`reasonLocalization.test.js`. Jest 5606 pass; `strongMatch` journey 4/4 (it covers item 37's rule; item 61's card headline is a pure
+client function no journey covers). No screen code changed. Not device-checked. The `vocab.confidence.high` string's native review stays with item 37.
+
 # Item 37 (2026-10-11) - "Perfect Match" for activities -> the strong-match moment - APPROVED, READY FOR DEVICE VERIFICATION (not device-verified)
 
 **Owner decisions (same day, LOCKED):** (1) keep "A strong match for you" (existing translations, all 11 languages); never "Perfect fit", which overstates what matching can establish; native-speaker review stays open before localization counts as verified. (2) The intent explanation stays inside the ticks: no separate "Your intent" step or screen; the ticks show which parts of the stated request matched and never imply a match for a constraint the result does not meet. (3) Interaction as tested: text readable from the first frame, row taps act at once, no haptic, Reduce Motion = settled, decorates the existing first-ranked result and never changes ranking. (4) The label explains WHY the result fits, never promises it is objectively the best. (5) Device appearance and ranking behavior are NOT verified by this item; close item 37 once the 10 device checks and the native review pass, without expanding scope.

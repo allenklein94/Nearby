@@ -58,6 +58,26 @@ describe('the moment: where it shows and how it moves', () => {
     }
     expect(read('motion/StrongMatch.js')).not.toMatch(/[Pp]erfect (fit|match)'/);
   });
+  test('item 38: the phrase is reserved for this rule - only the strong-match badge (and its own a11y labels) may say it', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const root = path.join(__dirname, '..');
+    const files = [];
+    const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).forEach((e) => {
+      const f = path.join(d, e.name);
+      if (e.isDirectory()) { if (e.name !== 'i18n' && e.name !== 'node_modules') walk(f); } else if (/\.js$/.test(e.name) && !/\.test\.js$/.test(e.name)) files.push(f);
+    });
+    walk(root);
+    const users = files.filter((f) => /vocab\.confidence\.high|A strong match for you/.test(fs.readFileSync(f, 'utf8'))).map((f) => path.relative(root, f)).sort();
+    expect(users).toEqual(['motion/StrongMatch.js', 'screens/DiscoverHubScreen.js', 'screens/HomeScreen.js', 'utils/recommendationConfidence.js', 'utils/strongMatch.js']);
+    // The screens say it only when the strong-match rule held for that row.
+    for (const s of ['screens/HomeScreen.js', 'screens/DiscoverHubScreen.js']) {
+      for (const line of read(s).split('\n').filter((l) => /vocab\.confidence\.high/.test(l))) expect(line).toMatch(/strongPieces \? [^:]*vocab\.confidence\.high/);
+    }
+    // Item 61's card headline never speaks at 'high'.
+    const { CARD_HEADLINE_LEVEL } = require('../utils/recommendationConfidence');
+    expect(Object.values(CARD_HEADLINE_LEVEL)).not.toContain('high');
+  });
   test('within its declared tier', () => {
     expect(isWithinBudget(settleMs('strongMatch'), SEQUENCES.strongMatch.tier)).toBe(true);
   });
