@@ -16,6 +16,7 @@ import { formatTimeOfDay, formatDateLabel } from './businessRequestWhen';
 import { tr, getCurrentLanguage } from '../i18n/translate';
 import { localClock, localWeekday, localDate } from '../i18n/format';
 import { categoryName } from '../i18n/categoryNames';
+import { displayWhen } from '../i18n/display';
 
 // Display words in the person's language (localization pass 5); English output is unchanged.
 const isEnglish = () => { const l = getCurrentLanguage(); return !l || l === 'en'; };
@@ -413,7 +414,11 @@ export function buildPlanWhoSummary({ participants, myId, whoForName }) {
 // day follows the booked time too: a business's accepted proposed_time sets the time-of-day already, so it sets the date
 // as well (else the plan could read one day with the booking on another). The plan is the one place these facts show;
 // the accepted offer card no longer repeats them.
-export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null, planTitleIsDeliberate = true, participants = null, myId = null, whoForName = null }) {
+// Item 32 polish (owner, 2026-10-11): `whenLine` is the plan's day and time as ONE contextual line, from the shared
+// whenLabel engine (displayWhen: "Tonight · 6:30 PM", "Tomorrow · 6:30 PM", else "Wed, Oct 14 · 6:30 PM", localized), so
+// plan cards and gathering cards read time the same way. Only when both the day and a time are known (no time is ever
+// invented); otherwise the card keeps its date label alone. Same with or without a booking.
+export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null, planTitleIsDeliberate = true, participants = null, myId = null, whoForName = null, now = new Date() }) {
   if (!primary) return null;
 
   const timeline = buildPlanTimeline({ primary, primaryOffers, addons: [] });
@@ -440,14 +445,21 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
   const bookedDate = !primary.plan_time && acceptedOffer?.proposed_time ? localDayOf(acceptedOffer.proposed_time) : null;
   const rawDate = bookedDate ?? primary.date ?? null;
 
+  const rawTime = entry?.planTime ?? primary.time_window_start ?? null;
+  const hhmm = rawTime ? String(rawTime).match(/^(\d{1,2}):(\d{2})/) : null;
+  const at = rawDate && hhmm ? new Date(`${rawDate}T${hhmm[1].padStart(2, '0')}:${hhmm[2]}:00`) : null;
+  const whenLine = at && Number.isFinite(at.getTime()) ? displayWhen(at.toISOString(), getCurrentLanguage(), now) : null;
+
   return {
     title: mergedTitle || planTitle || what || txt('yourPlan'),
     titleHasBusiness: !!mergedTitle,
+    titleIsGeneric: !(mergedTitle || planTitle || what), // the title IS "Your Plan" (so the card adds no label above it)
     who: buildPlanWhoSummary({ participants, myId, whoForName }),
     dateLabel: dateText(rawDate),
     timeLabel,
     rawDate,
-    rawTime: entry?.planTime ?? primary.time_window_start ?? null,
+    rawTime,
+    whenLine,
     location: mergedTitle ? (acceptedOffer?.brand_partners?.address ?? null) : bookedName,
     businessAddress: acceptedOffer?.brand_partners?.address ?? null,
     businessLatitude: acceptedOffer?.brand_partners?.latitude ?? null,

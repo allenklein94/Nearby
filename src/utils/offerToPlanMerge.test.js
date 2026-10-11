@@ -131,6 +131,45 @@ describe('the plan holds the facts, once', () => {
   });
 });
 
+describe('Your Plan card polish (owner, 2026-10-11): label + one contextual when line', () => {
+  // Local wall-clock fixtures, "now" frozen (engineering discipline).
+  const now = new Date(2026, 9, 11, 14, 0, 0);
+  const base = { status: 'open', category: 'Coffee', plan_label: null, party_size: 4 };
+  const at = (dayOffset, hhmm) => {
+    const d = new Date(2026, 9, 11 + dayOffset);
+    return { date: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, time_window_start: hhmm };
+  };
+  test('Tonight / Tomorrow / weekday-date, each with the time, from the shared whenLabel engine', () => {
+    expect(buildPlanSummary({ primary: { ...base, ...at(0, '18:30:00') }, now }).whenLine).toBe('Tonight · 6:30 PM');
+    expect(buildPlanSummary({ primary: { ...base, ...at(1, '18:30:00') }, now }).whenLine).toBe('Tomorrow · 6:30 PM');
+    expect(buildPlanSummary({ primary: { ...base, ...at(3, '18:30:00') }, now }).whenLine).toMatch(/^\w{3}, \w{3} 14 · 6:30 PM$/);
+  });
+  test('the same with a booking: the business\'s accepted time drives it', () => {
+    const t = new Date(2026, 9, 12, 19, 0, 0);
+    const s = buildPlanSummary({ primary: { ...base, ...at(0, '18:30:00') }, primaryOffers: [{ status: 'accepted', proposed_time: t.toISOString(), brand_partners: { name: 'Coastal Coffee' } }], planTitleIsDeliberate: false, now });
+    expect(s.whenLine).toBe('Tomorrow · 7 PM');
+    expect(s.title).toBe('Coffee at Coastal Coffee');
+  });
+  test('no time known = no invented time (the card keeps the date label alone)', () => {
+    const s = buildPlanSummary({ primary: { ...base, ...at(1, null) }, now });
+    expect(s.whenLine).toBeNull();
+    expect(s.dateLabel).toBeTruthy();
+  });
+  test('no label when the title itself is the generic "Your Plan"', () => {
+    expect(buildPlanSummary({ primary: { ...base, category: null, ...at(1, '18:30:00') }, now }).titleIsGeneric).toBe(true);
+    expect(buildPlanSummary({ primary: { ...base, ...at(1, '18:30:00') }, now }).titleIsGeneric).toBe(false);
+    expect(screen).toMatch(/\{!planSummary\.titleIsGeneric \? \(/);
+  });
+  test('the card reuses the existing "Your Plan" phrase and the shared engine, and shows party size once', () => {
+    const src = read('utils/planAddonReadiness.js');
+    expect(src).toMatch(/import \{ displayWhen \} from '\.\.\/i18n\/display';/);
+    expect(src.replace(/^\s*\/\/.*$/gm, '')).not.toMatch(/Tonight|Tomorrow/); // no second date rule (code, not comments)
+    expect(screen).toMatch(/<Text style=\{styles\.planSummaryEyebrow\}>\{t\('ui\.requestDetail\.plan\.yourPlan'\)\}<\/Text>/);
+    expect(screen).toMatch(/📅 \{planSummary\.whenLine\}/);
+    expect(screen.match(/t\('ui\.common\.count\.people', \{ count: planSummary\.partySize \}\)/g)).toHaveLength(1);
+  });
+});
+
 describe('decision B: Home is unchanged', () => {
   test('Home\'s Your Plans takes gatherings and group plans only; business bookings stay in Plans', () => {
     expect(read('utils/homeAttention.js')).toMatch(/export function selectHomePlans\(\{ plansGoing = \[\], plansHosting = \[\], plansGroup = \[\], plansInterested = \[\] \} = \{\}/);

@@ -263,6 +263,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Offer -> plan merge (owner item 32):** your own confirmed accept merges the booking into Your Plan (`utils/offerToPlanMerge.js`,
   `motion/OfferToPlanMerge.js`): chip travels up, gentle scroll (own accept only; any touch stops it), one plan glow; it replaces
   plan-comes-together for that accept. A booked plan reads "{what} at {business}"; day/time/party show once, in the plan. Home unchanged.
+  The plan card has a "Your Plan" label and one when line from `displayWhen` (shared whenLabel engine), booked or not.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

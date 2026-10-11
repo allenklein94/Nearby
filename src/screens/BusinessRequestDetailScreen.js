@@ -1230,6 +1230,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           <View collapsable={false} ref={planCardRef} style={styles.planSummaryCardSlot} onLayout={(e) => { planCardYRef.current = e.nativeEvent.layout.y; }}>
           <PlanMergeLanding playKey={planMergeKey} color={colors.success} radius={radius.lg}>
           <View style={styles.planSummaryCard}>
+            {/* Item 32 polish: the card names what it is, above the plan's own title (unless the title already is it). */}
+            {!planSummary.titleIsGeneric ? (
+              <Text style={styles.planSummaryEyebrow}>{t('ui.requestDetail.plan.yourPlan')}</Text>
+            ) : null}
             <View style={styles.planSummaryHeaderRow}>
               {planSummary.statusKind === 'confirmed' ? (
                 <View style={styles.planSummaryTitleRow}>
@@ -1269,11 +1273,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             {/* Item 120: Who, right after the title -- What/When/Where were already real fields
                 on this card; Who was the one genuinely missing from the mock's own breakdown. */}
             {planSummary.who && <Text style={styles.planSummaryLine}>👤 {planSummary.who}</Text>}
-            {(planSummary.dateLabel || planSummary.timeLabel) && (
+            {/* Item 32 polish: day and time as one contextual line (shared whenLabel engine); without both, as before. */}
+            {planSummary.whenLine ? (
+              <Text style={styles.planSummaryLine}>📅 {planSummary.whenLine}</Text>
+            ) : (planSummary.dateLabel || planSummary.timeLabel) ? (
               <Text style={styles.planSummaryLine}>
                 📅 {planSummary.dateLabel ?? t('ui.requestDetail.dateNotSet')}{planSummary.timeLabel ? `  🕖 ${planSummary.timeLabel}` : ''}
               </Text>
-            )}
+            ) : null}
             {planSummary.location && <Text style={styles.planSummaryLine}>📍 {planSummary.location}</Text>}
             {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {t('ui.common.count.people', { count: planSummary.partySize })}</Text>}
             {planSummary.statusKind === 'confirmed' && (
@@ -2158,6 +2165,7 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md,
   },
+  planSummaryEyebrow: { ...typography.caption, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 },
   planSummaryHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs },
   planSummaryTitle: { ...typography.headline, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },
   // Item 112 follow-up ("the finished plan could have a living header"):
