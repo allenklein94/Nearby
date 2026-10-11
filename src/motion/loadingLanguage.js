@@ -15,7 +15,8 @@ export const LOADING_KINDS = {
   content: 'Loading…',
 };
 
-// A multi-stage narration for a longer, multi-part real fetch (used by the Occasion options step).
+// A multi-stage narration for a longer, multi-part real fetch. Rotate these ONLY when real stages drive the index (owner rule
+// 2026-10-11: never on a timer); the Occasion options step is one call, so it shows only the first.
 export const PLANNING_CAPTIONS = [
   'Finding something special nearby…',
   'Finding places…',

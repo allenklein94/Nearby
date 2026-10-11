@@ -385,6 +385,24 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       setMyId(uid);
 
       const result = await getBusinessRequestWithOffers(requestId);
+      // Motion amplifies correct data (owner rule, 2026-10-11): a reply card assembles (the signature moment) the moment its
+      // offers are set, so what that assembly shows -- the business's screened logo and the "heard your request" wording
+      // (first-ever reply or not) -- is resolved FIRST, in one parallel read, and lands in the same update as the offers.
+      // Before this, the logo popped in and the heard line could switch wording while the card was building.
+      // Logos also for a visited (completed) booking: the settled plan keeps its business's logo in the place line.
+      const logoIds = [...new Set(result.offers.filter((o) => ['offered', 'accepted', 'completed'].includes(o.status)).map((o) => o.partner_id))];
+      const unviewed = result.offers.filter((o) => o.status === 'offered' && !o.viewed_at);
+      const decideFirst = !firstReplyDecided.current && unviewed.length > 0 && result.request.requester_id === uid;
+      if (decideFirst) firstReplyDecided.current = true;
+      const [logos, replyHistory] = await Promise.all([
+        logoIds.length > 0 ? getScreenedLogos(logoIds).catch(() => null) : null,
+        decideFirst ? fetchFirstReplyState(uid) : null, // null on failure = normal wording
+      ]);
+      if (logos) setPartnerLogos(logos);
+      if (decideFirst) {
+        const first = unviewed.find((o) => isFirstEverReply(o.id, replyHistory));
+        if (first) setFirstReplyOfferId(first.id);
+      }
       // Owner item 23: a reply that arrived while this request was already on screen travels from the request line ("what
       // you asked") into its card ("who answered"), then builds itself in. Asked before the card mounts so its assembly waits
       // for the travel; never on first open (the request is not on screen yet) and never when the line is scrolled away.
@@ -438,19 +456,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       // is idempotent (only ever sets viewed_at once) and internally
       // scoped to the real requester, so this is safe to fire
       // unconditionally regardless of who's viewing.
-      const unviewed = result.offers.filter((o) => o.status === 'offered' && !o.viewed_at);
-      if (!firstReplyDecided.current && unviewed.length > 0 && result.request.requester_id === uid) {
-        firstReplyDecided.current = true;
-        const history = await fetchFirstReplyState(uid); // null on failure = normal wording
-        const first = unviewed.find((o) => isFirstEverReply(o.id, history));
-        if (first) setFirstReplyOfferId(first.id);
-      }
       unviewed.forEach((o) => markBusinessOfferViewed(o.id));
 
       const partnerIds = [...new Set(result.offers.filter((o) => o.status === 'offered' || o.status === 'accepted').map((o) => o.partner_id))];
-      // Logos also for a visited (completed) booking: the settled plan keeps its business's logo in the place line.
-      const logoIds = [...new Set(result.offers.filter((o) => ['offered', 'accepted', 'completed'].includes(o.status)).map((o) => o.partner_id))];
-      if (logoIds.length > 0) getScreenedLogos(logoIds).then(setPartnerLogos);
       if (partnerIds.length > 0) {
         Promise.all(
           partnerIds.map(async (id) => [id, await Promise.all([getPartnerOfferReputation(id), getPartnerAvgResponseTime(id)])])

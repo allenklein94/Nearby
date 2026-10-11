@@ -47,11 +47,13 @@ test('every language has the Saved label next to the existing on/off labels', ()
 });
 
 describe('gathering detail', () => {
-  test('answers at the tap (optimistic + flash), ignores a second tap while saving, a failure puts it back', () => {
+  test('answers at the tap (optimistic), "✓ Saved" only after the save returned, ignores a second tap, a failure puts it back', () => {
     const i = detail.indexOf('async function toggleInterested()');
     const fn = detail.slice(i, detail.indexOf('async function undoInterested', i));
     expect(fn).toMatch(/if \(togglingInterested\) return;/);
-    expect(fn.indexOf('setInterestedFlash((k) => (next ? k + 1 : 0))')).toBeLessThan(fn.indexOf('await setGatheringInterested'));
+    // owner rule (2026-10-11): motion amplifies correct data -- the flash is a claim about the server, so it follows the save
+    expect(fn.indexOf('setInterestedPending(next)')).toBeLessThan(fn.indexOf('await setGatheringInterested'));
+    expect(fn.indexOf('if (next) setInterestedFlash((k) => k + 1)')).toBeGreaterThan(fn.indexOf('await setGatheringInterested'));
     expect(fn).toMatch(/catch \(e\) \{\s*setInterestedFlash\(0\);/);
     expect(fn).toMatch(/setInterestedPending\(null\);/);
     expect(fn).toMatch(/showSuccessToast\(\.\.\.interestedConfirmation\(next\), \{ undo:/); // the toast stays
@@ -66,13 +68,13 @@ describe('gathering detail', () => {
 });
 
 describe('Home card (the only other Interested button; Discover has none)', () => {
-  test('one save per card at a time; flash on marking only; failure and Undo end it; toast kept', () => {
+  test('one save per card at a time; flash on marking only, after the save returned; failure and Undo end it; toast kept', () => {
     const i = home.indexOf('async function toggleCardInterested');
     const fn = home.slice(i, home.indexOf('async function undoCardInterested', i));
     expect(fn).toMatch(/if \(interestedBusyRef\.current\.has\(g\.id\)\) return;/);
     expect(fn).toMatch(/finally \{\s*interestedBusyRef\.current\.delete\(g\.id\);/);
-    expect(fn).toMatch(/\[g\.id\]: on \? 0 : \(f\[g\.id\] \?\? 0\) \+ 1/);
-    expect(fn.indexOf('setInterestedFlash')).toBeLessThan(fn.indexOf('await setGatheringInterested'));
+    expect(fn.indexOf('setInterestedOverride((o) => ({ ...o, [g.id]: !on }))')).toBeLessThan(fn.indexOf('await setGatheringInterested'));
+    expect(fn.indexOf('if (!on) setInterestedFlash((f) => ({ ...f, [g.id]: (f[g.id] ?? 0) + 1 }))')).toBeGreaterThan(fn.indexOf('await setGatheringInterested'));
     expect(fn).toMatch(/showSuccessToast\(\.\.\.interestedConfirmation\(!on\)/);
     expect(home).toMatch(/<InterestedSaved flashKey=\{interestedFlash\[g\.id\]\}/);
     expect(home).toMatch(/if \(!previous\) setInterestedFlash\(\(f\) => \(\{ \.\.\.f, \[g\.id\]: 0 \}\)\);/);

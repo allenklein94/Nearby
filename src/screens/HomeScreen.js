@@ -420,9 +420,12 @@ export default function HomeScreen({ navigation }) {
         }
       }
       setInterestedOverride((o) => ({ ...o, [g.id]: !on }));
-      setInterestedFlash((f) => ({ ...f, [g.id]: on ? 0 : (f[g.id] ?? 0) + 1 }));
+      if (on) setInterestedFlash((f) => ({ ...f, [g.id]: 0 }));
       try {
         await setGatheringInterested(g.id, !on);
+        // "✓ Saved" is a claim about the server, so it plays only once the save returned (motion amplifies correct data);
+        // the button itself still flips at the tap.
+        if (!on) setInterestedFlash((f) => ({ ...f, [g.id]: (f[g.id] ?? 0) + 1 }));
         // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
         showSuccessToast(...interestedConfirmation(!on), { undo: () => undoCardInterested(g, on) });
       } catch (e) {
@@ -1023,8 +1026,11 @@ export default function HomeScreen({ navigation }) {
       const on = await getMyFriendNearbySharing();
       setFriendNearbySharingState(on);
       const friend = on ? await getNearbyFriend() : null;
+      // The photo is signed BEFORE the friend is set (one update): item 40's faces converge the moment the friend appears,
+      // so a placeholder must never converge and then swap to the photo (motion amplifies correct data).
+      const photo = friend?.photoPath ? await getSignedPhotoUrl(friend.photoPath).catch(() => null) : null;
       setNearbyFriend(friend);
-      setNearbyFriendPhoto(friend?.photoPath ? await getSignedPhotoUrl(friend.photoPath).catch(() => null) : null);
+      setNearbyFriendPhoto(photo);
     } catch {
       setNearbyFriend(null);
       setNearbyFriendPhoto(null);

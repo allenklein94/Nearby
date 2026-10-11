@@ -246,6 +246,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
         joinBaselineRef.current = { ids: approvedIds(joinRows), going };
         if (fresh.length > 0) {
           fresh.forEach((id) => joinShownRef.current.add(id));
+          // Motion amplifies correct data: the arriving faces are signed BEFORE they flow in, so a face never arrives as the
+          // grey placeholder and then swaps to the photo (the full set is signed again further down, as before).
+          const arrivingPhotos = await Promise.all(fresh.map(async (id) => {
+            const path = (g.approvedAttendees ?? []).find((a) => a.user_id === id)?.profiles?.photo_url;
+            return path ? [id, await getSignedPhotoUrl(path).catch(() => null)] : null;
+          }));
+          setAttendeePhotoUrls((cur) => ({ ...cur, ...Object.fromEntries(arrivingPhotos.filter((e) => e && e[1])) }));
           // The figure and the avatar move now; the named line follows the friends lookup (never waits on it, never flips from
           // "Maya joined" to "Your friend Maya joined"). A failed lookup just means nobody is called "your friend".
           setLiveJoin({ ids: fresh, previousGoing: goingBefore, note: null });
@@ -419,7 +426,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
   const [togglingInterested, setTogglingInterested] = useState(false);
   const [showDemandDisclosure, setShowDemandDisclosure] = useState(false);
-  // Item 30: the button answers the tap at once (optimistic state + the brief "✓ Saved" moment) while the save runs; a second
+  // Item 30: the button answers the tap at once (optimistic state; "✓ Saved" once the save returns) while the save runs; a second
   // tap is ignored until it returns (no duplicate save); a failure puts it back. The stored state stays the truth on reload.
   const [interestedPending, setInterestedPending] = useState(null);
   const [interestedFlash, setInterestedFlash] = useState(0);
@@ -429,9 +436,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
     const next = !myInterested;
     setTogglingInterested(true);
     setInterestedPending(next);
-    setInterestedFlash((k) => (next ? k + 1 : 0));
+    if (!next) setInterestedFlash(0);
     try {
       await setGatheringInterested(gatheringId, next);
+      // "✓ Saved" is a claim about the server, so it plays only once the save returned (motion amplifies correct data);
+      // the button itself still flips at the tap.
+      if (next) setInterestedFlash((k) => k + 1);
       // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
       showSuccessToast(...interestedConfirmation(next), { undo: () => undoInterested(!next) });
       if (next) {

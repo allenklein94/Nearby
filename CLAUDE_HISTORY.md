@@ -1,3 +1,16 @@
+# Motion truth audit (2026-10-11) - every moment checked against "motion amplifies correct data"
+
+All 23 data-carrying moments audited (`PRODUCT_AUDIT/MOTION_TRUTH_AUDIT_2026-10-11.md`). 5 violations fixed:
+1. Item 30 "✓ Saved" played before the save returned (Home card + detail): now only after success; the button still flips at the tap.
+2. Host join (items 25/28): the arriving face flowed in as a placeholder, photo popped in later: the arrivals are signed first.
+3. Reply assembly (items 21/23/25): the business logo was fetched fire-and-forget and the first-ever "heard" wording was decided
+   after the card started: both now resolved in one parallel read before `setOffers`.
+4. Item 40 collision: the friend was set before their photo was signed (faces converge at mount): photo first, one update.
+5. Occasion options loader cycled 4 captions on a 900 ms timer and looped: one steady caption (`PLANNING_CAPTIONS[0]`).
+Tests: new `motion/motionTruth.test.js` (4); `interestedSaved.test.js` and `firstReplyMoment.test.js` updated to the new order.
+Jest 418 suites / 5653 pass; journeys 24 / 265. Not device-verified. Residuals (host-join still face before the flow-in; a reused
+group reservation row not re-checked) are in the audit doc.
+
 # Owner rule (2026-10-11): motion amplifies correct data, never hides incorrect data - applied to item 41
 
 Locked in CLAUDE.md (Motion). Applied to the friends-planning moment:

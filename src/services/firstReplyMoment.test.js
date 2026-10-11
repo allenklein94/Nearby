@@ -167,12 +167,14 @@ describe('the card', () => {
 
   test('decided from server history BEFORE the screen marks anything viewed, once per visit, and only for the requester', () => {
     const screen = read('screens/BusinessRequestDetailScreen.js');
-    const decide = screen.indexOf('await fetchFirstReplyState(uid)');
+    const decide = screen.indexOf('decideFirst ? fetchFirstReplyState(uid) : null');
     const mark = screen.indexOf('unviewed.forEach((o) => markBusinessOfferViewed(o.id))');
+    const offersSet = screen.indexOf('setOffers(result.offers)');
     expect(decide).toBeGreaterThan(0);
     expect(mark).toBeGreaterThan(decide);
-    expect(screen).toMatch(/if \(!firstReplyDecided\.current && unviewed\.length > 0 && result\.request\.requester_id === uid\)/);
-    expect(screen).toMatch(/unviewed\.find\(\(o\) => isFirstEverReply\(o\.id, history\)\)/);
+    expect(offersSet).toBeGreaterThan(decide); // decided before the card can assemble (motion never shows a wording that then switches)
+    expect(screen).toMatch(/const decideFirst = !firstReplyDecided\.current && unviewed\.length > 0 && result\.request\.requester_id === uid;/);
+    expect(screen).toMatch(/unviewed\.find\(\(o\) => isFirstEverReply\(o\.id, replyHistory\)\)/);
     expect(screen).toContain('isFirstEverReply: firstReplyOfferId === o.id');
     expect(screen).toContain('{shown.heard}');
   });
