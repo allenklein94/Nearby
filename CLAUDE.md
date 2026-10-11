@@ -116,10 +116,16 @@ action conversion; item 159 business-declared reach (only if requests are consis
 demand-backed acquisition (needs >= 25 distinct people per category in the market); a "High demand"
 label (needs real comparison data); Discover first-viewport fit (needs a phone).
 
-**Open owner questions:** whether "Mark as Completed" may happen before the visit date; an "Also nearby
-(not a Nearby partner)" Places row in experiences; the gathering age-restriction system (parked: needs
-verified-age join/invite design first); where a real "offer value / potential earnings" figure would come
-from (none exists; never estimate it).
+**Owner decisions on the former open questions (2026-10-11; recorded, NOT built -- each needs its own build ask):**
+(1) "Mark as Completed" is never allowed before the scheduled visit date; (2) an "Also nearby (not a Nearby partner)" Places row is
+allowed, clearly labelled, kept distinct from partners, never implying they take part in Nearby offers; (3) gathering age limits:
+use the existing age/safety rules; inspect current rules and applicable requirements before proposing any change, no new restriction
+without approval; (4) offer value only from saved offer + redemption data: shown only with a real price/discount AND a confirmed
+redemption; never estimated revenue or invented value.
+
+**In progress (owner scope, 2026-10-11):** (a) plan messages send no push -- trace + fix + tests, no real pushes; (b) item 41
+"See gatherings" must not repeat the chips' plans; (c) item 35 sign-off check; (d) `docs/business.html` headless-browser check
+(real-browser review stays open). Status per step lands here as each finishes.
 
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
