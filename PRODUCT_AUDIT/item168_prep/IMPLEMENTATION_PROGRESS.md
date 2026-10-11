@@ -6,7 +6,7 @@ verifies mapping, impact, regression tests and rollback plan. Dry runs only, rol
 - [x] B. Client constants/code (CATEGORY_GROUPS, needs/D3, places, classifier, styles, rail D5, D6 paths, synonyms, max-5 UI, customer-only pickers, league format)
 - [x] C. Edge functions (3 VALID_CATEGORIES + prompt), not deployed
 - [x] D. Translations (translations_v1.json; bizDash3 upToFiveCategories; gatheringOptions league) (11 languages)
-- [~] E. Web export: docs/business.html signup page done (V1 group list, customer-only tags no longer offered, max 5 in all; regenerated + code-dependencies.json rebuilt); Expo business web export (docs/business/) pending
+- [x] E. Web export (branch only): docs/business.html signup page (V1 group list, customer-only tags not offered, max 5 in all; regenerated, code-dependencies.json rebuilt) and the Expo business export docs/business/ regenerated
 - [x] F. Tests updated + src/constants/v1CategoryPass.regression.test.js; jest 407 suites all pass; journeys 20/20 (live schema, pre-migration)
 - [ ] G. Migration + rollback runbook; impact query re-run
 - [ ] H. Full diff review
