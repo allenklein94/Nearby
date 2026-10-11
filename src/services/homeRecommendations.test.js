@@ -3,6 +3,10 @@
 // "run anywhere, no device/network needed" convention as
 // intentResolverScoring.test.js.
 const { buildHomeRecommendations, MAX_HOME_RECOMMENDATIONS } = require('./homeRecommendations');
+const { experienceFeedbackFromRow } = require('../utils/experienceFeedback');
+
+// Item 35: the person's latest "How was it?" word, as getMyExperienceFeedback returns it.
+const fbk = (row) => experienceFeedbackFromRow(row);
 
 // Forecast facts covering "now" (weather is judged at each gathering's own time).
 const H = 3600;
@@ -115,16 +119,16 @@ describe('buildHomeRecommendations', () => {
     expect(results[0].reasons).toEqual(['At Coastal Coffee']);
   });
 
-  it('adds a real "loved this host before" bonus only when the gathering\'s host is in positiveHostIds', () => {
+  it('adds a real "loved this host before" bonus only when the person loved this host', () => {
     const withBonus = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'host1', scheduled_at: new Date().toISOString() })],
-      positiveHostIds: new Set(['host1']),
+      feedback: fbk({ loved_host_ids: ['host1'] }),
     });
     expect(withBonus[0].reasons).toContain('You loved a gathering with this host before');
 
     const noBonus = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'host2', scheduled_at: new Date().toISOString() })],
-      positiveHostIds: new Set(['host1']),
+      feedback: fbk({ loved_host_ids: ['host1'] }),
     });
     expect(noBonus[0].reasons).not.toContain('You loved a gathering with this host before');
   });
@@ -133,33 +137,32 @@ describe('buildHomeRecommendations', () => {
     const today = new Date().toISOString();
     const kind = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'other', interest_tag: 'Outdoor Dining', scheduled_at: today })],
-      positiveCategories: new Set(['Outdoor Dining']),
+      feedback: fbk({ loved_categories: ['Outdoor Dining'] }),
     });
     expect(kind[0].reasons).toContain('You loved this kind of experience last time');
     const both = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'host1', interest_tag: 'Outdoor Dining', scheduled_at: today })],
-      positiveHostIds: new Set(['host1']),
-      positiveCategories: new Set(['Outdoor Dining']),
+      feedback: fbk({ loved_host_ids: ['host1'], loved_categories: ['Outdoor Dining'] }),
     });
     expect(both[0].reasons).toContain('You loved a gathering with this host before');
     expect(both[0].reasons).not.toContain('You loved this kind of experience last time');
     const none = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'other', interest_tag: 'Board Games', scheduled_at: today })],
-      positiveCategories: new Set(['Outdoor Dining']),
+      feedback: fbk({ loved_categories: ['Outdoor Dining'] }),
     });
     expect(none[0]?.reasons ?? []).not.toContain('You loved this kind of experience last time');
   });
 
-  it('adds a real "loved this business before" bonus only when the offer\'s partner is in positivePartnerIds', () => {
+  it('adds a real "loved this business before" bonus only when the person loved this business', () => {
     const withBonus = buildHomeRecommendations({
       offers: [offer({ partner_id: 'partner1' })],
-      positivePartnerIds: new Set(['partner1']),
+      feedback: fbk({ loved_partner_ids: ['partner1'] }),
     });
     expect(withBonus[0].reasons).toContain('You loved this business last time');
 
     const noBonus = buildHomeRecommendations({
       offers: [offer({ partner_id: 'partner2' })],
-      positivePartnerIds: new Set(['partner1']),
+      feedback: fbk({ loved_partner_ids: ['partner1'] }),
     });
     expect(noBonus[0].reasons).not.toContain('You loved this business last time');
   });
@@ -167,34 +170,58 @@ describe('buildHomeRecommendations', () => {
   it('Phase J: an omitted accountAgeDays/hasBehavioralHistory produces byte-identical scores to before -- zero regression', () => {
     const withoutMaturity = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'host1', matchesYourInterests: true, distanceMiles: 0.5 })],
-      positiveHostIds: new Set(['host1']),
+      feedback: fbk({ loved_host_ids: ['host1'] }),
     });
     const withFullMaturity = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'host1', matchesYourInterests: true, distanceMiles: 0.5 })],
-      positiveHostIds: new Set(['host1']),
+      feedback: fbk({ loved_host_ids: ['host1'] }),
       accountAgeDays: 14,
       hasBehavioralHistory: true,
     });
     expect(withoutMaturity[0].score).toBe(withFullMaturity[0].score);
   });
 
-  it('Phase J: dampens the TRANSACTIONAL "loved this host before" bonus for a brand-new, no-history account', () => {
+  it('item 35: a loved host is explicit feedback, never dampened for a brand-new account (explicit feedback > guessing)', () => {
     const mature = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'host1' })],
-      positiveHostIds: new Set(['host1']),
+      feedback: fbk({ loved_host_ids: ['host1'] }),
     });
     const brandNew = buildHomeRecommendations({
       gatherings: [gathering({ host_id: 'host1' })],
-      positiveHostIds: new Set(['host1']),
+      feedback: fbk({ loved_host_ids: ['host1'] }),
       accountAgeDays: 0,
       hasBehavioralHistory: false,
     });
-    expect(brandNew[0].score).toBeLessThan(mature[0].score);
-    expect(brandNew[0].score).toBeGreaterThan(0);
-    // The reason text itself never changes -- it's still honestly true,
-    // only the ranking weight behind it is smaller for a thin-history
-    // account.
+    expect(brandNew[0].score).toBe(mature[0].score);
     expect(brandNew[0].reasons).toContain('You loved a gathering with this host before');
+  });
+
+  it('item 35: Not for me lowers that host, business or kind, with no reason line', () => {
+    const today = new Date().toISOString();
+    const pool = [
+      gathering({ id: 'a', host_id: 'h1', interest_tag: 'Coffee', matchesYourInterests: true, scheduled_at: today }),
+      gathering({ id: 'b', host_id: 'h2', interest_tag: 'Coffee', matchesYourInterests: true, scheduled_at: today }),
+    ];
+    const plain = buildHomeRecommendations({ gatherings: pool });
+    const ranked = buildHomeRecommendations({ gatherings: pool, feedback: fbk({ not_for_me_host_ids: ['h1'] }) });
+    expect(ranked.map((r) => r.id)).toEqual(['b', 'a']);
+    expect(ranked.find((r) => r.id === 'a').score).toBeLessThan(plain.find((r) => r.id === 'a').score);
+    expect(ranked.find((r) => r.id === 'a').reasons.some((t) => /loved|not for me/i.test(t))).toBe(false);
+
+    const kind = buildHomeRecommendations({ gatherings: [pool[1]], feedback: fbk({ not_for_me_categories: ['Coffee'] }) });
+    expect(kind[0].score).toBeLessThan(plain.find((r) => r.id === 'b').score);
+
+    const offers = buildHomeRecommendations({ offers: [offer({ id: 'o1', partner_id: 'p1' }), offer({ id: 'o2', partner_id: 'p2' })], feedback: fbk({ not_for_me_partner_ids: ['p1'] }) });
+    expect(offers.map((r) => r.id)).toEqual(['o2', 'o1']);
+  });
+
+  it('item 35: the host\'s own word beats the word on the kind (most specific wins, never stacked)', () => {
+    const today = new Date().toISOString();
+    const g = gathering({ host_id: 'h1', interest_tag: 'Coffee', scheduled_at: today });
+    const lovedHost = buildHomeRecommendations({ gatherings: [g], feedback: fbk({ loved_host_ids: ['h1'], not_for_me_categories: ['Coffee'] }) });
+    expect(lovedHost[0].reasons).toContain('You loved a gathering with this host before');
+    const plain = buildHomeRecommendations({ gatherings: [g] });
+    expect(lovedHost[0].score).toBeGreaterThan(plain[0].score);
   });
 
   it('Phase J: never dampens EXPLICIT (interests) or CONTEXTUAL (distance/today/weather) bonuses, even at zero maturity', () => {

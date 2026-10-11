@@ -33,6 +33,7 @@ import { REASON_TEXT, becauseYouLikeReason, reasonText } from '../constants/reco
 // weightSignal() itself, so tagging them here is documentation, not a
 // behavior lever.
 import { SIGNAL_SOURCES, computeAccountMaturity, weightSignal } from '../constants/signalSourceMaturity';
+import { feedbackFor } from '../utils/experienceFeedback';
 
 // Item 131 audit: this is the CANDIDATE pool, not what Home shows. Home's attention list (utils/homeAttention.js) picks and
 // caps at MAX_HOME_ATTENTION by the shared tier ladder; a cut here at 5 let this file's point total decide which candidates the
@@ -95,7 +96,7 @@ function socialComfortBonus(groupSizeFeel, socialComfortLevel) {
     : null;
 }
 
-function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity, interestGroups = [], positiveCategories = new Set()) {
+function scoreGathering(gathering, weather, feedback, socialComfortLevel, maturity, interestGroups = []) {
   let score = 0;
   const reasons = [];
 
@@ -130,24 +131,14 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
     score += weightSignal(weatherBonus.points, SIGNAL_SOURCES.CONTEXTUAL, maturity);
     if (weatherBonus.reason) reasons.push(weatherBonus.reason);
   }
-  // "The Plan Engine" Phase 4 (CLAUDE.md) -- closes the doc's own VISIT ->
-  // FEEDBACK -> NEXT PLAN loop: a real, itemized bonus when the caller has
-  // genuinely rated a past gathering with this same host positively
-  // (satisfaction_rating loved_it/good AND would_attend_again = true, per
-  // get_my_positive_experience_signals()) -- reuses SCORE_OWN_NETWORK, the
-  // highest existing weight, since a real lived experience is at least as
-  // strong a signal as an own-network connection. TRANSACTIONAL: a single
-  // specific past interaction -- real, but the narrowest-scope class of
-  // the five, so it's the one bonus Phase J's own maturity weighting
-  // actually dampens for a low-maturity caller.
-  if (gathering.host_id && positiveHostIds?.has(gathering.host_id)) {
-    score += weightSignal(SCORE_OWN_NETWORK, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
-    reasons.push(reasonText('lovedHost'));
-  } else if (gathering.interest_tag && positiveCategories?.has(gathering.interest_tag)) {
-    // The feedback loop at the level of a KIND of experience (the same real feedback, not a repeat host): weaker than a
-    // repeat host, never stacked on it. TRANSACTIONAL like the host bonus, so a low-maturity account is dampened the same.
-    score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
-    reasons.push(reasonText('lovedKind'));
+  // Item 35 (owner, 2026-10-11): the person's latest "How was it?" word (utils/experienceFeedback.js, the one reader). A loved
+  // host (or business) lifts by the own-network weight, a loved kind by the interest weight; Not for me lowers by the same,
+  // without a reason line. Most specific wins, never stacked. EXPLICIT: the person said it, so it is never maturity-dampened
+  // (explicit feedback > guessing).
+  const fb = feedbackFor({ hostId: gathering.host_id, partnerId: gathering.hosting_partner_id, category: gathering.interest_tag }, feedback);
+  if (fb.direction !== 0) {
+    score += fb.direction * weightSignal(fb.scope === 'kind' ? SCORE_INTEREST_MATCH : SCORE_OWN_NETWORK, SIGNAL_SOURCES.EXPLICIT, maturity);
+    if (fb.reason) reasons.push(fb.reason);
   }
   const comfortBonus = socialComfortBonus(gathering.group_size_feel, socialComfortLevel);
   if (comfortBonus) {
@@ -160,7 +151,7 @@ function scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel,
   return { score, reasons };
 }
 
-function scoreOffer(offer, positivePartnerIds, maturity, weather = null) {
+function scoreOffer(offer, feedback, maturity, weather = null) {
   let score = 0;
   const reasons = [];
 
@@ -177,14 +168,11 @@ function scoreOffer(offer, positivePartnerIds, maturity, weather = null) {
   if (offer.brand_partners?.name) {
     reasons.push(reasonText('atBusiness', { business: offer.brand_partners.name }));
   }
-  // "The Plan Engine" Phase 4 (CLAUDE.md) -- same real closing-the-loop
-  // bonus as scoreGathering above, for a business the caller has genuinely
-  // rated positively before (satisfaction_rating loved_it/good AND
-  // would_repeat yes/maybe on a real past offer). TRANSACTIONAL, same
-  // reasoning as the positiveHostIds bonus above.
-  if (offer.partner_id && positivePartnerIds?.has(offer.partner_id)) {
-    score += weightSignal(SCORE_OWN_NETWORK, SIGNAL_SOURCES.TRANSACTIONAL, maturity);
-    reasons.push(reasonText('lovedBusiness'));
+  // Item 35: the same feedback reader as scoreGathering (a loved / Not for me business, else the offer's kind).
+  const fb = feedbackFor({ partnerId: offer.partner_id, category: offer.target_interest_tag ?? offer.brand_partners?.category ?? null }, feedback);
+  if (fb.direction !== 0) {
+    score += fb.direction * weightSignal(fb.scope === 'kind' ? SCORE_INTEREST_MATCH : SCORE_OWN_NETWORK, SIGNAL_SOURCES.EXPLICIT, maturity);
+    if (fb.reason) reasons.push(fb.reason);
   }
 
   // A business's own indoor/outdoor/weather-dependent declaration against today's weather (item 63). Ranks, never hides,
@@ -196,7 +184,7 @@ function scoreOffer(offer, positivePartnerIds, maturity, weather = null) {
 }
 
 // context: { gatherings=[], offers=[], weather=null, excludeIds=Set(),
-// positiveHostIds=Set(), positivePartnerIds=Set(), accountAgeDays=null,
+// feedback=null (item 35, getMyExperienceFeedback), accountAgeDays=null,
 // hasBehavioralHistory=false }
 // accountAgeDays/hasBehavioralHistory are both optional and both default
 // to values that resolve to full trust (computeAccountMaturity() returns
@@ -212,9 +200,7 @@ export function buildHomeRecommendations({
   offers = [],
   weather = null,
   excludeIds = new Set(),
-  positiveHostIds = new Set(),
-  positivePartnerIds = new Set(),
-  positiveCategories = new Set(),
+  feedback = null,
   socialComfortLevel = null,
   interestGroups = [],
   accountAgeDays = null,
@@ -225,14 +211,14 @@ export function buildHomeRecommendations({
 
   for (const gathering of gatherings) {
     if (excludeIds.has(gathering.id)) continue;
-    const { score, reasons } = scoreGathering(gathering, weather, positiveHostIds, socialComfortLevel, maturity, interestGroups, positiveCategories);
+    const { score, reasons } = scoreGathering(gathering, weather, feedback, socialComfortLevel, maturity, interestGroups);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'gathering', id: gathering.id, title: gathering.title, reasons, score, data: gathering });
   }
 
   for (const offer of offers) {
     if (excludeIds.has(offer.id)) continue;
-    const { score, reasons } = scoreOffer(offer, positivePartnerIds, maturity, weather);
+    const { score, reasons } = scoreOffer(offer, feedback, maturity, weather);
     if (reasons.length === 0) continue;
     candidates.push({ type: 'perk', id: offer.id, title: offer.title, reasons, score, data: offer });
   }

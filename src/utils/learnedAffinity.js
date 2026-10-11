@@ -60,11 +60,13 @@ export function askStatesConstraint(text, { dateWindow = null, priceLevel = null
   );
 }
 
-export function applyLearnedAffinity(candidates, learned, { constrained = false } = {}) {
+// `notForMeKinds` (item 35): kinds the person last called Not for me. Their explicit word beats this guess, so no lift there.
+export function applyLearnedAffinity(candidates, learned, { constrained = false, notForMeKinds = null } = {}) {
   if (!Array.isArray(candidates) || !learned || learned.maturity == null) return candidates;
   const behavior = learned.behavior ?? {};
   if (Object.keys(behavior).length === 0) return candidates;
   return candidates.map((c) => {
+    if (notForMeKinds instanceof Set && notForMeKinds.has(c?.category)) return c;
     const lift = behaviorNudge(c?.category, { behavior, maturity: learned.maturity });
     if (!(lift > 0)) return c;
     const reasons = appendReason(c.reasons, reasonText('recentActivity', { category: c.category }));

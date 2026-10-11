@@ -19,7 +19,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
-import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getMyPositiveExperienceSignals, getSignedGatheringPhotoUrl } from '../services/gatherings';
+import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getSignedGatheringPhotoUrl } from '../services/gatherings';
+import { getMyExperienceFeedback } from '../services/experienceFeedback';
+import { EMPTY_EXPERIENCE_FEEDBACK } from '../utils/experienceFeedback';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { askBusinessFromAsk } from '../services/askToBusiness';
 import { resolveClassifiedAsk, resolveCommunityIntent, navigateToIntentResultItem } from '../services/intentResolver';
@@ -353,6 +355,7 @@ export default function HomeScreen({ navigation }) {
   // reusing the same already-fetched nearby gatherings + a single new
   // getActiveOffers() call, scored on the shared intent-resolver axis.
   const [homeRecommendations, setHomeRecommendations] = useState([]);
+  const [experienceFeedback, setExperienceFeedback] = useState(EMPTY_EXPERIENCE_FEEDBACK); // item 35
   const period = getTimePeriod();
   // Impression analytics dedupe: this screen's own useFocusEffect re-runs the
   // "should I show a nudge" check on every focus, so a plain "log shown here"
@@ -482,6 +485,7 @@ export default function HomeScreen({ navigation }) {
     cards: homeMerge.cards,
     recommended: homeRecommendations,
     soon: (dashboard?.happeningNow ?? []).filter((g) => !shownInMergeIds.has(g.id)),
+    feedback: experienceFeedback, // item 35: loved ranks up, Not for me ranks down (personal-interest tier)
   });
   // Nearby Right Now (item 33): the time view, below everything personal; never repeats a gathering shown above it.
   const rightNow = selectRightNow({
@@ -912,16 +916,10 @@ export default function HomeScreen({ navigation }) {
       try {
         setOffersLoadFailed(false);
         const offers = await getActiveOffers(myLocation?.coords?.latitude ?? null, myLocation?.coords?.longitude ?? null).catch((e) => { console.error('home offers failed', e); setOffersLoadFailed(true); return []; });
-        // "The Plan Engine" Phase 4 (CLAUDE.md) -- real post-visit
-        // feedback (gathering_feedback/business_offer_outcomes) feeding
-        // back into this same scoring pass. Supplementary, non-fatal --
-        // falls back to two empty Sets (no bonus applied) on failure,
-        // matching this whole block's own established convention.
-        const { positiveHostIds, positivePartnerIds, positiveCategories } = await getMyPositiveExperienceSignals().catch(() => ({
-          positiveHostIds: new Set(),
-          positivePartnerIds: new Set(),
-          positiveCategories: new Set(),
-        }));
+        // Item 35: the person's latest "How was it?" word (loved / Not for me) ranks both ways, here and in Picked For You.
+        // Supplementary, non-fatal: a failure = no feedback (ranking unchanged).
+        const feedback = await getMyExperienceFeedback().catch(() => EMPTY_EXPERIENCE_FEEDBACK);
+        setExperienceFeedback(feedback);
         // Phase J (CLAUDE.md) -- both real, zero-new-query: accountAgeDays
         // from profile.created_at (this same load() call's own already-
         // fetched profile row); hasBehavioralHistory from
@@ -942,9 +940,7 @@ export default function HomeScreen({ navigation }) {
             offers,
             weather: forecast,
             excludeIds: new Set(result?.upcomingPlanIds ?? []),
-            positiveHostIds,
-            positivePartnerIds,
-            positiveCategories,
+            feedback,
             // Sep 3 2026 ("global onboarding -> product wiring" master
             // plan, CLAUDE.md, Phase A) -- `profile` is the same select
             // from earlier in this same load() call (closure, not a

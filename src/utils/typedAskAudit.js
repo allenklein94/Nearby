@@ -8,7 +8,7 @@
 // services/typedAskAudit.js.
 
 // Bump whenever what is recorded (fields, codes, layout) changes, so rows stay comparable.
-export const TYPED_ASK_AUDIT_VERSION = 'typed-ask-audit-v3'; // v2: results ordered by the tier framework; business/perk/community base split into named codes. v3 (item 118): eligibility runs before ranking; `exclusions` = removals by eligibility rule
+export const TYPED_ASK_AUDIT_VERSION = 'typed-ask-audit-v4'; // v4 (item 35): `experience_feedback` code. v2: results ordered by the tier framework; business/perk/community base split into named codes. v3 (item 118): eligibility runs before ranking; `exclusions` = removals by eligibility rule
 
 // Every code a score contribution or a removal can carry. `class` is what analysis aggregates by ("how often did an explicit
 // requirement contribute", "how often did weather"...). A pass that is traced must use one of these; a test keeps resolveIntent's
@@ -61,6 +61,7 @@ export const SIGNAL_CODES = {
   declared_features: 'explicit_requirement',
   vibe: 'explicit_preference',
   learned_affinity: 'personal_interest', // item 156: the person's own recent choices (counted as history)
+  experience_feedback: 'personal_interest', // item 35: the person's latest "How was it?" word (loved / Not for me; history)
   session_intent: 'personal_interest', // item 114: history lift removed/capped when the ask states what it wants now
   quality_depth: 'explicit_preference',
   date_place: 'explicit_preference',

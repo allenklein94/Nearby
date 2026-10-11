@@ -1,5 +1,7 @@
 import { recordSearchBehavior, getMyLearnedAffinity } from './behaviorSignals';
 import { applyLearnedAffinity, askStatesConstraint, comparePersonalTieBreak } from '../utils/learnedAffinity';
+import { applyExperienceFeedback } from '../utils/experienceFeedback';
+import { getMyExperienceFeedback } from './experienceFeedback';
 import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
@@ -159,6 +161,7 @@ async function resolveGatherings(category, dateWindow, rawText, priceLevel, part
       // item 196: what the row's state-aware action reads (utils/primaryAction.js gatheringPrimaryAction): the viewer's own
       // attendance row (RLS shows a stranger only their own and friends' rows), the server attendee count, and the join mode
       host_id: gathering.host_id ?? null,
+      hostingPartnerId: gathering.hosting_partner_id ?? null, // item 35: a business-hosted gathering carries that business's feedback
       attendees: Array.isArray(gathering.attendees) ? gathering.attendees : undefined,
       approvedCount: typeof gathering.approvedCount === 'number' ? gathering.approvedCount : undefined,
       visibility: gathering.visibility ?? null,
@@ -725,6 +728,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const learnedProximityPromise = getMyLearnedProximity().catch(() => ({}));
   // Item 156: the person's learned category affinity (the same signal the feeds use). Started now, awaited by its pass.
   const learnedAffinityPromise = getMyLearnedAffinity().catch(() => null);
+  const experienceFeedbackPromise = getMyExperienceFeedback().catch(() => null);
 
   // Item 69: "willing to travel" widens every search one step on the shared radius list (15 -> 30 mi), bounded by its maximum.
   const distanceWillingness = distanceWillingnessFromText(rawText);
@@ -951,10 +955,14 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // ask ALREADY returned, below a declared interest, as history: the session-intent pass right after keeps it to a
   // tie-breaker when the ask states any explicit constraint (time, budget, environment, vibe...). Never adds, removes or
   // narrows anything (utils/learnedAffinity.js).
-  deduped = applyLearnedAffinity(deduped, await learnedAffinityPromise, {
-    constrained: askStatesConstraint(rawText, { dateWindow, priceLevel, budgetMax, openNowChip, narrowGroup }),
-  });
+  const feedback = await experienceFeedbackPromise;
+  const constrained = askStatesConstraint(rawText, { dateWindow, priceLevel, budgetMax, openNowChip, narrowGroup });
+  deduped = applyLearnedAffinity(deduped, await learnedAffinityPromise, { constrained, notForMeKinds: feedback?.notForMeKinds });
   step('learned_affinity');
+  // Item 35: the person's latest "How was it?" word (utils/experienceFeedback.js): loved lifts, Not for me lowers, same rules
+  // as the learned affinity above (history; a literal tie-breaker under a stated constraint). Only reorders what the ask returned.
+  deduped = applyExperienceFeedback(deduped, feedback, { constrained });
+  step('experience_feedback');
   // Item 114: what the person asked for tonight outranks who they usually are (constants/sessionIntent.js).
   deduped = applySessionIntent(deduped, sessionIntentFromText(rawText));
   step('session_intent');

@@ -26,8 +26,10 @@ describe('categorizeReasonText', () => {
 
   it('classifies homeRecommendations.js\'s own distance/context reasons', () => {
     expect(categorizeReasonText('Close by')).toBe(REASON_CATEGORIES.DISTANCE);
-    expect(categorizeReasonText('You loved a gathering with this host before')).toBe(REASON_CATEGORIES.CONTEXT);
-    expect(categorizeReasonText('You loved this business last time')).toBe(REASON_CATEGORIES.CONTEXT);
+    // item 35: explicit feedback is a personal reason
+    expect(categorizeReasonText('You loved a gathering with this host before')).toBe(REASON_CATEGORIES.INTEREST);
+    expect(categorizeReasonText('You loved this business last time')).toBe(REASON_CATEGORIES.INTEREST);
+    expect(categorizeReasonText('You loved this kind of experience last time')).toBe(REASON_CATEGORIES.INTEREST);
   });
 
   it('classifies getGatheringFitReasons()\'s real parameterized reasons', () => {

@@ -6,12 +6,14 @@
 //   C. approved, over (90 min ago, no duration)       -> the card shown first (most recent that is over); Skip -> gone
 //   D. join request still pending, over               -> not attended, never offered
 // Each answer writes the one gathering_feedback row (Skip = an honest empty row, no rating invented), so the card never
-// comes back or duplicates. Rolled back. The move (once per gathering, Reduce Motion) and the Home wiring are checked in
+// comes back or duplicates. Item 35: the answer then feeds the next recommendations (get_my_experience_feedback, read through
+// utils/experienceFeedback.js): Loved it lifts that host and kind, a later Not for me lowers. Rolled back. The move (once per gathering, Reduce Motion) and the Home wiring are checked in
 // utils/gatheringCompletion.test.js. Not covered: rendering on a device.
 const { runSql } = require('../../scripts/live-verify/lib/db');
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
 import { completedPlanFor } from '../utils/gatheringCompletion';
 import { SATISFACTION_SCALE } from '../constants/satisfactionScale';
+import { experienceFeedbackFromRow, feedbackFor } from '../utils/experienceFeedback';
 
 const d = hasToken ? describe : describe.skip;
 
@@ -29,7 +31,7 @@ d('journey: an attended gathering ends -> Completed on Your Plans -> How was it?
     const people = await runSql(`select id from profiles order by created_at limit 2;`);
     const log = await runJourney(`
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}';
-      v_a uuid; v_b uuid; v_c uuid; v_d uuid; v_res jsonb;`, `
+      v_a uuid; v_b uuid; v_c uuid; v_d uuid; v_e uuid; v_res jsonb;`, `
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J34 over', now() + interval '3 days', 40.3, -75.2, 'Coffee', 'journey', 10, 'everyone') returning id into v_a;
@@ -74,7 +76,22 @@ d('journey: an attended gathering ends -> Completed on Your Plans -> How was it?
     log := log || jsonb_build_array(jsonb_build_object('step','second_answer','ok', true, 'data', jsonb_build_object('refused', false)));
   exception when unique_violation then
     log := log || jsonb_build_array(jsonb_build_object('step','second_answer','ok', true, 'data', jsonb_build_object('refused', true)));
-  end;`);
+  end;
+
+  -- item 35: what the fan's next recommendations read (the fan's own call; auth.uid() inside)
+  log := log || jsonb_build_array(jsonb_build_object('step','feedback_after_loved','ok', true, 'data',
+    (select to_jsonb(f) from public.get_my_experience_feedback() f)));
+  -- a later plan with the same host, a different kind: Not for me (a later answer = the latest word on that host)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
+    values (v_host, 'J35 bowling', now() + interval '3 days', 40.3, -75.2, 'Bowling', 'journey', 10, 'everyone') returning id into v_e;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_fan, 'role', 'authenticated')::text, true);
+  perform join_gathering(v_e);
+  update gatherings set scheduled_at = now() - interval '3 hours', duration_minutes = 60 where id = v_e;
+  insert into gathering_feedback (gathering_id, reviewer_id, satisfaction_rating, created_at)
+    values (v_e, v_fan, 'not_for_me', now() + interval '1 minute'); -- answered later than A (one transaction = one now())
+  log := log || jsonb_build_array(jsonb_build_object('step','feedback_after_not_for_me','ok', true, 'data',
+    (select to_jsonb(f) from public.get_my_experience_feedback() f) || jsonb_build_object('host', v_host)));`);
     s = stepMap(log);
   }, 120000);
 
@@ -110,5 +127,27 @@ d('journey: an attended gathering ends -> Completed on Your Plans -> How was it?
 
   test('a second answer for the same gathering is refused: the card can never duplicate', () => {
     expect(data('second_answer').refused).toBe(true);
+  });
+
+  // Item 35: "How was it?" improves recommendations, both ways.
+  test('Loved it (rating alone, would-go-again not asked) lifts that host and that kind of plan', () => {
+    const f = experienceFeedbackFromRow(data('feedback_after_loved'));
+    const host = data('feedback_after_not_for_me').host;
+    expect(f.lovedHosts.has(host)).toBe(true);
+    expect(f.lovedKinds.has('Coffee')).toBe(true);
+    const ranked = feedbackFor({ hostId: host, category: 'Coffee' }, f);
+    expect(ranked).toMatchObject({ direction: 1, reason: 'You loved a gathering with this host before' });
+  });
+
+  test('a later Not for me lowers that host and that kind; the loved kind stays loved', () => {
+    const row = data('feedback_after_not_for_me');
+    const f = experienceFeedbackFromRow(row);
+    expect(f.notForMeHosts.has(row.host)).toBe(true);
+    expect(f.lovedHosts.has(row.host)).toBe(false);
+    expect(f.notForMeKinds.has('Bowling')).toBe(true);
+    expect(f.lovedKinds.has('Coffee')).toBe(true);
+    // the next recommendation from that host ranks down, with no reason line; another host's coffee ranks up
+    expect(feedbackFor({ hostId: row.host, category: 'Coffee' }, f)).toMatchObject({ direction: -1, reason: null });
+    expect(feedbackFor({ hostId: 'someone-else', category: 'Coffee' }, f).direction).toBe(1);
   });
 });

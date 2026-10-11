@@ -193,6 +193,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `compareRanked`). All five consumer surfaces use it; business routing stays separate.
 - Declared interest (5) > learned behavior (0-4, needs 2+ separate pieces of evidence) > single click (0).
   Under any stated constraint, learned affinity and history are only literal tie-breakers.
+- **"How was it?" ranks both ways (item 35):** the latest word per host/business/kind (`get_my_experience_feedback`, read only via
+  `utils/experienceFeedback.js`): loved +5 / Not for me -5 in the interest tier, explicit (never dampened), most specific wins,
+  cancels learned behavior for a Not-for-me kind; reorders only; Not for me shows no reason. Home, Picked For You, Discover, typed asks.
 - **One object, once per surface, all its real reasons.** Home priority: firstRun > yourPlans > expanded
   insight > weather > bestPick > pickedForYou > nearbyRightNow (`HOME_SECTION_PRIORITY`). Discover: one dedupe chain.
 - **Cards** (`recommendationContext.js`, `gatheringCardModel`): What / Why (max 2 strongest reasons, section

@@ -48,15 +48,12 @@
 //                   actively less useful on day one, the opposite of the
 //                   "don't overwhelm a new user" goal this whole model
 //                   exists to serve.
-//   TRANSACTIONAL -- a specific, single past completed interaction the
-//                   caller explicitly rated (e.g. get_my_positive_experience_
-//                   signals()'s real loved-it/would-repeat history). The
-//                   narrowest-scope, most overfit-prone class of the five
-//                   -- one great night with one host is real, but weighing
-//                   it as heavily for a brand-new account as it would be
-//                   weighed for an account with a real track record risks
-//                   over-personalizing on N=1 -- dampened for a
-//                   low-maturity account.
+//   TRANSACTIONAL -- a specific, single past completed interaction (no
+//                   current caller). Dampened for a low-maturity account.
+//                   NOT the "How was it?" rating: owner item 35 (2026-10-11,
+//                   "explicit feedback > guessing") made the person's own
+//                   loved / Not for me word EXPLICIT (utils/experienceFeedback.js),
+//                   never dampened.
 export const SIGNAL_SOURCES = {
   EXPLICIT: 'explicit',
   BEHAVIORAL: 'behavioral',

@@ -15,6 +15,7 @@
 import { isWithinRightNowWindow } from './rightNowWindow';
 import { recommendationRow } from './recommendationFacts';
 import { signalTier, tierVector, compareTierVectors, SIGNAL_TIERS } from '../constants/signalPriority';
+import { feedbackFor, LOVED_REASONS } from './experienceFeedback';
 
 // Item 33 (owner, 2026-10-08): Home hierarchy = intent, Picked For You (2-3), Your Plans (1-3) + See all, the social line,
 // Nearby Right Now (2-3), then more. Each list is capped at 3.
@@ -34,8 +35,16 @@ function isUrgent(g, now) {
 // its real reasons come back in `absorbed` (id -> [reason text]) so an earlier surface that has room can show them. The
 // Best Pick lead is NOT exempt: if its gathering is already above, the lead is dropped (hero = null) and the freed slot
 // is refilled by the next eligible candidate like any other.
-export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], exclude = null, intentTags = null, now = new Date(), max = MAX_HOME_ATTENTION } = {}) {
+// `feedback` (item 35, utils/experienceFeedback.js): the person's latest "How was it?" word. Loved = one more point in the
+// personal-interest tier, Not for me = one less (the loved reason line itself is not counted again). A Best Pick the person
+// called Not for me (its host, business or kind) loses the lead and competes as an ordinary candidate.
+export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], exclude = null, intentTags = null, now = new Date(), max = MAX_HOME_ATTENTION, feedback = null } = {}) {
   const absorbed = new Map();
+  const fbOf = (g) => feedbackFor({ hostId: g?.host_id, partnerId: g?.hosting_partner_id, category: g?.interest_tag }, feedback);
+  if (hero && fbOf(hero).direction < 0) {
+    cards = [{ gathering: hero, signals: (hero.reasons ?? []).map((text) => ({ kind: 'bestPick', text })), reasons: hero.reasons ?? [], hasFriend: false, trendingOnly: false }, ...cards];
+    hero = null;
+  }
   const isAbove = (id) => !!exclude && exclude.has(id);
   const absorb = (id, texts) => {
     const list = absorbed.get(id) ?? [];
@@ -78,8 +87,13 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
   // `intentTags`: the interest categories of the active Ask-Nearby search (lower-cased), or null when none is active.
   const matchesIntent = (g) => !!intentTags && intentTags.size > 0 && typeof g?.interest_tag === 'string' && intentTags.has(g.interest_tag.toLowerCase());
   const vectorOf = (c) => {
-    if (c.kind === 'perk') return tierVector([{ tier: SIGNAL_TIERS.business, delta: 1 }]);
-    const parts = (c.signals ?? []).map((sig) => ({ tier: signalTier(sig), delta: 1 }));
+    if (c.kind === 'perk') {
+      const offer = c.item?.data;
+      const fb = feedbackFor({ partnerId: offer?.partner_id, category: offer?.target_interest_tag ?? offer?.brand_partners?.category ?? null }, feedback);
+      return tierVector([{ tier: SIGNAL_TIERS.business, delta: 1 }, { tier: SIGNAL_TIERS.interest, delta: fb.direction }]);
+    }
+    const parts = (c.signals ?? []).filter((sig) => !LOVED_REASONS.includes(sig?.text)).map((sig) => ({ tier: signalTier(sig), delta: 1 }));
+    parts.push({ tier: SIGNAL_TIERS.interest, delta: fbOf(c.gathering).direction });
     if (matchesIntent(c.gathering)) parts.push({ tier: SIGNAL_TIERS.intent, delta: 1 });
     if (isUrgent(c.gathering, now)) parts.push({ tier: SIGNAL_TIERS.time, delta: 1 });
     return tierVector(parts);

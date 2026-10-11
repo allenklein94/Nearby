@@ -183,6 +183,7 @@ export const TYPED_ASK_SIGNAL_TIER = {
   // 6 strong interests (who the person usually is)
   base_interest_match: SIGNAL_TIERS.interest, base_hobby_link: SIGNAL_TIERS.interest, base_past_plan: SIGNAL_TIERS.interest,
   base_followed: SIGNAL_TIERS.interest, session_intent: SIGNAL_TIERS.interest, learned_affinity: SIGNAL_TIERS.interest,
+  experience_feedback: SIGNAL_TIERS.interest,
   // 7 business opportunity (may be able to help, not confirmed)
   base_occasion_offering: SIGNAL_TIERS.business,
   // 8 weather

@@ -20,6 +20,7 @@ import PlacesToGoSection from '../components/PlacesToGoSection';
 import { askBusinessesFits } from '../utils/placesToGo';
 import { learnedProximityFor } from '../utils/learnedProximity';
 import { behaviorNudge, broadGroupNudge, relatedHobbyNudge, forYouBlend, COMFORT_POINTS } from '../constants/blendedRanking';
+import { feedbackFor, FEEDBACK_POINTS } from '../utils/experienceFeedback';
 import { comfortFits } from '../constants/socialComfort';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
@@ -1157,7 +1158,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
     }
     // Behavior (what this user actually opens/creates/joins) nudges the score as the account matures; declared interests are
     // already inside fit.score, so only the behavioral part is added here.
-    const nudge = behaviorNudge(g.interest_tag, personalization);
+    // Item 35: the person's latest "How was it?" word (utils/experienceFeedback.js). A kind they called Not for me also
+    // cancels the learned-behavior lift for it (explicit feedback > guessing).
+    const fb = feedbackFor({ hostId: g.host_id, partnerId: g.hosting_partner_id, category: g.interest_tag }, personalization.feedback);
+    const feedbackDelta = fb.direction * FEEDBACK_POINTS;
+    if (feedbackDelta !== 0) fit.score += feedbackDelta;
+    if (fb.reason) fit.reasons = [...fit.reasons, fb.reason];
+    const nudge = fb.dropsLearned ? 0 : behaviorNudge(g.interest_tag, personalization);
     if (nudge > 0) {
       fit.score += nudge;
       fit.reasons = [...fit.reasons, reasonText('likeWhatYouJoined')];
@@ -1183,6 +1190,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       { tier: SIGNAL_TIERS.planFriend, delta: friendGoing ? 4 : 0 },
       { tier: SIGNAL_TIERS.weather, delta: weatherFit ? WEATHER_BONUS : 0 },
       { tier: SIGNAL_TIERS.interest, delta: nudge },
+      { tier: SIGNAL_TIERS.interest, delta: feedbackDelta }, // item 35: loved +5 / Not for me -5
       // the onboarding social-comfort answer vs the host's group feel (rank-only; was the Gatherings feed's, audit B3)
       { tier: SIGNAL_TIERS.interest, delta: comfortFits(g.group_size_feel, personalization.socialComfort) ? COMFORT_POINTS : 0 },
       { tier: SIGNAL_TIERS.business, delta: related + broad },

@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { supabase, functionUrl } from './supabase';
+import { resetExperienceFeedbackCache } from './experienceFeedback';
 import { requireUserLocation, getUserLocation } from './userLocation';
 import { videoFrameTimes, videoLimitProblem } from '../utils/offerMedia';
 import { uploadResize, OFFER_IMAGE_MAX_PX, LOGO_MAX_PX, UPLOAD_JPEG_QUALITY, createSignedUrlCache, SIGNED_URL_LIFETIME_S } from '../utils/mediaBudget';
@@ -850,6 +851,7 @@ export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRep
     match_fit_param: matchFit,
   });
   if (error) throw new Error(error.message);
+  resetExperienceFeedbackCache(); // item 35: the new word ranks the next recommendations
   return data;
 }
 

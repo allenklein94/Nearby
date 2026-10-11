@@ -167,8 +167,10 @@ const EXACT_MATCHES = new Map([
   ['Starting soon', REASON_CATEGORIES.TIME],
   ['Close by', REASON_CATEGORIES.DISTANCE],
   ['Beginner friendly', REASON_CATEGORIES.CONTEXT],
-  ['You loved a gathering with this host before', REASON_CATEGORIES.CONTEXT],
-  ['You loved this business last time', REASON_CATEGORIES.CONTEXT],
+  // Item 35: the person's own explicit "How was it?" word is a personal reason (interest tier), stronger than a guess from activity.
+  ['You loved a gathering with this host before', REASON_CATEGORIES.INTEREST],
+  ['You loved this business last time', REASON_CATEGORIES.INTEREST],
+  ['You loved this kind of experience last time', REASON_CATEGORIES.INTEREST],
   ["You're already a member", REASON_CATEGORIES.CONTEXT],
   ['A public community — not yet joined', REASON_CATEGORIES.CONTEXT],
   ['May be available — business confirmation required', REASON_CATEGORIES.AVAILABILITY],

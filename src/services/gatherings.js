@@ -19,6 +19,7 @@ import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
 import { attendeeTotal, attendingFigure, isGatheringFull } from '../utils/gatheringFullness';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { cleanAgeRange } from '../utils/suitedAges';
+import { resetExperienceFeedbackCache } from './experienceFeedback';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -663,6 +664,7 @@ export async function submitGatheringFeedback(gatheringId, { feltWelcoming = nul
       great_because: greatBecause,
     });
   if (error) throw error;
+  if (satisfactionRating) resetExperienceFeedbackCache(); // item 35: the new word ranks the next recommendations
 }
 
 export async function getMostRecentUnratedGathering() {
@@ -1672,26 +1674,4 @@ export async function getMyGatheringsWithOutstandingRsvps() {
   return candidates
     .filter((g) => pendingCountByGathering.has(g.id))
     .map((g) => ({ ...g, pendingCount: pendingCountByGathering.get(g.id) }));
-}
-
-// "The Plan Engine" Phase 4 (CLAUDE.md) -- thin RPC wrapper around
-// get_my_positive_experience_signals(), which does the real work
-// server-side (internal auth.uid()-only, no caller-supplied id). Feeds
-// homeRecommendations.js's buildHomeRecommendations() a real "you had a
-// great time here before" signal, sourced from gathering_feedback and
-// business_offer_outcomes -- no new feedback mechanism, just a new
-// consumer of data this app already collects. Returns two Sets (never
-// raw arrays) so scoring can do an O(1) membership check per candidate.
-export async function getMyPositiveExperienceSignals() {
-  const { data, error } = await supabase.rpc('get_my_positive_experience_signals');
-  if (error) {
-    console.error('getMyPositiveExperienceSignals error', error);
-    return { positiveHostIds: new Set(), positivePartnerIds: new Set(), positiveCategories: new Set() };
-  }
-  const row = Array.isArray(data) ? data[0] : data;
-  return {
-    positiveHostIds: new Set(row?.host_ids ?? []),
-    positivePartnerIds: new Set(row?.partner_ids ?? []),
-    positiveCategories: new Set(row?.category_names ?? []),
-  };
 }
