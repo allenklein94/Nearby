@@ -53,6 +53,7 @@ import HostCommandCenter from '../components/HostCommandCenter';
 import { approvedIds, newJoinsToAnimate, joinedNote, acceptedInviteeIds, arrivalDelayMs, asideMs } from '../utils/hostLiveJoins';
 import { AvatarArrive } from '../motion/JoinArrival';
 import InterestedSaved from '../motion/InterestedSaved';
+import InterestedToAttending from '../motion/InterestedToAttending';
 import { filterToMyFriends } from '../services/friends';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
@@ -115,6 +116,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [joining, setJoining] = useState(false);
   // Set by an auto-approved join on THIS screen: the attending section shows "You're in" then "bring someone" (audit B1).
   const [justJoined, setJustJoined] = useState(false);
+  // Item 31: this visit's own auto-approved join came from Interested -> the Interested -> Attending moment in the You're in panel.
+  const [joinedFromInterested, setJoinedFromInterested] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
@@ -470,6 +473,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
     }
 
     setJoining(true);
+    const wasInterested = myInterested;
     try {
       const result = await expressInterest(gatheringId);
       recordBehaviorEvent('join', 'gathering', gatheringId, gathering?.interest_tag);
@@ -481,6 +485,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       if (result.status === 'approved') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setJustJoined(true);
+        if (wasInterested) setJoinedFromInterested(true);
       } else {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       }
@@ -1209,6 +1214,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </View>
           ) : gathering.myStatus === 'approved' ? (
             <View style={styles.youreInPanel}>
+              {/* Item 31: the person's own commitment from Interested, shown as the move between the two states. */}
+              {joinedFromInterested && (
+                <InterestedToAttending
+                  fromLabel={t('ui.actions.interestedOn')}
+                  toLabel={t('ui.actions.attendingNow')}
+                  a11yLabel={t('ui.actions.interestedToAttendingA11y')}
+                />
+              )}
               <Text style={styles.youreInTitle}>{t('ui.gatheringDetail.youreIn')}</Text>
               <Text style={styles.youreInSub}>{t('ui.gatheringDetail.sayHelloPrompt')}</Text>
               {acceptedBusinessOffer && (

@@ -250,6 +250,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   invite" only for the host's own accepted invite to that person for that gathering (`acceptedInviteeIds`).
 - **Interested (owner item 30):** marking it by your own tap shows "✓ Saved" with one small pulse, then returns to
   "★ Interested" (`motion/InterestedSaved.js`, detail + Home card; toast with Undo kept; one save in flight per button).
+  Item 31: your own auto-approved join FROM Interested shows "★ ~~Interested~~ → ✓ Attending" (one glow) atop You're in
+  (`motion/InterestedToAttending.js`); pending/waitlist/plain joins get no such moment.
 - **Something is happening near you (owner item 26):** one ring from the happening-now heading glyph (Home Nearby Right Now,
   Discover Happening Now; `motion/HappeningRipple.js`) only when the section shows a gathering not yet shown this session
   (`utils/happeningSeen.js`, one store for both surfaces, judged only while focused). Rows never move (item 15 stands).

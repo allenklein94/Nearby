@@ -117,6 +117,11 @@ export const SEQUENCES = {
   // no bounce) and reads "✓ Saved" for savedHoldMs (a dwell, not counted), then returns to "★ Interested". No haptic
   // (item 129: low-commitment and private, not an important state change).
   interestedSaved: { tier: 'small', pulseMs: 240, pulseFrom: 1.12, savedHoldMs: 1200 },
+  // Owner item 31 (2026-10-11): Interested -> Attending, the person's own commitment (auto-approved join from Interested).
+  // "★ Interested" dims to oldRestOpacity and is struck through while "✓ Attending" flows in flowPx from beside it (scale
+  // fromScale -> 1, readable from frame one), then one success glow around it. Calm: no bounce, confetti or loop.
+  interestedToAttending: { tier: 'special', dimMs: 220, arriveDelayMs: 120, arriveMs: 320, flowPx: 12, fromScale: 0.92, oldRestOpacity: 0.45,
+    glowInMs: 100, glowOutMs: 220 },
   happeningRipple: { tier: 'medium', ringMs: 400, fromScale: 0.6, toScale: 2.2, startOpacity: 0.35, size: 24 },
 };
 
@@ -166,6 +171,8 @@ export function settleMs(name) {
       return s.ringMs;
     case 'interestedSaved':
       return s.pulseMs;
+    case 'interestedToAttending':
+      return Math.max(s.dimMs, s.arriveDelayMs + s.arriveMs + s.glowInMs + s.glowOutMs);
     case 'offerTravel':
       return s.dimMs + s.travelMs + s.settleMs;
     case 'businessResponds': {
