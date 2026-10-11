@@ -65,6 +65,9 @@ const distanceFor = (miles, language) => (!language || language === DEFAULT_LANG
 // A perk opens Discover -> Perks with that perk selected in place (owner, 2026-10-04: one canonical Perks surface; the
 // selected perk shows its redemption controls under its own card, never a separate perk screen).
 export const PERKS_TAB = { initialMode: 'things', initialTypeTab: 'perks' };
+// Item 27: Home's Nearby Right Now heading opens Discover's existing Happening Now date view (the ⚡ chip's view). Spread it
+// into a NEW object on every tap (Discover applies each params object once).
+export const RIGHT_NOW_VIEW = { initialMode: 'things', openDateView: 'now' };
 // The canonical People -> Friends surface (owner, 2026-10-04). Entries that start on a tab open it in place with a fresh params
 // object each time (Discover applies each new params object once). Entries from a stack screen use the FriendDiscovery
 // presentation instead (navigation/presentationRoutes.js), so Back returns to that screen.

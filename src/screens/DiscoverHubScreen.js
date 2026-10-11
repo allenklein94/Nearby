@@ -100,6 +100,11 @@ import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
 import { NearbyPickBadge, NLoader, FoundLine, modalAnimation, animateLayout, HappeningRipple } from '../motion';
+import RightNowMark from '../components/RightNowMark';
+
+// Item 27: the Happening Now heading shows the radar mark instead of the ⚡ its title string starts with (the ⚡ chip keeps it);
+// the wording itself is unchanged.
+const withoutLeadGlyph = (title) => String(title ?? '').replace(/^⚡\s*/u, '');
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -486,10 +491,27 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // must apply when it arrives, not only on first mount. Each navigation carries its own context; one without an
   // environment clears a previous one. The tab bar re-opens Discover with the SAME params object, so nothing re-applies.
   const appliedParamsRef = useRef(route.params);
+  // Item 27: what Discover was showing when a link opened a date view (Home's Nearby Right Now heading). Closing that view
+  // puts it back (mode, type tab, search, category view); the date view's own scroll restore covers the position. Filters
+  // (Open now, Outdoor...) are never touched by the link. Dropped as soon as the date view ends any other way.
+  const linkReturnRef = useRef(null);
   useEffect(() => {
     const p = route.params;
     if (!p || p === appliedParamsRef.current) return;
     appliedParamsRef.current = p;
+    // Owner item 27 (2026-10-11) reopens item 206's "a navigation never lands inside a date view" for this one link only.
+    if (TIME_CHIPS.includes(p.openDateView)) {
+      if (!dateView) {
+        linkReturnRef.current = { mode, typeFilter, searchQuery, expandedContext };
+        restoreScrollY.current = mainScrollY.current;
+      }
+      setMode('things');
+      setTypeFilter('all');
+      setSearchQuery('');
+      setExpandedContext(null); // the category view's loaded rows stay, so closing can reopen it as it was
+      setDateView(p.openDateView);
+      return;
+    }
     if (p.initialMode === 'things' || p.initialMode === 'people') setMode(p.initialMode);
     if (p.initialPeopleSubMode === 'dating' || p.initialPeopleSubMode === 'friends') setPeopleSubMode(p.initialPeopleSubMode);
     if (p.initialTypeTab) setTypeFilter(p.initialTypeTab);
@@ -581,7 +603,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Owner item 206: "See all" on Tonight/Today or This Weekend turns Discover into the full date view IN PLACE ('today' |
   // 'weekend' | null). Everything else (mode, type tab, Open now, Outdoor, search) is untouched, and leaving restores the
   // sections at the scroll position they were left at.
-  const [dateView, setDateView] = useState(null);
+  // Item 27: a first mount opened by a Right Now link starts inside its date view (later links: the params effect above).
+  const [dateView, setDateView] = useState(() => (TIME_CHIPS.includes(route.params?.openDateView) ? route.params.openDateView : null));
   const mainScrollRef = useRef(null);
   const mainScrollY = useRef(0);
   const restoreScrollY = useRef(null);
@@ -673,6 +696,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }
 
   function closeDateView() {
+    const back = linkReturnRef.current;
+    linkReturnRef.current = null;
+    if (back) {
+      setMode(back.mode);
+      setTypeFilter(back.typeFilter);
+      setSearchQuery(back.searchQuery);
+      setExpandedContext(back.expandedContext);
+    }
     setDateView(null);
   }
 
@@ -1233,6 +1264,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // A search, another type tab or a category view ends the date view (it never reappears later on its own).
   useEffect(() => {
     if (dateView && (!isAll || isSearching || expandedContext)) setDateView(null);
+    if (!dateView) linkReturnRef.current = null; // item 27: a link's return state lives only while its date view is open
   }, [dateView, isAll, isSearching, expandedContext]);
 
   // Phase 8 section F -- the expanded context's own real content, filtered
@@ -2841,10 +2873,20 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <React.Fragment key={section.key}>
               {section.key === 'now' ? (
                 <>
-                  {/* Item 26: one ring from the ⚡ when this row shows something new (shared with Home); tiles never move. */}
-                  <HappeningRipple leading ids={section.items.map((g) => g.id)} color={colors.info} style={styles.sectionHeaderAnchor}>
-                    <Text style={[styles.sectionHeader, styles.sectionHeaderInAnchor]}>{sectionTitle(section)}</Text>
-                  </HappeningRipple>
+                  {/* Item 27: the Right Now radar mark in place of the ⚡ (still; item 26's one ring when this row shows something
+                      new, shared with Home; tiles never move). The heading opens the Happening Now view in place, as the ⚡ chip
+                      does; the chip itself keeps its ⚡. */}
+                  <TouchableOpacity
+                    style={styles.rightNowHeadingRow}
+                    onPress={() => openDateView('now')}
+                    accessibilityLabel={t('ui.discover.rightNowA11y')}
+                    accessibilityRole="button"
+                  >
+                    <HappeningRipple ids={section.items.map((g) => g.id)} color={colors.info}>
+                      <RightNowMark color={colors.info} />
+                    </HappeningRipple>
+                    <Text style={[styles.sectionHeader, styles.rightNowHeadingText]}>{withoutLeadGlyph(sectionTitle(section))}</Text>
+                  </TouchableOpacity>
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginBottom: spacing.md }}>
                     {section.items.map(renderHappeningNowTile)}
                   </ScrollView>
@@ -3660,9 +3702,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   contextGroupNote: { color: colors.textTertiary, fontSize: 12, marginTop: -spacing.xs, marginBottom: spacing.sm },
   connectionAvatar: { width: 44, height: 44, borderRadius: 22, marginRight: spacing.md },
   connectionAvatarPlaceholder: { backgroundColor: colors.surfaceElevated },
-  // Item 26: the happening-now heading's margins sit on its ripple anchor so the ring centres on the text line.
-  sectionHeaderAnchor: { marginTop: spacing.lg, marginBottom: spacing.sm },
-  sectionHeaderInAnchor: { marginTop: 0, marginBottom: 0 },
+  // Items 26-27: the happening-now heading row carries the margins so the radar mark and its ring centre on the text line.
+  rightNowHeadingRow: { flexDirection: 'row', alignItems: 'center', marginTop: spacing.lg, marginBottom: spacing.sm },
+  rightNowHeadingText: { marginTop: 0, marginBottom: 0, marginLeft: spacing.xs },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: spacing.lg, marginBottom: spacing.sm },
   // Item 43 (CLAUDE.md, "Things To Do feels busy"): a title + its own
   // "See all" both live on one row instead of title-content-See-all

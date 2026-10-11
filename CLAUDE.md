@@ -246,6 +246,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Something is happening near you (owner item 26):** one ring from the happening-now heading glyph (Home Nearby Right Now,
   Discover Happening Now; `motion/HappeningRipple.js`) only when the section shows a gathering not yet shown this session
   (`utils/happeningSeen.js`, one store for both surfaces, judged only while focused). Rows never move (item 15 stands).
+- **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
+  two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
+  `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).
 
 ### Copy, colour, errors
 - Coral = primary action or selected state; status colours have their own tokens (`theme.js`).

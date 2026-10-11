@@ -56,12 +56,47 @@ test('the ripple is decoration: native driver, no touches, no haptic, Reduce Mot
   expect(s.indexOf('takeNewHappening(ids)')).toBeLessThan(s.indexOf('reduceMotion) return'));
 });
 
-test('Home and Discover wrap only the heading glyph, never the rows', () => {
+test('Home and Discover wrap only the still radar mark, never the rows (item 27)', () => {
   const home = read('screens/HomeScreen.js');
-  expect(home).toMatch(/<HappeningRipple ids=\{rightNow\.map\(\(g\) => g\.id\)\}[^>]*>\s*<Ionicons name="time-outline"[^>]*\/>\s*<\/HappeningRipple>/);
+  expect(home).toMatch(/<HappeningRipple ids=\{rightNow\.map\(\(g\) => g\.id\)\}[^>]*>\s*<RightNowMark [^>]*\/>\s*<\/HappeningRipple>/);
   const discover = read('screens/DiscoverHubScreen.js');
-  expect(discover).toMatch(/<HappeningRipple leading ids=\{section\.items\.map\(\(g\) => g\.id\)\}[^>]*>\s*<Text style=\{\[styles\.sectionHeader[^>]*>\{sectionTitle\(section\)\}<\/Text>\s*<\/HappeningRipple>/);
-  // exactly one use per surface
+  expect(discover).toMatch(/<HappeningRipple ids=\{section\.items\.map\(\(g\) => g\.id\)\}[^>]*>\s*<RightNowMark [^>]*\/>\s*<\/HappeningRipple>/);
   expect(home.match(/<HappeningRipple/g)).toHaveLength(1);
   expect(discover.match(/<HappeningRipple/g)).toHaveLength(1);
+});
+
+// Owner item 27 (2026-10-11): the Right Now radar.
+describe('the Right Now radar mark', () => {
+  test('is drawn and still: no Animated, no loop, hidden from screen readers', () => {
+    const s = read('components/RightNowMark.js');
+    expect(s).not.toMatch(/Animated|useEffect|setInterval|setTimeout/);
+    expect(s).toMatch(/importantForAccessibility="no-hide-descendants"/);
+  });
+  test('the headings keep their wording and open the existing Happening Now view', () => {
+    const home = read('screens/HomeScreen.js');
+    expect(home).toMatch(/navigateKeepingTrail\(navigation, 'Discover', \{ \.\.\.RIGHT_NOW_VIEW \}\)[\s\S]{0,200}accessibilityLabel=\{t\('ui\.discover\.rightNowA11y'\)\}/);
+    expect(home).toMatch(/t\('ui\.home\.nearbyRightNow'\)/);
+    const discover = read('screens/DiscoverHubScreen.js');
+    expect(discover).toMatch(/onPress=\{\(\) => openDateView\('now'\)\}\s*accessibilityLabel=\{t\('ui\.discover\.rightNowA11y'\)\}/);
+    expect(discover).toMatch(/withoutLeadGlyph\(sectionTitle\(section\)\)/);
+    // the ⚡ chip keeps its own title (with the ⚡)
+    expect(discover).toMatch(/: t\(`ui\.discover\.section\.\$\{f\}`\)/);
+  });
+  test('the ⚡ is the only thing the heading drops', () => {
+    const langs = Object.values(require('../i18n/ui/discover.js').default);
+    expect(langs).toHaveLength(11);
+    const strip = (title) => String(title ?? '').replace(/^⚡\s*/u, '');
+    for (const lang of langs) {
+      expect(lang.section.now.startsWith('⚡ ')).toBe(true);
+      expect(strip(lang.section.now)).toBe(lang.section.now.slice(2));
+      expect(lang.rightNowA11y).toBeTruthy();
+    }
+  });
+  test('a link into the date view remembers what Discover showed and puts it back on close', () => {
+    const discover = read('screens/DiscoverHubScreen.js');
+    expect(discover).toMatch(/linkReturnRef\.current = \{ mode, typeFilter, searchQuery, expandedContext \}/);
+    expect(discover).toMatch(/function closeDateView\(\) \{\s*const back = linkReturnRef\.current;[\s\S]{0,300}setSearchQuery\(back\.searchQuery\)/);
+    expect(discover).toMatch(/if \(!dateView\) linkReturnRef\.current = null/);
+    expect(read('utils/recommendationContext.js')).toMatch(/RIGHT_NOW_VIEW = \{ initialMode: 'things', openDateView: 'now' \}/);
+  });
 });

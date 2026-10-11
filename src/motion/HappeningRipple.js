@@ -13,8 +13,9 @@ import { takeNewHappening } from '../utils/happeningSeen';
 // Motion = no ring; the ids are still marked seen, so nothing replays later.
 const T = SEQUENCES.happeningRipple;
 
-// `leading`: the glyph sits at the start of a text heading (Discover's "⚡ Happening Now") rather than being the child itself.
-export default function HappeningRipple({ ids = [], color, leading = false, style, children }) {
+// Item 27: its child is the Right Now radar mark (components/RightNowMark.js); the ring goes out from the mark, then the
+// mark is simply still again.
+export default function HappeningRipple({ ids = [], color, children }) {
   const focused = useIsFocused();
   const reduceMotion = useReduceMotion();
   const ring = useRef(new Animated.Value(1)).current;
@@ -32,10 +33,10 @@ export default function HappeningRipple({ ids = [], color, leading = false, styl
   }, [focused, key]);
 
   return (
-    <View style={[styles.anchor, leading && styles.anchorLeading, style]}>
+    <View style={styles.anchor}>
       <Animated.View
         pointerEvents="none"
-        style={[styles.ring, leading && styles.ringLeading, {
+        style={[styles.ring, {
           borderColor: color,
           opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [T.startOpacity, 0] }),
           transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [T.fromScale, T.toScale] }) }],
@@ -48,7 +49,5 @@ export default function HappeningRipple({ ids = [], color, leading = false, styl
 
 const styles = StyleSheet.create({
   anchor: { alignItems: 'center', justifyContent: 'center' },
-  anchorLeading: { alignItems: 'stretch' },
-  ringLeading: { left: T.glyphCenterPx - T.size / 2 },
   ring: { position: 'absolute', width: T.size, height: T.size, borderRadius: T.size / 2, borderWidth: 1.5 },
 });

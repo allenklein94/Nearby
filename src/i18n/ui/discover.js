@@ -62,6 +62,7 @@ export default {
     recommended: 'Recommended For You',
     dontSee: "Don't see what you're looking for?", tellNearby: 'Tell Nearby what you want to do.',
     createLooking: "Create What You're Looking For →", createLookingA11y: "Create what you're looking for",
+    rightNowA11y: 'What\'s happening nearby right now',
     happeningNearby: '🔴 Happening Nearby',
   },
   es: {
@@ -125,6 +126,7 @@ export default {
     recommended: 'Recomendado para ti',
     dontSee: '¿No ves lo que buscas?', tellNearby: 'Dile a Nearby lo que quieres hacer.',
     createLooking: 'Crea lo que estás buscando →', createLookingA11y: 'Crear lo que estás buscando',
+    rightNowA11y: 'Qué está pasando cerca ahora mismo',
     happeningNearby: '🔴 Pasando cerca',
   },
   de: {
@@ -188,6 +190,7 @@ export default {
     recommended: 'Für dich empfohlen',
     dontSee: 'Nicht das Richtige dabei?', tellNearby: 'Sag Nearby, was du machen möchtest.',
     createLooking: 'Erstelle, wonach du suchst →', createLookingA11y: 'Erstellen, wonach du suchst',
+    rightNowA11y: 'Was gerade in der Nähe los ist',
     happeningNearby: '🔴 In der Nähe los',
   },
   fr: {
@@ -251,6 +254,7 @@ export default {
     recommended: 'Recommandé pour vous',
     dontSee: 'Vous ne trouvez pas ce que vous cherchez ?', tellNearby: 'Dites à Nearby ce que vous voulez faire.',
     createLooking: 'Créez ce que vous cherchez →', createLookingA11y: 'Créer ce que vous cherchez',
+    rightNowA11y: 'Ce qui se passe à proximité en ce moment',
     happeningNearby: '🔴 En ce moment à proximité',
   },
   pt: {
@@ -314,6 +318,7 @@ export default {
     recommended: 'Recomendado para você',
     dontSee: 'Não encontrou o que procura?', tellNearby: 'Diga ao Nearby o que você quer fazer.',
     createLooking: 'Crie o que você procura →', createLookingA11y: 'Criar o que você procura',
+    rightNowA11y: 'O que está acontecendo por perto agora',
     happeningNearby: '🔴 Acontecendo por perto',
   },
   ht: {
@@ -377,6 +382,7 @@ export default {
     recommended: 'Rekòmande pou ou',
     dontSee: 'Ou pa wè sa w ap chèche a?', tellNearby: 'Di Nearby sa w vle fè.',
     createLooking: 'Kreye sa w ap chèche a →', createLookingA11y: 'Kreye sa w ap chèche a',
+    rightNowA11y: 'Sa k ap pase toupre la kounye a',
     happeningNearby: '🔴 K ap pase toupre',
   },
   zh: {
@@ -440,6 +446,7 @@ export default {
     recommended: '为你推荐',
     dontSee: '没有找到你想要的？', tellNearby: '告诉 Nearby 你想做什么。',
     createLooking: '创建你想要的 →', createLookingA11y: '创建你想要的',
+    rightNowA11y: '附近现在正在发生什么',
     happeningNearby: '🔴 附近正在发生',
   },
   vi: {
@@ -503,6 +510,7 @@ export default {
     recommended: 'Gợi ý cho bạn',
     dontSee: 'Không thấy điều bạn tìm?', tellNearby: 'Hãy cho Nearby biết bạn muốn làm gì.',
     createLooking: 'Tạo điều bạn đang tìm →', createLookingA11y: 'Tạo điều bạn đang tìm',
+    rightNowA11y: 'Những gì đang diễn ra gần đây ngay lúc này',
     happeningNearby: '🔴 Đang diễn ra gần đây',
   },
   tl: {
@@ -566,6 +574,7 @@ export default {
     recommended: 'Inirerekomenda Para sa Iyo',
     dontSee: 'Hindi mo makita ang hinahanap mo?', tellNearby: 'Sabihin sa Nearby ang gusto mong gawin.',
     createLooking: 'Gawin ang Hinahanap Mo →', createLookingA11y: 'Gawin ang hinahanap mo',
+    rightNowA11y: 'Ano ang nangyayari sa malapit ngayon',
     happeningNearby: '🔴 Nangyayari sa Malapit',
   },
   ru: {
@@ -629,6 +638,7 @@ export default {
     recommended: 'Рекомендуем вам',
     dontSee: 'Не нашли, что искали?', tellNearby: 'Расскажите Nearby, чем хотите заняться.',
     createLooking: 'Создайте то, что ищете →', createLookingA11y: 'Создать то, что ищете',
+    rightNowA11y: 'Что происходит рядом прямо сейчас',
     happeningNearby: '🔴 Происходит рядом',
   },
   ko: {
@@ -692,6 +702,7 @@ export default {
     recommended: '맞춤 추천',
     dontSee: '찾는 게 없나요?', tellNearby: 'Nearby에 하고 싶은 일을 알려주세요.',
     createLooking: '원하는 것을 직접 만들기 →', createLookingA11y: '원하는 것을 직접 만들기',
+    rightNowA11y: '지금 근처에서 일어나는 일',
     happeningNearby: '🔴 주변에서 진행 중',
   },
 };

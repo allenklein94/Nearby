@@ -69,8 +69,13 @@ describe('Discover date view wiring (item 206 guards)', () => {
   });
 
   it('closing changes only the date view: query, filters and mode are untouched', () => {
+    // Item 27 (owner, 2026-10-11): the one exception is a view a LINK opened (Home's Nearby Right Now heading): closing it
+    // puts back exactly what Discover showed before the link (mode, type tab, search, category view). Filters never change.
     const close = src.match(/function closeDateView\(\) \{([\s\S]*?)\n  \}/)[1];
-    expect(close.trim()).toBe('setDateView(null);');
+    expect(close.replace(/\s+/g, ' ').trim()).toBe(
+      'const back = linkReturnRef.current; linkReturnRef.current = null; if (back) { setMode(back.mode); setTypeFilter(back.typeFilter); '
+      + 'setSearchQuery(back.searchQuery); setExpandedContext(back.expandedContext); } setDateView(null);',
+    );
   });
 
   it('Home "See all plans" still opens Plans (a management surface, not an inline expansion)', () => {

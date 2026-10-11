@@ -1,5 +1,5 @@
 import { useLanguage } from '../context/LanguageContext';
-import { PERKS_TAB } from '../utils/recommendationContext';
+import { PERKS_TAB, RIGHT_NOW_VIEW } from '../utils/recommendationContext';
 import { gatheringsTabParams } from '../utils/gatheringFilters';
 import { localizeAskNote } from '../i18n/askNoteView';
 import { surpriseView, surpriseText } from '../i18n/surpriseView';
@@ -13,6 +13,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
+import RightNowMark from '../components/RightNowMark';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
@@ -2173,13 +2174,19 @@ export default function HomeScreen({ navigation }) {
 
         {rightNow.length > 0 && (
           <>
-            <View style={styles.sectionHeaderRow}>
-              {/* Item 26: one ring from the icon when this section shows something new (shared with Discover); rows never move. */}
+            {/* Item 27: the Right Now radar mark (still; item 26's one ring when this section shows something new, shared with
+                Discover; rows never move). The heading opens Discover's Happening Now view. */}
+            <TouchableOpacity
+              style={styles.sectionHeaderRow}
+              onPress={() => navigateKeepingTrail(navigation, 'Discover', { ...RIGHT_NOW_VIEW })}
+              accessibilityLabel={t('ui.discover.rightNowA11y')}
+              accessibilityRole="button"
+            >
               <HappeningRipple ids={rightNow.map((g) => g.id)} color={colors.info}>
-                <Ionicons name="time-outline" size={14} color={colors.textTertiary} style={styles.bannerIcon} />
+                <RightNowMark color={colors.info} />
               </HappeningRipple>
-              <Text style={styles.sectionHeaderText}>{t('ui.home.nearbyRightNow')}</Text>
-            </View>
+              <Text style={[styles.sectionHeaderText, styles.rightNowHeading]}>{t('ui.home.nearbyRightNow')}</Text>
+            </TouchableOpacity>
             {rightNow.map((g) => renderAttentionEntry({ kind: 'gathering', gathering: g, signals: [], hasFriend: false, trendingOnly: false }))}
           </>
         )}
@@ -2922,6 +2929,7 @@ const getStyles = (colors) => StyleSheet.create({
   // a bespoke margin per call site.
   bannerContent: { flexDirection: 'row', alignItems: 'center', flexShrink: 1, marginRight: spacing.sm },
   bannerIcon: { marginRight: spacing.xs },
+  rightNowHeading: { marginLeft: spacing.xs },
   outcomePromptCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.md,
