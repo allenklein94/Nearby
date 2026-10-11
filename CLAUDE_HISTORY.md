@@ -1,3 +1,20 @@
+# Item 39 (2026-10-11) - "A friend is nearby" - DESIGN ONLY, NOT BUILT (awaiting owner review)
+
+**Owner decisions (same day):** (1) consent: mutual opt-in, off by default ("Let friends know when I'm nearby"); never enabled by
+onboarding, friend requests, dating, attendance or a location-permission grant; turning it off ends visibility at once. (2)
+Eligibility: accepted platonic friends only; matches, pending/declined, blocked and strangers never; no "all connections" option.
+(3) Precision: yes/no only, fresh fix <= 30 min, ~1 mi (initial parameters), computed server-side; never coordinates, distance,
+direction, map, "last seen"; no history; "not nearby" must not reveal why (far / off / stale / blocked). (4) Surface: avatar +
+"{Name} is nearby" in Home's social line only; "Invite {Name}" opens Create with them preselected, nothing sent automatically,
+eligibility re-checked before sending; no push, no notification category or mute group, never via another route. (5) Keep it
+unbuilt until the data flow, permissions, update behaviour, retention and tests are written and reviewed.
+**Done:** the design `PRODUCT_AUDIT/ITEM_39_FRIEND_NEARBY_DESIGN_2026-10-11.md`. Found: no existing feature shows one person's
+location to another; `notification_areas` ("NOT presence") and `presence_reports` (dating crossed paths, background task) are
+deliberately not reused; the surface is `getHomeInsight` (`services/homeDashboard.js`); Invite reuses `suggestedInviteeIds`.
+Proposed: two new tables (consent; one overwritten fix per person, purged after 30 min), foreground-only reporting via
+`userLocation.js`, `get_nearby_friends()` returning only id/name/avatar ordered by name. Open questions in its section 9:
+spoofing residual and mitigations, several friends at once, line priority, a sharing reminder, parameters.
+
 # Item 38 (2026-10-11) - don't call everything a strong match - DONE (no new strings, no migration)
 
 **Owner approval (same day, LOCKED, wording decision closed):** (1) "A strong match for you" (badge + its screen-reader labels) only for
