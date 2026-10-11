@@ -1,0 +1,1965 @@
+[
+ {
+  "item": 169,
+  "phrase": "tea",
+  "tags": [
+   "Tea"
+  ],
+  "note": "spec lists these then \"...\"; only these four are approved text"
+ },
+ {
+  "item": 169,
+  "phrase": "tea house",
+  "tags": [
+   "Tea"
+  ],
+  "note": "spec lists these then \"...\"; only these four are approved text"
+ },
+ {
+  "item": 169,
+  "phrase": "tea room",
+  "tags": [
+   "Tea"
+  ],
+  "note": "spec lists these then \"...\"; only these four are approved text"
+ },
+ {
+  "item": 169,
+  "phrase": "bubble tea",
+  "tags": [
+   "Tea"
+  ],
+  "note": "spec lists these then \"...\"; only these four are approved text"
+ },
+ {
+  "item": 169,
+  "phrase": "distillery",
+  "tags": [
+   "Distilleries"
+  ],
+  "note": "spec lists these then \"...\"; only these two are approved text"
+ },
+ {
+  "item": 169,
+  "phrase": "craft spirits",
+  "tags": [
+   "Distilleries"
+  ],
+  "note": "spec lists these then \"...\"; only these two are approved text"
+ },
+ {
+  "item": 170,
+  "phrase": "adventure park",
+  "tags": [
+   "Adventure"
+  ]
+ },
+ {
+  "item": 170,
+  "phrase": "ropes course",
+  "tags": [
+   "Adventure"
+  ]
+ },
+ {
+  "item": 170,
+  "phrase": "zipline",
+  "tags": [
+   "Adventure"
+  ]
+ },
+ {
+  "item": 171,
+  "phrase": "baseball",
+  "tags": [
+   "Sports"
+  ]
+ },
+ {
+  "item": 171,
+  "phrase": "softball",
+  "tags": [
+   "Sports"
+  ]
+ },
+ {
+  "item": 171,
+  "phrase": "hockey",
+  "tags": [
+   "Sports"
+  ]
+ },
+ {
+  "item": 171,
+  "phrase": "sports club",
+  "tags": [
+   "Sports"
+  ]
+ },
+ {
+  "item": 171,
+  "phrase": "athletic club",
+  "tags": [
+   "Sports"
+  ]
+ },
+ {
+  "item": 171,
+  "phrase": "crossfit",
+  "tags": [
+   "Gyms",
+   "Fitness"
+  ]
+ },
+ {
+  "item": 171,
+  "phrase": "dance fitness",
+  "tags": [
+   "Fitness"
+  ]
+ },
+ {
+  "item": 171,
+  "phrase": "zumba",
+  "tags": [
+   "Fitness"
+  ]
+ },
+ {
+  "item": 172,
+  "phrase": "scenic area",
+  "tags": [
+   "Scenic Views"
+  ]
+ },
+ {
+  "item": 172,
+  "phrase": "scenic spot",
+  "tags": [
+   "Scenic Views"
+  ]
+ },
+ {
+  "item": 172,
+  "phrase": "viewpoint",
+  "tags": [
+   "Scenic Views"
+  ]
+ },
+ {
+  "item": 172,
+  "phrase": "overlook",
+  "tags": [
+   "Scenic Views"
+  ]
+ },
+ {
+  "item": 172,
+  "phrase": "water activities",
+  "tags": [
+   "Water Sports"
+  ]
+ },
+ {
+  "item": 172,
+  "phrase": "nature center",
+  "tags": [
+   "Parks",
+   "Wildlife"
+  ]
+ },
+ {
+  "item": 172,
+  "phrase": "nature preserve",
+  "tags": [
+   "Parks",
+   "Wildlife"
+  ]
+ },
+ {
+  "item": 173,
+  "phrase": "night market",
+  "tags": [
+   "Markets"
+  ]
+ },
+ {
+  "item": 173,
+  "phrase": "cinema",
+  "tags": [
+   "Movies"
+  ]
+ },
+ {
+  "item": 173,
+  "phrase": "movie theater",
+  "tags": [
+   "Movies"
+  ]
+ },
+ {
+  "item": 173,
+  "phrase": "stand-up",
+  "tags": [
+   "Comedy"
+  ]
+ },
+ {
+  "item": 173,
+  "phrase": "standup",
+  "tags": [
+   "Comedy"
+  ]
+ },
+ {
+  "item": 173,
+  "phrase": "nightlife event",
+  "tags": [
+   "Nightlife"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "gallery",
+  "tags": [
+   "Art Galleries"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "exhibition",
+  "tags": [
+   "Exhibits"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "art show",
+  "tags": [
+   "Art"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "art fair",
+  "tags": [
+   "Art"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "local event",
+  "tags": [
+   "Community Events"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "book event",
+  "tags": [
+   "Reading"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "book signing",
+  "tags": [
+   "Reading"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "author talk",
+  "tags": [
+   "Reading"
+  ]
+ },
+ {
+  "item": 174,
+  "phrase": "book club",
+  "tags": [
+   "Reading"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "gift store",
+  "tags": [
+   "Gift Shop"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "thrift store",
+  "tags": [
+   "Thrift & Vintage"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "thrift shop",
+  "tags": [
+   "Thrift & Vintage"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "vintage store",
+  "tags": [
+   "Thrift & Vintage"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "consignment",
+  "tags": [
+   "Thrift & Vintage"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "furniture",
+  "tags": [
+   "Home & Furniture"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "home decor",
+  "tags": [
+   "Home & Furniture"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "home goods",
+  "tags": [
+   "Home & Furniture"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "shoe store",
+  "tags": [
+   "Clothing"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "shoes",
+  "tags": [
+   "Clothing"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "sneakers",
+  "tags": [
+   "Clothing"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "flea market",
+  "tags": [
+   "Markets"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "swap meet",
+  "tags": [
+   "Markets"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "grocery store",
+  "tags": [
+   "Grocery"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "supermarket",
+  "tags": [
+   "Grocery"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "groceries",
+  "tags": [
+   "Grocery"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "convenience store",
+  "tags": [
+   "Grocery"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "bodega",
+  "tags": [
+   "Grocery"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "corner store",
+  "tags": [
+   "Grocery"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "sports store",
+  "tags": [
+   "Sporting Goods"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "sporting goods store",
+  "tags": [
+   "Sporting Goods"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "toy store",
+  "tags": [
+   "Toys"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "toy shop",
+  "tags": [
+   "Toys"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "bookstore",
+  "tags": [
+   "Bookstores"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "book shop",
+  "tags": [
+   "Bookstores"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "bookshop",
+  "tags": [
+   "Bookstores"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "cosmetics",
+  "tags": [
+   "Beauty Supply"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "makeup store",
+  "tags": [
+   "Beauty Supply"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "beauty supply",
+  "tags": [
+   "Beauty Supply"
+  ]
+ },
+ {
+  "item": 175,
+  "phrase": "beauty store",
+  "tags": [
+   "Beauty Supply"
+  ]
+ },
+ {
+  "item": 176,
+  "phrase": "facial",
+  "tags": [
+   "Skin Care"
+  ]
+ },
+ {
+  "item": 176,
+  "phrase": "skincare",
+  "tags": [
+   "Skin Care"
+  ]
+ },
+ {
+  "item": 176,
+  "phrase": "beauty salon",
+  "tags": [
+   "Salons"
+  ]
+ },
+ {
+  "item": 177,
+  "phrase": "children's activities",
+  "tags": [
+   "Kids Activity"
+  ]
+ },
+ {
+  "item": 177,
+  "phrase": "kids activities",
+  "tags": [
+   "Kids Activity"
+  ]
+ },
+ {
+  "item": 177,
+  "phrase": "kids classes",
+  "tags": [
+   "Kids Education"
+  ]
+ },
+ {
+  "item": 177,
+  "phrase": "educational activities",
+  "tags": [
+   "Kids Education"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "pet shop",
+  "tags": [
+   "Pet Stores"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "pet supply",
+  "tags": [
+   "Pet Stores"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "pet supplies",
+  "tags": [
+   "Pet Stores"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "pet food",
+  "tags": [
+   "Pet Stores"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "vet",
+  "tags": [
+   "Veterinary"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "vets",
+  "tags": [
+   "Veterinary"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "veterinarian",
+  "tags": [
+   "Veterinary"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "animal hospital",
+  "tags": [
+   "Veterinary"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "pet clinic",
+  "tags": [
+   "Veterinary"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "kennel",
+  "tags": [
+   "Pet Boarding"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "doggy daycare",
+  "tags": [
+   "Pet Boarding"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "dog daycare",
+  "tags": [
+   "Pet Boarding"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "pet hotel",
+  "tags": [
+   "Pet Boarding"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "dog walker",
+  "tags": [
+   "Dog Walking"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "pet sitter",
+  "tags": [
+   "Pet Sitting"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "cat sitter",
+  "tags": [
+   "Pet Sitting"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "house sitting for pets",
+  "tags": [
+   "Pet Sitting"
+  ],
+  "note": "in the item-178 table; pending row 24 lists only pet sitter / cat sitter: confirm"
+ },
+ {
+  "item": 178,
+  "phrase": "pet activities",
+  "tags": [
+   "Pet Events",
+   "Dog Meetup"
+  ]
+ },
+ {
+  "item": 178,
+  "phrase": "dog training",
+  "tags": [
+   "Pet Training"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "family getaway",
+  "tags": [
+   "Family Resorts"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "family vacation",
+  "tags": [
+   "Family Resorts"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "cruise",
+  "tags": [
+   "Boat Tours"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "sunset cruise",
+  "tags": [
+   "Boat Tours"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "dinner cruise",
+  "tags": [
+   "Boat Tours"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "harbor cruise",
+  "tags": [
+   "Boat Tours"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "cabin",
+  "tags": [
+   "Vacation Rentals"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "vacation home",
+  "tags": [
+   "Vacation Rentals"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "beach house",
+  "tags": [
+   "Vacation Rentals"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "weekend trip",
+  "tags": [
+   "Weekend Getaway"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "weekend away",
+  "tags": [
+   "Weekend Getaway"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "campground",
+  "tags": [
+   "Camping"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "campsite",
+  "tags": [
+   "Camping"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "bed and breakfast",
+  "tags": [
+   "Hotels"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "b&b",
+  "tags": [
+   "Hotels"
+  ]
+ },
+ {
+  "item": 179,
+  "phrase": "attractions",
+  "tags": [
+   "Amusement Park",
+   "Aquariums",
+   "Exhibits",
+   "Historic Sites",
+   "Landmarks",
+   "Local Attractions",
+   "Museums",
+   "Observation Decks",
+   "Sightseeing",
+   "Tourist Attractions",
+   "Zoos"
+  ],
+  "note": "\"the categories of Attractions & Things to See\": all 11 tags (none business-only)"
+ },
+ {
+  "item": 179,
+  "phrase": "things to see",
+  "tags": [
+   "Amusement Park",
+   "Aquariums",
+   "Exhibits",
+   "Historic Sites",
+   "Landmarks",
+   "Local Attractions",
+   "Museums",
+   "Observation Decks",
+   "Sightseeing",
+   "Tourist Attractions",
+   "Zoos"
+  ],
+  "note": "\"the categories of Attractions & Things to See\": all 11 tags (none business-only)"
+ },
+ {
+  "item": 180,
+  "phrase": "maid",
+  "tags": [
+   "Cleaning"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "housekeeping",
+  "tags": [
+   "Cleaning"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "maid service",
+  "tags": [
+   "Cleaning"
+  ],
+  "note": "in the item-180 table, not in decision 2 (which lists maid, housekeeping): confirm"
+ },
+ {
+  "item": 180,
+  "phrase": "house cleaner",
+  "tags": [
+   "Cleaning"
+  ],
+  "note": "in the item-180 table, not in decision 2 (which lists maid, housekeeping): confirm"
+ },
+ {
+  "item": 180,
+  "phrase": "landscaper",
+  "tags": [
+   "Landscaping"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "gardener",
+  "tags": [
+   "Landscaping"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "lawn care",
+  "tags": [
+   "Landscaping"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "lawn mowing",
+  "tags": [
+   "Landscaping"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "mow my lawn",
+  "tags": [
+   "Landscaping"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "yard work",
+  "tags": [
+   "Landscaping"
+  ],
+  "note": "in the item-180 table, not in decision 2: confirm"
+ },
+ {
+  "item": 180,
+  "phrase": "lawn service",
+  "tags": [
+   "Landscaping"
+  ],
+  "note": "in the item-180 table, not in decision 2: confirm"
+ },
+ {
+  "item": 180,
+  "phrase": "movers",
+  "tags": [
+   "Moving"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "exterminator",
+  "tags": [
+   "Pest Control"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "bed bugs",
+  "tags": [
+   "Pest Control"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "termites",
+  "tags": [
+   "Pest Control"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "ac repair",
+  "tags": [
+   "HVAC"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "air conditioning",
+  "tags": [
+   "HVAC"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "heating",
+  "tags": [
+   "HVAC"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "furnace",
+  "tags": [
+   "HVAC"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "ac",
+  "tags": [
+   "HVAC"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "heat pump",
+  "tags": [
+   "HVAC"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "house painter",
+  "tags": [
+   "House Painting"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "painter",
+  "tags": [
+   "House Painting"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "interior painting",
+  "tags": [
+   "House Painting"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "exterior painting",
+  "tags": [
+   "House Painting"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "storage unit",
+  "tags": [
+   "Storage"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "self storage",
+  "tags": [
+   "Storage"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "storage space",
+  "tags": [
+   "Storage"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "contractor",
+  "tags": [
+   "Contractors"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "general contractor",
+  "tags": [
+   "Contractors"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "home improvement",
+  "tags": [
+   "Contractors"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "remodel",
+  "tags": [
+   "Contractors"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "remodeling",
+  "tags": [
+   "Contractors"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "renovation",
+  "tags": [
+   "Contractors"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "roofer",
+  "tags": [
+   "Contractors"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "roofing",
+  "tags": [
+   "Contractors"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "security system",
+  "tags": [
+   "Home Security"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "alarm system",
+  "tags": [
+   "Home Security"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "home security",
+  "tags": [
+   "Home Security"
+  ]
+ },
+ {
+  "item": 180,
+  "phrase": "security cameras",
+  "tags": [
+   "Home Security"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "body shop",
+  "tags": [
+   "Auto Repair"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "collision repair",
+  "tags": [
+   "Auto Repair"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "brakes",
+  "tags": [
+   "Auto Repair"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "smog check",
+  "tags": [
+   "Auto Repair"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "car inspection",
+  "tags": [
+   "Auto Repair"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "windshield",
+  "tags": [
+   "Auto Repair"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "tow truck",
+  "tags": [
+   "Towing"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "roadside assistance",
+  "tags": [
+   "Towing"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "car parts",
+  "tags": [
+   "Auto Parts"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "auto parts store",
+  "tags": [
+   "Auto Parts"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "car dealer",
+  "tags": [
+   "Dealerships"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "dealership",
+  "tags": [
+   "Dealerships"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "used cars",
+  "tags": [
+   "Dealerships"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "new cars",
+  "tags": [
+   "Dealerships"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "buy a car",
+  "tags": [
+   "Dealerships"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "rental car",
+  "tags": [
+   "Car Rental"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "rent a car",
+  "tags": [
+   "Car Rental"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "charging station",
+  "tags": [
+   "EV Charging"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "ev charger",
+  "tags": [
+   "EV Charging"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "car charger",
+  "tags": [
+   "EV Charging"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "gas station",
+  "tags": [
+   "Gas Stations"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "gas",
+  "tags": [
+   "Gas Stations"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "fuel",
+  "tags": [
+   "Gas Stations"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "fill up",
+  "tags": [
+   "Gas Stations"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "taxi service",
+  "tags": [
+   "Transportation Services"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "car service",
+  "tags": [
+   "Transportation Services"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "airport shuttle",
+  "tags": [
+   "Transportation Services"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "shuttle service",
+  "tags": [
+   "Transportation Services"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "limo",
+  "tags": [
+   "Transportation Services"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "limousine",
+  "tags": [
+   "Transportation Services"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "chauffeur",
+  "tags": [
+   "Transportation Services"
+  ]
+ },
+ {
+  "item": 181,
+  "phrase": "party bus",
+  "tags": [
+   "Transportation Services"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "cooking classes",
+  "tags": [
+   "Cooking Class"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "cooking lessons",
+  "tags": [
+   "Cooking Class"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "art class",
+  "tags": [
+   "Art Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "painting class",
+  "tags": [
+   "Art Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "drawing class",
+  "tags": [
+   "Art Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "music class",
+  "tags": [
+   "Music Lessons"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "guitar lessons",
+  "tags": [
+   "Music Lessons"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "piano lessons",
+  "tags": [
+   "Music Lessons"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "voice lessons",
+  "tags": [
+   "Music Lessons"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "singing lessons",
+  "tags": [
+   "Music Lessons"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "dance class",
+  "tags": [
+   "Dance Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "dance lessons",
+  "tags": [
+   "Dance Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "salsa lessons",
+  "tags": [
+   "Dance Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "ballet class",
+  "tags": [
+   "Dance Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "language class",
+  "tags": [
+   "Language Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "language lessons",
+  "tags": [
+   "Language Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "esl",
+  "tags": [
+   "Language Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "english class",
+  "tags": [
+   "Language Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "spanish class",
+  "tags": [
+   "Language Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "spanish lessons",
+  "tags": [
+   "Language Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "coding class",
+  "tags": [
+   "Technology Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "coding bootcamp",
+  "tags": [
+   "Technology Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "computer class",
+  "tags": [
+   "Technology Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "programming class",
+  "tags": [
+   "Technology Classes"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "business course",
+  "tags": [
+   "Professional Development"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "business workshop",
+  "tags": [
+   "Professional Development"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "entrepreneurship class",
+  "tags": [
+   "Professional Development"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "job training",
+  "tags": [
+   "Professional Development"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "skills training",
+  "tags": [
+   "Professional Development"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "tutor",
+  "tags": [
+   "Tutoring"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "math tutor",
+  "tags": [
+   "Tutoring"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "homework help",
+  "tags": [
+   "Tutoring"
+  ]
+ },
+ {
+  "item": 182,
+  "phrase": "adult classes",
+  "tags": [
+   "Adult Education"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "volunteer",
+  "tags": [
+   "Volunteering"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "volunteer opportunities",
+  "tags": [
+   "Volunteering"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "volunteer work",
+  "tags": [
+   "Volunteering"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "community service",
+  "tags": [
+   "Volunteering"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "give back",
+  "tags": [
+   "Volunteering"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "giving back",
+  "tags": [
+   "Volunteering"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "nonprofit",
+  "tags": [
+   "Charity"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "non profit",
+  "tags": [
+   "Charity"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "food drive",
+  "tags": [
+   "Donation Drives"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "food bank",
+  "tags": [
+   "Donation Drives"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "toy drive",
+  "tags": [
+   "Donation Drives"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "clothing drive",
+  "tags": [
+   "Donation Drives"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "blood drive",
+  "tags": [
+   "Donation Drives"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "community meeting",
+  "tags": [
+   "Community Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "town hall",
+  "tags": [
+   "Community Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "public meeting",
+  "tags": [
+   "Community Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "civic event",
+  "tags": [
+   "Community Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "city council meeting",
+  "tags": [
+   "Community Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "public hearing",
+  "tags": [
+   "Community Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "neighborhood meeting",
+  "tags": [
+   "Neighborhood Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "hoa meeting",
+  "tags": [
+   "Neighborhood Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "block party",
+  "tags": [
+   "Neighborhood Events"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "church",
+  "tags": [
+   "Faith & Spirituality"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "temple",
+  "tags": [
+   "Faith & Spirituality"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "mosque",
+  "tags": [
+   "Faith & Spirituality"
+  ]
+ },
+ {
+  "item": 183,
+  "phrase": "synagogue",
+  "tags": [
+   "Faith & Spirituality"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "co-working",
+  "tags": [
+   "Coworking"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "shared office",
+  "tags": [
+   "Coworking"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "shared workspace",
+  "tags": [
+   "Coworking"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "seminar",
+  "tags": [
+   "Professional Events",
+   "Lectures"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "business event",
+  "tags": [
+   "Professional Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "industry event",
+  "tags": [
+   "Professional Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "trade show",
+  "tags": [
+   "Professional Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "trade expo",
+  "tags": [
+   "Professional Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "business expo",
+  "tags": [
+   "Professional Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "professional group",
+  "tags": [
+   "Professional Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "professional association",
+  "tags": [
+   "Professional Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "industry group",
+  "tags": [
+   "Professional Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "entrepreneur",
+  "tags": [
+   "Entrepreneurship"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "startup event",
+  "tags": [
+   "Entrepreneurship"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "startup meetup",
+  "tags": [
+   "Entrepreneurship"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "founders meetup",
+  "tags": [
+   "Entrepreneurship"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "pitch night",
+  "tags": [
+   "Entrepreneurship"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "career fair",
+  "tags": [
+   "Career Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "job fair",
+  "tags": [
+   "Career Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "hiring event",
+  "tags": [
+   "Career Events"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "accountant",
+  "tags": [
+   "Finance"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "accounting",
+  "tags": [
+   "Finance"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "bookkeeping",
+  "tags": [
+   "Finance"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "tax preparation",
+  "tags": [
+   "Finance"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "tax prep",
+  "tags": [
+   "Finance"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "financial advisor",
+  "tags": [
+   "Finance"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "realtor",
+  "tags": [
+   "Real Estate"
+  ]
+ },
+ {
+  "item": 184,
+  "phrase": "real estate agent",
+  "tags": [
+   "Real Estate"
+  ]
+ },
+ {
+  "item": 185,
+  "phrase": "singles mixer",
+  "tags": [
+   "Singles Events"
+  ]
+ },
+ {
+  "item": 185,
+  "phrase": "singles night",
+  "tags": [
+   "Singles Events"
+  ]
+ },
+ {
+  "item": 185,
+  "phrase": "singles meetup",
+  "tags": [
+   "Singles Events"
+  ]
+ },
+ {
+  "item": 185,
+  "phrase": "social group",
+  "tags": [
+   "Social Clubs"
+  ]
+ }
+]
