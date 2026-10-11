@@ -238,6 +238,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   PanResponder); loops only in ambient loaders, each capped at `AMBIENT.maxLoopMs` and paused in the background (`governLoop`);
   photos/logos shrink on the phone before upload (`utils/mediaBudget.js`); signed media addresses reused; video never
   preloaded/autoplayed. Guard `motionPerformance.test.js`.
+- **Request -> reply transition (owner item 23):** a reply arriving while its request is on screen travels from the request
+  line into its card (no dim, both ends visible, never scrolls), then builds in (`replyToTravel`/`landOfferTravel` in `offerTravel.js`).
 
 ### Copy, colour, errors
 - Coral = primary action or selected state; status colours have their own tokens (`theme.js`).

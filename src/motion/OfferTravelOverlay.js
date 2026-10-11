@@ -29,7 +29,7 @@ export default function OfferTravelOverlay() {
     [frame, light].forEach((v) => v.setValue(0));
     frameOpacity.setValue(0.9);
     lightOpacity.setValue(1);
-    Animated.timing(dim, { toValue: 1, duration: T.dimMs, useNativeDriver: true }).start();
+    if (travel.dim) Animated.timing(dim, { toValue: 1, duration: T.dimMs, useNativeDriver: true }).start();
     clearTimeout(waitTimer.current);
     const id = travel.id;
     waitTimer.current = setTimeout(() => {

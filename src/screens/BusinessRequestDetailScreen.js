@@ -5,7 +5,7 @@ import { displayClock } from '../i18n/display';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking, Dimensions } from 'react-native';
 import * as Calendar from 'expo-calendar';
 import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestPulse, VisitConfirmed, RespondingStatus, animateLayout } from '../motion';
 import { getRespondingBusinesses, subscribeToRespondingChanges, nextRespondingCheckMs } from '../services/offerResponding';
@@ -16,7 +16,7 @@ import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgre
 import { acceptedWhenLine, acceptedPartySize } from '../utils/acceptedBooking';
 import { useFocusEffect } from '@react-navigation/native';
 import { subscribeViewedArrivals } from '../services/offerArrivals';
-import { isOfferTravelPending, reportOfferTravelTarget } from '../motion/offerTravel';
+import { isOfferTravelPending, reportOfferTravelTarget, startOfferTravel, replyToTravel, rectInWindow, landOfferTravel, measureInWindowAsync } from '../motion/offerTravel';
 import { useStripe, initStripe } from '@stripe/stripe-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
@@ -194,6 +194,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [collectingPayment, setCollectingPayment] = useState(false);
 
   const [offers, setOffers] = useState([]);
+  const rawTextRef = useRef(null); // item 23: where "what you asked" is on screen, for the in-place reply travel
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
@@ -371,6 +372,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       setMyId(uid);
 
       const result = await getBusinessRequestWithOffers(requestId);
+      // Owner item 23: a reply that arrived while this request was already on screen travels from the request line ("what
+      // you asked") into its card ("who answered"), then builds itself in. Asked before the card mounts so its assembly waits
+      // for the travel; never on first open (the request is not on screen yet) and never when the line is scrolled away.
+      const travelOfferId = replyToTravel(result.offers);
+      if (travelOfferId && rawTextRef.current) {
+        const from = await measureInWindowAsync(rawTextRef.current);
+        if (rectInWindow(from, Dimensions.get('window').height)) startOfferTravel({ offerId: travelOfferId, from, dim: false, origin: 'request' });
+      }
       setRequest(result.request);
       setOffers(result.offers);
       noteVisitConfirmations(uid, result.offers);
@@ -1032,7 +1041,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const focusOfferId = route.params?.focusOfferId ?? null;
   const focusScrolledRef = useRef(false);
   const focusCardRef = useRef(null);
+  const cardRefs = useRef({});
   function onOfferLayout(offerId, e) {
+    // Item 23: an in-place reply's travel lands on its card if the card is on screen; below the fold it simply ends (the
+    // card builds in at once). Only a travel that started from the request line; the arrival signal's keeps its path below.
+    if (isOfferTravelPending(offerId)) {
+      requestAnimationFrame(() => {
+        measureInWindowAsync(cardRefs.current[offerId]).then((rect) => landOfferTravel(offerId, rect, Dimensions.get('window').height));
+      });
+    }
     if (!focusOfferId || offerId !== focusOfferId || focusScrolledRef.current) return;
     focusScrolledRef.current = true;
     const y = e.nativeEvent.layout.y;
@@ -1335,7 +1352,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           </View>
         )}
 
-        <Text style={styles.rawText}>{request.raw_text}</Text>
+        <Text ref={rawTextRef} style={styles.rawText}>{request.raw_text}</Text>
         <Text style={[styles.statusLine, statusCopy.color !== 'muted' && colors[statusCopy.color] && { color: colors[statusCopy.color] }]}>{statusCopy.label}</Text>
 
         {/* Request sent -> the reply (by kind) -> You're booked: only steps that really happened, no "viewed" step; then Next. */}
@@ -1484,7 +1501,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             // mounts fresh, so the reply builds itself in (item 16: "responding…" -> the reveal). Later status changes keep
             // the same card (the accepted morph is its own one-time moment).
             <OfferAssembly key={`${o.id}:${o.status === 'pending' ? 'pending' : 'reply'}`} offer={o}>
-            <View collapsable={false} ref={focusOfferId === o.id ? focusCardRef : undefined} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
+            <View collapsable={false} ref={(el) => { cardRefs.current[o.id] = el; if (focusOfferId === o.id) focusCardRef.current = el; }} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
             {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
             <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
             {o.status === 'completed' ? (

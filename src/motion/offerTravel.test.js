@@ -85,3 +85,80 @@ describe('locked constraints (source guards)', () => {
     expect(detail).not.toMatch(/await[^\n]*OfferTravel/);
   });
 });
+
+// Owner item 23 (2026-10-11): Before = your request, After = your offer. A reply arriving while the request is on screen
+// travels from the request line into its card (no dim), then builds itself in.
+describe('item 23: the in-place reply travel (request line -> reply card)', () => {
+  const { replyToTravel, rectInWindow, landOfferTravel, measureInWindowAsync } = require('./offerTravel');
+  const requestLine = { x: 16, y: 120, width: 340, height: 28 };
+  const fresh = (id, extra = {}) => ({ id, status: 'offered', viewed_at: null, expires_at: null, ...extra });
+  const now = new Date('2026-10-11T19:00:00');
+
+  test('picks the first reply that is about to build itself in, and nothing else', () => {
+    const offers = [
+      { id: 'p', status: 'pending' },
+      fresh('seen', { viewed_at: '2026-10-11T18:00:00' }),
+      fresh('new1'),
+      fresh('new2'),
+    ];
+    expect(replyToTravel(offers, { reduceMotion: false, now, playedIds: new Set() })).toBe('new1');
+    expect(replyToTravel(offers, { reduceMotion: false, now, playedIds: new Set(['new1']) })).toBe('new2');
+    expect(replyToTravel([fresh('a', { status: 'accepted' })], { reduceMotion: false, now, playedIds: new Set() })).toBeNull();
+  });
+
+  test('Reduce Motion, or another travel already running: nothing travels', () => {
+    expect(replyToTravel([fresh('a')], { reduceMotion: true, now, playedIds: new Set() })).toBeNull();
+    startOfferTravel({ offerId: 'x', from: pill }, { reduceMotion: false });
+    expect(replyToTravel([fresh('a')], { reduceMotion: false, now, playedIds: new Set() })).toBeNull();
+  });
+
+  test('both ends must be on screen (top edge inside the window)', () => {
+    expect(rectInWindow(requestLine, 800)).toBe(true);
+    expect(rectInWindow({ ...requestLine, y: -40 }, 800)).toBe(false); // scrolled away
+    expect(rectInWindow({ ...requestLine, y: 900 }, 800)).toBe(false); // below the fold
+    expect(rectInWindow(null, 800)).toBe(false);
+    expect(rectInWindow({ ...requestLine, width: 0 }, 800)).toBe(false);
+  });
+
+  test('no dim for the in-place travel; the signal travel keeps its dim', () => {
+    startOfferTravel({ offerId: 'r1', from: requestLine, dim: false, origin: 'request' }, { reduceMotion: false });
+    expect(getOfferTravel()).toMatchObject({ dim: false, origin: 'request' });
+    endOfferTravel();
+    startOfferTravel({ offerId: 's1', from: pill }, { reduceMotion: false });
+    expect(getOfferTravel()).toMatchObject({ dim: true, origin: 'signal' });
+  });
+
+  test('lands on a visible card; a card below the fold ends the travel at once (the card builds in, nothing scrolls)', () => {
+    startOfferTravel({ offerId: 'r1', from: requestLine, dim: false, origin: 'request' }, { reduceMotion: false, now: 1000 });
+    expect(landOfferTravel('r1', card, 800, 1100)).toBe(true);
+    expect(getOfferTravel().target).toEqual(card);
+    endOfferTravel();
+    startOfferTravel({ offerId: 'r2', from: requestLine, dim: false, origin: 'request' }, { reduceMotion: false, now: 1000 });
+    expect(landOfferTravel('r2', { ...card, y: 1200 }, 800, 1100)).toBe(false);
+    expect(getOfferTravel()).toBeNull();
+  });
+
+  test('never touches the arrival signal travel (that one lands via the focus scroll)', () => {
+    startOfferTravel({ offerId: 's1', from: pill }, { reduceMotion: false, now: 1000 });
+    expect(landOfferTravel('s1', { ...card, y: 1200 }, 800, 1100)).toBe(false);
+    expect(getOfferTravel()).toMatchObject({ offerId: 's1', target: null });
+  });
+
+  test('measureInWindowAsync always settles', async () => {
+    expect(await measureInWindowAsync(null)).toBeNull();
+    expect(await measureInWindowAsync({ measureInWindow: (cb) => cb(1, 2, 3, 4) })).toEqual({ x: 1, y: 2, width: 3, height: 4 });
+    expect(await measureInWindowAsync({ measureInWindow: () => {} }, 10)).toBeNull();
+  });
+
+  test('the screen asks before the reply card mounts, from the request line, with no dim', () => {
+    const screen = fs.readFileSync(path.join(__dirname, '..', 'screens', 'BusinessRequestDetailScreen.js'), 'utf8');
+    const ask = screen.indexOf('const travelOfferId = replyToTravel(result.offers);');
+    expect(ask).toBeGreaterThan(-1);
+    expect(ask).toBeLessThan(screen.indexOf('setOffers(result.offers);'));
+    expect(screen).toMatch(/startOfferTravel\(\{ offerId: travelOfferId, from, dim: false, origin: 'request' \}\)/);
+    expect(screen).toMatch(/<Text ref=\{rawTextRef\} style=\{styles\.rawText\}>/);
+    expect(screen).toMatch(/landOfferTravel\(offerId, rect, Dimensions\.get\('window'\)\.height\)/);
+    const overlay = fs.readFileSync(path.join(__dirname, 'OfferTravelOverlay.js'), 'utf8');
+    expect(overlay).toMatch(/if \(travel\.dim\) Animated\.timing\(dim/);
+  });
+});
