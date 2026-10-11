@@ -59,6 +59,11 @@ export default {
       blockTitle: "Block {name}?",
       blockBody: "They'll be removed from this gathering and won't be able to see you or message you.",
     },
+    joined: {
+      one: "{name} joined",
+      friend: "Your friend {name} joined",
+      many: { one: "{name} and {count} more joined", other: "{name} and {count} more joined" },
+    },
   },
   es: {
     stat: {
@@ -117,6 +122,11 @@ export default {
       report: "Denunciar",
       blockTitle: "¿Bloquear a {name}?",
       blockBody: "Se le quitará de esta reunión y no podrá verte ni escribirte.",
+    },
+    joined: {
+      one: "{name} se unió",
+      friend: "Tu amigo {name} se unió",
+      many: { one: "{name} y {count} más se unieron", other: "{name} y {count} más se unieron" },
     },
   },
   de: {
@@ -177,6 +187,11 @@ export default {
       blockTitle: "{name} blockieren?",
       blockBody: "Die Person wird aus diesem Treffen entfernt und kann dich weder sehen noch dir schreiben.",
     },
+    joined: {
+      one: "{name} ist dabei",
+      friend: "Dein Freund {name} ist dabei",
+      many: { one: "{name} und {count} weitere sind dabei", other: "{name} und {count} weitere sind dabei" },
+    },
   },
   fr: {
     stat: {
@@ -235,6 +250,11 @@ export default {
       report: "Signaler",
       blockTitle: "Bloquer {name} ?",
       blockBody: "Cette personne sera retirée de cette sortie et ne pourra ni te voir ni t'écrire.",
+    },
+    joined: {
+      one: "{name} a rejoint",
+      friend: "Ton ami {name} a rejoint",
+      many: { one: "{name} et {count} autre ont rejoint", other: "{name} et {count} autres ont rejoint" },
     },
   },
   pt: {
@@ -295,6 +315,11 @@ export default {
       blockTitle: "Bloquear {name}?",
       blockBody: "A pessoa será removida deste encontro e não poderá ver você nem enviar mensagens.",
     },
+    joined: {
+      one: "{name} entrou",
+      friend: "Seu amigo {name} entrou",
+      many: { one: "{name} e mais {count} entraram", other: "{name} e mais {count} entraram" },
+    },
   },
   ht: {
     stat: {
@@ -353,6 +378,11 @@ export default {
       report: "Siyale",
       blockTitle: "Bloke {name}?",
       blockBody: "Y ap retire moun nan nan rasanbleman sa a, epi li p ap ka wè w ni ekri w.",
+    },
+    joined: {
+      one: "{name} vin jwenn ou",
+      friend: "Zanmi ou {name} vin jwenn ou",
+      many: { one: "{name} ak {count} lòt vin jwenn ou", other: "{name} ak {count} lòt vin jwenn ou" },
     },
   },
   zh: {
@@ -413,6 +443,11 @@ export default {
       blockTitle: "要屏蔽 {name} 吗？",
       blockBody: "对方将被移出这次聚会，并且无法看到你或给你发消息。",
     },
+    joined: {
+      one: "{name} 加入了",
+      friend: "你的朋友 {name} 加入了",
+      many: { one: "{name} 和另外 {count} 人加入了", other: "{name} 和另外 {count} 人加入了" },
+    },
   },
   vi: {
     stat: {
@@ -471,6 +506,11 @@ export default {
       report: "Báo cáo",
       blockTitle: "Chặn {name}?",
       blockBody: "Người này sẽ bị xóa khỏi buổi gặp và không thể thấy hoặc nhắn tin cho bạn.",
+    },
+    joined: {
+      one: "{name} đã tham gia",
+      friend: "Bạn của bạn, {name}, đã tham gia",
+      many: { one: "{name} và {count} người khác đã tham gia", other: "{name} và {count} người khác đã tham gia" },
     },
   },
   tl: {
@@ -531,6 +571,11 @@ export default {
       blockTitle: "I-block si {name}?",
       blockBody: "Aalisin siya sa pagtitipong ito at hindi ka niya makikita o mamemensahe.",
     },
+    joined: {
+      one: "Sumali si {name}",
+      friend: "Sumali ang kaibigan mong si {name}",
+      many: { one: "Sumali si {name} at {count} pa", other: "Sumali si {name} at {count} pa" },
+    },
   },
   ru: {
     stat: {
@@ -590,6 +635,11 @@ export default {
       blockTitle: "Заблокировать {name}?",
       blockBody: "Человек будет убран с этой встречи и не сможет видеть вас или писать вам.",
     },
+    joined: {
+      one: "{name} присоединился",
+      friend: "Ваш друг {name} присоединился",
+      many: { one: "{name} и ещё {count} присоединились", other: "{name} и ещё {count} присоединились" },
+    },
   },
   ko: {
     stat: {
@@ -648,6 +698,11 @@ export default {
       report: "신고",
       blockTitle: "{name} 님을 차단할까요?",
       blockBody: "이 모임에서 내보내지고, 회원님을 보거나 메시지를 보낼 수 없게 됩니다.",
+    },
+    joined: {
+      one: "{name}님이 참여했어요",
+      friend: "친구 {name}님이 참여했어요",
+      many: { one: "{name}님 외 {count}명이 참여했어요", other: "{name}님 외 {count}명이 참여했어요" },
     },
   },
 };

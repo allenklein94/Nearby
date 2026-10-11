@@ -50,7 +50,9 @@ import { getMyPartnershipRequestForTarget } from '../services/businessPartnershi
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
-import { approvedIds, newJoinsToAnimate } from '../utils/hostLiveJoins';
+import { approvedIds, newJoinsToAnimate, joinedNote, attendeesNewFirst } from '../utils/hostLiveJoins';
+import { AvatarArrive } from '../motion/JoinArrival';
+import { filterToMyFriends } from '../services/friends';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
 import GatheringAttendingSection from '../components/GatheringAttendingSection';
@@ -166,6 +168,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const joinBaselineRef = useRef(null);
   const joinShownRef = useRef(new Set());
   const [joinGlowKey, setJoinGlowKey] = useState(0);
+  // Item 25 #3: the same live join as a moment: who joined (fresh ids, front of Who's going), the figure it rolled from, and
+  // the "Maya joined" line (named friend first).
+  const [liveJoin, setLiveJoin] = useState({ ids: [], previousGoing: null, note: null });
 
   const load = useCallback(async () => {
     const liveJoinReload = liveJoinReloadRef.current;
@@ -227,10 +232,18 @@ export default function GatheringDetailScreen({ route, navigation }) {
           live: liveJoinReload,
           shown: joinShownRef.current,
         });
+        const goingBefore = joinBaselineRef.current?.going ?? null;
         joinBaselineRef.current = { ids: approvedIds(joinRows), going };
         if (fresh.length > 0) {
           fresh.forEach((id) => joinShownRef.current.add(id));
+          // The figure and the avatar move now; the named line follows the friends lookup (never waits on it, never flips from
+          // "Maya joined" to "Your friend Maya joined"). A failed lookup just means nobody is called "your friend".
+          setLiveJoin({ ids: fresh, previousGoing: goingBefore, note: null });
           setJoinGlowKey((k) => k + 1);
+          filterToMyFriends(fresh)
+            .then((fs) => new Set(fs.map((f) => f.id)))
+            .catch(() => new Set())
+            .then((friendIds) => setLiveJoin((cur) => (cur.ids === fresh ? { ...cur, note: joinedNote(fresh, joinRows, friendIds) } : cur)));
         }
         setCountdownStats({
           going: going ?? attendeeTotal(g),
@@ -789,19 +802,22 @@ export default function GatheringDetailScreen({ route, navigation }) {
               <Text style={styles.sectionLabel}>{t('ui.gatheringDetail.whosGoing')}</Text>
               <View style={styles.attendeesRow}>
                 <View style={styles.attendeeAvatars}>
-                  {gathering.approvedAttendees.slice(0, 6).map((attendee, i) => {
+                  {/* Item 25 #3: on the host's live join, the new face is at the front and settles in (keyed per join event). */}
+                  {attendeesNewFirst(gathering.approvedAttendees, liveJoin.ids).slice(0, 6).map((attendee, i) => {
                     const url = attendeePhotoUrls[attendee.user_id];
-                    return url ? (
-                      <Image
-                        key={attendee.user_id}
-                        source={{ uri: url }}
-                        style={[styles.attendeeAvatar, { marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }]}
-                      />
-                    ) : (
-                      <View
-                        key={attendee.user_id}
-                        style={[styles.attendeeAvatar, styles.attendeeAvatarPlaceholder, { marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }]}
-                      />
+                    const arriving = liveJoin.ids.includes(attendee.user_id);
+                    return (
+                      <AvatarArrive
+                        key={arriving ? `${attendee.user_id}:${joinGlowKey}` : attendee.user_id}
+                        play={arriving}
+                        style={{ marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }}
+                      >
+                        {url ? (
+                          <Image source={{ uri: url }} style={styles.attendeeAvatar} />
+                        ) : (
+                          <View style={[styles.attendeeAvatar, styles.attendeeAvatarPlaceholder]} />
+                        )}
+                      </AvatarArrive>
                     );
                   })}
                 </View>
@@ -1007,6 +1023,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 attendeesExpanded={attendeesExpanded}
                 messageCount={hostMessageCount}
                 joinGlowKey={joinGlowKey}
+                joinPreviousGoing={liveJoin.previousGoing}
+                joinedNote={liveJoin.note}
                 onInvite={() => setInviteModalVisible(true)}
                 onEdit={() => navigation.navigate('EditGathering', { gathering })}
                 onMessage={() => navigation.navigate('GatheringChat', { gatheringId, gatheringTitle: gathering.title })}

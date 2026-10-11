@@ -9,6 +9,6 @@ minimum attendee count; attendance and readiness stay separate; no schema.
 |---|---|---|
 | 1 | Business responds (signature) | DONE: arc + halo, outline-only frame, converging ring on landing, build-in starts at landing, price wash; 1500 ms incl. dim |
 | 2 | Offer accepted | already built (item 12, OfferAcceptedMorph) - no change |
-| 3 | Friend joins your gathering | not started |
+| 3 | Friend joins your gathering | DONE: count roll, new avatar settles in at the front of Who's going, "Your friend Maya joined" line (host, live joins only) |
 | 4 | Plan comes together (plan fully booked) | not started |
 | 5 | Redemption | already built (moment 6, VisitConfirmed) - no change |

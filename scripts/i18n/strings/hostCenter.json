@@ -63,7 +63,13 @@
   "moderate.block": "Block",
   "moderate.report": "Report",
   "moderate.blockTitle": "Block {name}?",
-  "moderate.blockBody": "They'll be removed from this gathering and won't be able to see you or message you."
+  "moderate.blockBody": "They'll be removed from this gathering and won't be able to see you or message you.",
+  "joined.one": "{name} joined",
+  "joined.friend": "Your friend {name} joined",
+  "joined.many": {
+   "one": "{name} and {count} more joined",
+   "other": "{name} and {count} more joined"
+  }
  },
  "es": {
   "stat.going": {
@@ -129,7 +135,13 @@
   "moderate.block": "Bloquear",
   "moderate.report": "Denunciar",
   "moderate.blockTitle": "¿Bloquear a {name}?",
-  "moderate.blockBody": "Se le quitará de esta reunión y no podrá verte ni escribirte."
+  "moderate.blockBody": "Se le quitará de esta reunión y no podrá verte ni escribirte.",
+  "joined.one": "{name} se unió",
+  "joined.friend": "Tu amigo {name} se unió",
+  "joined.many": {
+   "one": "{name} y {count} más se unieron",
+   "other": "{name} y {count} más se unieron"
+  }
  },
  "de": {
   "stat.going": {
@@ -195,7 +207,13 @@
   "moderate.block": "Blockieren",
   "moderate.report": "Melden",
   "moderate.blockTitle": "{name} blockieren?",
-  "moderate.blockBody": "Die Person wird aus diesem Treffen entfernt und kann dich weder sehen noch dir schreiben."
+  "moderate.blockBody": "Die Person wird aus diesem Treffen entfernt und kann dich weder sehen noch dir schreiben.",
+  "joined.one": "{name} ist dabei",
+  "joined.friend": "Dein Freund {name} ist dabei",
+  "joined.many": {
+   "one": "{name} und {count} weitere sind dabei",
+   "other": "{name} und {count} weitere sind dabei"
+  }
  },
  "fr": {
   "stat.going": {
@@ -261,7 +279,13 @@
   "moderate.block": "Bloquer",
   "moderate.report": "Signaler",
   "moderate.blockTitle": "Bloquer {name} ?",
-  "moderate.blockBody": "Cette personne sera retirée de cette sortie et ne pourra ni te voir ni t'écrire."
+  "moderate.blockBody": "Cette personne sera retirée de cette sortie et ne pourra ni te voir ni t'écrire.",
+  "joined.one": "{name} a rejoint",
+  "joined.friend": "Ton ami {name} a rejoint",
+  "joined.many": {
+   "one": "{name} et {count} autre ont rejoint",
+   "other": "{name} et {count} autres ont rejoint"
+  }
  },
  "pt": {
   "stat.going": {
@@ -327,7 +351,13 @@
   "moderate.block": "Bloquear",
   "moderate.report": "Denunciar",
   "moderate.blockTitle": "Bloquear {name}?",
-  "moderate.blockBody": "A pessoa será removida deste encontro e não poderá ver você nem enviar mensagens."
+  "moderate.blockBody": "A pessoa será removida deste encontro e não poderá ver você nem enviar mensagens.",
+  "joined.one": "{name} entrou",
+  "joined.friend": "Seu amigo {name} entrou",
+  "joined.many": {
+   "one": "{name} e mais {count} entraram",
+   "other": "{name} e mais {count} entraram"
+  }
  },
  "ht": {
   "stat.going": {
@@ -393,7 +423,13 @@
   "moderate.block": "Bloke",
   "moderate.report": "Siyale",
   "moderate.blockTitle": "Bloke {name}?",
-  "moderate.blockBody": "Y ap retire moun nan nan rasanbleman sa a, epi li p ap ka wè w ni ekri w."
+  "moderate.blockBody": "Y ap retire moun nan nan rasanbleman sa a, epi li p ap ka wè w ni ekri w.",
+  "joined.one": "{name} vin jwenn ou",
+  "joined.friend": "Zanmi ou {name} vin jwenn ou",
+  "joined.many": {
+   "one": "{name} ak {count} lòt vin jwenn ou",
+   "other": "{name} ak {count} lòt vin jwenn ou"
+  }
  },
  "zh": {
   "stat.going": {
@@ -459,7 +495,13 @@
   "moderate.block": "屏蔽",
   "moderate.report": "举报",
   "moderate.blockTitle": "要屏蔽 {name} 吗？",
-  "moderate.blockBody": "对方将被移出这次聚会，并且无法看到你或给你发消息。"
+  "moderate.blockBody": "对方将被移出这次聚会，并且无法看到你或给你发消息。",
+  "joined.one": "{name} 加入了",
+  "joined.friend": "你的朋友 {name} 加入了",
+  "joined.many": {
+   "one": "{name} 和另外 {count} 人加入了",
+   "other": "{name} 和另外 {count} 人加入了"
+  }
  },
  "vi": {
   "stat.going": {
@@ -525,7 +567,13 @@
   "moderate.block": "Chặn",
   "moderate.report": "Báo cáo",
   "moderate.blockTitle": "Chặn {name}?",
-  "moderate.blockBody": "Người này sẽ bị xóa khỏi buổi gặp và không thể thấy hoặc nhắn tin cho bạn."
+  "moderate.blockBody": "Người này sẽ bị xóa khỏi buổi gặp và không thể thấy hoặc nhắn tin cho bạn.",
+  "joined.one": "{name} đã tham gia",
+  "joined.friend": "Bạn của bạn, {name}, đã tham gia",
+  "joined.many": {
+   "one": "{name} và {count} người khác đã tham gia",
+   "other": "{name} và {count} người khác đã tham gia"
+  }
  },
  "tl": {
   "stat.going": {
@@ -591,7 +639,13 @@
   "moderate.block": "I-block",
   "moderate.report": "I-report",
   "moderate.blockTitle": "I-block si {name}?",
-  "moderate.blockBody": "Aalisin siya sa pagtitipong ito at hindi ka niya makikita o mamemensahe."
+  "moderate.blockBody": "Aalisin siya sa pagtitipong ito at hindi ka niya makikita o mamemensahe.",
+  "joined.one": "Sumali si {name}",
+  "joined.friend": "Sumali ang kaibigan mong si {name}",
+  "joined.many": {
+   "one": "Sumali si {name} at {count} pa",
+   "other": "Sumali si {name} at {count} pa"
+  }
  },
  "ru": {
   "stat.going": {
@@ -667,7 +721,13 @@
   "moderate.block": "Заблокировать",
   "moderate.report": "Пожаловаться",
   "moderate.blockTitle": "Заблокировать {name}?",
-  "moderate.blockBody": "Человек будет убран с этой встречи и не сможет видеть вас или писать вам."
+  "moderate.blockBody": "Человек будет убран с этой встречи и не сможет видеть вас или писать вам.",
+  "joined.one": "{name} присоединился",
+  "joined.friend": "Ваш друг {name} присоединился",
+  "joined.many": {
+   "one": "{name} и ещё {count} присоединились",
+   "other": "{name} и ещё {count} присоединились"
+  }
  },
  "ko": {
   "stat.going": {
@@ -733,6 +793,12 @@
   "moderate.block": "차단",
   "moderate.report": "신고",
   "moderate.blockTitle": "{name} 님을 차단할까요?",
-  "moderate.blockBody": "이 모임에서 내보내지고, 회원님을 보거나 메시지를 보낼 수 없게 됩니다."
+  "moderate.blockBody": "이 모임에서 내보내지고, 회원님을 보거나 메시지를 보낼 수 없게 됩니다.",
+  "joined.one": "{name}님이 참여했어요",
+  "joined.friend": "친구 {name}님이 참여했어요",
+  "joined.many": {
+   "one": "{name}님 외 {count}명이 참여했어요",
+   "other": "{name}님 외 {count}명이 참여했어요"
+  }
  }
 }

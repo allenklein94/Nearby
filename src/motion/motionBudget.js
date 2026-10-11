@@ -91,6 +91,10 @@ export const SEQUENCES = {
   responding: { tier: 'small', fadeMs: 200, pulseMs: 260 },
   // Someone joined the host's gathering while the host had it open (item 15, 2026-10-10): the Going line glows once.
   hostJoin: { tier: 'small', glowInMs: 100, glowOutMs: 200 },
+  // Owner item 25 #3: the same live join, as a moment. The Going figure rolls (the old number lifts away, the new one rises
+  // in, readable from frame one), the new person's avatar settles into the front of Who's going (fade + slight grow, no
+  // bounce), and a "Maya joined" line settles in under the figure. Host only, live only, no haptic (the host did not tap).
+  friendJoin: { tier: 'medium', rollMs: 260, risePx: 8, avatarMs: 320, avatarFromScale: 0.8, lineDelayMs: 80, lineMs: 220 },
   // Item 25: the travel is part of the signature moment. The light follows a gentle arc (arcPx at most, never more than
   // arcShare of the distance) with a soft halo; the frame is an outline only (never covers the card's text); on landing one
   // ring converges onto the card (the request's rings went out, the answer's ring comes back in) while the dim and frame fade.
@@ -136,6 +140,8 @@ export function settleMs(name) {
       return Math.max(s.fadeMs, s.pulseMs);
     case 'hostJoin':
       return s.glowInMs + s.glowOutMs;
+    case 'friendJoin':
+      return Math.max(s.rollMs, s.avatarMs, s.lineDelayMs + s.lineMs);
     case 'requestPulse':
       return s.staggerMs * (s.rings - 1) + s.ringMs;
     case 'offerTravel':

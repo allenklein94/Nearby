@@ -6,6 +6,7 @@ import { spacing, radius } from '../theme';
 import { hostSummaryStats, hostActions, messageBadge } from '../utils/hostCommandCenter';
 import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
+import { CountRoll, JoinedLine } from '../motion/JoinArrival';
 
 const INVITE_PREVIEW = 5;
 
@@ -21,6 +22,8 @@ export default function HostCommandCenter({
   attendeesExpanded,
   messageCount,
   joinGlowKey = 0,
+  joinPreviousGoing = null,
+  joinedNote = null,
   onInvite,
   onEdit,
   onMessage,
@@ -56,7 +59,14 @@ export default function HostCommandCenter({
             // Item 15: someone joined while the host had this open -> one success-colour glow around the Going figure
             // (keyed per join event, so it plays once). No haptic (the host did not tap). Reduce Motion = no glow.
             <View key={s.key} style={styles.goingWrap} accessibilityLiveRegion={joinGlowKey > 0 ? 'polite' : undefined}>
-              <Text style={[styles.stat, styles.statLead]}>{t(`ui.hostCenter.stat.${s.key}`, { count: s.value })}</Text>
+              {/* Item 25 #3: the figure rolls from the number it was to the new one (keyed per join event, once). */}
+              <CountRoll
+                key={`roll:${joinGlowKey}`}
+                play={joinGlowKey > 0 && Number.isFinite(joinPreviousGoing) && joinPreviousGoing !== s.value}
+                previous={Number.isFinite(joinPreviousGoing) ? <Text style={[styles.stat, styles.statLead]}>{t(`ui.hostCenter.stat.${s.key}`, { count: joinPreviousGoing })}</Text> : null}
+              >
+                <Text style={[styles.stat, styles.statLead]}>{t(`ui.hostCenter.stat.${s.key}`, { count: s.value })}</Text>
+              </CountRoll>
               {joinGlowKey > 0 ? (
                 <OfferProgressGlow key={joinGlowKey} play color={colors.success} radius={radius.sm} timing={SEQUENCES.hostJoin} />
               ) : null}
@@ -68,6 +78,15 @@ export default function HostCommandCenter({
           )))}
         </View>
       )}
+      {joinGlowKey > 0 && joinedNote ? (
+        <JoinedLine key={`joined:${joinGlowKey}`} play>
+          <Text style={[styles.note, { color: colors.success }]}>
+            {joinedNote.key === 'many'
+              ? t('ui.hostCenter.joined.many', { name: joinedNote.name, count: joinedNote.count })
+              : t(`ui.hostCenter.joined.${joinedNote.key}`, { name: joinedNote.name })}
+          </Text>
+        </JoinedLine>
+      ) : null}
       {statRows.some((s) => s.key === 'interested') && (
         <Text style={styles.note}>{t('ui.hostCenter.interestedNote')}</Text>
       )}
