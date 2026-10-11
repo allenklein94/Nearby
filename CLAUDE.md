@@ -54,6 +54,9 @@ completed plan, screened source only, missing or failed logo falls back to 📍;
 travels, logo and line wait for it to land, text always readable, no flicker/shift/flash, under 0.9 s, Reduce Motion = finished
 card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests intact. Item 33 (reservation confirmation) is covered by item 32 as built (owner, 2026-10-11).
 
+**Item 36 (weather contextual layer) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_36_WEATHER_LAYER_DEVICE_CHECKLIST_2026-10-11.md`
+is recorded on a real device (built; tests and parse checks pass; no new strings).
+
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
 
@@ -286,6 +289,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   first row, plays "~~Confirmed~~ → ✓ Completed" once per gathering ever (`utils/gatheringCompletion.js`, stored ids; `motion/PlanCompleted.js`,
   medium tier, no glow/haptic) and asks "How was it?" inline (`GatheringFeedbackInline`); the auto-opening Home modal is gone. ONE scale
   `constants/satisfactionScale.js` (Loved it/Good/Okay/Not for me) for gatherings and offers; App Store prompt stays keyed to Loved it.
+- **Weather layer (owner item 36):** only the Home weather card carries weather: a quiet wash + condition icon
+  (`constants/weatherAtmosphere.js`, 3 wash tokens) that fades in once when the condition changes that day (`motion/WeatherShift.js`,
+  `utils/weatherShiftSeen.js`); never app-wide, never particles, wording unchanged (item 192).
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

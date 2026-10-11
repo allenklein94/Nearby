@@ -79,6 +79,9 @@ import { homeLoadNotice } from '../utils/homeLoadNotice';
 import { getGreeting, getTimePeriod, getPersonalizedQuickPicks, getPinnedQuickPicks, describeFriendGatheringTiming } from '../utils/timeContext';
 import { firstRunInterestLine } from '../utils/firstRunInterests';
 import { homeWeatherCard, goodWeatherCardAllowed, localDayKey } from '../constants/weatherRelevance';
+import { weatherAtmosphere } from '../constants/weatherAtmosphere';
+import WeatherShift from '../motion/WeatherShift';
+import { loadWeatherShiftSeen } from '../utils/weatherShiftSeen';
 import { attendingFigure, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
@@ -267,6 +270,7 @@ export default function HomeScreen({ navigation }) {
     AsyncStorage.getItem(GOOD_WEATHER_DAY_KEY)
       .then((day) => { if (!cancelled) setGoodWeatherDay({ loaded: true, day }); })
       .catch(() => { if (!cancelled) setGoodWeatherDay({ loaded: true, day: null }); });
+    loadWeatherShiftSeen(); // item 36: read before the forecast arrives, so the weather card knows if the weather changed
     return () => { cancelled = true; };
   }, []);
   const [myDeclaredInterests, setMyDeclaredInterests] = useState([]);
@@ -2541,14 +2545,17 @@ export default function HomeScreen({ navigation }) {
               // classified gathering to point at, and never over an active intent/Surprise result.
               const card = weatherCard;
               if (!card) return null;
+              const atmosphere = weatherAtmosphere(card.kind); // item 36: wash + condition icon
               const showIndoor = card.bias === 'indoor';
               const showOutdoor = card.bias === 'outdoor';
               const indoorUpcoming = showIndoor ? card.gatherings : [];
               const outdoorUpcoming = showOutdoor ? card.gatherings : [];
               return (
-                <View style={styles.forecastCard}>
+                <View style={[styles.forecastCard, { overflow: 'hidden' }]}>
+                  {/* Item 36: the card's quiet environmental wash; fades in once when the weather changes, else simply there. */}
+                  <WeatherShift kind={card.kind} color={atmosphere ? colors[atmosphere.wash] : null} radius={radius.lg} />
                   <View style={styles.forecastLabelRow}>
-                    <Ionicons name="partly-sunny-outline" size={12} color={colors.textTertiary} style={styles.bannerIcon} />
+                    <Ionicons name={atmosphere?.icon ?? 'partly-sunny-outline'} size={12} color={atmosphere ? colors[atmosphere.tone] : colors.textTertiary} style={styles.bannerIcon} />
                     <Text style={styles.forecastLabel}>{t('ui.homeParts.weatherLabel')}</Text>
                   </View>
                   {/* Item 192: when + why ("Rain expected tonight"), then what it offers. */}

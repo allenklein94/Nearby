@@ -142,6 +142,8 @@ export const SEQUENCES = {
     lines: 4, placeLine: 2, lineStaggerMs: 35, lineMs: 120, lineFlowPx: 6, logoMs: 140, logoFromScale: 0.7, drawMs: 120,
     glowInMs: 80, glowOutMs: 160 },
   happeningRipple: { tier: 'medium', ringMs: 400, fromScale: 0.6, toScale: 2.2, startOpacity: 0.35, size: 24 },
+  // Owner item 36: the weather card's wash fades in once when the weather changes (motion/WeatherShift.js). Slow on purpose.
+  weatherShift: { tier: 'special', washMs: 800 },
 };
 
 // Owner item 32 + confirmed-plan look (2026-10-11): the plan's assembly after the chip lands, in ms from the landing. One
@@ -203,6 +205,8 @@ export function settleMs(name) {
       return s.staggerMs * (s.rings - 1) + s.ringMs;
     case 'happeningRipple':
       return s.ringMs;
+    case 'weatherShift':
+      return s.washMs;
     case 'interestedSaved':
       return s.pulseMs;
     case 'planCompleted':

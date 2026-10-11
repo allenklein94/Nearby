@@ -27,6 +27,11 @@ export const lightColors = {
   inProgress: '#9A6210',
   // Offer travel (2026-10-09): the brief dim behind the offer as it emerges from the arrival signal.
   scrim: 'rgba(45, 36, 32, 0.16)',
+  // Item 36 (2026-10-11): the weather card's quiet environmental wash (constants/weatherAtmosphere.js). Opaque, very close to
+  // the surface, so text keeps AA on it (motionThemeContrast.test.js). Used only by the Home weather card.
+  weatherSunWash: '#FFF3DE',
+  weatherWetWash: '#EAF0F7',
+  weatherColdWash: '#EEF2F7',
 };
 
 export const darkColors = {
@@ -48,6 +53,9 @@ export const darkColors = {
   surpriseMuted: 'rgba(155, 140, 255, 0.18)',
   inProgress: '#E0A84A',
   scrim: 'rgba(0, 0, 0, 0.32)',
+  weatherSunWash: '#29242F',
+  weatherWetWash: '#1B2337',
+  weatherColdWash: '#1F2638',
 };
 
 export const typography = {
