@@ -52,7 +52,7 @@ activity/time/place/people, still solid after navigating away and reloading, vis
 before acceptance (no bias between offers), screened logo replaces the 📍 after booking, recognizable at 18 px, still there on a
 completed plan, screened source only, missing or failed logo falls back to 📍; (3) assembly: the card waits while the chip
 travels, logo and line wait for it to land, text always readable, no flicker/shift/flash, under 0.9 s, Reduce Motion = finished
-card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests intact.
+card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests intact. Item 33 (reservation confirmation) is covered by item 32 as built (owner, 2026-10-11).
 
 **Blocked on the owner:**
 - **Anthropic credit:** every AI edge function returns 500 ("credit balance is too low"). Never run live:
