@@ -243,6 +243,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Wow moments (owner item 25):** a business responding is the ONE signature moment (`signature` tier, <= 1.5 s, calm,
   same for every business; no other sequence may use it). Join on the host's gathering = count roll + avatar + named line;
   "plan comes together" = every piece confirmed (`isPlanFullyConfirmed`), never an attendee count. No hook after an early return (guard).
+  Item 28: the joining face flows in from the side while the others ease aside (no arc); the line says "X accepted your
+  invite" only for the host's own accepted invite to that person for that gathering (`acceptedInviteeIds`).
 - **Something is happening near you (owner item 26):** one ring from the happening-now heading glyph (Home Nearby Right Now,
   Discover Happening Now; `motion/HappeningRipple.js`) only when the section shows a gathering not yet shown this session
   (`utils/happeningSeen.js`, one store for both surfaces, judged only while focused). Rows never move (item 15 stands).

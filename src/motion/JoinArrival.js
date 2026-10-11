@@ -46,9 +46,12 @@ export function CountRoll({ play, previous, children }) {
   );
 }
 
-// The new person's avatar settling into the front of Who's going. `style` is the avatar's place in the row (overlap, z order).
-export function AvatarArrive({ play, style, children }) {
-  const { v, animate } = useOnce(play);
+// The new person's avatar arriving at the front of Who's going. `style` is the avatar's place in the row (overlap, z order).
+// Owner item 28 (2026-10-11): it flows in from the leading edge (fade + a short slide + slight grow) and the faces already
+// there ease aside by `asideBy` px (they start where they stood and slide into their new place). Same duration and easing
+// for both, no bounce, no arc (travel arcs belong to the business-response signature moment).
+export function AvatarArrive({ play, asideBy = 0, style, children }) {
+  const { v, animate } = useOnce(play || asideBy > 0);
   useEffect(() => {
     if (!animate) return undefined;
     const a = Animated.timing(v, { toValue: 1, duration: J.avatarMs, easing: ease, useNativeDriver: true });
@@ -56,8 +59,18 @@ export function AvatarArrive({ play, style, children }) {
     return () => a.stop();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   if (!animate) return <View style={style}>{children}</View>;
+  if (!play) {
+    return (
+      <Animated.View style={[style, { transform: [{ translateX: v.interpolate({ inputRange: [0, 1], outputRange: [-asideBy, 0] }) }] }]}>
+        {children}
+      </Animated.View>
+    );
+  }
   return (
-    <Animated.View style={[style, { opacity: infoOpacity(v), transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [J.avatarFromScale, 1] }) }] }]}>
+    <Animated.View style={[style, { opacity: infoOpacity(v), transform: [
+      { translateX: v.interpolate({ inputRange: [0, 1], outputRange: [-J.flowPx, 0] }) },
+      { scale: v.interpolate({ inputRange: [0, 1], outputRange: [J.avatarFromScale, 1] }) },
+    ] }]}>
       {children}
     </Animated.View>
   );

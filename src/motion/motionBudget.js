@@ -98,7 +98,8 @@ export const SEQUENCES = {
   // (slight rise, readable from frame one), then the plan's outline glows once in the success colour. Reservations are
   // business transactions, so calm (item 122): no bounce, particles or confetti.
   planTogether: { tier: 'special', staggerMs: 90, pieceMs: 200, maxPieces: 4, risePx: 4, glowInMs: 100, glowOutMs: 200 },
-  friendJoin: { tier: 'medium', rollMs: 260, risePx: 8, avatarMs: 320, avatarFromScale: 0.8, lineDelayMs: 80, lineMs: 220 },
+  // Owner item 28: the avatar flows in from flowPx before its place while the faces already there ease aside (same avatarMs).
+  friendJoin: { tier: 'medium', rollMs: 260, risePx: 8, avatarMs: 320, avatarFromScale: 0.8, flowPx: 24, lineDelayMs: 80, lineMs: 220 },
   // Item 25: the travel is part of the signature moment. The light follows a gentle arc (arcPx at most, never more than
   // arcShare of the distance) with a soft halo; the frame is an outline only (never covers the card's text); on landing one
   // ring converges onto the card (the request's rings went out, the answer's ring comes back in) while the dim and frame fade.

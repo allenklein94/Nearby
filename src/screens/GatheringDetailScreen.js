@@ -50,7 +50,7 @@ import { getMyPartnershipRequestForTarget } from '../services/businessPartnershi
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
-import { approvedIds, newJoinsToAnimate, joinedNote, attendeesNewFirst } from '../utils/hostLiveJoins';
+import { approvedIds, newJoinsToAnimate, joinedNote, attendeesNewFirst, acceptedInviteeIds } from '../utils/hostLiveJoins';
 import { AvatarArrive } from '../motion/JoinArrival';
 import { filterToMyFriends } from '../services/friends';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
@@ -243,7 +243,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
           filterToMyFriends(fresh)
             .then((fs) => new Set(fs.map((f) => f.id)))
             .catch(() => new Set())
-            .then((friendIds) => setLiveJoin((cur) => (cur.ids === fresh ? { ...cur, note: joinedNote(fresh, joinRows, friendIds) } : cur)));
+            .then((friendIds) => setLiveJoin((cur) => (cur.ids === fresh ? { ...cur, note: joinedNote(fresh, joinRows, friendIds, acceptedInviteeIds(invites)) } : cur)));
         }
         setCountdownStats({
           going: going ?? attendeeTotal(g),
@@ -803,13 +803,19 @@ export default function GatheringDetailScreen({ route, navigation }) {
               <View style={styles.attendeesRow}>
                 <View style={styles.attendeeAvatars}>
                   {/* Item 25 #3: on the host's live join, the new face is at the front and settles in (keyed per join event). */}
-                  {attendeesNewFirst(gathering.approvedAttendees, liveJoin.ids).slice(0, 6).map((attendee, i) => {
+                  {/* Item 28: it flows in from the leading edge and the faces already there ease aside to make room. */}
+                  {(() => {
+                    const shown = attendeesNewFirst(gathering.approvedAttendees, liveJoin.ids).slice(0, 6);
+                    const arrivals = shown.filter((a) => liveJoin.ids.includes(a.user_id)).length;
+                    return shown.map((attendee, i) => {
                     const url = attendeePhotoUrls[attendee.user_id];
                     const arriving = liveJoin.ids.includes(attendee.user_id);
+                    const aside = !arriving && arrivals > 0;
                     return (
                       <AvatarArrive
-                        key={arriving ? `${attendee.user_id}:${joinGlowKey}` : attendee.user_id}
+                        key={arriving || aside ? `${attendee.user_id}:${joinGlowKey}` : attendee.user_id}
                         play={arriving}
+                        asideBy={aside ? arrivals * AVATAR_SLOT_PX : 0}
                         style={{ marginLeft: i > 0 ? -10 : 0, zIndex: 10 - i }}
                       >
                         {url ? (
@@ -819,7 +825,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
                         )}
                       </AvatarArrive>
                     );
-                  })}
+                    });
+                  })()}
                 </View>
                 <Text style={styles.attendeesText}>{attendeeSummary(gathering, { verb: 'going', maxAvatars: 6 })?.text}</Text>
               </View>

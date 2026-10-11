@@ -62,6 +62,7 @@ export default {
     joined: {
       one: "{name} joined",
       friend: "Your friend {name} joined",
+      invite: "{name} accepted your invite",
       many: { one: "{name} and {count} more joined", other: "{name} and {count} more joined" },
     },
   },
@@ -126,6 +127,7 @@ export default {
     joined: {
       one: "{name} se unió",
       friend: "Tu amigo {name} se unió",
+      invite: "{name} aceptó tu invitación",
       many: { one: "{name} y {count} más se unieron", other: "{name} y {count} más se unieron" },
     },
   },
@@ -190,6 +192,7 @@ export default {
     joined: {
       one: "{name} ist dabei",
       friend: "Dein Freund {name} ist dabei",
+      invite: "{name} hat deine Einladung angenommen",
       many: { one: "{name} und {count} weitere sind dabei", other: "{name} und {count} weitere sind dabei" },
     },
   },
@@ -254,6 +257,7 @@ export default {
     joined: {
       one: "{name} a rejoint",
       friend: "Ton ami {name} a rejoint",
+      invite: "{name} a accepté ton invitation",
       many: { one: "{name} et {count} autre ont rejoint", other: "{name} et {count} autres ont rejoint" },
     },
   },
@@ -318,6 +322,7 @@ export default {
     joined: {
       one: "{name} entrou",
       friend: "Seu amigo {name} entrou",
+      invite: "{name} aceitou seu convite",
       many: { one: "{name} e mais {count} entraram", other: "{name} e mais {count} entraram" },
     },
   },
@@ -382,6 +387,7 @@ export default {
     joined: {
       one: "{name} vin jwenn ou",
       friend: "Zanmi ou {name} vin jwenn ou",
+      invite: "{name} aksepte envitasyon ou",
       many: { one: "{name} ak {count} lòt vin jwenn ou", other: "{name} ak {count} lòt vin jwenn ou" },
     },
   },
@@ -446,6 +452,7 @@ export default {
     joined: {
       one: "{name} 加入了",
       friend: "你的朋友 {name} 加入了",
+      invite: "{name} 接受了你的邀请",
       many: { one: "{name} 和另外 {count} 人加入了", other: "{name} 和另外 {count} 人加入了" },
     },
   },
@@ -510,6 +517,7 @@ export default {
     joined: {
       one: "{name} đã tham gia",
       friend: "Bạn của bạn, {name}, đã tham gia",
+      invite: "{name} đã nhận lời mời của bạn",
       many: { one: "{name} và {count} người khác đã tham gia", other: "{name} và {count} người khác đã tham gia" },
     },
   },
@@ -574,6 +582,7 @@ export default {
     joined: {
       one: "Sumali si {name}",
       friend: "Sumali ang kaibigan mong si {name}",
+      invite: "Tinanggap ni {name} ang imbitasyon mo",
       many: { one: "Sumali si {name} at {count} pa", other: "Sumali si {name} at {count} pa" },
     },
   },
@@ -638,6 +647,7 @@ export default {
     joined: {
       one: "{name} присоединился",
       friend: "Ваш друг {name} присоединился",
+      invite: "{name} принимает ваше приглашение",
       many: { one: "{name} и ещё {count} присоединились", other: "{name} и ещё {count} присоединились" },
     },
   },
@@ -702,6 +712,7 @@ export default {
     joined: {
       one: "{name}님이 참여했어요",
       friend: "친구 {name}님이 참여했어요",
+      invite: "{name}님이 초대를 수락했어요",
       many: { one: "{name}님 외 {count}명이 참여했어요", other: "{name}님 외 {count}명이 참여했어요" },
     },
   },
