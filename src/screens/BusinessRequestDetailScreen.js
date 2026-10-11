@@ -15,7 +15,7 @@ import { progressKey, visitConfirmationsToAnimate } from '../utils/offerProgress
 import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgressShown';
 import { acceptedWhenLine, acceptedPartySize } from '../utils/acceptedBooking';
 import { offerToPlanMergeNow, planMergeScroll, planTogetherYieldsToMerge, mergeTravelPath } from '../utils/offerToPlanMerge';
-import { MergeTravelChip, PlanMergeLanding } from '../motion/OfferToPlanMerge';
+import { MergeTravelChip, PlanMergeLanding, PlanAssemblyLine, PlanAssemblyLogo, PlanJoinRail } from '../motion/OfferToPlanMerge';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { useFocusEffect } from '@react-navigation/native';
 import { subscribeViewedArrivals } from '../services/offerArrivals';
@@ -448,8 +448,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       unviewed.forEach((o) => markBusinessOfferViewed(o.id));
 
       const partnerIds = [...new Set(result.offers.filter((o) => o.status === 'offered' || o.status === 'accepted').map((o) => o.partner_id))];
+      // Logos also for a visited (completed) booking: the settled plan keeps its business's logo in the place line.
+      const logoIds = [...new Set(result.offers.filter((o) => ['offered', 'accepted', 'completed'].includes(o.status)).map((o) => o.partner_id))];
+      if (logoIds.length > 0) getScreenedLogos(logoIds).then(setPartnerLogos);
       if (partnerIds.length > 0) {
-        getScreenedLogos(partnerIds).then(setPartnerLogos);
         Promise.all(
           partnerIds.map(async (id) => [id, await Promise.all([getPartnerOfferReputation(id), getPartnerAvgResponseTime(id)])])
         )
@@ -941,6 +943,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const planReady = isPlanFullyConfirmed(planTimeline);
   // Owner item 32: the offer the person just accepted merges into Your Plan (utils/offerToPlanMerge.js decides). Only the
   // primary request has the plan card; an add-on's own screen has none.
+  // The booked business's screened logo for the plan's place line (only once the plan is settled; no logo = the pin).
+  const planBookedOffer = offers.find((o) => o.status === 'accepted' || o.status === 'completed') ?? null;
   const mergeOffer = justAcceptedOfferId ? offers.find((o) => o.id === justAcceptedOfferId) ?? null : null;
   const mergeDue = offerToPlanMergeNow({
     justAcceptedOfferId, offer: mergeOffer,
@@ -975,6 +979,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     })),
     [request, offers, planChatInfo, myId]
   );
+  const planLogoUri = planSummary?.joinLine === 'settled' && planBookedOffer ? logoFor(partnerLogos, planBookedOffer.partner_id) : null;
 
   // Item 112 follow-up (CLAUDE.md, "the finished plan could have a living
   // header... 🎂 Sarah's 30th Birthday"): only once the plan is genuinely
@@ -1010,10 +1015,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   useEffect(() => () => { aliveRef.current = false; }, []);
   const [mergeChip, setMergeChip] = useState(null);
   const [planMergeKey, setPlanMergeKey] = useState(0);
+  // Confirmed-plan look (owner, 2026-10-11): while the chip is on its way the plan holds its assembly's start (the logo and
+  // the connecting line wait for it); the landing plays the assembly. Never under Reduce Motion (the finished card at once).
+  const [mergeHolding, setMergeHolding] = useState(false);
   useEffect(() => {
     if (!mergeDue) return;
     const offer = mergeOffer;
     MERGE_PLAYED.add(offer.id);
+    if (!reduceMotion) setMergeHolding(true);
     // Not cancelled when mergeDue turns false on the next render (it does, by design: played once); only on unmount.
     setTimeout(async () => {
       if (!aliveRef.current) return;
@@ -1024,7 +1033,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const scroll = planMergeScroll({ planY: planCardYRef.current, scrollY: scrollYRef.current, interrupted: touchedSinceAcceptRef.current, reduceMotion, gap: spacing.lg });
       if (scroll) scrollViewRef.current?.scrollTo?.(scroll);
       if (path) setMergeChip({ key: offer.id, label, ...path });
-      else setPlanMergeKey((k) => k + 1);
+      else { setMergeHolding(false); setPlanMergeKey((k) => k + 1); }
     }, reduceMotion ? 0 : SEQUENCES.offerToPlan.startDelayMs);
   }, [mergeDue]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1228,61 +1237,84 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         )}
         {planSummary && (
           <View collapsable={false} ref={planCardRef} style={styles.planSummaryCardSlot} onLayout={(e) => { planCardYRef.current = e.nativeEvent.layout.y; }}>
-          <PlanMergeLanding playKey={planMergeKey} color={colors.success} radius={radius.lg}>
+          <PlanMergeLanding playKey={planMergeKey} holding={mergeHolding || mergeDue} color={colors.success} radius={radius.lg}>
           <View style={styles.planSummaryCard}>
             {/* Item 32 polish: the card names what it is, above the plan's own title (unless the title already is it). */}
             {!planSummary.titleIsGeneric ? (
               <Text style={styles.planSummaryEyebrow}>{t('ui.requestDetail.plan.yourPlan')}</Text>
             ) : null}
-            <View style={styles.planSummaryHeaderRow}>
-              {planSummary.statusKind === 'confirmed' ? (
-                <View style={styles.planSummaryTitleRow}>
-                  <CelebrationHeaderIcon
-                    icon={planHeaderIcon}
-                    changeKey={planHeaderChangeKey}
-                    size={20}
-                    style={styles.planSummaryTitleIcon}
-                  />
-                  <Text style={styles.planSummaryTitle} numberOfLines={2}>{planHeaderLabel}</Text>
+            {/* Confirmed-plan look (owner, 2026-10-11): the plan's four lines (activity, time, place, people), joined on the left
+                by one thin line: faint and broken while the plan comes together, solid success green once booked, for good
+                (planSummary.joinLine, from the plan's own status). Item 32's moment assembles them in order (PlanAssemblyLine). */}
+            <View style={planSummary.joinLine ? styles.planJoined : null}>
+              <PlanJoinRail state={planSummary.joinLine} color={colors.success} faintColor={colors.border} />
+              <PlanAssemblyLine index={0}>
+                <View style={styles.planSummaryHeaderRow}>
+                  {planSummary.statusKind === 'confirmed' ? (
+                    <View style={styles.planSummaryTitleRow}>
+                      <CelebrationHeaderIcon
+                        icon={planHeaderIcon}
+                        changeKey={planHeaderChangeKey}
+                        size={20}
+                        style={styles.planSummaryTitleIcon}
+                      />
+                      <Text style={styles.planSummaryTitle} numberOfLines={2}>{planHeaderLabel}</Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.planSummaryTitle} numberOfLines={2}>{planSummary.title}</Text>
+                  )}
+                  <View
+                    style={[
+                      styles.planSummaryStatusPill,
+                      planSummary.statusKind === 'confirmed' && styles.planSummaryStatusPillConfirmed,
+                      planSummary.statusKind === 'cancelled' && styles.planSummaryStatusPillCancelled,
+                      (planSummary.statusKind === 'option_selected' || planSummary.statusKind === 'booking_pending') && styles.planSummaryStatusPillInProgress,
+                      planSummary.statusKind === 'completed' && styles.planSummaryStatusPillCompleted,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.planSummaryStatusText,
+                        planSummary.statusKind === 'confirmed' && styles.planSummaryStatusTextConfirmed,
+                        planSummary.statusKind === 'cancelled' && styles.planSummaryStatusTextCancelled,
+                        (planSummary.statusKind === 'option_selected' || planSummary.statusKind === 'booking_pending') && styles.planSummaryStatusTextInProgress,
+                        planSummary.statusKind === 'completed' && styles.planSummaryStatusTextCompleted,
+                      ]}
+                    >
+                      {planSummary.statusLabel}
+                    </Text>
+                  </View>
                 </View>
-              ) : (
-                <Text style={styles.planSummaryTitle} numberOfLines={2}>{planSummary.title}</Text>
+              </PlanAssemblyLine>
+              {/* Item 32 polish: day and time as one contextual line (shared whenLabel engine); without both, as before. */}
+              {planSummary.whenLine ? (
+                <PlanAssemblyLine index={1}>
+                  <Text style={styles.planSummaryLine}>📅 {planSummary.whenLine}</Text>
+                </PlanAssemblyLine>
+              ) : (planSummary.dateLabel || planSummary.timeLabel) ? (
+                <PlanAssemblyLine index={1}>
+                  <Text style={styles.planSummaryLine}>
+                    📅 {planSummary.dateLabel ?? t('ui.requestDetail.dateNotSet')}{planSummary.timeLabel ? `  🕖 ${planSummary.timeLabel}` : ''}
+                  </Text>
+                </PlanAssemblyLine>
+              ) : null}
+              {/* The place; once booked, the business's screened logo sits in it (in place of the pin). */}
+              {planSummary.location && (
+                <PlanAssemblyLine index={2} style={styles.planPlaceRow}>
+                  {planLogoUri ? (
+                    <PlanAssemblyLogo><BusinessLogoMark uri={planLogoUri} size={18} /></PlanAssemblyLogo>
+                  ) : null}
+                  <Text style={[styles.planSummaryLine, styles.planPlaceText]}>{planLogoUri ? '' : '📍 '}{planSummary.location}</Text>
+                </PlanAssemblyLine>
               )}
-              <View
-                style={[
-                  styles.planSummaryStatusPill,
-                  planSummary.statusKind === 'confirmed' && styles.planSummaryStatusPillConfirmed,
-                  planSummary.statusKind === 'cancelled' && styles.planSummaryStatusPillCancelled,
-                  (planSummary.statusKind === 'option_selected' || planSummary.statusKind === 'booking_pending') && styles.planSummaryStatusPillInProgress,
-                  planSummary.statusKind === 'completed' && styles.planSummaryStatusPillCompleted,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.planSummaryStatusText,
-                    planSummary.statusKind === 'confirmed' && styles.planSummaryStatusTextConfirmed,
-                    planSummary.statusKind === 'cancelled' && styles.planSummaryStatusTextCancelled,
-                    (planSummary.statusKind === 'option_selected' || planSummary.statusKind === 'booking_pending') && styles.planSummaryStatusTextInProgress,
-                    planSummary.statusKind === 'completed' && styles.planSummaryStatusTextCompleted,
-                  ]}
-                >
-                  {planSummary.statusLabel}
-                </Text>
-              </View>
+              {/* People: who (item 120) and how many. */}
+              {(planSummary.who || planSummary.partySize != null) && (
+                <PlanAssemblyLine index={3}>
+                  {planSummary.who && <Text style={styles.planSummaryLine}>👤 {planSummary.who}</Text>}
+                  {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {t('ui.common.count.people', { count: planSummary.partySize })}</Text>}
+                </PlanAssemblyLine>
+              )}
             </View>
-            {/* Item 120: Who, right after the title -- What/When/Where were already real fields
-                on this card; Who was the one genuinely missing from the mock's own breakdown. */}
-            {planSummary.who && <Text style={styles.planSummaryLine}>👤 {planSummary.who}</Text>}
-            {/* Item 32 polish: day and time as one contextual line (shared whenLabel engine); without both, as before. */}
-            {planSummary.whenLine ? (
-              <Text style={styles.planSummaryLine}>📅 {planSummary.whenLine}</Text>
-            ) : (planSummary.dateLabel || planSummary.timeLabel) ? (
-              <Text style={styles.planSummaryLine}>
-                📅 {planSummary.dateLabel ?? t('ui.requestDetail.dateNotSet')}{planSummary.timeLabel ? `  🕖 ${planSummary.timeLabel}` : ''}
-              </Text>
-            ) : null}
-            {planSummary.location && <Text style={styles.planSummaryLine}>📍 {planSummary.location}</Text>}
-            {planSummary.partySize != null && <Text style={styles.planSummaryLine}>👥 {t('ui.common.count.people', { count: planSummary.partySize })}</Text>}
             {planSummary.statusKind === 'confirmed' && (
               <View style={styles.planSummaryActionsRow}>
                 {planOrganizerInfo?.isHost && (
@@ -2127,7 +2159,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             label={mergeChip.label}
             fromY={mergeChip.fromY}
             toY={mergeChip.toY}
-            onLanded={() => { setMergeChip(null); setPlanMergeKey((k) => k + 1); }}
+            onLanded={() => { setMergeChip(null); setMergeHolding(false); setPlanMergeKey((k) => k + 1); }}
           />
         ) : null}
       </ScrollView>
@@ -2165,6 +2197,10 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md,
   },
+  // The confirmed-plan look: room on the left for the connecting line (PlanJoinRail sits at left 0).
+  planJoined: { paddingLeft: spacing.md },
+  planPlaceRow: { flexDirection: 'row', alignItems: 'center' },
+  planPlaceText: { flexShrink: 1 },
   planSummaryEyebrow: { ...typography.caption, color: colors.textSecondary, fontWeight: '600', marginBottom: 2 },
   planSummaryHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs },
   planSummaryTitle: { ...typography.headline, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },

@@ -113,7 +113,7 @@ describe('failed or unapproved screening', () => {
     }
     const detail = read('src/screens/BusinessRequestDetailScreen.js');
     expect(detail).not.toMatch(/logo_url/);
-    expect(detail).toMatch(/getScreenedLogos\(partnerIds\)/);
+    expect(detail).toMatch(/getScreenedLogos\(logoIds\)/);
     const dash = read('src/screens/BusinessDashboardScreen.js');
     expect(dash).toMatch(/<BusinessLogoMark uri=\{previewLogo\} \/>/);
     expect(dash).not.toMatch(/<BusinessLogoMark uri=\{selectedPartner/);
@@ -153,7 +153,10 @@ describe('everything else stays the same for every business', () => {
     expect(head).toMatch(/<BusinessLogoMark uri=\{logoFor\(partnerLogos, o\.partner_id\)\} \/>/);
     const step = detail.slice(detail.indexOf('<AssemblyStep step="business">'), detail.indexOf('</AssemblyStep>', detail.indexOf('<AssemblyStep step="business">')));
     expect(step).toMatch(/\{businessHead\}/);
-    expect(detail.match(/<BusinessLogoMark/g).length).toBe(1); // one mark, nowhere else on the card
+    // One mark on the offer card, nowhere else on it. The only other mark on the screen is the booked business's in Your
+    // Plan's place line (confirmed-plan look, 2026-10-11): after the choice, so it never sways a comparison.
+    expect(detail.match(/<BusinessLogoMark/g).length).toBe(2);
+    expect(detail.match(/<BusinessLogoMark uri=\{planLogoUri\} size=\{18\} \/>/g)).toHaveLength(1);
     expect(read('src/components/OfferCustomerBody.js')).not.toMatch(/BusinessLogoMark/); // media untouched
   });
 });

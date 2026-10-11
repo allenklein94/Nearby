@@ -467,5 +467,17 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
     partySize: primary.party_size ?? null,
     statusLabel,
     statusKind,
+    joinLine: planJoinLine(statusKind),
   };
+}
+
+// Confirmed-plan look (owner, 2026-10-11, decision C): the plan's four lines (activity, time, place, people) are joined by a
+// thin line on the card's left. It is the plan's lasting state, not an effect: 'settled' (solid, success green) once the
+// booking is confirmed, and it stays so whenever the plan is reopened, after the visit too; 'open' (faint, broken) while the
+// plan is still coming together; none for a cancelled plan (nothing is being joined). Derived only from the plan's own
+// lifecycle status (resolveBusinessRequestPlanStatus), never a stored styling field.
+export function planJoinLine(statusKind) {
+  if (statusKind === PLAN_LIFECYCLE_STATUS.CONFIRMED || statusKind === PLAN_LIFECYCLE_STATUS.COMPLETED) return 'settled';
+  if (!statusKind || statusKind === PLAN_LIFECYCLE_STATUS.CANCELLED) return null;
+  return 'open';
 }

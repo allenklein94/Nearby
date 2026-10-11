@@ -128,12 +128,30 @@ export const SEQUENCES = {
     glowInMs: 100, glowOutMs: 220 },
   // Owner item 32 (2026-10-11): the accepted offer merges into Your Plan. startDelayMs after the booked card mounts (its ✓ is
   // settling), a "✓ Business" chip travels from the offer card up into the plan card (travelMs; it fades only over its last
-  // stretch, from chipFadeFrom, and shrinks to chipToScale), then the plan card settles from landFromScale (landMs) while its
-  // outline glows once (glowInMs + glowOutMs). Decorative: both cards already show the facts at full opacity.
-  offerToPlan: { tier: 'special', startDelayMs: 180, travelMs: 380, chipFadeFrom: 0.7, chipToScale: 0.92, landMs: 200, landFromScale: 0.98,
-    glowInMs: 100, glowOutMs: 220 },
+  // stretch, from chipFadeFrom, and shrinks to chipToScale). Then, in the same moment (owner decision B, 2026-10-11: one
+  // moment, not a second "lock" after it), the plan assembles (offerToPlanAssembly): its four lines (activity, time, place,
+  // people) settle one after another (lineStaggerMs apart, lineMs each, from lineFlowPx below, never below the info floor),
+  // the business's logo settles into the place line as that line does (logoMs, from logoFromScale), the connecting line draws
+  // top to bottom as the last line arrives (drawMs), then the card's outline glows once (glowInMs + glowOutMs). Start and
+  // travel were shortened (180 -> 100, 380 -> 280) to make room; the whole moment stays under 0.9 s (special tier).
+  offerToPlan: { tier: 'special', startDelayMs: 100, travelMs: 280, chipFadeFrom: 0.7, chipToScale: 0.92,
+    lines: 4, placeLine: 2, lineStaggerMs: 35, lineMs: 120, lineFlowPx: 6, logoMs: 140, logoFromScale: 0.7, drawMs: 120,
+    glowInMs: 80, glowOutMs: 160 },
   happeningRipple: { tier: 'medium', ringMs: 400, fromScale: 0.6, toScale: 2.2, startOpacity: 0.35, size: 24 },
 };
+
+// Owner item 32 + confirmed-plan look (2026-10-11): the plan's assembly after the chip lands, in ms from the landing. One
+// schedule shared by the component (OfferToPlanMerge.js) and the budget, so what runs is what is checked. Order: the lines
+// one after another; the logo with the place line; the connecting line draws as the last line arrives and finishes with it;
+// then the one glow.
+export function offerToPlanAssembly(s = SEQUENCES.offerToPlan) {
+  const lines = Array.from({ length: s.lines }, (_, i) => ({ start: i * s.lineStaggerMs, end: i * s.lineStaggerMs + s.lineMs }));
+  const last = lines[lines.length - 1];
+  const logo = { start: lines[s.placeLine].start, end: lines[s.placeLine].start + s.logoMs };
+  const draw = { start: Math.max(last.end - s.drawMs, 0), end: last.end };
+  const glowStart = Math.max(last.end, logo.end, draw.end);
+  return { lines, logo, draw, glowStart, settleMs: glowStart + s.glowInMs + s.glowOutMs };
+}
 
 // Time from trigger to settled state for each sequence.
 export function settleMs(name) {
@@ -162,7 +180,7 @@ export function settleMs(name) {
     case 'offerAccepted':
       return s.checkMs + s.morphMs;
     case 'offerToPlan':
-      return s.startDelayMs + s.travelMs + Math.max(s.landMs, s.glowInMs + s.glowOutMs);
+      return s.startDelayMs + s.travelMs + offerToPlanAssembly(s).settleMs;
     case 'bookedExit':
       return s.fadeMs + s.collapseMs;
     case 'offerProgress':

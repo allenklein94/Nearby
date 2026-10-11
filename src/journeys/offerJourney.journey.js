@@ -164,4 +164,17 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(plan.parent_type).not.toBe('experience');
     expect(request.group_plan_id).toBeNull();
   });
+  // Confirmed-plan look (owner, 2026-10-11): from the very rows the database produced, the booked plan is 'settled' (solid
+  // green connecting line), the same on every reload (no merge state needed), and the same request before its offer was
+  // accepted reads 'open' (faint, broken).
+  test('confirmed-plan look: the booked plan is settled, on reload too; before acceptance it is open', () => {
+    const { request, offer } = s.offer_merges_into_plan.data;
+    const primary = { ...request, status: 'fulfilled' };
+    const booked = buildPlanSummary({ primary, primaryOffers: [offer] });
+    expect(booked.statusKind).toBe('confirmed');
+    expect(booked.joinLine).toBe('settled');
+    expect(buildPlanSummary({ primary, primaryOffers: [offer] }).joinLine).toBe('settled'); // reopened: same rows, same look
+    const before = buildPlanSummary({ primary: { ...request, status: 'open' }, primaryOffers: [{ ...offer, status: 'offered', business_reservations: null }] });
+    expect(before.joinLine).toBe('open');
+  });
 });

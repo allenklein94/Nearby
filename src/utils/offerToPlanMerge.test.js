@@ -177,3 +177,93 @@ describe('decision B: Home is unchanged', () => {
     expect(read('screens/PlansScreen.js')).toMatch(/getMyStandaloneBusinessRequestPlans/);
   });
 });
+
+// Confirmed-plan look (owner, 2026-10-11): A keep "You're booked"; B one combined moment (inside item 32's); C the connecting
+// line is the plan's lasting look, derived from its status, never a stored styling field.
+describe('confirmed-plan look: the connecting line is the plan\'s lasting state (decision C)', () => {
+  const { planJoinLine } = require('./planAddonReadiness');
+  const primary = { status: 'fulfilled', category: 'Coffee', plan_label: null, date: '2099-01-10', time_window_start: '18:30:00', party_size: 4 };
+  const offer = (over = {}) => ({ id: 'o1', status: 'accepted', business_reservations: [{ status: 'confirmed' }], brand_partners: { name: 'Coastal Coffee', address: '1 Ocean Ave' }, ...over });
+
+  test('settled (solid green) once booked and after the visit; open (faint, broken) before; none when cancelled', () => {
+    expect(planJoinLine('confirmed')).toBe('settled');
+    expect(planJoinLine('completed')).toBe('settled');
+    for (const k of ['planning', 'awaiting_responses', 'option_selected', 'booking_pending']) expect(planJoinLine(k)).toBe('open');
+    expect(planJoinLine('cancelled')).toBeNull();
+    expect(planJoinLine(undefined)).toBeNull();
+  });
+  test('the plan summary carries it from the stored rows alone (so a reopened plan looks the same, no merge state needed)', () => {
+    expect(buildPlanSummary({ primary, primaryOffers: [offer()] }).joinLine).toBe('settled');
+    expect(buildPlanSummary({ primary, primaryOffers: [offer({ business_reservations: [{ status: 'pending' }] })] }).joinLine).toBe('open');
+    expect(buildPlanSummary({ primary, primaryOffers: [offer({ status: 'offered', business_reservations: [] })] }).joinLine).toBe('open');
+    expect(buildPlanSummary({ primary, primaryOffers: [] }).joinLine).toBe('open');
+    expect(buildPlanSummary({ primary: { ...primary, status: 'cancelled' }, primaryOffers: [] }).joinLine).toBeNull();
+    // Reload: the same rows twice give the same look.
+    expect(buildPlanSummary({ primary, primaryOffers: [offer()] }).joinLine).toBe(buildPlanSummary({ primary, primaryOffers: [offer()] }).joinLine);
+  });
+  test('derived in code only: no column, migration or stored flag for it', () => {
+    const src = read('utils/planAddonReadiness.js');
+    expect(src).toMatch(/joinLine: planJoinLine\(statusKind\),/);
+    expect(screen).toMatch(/<PlanJoinRail state=\{planSummary\.joinLine\} color=\{colors\.success\} faintColor=\{colors\.border\} \/>/);
+    const migrations = fs.readdirSync(path.join(__dirname, '..', '..', 'supabase', 'migrations')).join('\n');
+    expect(migrations).not.toMatch(/join_?line|plan_?rail|connecting_?line/i);
+  });
+  test('the rail: solid (one view) when settled, broken segments when open, decorative and never touchable', () => {
+    expect(motion).toMatch(/if \(state === 'open'\) \{/);
+    expect(motion).toMatch(/styles\.railDash/);
+    expect(motion).toMatch(/transformOrigin: 'top', transform: \[\{ scaleY: draw \}\]/);
+    expect(motion).toMatch(/pointerEvents: 'none', accessibilityElementsHidden: true/);
+  });
+  test('the four lines, in order: activity, time, place (with the booked logo), people', () => {
+    const idx = [0, 1, 2, 3].map((i) => screen.indexOf(`<PlanAssemblyLine index={${i}}`));
+    expect(idx.every((i) => i > 0)).toBe(true);
+    expect([...idx].sort((a, b) => a - b)).toEqual(idx);
+    expect(screen).toMatch(/<PlanAssemblyLogo><BusinessLogoMark uri=\{planLogoUri\} size=\{18\} \/><\/PlanAssemblyLogo>/);
+    expect(screen).toMatch(/const planLogoUri = planSummary\?\.joinLine === 'settled' && planBookedOffer \?/);
+  });
+});
+
+describe('confirmed-plan look: one combined moment under 0.9 s (decision B)', () => {
+  const { offerToPlanAssembly } = require('../motion/motionBudget');
+  const M = SEQUENCES.offerToPlan;
+  const plan = offerToPlanAssembly(M);
+
+  test('the lines settle one after another; the logo with the place line; the line draws as the last arrives; then the glow', () => {
+    expect(plan.lines).toHaveLength(4);
+    for (let i = 1; i < 4; i += 1) {
+      expect(plan.lines[i].start).toBeGreaterThan(plan.lines[i - 1].start);
+      expect(plan.lines[i].end).toBeGreaterThan(plan.lines[i - 1].end);
+    }
+    expect(plan.logo.start).toBe(plan.lines[M.placeLine].start);
+    expect(plan.draw.start).toBeGreaterThanOrEqual(plan.lines[3].start);
+    expect(plan.draw.end).toBe(plan.lines[3].end);
+    expect(plan.glowStart).toBeGreaterThanOrEqual(Math.max(plan.draw.end, plan.logo.end, plan.lines[3].end));
+  });
+  test('whole moment (start + travel + assembly + glow) under 0.9 s; start and travel shortened to make room', () => {
+    expect(settleMs('offerToPlan')).toBeLessThan(900);
+    expect(M.startDelayMs).toBeLessThan(180);
+    expect(M.travelMs).toBeLessThan(380);
+  });
+  test('one glow, after the assembly; no second moment, celebration or vibration', () => {
+    expect(motion.match(/<OfferProgressGlow/g)).toHaveLength(1);
+    expect(motion).toMatch(/timing=\{\{ \.\.\.M, delayMs: plan\.glowStart \}\}/);
+    expect(motionCode).not.toMatch(/Haptics|playHaptic|confetti|particle/i);
+    expect(screen.match(/<PlanMergeLanding /g)).toHaveLength(1);
+  });
+  test('the lines stay readable on every frame (info floor); only the logo and the line start from nothing', () => {
+    expect(motion).toMatch(/opacity: infoOpacity\(v\),/);
+  });
+  test('Reduce Motion: the finished card at once (no hold, no assembly, rail drawn)', () => {
+    expect(screen).toMatch(/if \(!reduceMotion\) setMergeHolding\(true\);/);
+    expect(motion).toMatch(/if \(holding && !reduceMotion && playKey === 0\) t\.setValue\(0\);/);
+    expect(motion).toMatch(/if \(!animate\) \{ t\.setValue\(1\); return undefined; \}/);
+    expect(motion).toMatch(/useRef\(new Animated\.Value\(1\)\)\.current;\n  const plan = offerToPlanAssembly/);
+  });
+  test('the hold always ends with the landing (chip landed, or no travel path)', () => {
+    expect(screen).toMatch(/else \{ setMergeHolding\(false\); setPlanMergeKey\(\(k\) => k \+ 1\); \}/);
+    expect(screen).toMatch(/onLanded=\{\(\) => \{ setMergeChip\(null\); setMergeHolding\(false\); setPlanMergeKey\(\(k\) => k \+ 1\); \}\}/);
+  });
+  test('decision A: the booked wording stays "You\'re booked"', () => {
+    expect(require('../i18n/ui/actions').default.en.youreBooked).toBe("You're booked");
+  });
+});
