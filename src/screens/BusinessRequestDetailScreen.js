@@ -293,7 +293,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const [selectedNewOrganizerId, setSelectedNewOrganizerId] = useState(null);
   // Offer System outcome capture (CLAUDE.md, Aug 23 2026): the real "did it
   // go well?" step, asked right after a real completeBusinessReservation()
-  // success -- never before, matching GatheringFeedbackModal's own "only
+  // success -- never before, matching GatheringFeedbackInline's own "only
   // ask after it actually happened" convention.
   const [outcomeModalOfferId, setOutcomeModalOfferId] = useState(null);
   // The first-ever business reply (owner, 2026-10-10): its card says "Your first reply from a local business" instead of

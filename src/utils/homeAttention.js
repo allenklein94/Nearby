@@ -124,14 +124,17 @@ export function expandedListIds(insight, expandedKind) {
 
 // Your Plans on Home (item 33): at most MAX_HOME_PLANS rows; the full list lives on Plans (See all). Commitments first
 // (going + hosting, soonest start first), then group plans (by date), then Interested. Each role list keeps its order.
-export function selectHomePlans({ plansGoing = [], plansHosting = [], plansGroup = [], plansInterested = [] } = {}, max = MAX_HOME_PLANS) {
+// Item 34: a just-finished attended gathering awaiting "How was it?" (`completed`, utils/gatheringCompletion.js) takes the
+// FIRST row, inside the same cap: it is offered for 3 days at most and leaves once answered or skipped.
+export function selectHomePlans({ plansGoing = [], plansHosting = [], plansGroup = [], plansInterested = [] } = {}, max = MAX_HOME_PLANS, completed = null) {
   const t = (g) => { const ms = new Date(g?.scheduled_at).getTime(); return Number.isFinite(ms) ? ms : Infinity; };
   const committed = [...(plansGoing ?? []).map((g) => ({ k: 'going', g })), ...(plansHosting ?? []).map((g) => ({ k: 'hosting', g }))]
     .sort((a, b) => t(a.g) - t(b.g));
-  const ordered = [...committed, ...(plansGroup ?? []).map((g) => ({ k: 'group', g })), ...(plansInterested ?? []).map((g) => ({ k: 'interested', g }))];
+  const done = completed?.id ? [{ k: 'completed', g: completed }] : [];
+  const ordered = [...done, ...committed, ...(plansGroup ?? []).map((g) => ({ k: 'group', g })), ...(plansInterested ?? []).map((g) => ({ k: 'interested', g }))];
   const keep = new Set(ordered.slice(0, Math.max(0, max)).map((e) => e.g));
   const pick = (list) => (list ?? []).filter((g) => keep.has(g));
-  return { going: pick(plansGoing), hosting: pick(plansHosting), group: pick(plansGroup), interested: pick(plansInterested), total: ordered.length };
+  return { completed: done.length && keep.has(completed) ? completed : null, going: pick(plansGoing), hosting: pick(plansHosting), group: pick(plansGroup), interested: pick(plansInterested), total: ordered.length };
 }
 
 // Nearby Right Now on Home (item 33): nearby gatherings inside the canonical Right Now window (utils/rightNowWindow.js),

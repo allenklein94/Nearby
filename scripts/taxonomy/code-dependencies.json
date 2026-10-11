@@ -1795,21 +1795,21 @@
   },
   {
    "tag": "Coffee",
-   "file": "src/components/GatheringFeedbackModal.js",
+   "file": "src/components/GatheringFeedbackInline.js",
    "consumer": "code",
    "occurrences": 1,
    "group": null
   },
   {
    "tag": "Foodie",
-   "file": "src/components/GatheringFeedbackModal.js",
+   "file": "src/components/GatheringFeedbackInline.js",
    "consumer": "code",
    "occurrences": 1,
    "group": null
   },
   {
    "tag": "Outdoors",
-   "file": "src/components/GatheringFeedbackModal.js",
+   "file": "src/components/GatheringFeedbackInline.js",
    "consumer": "code",
    "occurrences": 1,
    "group": null

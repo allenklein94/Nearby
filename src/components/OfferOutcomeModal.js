@@ -6,15 +6,9 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
-// Same four-option scale GatheringFeedbackModal already established --
-// deliberately not a new star-rating invented for this, per direct
-// instruction to mirror the existing shape rather than build a second one.
-const SATISFACTION_OPTIONS = [
-  { value: 'loved_it', emoji: '😊' },
-  { value: 'good', emoji: '🙂' },
-  { value: 'okay', emoji: '😐' },
-  { value: 'not_for_me', emoji: '🙁' },
-];
+import { SATISFACTION_SCALE } from '../constants/satisfactionScale';
+// The one shared four-option scale (constants/satisfactionScale.js), never a second one.
+const SATISFACTION_OPTIONS = SATISFACTION_SCALE;
 
 // "Good match?": did what Nearby found actually fit what they asked for. Optional, so it never slows the two core answers.
 const MATCH_OPTIONS = [
@@ -61,7 +55,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
       await submitOfferOutcome(offerId, { satisfactionRating: satisfaction, wouldRepeat, matchFit, feedbackText: feedbackText.trim() || null });
     } catch (e) {
       console.error('Failed to submit offer outcome', e);
-      // Fails quietly, same philosophy as GatheringFeedbackModal -- this
+      // Fails quietly, same philosophy as GatheringFeedbackInline -- this
       // is a private signal, not something worth alarming someone over.
     }
     setSubmitting(false);

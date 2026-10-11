@@ -1,4 +1,5 @@
 import { relatedHobbyFor } from '../constants/hobbyRelations';
+import { completedPlanFor } from '../utils/gatheringCompletion';
 import { TRAVEL_SEARCH_MILES, boundedSearchMiles } from '../constants/searchRadius';
 import { searchScope } from '../constants/categoryTree';
 import { groupForTag } from '../constants/gatheringCategories';
@@ -674,7 +675,7 @@ export async function getMostRecentUnratedGathering() {
 
   const { data: attended } = await supabase
     .from('gathering_interest')
-    .select('gatherings!inner(id, title, scheduled_at, interest_tag)')
+    .select('gatherings!inner(id, title, scheduled_at, duration_minutes, interest_tag, hosting_partner_id)')
     .eq('user_id', myId)
     .eq('status', 'approved')
     .lt('gatherings.scheduled_at', now.toISOString())
@@ -691,9 +692,10 @@ export async function getMostRecentUnratedGathering() {
     .in('gathering_id', attended.map((a) => a.gatherings.id));
 
   const ratedIds = new Set((existingFeedback ?? []).map((f) => f.gathering_id));
-  const unrated = attended.find((a) => !ratedIds.has(a.gatherings.id));
+  // Item 34: only a gathering that is really over (utils/gatheringCompletion.js), never one still going.
+  const unrated = attended.map((a) => a.gatherings).find((g) => !ratedIds.has(g.id) && completedPlanFor(g, now));
 
-  return unrated ? unrated.gatherings : null;
+  return unrated ?? null;
 }
 
 export async function hasSubmittedFeedback(gatheringId) {

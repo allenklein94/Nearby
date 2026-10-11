@@ -126,6 +126,10 @@ export const SEQUENCES = {
   // fromScale -> 1, readable from frame one), then one success glow around it. Calm: no bounce, confetti or loop.
   interestedToAttending: { tier: 'special', dimMs: 220, arriveDelayMs: 120, arriveMs: 320, flowPx: 12, fromScale: 0.94, oldRestOpacity: 0.88,
     glowInMs: 100, glowOutMs: 220 },
+  // Owner item 34 (2026-10-11): a gathering you attended is over. Its Home plan card shows the move once, quietly: "Confirmed"
+  // dims and is struck through (to oldRestOpacity, still readable) while "✓ Completed" slides in beside it (flowPx, from
+  // fromScale, full opacity from frame one). No glow, no haptic: a calm close, smaller than item 31's join (medium tier).
+  planCompleted: { tier: 'medium', dimMs: 200, arriveDelayMs: 80, arriveMs: 240, flowPx: 8, fromScale: 0.96, oldRestOpacity: 0.88 },
   // Owner item 32 (2026-10-11): the accepted offer merges into Your Plan. startDelayMs after the booked card mounts (its ✓ is
   // settling), a "✓ Business" chip travels from the offer card up into the plan card (travelMs; it fades only over its last
   // stretch, from chipFadeFrom, and shrinks to chipToScale). Then, in the same moment (owner decision B, 2026-10-11: one
@@ -201,6 +205,8 @@ export function settleMs(name) {
       return s.ringMs;
     case 'interestedSaved':
       return s.pulseMs;
+    case 'planCompleted':
+      return Math.max(s.dimMs, s.arriveDelayMs + s.arriveMs);
     case 'interestedToAttending':
       return Math.max(s.dimMs, s.arriveDelayMs + s.arriveMs + s.glowInMs + s.glowOutMs);
     case 'offerTravel':

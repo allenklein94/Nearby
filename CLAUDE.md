@@ -54,6 +54,9 @@ completed plan, screened source only, missing or failed logo falls back to 📍;
 travels, logo and line wait for it to land, text always readable, no flicker/shift/flash, under 0.9 s, Reduce Motion = finished
 card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests intact. Item 33 (reservation confirmation) is covered by item 32 as built (owner, 2026-10-11).
 
+**Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
+recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
+
 **Blocked on the owner:**
 - **Anthropic credit:** every AI edge function returns 500 ("credit balance is too low"). Never run live:
   the intent extractor, offer/creative/logo/video screening (owner-typed content fails closed to "Try
@@ -272,6 +275,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Confirmed-plan look: its four lines (activity, time, place, people) are joined on the left by `PlanJoinRail` from
   `buildPlanSummary().joinLine` (`planJoinLine`: solid success green once booked, for good; faint broken before; none if cancelled;
   never stored). The merge's ONE moment assembles them (`offerToPlanAssembly`: lines in order, logo into the place line, line draws, one glow; < 0.9 s).
+- **Plan complete (owner item 34):** an attended gathering that is OVER (`timeWindowParts` phase, never while going) takes Your Plans'
+  first row, plays "~~Confirmed~~ → ✓ Completed" once per gathering ever (`utils/gatheringCompletion.js`, stored ids; `motion/PlanCompleted.js`,
+  medium tier, no glow/haptic) and asks "How was it?" inline (`GatheringFeedbackInline`); the auto-opening Home modal is gone. ONE scale
+  `constants/satisfactionScale.js` (Loved it/Good/Okay/Not for me) for gatherings and offers; App Store prompt stays keyed to Loved it.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

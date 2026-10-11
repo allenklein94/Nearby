@@ -43,9 +43,11 @@ import { nearestCalendarHint } from '../utils/calendarOccasionSuggestion';
 import { logBusinessProfileView, getActiveOffers } from '../services/brandOffers';
 import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import GatheringFeedbackModal from '../components/GatheringFeedbackModal';
+import GatheringFeedbackInline from '../components/GatheringFeedbackInline';
+import PlanCompleted from '../motion/PlanCompleted';
+import { takeCompletionMoment, COMPLETION_FROM, COMPLETION_TO } from '../utils/gatheringCompletion';
 import PlanCard from '../components/PlanCard';
-import { resolveGatheringPlanStatus, resolveGroupPlanStatus } from '../constants/planStatus';
+import { resolveGatheringPlanStatus, resolveGroupPlanStatus, PLAN_STATUS_META } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
 import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
 import SurpriseMeSheet from '../components/SurpriseMeSheet';
@@ -247,7 +249,8 @@ export default function HomeScreen({ navigation }) {
   const [continueCommunities, setContinueCommunities] = useState([]);
   const [perksCount, setPerksCount] = useState(0);
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
-  const [unratedGathering, setUnratedGathering] = useState(null);
+  // Item 34: the just-finished attended gathering awaiting "How was it?" and whether its Completed move plays (decided once).
+  const [completedPlan, setCompletedPlan] = useState(null);
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
   // Progressive dining-taste prompt (Preference wiring Phase 4): a permanent, per-user dismissable Home card.
   const goalRow = useMyGoals();
@@ -443,7 +446,7 @@ export default function HomeScreen({ navigation }) {
   // pickedForYou). `above` collects what higher placements already render; lower ones suppress it and refill.
   const firstRunIds = seenFirstRunMoment === false ? homeRecommendations.slice(0, 2).filter((r) => r.type === 'gathering').map((r) => r.id) : [];
   // Every committed/Interested gathering, not only the capped rows shown (item 33): a plan beyond the cap is never recommended.
-  const homePlans = selectHomePlans(dashboard ?? {});
+  const homePlans = selectHomePlans(dashboard ?? {}, undefined, completedPlan?.gathering ?? null);
   const yourPlansIds = [
     ...(dashboard?.plansGoing ?? []), ...(dashboard?.plansHosting ?? []), ...(dashboard?.plansInterested ?? []),
   ].map((g) => g?.id).concat(dashboard?.upcomingPlanIds ?? [], dashboard?.interestedIds ?? []).filter(Boolean);
@@ -644,7 +647,9 @@ export default function HomeScreen({ navigation }) {
 
       const communitiesTask = getContinueYourCommunities().then(setContinueCommunities).catch((e) => console.error('getContinueYourCommunities failed', e));
       const perksTask = getUnlockedPerksCount().then(setPerksCount).catch((e) => console.error('getUnlockedPerksCount failed', e));
-      const unratedTask = getMostRecentUnratedGathering().then(setUnratedGathering).catch((e) => console.error('getMostRecentUnratedGathering failed', e));
+      const unratedTask = getMostRecentUnratedGathering()
+        .then(async (g) => setCompletedPlan(g ? { gathering: g, play: await takeCompletionMoment(g.id, AsyncStorage) } : null))
+        .catch((e) => console.error('getMostRecentUnratedGathering failed', e));
       const pendingInvitesTask = getPendingInvitesCount(myId).then(setPendingInvitesCount).catch((e) => console.error('getPendingInvitesCount failed', e));
       const pendingOutcomeTask = getPendingIntentOutcomePrompt().then(setOutcomePrompt).catch((e) => console.error('getPendingIntentOutcomePrompt failed', e));
 
@@ -2054,9 +2059,31 @@ export default function HomeScreen({ navigation }) {
                 by position below the intent box. */}
             <Text style={styles.primaryHeader}>{t('ui.home.yourPlans')}</Text>
             <View style={styles.plansCard}>
+              {/* Item 34: the just-finished plan turns Confirmed -> ✓ Completed once and asks "How was it?" right here. */}
+              {homePlans.completed && (
+                <View>
+                  <PlanCard
+                    icon={categoryStyleFor(homePlans.completed.interest_tag).icon}
+                    iconColor={categoryStyleFor(homePlans.completed.interest_tag).color}
+                    title={homePlans.completed.title}
+                    hostingPartnerId={homePlans.completed.hosting_partner_id}
+                    status={completedPlan?.play ? null : COMPLETION_TO}
+                    onPress={() => navigation.navigate('GatheringDetail', { gatheringId: homePlans.completed.id })}
+                  />
+                  {completedPlan?.play && (
+                    <PlanCompleted fromLabel={PLAN_STATUS_META[COMPLETION_FROM].label} toLabel={PLAN_STATUS_META[COMPLETION_TO].label} />
+                  )}
+                  <GatheringFeedbackInline
+                    key={homePlans.completed.id}
+                    gatheringId={homePlans.completed.id}
+                    navigation={navigation}
+                    onDone={() => setCompletedPlan(null)}
+                  />
+                </View>
+              )}
               {homePlans.going.length > 0 && (
                 <>
-                  <Text style={styles.subLabel}>{t('ui.actions.going')}</Text>
+                  <Text style={[styles.subLabel, homePlans.completed && styles.subLabelSpaced]}>{t('ui.actions.going')}</Text>
                   {homePlans.going.map((plan) => (
                     <PlanCard
                       key={plan.id}
@@ -2075,7 +2102,7 @@ export default function HomeScreen({ navigation }) {
               )}
               {homePlans.hosting.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, homePlans.going.length > 0 && styles.subLabelSpaced]}>{t('ui.actions.hosting')}</Text>
+                  <Text style={[styles.subLabel, (homePlans.completed || homePlans.going.length > 0) && styles.subLabelSpaced]}>{t('ui.actions.hosting')}</Text>
                   {homePlans.hosting.map((plan) => (
                     <PlanCard
                       key={plan.id}
@@ -2094,7 +2121,7 @@ export default function HomeScreen({ navigation }) {
               )}
               {homePlans.interested?.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, (homePlans.going.length > 0 || homePlans.hosting.length > 0) && styles.subLabelSpaced]}>{t('ui.home.yourInterest')}</Text>
+                  <Text style={[styles.subLabel, (homePlans.completed || homePlans.going.length > 0 || homePlans.hosting.length > 0) && styles.subLabelSpaced]}>{t('ui.home.yourInterest')}</Text>
                   {homePlans.interested.map((plan) => (
                     <PlanCard
                       key={plan.id}
@@ -2111,7 +2138,7 @@ export default function HomeScreen({ navigation }) {
               )}
               {homePlans.group?.length > 0 && (
                 <>
-                  <Text style={[styles.subLabel, (homePlans.going.length > 0 || homePlans.hosting.length > 0 || homePlans.interested?.length > 0) && styles.subLabelSpaced]}>{t('ui.home.groupPlans')}</Text>
+                  <Text style={[styles.subLabel, (homePlans.completed || homePlans.going.length > 0 || homePlans.hosting.length > 0 || homePlans.interested?.length > 0) && styles.subLabelSpaced]}>{t('ui.home.groupPlans')}</Text>
                   {homePlans.group.map((plan) => (
                     <PlanCard
                       key={plan.id}
@@ -2771,12 +2798,6 @@ export default function HomeScreen({ navigation }) {
         onClose={closeStartModal}
         navigation={navigation}
         topLevelOptions={personalizeQuickOptions(CREATE_HUB_OPTIONS, myDeclaredInterests, (t) => categoryStyleFor(t).icon)}
-      />
-      <GatheringFeedbackModal
-        visible={!!unratedGathering}
-        gatheringId={unratedGathering?.id}
-        navigation={navigation}
-        onClose={() => setUnratedGathering(null)}
       />
       <DiningPreferencesPromptModal
         visible={diningModalVisible}

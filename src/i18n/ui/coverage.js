@@ -82,7 +82,7 @@ export const LOCALIZED_FILES = [
   'src/constants/gatheringHubContent.js',
   'src/components/HostAttendeeManager.js',
   'src/components/GatheringQnA.js',
-  'src/components/GatheringFeedbackModal.js',
+  'src/components/GatheringFeedbackInline.js',
   'src/screens/OccasionsScreen.js',
   'src/utils/occasionDatePrecision.js',
   'src/utils/occasionVisibility.js',
