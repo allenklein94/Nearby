@@ -26,6 +26,13 @@ function timeText(timeStr) {
   const m = parsePlanTimeMinutes(String(timeStr).slice(0, 5));
   return m == null ? formatTimeOfDay(timeStr) : localClock(m, getCurrentLanguage());
 }
+// A timestamptz as the person's local calendar day ("YYYY-MM-DD"), the form dateText and rawDate take.
+function localDayOf(ts) {
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 function dateText(dateStr) {
   if (isEnglish()) return formatDateLabel(dateStr);
   if (!dateStr) return null;
@@ -400,7 +407,13 @@ export function buildPlanWhoSummary({ participants, myId, whoForName }) {
   return shown.join(', ') + more(extra);
 }
 
-export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null, participants = null, myId = null, whoForName = null }) {
+// Owner item 32 (2026-10-11): an accepted business offer merges INTO the plan. Once a business is booked, the plan reads as
+// what it now is, "Coffee at Coastal Coffee" (what = the plan's own label, else its category), unless the plan has a
+// deliberate title (an occasion's, `planTitleIsDeliberate`); the 📍 line then gives the address, not the name again. The
+// day follows the booked time too: a business's accepted proposed_time sets the time-of-day already, so it sets the date
+// as well (else the plan could read one day with the booking on another). The plan is the one place these facts show;
+// the accepted offer card no longer repeats them.
+export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null, planTitleIsDeliberate = true, participants = null, myId = null, whoForName = null }) {
   if (!primary) return null;
 
   const timeline = buildPlanTimeline({ primary, primaryOffers, addons: [] });
@@ -421,14 +434,21 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
   // second lookup or a fabricated coordinate.
   const acceptedOffer = primaryOffers.find((o) => o.status === 'accepted' || o.status === 'completed') ?? null;
 
+  const what = primary.plan_label || (primary.category ? categoryName(primary.category, getCurrentLanguage()) : null);
+  const bookedName = entry?.businessName ?? null;
+  const mergedTitle = (planTitle && planTitleIsDeliberate) || !what || !bookedName ? null : txt('titleAtBusiness', { what, name: bookedName });
+  const bookedDate = !primary.plan_time && acceptedOffer?.proposed_time ? localDayOf(acceptedOffer.proposed_time) : null;
+  const rawDate = bookedDate ?? primary.date ?? null;
+
   return {
-    title: planTitle || primary.plan_label || (primary.category ? categoryName(primary.category, getCurrentLanguage()) : null) || txt('yourPlan'),
+    title: mergedTitle || planTitle || what || txt('yourPlan'),
+    titleHasBusiness: !!mergedTitle,
     who: buildPlanWhoSummary({ participants, myId, whoForName }),
-    dateLabel: dateText(primary.date),
+    dateLabel: dateText(rawDate),
     timeLabel,
-    rawDate: primary.date ?? null,
+    rawDate,
     rawTime: entry?.planTime ?? primary.time_window_start ?? null,
-    location: entry?.businessName ?? null,
+    location: mergedTitle ? (acceptedOffer?.brand_partners?.address ?? null) : bookedName,
     businessAddress: acceptedOffer?.brand_partners?.address ?? null,
     businessLatitude: acceptedOffer?.brand_partners?.latitude ?? null,
     businessLongitude: acceptedOffer?.brand_partners?.longitude ?? null,

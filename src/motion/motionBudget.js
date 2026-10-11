@@ -126,6 +126,12 @@ export const SEQUENCES = {
   // fromScale -> 1, readable from frame one), then one success glow around it. Calm: no bounce, confetti or loop.
   interestedToAttending: { tier: 'special', dimMs: 220, arriveDelayMs: 120, arriveMs: 320, flowPx: 12, fromScale: 0.94, oldRestOpacity: 0.88,
     glowInMs: 100, glowOutMs: 220 },
+  // Owner item 32 (2026-10-11): the accepted offer merges into Your Plan. startDelayMs after the booked card mounts (its ✓ is
+  // settling), a "✓ Business" chip travels from the offer card up into the plan card (travelMs; it fades only over its last
+  // stretch, from chipFadeFrom, and shrinks to chipToScale), then the plan card settles from landFromScale (landMs) while its
+  // outline glows once (glowInMs + glowOutMs). Decorative: both cards already show the facts at full opacity.
+  offerToPlan: { tier: 'special', startDelayMs: 180, travelMs: 380, chipFadeFrom: 0.7, chipToScale: 0.92, landMs: 200, landFromScale: 0.98,
+    glowInMs: 100, glowOutMs: 220 },
   happeningRipple: { tier: 'medium', ringMs: 400, fromScale: 0.6, toScale: 2.2, startOpacity: 0.35, size: 24 },
 };
 
@@ -155,6 +161,8 @@ export function settleMs(name) {
       return s.ringMs + s.checkMs + Math.max(s.rippleMs, s.textFadeMs);
     case 'offerAccepted':
       return s.checkMs + s.morphMs;
+    case 'offerToPlan':
+      return s.startDelayMs + s.travelMs + Math.max(s.landMs, s.glowInMs + s.glowOutMs);
     case 'bookedExit':
       return s.fadeMs + s.collapseMs;
     case 'offerProgress':

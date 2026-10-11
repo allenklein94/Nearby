@@ -14,6 +14,9 @@ import { SEQUENCES } from '../motion/motionBudget';
 import { progressKey, visitConfirmationsToAnimate } from '../utils/offerProgress';
 import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgressShown';
 import { acceptedWhenLine, acceptedPartySize } from '../utils/acceptedBooking';
+import { offerToPlanMergeNow, planMergeScroll, planTogetherYieldsToMerge, mergeTravelPath } from '../utils/offerToPlanMerge';
+import { MergeTravelChip, PlanMergeLanding } from '../motion/OfferToPlanMerge';
+import useReduceMotion from '../hooks/useReduceMotion';
 import { useFocusEffect } from '@react-navigation/native';
 import { subscribeViewedArrivals } from '../services/offerArrivals';
 import { isOfferTravelPending, reportOfferTravelTarget, startOfferTravel, replyToTravel, rectInWindow, landOfferTravel, measureInWindowAsync } from '../motion/offerTravel';
@@ -109,6 +112,8 @@ const OFFER_TYPE_LABELS = { standard: true, discount: true, perk: true, upgrade:
 const OFFER_SCROLL_SETTLE_MS = 380;
 // Item 25 #4: plans whose coming-together already played in this session (never twice for the same plan).
 const PLAN_TOGETHER_PLAYED = new Set();
+// Item 32: offers whose merge into Your Plan already played in this session (once per offer).
+const MERGE_PLAYED = new Set();
 
 export default function BusinessRequestDetailScreen({ navigation, route }) {
   const { t, language } = useLanguage();
@@ -803,6 +808,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       recordAcceptBehavior(request?.id, request?.category); // item 95: private ranking signal, never a profile edit
       // Item 12: the card morphs only from the stored state the reload brings back (accepted + its reservation), never on
       // the tap alone. The layout change (button out, booked facts in) is smoothed so nothing below jumps.
+      touchedSinceAcceptRef.current = false; // item 32: a touch from here on stops the merge's scroll
       setJustAcceptedOfferId(offerId);
       animateLayout();
       await load();
@@ -933,11 +939,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     [request, offers, addons]
   );
   const planReady = isPlanFullyConfirmed(planTimeline);
+  // Owner item 32: the offer the person just accepted merges into Your Plan (utils/offerToPlanMerge.js decides). Only the
+  // primary request has the plan card; an add-on's own screen has none.
+  const mergeOffer = justAcceptedOfferId ? offers.find((o) => o.id === justAcceptedOfferId) ?? null : null;
+  const mergeDue = offerToPlanMergeNow({
+    justAcceptedOfferId, offer: mergeOffer,
+    hasPlanCard: !!request && !request.addon_type, played: MERGE_PLAYED,
+  });
   useEffect(() => {
     if (!addonsLoadedRef.current || request?.addon_type) return;
     if (planComesTogetherNow({ previousReady: planReadyRef.current, ready: planReady, planId: request?.id, played: PLAN_TOGETHER_PLAYED })) {
       PLAN_TOGETHER_PLAYED.add(request.id);
-      setPlanTogetherKey((k) => k + 1);
+      // Item 32 decision C: one moment per action. When this same accept merges into the plan, the merge is the moment.
+      if (!planTogetherYieldsToMerge({ mergeOwnAccept: mergeDue })) setPlanTogetherKey((k) => k + 1);
     }
     planReadyRef.current = planReady;
   }, [planReady, addons]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -950,6 +964,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       primary: request,
       primaryOffers: offers,
       planTitle: planChatInfo?.title ?? null,
+      // Item 32: an occasion's title is deliberate and stays; otherwise a booked plan reads "Coffee at Coastal Coffee".
+      planTitleIsDeliberate: !!planChatInfo?.occasionType,
       // Item 120 ("Plan creation should feel like a major achievement"): the mock's own Who,
       // sourced from the plan's own already-fetched real roster/occasion who-for -- never a new
       // query.
@@ -982,6 +998,35 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const focusCardRef = useRef(null);
   const cardRefs = useRef({});
   const [addingToCalendar, setAddingToCalendar] = useState(false);
+  // Item 32: the merge. Measured once the booked card is on screen (startDelayMs, while its ✓ settles): the chip travels
+  // from it into the plan card in content coordinates, and the screen scrolls gently to the plan unless the person has
+  // touched the screen since the accept (decision A). No path (unmeasured, Reduce Motion) = the plan card lands alone.
+  const reduceMotion = useReduceMotion();
+  const scrollYRef = useRef(0);
+  const touchedSinceAcceptRef = useRef(false);
+  const planCardRef = useRef(null);
+  const planCardYRef = useRef(null);
+  const aliveRef = useRef(true);
+  useEffect(() => () => { aliveRef.current = false; }, []);
+  const [mergeChip, setMergeChip] = useState(null);
+  const [planMergeKey, setPlanMergeKey] = useState(0);
+  useEffect(() => {
+    if (!mergeDue) return;
+    const offer = mergeOffer;
+    MERGE_PLAYED.add(offer.id);
+    // Not cancelled when mergeDue turns false on the next render (it does, by design: played once); only on unmount.
+    setTimeout(async () => {
+      if (!aliveRef.current) return;
+      const [from, to] = await Promise.all([measureInWindowAsync(cardRefs.current[offer.id]), measureInWindowAsync(planCardRef.current)]);
+      if (!aliveRef.current) return;
+      const label = offer.brand_partners?.name ?? null;
+      const path = label && !reduceMotion ? mergeTravelPath({ fromWindowY: from?.y, toWindowY: to?.y, planContentY: planCardYRef.current }) : null;
+      const scroll = planMergeScroll({ planY: planCardYRef.current, scrollY: scrollYRef.current, interrupted: touchedSinceAcceptRef.current, reduceMotion, gap: spacing.lg });
+      if (scroll) scrollViewRef.current?.scrollTo?.(scroll);
+      if (path) setMergeChip({ key: offer.id, label, ...path });
+      else setPlanMergeKey((k) => k + 1);
+    }, reduceMotion ? 0 : SEQUENCES.offerToPlan.startDelayMs);
+  }, [mergeDue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading && !request) {
     return (
@@ -1158,7 +1203,14 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView ref={scrollViewRef} contentContainerStyle={{ padding: spacing.lg }}>
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={{ padding: spacing.lg }}
+        scrollEventThrottle={32}
+        onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }}
+        onTouchStart={() => { touchedSinceAcceptRef.current = true; }}
+        onScrollBeginDrag={() => { touchedSinceAcceptRef.current = true; }}
+      >
         {/* Item 122 ("Don't overanimate the business experience"): accepting a business's offer
             is a reservation locking in -- a business TRANSACTION, not an occasion-creation
             moment -- so it should feel fast + trustworthy + reassuring, not festive. Reverted
@@ -1175,6 +1227,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           </TouchableOpacity>
         )}
         {planSummary && (
+          <View collapsable={false} ref={planCardRef} style={styles.planSummaryCardSlot} onLayout={(e) => { planCardYRef.current = e.nativeEvent.layout.y; }}>
+          <PlanMergeLanding playKey={planMergeKey} color={colors.success} radius={radius.lg}>
           <View style={styles.planSummaryCard}>
             <View style={styles.planSummaryHeaderRow}>
               {planSummary.statusKind === 'confirmed' ? (
@@ -1283,6 +1337,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 )}
               </View>
             )}
+          </View>
+          </PlanMergeLanding>
           </View>
         )}
         {planSummary && planSummary.statusKind === 'confirmed' && (
@@ -1535,8 +1591,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 // Item 12: the same card, now booked. Heading from the stored reservation (the engine's confirmation), then
                 // the business, then the real facts; the button's place below goes to the business's own redeem instructions.
                 const confirmation = shown.confirmation;
-                const whenLine = acceptedWhenLine({ proposedTimeLabel: o.proposed_time ? formatProposedTime(o.proposed_time, language) : null, dateLabel: planSummary?.dateLabel ?? null, timeLabel: planSummary?.timeLabel ?? null });
-                const partySize = acceptedPartySize(request);
+                // Item 32: where Your Plan is on this screen, the booking's day, time and party size live there only (the card
+                // merged into it); an add-on's own screen has no plan card, so its card keeps them.
+                const factsInPlan = !!planSummary;
+                const whenLine = factsInPlan ? null : acceptedWhenLine({ proposedTimeLabel: o.proposed_time ? formatProposedTime(o.proposed_time, language) : null, dateLabel: null, timeLabel: null });
+                const partySize = factsInPlan ? null : acceptedPartySize(request);
                 return (
                   <OfferAcceptedMorph
                     title={t(confirmation.titleKey)}
@@ -2054,6 +2113,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             <Text style={styles.cancelLink}>{cancelling ? t('ui.requestDetail.cancelling') : t('ui.requestDetail.cancelRequest')}</Text>
           </TouchableOpacity>
         )}
+        {/* Item 32: the booking's chip on its way into Your Plan (content coordinates: it scrolls with the cards). */}
+        {mergeChip ? (
+          <MergeTravelChip
+            key={mergeChip.key}
+            label={mergeChip.label}
+            fromY={mergeChip.fromY}
+            toY={mergeChip.toY}
+            onLanded={() => { setMergeChip(null); setPlanMergeKey((k) => k + 1); }}
+          />
+        ) : null}
       </ScrollView>
       <OfferOutcomeModal
         visible={!!outcomeModalOfferId}
@@ -2083,9 +2152,11 @@ const getStyles = (colors) => StyleSheet.create({
   // participant looking at this same request sees the same title/date/
   // time/location/party size/status, instead of piecing it together from
   // raw_text, per-offer cards, and the timeline separately.
+  // The slot carries the spacing so the item-32 landing glow outlines the card itself, not its margin.
+  planSummaryCardSlot: { marginBottom: spacing.lg },
   planSummaryCard: {
     backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.md, marginBottom: spacing.lg,
+    padding: spacing.md,
   },
   planSummaryHeaderRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: spacing.xs },
   planSummaryTitle: { ...typography.headline, color: colors.textPrimary, flex: 1, marginRight: spacing.sm },

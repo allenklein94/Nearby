@@ -7,6 +7,8 @@ const { runSql } = require('../../scripts/live-verify/lib/db');
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { offerPrimaryAction } from '../utils/primaryAction';
+import { buildPlanSummary } from '../utils/planAddonReadiness';
+import { offerToPlanMergeNow } from '../utils/offerToPlanMerge';
 
 const d = hasToken ? describe : describe.skip;
 
@@ -69,6 +71,25 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
      'data', jsonb_build_object('offer', (select status from business_request_offers where id = v_offer), 'request', (select status from business_requests where id = v_req),
         'reservation', (select status from business_reservations where id = v_rev))));
 
+  -- 6b. item 32: the accepted offer merges into the host's plan. Read as the host (RLS), the same rows the request screen
+  -- and Plans read: the plan exists and is live, its chat info gives the title source, the offer carries the business name
+  -- and a CONFIRMED reservation (the merge plays only for a real booking), and the request's party size is on the plan.
+  set local role authenticated;
+  log := log || jsonb_build_array(jsonb_build_object('step','offer_merges_into_plan','ok',
+     exists (select 1 from plans where resulting_business_request_id = v_req and status <> 'cancelled'),
+     'data', jsonb_build_object(
+        'plan', (select jsonb_build_object('plan_type', p.plan_type, 'status', p.status, 'party_size', p.party_size,
+                   'parent_type', (select pp.plan_type from plans pp where pp.id = p.parent_plan_id))
+                 from plans p where p.resulting_business_request_id = v_req order by p.created_at desc limit 1),
+        'chat', (select jsonb_build_object('title_present', (i->>'title') is not null, 'occasionType', i->'occasionType') from (select get_plan_chat_info(v_req) i) x),
+        'request', (select jsonb_build_object('category', category, 'plan_label', plan_label, 'party_size', party_size, 'addon_type', addon_type, 'date', date, 'group_plan_id', group_plan_id)
+                    from business_requests where id = v_req),
+        'offer', (select jsonb_build_object('id', o.id, 'status', o.status, 'proposed_time', o.proposed_time,
+                    'brand_partners', jsonb_build_object('name', bp.name, 'address', bp.address),
+                    'business_reservations', (select jsonb_agg(jsonb_build_object('status', r.status)) from business_reservations r where r.offer_id = o.id))
+                  from business_request_offers o join brand_partners bp on bp.id = o.partner_id where o.id = v_offer))));
+  reset role;
+
   -- 7. the visit happens: the host completes it (redemption)
   v_res := complete_business_reservation(v_offer);
   log := log || jsonb_build_array(jsonb_build_object('step','visit_completed','ok', coalesce((v_res->>'success')::boolean,false),
@@ -99,7 +120,7 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
 
   test.each([
     'gathering_created', 'request_created', 'business_sees_opportunity', 'offer_submitted',
-    'offer_reaches_host', 'host_accepts', 'visit_completed', 'analytics_updated', 'value_generated', 'funnel_updated',
+    'offer_reaches_host', 'host_accepts', 'offer_merges_into_plan', 'visit_completed', 'analytics_updated', 'value_generated', 'funnel_updated',
   ])('step %s', (name) => {
     expect(s[name]).toBeDefined();
     expect(s[name].ok).toBe(true);
@@ -121,5 +142,26 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(offerPrimaryAction(offered)).toBeTruthy();
     expect(canDo('offer', 'accepted', 'accept')).toBe(false);
     expect(canDo('offer', 'completed', 'accept')).toBe(false);
+  });
+  // Item 32, applied to the very rows the database produced: the booking merges into Your Plan exactly once, the plan card
+  // reads "<what> at <business>" with the party size, and the plan stays where Plans lists it (Home is not touched).
+  test('item 32: the accepted offer merges into Your Plan (once), and the booking stays in Plans', () => {
+    const { plan, chat, request, offer } = s.offer_merges_into_plan.data;
+    const played = new Set();
+    expect(offerToPlanMergeNow({ justAcceptedOfferId: offer.id, offer, hasPlanCard: !request.addon_type, played })).toBe(true);
+    played.add(offer.id);
+    expect(offerToPlanMergeNow({ justAcceptedOfferId: offer.id, offer, hasPlanCard: true, played })).toBe(false); // never twice
+    expect(offerToPlanMergeNow({ justAcceptedOfferId: null, offer, hasPlanCard: true, played: new Set() })).toBe(false); // not on a later visit
+    const summary = buildPlanSummary({ primary: { ...request, status: 'fulfilled' }, primaryOffers: [offer], planTitle: 'typed ask', planTitleIsDeliberate: !!chat.occasionType });
+    expect(summary.title).toBe(`${request.category} at ${offer.brand_partners.name}`);
+    expect(summary.titleHasBusiness).toBe(true);
+    expect(summary.partySize).toBe(request.party_size);
+    expect(summary.statusKind).toBe('confirmed');
+    // Plans (services/plans.js getMyStandaloneBusinessRequestPlans): a live business_request plan, not merged into a group
+    // plan and not an experience stop.
+    expect(plan.plan_type).toBe('business_request');
+    expect(plan.status).not.toBe('cancelled');
+    expect(plan.parent_type).not.toBe('experience');
+    expect(request.group_plan_id).toBeNull();
   });
 });

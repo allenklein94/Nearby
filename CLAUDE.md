@@ -44,6 +44,8 @@ Anthropic credit first).
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
+**Item 32 (offer merges into Your Plan)** built and journey-verified; needs the device check and native review of `titleAtBusiness` (see CLAUDE_HISTORY.md).
+
 **Blocked on the owner:**
 - **Anthropic credit:** every AI edge function returns 500 ("credit balance is too low"). Never run live:
   the intent extractor, offer/creative/logo/video screening (owner-typed content fails closed to "Try
@@ -258,6 +260,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Something is happening near you (owner item 26):** one ring from the happening-now heading glyph (Home Nearby Right Now,
   Discover Happening Now; `motion/HappeningRipple.js`) only when the section shows a gathering not yet shown this session
   (`utils/happeningSeen.js`, one store for both surfaces, judged only while focused). Rows never move (item 15 stands).
+- **Offer -> plan merge (owner item 32):** your own confirmed accept merges the booking into Your Plan (`utils/offerToPlanMerge.js`,
+  `motion/OfferToPlanMerge.js`): chip travels up, gentle scroll (own accept only; any touch stops it), one plan glow; it replaces
+  plan-comes-together for that accept. A booked plan reads "{what} at {business}"; day/time/party show once, in the plan. Home unchanged.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).
