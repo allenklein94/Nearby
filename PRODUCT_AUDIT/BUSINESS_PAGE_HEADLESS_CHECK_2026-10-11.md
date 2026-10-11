@@ -43,8 +43,10 @@ scroll). The same script against the previous page fails 6 of them (the mock cou
 is static HTML outside every journey.
 
 **Still open, not claimed by this check:** the owner's own review in a real browser (desktop and phone); nothing here
-is a phone verification. Seen and NOT changed (out of scope): the logo text renders as "Near by" with a gap at all widths
-(the brand's flex `gap` also applies between "Near" and the "by" span).
+is a phone verification. Logo (owner approved, same day): it rendered as "Near by" at all widths (the brand's flex `gap`
+also applied between "Near" and the "by" span); FIXED by moving the 8 px to the icon's right margin. A check per header width
+(10 widths) measures 0.0 px between "Near" and "by": **110/110 pass**. The same markup still shows "Near by" on
+`docs/invite.html`, `docs/occasion-invite.html` and `docs/shared-night.html` (not changed; owner to decide).
 
 **Not covered (still open):** a real browser (Safari / Chrome on a phone and a desktop) by the owner; real email/phone formats
 the server rejects; the live submit path end to end (deliberately never called).

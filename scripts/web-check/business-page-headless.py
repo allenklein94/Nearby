@@ -39,6 +39,10 @@ def header_layout(browser, width, height=800):
     check(p + 'nav never overlaps the logo', not hit, ', '.join(hit))
     off = [l['text'] for l in h['links'] if l['left'] < 0 or l['right'] > h['vw']]
     check(p + 'every nav label fully on screen', not off, ', '.join(off))
+    # owner 2026-10-11: the logo reads "Nearby" as one word (no gap between "Near" and the "by" span)
+    gap = page.evaluate("""() => { const s = document.querySelector('header.top .brand > span'); const r = document.createRange();
+      r.selectNodeContents(s.previousSibling); return s.getBoundingClientRect().left - r.getBoundingClientRect().right; }""")
+    check(p + 'logo reads "Nearby" with no gap', abs(gap) < 1, f'gap {gap:.1f}px')
     sw = page.evaluate('document.documentElement.scrollWidth')
     check(p + 'no horizontal page scroll', sw <= h['vw'], f'scrollWidth {sw} / clientWidth {h["vw"]}')
     page.screenshot(path=f'/out/header-{width}.png', clip={'x': 0, 'y': 0, 'width': width, 'height': 160})
