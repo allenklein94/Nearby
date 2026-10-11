@@ -146,6 +146,9 @@ export const SEQUENCES = {
   weatherShift: { tier: 'special', washMs: 800 },
   // Owner item 37: the strong-match pieces tick in one after another, then the badge settles (motion/StrongMatch.js).
   strongMatch: { tier: 'medium', pieces: ['activity', 'time', 'place'], pieceMs: 180, staggerMs: 80, badgeDelayMs: 260, badgeMs: 180, badgeFromScale: 0.9 },
+  // Owner item 40: you + a nearby friend converge on a gathering you both like: the two faces slide together and overlap, then
+  // the line settles (motion/FriendCollision.js). Once per (friend, gathering) per session.
+  friendCollision: { tier: 'medium', avatarMs: 280, travelPx: 10, textDelayMs: 160, textMs: 200 },
 };
 
 // Owner item 32 + confirmed-plan look (2026-10-11): the plan's assembly after the chip lands, in ms from the landing. One
@@ -211,6 +214,8 @@ export function settleMs(name) {
       return s.washMs;
     case 'strongMatch':
       return Math.max(s.staggerMs * (s.pieces.length - 1) + s.pieceMs, s.badgeDelayMs + s.badgeMs);
+    case 'friendCollision':
+      return Math.max(s.avatarMs, s.textDelayMs + s.textMs);
     case 'interestedSaved':
       return s.pulseMs;
     case 'planCompleted':

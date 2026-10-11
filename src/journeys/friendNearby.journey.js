@@ -11,6 +11,7 @@
 //   8  every "not nearby" cause            -> the same empty result
 //   9  a fix while sharing is off          -> stored nothing; off by default
 //   10 anon                                -> refused; the tables are unreadable by any signed-in client
+// Item 40: the one row also carries shared_tags = the viewer's declared interests the friend declared too (nothing else).
 // Plus: report throttle (30 s gap, 5 min unless moved >= 0.25 mi, impossible speed, 20 per hour), read limit (20 per 10 min),
 // 3-decimal storage, and the purge. Not covered (device only): the permission prompt, foreground-only reporting on a phone,
 // the Home line's look. Client rules (Home line priority, one friend, reminder) are in friendNearby.test.js.
@@ -42,6 +43,10 @@ d('journey: a friend is nearby - mutual consent, friends only, fresh and close, 
   delete from friend_nearby_fixes where user_id in (v_a, v_b, v_c);
   insert into friendships (user_a, user_b, status, requested_by) values (v_a, v_b, 'accepted', v_a);
   insert into matches (user_a, user_b) values (v_a, v_c);
+  -- item 40: declared interests (A: Pickleball, Coffee; B: Pickleball, Yoga) -> the shared tag is Pickleball only
+  perform set_config('app.trusted_update', 'on', true);
+  update profiles set interests = array['Pickleball', 'Coffee'] where id = v_a;
+  update profiles set interests = array['Pickleball', 'Yoga'] where id = v_b;
 
   -- 9: off by default; a fix while off stores nothing
   ${as('v_a')}
@@ -175,11 +180,15 @@ d('journey: a friend is nearby - mutual consent, friends only, fresh and close, 
     expect(s.defaultOff.data).toBe(false);
     expect(s.fixWhileOff.data).toBeNull();
   });
-  test('1: both on, fresh and ~0.5 mi apart -> each sees the other, and only id, name and photo leave the server', () => {
+  test('1: both on, fresh and ~0.5 mi apart -> each sees the other, and only id, name, photo and shared tags leave the server', () => {
     expect(s.onAfterEnable.data).toBe(true);
     expect(s.aSeesB.data).toHaveLength(1);
     expect(s.bSeesA.data).toHaveLength(1);
-    expect(Object.keys(s.aSeesB.data[0]).sort()).toEqual(['display_name', 'friend_id', 'photo_url']);
+    expect(Object.keys(s.aSeesB.data[0]).sort()).toEqual(['display_name', 'friend_id', 'photo_url', 'shared_tags']);
+  });
+  test('item 40: shared_tags = only the interests BOTH declared (never the friend\'s others), each way', () => {
+    expect(s.aSeesB.data[0].shared_tags).toEqual(['Pickleball']);
+    expect(s.bSeesA.data[0].shared_tags).toEqual(['Pickleball']);
   });
   test('2: turning it off ends visibility both ways at once and deletes the stored fix', () => {
     expect(s.aFixAfterOff.data).toBeNull();

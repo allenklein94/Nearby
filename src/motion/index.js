@@ -40,6 +40,7 @@ export { default as ConnectionGlyphSwap } from './ConnectionGlyphSwap';
 export { default as AnticipationText } from './AnticipationText';
 export { default as NearbyPickBadge } from './NearbyPickBadge';
 export { default as StrongMatch } from './StrongMatch';
+export { default as FriendCollision } from './FriendCollision';
 export { getReduceMotion, subscribeReduceMotion, installReducedMotionPolicy } from './motionPolicy';
 export { playHaptic, HAPTIC_MOMENTS } from './haptics';
 export * from './motionBudget';

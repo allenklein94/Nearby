@@ -13,7 +13,8 @@ import InterestedSaved from '../motion/InterestedSaved';
 import { presentRecoverableError } from '../utils/recoverableError';
 import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, StrongMatch, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
+import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, StrongMatch, FriendCollision, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
+import { friendCollision } from '../utils/friendCollision';
 import { strongMatchPieces } from '../utils/strongMatch';
 import RightNowMark from '../components/RightNowMark';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -249,6 +250,7 @@ export default function HomeScreen({ navigation }) {
   const [friendNearbySharing, setFriendNearbySharingState] = useState(false);
   const [nearbyFriend, setNearbyFriend] = useState(null);
   const [nearbyFriendPhoto, setNearbyFriendPhoto] = useState(null);
+  const [myPhotoUrl, setMyPhotoUrl] = useState(null); // item 40: your face beside the friend's on "You + {Name} might like this"
   const [insightExpanded, setInsightExpanded] = useState(null); // which insight line's gatherings are listed inline (item 136)
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -501,6 +503,14 @@ export default function HomeScreen({ navigation }) {
     feedback: experienceFeedback, // item 35: loved ranks up, Not for me ranks down (personal-interest tier)
     maturity: experienceMaturity, // scaled down for a new account, like every feedback weight
   });
+  // Item 40: the ONE card (Best Pick, then Picked For You, in display order) where a nearby friend (item 39) and you both
+  // declared its interest says "You + {Name} might like this". Explains only; nothing reorders on it.
+  const collision = friendCollision({
+    friend: nearbyFriend,
+    gatherings: [attention.hero, ...attention.items.filter((e) => e.kind === 'gathering').map((e) => e.gathering)].filter(Boolean),
+    myUserId,
+    myDeclaredInterests,
+  });
   // Nearby Right Now (item 33): the time view, below everything personal; never repeats a gathering shown above it.
   const rightNow = selectRightNow({
     gatherings: dashboard?.nearbyGatherings ?? [],
@@ -552,7 +562,9 @@ export default function HomeScreen({ navigation }) {
         accessibilityRole="button"
       >
         <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
-        {confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
+        {collision?.gatheringId === g.id
+          ? <FriendCollision collision={collision} myPhotoUrl={myPhotoUrl} friendPhotoUrl={nearbyFriendPhoto} language={language} textStyle={styles.trendingMeta} />
+          : confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
         {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
         <Text style={styles.trendingMeta}>
           {[card.meta, g.approvedAttendees ? translate(language, 'reasons.attendingCount', { count: attendingFigure(g) }) : null].filter(Boolean).join(' · ')}
@@ -611,8 +623,9 @@ export default function HomeScreen({ navigation }) {
         // Phase J (CLAUDE.md) -- created_at is the one new column this
         // whole phase needs; a plain, already-fetched real timestamp, zero
         // new query, used below to compute real account-age maturity.
-        const { data: profile } = await supabase.from('profiles').select('display_name, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences, interest_groups').eq('id', myId).single();
+        const { data: profile } = await supabase.from('profiles').select('display_name, photo_url, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences, interest_groups').eq('id', myId).single();
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
+        setMyPhotoUrl(profile?.photo_url ? await getSignedPhotoUrl(profile.photo_url).catch(() => null) : null);
         setMyDeclaredInterests(Array.isArray(profile?.interests) ? profile.interests : []);
         setPinnedQuickPicks(Array.isArray(profile?.home_quick_pick_categories) ? profile.home_quick_pick_categories : null);
         setSeenFirstRunMoment(profile?.seen_home_first_run_moment ?? true);
@@ -2065,7 +2078,9 @@ export default function HomeScreen({ navigation }) {
                   <View style={styles.heroBody}>
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
                       <Text style={styles.heroTitle} numberOfLines={1}>{attention.hero.title}</Text>
-                      {confidenceHeadline(attention.hero.reasons.map((text) => ({ text })), { language }) ? (
+                      {collision?.gatheringId === attention.hero.id ? (
+                        <FriendCollision collision={collision} myPhotoUrl={myPhotoUrl} friendPhotoUrl={nearbyFriendPhoto} language={language} textStyle={styles.heroMeta} />
+                      ) : confidenceHeadline(attention.hero.reasons.map((text) => ({ text })), { language }) ? (
                         <Text style={styles.heroMeta} numberOfLines={1}>{confidenceHeadline(attention.hero.reasons.map((text) => ({ text })), { language })}</Text>
                       ) : null}
                       {heroCard.why ? <Text style={styles.heroMeta} numberOfLines={1}>{heroCard.why}</Text> : null}

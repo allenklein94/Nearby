@@ -1,3 +1,27 @@
+# Item 40 (2026-10-11) - Friend + activity collision - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+**Owner ask:** Claude is nearby, Claude likes pickleball, there's a pickleball activity nearby -> "You + Claude might like this", the
+two signals visually converging into the activity.
+**Built on what exists:** item 39 (the ONE nearby friend, server-decided) and the owner-approved friend-interest fact
+(`get_friends_interested_in`, "Sam is into Coffee", 2026-09-21): no new kind of data leaves the server.
+**Built:** migration `20270297_friend_nearby_shared_tags.sql` (applied live; drop + recreate since the return type changed; one
+signature checked): `get_nearby_friends()` also returns `shared_tags` = the viewer's declared interests that friend declared too
+(never the friend's other interests, never learned behaviour); eligibility unchanged. `services/friendNearby.js` exposes
+`sharedTags`. `utils/friendCollision.js` = the one rule: a named nearby friend + a gathering whose tag is in sharedTags AND your own
+declared interests (re-checked), not hosted by either of you, neither already attending; the FIRST such card in Home's display order
+(Best Pick, then Picked For You); explains only, never ranks. `motion/FriendCollision.js` replaces that card's "You might like this"
+headline: your face and the friend's slide together and overlap, then "You + {Name} might like this" settles (`SEQUENCES.friendCollision`,
+medium, 360 ms; text >= 0.6 opacity from frame one; pointerEvents none; no haptic; Reduce Motion = settled; once per friend+gathering per
+session via `takeCollisionPlay`). Home loads your own photo for it. 2 new strings (`ui.friendNearby.together`, `togetherA11y`) in 11
+languages, machine-authored.
+**Defaults chosen (owner not yet asked):** Home only; one card per Home; no reordering; not when the friend is going (their "is going"
+reason says more and "might like" would be untrue); the wording never implies the friend is at the gathering. Item 39's "{Name} is nearby
+· Invite" line stays as is beside it.
+**Verified:** Jest 415 suites / 5628 pass (new `utils/friendCollision.test.js`: rule, once-per-session, budget, motion rules, surface and
+no-ranking guards; `friendNearby.test.js` + `learnedProximity.test.js` guards extended to the new migration); journeys 23/23 (260),
+`friendNearby` 15/15 with shared_tags = only the interests both declared, both ways. Parse check on edited files. Not device-checked
+(`PRODUCT_AUDIT/ITEM_40_FRIEND_ACTIVITY_COLLISION_DEVICE_CHECKLIST_2026-10-11.md`). No from-scratch migration replay.
+
 # Item 39 (2026-10-11) - "A friend is nearby" - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 **Owner answers to the design's section 9 (before the build):** spoofing residual accepted with the mitigations; ONE friend only;

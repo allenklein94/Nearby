@@ -10,6 +10,8 @@ export default {
     reminder: "Friends can see you're nearby",
     turnOff: "Turn off",
     turnOffA11y: "Stop letting friends know when you're nearby",
+    together: "You + {name} might like this",
+    togetherA11y: "You and {name} might both like this",
   },
   es: {
     settingTitle: "Avisar a mis amigos cuando esté cerca",
@@ -20,6 +22,8 @@ export default {
     reminder: "Tus amigos pueden ver que estás cerca",
     turnOff: "Desactivar",
     turnOffA11y: "Dejar de avisar a tus amigos cuando estés cerca",
+    together: "A ti y a {name} podría gustarles esto",
+    togetherA11y: "A ti y a {name} podría gustarles esto a los dos",
   },
   de: {
     settingTitle: "Freunden zeigen, wenn ich in der Nähe bin",
@@ -30,6 +34,8 @@ export default {
     reminder: "Freunde sehen, dass du in der Nähe bist",
     turnOff: "Ausschalten",
     turnOffA11y: "Freunden nicht mehr zeigen, wenn du in der Nähe bist",
+    together: "Dir + {name} könnte das gefallen",
+    togetherA11y: "Dir und {name} könnte das beiden gefallen",
   },
   fr: {
     settingTitle: "Prévenir mes amis quand je suis à proximité",
@@ -40,6 +46,8 @@ export default {
     reminder: "Tes amis peuvent voir que tu es à proximité",
     turnOff: "Désactiver",
     turnOffA11y: "Ne plus prévenir tes amis quand tu es à proximité",
+    together: "Toi + {name} pourriez aimer ça",
+    togetherA11y: "Toi et {name} pourriez aimer ça tous les deux",
   },
   pt: {
     settingTitle: "Avisar amigos quando eu estiver por perto",
@@ -50,6 +58,8 @@ export default {
     reminder: "Seus amigos podem ver que você está por perto",
     turnOff: "Desativar",
     turnOffA11y: "Parar de avisar amigos quando você estiver por perto",
+    together: "Você + {name} podem gostar disto",
+    togetherA11y: "Você e {name} podem gostar disto",
   },
   ht: {
     settingTitle: "Fè zanmi m konnen lè m toupre",
@@ -60,6 +70,8 @@ export default {
     reminder: "Zanmi ou ka wè ou toupre",
     turnOff: "Fèmen",
     turnOffA11y: "Sispann fè zanmi ou konnen lè ou toupre",
+    together: "Ou + {name} ka renmen sa",
+    togetherA11y: "Ou menm ak {name} ka renmen sa tou de",
   },
   zh: {
     settingTitle: "我在附近时让朋友知道",
@@ -70,6 +82,8 @@ export default {
     reminder: "朋友可以看到你在附近",
     turnOff: "关闭",
     turnOffA11y: "不再让朋友知道你在附近",
+    together: "你和{name}可能会喜欢",
+    togetherA11y: "你和{name}可能都会喜欢这个",
   },
   vi: {
     settingTitle: "Cho bạn bè biết khi tôi ở gần",
@@ -80,6 +94,8 @@ export default {
     reminder: "Bạn bè có thể thấy bạn đang ở gần",
     turnOff: "Tắt",
     turnOffA11y: "Ngừng cho bạn bè biết khi bạn ở gần",
+    together: "Bạn + {name} có thể thích điều này",
+    togetherA11y: "Bạn và {name} có thể đều thích điều này",
   },
   tl: {
     settingTitle: "Ipaalam sa mga kaibigan kapag malapit ako",
@@ -90,6 +106,8 @@ export default {
     reminder: "Nakikita ng mga kaibigan na malapit ka",
     turnOff: "I-off",
     turnOffA11y: "Itigil ang pagpapaalam sa mga kaibigan kapag malapit ka",
+    together: "Ikaw + si {name} baka magustuhan ito",
+    togetherA11y: "Ikaw at si {name} ay baka parehong magustuhan ito",
   },
   ru: {
     settingTitle: "Сообщать друзьям, когда я рядом",
@@ -100,6 +118,8 @@ export default {
     reminder: "Друзья видят, что вы рядом",
     turnOff: "Выключить",
     turnOffA11y: "Больше не сообщать друзьям, когда вы рядом",
+    together: "Вам + {name} может понравиться",
+    togetherA11y: "Вам и {name} это может понравиться",
   },
   ko: {
     settingTitle: "내가 근처에 있을 때 친구에게 알리기",
@@ -110,5 +130,7 @@ export default {
     reminder: "친구가 내가 근처에 있다는 것을 볼 수 있어요",
     turnOff: "끄기",
     turnOffA11y: "근처에 있을 때 친구에게 알리지 않기",
+    together: "나 + {name}님이 좋아할 만해요",
+    togetherA11y: "나와 {name}님 모두 좋아할 만해요",
   },
 };

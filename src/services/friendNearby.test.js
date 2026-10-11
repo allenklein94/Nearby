@@ -123,7 +123,7 @@ describe('guards', () => {
     expect(mig).not.toMatch(/_send_push|_emit_event|behavior_events|net\.http/);
     const migDir = path.join(SRC, '../supabase/migrations');
     for (const f of fs.readdirSync(migDir)) {
-      if (f === '20270296_friend_nearby.sql') continue;
+      if (f === '20270296_friend_nearby.sql' || f === '20270297_friend_nearby_shared_tags.sql') continue; // item 40 extends the read
       expect([f, /friend_nearby|get_nearby_friends/.test(fs.readFileSync(path.join(migDir, f), 'utf8'))]).toEqual([f, false]);
     }
     expect(read('services/friendNearby.js').replace(/\/\/.*$/gm, '')).not.toMatch(/recordBehaviorEvent|trackEvent|analytics/i);
@@ -131,10 +131,10 @@ describe('guards', () => {
     expect(read('services/invites.js')).not.toMatch(/nearby/i);
   });
 
-  test('every language has the eight strings (machine-authored; native review open)', () => {
+  test('every language has the ten strings (item 39 eight + item 40 two; machine-authored; native review open)', () => {
     const ns = require('../i18n/ui/friendNearby').default;
     for (const lang of ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko']) {
-      expect(Object.keys(ns[lang]).sort()).toEqual(['invite', 'line', 'locationOff', 'reminder', 'settingHelper', 'settingTitle', 'turnOff', 'turnOffA11y']);
+      expect(Object.keys(ns[lang]).sort()).toEqual(['invite', 'line', 'locationOff', 'reminder', 'settingHelper', 'settingTitle', 'together', 'togetherA11y', 'turnOff', 'turnOffA11y']);
       expect(ns[lang].line).toMatch(/\{name\}/);
       expect(ns[lang].invite).toMatch(/\{name\}/);
     }

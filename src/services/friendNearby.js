@@ -4,7 +4,8 @@
 //     reminder may only turn it OFF. Off deletes the stored fix server-side at once.
 //   * reporting: only a real fresh foreground fix from services/userLocation.js (its onFix), only while sharing is on and
 //     the app is active; never from a background task. Throttled here AND on the server (5 min unless moved >= 0.25 mi).
-//   * reading: getNearbyFriend() -> at most ONE friend { id, name, photoPath } or null. The server never returns coordinates,
+//   * reading: getNearbyFriend() -> at most ONE friend { id, name, photoPath, sharedTags } or null (sharedTags, item 40: only
+//     the viewer's own declared interests that friend declared too). The server never returns coordinates,
 //     distance or time, and every "not nearby" cause is the same null.
 //   * no push, no analytics, no behaviour event, nothing stored on the device about anyone's location.
 import { AppState } from 'react-native';
@@ -79,7 +80,9 @@ export async function getNearbyFriend({ now = Date.now() } = {}) {
   const { data, error } = await supabase.rpc('get_nearby_friends');
   if (error) throw error;
   const row = (data ?? [])[0];
-  const friend = row?.friend_id ? { id: row.friend_id, name: row.display_name, photoPath: row.photo_url ?? null } : null;
+  const friend = row?.friend_id
+    ? { id: row.friend_id, name: row.display_name, photoPath: row.photo_url ?? null, sharedTags: Array.isArray(row.shared_tags) ? row.shared_tags : [] }
+    : null;
   readCache = { at: now, friend };
   return friend;
 }
