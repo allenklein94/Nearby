@@ -1,4 +1,7 @@
-# Item 36 (2026-10-11) - weather as a subtle contextual layer on the Home weather card - OPEN until device check
+# Item 36 (2026-10-11) - weather as a subtle contextual layer on the Home weather card - APPROVED, READY FOR DEVICE VERIFICATION (not device-verified)
+
+**Owner decisions (same day, LOCKED):** (1) keep item 192's wording ("Rain expected tonight", "Here are some indoor options"); no second wording change across the 11 languages. (2) Scope = the Home weather card ONLY; no wash on the top of Home, Discover or Happening Now; weather is not an app-wide mood system (if the card feels too subtle on a device, evaluate that first before any broader effect). (3) Implementation kept as tested: light/dark washes, condition icons, one fade per newly encountered condition per day (no replay after navigation, tab switch or restart; a condition change gets one new fade), immediate taps, stable layout, readability, Reduce Motion, every other screen unchanged. No more animation. Remaining: the 10-check device list.
+
 
 Owner: weather changes could make a very subtle environmental shift ("Great evening for outdoor plans" / "Rain coming tonight, here are some indoor options"), but never turn the app into a weather animation; it is a contextual layer.
 Found before building: the words and the card already exist (items 62 + 192: `constants/weatherRelevance.js` decides IF a card exists, only when the weather at a real upcoming gathering's start matters, and says "Rain expected tonight" + indoor picks or "Perfect evening for outdoor plans" + outdoor picks, good weather once a day). Wording not changed (item 192). Missing: any visual atmosphere (the card always used a generic partly-sunny icon on the plain surface).

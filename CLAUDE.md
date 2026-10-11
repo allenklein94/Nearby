@@ -54,8 +54,8 @@ completed plan, screened source only, missing or failed logo falls back to 📍;
 travels, logo and line wait for it to land, text always readable, no flicker/shift/flash, under 0.9 s, Reduce Motion = finished
 card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests intact. Item 33 (reservation confirmation) is covered by item 32 as built (owner, 2026-10-11).
 
-**Item 36 (weather contextual layer) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_36_WEATHER_LAYER_DEVICE_CHECKLIST_2026-10-11.md`
-is recorded on a real device (built; tests and parse checks pass; no new strings).
+**Item 36 (weather contextual layer) is APPROVED, READY FOR DEVICE VERIFICATION (not device-verified) until** every check in
+`PRODUCT_AUDIT/ITEM_36_WEATHER_LAYER_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (owner: wording and card-only scope locked).
 
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
@@ -291,7 +291,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `constants/satisfactionScale.js` (Loved it/Good/Okay/Not for me) for gatherings and offers; App Store prompt stays keyed to Loved it.
 - **Weather layer (owner item 36):** only the Home weather card carries weather: a quiet wash + condition icon
   (`constants/weatherAtmosphere.js`, 3 wash tokens) that fades in once when the condition changes that day (`motion/WeatherShift.js`,
-  `utils/weatherShiftSeen.js`); never app-wide, never particles, wording unchanged (item 192).
+  `utils/weatherShiftSeen.js`); never app-wide, never particles, wording unchanged (item 192). Owner LOCKED: card only (not top
+  of Home, Discover or Happening Now), no more animation; judge it on a device before considering anything broader.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

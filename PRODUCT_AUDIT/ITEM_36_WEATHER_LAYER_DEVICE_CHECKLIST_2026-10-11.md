@@ -1,5 +1,8 @@
 # Item 36 - weather as a contextual layer: device checklist (2026-10-11)
 
+Status: APPROVED by the owner (2026-10-11), READY FOR DEVICE VERIFICATION, not device-verified. Wording (item 192) and
+card-only scope are locked. If the card feels too subtle on the device, note it here; do not widen the effect without the owner.
+
 Item 36 stays OPEN until every check below is recorded as passed on a real device (device, OS, appearance mode, result).
 Tests and parse checks are not visual sign-off. Built: `constants/weatherAtmosphere.js`, `motion/WeatherShift.js`,
 `utils/weatherShiftSeen.js`, theme tokens `weatherSunWash` / `weatherWetWash` / `weatherColdWash`, Home weather card.
