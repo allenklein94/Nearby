@@ -1,3 +1,20 @@
+# Item 41 approved (2026-10-11) - avatars -> gathering chips -> line
+
+**Owner decisions:** (1) keep "{count} of your friends are already making plans" -- no "nearby", no Discover-radius filter added just
+to justify it (a friend's plan across town is still useful context); (2) gathering cards: up to 3 compact one-line chips (activity
+glyph + truthful title, no other metadata) under the avatars and above the line; slide in once when genuinely new plans appear,
+static afterwards (no pulse/loop/expand), Reduce Motion = final state; a chip opens the existing gathering detail; "See gatherings"
+unchanged; no new screen. A narrow exception to "no animated cards", for this moment only.
+**Built:** `motion/FriendsPlanning.js`: faces (plain now; the glyph moved onto the chip) -> chips (opacity via `infoOpacity`,
+translateY 6 -> 0; transform/opacity only, native driver, so no layout shift) -> line. Chips are Pressables, tappable from frame one
+(item 20); faces hidden from screen readers, each chip a button labelled with its title. `SEQUENCES.friendsPlanning` now has
+`chipDelayMs 160 / chipMs 180 / chipRise 6` (settles at 500 ms, medium). `getHomeInsight` people carry `title` and `destination`
+(the shared `gatheringDestination`); Home passes `onOpen` -> `openDestination`. Play rule unchanged (stored ids: never on tab
+switch/refresh/restart with the same plans; again only when a new plan appears).
+**Verified:** Jest 417 suites / 5646 pass (friendsPlanningMoment.test.js 16: chip timing, readability, chip content/tap wiring,
+theme token guard); journeys 24 / 265 (friendsPlanning extended: chip titles and destinations from the live rows). NOT device-verified.
+Noted, not changed: with all plans already shown as chips (max 3), "See gatherings" lists the same plans again inline.
+
 # Item 41 follow-up (2026-10-11) - friends-planning query coverage + Link-only leak fixed
 
 Owner asked for targeted coverage of the friends-planning query (3-day window, visibility rules, "See gatherings").

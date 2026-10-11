@@ -2262,7 +2262,7 @@ export default function HomeScreen({ navigation }) {
                   <Text style={[styles.insightLine, { marginBottom: 0, flex: 1 }]}>{insight.text}</Text>
                 </View>
               ) : insight.kind === 'friends_planning' ? (
-                <FriendsPlanning people={insight.people} photoUrls={friendsPlanningPhotos} text={insight.text} textStyle={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]} playKey={friendsPlanningPlay} />
+                <FriendsPlanning people={insight.people} photoUrls={friendsPlanningPhotos} text={insight.text} textStyle={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]} playKey={friendsPlanningPlay} onOpen={(p) => openDestination(navigation, p.destination)} />
               ) : (
                 <Text style={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]}>{insight.text}</Text>
               )}

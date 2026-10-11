@@ -776,9 +776,10 @@ export function getHomeInsight(dashboard, now = new Date()) {
   if (dashboard.friendsActivity?.length >= 2) {
     const destination = gatheringSetDestination(dashboard.friendsActivity, (g) => SIGNAL_TEXT.friend(g, isGatheringPast(g, now)));
     // Item 41: the faces behind the count, one per friend (friendsActivity is already one gathering per distinct host), each
-    // with its plan's activity -- what motion/FriendsPlanning.js assembles. Only what the line already rests on.
+    // with its plan (activity, title, where a tap goes) -- what motion/FriendsPlanning.js assembles as face + one-line chip.
+    // Only what the line already rests on.
     const people = dashboard.friendsActivity.filter((g) => g?.host_id && g?.id)
-      .map((g) => ({ id: g.host_id, gatheringId: g.id, photoPath: g.profiles?.photo_url ?? null, tag: g.interest_tag ?? null }));
+      .map((g) => ({ id: g.host_id, gatheringId: g.id, photoPath: g.profiles?.photo_url ?? null, tag: g.interest_tag ?? null, title: g.title ?? null, destination: gatheringDestination(g) }));
     return { kind: 'friends_planning', text: tr('ui.homeParts.insight.friendsPlanning', { count: dashboard.friendsActivity.length }), people, cta: destination ? { label: tr('ui.homeParts.insight.seeGatherings'), destination } : null };
   }
   // Previously ANY Best Pick produced "a great night to meet someone new" -- a People claim with a gathering as its

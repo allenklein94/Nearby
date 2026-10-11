@@ -47,18 +47,19 @@ describe('when it plays', () => {
 
 describe('the line\'s data', () => {
   const friendsActivity = [
-    { id: 'g1', host_id: 'a', interest_tag: 'Pickleball', profiles: { display_name: 'Ann', photo_url: 'p/a.jpg' } },
-    { id: 'g2', host_id: 'b', interest_tag: null, profiles: { display_name: 'Bo' } },
+    { id: 'g1', host_id: 'a', title: 'Pickleball at 6', interest_tag: 'Pickleball', profiles: { display_name: 'Ann', photo_url: 'p/a.jpg' } },
+    { id: 'g2', host_id: 'b', title: 'Board games', interest_tag: null, profiles: { display_name: 'Bo' } },
     { id: 'g3', host_id: 'c', interest_tag: 'Coffee', profiles: null },
   ];
   test('one face per friend behind the count, each with its plan\'s activity; the count and wording unchanged', () => {
     const r = getHomeInsight({ friendsActivity });
     expect(r.kind).toBe('friends_planning');
     expect(r.text).toBe('3 of your friends are already making plans.');
+    const open = (id) => ({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: id } });
     expect(r.people).toEqual([
-      { id: 'a', gatheringId: 'g1', photoPath: 'p/a.jpg', tag: 'Pickleball' },
-      { id: 'b', gatheringId: 'g2', photoPath: null, tag: null },
-      { id: 'c', gatheringId: 'g3', photoPath: null, tag: 'Coffee' },
+      { id: 'a', gatheringId: 'g1', photoPath: 'p/a.jpg', tag: 'Pickleball', title: 'Pickleball at 6', destination: open('g1') },
+      { id: 'b', gatheringId: 'g2', photoPath: null, tag: null, title: 'Board games', destination: open('g2') },
+      { id: 'c', gatheringId: 'g3', photoPath: null, tag: 'Coffee', title: null, destination: open('g3') },
     ]);
     expect(r.people).toHaveLength(r.text.match(/\d+/)[0] * 1);
   });
@@ -68,21 +69,34 @@ describe('the line\'s data', () => {
 });
 
 describe('the moment', () => {
-  test('medium tier: faces, then glyphs, then the line, all within 500 ms', () => {
+  test('medium tier: faces, then the gathering chips, then the line, all within 500 ms', () => {
     const s = SEQUENCES.friendsPlanning;
     expect(s.tier).toBe('medium');
     expect(tierOf(settleMs('friendsPlanning'))).toBe('medium');
-    expect(s.glyphDelayMs).toBeGreaterThan(0);
-    expect(s.lineDelayMs).toBeGreaterThan(s.glyphDelayMs);
+    expect(s.chipDelayMs).toBeGreaterThan(0);
+    expect(s.lineDelayMs).toBeGreaterThan(s.chipDelayMs);
+    expect(s.chipRise).toBeLessThanOrEqual(8); // restrained: a small rise, not a slide across
   });
-  test('line readable from frame one, faces never invisible, no touches, native driver, no haptic, Reduce Motion settled', () => {
+  test('readable from frame one, transform/opacity only, native driver, no haptic, no loop, Reduce Motion settled', () => {
     const src = read('motion/FriendsPlanning.js');
     expect(src).toMatch(/opacity: infoOpacity\(line\)/);
     expect(src).toMatch(/opacity: infoOpacity\(faces\[i\]\)/);
-    expect(src).toMatch(/pointerEvents="none"/);
+    expect(src).toMatch(/opacity: infoOpacity\(chips\[i\]\)/);
     expect(src).not.toMatch(/useNativeDriver: false/);
-    expect(src).not.toMatch(/playHaptic|expo-haptics/);
+    expect(src).not.toMatch(/playHaptic|expo-haptics|Animated\.loop/);
     expect(src).toMatch(/if \(!playKey \|\| reduceMotion\) return/);
+  });
+  test('chips (owner decision): one line each, glyph + title only, a tap at once opens that gathering via its destination', () => {
+    const src = read('motion/FriendsPlanning.js');
+    expect(src).toMatch(/numberOfLines=\{1\}/);
+    expect(src).not.toMatch(/colors\.text\b(?!Primary|Secondary|Tertiary)/); // a theme token that exists
+    expect(src).toMatch(/onPress=\{\(\) => onOpen\?\.\(p\)\}/);
+    expect(src).toMatch(/accessibilityRole="button"/);
+    expect(src).not.toMatch(/scheduled_at|whenLabel|formatDistance/); // no extra metadata on the chip
+    const faces = src.slice(src.indexOf('styles.faces'), src.indexOf('shown.filter'));
+    expect(faces).toMatch(/pointerEvents="none"/); // the faces are not touch targets; the chips are
+    const home = read('screens/HomeScreen.js');
+    expect(home).toMatch(/<FriendsPlanning [^>]*onOpen=\{\(p\) => openDestination\(navigation, p\.destination\)\}/);
   });
   test('plays only from the stored-ids rule, only on Home', () => {
     const home = read('screens/HomeScreen.js');

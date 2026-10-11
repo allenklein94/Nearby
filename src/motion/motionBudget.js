@@ -151,7 +151,7 @@ export const SEQUENCES = {
   friendCollision: { tier: 'medium', avatarMs: 280, travelPx: 10, textDelayMs: 160, textMs: 200 },
   // Owner item 41: "Your people are doing things" -- the friends' faces appear one after another, each plan's activity glyph
   // lands on its face, then the line settles (motion/FriendsPlanning.js). Only when the set of friends' plans has something new.
-  friendsPlanning: { tier: 'medium', maxPeople: 3, avatarMs: 200, staggerMs: 60, fromScale: 0.85, glyphDelayMs: 200, glyphMs: 160, lineDelayMs: 340, lineMs: 160 },
+  friendsPlanning: { tier: 'medium', maxPeople: 3, avatarMs: 200, staggerMs: 60, fromScale: 0.85, chipDelayMs: 160, chipMs: 180, chipRise: 6, lineDelayMs: 340, lineMs: 160 },
 };
 
 // Owner item 32 + confirmed-plan look (2026-10-11): the plan's assembly after the chip lands, in ms from the landing. One
@@ -220,7 +220,7 @@ export function settleMs(name) {
     case 'friendCollision':
       return Math.max(s.avatarMs, s.textDelayMs + s.textMs);
     case 'friendsPlanning':
-      return Math.max(s.staggerMs * (s.maxPeople - 1) + s.avatarMs, s.glyphDelayMs + s.staggerMs * (s.maxPeople - 1) + s.glyphMs, s.lineDelayMs + s.lineMs);
+      return Math.max(s.staggerMs * (s.maxPeople - 1) + s.avatarMs, s.chipDelayMs + s.staggerMs * (s.maxPeople - 1) + s.chipMs, s.lineDelayMs + s.lineMs);
     case 'interestedSaved':
       return s.pulseMs;
     case 'planCompleted':

@@ -70,9 +70,8 @@ is done; then close it without expanding scope (owner: wording, ticks-as-intent,
 interest, nearby and attending stay three distinct facts), native review of `ui.friendNearby.together` / `togetherA11y` is done, and a
 from-scratch migration replay is done before claiming fresh-install verification (migration 20270297; journey `friendNearby` 15/15). Do not expand scope.
 
-**Item 41 (friends are making plans, motion) is BUILT, AWAITING OWNER REVIEW** of two deviations (no "nearby": the plans aren't
-distance-filtered; plans shown as glyphs on faces, not cards) and NOT DEVICE-VERIFIED
-(`PRODUCT_AUDIT/ITEM_41_FRIENDS_PLANNING_DEVICE_CHECKLIST_2026-10-11.md`). Query now one helper (`selectFriendsActivity`), journey `friendsPlanning` 5/5; a Link-only leak fixed; no new strings.
+**Item 41 (friends are making plans) is APPROVED (owner, 2026-10-11), READY FOR DEVICE VERIFICATION until** every check in
+`PRODUCT_AUDIT/ITEM_41_FRIENDS_PLANNING_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (journey `friendsPlanning`; no new strings).
 
 **Item 35 (feedback ranks both ways) is READY FOR OWNER SIGN-OFF** (live, migration 20270295; owner review applied: one early rating
 weighs less for a new account). Not covered: Discover business/perk lists, communities, people.
@@ -326,9 +325,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Explanation only: never reorders, never touches Best Pick selection or scoring, separate from item 37. Suppressed when either hosts or
   joined. Never implies the friend attends or is present beyond what attendance/item 39 state confirms; never the friend's other or
   inferred interests; nothing to any AI service. Item 39's "{Name} is nearby · Invite" stays the only Invite; not merged into sharing.
-- **Friends planning (owner item 41):** Home's friends-planning line assembles (faces one after another, each plan's activity
-  glyph on its face, then the line; `motion/FriendsPlanning.js`, medium) only when its set of plans has an id not shown before
-  (`utils/friendsPlanningMoment.js`, stored ids); wording unchanged, never "nearby" unless the data is distance-filtered.
+- **Friends planning (owner item 41, approved):** Home's friends-planning line assembles (faces one after another, then up to 3
+  one-line chips: glyph + real title, each opening its gathering's detail; then the line; `motion/FriendsPlanning.js`, medium) only
+  when its set of plans has an id not shown before (`utils/friendsPlanningMoment.js`); chips static otherwise (the ONE exception to
+  "no animated cards"). Wording never "nearby" (not distance-filtered; no radius filter added for it). Query: `selectFriendsActivity`.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

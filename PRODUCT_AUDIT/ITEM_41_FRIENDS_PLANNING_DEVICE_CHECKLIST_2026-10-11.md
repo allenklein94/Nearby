@@ -1,28 +1,32 @@
 # Item 41 - "Your people are doing things": device checklist (2026-10-11)
 
-Status: BUILT, NOT device-verified, awaiting owner review (two deviations from the ask, below). Rule
-`utils/friendsPlanningMoment.js`, moment `motion/FriendsPlanning.js` (`SEQUENCES.friendsPlanning`, medium, 500 ms); unit tests
-`utils/friendsPlanningMoment.test.js`. No journey covers the friends-planning line: it is a client query in
-`services/homeDashboard.js` (friends' visible gatherings created in the last 3 days, one per host, max 3), not a server function.
+Status: APPROVED (owner, 2026-10-11), BUILT, NOT device-verified. Rule `utils/friendsPlanningMoment.js`, moment
+`motion/FriendsPlanning.js` (`SEQUENCES.friendsPlanning`, medium, 500 ms), query `selectFriendsActivity` in
+`services/homeDashboard.js` (friends' visible gatherings created in the last 3 days, one per friend, max 3); unit tests
+`utils/friendsPlanningMoment.test.js`; live journey `friendsPlanning`.
 
-Deviations from the owner's sketch, kept on purpose until the owner decides:
-1. The line still reads "{count} of your friends are already making plans." -- NOT "...nearby": those plans are not
-   distance-filtered, so "nearby" would be an unbacked claim (truthfulness rule).
-2. "Gathering cards appear" is shown as each plan's activity glyph landing on its friend's face, not as cards: Home never
-   expands sections in place, and "See gatherings" already lists exactly those plans inline on tap (item 136).
+Owner decisions (locked):
+1. Wording stays "{count} of your friends are already making plans." -- never "nearby" (the plans are not distance-filtered;
+   no Discover-radius filter added just to justify the word).
+2. Avatars first, then up to 3 one-line gathering chips (activity glyph + the plan's real title, nothing else), then the line.
+   The chips move once, when the plans are genuinely new, then stay static: a narrow exception to "no animated cards" for
+   this moment only. A chip opens that gathering's existing detail; "See gatherings" is unchanged. No new screen.
 
-Setup: an account with 2-3 accepted friends who each created a visible gathering in the last 3 days, and no stronger Home line.
+Setup: an account with 0, 1, 2 and 3+ accepted friends who each created a visible gathering in the last 3 days, and no stronger Home line.
 
 | # | Check | Light | Dark |
 |---|---|---|---|
-| 1 | First time: the friends' faces appear one after another (overlapping), each plan's activity glyph lands on its face, then the line settles; calm, about half a second | | |
-| 2 | The line is readable from the first frame; faces never pop from nothing; nothing below shifts | | |
+| 1 | First time: faces appear one after another (overlapping), then the chips fade and rise a little into place under them, then the line settles; calm, about half a second | | |
+| 2 | The line and chips are readable from the first frame; nothing pops from nothing; nothing around the row shifts or jumps | | |
 | 3 | Back, tab switch, pull to refresh, app restart with the same plans: settled row, no replay | | |
-| 4 | A friend creates a new plan (the count changes or a plan is replaced): plays once more | | |
-| 5 | "See gatherings" opens exactly those plans inline, at once, even during the moment | | |
-| 6 | Missing photo: the person glyph; a plan without an activity: no glyph on that face | | |
-| 7 | Reduce Motion: the settled row at once | | |
-| 8 | VoiceOver/TalkBack reads the line once (not each face) | | |
-| 9 | Large text / narrow phone: faces and line wrap cleanly | | |
+| 4 | A friend creates a new plan: plays once more; afterwards the chips are static (no pulse, loop or expand) | | |
+| 5 | Tapping a chip (also mid-motion) opens that gathering's detail at once; Back returns to Home where it was | | |
+| 6 | "See gatherings" behaves as before, at once, even during the moment | | |
+| 7 | 0 or 1 eligible friend: no line, no chips; 2 or 3: count = faces = chips; never more than 3 chips | | |
+| 8 | A long title truncates on one line; a plan without an activity: chip shows title only; missing photo: the person glyph | | |
+| 9 | Reduce Motion: the settled row at once | | |
+| 10 | VoiceOver/TalkBack: faces skipped, each chip read as a button with its title, the line read once | | |
+| 11 | Large text / narrow phone: chips and line wrap or truncate cleanly | | |
+| 12 | No haptic; nothing says or implies a friend is nearby or attending | | |
 
 Device: ____  OS: ____  Date: ____  Result: ____

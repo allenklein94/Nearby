@@ -79,5 +79,8 @@ d('journey: friends are making plans - the 3-day window, visibility, one per fri
     for (const row of friendsActivity) expect(row.profiles).not.toBeNull(); // the host's profile row is readable by a friend
     expect(r.cta.destination.items.map((it) => it.gathering.id).sort()).toEqual(friendsActivity.map((x) => x.id).sort());
     for (const it of r.cta.destination.items) expect(it.destination.screen).toBe('GatheringDetail');
+    // item 41's chips: one per plan behind the count, the plan's real title, opening that gathering's detail
+    expect(r.people.map((p) => p.title).sort()).toEqual(['J41 friends', 'J41 recent']);
+    for (const p of r.people) expect(p.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: p.gatheringId } });
   });
 });
