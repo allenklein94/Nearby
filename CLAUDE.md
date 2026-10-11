@@ -80,6 +80,9 @@ from-scratch migration replay is done before claiming fresh-install verification
 `PRODUCT_AUDIT/ITEM_44_PIN_TO_SHEET_DEVICE_CHECKLIST_2026-10-11.md` passes on a real iPhone AND a real Android phone (anchor alignment incl.
 Android status bar, timing, interaction, Reduce Motion); then close it. Keep as built; `PIN_HEAD_LIFT` (18 px) changes only on device evidence. No new strings.
 
+**Item 45 (search understanding chips) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_45_ASK_UNDERSTOOD_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (journey `outdoorMatch`; no new strings).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -350,6 +353,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Pin -> sheet (owner item 44):** a Discover map business pin opens the item-17 sheet growing out of the pin (`motion/PinToSheetFrame.js`,
   `motion/pinToSheet.js`, `SEQUENCES.pinToSheet`, medium): sheet rises/grows (info floor, buttons live at once) while a pin-coloured outline
   travels from the pin into its edge. Replaces the slide, adds no other motion; rows and Reduce Motion keep the plain modal animation.
+- **Ask understood (owner item 45):** a typed ask shows quiet chips of what its words gave (WHAT/WHEN/WHERE/WHO; unknown = none; never
+  a refinement chip's piece) under the loader and above the results, Home + Discover, from `utils/askUnderstood.js` only
+  (`components/AskUnderstoodChips.js`); settles once per ask (small tier), then static.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

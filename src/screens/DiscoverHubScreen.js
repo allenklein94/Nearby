@@ -58,6 +58,7 @@ import { discoverSession } from '../services/discoverSession';
 import { syncDiscoverSession, pushSession, pushClear, sameSession } from '../services/discoverSessionSync';
 import { randomUUID } from 'expo-crypto';
 import AskRefinementChips from '../components/AskRefinementChips';
+import AskUnderstoodChips from '../components/AskUnderstoodChips';
 import { displayedPosition } from '../utils/typedAskAudit';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
 import { discoverQuery } from '../utils/discoverQuery';
@@ -68,7 +69,7 @@ import { isIndoorCategory, isOutdoorCategory, filterGatheringsByEnvironment } fr
 import { filterByEnvironment } from '../constants/environmentMatch';
 import {
   SCORE_HAPPENING_NOW as WEATHER_BONUS,
-  INTENT_SEARCH_TYPE_EMOJI, intentSearchDateLabel, intentSearchFallbackTitle, intentPhaseCaption,
+  INTENT_SEARCH_TYPE_EMOJI, intentSearchFallbackTitle, intentPhaseCaption,
 } from '../services/intentResolverScoring';
 import { isWeatherIndoorBiased, isWeatherOutdoorBiased, rankOffersByBusinessWeather, weatherMention } from '../utils/weatherBias';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
@@ -111,7 +112,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { attendeeTotal, attendingFigure, gatheringFullnessLabel } from '../utils/gatheringFullness';
-import { gatheringSignalLine, PARTY_TYPE_LABELS } from '../constants/gatheringDisplaySignals';
+import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
 // P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
 // the business/perk half of the same fix.
 import { businessSignalLine } from '../constants/businessDisplaySignals';
@@ -1616,7 +1617,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     setIntentSearching(true);
     try {
       const result = await runIntentSearch(typedText, {
-        onPhase: (p) => { if (thisRequestId === intentSearchRequestId.current) setIntentPhase(p); },
+        onPhase: (p) => { if (thisRequestId === intentSearchRequestId.current) setIntentPhase({ ...p, typedText }); },
       });
       if (thisRequestId !== intentSearchRequestId.current) return;
       // "what's open" / "still open" turns on the same Open-now chip (one definition, utils/operatingStatus.js).
@@ -2972,9 +2973,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
 
           {isSearching && onTopOrNotTabbed && intentSearching && (
-            <View style={styles.intentSearchLoadingRow}>
-              <NLoader fullScreen={false} size="inline" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />
-            </View>
+            <>
+              <View style={styles.intentSearchLoadingRow}>
+                <NLoader fullScreen={false} size="inline" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />
+              </View>
+              {/* Item 45: what the ask was understood as, the moment it is (kept above the results that follow). */}
+              {intentPhase?.phase === 'finding' && <AskUnderstoodChips classifyResult={intentPhase.classifyResult} typedText={intentPhase.typedText} />}
+            </>
           )}
           {isSearching && onTopOrNotTabbed && !intentSearching && !!restoreFailed && !intentSearch && (
             <View style={styles.intentSearchBlock}>
@@ -2986,6 +2991,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
           {isSearching && onTopOrNotTabbed && !intentSearching && (intentSearch?.outcome === 'results' || intentSearch?.refined) && (
             <View style={styles.intentSearchBlock}>
+              <AskUnderstoodChips classifyResult={intentSearch.classifyResult} typedText={intentSearch.typedText} />
               {intentSearch.items?.length > 0 && <FoundLine />}
               <AskRefinementChips
                 classifyResult={intentSearch.classifyResult}
@@ -3013,22 +3019,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <Text style={styles.intentSearchTitle}>
                 {intentSearch.experience?.title ?? intentSearchFallbackTitle(intentSearch.classifyResult)}
               </Text>
-              <View style={styles.intentSearchTagsRow}>
-                <Text style={styles.intentSearchTag}>{t('ui.discover.tagNearby')}</Text>
-                {!!intentSearch.classifyResult?.narrowGroup && (
-                  <Text style={styles.intentSearchTag}>{names.group(intentSearch.classifyResult.narrowGroup, narrowGroupLabel(intentSearch.classifyResult.narrowGroup))}</Text>
-                )}
-                {intentSearchDateLabel(intentSearch.classifyResult?.dateWindow) && (
-                  <Text style={styles.intentSearchTag}>📅 {intentSearchDateLabel(intentSearch.classifyResult.dateWindow)}</Text>
-                )}
-                {intentSearch.classifyResult?.partyType === 'date' && <Text style={styles.intentSearchTag}>{t('ui.discover.tagForTwo')}</Text>}
-                {intentSearch.classifyResult?.partyType === 'groups' && <Text style={styles.intentSearchTag}>{t('ui.discover.tagBigGroup')}</Text>}
-                {intentSearch.classifyResult?.partyType === 'friends' && <Text style={styles.intentSearchTag}>{t('ui.discover.tagFriends')}</Text>}
-                {intentSearch.classifyResult?.partyType === 'solo' && <Text style={styles.intentSearchTag}>{t('ui.discover.tagSolo')}</Text>}
-                {['family', 'coworkers', 'new_people'].includes(intentSearch.classifyResult?.partyType) && (
-                  <Text style={styles.intentSearchTag}>{PARTY_TYPE_LABELS[intentSearch.classifyResult.partyType]}</Text>
-                )}
-              </View>
+              {/* Item 45: the old static tag row here (Nearby / group / date / party) is now AskUnderstoodChips at the top of this block. */}
               {/* Item 76: an explicit typed cuisine keeps its constraint in the Restaurants view (same resolver as the chip). */}
               {!!cuisineConstraintFromText(intentSearch.typedText) && (
                 <TouchableOpacity
@@ -3745,8 +3736,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
     padding: spacing.md, marginTop: spacing.md, marginBottom: spacing.md,
   },
   intentSearchTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
-  intentSearchTagsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.sm },
-  intentSearchTag: { ...typography.caption, color: colors.textSecondary, fontWeight: '600' },
   intentSearchGroupLabel: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs },
   intentSearchResultRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   intentSearchResultEmoji: { fontSize: 18, marginRight: spacing.sm },

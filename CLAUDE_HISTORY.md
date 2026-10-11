@@ -1,3 +1,17 @@
+# Item 45 (2026-10-11) - the search "understanding" moment - BUILT, NOT DEVICE-VERIFIED
+
+(Owner item 45 of the motion series; unrelated to the older "screen reduction (item 45)".) A typed ask shows quiet chips of what
+Nearby read from the words ("Tonight · Outdoor"), WHAT/WHEN/WHERE/WHO, under the "Finding..." loader as soon as the ask is
+classified and kept above its results, on Home and Discover. One rule: `utils/askUnderstood.js` (`understoodPieces`: the resolver's
+category or narrowed group, dateWindow in now/today/tonight/tomorrow/weekend, environment from the resolver's facets else the same
+`parseAskFacets`, party groups/family/coworkers/new_people; friends/date/solo stay with item 107's refinement chips; unknown = no
+chip; business_partner asks = none). Rendered by `components/AskUnderstoodChips.js` (not buttons, no coral, no new strings).
+Motion: `SEQUENCES.askUnderstood` (small tier, 4 x 160 ms staggered 40 ms, 4 px rise, `infoOpacity` floor), once per ask per
+session (`takeUnderstoodPlay`), Reduce Motion = settled. Discover's old static tag row (Nearby / group / date / party) was replaced
+by the chips; `groupType.test.js` follows the party tag to its new home. Verification: full Jest 421 suites / 5693 tests pass;
+journeys 26/26 (273 tests) incl. the new `outdoorMatch` step (chips at "finding" == chips with results, real pipeline, AI down).
+Device checklist: `PRODUCT_AUDIT/ITEM_45_ASK_UNDERSTOOD_DEVICE_CHECKLIST_2026-10-11.md` (not run).
+
 # Item 44 approved (2026-10-11, owner) - device verification pending
 
 Approved as built: replaces the slide (no stacked animation), medium tier < 0.35 s, readable from frame one, no delayed/blocked

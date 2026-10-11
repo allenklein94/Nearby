@@ -171,6 +171,18 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     expect(rows.find((i) => i.partnerId === ids().indoor)).toBeUndefined();
   });
 
+  // Owner item 45: the understanding moment, through the real pipeline (deterministic classifier, AI down as in production).
+  test('item 45: "something fun outside tonight" is understood as Tonight + Outdoor, the same at "finding" as with the results', async () => {
+    const { understoodPieces } = require('../utils/askUnderstood');
+    const text = 'something fun outside tonight';
+    let finding = null;
+    const r = await runIntentSearch(text, { onPhase: (p) => { if (p.phase === 'finding') finding = p.classifyResult; } });
+    const shown = understoodPieces(r.classifyResult, text);
+    expect(shown).toEqual([{ key: 'when', window: 'tonight' }, { key: 'where', environment: 'outdoor' }]);
+    // the chips under the loader and the chips above the results come from the same interpretation (motion never swaps data)
+    expect(understoodPieces(finding, text)).toEqual(shown);
+  });
+
   test('without the declaration the same business is NOT returned (the outdoor rule, not the category, includes it)', async () => {
     const saved = db.operatingRows;
     const savedAvail = db.availabilityRows;

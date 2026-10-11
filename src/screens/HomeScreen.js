@@ -35,6 +35,7 @@ import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind 
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
 import { recordTypedAsk } from '../services/typedAskAudit';
 import AskRefinementChips from '../components/AskRefinementChips';
+import AskUnderstoodChips from '../components/AskUnderstoodChips';
 import { refineTypedAsk } from '../services/askRefine';
 import { remainingIntentItems, groupIntentResultsByType, displayedPosition } from '../utils/typedAskAudit';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
@@ -1176,7 +1177,7 @@ export default function HomeScreen({ navigation }) {
     setSurprise(null);
     try {
       const result = await classifyCreateRequest(typedText);
-      setIntentPhase({ phase: 'finding', classifyResult: result });
+      setIntentPhase({ phase: 'finding', classifyResult: result, typedText });
       if (result.intent === 'business_partner') {
         // No existing-supply concept to check for a business-partner
         // proposal -- logged for the funnel's own intent_kind breakdown,
@@ -1778,6 +1779,8 @@ export default function HomeScreen({ navigation }) {
           {intentThinking && (
             <View style={styles.intentResults}>
               <NLoader fullScreen={false} size="compact" caption={intentPhaseCaption(intentPhase?.phase ?? 'understanding', intentPhase?.classifyResult)} />
+              {/* Item 45: what the ask was understood as, the moment it is (kept above the results that follow). */}
+              {intentPhase?.phase === 'finding' && <AskUnderstoodChips classifyResult={intentPhase.classifyResult} typedText={intentPhase.typedText} />}
             </View>
           )}
 
@@ -1866,6 +1869,7 @@ export default function HomeScreen({ navigation }) {
 
           {intentResults && (
             <View style={styles.intentResults}>
+              <AskUnderstoodChips classifyResult={intentResults.classifyResult} typedText={intentResults.typedText} />
               {intentResults.items?.length > 0 && <FoundLine text={t('ui.home.foundIdeas')} />}
               {/* Item 107: refine in place (shared with Discover). A tap re-runs the same ask with one change. */}
               <AskRefinementChips

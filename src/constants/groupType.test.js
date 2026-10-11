@@ -48,6 +48,8 @@ describe('group type shows up on every surface from the one list', () => {
     const { PARTY_TYPE_LABELS } = require('./gatheringDisplaySignals');
     for (const k of KEYS) expect(PARTY_TYPE_LABELS[k]).toBeTruthy();
     expect(read('src/utils/gatheringFilters.js')).toMatch(/PLAN_KIND_FILTER_OPTIONS = \[null, \.\.\.EXPERIENCE_PARTY_TYPE_OPTIONS/); // Discover -> Gatherings plan kind (B3)
-    expect(read('src/screens/DiscoverHubScreen.js')).toMatch(/\['family', 'coworkers', 'new_people'\]\.includes/);
+    // item 45: the ask's party tag moved from Discover's old row to the shared understood chips (Home + Discover)
+    expect(read('src/utils/askUnderstood.js')).toMatch(/UNDERSTOOD_PARTIES = \['groups', 'family', 'coworkers', 'new_people'\]/);
+    expect(read('src/components/AskUnderstoodChips.js')).toMatch(/PARTY_TYPE_LABELS\[p\.party\]/);
   });
 });
