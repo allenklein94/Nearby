@@ -18,6 +18,9 @@ function shortTime(d) {
 //   { form: 'now' } | { form: 'startsIn', minutes } | { form: 'today' | 'tonight' | 'tomorrow' | 'date', date }
 // `endIso` (optional): the end the host gave (start + the host-chosen length, item 188 follow-up). With it, a clock form
 // carries `end` and reads as a range ("Tonight · 7–10 PM"); without it nothing is invented.
+// "Tonight" starts at 6 PM: the one definition (whenParts' labels and item 37's strong-match time check read it).
+export const TONIGHT_START_HOUR = 18;
+
 export function whenParts(iso, now = new Date(), endIso = null) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return null;
@@ -29,7 +32,7 @@ export function whenParts(iso, now = new Date(), endIso = null) {
   const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
-  if (isSameDay(d, now)) return { form: d.getHours() >= 18 ? 'tonight' : 'today', date: d, end };
+  if (isSameDay(d, now)) return { form: d.getHours() >= TONIGHT_START_HOUR ? 'tonight' : 'today', date: d, end };
   if (isSameDay(d, tomorrow)) return { form: 'tomorrow', date: d, end };
   return { form: 'date', date: d, end };
 }

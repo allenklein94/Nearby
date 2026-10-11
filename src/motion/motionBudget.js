@@ -144,6 +144,8 @@ export const SEQUENCES = {
   happeningRipple: { tier: 'medium', ringMs: 400, fromScale: 0.6, toScale: 2.2, startOpacity: 0.35, size: 24 },
   // Owner item 36: the weather card's wash fades in once when the weather changes (motion/WeatherShift.js). Slow on purpose.
   weatherShift: { tier: 'special', washMs: 800 },
+  // Owner item 37: the strong-match pieces tick in one after another, then the badge settles (motion/StrongMatch.js).
+  strongMatch: { tier: 'medium', pieces: ['activity', 'time', 'place'], pieceMs: 180, staggerMs: 80, badgeDelayMs: 260, badgeMs: 180, badgeFromScale: 0.9 },
 };
 
 // Owner item 32 + confirmed-plan look (2026-10-11): the plan's assembly after the chip lands, in ms from the landing. One
@@ -207,6 +209,8 @@ export function settleMs(name) {
       return s.ringMs;
     case 'weatherShift':
       return s.washMs;
+    case 'strongMatch':
+      return Math.max(s.staggerMs * (s.pieces.length - 1) + s.pieceMs, s.badgeDelayMs + s.badgeMs);
     case 'interestedSaved':
       return s.pulseMs;
     case 'planCompleted':

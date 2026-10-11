@@ -13,7 +13,8 @@ import InterestedSaved from '../motion/InterestedSaved';
 import { presentRecoverableError } from '../utils/recoverableError';
 import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
-import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
+import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, StrongMatch, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
+import { strongMatchPieces } from '../utils/strongMatch';
 import RightNowMark from '../components/RightNowMark';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -1195,6 +1196,8 @@ export default function HomeScreen({ navigation }) {
     // real discovered supply, never a relationship-status item (friend_request) or the synthetic
     // friend_discovery fallback appended after real results, neither of which is a scored "pick."
     const isTopPick = index === 0 && item.type !== 'friend_request' && item.type !== 'friend_discovery';
+    // Item 37: the top pick that really matches the ask's activity, time and place shows the strong-match moment instead.
+    const strongPieces = isTopPick ? strongMatchPieces(item, intentResults?.classifyResult) : null;
     if (item.type === 'friend_request') {
       return (
         <View key={`${item.type}-${item.id}`} style={styles.intentResultRow}>
@@ -1247,7 +1250,7 @@ export default function HomeScreen({ navigation }) {
         style={styles.intentResultRow}
         onPress={() => handleIntentResultTap(item)}
         accessibilityRole="button"
-        accessibilityLabel={[row.title, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
+        accessibilityLabel={[row.title, strongPieces ? t('vocab.confidence.high') : null, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
       >
         <Ionicons
           name={INTENT_RESULT_ICONS[item.type] ?? 'people-outline'}
@@ -1256,7 +1259,7 @@ export default function HomeScreen({ navigation }) {
           style={styles.intentResultIcon}
         />
         <View style={styles.intentResultTextCol}>
-          {isTopPick && <NearbyPickBadge />}
+          {strongPieces ? <StrongMatch pieces={strongPieces} language={language} playKey={intentResults?.typedText} /> : isTopPick && <NearbyPickBadge />}
           <Text style={styles.intentResultTitle} numberOfLines={1}>{row.title}</Text>
           {row.reason ? <Text style={styles.intentResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
           {row.meta ? (

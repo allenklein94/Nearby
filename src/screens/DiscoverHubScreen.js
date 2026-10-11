@@ -100,7 +100,8 @@ import CompactRow from '../components/CompactRow';
 import TabHeaderActions from '../components/TabHeaderActions';
 import DiscoveryScreen from './DiscoveryScreen';
 import FriendDiscoveryScreen from './FriendDiscoveryScreen';
-import { NearbyPickBadge, NLoader, FoundLine, modalAnimation, animateLayout, HappeningRipple } from '../motion';
+import { NearbyPickBadge, StrongMatch, NLoader, FoundLine, modalAnimation, animateLayout, HappeningRipple } from '../motion';
+import { strongMatchPieces } from '../utils/strongMatch';
 import RightNowMark from '../components/RightNowMark';
 
 // Item 27: the Happening Now heading shows the radar mark instead of the ⚡ its title string starts with (the ⚡ chip keeps it);
@@ -1801,6 +1802,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // friend_discovery is a synthetic fallback item appended after the real ranked candidates,
     // never itself a scored "pick" -- excluded even in the edge case where it's the only item.
     const isTopPick = pickBadge && index === 0 && item.type !== 'friend_discovery';
+    // Item 37: the top pick that really matches the ask's activity, time and place shows the strong-match moment instead.
+    const strongPieces = isTopPick ? strongMatchPieces(item, intentSearch?.classifyResult) : null;
     const row = resultRowView(item, { language, myUserId }); // typed-ask AND Surprise Me rows: the one context object's reason / context / action
     return (
       <View key={`${item.type}-${item.id}`}>
@@ -1808,12 +1811,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
         style={styles.intentSearchResultRow}
         onPress={() => onPress(item)}
         activeOpacity={0.85}
-        accessibilityLabel={[row.title, isTopPick ? translate(language, 'vocab.labels.nearbyPick') : null, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
+        accessibilityLabel={[row.title, strongPieces ? translate(language, 'vocab.confidence.high') : isTopPick ? translate(language, 'vocab.labels.nearbyPick') : null, row.reason, row.meta, row.action?.label].filter(Boolean).join(', ')}
         accessibilityRole="button"
       >
         <Text style={styles.intentSearchResultEmoji}>{INTENT_SEARCH_TYPE_EMOJI[item.type] ?? '📌'}</Text>
         <View style={{ flex: 1 }}>
-          {isTopPick && <NearbyPickBadge />}
+          {strongPieces ? <StrongMatch pieces={strongPieces} language={language} playKey={intentSearch?.typedText} /> : isTopPick && <NearbyPickBadge />}
           <Text style={styles.intentSearchResultTitle} numberOfLines={1}>{row.title}</Text>
           {row.reason ? <Text style={styles.intentSearchResultSubtitle} numberOfLines={1}>{row.reason}</Text> : null}
           {row.meta ? <Text style={[styles.intentSearchResultSubtitle, row.warn && { color: colors.danger }]} numberOfLines={1}>{row.meta}</Text> : null}
