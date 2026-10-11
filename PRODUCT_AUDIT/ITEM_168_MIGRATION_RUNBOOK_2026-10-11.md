@@ -1,6 +1,6 @@
 # Item 168: V1 category pass, apply + rollback runbook (2026-10-11)
 
-**Status: READY FOR OWNER SIGN-OFF. Nothing is applied.** Branch `item-168-category-pass`. Production is unchanged
+**Status: APPLIED 2026-10-11 (owner approved; record in section 8).** Was: ready for owner sign-off. Branch `item-168-category-pass`. Production is unchanged
 (taxonomy version 1, 241 live tags, no `sports_fitness`). The owner's decisions D1-D6 are in
 `ITEM_168_MIGRATION_PREP_2026-10-11.md`; this file is the release gate the owner signs before anything goes live.
 
@@ -97,3 +97,18 @@ canonical change) is then the right tool, not this rollback.
   really migrated database (step 7).
 - Never run: the business web signup page in a real browser, any of it on a phone (no device exists).
 - 2026-10-11 machine-authored translations for the new labels need native-speaker review (standing item).
+
+## 8. Applied record (2026-10-11)
+
+| Step | Result |
+|---|---|
+| 1 Impact re-check | identical to prep evidence: 2 declarations, none loses coverage, no flags |
+| 2 Snapshot | committed: 241 tags, 5 functions, 4 constraints, 1 business, 1 application, 177 synonyms, 0 aliases |
+| 3 Migration | applied in one transaction: 19 groups, 263 live tags, 7 customer-only, taxonomy version 36 |
+| 4 Verify | `v1-category-pass.sql`: ALL OK, no probe rows left |
+| 5 Edge functions | all 3 deployed together; signup smoke test (empty body) -> 400 "Tell us your business's name." |
+| 6 Merge | `main` at f62ff7e9 |
+| 7 Inventory sync | 1580 rows; 66 follow-ups resolved, 0 open |
+| 8 Journeys | 20/20 suites, 234 tests, on the migrated database; Jest 408 suites pass |
+
+`item168_backup` is kept until the owner signs off on the live result.

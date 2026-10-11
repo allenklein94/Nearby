@@ -73,22 +73,11 @@ card at once. Keep the 14 confirmed-plan-look tests and the offer-journey tests 
   (owner SQL), and an approval audit table before the first live checkpoint. Sponsored allow-list stays
   empty (serves nothing). Run `bash scripts/deploy-sponsored-functions.sh` before any sponsored test.
 - **Native-speaker review** of all machine-authored non-English strings (most items since 2026-09-28).
-- `scripts/taxonomy/sync-code-dependencies.js` (owner-run) has not been run since the latest inventory rebuilds.
 
-**Decided, not built yet:**
-- **Item 168, the V1 category set (ONE migration pass, not started):** 19 groups (split Sports & Fitness
-  out of Activities & Recreation, merge Travel & Experiences + Stay & Getaway into Travel & Getaways,
-  rename Arts -> Arts, Culture & Events), plus every wording/new category/need-tag/customer-only decision
-  from items 169-186. All recorded in `PRODUCT_AUDIT/V1_TAXONOMY_SPEC_2026-10-03.md`. Before migrating:
-  a complete old -> new mapping (every group and tag) and an affected-surface checklist for owner review;
-  list businesses whose group-only declarations would stop covering a moved tag. Structural only: no
-  ranking/routing/privacy change. Any later item that touches the taxonomy must flag its conflict with 168.
-  Locksmith is flagged for that review, not created.
-  **Prep done 2026-10-11, awaiting owner review:** `PRODUCT_AUDIT/ITEM_168_MIGRATION_PREP_2026-10-11.md` (mapping, impact,
-  surface checklist, decisions D1-D6; `node PRODUCT_AUDIT/item168_prep/crosscheck.js` 33/33). D1-D6 approved 2026-10-11.
-  **Built on branch `item-168-category-pass`, NOT applied/deployed/merged:** migration 20270294, client, 3 edge functions,
-  translations, web export, tests (jest + journeys pass), rollback rehearsed. Release gate + steps:
-  `PRODUCT_AUDIT/ITEM_168_MIGRATION_RUNBOOK_2026-10-11.md` (owner signs off, then applies with the owner present).
+**Item 168 (V1 category set) is LIVE (2026-10-11):** migration 20270294 applied, 3 edge functions deployed, merged; journeys
+20/20 on the migrated DB. Still open: native review of its machine-authored labels; owner drops `item168_backup` after
+sign-off (rollback: `PRODUCT_AUDIT/ITEM_168_MIGRATION_RUNBOOK_2026-10-11.md`); later relevance review of a broad Travel &
+Getaways interest weakly matching the 10 lodging categories.
 
 **Waiting on evidence (do not build without it):** Momentum fold decision (`momentum_viewed` /
 `momentum_cta_tapped` usage); removal of any relationship tool (B9 usage review); item 152 intent ->
@@ -211,14 +200,15 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   only by their declared weather setting.
 
 ### Taxonomy
-- Frozen for V1 except item 168 and the taxonomy-miss process (a reported real miss -> test case ->
+- Frozen for V1 (item 168's V1 set is live) except the taxonomy-miss process (a reported real miss -> test case ->
   smallest existing fix: synonym, attribute combination, existing mapping; new category only if truly
   needed; never mined from raw search text). Never create a category because a business asked.
 - Change only through the canonical path (`admin_preview_category_change` + `admin_*_category_tag`); ids and
   keys are permanent; a new tag-name column joins `category_tag_references`. A change isn't done while code follow-ups are open.
 - Flat axes, never a deep tree: group -> tag -> declared cuisine; attributes, genre, skill, format, environment are separate facts.
   Synonyms map phrases to tags (a specific phrase beats a broad one; a canonical name maps only to itself).
-- One primary category, up to 5 secondary, unlimited attributes; attributes never route.
+- One primary category, up to 5 secondary (DB trigger), unlimited attributes; attributes never route. Customer-only tags
+  (`customer_only`, e.g. Date Night) are never declared, posted, boosted or served by a business (item 185).
 
 ### Navigation and screens
 - **Screen reduction (item 45):** same job = same screen; prefer change content > expand inline > sheet >
