@@ -113,7 +113,7 @@ describe('Discover owns browsing AND redemption, in place', () => {
     for (const fn of ['redeemOffer', 'followBusiness', 'unfollowBusiness', 'isFollowingBusiness', 'getRedemptionCounts', 'unlockStatus', 'getCommunityMemberCount', 'getApprovedAttendeeCount']) {
       expect(panel).toMatch(new RegExp(`\\b${fn}\\(`));
     }
-    expect(panel).toMatch(/showStaffCode/); // staff code shown in place
+    expect(panel).toMatch(/<PerkCodeBox /); // staff code shown in place (components/PerkCodeBox.js, owner 2026-10-12)
     expect(panel).toMatch(/stayConnectedWith/); // optional follow, never a default opt-in
     expect(panel).toMatch(/spotsLeftOf/);
     expect(panel).not.toMatch(/navigation\./);

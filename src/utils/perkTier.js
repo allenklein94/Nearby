@@ -1,6 +1,7 @@
 // Rule 14 (owner, 2026-10-04): the Rewards screen is folded into Discover -> Perks as ONE compact informational line,
 // context for Perks, not a rewards dashboard: the current tier and how far the next one is. No tier list, no points
-// dashboard, no action. Built only from getMyRewardStatus() (services/rewards.js: the caller's own real redemption count).
+// dashboard, no action. Built only from getMyRewardStatus() (services/rewards.js: the caller's own confirmed-visit count;
+// a claimed code counts only once the business confirms it).
 //   "🥈 Silver Member · 3 more redemptions to Gold"   "🥇 Gold Member · You've reached the top tier"
 //   "🎁 2 more redemptions to Bronze" (redeemed some, no tier yet)   nothing: unknown status, or nothing redeemed yet.
 export function perkTierLine(status, t) {

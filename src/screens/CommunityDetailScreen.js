@@ -8,7 +8,9 @@ import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyCommunities, joinCommunity, leaveCommunity, deleteCommunity, pauseCommunity, resumeCommunity, cancelCommunity, getCommunityMemberCount, getCommunityGatherings, getCommunityMembers, setCommunityMemberRole, updateCommunityArea } from '../services/communities';
-import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptions, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
+import { isFollowingBusiness, followBusiness, unfollowBusiness, getCommunityOffers, getMyRedemptionRows, getMyRedemptionFor, redeemOffer, getMyManagedPartner } from '../services/brandOffers';
+import { perkRedemptionState, perkCodeMessage, redemptionsByOffer } from '../utils/perkRedemptionState';
+import PerkCodeBox from '../components/PerkCodeBox';
 import { getBusinessRequestForCommunity, getAcceptedOfferForRequest } from '../services/businessFulfillment';
 import { getMyPartnershipRequestForTarget } from '../services/businessPartnerships';
 import { CATEGORY_OPTIONS as BUSINESS_REQUEST_CATEGORY_OPTIONS } from './AskBusinessScreen';
@@ -69,7 +71,8 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [offers, setOffers] = useState([]);
-  const [redeemedOfferIds, setRedeemedOfferIds] = useState([]);
+  // The viewer's own redemption rows by offer (utils/perkRedemptionState.js): claimed = the code, confirmed = Redeemed.
+  const [myRedemptions, setMyRedemptions] = useState({});
   const [redeemingOfferId, setRedeemingOfferId] = useState(null);
   const [areaModalVisible, setAreaModalVisible] = useState(false);
   const [areaCity, setAreaCity] = useState('');
@@ -105,7 +108,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
         getCommunityMemberCount(communityId),
         getCommunityGatherings(communityId),
         getCommunityMembers(communityId),
-        Promise.all([getCommunityOffers(communityId), getMyRedemptions()]),
+        Promise.all([getCommunityOffers(communityId), getMyRedemptionRows().catch(() => [])]),
       ]);
 
       if (communityError && !isNotFound(communityError)) throw new Error(communityError.message);
@@ -120,7 +123,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       setGatherings(upcoming.filter((g) => isGatheringUpcoming(g)));
       setMembers(memberList);
       setOffers(communityOffers);
-      setRedeemedOfferIds(myRedemptions);
+      setMyRedemptions(redemptionsByOffer(myRedemptions));
 
       const urlEntries = await Promise.all(
         memberList.map(async (m) => {
@@ -186,11 +189,18 @@ export default function CommunityDetailScreen({ route, navigation }) {
     setRedeemingOfferId(offer.id);
     try {
       const { confirmationCode } = await redeemOffer(offer.id);
-      Alert.alert(t('ui.community.redeemed'), t('ui.community.showStaffThisCodeTo', { confirmationCode: confirmationCode, redemptionInstructions: offer.redemption_instructions || 'Check your account for details on how to use this.' }));
+      setMyRedemptions((prev) => ({ ...prev, [offer.id]: { offer_id: offer.id, confirmation_code: confirmationCode, confirmed_at: null } }));
+      Alert.alert(t('ui.brandOffersUi.yourCode'), perkCodeMessage(t, { code: confirmationCode, businessName: offer.brand_partners?.name, instructions: offer.redemption_instructions }));
       load();
     } catch (e) {
       if (e.message === 'ALREADY_REDEEMED') {
-        Alert.alert(t('ui.community.alreadyRedeemed'), t('ui.community.youveAlreadyClaimedThisOffer'));
+        // Already claimed: show what is true now (the code box, or Redeemed once the business confirmed).
+        try {
+          const row = await getMyRedemptionFor(offer.id);
+          if (row) setMyRedemptions((prev) => ({ ...prev, [offer.id]: row }));
+        } catch (readError) {
+          presentRecoverableError(Alert, { what: 'complete that', error: readError, onRetry: () => handleRedeemOffer(offer) });
+        }
       } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
         Alert.alert(t('ui.community.offerFullyClaimed'), t('ui.community.thisOffersLimitedSpotsHave'));
       } else if (e.message === 'OFFER_LOCKED') {
@@ -554,7 +564,8 @@ export default function CommunityDetailScreen({ route, navigation }) {
             {offers.map((offer) => {
               const unlock = unlockStatus({ ...offer, unlock_scope: 'community' }, memberCount);
               const isLocked = unlock.isLocked;
-              const alreadyRedeemed = redeemedOfferIds.includes(offer.id);
+              const redemption = myRedemptions[offer.id] ?? null;
+              const state = perkRedemptionState(redemption);
               return (
                 <View key={offer.id} style={styles.perkCard}>
                   <TouchableOpacity
@@ -571,7 +582,9 @@ export default function CommunityDetailScreen({ route, navigation }) {
                       ? unlock.label
                       : t('ui.community.unlockedCommunityGoalReached')}
                   </Text>
-                  {alreadyRedeemed ? (
+                  {state === 'claimed' ? (
+                    <PerkCodeBox code={redemption.confirmation_code} businessName={offer.brand_partners?.name} instructions={offer.redemption_instructions} />
+                  ) : state === 'confirmed' ? (
                     <View style={styles.perkRedeemedBadge}>
                       <Text style={styles.perkRedeemedBadgeText}>{t('ui.community.redeemed2')}</Text>
                     </View>

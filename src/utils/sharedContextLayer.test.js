@@ -143,10 +143,12 @@ describe('perks, communities, requests and offers', () => {
     const row = recommendationRow({ type: 'perk', id: 'p1', title: '10% off', reasons: ['Because you like Coffee'], data: { distanceMiles: 0.3 } });
     expect(row.destination).toEqual({ kind: 'navigate', screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'perks', selectPerkId: 'p1' } });
     expect(row).toMatchObject({ why: 'Because you like Coffee', meta: '0.3 mi' });
-    const disc = recommendationContext(contextItem('perk', { id: 'p1', title: '10% off', distanceMiles: 0.3 }, { reasons: [becauseYouLikeReason('Coffee')], redeemed: false }));
+    const disc = recommendationContext(contextItem('perk', { id: 'p1', title: '10% off', distanceMiles: 0.3 }, { reasons: [becauseYouLikeReason('Coffee')], redemptionState: 'available' }));
     expect(disc.destination).toEqual(row.destination);
     expect(disc.action).toEqual({ kind: 'redeem', label: 'Redeem' });
-    expect(recommendationContext(contextItem('perk', { id: 'p1' }, { redeemed: true })).action).toMatchObject({ kind: 'status', label: 'Redeemed ✓' });
+    expect(recommendationContext(contextItem('perk', { id: 'p1' }, { redemptionState: 'confirmed' })).action).toMatchObject({ kind: 'status', label: 'Redeemed ✓' });
+    // owner 2026-10-12: a claimed (unconfirmed) perk is never "Redeemed"; opening it shows the code
+    expect(recommendationContext(contextItem('perk', { id: 'p1' }, { redemptionState: 'claimed' })).action).toBeNull();
   });
   it('a community names a reason only for a declared interest', () => {
     const c = { id: 'c1', name: 'Runners', interest_tag: 'Running', distanceMiles: 3 };

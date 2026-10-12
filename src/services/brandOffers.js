@@ -379,6 +379,24 @@ export async function getMyRedemptions() {
   return (data ?? []).map((r) => r.offer_id);
 }
 
+// The viewer's own redemption rows with the code and whether the business has confirmed the visit (RLS: own rows only),
+// read by utils/perkRedemptionState.js so a claimed perk shows its code again and "Redeemed" appears only once confirmed.
+export async function getMyRedemptionRows(offerIds = null) {
+  let query = supabase.from('offer_redemptions').select('offer_id, confirmation_code, confirmed_at');
+  if (Array.isArray(offerIds)) {
+    if (offerIds.length === 0) return [];
+    query = query.in('offer_id', offerIds);
+  }
+  const { data, error } = await query;
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getMyRedemptionFor(offerId) {
+  const rows = await getMyRedemptionRows([offerId]);
+  return rows[0] ?? null;
+}
+
 export async function getBusinessMemberGatheringHistory(partnerId, memberId) {
   const { data, error } = await supabase.rpc('get_business_member_gathering_history', {
     partner_id_param: partnerId,

@@ -1,3 +1,35 @@
+# Perk redemption: claimed vs confirmed; items 65-68 (owner, 2026-10-12) - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+Items 65 (offer arrival signature) and 67 (business sees the acceptance) recorded as MET by items 23/25 and 13 (nothing built).
+Items 66 (outward signal + "Business notified" on accept) and 68 (redemption as a second signature, "Completed", "Enjoy!")
+DECLINED: invented states (a queued push is not "notified"; a claim is not a visit), items 12/32/56/57 locked, nothing waits on motion.
+Owner then ordered a perk redemption investigation (findings: the code was shown once and never retrievable; "Redeemed" shown on
+the claim; a dead "Check your account" fallback, hard-coded English in Community; the customer never saw a confirmation; billing
+and offer value already confirmed-only, but dashboard stats and the perk tier counted claims) and approved the fix:
+- `src/utils/perkRedemptionState.js` (ONE rule: available / claimed / confirmed from the viewer's own `offer_redemptions` row;
+  `redemptionsByOffer`; `perkCodeMessage` reusing `ui.businessProfile.showStaffAtThisCode` when the name is known, else
+  `ui.brandOffersUi.showStaffCode` trimmed, + business-written instructions only when present). `components/PerkCodeBox.js`
+  (static, "Your code" + message, selectable). Services: `getMyRedemptionRows(offerIds?)`, `getMyRedemptionFor(offerId)`
+  (RLS: own rows; `getMyRedemptions` kept for MatchesScreen's unclaimed-perk count, where a claim is the right signal).
+- PerkRedemptionPanel: state from the rule; re-reads the row each time a perk opens (`onRedemption` keeps Discover's map in
+  sync); claimed = code box (no Redeem button); "Redeemed" badge only when confirmed; ALREADY_REDEEMED re-reads and shows the
+  truth (old "Already redeemed" alert gone); unknown = available (server refuses a second claim). Discover card action
+  (`recommendationContext`, `redemptionState`): confirmed = "Redeemed ✓", claimed = none, available = Redeem.
+- CommunityDetailScreen + BusinessProfileScreen: same rule + PerkCodeBox; claim alerts retitled "Your code" with
+  `perkCodeMessage`; the profile now knows the viewer's state (it always showed Redeem before). No new string, screen, status,
+  animation or push. Unused old keys (`alreadyRedeemed`, `youveAlreadyRedeemedThis`, `checkYourAccountForDetails`, the
+  `ui.businessProfile/community.redeemed` titles) left in the catalogs.
+- Migration `20270305_confirmed_visit_counts.sql` (live): `get_business_dashboard_stats` and `get_business_growth` count
+  `confirmed_at is not null` only, month by `redeemed_at` exactly like billing (so figures and the fee estimate agree; a visit
+  claimed in one month and confirmed in the next belongs to the claim month in both). Same signatures, grants unchanged, one
+  overload each. `count_redemptions_since` (no caller) and `get_offer_redemption_counts` (spots left: a claim holds a spot)
+  unchanged. `services/rewards.js` perk tier counts `confirmed_at` not null (client filter, no migration). 0 rows in production.
+- Verified: Jest 5868/5868 (+15: `perkRedemptionState.test.js`, sharedContextLayer/perkSelection updated); journey
+  `perkRedemption` 4/4 (available -> claim -> reopen same code -> wrong code refused, real code confirms once -> Redeemed,
+  stats/tier 0 until confirmed then 1); `scripts/live-verify/confirmed-visit-counts.sql` 16/16 live (control run against the
+  old functions fails exactly its 4 stats checks). Business web export not regenerated (no business-dashboard client change).
+  No from-scratch replay. Device: `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` PENDING.
+
 # Offer screens: no screen-wide motion (owner, 2026-10-12) - BUILT, NOT DEVICE-VERIFIED
 
 Owner approved changes 1 and 2 and extended the rule to GroupPlan: motion communicates a real event or helps navigation, never

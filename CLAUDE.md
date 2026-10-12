@@ -134,6 +134,9 @@ screen is checked on a real device AND native review of `ui.requestDetail.pickFi
 **Offer screens without screen-wide motion (owner, 2026-10-12) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/OFFER_SCREEN_WIDE_MOTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (incl. whether acceptance / the GroupPlan card exit feel jumpy: report, never add motion).
 
+**Items 65/67 recorded as met, 66/68 declined (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
+NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (migration 20270305; journey `perkRedemption`; live `confirmed-visit-counts.sql` 16/16).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -467,6 +470,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).
+
+- **Perk redemption (owner, 2026-10-12):** claiming creates a code, only the business's confirmation is a visit. ONE rule
+  `utils/perkRedemptionState.js` (available = Redeem, claimed = `PerkCodeBox` every time the perk opens, confirmed = "Redeemed") on
+  Discover, community and business profile perks; never "Redeemed" before confirmation. Dashboard redemption stats and the perk tier
+  count confirmed visits only (`confirmed_at`, bucketed by `redeemed_at` like billing).
 
 ### Copy, colour, errors
 - Coral = primary action or selected state; status colours have their own tokens (`theme.js`).

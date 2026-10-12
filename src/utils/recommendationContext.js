@@ -112,10 +112,12 @@ function actionFor(item, { myUserId = null, now = new Date(), actionOpts = {} } 
     if (!item.id) return null;
     return gatheringPrimaryAction({ ...item, scheduled_at: item.startsAt ?? item.scheduled_at }, myUserId, now.getTime ? now.getTime() : now, actionOpts);
   }
-  // a perk card that knows the viewer's redemption state: Redeem, or the Redeemed status (a typed-ask row does not know it: none)
+  // a perk card that knows the viewer's redemption state (utils/perkRedemptionState.js): available = Redeem, confirmed by the
+  // business = the Redeemed status, claimed = no action label (opening the perk shows the code; never "Redeemed" before the
+  // business confirms, owner 2026-10-12). A typed-ask row does not know the state: none.
   if (item.type === 'perk') {
-    if (item.redeemed === true) return { kind: 'status', label: 'Redeemed ✓', status: 'Redeemed ✓' };
-    return item.redeemed === false && item.id ? { kind: 'redeem', label: 'Redeem' } : null;
+    if (item.redemptionState === 'confirmed') return { kind: 'status', label: 'Redeemed ✓', status: 'Redeemed ✓' };
+    return item.redemptionState === 'available' && item.id ? { kind: 'redeem', label: 'Redeem' } : null;
   }
   // an offer in a feed: View Offer only while it can still be taken (the lifecycle table decides; expired = none)
   if (item.type === 'business_offer') return item.requestId ? offerPrimaryAction(item.offer ?? item) : null;
@@ -172,7 +174,7 @@ export function contextItem(kind, row, { reasons = [], ...extra } = {}) {
         durationMinutes: row.duration_minutes ?? row.durationMinutes ?? null, distanceMiles, reasons: list };
     case 'perk':
       return { type: 'perk', id: row.id ?? null, title: row.title ?? null, partnerId: row.partner_id ?? row.partnerId ?? null, distanceMiles, reasons: list,
-        ...(typeof extra.redeemed === 'boolean' ? { redeemed: extra.redeemed } : {}) };
+        ...(typeof extra.redemptionState === 'string' ? { redemptionState: extra.redemptionState } : {}) };
     case 'community':
       return { type: 'community', id: row.id ?? null, title: row.name ?? row.title ?? null, distanceMiles, reasons: list };
     case 'business':

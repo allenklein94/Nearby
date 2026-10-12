@@ -4,7 +4,9 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, Image, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
-import { getBusinessProfile, getBusinessFollowerCount, getBusinessPublicGatherings, getBusinessActiveOffers, isFollowingBusiness, followBusiness, unfollowBusiness, getRedemptionCounts, redeemOffer, getMyManagedPartner, logBusinessProfileView, getBusinessExperiences, getBusinessMessagesPage } from '../services/brandOffers';
+import { perkRedemptionState, perkCodeMessage, redemptionsByOffer } from '../utils/perkRedemptionState';
+import PerkCodeBox from '../components/PerkCodeBox';
+import { getBusinessProfile, getBusinessFollowerCount, getBusinessPublicGatherings, getBusinessActiveOffers, isFollowingBusiness, followBusiness, unfollowBusiness, getRedemptionCounts, getMyRedemptionRows, getMyRedemptionFor, redeemOffer, getMyManagedPartner, logBusinessProfileView, getBusinessExperiences, getBusinessMessagesPage } from '../services/brandOffers';
 import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
 import { businessPrimaryAction } from '../utils/primaryAction';
@@ -77,6 +79,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [gatherings, setGatherings] = useState([]);
   const [offers, setOffers] = useState([]);
   const [redemptionCounts, setRedemptionCounts] = useState({});
+  // The viewer's own redemption rows by offer (utils/perkRedemptionState.js): claimed = the code, confirmed = Redeemed.
+  const [myRedemptions, setMyRedemptions] = useState({});
   const [unlockProgress, setUnlockProgress] = useState({});
   const [redeemingId, setRedeemingId] = useState(null);
   const [lovedTags, setLovedTags] = useState([]);
@@ -143,6 +147,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
       if (activeOffers.length > 0) {
         getRedemptionCounts(activeOffers.map((o) => o.id)).then(setRedemptionCounts);
+        getMyRedemptionRows(activeOffers.map((o) => o.id)).then((rows) => setMyRedemptions(redemptionsByOffer(rows))).catch(() => {});
       }
 
       const lockedOffers = activeOffers.filter((o) => o.unlock_scope != null);
@@ -194,10 +199,17 @@ export default function BusinessProfileScreen({ route, navigation }) {
     try {
       const { confirmationCode } = await redeemOffer(offer.id);
       setRedemptionCounts((prev) => ({ ...prev, [offer.id]: (prev[offer.id] ?? 0) + 1 }));
-      Alert.alert(t('ui.businessProfile.redeemed'), t('ui.businessProfile.showStaffAtThisCode', { name: partner?.name, confirmationCode: confirmationCode }));
+      setMyRedemptions((prev) => ({ ...prev, [offer.id]: { offer_id: offer.id, confirmation_code: confirmationCode, confirmed_at: null } }));
+      Alert.alert(t('ui.brandOffersUi.yourCode'), perkCodeMessage(t, { code: confirmationCode, businessName: partner?.name, instructions: offer.redemption_instructions }));
     } catch (e) {
       if (e.message === 'ALREADY_REDEEMED') {
-        Alert.alert(t('ui.businessProfile.youveAlreadyRedeemedThis'));
+        // Already claimed: show what is true now (the code box, or Redeemed once the business confirmed).
+        try {
+          const row = await getMyRedemptionFor(offer.id);
+          if (row) setMyRedemptions((prev) => ({ ...prev, [offer.id]: row }));
+        } catch (readError) {
+          presentRecoverableError(Alert, { what: 'complete that', error: readError, onRetry: () => handleRedeem(offer) });
+        }
       } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
         Alert.alert(t('ui.businessProfile.sorryThisOfferIsFully'));
       } else if (e.message === 'OFFER_LOCKED') {
@@ -564,6 +576,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
             {offers.map((offer) => {
               const unlock = unlockStatus(offer, unlockProgress[offer.id]);
               const isLocked = unlock?.isLocked ?? false;
+              const redemption = myRedemptions[offer.id] ?? null;
+              const state = perkRedemptionState(redemption);
               return (
                 <View key={offer.id} style={styles.offerCard}>
                   <Text style={styles.offerTitle}>{offer.title}</Text>
@@ -578,7 +592,13 @@ export default function BusinessProfileScreen({ route, navigation }) {
                       {unlock.label}
                     </Text>
                   )}
-                  {isLocked ? (
+                  {state === 'claimed' ? (
+                    <PerkCodeBox code={redemption.confirmation_code} businessName={partner?.name} instructions={offer.redemption_instructions} style={styles.perkCodeBox} />
+                  ) : state === 'confirmed' ? (
+                    <View style={[styles.redeemButton, styles.lockedButton]}>
+                      <Text style={styles.lockedButtonText}>{t('brandOffers.redeemed')}</Text>
+                    </View>
+                  ) : isLocked ? (
                     <View style={[styles.redeemButton, styles.lockedButton]}>
                       <Text style={styles.lockedButtonText}>{t('ui.businessProfile.locked')}</Text>
                     </View>
@@ -676,6 +696,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
   lockedButton: { backgroundColor: colors.surfaceElevated },
   lockedButtonText: { color: colors.textTertiary, fontWeight: '700', fontSize: 13 },
+  perkCodeBox: { marginTop: spacing.sm, marginBottom: 0 },
   gatheringCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   gatheringIcon: { fontSize: 22, marginRight: spacing.sm },
   gatheringTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },

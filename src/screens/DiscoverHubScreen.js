@@ -39,7 +39,8 @@ import { getSignedStoryUrl, getGatheringStoriesGrouped, getBusinessMomentsGroupe
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
-import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptions } from '../services/brandOffers';
+import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows } from '../services/brandOffers';
+import { perkRedemptionState, redemptionsByOffer } from '../utils/perkRedemptionState';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
 import { resultRowView, recommendationContext, contextItem } from '../utils/recommendationContext';
 import { gatheringCardModel } from '../utils/recommendationCard';
@@ -563,11 +564,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [businesses, setBusinesses] = useState([]);
   const [places, setPlaces] = useState([]);
   const [coverPhotoUrls, setCoverPhotoUrls] = useState({});
-  // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real per-offer
-  // redemption state (BrandOffersScreen's own getMyRedemptions(), not a new
-  // signal) so a Perks row can honestly show "Redeemed ✓" instead of always
-  // "Redeem" regardless of whether the user already has.
-  const [redeemedOfferIds, setRedeemedOfferIds] = useState(new Set());
+  // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real per-offer redemption state: the viewer's own rows (offer id ->
+  // code + confirmed_at), read through utils/perkRedemptionState.js, so a Perks row shows "Redeemed ✓" only once the
+  // business confirmed the visit and a claimed perk shows its code again (owner, 2026-10-12).
+  const [myRedemptions, setMyRedemptions] = useState({});
   // Perk Selection State (owner, 2026-10-04): Discover -> Perks is the ONE perk surface. Tapping a perk (or arriving from a
   // link to one: selectPerkId) selects it IN PLACE: its card expands to show the redemption context and Redeem, nothing
   // navigates, no second list. It is temporary focus on one object, not a filter and not saved: Close / tapping the card
@@ -911,13 +911,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
         setUserLocation(loc);
       }
 
-      const [gatheringsData, publicCommunities, myCommunities, offersData, businessesData, redeemedIds] = await Promise.all([
+      const [gatheringsData, publicCommunities, myCommunities, offersData, businessesData, redemptionRows] = await Promise.all([
         gatheringsPromise,
         publicCommunitiesPromise,
         myCommunitiesPromise,
         getActiveOffers(loc?.latitude ?? null, loc?.longitude ?? null),
         getNearbyBusinesses(loc?.latitude ?? null, loc?.longitude ?? null),
-        getMyRedemptions(),
+        getMyRedemptionRows().catch(() => []),
       ]);
 
       const joinedCommunityIds = new Set(myCommunities.map((c) => c.id));
@@ -926,7 +926,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       setCommunities(publicCommunities.filter((c) => !joinedCommunityIds.has(c.id)));
       setOffers(offersData);
       setBusinesses(businessesData);
-      setRedeemedOfferIds(new Set(redeemedIds));
+      setMyRedemptions(redemptionsByOffer(redemptionRows));
 
       const coverEntries = await Promise.all(
         gatheringsData.map(async (g) => {
@@ -1976,8 +1976,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
         {card}
         <PerkRedemptionPanel
           offer={o}
-          redeemed={redeemedOfferIds.has(o.id)}
-          onRedeemed={(id) => setRedeemedOfferIds((prev) => new Set([...prev, id]))}
+          redemption={myRedemptions[o.id] ?? null}
+          onRedemption={(id, row) => setMyRedemptions((prev) => {
+            const next = { ...prev };
+            if (row) next[id] = row; else delete next[id];
+            return next;
+          })}
           onClose={clearPerkSelection}
           onOpenBusiness={() => openDestination(navigation, businessContext({ id: o.partner_id, name: o.brand_partners?.name }).destination)}
         />
@@ -1993,7 +1997,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   function perkContext(o) {
     return recommendationContext(contextItem('perk', o, {
       reasons: [o.target_interest_tag ? becauseYouLikeReason(o.target_interest_tag) : null],
-      redeemed: redeemedOfferIds.has(o.id),
+      redemptionState: perkRedemptionState(myRedemptions[o.id] ?? null),
     }), { language });
   }
 

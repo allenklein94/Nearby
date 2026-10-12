@@ -4,17 +4,23 @@ import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
-import { redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness, getRedemptionCounts } from '../services/brandOffers';
+import { redeemOffer, followBusiness, unfollowBusiness, isFollowingBusiness, getRedemptionCounts, getMyRedemptionFor } from '../services/brandOffers';
 import { getCommunityMemberCount } from '../services/communities';
 import { getApprovedAttendeeCount } from '../services/gatherings';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { unlockStatus } from '../utils/unlockProgress';
+import { perkRedemptionState } from '../utils/perkRedemptionState';
+import PerkCodeBox from './PerkCodeBox';
 
 // The selected perk's redemption context, shown in place under its card on Discover -> Perks (owner, 2026-10-04: the
 // former BrandOffers screen's redemption moved here; there is no separate perk screen or second perk list). It loads only
-// what this ONE perk needs (follow state, spots claimed, unlock progress) and redeems from here. After a redemption the
-// person stays on the perk: the staff code and the optional "stay connected" choice appear inline instead of alerts.
-export default function PerkRedemptionPanel({ offer, redeemed, onRedeemed, onClose, onOpenBusiness }) {
+// what this ONE perk needs (follow state, spots claimed, unlock progress, the viewer's own redemption row) and redeems
+// from here. After a claim the person stays on the perk: the staff code and the optional "stay connected" choice appear
+// inline instead of alerts. Owner (2026-10-12): the state comes from utils/perkRedemptionState.js only: a claimed perk
+// shows its code every time it is opened; "Redeemed" only once the business has confirmed the visit.
+// `redemption` = the viewer's row the list already has (null/undefined = none known); the panel re-reads it on open (the
+// business may have confirmed since) and reports it back through onRedemption.
+export default function PerkRedemptionPanel({ offer, redemption, onRedemption, onClose, onOpenBusiness }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   const posthog = usePostHog();
@@ -25,13 +31,14 @@ export default function PerkRedemptionPanel({ offer, redeemed, onRedeemed, onClo
   const [claimed, setClaimed] = useState(null);
   const [progress, setProgress] = useState(undefined);
   const [redeeming, setRedeeming] = useState(false);
-  const [code, setCode] = useState(null); // shown after a redemption in this visit
+  const [claimedHere, setClaimedHere] = useState(false); // claimed in this visit: offers the "stay connected" choice
   const [followAsked, setFollowAsked] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    setCode(null);
+    setClaimedHere(false);
     setFollowAsked(false);
+    getMyRedemptionFor(offer.id).then((row) => { if (!cancelled) onRedemption?.(offer.id, row); }).catch(() => {});
     isFollowingBusiness(offer.partner_id).then((v) => { if (!cancelled) setFollowing(!!v); }).catch(() => {});
     if (offer.redemption_limit != null) {
       getRedemptionCounts([offer.id]).then((c) => { if (!cancelled) setClaimed(c?.[offer.id] ?? 0); }).catch(() => {});
@@ -45,7 +52,9 @@ export default function PerkRedemptionPanel({ offer, redeemed, onRedeemed, onClo
 
   const unlock = unlockStatus(offer, progress);
   const isLocked = unlock?.isLocked ?? false;
-  const showFollowAsk = !!code && following === false && !followAsked;
+  // Unknown (the list's read failed) = available: the server refuses a second claim, and that path shows the code.
+  const state = perkRedemptionState(redemption ?? null);
+  const showFollowAsk = claimedHere && following === false && !followAsked;
 
   async function toggleFollow() {
     const next = !following;
@@ -63,13 +72,14 @@ export default function PerkRedemptionPanel({ offer, redeemed, onRedeemed, onClo
     try {
       const { confirmationCode } = await redeemOffer(offer.id);
       posthog?.capture?.('brand_offer_redeemed', { offer_id: offer.id, partner: name });
-      setCode(confirmationCode);
+      setClaimedHere(true);
       if (offer.redemption_limit != null) setClaimed((c) => (c ?? 0) + 1);
-      onRedeemed?.(offer.id);
+      onRedemption?.(offer.id, { offer_id: offer.id, confirmation_code: confirmationCode, confirmed_at: null });
     } catch (e) {
       if (e.message === 'ALREADY_REDEEMED') {
-        Alert.alert(t('ui.brandOffersUi.alreadyRedeemed'), t('ui.brandOffersUi.youveAlreadyClaimedThisOffer'));
-        onRedeemed?.(offer.id);
+        // Already claimed (another device, a stale list): show what is true now, the code or the confirmed badge.
+        try { onRedemption?.(offer.id, await getMyRedemptionFor(offer.id)); }
+        catch (readError) { presentRecoverableError(Alert, { what: 'complete that', error: readError, onRetry: handleRedeem }); }
       } else if (e.message === 'REDEMPTION_LIMIT_REACHED') {
         Alert.alert(t('ui.brandOffersUi.offerFullyClaimed'), t('ui.brandOffersUi.thisOffersLimitedSpotsHave'));
       } else if (e.message === 'OFFER_LOCKED') {
@@ -109,13 +119,8 @@ export default function PerkRedemptionPanel({ offer, redeemed, onRedeemed, onClo
         </Text>
       )}
 
-      {code ? (
-        <View style={styles.codeBox} accessibilityLiveRegion="polite">
-          <Text style={styles.codeLabel}>{t('ui.brandOffersUi.yourCode')}</Text>
-          <Text style={styles.codeText}>
-            {t('ui.brandOffersUi.showStaffCode', { code, instructions: offer.redemption_instructions || t('ui.brandOffersUi.checkYourAccountForDetails') })}
-          </Text>
-        </View>
+      {state === 'claimed' ? (
+        <PerkCodeBox code={redemption?.confirmation_code} businessName={name} instructions={offer.redemption_instructions} />
       ) : null}
 
       {/* The optional "stay connected" choice after a redemption: a genuine choice, never a default opt-in. */}
@@ -143,10 +148,12 @@ export default function PerkRedemptionPanel({ offer, redeemed, onRedeemed, onClo
       ) : null}
 
       <View style={styles.actionRow}>
-        {redeemed ? (
+        {state === 'confirmed' ? (
           <View style={styles.redeemedBadge}>
             <Text style={styles.redeemedBadgeText}>{t('brandOffers.redeemed')}</Text>
           </View>
+        ) : state === 'claimed' ? (
+          <View style={styles.actionSpacer} />
         ) : isLocked ? (
           <View style={[styles.redeemButton, styles.lockedButton]}>
             <Text style={styles.lockedButtonText}>{t('ui.brandOffersUi.locked')}</Text>
@@ -178,9 +185,6 @@ const getStyles = (colors) => StyleSheet.create({
   partnerName: { ...typography.caption, color: colors.textSecondary, fontWeight: '700', flex: 1 },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
   fact: { color: colors.textSecondary, fontWeight: '700', fontSize: 12, marginBottom: spacing.sm },
-  codeBox: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.sm },
-  codeLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs },
-  codeText: { ...typography.body, color: colors.textPrimary },
   followAsk: { marginBottom: spacing.sm },
   followAskTitle: { ...typography.bodyBold, color: colors.textPrimary },
   followAskBody: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
@@ -194,5 +198,6 @@ const getStyles = (colors) => StyleSheet.create({
   redeemedBadgeText: { color: colors.textSecondary, fontWeight: '700', fontSize: 13 },
   lockedButton: { backgroundColor: colors.surfaceElevated },
   lockedButtonText: { color: colors.textTertiary, fontWeight: '700', fontSize: 14 },
+  actionSpacer: { flex: 1 },
   closeButton: { paddingVertical: spacing.sm, paddingHorizontal: spacing.xs },
 });
