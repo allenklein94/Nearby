@@ -189,6 +189,17 @@ export default function SettingsScreen({ navigation, route }) {
     }
   }, [route?.params?.scrollToPreferences]);
 
+  // Owner item 54: Home's "You've been into X lately" lands on "What Nearby has noticed" (Privacy), same wait-then-scroll.
+  const privacyYRef = useRef(0);
+  useEffect(() => {
+    if (route?.params?.scrollToNoticed) {
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: privacyYRef.current, animated: true });
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [route?.params?.scrollToNoticed]);
+
   async function checkOsPermission() {
     const { status } = await Notifications.getPermissionsAsync();
     setOsNotifPermission(status);
@@ -852,7 +863,7 @@ export default function SettingsScreen({ navigation, route }) {
 
         <Text style={styles.groupHeader} accessibilityRole="header">{t('ui.settings.privacySafety')}</Text>
 
-        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.privacy')}</Text>
+        <Text style={styles.sectionLabel} accessibilityRole="header" onLayout={(e) => { privacyYRef.current = e.nativeEvent.layout.y; }}>{t('ui.settings.privacy')}</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>

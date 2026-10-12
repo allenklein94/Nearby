@@ -58,6 +58,9 @@ import { takeCompletionMoment, COMPLETION_FROM, COMPLETION_TO } from '../utils/g
 import { getMyPlansThisMonth } from '../services/plansThisMonth';
 import { plansThisMonthCount, showPlansThisMonth, takePlansThisMonthMoment } from '../utils/plansThisMonth';
 import { CountRoll } from '../motion/JoinArrival';
+import { getMyNoticedCategories } from '../services/behaviorSignals';
+import { noticedCategories, takeNoticedMoment } from '../utils/noticedActivity';
+import { joinAnd } from '../i18n/list';
 import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus, PLAN_STATUS_META } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
@@ -265,6 +268,8 @@ export default function HomeScreen({ navigation }) {
   const [completedPlan, setCompletedPlan] = useState(null);
   // Owner item 53: "N plans this month" (utils/plansThisMonth.js). null = unknown or not loaded: no line.
   const [plansMonth, setPlansMonth] = useState(null);
+  // Owner item 54: "You've been into X lately" (utils/noticedActivity.js). [] = no line.
+  const [noticed, setNoticed] = useState([]);
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
   // Progressive dining-taste prompt (Preference wiring Phase 4): a permanent, per-user dismissable Home card.
   const goalRow = useMyGoals();
@@ -714,6 +719,9 @@ export default function HomeScreen({ navigation }) {
           setPlansMonth({ count, ...moment, rollKey: moment.play ? keys.join('|') : 'settled' });
         })
         .catch((e) => console.error('getMyPlansThisMonth failed', e));
+      const noticedTask = getMyNoticedCategories()
+        .then(async (rows) => setNoticed(await takeNoticedMoment({ userId: myId, categories: noticedCategories(rows), dayKey: localDayKey() }, AsyncStorage)))
+        .catch((e) => console.error('getMyNoticedCategories failed', e));
       const pendingInvitesTask = getPendingInvitesCount(myId).then(setPendingInvitesCount).catch((e) => console.error('getPendingInvitesCount failed', e));
       const pendingOutcomeTask = getPendingIntentOutcomePrompt().then(setOutcomePrompt).catch((e) => console.error('getPendingIntentOutcomePrompt failed', e));
 
@@ -936,6 +944,7 @@ export default function HomeScreen({ navigation }) {
         perksTask,
         unratedTask,
         plansMonthTask,
+        noticedTask,
         pendingInvitesTask,
         pendingOutcomeTask,
         predictiveNudgeTask,
@@ -2141,6 +2150,21 @@ export default function HomeScreen({ navigation }) {
             })()}
 
             {attention.items.map(renderAttentionEntry)}
+
+            {noticed.length > 0 && (
+              <TouchableOpacity
+                style={styles.noticedRow}
+                onPress={() => navigation.navigate('Settings', { scrollToNoticed: Date.now() })}
+                accessibilityRole="button"
+                accessibilityLabel={t('ui.home.noticedLatelyA11y', { categories: joinAnd(noticed.map((c) => categoryName(c, language))) })}
+              >
+                <Text style={styles.noticedGlyph}>N</Text>
+                <View style={styles.noticedTextWrap}>
+                  <Text style={styles.noticedText}>{t('ui.home.noticedLately', { categories: joinAnd(noticed.map((c) => categoryName(c, language))) })}</Text>
+                  <Text style={styles.recapLink}>{t('ui.home.noticedLink')}</Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </>
         )}
 
@@ -3205,6 +3229,10 @@ const getStyles = (colors) => StyleSheet.create({
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
   },
   recapSummaryWrap: { flex: 1, marginRight: spacing.sm },
+  noticedRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: spacing.sm, marginBottom: spacing.md },
+  noticedGlyph: { color: colors.textTertiary, fontSize: 13, fontWeight: '800', width: 18, marginTop: 1 },
+  noticedTextWrap: { flex: 1 },
+  noticedText: { color: colors.textSecondary, fontSize: 13, marginBottom: 2 },
   recapSummary: { color: colors.textPrimary, fontSize: 13 },
   recapLink: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   trendingCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },

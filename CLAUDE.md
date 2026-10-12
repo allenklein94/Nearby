@@ -108,6 +108,10 @@ AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 2
 `PRODUCT_AUDIT/ITEM_53_PLANS_THIS_MONTH_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real device AND native review of
 `ui.home.plansThisMonth` / `plansThisMonthA11y` is done (migrations 20270300 + 20270301; journey `plansThisMonth`; live `streak-nudge-retired.sql` 7/7).
 
+**Item 54 ("You've been into X lately") is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_54_NOTICED_ACTIVITY_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real device AND native review of the 3
+`ui.home.noticed*` strings is done (migration 20270302; journey `noticedActivity`).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -405,6 +409,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   hosting/RSVP/Interested never) over the device's local month; shown at >= 1 only; rolls once via `CountRoll` for a new plan key
   (`utils/plansThisMonth.js`). The streak push is RETIRED (never nudge a streak; guard `streakNudgeRetired.test.js`); the streak on
   Your Activity stays until the Momentum fold decision.
+- **Noticed activity (owner item 54, LOCKED wording):** under Picked For You, "N You've been into {X and Y} lately. See what Nearby
+  noticed →" (Settings > What Nearby has noticed). Behavior wording only (item 60 stands: never "you like"/"seem to enjoy"); only
+  specific canonical categories, never groups or made-up combinations; max 2. ONE rule `get_my_noticed_categories`: 2+ separate
+  things DONE (join/create/accept/redeem, never views/searches) in 30 days, learned, surely listed in Settings, not declared, never
+  never-learned. Each category offered on one local day only (`utils/noticedActivity.js`); no motion, push or profile change.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

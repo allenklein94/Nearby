@@ -65,6 +65,17 @@ export async function getMyBehaviorCategories(daysBack = 90) {
   return data ?? [];
 }
 
+// Owner item 54: the categories Home may name in "You've been into X lately" (get_my_noticed_categories: recent, explicit,
+// repeated activity only; see utils/noticedActivity.js). A failure = [] (no line).
+export async function getMyNoticedCategories() {
+  const { data, error } = await supabase.rpc('get_my_noticed_categories');
+  if (error) {
+    console.error('getMyNoticedCategories error', error.message);
+    return [];
+  }
+  return Array.isArray(data) ? data : [];
+}
+
 export async function clearMyBehaviorHistory() {
   const { error } = await supabase.rpc('clear_my_behavior_history');
   learnedCache = null; // a typed ask right after Clear must not use what was cleared

@@ -1,3 +1,26 @@
+# Item 54 (2026-10-12) - "You've been into X lately" (Nearby is getting smarter) - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+Owner decisions (asked): wording "You've been into X lately." (behavior, not preference; item 60 NOT reopened: never "you like",
+"you seem to enjoy"); only specific canonical categories Nearby tracks, never synthetic groupings ("social activities + outdoors");
+built on the existing activity tracking; no profile/sensitive inference; no qualifying activity = no moment. Placement was not
+answered; built on my recommended default (one quiet Home line, occasionally) and the "We're learning what you like" headline was
+dropped (it says "you like"). **Server (migration `20270302_noticed_activity.sql`, applied live):** `get_my_noticed_categories()`
+(security definer, auth.uid(), authenticated only, max 2 rows): the person's own behavior_events of DOING kinds (join, create,
+accept, redeem; never open/search) in the last 30 days on 2+ distinct entities (`behavior_min_evidence()`), AND learned
+(`get_my_behavior_categories(90)`), AND surely in Settings' top-5 "What Nearby has noticed" list (fewer than 5 other learned
+categories weigh >= it, tie-proof), AND a live non-business-only canonical tag, AND not never-learned, AND not in interests /
+monthly_interests (profile read only to exclude). Order: done count, learned weight, name. **Client:** `getMyNoticedCategories`
+(`services/behaviorSignals.js`, failure = []); `utils/noticedActivity.js` (`noticedCategories`, `takeNoticedMoment`: each category
+offered on one local day only, stays that day, never again; a new category can bring it back; storage failure = none). Home: inside
+Picked For You after its cards, "N" glyph + `ui.home.noticedLately` (categories translated, `joinAnd`) + "See what Nearby noticed →"
+to Settings (`scrollToNoticed` scrolls to Privacy). Static: no motion, haptic, push, analytics; never calls Add/Forget (item 95's
+Settings tap stays the only way to an interest). Strings in 11 languages (machine-authored; es/pt worded as "participated", not
+"enjoyed"). **Verified:** Jest 430 suites / 5781 (`utils/noticedActivity.test.js` 12); journeys 28/28 (291) incl. `noticedActivity`
+6/6 (views/searches/one join/declared/never-learned/45 days ago/business-only never named; max 2 by done count; Forget and Add remove;
+crowded out of Settings' top 5 = not named; no caller = nothing, anon refused). **NOT verified:** device render, native review,
+from-scratch replay. Disclosed: the line only shows when Picked For You shows; the moment is per device (another phone can show it once
+too). Checklist: `PRODUCT_AUDIT/ITEM_54_NOTICED_ACTIVITY_DEVICE_CHECKLIST_2026-10-12.md`.
+
 # Item 53 (2026-10-12) - "N plans this month" on Home + the streak push retired - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Owner principle: celebrate participation without pressuring people to maintain a streak. Owner decisions (asked): (1) count = plans that
