@@ -7,7 +7,8 @@ jest.mock('@react-native-async-storage/async-storage', () => ({}));
 jest.mock('../services/supabase', () => ({ supabase: {} }));
 
 import { resolveAsk, toClassification } from './askResolver';
-import { peopleAsk, peopleAskSubMode, peopleModeParams, PEOPLE_PURPOSE_TAGS } from './peopleAsk';
+import { peopleAsk, peopleAskSubMode, peopleModeParams, peopleAskUnderstood, PEOPLE_PURPOSE_TAGS } from './peopleAsk';
+import { understoodPieces } from './askUnderstood';
 import { intentResultDestination, PEOPLE_FRIENDS } from './recommendationContext';
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
@@ -102,9 +103,9 @@ describe('wiring (one helper, no second screen)', () => {
     expect(resolver).toMatch(/const people = peopleAsk\(classifyResult, typedText\);\n  if \(people\) \{[\s\S]*?return \{ outcome: 'people', people,/);
     expect(resolver.indexOf("outcome: 'people'")).toBeLessThan(resolver.indexOf('await resolveClassifiedAsk(classifyResult, typedText)'));
     const home = read('screens/HomeScreen.js');
-    expect(home).toMatch(/else if \(peopleAsk\(result, typedText\)\) \{[\s\S]*?navigation\.navigate\('Discover', peopleModeParams\(peopleAsk\(result, typedText\)\)\);/);
+    expect(home).toMatch(/else if \(peopleAsk\(result, typedText\)\) \{[\s\S]*?navigation\.navigate\('Discover', peopleModeParams\(\{ \.\.\.peopleAsk\(result, typedText\), understood: peopleAskUnderstood\(result, typedText\) \}\)\);/);
     const discover = read('screens/DiscoverHubScreen.js');
-    expect(discover).toMatch(/result\.outcome === 'people'\) \{\n\s*setIntentSearch\(null\);\n\s*enterPeopleFromAsk\(result\.people\);/);
+    expect(discover).toMatch(/result\.outcome === 'people'\) \{\n\s*setIntentSearch\(null\);\n\s*enterPeopleFromAsk\(result\.people, peopleAskUnderstood\(result\.classifyResult, typedText\)\);/);
     expect(discover).toMatch(/item\.type === 'friend_discovery'\) \{\n\s*enterPeopleFromAsk\(\{ subMode: 'friends', tonight: false \}\);/);
   });
 
@@ -113,6 +114,52 @@ describe('wiring (one helper, no second screen)', () => {
     const fn = discover.slice(discover.indexOf('function enterPeopleFromAsk'), discover.indexOf('function enterPeopleFromAsk') + 600);
     expect(fn).not.toMatch(/AsyncStorage|recordPeopleSubModeUse|selectPeopleSubMode|navigation\./);
     expect(discover).toMatch(/meetTonightContext = route\.params\?\.context === 'meet_tonight' \|\| peopleFromAsk\?\.tonight === true/);
-    expect(discover).toMatch(/if \(!peopleFromAsk \|\| mode !== 'people'\) return undefined;\n\s*const sub = BackHandler\.addEventListener\('hardwareBackPress', \(\) => \{\n\s*setMode\('things'\);/);
+    expect(discover).toMatch(/if \(!peopleFromAsk\?\.inPlace \|\| mode !== 'people'\) return undefined;\n\s*const sub = BackHandler\.addEventListener\('hardwareBackPress', \(\) => \{\n\s*setMode\('things'\);/);
+  });
+});
+
+// Owner item 86 follow-up (2026-10-12): People opened by an ask shows item 45's understood chips of what the ask said, only
+// what the words gave; a generic ask shows nothing (no fabricated cue, no empty banner).
+describe('what Nearby understood, above People', () => {
+  const understoodFor = (text) => peopleAskUnderstood(toClassification(resolveAsk(text, null)), text);
+  const piecesFor = (text) => { const u = understoodFor(text); return u ? understoodPieces(u.classifyResult, u.typedText) : []; };
+
+  it('a people ask with understood pieces carries them (the same pieces the search showed)', () => {
+    expect(piecesFor('I want to meet someone tonight')).toEqual([{ key: 'when', window: 'tonight' }]);
+    expect(piecesFor('meet someone outside tonight')).toEqual([{ key: 'when', window: 'tonight' }, { key: 'where', environment: 'outdoor' }]);
+    expect(piecesFor('meet someone now')).toEqual([{ key: 'when', window: 'now' }]); // "Now" as said; still no tonight banner
+    for (const t of ['I want to meet someone tonight', 'meet someone outside tonight', 'help me make new friends nearby']) {
+      const c = toClassification(resolveAsk(t, null));
+      expect(piecesFor(t)).toEqual(understoodPieces(c, t));
+    }
+  });
+
+  it('"Tonight" never appears unless the ask said it', () => {
+    expect(piecesFor('I want to meet new people')).toEqual([{ key: 'who', party: 'new_people' }]);
+    expect(piecesFor('I want to meet new people').some((p) => p.key === 'when')).toBe(false);
+  });
+
+  it('a generic people ask has no chips: nothing travels and nothing renders', () => {
+    expect(understoodFor('I want to meet someone')).toBeNull();
+    const params = peopleModeParams({ ...ask('I want to meet someone'), understood: understoodFor('I want to meet someone') });
+    expect(params).toEqual({ initialMode: 'people' });
+  });
+
+  it('only the fields the chip rule reads travel with the navigation (no raw classification, no ids)', () => {
+    const u = understoodFor('I want to meet someone tonight');
+    expect(Object.keys(u.classifyResult).sort()).toEqual(['category', 'dateWindow', 'intent', 'narrowGroup', 'partyType', 'structured']);
+    expect(u.classifyResult.structured).toEqual({ facets: { environment: null } }); // the resolver's environment reading only
+    expect(peopleModeParams({ ...ask('I want to meet someone tonight'), understood: u }))
+      .toEqual({ initialMode: 'people', context: 'meet_tonight', understood: u });
+  });
+
+  it('Discover renders the existing AskUnderstoodChips above People only for an ask; mode inference and eligibility untouched', () => {
+    const discover = read('screens/DiscoverHubScreen.js');
+    expect(discover).toMatch(/\{peopleFromAsk\?\.understood \? \(\n\s*<AskUnderstoodChips classifyResult=\{peopleFromAsk\.understood\.classifyResult\} typedText=\{peopleFromAsk\.understood\.typedText\} \/>\n\s*\) : null\}\n\s*\{meetBanner && \(/);
+    // Home's ask arrives as a param and is NOT in place: tab Back is unchanged; a Discover-typed ask is in place (Back -> Things)
+    expect(discover).toMatch(/setPeopleFromAsk\(p\.understood \? \{ tonight: false, understood: p\.understood, inPlace: false \} : null\);/);
+    expect(discover).toMatch(/setPeopleFromAsk\(\{ tonight: people\?\.tonight === true, understood, inPlace: true \}\);/);
+    // leaving People (the Things toggle) drops the chips with the rest of the ask's People context
+    expect(discover).toMatch(/setMode\(key\);\n\s*if \(key !== 'people'\) setPeopleFromAsk\(null\);/);
   });
 });

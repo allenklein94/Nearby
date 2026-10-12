@@ -32,7 +32,8 @@ jest.mock('../services/supabase', () => ({
 const { runSql } = require('../../scripts/live-verify/lib/db');
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
 import { matchDistanceLabel, MUTUAL_FREE_TONIGHT_LINE } from '../utils/freeTonight';
-import { peopleModeParams } from '../utils/peopleAsk';
+import { peopleModeParams, peopleAskUnderstood } from '../utils/peopleAsk';
+import { understoodPieces } from '../utils/askUnderstood';
 import { orderForTonight, countTonightSupply, peopleTonightBanner } from '../utils/meetTonight';
 
 const d = hasToken ? describe : describe.skip;
@@ -168,5 +169,17 @@ d('journey (owner item 86): a typed people ask -> People mode, the right Dating/
     expect(peopleModeParams((await runIntentSearch('meet someone for a date tonight')).people))
       .toEqual({ initialMode: 'people', initialPeopleSubMode: 'dating', context: 'meet_tonight' });
     expect(peopleModeParams((await runIntentSearch('meet someone now')).people)).toEqual({ initialMode: 'people' });
+  });
+
+  test('item 86 follow-up: People shows the understood chips the search read; a generic people ask shows none', async () => {
+    const { runIntentSearch } = require('../services/intentResolver');
+    const r = await runIntentSearch('I want to meet someone tonight');
+    const u = peopleAskUnderstood(r.classifyResult, r.typedText);
+    expect(understoodPieces(u.classifyResult, u.typedText)).toEqual(understoodPieces(r.classifyResult, r.typedText));
+    expect(understoodPieces(u.classifyResult, u.typedText)).toEqual([{ key: 'when', window: 'tonight' }]);
+    const plain = await runIntentSearch('I want to meet someone');
+    expect(plain.outcome).toBe('people');
+    expect(peopleAskUnderstood(plain.classifyResult, plain.typedText)).toBeNull();
+    expect(peopleModeParams({ ...plain.people, understood: null })).toEqual({ initialMode: 'people' });
   });
 });

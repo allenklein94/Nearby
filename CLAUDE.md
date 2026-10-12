@@ -498,6 +498,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   outcome 'people'; Home navigates with the Home card's params, Discover switches in place, Back returns to the ask). Dating/Friends
   only from the words, else the person's own default; tonight context only for the resolver's "tonight" ("now" = no banner).
   Activity asks keep results; the meet-people row opens People -> Friends in place from tabs, the FriendDiscovery presentation from stack screens.
+  Above People, item 45's `AskUnderstoodChips` show what the ask said (`peopleAskUnderstood`; none = nothing, never a filler cue).
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

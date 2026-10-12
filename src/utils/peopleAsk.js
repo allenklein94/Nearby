@@ -11,6 +11,7 @@
 //   - tonight context only when the resolver read "tonight" (its dateWindow). "now" is NOT read as tonight: the existing banner
 //     says "People worth meeting tonight" and only the evening-gated Home card opens it, so "now" opens People mode plainly.
 import { detectFriendDiscoveryIntent } from '../services/intentResolverScoring';
+import { understoodPieces } from './askUnderstood';
 
 export const PEOPLE_PURPOSE_TAGS = { 'Make New Friends': 'friends', Dating: 'dating' };
 const NOT_PEOPLE_INTENTS = ['business_partner', 'community'];
@@ -37,11 +38,29 @@ export function peopleAsk(classifyResult, typedText) {
   return { subMode: peopleAskSubMode(typedText, c), tonight: c.dateWindow === 'tonight' };
 }
 
+// Owner item 86 follow-up (2026-10-12): People opened by an ask keeps a quiet trace of what Nearby understood: item 45's
+// understood-search chips (utils/askUnderstood.js decides which, from the ask's own reading; unknown = none). Only the fields
+// that rule reads travel with the navigation; no pieces = null = no chips and no cue at all.
+export function peopleAskUnderstood(classifyResult, typedText) {
+  const c = classifyResult ?? {};
+  if (understoodPieces(c, typedText).length === 0) return null;
+  const env = c.structured?.facets?.environment;
+  return {
+    typedText: String(typedText ?? ''),
+    classifyResult: {
+      intent: c.intent ?? null, category: c.category ?? null, narrowGroup: c.narrowGroup ?? null,
+      dateWindow: c.dateWindow ?? null, partyType: c.partyType ?? null,
+      ...(env !== undefined ? { structured: { facets: { environment: env } } } : {}),
+    },
+  };
+}
+
 // The existing People-mode navigation (the same params the Home card sends; Discover applies them, utils/meetTonight.js).
-export function peopleModeParams({ subMode = null, tonight = false } = {}) {
+export function peopleModeParams({ subMode = null, tonight = false, understood = null } = {}) {
   return {
     initialMode: 'people',
     ...(subMode === 'dating' || subMode === 'friends' ? { initialPeopleSubMode: subMode } : {}),
     ...(tonight ? { context: 'meet_tonight' } : {}),
+    ...(understood ? { understood } : {}),
   };
 }

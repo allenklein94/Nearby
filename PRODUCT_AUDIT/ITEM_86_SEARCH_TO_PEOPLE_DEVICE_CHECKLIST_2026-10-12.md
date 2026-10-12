@@ -22,4 +22,11 @@ Setup: a signed-in account with friend discovery ON, Dating set up, and a few pe
 10. Privacy: no person's card ever appears inside search results; People shows exactly who it shows when opened from the tab.
 11. Switching Dating/Friends after arriving works as usual; the next normal visit to People opens on the account's usual default
     (an ask never rewrites it).
+13. (Follow-up) Chips above People: "I want to meet someone tonight" (Home and Discover) -> the quiet "Tonight" chip above the
+    tonight banner, the same chip the search showed. "I want to meet new people" -> a "New people" chip, NO "Tonight".
+    "meet someone outside tonight" -> "Tonight" + "Outdoor".
+14. (Follow-up) "I want to meet someone" -> People with NO chips and no empty space or banner where they'd be.
+15. (Follow-up) Back unchanged: Home's ask -> Android back / Home tab -> Home with the ask in the box (Discover back is NOT
+    intercepted for it). Discover's ask -> back -> Things with search, type tab, filters, scroll as they were; the chips are gone,
+    and reopening People from the toggle shows no chips.
 12. Light and dark; longest language (de / tl): nothing new to read (no new strings), banner wraps as before.

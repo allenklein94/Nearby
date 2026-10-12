@@ -1,3 +1,20 @@
+# Item 86 follow-up (owner, 2026-10-12) - what Nearby understood, above People - BUILT, NOT DEVICE-VERIFIED
+
+- Asked: a pure people ask that jumps to People keeps a quiet sign of what Nearby understood, even without "tonight"; reuse the
+  existing understood-search chips above People; only chips the ask supports; none = no cue at all; tonight banner/order kept;
+  privacy, eligibility, mode inference and Back unchanged; no new screen, search logic or UI system.
+- Built: `peopleAskUnderstood(classifyResult, text)` in `utils/peopleAsk.js` -> the fields item 45's `understoodPieces` reads
+  (intent, category, narrowGroup, dateWindow, partyType, the resolver's environment) + the words, or null when that rule gives no
+  piece. Home adds it to `peopleModeParams` (`understood`); Discover's in-place switch keeps it in `peopleFromAsk`; Discover renders
+  the existing `AskUnderstoodChips` at the top of People's fixed area (above the tonight banner) only then. Back unchanged: a new
+  `inPlace` flag keeps the item-86 Android-back intercept for Discover-typed asks only (Home's arrives as a param, tab Back as
+  before); the Things toggle or a new navigation drops the chips. Examples (real resolver): "meet someone tonight" = Tonight;
+  "meet new people" = New people (no Tonight); "meet someone outside tonight" = Tonight + Outdoor; "meet someone now" = Now (still
+  no tonight banner); "I want to meet someone" = none.
+- Verified: `peopleAsk.test.js` +5 (chips = the search's own pieces, no Tonight unless said, generic = null and no param, only
+  rule fields travel, render/Back/inPlace guards); `peopleMatch` journey +1 on the real `runIntentSearch`. Jest 5921; journeys 321/321.
+  Checklist checks 13-15 added. Not device-verified (no phone): rendering and Back behaviour need the device.
+
 # Item 86 (owner, 2026-10-12) - search -> People: a pure people ask opens People mode - BUILT, NOT DEVICE-VERIFIED
 
 - Asked: "I want to meet someone tonight" -> Nearby recognizes People and goes into People mode, not a recommendation list.

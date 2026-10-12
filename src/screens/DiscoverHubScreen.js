@@ -60,6 +60,7 @@ import { syncDiscoverSession, pushSession, pushClear, sameSession } from '../ser
 import { randomUUID } from 'expo-crypto';
 import AskRefinementChips from '../components/AskRefinementChips';
 import AskUnderstoodChips from '../components/AskUnderstoodChips';
+import { peopleAskUnderstood } from '../utils/peopleAsk';
 import { displayedPosition } from '../utils/typedAskAudit';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
 import { discoverQuery } from '../utils/discoverQuery';
@@ -315,7 +316,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // this screen is showing (Dating deck or friend-discovery), never a generic list.
   // Owner item 86: a pure people ask typed here switches to People in place (utils/peopleAsk.js). Its tonight context lives
   // only while People shows it; Back or the Things toggle returns to the ask with the search, filters and type tab as they were.
-  const [peopleFromAsk, setPeopleFromAsk] = useState(null);
+  // `understood` (item 86 follow-up): item 45's chips of what the ask said, shown above People; from Home it arrives as a param.
+  // `inPlace` = typed here, so only then does Android back return to Things (Home's ask keeps the usual tab Back).
+  const [peopleFromAsk, setPeopleFromAsk] = useState(() => (route.params?.understood ? { tonight: false, understood: route.params.understood, inPlace: false } : null));
   const meetTonightContext = route.params?.context === 'meet_tonight' || peopleFromAsk?.tonight === true;
   const [meetTonightCount, setMeetTonightCount] = useState(null);
   useEffect(() => {
@@ -507,7 +510,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const p = route.params;
     if (!p || p === appliedParamsRef.current) return;
     appliedParamsRef.current = p;
-    setPeopleFromAsk(null); // a new navigation into Discover carries its own context
+    // a new navigation into Discover carries its own context (Home's people ask: what it understood, for the chips)
+    setPeopleFromAsk(p.understood ? { tonight: false, understood: p.understood, inPlace: false } : null);
     // Owner item 27 (2026-10-11) reopens item 206's "a navigation never lands inside a date view" for this one link only.
     if (TIME_CHIPS.includes(p.openDateView)) {
       if (!dateView) {
@@ -795,7 +799,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }, [expandedContext]);
   // Owner item 86: Android back from People opened by an ask returns to the ask (Things, search as it was).
   useEffect(() => {
-    if (!peopleFromAsk || mode !== 'people') return undefined;
+    if (!peopleFromAsk?.inPlace || mode !== 'people') return undefined;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       setMode('things');
       setPeopleFromAsk(null);
@@ -1642,7 +1646,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
       } else if (result.outcome === 'people') {
         setIntentSearch(null);
-        enterPeopleFromAsk(result.people);
+        enterPeopleFromAsk(result.people, peopleAskUnderstood(result.classifyResult, typedText));
       } else {
         // Typed-ask audit (item 105): records what this search understood and the rows rendered below, in their order.
         // Fire-and-forget; the result is set unchanged.
@@ -1821,11 +1825,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   // Owner item 86: People mode from an ask, in place. Only what the words said changes (mode, Dating/Friends when stated,
   // tonight); the remembered mode and the sub-mode usage counts are the person's own toggles and stay untouched.
-  function enterPeopleFromAsk(people) {
+  function enterPeopleFromAsk(people, understood = null) {
     closeContext();
     setMode('people');
     if (people?.subMode === 'dating' || people?.subMode === 'friends') setPeopleSubMode(people.subMode);
-    setPeopleFromAsk({ tonight: people?.tonight === true });
+    setPeopleFromAsk({ tonight: people?.tonight === true, understood, inPlace: true });
   }
 
   function renderIntentSearchResultRow(item, index, { onPress = handleIntentSearchResultTap, pickBadge = true } = {}) {
@@ -2577,6 +2581,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
         // embedded screens in a flex sibling, not inside a ScrollView.
         <View style={{ flex: 1 }}>
           <View style={styles.peopleFixedArea}>
+            {/* Owner item 86 follow-up: what the people ask said (item 45's chips; none when it gave nothing). */}
+            {peopleFromAsk?.understood ? (
+              <AskUnderstoodChips classifyResult={peopleFromAsk.understood.classifyResult} typedText={peopleFromAsk.understood.typedText} />
+            ) : null}
             {meetBanner && (
               <View style={{ marginBottom: spacing.sm }} accessibilityRole="header">
                 <Text style={{ color: colors.textPrimary, fontWeight: '700', fontSize: 16 }}>{meetBanner.title}</Text>

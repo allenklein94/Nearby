@@ -33,7 +33,7 @@ import { askBusinessFromAsk } from '../services/askToBusiness';
 import { resolveClassifiedAsk, resolveCommunityIntent, navigateToIntentResultItem } from '../services/intentResolver';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
-import { peopleAsk, peopleModeParams } from '../utils/peopleAsk';
+import { peopleAsk, peopleAskUnderstood, peopleModeParams } from '../utils/peopleAsk';
 import { recordTypedAsk } from '../services/typedAskAudit';
 import AskRefinementChips from '../components/AskRefinementChips';
 import AskUnderstoodChips from '../components/AskUnderstoodChips';
@@ -1209,7 +1209,7 @@ export default function HomeScreen({ navigation }) {
           rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
           intentKind: result.intent, hadAnyResult: true, reachedBusinessFallback: false,
         });
-        navigation.navigate('Discover', peopleModeParams(peopleAsk(result, typedText)));
+        navigation.navigate('Discover', peopleModeParams({ ...peopleAsk(result, typedText), understood: peopleAskUnderstood(result, typedText) }));
       } else if (result.intent === 'community') {
         const resolved = await resolveCommunityIntent({ category: result.category, rawText: typedText });
         const submissionId = await recordIntentSubmission({
