@@ -231,10 +231,18 @@ export function toClassification(r) {
 // Create Gathering prefill from the structured result (all entry points). Title + real category = start after What.
 // Item 109: `current` = the ask's classification as it stands NOW (a Home/Discover chip may have changed who it is for after the
 // search); a party type the person chose there wins over the one first read from the words. Nothing else is taken from it.
+// Item 187 / owner item 84: a party size counts as the person's own only when the words gave a number (never a date's assumed 2).
+// The one rule for Create's People and the request's carried People row.
+export function statedPartySize(r, typedText) {
+  const n = r?.group?.partySize;
+  if (!Number.isInteger(n) || n <= 0) return null;
+  return r.sources?.partySize === 'words' || NUMBER_WORDS.test(String(typedText ?? '')) ? n : null;
+}
+
 export function createParamsFromAsk(r, typedText, current = null) {
   const partyType = current && 'partyType' in current ? (current.partyType ?? null) : r.group.partyType;
   // Item 187: Create's People (and its capacity suggestion) only from a number the person stated, never a date's assumed 2.
-  const statedSize = r.sources?.partySize === 'words' || NUMBER_WORDS.test(String(typedText ?? '')) ? r.group.partySize : null;
+  const statedSize = statedPartySize(r, typedText);
   const inf = {
     tag: r.subcategory,
     categoryLabel: r.category?.label ?? null,

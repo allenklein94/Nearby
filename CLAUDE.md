@@ -141,6 +141,9 @@ NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE
 **Item 82 ("Create it": what you said on Create's first screen) is BUILT, NOT DEVICE-VERIFIED, OPEN until** every check in
 `PRODUCT_AUDIT/ITEM_82_CREATE_FROM_ASK_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `outdoorMatch`; no new strings, no migration).
 
+**Item 84 (request from an ask: carried facts + every missing field before Send) is BUILT, NOT DEVICE-VERIFIED, OPEN until** every check in
+`PRODUCT_AUDIT/ITEM_84_REQUEST_FROM_ASK_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `outdoorMatch`; no new strings, no migration).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -482,6 +485,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `utils/fromWhatYouSaid.js`) shows at the top of step 1 and on step 2 (unchanged, its guidance line step 2 only), one Hide for both;
   settles once per Create only when Create opened on step 1 (item 45's `SEQUENCES.askUnderstood`, Reduce Motion = settled). Never a
   location/setting row ("near me" is Create's default); no cross-screen transition; navigation never waits.
+- **Request from an ask (owner item 84):** "Ask Nearby Businesses" from an ask opens AskBusiness with item 82's card on top (rows
+  `requestCarriedRows` via `askBusinessParamsFromAsk`: activity, the day the words said, People only via `statedPartySize`; never
+  purpose/budget/defaults) and marks each missing required field under its label from `askMissingFields` (Send's `askMissingField` =
+  its first, same `askForm`); Send's alert stays as backstop. Only `prefillFromAsk`; no optional field is ever marked.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

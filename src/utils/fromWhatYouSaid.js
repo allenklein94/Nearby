@@ -27,3 +27,16 @@ export function fromWhatYouSaidGuidance(stepKey) {
 export function fromWhatYouSaidSettles(stepKey, openedOnStepKey) {
   return stepKey === 'what' && openedOnStepKey === 'what';
 }
+
+// Owner item 84 (2026-10-12): the same card on the request screen when it opens from a typed ask ("Ask Nearby Businesses").
+// Only what the ask itself gave AND the request form really carries: the activity (its category), the day its words said, and
+// People only when the words stated a number (statedPartySize). Never purpose/who-it's-with (a request never carries it to a
+// business), budget, radius, or a default.
+export const REQUEST_CARRIED_DAYS = ['now', 'today', 'tonight', 'tomorrow', 'weekend', 'flexible'];
+export function requestCarriedRows({ category = null, dateWindow = null, statedPartySize = null } = {}) {
+  const rows = [];
+  if (typeof category === 'string' && category) rows.push({ layer: 'activity', key: category });
+  if (REQUEST_CARRIED_DAYS.includes(dateWindow)) rows.push({ layer: 'time', key: dateWindow });
+  if (Number.isInteger(statedPartySize) && statedPartySize > 0) rows.push({ layer: 'people', key: statedPartySize });
+  return rows;
+}

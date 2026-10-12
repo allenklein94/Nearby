@@ -1,3 +1,30 @@
+# Item 84 (owner, 2026-10-12) - request from an ask: what was carried + every missing field before Send - BUILT, NOT DEVICE-VERIFIED
+
+- Asked: "Coffee tonight" -> Ask a nearby business -> the intent becomes the request; the person fills only what's missing.
+- Found: item 110 already carried the ask (`askBusinessParamsFromAsk`: words, category, stated party size, budget, day). Gap: the
+  full form opened with nothing showing what was carried or still required; the first sign of a missing field was Send's alert.
+- Owner approved (2026-10-12): both parts. Declined: a cross-screen morph (as item 82).
+- Built: `statedPartySize` in `utils/askResolver.js` (the one "words gave a number" rule, now also used by createParamsFromAsk);
+  `requestCarriedRows` in `utils/fromWhatYouSaid.js` (activity, the day the words said incl. tonight/now/weekend/flexible,
+  People only when stated; never purpose, budget, radius or a default); `askBusinessParamsFromAsk` adds `prefillFromAsk` +
+  `carriedSummary`; `askMissingFields` in `utils/askMissing.js` (all missing required fields in render order; `askMissingField` =
+  its first, so Send and the marks cannot disagree). AskBusinessScreen: item 82's `FromWhatYouSaidCard` at the top (settle once,
+  Hide), an amber `missingMark` (existing `ui.askBusiness.missing.*.title` strings, `colors.warning`) under the label of text /
+  category / when / party size, live from the same `askForm` Send checks; the time row says "Now" for "now" (existing
+  `ui.gatheringOptions.when.now`). Only when opened from an ask. No new strings, screens, sequences or migration.
+- Verified: `askToBusiness.test.js` +6 (Coffee tonight -> party only; Coffee for four tonight -> People 4, nothing missing;
+  "something fun" -> category/day/party; 8 partly completed forms each matching Send's first; a date's AI-assumed 2 never a
+  People row, Under $25/friends chips never rows, "no rush" = flexible; screen guards: one card, Hide, marks under exactly the
+  four labels, same askForm, Send alert kept, no await/morph); `askMissing.test.js` +1 and its Send guard repointed to
+  `askMissingField(askForm)`; `outdoorMatch` journey +item 84 step (real "coffee right now" search on live rows -> carried
+  Coffee + Now, only party missing, filling it clears it) 26/26. Jest 5889; journeys 315/315.
+- Unresolved edge cases (reported, unchanged): (1) the card states what the ask said; if the person changes a chip, the card still
+  shows the original (Hide is there; same as item 82). (2) an AI-assumed party size of 2 for a date still pre-fills the Party size
+  FIELD (item 110 behaviour) though the card never lists it; harmless while AI is down. (3) an AI-suggested category shows as
+  "Activity" in the card, as in Create since item 61 (AI suggests, the person confirms). (4) "now" sends today's date (chip:
+  Today) while the card says Now. (5) other entry points (gathering, match, community, retry wider radius) keep the Send alert
+  only, by scope. (6) a vague ask can open with three amber marks: judge on a phone.
+
 # Item 82 (owner, 2026-10-12) - "Create it": what you said on Create's first screen - BUILT, NOT DEVICE-VERIFIED
 
 - Asked: "Create it" animating the search into a New Gathering with the info carried over ("you didn't start over").

@@ -54,3 +54,85 @@ describe('screens', () => {
     expect(discover).toMatch(/askBusinessFromAsk\(navigation, \{ classifyResult: intentSearch\.classifyResult,/);
   });
 });
+
+// Owner item 84 (2026-10-12): the request shows what the ask gave ("From what you said", item 82's card) and marks every
+// still-missing required field where it sits before Send, through the same rule Send uses.
+describe('item 84: request from an ask -- what was carried, and what is still missing', () => {
+  const { askMissingField, askMissingFields } = require('../utils/askMissing');
+  const { fromWhatYouSaidRows } = require('../utils/fromWhatYouSaid');
+  const rows = (params) => fromWhatYouSaidRows({ inferredSummary: params.carriedSummary }).map((r) => `${r.layer}:${r.key}`);
+  // the form exactly as AskBusinessScreen starts it from these params (askForm), before the person touches anything
+  const formFrom = (p) => ({ text: p.prefillText, category: p.prefillCategory, gatheringId: null, matchId: null, partySize: p.prefillPartySize ? String(p.prefillPartySize) : '', dateWindow: p.prefillDateWindow === 'tonight' || p.prefillDateWindow === 'now' ? 'today' : (p.prefillDateWindow || null), matchedAvailability: null });
+
+  it('"Coffee tonight": carried Coffee + Tonight (no People: no number said); only How many people? is missing', () => {
+    const p = askBusinessParamsFromAsk(ask('Coffee tonight'));
+    expect(p.prefillFromAsk).toBe(true);
+    expect(rows(p)).toEqual(['activity:Coffee', 'time:tonight']);
+    expect(askMissingFields(formFrom(p)).map((m) => m.key)).toEqual(['party']);
+  });
+
+  it('"Coffee for four tonight": People 4 carried because the words said it; nothing missing', () => {
+    const p = askBusinessParamsFromAsk(ask('Coffee for four tonight'));
+    expect(rows(p)).toEqual(['activity:Coffee', 'time:tonight', 'people:4']);
+    expect(askMissingFields(formFrom(p))).toEqual([]);
+  });
+
+  it('several missing at once: "something fun" -> category, day and party all marked, in render order', () => {
+    const p = askBusinessParamsFromAsk(ask('something fun'));
+    expect(rows(p)).toEqual([]);
+    expect(askMissingFields(formFrom(p)).map((m) => m.key)).toEqual(['category', 'day', 'party']);
+  });
+
+  it('partly completed: the marks follow the form live, and Send always names the first of the same list', () => {
+    const base = formFrom(askBusinessParamsFromAsk(ask('something fun')));
+    const forms = [
+      base,
+      { ...base, category: 'Bowling' },
+      { ...base, category: 'Bowling', dateWindow: 'flexible' },
+      { ...base, category: 'Bowling', dateWindow: 'flexible', partySize: '3' },
+      { ...base, text: '  ', category: 'Bowling', dateWindow: 'flexible', partySize: '3' },
+      { ...base, gatheringId: 'g' },
+      { ...base, matchId: 'm', category: 'Bowling' },
+      { ...base, matchedAvailability: { availabilityId: 'a' }, category: 'Bowling' },
+    ];
+    const expected = [['category', 'day', 'party'], ['day', 'party'], ['party'], [], ['text'], ['category'], ['day'], ['party']];
+    forms.forEach((f, i) => {
+      const keys = askMissingFields(f).map((m) => m.key);
+      expect(keys).toEqual(expected[i]);
+      expect(askMissingField(f)?.key ?? null).toBe(keys[0] ?? null);
+    });
+  });
+
+  it('never a default or inference as a stated fact: a date\'s assumed 2 is not People; an Under $25 chip is not a row', () => {
+    const date = ask('date night tonight');
+    const ai = { ...date.classifyResult, partySize: 2, structured: { ...date.classifyResult.structured, group: { ...date.classifyResult.structured.group, partySize: 2 }, sources: { partySize: 'ai' } } };
+    expect(rows(askBusinessParamsFromAsk({ ...date, classifyResult: ai }))).not.toContain('people:2');
+    const a = ask('dinner for six tomorrow');
+    const p = askBusinessParamsFromAsk({ ...a, classifyResult: applyRefinement(applyRefinement(a.classifyResult, 'under_25'), 'friends') });
+    expect(rows(p)).toEqual(['activity:Restaurants', 'time:tomorrow', 'people:6']); // no budget, no who-it's-with row
+    expect(rows(askBusinessParamsFromAsk(ask('dinner whenever, no rush')))).toContain('time:flexible');
+  });
+
+  it('the screen: one card (item 82\'s), Hide, marks only on the four required fields, Send unchanged as the backstop', () => {
+    const screen = read('../screens/AskBusinessScreen.js');
+    expect((screen.match(/<FromWhatYouSaidCard/g) || []).length).toBe(1);
+    expect(screen).toContain("const fromAsk = route.params?.prefillFromAsk === true;");
+    expect(screen).toContain('onHide={() => setCarriedDismissed(true)}');
+    expect(screen).toContain('settle={!carriedSettled}');
+    expect(screen).toContain('const askForm = { text: askText, category, gatheringId, matchId, partySize, dateWindow, matchedAvailability };');
+    expect(screen).toContain('return askMissingField(askForm);');
+    expect(screen).toContain("const missingKeys = fromAsk ? askMissingFields(askForm).map((m) => m.key) : [];");
+    expect([...screen.matchAll(/missingMark\('(\w+)'\)/g)].map((m) => m[1])).toEqual(['text', 'category', 'day', 'party']);
+    // each mark sits right under its own field's label
+    expect(screen).toMatch(/t\('ui\.askBusiness\.whatDoYouWant'\)\}<\/Text>\s*\{missingMark\('text'\)\}/);
+    expect(screen).toMatch(/t\('ui\.askBusiness\.category'\)\}<\/Text>\s*\{missingMark\('category'\)\}/);
+    expect(screen).toMatch(/t\('ui\.askBusiness\.when'\)\}<\/Text>\s*\{missingMark\('day'\)\}/);
+    expect(screen).toMatch(/t\('ui\.askBusiness\.partySize'\)\}<\/Text>\s*\{missingMark\('party'\)\}/);
+    // the existing wording only (no new strings), and Send's alert stays
+    expect(screen).toContain("t(`ui.askBusiness.missing.${key}.title`)");
+    expect(screen).toContain("Alert.alert(t(`ui.askBusiness.missing.${missing.key}.title`), t(`ui.askBusiness.missing.${missing.key}.body`));");
+    // opening never waits: the shared navigate is synchronous, no morph
+    const svc = read('./askToBusiness.js');
+    expect(svc).not.toMatch(/await|setTimeout|SharedElement|Animated/);
+  });
+});

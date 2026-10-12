@@ -1,5 +1,7 @@
 import BusinessPicker from '../components/BusinessPicker';
-import { askMissingField } from '../utils/askMissing';
+import { askMissingField, askMissingFields } from '../utils/askMissing';
+import FromWhatYouSaidCard from '../components/FromWhatYouSaidCard';
+import { fromWhatYouSaidRows } from '../utils/fromWhatYouSaid';
 import { tr } from '../i18n/translate';
 import { useLanguage } from '../context/LanguageContext';
 import useCategoryNames from '../hooks/useCategoryNames';
@@ -392,9 +394,35 @@ export default function AskBusinessScreen({ navigation, route }) {
   // "No preference", the same reasoning the When? chip row already
   // established), so a forced "must type a number" check would contradict
   // the whole point of this item -- keeping the initial interaction easy.
+  // Owner item 84: Send's check and the inline marks read the SAME form through the same rule (askMissingFields; Send = its first).
+  const askForm = { text: askText, category, gatheringId, matchId, partySize, dateWindow, matchedAvailability };
   function findMissingField() {
-    return askMissingField({ text: askText, category, gatheringId, matchId, partySize, dateWindow, matchedAvailability });
+    return askMissingField(askForm);
   }
+
+  // Owner item 84 (2026-10-12): opened from a typed ask ("Ask Nearby Businesses"), the screen shows what the ask gave (item 82's
+  // "From what you said" card, rows from services/askToBusiness.js) and marks each still-missing required field where it sits,
+  // live, before Send (Send's alert stays as the backstop). Optional fields are never marked.
+  const fromAsk = route.params?.prefillFromAsk === true;
+  const carriedRows = fromAsk ? fromWhatYouSaidRows({ inferredSummary: route.params?.carriedSummary }) : [];
+  const [carriedDismissed, setCarriedDismissed] = useState(false);
+  const [carriedSettled, setCarriedSettled] = useState(false);
+  const missingKeys = fromAsk ? askMissingFields(askForm).map((m) => m.key) : [];
+  function missingMark(key) {
+    if (!missingKeys.includes(key)) return null;
+    return <Text style={styles.missingMark} accessibilityLiveRegion="polite">{t(`ui.askBusiness.missing.${key}.title`)}</Text>;
+  }
+  const carriedValue = (r) => {
+    if (r.layer === 'activity') return names.tag(r.key);
+    if (r.layer === 'time') {
+      const key = r.key === 'tonight' || r.key === 'now' ? 'today' : r.key;
+      const d = DATE_OPTIONS.find((o) => o.key === key);
+      // what the words said: "tonight" / "now" stay themselves (the chip below shows the day that is sent)
+      if (r.key === 'now') return t('ui.gatheringOptions.when.now');
+      return r.key === 'tonight' ? dateOptionText('tonight', 'Tonight', language) : dateOptionText(key, d?.label ?? key, language);
+    }
+    return String(r.key);
+  };
 
   // Read-only, contacts no business -- same "browsing is free, asking is
   // the real action" precedent DateProposalScreen's own handleFindNearby
@@ -676,8 +704,21 @@ export default function AskBusinessScreen({ navigation, route }) {
             </View>
           )}
 
+          {carriedRows.length > 0 && !carriedDismissed && (
+            <FromWhatYouSaidCard
+              rows={carriedRows}
+              labelFor={(r) => t(`ui.gatheringForm.summary.${r.layer}`)}
+              valueFor={carriedValue}
+              onHide={() => setCarriedDismissed(true)}
+              settle={!carriedSettled}
+              onSettled={() => setCarriedSettled(true)}
+              labelStyle={styles.label}
+            />
+          )}
+
           {!gatheringId && (<>
           <Text style={styles.label}>{t('ui.askBusiness.whatDoYouWant')}</Text>
+          {missingMark('text')}
           <TextInput
             style={styles.textArea}
             placeholder={t('ui.askBusiness.dinnerFor4Tonight')}
@@ -695,6 +736,7 @@ export default function AskBusinessScreen({ navigation, route }) {
 
           {(!gatheringId || (gathering && !gathering.interest_tag)) && (<>
           <Text style={styles.label}>{t('ui.askBusiness.category')}</Text>
+          {missingMark('category')}
           <View style={styles.chipRow}>
             {CATEGORY_OPTIONS.map((c) => (
               <TouchableOpacity
@@ -717,6 +759,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           {!gatheringId && (
             <>
               <Text style={styles.label}>{t('ui.askBusiness.when')}</Text>
+              {missingMark('day')}
               <View style={styles.chipRow}>
                 {DATE_OPTIONS.map((d) => (
                   <TouchableOpacity
@@ -806,6 +849,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           {!gatheringId && !matchId && (
             <>
               <Text style={styles.label}>{t('ui.askBusiness.partySize')}</Text>
+              {missingMark('party')}
               <TextInput
                 style={styles.input}
                 placeholder={t('ui.askBusiness.partySizePlaceholder')}
@@ -1150,6 +1194,8 @@ const getStyles = (colors) => StyleSheet.create({
   factLine: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
   questionHeading: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginTop: spacing.lg },
   label: { ...typography.caption, color: colors.textTertiary, fontWeight: '700', marginBottom: spacing.xs, marginTop: spacing.md },
+  // Owner item 84: a required field still missing, marked where it sits (status token, never coral or red).
+  missingMark: { ...typography.caption, color: colors.warning, fontWeight: '600', marginBottom: spacing.xs },
   textArea: {
     ...typography.body, color: colors.textPrimary, backgroundColor: colors.surface,
     borderRadius: radius.md, borderWidth: 1, borderColor: colors.border,

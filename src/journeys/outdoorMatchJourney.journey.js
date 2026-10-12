@@ -227,6 +227,25 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     expect(fromWhatYouSaidOnStep('whenWhere', rows, true)).toBe(false);
   });
 
+  // Owner item 84: the same real search -> "Ask Nearby Businesses" -> the request shows what was carried and every missing field.
+  test('item 84: "coffee right now" -> Ask a business -> Coffee + Now carried, only How many people? missing; filling it clears it', async () => {
+    const { askBusinessParamsFromAsk } = require('../services/askToBusiness');
+    const { askMissingField, askMissingFields } = require('../utils/askMissing');
+    const { fromWhatYouSaidRows } = require('../utils/fromWhatYouSaid');
+    const text = 'coffee right now';
+    const r = await runIntentSearch(text);
+    expect(r.items.length).toBeGreaterThan(0); // the real supply was found; asking businesses is the secondary path
+    const p = askBusinessParamsFromAsk({ classifyResult: r.classifyResult, typedText: text, submissionId: 'sub-1' });
+    expect(p).toMatchObject({ prefillFromAsk: true, prefillText: text, prefillCategory: 'Coffee', prefillDateWindow: 'now', prefillPartySize: null });
+    expect(fromWhatYouSaidRows({ inferredSummary: p.carriedSummary }).map((x) => `${x.layer}:${x.key}`)).toEqual(['activity:Coffee', 'time:now']);
+    // the form as the screen starts it ('now' is today's chip), then as the person fills it in
+    const form = { text: p.prefillText, category: p.prefillCategory, partySize: '', dateWindow: 'today', gatheringId: null, matchId: null, matchedAvailability: null };
+    expect(askMissingFields(form).map((m) => m.key)).toEqual(['party']);
+    expect(askMissingField(form).key).toBe('party');
+    expect(askMissingFields({ ...form, partySize: '4' })).toEqual([]);
+    expect(askMissingField({ ...form, partySize: '4' })).toBeNull();
+  });
+
   test('without the declaration the same business is NOT returned (the outdoor rule, not the category, includes it)', async () => {
     const saved = db.operatingRows;
     const savedAvail = db.availabilityRows;

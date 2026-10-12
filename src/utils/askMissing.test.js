@@ -38,13 +38,26 @@ describe('the request form asks only what a business cannot act without', () => 
   it('the form no longer defaults the day to "flexible"; it starts unanswered unless the words gave one', () => {
     const screen = read('../screens/AskBusinessScreen.js');
     expect(screen).toMatch(/useState\(normalizedPrefillDateWindow \|\| null\)/);
-    expect(screen).toMatch(/return askMissingField\(\{/);
+    // Item 84: Send's check reads the same askForm the inline marks read.
+    expect(screen).toMatch(/return askMissingField\(askForm\);/);
     expect(screen).not.toMatch(/setDateWindow\(d\.dateWindow \?\? 'flexible'\)/);
   });
 
   it('typed searches ask nothing: Home and Discover go straight from the words to results', () => {
     for (const f of ['../screens/HomeScreen.js', '../screens/DiscoverHubScreen.js']) {
       expect(read(f)).not.toMatch(/askMissingField|What day\?/);
+    }
+  });
+});
+
+// Owner item 84: every missing field, and Send's single check is always its first entry.
+describe('askMissingFields', () => {
+  const { askMissingFields } = require('./askMissing');
+  it('lists all missing required fields in render order and nothing optional', () => {
+    expect(askMissingFields({ text: '', category: null }).map((m) => m.key)).toEqual(['text', 'category', 'day', 'party']);
+    expect(askMissingFields({ text: 'x', category: 'Coffee', dateWindow: 'today', partySize: '2' })).toEqual([]);
+    for (const f of [{ text: '' }, { text: 'x', category: 'Coffee' }, { text: 'x', category: 'Coffee', dateWindow: 'weekend' }]) {
+      expect(askMissingField(f)).toEqual(askMissingFields(f)[0] ?? null);
     }
   });
 });
