@@ -89,8 +89,9 @@ Android status bar, timing, interaction, Reduce Motion); then close it. Keep as 
 **Item 47 (offer countdown) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_47_OFFER_COUNTDOWN_DEVICE_CHECKLIST_2026-10-11.md` is recorded on a real device (journey `offer`; no new strings).
 
-**Item 48 (business "signal received") is BUILT, NOT DEVICE-VERIFIED until** every check in
+**Item 48 (business "signal received") is APPROVED as built (owner, 2026-10-12), BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_48_SIGNAL_RECEIVED_DEVICE_CHECKLIST_2026-10-11.md` is recorded with a real business + customer (journey `offer`; no new strings).
+Owner: keep the existing headline (no "Someone is looking for this" unless business-owner testing shows it's unclear) and the locked Accept/Alternative/Decline.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -369,7 +370,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   step's chips (Who, then Budget; `nextRefinementStep`) carry a soft wash, fading in after the person's tap; none while refining/empty.
 - **Offer countdown (owner item 47):** only an open offer's real last 30 min (`presentOffer().countdown` <- `offerCountdown`): the existing
   "Ends in N min" line in amber `inProgress` (never red) + a thin bar easing each real minute (`OfferCountdown.js`); no flash/pulse/loop.
-- **Signal received (owner item 48):** moment 1's business side: a still-answerable opportunity new to the device arrives (rise +
+- **Signal received (owner item 48, approved):** moment 1's business side: a still-answerable opportunity new to the device arrives (rise +
   requestPulse's rings from its ✨; max 3 per load; once ever; live on INSERT) via `utils/opportunityArrival.js`; wording/buttons unchanged.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via

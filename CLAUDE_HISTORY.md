@@ -1,3 +1,15 @@
+# Item 48 (2026-10-12) - owner approval as built, pending device checklist
+
+Owner decisions: (1) keep the existing headline ("New opportunity" / "Good match for your business"); no new translated
+"Someone is looking for this" string unless business-owner testing shows the card doesn't communicate the arrival; (2) keep the
+locked Accept / Alternative / Decline from `opportunityPrimaryAction`, never replaced globally; (3) no new interaction unless the
+existing card/navigation rules already support it. Approved behavior kept: once per opportunity, max 3 per dashboard load, live
+arrivals while open, consumer requestPulse rings, Reduce Motion = card at once, no sounds/haptics/counters/streaks/urgency.
+Investigated (not built): a "clearer path to the request" -- the opportunity card already renders the whole request inline
+(title, note, timing, needs, potential value, looking-for, why-this-fits); there is no business-side request detail screen
+(`BusinessRequestDetail` is the consumer's own request), so a tap-to-open would need a new screen/expansion = not supported by
+current rules; left as is. Status stays BUILT, NOT DEVICE-VERIFIED; no device sign-off claimed.
+
 # Item 48 (2026-10-11) - business "signal received" - BUILT, NOT DEVICE-VERIFIED
 
 Owner spec: the business mirror of the consumer animation: a new opportunity appears ("Someone nearby is looking for this"),
