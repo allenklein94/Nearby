@@ -53,13 +53,16 @@ export const NEARBY_MOTION_LANGUAGE_DOC_ONLY = true;
 // vibration only after the person's own tap, transaction tone (success colour, no confetti, no bounce, no loop), and
 // every moment shows a state that is already stored, never one the animation implies.
 //   1 Request sent         -- an outward pulse from the confirmation line, only when a business was really reached.
+//                             Its business-side mirror (owner item 48): the new opportunity card arrives on the business's
+//                             dashboard with the same pulse from its ✨ headline (motion/OpportunityArrival.js).
 //   2 Business response    -- the arrival signal (pill) travels into the offer card.
 //   3 Offer reveal         -- the offer card builds itself step by step, ending on "I'll take this one".
 //   4 Offer acceptance     -- the same card transforms into its booked state ("You're booked" only when confirmed).
 //   5 Business progress    -- Offer sent -> Accepted -> Redeemed on the business's card, live, one glow per step.
 //   6 Customer redemption  -- the booked card's final step, "✓ Visit confirmed", one glow when it arrives live.
 export const MARKETPLACE_MOMENTS = Object.freeze([
-  { key: 'request_sent', component: 'motion/RequestPulse.js', sequence: 'requestPulse' },
+  { key: 'request_sent', component: 'motion/RequestPulse.js', sequence: 'requestPulse',
+    businessSide: { component: 'motion/OpportunityArrival.js', sequence: 'opportunityArrival' } },
   { key: 'business_response', component: 'motion/OfferTravelOverlay.js', sequence: 'businessResponds' },
   { key: 'offer_reveal', component: 'components/OfferAssembly.js', sequence: 'offerAssembly' },
   { key: 'offer_acceptance', component: 'motion/OfferAcceptedMorph.js', sequence: 'offerAccepted' },

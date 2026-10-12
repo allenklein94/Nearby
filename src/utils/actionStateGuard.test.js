@@ -18,7 +18,8 @@ test('consumer offer actions require an open request', () => {
 test('a closed pending opportunity is labelled, not called new', () => {
   const src = read('BusinessDashboardScreen.js');
   expect(src).toMatch(/opportunityPrimaryAction\(o, \{ inFlight/);
-  expect(src).toMatch(/oppAction\.kind === 'send_offer' \? \(\s*<Text[^>]*>\s*\{matchReasons\.length > 0/);
+  // item 48 wraps the headline in its arrival rings (decoration only); the "new" wording stays inside the send_offer branch
+  expect(src).toMatch(/oppAction\.kind === 'send_offer' \? \(\s*(<ArrivalSignal[^>]*>\s*)?<Text[^>]*>\s*\{matchReasons\.length > 0/);
 });
 
 test('surprise reveal is not offered on a cancelled plan', () => {

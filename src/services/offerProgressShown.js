@@ -26,7 +26,11 @@ export async function saveShown(storageKey, list, keys) {
 }
 
 export const businessProgressKey = (partnerId) => `biz_offer_progress_shown:${partnerId}`;
+// Owner item 48: the opportunity cards that already arrived (played their signal) on this device, per partner.
+export const opportunityArrivedKey = (partnerId) => `biz_opportunity_arrived:${partnerId}`;
 export const visitConfirmedKey = (userId) => `visit_confirmed_shown:${userId}`;
 
 export const loadShownProgress = (partnerId) => loadShown(businessProgressKey(partnerId));
 export const saveShownProgress = (partnerId, list, keys) => saveShown(businessProgressKey(partnerId), list, keys);
+export const loadArrivedOpportunities = (partnerId) => loadShown(opportunityArrivedKey(partnerId));
+export const saveArrivedOpportunities = (partnerId, list, keys) => saveShown(opportunityArrivedKey(partnerId), list, keys);

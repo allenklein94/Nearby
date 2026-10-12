@@ -46,7 +46,7 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
   v_opps := get_business_opportunities(v_partner);
   select e into v_row from jsonb_array_elements(v_opps) e where e->>'request_id' = v_req::text;
   log := log || jsonb_build_array(jsonb_build_object('step','business_sees_opportunity','ok', v_row is not null and (v_row->>'is_directed')::boolean,
-     'data', jsonb_build_object('leaks_host_id', position(v_host::text in v_row::text) > 0, 'party', v_row->'business_requests'->>'party_size')));
+     'data', jsonb_build_object('leaks_host_id', position(v_host::text in v_row::text) > 0, 'party', v_row->'business_requests'->>'party_size', 'row', v_row)));
 
   -- 4. the business creates an offer (the writer the edge function calls after screening)
   v_res := submit_business_offer(request_id_param := v_req, offer_type_param := 'standard',
@@ -143,6 +143,16 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(offerPrimaryAction(offered)).toBeTruthy();
     expect(canDo('offer', 'accepted', 'accept')).toBe(false);
     expect(canDo('offer', 'completed', 'accept')).toBe(false);
+  });
+  // Item 48: the opportunity row exactly as get_business_opportunities returned it arrives with the signal once; after the
+  // business has replied (the row's real next state) it never would.
+  test('item 48: the new opportunity arrives on the dashboard once, and not after the business replied', () => {
+    const { newArrivals, arrivalKey } = require('../utils/opportunityArrival');
+    const row = s.business_sees_opportunity.data.row;
+    const arriving = newArrivals([row], new Set());
+    expect(arriving.map((o) => o.id)).toEqual([row.id]);
+    expect(newArrivals([row], new Set(arriving.map(arrivalKey)))).toEqual([]);
+    expect(newArrivals([{ ...row, status: s.offer_submitted.data.status }], new Set())).toEqual([]);
   });
   // Item 47: the time-sensitive offer the host reads gets the countdown, from the stored valid_until alone.
   test('item 47: an offer valid for 18 more minutes reads "Ends in 18 min" with its countdown; once accepted, none', () => {

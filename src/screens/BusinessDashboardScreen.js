@@ -34,7 +34,9 @@ import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import OfferProgressSteps, { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { offerProgress, offersToAnimate, progressKey } from '../utils/offerProgress';
-import { loadShownProgress, saveShownProgress } from '../services/offerProgressShown';
+import { loadShownProgress, saveShownProgress, loadArrivedOpportunities, saveArrivedOpportunities } from '../services/offerProgressShown';
+import { newArrivals, arrivalSlots, arrivalKey } from '../utils/opportunityArrival';
+import OpportunityArrival, { ArrivalSignal } from '../motion/OpportunityArrival';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
@@ -632,6 +634,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [progressAnimKeys, setProgressAnimKeys] = useState(() => new Set());
   const progressPrevRef = useRef(new Map());
   const progressShownRef = useRef({ partnerId: null, list: null });
+  // Owner item 48: opportunities that arrived on this device (persisted per partner) and the ones arriving this session.
+  const arrivedRef = useRef({ partnerId: null, list: null });
+  const [arrivingIds, setArrivingIds] = useState(() => new Set());
+  const arrivalPlayedRef = useRef(new Set());
+  const consumeArrival = useCallback((id) => {
+    if (arrivalPlayedRef.current.has(id)) return false;
+    arrivalPlayedRef.current.add(id);
+    return true;
+  }, []);
   const [markingNoShowId, setMarkingNoShowId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   // Phase 3 -- which real Signature Experience (if any) the currently-open
@@ -1990,6 +2001,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const results = await getBusinessOpportunities(partnerId);
       setOpportunities(results);
       noteProgressTransitions(partnerId, results, live);
+      noteArrivals(partnerId, results);
       setOpportunitiesLoaded(true);
       getMyBusinessNoShows().then(setNoShowIds).catch(() => {});
     } catch (e) {
@@ -2019,6 +2031,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
+  // Owner item 48: the still-answerable opportunities this device has never shown arrive with the signal (once each); all of
+  // them are remembered at once, so a reopen, a refresh or a duplicate realtime event never replays one.
+  async function noteArrivals(partnerId, results) {
+    try {
+      if (arrivedRef.current.partnerId !== partnerId || !arrivedRef.current.list) {
+        arrivedRef.current = { partnerId, list: await loadArrivedOpportunities(partnerId) };
+        setArrivingIds(new Set());
+      }
+      const fresh = newArrivals(results, new Set(arrivedRef.current.list));
+      if (fresh.length === 0) return;
+      arrivedRef.current.list = await saveArrivedOpportunities(partnerId, arrivedRef.current.list, fresh.map(arrivalKey));
+      setArrivingIds((prev) => new Set([...prev, ...fresh.map((o) => o.id)]));
+    } catch {
+      // never blocks the dashboard: worst case a card simply appears without its signal
+    }
+  }
+
   // Owner item 13: live while the dashboard is in front. Realtime only says "something changed on one of your offer
   // rows" (RLS: the owner's own rows; the payload is never read) and the dashboard re-reads the persisted state, which
   // stays the source of truth. Removed when the dashboard loses focus; the focus reload above covers anything missed.
@@ -2030,6 +2059,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const channel = supabase
         .channel(`biz_offer_progress:${partnerId}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'business_request_offers', filter: `partner_id=eq.${partnerId}` }, () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => loadOpportunities(partnerId, { live: true }), 700);
+        })
+        // Item 48: a new opportunity row (a request routed to this business) arriving while the dashboard is open.
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'business_request_offers', filter: `partner_id=eq.${partnerId}` }, () => {
           clearTimeout(timer);
           timer = setTimeout(() => loadOpportunities(partnerId, { live: true }), 700);
         })
@@ -4472,7 +4506,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </TouchableOpacity>
                   </View>
                 ) : (
-                  focusFirst(scoredOpportunities, focusRequestId).map((o) => {
+                  (() => {
+                  const displayedOpportunities = focusFirst(scoredOpportunities, focusRequestId);
+                  // Item 48: the first few never-shown opportunities, in this order, arrive with the signal.
+                  const arrivals = arrivalSlots(displayedOpportunities, arrivingIds);
+                  return displayedOpportunities.map((o) => {
                     // "Business Story" plan, Phase 4: closes the real,
                     // already-flagged gap (see CLAUDE.md) -- this row's
                     // own request.attributes/cuisine are now selected (see
@@ -4550,15 +4588,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     const contextLine = [surpriseTag, planTimeLabel ? `🕐 ${planTimeLabel}` : null].filter(Boolean).join(' · ');
                     const oppAction = opportunityPrimaryAction(o, { inFlight: offerInFlight.has(o.request_id) });
                     return (
-                    <View key={o.id} style={[styles.gatheringRow, o.request_id === focusRequestId && { borderColor: colors.primary, borderWidth: 2 }]}>
+                    <OpportunityArrival key={o.id} id={o.id} play={arrivals.has(o.id)} slot={arrivals.get(o.id) ?? 0} consume={consumeArrival} style={[styles.gatheringRow, o.request_id === focusRequestId && { borderColor: colors.primary, borderWidth: 2 }]}>
                       {offerProgress(o) && (
                         <OfferProgressGlow key={progressKey(o)} play={progressAnimKeys.has(progressKey(o))} color={colors.success} radius={radius.lg} />
                       )}
                       {/* Item 73: the card's action comes from the opportunity's state (utils/primaryAction.js). */}
                       {oppAction.kind === 'send_offer' ? (
-                        <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
-                          {matchReasons.length > 0 ? t('ui.bizDash2.goodMatchForYourBusiness') : t('ui.bizDash2.newOpportunity')}
-                        </Text>
+                        <ArrivalSignal color={colors.info}>
+                          <Text style={[styles.breakdownText, { color: colors.info, fontWeight: '700' }]}>
+                            {matchReasons.length > 0 ? t('ui.bizDash2.goodMatchForYourBusiness') : t('ui.bizDash2.newOpportunity')}
+                          </Text>
+                        </ArrivalSignal>
                       ) : oppAction.kind === 'status' ? (
                         <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{oppAction.status}</Text>
                       ) : null}
@@ -4662,9 +4702,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
                         </>
                       )}
-                    </View>
+                    </OpportunityArrival>
                     );
-                  })
+                  });
+                  })()
                 )}
 
 </>

@@ -1,3 +1,22 @@
+# Item 48 (2026-10-11) - business "signal received" - BUILT, NOT DEVICE-VERIFIED
+
+Owner spec: the business mirror of the consumer animation: a new opportunity appears ("Someone nearby is looking for this"),
+the card arrives with a subtle signal, "View Request -> Make Offer"; "addictive because they see real demand arrive".
+Built as marketplace moment 1's business side (the locked rule: a new marketplace animation extends one of the six moments;
+`MARKETPLACE_MOMENTS[0].businessSide`), reusing requestPulse's own rings. `utils/opportunityArrival.js` (`newArrivals`: still
+answerable via `canRespondToOpportunity`, never shown on this device; `arrivalSlots`: first 3 in display order); persisted per
+partner (`biz_opportunity_arrived:<partner>` in `services/offerProgressShown.js`, all fresh ones remembered at once);
+`motion/OpportunityArrival.js` (card rises 8 px at the info floor, `ArrivalSignal` rings from the ✨ headline, 120 ms per slot,
+`SEQUENCES.opportunityArrival` medium, consume-once per session, Reduce Motion settled, no haptic). Dashboard: `noteArrivals` after
+every load; realtime channel now also listens to INSERT on the business's own `business_request_offers` rows (RLS "Business owners
+can view their own offer rows" + table in `supabase_realtime`, both checked live; payload never read). NOT done, deliberately:
+the "Someone nearby is looking for this" line (a new string in 11 languages, and "nearby" is not verified for every directed
+request) and "View Request -> Make Offer" (the card's buttons come from the locked `opportunityPrimaryAction` table; Accept /
+Alternative / Decline stay); "addictive" read as calm and truthful only: no counters, streaks, sounds or haptics. Guard update:
+`actionStateGuard.test.js` allows the rings wrapper around the "new" headline (still only in the send_offer branch). Verified:
+Jest 424 suites / 5726; journeys 26/26 (276), `offer` journey step "item 48" on the real RPC row. Business web export regenerated.
+Checklist: `PRODUCT_AUDIT/ITEM_48_SIGNAL_RECEIVED_DEVICE_CHECKLIST_2026-10-11.md` (not run).
+
 # Item 47 (2026-10-11) - offer countdown - BUILT, NOT DEVICE-VERIFIED
 
 Owner spec: "Offer expires in 18 min", a subtle animation, never obnoxious flashing red; urgency informative, not manipulative.

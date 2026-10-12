@@ -158,6 +158,10 @@ export const SEQUENCES = {
   // Owner item 46 (2026-10-11): after the person's own refinement tap lands, the soft emphasis on the next refinement step's
   // chips (components/AskRefinementChips.js) fades in. Pure decoration behind the label (the label never moves or fades).
   refineNextStep: { tier: 'small', fadeMs: 200 },
+  // Owner item 48 (2026-10-11): the business's mirror of moment 1. A new opportunity card rises risePx into place (text
+  // readable from frame one, buttons live at once) while requestPulse's own rings go out from its ✨ headline glyph. Several
+  // arriving together play one after another (slotStaggerMs apart, at most maxSlots; motion/OpportunityArrival.js).
+  opportunityArrival: { tier: 'medium', riseMs: 240, risePx: 8, ringSize: 44, slotStaggerMs: 120, maxSlots: 3 },
   // Owner item 47 (2026-10-11): an open offer's countdown bar (components/OfferCountdown.js) eases to its new length when the
   // real minute changes (the screen re-renders at each change). No loop, no pulse, no flash; the text itself never animates.
   offerCountdown: { tier: 'small', easeMs: 240, barPx: 3 },
@@ -234,6 +238,8 @@ export function settleMs(name) {
       return s.washMs;
     case 'strongMatch':
       return Math.max(s.staggerMs * (s.pieces.length - 1) + s.pieceMs, s.badgeDelayMs + s.badgeMs);
+    case 'opportunityArrival':
+      return Math.max(s.riseMs, settleMs('requestPulse'));
     case 'offerCountdown':
       return s.easeMs;
     case 'refineNextStep':
