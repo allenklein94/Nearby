@@ -186,7 +186,7 @@ describe('the reveal never gets in the way', () => {
   });
   test('the owner\'s Customer Preview shows the same lines (heard, then what the reply is)', () => {
     const dash = read('screens/BusinessDashboardScreen.js');
-    expect(dash).toMatch(/presentOffer\(\{ \.\.\.previewOffer/);
+    expect(dash).toMatch(/presentOffer\(previewOffer, \{ business:/);
     expect(dash).toContain("context: { viewer: 'owner_preview' }");
     expect(dash).toMatch(/\{shown\.heard\}[\s\S]{0,120}\{shown\.statusLine\}/);
   });

@@ -60,10 +60,14 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   set local role authenticated;
   select count(*) into v_seen from business_request_offers where request_id = v_req and status = 'offered';
+  -- item 49: the customer-visible fields exactly as the host reads them, to hold the owner's live preview against
+  select to_jsonb(c) into v_row from (select offer_type, offer_title, offer_description, included_items, proposed_time, offer_price,
+     price_is_per_person, discount_pct, available_from, available_until, valid_until, media_path, media_type
+     from business_request_offers where id = v_offer) c;
   reset role;
   select o.status, o.valid_until, r.status as request_status into v_o from business_request_offers o join business_requests r on r.id = o.request_id where o.id = v_offer;
   log := log || jsonb_build_array(jsonb_build_object('step','offer_reaches_host','ok', v_seen = 1,
-     'data', jsonb_build_object('offer_status', v_o.status, 'request_status', v_o.request_status, 'valid_until', v_o.valid_until)));
+     'data', jsonb_build_object('offer_status', v_o.status, 'request_status', v_o.request_status, 'valid_until', v_o.valid_until, 'customer_row', v_row)));
 
   -- 6. the host accepts -> reservation
   v_res := accept_business_offer(v_offer);
@@ -153,6 +157,27 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(arriving.map((o) => o.id)).toEqual([row.id]);
     expect(newArrivals([row], new Set(arriving.map(arrivalKey)))).toEqual([]);
     expect(newArrivals([{ ...row, status: s.offer_submitted.data.status }], new Set())).toEqual([]);
+  });
+  // Item 49: the owner's live Customer Preview, built from the draft the business typed, shows what the host then reads:
+  // every customer-visible field the same (the end time to the minute: the form picks a clock time, not seconds).
+  test('item 49: the live preview of the draft matches the offer the host receives', () => {
+    const { draftPreviewOffer } = require('../utils/offerDraftPreview');
+    const row = s.offer_reaches_host.data.customer_row;
+    const until = new Date(row.valid_until);
+    const now = new Date(until.getTime() - 18 * 60000); // when the business typed it
+    const validTime = new Date(until.getTime() + 60000); // the form's clock time: the minute the server's end falls in
+    validTime.setSeconds(0, 0);
+    const preview = draftPreviewOffer({
+      type: 'standard', description: 'We can accommodate this as requested.', price: '12.5',
+      validDay: validTime.toDateString() === now.toDateString() ? 'today' : 'tomorrow', validTime,
+    }, now);
+    const { valid_until: pv, ...shown } = preview;
+    const { valid_until: rv, ...stored } = row;
+    // same meaning, same value: no items = none, a numeric column may come back as text
+    const norm = (k, v) => (Array.isArray(v) && v.length === 0 ? null : k === 'offer_price' && v != null ? Number(v) : v ?? null);
+    const pick = (o) => Object.fromEntries(Object.keys(stored).map((k) => [k, norm(k, o[k])]));
+    expect(pick(shown)).toEqual(pick(stored));
+    expect(Math.abs(new Date(pv).getTime() - new Date(rv).getTime())).toBeLessThan(60000);
   });
   // Item 47: the time-sensitive offer the host reads gets the countdown, from the stored valid_until alone.
   test('item 47: an offer valid for 18 more minutes reads "Ends in 18 min" with its countdown; once accepted, none', () => {

@@ -70,7 +70,7 @@ describe('informative, not manipulative', () => {
   test('no new wording: the line still reads through the existing validity text; both offer surfaces pass the one countdown', () => {
     expect(body).toMatch(/offerValidityText\(o\.valid_until, language\)/);
     expect(read('src/screens/BusinessRequestDetailScreen.js')).toMatch(/countdown=\{shown\.countdown\}/);
-    expect(read('src/screens/BusinessDashboardScreen.js')).toMatch(/countdown=\{presentOffer\(previewOffer/);
+    expect(read('src/screens/BusinessDashboardScreen.js')).toMatch(/shown = presentOffer\(previewOffer[\s\S]{0,1600}countdown=\{shown\.countdown\}/);
   });
   test('small tier', () => {
     expect(SEQUENCES.offerCountdown.tier).toBe('small');

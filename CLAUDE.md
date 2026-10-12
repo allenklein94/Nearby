@@ -93,6 +93,9 @@ Android status bar, timing, interaction, Reduce Motion); then close it. Keep as 
 `PRODUCT_AUDIT/ITEM_48_SIGNAL_RECEIVED_DEVICE_CHECKLIST_2026-10-11.md` is recorded with a real business + customer (journey `offer`; no new strings).
 Owner: keep the existing headline (no "Someone is looking for this" unless business-owner testing shows it's unclear) and the locked Accept/Alternative/Decline.
 
+**Item 49 (live Customer Preview in Make an Offer) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_49_LIVE_CUSTOMER_PREVIEW_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone and the business website (journey `offer`; no new strings).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -372,6 +375,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   "Ends in N min" line in amber `inProgress` (never red) + a thin bar easing each real minute (`OfferCountdown.js`); no flash/pulse/loop.
 - **Signal received (owner item 48, approved):** moment 1's business side: a still-answerable opportunity new to the device arrives (rise +
   requestPulse's rings from its ✨; max 3 per load; once ever; live on INSERT) via `utils/opportunityArrival.js`; wording/buttons unchanged.
+- **Live Customer Preview (owner item 49):** Make an Offer shows the customer's card live above Send Offer (no separate preview step),
+  from ONE mapping `utils/offerDraftPreview.js` + `OfferCustomerBody` + `presentOffer`; nothing before a description; a piece Send would refuse is left out.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

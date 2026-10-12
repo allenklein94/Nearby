@@ -72,6 +72,8 @@ describe('layout', () => {
     expect(src.indexOf("percentOff")).toBeLessThan(src.indexOf('styles.offerPrice'));
   });
   test("the owner's Customer Preview carries the discount it will send", () => {
-    expect(read('screens/BusinessDashboardScreen.js')).toMatch(/discount_pct: offerTypeInput === 'discount' \? parseDiscountPct\(offerDiscountInput\) : null,\n\s+available_from/);
+    // item 49: the live preview's one mapping (utils/offerDraftPreview.js), fed the form's discount input
+    expect(read('utils/offerDraftPreview.js')).toMatch(/discount_pct: type === 'discount' && discountOk \? parseDiscountPct\(draft\.discount\) : null/);
+    expect(read('screens/BusinessDashboardScreen.js')).toMatch(/discount: offerDiscountInput, discountCap/);
   });
 });

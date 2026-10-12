@@ -66,7 +66,7 @@ describe('client and edge function stay in lockstep', () => {
   it('the screen only changes the form inside the explicit accept handler', () => {
     const handler = SCREEN.slice(SCREEN.indexOf('async function handlePlainLanguage'), SCREEN.indexOf('function applyPlainLanguageSuggestion'));
     expect(handler).not.toMatch(/setOffer(Title|Description)Input/);
-    const apply = SCREEN.slice(SCREEN.indexOf('function applyPlainLanguageSuggestion'), SCREEN.indexOf('// One validation for both Preview and Send'));
+    const apply = SCREEN.slice(SCREEN.indexOf('function applyPlainLanguageSuggestion'), SCREEN.indexOf('// The one validation before Send'));
     expect(apply).toMatch(/acceptPlainLanguage\(/);
     expect(apply).not.toMatch(/setOffer(Price|Discount|Redemption|Valid|Avail|Type|ProposedTime)/);
   });

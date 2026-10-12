@@ -1,3 +1,22 @@
+# Item 49 (2026-10-12) - live Customer Preview while making an offer - BUILT, NOT DEVICE-VERIFIED
+
+Owner spec: as the business builds an offer ("20% off tonight") they see exactly how it will appear to the customer, then Send Offer.
+Item 84 (2026-09-20) already had the Customer Preview, but as a separate step (form -> "Preview offer" -> preview -> Send Offer /
+Back to edit). Now it builds LIVE inside the form, directly above Send Offer, and the separate step is gone (one preview, not two;
+screen reduction: change content > a step). `utils/offerDraftPreview.js` (`draftPreviewOffer`) is the ONE mapping from the form's
+draft to the customer-visible row, field for field what `handleSubmitOffer` sends; the card is the same `OfferCustomerBody` +
+`presentOffer` (viewer `owner_preview`) + screened logo as before. Truth rules: nothing shows before a description (Send requires
+one; no placeholder card); a piece Send would refuse (discount over the business's limit, passed end time, half a window, alt time
+with no time, negative price) is left out, never shown as if it would go; Send keeps the one `validateOfferForm` alerts. The
+screened-logo lookup now runs while the form is open. No new strings (the existing "This is what the customer will see. Nothing
+is sent until you tap Send Offer." fits); `previewOffer` / `backToEdit` / `previewWhatTheCustomerWillA11y` keys are now unused,
+left in i18n. No motion. Guards updated to the moved code (offerPreview, offerCountdown, offerAssembly, offerPresentation,
+plainLanguageOffer); `undefinedNames` caught a leftover `setOfferPreviewing`. Verified: Jest 425 suites / 5733 passed;
+`offerDraftPreview.test.js` (7); journeys 26/26 (277): `offer` step "item 49" holds the preview of the typed draft against the
+offer row exactly as the host reads it under RLS (every customer-visible field equal, end time to the minute; a mutated price
+fails it). Business web export regenerated. NOT done: a device/browser render; the one-tap Standard/Alternative replies still
+have no preview (unchanged). Checklist: `PRODUCT_AUDIT/ITEM_49_LIVE_CUSTOMER_PREVIEW_DEVICE_CHECKLIST_2026-10-12.md` (not run).
+
 # Item 48 (2026-10-12) - owner approval as built, pending device checklist
 
 Owner decisions: (1) keep the existing headline ("New opportunity" / "Good match for your business"); no new translated

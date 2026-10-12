@@ -22,11 +22,11 @@ describe('customer preview before publishing (item 84)', () => {
     // redemption instructions are deliberately not part of the pre-accept body
     expect(body).not.toContain('redemption');
   });
-  test('the offer form leads to Preview, and only the preview step sends', () => {
-    expect(dash).toContain('onPress={handlePreviewOffer}');
-    expect(dash).toContain("t('ui.bizDash3.backToEdit')");
-    // Preview and Send share one validation
-    expect(dash.match(/validateOfferForm\(\)/g).length).toBeGreaterThanOrEqual(3);
+  test('the preview is live in the form (item 49); Send runs the one validation', () => {
+    expect(dash).toContain('draftPreviewOffer(');
+    expect(dash).toContain('onPress={handleSubmitOffer}');
+    expect(dash).not.toContain('handlePreviewOffer');
+    expect(dash.match(/validateOfferForm\(\)/g).length).toBeGreaterThanOrEqual(2);
     expect(dash).toContain("t('ui.bizDash3.thisIsWhatTheCustomer')");
     expect(bizDash3.thisIsWhatTheCustomer).toContain('Nothing is sent until you tap Send Offer');
   });

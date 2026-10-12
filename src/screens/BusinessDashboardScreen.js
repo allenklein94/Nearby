@@ -86,6 +86,7 @@ import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardA
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
+import { draftPreviewOffer } from '../utils/offerDraftPreview';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
 // weather-aware surface already calls -- never a new one.
@@ -539,17 +540,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [offerSubmissions, setOfferSubmissions] = useState([]);
   const [resendingSubmissionId, setResendingSubmissionId] = useState(null);
   const [busySubmissionId, setBusySubmissionId] = useState(null);
-  const [offerPreviewing, setOfferPreviewing] = useState(false); // Item 84: the owner's "Customer preview" step
   // The owner's own logo as the customer would see it: only once it has passed screening (utils/businessLogo.js).
   const [previewLogo, setPreviewLogo] = useState(null);
   useEffect(() => {
     setPreviewLogo(null);
-    const id = offerPreviewing ? selectedPartner?.id : null;
+    const id = offerModalRequestId ? selectedPartner?.id : null; // item 49: the preview is live while the offer form is open
     if (!id) return undefined;
     let live = true;
     getScreenedLogos([id]).then((map) => { if (live) setPreviewLogo(logoFor(map, id)); });
     return () => { live = false; };
-  }, [offerPreviewing, selectedPartner?.id, selectedPartner?.logo_url]);
+  }, [offerModalRequestId, selectedPartner?.id, selectedPartner?.logo_url]);
   const offerInFlight = useMemo(() => inFlightRequestIds(offerSubmissions), [offerSubmissions]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
   // "Demand near you" card: null = not loaded yet; otherwise the privacy-floored RPC payload.
@@ -2208,7 +2208,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   function openOfferModal(requestId) {
     setOfferModalRequestId(requestId);
-    setOfferPreviewing(false);
     setResendingSubmissionId(null);
     setOfferTypeInput('standard');
     setOfferDescriptionInput('');
@@ -2497,7 +2496,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setPlainLanguageSuggestion(null);
   }
 
-  // One validation for both Preview and Send, so a preview can never show something Send would refuse. null = invalid (already alerted).
+  // The one validation before Send (the live preview leaves out what it would refuse: utils/offerDraftPreview.js). null = invalid (already alerted).
   function validateOfferForm() {
     if (!offerDescriptionInput.trim()) {
       Alert.alert(t('ui.bizDash1.addADescription'), t('ui.bizDash1.sayWhatYouCanOffer'));
@@ -2523,11 +2522,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       return null;
     }
     return { validity, availWindow };
-  }
-
-  // Item 84: check, then show the customer's view before anything is sent.
-  function handlePreviewOffer() {
-    if (validateOfferForm()) setOfferPreviewing(true);
   }
 
   async function handleSubmitOffer() {
@@ -7083,68 +7077,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   onDiscard={offerDraft.discard}
                 />
               )}
-              {offerPreviewing && (() => {
-                const priceNum = offerPriceInput.trim() ? parseFloat(offerPriceInput.trim()) : null;
-                const checked = { validity: validUntilFromChoice(offerValidDay, offerValidTime), win: availableWindowFromChoice(offerAvailFrom, offerAvailUntil) };
-                const creative = offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null;
-                const previewOffer = {
-                  offer_description: offerDescriptionInput.trim(),
-                  included_items: offerIncludedItemsInput,
-                  proposed_time: offerTypeInput === 'alt_time' && offerProposedTime ? offerProposedTime.toISOString() : null,
-                  offer_price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
-                  price_is_per_person: offerPriceIsPerPerson,
-                  discount_pct: offerTypeInput === 'discount' ? parseDiscountPct(offerDiscountInput) : null,
-                  available_from: checked.win.from ?? null,
-                  available_until: checked.win.until ?? null,
-                  valid_until: checked.validity.iso ?? null,
-                  media_path: creative?.media_path ?? null,
-                  media_type: creative?.media_type ?? null,
-                  media_poster_path: creative?.poster_path ?? null,
-                };
-                const localMedia = !creative && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
-                return (
-                  <View>
-                    <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
-                    <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
-                    <View style={styles.gatheringRow}>
-                      <View style={styles.previewPartnerRow}>
-                        <BusinessLogoMark uri={previewLogo} />
-                        <Text style={[styles.offerTitle, styles.previewPartnerName]}>{selectedPartner?.name}</Text>
-                      </View>
-                      {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
-                      {(() => {
-                        const shown = presentOffer({ ...previewOffer, offer_type: offerTypeInput, offer_title: offerTitleInput.trim() || null, discount_pct: offerTypeInput === 'discount' ? parseDiscountPct(offerDiscountInput) : null }, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } });
-                        return (
-                          <>
-                            <Text style={styles.breakdownText}>{shown.heard}</Text>
-                            <Text style={styles.breakdownText}>{shown.statusLine}</Text>
-                          </>
-                        );
-                      })()}
-                      {!!offerTitleInput.trim() && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{offerTitleInput.trim()}</Text>}
-                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={presentOffer(previewOffer, { context: { viewer: 'owner_preview' } }).countdown} />
-                      <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
-                        <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
-                      </View>
-                    </View>
-                    {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
-                    <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
-                    <TouchableOpacity
-                      style={styles.submitButton}
-                      onPress={handleSubmitOffer}
-                      disabled={respondingOpportunityId === offerModalRequestId}
-                      accessibilityRole="button"
-                      accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
-                    >
-                      <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setOfferPreviewing(false)} style={{ marginTop: spacing.md }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash3.backToEditA11y')}>
-                      <Text style={styles.modalCloseText}>{t('ui.bizDash3.backToEdit')}</Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })()}
-              <View style={offerPreviewing ? { display: 'none' } : undefined}>
               {offerModalRequest && (() => {
                 const ctx = buildOpportunityCard(offerModalRequest, {
                   occasionLabel: offerModalRequest.occasion ? (language === 'en' ? occasionLabel(offerModalRequest.occasion) : categoryName(occasionLabel(offerModalRequest.occasion), language)) : null,
@@ -7574,19 +7506,54 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   }}
                 />
               ) : null}
+              {/* Item 49 (was item 84's separate step): the Customer Preview builds live as the owner fills the form, right
+                  above Send Offer. One mapping (utils/offerDraftPreview.js), one body + engine shared with the customer's real card. */}
+              {(() => {
+                const previewOffer = draftPreviewOffer({
+                  type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
+                  proposedTime: offerProposedTime, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
+                  discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
+                  availFrom: offerAvailFrom, availUntil: offerAvailUntil,
+                  creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
+                });
+                if (!previewOffer) return null;
+                const localMedia = !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
+                const shown = presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } });
+                return (
+                  <View style={{ marginTop: spacing.md }}>
+                    <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
+                    <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
+                    <View style={styles.gatheringRow}>
+                      <View style={styles.previewPartnerRow}>
+                        <BusinessLogoMark uri={previewLogo} />
+                        <Text style={[styles.offerTitle, styles.previewPartnerName]}>{selectedPartner?.name}</Text>
+                      </View>
+                      {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
+                      <Text style={styles.breakdownText}>{shown.heard}</Text>
+                      <Text style={styles.breakdownText}>{shown.statusLine}</Text>
+                      {!!previewOffer.offer_title && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{previewOffer.offer_title}</Text>}
+                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} />
+                      <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
+                        <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
+                      </View>
+                    </View>
+                    {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
+                    <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
+                  </View>
+                );
+              })()}
               <TouchableOpacity
                 style={styles.submitButton}
-                onPress={handlePreviewOffer}
+                onPress={handleSubmitOffer}
                 disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
-                accessibilityLabel={t('ui.bizDash3.previewWhatTheCustomerWillA11y')}
                 accessibilityRole="button"
+                accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
               >
-                <Text style={styles.submitButtonText}>{t('ui.bizDash3.previewOffer')}</Text>
+                <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
                 <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
-              </View>
             </ScrollView>
           </View>
         </TouchableWithoutFeedback>
