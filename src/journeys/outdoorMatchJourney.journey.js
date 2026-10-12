@@ -227,6 +227,28 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     expect(fromWhatYouSaidOnStep('whenWhere', rows, true)).toBe(false);
   });
 
+  // Owner item 85: a fully understood real ask opens Create on When & where, and the card settles there once.
+  test('item 85: "coffee right now" -> Create it -> opens on When & where with Coffee carried, and settles there (not on step 1)', async () => {
+    const { routeClassifiedIntentToCreation } = require('../services/createAssistant');
+    const { startAfterWhatStep } = require('../utils/gatheringStructure');
+    const { fromWhatYouSaidRows, fromWhatYouSaidOnStep, fromWhatYouSaidSettles, fromWhatYouSaidGuidance } = require('../utils/fromWhatYouSaid');
+    const text = 'coffee right now';
+    const r = await runIntentSearch(text);
+    const nav = { navigate: jest.fn() };
+    routeClassifiedIntentToCreation(nav, r.classifyResult, text, { explicitCreate: true });
+    const [route, params] = nav.navigate.mock.calls[0];
+    expect(route).toBe('CreateGathering');
+    expect(params).toMatchObject({ quickStartCategory: 'Coffee' });
+    const openedOn = startAfterWhatStep(params) ? 'whenWhere' : 'what';
+    expect(openedOn).toBe('whenWhere');
+    const rows = fromWhatYouSaidRows(params);
+    expect(rows.map((x) => x.layer)).toContain('activity');
+    expect(fromWhatYouSaidOnStep('whenWhere', rows, false)).toBe(true);
+    expect(fromWhatYouSaidGuidance('whenWhere')).toBe(true);
+    expect(fromWhatYouSaidSettles('whenWhere', openedOn)).toBe(true);
+    expect(fromWhatYouSaidSettles('what', openedOn)).toBe(false);
+  });
+
   // Owner item 84: the same real search -> "Ask Nearby Businesses" -> the request shows what was carried and every missing field.
   test('item 84: "coffee right now" -> Ask a business -> Coffee + Now carried, only How many people? missing; filling it clears it', async () => {
     const { askBusinessParamsFromAsk } = require('../services/askToBusiness');

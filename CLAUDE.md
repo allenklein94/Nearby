@@ -138,7 +138,7 @@ screen is checked on a real device AND native review of `ui.requestDetail.pickFi
 **Items 65/67/69/70/71/77/78/81/83 recorded as met, 66/68/74 declined, 72/75/76/79/80 partly met (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
 NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (migration 20270305; journey `perkRedemption`; live `confirmed-visit-counts.sql` 16/16).
 
-**Item 82 ("Create it": what you said on Create's first screen) is BUILT, NOT DEVICE-VERIFIED, OPEN until** every check in
+**Item 82 ("Create it": what you said on Create's first screen; + item 85's settle on the opening step) is BUILT, NOT DEVICE-VERIFIED, OPEN until** every check in
 `PRODUCT_AUDIT/ITEM_82_CREATE_FROM_ASK_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `outdoorMatch`; no new strings, no migration).
 
 **Item 84 (request from an ask: carried facts + every missing field before Send) is BUILT, NOT DEVICE-VERIFIED, OPEN until** every check in
@@ -483,7 +483,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Item 32's scroll, item 55's pulse, the travel's light/frame stay. Guard `motion/offerScreenWideMotion.test.js`.
 - **Create from an ask (owner item 82):** the "From what you said" card (`components/FromWhatYouSaidCard.js`, rows/steps from
   `utils/fromWhatYouSaid.js`) shows at the top of step 1 and on step 2 (unchanged, its guidance line step 2 only), one Hide for both;
-  settles once per Create only when Create opened on step 1 (item 45's `SEQUENCES.askUnderstood`, Reduce Motion = settled). Never a
+  settles once per Create on whichever step Create opened on (item 85: step 2 for a fully understood ask; never on a later step
+  change; item 45's `SEQUENCES.askUnderstood`, Reduce Motion = settled). Never a
   location/setting row ("near me" is Create's default); no cross-screen transition; navigation never waits.
 - **Request from an ask (owner item 84):** "Ask Nearby Businesses" from an ask opens AskBusiness with item 82's card on top (rows
   `requestCarriedRows` via `askBusinessParamsFromAsk`: activity, the day the words said, People only via `statedPartySize`; never

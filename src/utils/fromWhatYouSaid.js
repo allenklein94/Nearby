@@ -5,7 +5,7 @@
 // Rules: only the rows the ask's own words gave (activity, purpose, time, people); never a location or setting: "near me" is
 // Create's default, not something read from the ask. One Hide for the card on both steps. The step-2 guidance line ("Pick a
 // time, then a place") belongs to step 2 only. The card settles in once (item 45's small pattern) only on the step Create
-// opened on; Reduce Motion or step 2 = already there.
+// opened on (step 1 or step 2, owner item 85); Reduce Motion or any later step change = already there.
 
 export const SUMMARY_LAYERS = ['activity', 'purpose', 'time', 'people'];
 export const FROM_WHAT_YOU_SAID_STEPS = ['what', 'whenWhere'];
@@ -23,9 +23,11 @@ export function fromWhatYouSaidGuidance(stepKey) {
   return stepKey === 'whenWhere';
 }
 
-// The one settle: on the step Create opened on (the first step, What), the first time that card shows in this Create.
+// The one settle: on whichever step Create opened on (What, or When & where for a fully understood ask such as "Coffee
+// tonight"; owner item 85), the first time that card shows in this Create. Any later step change never settles (the screen
+// also stops offering it once played: fromWhatYouSaidSettled).
 export function fromWhatYouSaidSettles(stepKey, openedOnStepKey) {
-  return stepKey === 'what' && openedOnStepKey === 'what';
+  return FROM_WHAT_YOU_SAID_STEPS.includes(stepKey) && stepKey === openedOnStepKey;
 }
 
 // Owner item 84 (2026-10-12): the same card on the request screen when it opens from a typed ask ("Ask Nearby Businesses").

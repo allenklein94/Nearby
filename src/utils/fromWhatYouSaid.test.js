@@ -33,22 +33,35 @@ describe('the card on step 1 when Create opens there from an ask', () => {
     expect(fromWhatYouSaidGuidance('what')).toBe(false); // the step-2 line ("Pick a time, then a place") stays on step 2
   });
 
-  it('the same card stays on step 2, unchanged: guidance line, no settle', () => {
+  it('opened on step 1, moving on to step 2 never settles there: same content, guidance line', () => {
     const c = createFrom('something fun tonight');
+    expect(c.openedOn).toBe('what');
     expect(facts(c.rows)).toEqual(['time:tonight']);
     expect(fromWhatYouSaidOnStep('whenWhere', c.rows, false)).toBe(true);
     expect(fromWhatYouSaidGuidance('whenWhere')).toBe(true);
     expect(fromWhatYouSaidSettles('whenWhere', c.openedOn)).toBe(false);
   });
 
-  it('a fully understood ask still opens on step 2 with the card (as before); Back to step 1 shows it there, without a settle', () => {
-    const c = createFrom('Pickleball tonight');
+  // Owner item 85: a fully understood ask opens on step 2, and the card settles there once (the path most people take).
+  it.each([
+    ['Coffee tonight', 'Coffee', ['activity:Coffee', 'time:tonight']],
+    ['Pickleball tonight', 'Pickleball', ['activity:Pickleball', 'time:tonight']],
+    ['dinner for 6', null, ['activity:Restaurants', 'people:6']],
+  ])('item 85: "%s" opens on step 2 and settles there once; Back to step 1 never settles', (text, title, rows) => {
+    const c = createFrom(text);
     expect(c.openedOn).toBe('whenWhere');
-    expect(c.params.quickStartTitle).toBe('Pickleball');
-    expect(facts(c.rows)).toEqual(['activity:Pickleball', 'time:tonight']);
-    expect(fromWhatYouSaidSettles('whenWhere', c.openedOn)).toBe(false);
+    if (title) expect(c.params.quickStartTitle).toBe(title);
+    expect(facts(c.rows)).toEqual(rows);
+    expect(fromWhatYouSaidOnStep('whenWhere', c.rows, false)).toBe(true);
+    expect(fromWhatYouSaidGuidance('whenWhere')).toBe(true); // step 2's content unchanged
+    expect(fromWhatYouSaidSettles('whenWhere', c.openedOn)).toBe(true);
     expect(fromWhatYouSaidOnStep('what', c.rows, false)).toBe(true);
     expect(fromWhatYouSaidSettles('what', c.openedOn)).toBe(false);
+  });
+
+  it('never on a step without the card, nor for an unknown opening step', () => {
+    for (const s of ['who', 'details', 'publish']) expect(fromWhatYouSaidSettles(s, s)).toBe(false);
+    expect(fromWhatYouSaidSettles('what', null)).toBe(false);
   });
 
   it('Hide hides the one card on both steps; nothing on later steps; nothing without carried facts', () => {

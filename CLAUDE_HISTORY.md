@@ -1,3 +1,17 @@
+# Item 85 (owner, 2026-10-12) - item 82's settle on whichever step Create opens on - BUILT, NOT DEVICE-VERIFIED
+
+- Asked: the one-time "From what you said" settle also plays when Create OPENS on step 2 (fully understood asks: "Coffee tonight",
+  "Pickleball tonight", "dinner for 6"), the path most people take; never replays on a later step change; step 2's content,
+  guidance line and Hide unchanged; Reduce Motion = settled; no cross-screen transition, no navigation delay, no new strings.
+- Built: `fromWhatYouSaidSettles(stepKey, openedOnStepKey)` in `utils/fromWhatYouSaid.js` = the card's step AND the step Create
+  opened on (was step 1 only). The screen already captured `openedOnStepKey` once at mount and stops offering the settle after it
+  played (`fromWhatYouSaidSettled`), so 1 -> 2, 2 -> 1 -> 2 never replay. Same tokens (`SEQUENCES.askUnderstood`), same component.
+- Verified: `fromWhatYouSaid.test.js` (Coffee/Pickleball tonight + dinner for 6 open on step 2 and settle there, Back to step 1
+  never settles, opened on step 1 never settles on step 2, no settle on steps without the card or an unknown opening step);
+  `outdoorMatch` journey +item 85 step (real "coffee right now" -> opens on When & where, settles there, not on step 1).
+  Jest 5892; journeys 316/316. Device checklist checks 3, 6, 6a, 6b, 9 extended for both entry paths + no replay.
+- Open: item 82 stays OPEN until its device checklist is recorded on a real phone.
+
 # Item 83 (owner, 2026-10-12) - RECORDED AS MET, NOTHING BUILT
 
 - Item 83 ("the app remembers what you're trying to accomplish" matters more than a card entrance) MET by items 45 (understood

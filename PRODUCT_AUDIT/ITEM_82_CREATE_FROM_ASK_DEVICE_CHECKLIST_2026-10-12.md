@@ -10,15 +10,18 @@ Setup: Home or Discover, a typed ask with no results you're happy with, then "Cr
 2. In check 1, the rows settle in once, one after another, quickly (well under half a second). Readable from the first frame,
    no glow, no haptic. It must not feel like an onboarding step.
 3. Same ask: Next to step 2 -> the card is there as before, with "Check the time below, then pick a place…", and it does NOT
-   animate. Back to step 1: the card is there and does NOT animate again.
+   animate (it settles on step 2 only when Create OPENED there, check 6). Back to step 1: the card is there and does NOT animate again.
 4. Step 1's card has NO "Pick a time, then a place" line (that line is step 2's).
 5. Hide on step 1 -> the card is gone on step 1 AND on step 2. Title, activity and time stay filled.
-6. Type "Pickleball tonight" -> Create it. Create opens on step 2 (as before) with the card (Activity Pickleball, Time Tonight),
-   no animation. Back to step 1: the card is at the top, no animation, Pickleball selected below.
+6. (Item 85) Type "Pickleball tonight" -> Create it. Create opens on step 2 (as before) with the card (Activity Pickleball, Time
+   Tonight); its rows settle in ONCE, exactly like check 2. The card's content, its "Check the time below…" line and Hide are as
+   before. Back to step 1: the card is at the top, no animation, Pickleball selected below. Next to step 2 again: no animation.
+6a. (Item 85) Repeat check 6 with "Coffee tonight" and "dinner for 6": both open on step 2 and settle there once.
+6b. (Item 85) Both entry paths, then move between steps several times (1 -> 2 -> 1 -> 2 -> 3 -> 2): the settle never replays.
 7. "something fun outside tonight" -> Create it: the card says Time Tonight only. No place, setting or "near me" row ever
    appears, whatever the words; "Where" on step 2 still defaults to near you.
 8. Opening Create from the Create tab (no ask): no card on any step.
-9. Reduce Motion ON: check 1's card is simply there, settled, no movement.
+9. Reduce Motion ON: check 1's and check 6's cards are simply there, settled, no movement.
 10. Tapping "Create it" opens Create at once with the normal screen transition: nothing morphs or travels between screens.
 11. Light and dark: card readable; longest language (de / tl) wraps cleanly at narrow width; the card doesn't push Title below
     the fold on a small phone (record the device if it does: report, don't change).
