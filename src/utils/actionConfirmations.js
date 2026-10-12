@@ -5,12 +5,19 @@
 import { businessReplyKind } from './offerCopy';
 import { tr } from '../i18n/translate';
 
-export function replySentConfirmation(offer) {
-  switch (businessReplyKind(offer)) {
-    case 'alternative': return [tr('ui.bizHelp.confirm.altTitle'), tr('ui.bizHelp.confirm.altBody')];
-    case 'offer': return [tr('ui.bizHelp.confirm.offerTitle'), tr('ui.bizHelp.confirm.offerBody')];
-    default: return [tr('ui.bizHelp.confirm.replyTitle'), tr('ui.bizHelp.confirm.replyBody')];
-  }
+// Item 51: `first` = the server said this is the business's first-ever offer (partner_first_offers; never decided on the
+// device). Words only: the title marks the milestone, named by the reply's real kind; the body stays what happens next.
+export function replySentConfirmation(offer, { first = false } = {}) {
+  const kind = businessReplyKind(offer);
+  const [title, body] = (() => {
+    switch (kind) {
+      case 'alternative': return [tr('ui.bizHelp.confirm.altTitle'), tr('ui.bizHelp.confirm.altBody')];
+      case 'offer': return [tr('ui.bizHelp.confirm.offerTitle'), tr('ui.bizHelp.confirm.offerBody')];
+      default: return [tr('ui.bizHelp.confirm.replyTitle'), tr('ui.bizHelp.confirm.replyBody')];
+    }
+  })();
+  if (first !== true) return [title, body];
+  return [tr(kind === 'offer' ? 'ui.bizHelp.confirm.firstOfferTitle' : 'ui.bizHelp.confirm.firstReplyTitle'), body];
 }
 
 // The full offer editor saves the offer and checks it in the background (item 83); it is not sent yet.

@@ -45,7 +45,8 @@ export function submissionView(sub) {
     case 'published': {
       // Named by the reply's real kind from its saved payload (item 121/123): a plain reply is "Reply sent", never "Offer sent".
       const p = sub.payload ?? {};
-      const [headline] = replySentConfirmation({ offer_type: p.offerType, offer_title: p.offerTitle, offer_price: p.offerPrice, discount_pct: p.discountPct, included_items: p.includedItems });
+      // Item 51: the server's is_first_offer marks the business's first-ever offer (get_my_offer_submissions).
+      const [headline] = replySentConfirmation({ offer_type: p.offerType, offer_title: p.offerTitle, offer_price: p.offerPrice, discount_pct: p.discountPct, included_items: p.includedItems }, { first: sub.is_first_offer === true });
       return { headline, detail: U('publishedBody'), tone: 'success', actions: ['dismiss'] };
     }
     case 'needs_changes':

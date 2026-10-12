@@ -2330,7 +2330,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   async function handleOfferResult(result, close, sent = null) {
     if (result.published) {
       close();
-      if (sent) showSuccessToast(...replySentConfirmation(sent));
+      if (sent) showSuccessToast(...replySentConfirmation(sent, { first: result.firstOffer === true })); // item 51: server-decided
       await loadOpportunities(selectedPartner.id);
     } else if (result.blocked) {
       Alert.alert(

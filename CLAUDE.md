@@ -96,6 +96,10 @@ Owner: keep the existing headline (no "Someone is looking for this" unless busin
 **Item 49 (live Customer Preview in Make an Offer) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_49_LIVE_CUSTOMER_PREVIEW_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone and the business website (journey `offer`; no new strings).
 
+**Item 51 (business's first offer confirmation) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_51_FIRST_OFFER_CONFIRMATION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (needs Anthropic credit + a business with no offers yet)
+AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 20270299; journey `offer`; `partner-first-offer.sql` 13/13).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -381,6 +385,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   nothing (no "Offer card / Photo / Video" chooser); items 10 (whole media in the fixed frame, video tap-to-play), 11/21 (one card for
   every business), screened logo beside the name only (no brand colours, fonts, templates, button styles; coral stays Nearby's), item 49
   preview above Send Offer. Businesses get freedom over WHAT they offer, never over how prominently it is designed. Do not reopen.
+- **First offer (owner item 51):** a business's first-ever offer = ONE server claim `partner_first_offers` (trigger on the first row to reach
+  'offered' by ANY path, PK `on conflict do nothing`; no client grants); the sent confirmation reads "Your first offer/reply is on its way"
+  (`replySentConfirmation(.., { first })`, kind per item 121) from the edge function's `firstOffer` / `get_my_offer_submissions.is_first_offer`.
+  Words only; never on the queued "saved" step; the customer's first-reply moment stays as locked.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

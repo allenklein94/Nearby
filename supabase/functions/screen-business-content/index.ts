@@ -1145,7 +1145,10 @@ Body: ${updateBody || '(none)'}`;
           console.error('screen-business-content: low-tier offer_response write failed', writeError);
           return { status: 500, body: { error: writeError.message || 'Could not send your response.' } };
         }
-        return { status: 200, body: { riskTier, published: true, blocked: false, screeningId, offerId: writeResult?.offerId } };
+        // Item 51: the business's first-ever offer = the server's one claim (partner_first_offers, set by trigger in this write).
+        const { data: first } = await admin.from('partner_first_offers').select('offer_id').eq('partner_id', partnerId).maybeSingle();
+        const firstOffer = !!writeResult?.offerId && first?.offer_id === writeResult.offerId;
+        return { status: 200, body: { riskTier, published: true, blocked: false, screeningId, offerId: writeResult?.offerId, firstOffer } };
       }
 
       if (riskTier === 'high') {

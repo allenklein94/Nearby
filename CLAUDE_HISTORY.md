@@ -1,3 +1,31 @@
+# Item 51 (2026-10-12) - the business's first-ever offer gets its own confirmation - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+Owner choice (asked): the BUSINESS side only; the customer's first-reply moment (2026-10-10, LOCKED: "Your first reply from a local
+business", the longer arrival notice, the approved animations) is untouched. Words only: no confetti, motion, sound, haptics or pressure.
+**Server (migration `20270299_partner_first_offer.sql`, applied live):** `partner_first_offers` (partner_id PK, offer_id, request_id,
+claimed_at; RLS on, revoked from public/anon/authenticated; service_role reads). `_claim_partner_first_offer()` AFTER INSERT/UPDATE OF
+status on `business_request_offers`: the first row of a partner to reach 'offered' by ANY path (owner send, one-tap reply, reviewer
+approval, standing availability/package/policy match, AI auto-respond: 7 writer functions found live) claims it with `on conflict
+(partner_id) do nothing`; never re-taken (withdraw/expire/delete keep it). Backfill = earliest responded non-declined reply (prod: 0
+offers, 0 claims). `get_my_offer_submissions` dropped and re-created (one overload, same grants) + `is_first_offer` = a SENT
+submission whose request holds the claim ((request_id, partner_id) is unique, so reviewer-approved offers with no offer_id are covered).
+`screen-business-content` (deployed) adds `firstOffer` = the claim's offer_id equals this write's offerId (live path: one-tap replies).
+**Client:** `replySentConfirmation(offer, { first })` -> "Your first offer is on its way" (an offer by item 121) or "Your first reply is
+on its way" (plain reply / suggested time: never called an offer); body unchanged; only a real `true` counts. Dashboard toast passes
+`result.firstOffer`; the Your offers card (`submissionView`) passes `is_first_offer`. The queued "Offer saved, we're checking it" never
+says first (nothing sent yet). 2 strings x 11 languages (`ui.bizHelp.confirm.firstOfferTitle/firstReplyTitle`, machine-authored).
+**Verified:** `scripts/live-verify/partner-first-offer.sql` ALL OK 13/13 (dry run with the migration prepended, then after applying):
+pending claims nothing, pending->offered claims its own row, a later offer / a second claim / withdraw+expire+re-offer never take it,
+a decline claims nothing, per-business, submissions flag only the first request's SENT row, no client read, one overload, trigger present;
+a mutation (claim overwrite) fails 4 checks. **Real two-session race** on the live DB (Management API, parallel): B's claim waited 3.5 s
+on A's uncommitted claim (A rolled back -> B could claim); with A committing, B's `on conflict` inserted nothing (`b_won 0`); the one
+throwaway committed row deleted, 0 claims left. Jest 426 suites / 5742 (`firstOffer.test.js` 9, wiring test updated); journeys 26/26
+(278), `offer` step "item 51": the real submit leaves the claim on its own offer when the business had none (else unchanged) and the
+title follows. Business web export regenerated. **NOT verified:** a real send through the edge function (Anthropic credit: every owner
+send is screened), a device/browser render, native review. Disclosed: a business whose first offer went out AUTOMATICALLY never sees the
+line (by design: that was its first offer); no from-scratch replay. Not the standing-offer "Post your first offer" / `first_offer_created`
+acquisition event (a different object, unchanged). Checklist: `PRODUCT_AUDIT/ITEM_51_FIRST_OFFER_CONFIRMATION_DEVICE_CHECKLIST_2026-10-12.md`.
+
 # Item 50 (2026-10-12) - offer delivery "could be branded" - APPROVED AS ALREADY BUILT, LOCKED, no code change
 
 Owner spec: the business chooses Video / Photo / Offer Card and Nearby packages it, creative freedom without breaking UI consistency.

@@ -21,7 +21,7 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}';
       v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_opps jsonb; v_row jsonb; v_o record; v_perf_before bigint; v_perf_after bigint;
-      v_comp_before bigint; v_comp_after bigint; v_seen int; v_val_before numeric; v_val_after numeric; v_red_before bigint; v_val record; v_f0 record; v_f1 record;`, `
+      v_comp_before bigint; v_comp_after bigint; v_seen int; v_first_before uuid; v_val_before numeric; v_val_after numeric; v_red_before bigint; v_val record; v_f0 record; v_f1 record;`, `
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
   select coalesce(sum(accepted_count),0), coalesce(sum(completed_count),0) into v_perf_before, v_comp_before from (
     select * from (select set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true)) x, lateral get_partner_offer_performance(v_partner)) p;
@@ -49,12 +49,15 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
      'data', jsonb_build_object('leaks_host_id', position(v_host::text in v_row::text) > 0, 'party', v_row->'business_requests'->>'party_size', 'row', v_row)));
 
   -- 4. the business creates an offer (the writer the edge function calls after screening)
+  select offer_id into v_first_before from partner_first_offers where partner_id = v_partner; -- item 51
   v_res := submit_business_offer(request_id_param := v_req, offer_type_param := 'standard',
      offer_description_param := 'We can accommodate this as requested.', offer_price_param := 12.5,
      valid_until_param := now() + interval '18 minutes'); -- item 47: a time-sensitive offer (its last 30 minutes)
   select id into v_offer from business_request_offers where request_id = v_req and partner_id = v_partner;
   log := log || jsonb_build_array(jsonb_build_object('step','offer_submitted','ok', coalesce((v_res->>'success')::boolean,false),
-     'data', (select to_jsonb(o) - 'partner_id' from (select status, offer_type, offer_price from business_request_offers where id = v_offer) o)));
+     'data', (select to_jsonb(o) - 'partner_id' from (select status, offer_type, offer_price from business_request_offers where id = v_offer) o)
+       || jsonb_build_object('offer_id', v_offer, 'first_before', v_first_before,
+            'first_after', (select offer_id from partner_first_offers where partner_id = v_partner))));
 
   -- 5. the offer reaches the host (read as the host)
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
@@ -157,6 +160,18 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(arriving.map((o) => o.id)).toEqual([row.id]);
     expect(newArrivals([row], new Set(arriving.map(arrivalKey)))).toEqual([]);
     expect(newArrivals([{ ...row, status: s.offer_submitted.data.status }], new Set())).toEqual([]);
+  });
+  // Item 51: the server's one claim. A business with no earlier offer gets this one as its first (and the edge function's
+  // answer, firstOffer, is exactly "the claim is this offer"); a business that already had one keeps it.
+  test("item 51: the business's first offer is claimed by the server, once", () => {
+    const { replySentConfirmation } = require('../utils/actionConfirmations');
+    const { offer_id, first_before, first_after } = s.offer_submitted.data;
+    expect(first_after).toBe(first_before ?? offer_id);
+    const firstOffer = first_after === offer_id;
+    expect(firstOffer).toBe(first_before == null);
+    const [title] = replySentConfirmation({ offer_type: s.offer_submitted.data.offer_type, offer_price: s.offer_submitted.data.offer_price }, { first: firstOffer });
+    // named by the one classifier (item 121): this reply carries a price, so it is an offer
+    expect(title).toBe(firstOffer ? 'Your first offer is on its way' : 'Offer sent');
   });
   // Item 49: the owner's live Customer Preview, built from the draft the business typed, shows what the host then reads:
   // every customer-visible field the same (the end time to the minute: the form picks a clock time, not seconds).

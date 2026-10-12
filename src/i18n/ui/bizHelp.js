@@ -61,6 +61,8 @@ export default {
       replyBody: "The customer will see you can take them.",
       queuedTitle: "Offer saved",
       queuedBody: "We're checking it now. It goes to the customer as soon as it clears.",
+      firstOfferTitle: "Your first offer is on its way",
+      firstReplyTitle: "Your first reply is on its way",
     },
     outcome: {
       opportunities: { one: "{count} opportunity", other: "{count} opportunities" },
@@ -440,6 +442,8 @@ export default {
       replyBody: "El cliente verá que puedes atenderlo.",
       queuedTitle: "Oferta guardada",
       queuedBody: "La estamos revisando. Le llegará al cliente en cuanto se apruebe.",
+      firstOfferTitle: "Tu primera oferta va en camino",
+      firstReplyTitle: "Tu primera respuesta va en camino",
     },
     outcome: {
       opportunities: { one: "{count} oportunidad", other: "{count} oportunidades" },
@@ -819,6 +823,8 @@ export default {
       replyBody: "Der Kunde sieht, dass du ihn aufnehmen kannst.",
       queuedTitle: "Angebot gespeichert",
       queuedBody: "Wir prüfen es gerade. Es geht an den Kunden, sobald es freigegeben ist.",
+      firstOfferTitle: "Dein erstes Angebot ist unterwegs",
+      firstReplyTitle: "Deine erste Antwort ist unterwegs",
     },
     outcome: {
       opportunities: { one: "{count} Gelegenheit", other: "{count} Gelegenheiten" },
@@ -1198,6 +1204,8 @@ export default {
       replyBody: "Le client verra que vous pouvez l'accueillir.",
       queuedTitle: "Offre enregistrée",
       queuedBody: "Nous la vérifions. Elle sera envoyée au client dès qu'elle sera validée.",
+      firstOfferTitle: "Votre première offre est en route",
+      firstReplyTitle: "Votre première réponse est en route",
     },
     outcome: {
       opportunities: { one: "{count} opportunité", other: "{count} opportunités" },
@@ -1577,6 +1585,8 @@ export default {
       replyBody: "O cliente verá que você pode atendê-lo.",
       queuedTitle: "Oferta salva",
       queuedBody: "Estamos verificando agora. Ela vai para o cliente assim que for aprovada.",
+      firstOfferTitle: "Sua primeira oferta está a caminho",
+      firstReplyTitle: "Sua primeira resposta está a caminho",
     },
     outcome: {
       opportunities: { one: "{count} oportunidade", other: "{count} oportunidades" },
@@ -1956,6 +1966,8 @@ export default {
       replyBody: "Kliyan an ap wè ou ka resevwa l.",
       queuedTitle: "Òf sove",
       queuedBody: "N ap tcheke l kounye a. L ap ale bay kliyan an depi li pase.",
+      firstOfferTitle: "Premye òf ou a sou wout",
+      firstReplyTitle: "Premye repons ou a sou wout",
     },
     outcome: {
       opportunities: { other: "{count} opòtinite" },
@@ -2335,6 +2347,8 @@ export default {
       replyBody: "顾客会看到你可以接待他们。",
       queuedTitle: "优惠已保存",
       queuedBody: "我们正在检查，通过后就会发送给顾客。",
+      firstOfferTitle: "你的第一个优惠已在路上",
+      firstReplyTitle: "你的第一条回复已在路上",
     },
     outcome: {
       opportunities: { other: "{count} 个机会" },
@@ -2714,6 +2728,8 @@ export default {
       replyBody: "Khách sẽ thấy bạn có thể tiếp nhận họ.",
       queuedTitle: "Đã lưu ưu đãi",
       queuedBody: "Chúng tôi đang kiểm tra. Ưu đãi sẽ đến khách ngay khi được duyệt.",
+      firstOfferTitle: "Ưu đãi đầu tiên của bạn đang được gửi đi",
+      firstReplyTitle: "Phản hồi đầu tiên của bạn đang được gửi đi",
     },
     outcome: {
       opportunities: { other: "{count} cơ hội" },
@@ -3093,6 +3109,8 @@ export default {
       replyBody: "Makikita ng customer na kaya mo silang tanggapin.",
       queuedTitle: "Na-save ang alok",
       queuedBody: "Sinusuri namin ito ngayon. Ipapadala ito sa customer sa sandaling pumasa.",
+      firstOfferTitle: "Papunta na ang una mong alok",
+      firstReplyTitle: "Papunta na ang una mong tugon",
     },
     outcome: {
       opportunities: { other: "{count} oportunidad" },
@@ -3472,6 +3490,8 @@ export default {
       replyBody: "Клиент увидит, что вы можете его принять.",
       queuedTitle: "Предложение сохранено",
       queuedBody: "Мы его проверяем. Клиент получит его, как только проверка будет пройдена.",
+      firstOfferTitle: "Ваше первое предложение в пути",
+      firstReplyTitle: "Ваш первый ответ в пути",
     },
     outcome: {
       opportunities: { one: "{count} возможность", few: "{count} возможности", many: "{count} возможностей", other: "{count} возможности" },
@@ -3851,6 +3871,8 @@ export default {
       replyBody: "고객에게 방문을 받을 수 있다고 표시됩니다.",
       queuedTitle: "제안을 저장했습니다",
       queuedBody: "지금 확인하고 있습니다. 통과되면 바로 고객에게 전달됩니다.",
+      firstOfferTitle: "첫 제안이 전달되고 있습니다",
+      firstReplyTitle: "첫 답장이 전달되고 있습니다",
     },
     outcome: {
       opportunities: { other: "기회 {count}건" },

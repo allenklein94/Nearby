@@ -40,7 +40,7 @@ describe('meaningful confirmations', () => {
   });
   it('each action is wired to its confirmation', () => {
     const dash = read('screens/BusinessDashboardScreen.js');
-    expect(dash).toMatch(/showSuccessToast\(\.\.\.replySentConfirmation\(sent\)\)/);
+    expect(dash).toMatch(/showSuccessToast\(\.\.\.replySentConfirmation\(sent, \{ first: result\.firstOffer === true \}\)\)/);
     expect(dash).toMatch(/\{ offer_type: offerType \}\)/);
     expect(dash).toMatch(/showSuccessToast\(\.\.\.offerQueuedConfirmation\(\)\)/);
     // the full editor's direct send passes the reply's REAL fields (no placeholder that forces "Offer sent")
