@@ -1,3 +1,10 @@
+# Item 83 (owner, 2026-10-12) - RECORDED AS MET, NOTHING BUILT
+
+- Item 83 ("the app remembers what you're trying to accomplish" matters more than a card entrance) MET by items 45 (understood
+  chips kept above results), 61/187 + 82 (Create carries the ask and shows it on its first screen), 110/112 + 84 (the request
+  carries the ask, never re-asks, marks only what's missing) and flywheel gap 1 (the gathering records its ask). No more motion
+  added (item 58). Owner: items 82 and 84 join the device session order right after items 28 and 32.
+
 # Item 84 (owner, 2026-10-12) - request from an ask: what was carried + every missing field before Send - BUILT, NOT DEVICE-VERIFIED
 
 - Asked: "Coffee tonight" -> Ask a nearby business -> the intent becomes the request; the person fills only what's missing.

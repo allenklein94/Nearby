@@ -121,7 +121,7 @@ record device failures in the checklist without changing locked behavior to work
 incl. item 73's checks 15-16: four joins in 10 s = one full + three small, full again after 10 s quiet).
 
 **Device session order (owner, 2026-10-12):** item 55 first (its overlap map records shared results against items 44/48), then items 28
-and 32, then the offer experience once Anthropic credit exists (never bypass screening). One phone first is fine: other platform stays PENDING.
+and 32, then items 82 and 84 (one phone, a few minutes), then the offer experience once Anthropic credit exists (never bypass screening). One phone first is fine: other platform stays PENDING.
 
 **Item 62 (several replies -> one notification) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_62_REPLY_PUSH_REPLACE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND Android phone, incl. whether each
@@ -135,7 +135,7 @@ screen is checked on a real device AND native review of `ui.requestDetail.pickFi
 **Offer screens without screen-wide motion (owner, 2026-10-12) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/OFFER_SCREEN_WIDE_MOTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (incl. whether acceptance / the GroupPlan card exit feel jumpy: report, never add motion).
 
-**Items 65/67/69/70/71/77/78/81 recorded as met, 66/68/74 declined, 72/75/76/79/80 partly met (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
+**Items 65/67/69/70/71/77/78/81/83 recorded as met, 66/68/74 declined, 72/75/76/79/80 partly met (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
 NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (migration 20270305; journey `perkRedemption`; live `confirmed-visit-counts.sql` 16/16).
 
 **Item 82 ("Create it": what you said on Create's first screen) is BUILT, NOT DEVICE-VERIFIED, OPEN until** every check in
