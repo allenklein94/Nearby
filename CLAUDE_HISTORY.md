@@ -1,3 +1,17 @@
+# Items 76-78 (owner, 2026-10-12) - RECORDED, NOTHING BUILT
+
+- Item 76 ("Happening Now" live indicators) PARTLY MET: the live time line from the shared engine ("Happening now · until
+  10 PM", "Ends in N min"), accepted friends going/hosting, real "N attending", item 26's one ring + item 27's still mark.
+  DECLINED: "18 people nearby" (Nearby has no stranger presence data; only item 39's opt-in friends), "friends interested"
+  (Interested is private), numbers that animate/tick on cards (cards static; rows never move, item 15).
+- Item 77 (live data never fakes activity) MET by the Truthfulness rules (no invented numbers, unknown = nothing, Home may say
+  nothing), the motion truth rule and item 58, real-only scarcity ("Almost full" from real spots, offer countdown only in the
+  real last 30 min, Trending >= 5 joined), no view counts (views are private behaviour signals), demand floor of 5. Note: "2
+  people interested" stays host-only (count, never who).
+- Item 78 (weather environmental intelligence) MET by the weather ranking tier (silent), items 62/193 (speaks only when it
+  materially changes the picks), item 192's wording ("Perfect evening for outdoor plans", exact) and item 36's card-only wash +
+  icon. Not added: an icon -> recommendation travel (item 36 LOCKED: card only, no more animation). Item 36 device check open.
+
 # Items 74-75 (owner, 2026-10-12) - RECORDED, NOTHING BUILT
 
 - Item 74 (a friend's avatar briefly beside "Interested") DECLINED: Interested is private (locked), the host sees a count only
