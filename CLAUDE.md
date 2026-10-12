@@ -135,7 +135,7 @@ screen is checked on a real device AND native review of `ui.requestDetail.pickFi
 **Offer screens without screen-wide motion (owner, 2026-10-12) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/OFFER_SCREEN_WIDE_MOTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (incl. whether acceptance / the GroupPlan card exit feel jumpy: report, never add motion).
 
-**Items 65/67/69/70/71/77/78 recorded as met, 66/68/74 declined, 72/75/76 partly met (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
+**Items 65/67/69/70/71/77/78/81 recorded as met, 66/68/74 declined, 72/75/76/79/80 partly met (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
 NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (migration 20270305; journey `perkRedemption`; live `confirmed-visit-counts.sql` 16/16).
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
@@ -304,6 +304,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `formatDistance`, time via `whenLabel`/`timeWindowState`.
 - Home: intent box -> Picked For You (max 3) -> Your Plans (max 3) -> social line -> Nearby Right Now (max 3).
   Home never expands sections in place.
+- **Empty asks (owner item 81, LOCKED):** no out-of-radius fallback, even labelled (the radius stays a hard filter; only an explicit
+  rule change reopens it); no "similar activities" until item 128's analysis AND a real phone show empty results recur (then labelled,
+  real results, existing taxonomy relations, never AI-guessed substitutes); the empty state stays static (item 58).
 - Weather reranks silently and speaks only when it materially changes the picks; businesses are judged
   only by their declared weather setting.
 

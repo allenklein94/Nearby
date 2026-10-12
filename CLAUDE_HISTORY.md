@@ -1,3 +1,21 @@
+# Items 79-81 (owner, 2026-10-12) - RECORDED, NOTHING BUILT
+
+- Item 79 ("New nearby" card appears on Discover) MET for Happening Now by item 26 (one ring from the heading for a gathering
+  not yet shown this session, `utils/happeningSeen.js`, shared with Home). Discover loads on focus, never inserts while viewed.
+  DECLINED: cards animating in (cards/lists static, item 15) and a "New nearby" label elsewhere (new string + a cross-restart
+  "since you last looked" store; too close to the reserved "Happening Nearby"; Discover first-viewport fit waits on a phone).
+- Item 80 (business availability "just became available") MET where it concerns the person: `post_business_availability`
+  matching an OPEN request arrives as a reply (item 62 push, item 23 travel, item 25 signature); browsing = availability ranking
+  tier 4. DECLINED: broadcasting a business's availability to people who did not ask (advertising / deals feed) and a card
+  sliding into a section (static cards; would give businesses a prominence lever, item 50).
+- Item 81 ("No results" shouldn't be dead) MET by items 26/190 (Create it yourself, primary, words carried; "Ask Nearby
+  Businesses" secondary via `askBusinessesFits`, Home + Discover) and 189 (Places to go for public-place asks). Owner decisions
+  (LOCKED): Gap 1 "closest option" NOT BUILT: no out-of-radius fallback even clearly labelled; the radius stays a hard filter;
+  only an explicit product decision changing that rule reopens it. Gap 2 "similar activities" HELD until item 128's
+  unmatched-ask analysis AND a real-phone session show empty results recur; if reconsidered: clearly labelled, real results,
+  existing taxonomy relationships only, never AI-guessed substitutes presented as answers. The empty state stays static (item 58;
+  no entrance animation restored).
+
 # Items 76-78 (owner, 2026-10-12) - RECORDED, NOTHING BUILT
 
 - Item 76 ("Happening Now" live indicators) PARTLY MET: the live time line from the shared engine ("Happening now · until
