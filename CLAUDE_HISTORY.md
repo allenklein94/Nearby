@@ -1,24 +1,34 @@
-# Item 62 (2026-10-12) - several businesses reply: push collapse - INVESTIGATED, NOTHING BUILT (awaiting owner)
+# Item 62 (2026-10-12) - several replies to one request = one notification, replaced in place - BUILT, LIVE, NOT DEVICE-VERIFIED
 
-Owner: investigate first, build nothing yet; never a staged three-offer fan-out or "competition" framing (motion-truth rule
-stays locked; flow stays "we found options -> I'll take this one -> you're booked"). Traced live (pg_proc on prod):
-- `business_offer_received` pushes come from TWO places: (1) `_on_business_offer_sent` (BUSINESS_OFFER_SENT handler) for
-  sources `submit_business_offer` and `admin_review_business_content_screening` (screened offer approved), text from
-  `_business_reply_push(offer)` ("{emoji} {Business} responded" / "They sent an offer for your {what}..."), via
-  `_notify_event_recipient` with dedupe key `event:<event id>:<recipient>`; (2) `post_business_availability`, a direct
-  `_send_push` (no dedupe key) per matched open request ("New offer for your request!").
-- The auto-match sources (`match_availability`, `match_package`, `match_policy`, `ai_auto_respond`) emit BUSINESS_OFFER_SENT
-  but the handler pushes only the BUSINESS (`business_opportunity_received`), never the customer.
-- Every event is one offer, so the dedupe key never joins two replies: CONFIRMED, each business reply = its own push.
-  Delivery is immediate (`_send_push` -> `_push_outbox_deliver` -> pg_net -> send-push -> Expo); the 5/10/20 min retry exists
-  only for a failed hand-off. Server push text is English-only (as every push).
-- send-push sends no `collapseId` / `tag` / `threadId`. Expo's push API supports them (docs.expo.dev, checked 2026-10-12):
-  `tag` (Android) replaces a shown notification; `collapseId` replaces on iOS (on Android it only coalesces in transit).
-- In the app, `services/offerArrivals.js` already folds several new replies into ONE in-app signal ("2 offers came in").
-Recommendation (not built): send each reply's push at once as today, with `collapseId` + `tag` = the request id, and words
-from the live count of offered replies on that request (1 = today's text; 2+ = one roll-up line). No delay, nothing dropped
-(each reply still pushes; the newer one replaces the older on the phone), grouped by request id only. Route
-`post_business_availability`'s customer push through the same helper. Fallback: the "N replies" count line on the request screen.
+Owner approved (2026-10-12) after the investigation below: Expo `tag` (Android) + `collapseId` (iOS), one notification per
+request, today's words at 1 reply, the live count at 2+; no fallback count line unless device testing shows it is needed; never a
+staged fan-out (motion-truth rule locked). Built: migration `20270303_reply_push_replaces_in_place.sql` (live) + `send-push` v23.
+- Both customer reply-push senders set `collapse_key = 'offers:<request id>'`: `_on_business_offer_sent` (submit_business_offer +
+  screened-offer approval) and `post_business_availability`. send-push's `replaceInPlace(data)` passes it as `collapseId` + `tag`,
+  only for a well-formed `offers:<uuid>` key (every other push: neither).
+- ONE rule `_refresh_reply_push(outbox id)`, run inside `_push_outbox_deliver` right before EVERY hand-off (first try and retry),
+  under a per-request advisory lock: count the request's replies with status 'offered' (one row per business). 2+ -> "{emoji} N
+  businesses responded" / "See their replies to your {what}.", data drops offer_id (tap opens the request) and carries
+  reply_count; 1 -> the push keeps exactly what was queued if it is still about that reply, else becomes the remaining reply's
+  own words (`_business_reply_push`); 0 -> not sent (status failed, "not sent: no open reply left on this request").
+- `_business_reply_what(request)` now holds the "what" phrase once (was inline in `_business_reply_push`; output identical,
+  checked 3/3 variants on fixtures in a rolled-back transaction; production has no offers yet).
+Retries/out-of-order: a late hand-off is worded from the count at that moment, never an older one (journey). Concurrency: the
+lock makes the second of two simultaneous replies wait for the first to commit and count both (by reading; one transaction can't
+race itself, so not exercised by a test). Residuals (documented): the count is true when sent (a later withdrawal doesn't change a
+shown notification); APNs/FCM may deliver two pushes seconds apart out of order, briefly showing the earlier true count; a
+`_notify_event_recipient` ledger would record a 0-reply refusal as 'sent', but that case only arises on a retry, not a first send.
+Verified: journey `replyPushCollapse` 11/11 (4 replies across both senders -> 4 immediate pushes; 1 / 2 / 3 counts; a second
+request keeps its own key and words; late retry says 3 not 1; withdrawals re-word down to 2, to the remaining reply's words, then
+not sent; taps), `sendPushReplaceInPlace.test.js` 6/6; all 29 journeys 302/302 live; Jest 434 suites / 5822 passed.
+NOT device-verified: whether the phone really replaces in place and whether each replacement sounds/vibrates again is unknown
+until `PRODUCT_AUDIT/ITEM_62_REPLY_PUSH_REPLACE_DEVICE_CHECKLIST_2026-10-12.md` is run on a real iPhone and Android phone.
+
+Investigation (same day, before the build): `business_offer_received` came from `_on_business_offer_sent` (sources
+submit_business_offer, admin_review_business_content_screening; dedupe key per event, so per reply) and a direct `_send_push` in
+`post_business_availability`; the auto-match sources (match_availability/package/policy, ai_auto_respond) push only the business.
+Every reply was its own push, delivered at once; send-push sent no collapseId/tag. In the app, `services/offerArrivals.js` already
+folded several new replies into one signal ("2 offers came in"), unchanged.
 
 # Items 59-61 (2026-10-12) - living network / signal sent / signal received - MET, NOTHING BUILT
 

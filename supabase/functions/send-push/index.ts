@@ -202,6 +202,14 @@ const EMAIL_EXTRA_TYPES = new Set(['business_opportunity_received', 'business_op
 function notificationPriority(type) {
   return NOTIFICATION_PRIORITY_BY_TYPE[type] ?? 'medium';
 }
+// Item 62: replies to ONE request replace each other on the phone instead of piling up. The database sets collapse_key
+// 'offers:<request id>' on reply pushes only; Expo maps collapseId to apns-collapse-id (iOS replaces the shown one) and tag to
+// the FCM notification tag (Android replaces the shown one; collapseId alone only coalesces in transit there).
+const REPLACE_KEY = /^offers:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+function replaceInPlace(data) {
+  const k = data?.collapse_key;
+  return typeof k === 'string' && REPLACE_KEY.test(k) ? { collapseId: k, tag: k } : {};
+}
 serve(async (req)=>{
   try {
     // Critical: this function was previously callable by anyone
@@ -270,7 +278,8 @@ serve(async (req)=>{
         body,
         data: data ?? {},
         ...delivery,
-        ...(NOTIFICATION_ACTION_BY_TYPE[data?.type] ? { categoryId: `nearby_${NOTIFICATION_ACTION_BY_TYPE[data?.type]}` } : {})
+        ...(NOTIFICATION_ACTION_BY_TYPE[data?.type] ? { categoryId: `nearby_${NOTIFICATION_ACTION_BY_TYPE[data?.type]}` } : {}),
+        ...replaceInPlace(data)
       })
     });
     const result = await pushResponse.json();

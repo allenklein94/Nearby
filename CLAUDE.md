@@ -122,8 +122,9 @@ record device failures in the checklist without changing locked behavior to work
 **Device session order (owner, 2026-10-12):** item 55 first (its overlap map records shared results against items 44/48), then items 28
 and 32, then the offer experience once Anthropic credit exists (never bypass screening). One phone first is fine: other platform stays PENDING.
 
-**Item 62 (several replies -> one push) is INVESTIGATED, NOTHING BUILT, awaiting the owner's go:** confirmed each reply pushes on its own;
-recommended Expo `collapseId` + `tag` per request with a live-count roll-up (findings in CLAUDE_HISTORY.md). Never a staged fan-out.
+**Item 62 (several replies -> one notification) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_62_REPLY_PUSH_REPLACE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND Android phone, incl. whether each
+replacement sounds/vibrates again (migration 20270303, send-push v23; journey `replyPushCollapse`). Fallback count line: not built unless the device shows it's needed.
 Items 59-61 recorded as met (nothing built).
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
@@ -468,6 +469,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 ### Notifications
 - Every push goes through `_send_push` (outbox, dedupe, retry); only `_push_outbox_deliver` calls send-push.
   New notifications for registry events are decided in that event's handler (`constants/domainEvents.js`).
+- Reply pushes (`business_offer_received`, item 62): one notification per request, replaced in place (`collapse_key` 'offers:<request id>' ->
+  Expo collapseId + tag); worded by `_refresh_reply_push` from the LIVE open replies at every hand-off (1 = the reply's own words, 2+ = count,
+  0 = not sent); every reply still pushes at once; never grouped across requests, never delayed or staged.
 - Plan group chat pushes (`plan_message`): recipients = `_plan_participant_rows()` (the chat roster's one source) minus the writer and
   blocks either way; the Messages switch; at most one per person per plan per 2 min; tap opens PlanChat.
 - Each push type has one priority (`notificationTier.js`), one navigation-only action button
