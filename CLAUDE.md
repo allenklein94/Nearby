@@ -377,6 +377,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   requestPulse's rings from its ✨; max 3 per load; once ever; live on INSERT) via `utils/opportunityArrival.js`; wording/buttons unchanged.
 - **Live Customer Preview (owner item 49):** Make an Offer shows the customer's card live above Send Offer (no separate preview step),
   from ONE mapping `utils/offerDraftPreview.js` + `OfferCustomerBody` + `presentOffer`; nothing before a description; a piece Send would refuse is left out.
+- **Offer delivery (owner item 50, LOCKED 2026-10-12, approved as built):** the business's only media choice is attach a photo, a video, or
+  nothing (no "Offer card / Photo / Video" chooser); items 10 (whole media in the fixed frame, video tap-to-play), 11/21 (one card for
+  every business), screened logo beside the name only (no brand colours, fonts, templates, button styles; coral stays Nearby's), item 49
+  preview above Send Offer. Businesses get freedom over WHAT they offer, never over how prominently it is designed. Do not reopen.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

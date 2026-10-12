@@ -1,3 +1,16 @@
+# Item 50 (2026-10-12) - offer delivery "could be branded" - APPROVED AS ALREADY BUILT, LOCKED, no code change
+
+Owner spec: the business chooses Video / Photo / Offer Card and Nearby packages it, creative freedom without breaking UI consistency.
+Found already built: Make an Offer attaches a photo or video (saved creative or a new pick) or none (plain card); item 10 fits any
+shape whole in the fixed frame (`utils/mediaFit.js`), video tap-to-play; items 11/21 one card structure + presentation for every
+business (`OfferCustomerBody`, `presentOffer`); the screened logo beside the name (logo item, LOCKED: no brand colours/templates);
+item 49's live Customer Preview above Send Offer. Proposed and DECLINED by the owner: an explicit "Offer card / Photo / Video"
+chooser (adds a step and 3-4 strings x 11 languages for no new function). Owner rationale: businesses get freedom over what they
+offer, not over how prominently it is designed; fair to smaller businesses, recognizable for customers. Locked; do not reopen.
+Verification still owed (separate from completion): items 10/11/49 and the logo have never rendered on a real iOS/Android device
+or the business website in a real browser with real signed URLs; no real screened logo exists in production; item 49's checklist
+`PRODUCT_AUDIT/ITEM_49_LIVE_CUSTOMER_PREVIEW_DEVICE_CHECKLIST_2026-10-12.md` is not run.
+
 # Item 49 (2026-10-12) - live Customer Preview while making an offer - BUILT, NOT DEVICE-VERIFIED
 
 Owner spec: as the business builds an offer ("20% off tonight") they see exactly how it will appear to the customer, then Send Offer.
