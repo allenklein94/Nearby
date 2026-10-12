@@ -1,3 +1,14 @@
+# Items 74-75 (owner, 2026-10-12) - RECORDED, NOTHING BUILT
+
+- Item 74 (a friend's avatar briefly beside "Interested") DECLINED: Interested is private (locked), the host sees a count only
+  ("you see how many, never who"); any face reveals identity. Joins already are the quiet social signal (items 25/28/73).
+  Not built either: a live roll of the host's Interested count (timing could identify someone on a small gathering; would need
+  an owner decision on the Interested privacy rule).
+- Item 75 ("momentum": a card more prominent as activity rises) HALF MET by attendance: the popularity tier (9 of the ranking
+  ladder) and Trending (>= 5 joined, "N attending" reason, Discover Trending section). DECLINED for Interested (never counted to
+  other viewers), for any visual change on the card (cards static), and for a growth-rate signal without usage evidence; the
+  name "Momentum" already means the personal Momentum screen.
+
 # Item 73: host live joins, first one full, the rest small (owner, 2026-10-12, LOCKED) - BUILT, NOT DEVICE-VERIFIED
 
 Owner approved (10 s quiet window) a refinement of item 28's arrival so rapid joins don't repeat the same fly-in. A host-live-join
