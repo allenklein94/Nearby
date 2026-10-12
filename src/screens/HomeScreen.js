@@ -33,6 +33,7 @@ import { askBusinessFromAsk } from '../services/askToBusiness';
 import { resolveClassifiedAsk, resolveCommunityIntent, navigateToIntentResultItem } from '../services/intentResolver';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, pickForMeKind } from '../services/surpriseMe';
 import { detectFriendDiscoveryIntent, intentPhaseCaption } from '../services/intentResolverScoring';
+import { peopleAsk, peopleModeParams } from '../utils/peopleAsk';
 import { recordTypedAsk } from '../services/typedAskAudit';
 import AskRefinementChips from '../components/AskRefinementChips';
 import AskUnderstoodChips from '../components/AskUnderstoodChips';
@@ -1200,6 +1201,15 @@ export default function HomeScreen({ navigation }) {
           intentKind: 'business_partner', hadAnyResult: false, reachedBusinessFallback: false,
         });
         proceedToCreation(result, typedText, submissionId);
+      } else if (peopleAsk(result, typedText)) {
+        // Owner item 86: a pure people ask ("I want to meet someone tonight") opens People mode through the same navigation
+        // the "meet someone tonight" card uses (utils/peopleAsk.js decides Dating/Friends and tonight); no results list.
+        // The ask stays in the box, so Back to Home returns to it.
+        await recordIntentSubmission({
+          rawText: typedText, category: result.category ?? null, dateWindow: result.dateWindow ?? null,
+          intentKind: result.intent, hadAnyResult: true, reachedBusinessFallback: false,
+        });
+        navigation.navigate('Discover', peopleModeParams(peopleAsk(result, typedText)));
       } else if (result.intent === 'community') {
         const resolved = await resolveCommunityIntent({ category: result.category, rawText: typedText });
         const submissionId = await recordIntentSubmission({
@@ -1273,6 +1283,12 @@ export default function HomeScreen({ navigation }) {
     // identical routing (a gathering result always lands on
     // GatheringDetail regardless of which search box found it), doesn't
     // hand-roll a second copy that could quietly drift from this one.
+    // Owner item 86: Home is a tab, so the meet-people row opens People -> Friends in place (the friends-presentation rule:
+    // tab entries open Discover, stack screens keep the FriendDiscovery presentation on top).
+    if (item.type === 'friend_discovery') {
+      navigation.navigate('Discover', peopleModeParams({ subMode: 'friends' }));
+      return;
+    }
     navigateToIntentResultItem(navigation, item, { typedText, classifyResult, submissionId });
   }
 

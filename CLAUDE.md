@@ -144,6 +144,9 @@ NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE
 **Item 84 (request from an ask: carried facts + every missing field before Send) is BUILT, NOT DEVICE-VERIFIED, OPEN until** every check in
 `PRODUCT_AUDIT/ITEM_84_REQUEST_FROM_ASK_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `outdoorMatch`; no new strings, no migration).
 
+**Item 86 (search -> People) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_86_SEARCH_TO_PEOPLE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `peopleMatch`; no new strings, no migration).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -490,6 +493,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `requestCarriedRows` via `askBusinessParamsFromAsk`: activity, the day the words said, People only via `statedPartySize`; never
   purpose/budget/defaults) and marks each missing required field under its label from `askMissingFields` (Send's `askMissingField` =
   its first, same `askForm`); Send's alert stays as backstop. Only `prefillFromAsk`; no optional field is ever marked.
+- **Search -> People (owner item 86):** a pure people ask (the `detectFriendDiscoveryIntent` phrases + no activity; the
+  'Make New Friends'/'Dating' tags only restate it) opens People mode, decided ONLY by `utils/peopleAsk.js` (`runIntentSearch`
+  outcome 'people'; Home navigates with the Home card's params, Discover switches in place, Back returns to the ask). Dating/Friends
+  only from the words, else the person's own default; tonight context only for the resolver's "tonight" ("now" = no banner).
+  Activity asks keep results; the meet-people row opens People -> Friends in place from tabs, the FriendDiscovery presentation from stack screens.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

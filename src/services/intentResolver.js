@@ -68,6 +68,7 @@ import {
   detectFriendDiscoveryIntent,
   SCORE_OCCASION_PACKAGE_FLOOR,
 } from './intentResolverScoring';
+import { peopleAsk } from '../utils/peopleAsk';
 import { activitiesFromText, gatheringActivityFit } from '../constants/activityLayer';
 import { energiesFromText, applyEnergyToCandidates } from '../constants/energyLevel';
 import { sessionIntentFromText, applySessionIntent } from '../constants/sessionIntent';
@@ -1129,6 +1130,17 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
       intentKind: 'business_partner', hadAnyResult: false, reachedBusinessFallback: false,
     });
     return { outcome: 'business_partner', classifyResult, typedText, submissionId, items: [], experience: null };
+  }
+
+  // Owner item 86: a pure people ask ("I want to meet someone tonight") opens People mode; no search runs. Logged as it always
+  // was (it used to end on the meet-people row, so it still counts as having somewhere to go).
+  const people = peopleAsk(classifyResult, typedText);
+  if (people) {
+    const submissionId = await recordIntentSubmission({
+      rawText: typedText, category: classifyResult.category ?? null, dateWindow: classifyResult.dateWindow ?? null,
+      intentKind: classifyResult.intent, hadAnyResult: true, reachedBusinessFallback: false,
+    });
+    return { outcome: 'people', people, classifyResult, typedText, submissionId, items: [], experience: null };
   }
 
   if (classifyResult.intent === 'community') {

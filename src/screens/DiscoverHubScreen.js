@@ -313,7 +313,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   // Item 76: opened from Home's "meet someone new tonight" claim -> lead with what it promised, counted from the pool
   // this screen is showing (Dating deck or friend-discovery), never a generic list.
-  const meetTonightContext = route.params?.context === 'meet_tonight';
+  // Owner item 86: a pure people ask typed here switches to People in place (utils/peopleAsk.js). Its tonight context lives
+  // only while People shows it; Back or the Things toggle returns to the ask with the search, filters and type tab as they were.
+  const [peopleFromAsk, setPeopleFromAsk] = useState(null);
+  const meetTonightContext = route.params?.context === 'meet_tonight' || peopleFromAsk?.tonight === true;
   const [meetTonightCount, setMeetTonightCount] = useState(null);
   useEffect(() => {
     if (!meetTonightContext || mode !== 'people') return undefined;
@@ -328,6 +331,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   function selectMode(key) {
     setMode(key);
+    if (key !== 'people') setPeopleFromAsk(null);
     // Switching to People is a genuine surface change -- an expanded
     // Things-to-Do context must not survive it and reappear later.
     closeContext();
@@ -503,6 +507,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const p = route.params;
     if (!p || p === appliedParamsRef.current) return;
     appliedParamsRef.current = p;
+    setPeopleFromAsk(null); // a new navigation into Discover carries its own context
     // Owner item 27 (2026-10-11) reopens item 206's "a navigation never lands inside a date view" for this one link only.
     if (TIME_CHIPS.includes(p.openDateView)) {
       if (!dateView) {
@@ -788,6 +793,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
     });
     return () => sub.remove();
   }, [expandedContext]);
+  // Owner item 86: Android back from People opened by an ask returns to the ask (Things, search as it was).
+  useEffect(() => {
+    if (!peopleFromAsk || mode !== 'people') return undefined;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      setMode('things');
+      setPeopleFromAsk(null);
+      return true;
+    });
+    return () => sub.remove();
+  }, [peopleFromAsk, mode]);
   // Item 206: Android back leaves the date view first (one level), the same way it leaves a category view.
   useEffect(() => {
     if (!dateView) return undefined;
@@ -1625,6 +1640,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
       if (result.outcome === 'business_partner') {
         setIntentSearch(null);
         routeClassifiedIntentToCreation(navigation, result.classifyResult, typedText);
+      } else if (result.outcome === 'people') {
+        setIntentSearch(null);
+        enterPeopleFromAsk(result.people);
       } else {
         // Typed-ask audit (item 105): records what this search understood and the rows rendered below, in their order.
         // Fire-and-forget; the result is set unchanged.
@@ -1793,7 +1811,21 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // one-shot ask box, so returning here after viewing a result should
     // still show the same understood block, same as the literal keyword
     // search results right below it never disappear on their own either.
+    // Owner item 86: the meet-people row switches to People (Friends) in place, the same as its destination elsewhere.
+    if (item.type === 'friend_discovery') {
+      enterPeopleFromAsk({ subMode: 'friends', tonight: false });
+      return;
+    }
     navigateToIntentResultItem(navigation, item, { typedText, classifyResult, submissionId });
+  }
+
+  // Owner item 86: People mode from an ask, in place. Only what the words said changes (mode, Dating/Friends when stated,
+  // tonight); the remembered mode and the sub-mode usage counts are the person's own toggles and stay untouched.
+  function enterPeopleFromAsk(people) {
+    closeContext();
+    setMode('people');
+    if (people?.subMode === 'dating' || people?.subMode === 'friends') setPeopleSubMode(people.subMode);
+    setPeopleFromAsk({ tonight: people?.tonight === true });
   }
 
   function renderIntentSearchResultRow(item, index, { onPress = handleIntentSearchResultTap, pickBadge = true } = {}) {

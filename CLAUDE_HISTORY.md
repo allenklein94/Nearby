@@ -1,3 +1,34 @@
+# Item 86 (owner, 2026-10-12) - search -> People: a pure people ask opens People mode - BUILT, NOT DEVICE-VERIFIED
+
+- Asked: "I want to meet someone tonight" -> Nearby recognizes People and goes into People mode, not a recommendation list.
+- Found: the phrase was already recognized (`detectFriendDiscoveryIntent`), but the ask ran a normal search and ended on a
+  "Meet new people nearby" row; Home's "meet someone tonight" card (items 76/137) already opened People mode with the tonight
+  banner + tonight-first order.
+- Owner approved (2026-10-12): (a) a pure people ask jumps straight to People mode; (b) Dating/Friends from the words, else the
+  person's existing default. Extra criterion: "now" counts as tonight only if the existing banner/order are designed that way.
+- Built: `utils/peopleAsk.js` (ONE rule): `peopleAsk(classifyResult, text)` = the existing phrase check AND no activity (any
+  category / narrowed group except the two people-purpose tags 'Make New Friends'/'Dating'; community and business_partner never);
+  `peopleAskSubMode` (friend words -> friends, date words -> dating, neither/both -> null = Discover's existing default);
+  tonight = the resolver's dateWindow 'tonight' only. "now" is NOT tonight: the banner reads "People worth meeting tonight" and only
+  the evening-gated Home card opens it, so "now" opens People plainly. `peopleModeParams` = the Home card's own params.
+  `runIntentSearch` returns outcome 'people' before any search (logged as before: had_any_result true, as the old row made it).
+  Home navigates to Discover with those params (ask stays in the box). Discover switches in place (`enterPeopleFromAsk`: mode,
+  stated sub-mode, tonight; never writes the remembered mode or the sub-mode usage counts), Android back / the Things toggle
+  return to the ask with search, filters and type tab untouched; a new navigation into Discover drops it.
+  Activity asks ("meet people who like tennis") keep their results. Their meet-people row opens People -> Friends IN PLACE from Home
+  and Discover (tabs). The shared destination stays the FriendDiscovery presentation (owner 2026-10-04: the same People -> Friends
+  surface opened on top of stack screens such as Celebrate, so Back returns there; `friendsPresentation.test.js`).
+- Verified: `peopleAsk.test.js` (phrase match, activity detection, Dating/Friends inference, default fallback, tonight vs now,
+  wiring guards); `peopleMatch` journey +4 (live `get_friend_discovery_candidates` as the asker: server ranks the far shared-interest
+  person first; the real `runIntentSearch` on "I want to make new friends tonight" -> outcome people, Friends, meet_tonight, no items;
+  `orderForTonight` puts the near person first, nobody removed; banner count 1; "meet someone tonight" = default sub-mode;
+  "a date tonight" = Dating; "now" = no banner). Jest 5916; journeys 320/320. Taxonomy code-dependency inventory rebuilt (the two
+  tag literals); its server sync is owner-run (`sync-code-dependencies.js`).
+- Not covered: rendering, Back/in-place behavior and Dating's tonight order from real sightings on a phone (device checklist
+  `PRODUCT_AUDIT/ITEM_86_SEARCH_TO_PEOPLE_DEVICE_CHECKLIST_2026-10-12.md`); live AI classification (credit).
+- Reported, unchanged: `constants/intentRoutes.js` `meet_new_people` holds the same phrases with subMode hardcoded 'friends', used by
+  the Create path (`routeClassifiedIntentToCreation` when not an explicit create); two phrase lists that can drift (pre-existing).
+
 # Item 85 (owner, 2026-10-12) - item 82's settle on whichever step Create opens on - BUILT, NOT DEVICE-VERIFIED
 
 - Asked: the one-time "From what you said" settle also plays when Create OPENS on step 2 (fully understood asks: "Coffee tonight",
