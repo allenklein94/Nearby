@@ -433,6 +433,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `PULSE_MOMENTS` (no motion added to item 39, item 40 not reopened); the Pulse unifies existing motion, never a reason to animate more.
   Item 56 (owner, 2026-10-12): MET by the marketplace sequence + the Pulse, nothing built; business responds (signature), item 28's
   join, item 32's accept/merge and the redemption glow + "Redeemed" stay exactly as approved, never moved into the Pulse for uniformity.
+- **Motion levels (owner item 57, documentation only):** `MOTION_LEVELS` in `constants/motionLanguage.js` names the existing tiers:
+  Level 1 micro = tiny/small (functional, only where locks permit; cards, lists, recommendations static; mode/filter changes instant),
+  Level 2 contextual = medium/special (meaningful, never signature), Level 3 = signature, exactly ONE: a business responds. Accept,
+  redemption, first business interaction, plan formation stay as approved. Guard `motion/motionLevels.test.js`.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

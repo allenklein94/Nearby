@@ -82,3 +82,23 @@ export const PULSE_MOMENTS = Object.freeze([
   { key: 'right_now_mark', form: 'still', component: 'components/RightNowMark.js', sequence: null, from: 'what is happening nearby', to: 'the Right Now heading' },
   { key: 'pin_to_sheet', form: 'journey', component: 'motion/PinToSheetFrame.js', sequence: 'pinToSheet', from: 'a place on the map', to: 'its business sheet' },
 ]);
+// Owner item 57 (2026-10-12, documentation only): three motion LEVELS, mapped exactly onto the existing timing tiers in
+// motion/motionBudget.js. They name how loud a moment may be; they change no animation, timing, component or interaction, and
+// they never move a moment between tiers. Use them to judge a motion request ("is this Level 1, 2 or 3?").
+//   Level 1 micro       -- quiet, functional motion, only where the existing locks permit it (buttons, state changes, loading,
+//                          small confirmations). Cards and lists stay static, recommendations appear statically, and map/list
+//                          mode or filter changes stay instant (item 15).
+//   Level 2 contextual  -- meaningful moments (incl. most of the marketplace sequence): memorable and recognizable, never a
+//                          signature. Offer acceptance, redemption, the first business interaction (words only, items 51/52) and
+//                          plan formation (items 25 #4, 43) stay at their approved behavior and tier.
+//   Level 3 signature   -- exactly ONE moment: a business responds to a customer's request (SIGNATURE_MOMENT).
+// Guard: motion/motionLevels.test.js.
+export const MOTION_LEVELS = Object.freeze([
+  { level: 1, key: 'micro', tiers: ['tiny', 'small'] },
+  { level: 2, key: 'contextual', tiers: ['medium', 'special'] },
+  { level: 3, key: 'signature', tiers: ['signature'] },
+]);
+export function motionLevelOf(tier) {
+  const found = MOTION_LEVELS.find((l) => l.tiers.includes(tier));
+  return found ? found.level : null;
+}

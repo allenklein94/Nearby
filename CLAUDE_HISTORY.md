@@ -1,3 +1,17 @@
+# Item 57 (2026-10-12) - three motion levels - DOCUMENTATION COMPLETE, no new animation scope
+
+The owner proposed three motion levels (micro / contextual / signature). Audit: they map onto the existing timing tiers
+(`motion/motionBudget.js`); the proposal's lists conflicted with locks (five Level 3 moments vs. item 25's ONE signature; "card
+movement", "recommendation appearing", "map/list transition" vs. item 15). Owner decision: documentation only. `MOTION_LEVELS` +
+`motionLevelOf(tier)` in `constants/motionLanguage.js` (pure data, no imports): Level 1 = tiny/small, Level 2 = medium/special,
+Level 3 = signature (exactly `businessResponds`). Offer acceptance (special), redemption (`visitConfirmed`, small), first business
+interaction (words only, items 51/52, no sequence) and plan formation (`planTogether`, special) stay as approved; nothing promoted.
+No animation, timing, component or interaction changed; every device checklist keeps its PENDING status.
+Guard `src/motion/motionLevels.test.js` (15): levels = exactly the tiers, every sequence has a level, Level 3 = exactly the
+signature, the named moments keep their approved level, no "first" sequence exists. Limitation (reported): "cards and lists stay
+static" can't be proven from tokens; it stays enforced by item 15's rule and `consistencyAudit.test.js` (no raw LayoutAnimation).
+Jest: src/motion 25 suites / 246 tests, src/constants green.
+
 # Item 56 (2026-10-12) - "biggest moments share one language" - MET, NOTHING BUILT
 
 The owner's item 56 mapped six moments onto one signal language (ask, business responds, friend joins, event appears, offer accepted,
