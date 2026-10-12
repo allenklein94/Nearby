@@ -122,6 +122,10 @@ record device failures in the checklist without changing locked behavior to work
 **Device session order (owner, 2026-10-12):** item 55 first (its overlap map records shared results against items 44/48), then items 28
 and 32, then the offer experience once Anthropic credit exists (never bypass screening). One phone first is fine: other platform stays PENDING.
 
+**Item 62 (several replies -> one push) is INVESTIGATED, NOTHING BUILT, awaiting the owner's go:** confirmed each reply pushes on its own;
+recommended Expo `collapseId` + `tag` per request with a live-count roll-up (findings in CLAUDE_HISTORY.md). Never a staged fan-out.
+Items 59-61 recorded as met (nothing built).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 

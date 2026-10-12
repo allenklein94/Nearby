@@ -1,3 +1,37 @@
+# Item 62 (2026-10-12) - several businesses reply: push collapse - INVESTIGATED, NOTHING BUILT (awaiting owner)
+
+Owner: investigate first, build nothing yet; never a staged three-offer fan-out or "competition" framing (motion-truth rule
+stays locked; flow stays "we found options -> I'll take this one -> you're booked"). Traced live (pg_proc on prod):
+- `business_offer_received` pushes come from TWO places: (1) `_on_business_offer_sent` (BUSINESS_OFFER_SENT handler) for
+  sources `submit_business_offer` and `admin_review_business_content_screening` (screened offer approved), text from
+  `_business_reply_push(offer)` ("{emoji} {Business} responded" / "They sent an offer for your {what}..."), via
+  `_notify_event_recipient` with dedupe key `event:<event id>:<recipient>`; (2) `post_business_availability`, a direct
+  `_send_push` (no dedupe key) per matched open request ("New offer for your request!").
+- The auto-match sources (`match_availability`, `match_package`, `match_policy`, `ai_auto_respond`) emit BUSINESS_OFFER_SENT
+  but the handler pushes only the BUSINESS (`business_opportunity_received`), never the customer.
+- Every event is one offer, so the dedupe key never joins two replies: CONFIRMED, each business reply = its own push.
+  Delivery is immediate (`_send_push` -> `_push_outbox_deliver` -> pg_net -> send-push -> Expo); the 5/10/20 min retry exists
+  only for a failed hand-off. Server push text is English-only (as every push).
+- send-push sends no `collapseId` / `tag` / `threadId`. Expo's push API supports them (docs.expo.dev, checked 2026-10-12):
+  `tag` (Android) replaces a shown notification; `collapseId` replaces on iOS (on Android it only coalesces in transit).
+- In the app, `services/offerArrivals.js` already folds several new replies into ONE in-app signal ("2 offers came in").
+Recommendation (not built): send each reply's push at once as today, with `collapseId` + `tag` = the request id, and words
+from the live count of offered replies on that request (1 = today's text; 2+ = one roll-up line). No delay, nothing dropped
+(each reply still pushes; the newer one replaces the older on the phone), grouped by request id only. Route
+`post_business_availability`'s customer push through the same helper. Fallback: the "N replies" count line on the request screen.
+
+# Items 59-61 (2026-10-12) - living network / signal sent / signal received - MET, NOTHING BUILT
+
+Owner proposals 59 (the story ask -> business found -> responds -> accept -> plan forms as one signal chain), 60 (request sent:
+pulse outward, businesses light up, "Looking nearby..." then "Request sent") and 61 (business side: a pulse arrives, "4 people
+looking for coffee tonight"). Audit: already built as `MARKETPLACE_MOMENTS` + `PULSE_MOMENTS` (request sent = RequestPulse rings
+only after the server confirms notifiedCount > 0, with the real "sent to N" line, `BusinessRequestDetailScreen.js`; signal received
+= item 48 OpportunityArrival; business responds = the one signature; accept + plan = items 32/33; redemption = visitConfirmed).
+Owner decision: record as met. Not built, by the locks: a staged "Looking nearby..." (motion-truth rule), businesses lighting up
+(no map on that screen; would claim routing before the server returns or show which businesses were asked = marketplace feel;
+item 55 adds no motion), a "living network" graph view (item 55/15), the "N people looking" headline (item 48 keeps its headline;
+one request's party size must not read as N separate people). No code change; item 48/55 device checklists stay PENDING.
+
 # Item 58 refinement (2026-10-12) - semantic accuracy of the meaning labels
 
 Owner: approved surprise reveal = 'changed' and business progress = accepted/completed (per step); revised two labels.
