@@ -79,7 +79,9 @@ describe('Create flow: ask only what is missing', () => {
     const screen = read('screens/CreateGatheringScreen.js');
     expect(screen).toMatch(/startAfterWhatStep\(route\.params\) \? 1 : 0/);
     expect(screen).toMatch(/quickStartPartyType/);
-    expect(screen).toMatch(/ui\.gatheringForm\.fromWhatYouSaid'/);
+    // Item 82: the "From what you said" card is the shared components/FromWhatYouSaidCard.js, rendered by Create.
+    expect(screen).toMatch(/<FromWhatYouSaidCard/);
+    expect(read('components/FromWhatYouSaidCard.js')).toMatch(/ui\.gatheringForm\.fromWhatYouSaid'/);
     // The When step still validates a picked, future time before moving on.
     // The When step must be confirmed before moving on: a preset/picked time in the future (createGatheringValidation).
     const validation = require('fs').readFileSync(require('path').join(__dirname, '../utils/createGatheringValidation.js'), 'utf8');
@@ -189,7 +191,10 @@ describe('item 187: "From what you said" describes the plan, not the taxonomy', 
     const src = read('screens/CreateGatheringScreen.js');
     expect(src).toContain("t('ui.gatheringForm.activityLabel')");
     expect(src).not.toContain("t('gatherings.categoryLabel')");
-    expect(src).toContain("const SUMMARY_LAYERS = ['activity', 'purpose', 'time', 'people'];");
+    // Item 82: the four rows are decided in utils/fromWhatYouSaid.js, which Create reads.
+    expect(read('utils/fromWhatYouSaid.js')).toContain("export const SUMMARY_LAYERS = ['activity', 'purpose', 'time', 'people'];");
+    expect(src).toContain('fromWhatYouSaidRows(route.params)');
     expect(src).not.toMatch(/\{r\.label\}/);
+    expect(read('components/FromWhatYouSaidCard.js')).not.toMatch(/\{r\.label\}/);
   });
 });

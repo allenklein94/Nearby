@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import useFormDraft from '../hooks/useFormDraft';
 import DraftBanner from '../components/DraftBanner';
+import FromWhatYouSaidCard from '../components/FromWhatYouSaidCard';
+import { fromWhatYouSaidRows, fromWhatYouSaidOnStep, fromWhatYouSaidGuidance, fromWhatYouSaidSettles } from '../utils/fromWhatYouSaid';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ScrollView, Keyboard, TouchableWithoutFeedback, ActivityIndicator, Image } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -60,8 +62,6 @@ const PRICE_OPTIONS = [
 // "What kind of plan is this?" (owner item 54): the same `party_type` column and vocabulary as everywhere else, worded as the KIND of
 // plan. Networking is the existing `coworkers` value and a casual hangout is `friends` (one value each, no second list); a plan is one
 // kind, so this stays single-select. Not specified stays the default.
-// Item 187: the only rows the "From what you said" summary shows, in this order.
-const SUMMARY_LAYERS = ['activity', 'purpose', 'time', 'people'];
 
 const PARTY_TYPE_OPTIONS = [null, 'friends', 'date', 'family', 'coworkers', 'new_people', 'groups', 'solo'].map((key) => ({
   key, labelKey: key ? `ui.gatheringOptions.kind.${key}` : 'ui.gatheringOptions.notSpecified',
@@ -301,7 +301,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     const pt = route.params?.quickStartPartyType;
     if (pt && PARTY_TYPE_OPTIONS.some((o) => o.key === pt)) setPartyType(pt);
   }, [route.params?.quickStartPartyType]);
-  const inferredRows = Array.isArray(route.params?.inferredSummary) ? route.params.inferredSummary : [];
+  const inferredRows = fromWhatYouSaidRows(route.params);
   // Item 187: the summary describes the plan in the person's language; stored values (the canonical tag, party type, preset)
   // are only looked up for display, never renamed. A row from an older build with another layer is not shown.
   const summaryValue = (r) => {
@@ -311,6 +311,26 @@ export default function CreateGatheringScreen({ navigation, route }) {
     return r.value;
   };
   const [inferredDismissed, setInferredDismissed] = useState(false);
+  // Owner item 82: the card shows as soon as Create opens from an ask (step 1 and step 2, one Hide for both); it settles in
+  // once only on the step Create opened on. Which rows and where: utils/fromWhatYouSaid.js.
+  const [openedOnStepKey] = useState(() => STEP_DEFS[step]?.key ?? null);
+  const [fromWhatYouSaidSettled, setFromWhatYouSaidSettled] = useState(false);
+  function renderFromWhatYouSaid() {
+    if (!fromWhatYouSaidOnStep(stepKey, inferredRows, inferredDismissed)) return null;
+    return (
+      <FromWhatYouSaidCard
+        key={`fromWhatYouSaid-${stepKey}`}
+        rows={inferredRows}
+        labelFor={(r) => t(`ui.gatheringForm.summary.${r.layer}`)}
+        valueFor={summaryValue}
+        guidance={fromWhatYouSaidGuidance(stepKey) ? `${whenPreset ? t('ui.gatheringForm.checkTimeThenPlace') : t('ui.gatheringForm.pickTimeThenPlace')} ${t('ui.gatheringForm.changeOnStepActivity')}` : null}
+        onHide={() => setInferredDismissed(true)}
+        settle={!fromWhatYouSaidSettled && fromWhatYouSaidSettles(stepKey, openedOnStepKey)}
+        onSettled={() => setFromWhatYouSaidSettled(true)}
+        labelStyle={styles.label}
+      />
+    );
+  }
 
   // "Planning for 4?": a headcount from the person's own words, suggested (visible + editable) rather than committed.
   const [suggestedPartySize, setSuggestedPartySize] = useState(null);
@@ -608,6 +628,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
           ))}
         </View>
 
+        {stepKey === 'what' && renderFromWhatYouSaid()}
+
         {stepKey === 'what' && (
           <>
             <Text style={styles.label}>{t('gatherings.titleLabel')}</Text>
@@ -676,22 +698,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
           </>
         )}
 
-        {stepKey === 'whenWhere' && inferredRows.length > 0 && !inferredDismissed && (
-          <View style={{ marginBottom: spacing.md, padding: spacing.md, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface }} accessibilityLabel={t('ui.gatheringForm.fromWhatYouSaid')}>
-            <Text style={[styles.label, { marginTop: 0 }]}>{t('ui.gatheringForm.fromWhatYouSaid')}</Text>
-            {inferredRows.filter((r) => SUMMARY_LAYERS.includes(r.layer)).map((r) => (
-              <Text key={r.layer} style={{ color: colors.text, marginTop: 2 }}>
-                <Text style={{ color: colors.textSecondary }}>{t(`ui.gatheringForm.summary.${r.layer}`)}: </Text>{summaryValue(r)}
-              </Text>
-            ))}
-            <Text style={{ color: colors.textSecondary, marginTop: spacing.xs }}>
-              {whenPreset ? t('ui.gatheringForm.checkTimeThenPlace') : t('ui.gatheringForm.pickTimeThenPlace')} {t('ui.gatheringForm.changeOnStepActivity')}
-            </Text>
-            <TouchableOpacity onPress={() => setInferredDismissed(true)} accessibilityRole="button" accessibilityLabel={t('ui.gatheringForm.hideSummaryA11y')} style={{ marginTop: spacing.xs, alignSelf: 'flex-start' }}>
-              <Text style={{ color: colors.textSecondary, fontWeight: '600' }}>{t('ui.gatheringForm.hide')}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {stepKey === 'whenWhere' && renderFromWhatYouSaid()}
 
         {stepKey === 'whenWhere' && (
           <>

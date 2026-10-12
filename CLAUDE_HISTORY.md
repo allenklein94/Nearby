@@ -1,3 +1,26 @@
+# Item 82 (owner, 2026-10-12) - "Create it": what you said on Create's first screen - BUILT, NOT DEVICE-VERIFIED
+
+- Asked: "Create it" animating the search into a New Gathering with the info carried over ("you didn't start over").
+- Found: carry-over already built (item 61/187: title, activity, Who, time, stated party size; `createParamsFromAsk`), the
+  "From what you said" card on step 2, and a fully understood ask ("Pickleball tonight") already opens on step 2 with it
+  (`startAfterWhatStep`). The real gap: a partly understood ask ("hang out with 4 friends tomorrow", "something fun tonight")
+  opens on step 1, where the carried facts were invisible until step 2. (My first report said every "Create it" landed on step 1;
+  corrected while building.)
+- Owner approved (2026-10-12): the gap fix with the one-time settle. Declined: a cross-screen shared-element transition (new motion
+  system, would delay navigation; item 58) and "Nearby" as a carried piece (near me is Create's default, not from the words).
+- Built: `utils/fromWhatYouSaid.js` (SUMMARY_LAYERS moved here; rows, steps 'what' + 'whenWhere', guidance step 2 only, settle only
+  on the step Create opened on and only when that is step 1), `components/FromWhatYouSaidCard.js` (the step-2 card's markup moved
+  as is; rows settle on `SEQUENCES.askUnderstood` with `infoOpacity`, native driver, Reduce Motion settled; reports `onSettled` so
+  Back to step 1 never replays). `CreateGatheringScreen.js` renders it once through `renderFromWhatYouSaid()` on both steps, one
+  `inferredDismissed` for both. No new strings, sequence, migration or screen.
+- Verified: `src/utils/fromWhatYouSaid.test.js` 8 tests (real router -> params -> rule, no location row even for "near me" /
+  "outdoors", Hide, once-only, no new strings/motion mechanism, "Create it" navigate has no await/timer/shared element);
+  `gatheringInference.test.js` guards repointed to the moved code; `outdoorMatch` journey + item 82 step (real typed search ->
+  Create it -> card on step 1 with Time tonight, no setting row, Hide) 25/25; Jest 5882 passed; journeys 314/314.
+- Not covered: rendering on a device (checklist `PRODUCT_AUDIT/ITEM_82_CREATE_FROM_ASK_DEVICE_CHECKLIST_2026-10-12.md`). Noted, not
+  changed: "a walk outside this weekend" carries no rows (no weekend preset read for Create); an understood outdoor/indoor setting is
+  not carried into Create at all (Create has no such row, and adding one would need new strings).
+
 # Items 79-81 (owner, 2026-10-12) - RECORDED, NOTHING BUILT
 
 - Item 79 ("New nearby" card appears on Discover) MET for Happening Now by item 26 (one ring from the heading for a gathering

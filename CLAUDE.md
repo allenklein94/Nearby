@@ -138,6 +138,9 @@ screen is checked on a real device AND native review of `ui.requestDetail.pickFi
 **Items 65/67/69/70/71/77/78/81 recorded as met, 66/68/74 declined, 72/75/76/79/80 partly met (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
 NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (migration 20270305; journey `perkRedemption`; live `confirmed-visit-counts.sql` 16/16).
 
+**Item 82 ("Create it": what you said on Create's first screen) is BUILT, NOT DEVICE-VERIFIED, OPEN until** every check in
+`PRODUCT_AUDIT/ITEM_82_CREATE_FROM_ASK_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `outdoorMatch`; no new strings, no migration).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -475,6 +478,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **No screen-wide motion on offer screens (owner, 2026-10-12):** a card animates only its own state change; never `animateLayout`/
   LayoutAnimation, an animated gap-closing height, or a full-screen dim there (accept, arrival pill travel, GroupPlan booked card exit).
   Item 32's scroll, item 55's pulse, the travel's light/frame stay. Guard `motion/offerScreenWideMotion.test.js`.
+- **Create from an ask (owner item 82):** the "From what you said" card (`components/FromWhatYouSaidCard.js`, rows/steps from
+  `utils/fromWhatYouSaid.js`) shows at the top of step 1 and on step 2 (unchanged, its guidance line step 2 only), one Hide for both;
+  settles once per Create only when Create opened on step 1 (item 45's `SEQUENCES.askUnderstood`, Reduce Motion = settled). Never a
+  location/setting row ("near me" is Create's default); no cross-screen transition; navigation never waits.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

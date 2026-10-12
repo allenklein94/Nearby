@@ -202,6 +202,31 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     expect(Array.isArray(last.items)).toBe(true);
   });
 
+  // Owner item 82: the same real ask -> "Create it yourself" -> Create opens with "From what you said" on its first screen.
+  test('item 82: "something fun outside tonight" -> Create it -> the card on step 1 says Tonight, never a place; Hide hides it', async () => {
+    const { routeClassifiedIntentToCreation } = require('../services/createAssistant');
+    const { startAfterWhatStep } = require('../utils/gatheringStructure');
+    const { fromWhatYouSaidRows, fromWhatYouSaidOnStep, fromWhatYouSaidSettles } = require('../utils/fromWhatYouSaid');
+    const text = 'something fun outside tonight';
+    const r = await runIntentSearch(text);
+    const nav = { navigate: jest.fn() };
+    routeClassifiedIntentToCreation(nav, r.classifyResult, text, { explicitCreate: true, submissionId: 'sub-1' });
+    const [route, params] = nav.navigate.mock.calls[0];
+    expect(route).toBe('CreateGathering');
+    expect(params).toMatchObject({ quickStartTitle: text, quickStartWhenPreset: 'tonight', quickStartSubmissionId: 'sub-1' });
+    const openedOn = startAfterWhatStep(params) ? 'whenWhere' : 'what';
+    expect(openedOn).toBe('what'); // no activity read from "something fun": Create opens on What
+    const rows = fromWhatYouSaidRows(params);
+    expect(rows.map((x) => `${x.layer}:${x.key}`)).toEqual(['time:tonight']);
+    expect(fromWhatYouSaidOnStep('what', rows, false)).toBe(true);
+    expect(fromWhatYouSaidSettles('what', openedOn)).toBe(true);
+    // "outside" was understood for the search, but Create carries no location or setting row ("near me" is its default)
+    expect(rows.some((x) => !['activity', 'purpose', 'time', 'people'].includes(x.layer))).toBe(false);
+    // the existing Hide hides the one card on both steps
+    expect(fromWhatYouSaidOnStep('what', rows, true)).toBe(false);
+    expect(fromWhatYouSaidOnStep('whenWhere', rows, true)).toBe(false);
+  });
+
   test('without the declaration the same business is NOT returned (the outdoor rule, not the category, includes it)', async () => {
     const saved = db.operatingRows;
     const savedAvail = db.availabilityRows;
