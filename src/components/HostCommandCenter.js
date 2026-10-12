@@ -22,6 +22,7 @@ export default function HostCommandCenter({
   attendeesExpanded,
   messageCount,
   joinGlowKey = 0,
+  joinKey = 0,
   joinPreviousGoing = null,
   joinedNote = null,
   onInvite,
@@ -59,10 +60,11 @@ export default function HostCommandCenter({
             // Item 15: someone joined while the host had this open -> one success-colour glow around the Going figure
             // (keyed per join event, so it plays once). No haptic (the host did not tap). Reduce Motion = no glow.
             <View key={s.key} style={styles.goingWrap} accessibilityLiveRegion={joinGlowKey > 0 ? 'polite' : undefined}>
-              {/* Item 25 #3: the figure rolls from the number it was to the new one (keyed per join event, once). */}
+              {/* Item 25 #3: the figure rolls from the number it was to the new one (keyed per join event, once). Item 73: */}
+              {/* every join rolls it, a small one too; only a full moment (joinGlowKey) glows. */}
               <CountRoll
-                key={`roll:${joinGlowKey}`}
-                play={joinGlowKey > 0 && Number.isFinite(joinPreviousGoing) && joinPreviousGoing !== s.value}
+                key={`roll:${joinKey}`}
+                play={joinKey > 0 && Number.isFinite(joinPreviousGoing) && joinPreviousGoing !== s.value}
                 previous={Number.isFinite(joinPreviousGoing) ? <Text style={[styles.stat, styles.statLead]}>{t(`ui.hostCenter.stat.${s.key}`, { count: joinPreviousGoing })}</Text> : null}
               >
                 <Text style={[styles.stat, styles.statLead]}>{t(`ui.hostCenter.stat.${s.key}`, { count: s.value })}</Text>
@@ -78,6 +80,7 @@ export default function HostCommandCenter({
           )))}
         </View>
       )}
+      {/* Item 73: keyed per FULL moment, so rapid joins update its words in place ("Maya and 2 more joined"), no replay. */}
       {joinGlowKey > 0 && joinedNote ? (
         <JoinedLine key={`joined:${joinGlowKey}`} play>
           <Text style={[styles.note, { color: colors.success }]}>

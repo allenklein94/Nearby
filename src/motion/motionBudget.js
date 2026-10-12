@@ -98,10 +98,10 @@ export const SEQUENCES = {
   // business transactions, so calm (item 122): no bounce, particles or confetti.
   planTogether: { tier: 'special', staggerMs: 90, pieceMs: 200, maxPieces: 4, risePx: 4, glowInMs: 100, glowOutMs: 200 },
   // Owner item 28: the avatar flows in from flowPx before its place while the faces already there ease aside (same avatarMs).
-  // Item 28 follow-up (owner, 2026-10-11): several people in ONE update arrive one after another, staggerMs apart; arrivals
-  // past maxStaggered land with the last staggered one, so the whole sequence stays inside the special tier.
-  friendJoin: { tier: 'special', rollMs: 260, risePx: 8, avatarMs: 320, avatarFromScale: 0.8, flowPx: 24, lineDelayMs: 80, lineMs: 220,
-    staggerMs: 120, maxStaggered: 5 },
+  // Owner item 73 (2026-10-12): first one full, the rest small. A join within 10 s of the previous one (and every join after
+  // the lead in one update) only fades in in place over smallMs (no slide, grow or glow); nothing is staggered any more.
+  friendJoin: { tier: 'medium', rollMs: 260, risePx: 8, avatarMs: 320, avatarFromScale: 0.8, flowPx: 24, lineDelayMs: 80, lineMs: 220,
+    smallMs: 180 },
   // Item 25: the travel is part of the signature moment. The light follows a gentle arc (arcPx at most, never more than
   // arcShare of the distance) with a soft halo; the frame is an outline only (never covers the card's text); on landing one
   // ring converges onto the card (the request's rings went out, the answer's ring comes back in) while the frame fades.
@@ -225,8 +225,8 @@ export function settleMs(name) {
     case 'planTogether':
       return s.maxPieces * s.staggerMs + Math.max(s.pieceMs, s.glowInMs + s.glowOutMs);
     case 'friendJoin':
-      // worst case: the last staggered arrival (and the faces easing aside, which finish with it)
-      return Math.max(s.rollMs, s.staggerMs * (s.maxStaggered - 1) + s.avatarMs, s.lineDelayMs + s.lineMs);
+      // the full arrival (the small ones and the faces easing aside finish inside it)
+      return Math.max(s.rollMs, s.avatarMs, s.smallMs, s.lineDelayMs + s.lineMs);
     case 'requestPulse':
       return s.staggerMs * (s.rings - 1) + s.ringMs;
     case 'happeningRipple':

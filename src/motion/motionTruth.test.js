@@ -29,7 +29,7 @@ describe('motion amplifies correct data', () => {
     const src = read('screens/GatheringDetailScreen.js');
     const signed = src.indexOf('const arrivingPhotos = await Promise.all(fresh.map(');
     const merged = src.indexOf('setAttendeePhotoUrls((cur) => ({ ...cur, ...Object.fromEntries(arrivingPhotos');
-    const play = src.indexOf('setLiveJoin({ ids: fresh');
+    const play = src.indexOf('setLiveJoin((cur) => ({ ids: fresh');
     expect(signed).toBeGreaterThan(0);
     expect(merged).toBeGreaterThan(signed);
     expect(play).toBeGreaterThan(merged);

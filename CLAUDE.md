@@ -117,7 +117,8 @@ AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 2
 record device failures in the checklist without changing locked behavior to work around them.
 
 **Item 28 (friend joins, LOCKED) is NOT DEVICE-VERIFIED until** every check in
-`PRODUCT_AUDIT/ITEM_28_FRIEND_JOINS_DEVICE_CHECKLIST_2026-10-12.md` is recorded on two real phones (written 2026-10-12; no new strings).
+`PRODUCT_AUDIT/ITEM_28_FRIEND_JOINS_DEVICE_CHECKLIST_2026-10-12.md` is recorded on two real phones (written 2026-10-12; no new strings;
+incl. item 73's checks 15-16: four joins in 10 s = one full + three small, full again after 10 s quiet).
 
 **Device session order (owner, 2026-10-12):** item 55 first (its overlap map records shared results against items 44/48), then items 28
 and 32, then the offer experience once Anthropic credit exists (never bypass screening). One phone first is fine: other platform stays PENDING.
@@ -365,8 +366,12 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   same for every business; no other sequence may use it). Join on the host's gathering = count roll + avatar + named line;
   "plan comes together" = every piece confirmed (`isPlanFullyConfirmed`), never an attendee count. No hook after an early return (guard).
   Item 28: the joining face flows in from the side while the others ease aside (no arc); several in one update arrive one
-  after another (`arrivalDelayMs`) into Who's going's overlapping cluster (host + joined faces + "+N", `attendeeCluster`); the line says "X accepted your
+  together into Who's going's overlapping cluster (host + joined faces + "+N", `attendeeCluster`); the line says "X accepted your
   invite" only for the host's own accepted invite to that person for that gathering (`acceptedInviteeIds`).
+  Item 73 (owner, LOCKED; a host-live-join convention only, never a general mechanism): first one full, the rest small. The full
+  moment plays after 10 s with no join (`JOIN_QUIET_MS`, `joinArrivalPlan` in `utils/hostLiveJoins.js`, from each join's arrival
+  time, never animation end); a join within 10 s of the previous one fades in in place (`smallMs` 180, no slide/grow/glow), the count
+  still rolls, the line counts the run keeping its name; in one update the lead is full, the rest small, no stagger.
 - **Interested (owner item 30):** marking it by your own tap shows "✓ Saved" with one small pulse, then returns to
   "★ Interested" (`motion/InterestedSaved.js`, detail + Home card; toast with Undo kept; one save in flight per button).
   Item 31: your own auto-approved join FROM Interested shows "★ ~~Interested~~ → ✓ Attending" (one glow) atop You're in

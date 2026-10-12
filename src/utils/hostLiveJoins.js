@@ -26,18 +26,33 @@ export function newJoinsToAnimate(rows, { previousIds, previousGoing, going, liv
 // no line (the count and avatar still move). Returns { key: 'one' | 'friend' | 'invite' | 'many', name, count } or null.
 // Owner item 28 (2026-10-11): "Claude accepted your invite" only when `acceptedInviteeIds` (the viewer's OWN accepted
 // social_invites for this gathering, see acceptedInviteeIds below) holds that person; never inferred from the join itself.
-export function joinedNote(freshIds, rows, friendIds, acceptedInviteIds = null) {
+export function joinedNote(freshIds, rows, friendIds, acceptedInviteIds = null, leadId = null) {
   const ids = Array.isArray(freshIds) ? freshIds : [];
   if (ids.length === 0) return null;
-  const nameOf = new Map((rows ?? []).filter((r) => r?.user_id).map((r) => [r.user_id, r.profiles?.display_name?.trim() || null]));
-  const friends = friendIds ?? new Set();
-  const named = ids.filter((id) => nameOf.get(id));
-  if (named.length === 0) return null;
-  const lead = named.find((id) => friends.has(id)) ?? named[0];
+  const nameOf = namesOf(rows);
+  const lead = noteLeadId(ids, rows, friendIds, leadId);
+  if (!lead) return null;
   const name = nameOf.get(lead);
+  const friends = friendIds ?? new Set();
   if (ids.length > 1) return { key: 'many', name, count: ids.length - 1 };
   if (acceptedInviteIds && acceptedInviteIds.has(lead)) return { key: 'invite', name, count: 1 };
   return { key: friends.has(lead) ? 'friend' : 'one', name, count: 1 };
+}
+
+function namesOf(rows) {
+  return new Map((rows ?? []).filter((r) => r?.user_id).map((r) => [r.user_id, r.profiles?.display_name?.trim() || null]));
+}
+
+// Who the joined line names: a friend of the host first, else the first nameable person. Item 73: during a run of rapid joins
+// the line keeps naming the person it already named (`leadId`, when still nameable), so "Maya joined" becomes "Maya and 2 more
+// joined", never flips to another name mid-run. No nameable person = null (no line).
+export function noteLeadId(ids, rows, friendIds, leadId = null) {
+  const nameOf = namesOf(rows);
+  const named = (ids ?? []).filter((id) => nameOf.get(id));
+  if (named.length === 0) return null;
+  if (leadId && named.includes(leadId)) return leadId;
+  const friends = friendIds ?? new Set();
+  return named.find((id) => friends.has(id)) ?? named[0];
 }
 
 // Item 28: who accepted an invitation the viewer sent for this gathering, from getHostSentInvitations (social_invites rows
@@ -46,15 +61,35 @@ export function acceptedInviteeIds(sentInvites) {
   return new Set((sentInvites ?? []).filter((r) => r?.status === 'accepted' && r.invitee_id).map((r) => r.invitee_id));
 }
 
-// Item 28 follow-up (owner, 2026-10-11): several joins in ONE update arrive one after another (the lead first), never all
-// at once; separate updates stay separate moments (the screen's 700 ms realtime debounce). `order` = the arrival's place among
-// this update's arrivals. The faces already shown ease aside for the whole sequence, finishing as the last one lands.
-export function arrivalDelayMs(order) {
-  const J = SEQUENCES.friendJoin;
-  return Math.min(Math.max(order, 0), J.maxStaggered - 1) * J.staggerMs;
+// Owner item 73 (2026-10-12, LOCKED): first one full, the rest small -- a convention of host live joins only, not a general
+// mechanism. A join arriving after JOIN_QUIET_MS without any join (or the first on this screen) is the full item-28 moment:
+// its lead flies in, the count rolls, the Going figure glows, the named line settles. Any join arriving within JOIN_QUIET_MS
+// of the previous join is small: its face fades in in place (`smallMs`), the count still rolls, no glow, and the line counts
+// everyone who joined since the full moment ("Maya and 2 more joined"). In one update the lead gets the full fly-in and the
+// rest the small treatment, all together (the old 120 ms stagger is gone). The window runs on when each join ARRIVED on this
+// screen (`now` = the moment the read showing it returned), never on when an animation finished, so an interrupted animation
+// or Reduce Motion (settled at once) changes nothing about which join is full.
+export const JOIN_QUIET_MS = 10000;
+
+// `burst` = the previous result's burst ({ ids since the full moment, lastAt, leadId }) or null. `order` = the cluster's
+// face order, so the full arrival is the face that leads the cluster. Returns { full: id | null, small: ids, continuing, burst }.
+export function joinArrivalPlan(fresh, burst, now, order = null) {
+  const ids = Array.isArray(fresh) ? fresh.filter(Boolean) : [];
+  if (ids.length === 0) return { full: null, small: [], continuing: false, burst: burst ?? null };
+  const continuing = !!burst && Number.isFinite(burst.lastAt) && Number.isFinite(now) && now >= burst.lastAt
+    && now - burst.lastAt < JOIN_QUIET_MS;
+  if (continuing) {
+    return { full: null, small: ids, continuing, burst: { ...burst, ids: [...burst.ids, ...ids.filter((id) => !burst.ids.includes(id))], lastAt: now } };
+  }
+  const lead = (order ?? []).find((id) => ids.includes(id)) ?? ids[0];
+  return { full: lead, small: ids.filter((id) => id !== lead), continuing, burst: { ids: [lead, ...ids.filter((id) => id !== lead)], lastAt: now, leadId: null } };
 }
-export function asideMs(arrivals) {
-  return arrivals > 0 ? arrivalDelayMs(arrivals - 1) + SEQUENCES.friendJoin.avatarMs : 0;
+
+// How long the faces already there take to ease aside: the full arrival's duration when this update has one, else the small one.
+export function asideMs(arrivals, full = true) {
+  const J = SEQUENCES.friendJoin;
+  if (!(arrivals > 0)) return 0;
+  return full ? J.avatarMs : J.smallMs;
 }
 
 // The Who's going avatar row with the people who just joined at the front, so the new face is the one that arrives.

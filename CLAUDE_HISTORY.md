@@ -1,3 +1,26 @@
+# Item 73: host live joins, first one full, the rest small (owner, 2026-10-12, LOCKED) - BUILT, NOT DEVICE-VERIFIED
+
+Owner approved (10 s quiet window) a refinement of item 28's arrival so rapid joins don't repeat the same fly-in. A host-live-join
+convention only (not a general mechanism; scope guard in the test). No migration, no new string, no new screen.
+- `utils/hostLiveJoins.js`: `JOIN_QUIET_MS` = 10000; `joinArrivalPlan(fresh, burst, now, order)` -> { full, small, continuing,
+  burst }. A join is "continuing" when it arrives < 10 s after the PREVIOUS join (a steady stream stays small); otherwise the lead
+  (the face leading the cluster, `order`) is full and the rest of that update small. `now` = Date.now() at the moment the read
+  showing the join returns, decided before any await, so interrupted animations / Reduce Motion never change which is full;
+  unknown or backwards time = full. Burst = everyone since the full moment + the named lead. `noteLeadId` (extracted from
+  `joinedNote`, which gains a 5th `leadId` arg) keeps the line naming the same person mid-run ("Maya and 2 more joined").
+  `arrivalDelayMs` removed (no stagger); `asideMs(arrivals, full)` = avatarMs with a full arrival, smallMs without.
+- `motion/motionBudget.js` friendJoin: `staggerMs`/`maxStaggered` removed, `smallMs: 180` added, tier special -> medium (worst case
+  is now the single 320 ms arrival; still level 2). `motion/JoinArrival.js` `AvatarArrive({ small })`: fade only (infoOpacity), no
+  slide/grow; `delayMs` removed.
+- GatheringDetailScreen: `joinKey` (every join event: faces, count roll) separate from `joinGlowKey` (full moments only: glow, the
+  line's settle); a small update keeps the line already shown until the friends lookup updates its count. HostCommandCenter: the
+  CountRoll is keyed on `joinKey`, the glow and JoinedLine on `joinGlowKey` (words update in place during a run).
+- Kept: item 28's full moment unchanged (320 ms fly-in, roll, glow, line), "accepted your invite" only via `acceptedInviteeIds`,
+  Reduce Motion = settled at once, no haptic, business responds the one signature.
+- Verified: Jest 5874 passed (hostLiveJoinsMoment.test.js: 11 new item-73 tests replacing the stagger tests; motionTruth updated);
+  journeys 313/313 (unchanged, incl. gatheringFormation and friendNearby; no journey covers on-screen motion). Device checks 15-16
+  added to `PRODUCT_AUDIT/ITEM_28_FRIEND_JOINS_DEVICE_CHECKLIST_2026-10-12.md` (check 7 rewritten); all PENDING. Item 28 stays open.
+
 # Items 69-72 (owner, 2026-10-12) - RECORDED, NOTHING BUILT
 
 - Item 69 (plan formation, pieces assemble) MET by items 43 (publish card), 28 (faces join), 32 (accept merges, join rail

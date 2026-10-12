@@ -50,7 +50,7 @@ import { getMyPartnershipRequestForTarget } from '../services/businessPartnershi
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
-import { approvedIds, newJoinsToAnimate, joinedNote, acceptedInviteeIds, arrivalDelayMs, asideMs } from '../utils/hostLiveJoins';
+import { approvedIds, newJoinsToAnimate, joinedNote, noteLeadId, acceptedInviteeIds, joinArrivalPlan, asideMs } from '../utils/hostLiveJoins';
 import { AvatarArrive } from '../motion/JoinArrival';
 import InterestedSaved from '../motion/InterestedSaved';
 import InterestedToAttending from '../motion/InterestedToAttending';
@@ -178,9 +178,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const joinBaselineRef = useRef(null);
   const joinShownRef = useRef(new Set());
   const [joinGlowKey, setJoinGlowKey] = useState(0);
+  // Owner item 73: every live join event bumps joinKey (count roll, faces); only a FULL moment bumps joinGlowKey (glow, the
+  // line settling in). joinBurstRef = the run of rapid joins since the last full moment (joinArrivalPlan in hostLiveJoins.js).
+  const [joinKey, setJoinKey] = useState(0);
+  const joinBurstRef = useRef(null);
   // Item 25 #3: the same live join as a moment: who joined (fresh ids, front of Who's going), the figure it rolled from, and
-  // the "Maya joined" line (named friend first).
-  const [liveJoin, setLiveJoin] = useState({ ids: [], previousGoing: null, note: null });
+  // the "Maya joined" line (named friend first). Item 73: `full` = the one face that flies in (null = every face is small).
+  const [liveJoin, setLiveJoin] = useState({ ids: [], full: null, previousGoing: null, note: null });
 
   const load = useCallback(async () => {
     const liveJoinReload = liveJoinReloadRef.current;
@@ -246,6 +250,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
         joinBaselineRef.current = { ids: approvedIds(joinRows), going };
         if (fresh.length > 0) {
           fresh.forEach((id) => joinShownRef.current.add(id));
+          // Item 73: full or small is decided NOW, from when this join arrived on screen (never from an animation finishing).
+          const plan = joinArrivalPlan(fresh, joinBurstRef.current, Date.now(),
+            attendeeCluster(g, fresh, { maxFaces: CLUSTER_MAX_FACES })?.faces.map((a) => a.user_id));
+          joinBurstRef.current = plan.burst;
+          const burst = plan.burst;
           // Motion amplifies correct data: the arriving faces are signed BEFORE they flow in, so a face never arrives as the
           // grey placeholder and then swaps to the photo (the full set is signed again further down, as before).
           const arrivingPhotos = await Promise.all(fresh.map(async (id) => {
@@ -255,12 +264,22 @@ export default function GatheringDetailScreen({ route, navigation }) {
           setAttendeePhotoUrls((cur) => ({ ...cur, ...Object.fromEntries(arrivingPhotos.filter((e) => e && e[1])) }));
           // The figure and the avatar move now; the named line follows the friends lookup (never waits on it, never flips from
           // "Maya joined" to "Your friend Maya joined"). A failed lookup just means nobody is called "your friend".
-          setLiveJoin({ ids: fresh, previousGoing: goingBefore, note: null });
-          setJoinGlowKey((k) => k + 1);
-          filterToMyFriends(fresh)
+          // Item 73: a small arrival keeps the line already shown until its count is updated (never blanks it mid-run).
+          setLiveJoin((cur) => ({ ids: fresh, full: plan.full, previousGoing: goingBefore, note: plan.continuing ? cur.note : null }));
+          setJoinKey((k) => k + 1);
+          if (plan.full) setJoinGlowKey((k) => k + 1);
+          // The line names everyone since the full moment ("Maya and 2 more joined"), keeping the person it already named.
+          filterToMyFriends(burst.ids)
             .then((fs) => new Set(fs.map((f) => f.id)))
             .catch(() => new Set())
-            .then((friendIds) => setLiveJoin((cur) => (cur.ids === fresh ? { ...cur, note: joinedNote(fresh, joinRows, friendIds, acceptedInviteeIds(invites)) } : cur)));
+            .then((friendIds) => {
+              if (joinBurstRef.current?.ids[0] === burst.ids[0] && !joinBurstRef.current.leadId) {
+                joinBurstRef.current.leadId = noteLeadId(burst.ids, joinRows, friendIds);
+              }
+              setLiveJoin((cur) => (cur.ids === fresh
+                ? { ...cur, note: joinedNote(burst.ids, joinRows, friendIds, acceptedInviteeIds(invites), burst.leadId ?? joinBurstRef.current?.leadId) }
+                : cur));
+            });
         }
         // Item 28 follow-up: the host's Going figure counts the host too (host + 3 joined = "4 attending"); the join detection
         // above keeps comparing the server's guest counts.
@@ -845,18 +864,17 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     const cluster = attendeeCluster(gathering, liveJoin.ids, { maxFaces: CLUSTER_MAX_FACES });
                     if (!cluster) return null;
                     const arrivals = cluster.faces.filter((a) => liveJoin.ids.includes(a.user_id)).length;
-                    let order = 0;
                     const faces = cluster.faces.map((attendee, i) => {
                       const url = attendee.isHost ? hostPhotoUrl : attendeePhotoUrls[attendee.user_id];
                       const arriving = liveJoin.ids.includes(attendee.user_id);
                       const aside = !arriving && arrivals > 0;
                       return (
                         <AvatarArrive
-                          key={arriving || aside ? `${attendee.user_id}:${joinGlowKey}` : attendee.user_id}
+                          key={arriving || aside ? `${attendee.user_id}:${joinKey}` : attendee.user_id}
                           play={arriving}
-                          delayMs={arriving ? arrivalDelayMs(order++) : 0}
+                          small={arriving && attendee.user_id !== liveJoin.full}
                           asideBy={aside ? arrivals * AVATAR_SLOT_PX : 0}
-                          asideMs={asideMs(arrivals)}
+                          asideMs={asideMs(arrivals, liveJoin.full != null && liveJoin.ids.includes(liveJoin.full))}
                           style={{ marginLeft: i > 0 ? -CLUSTER_OVERLAP_PX : 0, zIndex: 20 - i }}
                         >
                           {url ? (
@@ -1076,6 +1094,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 attendeesExpanded={attendeesExpanded}
                 messageCount={hostMessageCount}
                 joinGlowKey={joinGlowKey}
+                joinKey={joinKey}
                 joinPreviousGoing={attendingFigure(gathering, liveJoin.previousGoing)}
                 joinedNote={liveJoin.note}
                 onInvite={() => setInviteModalVisible(true)}

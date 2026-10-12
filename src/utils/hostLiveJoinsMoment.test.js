@@ -1,7 +1,7 @@
 // Owner item 25 #3 (2026-10-11): a join on the host's gathering, as a moment (count roll, avatar arrival, named line).
 import fs from 'fs';
 import path from 'path';
-import { joinedNote, attendeesNewFirst, acceptedInviteeIds, newJoinsToAnimate, arrivalDelayMs, asideMs } from './hostLiveJoins';
+import { joinedNote, noteLeadId, attendeesNewFirst, acceptedInviteeIds, newJoinsToAnimate, joinArrivalPlan, asideMs, JOIN_QUIET_MS } from './hostLiveJoins';
 import { attendeeCluster, attendeeSummary } from './gatheringAttendeeDisplay';
 import { attendingFigure } from './gatheringFullness';
 import { SEQUENCES, settleMs, isWithinBudget } from '../motion/motionBudget';
@@ -50,12 +50,12 @@ test('budget: within its tier, calm', () => {
 test('plays only for the locked item-15 live joins, and the count never waits on the friends lookup', () => {
   const screen = fs.readFileSync(path.join(__dirname, '../screens/GatheringDetailScreen.js'), 'utf8');
   const i = screen.indexOf('if (fresh.length > 0) {');
-  const block = screen.slice(i, i + 1200);
-  expect(block).toMatch(/setLiveJoin\(\{ ids: fresh, previousGoing: goingBefore, note: null \}\);/);
+  const block = screen.slice(i, i + 2600);
+  expect(block).toMatch(/setLiveJoin\(\(cur\) => \(\{ ids: fresh, full: plan\.full, previousGoing: goingBefore, note: plan\.continuing \? cur\.note : null \}\)\);/);
   expect(block).not.toMatch(/await filterToMyFriends/);
   expect(screen).toMatch(/attendeeCluster\(gathering, liveJoin\.ids, \{ maxFaces: CLUSTER_MAX_FACES \}\)/);
   const center = fs.readFileSync(path.join(__dirname, '../components/HostCommandCenter.js'), 'utf8');
-  expect(center).toMatch(/<CountRoll\s+key=\{`roll:\$\{joinGlowKey\}`\}/);
+  expect(center).toMatch(/<CountRoll\s+key=\{`roll:\$\{joinKey\}`\}/);
   expect(center).toMatch(/joinGlowKey > 0 && joinedNote \?/);
   // item 15's glow is kept
   expect(center).toMatch(/<OfferProgressGlow key=\{joinGlowKey\} play color=\{colors\.success\}/);
@@ -92,7 +92,7 @@ describe('item 28: "accepted your invite" only from a verified accepted invite',
   });
   test('the screen passes the host\'s own sent invitations from the same read', () => {
     const screen = fs.readFileSync(path.join(__dirname, '../screens/GatheringDetailScreen.js'), 'utf8');
-    expect(screen).toMatch(/joinedNote\(fresh, joinRows, friendIds, acceptedInviteeIds\(invites\)\)/);
+    expect(screen).toMatch(/joinedNote\(burst\.ids, joinRows, friendIds, acceptedInviteeIds\(invites\), burst\.leadId \?\? joinBurstRef\.current\?\.leadId\)/);
     expect(screen).toMatch(/getHostSentInvitations\(gatheringId\)\.catch\(\(\) => null\)/);
   });
   test('every language has the invite line with {name}', () => {
@@ -115,52 +115,120 @@ describe('item 28: the avatar flows in, the others ease aside', () => {
     const screen = fs.readFileSync(path.join(__dirname, '../screens/GatheringDetailScreen.js'), 'utf8');
     expect(screen).toMatch(/const aside = !arriving && arrivals > 0;/);
     expect(screen).toMatch(/asideBy=\{aside \? arrivals \* AVATAR_SLOT_PX : 0\}/);
-    expect(screen).toMatch(/key=\{arriving \|\| aside \? `\$\{attendee\.user_id\}:\$\{joinGlowKey\}` : attendee\.user_id\}/);
+    expect(screen).toMatch(/key=\{arriving \|\| aside \? `\$\{attendee\.user_id\}:\$\{joinKey\}` : attendee\.user_id\}/);
   });
 });
 
-// Item 28 follow-up (owner, 2026-10-11): one after another, a cluster of the whole group, a count that includes the host.
-describe('item 28 follow-up: sequential arrival', () => {
+// Item 28 follow-up (owner, 2026-10-11) as refined by owner item 73 (2026-10-12, LOCKED): first one full, the rest small.
+describe('item 73: first one full, the rest small', () => {
   const J = SEQUENCES.friendJoin;
-  test('several people in one update arrive one after another, the lead first; late arrivals share the last slot', () => {
-    expect([0, 1, 2].map(arrivalDelayMs)).toEqual([0, J.staggerMs, 2 * J.staggerMs]);
-    expect(arrivalDelayMs(J.maxStaggered + 3)).toBe((J.maxStaggered - 1) * J.staggerMs);
-    expect(arrivalDelayMs(-1)).toBe(0);
+  const T0 = 1_000_000;
+  test('four joins within 10 s: one full moment, then three small; after 10 s quiet the next is full again', () => {
+    let burst = null;
+    const kinds = [];
+    for (const [id, at] of [['maya', T0], ['sam', T0 + 3000], ['lee', T0 + 6000], ['kai', T0 + 9500], ['ana', T0 + 19500 + 1]]) {
+      const plan = joinArrivalPlan([id], burst, at);
+      burst = plan.burst;
+      kinds.push(plan.full === id ? 'full' : 'small');
+    }
+    expect(kinds).toEqual(['full', 'small', 'small', 'small', 'full']);
   });
-  test('the faces already there ease aside for the whole sequence, finishing as the last arrival lands', () => {
-    expect(asideMs(1)).toBe(J.avatarMs); // a single join is item 28's moment, unchanged
-    expect(asideMs(3)).toBe(2 * J.staggerMs + J.avatarMs);
+  test('the window runs from the PREVIOUS join (a steady stream stays small), and exactly 10 s of quiet resets it', () => {
+    let { burst } = joinArrivalPlan(['a'], null, T0);
+    let plan = joinArrivalPlan(['b'], burst, T0 + 8000); burst = plan.burst;
+    expect(plan.full).toBeNull();
+    plan = joinArrivalPlan(['c'], burst, T0 + 16000); // 16 s after the full one, 8 s after the previous join
+    expect(plan.full).toBeNull();
+    expect(plan.burst.ids).toEqual(['a', 'b', 'c']); // everyone since the full moment
+    expect(joinArrivalPlan(['d'], plan.burst, T0 + 16000 + JOIN_QUIET_MS - 1).full).toBeNull();
+    expect(joinArrivalPlan(['d'], plan.burst, T0 + 16000 + JOIN_QUIET_MS).full).toBe('d');
+  });
+  test('the window is arrival time only: nothing about animation, Reduce Motion or a missing clock makes a join small', () => {
+    const rule = fs.readFileSync(path.join(__dirname, 'hostLiveJoins.js'), 'utf8');
+    expect(rule).toMatch(/export function joinArrivalPlan\(fresh, burst, now, order = null\)/); // no animation-state input exists
+    const { burst } = joinArrivalPlan(['a'], null, T0);
+    expect(joinArrivalPlan(['b'], burst, NaN).full).toBe('b'); // unknown time = never claimed as part of a run
+    expect(joinArrivalPlan(['b'], burst, T0 - 1).full).toBe('b'); // a clock that went back = a fresh moment
+    const screen = fs.readFileSync(path.join(__dirname, '../screens/GatheringDetailScreen.js'), 'utf8');
+    expect(screen).toMatch(/joinArrivalPlan\(fresh, joinBurstRef\.current, Date\.now\(\),/);
+    const i = screen.indexOf('const plan = joinArrivalPlan(');
+    expect(screen.indexOf('await Promise.all(fresh.map')).toBeGreaterThan(i); // decided before any await (photo signing)
+  });
+  test('one update: the lead (the face leading the cluster) is full, the rest small, nobody staggered', () => {
+    const plan = joinArrivalPlan(['sam', 'maya', 'lee'], null, T0, ['host', 'maya', 'sam', 'lee']);
+    expect(plan.full).toBe('maya');
+    expect(plan.small).toEqual(['sam', 'lee']);
+    expect(plan.burst.ids).toEqual(['maya', 'sam', 'lee']);
+    expect(joinArrivalPlan(['sam', 'lee'], null, T0).full).toBe('sam'); // no order known: the first one
+    const motion = fs.readFileSync(path.join(__dirname, '../motion/JoinArrival.js'), 'utf8');
+    expect(motion).not.toMatch(/delayMs/); // the avatar has no stagger delay (only the line keeps its own lineDelayMs)
+    expect(J.staggerMs).toBeUndefined();
+  });
+  test('an update inside the window is entirely small; nothing new = nothing played and the run is kept', () => {
+    const { burst } = joinArrivalPlan(['a'], null, T0);
+    const plan = joinArrivalPlan(['b', 'c'], burst, T0 + 1000);
+    expect(plan.full).toBeNull();
+    expect(plan.small).toEqual(['b', 'c']);
+    expect(plan.continuing).toBe(true);
+    expect(joinArrivalPlan([], burst, T0 + 1000)).toEqual({ full: null, small: [], continuing: false, burst });
+  });
+  test('the small arrival: fade in place over ~180 ms, no slide, no grow; the faces aside take the same short time', () => {
+    expect(J.smallMs).toBe(180);
+    expect(isWithinBudget(J.smallMs, 'small')).toBe(true);
+    expect(asideMs(1)).toBe(J.avatarMs); // a full arrival: item 28's moment, unchanged
+    expect(asideMs(3, true)).toBe(J.avatarMs);
+    expect(asideMs(3, false)).toBe(J.smallMs);
     expect(asideMs(0)).toBe(0);
-    expect(asideMs(50)).toBeLessThanOrEqual(settleMs('friendJoin'));
     expect(isWithinBudget(settleMs('friendJoin'), J.tier)).toBe(true);
+    const motion = fs.readFileSync(path.join(__dirname, '../motion/JoinArrival.js'), 'utf8');
+    expect(motion).toMatch(/if \(small\) return <Animated\.View style=\{\[style, \{ opacity: infoOpacity\(v\) \}\]\}>\{children\}<\/Animated\.View>;/);
+    expect(motion).toMatch(/const duration = play \? \(small \? J\.smallMs : J\.avatarMs\) : asideMs;/);
+    const screen = fs.readFileSync(path.join(__dirname, '../screens/GatheringDetailScreen.js'), 'utf8');
+    expect(screen).toMatch(/small=\{arriving && attendee\.user_id !== liveJoin\.full\}/);
+    expect(screen).toMatch(/asideMs=\{asideMs\(arrivals, liveJoin\.full != null && liveJoin\.ids\.includes\(liveJoin\.full\)\)\}/);
   });
-  test('simultaneous joins are ONE update (one moment, "Maya and 2 more joined"); separate updates stay separate', () => {
+  test('glow only on a full moment; the count rolls on every join; the line keeps its place and counts the run', () => {
+    const screen = fs.readFileSync(path.join(__dirname, '../screens/GatheringDetailScreen.js'), 'utf8');
+    expect(screen).toMatch(/setJoinKey\(\(k\) => k \+ 1\);\n\s*if \(plan\.full\) setJoinGlowKey\(\(k\) => k \+ 1\);/);
+    const center = fs.readFileSync(path.join(__dirname, '../components/HostCommandCenter.js'), 'utf8');
+    expect(center).toMatch(/<OfferProgressGlow key=\{joinGlowKey\}/);
+    expect(center).toMatch(/<JoinedLine key=\{`joined:\$\{joinGlowKey\}`\} play>/);
+    expect(center).toMatch(/play=\{joinKey > 0 && Number\.isFinite\(joinPreviousGoing\)/);
+  });
+  test('"Maya and 2 more joined" counts everyone since the full moment and keeps naming Maya', () => {
+    const run = [{ user_id: 'maya', profiles: { display_name: 'Maya' } }, { user_id: 'sam', profiles: { display_name: 'Sam' } },
+      { user_id: 'lee', profiles: { display_name: 'Lee' } }];
+    const lead = noteLeadId(['maya'], run, new Set());
+    expect(lead).toBe('maya');
+    // Sam is the host's friend, but the line already named Maya, so it does not flip
+    expect(joinedNote(['maya', 'sam', 'lee'], run, new Set(['sam']), null, lead)).toEqual({ key: 'many', name: 'Maya', count: 2 });
+    expect(joinedNote(['maya', 'sam', 'lee'], run, new Set(['sam']))).toEqual({ key: 'many', name: 'Sam', count: 2 }); // no lead yet
+    expect(joinedNote(['sam'], run, new Set(), null, 'ghost')).toEqual({ key: 'one', name: 'Sam', count: 1 }); // unnameable lead ignored
+    expect(hostCenter.en.joined.many.other).toBe('{name} and {count} more joined'); // the existing words, no new string
+  });
+  test('Reduce Motion: the settled cluster at once (the animate flag is read every render, so turning it on mid-sequence settles)', () => {
+    const motion = fs.readFileSync(path.join(__dirname, '../motion/JoinArrival.js'), 'utf8');
+    expect(motion).toMatch(/return \{ v, animate: play && !reduceMotion \};/);
+    expect(motion).toMatch(/if \(!animate\) return <View style=\{style\}>\{children\}<\/View>;/);
+  });
+  test('simultaneous joins are ONE update; a later update plays only its own new person; a duplicate event plays nothing', () => {
     const base = { previousIds: new Set(['a']), previousGoing: 1, live: true, shown: new Set() };
     const three = [{ user_id: 'a', status: 'approved' }, ...['maya', 'sam', 'lee'].map((id) => ({ user_id: id, status: 'approved', profiles: { display_name: id } }))];
     const fresh = newJoinsToAnimate(three, { ...base, going: 4 });
     expect(fresh).toEqual(['maya', 'sam', 'lee']);
     expect(joinedNote(fresh, three, new Set()).key).toBe('many');
-    // a later update (after the 700 ms debounce) plays only its own new person; a duplicate event plays nothing
     const shown = new Set(fresh);
     const later = newJoinsToAnimate([...three, { user_id: 'kai', status: 'approved' }], { previousIds: new Set(['a', ...fresh]), previousGoing: 4, going: 5, live: true, shown });
     expect(later).toEqual(['kai']);
     expect(newJoinsToAnimate(three, { previousIds: new Set(['a', ...fresh]), previousGoing: 4, going: 4, live: true, shown })).toEqual([]);
     const screen = fs.readFileSync(path.join(__dirname, '../screens/GatheringDetailScreen.js'), 'utf8');
     expect(screen).toMatch(/timer = setTimeout\(\(\) => \{ liveJoinReloadRef\.current = true; load\(\); \}, 700\);/);
+    expect(screen).toMatch(/const AVATAR_SLOT_PX = 36 - CLUSTER_OVERLAP_PX;/);
   });
-  test('the screen staggers each arrival and the faces easing aside take the whole sequence', () => {
-    const screen = fs.readFileSync(path.join(__dirname, '../screens/GatheringDetailScreen.js'), 'utf8');
-    expect(screen).toMatch(/delayMs=\{arriving \? arrivalDelayMs\(order\+\+\) : 0\}/);
-    expect(screen).toMatch(/asideMs=\{asideMs\(arrivals\)\}/);
-    expect(screen).toMatch(/const AVATAR_SLOT_PX = 36 - CLUSTER_OVERLAP_PX;/); // defined (it was referenced but missing)
-    const motion = fs.readFileSync(path.join(__dirname, '../motion/JoinArrival.js'), 'utf8');
-    expect(motion).toMatch(/duration: J\.avatarMs, delay: delayMs/);
-    expect(motion).toMatch(/duration: asideMs/);
-  });
-  test('Reduce Motion: the settled cluster at once (the animate flag is read every render, so turning it on mid-sequence settles)', () => {
-    const motion = fs.readFileSync(path.join(__dirname, '../motion/JoinArrival.js'), 'utf8');
-    expect(motion).toMatch(/return \{ v, animate: play && !reduceMotion \};/);
-    expect(motion).toMatch(/if \(!animate\) return <View style=\{style\}>\{children\}<\/View>;/);
+  test('scope: the rule lives only in hostLiveJoins.js (no general mechanism)', () => {
+    const { execSync } = require('child_process');
+    const hits = execSync("grep -rl 'joinArrivalPlan\\|JOIN_QUIET_MS' src --include=*.js", { cwd: path.join(__dirname, '../..') }).toString().trim().split('\n').sort();
+    expect(hits).toEqual(['src/motion/JoinArrival.js', 'src/screens/GatheringDetailScreen.js', 'src/utils/hostLiveJoins.js', 'src/utils/hostLiveJoinsMoment.test.js']);
   });
 });
 

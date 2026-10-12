@@ -49,16 +49,17 @@ export function CountRoll({ play, previous, children }) {
 // The new person's avatar arriving at the front of Who's going. `style` is the avatar's place in the cluster (overlap, z order).
 // Owner item 28 (2026-10-11): it flows in from the leading edge (fade + a short slide + slight grow) and the faces already
 // there ease aside by `asideBy` px (they start where they stood and slide into their new place). No bounce, no arc (travel
-// arcs belong to the business-response signature moment). Item 28 follow-up: several arrivals in one update play one after
-// another (`delayMs`, from arrivalDelayMs) and the faces easing aside take the whole sequence (`asideMs`), finishing with the
-// last arrival. A face waiting its turn is already readable (infoOpacity), never hidden.
-export function AvatarArrive({ play, asideBy = 0, delayMs = 0, asideMs = J.avatarMs, style, children }) {
+// arcs belong to the business-response signature moment). Owner item 73 (2026-10-12): first one full, the rest small -- a
+// `small` arrival (a join within 10 s of the previous one, or any join after the lead in the same update; decided in
+// utils/hostLiveJoins.js joinArrivalPlan) only fades in where it lands over smallMs: no slide, no grow. Nothing is staggered.
+// The faces easing aside take `asideMs` (the full arrival's duration, or the small one when the update has no full arrival).
+// An arriving face is readable from its first frame (infoOpacity), never hidden.
+export function AvatarArrive({ play, small = false, asideBy = 0, asideMs = J.avatarMs, style, children }) {
   const { v, animate } = useOnce(play || asideBy > 0);
   useEffect(() => {
     if (!animate) return undefined;
-    const a = play
-      ? Animated.timing(v, { toValue: 1, duration: J.avatarMs, delay: delayMs, easing: ease, useNativeDriver: true })
-      : Animated.timing(v, { toValue: 1, duration: asideMs, easing: ease, useNativeDriver: true });
+    const duration = play ? (small ? J.smallMs : J.avatarMs) : asideMs;
+    const a = Animated.timing(v, { toValue: 1, duration, easing: ease, useNativeDriver: true });
     a.start();
     return () => a.stop();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -70,6 +71,7 @@ export function AvatarArrive({ play, asideBy = 0, delayMs = 0, asideMs = J.avata
       </Animated.View>
     );
   }
+  if (small) return <Animated.View style={[style, { opacity: infoOpacity(v) }]}>{children}</Animated.View>;
   return (
     <Animated.View style={[style, { opacity: infoOpacity(v), transform: [
       { translateX: v.interpolate({ inputRange: [0, 1], outputRange: [-J.flowPx, 0] }) },
