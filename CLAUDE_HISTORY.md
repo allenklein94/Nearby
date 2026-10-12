@@ -1,3 +1,16 @@
+# Items 69-72 (owner, 2026-10-12) - RECORDED, NOTHING BUILT
+
+- Item 69 (plan formation, pieces assemble) MET by items 43 (publish card), 28 (faces join), 32 (accept merges, join rail
+  assembles), 25 (plan comes together only when `isPlanFullyConfirmed`). No continuous "forming" replay: pieces arrive at
+  different times (motion truth rule), time never "locks in" later (words/picker or the booking), item 43 locked.
+- Item 70 (animation shows what changed, Interested -> Attending) MET by item 31 (`InterestedToAttending.js`) and the same pattern
+  in items 34, 30, 12, 13; the principle is item 58's locked rule (`motionMeaning.test.js`).
+- Item 71 (friend accepted moves into the cluster) MET by items 25/28 (face flows in, "X accepted your invite" only via
+  `acceptedInviteeIds`, count rolls via `attendingFigure`: host + 1 = "2 attending"); no second "people are going" wording.
+- Item 72 (cluster grows, "Your group is ready") HALF MET: the growing cluster is item 28. "Your group is ready" DECLINED: no
+  stated target size, so "ready" would be an invented state; item 25 forbids an attendee-count payoff. A capacity moment would
+  be a new product decision (not recommended before items 28/32 are seen on a device).
+
 # Perk redemption: claimed vs confirmed; items 65-68 (owner, 2026-10-12) - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Items 65 (offer arrival signature) and 67 (business sees the acceptance) recorded as MET by items 23/25 and 13 (nothing built).

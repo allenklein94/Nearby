@@ -134,7 +134,7 @@ screen is checked on a real device AND native review of `ui.requestDetail.pickFi
 **Offer screens without screen-wide motion (owner, 2026-10-12) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/OFFER_SCREEN_WIDE_MOTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (incl. whether acceptance / the GroupPlan card exit feel jumpy: report, never add motion).
 
-**Items 65/67 recorded as met, 66/68 declined (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
+**Items 65/67/69/70/71 recorded as met, 66/68 declined, 72 half met (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
 NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (migration 20270305; journey `perkRedemption`; live `confirmed-visit-counts.sql` 16/16).
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
