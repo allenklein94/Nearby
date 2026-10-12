@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated } from 'react-native';
+import { Animated, View } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { NearbyMark } from './brand';
-import { SEQUENCES, MOTION_BUDGET } from '../motion/motionBudget';
+import { MOTION_BUDGET } from '../motion/motionBudget';
 
 // Empty/error-state transition (per the Nearby Motion Language, locked 2026-09-18): a
 // small, one-shot fade-in for a screen's own custom "nothing here yet" state, instead
@@ -14,33 +14,19 @@ import { SEQUENCES, MOTION_BUDGET } from '../motion/motionBudget';
 //
 // Item 134 ("Empty states can animate into opportunity"): pass `opportunity` on an empty state
 // that carries a real next-step action (create/invite/explore -- the Item 56 "no dead ends"
-// CTAs) and it plays a two-beat sequence instead of one fade: the N mark appears first, then
-// the invitation copy + action settle in beneath it -- an empty database state reads as an
-// invitation, not a dead screen. Budgeted as a medium-tier sequence (motionBudget.js
-// `emptyInvitation`). Reduce Motion: mark and invitation are simply present, no motion.
+// CTAs): the N mark sits above the invitation copy + action, so an empty state reads as an
+// invitation, not a dead screen. Owner item 58 (2026-10-12): its entrance animation is RETIRED
+// (it explained no change); the mark, invitation and action render settled at once.
 export default function FadeInState({ style, children, opportunity = false, ...rest }) {
   const reduceMotion = useReduceMotion();
-  const seq = SEQUENCES.emptyInvitation;
-  const opacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
-  const markOpacity = useRef(new Animated.Value(reduceMotion ? 1 : 0)).current;
-  const markScale = useRef(new Animated.Value(reduceMotion ? 1 : 0.85)).current;
+  const opacity = useRef(new Animated.Value(reduceMotion || opportunity ? 1 : 0)).current;
 
   useEffect(() => {
-    if (reduceMotion) {
+    if (reduceMotion || opportunity) {
       opacity.setValue(1);
-      markOpacity.setValue(1);
-      markScale.setValue(1);
       return;
     }
-    if (!opportunity) {
-      Animated.timing(opacity, { toValue: 1, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start();
-      return;
-    }
-    Animated.parallel([
-      Animated.timing(markOpacity, { toValue: 1, duration: seq.markMs, useNativeDriver: true }),
-      Animated.timing(markScale, { toValue: 1, duration: seq.markMs, useNativeDriver: true }),
-    ]).start();
-    Animated.timing(opacity, { toValue: 1, duration: seq.invitationMs, delay: seq.delayMs, useNativeDriver: true }).start();
+    Animated.timing(opacity, { toValue: 1, duration: MOTION_BUDGET.small.ms, useNativeDriver: true }).start();
   }, [reduceMotion, opportunity]);
 
   if (!opportunity) {
@@ -51,11 +37,11 @@ export default function FadeInState({ style, children, opportunity = false, ...r
     );
   }
   return (
-    <Animated.View style={[style, { alignItems: 'center' }]} {...rest}>
-      <Animated.View style={{ opacity: markOpacity, transform: [{ scale: markScale }], marginBottom: 12 }}>
+    <View style={[style, { alignItems: 'center' }]} {...rest}>
+      <View style={{ marginBottom: 12 }}>
         <NearbyMark size={36} />
-      </Animated.View>
-      <Animated.View style={{ opacity, alignItems: 'center' }}>{children}</Animated.View>
-    </Animated.View>
+      </View>
+      <View style={{ alignItems: 'center' }}>{children}</View>
+    </View>
   );
 }

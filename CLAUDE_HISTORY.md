@@ -1,3 +1,27 @@
+# Item 58 (2026-10-12) - animation must explain something - BUILT (registry + guard + one retirement), NOT DEVICE-VERIFIED
+
+Owner rule (LOCKED): animation explains a real change, a meaningful connection, or a narrowly documented exception; decoration
+alone is not enough. Owner decisions: registry + guard approved; occasion tile celebrations KEPT as the one named exception
+(celebratory interaction; no particles, duration or effects added; revisit only on real usage/device evidence); empty-state
+invitation entrance RETIRED; booked-card exit KEPT (communicates removal); the extras saved/working/ending/understood/changed/
+next step/matched allowed only where accurate.
+Built (`constants/motionLanguage.js`, pure data): `MOTION_MEANINGS` (the six + the seven extras + 'removed' per decision 4);
+`MOTION_EXCEPTIONS.occasion_celebration` (occasionMorph/Lock/Particles, `motion/OccasionAnimation.js`); `SEQUENCE_MEANINGS` for all
+34 remaining timing sequences (31 with a meaning, 3 via the exception; business responds = 'new', still the one Level 3);
+`DIRECT_TIER_MEANINGS` for the 12 files that animate on a raw `MOTION_BUDGET.<tier>.ms` (toasts, swipe cards, swipe-to-dismiss,
+message bubble, arrival pill, celebration header icon, published panel, load-error and empty fades). Judgement calls disclosed:
+surprise reveal = 'changed'; offer progress = accepted + completed; the plain empty/error fades = 'changed' (loading -> result);
+swipe-to-dismiss = 'removed' (its cancelled-swipe settle-back is part of the gesture).
+Retired: `SEQUENCES.emptyInvitation` and its settle case; `components/FadeInState.js` `opportunity` renders the N mark,
+invitation and action settled at once (plain empty-state fade unchanged). No other timing, motion, Reduce Motion behavior or
+lock changed.
+Guard `src/motion/motionMeaning.test.js`: every sequence has a valid meaning or an approved exception, no stale entries; every
+file using a raw tier token is registered; the exception is exactly the three occasion sequences with their tokens, five
+occasions and one particle set frozen; signature = 'new'. `emptyInvitation.test.js` now pins the retirement (and keeps the
+"opportunity state has an action" check). Limits: an animation with no budget token at all (Animated.spring, or timing with no
+duration) is not seen by the guard (literal durations stay banned by consistencyAudit.test.js); label ACCURACY is a review
+judgement. Jest 433 suites / 5814 passed. Consumer-only component change, so no business web export. Not device-verified.
+
 # Item 57 (2026-10-12) - three motion levels - DOCUMENTATION COMPLETE, no new animation scope
 
 The owner proposed three motion levels (micro / contextual / signature). Audit: they map onto the existing timing tiers

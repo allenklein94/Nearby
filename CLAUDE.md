@@ -437,6 +437,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Level 1 micro = tiny/small (functional, only where locks permit; cards, lists, recommendations static; mode/filter changes instant),
   Level 2 contextual = medium/special (meaningful, never signature), Level 3 = signature, exactly ONE: a business responds. Accept,
   redemption, first business interaction, plan formation stay as approved. Guard `motion/motionLevels.test.js`.
+- **Animation must explain something (owner item 58, LOCKED):** a real change, a meaningful connection, or a narrowly documented
+  exception; never decoration alone. Every `SEQUENCES` entry and every file animating on a raw tier token declares its meaning
+  (`MOTION_MEANINGS`, `SEQUENCE_MEANINGS`, `DIRECT_TIER_MEANINGS` in `constants/motionLanguage.js`), a label only when accurate. The ONE
+  exception: the occasion tile celebrations (kept as is, nothing added). The empty-state invitation's entrance is retired (settled
+  at once). Guard `motion/motionMeaning.test.js`.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

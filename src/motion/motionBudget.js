@@ -60,8 +60,6 @@ export const SEQUENCES = {
   occasionParticles: { tier: 'special', maxDelayMs: 150, riseMs: 420, fadeMs: 260 },
   // ❤️ -> N intro, then the real match content.
   matchIntro: { tier: 'medium', stageMs: 140, stages: 2, entranceMs: 200 },
-  // Empty state -> invitation: the N appears, then the invitation + action settle in.
-  emptyInvitation: { tier: 'medium', markMs: 200, delayMs: 180, invitationMs: 220 },
   // An open reply's card assembling itself (2026-10-09, replaces the two-beat offerReveal): business -> "Heard your request"
   // -> what they said -> the order -> price -> when, one step at a time (only the steps the reply really has). Business tone:
   // gentle fades + a slight upward settle, no bounce, no haptic. Starts after an offer travel into this card has finished.
@@ -205,8 +203,6 @@ export function settleMs(name) {
       return s.maxDelayMs + s.riseMs + s.fadeMs;
     case 'matchIntro':
       return s.stageMs * s.stages + s.entranceMs;
-    case 'emptyInvitation':
-      return s.delayMs + s.invitationMs;
     case 'offerAssembly':
       // the content steps, then the finish slot (button + one outline glow) after the last of them
       return s.maxSteps * s.staggerMs + Math.max(s.stepMs, s.glowInMs + s.glowOutMs);

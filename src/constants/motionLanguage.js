@@ -102,3 +102,76 @@ export function motionLevelOf(tier) {
   const found = MOTION_LEVELS.find((l) => l.tiers.includes(tier));
   return found ? found.level : null;
 }
+// Owner item 58 (2026-10-12, LOCKED): animation must explain something. It shows a real change, a meaningful connection, or a
+// narrowly documented exception; decoration alone is not enough. Every animation sequence (SEQUENCES in motion/motionBudget.js)
+// and every file that animates on a raw tier token (MOTION_BUDGET.<tier>.ms) declares what it communicates, using only this
+// vocabulary, and a label is used only when it accurately describes the animation's purpose. Registering a meaning changes no
+// timing or motion. Guard: motion/motionMeaning.test.js.
+export const MOTION_MEANINGS = Object.freeze([
+  // the owner's six
+  'new', 'available', 'connected', 'accepted', 'confirmed', 'completed',
+  // the owner's approved extras
+  'saved', 'working', 'ending', 'understood', 'changed', 'next_step', 'matched',
+  // the booked card's exit (owner decision 4: kept because it communicates removal)
+  'removed',
+]);
+// Approved exceptions: celebratory, not a change. Kept as they are; no particles, duration or effects may be added; revisit only
+// if real usage or device testing shows a problem.
+export const MOTION_EXCEPTIONS = Object.freeze({
+  occasion_celebration: {
+    sequences: ['occasionMorph', 'occasionLock', 'occasionParticles'],
+    component: 'motion/OccasionAnimation.js',
+    why: 'Choosing Birthday, Anniversary, Graduation, Celebration or Surprise is an inherently celebratory interaction.',
+  },
+});
+export const SEQUENCE_MEANINGS = Object.freeze({
+  successCelebratory: ['confirmed'], // a plan/occasion was really created
+  successBusiness: ['confirmed'], // a transaction confirmed
+  surpriseReveal: ['changed'], // the surprise is now revealed (after the reveal RPC succeeded)
+  occasionMorph: { exception: 'occasion_celebration' },
+  occasionLock: { exception: 'occasion_celebration' },
+  occasionParticles: { exception: 'occasion_celebration' },
+  matchIntro: ['connected'],
+  offerAssembly: ['new'],
+  booked: ['confirmed'],
+  offerAccepted: ['accepted'],
+  bookedExit: ['removed'],
+  offerProgress: ['accepted', 'completed'], // the business sees Accepted, then Redeemed
+  requestPulse: ['connected'],
+  visitConfirmed: ['completed'],
+  responding: ['working'],
+  hostJoin: ['new'],
+  planTogether: ['confirmed'],
+  friendJoin: ['new'],
+  offerTravel: ['new'],
+  businessResponds: ['new'], // the ONE Level 3 signature
+  interestedSaved: ['saved'],
+  interestedToAttending: ['confirmed'],
+  planCompleted: ['completed'],
+  offerToPlan: ['confirmed'],
+  happeningRipple: ['new'],
+  weatherShift: ['changed'],
+  strongMatch: ['matched'],
+  friendCollision: ['connected'],
+  askUnderstood: ['understood'],
+  refineNextStep: ['next_step'],
+  opportunityArrival: ['new'],
+  offerCountdown: ['ending'],
+  pinToSheet: ['connected'],
+  friendsPlanning: ['new'],
+});
+// Files that animate on a raw tier token instead of a named sequence (functional Level 1/2 motion).
+export const DIRECT_TIER_MEANINGS = Object.freeze({
+  'screens/DiscoveryScreen.js': ['changed'], // the Undo toast after your own action
+  'motion/swipeDismiss.js': ['removed'], // swipe-to-dismiss (a cancelled swipe settles back)
+  'screens/ViewProfileScreen.js': ['connected'], // "just connected" toast
+  'motion/SuccessToast.js': ['confirmed'],
+  'components/OfferArrivalSignal.js': ['new'], // the arrival pill
+  'components/AnimatedMessageBubble.js': ['new'], // a message arrived
+  'components/FriendDiscoverySwipeCards.js': ['removed'], // the card leaves after your swipe
+  'components/SwipeableDiscoveryCards.js': ['removed'],
+  'components/CelebrationHeaderIcon.js': ['changed'], // plays only when its changeKey really changes
+  'components/GatheringPublishedPanel.js': ['new'], // the gathering was published
+  'components/LoadErrorState.js': ['changed'], // the load finished in an error
+  'components/FadeInState.js': ['changed'], // the load finished with nothing (plain fade; the invitation sequence is retired)
+});
