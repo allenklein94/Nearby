@@ -425,6 +425,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   moment registers there and reuses the Pulse, never a bespoke animation; no new animated places. Business responds stays the ONE
   signature, outside the Pulse. Guard `motion/nearbyPulse.test.js`. Owner (2026-10-12): person-to-person moments stay OUT of
   `PULSE_MOMENTS` (no motion added to item 39, item 40 not reopened); the Pulse unifies existing motion, never a reason to animate more.
+  Item 56 (owner, 2026-10-12): MET by the marketplace sequence + the Pulse, nothing built; business responds (signature), item 28's
+  join, item 32's accept/merge and the redemption glow + "Redeemed" stay exactly as approved, never moved into the Pulse for uniformity.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

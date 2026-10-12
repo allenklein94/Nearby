@@ -1,3 +1,14 @@
+# Item 56 (2026-10-12) - "biggest moments share one language" - MET, NOTHING BUILT
+
+The owner's item 56 mapped six moments onto one signal language (ask, business responds, friend joins, event appears, offer accepted,
+redemption). Audit: the language already exists. `MARKETPLACE_MOMENTS` (constants/motionLanguage.js) tells request -> response ->
+reveal -> acceptance -> progress -> redemption, and `PULSE_MOMENTS` covers the connection moments (request sent and Happening near you
+already use the Pulse). No confetti exists anywhere in src (every mention is a "no confetti" comment). Owner decision: treat item 56 as
+met; no code change. Business responds stays the ONE signature outside the Pulse; item 28's friend-joins (face flows in, count roll,
+named line), item 32's card -> booked -> merge into Your Plan, and the redemption glow ("Visit confirmed") + business-side "Redeemed"
+stay exactly as approved. Nothing is moved into the Pulse or newly animated for uniformity. The device checklists for items 28, 32, 48
+and 55 are unchanged and stay PENDING.
+
 # Item 55 (2026-10-12) - the Nearby Pulse: one motion language for connections (consolidation) - BUILT, NOT DEVICE-VERIFIED
 
 Owner choice (asked, option 1 "Consolidate"): make the Pulse the shared building block for the moments that already connect two
