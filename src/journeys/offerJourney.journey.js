@@ -9,6 +9,7 @@ import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { offerPrimaryAction } from '../utils/primaryAction';
 import { buildPlanSummary } from '../utils/planAddonReadiness';
 import { offerToPlanMergeNow } from '../utils/offerToPlanMerge';
+import { rankReplies } from '../utils/replyFit';
 
 const d = hasToken ? describe : describe.skip;
 
@@ -261,5 +262,141 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(buildPlanSummary({ primary, primaryOffers: [offer] }).joinLine).toBe('settled'); // reopened: same rows, same look
     const before = buildPlanSummary({ primary: { ...request, status: 'open' }, primaryOffers: [{ ...offer, status: 'offered', business_reservations: null }] });
     expect(before.joinLine).toBe('open');
+  });
+});
+
+// Item 63 (owner, 2026-10-12, LOCKED rules): several replies to one request -> the ones that meet what the customer STATED
+// (time, budget) come first, track record only breaks ties, unknown never counts, and "Our pick" needs both. Real writers
+// (submit_business_offer, post_business_availability), real records (get_partner_offer_reputation over real offer rows),
+// then the client's ONE rule (utils/replyFit.js rankReplies) on the very rows the customer reads. One rolled-back
+// transaction. Not covered: the screen itself on a device (cards static and identical, the reasons line's placement).
+d('journey: several replies -> the reply that meets the request ranks first, "Our pick" only with a real record (item 63)', () => {
+  let s;
+  beforeAll(async () => {
+    const log = await runJourney(`
+      v_c uuid := gen_random_uuid(); v_o1 uuid := gen_random_uuid(); v_o2 uuid := gen_random_uuid(); v_o3 uuid := gen_random_uuid(); v_o4 uuid := gen_random_uuid();
+      v_strong uuid := gen_random_uuid(); v_est uuid := gen_random_uuid(); v_fresh uuid := gen_random_uuid(); v_avail uuid := gen_random_uuid();
+      v_r uuid := gen_random_uuid(); v_r0 uuid := gen_random_uuid(); v_h uuid; v_day date := current_date + 1; u uuid; i int;`, `
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+  perform set_config('app.trusted_update', 'on', true);
+  foreach u in array array[v_c, v_o1, v_o2, v_o3, v_o4] loop
+    insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@replyfit.test');
+    insert into profiles (id, display_name, birthdate) values (u, 'RF-' || left(u::text, 4), date '1990-01-01');
+  end loop;
+  insert into brand_partners (id, name, active, latitude, longitude) values
+    (v_strong, 'J63 Strong Record Cafe', true, 0.5, 0.5), (v_est, 'J63 Fits Cafe', true, 0.5, 0.5),
+    (v_fresh, 'J63 New Cafe', true, 0.5, 0.5), (v_avail, 'J63 Posted Cafe', true, 0.5, 0.5);
+  update profiles set managed_partner_id = v_strong where id = v_o1;
+  update profiles set managed_partner_id = v_est where id = v_o2;
+  update profiles set managed_partner_id = v_fresh where id = v_o3;
+  update profiles set managed_partner_id = v_avail where id = v_o4;
+  -- real track records: Strong Record 8 of 8 completed, Fits 5 of 6 completed (both established: >= 5 opportunities)
+  for i in 1..8 loop
+    insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
+      values (v_c, 'history', 0.5, 0.5, now() - interval '1 day', 'fulfilled', 'Coffee', 2, 10) returning id into v_h;
+    insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at)
+      values (v_h, v_strong, 'completed', 'standard', now() - interval '2 days', now() - interval '2 days', now() - interval '1 day');
+    if i <= 6 then
+      insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
+        values (v_c, 'history', 0.5, 0.5, now() - interval '1 day', 'fulfilled', 'Coffee', 2, 10) returning id into v_h;
+      insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at)
+        values (v_h, v_est, case when i <= 5 then 'completed' else 'accepted' end, 'standard', now() - interval '2 days', now() - interval '2 days',
+                case when i <= 5 then now() - interval '1 day' end);
+    end if;
+  end loop;
+  -- the customer asks: coffee for 4 tomorrow at 7 PM, up to $15 a person (R); and a second ask with no time or budget (R0)
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles, date, time_window_start, budget_max)
+    values (v_r, v_c, 'Coffee for 4 tomorrow at 7', 0.5, 0.5, now() + interval '1 day', 'open', 'Coffee', 4, 10, v_day, time '19:00', 15),
+           (v_r0, v_c, 'Coffee sometime', 0.5, 0.5, now() + interval '1 day', 'open', 'Tea', 2, 10, null, null, null);
+  insert into business_request_offers (request_id, partner_id, status) values
+    (v_r, v_strong, 'pending'), (v_r, v_est, 'pending'), (v_r, v_fresh, 'pending'), (v_r0, v_strong, 'pending'), (v_r0, v_fresh, 'pending');
+
+  -- 1. replies, in arrival order: Strong Record offers a DIFFERENT time; Fits confirms 6-8 PM at $12 a person;
+  --    New confirms as requested with no price; Posted Cafe's availability post matches automatically
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time', offer_description_param := 'We could do 9 PM.',
+    proposed_time_param := ((v_day + time '21:00')::timestamp at time zone 'UTC'), offer_price_param := 10, price_is_per_person_param := true);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o2, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r, offer_type_param := 'standard', offer_description_param := 'A table for 4.',
+    offer_price_param := 12, price_is_per_person_param := true, available_from_param := time '18:00', available_until_param := time '20:00');
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o3, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r, offer_type_param := 'standard', offer_description_param := 'Yes, as requested.');
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o4, 'role', 'authenticated')::text, true);
+  perform post_business_availability('Coffee', 'Coffee for groups', null, 'standard', 8, 6, now(), now() + interval '40 hours', 15);
+  -- R0: Strong Record and New both reply as requested
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r0, offer_type_param := 'standard', offer_description_param := 'Sure.');
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o3, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r0, offer_type_param := 'standard', offer_description_param := 'Sure.');
+
+  -- what the customer's screen reads (getBusinessRequestWithOffers + getPartnerStats), as the customer
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'read', 'ok', true, 'data', jsonb_build_object(
+    'request', (select to_jsonb(r) from business_requests r where id = v_r),
+    'request0', (select to_jsonb(r) from business_requests r where id = v_r0),
+    'offers', (select jsonb_agg(to_jsonb(o) order by o.created_at, o.id) from business_request_offers o where request_id = v_r),
+    'offers0', (select jsonb_agg(to_jsonb(o) order by o.created_at, o.id) from business_request_offers o where request_id = v_r0),
+    'names', jsonb_build_object(v_strong, 'strong', v_est, 'fits', v_fresh, 'fresh', v_avail, 'posted'),
+    'stats', (select jsonb_object_agg(p, (select to_jsonb(x) from get_partner_offer_reputation(p) x))
+              from unnest(array[v_strong, v_est, v_fresh, v_avail]) p))));
+
+  -- 2. Fits withdraws its reply: nothing left meets the request
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o2, 'role', 'authenticated')::text, true);
+  perform withdraw_business_offer((select id from business_request_offers where request_id = v_r and partner_id = v_est));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'after_withdraw', 'ok', true, 'data', jsonb_build_object(
+    'offers', (select jsonb_agg(to_jsonb(o) order by o.created_at, o.id) from business_request_offers o where request_id = v_r))));`);
+    s = stepMap(log);
+  }, 120000);
+
+  const named = (offers, names) => offers.map((o) => names[o.partner_id]);
+  const statsOf = (stats) => Object.fromEntries(Object.entries(stats).map(([id, rep]) => [id, { reputation: rep }]));
+
+  test('every reply arrived through the real writers, and the records are real', () => {
+    const { offers, names, stats } = s.read.data;
+    expect(offers.filter((o) => o.status === 'offered').map((o) => names[o.partner_id]).sort()).toEqual(['fits', 'fresh', 'posted', 'strong']);
+    const byName = Object.fromEntries(Object.entries(stats).map(([id, r]) => [names[id], r]));
+    expect(Number(byName.strong.total_opportunities)).toBeGreaterThanOrEqual(5);
+    expect(Number(byName.fits.total_opportunities)).toBeGreaterThanOrEqual(5);
+    expect(Number(byName.strong.completion_rate)).toBeGreaterThan(Number(byName.fits.completion_rate));
+    expect(offers.find((o) => names[o.partner_id] === 'posted').availability_id).not.toBeNull();
+  });
+
+  test('the reply that meets the stated time and budget outranks a stronger record that does not, and is "Our pick"', () => {
+    const { request, offers, names, stats } = s.read.data;
+    const r = rankReplies(offers, request, statsOf(stats));
+    const order = named(r.offers.filter((o) => o.status === 'offered'), names);
+    expect(order[0]).toBe('fits');
+    expect(order[1]).toBe('strong'); // the strongest record still leads everything that does not qualify
+    expect(r.pickOfferId).toBe(offers.find((o) => names[o.partner_id] === 'fits').id);
+    expect(r.pickReasons).toEqual([{ kind: 'time', date: request.date, startMin: 19 * 60 }, { kind: 'budget' }]);
+  });
+
+  test('unknown never qualifies: no price against a stated budget, and an automatic availability reply', () => {
+    const { request, offers, names, stats } = s.read.data;
+    const { fitById } = rankReplies(offers, request, statsOf(stats));
+    const fit = (n) => fitById[offers.find((o) => names[o.partner_id] === n).id];
+    expect(fit('fresh')).toMatchObject({ qualifies: false, time: 'fits', budget: 'unknown' });
+    expect(fit('posted')).toMatchObject({ qualifies: false, time: 'unknown' });
+    expect(fit('strong')).toMatchObject({ qualifies: false, time: 'fails', budget: 'fits' });
+  });
+
+  test('when no reply meets the request, there is no "Our pick" at all, and every reply stays', () => {
+    const { request, names, stats } = s.read.data;
+    const { offers } = s.after_withdraw.data;
+    const r = rankReplies(offers, request, statsOf(stats));
+    expect(r.pickOfferId).toBeNull();
+    expect(r.pickReasons).toEqual([]);
+    const order = named(r.offers.filter((o) => o.status === 'offered'), names);
+    expect(order[0]).toBe('strong'); // record still breaks the tie inside the (only) tier
+    expect(order.slice(1).sort()).toEqual(['fresh', 'posted']); // same created_at inside one transaction: arrival ties
+  });
+
+  test('nothing stated: the record alone decides the pick, with no reasons line (decision C)', () => {
+    const { request0, offers0, names, stats } = s.read.data;
+    const r = rankReplies(offers0, request0, statsOf(stats));
+    expect(named(r.offers.filter((o) => o.status === 'offered'), names)).toEqual(['strong', 'fresh']);
+    expect(r.pickOfferId).toBe(offers0.find((o) => names[o.partner_id] === 'strong').id);
+    expect(r.pickReasons).toEqual([]);
   });
 });

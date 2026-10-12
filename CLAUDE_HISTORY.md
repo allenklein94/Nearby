@@ -1,3 +1,36 @@
+# Item 63 (2026-10-12) - replies ranked by what the customer stated; "Our pick" needs a fit AND a record - BUILT, NOT DEVICE-VERIFIED
+
+Owner idea ("Best offer could emerge from the group", card rises above the others) declined as written (items 17/37/38/58/62:
+no "best" wording, no special card, no lift, no price competition). Owner approved the smallest truthful version with LOCKED rules
+and decisions A/B/C (2026-10-12). Built (no migration, no server change):
+- `src/utils/replyFit.js` = the ONE rule: `replyTimeFit` / `replyBudgetFit` -> fits | fails | unknown | null (not stated),
+  `replyMeetsRequest` -> { qualifies, reasons }, `rankReplies(offers, request, partnerStats)` -> { offers, pickOfferId, pickReasons }.
+  BusinessRequestDetailScreen's inline `reliabilityRank` ordering + pick memo were replaced by it (guard in replyFit.test.js).
+- Time (request = `date` + single `time_window_start`; Ask a business never stores an end): non-alternate reply with no window =
+  the business's "as requested" (decision A); a window must contain the start (from <= start < until); `alt_time` meets it only
+  when `proposed_time` IS that local day (and minute); `availability_id` / `package_id` rows (automatic) = unknown.
+- Budget only when given: `budget_max` per person; per-person price <= it; total price <= budget x party size (party size
+  known); no price = unknown. Price is never a weight.
+- Order: qualifying before the rest; inside each tier established record (>= 5 opportunities) first, then completion rate,
+  then arrival. Only 'offered' rows move, inside their own slots. Pick = first, qualifies, established, >= 2 open replies.
+  Nothing stated = every reply qualifies = the old record-only behaviour, no reasons line (decision C).
+- Reasons line under "✨ Our pick" (same card style as the record line, no new styling, no motion): only stated constraints met,
+  "Fits {time}" (clock, or the day for a date-only ask, via displayClock / displayWeekdayDate) and "Within your budget"
+  (decision B: no distance). New strings `ui.requestDetail.pickFitsTime` / `pickWithinBudget`, 11 languages, 10 machine-authored
+  (NEED NATIVE REVIEW). `scripts/i18n/strings/requestDetail.json` was stale (missing items 32/52's `titleAtBusiness` and
+  `firstVisitNote`, hand-added to the generated file); folded back in, so regeneration is byte-identical plus the 22 new lines.
+- Verified: replyFit.test.js 24/24; offer journey extended with a second journey (item 63, rolled back): four throwaway
+  businesses reply through submit_business_offer + post_business_availability, real records from get_partner_offer_reputation;
+  a fitting reply with the weaker record ranks above the strongest-record alternate-time reply and is the pick with
+  [time, budget]; no-price and availability replies never qualify; after the fitting reply withdraws there is no pick; a request
+  with nothing stated keeps the record-only pick with no reasons. offer journey 26/26.
+- UNRESOLVED (reported to the owner): two automatic writers, `_match_request_to_policy_core` (standing auto-accept policy) and
+  `_ai_auto_respond_to_business_requests`, insert plain 'standard' rows with no window and no marker, indistinguishable from a
+  business's own "as requested"; neither checks a single stated time against hours. Under decision A they count as fitting.
+  Live: 0 active auto-accept policies, 0 AI policies. A precise fix needs a server-set marker on the reply (owner decision).
+- Not covered: the screen on a device (cards identical and static, reasons line placement), arrival order ties inside one
+  transaction (same created_at).
+
 # Item 62 (2026-10-12) - several replies to one request = one notification, replaced in place - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Owner approved (2026-10-12) after the investigation below: Expo `tag` (Android) + `collapseId` (iOS), one notification per

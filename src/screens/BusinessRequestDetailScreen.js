@@ -1,7 +1,7 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
-import { hasEstablishedRecord } from '../utils/reliabilityRecord';
+import { rankReplies } from '../utils/replyFit';
 import { useLanguage } from '../context/LanguageContext';
-import { displayClock } from '../i18n/display';
+import { displayClock, displayWeekdayDate } from '../i18n/display';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -328,37 +328,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     return () => clearTimeout(id);
   });
 
-  const displayOffers = useMemo(() => {
-    const offeredIndices = [];
-    offers.forEach((o, i) => { if (o.status === 'offered') offeredIndices.push(i); });
-    if (offeredIndices.length < 2) return offers;
-
-    function reliabilityRank(offer) {
-      const rep = partnerStats[offer.partner_id]?.reputation;
-      const established = hasEstablishedRecord(rep);
-      return { established, completionRate: established ? (rep.completion_rate ?? -1) : null };
-    }
-    const reordered = offeredIndices
-      .map((i) => offers[i])
-      .sort((a, b) => {
-        const rankA = reliabilityRank(a);
-        const rankB = reliabilityRank(b);
-        if (rankA.established !== rankB.established) return rankA.established ? -1 : 1;
-        if (rankA.established) return rankB.completionRate - rankA.completionRate;
-        return 0; // neither established -- stable sort preserves original (created_at) order
-      });
-    const result = [...offers];
-    offeredIndices.forEach((originalIndex, k) => { result[originalIndex] = reordered[k]; });
-    return result;
-  }, [offers, partnerStats]);
-
-  // Nearby's pick: only when the first offered card is there on real evidence (an established reliability record, the
-  // same rule that orders the list). With no such record nothing is called a pick.
-  const pickOfferId = useMemo(() => {
-    const first = displayOffers.find((o) => o.status === 'offered');
-    const rep = first ? partnerStats[first.partner_id]?.reputation : null;
-    return displayOffers.filter((o) => o.status === 'offered').length >= 2 && hasEstablishedRecord(rep) ? first.id : null;
-  }, [displayOffers, partnerStats]);
+  // Item 63: the ONE ordering + "Our pick" rule (utils/replyFit.js): replies that meet what the customer stated (time,
+  // budget) come first, track record only breaks ties, unknown never counts; the pick needs both. Cards stay identical.
+  const ranking = useMemo(() => rankReplies(offers, request, partnerStats), [offers, request, partnerStats]);
+  const displayOffers = ranking.offers;
+  const pickOfferId = ranking.pickOfferId;
+  const pickReasonsLine = useMemo(() => ranking.pickReasons.map((r) => {
+    if (r.kind === 'budget') return t('ui.requestDetail.pickWithinBudget');
+    const [y, m, d] = (r.date ?? '').split('-').map(Number);
+    const at = r.date ? new Date(y, m - 1, d) : new Date();
+    if (r.startMin != null) at.setHours(Math.floor(r.startMin / 60), r.startMin % 60, 0, 0);
+    const label = r.startMin != null ? displayClock(at.toISOString(), language) : displayWeekdayDate(at.toISOString(), language);
+    return label ? t('ui.requestDetail.pickFitsTime', { time: label }) : null;
+  }).filter(Boolean).join(' · ') || null, [ranking, language]);
 
   // Plays only a confirmation that arrived live (a realtime-triggered re-read saw accepted -> completed); the first read
   // of this visit is the baseline, and anything already played on this device is never replayed.
@@ -1629,6 +1611,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   the business's own name above it. Null for a plain generic
                   offer with no title, same as it always rendered before. */}
               {pickOfferId === o.id && offerLifecycleState(o) === 'offered' ? <Text style={styles.offerReputationLine}>{t('ui.requestDetail.ourPick')}</Text> : null}
+              {pickOfferId === o.id && offerLifecycleState(o) === 'offered' && pickReasonsLine ? <Text style={styles.offerReputationLine}>{pickReasonsLine}</Text> : null}
               {o.offer_title && o.status !== 'offered' ? <Text style={styles.offerTitleHeadline}>{o.offer_title}</Text> : null}
               {reputationLine && (offerLifecycleState(o) === 'offered' || o.status === 'accepted') ? (
                 <Text style={styles.offerReputationLine}>{reputationLine}</Text>

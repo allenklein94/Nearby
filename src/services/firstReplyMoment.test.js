@@ -271,7 +271,7 @@ describe('the countdown updates on its own while the screen is open (text only)'
 
   test('the screen re-renders at that moment (setTimeout + cleanup), with no animation', () => {
     const screen = read('screens/BusinessRequestDetailScreen.js');
-    const block = screen.slice(screen.indexOf('const [, setValidityTick]'), screen.indexOf('const displayOffers = useMemo'));
+    const block = screen.slice(screen.indexOf('const [, setValidityTick]'), screen.indexOf('const ranking = useMemo'));
     expect(block).toMatch(/nextValidityRefreshMs\(offers\)/);
     expect(block).toMatch(/clearTimeout\(id\)/);
     expect(block).not.toMatch(/Animated|loop|pulse/i);
