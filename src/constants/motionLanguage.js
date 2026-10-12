@@ -69,3 +69,16 @@ export const MARKETPLACE_MOMENTS = Object.freeze([
   { key: 'business_progress', component: 'motion/OfferProgressSteps.js', sequence: 'offerProgress' },
   { key: 'customer_redemption', component: 'motion/VisitConfirmed.js', sequence: 'visitConfirmed' },
 ]);
+
+// Owner item 55 (2026-10-12, LOCKED): the Nearby Pulse (motion/NearbyPulse.js) is the one motion language for a CONNECTION --
+// a signal that starts at one thing and reaches another. Every connection moment is listed here with the Pulse form it uses
+// (ring / still / journey) and its own approved tokens; a NEW connection moment is added here and reuses the Pulse, never a
+// bespoke animation (guard: motion/nearbyPulse.test.js). The business-responds travel is the ONE signature moment and stays
+// outside the Pulse, distinct and larger (SIGNATURE_MOMENT in motion/motionBudget.js).
+export const PULSE_MOMENTS = Object.freeze([
+  { key: 'request_sent', form: 'ring', component: 'motion/RequestPulse.js', sequence: 'requestPulse', from: 'the person\'s request', to: 'the businesses it reached' },
+  { key: 'signal_received', form: 'ring', component: 'motion/OpportunityArrival.js', sequence: 'requestPulse', from: 'a request', to: 'the business\'s opportunity card' },
+  { key: 'happening_near_you', form: 'ring', component: 'motion/HappeningRipple.js', sequence: 'happeningRipple', from: 'a gathering happening now', to: 'the person\'s Right Now section' },
+  { key: 'right_now_mark', form: 'still', component: 'components/RightNowMark.js', sequence: null, from: 'what is happening nearby', to: 'the Right Now heading' },
+  { key: 'pin_to_sheet', form: 'journey', component: 'motion/PinToSheetFrame.js', sequence: 'pinToSheet', from: 'a place on the map', to: 'its business sheet' },
+]);

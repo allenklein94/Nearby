@@ -7,7 +7,10 @@ const { SEQUENCES, settleMs, tierOf, MOTION_BUDGET } = require('./motionBudget')
 const ROOT = path.join(__dirname, '..', '..');
 const read = (f) => fs.readFileSync(path.join(ROOT, f), 'utf8');
 const sheet = read('src/components/BusinessPreviewSheet.js');
-const frame = read('src/motion/PinToSheetFrame.js');
+const frameWrapper = read('src/motion/PinToSheetFrame.js');
+// item 55: the frame is the Nearby Pulse's journey form; its drawing lives in PulseJourney
+const pulseSrc = read('src/motion/NearbyPulse.js');
+const frame = pulseSrc.slice(pulseSrc.indexOf('export function PulseJourney'), pulseSrc.indexOf('const styles = StyleSheet.create'));
 const map = read('src/components/GatheringsMapView.js');
 
 describe('geometry', () => {
@@ -61,7 +64,7 @@ describe('never delays or blocks the person', () => {
   });
   test('the frame is an outline only and takes no touches', () => {
     expect(frame).toMatch(/pointerEvents="none"/);
-    expect(frame).toMatch(/borderWidth: 2/);
+    expect(frameWrapper).toMatch(/<PulseJourney origin=\{pin\} rect=\{rect\} tokens=\{JOURNEY\} color=\{BUSINESS_PIN_COLOR\} borderRadius=\{radius\.lg\} borderWidth=\{2\} play=\{!reduceMotion\} \/>/);
     expect(frame).not.toMatch(/backgroundColor/);
   });
   test('native driver for every timing', () => {

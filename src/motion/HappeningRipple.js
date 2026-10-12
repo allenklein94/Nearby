@@ -1,9 +1,10 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { SEQUENCES } from './motionBudget';
 import { takeNewHappening } from '../utils/happeningSeen';
+import { usePulseRings, PulseRings } from './NearbyPulse';
 
 // Owner item 26 (2026-10-11): "Something is happening near you". One soft ring goes out from the happening-now section's
 // heading icon when the section shows a gathering no happening-now section has shown this session (utils/happeningSeen.js,
@@ -11,6 +12,7 @@ import { takeNewHappening } from '../utils/happeningSeen';
 // Back replays nothing. Decoration only: the heading and the rows render at once and never move (item 15: lists and cards
 // do not animate), the ring sits behind the icon and takes no touches. No haptic (the person tapped nothing). Reduce
 // Motion = no ring; the ids are still marked seen, so nothing replays later.
+// Item 55: the ring is the Nearby Pulse's ring form (motion/NearbyPulse.js), with this moment's own tokens and size.
 const T = SEQUENCES.happeningRipple;
 
 // Item 27: its child is the Right Now radar mark (components/RightNowMark.js); the ring goes out from the mark, then the
@@ -18,30 +20,21 @@ const T = SEQUENCES.happeningRipple;
 export default function HappeningRipple({ ids = [], color, children }) {
   const focused = useIsFocused();
   const reduceMotion = useReduceMotion();
-  const ring = useRef(new Animated.Value(1)).current;
+  const pulse = usePulseRings(T);
   const key = (ids ?? []).join('|');
 
   useEffect(() => {
     if (!focused) return undefined;
     const fresh = takeNewHappening(ids);
     if (fresh.length === 0 || reduceMotion) return undefined;
-    ring.setValue(0);
-    const anim = Animated.timing(ring, { toValue: 1, duration: T.ringMs, easing: Easing.bezier(0.2, 0, 0, 1), useNativeDriver: true });
-    anim.start();
+    const anim = pulse.start();
     return () => anim.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focused, key]);
 
   return (
     <View style={styles.anchor}>
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.ring, {
-          borderColor: color,
-          opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [T.startOpacity, 0] }),
-          transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [T.fromScale, T.toScale] }) }],
-        }]}
-      />
+      <PulseRings pulse={pulse} tokens={T} size={T.size} borderWidth={1.5} color={color} style={styles.layer} />
       {children}
     </View>
   );
@@ -49,5 +42,5 @@ export default function HappeningRipple({ ids = [], color, children }) {
 
 const styles = StyleSheet.create({
   anchor: { alignItems: 'center', justifyContent: 'center' },
-  ring: { position: 'absolute', width: T.size, height: T.size, borderRadius: T.size / 2, borderWidth: 1.5 },
+  layer: { ...StyleSheet.absoluteFillObject, alignItems: 'center', justifyContent: 'center' },
 });

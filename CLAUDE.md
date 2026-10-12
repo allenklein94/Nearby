@@ -112,6 +112,9 @@ AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 2
 `PRODUCT_AUDIT/ITEM_54_NOTICED_ACTIVITY_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real device AND native review of the 3
 `ui.home.noticed*` strings is done (migration 20270302; journey `noticedActivity`).
 
+**Item 55 (the Nearby Pulse, consolidation) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_55_NEARBY_PULSE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND a real Android phone (no new strings, no migration).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -414,6 +417,12 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   specific canonical categories, never groups or made-up combinations; max 2. ONE rule `get_my_noticed_categories`: 2+ separate
   things DONE (join/create/accept/redeem, never views/searches) in 30 days, learned, surely listed in Settings, not declared, never
   never-learned. Each category offered on one local day only (`utils/noticedActivity.js`); no motion, push or profile change.
+- **The Nearby Pulse (owner item 55, LOCKED):** the one motion language for a CONNECTION (a signal from one thing to another):
+  `motion/NearbyPulse.js`, forms ring (`usePulseRings`/`PulseRings`), still (`PulseMark`) and journey (`PulseJourney`, `pulseGeometry.js`).
+  Request sent, signal received, Happening near you, the Right Now mark and pin -> sheet draw only through it (`PULSE_MOMENTS` in
+  `constants/motionLanguage.js`), each keeping its own approved tokens, size, colour, trigger and Reduce Motion rule. A new connection
+  moment registers there and reuses the Pulse, never a bespoke animation; no new animated places. Business responds stays the ONE
+  signature, outside the Pulse. Guard `motion/nearbyPulse.test.js`.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

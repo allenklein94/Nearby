@@ -38,7 +38,8 @@ describe('moment 1: request sent pulse', () => {
   });
   it('never delays the confirmation: the line is a child rendered at once, rings are untouchable', () => {
     const s = src('motion/RequestPulse.js');
-    expect(s).toMatch(/pointerEvents="none"/);
+    expect(s).toMatch(/<PulseRings pulse=\{pulse\} tokens=\{T\}/); // item 55: the Pulse's untouchable rings
+    expect(src('motion/NearbyPulse.js')).toMatch(/<View pointerEvents="none" style=\{style\}>/);
     expect(s).toMatch(/\{children\}/);
     expect(screen).toMatch(/<RequestPulse[\s\S]{0,600}justSentLine/);
   });

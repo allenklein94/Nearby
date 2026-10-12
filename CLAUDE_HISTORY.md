@@ -1,3 +1,30 @@
+# Item 55 (2026-10-12) - the Nearby Pulse: one motion language for connections (consolidation) - BUILT, NOT DEVICE-VERIFIED
+
+Owner choice (asked, option 1 "Consolidate"): make the Pulse the shared building block for the moments that already connect two
+things; no new animated places; business-responds stays the single signature; preserve every lock (timing, content, interaction,
+privacy, Reduce Motion); report any conflict instead of overriding. **Built:** `motion/NearbyPulse.js`: ring form (`usePulseRings`
+-> values resting at 1, `start({ delayMs })` restarts from the origin, one ring = one timing, several = staggered; `PulseRings`
+draws them untouchable), still form (`PulseMark`, never animated), journey form (`PulseJourney` + pure `journeyStart` in
+`motion/pulseGeometry.js`). New backstop: under Reduce Motion `start()` and the journey do nothing even if a caller forgets.
+Moved onto it, each with its OWN tokens/size/colour/trigger unchanged: RequestPulse (requestPulse, 120 px, border 2, decided once
+at mount), OpportunityArrival's ArrivalSignal (requestPulse tokens, ringSize 44 at the ✨, slot delay), HappeningRipple
+(happeningRipple, 24 px, border 1.5, seen-marking before the Reduce Motion check kept), RightNowMark (PulseMark 14/6/0.45),
+PinToSheetFrame (journey: pinToSheet frameMs 320, pinSize 28, peak 0.9, #5B9AA0, radius.lg; `pinFrameStart` = `journeyStart`).
+Registry `PULSE_MOMENTS` (constants/motionLanguage.js). **Locks checked, no conflict:** items 26/27 (ring/mark wording, seen
+store, still mark), 44 (anchor, PIN_HEAD_LIFT, Reduce Motion = plain modal), 48 (same rings as moment 1, info floor, buttons live),
+marketplace moment 1, item 15 (no rows move), item 20 (overlays untouchable), item 22 (native driver, no loops), item 25 (signature
+exclusive: OfferTravelOverlay untouched and does not import the Pulse). **Considered and left alone (not connections):** the
+"You're booked" ring + ripple, the accepted-offer ✓ ring, Interested -> Attending (confirmations, locked tokens); allow-listed in
+the guard. **One visible difference, disclosed:** a ring now rests invisible before it plays (before, the first ring could show faint for
+one frame before its effect started). **Guard** `motion/nearbyPulse.test.js` (15): each registered moment imports the Pulse and its form
+and draws no ring/stagger/loop/haptic/travel of its own; the set of files drawing an animated ring is exactly the allow-list; tokens
+equal the approved values; sizes/colours per moment; the Pulse is native-driver, untouchable, no loop/haptic/arc/dim/glow; one
+journey geometry. Existing guards repointed where the drawing moved (happeningRipple, pinToSheet, marketplaceMoments,
+opportunityArrival, animationInterruptible), each guarantee kept. Business web export regenerated (ArrivalSignal is on the
+dashboard). **Verified:** Jest 431 suites / 5796; journeys 28/28 (291; motion isn't journey-covered, no data flow changed).
+**NOT verified:** any render on a real iPhone or Android phone (every check PENDING). Checklist:
+`PRODUCT_AUDIT/ITEM_55_NEARBY_PULSE_DEVICE_CHECKLIST_2026-10-12.md`.
+
 # Item 54 (2026-10-12) - "You've been into X lately" (Nearby is getting smarter) - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Owner decisions (asked): wording "You've been into X lately." (behavior, not preference; item 60 NOT reopened: never "you like",

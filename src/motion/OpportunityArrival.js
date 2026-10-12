@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { SEQUENCES, infoOpacity } from './motionBudget';
+import { usePulseRings, PulseRings } from './NearbyPulse';
 
 // Owner item 48 (2026-10-11): "signal received" -- marketplace moment 1 seen from the business side. An opportunity card that
 // is new on this device (utils/opportunityArrival.js decides which, the screen passes `play` + `slot`) rises into place
@@ -42,38 +43,21 @@ export default function OpportunityArrival({ id, play = false, slot = 0, consume
 }
 
 // The rings, centred on the start of the headline (its ✨), behind it. Renders the headline itself unchanged.
+// Item 55: the Nearby Pulse's ring form (motion/NearbyPulse.js) with requestPulse's own tokens: the same pulse, arriving.
 export function ArrivalSignal({ color, children }) {
   const { animate, delayMs } = useContext(ArrivalContext);
-  const rings = useRef(Array.from({ length: P.rings }, () => new Animated.Value(0))).current;
+  const pulse = usePulseRings(P);
 
   useEffect(() => {
     if (!animate) return undefined;
-    const ease = Easing.bezier(0.2, 0, 0, 1);
-    const anim = Animated.sequence([
-      Animated.delay(delayMs),
-      Animated.stagger(P.staggerMs, rings.map((v) => Animated.timing(v, { toValue: 1, duration: P.ringMs, easing: ease, useNativeDriver: true }))),
-    ]);
-    anim.start();
+    const anim = pulse.start({ delayMs });
     return () => anim.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
     <View>
-      {animate ? (
-        <View pointerEvents="none" style={styles.anchor}>
-          {rings.map((v, i) => (
-            <Animated.View
-              key={i}
-              style={[styles.ring, {
-                borderColor: color,
-                opacity: v.interpolate({ inputRange: [0, 1], outputRange: [P.startOpacity, 0] }),
-                transform: [{ scale: v.interpolate({ inputRange: [0, 1], outputRange: [P.fromScale, P.toScale] }) }],
-              }]}
-            />
-          ))}
-        </View>
-      ) : null}
+      {animate ? <PulseRings pulse={pulse} tokens={P} size={T.ringSize} borderWidth={2} color={color} style={styles.anchor} /> : null}
       {children}
     </View>
   );
@@ -82,5 +66,4 @@ export function ArrivalSignal({ color, children }) {
 const styles = StyleSheet.create({
   // Centred on the headline's first glyph (about 8 px in, half a caption line down).
   anchor: { position: 'absolute', left: 8 - T.ringSize / 2, top: 10 - T.ringSize / 2, width: T.ringSize, height: T.ringSize, alignItems: 'center', justifyContent: 'center' },
-  ring: { position: 'absolute', width: T.ringSize, height: T.ringSize, borderRadius: T.ringSize / 2, borderWidth: 2 },
 });

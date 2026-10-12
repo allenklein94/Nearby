@@ -1,17 +1,11 @@
 // Owner item 44 (2026-10-11): the geometry of a map pin growing into its business sheet. Pure, so the numbers that run are
 // the numbers that are tested. Both points are in the sheet overlay's own coordinates.
+import { journeyStart } from './pulseGeometry';
 
 // The frame's starting transform: the sheet's outline shrunk to a pin-sized square centred on the pin. The transform order is
 // translate then scale (React Native scales about the view's centre), so the start centre lands exactly on the pin.
 export function pinFrameStart(pin, rect, pinSize) {
-  if (!pin || !rect || !(rect.width > 0) || !(rect.height > 0)) return null;
-  if (!Number.isFinite(pin.x) || !Number.isFinite(pin.y)) return null;
-  return {
-    translateX: pin.x - (rect.x + rect.width / 2),
-    translateY: pin.y - (rect.y + rect.height / 2),
-    scaleX: Math.min(1, pinSize / rect.width),
-    scaleY: Math.min(1, pinSize / rect.height),
-  };
+  return journeyStart(pin, rect, pinSize); // item 55: the Nearby Pulse's one journey geometry
 }
 
 // A pin's spot in window coordinates -> the overlay's coordinates (the overlay may not start at the window's top, e.g. under

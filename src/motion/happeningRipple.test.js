@@ -47,13 +47,17 @@ test('one ring, medium tier, under 500 ms', () => {
 
 test('the ripple is decoration: native driver, no touches, no haptic, Reduce Motion = none, only while in front', () => {
   const s = read('motion/HappeningRipple.js');
-  expect(s).toMatch(/useNativeDriver: true/);
-  expect(s).toMatch(/pointerEvents="none"/);
+  // item 55: the ring is the Nearby Pulse's ring form; native driver + untouchable live there
+  expect(s).toMatch(/<PulseRings pulse=\{pulse\}/);
+  const pulse = read('motion/NearbyPulse.js');
+  expect(pulse).toMatch(/useNativeDriver: true/);
+  expect(pulse).toMatch(/<View pointerEvents="none" style=\{style\}>/);
   expect(s).toMatch(/useIsFocused/);
   expect(s).toMatch(/if \(fresh\.length === 0 \|\| reduceMotion\) return/);
   expect(s).not.toMatch(/playHaptic|Animated\.loop|Animated\.stagger/);
   // the seen record is marked BEFORE the reduce-motion check, so nothing replays when Reduce Motion is turned off later
   expect(s.indexOf('takeNewHappening(ids)')).toBeLessThan(s.indexOf('reduceMotion) return'));
+  expect(s.indexOf('reduceMotion) return')).toBeLessThan(s.indexOf('pulse.start()'));
 });
 
 test('Home and Discover wrap only the still radar mark, never the rows (item 27)', () => {
@@ -70,7 +74,12 @@ describe('the Right Now radar mark', () => {
   test('is drawn and still: no Animated, no loop, hidden from screen readers', () => {
     const s = read('components/RightNowMark.js');
     expect(s).not.toMatch(/Animated|useEffect|setInterval|setTimeout/);
-    expect(s).toMatch(/importantForAccessibility="no-hide-descendants"/);
+    // item 55: it is the Pulse's still form, with the same size, dot and ring opacity as before
+    expect(s).toMatch(/<PulseMark color=\{color\} size=\{14\} dot=\{6\} ringOpacity=\{0\.45\} style=\{style\} \/>/);
+    const pulse = read('motion/NearbyPulse.js');
+    const mark = pulse.slice(pulse.indexOf('export function PulseMark'), pulse.indexOf('// ---------- form 2'));
+    expect(mark).not.toMatch(/Animated|useEffect|setInterval|setTimeout/);
+    expect(mark).toMatch(/importantForAccessibility="no-hide-descendants"/);
   });
   test('the headings keep their wording and open the existing Happening Now view', () => {
     const home = read('screens/HomeScreen.js');

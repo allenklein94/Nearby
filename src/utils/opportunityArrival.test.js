@@ -58,7 +58,8 @@ describe('the moment', () => {
   });
   test('never delays: text at the info floor, untouchable rings, Reduce Motion settled, decided once at mount', () => {
     expect(motion).toMatch(/opacity: infoOpacity\(rise\)/);
-    expect(motion).toMatch(/pointerEvents="none"/);
+    expect(motion).toMatch(/<PulseRings pulse=\{pulse\} tokens=\{P\}/); // item 55: the Pulse's untouchable rings
+    expect(read('src/motion/NearbyPulse.js')).toMatch(/<View pointerEvents="none" style=\{style\}>/);
     expect(motion).toMatch(/useRef\(play && !reduceMotion && \(consume \? consume\(id\) : true\)\)\.current/);
     expect(motion).toMatch(/useNativeDriver: true/);
   });

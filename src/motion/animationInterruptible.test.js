@@ -27,9 +27,11 @@ describe('swipe decision', () => {
 
 describe('every animation that could sit in the way is interruptible', () => {
   test('pure overlays never take touches', () => {
-    for (const f of ['motion/OccasionAnimation.js', 'motion/OfferTravelOverlay.js', 'motion/RequestPulse.js', 'motion/RespondingStatus.js', 'motion/OfferProgressSteps.js']) {
+    for (const f of ['motion/OccasionAnimation.js', 'motion/OfferTravelOverlay.js', 'motion/NearbyPulse.js', 'motion/RespondingStatus.js', 'motion/OfferProgressSteps.js']) {
       expect(read(f)).toMatch(/pointerEvents="none"/);
     }
+    // item 55: the request pulse draws only through the Nearby Pulse (whose rings and journey take no touches)
+    expect(read('motion/RequestPulse.js')).toMatch(/<PulseRings /);
   });
   test('the offer arrival pill and the Undo toast can be swiped away', () => {
     expect(read('components/OfferArrivalSignal.js')).toMatch(/useSwipeToDismiss\(/);
