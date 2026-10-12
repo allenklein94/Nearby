@@ -9,9 +9,10 @@ import { SEQUENCES, infoOpacity } from './motionBudget';
 // shown whenever the offer is stored as `completed` (the business confirmed the visit). `play` (decided once at mount)
 // = the confirmation arrived while the screen was open: the line settles in (fade + slight rise); the card's glow is
 // OfferProgressGlow with SEQUENCES.visitConfirmed. Arrival-driven: no haptic. Reduce Motion = the settled line.
+// Item 52: `note` = the first-ever redemption's one extra line, settling in with the label (words only, no motion of its own).
 const T = SEQUENCES.visitConfirmed;
 
-export default function VisitConfirmed({ label, play = false }) {
+export default function VisitConfirmed({ label, note = null, play = false }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const animate = useRef(play && !reduceMotion).current;
@@ -31,6 +32,7 @@ export default function VisitConfirmed({ label, play = false }) {
       style={[styles.row, { opacity: infoOpacity(v), transform: [{ translateY: v.interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }] }]}
     >
       <Text style={[styles.text, { color: colors.success }]}>✓ {label}</Text>
+      {note ? <Text style={[styles.note, { color: colors.textSecondary }]}>{note}</Text> : null}
     </Animated.View>
   );
 }
@@ -38,4 +40,5 @@ export default function VisitConfirmed({ label, play = false }) {
 const styles = StyleSheet.create({
   row: { marginTop: spacing.sm },
   text: { ...typography.bodyBold },
+  note: { ...typography.body, marginTop: spacing.xs },
 });

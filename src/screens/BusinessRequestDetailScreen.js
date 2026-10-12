@@ -61,7 +61,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { offerPriceLabel } from '../utils/outcomeDisplay';
 import { acceptedReplyTitle, businessReplyKind, isFirstEverReply, respondingLine } from '../utils/offerCopy';
-import { fetchFirstReplyState } from '../services/offerArrivalSource';
+import { fetchFirstRedemptionId, fetchFirstReplyState } from '../services/offerArrivalSource';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import BusinessLogoMark from '../components/BusinessLogoMark';
@@ -301,6 +301,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // rest of this visit (a reload here never takes it away mid-view; the next visit reads the history again = normal).
   const [firstReplyOfferId, setFirstReplyOfferId] = useState(null);
   const firstReplyDecided = useRef(false);
+  // Item 52: the person's first-ever redemption (their earliest completed offer, from the server). Once known it never moves
+  // ('completed' is final), so it is read only until found, and only while this request has a completed offer of theirs.
+  const [firstRedemptionOfferId, setFirstRedemptionOfferId] = useState(null);
+  const firstRedemptionRef = useRef(null);
   const [reasonAsk, setReasonAsk] = useState(null);
 
   // "Nearby V3/V4" plan, Phase C: order the consumer's own offer list by
@@ -395,11 +399,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const unviewed = result.offers.filter((o) => o.status === 'offered' && !o.viewed_at);
       const decideFirst = !firstReplyDecided.current && unviewed.length > 0 && result.request.requester_id === uid;
       if (decideFirst) firstReplyDecided.current = true;
-      const [logos, replyHistory] = await Promise.all([
+      // Item 52: read with the offers, so "✓ Visit confirmed" and its first-time line arrive together (never a line popping in).
+      const askFirstRedemption = !firstRedemptionRef.current && result.request.requester_id === uid
+        && result.offers.some((o) => o.status === 'completed');
+      const [logos, replyHistory, firstRedemptionId] = await Promise.all([
         logoIds.length > 0 ? getScreenedLogos(logoIds).catch(() => null) : null,
         decideFirst ? fetchFirstReplyState(uid) : null, // null on failure = normal wording
+        askFirstRedemption ? fetchFirstRedemptionId(uid) : null, // null on failure = the normal card
       ]);
       if (logos) setPartnerLogos(logos);
+      if (firstRedemptionId) {
+        firstRedemptionRef.current = firstRedemptionId;
+        setFirstRedemptionOfferId(firstRedemptionId);
+      }
       if (decideFirst) {
         const first = unviewed.find((o) => isFirstEverReply(o.id, replyHistory));
         if (first) setFirstReplyOfferId(first.id);
@@ -1599,7 +1611,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             // building itself in, or the booked confirmation); this screen only lays out what it returns.
             const shown = presentOffer(o, {
               business: { name: o.brand_partners?.name ?? null, logoUri: logoFor(partnerLogos, o.partner_id) },
-              context: { isFirstEverReply: firstReplyOfferId === o.id, justAccepted: justAcceptedOfferId === o.id },
+              context: { isFirstEverReply: firstReplyOfferId === o.id, isFirstRedemption: firstRedemptionOfferId === o.id, justAccepted: justAcceptedOfferId === o.id },
             });
             // The business head (logo, name, title, record): the assembly's first step on an open reply, and the line under
             // "You're booked" once accepted (item 12). One copy, two placements.
@@ -1658,9 +1670,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     {businessHead}
                     {whenLine ? <Text style={styles.acceptedFact}>{whenLine}</Text> : null}
                     {partySize != null ? <Text style={styles.acceptedFact}>{t('ui.common.count.people', { count: partySize })}</Text> : null}
-                    {/* Marketplace moment 6: the business confirmed the visit. A fact, never something to do. */}
+                    {/* Marketplace moment 6: the business confirmed the visit. A fact, never something to do. Item 52: on the
+                        person's first-ever redemption, one more line says what they just did (words only). */}
                     {confirmation.visitConfirmed ? (
-                      <VisitConfirmed key={progressKey(o)} label={t('ui.requestDetail.visitConfirmed')} play={visitPlayKeys.has(progressKey(o))} />
+                      <VisitConfirmed key={progressKey(o)} label={t('ui.requestDetail.visitConfirmed')} note={confirmation.firstVisitNote} play={visitPlayKeys.has(progressKey(o))} />
                     ) : null}
                   </OfferAcceptedMorph>
                 );

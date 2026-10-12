@@ -72,6 +72,7 @@ export function presentOffer(offer, { business = {}, context = {} } = {}) {
     reduceMotion = false,
     now = new Date(),
     isFirstEverReply = false,
+    isFirstRedemption = false, // item 52: this is the person's earliest-ever completed offer (services fetchFirstRedemptionId)
     justAccepted = false,
     playedIds,
   } = context;
@@ -103,6 +104,8 @@ export function presentOffer(offer, { business = {}, context = {} } = {}) {
       warn: bookingState === 'not_through',
       plays: !preview && justAccepted, // the morph itself settles at once under Reduce Motion
       visitConfirmed: card === 'visited',
+      // Item 52: the first-ever redemption says once what just happened (words only, under "✓ Visit confirmed").
+      firstVisitNote: card === 'visited' && !preview && isFirstRedemption === true ? tr('ui.requestDetail.firstVisitNote') : null,
     } : null,
     redemption: card === 'booked' ? visibleRedemption(offer) : null,
   };

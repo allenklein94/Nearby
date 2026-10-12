@@ -1,3 +1,21 @@
+# Item 52 (2026-10-12) - the first successful redemption says what just happened - BUILT, NOT DEVICE-VERIFIED
+
+Owner: after redeeming, "Redeemed ✓", then the first time only "You just used Nearby to turn a request into a real-world experience"
+(not that wording every time). Found: redemption = `complete_business_reservation` (requester or business) -> offer `completed`
+(final, `completed_at` set once); the customer's card already shows "✓ Visit confirmed" (marketplace moment 6, `VisitConfirmed`).
+**Built (no migration):** `fetchFirstRedemptionId(uid)` (`services/offerArrivalSource.js`): the earliest completed offer on the person's
+own requests (completed_at, id), read under RLS, null on failure/none. BusinessRequestDetail reads it in the same parallel read as the
+logos (only for the requester, only while a completed offer is on screen, only until found: it never moves), so the line lands with the
+card. `presentOffer` context `isFirstRedemption` -> `confirmation.firstVisitNote` (visited card only, never owner preview, only a real
+`true`); `VisitConfirmed` takes `note` and renders it inside its one existing settle (no new motion, haptic or glow). Wording: the owner's
+sentence minus "just" ("You used Nearby to turn a request into a real-world experience."), since the line stays on that offer on later
+looks; 11 languages (machine-authored). **Verified:** Jest 427 suites / 5750 (`utils/firstRedemption.test.js` 8); journeys 26/26 (279):
+`offer` journey step 7 reads the host's first redemption as the host before/after the real completion (prod has no earlier completed
+offer, so the first-time branch ran) and the card follows. **NOT verified:** device render, realtime arrival on a real phone, native
+review. Disclosed: if an earlier completed offer's row is ever deleted, the "first" would move to the next one (no claim table; completed
+rows are not deleted by any app path). Perk/brand redemptions (a different object) are not included. Checklist:
+`PRODUCT_AUDIT/ITEM_52_FIRST_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md`.
+
 # Item 51 (2026-10-12) - the business's first-ever offer gets its own confirmation - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Owner choice (asked): the BUSINESS side only; the customer's first-reply moment (2026-10-10, LOCKED: "Your first reply from a local

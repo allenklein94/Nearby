@@ -100,6 +100,10 @@ Owner: keep the existing headline (no "Someone is looking for this" unless busin
 `PRODUCT_AUDIT/ITEM_51_FIRST_OFFER_CONFIRMATION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (needs Anthropic credit + a business with no offers yet)
 AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 20270299; journey `offer`; `partner-first-offer.sql` 13/13).
 
+**Item 52 (first successful redemption) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_52_FIRST_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real device AND native review of
+`ui.requestDetail.firstVisitNote` (10 languages) is done (no migration; journey `offer`).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -389,6 +393,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   'offered' by ANY path, PK `on conflict do nothing`; no client grants); the sent confirmation reads "Your first offer/reply is on its way"
   (`replySentConfirmation(.., { first })`, kind per item 121) from the edge function's `firstOffer` / `get_my_offer_submissions.is_first_offer`.
   Words only; never on the queued "saved" step; the customer's first-reply moment stays as locked.
+- **First redemption (owner item 52):** the customer's earliest-ever completed offer (server: min `completed_at` on their own requests,
+  `fetchFirstRedemptionId`, read with the offers) adds "You used Nearby to turn a request into a real-world experience." under
+  "✓ Visit confirmed" (`presentOffer().confirmation.firstVisitNote`); words only, inside VisitConfirmed's one settle; later ones: none.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

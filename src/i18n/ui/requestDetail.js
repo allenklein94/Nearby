@@ -308,6 +308,7 @@ export default {
       notThrough: "Offer accepted · the booking didn't go through",
     },
     visitConfirmed: "Visit confirmed",
+    firstVisitNote: "You used Nearby to turn a request into a real-world experience.",
   },
   es: {
     youreBooked: "Tienes reserva",
@@ -616,6 +617,7 @@ export default {
       notThrough: "Oferta aceptada · la reserva no se pudo completar",
     },
     visitConfirmed: "Visita confirmada",
+    firstVisitNote: "Usaste Nearby para convertir una solicitud en una experiencia real.",
   },
   de: {
     youreBooked: "Du bist gebucht",
@@ -924,6 +926,7 @@ export default {
       notThrough: "Angebot angenommen · die Buchung hat nicht geklappt",
     },
     visitConfirmed: "Besuch bestätigt",
+    firstVisitNote: "Du hast mit Nearby aus einer Anfrage ein echtes Erlebnis gemacht.",
   },
   fr: {
     youreBooked: "C'est réservé",
@@ -1232,6 +1235,7 @@ export default {
       notThrough: "Offre acceptée · la réservation n'a pas abouti",
     },
     visitConfirmed: "Visite confirmée",
+    firstVisitNote: "Grâce à Nearby, votre demande est devenue une vraie sortie.",
   },
   pt: {
     youreBooked: "Reserva feita",
@@ -1540,6 +1544,7 @@ export default {
       notThrough: "Oferta aceita · a reserva não foi concluída",
     },
     visitConfirmed: "Visita confirmada",
+    firstVisitNote: "Você usou o Nearby para transformar um pedido em uma experiência real.",
   },
   ht: {
     youreBooked: "Ou gen rezèvasyon",
@@ -1848,6 +1853,7 @@ export default {
       notThrough: "Òf aksepte · rezèvasyon an pa t pase",
     },
     visitConfirmed: "Vizit konfime",
+    firstVisitNote: "Ou itilize Nearby pou fè yon demann tounen yon vrè eksperyans.",
   },
   zh: {
     youreBooked: "已预订",
@@ -2156,6 +2162,7 @@ export default {
       notThrough: "已接受优惠 · 预订未成功",
     },
     visitConfirmed: "已确认到店",
+    firstVisitNote: "你通过 Nearby 把一个请求变成了真实的体验。",
   },
   vi: {
     youreBooked: "Bạn đã đặt chỗ",
@@ -2464,6 +2471,7 @@ export default {
       notThrough: "Đã chấp nhận ưu đãi · đặt chỗ chưa thành công",
     },
     visitConfirmed: "Đã xác nhận lượt ghé",
+    firstVisitNote: "Bạn đã dùng Nearby để biến một yêu cầu thành trải nghiệm thật.",
   },
   tl: {
     youreBooked: "Naka-book ka na",
@@ -2772,6 +2780,7 @@ export default {
       notThrough: "Tinanggap ang alok · hindi natuloy ang booking",
     },
     visitConfirmed: "Kumpirmado ang pagbisita",
+    firstVisitNote: "Ginamit mo ang Nearby para gawing totoong karanasan ang isang kahilingan.",
   },
   ru: {
     youreBooked: "Бронь подтверждена",
@@ -3080,6 +3089,7 @@ export default {
       notThrough: "Предложение принято · бронь не прошла",
     },
     visitConfirmed: "Визит подтверждён",
+    firstVisitNote: "С Nearby ваш запрос превратился в настоящее событие.",
   },
   ko: {
     youreBooked: "예약 완료",
@@ -3388,5 +3398,6 @@ export default {
       notThrough: "제안을 수락했어요 · 예약이 완료되지 않았어요",
     },
     visitConfirmed: "방문 확인됨",
+    firstVisitNote: "Nearby로 요청 하나가 실제 경험이 되었어요.",
   },
 };

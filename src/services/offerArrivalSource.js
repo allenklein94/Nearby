@@ -50,6 +50,28 @@ export async function fetchFirstReplyState(userId) {
   }
 }
 
+// Item 52: the person's first-ever redemption, from the server (the same on every device): the earliest offer on a request
+// THEY made that a visit completed (completed_at, set once by complete_business_reservation; 'completed' is final, so the
+// answer never moves to another offer). Returns its id, or null when there is none or the read fails (the normal card).
+export async function fetchFirstRedemptionId(userId) {
+  if (!userId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('business_request_offers')
+      .select('id, completed_at, business_requests!inner(requester_id)')
+      .eq('business_requests.requester_id', userId)
+      .eq('status', 'completed')
+      .not('completed_at', 'is', null)
+      .order('completed_at', { ascending: true })
+      .order('id', { ascending: true })
+      .limit(1);
+    if (error) return null;
+    return data?.[0]?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // Any change to an offer row the person may read (RLS decides who receives it). The payload is dropped and never read:
 // an event only means "look again" (fetchMyLiveReplies), same pattern as the host's message count.
 export function subscribeToOfferChanges(userId, onChange) {

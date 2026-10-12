@@ -21,7 +21,7 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}';
       v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_opps jsonb; v_row jsonb; v_o record; v_perf_before bigint; v_perf_after bigint;
-      v_comp_before bigint; v_comp_after bigint; v_seen int; v_first_before uuid; v_val_before numeric; v_val_after numeric; v_red_before bigint; v_val record; v_f0 record; v_f1 record;`, `
+      v_comp_before bigint; v_comp_after bigint; v_seen int; v_first_before uuid; v_redeem_before uuid; v_redeem_after uuid; v_val_before numeric; v_val_after numeric; v_red_before bigint; v_val record; v_f0 record; v_f1 record;`, `
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
   select coalesce(sum(accepted_count),0), coalesce(sum(completed_count),0) into v_perf_before, v_comp_before from (
     select * from (select set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true)) x, lateral get_partner_offer_performance(v_partner)) p;
@@ -99,9 +99,20 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
   reset role;
 
   -- 7. the visit happens: the host completes it (redemption)
+  -- item 52: the host's first-ever redemption, read as the host (RLS) exactly as fetchFirstRedemptionId reads it
+  perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  select o.id into v_redeem_before from business_request_offers o join business_requests r on r.id = o.request_id
+    where r.requester_id = v_host and o.status = 'completed' and o.completed_at is not null order by o.completed_at, o.id limit 1;
+  reset role;
   v_res := complete_business_reservation(v_offer);
+  set local role authenticated;
+  select o.id into v_redeem_after from business_request_offers o join business_requests r on r.id = o.request_id
+    where r.requester_id = v_host and o.status = 'completed' and o.completed_at is not null order by o.completed_at, o.id limit 1;
+  reset role;
   log := log || jsonb_build_array(jsonb_build_object('step','visit_completed','ok', coalesce((v_res->>'success')::boolean,false),
-     'data', jsonb_build_object('offer', (select status from business_request_offers where id = v_offer))));
+     'data', jsonb_build_object('offer', (select status from business_request_offers where id = v_offer), 'offer_id', v_offer,
+        'first_redemption_before', v_redeem_before, 'first_redemption_after', v_redeem_after)));
 
   -- 8. the business analytics moved
   perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
@@ -160,6 +171,18 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(arriving.map((o) => o.id)).toEqual([row.id]);
     expect(newArrivals([row], new Set(arriving.map(arrivalKey)))).toEqual([]);
     expect(newArrivals([{ ...row, status: s.offer_submitted.data.status }], new Set())).toEqual([]);
+  });
+  // Item 52: the host's first-ever redemption is this visit when they had none before, and an earlier one keeps it; the card
+  // then carries the first-time line on exactly that offer.
+  test("item 52: the host's first redemption is read from the server, and the card follows", () => {
+    const { presentOffer } = require('../utils/offerPresentationEngine');
+    const { offer_id, first_redemption_before, first_redemption_after } = s.visit_completed.data;
+    expect(first_redemption_after).toBe(first_redemption_before ?? offer_id);
+    const first = first_redemption_after === offer_id;
+    const card = presentOffer({ id: offer_id, status: 'completed', business_reservations: [{ status: 'confirmed' }] },
+      { context: { isFirstRedemption: first } });
+    expect(card.confirmation.visitConfirmed).toBe(true);
+    expect(card.confirmation.firstVisitNote).toBe(first ? 'You used Nearby to turn a request into a real-world experience.' : null);
   });
   // Item 51: the server's one claim. A business with no earlier offer gets this one as its first (and the edge function's
   // answer, firstOffer, is exactly "the claim is this offer"); a business that already had one keeps it.
