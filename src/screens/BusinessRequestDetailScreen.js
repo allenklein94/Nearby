@@ -7,7 +7,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking, Dimensions } from 'react-native';
 import * as Calendar from 'expo-calendar';
-import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestPulse, VisitConfirmed, RespondingStatus, animateLayout } from '../motion';
+import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestPulse, VisitConfirmed, RespondingStatus } from '../motion';
 import { getRespondingBusinesses, subscribeToRespondingChanges, nextRespondingCheckMs } from '../services/offerResponding';
 import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
@@ -404,7 +404,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const travelOfferId = replyToTravel(result.offers);
       if (travelOfferId && rawTextRef.current) {
         const from = await measureInWindowAsync(rawTextRef.current);
-        if (rectInWindow(from, Dimensions.get('window').height)) startOfferTravel({ offerId: travelOfferId, from, dim: false, origin: 'request' });
+        if (rectInWindow(from, Dimensions.get('window').height)) startOfferTravel({ offerId: travelOfferId, from, origin: 'request' });
       }
       setRequest(result.request);
       setOffers(result.offers);
@@ -812,10 +812,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       const result = await acceptBusinessOffer(offerId);
       recordAcceptBehavior(request?.id, request?.category); // item 95: private ranking signal, never a profile edit
       // Item 12: the card morphs only from the stored state the reload brings back (accepted + its reservation), never on
-      // the tap alone. The layout change (button out, booked facts in) is smoothed so nothing below jumps.
+      // the tap alone. Only that card animates its own change (owner, 2026-10-12): the rest of the screen updates without a
+      // screen-wide layout animation; item 32's gentle scroll to Your Plan is navigation and stays.
       touchedSinceAcceptRef.current = false; // item 32: a touch from here on stops the merge's scroll
       setJustAcceptedOfferId(offerId);
-      animateLayout();
       await load();
       // accept_business_offer() itself already confirmed the real
       // reservation ('nearby' provider) regardless of payment -- this is

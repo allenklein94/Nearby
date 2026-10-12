@@ -78,7 +78,7 @@ export default function GroupPlanScreen({ navigation, route }) {
   function flashSuccess(kind) {
     setSuccessBanner(kind);
     clearTimeout(successBannerTimerRef.current);
-    // The booking card times itself and closes its own space (BookedCelebration onDone); only the plan banner needs a timer.
+    // The booking card times its own fade-out (BookedCelebration onDone); only the plan banner needs a timer.
     if (kind !== 'reservation') successBannerTimerRef.current = setTimeout(() => setSuccessBanner(null), 3200);
   }
 

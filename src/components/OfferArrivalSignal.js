@@ -80,6 +80,7 @@ export default function OfferArrivalHost() {
 
   // One offer: the offer travels from the signal into its card (motion/offerTravel.js). The screen opens at once either
   // way; the travel is drawn over it and never delays it. Several replies open a list, so there is nothing to travel to.
+  // No dim (owner, 2026-10-12, as item 23): only the light and the frame move; the screen underneath never darkens.
   const open = (fromRect) => {
     const current = controllerRef.current?.getSignal() ?? signal;
     const dest = arrivalDestination(current);

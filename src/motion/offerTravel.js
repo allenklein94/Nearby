@@ -1,9 +1,9 @@
 // Offer travel (owner, 2026-10-09; layer 2 of the offer moment, built before device testing at the owner's request).
-// Tapping the arrival signal for ONE offer: the request screen opens at once (nothing waits for this), and over it the
-// screen dims slightly, a point of light travels from the signal toward the offer while a soft frame grows from the
-// signal's shape into the offer card, then frame and dim fade into the real card. Purely visual, never touchable, never
-// blocks, never vibrates; Reduce Motion = nothing (the screen just opens). This file is the small store that connects the
-// signal (where it starts) with BusinessRequestDetail (where the offer card landed); OfferTravelOverlay draws it.
+// Tapping the arrival signal for ONE offer: the request screen opens at once (nothing waits for this), and over it a
+// point of light travels from the signal toward the offer while a soft frame grows from the signal's shape into the offer
+// card, then the frame fades into the real card. No full-screen dim on either path (owner, 2026-10-12: the pill matches
+// item 23's undimmed travel). Purely visual, never touchable, never blocks, never vibrates; Reduce Motion = nothing (the
+// screen just opens). This file is the small store that connects the signal (where it starts) with BusinessRequestDetail (where the offer card landed); OfferTravelOverlay draws it.
 import { getReduceMotion } from './motionPolicy';
 import { SEQUENCES } from './motionBudget';
 import { shouldAssemble } from '../utils/offerAssembly';
@@ -19,12 +19,11 @@ export function subscribeOfferTravel(listener) {
 }
 
 // from = the signal's window rect { x, y, width, height }. Returns whether a travel started.
-// dim: false = no scrim (the in-place reply, item 23: the person tapped nothing, so the screen never darkens under them).
 // origin: 'signal' (the arrival pill) or 'request' (the request line, item 23).
-export function startOfferTravel({ offerId, from, dim = true, origin = 'signal' }, { reduceMotion = getReduceMotion(), now = Date.now() } = {}) {
+export function startOfferTravel({ offerId, from, origin = 'signal' }, { reduceMotion = getReduceMotion(), now = Date.now() } = {}) {
   if (reduceMotion || !offerId || !validRect(from)) return false;
   seq += 1;
-  current = { id: seq, offerId, from, target: null, startedAt: now, dim: dim !== false, origin };
+  current = { id: seq, offerId, from, target: null, startedAt: now, origin };
   emit();
   return true;
 }
@@ -41,8 +40,8 @@ export function reportOfferTravelTarget(offerId, rect, now = Date.now()) {
   return true;
 }
 
-// Item 25: the light has reached the card. From here the card builds itself in while the ring converges and the dim and
-// frame fade (the signature moment overlaps them instead of waiting for the fade).
+// Item 25: the light has reached the card. From here the card builds itself in while the ring converges and the frame
+// fades (the signature moment overlaps them instead of waiting for the fade).
 export function markOfferTravelLanded(id) {
   if (current && current.id === id && !current.landed) { current = { ...current, landed: true }; emit(); }
 }
@@ -55,7 +54,7 @@ export function getOfferTravel() { return current; }
 
 // Owner item 23 (2026-10-11), "the best moment may be the transition": Before = your request, After = your offer. When a
 // reply arrives while the person is on the request screen, the same travel runs from the request line itself (what you
-// asked) into the new reply's card (who answered), with no dim, before the card builds itself in. Only a reply that is
+// asked) into the new reply's card (who answered), before the card builds itself in. Only a reply that is
 // about to assemble (shouldAssemble: newly received, unseen, open, Reduce Motion off), only one at a time, and only when
 // both ends are really on screen; otherwise nothing travels and the card just builds in. Returns the offer id or null.
 export function replyToTravel(offers, { reduceMotion = getReduceMotion(), now = new Date(), playedIds } = {}) {
@@ -113,5 +112,5 @@ export function afterOfferTravel(offerId, start, { capMs = SEQUENCES.offerTravel
 
 function travelSettleMs() {
   const t = SEQUENCES.offerTravel;
-  return t.dimMs + t.travelMs + t.settleMs;
+  return t.travelMs + t.settleMs;
 }

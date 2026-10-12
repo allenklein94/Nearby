@@ -67,16 +67,17 @@ export const SEQUENCES = {
   // actionRestOpacity, always tappable) while the card's coral outline glows once: in glowInMs, back out glowOutMs.
   offerAssembly: { tier: 'special', stepMs: 160, staggerMs: 100, maxSteps: 6, risePx: 6, actionRestOpacity: 0.6 /* = INFO_REST_OPACITY */, glowInMs: 100, glowOutMs: 200,
     washInMs: 180, washOutMs: 320, washOpacity: 0.14 },
-  // Offer travel (2026-10-09): dim in, the light travels from the arrival signal while the frame grows into the offer card,
-  // then frame + dim fade into the real card. Waiting for the card to be on screen is a hold, not part of the transition.
+  // Offer travel (2026-10-09): the light travels from the arrival signal while the frame grows into the offer card, then
+  // the frame fades into the real card (no full-screen dim, owner 2026-10-12). Waiting for the card to be on screen is a hold, not part of the transition.
   // You're booked (2026-10-09): the ring closes, the ✓ settles, one soft ripple while the facts fade in. A booking is a
   // transaction (item 122): success colour, no particles, no bounce, one ripple, done in under 0.8 s.
   booked: { tier: 'special', ringMs: 200, checkMs: 160, rippleMs: 380, textFadeMs: 220 },
-  // Its exit (2026-10-09): fade + a slight shrink, then the space it took closes, so nothing below jumps.
+  // Its exit (2026-10-09): fade + a slight shrink of the card itself. Owner (2026-10-12): the space it took is NOT animated
+  // closed (that moved the whole screen below it); once faded, the card is removed and the layout updates at once.
   // The accepted offer card morphs in place (owner item 12, 2026-10-10): the ✓ settles beside the heading (owner target
   // 180-250 ms), then the booked facts and the rest of the card settle in (250-350 ms). Never delays the booking itself.
   offerAccepted: { tier: 'special', checkMs: 220, morphMs: 300, risePx: 6 },
-  bookedExit: { tier: 'medium', fadeMs: 180, collapseMs: 220, shrinkTo: 0.96 },
+  bookedExit: { tier: 'small', fadeMs: 180, shrinkTo: 0.96 },
   // The business side of it (owner item 13, 2026-10-10): on the opportunity card the newly reached step (Accepted /
   // Redeemed) fades in with a slight rise while the card's outline glows once. Arrival-driven: no haptic.
   offerProgress: { tier: 'small', stepMs: 200, risePx: 6, glowInMs: 100, glowOutMs: 200 },
@@ -103,8 +104,8 @@ export const SEQUENCES = {
     staggerMs: 120, maxStaggered: 5 },
   // Item 25: the travel is part of the signature moment. The light follows a gentle arc (arcPx at most, never more than
   // arcShare of the distance) with a soft halo; the frame is an outline only (never covers the card's text); on landing one
-  // ring converges onto the card (the request's rings went out, the answer's ring comes back in) while the dim and frame fade.
-  offerTravel: { tier: 'special', dimMs: 180, travelMs: 420, settleMs: 300, targetWaitMs: 1500, arcPx: 72, arcShare: 0.25,
+  // ring converges onto the card (the request's rings went out, the answer's ring comes back in) while the frame fades.
+  offerTravel: { tier: 'special', travelMs: 420, settleMs: 300, targetWaitMs: 1500, arcPx: 72, arcShare: 0.25,
     ringMs: 380, ringFromScale: 2.2, ringToScale: 0.6, ringPeakOpacity: 0.35, ringSize: 64, haloOpacity: 0.3 },
   // The signature moment (item 25): the travel, then -- starting the moment it lands, overlapping its settle -- the card
   // building itself in (offerAssembly), whose price step gets one soft coral wash (washInMs + washOutMs, washOpacity).
@@ -213,7 +214,7 @@ export function settleMs(name) {
     case 'offerToPlan':
       return s.startDelayMs + s.travelMs + offerToPlanAssembly(s).settleMs;
     case 'bookedExit':
-      return s.fadeMs + s.collapseMs;
+      return s.fadeMs;
     case 'offerProgress':
     case 'visitConfirmed':
       return Math.max(s.stepMs, s.glowInMs + s.glowOutMs);
@@ -255,7 +256,7 @@ export function settleMs(name) {
     case 'interestedToAttending':
       return Math.max(s.dimMs, s.arriveDelayMs + s.arriveMs + s.glowInMs + s.glowOutMs);
     case 'offerTravel':
-      return s.dimMs + s.travelMs + s.settleMs;
+      return s.travelMs + s.settleMs;
     case 'businessResponds': {
       // from the card's position being known: travel, then the longest of (ring, settle, the full card assembly)
       const t = SEQUENCES.offerTravel;

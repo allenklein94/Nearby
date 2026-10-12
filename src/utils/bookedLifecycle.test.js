@@ -78,9 +78,10 @@ test('unmounting mid-way stops everything and never calls done', () => {
   expect(beforeEnterEnds.lc.start()).toBe(false);
 });
 
-test('the exit is quick and restrained: medium tier, a slight shrink only', () => {
+// Owner (2026-10-12): with the space no longer animated closed, the exit is the card's own 180 ms fade + shrink: small tier.
+test('the exit is quick and restrained: small tier, a slight shrink only', () => {
   expect(isWithinBudget(settleMs('bookedExit'), SEQUENCES.bookedExit.tier)).toBe(true);
-  expect(SEQUENCES.bookedExit.tier).toBe('medium');
+  expect(SEQUENCES.bookedExit.tier).toBe('small');
   expect(SEQUENCES.bookedExit.shrinkTo).toBeGreaterThanOrEqual(0.9);
 });
 
@@ -93,10 +94,14 @@ describe('wiring (source guards)', () => {
     expect(card).toMatch(/lifecycle\.start\(\);\s*return \(\) => \{ lifecycle\.stop\(\); running\.forEach\(\(a\) => a\.stop\(\)\); \};/);
     expect(card).toMatch(/\/\/ eslint-disable-next-line react-hooks\/exhaustive-deps\n  \}, \[\]\);/);
   });
-  test('space is reserved at its measured height, then closed, before removal', () => {
-    expect(card).toMatch(/space\.setValue\(measured\.current\)/);
-    expect(card).toMatch(/collapsing && \{ height: space, overflow: 'hidden' \}/);
-    expect(card).toMatch(/Animated\.timing\(space, \{ toValue: 0/);
+  // Owner (2026-10-12): the card's own fade + shrink stays (it explains the card going away); the space it took is NOT
+  // animated closed, because that slid the whole GroupPlan screen below it.
+  test('the exit animates only the card (fade + shrink); the space it took is never animated closed', () => {
+    expect(card).toMatch(/Animated\.timing\(exitFade, \{ toValue: 0, duration: X\.fadeMs/);
+    expect(card).toMatch(/Animated\.timing\(exitScale, \{ toValue: X\.shrinkTo, duration: X\.fadeMs/);
+    expect(card).not.toMatch(/collapsing|measured\.current|\bheight: space|useNativeDriver:\s*false/);
+    expect(SEQUENCES.bookedExit).not.toHaveProperty('collapseMs');
+    expect(settleMs('bookedExit')).toBe(SEQUENCES.bookedExit.fadeMs);
   });
   test('the screens remove it only when it says it is done (no screen-side timer pulls it out)', () => {
     // Item 12: the request screen no longer shows this card (its offer card morphs in place and stays).

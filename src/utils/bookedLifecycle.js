@@ -1,6 +1,6 @@
 // The "You're booked" card's lifetime (motion/BookedCelebration.js), kept pure so it can be tested without rendering:
-// enter -> hold -> exit (fade + slight shrink, then the space it took closes smoothly) -> done (the screen removes it).
-// The card owns this, so the screen never pulls it out abruptly (that was the layout jump). Runs ONCE per mount: a
+// enter -> hold -> exit (fade + slight shrink of the card itself) -> done (the screen removes it; the space it took is not
+// animated closed, owner 2026-10-12). The card owns this, so the screen never pulls it out before it has faded. Runs ONCE per mount: a
 // re-render, a refreshed booking or a second success call never replays it. Reduce Motion: the settled card is shown,
 // held, then removed at once with no exit animation. After stop() (unmount) nothing runs and done is never called.
 export function createBookedLifecycle({ reduceMotion = false, holdMs, enter, exit, onDone, setTimer = setTimeout, clearTimer = clearTimeout }) {

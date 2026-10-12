@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography, radius } from '../theme';
@@ -14,8 +14,9 @@ import { createBookedLifecycle } from '../utils/bookedLifecycle';
 // particles, no confetti, no bounce, no loop; under 0.8 s (SEQUENCES.booked). The success vibration plays only because
 // the person tapped "I'll take this one" (`haptic`, item 130). Reduce Motion: the settled card, at once.
 // `details` = the real booking facts the screen already has; any missing part is left out, never invented.
-// Exit (owner, same day): after `holdMs` the card fades with a slight shrink, then the space it took closes smoothly, and
-// only then `onDone` lets the screen remove it, so nothing below jumps. It runs once per mount (utils/bookedLifecycle.js).
+// Exit (owner, same day): after `holdMs` the card fades with a slight shrink (its own, local transition), then `onDone`
+// lets the screen remove it. Owner (2026-10-12): the space it took is not animated closed; the content below moves up in
+// one layout update, never a screen-wide slide. It runs once per mount (utils/bookedLifecycle.js).
 // Reduce Motion: removed at once after the hold, no exit animation. Nothing here waits on or delays the booking itself.
 const T = SEQUENCES.booked;
 const X = SEQUENCES.bookedExit;
@@ -34,9 +35,6 @@ export default function BookedCelebration({ title, details = null, haptic = fals
   const text = useRef(new Animated.Value(0)).current;
   const exitFade = useRef(new Animated.Value(1)).current;
   const exitScale = useRef(new Animated.Value(1)).current;
-  const space = useRef(new Animated.Value(0)).current; // the reserved height while it closes
-  const measured = useRef(0);
-  const [collapsing, setCollapsing] = useState(false);
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
   const line = bookedDetailsLine(details ?? {});
@@ -66,12 +64,7 @@ export default function BookedCelebration({ title, details = null, haptic = fals
       exit: (cb) => run(Animated.parallel([
         Animated.timing(exitFade, { toValue: 0, duration: X.fadeMs, useNativeDriver: true }),
         Animated.timing(exitScale, { toValue: X.shrinkTo, duration: X.fadeMs, useNativeDriver: true }),
-      ]), () => {
-        // Keep exactly the space it took, then close it smoothly; only then is the card removed.
-        space.setValue(measured.current);
-        setCollapsing(true);
-        run(Animated.timing(space, { toValue: 0, duration: X.collapseMs, easing: ease, useNativeDriver: false }), cb);
-      }),
+      ]), cb),
     });
     lifecycle.start();
     return () => { lifecycle.stop(); running.forEach((a) => a.stop()); };
@@ -80,10 +73,7 @@ export default function BookedCelebration({ title, details = null, haptic = fals
 
   const a11y = [title, line].filter(Boolean).join('. ');
   return (
-    <Animated.View
-      style={[styles.slot, collapsing && { height: space, overflow: 'hidden' }]}
-      onLayout={(e) => { if (!collapsing) measured.current = e.nativeEvent.layout.height; }}
-    >
+    <View style={styles.slot}>
     <Animated.View
       accessibilityRole="alert"
       accessibilityLiveRegion="polite"
@@ -110,13 +100,13 @@ export default function BookedCelebration({ title, details = null, haptic = fals
         {line ? <Text style={[styles.details, { color: colors.textSecondary }]} numberOfLines={2}>{line}</Text> : null}
       </Animated.View>
     </Animated.View>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', borderRadius: radius.lg, borderWidth: 1.5, padding: spacing.md },
-  // The card's space, including the gap below it, so closing it closes the gap too.
+  // The card's space, including the gap below it, so removing it removes the gap too.
   slot: { paddingBottom: spacing.md },
   badge: { width: RING, height: RING, alignItems: 'center', justifyContent: 'center', marginRight: spacing.md },
   ripple: { position: 'absolute', width: RING, height: RING, borderRadius: RING / 2, borderWidth: 2 },

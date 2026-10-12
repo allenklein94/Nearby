@@ -131,6 +131,9 @@ Items 59-61 recorded as met (nothing built).
 screen is checked on a real device AND native review of `ui.requestDetail.pickFitsTime` / `pickWithinBudget` is done (migration
 20270304 marks automatic policy/AI replies = unknown time; journey `offer` 28/28).
 
+**Offer screens without screen-wide motion (owner, 2026-10-12) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/OFFER_SCREEN_WIDE_MOTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (incl. whether acceptance / the GroupPlan card exit feel jumpy: report, never add motion).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -458,6 +461,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   at once). Raw-tier files may instead be a reviewed RENDERING transition (empty/error fades) or GESTURE (swipe-dismiss settle-back =
   cancelled, nothing removed); never a catch-all. Guard `motion/motionMeaning.test.js`: passing it is NOT proof all motion has meaning
   (it can't see spring/default-duration/untokened motion or judge label accuracy).
+- **No screen-wide motion on offer screens (owner, 2026-10-12):** a card animates only its own state change; never `animateLayout`/
+  LayoutAnimation, an animated gap-closing height, or a full-screen dim there (accept, arrival pill travel, GroupPlan booked card exit).
+  Item 32's scroll, item 55's pulse, the travel's light/frame stay. Guard `motion/offerScreenWideMotion.test.js`.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

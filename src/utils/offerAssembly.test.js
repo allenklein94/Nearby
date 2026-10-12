@@ -77,9 +77,9 @@ describe('timing', () => {
     expect(new Set(delays).size).toBe(ASSEMBLY_STEPS.length);
   });
   // Item 25: the signature moment. The card builds in from the moment the light lands (overlapping the ring and the fade),
-  // so dim + flight + the full assembly + finish stay inside the owner's ~1.5 s (the button is tappable throughout).
-  test('the signature moment (dim, flight, assembly, finish) stays within 1.5 s', () => {
-    expect(SEQUENCES.offerTravel.dimMs + settleMs('businessResponds')).toBeLessThanOrEqual(1500);
+  // so flight + the full assembly + finish stay inside the owner's ~1.5 s (the button is tappable throughout; no dim since 2026-10-12).
+  test('the signature moment (flight, assembly, finish) stays within 1.5 s', () => {
+    expect(settleMs('businessResponds')).toBeLessThanOrEqual(1500);
     expect(isWithinBudget(settleMs('businessResponds'), 'signature')).toBe(true);
   });
 });

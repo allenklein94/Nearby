@@ -70,7 +70,7 @@ describe('locked constraints (source guards)', () => {
   test('no vibration or sound, no loop, durations only from the budget, theme tokens only', () => {
     for (const s of [overlay, store]) expect(s).not.toMatch(/expo-haptics|playHaptic|Vibration|Animated\.loop|duration:\s*\d/);
     expect(overlay).not.toMatch(/#[0-9a-fA-F]{3,6}\b/);
-    expect(overlay).toMatch(/colors\.scrim/);
+    expect(overlay).not.toMatch(/colors\.scrim/); // owner 2026-10-12: no full-screen dim
   });
   test('the screen opens immediately; the travel only draws over it', () => {
     const open = signal.slice(signal.indexOf('const open = (fromRect)'), signal.indexOf('return <OfferArrivalSignal'));
@@ -120,20 +120,23 @@ describe('item 23: the in-place reply travel (request line -> reply card)', () =
     expect(rectInWindow({ ...requestLine, width: 0 }, 800)).toBe(false);
   });
 
-  test('no dim for the in-place travel; the signal travel keeps its dim', () => {
-    startOfferTravel({ offerId: 'r1', from: requestLine, dim: false, origin: 'request' }, { reduceMotion: false });
-    expect(getOfferTravel()).toMatchObject({ dim: false, origin: 'request' });
+  // Owner (2026-10-12): the arrival pill's travel no longer dims either; neither path carries a dim.
+  test('no dim on either travel (request line or arrival signal)', () => {
+    startOfferTravel({ offerId: 'r1', from: requestLine, origin: 'request' }, { reduceMotion: false });
+    expect(getOfferTravel()).toMatchObject({ origin: 'request' });
+    expect(getOfferTravel()).not.toHaveProperty('dim');
     endOfferTravel();
-    startOfferTravel({ offerId: 's1', from: pill }, { reduceMotion: false });
-    expect(getOfferTravel()).toMatchObject({ dim: true, origin: 'signal' });
+    startOfferTravel({ offerId: 's1', from: pill, dim: true }, { reduceMotion: false });
+    expect(getOfferTravel()).toMatchObject({ origin: 'signal' });
+    expect(getOfferTravel()).not.toHaveProperty('dim');
   });
 
   test('lands on a visible card; a card below the fold ends the travel at once (the card builds in, nothing scrolls)', () => {
-    startOfferTravel({ offerId: 'r1', from: requestLine, dim: false, origin: 'request' }, { reduceMotion: false, now: 1000 });
+    startOfferTravel({ offerId: 'r1', from: requestLine, origin: 'request' }, { reduceMotion: false, now: 1000 });
     expect(landOfferTravel('r1', card, 800, 1100)).toBe(true);
     expect(getOfferTravel().target).toEqual(card);
     endOfferTravel();
-    startOfferTravel({ offerId: 'r2', from: requestLine, dim: false, origin: 'request' }, { reduceMotion: false, now: 1000 });
+    startOfferTravel({ offerId: 'r2', from: requestLine, origin: 'request' }, { reduceMotion: false, now: 1000 });
     expect(landOfferTravel('r2', { ...card, y: 1200 }, 800, 1100)).toBe(false);
     expect(getOfferTravel()).toBeNull();
   });
@@ -150,16 +153,14 @@ describe('item 23: the in-place reply travel (request line -> reply card)', () =
     expect(await measureInWindowAsync({ measureInWindow: () => {} }, 10)).toBeNull();
   });
 
-  test('the screen asks before the reply card mounts, from the request line, with no dim', () => {
+  test('the screen asks before the reply card mounts, from the request line', () => {
     const screen = fs.readFileSync(path.join(__dirname, '..', 'screens', 'BusinessRequestDetailScreen.js'), 'utf8');
     const ask = screen.indexOf('const travelOfferId = replyToTravel(result.offers);');
     expect(ask).toBeGreaterThan(-1);
     expect(ask).toBeLessThan(screen.indexOf('setOffers(result.offers);'));
-    expect(screen).toMatch(/startOfferTravel\(\{ offerId: travelOfferId, from, dim: false, origin: 'request' \}\)/);
+    expect(screen).toMatch(/startOfferTravel\(\{ offerId: travelOfferId, from, origin: 'request' \}\)/);
     expect(screen).toMatch(/<Text ref=\{rawTextRef\} style=\{styles\.rawText\}>/);
     expect(screen).toMatch(/landOfferTravel\(offerId, rect, Dimensions\.get\('window'\)\.height\)/);
-    const overlay = fs.readFileSync(path.join(__dirname, 'OfferTravelOverlay.js'), 'utf8');
-    expect(overlay).toMatch(/if \(travel\.dim\) Animated\.timing\(dim/);
   });
 });
 

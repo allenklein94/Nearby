@@ -26,8 +26,7 @@ const read = (r) => fs.readFileSync(path.join(SRC, r), 'utf8');
 // Each entry is a file allowed to drive an animation on the JS thread, and why (layout props or a PanResponder gesture,
 // neither of which the native driver supports). Keep it short; prefer transform/opacity on the native driver.
 const JS_DRIVER_ALLOWED = {
-  'motion/BookedCelebration.js': 'the exit collapses the height the card took (layout)',
-  'motion/OfferTravelOverlay.js': 'the frame grows by left/top/width/height (layout); the dim is native',
+  'motion/OfferTravelOverlay.js': 'the frame grows by left/top/width/height (layout)',
   'components/SwipeableDiscoveryCards.js': 'PanResponder Animated.event cannot use the native driver',
   'components/FriendDiscoverySwipeCards.js': 'PanResponder Animated.event cannot use the native driver',
   'components/PhotoLightbox.js': 'PanResponder Animated.event cannot use the native driver',

@@ -55,7 +55,8 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
 
 - [ ] Customer on another screen when the reply lands: the pill "✨ Coastal Coffee made you an offer" appears near the top
   (check its position under each header), holds ~6 s, leaves on its own. Any OS banner that overlaps it: note it.
-- [ ] Tap the pill: the screen dims slightly, a point of light travels into the offer card, the coral frame settles on it.
+- [ ] Tap the pill: the screen does NOT dim (owner, 2026-10-12, same as item 23); a point of light travels into the offer card,
+  the coral frame settles on it.
   ★ With Reduce Motion: the screen just opens on the outlined card.
 - [ ] The card builds step by step: business + logo → "Heard your request" → status → offer → price ("20% OFF") → when →
   "I'll take this one" with one coral glow. The button is tappable throughout. ★
@@ -79,8 +80,12 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
 - [ ] Tap "I'll take this one" (one tap only; a second tap does nothing while it is working).
 - [ ] The same card becomes the booked card: ✓ ring + "You're booked", then business, when, "4 people", then How to redeem.
   Success vibration once. ★ With Reduce Motion: the finished card, no animation.
+- [ ] The rest of the screen does NOT slide or fade to its new layout (screen-wide smoothing removed, owner 2026-10-12): only the
+  accepted card animates, then item 32's gentle scroll to Your Plan. Record whether the acceptance feels jumpy; if it does, report
+  it, do not add motion (see `OFFER_SCREEN_WIDE_MOTION_DEVICE_CHECKLIST_2026-10-12.md`).
 - [ ] Booking still confirming / failed: reads "Offer accepted · confirming your booking" / "…didn't go through".
-- [ ] Group plan: "You're booked" only after everyone needed confirmed.
+- [ ] Group plan: "You're booked" only after everyone needed confirmed. After ~4.5 s the card fades with a slight shrink; the
+  content below then moves up in ONE step (no smooth slide). Record whether that reads as a jump.
 
 ## 7. Business progress and redemption (moments 5-6)
 

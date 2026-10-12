@@ -1,3 +1,24 @@
+# Offer screens: no screen-wide motion (owner, 2026-10-12) - BUILT, NOT DEVICE-VERIFIED
+
+Owner approved changes 1 and 2 and extended the rule to GroupPlan: motion communicates a real event or helps navigation, never
+decorates a screen-wide content change; a card may animate its own state change, the whole screen does not move with the layout.
+- 1. `BusinessRequestDetailScreen.handleAccept`: `animateLayout()` removed (and its import). Kept: the accepted card's own morph
+  (item 12), item 32's merge + gentle scroll. No replacement animation.
+- 2. Arrival-pill travel: the full-screen scrim layer is removed from `OfferTravelOverlay`; `startOfferTravel` no longer takes or
+  stores `dim` (item 23's call drops `dim: false`); `SEQUENCES.offerTravel.dimMs` removed (settle = travelMs + settleMs; the
+  `afterOfferTravel` fallback cap shrinks by 180 ms accordingly). Light, arc, halo, frame, landing ring, build-in unchanged.
+- GroupPlan (inspected first): `BookedCelebration` LOCAL (kept) = entrance (ring, ✓, one ripple, facts fade, 6 px rise) + exit
+  fade + shrink to 0.96 (180 ms, native). SURROUNDING (removed) = the slot's height animated to 0 over 220 ms on the JS driver,
+  which slid everything below it. Now `onDone` fires after the fade; content below moves up in one layout update.
+  `SEQUENCES.bookedExit` loses `collapseMs`; settle = 180 ms, so its tier is reclassified medium -> small (timing unchanged);
+  meaning stays 'removed'. `BookedCelebration` leaves the JS-driver allow-list (`motionPerformance.test.js`).
+- Guard `src/motion/offerScreenWideMotion.test.js` (5 tests): no animateLayout/LayoutAnimation on the offer screens and their
+  motion pieces; handleAccept keeps the card's change without layout animation; no scrim/dim anywhere in the travel; light +
+  frame kept; booked card has no animated height. Updated: offerTravel, bookedLifecycle, offerAssembly, motionPerformance tests.
+  Jest 5853/5853 (+5). Journeys not re-run (no data/flow change). Unchanged: items 32, 55, Discover/Profile `animateLayout` uses.
+- Device: never run. `PRODUCT_AUDIT/OFFER_SCREEN_WIDE_MOTION_DEVICE_CHECKLIST_2026-10-12.md` (incl. whether acceptance or the
+  GroupPlan exit feel jumpy: report, do not add motion); offer experience checklist sections 4/6 updated.
+
 # Item 63 (2026-10-12) - replies ranked by what the customer stated; "Our pick" needs a fit AND a record - BUILT, NOT DEVICE-VERIFIED
 
 Owner idea ("Best offer could emerge from the group", card rises above the others) declined as written (items 17/37/38/58/62:
