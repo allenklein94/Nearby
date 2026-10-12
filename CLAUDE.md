@@ -128,8 +128,8 @@ replacement sounds/vibrates again (migration 20270303, send-push v23; journey `r
 Items 59-61 recorded as met (nothing built).
 
 **Item 63 (replies ranked by what was stated; "Our pick" = fit + record) is BUILT, NOT DEVICE-VERIFIED, OPEN until** the request
-screen is checked on a real device AND native review of `ui.requestDetail.pickFitsTime` / `pickWithinBudget` is done, and the owner
-decides how automatic policy/AI replies count (no marker today; see CLAUDE_HISTORY item 63). Journey `offer` (no migration).
+screen is checked on a real device AND native review of `ui.requestDetail.pickFitsTime` / `pickWithinBudget` is done (migration
+20270304 marks automatic policy/AI replies = unknown time; journey `offer` 28/28).
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -287,6 +287,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Replies to one request (owner item 63, LOCKED):** `rankReplies` in `utils/replyFit.js` only: replies meeting every STATED
   constraint (time; budget when given) first, track record only breaks ties per tier, unknown never counts, price never a weight;
   "✨ Our pick" = first + qualifies + established record; reasons only the constraints met ("Fits 7 PM", "Within your budget").
+  Automatic replies (availability, package, `auto_reply` policy/ai) never confirm a stated time. Ties keep created_at order.
   Never "best", never a special card, lift or reveal; a non-qualifying reply stays listed.
 - **One object, once per surface, all its real reasons.** Home priority: firstRun > yourPlans > expanded
   insight > weather > bestPick > pickedForYou > nearbyRightNow (`HOME_SECTION_PRIORITY`). Discover: one dedupe chain.

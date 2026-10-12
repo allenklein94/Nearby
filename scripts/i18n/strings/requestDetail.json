@@ -279,16 +279,7 @@
   "booking.confirming": "Offer accepted · confirming your booking",
   "booking.notThrough": "Offer accepted · the booking didn't go through",
   "visitConfirmed": "Visit confirmed",
-  "firstVisitNote": "You used Nearby to turn a request into a real-world experience.",
-  "cancelReason.changed_plans": "Plans changed",
-  "cancelReason.scheduling_conflict": "Scheduling conflict",
-  "cancelReason.found_another_option": "Found another option",
-  "cancelReason.cost": "Cost or budget",
-  "cancelReason.group_fell_through": "The group fell through",
-  "cancelReason.too_busy": "Too busy",
-  "cancelReason.unable_to_fulfil": "Can't fulfil it",
-  "cancelReason.closed_or_unavailable": "Closed or unavailable that day",
-  "cancelReason.other": "Something else"
+  "firstVisitNote": "You used Nearby to turn a request into a real-world experience."
  },
  "es": {
   "youreBooked": "Tienes reserva",
@@ -570,16 +561,7 @@
   "booking.confirming": "Oferta aceptada · confirmando tu reserva",
   "booking.notThrough": "Oferta aceptada · la reserva no se pudo completar",
   "visitConfirmed": "Visita confirmada",
-  "firstVisitNote": "Usaste Nearby para convertir una solicitud en una experiencia real.",
-  "cancelReason.changed_plans": "Cambiaron los planes",
-  "cancelReason.scheduling_conflict": "Conflicto de horario",
-  "cancelReason.found_another_option": "Encontré otra opción",
-  "cancelReason.cost": "Costo o presupuesto",
-  "cancelReason.group_fell_through": "El grupo se deshizo",
-  "cancelReason.too_busy": "Demasiado ocupado",
-  "cancelReason.unable_to_fulfil": "No podemos cumplirlo",
-  "cancelReason.closed_or_unavailable": "Cerrado o no disponible ese día",
-  "cancelReason.other": "Otra cosa"
+  "firstVisitNote": "Usaste Nearby para convertir una solicitud en una experiencia real."
  },
  "de": {
   "youreBooked": "Du bist gebucht",
@@ -861,16 +843,7 @@
   "booking.confirming": "Angebot angenommen · deine Buchung wird bestätigt",
   "booking.notThrough": "Angebot angenommen · die Buchung hat nicht geklappt",
   "visitConfirmed": "Besuch bestätigt",
-  "firstVisitNote": "Du hast mit Nearby aus einer Anfrage ein echtes Erlebnis gemacht.",
-  "cancelReason.changed_plans": "Pläne haben sich geändert",
-  "cancelReason.scheduling_conflict": "Terminkonflikt",
-  "cancelReason.found_another_option": "Andere Option gefunden",
-  "cancelReason.cost": "Kosten oder Budget",
-  "cancelReason.group_fell_through": "Die Gruppe ist abgesprungen",
-  "cancelReason.too_busy": "Zu viel los",
-  "cancelReason.unable_to_fulfil": "Können wir nicht erfüllen",
-  "cancelReason.closed_or_unavailable": "An dem Tag geschlossen oder nicht verfügbar",
-  "cancelReason.other": "Etwas anderes"
+  "firstVisitNote": "Du hast mit Nearby aus einer Anfrage ein echtes Erlebnis gemacht."
  },
  "fr": {
   "youreBooked": "C'est réservé",
@@ -1152,16 +1125,7 @@
   "booking.confirming": "Offre acceptée · confirmation de ta réservation",
   "booking.notThrough": "Offre acceptée · la réservation n'a pas abouti",
   "visitConfirmed": "Visite confirmée",
-  "firstVisitNote": "Grâce à Nearby, votre demande est devenue une vraie sortie.",
-  "cancelReason.changed_plans": "Changement de programme",
-  "cancelReason.scheduling_conflict": "Conflit d'horaire",
-  "cancelReason.found_another_option": "Trouvé une autre option",
-  "cancelReason.cost": "Coût ou budget",
-  "cancelReason.group_fell_through": "Le groupe s'est désisté",
-  "cancelReason.too_busy": "Trop occupé",
-  "cancelReason.unable_to_fulfil": "Impossible à honorer",
-  "cancelReason.closed_or_unavailable": "Fermé ou indisponible ce jour-là",
-  "cancelReason.other": "Autre chose"
+  "firstVisitNote": "Grâce à Nearby, votre demande est devenue une vraie sortie."
  },
  "pt": {
   "youreBooked": "Reserva feita",
@@ -1443,16 +1407,7 @@
   "booking.confirming": "Oferta aceita · confirmando sua reserva",
   "booking.notThrough": "Oferta aceita · a reserva não foi concluída",
   "visitConfirmed": "Visita confirmada",
-  "firstVisitNote": "Você usou o Nearby para transformar um pedido em uma experiência real.",
-  "cancelReason.changed_plans": "Os planos mudaram",
-  "cancelReason.scheduling_conflict": "Conflito de horário",
-  "cancelReason.found_another_option": "Encontrei outra opção",
-  "cancelReason.cost": "Custo ou orçamento",
-  "cancelReason.group_fell_through": "O grupo desistiu",
-  "cancelReason.too_busy": "Muito ocupado",
-  "cancelReason.unable_to_fulfil": "Não conseguimos atender",
-  "cancelReason.closed_or_unavailable": "Fechado ou indisponível nesse dia",
-  "cancelReason.other": "Outra coisa"
+  "firstVisitNote": "Você usou o Nearby para transformar um pedido em uma experiência real."
  },
  "ht": {
   "youreBooked": "Ou gen rezèvasyon",
@@ -1734,16 +1689,7 @@
   "booking.confirming": "Òf aksepte · n ap konfime rezèvasyon ou",
   "booking.notThrough": "Òf aksepte · rezèvasyon an pa t pase",
   "visitConfirmed": "Vizit konfime",
-  "firstVisitNote": "Ou itilize Nearby pou fè yon demann tounen yon vrè eksperyans.",
-  "cancelReason.changed_plans": "Plan yo chanje",
-  "cancelReason.scheduling_conflict": "Konfli orè",
-  "cancelReason.found_another_option": "M jwenn yon lòt opsyon",
-  "cancelReason.cost": "Pri oswa bidjè",
-  "cancelReason.group_fell_through": "Gwoup la tonbe",
-  "cancelReason.too_busy": "Twò okipe",
-  "cancelReason.unable_to_fulfil": "Nou pa ka fè l",
-  "cancelReason.closed_or_unavailable": "Fèmen oswa pa disponib jou sa a",
-  "cancelReason.other": "Yon lòt bagay"
+  "firstVisitNote": "Ou itilize Nearby pou fè yon demann tounen yon vrè eksperyans."
  },
  "zh": {
   "youreBooked": "已预订",
@@ -2022,16 +1968,7 @@
   "booking.confirming": "已接受优惠 · 正在确认你的预订",
   "booking.notThrough": "已接受优惠 · 预订未成功",
   "visitConfirmed": "已确认到店",
-  "firstVisitNote": "你通过 Nearby 把一个请求变成了真实的体验。",
-  "cancelReason.changed_plans": "计划有变",
-  "cancelReason.scheduling_conflict": "时间冲突",
-  "cancelReason.found_another_option": "找到了别的选择",
-  "cancelReason.cost": "费用或预算",
-  "cancelReason.group_fell_through": "小组去不成了",
-  "cancelReason.too_busy": "太忙了",
-  "cancelReason.unable_to_fulfil": "无法履行",
-  "cancelReason.closed_or_unavailable": "当天休息或不可用",
-  "cancelReason.other": "其他原因"
+  "firstVisitNote": "你通过 Nearby 把一个请求变成了真实的体验。"
  },
  "vi": {
   "youreBooked": "Bạn đã đặt chỗ",
@@ -2310,16 +2247,7 @@
   "booking.confirming": "Đã chấp nhận ưu đãi · đang xác nhận đặt chỗ của bạn",
   "booking.notThrough": "Đã chấp nhận ưu đãi · đặt chỗ chưa thành công",
   "visitConfirmed": "Đã xác nhận lượt ghé",
-  "firstVisitNote": "Bạn đã dùng Nearby để biến một yêu cầu thành trải nghiệm thật.",
-  "cancelReason.changed_plans": "Kế hoạch thay đổi",
-  "cancelReason.scheduling_conflict": "Trùng lịch",
-  "cancelReason.found_another_option": "Đã tìm được lựa chọn khác",
-  "cancelReason.cost": "Chi phí hoặc ngân sách",
-  "cancelReason.group_fell_through": "Nhóm không đi được nữa",
-  "cancelReason.too_busy": "Quá bận",
-  "cancelReason.unable_to_fulfil": "Không thể đáp ứng",
-  "cancelReason.closed_or_unavailable": "Đóng cửa hoặc không phục vụ ngày đó",
-  "cancelReason.other": "Lý do khác"
+  "firstVisitNote": "Bạn đã dùng Nearby để biến một yêu cầu thành trải nghiệm thật."
  },
  "tl": {
   "youreBooked": "Naka-book ka na",
@@ -2601,16 +2529,7 @@
   "booking.confirming": "Tinanggap ang alok · kinukumpirma ang booking mo",
   "booking.notThrough": "Tinanggap ang alok · hindi natuloy ang booking",
   "visitConfirmed": "Kumpirmado ang pagbisita",
-  "firstVisitNote": "Ginamit mo ang Nearby para gawing totoong karanasan ang isang kahilingan.",
-  "cancelReason.changed_plans": "Nagbago ang plano",
-  "cancelReason.scheduling_conflict": "Nagkasabay ang iskedyul",
-  "cancelReason.found_another_option": "May nahanap na ibang opsyon",
-  "cancelReason.cost": "Gastos o budget",
-  "cancelReason.group_fell_through": "Hindi natuloy ang grupo",
-  "cancelReason.too_busy": "Masyadong abala",
-  "cancelReason.unable_to_fulfil": "Hindi namin kaya",
-  "cancelReason.closed_or_unavailable": "Sarado o hindi available sa araw na iyon",
-  "cancelReason.other": "Iba pa"
+  "firstVisitNote": "Ginamit mo ang Nearby para gawing totoong karanasan ang isang kahilingan."
  },
  "ru": {
   "youreBooked": "Бронь подтверждена",
@@ -2898,16 +2817,7 @@
   "booking.confirming": "Предложение принято · подтверждаем бронь",
   "booking.notThrough": "Предложение принято · бронь не прошла",
   "visitConfirmed": "Визит подтверждён",
-  "firstVisitNote": "С Nearby ваш запрос превратился в настоящее событие.",
-  "cancelReason.changed_plans": "Планы изменились",
-  "cancelReason.scheduling_conflict": "Накладка по времени",
-  "cancelReason.found_another_option": "Нашёлся другой вариант",
-  "cancelReason.cost": "Стоимость или бюджет",
-  "cancelReason.group_fell_through": "Группа не собралась",
-  "cancelReason.too_busy": "Слишком загружены",
-  "cancelReason.unable_to_fulfil": "Не можем выполнить",
-  "cancelReason.closed_or_unavailable": "В этот день закрыто или недоступно",
-  "cancelReason.other": "Другое"
+  "firstVisitNote": "С Nearby ваш запрос превратился в настоящее событие."
  },
  "ko": {
   "youreBooked": "예약 완료",
@@ -3186,15 +3096,6 @@
   "booking.confirming": "제안을 수락했어요 · 예약을 확인하는 중이에요",
   "booking.notThrough": "제안을 수락했어요 · 예약이 완료되지 않았어요",
   "visitConfirmed": "방문 확인됨",
-  "firstVisitNote": "Nearby로 요청 하나가 실제 경험이 되었어요.",
-  "cancelReason.changed_plans": "계획이 바뀌었어요",
-  "cancelReason.scheduling_conflict": "일정이 겹쳐요",
-  "cancelReason.found_another_option": "다른 곳을 찾았어요",
-  "cancelReason.cost": "비용 또는 예산",
-  "cancelReason.group_fell_through": "모임이 무산됐어요",
-  "cancelReason.too_busy": "너무 바빠요",
-  "cancelReason.unable_to_fulfil": "처리할 수 없어요",
-  "cancelReason.closed_or_unavailable": "그날 휴무이거나 이용 불가",
-  "cancelReason.other": "기타"
+  "firstVisitNote": "Nearby로 요청 하나가 실제 경험이 되었어요."
  }
 }

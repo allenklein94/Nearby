@@ -38,6 +38,15 @@ describe('replyTimeFit', () => {
     expect(replyTimeFit(REQ, { offer_type: 'standard', package_id: 'p1' })).toBe(FIT.UNKNOWN);
     expect(replyTimeFit({}, { offer_type: 'standard', availability_id: 'a1' })).toBeNull();
   });
+  test('standing-policy auto-accept and AI auto-respond replies have not verified the stated time: unknown (option 1)', () => {
+    expect(replyTimeFit(REQ, { offer_type: 'standard', auto_reply: 'policy' })).toBe(FIT.UNKNOWN);
+    expect(replyTimeFit(REQ, { offer_type: 'standard', auto_reply: 'ai', offer_price: 10, price_is_per_person: true })).toBe(FIT.UNKNOWN);
+    expect(replyTimeFit({ date: '2026-10-14' }, { offer_type: 'standard', auto_reply: 'policy' })).toBe(FIT.UNKNOWN);
+    // nothing stated: nothing to verify, so an automatic reply is treated like any other (decision C)
+    expect(replyMeetsRequest({}, { offer_type: 'standard', auto_reply: 'ai' }).qualifies).toBe(true);
+    // a business's own reply (auto_reply null) keeps decision A
+    expect(replyTimeFit(REQ, { offer_type: 'standard', auto_reply: null })).toBe(FIT.FITS);
+  });
 });
 
 describe('replyBudgetFit', () => {

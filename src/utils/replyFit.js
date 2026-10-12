@@ -8,14 +8,18 @@
 //         when a time was stated), on the device's local clock like every date in the app;
 //       * a reply with an available window meets a stated time when the start is inside it (from <= start < until);
 //       * any other reply the business itself sent ("Yes, you can host them as requested.") confirms the requested time;
-//       * an automatic reply made from a posted availability or a package (availability_id / package_id) never checked a
-//         single stated time against anything: unknown.
+//       * an automatic reply never checked a single stated time against the business's availability: unknown. That is a
+//         reply made from a posted availability or a package (availability_id / package_id), or by a standing auto-accept
+//         policy or AI auto-respond (auto_reply 'policy' | 'ai', migration 20270304). It stays listed; it cannot qualify
+//         on time (and so cannot be "Our pick" on that basis).
 //   - budget (only when the customer gave one): budget_max is per person (utils/budgetTier.js). A per-person price must be
 //     <= it; a total price must be <= budget x party size, only when the party size is known; no price = unknown.
 // Unknown never counts as met. Nothing stated = nothing to meet (every reply qualifies, as before item 63).
 //
 // Order: qualifying replies before the rest; inside each group an established record first, then the higher completion
-// rate, then arrival order. "Our pick" = the first reply, only when it qualifies, its business has an established record and
+// rate, then the list's existing order (getBusinessRequestWithOffers: created_at ascending, i.e. when the business's row was
+// created -- for a fanned-out request, when it was ASKED, not when it replied; rows created together keep the order the
+// database returned them in). No tie-breaker of its own. "Our pick" = the first reply, only when it qualifies, its business has an established record and
 // at least two replies are open. Its reasons are only the stated constraints it met (time, then budget); none when nothing
 // was stated. Nothing here changes how a card looks (item 17); a reply that does not qualify stays in the list.
 import { hasEstablishedRecord } from './reliabilityRecord';
@@ -48,7 +52,7 @@ export function statedBudget(request) {
 export function replyTimeFit(request, offer) {
   const stated = statedTime(request);
   if (!stated) return null;
-  if (offer?.availability_id || offer?.package_id) return FIT.UNKNOWN;
+  if (offer?.availability_id || offer?.package_id || offer?.auto_reply) return FIT.UNKNOWN;
   if (offer?.offer_type === 'alt_time') {
     const d = offer?.proposed_time ? new Date(offer.proposed_time) : null;
     if (!d || Number.isNaN(d.getTime())) return FIT.UNKNOWN;

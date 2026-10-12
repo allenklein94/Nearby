@@ -24,12 +24,26 @@ and decisions A/B/C (2026-10-12). Built (no migration, no server change):
   a fitting reply with the weaker record ranks above the strongest-record alternate-time reply and is the pick with
   [time, budget]; no-price and availability replies never qualify; after the fitting reply withdraws there is no pick; a request
   with nothing stated keeps the record-only pick with no reasons. offer journey 26/26.
-- UNRESOLVED (reported to the owner): two automatic writers, `_match_request_to_policy_core` (standing auto-accept policy) and
-  `_ai_auto_respond_to_business_requests`, insert plain 'standard' rows with no window and no marker, indistinguishable from a
-  business's own "as requested"; neither checks a single stated time against hours. Under decision A they count as fitting.
-  Live: 0 active auto-accept policies, 0 AI policies. A precise fix needs a server-set marker on the reply (owner decision).
-- Not covered: the screen on a device (cards identical and static, reasons line placement), arrival order ties inside one
-  transaction (same created_at).
+- Follow-up, owner option 1 (same day): migration `20270304_auto_reply_marker.sql` (live) adds `business_request_offers.auto_reply`
+  ('policy' | 'ai' | null, check constraint) written ONLY by `_match_request_to_policy_core` and
+  `_ai_auto_respond_to_business_requests` (their INSERT ... ON CONFLICT only; rest verbatim; one overload each, grants unchanged
+  postgres + service_role). Neither verifies a single stated time (one start, no end: hours-overlap skipped; unknown operating hours
+  = open), so `replyTimeFit` treats a marked reply as unknown: listed, never qualifying on time, never the pick on that basis.
+  Decision A unchanged for a business's own reply (auto_reply null). No write path to the table but these server functions
+  (SELECT-only RLS); a marked row never re-pends (reopen_business_request only re-pends responded_at null). 0 offer rows in
+  production, so no backfill. Third offer-journey block: both writers really reply to an 11 PM ask outside their declared
+  8 AM-8 PM hours, mark their rows, never qualify; the business's own "as requested" (weaker record) ranks first and is the pick.
+- Arrival order (investigated, unchanged, no new tie-breaker): the list is `getBusinessRequestWithOffers` ordered by `created_at`
+  ascending, set when the business's row was CREATED (fan-out inserts all candidates in one statement; automatic writers at match
+  time; submit_business_offer updates the existing pending row and never touches created_at). So it is the order businesses were
+  ASKED, not the order they replied; rows created together tie and come back in whatever order the database returns (not
+  guaranteed stable across reloads). rankReplies keeps that order (stable sort). `responded_at` exists if the owner ever wants
+  real reply order (a product decision, not built).
+- Translation source: regeneration verified byte-identical; the restore step had also added 99 duplicate dotted `cancelReason.*`
+  keys beside the existing `cancelReason` object (harmless), removed; guard `src/i18n/requestDetailSource.test.js` (source == generated, incl.
+  `plan.titleAtBusiness`, `firstVisitNote`, both new keys).
+- Tests: offer journey 28/28 (run first against the unapplied migration, then live), all journeys 309/309, Jest 5848.
+- Not covered: the screen on a device (cards identical and static, reasons line placement); native review of the 2 strings.
 
 # Item 62 (2026-10-12) - several replies to one request = one notification, replaced in place - BUILT, LIVE, NOT DEVICE-VERIFIED
 

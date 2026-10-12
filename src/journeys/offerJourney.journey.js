@@ -400,3 +400,91 @@ d('journey: several replies -> the reply that meets the request ranks first, "Ou
     expect(r.pickReasons).toEqual([]);
   });
 });
+
+// Item 63 follow-up (owner option 1, migration 20270304): the two automatic writers -- a standing auto-accept policy and AI
+// auto-respond -- mark their replies (auto_reply), and neither verifies a single stated time: here both reply to an 11 PM ask
+// although their declared hours end at 8 PM (one start, no end, so their hours-overlap checks are skipped). Their replies stay
+// listed but never qualify on time, so a business's own "as requested" with a weaker record ranks first and is the pick.
+// Real writers called as the server calls them (service-only functions), one rolled-back transaction.
+d('journey: automatic policy / AI replies never qualify on a stated time they did not verify (item 63, option 1)', () => {
+  let s;
+  beforeAll(async () => {
+    const log = await runJourney(`
+      v_c uuid := gen_random_uuid(); v_o uuid := gen_random_uuid();
+      v_pol uuid := gen_random_uuid(); v_ai uuid := gen_random_uuid(); v_man uuid := gen_random_uuid();
+      v_r uuid := gen_random_uuid(); v_h uuid; v_exp uuid; v_day date := current_date + 1; i int; p uuid; v_n1 int; v_n2 int;`, `
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+  perform set_config('app.trusted_update', 'on', true);
+  foreach p in array array[v_c, v_o] loop
+    insert into auth.users (id, aud, role, email) values (p, 'authenticated', 'authenticated', p || '@autoreply.test');
+    insert into profiles (id, display_name, birthdate) values (p, 'AR-' || left(p::text, 4), date '1990-01-01');
+  end loop;
+  insert into brand_partners (id, name, active, latitude, longitude) values
+    (v_pol, 'J63 Policy Cafe', true, 0.5, 0.5), (v_ai, 'J63 AI Cafe', true, 0.5, 0.5), (v_man, 'J63 Own Reply Cafe', true, 0.5, 0.5);
+  update brand_partners set ai_trust_level = 2 where id = v_ai;
+  update profiles set managed_partner_id = v_man where id = v_o;
+  -- records: both automatic businesses 8 of 8 completed, the business that replies itself 5 of 6 (all established)
+  foreach p in array array[v_pol, v_ai, v_man] loop
+    for i in 1..(case when p = v_man then 6 else 8 end) loop
+      insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
+        values (v_c, 'history', 0.5, 0.5, now() - interval '1 day', 'fulfilled', 'Coffee', 2, 10) returning id into v_h;
+      insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at)
+        values (v_h, p, case when p = v_man and i = 6 then 'accepted' else 'completed' end, 'standard', now() - interval '2 days',
+                now() - interval '2 days', case when p = v_man and i = 6 then null else now() - interval '1 day' end);
+    end loop;
+  end loop;
+  -- the standing policy: auto-accept parties up to 10, declared hours 8 AM - 8 PM
+  insert into business_fulfillment_policies (partner_id, active, auto_accept_party_size_max, active_hours_start, active_hours_end)
+    values (v_pol, true, 10, time '08:00', time '20:00');
+  -- the AI policy: auto-respond to Coffee asks with an experience, declared hours 8 AM - 8 PM
+  insert into business_experiences (partner_id, title, price_level, active) values (v_ai, 'Coffee flight', '$', true) returning id into v_exp;
+  insert into business_ai_policies (partner_id, name, enabled, trust_level, action_type, conditions)
+    values (v_ai, 'J63 auto coffee', true, 2, 'auto_respond_offer',
+            jsonb_build_object('category', 'Coffee', 'hours_start', '08:00', 'hours_end', '20:00', 'experience_id', v_exp));
+
+  -- the customer asks: coffee for 4 tomorrow at 11 PM (no budget)
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles, date, time_window_start)
+    values (v_r, v_c, 'Coffee for 4 tomorrow at 11 PM', 0.5, 0.5, now() + interval '1 day', 'open', 'Coffee', 4, 10, v_day, time '23:00');
+  insert into business_request_offers (request_id, partner_id, status) values (v_r, v_man, 'pending');
+  -- the two automatic writers, called as the server calls them
+  v_n1 := _match_request_to_policy_core(v_r, 0.5, 0.5, 10, 4, time '23:00', null);
+  v_n2 := _ai_auto_respond_to_business_requests(v_r, 0.5, 0.5, 10, 'Coffee', 4, time '23:00', null);
+  -- the business that replies itself: "Yes, you can host them as requested."
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r, offer_type_param := 'standard', offer_description_param := 'Yes, you can host them as requested.');
+
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'read', 'ok', true, 'data', jsonb_build_object(
+    'made', jsonb_build_object('policy', v_n1, 'ai', v_n2),
+    'request', (select to_jsonb(r) from business_requests r where id = v_r),
+    'offers', (select jsonb_agg(to_jsonb(o) order by o.created_at, o.id) from business_request_offers o where request_id = v_r),
+    'names', jsonb_build_object(v_pol, 'policy', v_ai, 'ai', v_man, 'own'),
+    'stats', (select jsonb_object_agg(p2, (select to_jsonb(x) from get_partner_offer_reputation(p2) x)) from unnest(array[v_pol, v_ai, v_man]) p2))));`);
+    s = stepMap(log);
+  }, 120000);
+
+  const statsOf = (stats) => Object.fromEntries(Object.entries(stats).map(([id, rep]) => [id, { reputation: rep }]));
+
+  test('both automatic writers replied to an 11 PM ask outside their declared hours, and marked their replies', () => {
+    const { made, offers, names } = s.read.data;
+    expect(made).toEqual({ policy: 1, ai: 1 });
+    const by = Object.fromEntries(offers.map((o) => [names[o.partner_id], o]));
+    expect(by.policy).toMatchObject({ status: 'offered', offer_type: 'standard', auto_reply: 'policy' });
+    expect(by.ai).toMatchObject({ status: 'offered', offer_type: 'standard', auto_reply: 'ai' });
+    expect(by.own).toMatchObject({ status: 'offered', offer_type: 'standard', auto_reply: null });
+  });
+
+  test('neither automatic reply qualifies on time; the business\'s own "as requested" does and is the pick', () => {
+    const { request, offers, names, stats } = s.read.data;
+    const r = rankReplies(offers, request, statsOf(stats));
+    const fit = (n) => r.fitById[offers.find((o) => names[o.partner_id] === n).id];
+    expect(fit('policy')).toMatchObject({ qualifies: false, time: 'unknown' });
+    expect(fit('ai')).toMatchObject({ qualifies: false, time: 'unknown' });
+    expect(fit('own')).toMatchObject({ qualifies: true, time: 'fits' });
+    const order = r.offers.filter((o) => o.status === 'offered').map((o) => names[o.partner_id]);
+    expect(order[0]).toBe('own'); // weaker record, but it meets the request
+    expect(order.slice(1).sort()).toEqual(['ai', 'policy']); // still listed
+    expect(r.pickOfferId).toBe(offers.find((o) => names[o.partner_id] === 'own').id);
+    expect(r.pickReasons).toEqual([{ kind: 'time', date: request.date, startMin: 23 * 60 }]);
+  });
+});
