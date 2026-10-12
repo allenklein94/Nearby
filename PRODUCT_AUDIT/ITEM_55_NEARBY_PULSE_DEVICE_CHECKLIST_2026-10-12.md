@@ -24,3 +24,27 @@ Cross-check with the existing checklists: `ITEM_44_PIN_TO_SHEET_DEVICE_CHECKLIST
 
 Known difference, by design: before a ring plays, it now rests invisible. Previously the first ring could sit faint for the one frame
 before its animation started. It can't be seen at normal frame rates.
+
+## Owner decision and recording rules (2026-10-12)
+
+- Scope stays at the five moments above. Person-to-person moments stay out of `PULSE_MOMENTS`: no motion is added to item 39
+  ("{Name} is nearby"), and item 40's locked friend + activity animation is not reopened. The Pulse unifies motion that already
+  exists. It is never a reason to animate more.
+- "A business responds" stays outside the Pulse as Nearby's one signature moment (check 7).
+- Record any device-specific failure in the table below as it was seen. Do not change locked behavior to work around it. A fix
+  goes through the shared source (`motion/NearbyPulse.js` / `pulseGeometry.js`) and keeps each moment's approved tokens.
+- No check is marked passed until it's seen on the physical phone. Tests and parse checks don't count.
+
+## Results (fill in on device)
+
+| # | iPhone (model, iOS, light/dark) | Result | Android (model, version, light/dark) | Result | Notes / failures |
+|---|---|---|---|---|---|
+| 1 | | PENDING | | PENDING | |
+| 2 | | PENDING | | PENDING | |
+| 3 | | PENDING | | PENDING | |
+| 4 | | PENDING | | PENDING | |
+| 5 | | PENDING | | PENDING | |
+| 6 | | PENDING | | PENDING | |
+| 7 | | PENDING | | PENDING | |
+| 8 | | PENDING | | PENDING | |
+| 9 | | PENDING | | PENDING | |

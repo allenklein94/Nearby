@@ -113,7 +113,8 @@ AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 2
 `ui.home.noticed*` strings is done (migration 20270302; journey `noticedActivity`).
 
 **Item 55 (the Nearby Pulse, consolidation) is BUILT, NOT DEVICE-VERIFIED until** every check in
-`PRODUCT_AUDIT/ITEM_55_NEARBY_PULSE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND a real Android phone (no new strings, no migration).
+`PRODUCT_AUDIT/ITEM_55_NEARBY_PULSE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND a real Android phone (no new strings, no migration). Owner (2026-10-12): scope closed at the five moments;
+record device failures in the checklist without changing locked behavior to work around them.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -422,7 +423,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Request sent, signal received, Happening near you, the Right Now mark and pin -> sheet draw only through it (`PULSE_MOMENTS` in
   `constants/motionLanguage.js`), each keeping its own approved tokens, size, colour, trigger and Reduce Motion rule. A new connection
   moment registers there and reuses the Pulse, never a bespoke animation; no new animated places. Business responds stays the ONE
-  signature, outside the Pulse. Guard `motion/nearbyPulse.test.js`.
+  signature, outside the Pulse. Guard `motion/nearbyPulse.test.js`. Owner (2026-10-12): person-to-person moments stay OUT of
+  `PULSE_MOMENTS` (no motion added to item 39, item 40 not reopened); the Pulse unifies existing motion, never a reason to animate more.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).
