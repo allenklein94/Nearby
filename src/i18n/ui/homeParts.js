@@ -7,7 +7,6 @@ export default {
     list: { sep: ', ', and: '{rest} and {last}' },
     greeting: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening' },
     quickPick: { morningRun: 'Morning Run', breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinner', concert: 'Concert', walk: 'Walk', beachVolleyball: 'Beach Volleyball', beachCleanup: 'Beach Cleanup', wineTasting: 'Wine Tasting' },
-    recap: { gatherings: { one: '{count} gathering', other: '{count} gatherings' }, connections: { one: '{count} new connection', other: '{count} new connections' } },
     stats: { gatheringsToday: { one: '{count} gathering today', other: '{count} gatherings today' }, crossedPaths: 'Crossed paths with {name}', unread: { one: '{count} unread message', other: '{count} unread messages' } },
     meet: {
       nearbyToMeet: { one: '{count} person nearby to meet', other: '{count} people nearby to meet' }, seeWhoNearby: "See who's nearby",
@@ -46,7 +45,6 @@ export default {
     list: { sep: ', ', and: '{rest} y {last}' },
     greeting: { morning: 'Buenos días', afternoon: 'Buenas tardes', evening: 'Buenas noches' },
     quickPick: { morningRun: 'Correr por la mañana', breakfast: 'Desayuno', lunch: 'Almuerzo', dinner: 'Cena', concert: 'Concierto', walk: 'Paseo', beachVolleyball: 'Vóley playa', beachCleanup: 'Limpieza de playa', wineTasting: 'Cata de vinos' },
-    recap: { gatherings: { one: '{count} reunión', other: '{count} reuniones' }, connections: { one: '{count} conexión nueva', other: '{count} conexiones nuevas' } },
     stats: { gatheringsToday: { one: '{count} reunión hoy', other: '{count} reuniones hoy' }, crossedPaths: 'Te cruzaste con {name}', unread: { one: '{count} mensaje sin leer', other: '{count} mensajes sin leer' } },
     meet: {
       nearbyToMeet: { one: '{count} persona cerca para conocer', other: '{count} personas cerca para conocer' }, seeWhoNearby: 'Ver quién está cerca',
@@ -85,7 +83,6 @@ export default {
     list: { sep: ', ', and: '{rest} und {last}' },
     greeting: { morning: 'Guten Morgen', afternoon: 'Guten Tag', evening: 'Guten Abend' },
     quickPick: { morningRun: 'Morgenlauf', breakfast: 'Frühstück', lunch: 'Mittagessen', dinner: 'Abendessen', concert: 'Konzert', walk: 'Spaziergang', beachVolleyball: 'Beachvolleyball', beachCleanup: 'Strandputz', wineTasting: 'Weinprobe' },
-    recap: { gatherings: { one: '{count} Treffen', other: '{count} Treffen' }, connections: { one: '{count} neuer Kontakt', other: '{count} neue Kontakte' } },
     stats: { gatheringsToday: { one: '{count} Treffen heute', other: '{count} Treffen heute' }, crossedPaths: 'Du bist {name} begegnet', unread: { one: '{count} ungelesene Nachricht', other: '{count} ungelesene Nachrichten' } },
     meet: {
       nearbyToMeet: { one: '{count} Person in der Nähe zum Kennenlernen', other: '{count} Leute in der Nähe zum Kennenlernen' }, seeWhoNearby: 'Sieh, wer in der Nähe ist',
@@ -124,7 +121,6 @@ export default {
     list: { sep: ', ', and: '{rest} et {last}' },
     greeting: { morning: 'Bonjour', afternoon: 'Bon après-midi', evening: 'Bonsoir' },
     quickPick: { morningRun: 'Course du matin', breakfast: 'Petit-déjeuner', lunch: 'Déjeuner', dinner: 'Dîner', concert: 'Concert', walk: 'Balade', beachVolleyball: 'Beach-volley', beachCleanup: 'Nettoyage de plage', wineTasting: 'Dégustation de vins' },
-    recap: { gatherings: { one: '{count} rencontre', other: '{count} rencontres' }, connections: { one: '{count} nouvelle relation', other: '{count} nouvelles relations' } },
     stats: { gatheringsToday: { one: '{count} rencontre aujourd’hui', other: '{count} rencontres aujourd’hui' }, crossedPaths: 'Vous avez croisé {name}', unread: { one: '{count} message non lu', other: '{count} messages non lus' } },
     meet: {
       nearbyToMeet: { one: '{count} personne à rencontrer près de vous', other: '{count} personnes à rencontrer près de vous' }, seeWhoNearby: 'Voir qui est près de vous',
@@ -163,7 +159,6 @@ export default {
     list: { sep: ', ', and: '{rest} e {last}' },
     greeting: { morning: 'Bom dia', afternoon: 'Boa tarde', evening: 'Boa noite' },
     quickPick: { morningRun: 'Corrida matinal', breakfast: 'Café da manhã', lunch: 'Almoço', dinner: 'Jantar', concert: 'Show', walk: 'Caminhada', beachVolleyball: 'Vôlei de praia', beachCleanup: 'Limpeza de praia', wineTasting: 'Degustação de vinhos' },
-    recap: { gatherings: { one: '{count} encontro', other: '{count} encontros' }, connections: { one: '{count} nova conexão', other: '{count} novas conexões' } },
     stats: { gatheringsToday: { one: '{count} encontro hoje', other: '{count} encontros hoje' }, crossedPaths: 'Você cruzou com {name}', unread: { one: '{count} mensagem não lida', other: '{count} mensagens não lidas' } },
     meet: {
       nearbyToMeet: { one: '{count} pessoa por perto para conhecer', other: '{count} pessoas por perto para conhecer' }, seeWhoNearby: 'Ver quem está por perto',
@@ -202,7 +197,6 @@ export default {
     list: { sep: ', ', and: '{rest} ak {last}' },
     greeting: { morning: 'Bonjou', afternoon: 'Bon apremidi', evening: 'Bonswa' },
     quickPick: { morningRun: 'Kouri nan maten', breakfast: 'Manje maten', lunch: 'Manje midi', dinner: 'Manje aswè', concert: 'Konsè', walk: 'Pwomnad', beachVolleyball: 'Volebòl sou plaj', beachCleanup: 'Netwaye plaj', wineTasting: 'Degistasyon diven' },
-    recap: { gatherings: { one: '{count} rasanbleman', other: '{count} rasanbleman' }, connections: { one: '{count} nouvo koneksyon', other: '{count} nouvo koneksyon' } },
     stats: { gatheringsToday: { one: '{count} rasanbleman jodi a', other: '{count} rasanbleman jodi a' }, crossedPaths: 'Ou te kwaze ak {name}', unread: { one: '{count} mesaj ou poko li', other: '{count} mesaj ou poko li' } },
     meet: {
       nearbyToMeet: { one: '{count} moun toupre pou rankontre', other: '{count} moun toupre pou rankontre' }, seeWhoNearby: 'Gade ki moun ki toupre',
@@ -241,7 +235,6 @@ export default {
     list: { sep: '、', and: '{rest}和{last}' },
     greeting: { morning: '早上好', afternoon: '下午好', evening: '晚上好' },
     quickPick: { morningRun: '晨跑', breakfast: '早餐', lunch: '午餐', dinner: '晚餐', concert: '音乐会', walk: '散步', beachVolleyball: '沙滩排球', beachCleanup: '海滩清洁', wineTasting: '品酒' },
-    recap: { gatherings: { other: '{count} 次聚会' }, connections: { other: '{count} 个新联系人' } },
     stats: { gatheringsToday: { other: '今天有 {count} 个聚会' }, crossedPaths: '与 {name} 擦肩而过', unread: { other: '{count} 条未读消息' } },
     meet: {
       nearbyToMeet: { other: '附近有 {count} 个人可以认识' }, seeWhoNearby: '看看附近有谁',
@@ -280,7 +273,6 @@ export default {
     list: { sep: ', ', and: '{rest} và {last}' },
     greeting: { morning: 'Chào buổi sáng', afternoon: 'Chào buổi chiều', evening: 'Chào buổi tối' },
     quickPick: { morningRun: 'Chạy bộ buổi sáng', breakfast: 'Bữa sáng', lunch: 'Bữa trưa', dinner: 'Bữa tối', concert: 'Hòa nhạc', walk: 'Đi dạo', beachVolleyball: 'Bóng chuyền bãi biển', beachCleanup: 'Dọn dẹp bãi biển', wineTasting: 'Nếm rượu vang' },
-    recap: { gatherings: { other: '{count} buổi gặp mặt' }, connections: { other: '{count} kết nối mới' } },
     stats: { gatheringsToday: { other: '{count} buổi gặp mặt hôm nay' }, crossedPaths: 'Đã đi ngang qua {name}', unread: { other: '{count} tin nhắn chưa đọc' } },
     meet: {
       nearbyToMeet: { other: '{count} người gần đây để làm quen' }, seeWhoNearby: 'Xem ai đang ở gần',
@@ -319,7 +311,6 @@ export default {
     list: { sep: ', ', and: '{rest} at {last}' },
     greeting: { morning: 'Magandang umaga', afternoon: 'Magandang hapon', evening: 'Magandang gabi' },
     quickPick: { morningRun: 'Takbo sa Umaga', breakfast: 'Almusal', lunch: 'Tanghalian', dinner: 'Hapunan', concert: 'Konsiyerto', walk: 'Lakad', beachVolleyball: 'Beach Volleyball', beachCleanup: 'Paglilinis ng Beach', wineTasting: 'Wine Tasting' },
-    recap: { gatherings: { one: '{count} pagtitipon', other: '{count} pagtitipon' }, connections: { one: '{count} bagong koneksyon', other: '{count} bagong koneksyon' } },
     stats: { gatheringsToday: { one: '{count} pagtitipon ngayong araw', other: '{count} pagtitipon ngayong araw' }, crossedPaths: 'Nakasalubong mo si {name}', unread: { one: '{count} hindi pa nababasang mensahe', other: '{count} hindi pa nababasang mensahe' } },
     meet: {
       nearbyToMeet: { one: '{count} tao sa malapit na puwedeng makilala', other: '{count} tao sa malapit na puwedeng makilala' }, seeWhoNearby: 'Tingnan kung sino ang malapit',
@@ -358,7 +349,6 @@ export default {
     list: { sep: ', ', and: '{rest} и {last}' },
     greeting: { morning: 'Доброе утро', afternoon: 'Добрый день', evening: 'Добрый вечер' },
     quickPick: { morningRun: 'Утренняя пробежка', breakfast: 'Завтрак', lunch: 'Обед', dinner: 'Ужин', concert: 'Концерт', walk: 'Прогулка', beachVolleyball: 'Пляжный волейбол', beachCleanup: 'Уборка пляжа', wineTasting: 'Дегустация вин' },
-    recap: { gatherings: { one: '{count} встреча', few: '{count} встречи', many: '{count} встреч', other: '{count} встречи' }, connections: { one: '{count} новое знакомство', few: '{count} новых знакомства', many: '{count} новых знакомств', other: '{count} новых знакомства' } },
     stats: { gatheringsToday: { one: '{count} встреча сегодня', few: '{count} встречи сегодня', many: '{count} встреч сегодня', other: '{count} встречи сегодня' }, crossedPaths: 'Вы пересеклись с {name}', unread: { one: '{count} непрочитанное сообщение', few: '{count} непрочитанных сообщения', many: '{count} непрочитанных сообщений', other: '{count} непрочитанных сообщения' } },
     meet: {
       nearbyToMeet: { one: '{count} человек рядом для знакомства', few: '{count} человека рядом для знакомства', many: '{count} человек рядом для знакомства', other: '{count} человека рядом для знакомства' }, seeWhoNearby: 'Посмотреть, кто рядом',
@@ -397,7 +387,6 @@ export default {
     list: { sep: ', ', and: '{rest} 및 {last}' },
     greeting: { morning: '좋은 아침이에요', afternoon: '좋은 오후예요', evening: '좋은 저녁이에요' },
     quickPick: { morningRun: '아침 달리기', breakfast: '아침 식사', lunch: '점심', dinner: '저녁 식사', concert: '콘서트', walk: '산책', beachVolleyball: '비치발리볼', beachCleanup: '해변 청소', wineTasting: '와인 시음' },
-    recap: { gatherings: { other: '모임 {count}회' }, connections: { other: '새 인연 {count}명' } },
     stats: { gatheringsToday: { other: '오늘 모임 {count}개' }, crossedPaths: '{name}님과 마주쳤어요', unread: { other: '읽지 않은 메시지 {count}개' } },
     meet: {
       nearbyToMeet: { other: '근처에서 만날 수 있는 사람 {count}명' }, seeWhoNearby: '근처에 누가 있는지 보기',

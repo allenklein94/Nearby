@@ -1,3 +1,34 @@
+# Item 53 (2026-10-12) - "N plans this month" on Home + the streak push retired - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+Owner principle: celebrate participation without pressuring people to maintain a streak. Owner decisions (asked): (1) count = plans that
+really happened, with evidence; (2) the line replaces Home's weekly recap ("This week: N gatherings · N new connections"); (3) retire
+ONLY the "keep your streak going" push; the weeks-in-a-row card on Your Activity stays, unchanged, until the Momentum fold decision
+(usage evidence). Not done (owner: out of scope): removing the streak card, redesigning Momentum.
+**Streak push (migration `20270300_retire_streak_nudge.sql`, applied live):** its ONLY sender was the streak branch of
+`send_momentum_nudges()` (cron `send-momentum-reward-nudges`, Wed 15:00 UTC). Checked live: no other SQL function, no edge function, no
+client code (no local scheduled notification) sends `momentum_streak_nudge`; outbox had 0 such rows. The branch is removed (the
+reward-tier branch is byte for byte the same; a person who used to get the streak push instead of the tier push can now get the tier
+push, which is that push's own rule). Pending/retry streak rows in `push_outbox` are failed so nothing can go out late. The type stays
+in the tap/priority/mute tables (`notificationTier/Actions/Preferences`, `notificationDestinations`, send-push) so an old delivered push
+still opens Your Activity. Live: `scripts/live-verify/streak-nudge-retired.sql` 7/7 (a fixture person active 3 weeks in a row, nothing
+this week, gets no streak push when the job runs; reward-tier push still there; no other function sends it; cron unchanged).
+Guard `utils/streakNudgeRetired.test.js` (last definer of the function, no later migration or code sender, streak display kept).
+**Plans this month (migration `20270301_plans_this_month.sql`, applied live):** `get_my_plans_this_month(p_since, p_until)` (security
+definer, auth.uid() inside, authenticated only) returns one row per plan: an approved attendance at a gathering that is over (start +
+duration, or + 30 min) with the person's own evidence (checked_in_at or a gathering_feedback row), key `g:<id>`; an offer on the person's
+own request that reached 'completed' (in the month of completed_at), keyed by its gathering (`g:`) or its root request (`r:`), so a
+hosted gathering counts only through a redeemed booking for it and an add-on is the same plan. Month bounds come from the device
+(local month, `localMonthBounds`). Client: `services/plansThisMonth.js` (null on failure = no line), `utils/plansThisMonth.js` (count,
+show at >= 1, `takePlansThisMonthMoment`: rolls once when a key appears this device has not counted; first read on a device/account only
+records; storage failure = settled). Home renders it where the weekly recap was, opens Momentum (`source: home_plans_this_month`), and
+rolls the figure with the existing `CountRoll` (JoinArrival, friendJoin tokens, 260 ms; no new motion component, no haptic). The weekly
+recap's two queries (`homeDashboard.weeklyRecap`) and its strings (`ui.home.weekRecapA11y/thisWeek`, `ui.homeParts.recap.*`) are
+removed; new strings `ui.home.plansThisMonth` + `plansThisMonthA11y` in 11 languages (machine-authored; fr uses "sortie(s)").
+**Verified:** Jest 429 suites / 5769 (`utils/plansThisMonth.test.js` 13, `streakNudgeRetired.test.js` 6); journeys 27/27 (285) incl.
+new `plansThisMonth` 6/6 (RSVP/host/pending/still-going/no-evidence/booked-not-visited/last month never count; check-in and "How was
+it?" count; completed visits count; add-on = same plan; caller-only). **NOT verified:** device render, a real Wednesday run, native
+review, a from-scratch migration replay. Checklist: `PRODUCT_AUDIT/ITEM_53_PLANS_THIS_MONTH_DEVICE_CHECKLIST_2026-10-12.md`.
+
 # Item 52 (2026-10-12) - the first successful redemption says what just happened - BUILT, NOT DEVICE-VERIFIED
 
 Owner: after redeeming, "Redeemed ✓", then the first time only "You just used Nearby to turn a request into a real-world experience"

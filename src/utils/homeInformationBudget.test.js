@@ -24,7 +24,7 @@ describe('Home information budget order', () => {
       at('goalRow.length > 0 &&'),
       at('continueCommunities.length > 0 &&'),
       at('homeQuickStatRows(dashboard).length > 0 &&'),
-      at('dashboard?.weeklyRecap &&'),
+      at('showPlansThisMonth(plansMonth?.count) &&'),
     ];
     expect([...order].sort((a, b) => a - b)).toEqual(order);
   });

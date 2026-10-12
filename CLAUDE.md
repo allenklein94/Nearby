@@ -104,6 +104,10 @@ AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 2
 `PRODUCT_AUDIT/ITEM_52_FIRST_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real device AND native review of
 `ui.requestDetail.firstVisitNote` (10 languages) is done (no migration; journey `offer`).
 
+**Item 53 ("N plans this month" + streak push retired) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_53_PLANS_THIS_MONTH_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real device AND native review of
+`ui.home.plansThisMonth` / `plansThisMonthA11y` is done (migrations 20270300 + 20270301; journey `plansThisMonth`; live `streak-nudge-retired.sql` 7/7).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -396,6 +400,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **First redemption (owner item 52):** the customer's earliest-ever completed offer (server: min `completed_at` on their own requests,
   `fetchFirstRedemptionId`, read with the offers) adds "You used Nearby to turn a request into a real-world experience." under
   "✓ Visit confirmed" (`presentOffer().confirmation.firstVisitNote`); words only, inside VisitConfirmed's one settle; later ones: none.
+- **Plans this month (owner item 53):** Home's "N plans this month" (replaced the weekly recap; opens Your Activity) counts only what HAPPENED,
+  decided by `get_my_plans_this_month` (attended + over + checked in or answered "How was it?", or an offer visit completed; one plan once;
+  hosting/RSVP/Interested never) over the device's local month; shown at >= 1 only; rolls once via `CountRoll` for a new plan key
+  (`utils/plansThisMonth.js`). The streak push is RETIRED (never nudge a streak; guard `streakNudgeRetired.test.js`); the streak on
+  Your Activity stays until the Momentum fold decision.
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

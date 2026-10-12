@@ -55,6 +55,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackInline from '../components/GatheringFeedbackInline';
 import PlanCompleted from '../motion/PlanCompleted';
 import { takeCompletionMoment, COMPLETION_FROM, COMPLETION_TO } from '../utils/gatheringCompletion';
+import { getMyPlansThisMonth } from '../services/plansThisMonth';
+import { plansThisMonthCount, showPlansThisMonth, takePlansThisMonthMoment } from '../utils/plansThisMonth';
+import { CountRoll } from '../motion/JoinArrival';
 import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus, PLAN_STATUS_META } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
@@ -201,17 +204,6 @@ function occasionTypeIcon(occasionType) {
 }
 
 
-function formatWeeklyRecap(recap) {
-  const parts = [];
-  if (recap.gatheringsAttended > 0) {
-    parts.push(tr('ui.homeParts.recap.gatherings', { count: recap.gatheringsAttended }));
-  }
-  if (recap.newFriends > 0) {
-    parts.push(tr('ui.homeParts.recap.connections', { count: recap.newFriends }));
-  }
-  return parts.join(' · ');
-}
-
 // A quick pick's label in the person's language: i18n/optionLabels quickOptionLabel (shared with the Start Something sheet).
 const quickPickLabel = quickOptionLabel;
 
@@ -271,6 +263,8 @@ export default function HomeScreen({ navigation }) {
   const [pendingInvitesCount, setPendingInvitesCount] = useState(0);
   // Item 34: the just-finished attended gathering awaiting "How was it?" and whether its Completed move plays (decided once).
   const [completedPlan, setCompletedPlan] = useState(null);
+  // Owner item 53: "N plans this month" (utils/plansThisMonth.js). null = unknown or not loaded: no line.
+  const [plansMonth, setPlansMonth] = useState(null);
   const [pinnedQuickPicks, setPinnedQuickPicks] = useState(null);
   // Progressive dining-taste prompt (Preference wiring Phase 4): a permanent, per-user dismissable Home card.
   const goalRow = useMyGoals();
@@ -711,6 +705,15 @@ export default function HomeScreen({ navigation }) {
       const unratedTask = getMostRecentUnratedGathering()
         .then(async (g) => setCompletedPlan(g ? { gathering: g, play: await takeCompletionMoment(g.id, AsyncStorage) } : null))
         .catch((e) => console.error('getMostRecentUnratedGathering failed', e));
+      const plansMonthTask = getMyPlansThisMonth()
+        .then(async (rows) => {
+          const count = plansThisMonthCount(rows);
+          if (count == null) return setPlansMonth(null);
+          const keys = rows.map((r) => r.plan_key);
+          const moment = await takePlansThisMonthMoment({ userId: myId, keys }, AsyncStorage);
+          setPlansMonth({ count, ...moment, rollKey: moment.play ? keys.join('|') : 'settled' });
+        })
+        .catch((e) => console.error('getMyPlansThisMonth failed', e));
       const pendingInvitesTask = getPendingInvitesCount(myId).then(setPendingInvitesCount).catch((e) => console.error('getPendingInvitesCount failed', e));
       const pendingOutcomeTask = getPendingIntentOutcomePrompt().then(setOutcomePrompt).catch((e) => console.error('getPendingIntentOutcomePrompt failed', e));
 
@@ -932,6 +935,7 @@ export default function HomeScreen({ navigation }) {
         communitiesTask,
         perksTask,
         unratedTask,
+        plansMonthTask,
         pendingInvitesTask,
         pendingOutcomeTask,
         predictiveNudgeTask,
@@ -2868,14 +2872,22 @@ export default function HomeScreen({ navigation }) {
         )}
 
 
-        {dashboard?.weeklyRecap && (dashboard.weeklyRecap.gatheringsAttended > 0 || dashboard.weeklyRecap.newFriends > 0) && (
+        {showPlansThisMonth(plansMonth?.count) && (
           <TouchableOpacity
             style={styles.recapCard}
-            onPress={() => navigation.navigate('Momentum', { source: 'home_recap' })}
-            accessibilityLabel={t('ui.home.weekRecapA11y', { recap: formatWeeklyRecap(dashboard.weeklyRecap) })}
+            onPress={() => navigation.navigate('Momentum', { source: 'home_plans_this_month' })}
+            accessibilityLabel={t('ui.home.plansThisMonthA11y', { count: plansMonth.count })}
             accessibilityRole="button"
           >
-            <Text style={styles.recapSummary}>{t('ui.home.thisWeek', { recap: formatWeeklyRecap(dashboard.weeklyRecap) })}</Text>
+            <View style={styles.recapSummaryWrap}>
+              <CountRoll
+                key={`plansMonth:${plansMonth.rollKey}`}
+                play={plansMonth.play}
+                previous={plansMonth.previous ? <Text style={styles.recapSummary}>{t('ui.home.plansThisMonth', { count: plansMonth.previous })}</Text> : null}
+              >
+                <Text style={styles.recapSummary}>{t('ui.home.plansThisMonth', { count: plansMonth.count })}</Text>
+              </CountRoll>
+            </View>
             <Text style={styles.recapLink}>{t('ui.home.viewActivity')}</Text>
           </TouchableOpacity>
         )}
@@ -3192,7 +3204,8 @@ const getStyles = (colors) => StyleSheet.create({
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg,
   },
-  recapSummary: { color: colors.textPrimary, fontSize: 13, flex: 1, marginRight: spacing.sm },
+  recapSummaryWrap: { flex: 1, marginRight: spacing.sm },
+  recapSummary: { color: colors.textPrimary, fontSize: 13 },
   recapLink: { color: colors.primary, fontWeight: '700', fontSize: 13 },
   trendingCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   trendingTitle: { color: colors.textPrimary, fontSize: 14, fontWeight: '700' },
