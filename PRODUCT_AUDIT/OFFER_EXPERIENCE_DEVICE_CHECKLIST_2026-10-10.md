@@ -16,6 +16,17 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
 - Test once with Reduce Motion **off**, then repeat the starred (★) steps with Reduce Motion **on**
   (iOS: Accessibility > Motion; Android: Remove animations).
 
+## Recording rules and overlaps (2026-10-12)
+
+- Do not bypass offer screening while Anthropic credit is unavailable. Steps that depend on a screened reply stay PENDING until
+  credit is added. A failure is recorded as seen; locked behavior is never changed to work around it.
+- Keep each platform's column separate (Record table). An untested platform stays PENDING.
+- The same observation counts on these other lists, with the same device row:
+  - section 1, bullets 1-2 = item 55 #1;
+  - section 4, bullets 1-3 = item 55 #7 (business responds stays the signature, outside the Pulse);
+  - section 6, bullets 1-2 = item 32 section 3 (the merge plays right after the accept);
+  - section 8, bullet 3 = item 28 #1, #9 and #11.
+
 ## 1. Request sent (moment 1)
 
 - [ ] Customer asks for coffee for 4 tonight. The just-sent line reads "We asked N nearby businesses…" and two soft rings

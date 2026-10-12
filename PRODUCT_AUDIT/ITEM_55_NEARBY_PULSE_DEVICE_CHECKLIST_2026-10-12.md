@@ -48,3 +48,27 @@ before its animation started. It can't be seen at normal frame rates.
 | 7 | | PENDING | | PENDING | |
 | 8 | | PENDING | | PENDING | |
 | 9 | | PENDING | | PENDING | |
+
+## One observation, several checklists (overlap map, 2026-10-12)
+
+The Pulse moments are the same screens the item 44 and item 48 checklists cover. When you see one of the item 55 checks below,
+record the same result (same device row) against each mapped line too. This map only saves repeat work; it does NOT merge or
+change any checklist's requirements. Each checklist still closes only when ALL of its own lines pass. Item 44 needs iOS AND
+Android; item 48 also needs the business website in a real browser (its check 11), which item 55 does not cover.
+
+| Item 55 check | Same observation in item 44 | Same observation in item 48 | Other |
+|---|---|---|---|
+| 1 Request sent | - | - | Offer experience section 1, bullets 1-2 |
+| 2 Signal received | - | #1 (arrives with rings), #2 (rings centred, < 0.5 s), #5 (buttons live at once), #6 (several at once) | - |
+| 3 Happening near you | - | - | - |
+| 4 Right Now mark | - | - | - |
+| 5 Pin to sheet | #1 (starts at the pin), #2 (lands on the edge), #4 (taps work at once), #8 (Android status bar) | - | - |
+| 6 Reduce Motion | #9 | #9 | Offer experience section 1 ★ |
+| 7 Signature untouched | - | - | Offer experience section 4, bullets 1-3 (needs Anthropic credit) |
+| 8 Light and dark | #11 | #10 | - |
+| 9 Performance | #12 (mid-range Android) | - | - |
+
+Lines in items 44 and 48 that item 55 never covers (they still need their own observation): item 44 #3, #5, #6, #7, #10; item 48
+#3, #4, #7, #8, #11, #12.
+
+If only one phone is available first, record its column now and leave the other platform PENDING.

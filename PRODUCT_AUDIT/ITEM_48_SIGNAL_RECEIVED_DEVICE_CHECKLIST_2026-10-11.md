@@ -32,3 +32,6 @@ CLAUDE_HISTORY.md item 48).
 Coverage: `src/utils/opportunityArrival.test.js` (11: once only, real answerable demand only, cap and order, moment-1 registration,
 same rings, budget, never delays, calm tone, live INSERT wiring); journey `offer` step "item 48" runs the very row
 `get_business_opportunities` returned. Uncovered: realtime delivery and the look (device / browser).
+
+Overlap (2026-10-12): some lines here are the same observation as checks in `ITEM_55_NEARBY_PULSE_DEVICE_CHECKLIST_2026-10-12.md`
+(see its overlap map). Record the shared result here too. This list's requirements are unchanged; it closes only when all its own lines pass.

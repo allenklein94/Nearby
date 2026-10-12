@@ -14,6 +14,15 @@ Also still open for item 32: native-speaker review of `ui.requestDetail.plan.tit
 - To test a logo that fails to load: a screened logo URL that is unreachable (e.g. device offline after the list loads).
 - Run each section in light AND dark appearance. Run section 3 once with Reduce Motion on.
 
+## Recording rules (2026-10-12)
+
+- Fill sections 1-3 once per device, with one Record row per run. Keep iOS and Android results separate: write the device in each
+  Notes cell, or copy the tables per device. A platform that hasn't been tested stays PENDING.
+- A failure is recorded as seen. Locked behavior is never changed to work around it (owner, 2026-10-12).
+- Needs Anthropic credit: a business offer must pass screening to reach the customer. Do not bypass screening to run this list.
+- Overlap: accepting an offer here is the same observation as `OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` section 6
+  (bullets 1-2). Record it against both.
+
 ## Record (one row per run)
 
 | Date | Device | OS + version | Appearance | Reduce Motion | Build | Tester |

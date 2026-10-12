@@ -116,6 +116,12 @@ AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 2
 `PRODUCT_AUDIT/ITEM_55_NEARBY_PULSE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND a real Android phone (no new strings, no migration). Owner (2026-10-12): scope closed at the five moments;
 record device failures in the checklist without changing locked behavior to work around them.
 
+**Item 28 (friend joins, LOCKED) is NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_28_FRIEND_JOINS_DEVICE_CHECKLIST_2026-10-12.md` is recorded on two real phones (written 2026-10-12; no new strings).
+
+**Device session order (owner, 2026-10-12):** item 55 first (its overlap map records shared results against items 44/48), then items 28
+and 32, then the offer experience once Anthropic credit exists (never bypass screening). One phone first is fine: other platform stays PENDING.
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 

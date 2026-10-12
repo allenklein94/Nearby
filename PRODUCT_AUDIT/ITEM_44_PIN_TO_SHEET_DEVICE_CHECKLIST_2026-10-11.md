@@ -33,3 +33,6 @@ Known unknowns: the pin head is assumed 18 px above the coordinate (`PIN_HEAD_LI
 spot asynchronously, and if it takes longer than 120 ms the sheet just rises without the outline (check 1 would show this as
 "no outline"). No journey covers this: it changes no data or flow (same sheet, same row, same actions); the motion is guarded by
 `motion/pinToSheet.test.js` (12 tests) and the item-17 sheet tests.
+
+Overlap (2026-10-12): some lines here are the same observation as checks in `ITEM_55_NEARBY_PULSE_DEVICE_CHECKLIST_2026-10-12.md`
+(see its overlap map). Record the shared result here too. This list's requirements are unchanged; it closes only when all its own lines pass.
