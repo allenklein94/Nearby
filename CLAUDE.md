@@ -441,7 +441,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   exception; never decoration alone. Every `SEQUENCES` entry and every file animating on a raw tier token declares its meaning
   (`MOTION_MEANINGS`, `SEQUENCE_MEANINGS`, `DIRECT_TIER_MEANINGS` in `constants/motionLanguage.js`), a label only when accurate. The ONE
   exception: the occasion tile celebrations (kept as is, nothing added). The empty-state invitation's entrance is retired (settled
-  at once). Guard `motion/motionMeaning.test.js`.
+  at once). Raw-tier files may instead be a reviewed RENDERING transition (empty/error fades) or GESTURE (swipe-dismiss settle-back =
+  cancelled, nothing removed); never a catch-all. Guard `motion/motionMeaning.test.js`: passing it is NOT proof all motion has meaning
+  (it can't see spring/default-duration/untokened motion or judge label accuracy).
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

@@ -1,12 +1,15 @@
 // Owner item 58 (2026-10-12, LOCKED): animation must explain something -- a real change, a meaningful connection, or a narrowly
 // documented exception. This guard makes "what does this explain?" a required answer: every timing sequence and every file that
-// animates on a raw tier token declares a meaning from the approved vocabulary, or names an approved exception. It changes no
-// animation. Limits (reported): an animation with no budget token at all (e.g. Animated.spring, or Animated.timing with no
-// duration) is not seen here; consistencyAudit.test.js still bans literal durations outside src/motion. Whether a label is
-// ACCURATE is a review judgement, recorded beside each entry in constants/motionLanguage.js.
+// animates on a raw tier token declares a meaning from the approved vocabulary, an approved exception, or (raw-tier files only)
+// a reviewed rendering transition or gesture. It changes no animation.
+// PASSING THIS TEST IS NOT PROOF THAT ALL MOTION HAS MEANING. It cannot see an animation with no budget token at all
+// (Animated.spring, Animated.decay, Animated.timing with no duration, LayoutAnimation inside src/motion, CSS on the web);
+// consistencyAudit.test.js only bans literal durations outside src/motion. And it cannot judge whether a label is semantically
+// ACCURATE: that is a review judgement, recorded beside each entry in constants/motionLanguage.js.
 const fs = require('fs');
 const path = require('path');
-const { MOTION_MEANINGS, MOTION_EXCEPTIONS, SEQUENCE_MEANINGS, DIRECT_TIER_MEANINGS } = require('../constants/motionLanguage');
+const { MOTION_MEANINGS, MOTION_EXCEPTIONS, SEQUENCE_MEANINGS, DIRECT_TIER_MEANINGS, RENDERING_TRANSITIONS, GESTURE_MOTIONS } = require('../constants/motionLanguage');
+const { PROGRESS_STEPS } = require('../utils/offerProgress');
 const { SEQUENCES, MOTION_BUDGET, SIGNATURE_MOMENT } = require('./motionBudget');
 
 const SRC = path.join(__dirname, '..');
@@ -20,7 +23,11 @@ function walk(dir, out = []) {
   }
   return out;
 }
-const validMeaning = (m) => Array.isArray(m) && m.length > 0 && m.every((x) => MOTION_MEANINGS.includes(x));
+const validMeaning = (m) => (Array.isArray(m) && m.length > 0 && m.every((x) => MOTION_MEANINGS.includes(x)))
+  || (!!m && !!m.steps && Object.keys(m.steps).length > 0 && Object.values(m.steps).every((x) => MOTION_MEANINGS.includes(x)));
+const validDirect = (m) => validMeaning(m)
+  || (!!m && RENDERING_TRANSITIONS.includes(m.rendering) && typeof m.purpose === 'string' && m.purpose.length > 20)
+  || (!!m && GESTURE_MOTIONS.includes(m.gesture) && typeof m.semantics === 'string' && m.semantics.length > 20);
 
 test('every timing sequence declares a meaning or an approved exception, and no entry is stale', () => {
   expect(Object.keys(SEQUENCE_MEANINGS).sort()).toEqual([...sequenceKeys].sort());
@@ -34,7 +41,7 @@ test('every file animating on a raw tier token is registered with a meaning', ()
   const users = walk(SRC).filter((f) => f !== 'motion/motionBudget.js'
     && /MOTION_BUDGET\.(tiny|small|medium|special|signature)\.ms/.test(fs.readFileSync(path.join(SRC, f), 'utf8')));
   expect(Object.keys(DIRECT_TIER_MEANINGS).sort()).toEqual(users.sort());
-  for (const [f, m] of Object.entries(DIRECT_TIER_MEANINGS)) expect([f, validMeaning(m)]).toEqual([f, true]);
+  for (const [f, m] of Object.entries(DIRECT_TIER_MEANINGS)) expect([f, validDirect(m)]).toEqual([f, true]);
 });
 
 test('the only exception is the occasion celebration, exactly its three sequences, kept as they are', () => {
@@ -57,4 +64,22 @@ test('the signature and the retired invitation', () => {
   expect(SEQUENCE_MEANINGS[SIGNATURE_MOMENT]).toEqual(['new']);
   expect(SEQUENCE_MEANINGS.bookedExit).toEqual(['removed']);
   expect(SEQUENCE_MEANINGS.emptyInvitation).toBeUndefined();
+});
+
+test('business progress: Accepted = accepted, Redeemed = completed, one label per animated step (Offer sent never animates)', () => {
+  expect(SEQUENCE_MEANINGS.offerProgress).toEqual({ steps: { accepted: 'accepted', redeemed: 'completed' } });
+  expect(Object.keys(SEQUENCE_MEANINGS.offerProgress.steps)).toEqual(PROGRESS_STEPS.filter((st) => st !== 'sent'));
+});
+
+test('rendering transitions and gestures are reviewed one by one, never a catch-all', () => {
+  expect(RENDERING_TRANSITIONS).toEqual(['error_state_fade', 'empty_state_fade']);
+  expect(GESTURE_MOTIONS).toEqual(['swipe_dismiss']);
+  const rendering = Object.entries(DIRECT_TIER_MEANINGS).filter(([, m]) => m && m.rendering).map(([f]) => f).sort();
+  const gesture = Object.entries(DIRECT_TIER_MEANINGS).filter(([, m]) => m && m.gesture).map(([f]) => f);
+  expect(rendering).toEqual(['components/FadeInState.js', 'components/LoadErrorState.js']);
+  expect(gesture).toEqual(['motion/swipeDismiss.js']);
+  // a reviewed rendering transition or gesture is never mislabelled as a change, and never used for a named sequence
+  for (const f of [...rendering, ...gesture]) expect(Array.isArray(DIRECT_TIER_MEANINGS[f])).toBe(false);
+  for (const m of Object.values(SEQUENCE_MEANINGS)) expect(!!(m && (m.rendering || m.gesture))).toBe(false);
+  expect(DIRECT_TIER_MEANINGS['motion/swipeDismiss.js'].semantics).toMatch(/nothing was removed/);
 });

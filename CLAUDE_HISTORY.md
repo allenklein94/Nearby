@@ -1,3 +1,17 @@
+# Item 58 refinement (2026-10-12) - semantic accuracy of the meaning labels
+
+Owner: approved surprise reveal = 'changed' and business progress = accepted/completed (per step); revised two labels.
+(1) The plain empty-state and load-error fades are no longer labelled 'changed': they are reviewed RENDERING transitions
+(`RENDERING_TRANSITIONS`: empty_state_fade, error_state_fade), each with its examined purpose (fade in instead of snapping into
+place after a load; marks no change). Behavior unchanged, not retired. (2) swipeDismiss is no longer 'removed': it is a GESTURE
+(`GESTURE_MOTIONS`: swipe_dismiss); its only tier-token animation is the cancelled swipe settling back (restored, nothing removed);
+a completed dismiss runs onDismiss at once and animates nothing there. The swipe cards stay 'removed' (verified: forceSwipe flies
+the card off the deck). offerProgress is now per step `{ steps: { accepted: 'accepted', redeemed: 'completed' } }`, checked against
+`PROGRESS_STEPS` (Offer sent never animates; Redeemed lights only at status completed, utils/offerProgress.js).
+Guard: rendering/gesture lists frozen and file-exact, never usable for a named sequence, never an array meaning; the guard header
+now states plainly that passing is NOT proof all motion has meaning (blind to spring/decay/default-duration/untokened motion, web
+CSS, and label accuracy). No animation changed. Jest 433 suites / 5816 passed.
+
 # Item 58 (2026-10-12) - animation must explain something - BUILT (registry + guard + one retirement), NOT DEVICE-VERIFIED
 
 Owner rule (LOCKED): animation explains a real change, a meaningful connection, or a narrowly documented exception; decoration

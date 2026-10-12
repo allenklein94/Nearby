@@ -136,7 +136,8 @@ export const SEQUENCE_MEANINGS = Object.freeze({
   booked: ['confirmed'],
   offerAccepted: ['accepted'],
   bookedExit: ['removed'],
-  offerProgress: ['accepted', 'completed'], // the business sees Accepted, then Redeemed
+  // per step: only a real move forward plays (utils/offerProgress.js offersToAnimate); 'sent' never animates
+  offerProgress: { steps: { accepted: 'accepted', redeemed: 'completed' } }, // Accepted = offer accepted; Redeemed = status completed
   requestPulse: ['connected'],
   visitConfirmed: ['completed'],
   responding: ['working'],
@@ -160,18 +161,24 @@ export const SEQUENCE_MEANINGS = Object.freeze({
   pinToSheet: ['connected'],
   friendsPlanning: ['new'],
 });
-// Files that animate on a raw tier token instead of a named sequence (functional Level 1/2 motion).
+// Files that animate on a raw tier token instead of a named sequence. Each is ONE of: a meaning (a real change, from the
+// vocabulary), a reviewed RENDERING transition (routine appearance after loading; not claimed as a change), or part of a GESTURE
+// (motion that follows the person's finger). Rendering and gesture entries are reviewed one by one (owner, 2026-10-12): never a
+// catch-all, behavior unchanged, not retired without examining their purpose.
 export const DIRECT_TIER_MEANINGS = Object.freeze({
-  'screens/DiscoveryScreen.js': ['changed'], // the Undo toast after your own action
-  'motion/swipeDismiss.js': ['removed'], // swipe-to-dismiss (a cancelled swipe settles back)
+  'screens/DiscoveryScreen.js': ['changed'], // the Undo toast: your own action just took effect and can be undone
+  'motion/swipeDismiss.js': { gesture: 'swipe_dismiss', semantics: 'cancelled swipe: the item settles back to its place (restored); nothing was removed. A completed dismiss runs onDismiss at once and animates nothing here.' },
   'screens/ViewProfileScreen.js': ['connected'], // "just connected" toast
   'motion/SuccessToast.js': ['confirmed'],
   'components/OfferArrivalSignal.js': ['new'], // the arrival pill
   'components/AnimatedMessageBubble.js': ['new'], // a message arrived
-  'components/FriendDiscoverySwipeCards.js': ['removed'], // the card leaves after your swipe
+  'components/FriendDiscoverySwipeCards.js': ['removed'], // the card flies off the deck after your swipe (forceSwipe)
   'components/SwipeableDiscoveryCards.js': ['removed'],
-  'components/CelebrationHeaderIcon.js': ['changed'], // plays only when its changeKey really changes
+  'components/CelebrationHeaderIcon.js': ['changed'], // plays only when its changeKey really changes, never on mount
   'components/GatheringPublishedPanel.js': ['new'], // the gathering was published
-  'components/LoadErrorState.js': ['changed'], // the load finished in an error
-  'components/FadeInState.js': ['changed'], // the load finished with nothing (plain fade; the invitation sequence is retired)
+  'components/LoadErrorState.js': { rendering: 'error_state_fade', purpose: 'the shared "couldn\'t load, try again" state fades in instead of snapping into place; it marks no change beyond the load having ended. Kept as is.' },
+  'components/FadeInState.js': { rendering: 'empty_state_fade', purpose: 'the plain (non-opportunity) empty state fades in instead of snapping into place after a load. Kept as is; its invitation entrance is retired.' },
 });
+// The reviewed lists, kept exact by the guard: adding to either is a review decision, not a default.
+export const RENDERING_TRANSITIONS = Object.freeze(['error_state_fade', 'empty_state_fade']);
+export const GESTURE_MOTIONS = Object.freeze(['swipe_dismiss']);
