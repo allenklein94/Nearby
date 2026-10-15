@@ -1,7 +1,14 @@
 # Item 102 (owner, 2026-10-15) - offer lifecycle end to end + "the biggest animation is the rarest" - MET AS BUILT, NOTHING BUILT
 
-- Proposal: Business provides -> offer becomes a reservation -> you go -> experience completes -> Nearby learns; the biggest
-  animation should be the rarest.
+- Proposal (owner's ultimate vision): Nearby should feel like a living local network that responds to what you're trying to
+  do, not an app with a lot of animations: you ask -> signal goes out -> something nearby responds -> signal comes back -> friends
+  join -> the plan forms -> the business provides -> the offer becomes a reservation -> you go -> the experience completes ->
+  Nearby learns from what actually happened. Invest in that motion system only once the product mechanics are completely stable.
+  The biggest animation should be the rarest (like progressive disclosure: the right amount at the right moment).
+- First half already built: you ask = ask understood (item 45); signal goes out = request sent via the Nearby Pulse (item 55);
+  something responds = signal received (item 48); signal comes back = business responds, the one signature (items 23/25/57);
+  friends join = item 28 + item 73 (first full, rest small); the plan forms = formation on publish (item 43) + plan comes together.
+- Stability first matches the owner's device-session order: verify on real phones before any further motion investment.
 - Owner decision: keep the current implementation; the lifecycle is coherent and the signature is already appropriately rare.
   Business provides = offer assembles (item 21); reservation = booked in place (item 12), merges into Your Plan (item 32); you go =
   no motion, only the real countdown (item 47) + how-to-redeem instructions; completes = Completed (item 34), visit confirmed
