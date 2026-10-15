@@ -1,3 +1,15 @@
+# Item 113 (owner, 2026-10-15) - "Something for you" discovery animation - MET BY ITEM 26, ADDITIONS DECLINED (LOCKED), NOTHING BUILT
+
+- Number note: reuses "item 113" (the 2026-09-27 temporary-intent rule and the older "Nearby Motion System" item are different).
+- Proposal: "Found something you might like" + the card gently enters while browsing; no notification, no interruption.
+- Owner decision: met by item 26 (now drawn through item 55's Nearby Pulse): one ring from the Home Nearby Right Now / Discover
+  Happening Now heading only when the section shows a gathering not yet shown this session (`utils/happeningSeen.js`). Quiet, no push.
+- DECLINED (LOCKED): card entrance animation (cards/lists static; items 15, 58, 79, 99); live insertion of rows while browsing
+  (surfaces load on focus; scroll position and exact Back restoration preserved); a "Found something you might like" string
+  (item 61's "You might like this" stays); any notification.
+- Device acceptance: check 3 of `PRODUCT_AUDIT/ITEM_55_NEARBY_PULSE_DEVICE_CHECKLIST_2026-10-12.md` (item 26's ring). No new check.
+- No code changes.
+
 # Item 112 (owner, 2026-10-15) - Best Pick shows why - MET AS BUILT, ADDITIONS DECLINED (LOCKED), NOTHING BUILT
 
 - Number note: this reuses "item 112" (the 2026-09-27 locked rule "never re-ask what Nearby knows" is a different, older item 112).
