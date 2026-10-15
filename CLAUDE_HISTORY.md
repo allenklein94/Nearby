@@ -1,3 +1,12 @@
+# Item 91 (owner, 2026-10-15) - "Nearby Match" animation - MET BY ITEMS 25 + 32, NOTHING BUILT
+
+- Proposal: a "MATCH" moment when consumer intent and a business align; reserve "match" for genuine two-sided alignment.
+- Owner decision (option a): MET by item 25 (business responds = the one signature) and item 32 (accept = booking, merge into
+  Your Plan, "You're booked"). No new animation (would be a second signature, item 57, or duplicate item 32's merge). "Match" stays
+  with the mutual People match; no business-transaction use of the word. Existing strings unchanged ("A strong match for you",
+  "Matches how you like to hang out", "Matches {name}'s taste" / "Matches their taste", "{score}% Match"); items 37/38 stay locked;
+  no copy change or localization review initiated.
+
 # Item 89 (owner, 2026-10-15) - "business picks up your signal": signal path continuity - IMPLEMENTED IN CODE, E2E VERIFICATION PENDING, NOTHING BUILT
 
 - Proposal: consumer "Coffee tonight" -> business "New nearby request, 4 people are looking for coffee tonight" -> business
