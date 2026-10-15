@@ -1,3 +1,17 @@
+# Item 88 (owner, 2026-10-15) - one understood ask carried across destinations - MOSTLY MET, NOTHING BUILT
+
+- Item 88 (what you said travels with you from the ask to wherever it leads) MOSTLY MET by the existing ONE interpretation:
+  Home/Discover item 45 understood chips (incl. today's People count + remove-only ✕), Create item 82/85 "From what you said"
+  card, AskBusiness item 84 (same card, every missing field marked before Send), People item 86 + follow-up (same chips for an
+  eligible people ask). One source, no second interpretation that could drift. "Mostly" = the cross-screen traveling animation
+  is absent BY DECISION, not a defect.
+- Owner decisions (LOCKED): (1) items 45, 82/85, 84, 86 and the 2026-10-15 chip changes are the implementation of item 88;
+  (2) NO cross-screen traveling animation (item 82's no-cross-screen-transition/navigation-never-waits lock, item 55's
+  restriction, item 58's meaning rule); (3) People is NOT a destination for activity-only asks (only eligible people intent,
+  item 86; stranger-discovery privacy stands); (4) continuity is verified on a phone through the existing checklists of items
+  82, 84, 86 and `UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md`. No implementation, animation, navigation change or
+  reopening authorized. (Not the older owner item 88 of 2026-09-26, dietary attributes.)
+
 # Understood chips: People count + remove only (owner, 2026-10-15; reopens item 45 narrowly) - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 - Asked: (1) a People chip only when the words stated a number (item 84's `statedPartySize`, never a date's assumed 2), label =
