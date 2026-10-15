@@ -1,3 +1,18 @@
+# Item 104 (owner, 2026-10-15) - "Who is this for?" animation - MET BY recommendationContext.js, ANIMATION DECLINED (LOCKED), NOTHING BUILT
+
+- Proposal: when a recommendation opens, visually connect its reason to the card ("coffee" in "Because you like coffee", a
+  friend's avatar for "Claude is interested", the location marker for "0.6 mi away") instead of a paragraph of reasoning.
+- Owner decision: met by `recommendationContext.js` as built: max 2 strongest genuine reasons, then the one "distance · when" line
+  and accepted-friend social proof; "Because you like X" only for a declared interest.
+- Privacy: another person's private Interested is never shown or counted ("X is interested" is never possible); social proof stays
+  accepted friends who are actually attending.
+- DECLINED (LOCKED): connecting lines, card-opening animations, repeated recommendation animations; a reason is a static fact, not a
+  real state change (item 58; cards static; items 102/103).
+- Item 37's rare typed-ask strong-match moment is preserved unchanged.
+- Device follow-up: reason wording clarity on a phone, added as check C9 of `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md`;
+  any problem is a copy/legibility issue, never a motion request.
+- No code changes.
+
 # Item 103 (owner, 2026-10-15) - the "Nearby Orbit" - MET BY EXISTING MOTION, ORBIT DECLINED (LOCKED), NOTHING BUILT
 
 - Proposal: animate relationships between things, not UI elements: small signals (you, friends, location, business) orbit a

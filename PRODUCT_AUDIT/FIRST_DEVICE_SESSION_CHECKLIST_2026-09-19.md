@@ -35,6 +35,7 @@ has a phone and a browser. **Stop-and-fix any failure before moving on; each ste
 6. "Make it a night" suggestion on Home for a tonight/weekend date ask (needs real inventory in >= 2 components; may legitimately not appear).
 7. Settings: goals edit, interest groups, "Clear my activity history".
 8. Share cards (view-shot) and calendar export.
+9. **Recommendation reasons (item 104, 2026-10-15)**: on Home, Picked For You and Discover cards, the reasons (max 2) + the "distance · when" line + friend social proof read clearly at a glance and aren't truncated. Record any problem as copy/legibility, never as a motion request.
 
 ## D. Needs both surfaces (state-machine parity)
 Consumer request -> business opportunity appears on web -> Accept/Offer on web -> consumer sees offer on phone -> accept -> reservation on both -> cancel from either side (reason sheet is optional) -> both show the same status.
