@@ -1,3 +1,15 @@
+# Item 98 (owner, 2026-10-15) - one object, evolving through states - MET BY EXISTING PRINCIPLES, NOTHING BUILT, NO NEW RULE
+
+- Proposal: animation as the visual counterpart of "one object, multiple states": the same thing evolving instead of a new screen /
+  card / record.
+- Owner decision: met by existing principles: master principle 2 (one source of truth per object; `objectState.js`,
+  `objectLifecycle.js`, `primaryAction.js`); "states, not folders"; item 45's screen reduction (same job = same screen, change content
+  in place first); the approved in-place transformations (items 12, 32, 30, 31, 34; lifecycles confirmed by items 95-97); item 58 +
+  the motion-truth rule (motion only for a final, confirmed change).
+- Boundary (LOCKED): item 98 authorizes no additional motion; item 55's rule stands (never a reason to animate more); no animation for
+  pending, recommended or otherwise unchanged states. Formalizes an existing principle; reopens nothing.
+- Nothing built; no new rule added to CLAUDE.md conventions.
+
 # Item 97 (owner, 2026-10-15) - gathering/event card lifecycle - MET BY ITEMS 30/31/34, NOTHING BUILT, NOT DEVICE-VERIFIED
 
 - Proposal: recommended event -> Interested -> Attending -> Completed as one entity whose state changes and the UI follows.
