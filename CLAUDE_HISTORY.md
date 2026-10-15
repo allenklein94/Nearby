@@ -18,6 +18,9 @@
   opportunityArrival's rise = Reveal while its rings (requestPulse) = Pulse; booked (GroupPlan reservation) = Complete;
   bookedExit = Transform (removal); strongMatch / hostJoin = Reveal; the occasion sequences = Transform (tile selected).
 - Verified: jest 444 suites, 5969 tests pass. No animation, timing or component changed; nothing to device-check.
+- Owner APPROVED as built (same day, LOCKED): placements unchanged (incl. the judgement calls above; item 48 rise = Reveal, rings =
+  Pulse); the guard keeps every constraint; `occasionParticles` stays the sole particle exception; the signature stays only a
+  business response, outside Pulse; no component may read the map or use it to standardize animations. Item closed.
 
 # Item 99 (owner, 2026-10-15) - motion restraint ("where I'd draw the line") - MET BY EXISTING RULES, NOTHING BUILT, NO NEW RULE
 
