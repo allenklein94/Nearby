@@ -1,3 +1,18 @@
+# Item 92 (owner, 2026-10-15) - three-way plan (two people + one business) - PARTLY MET, NOTHING BUILT
+
+- Proposal: Allen wants coffee + Claude wants coffee + Coastal Coffee can take 2 -> "Perfect plan" with all three.
+- MET (existing, accepted as is): (1) invite-based coordination: one person invites a friend into the request/plan
+  (`invite_to_business_request`, plan organizers), the business replies for the party of 2, acceptance = booking into ONE plan
+  (Your Plan, plan chat); (2) item 40: accepted friends, both opted into item 39, same DECLARED interest -> Home "You + {Name} might
+  like this"; (3) recommendations use declared interests, never temporary typed asks.
+- DECLINED (not unfinished work; never to build): automatically pairing two people because they independently typed the same ask
+  (strangers or friends); sharing one person's private temporary ask with another; showing "Interested" to another person;
+  "perfect plan" or any "perfect" wording.
+- Governing rules: People surfaces show connected people only (strangers = aggregate counts); typed asks are private, never stored
+  as preferences, expire with their window; Nearby never infers mutual intent from coincidental searches.
+- "Partly met" = the permitted parts exist and need no more development; the declined parts are out of scope, not open tasks; no
+  new work or reopening of privacy decisions authorized.
+
 # Item 90 (owner, 2026-10-15) - the hero animation = a real request answered by a real nearby business - MET BY ITEMS 25 + 57, NOTHING BUILT
 
 - Proposal: Nearby's hero animation is not the app opening, a spinning logo or onboarding, but a real consumer request answered by
