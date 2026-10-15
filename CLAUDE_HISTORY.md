@@ -1,3 +1,19 @@
+# Item 103 (owner, 2026-10-15) - the "Nearby Orbit" - MET BY EXISTING MOTION, ORBIT DECLINED (LOCKED), NOTHING BUILT
+
+- Proposal: animate relationships between things, not UI elements: small signals (you, friends, location, business) orbit a
+  gathering card and connect as things happen (join -> avatar moves into the orbit; business responds -> business signal enters;
+  location confirmed -> pin locks in); the gathering becomes a living object.
+- Owner decision: met by existing motion: items 28/73 (attendee joins into Who's going's cluster; first full, rest small), item 43
+  (formation on publish: what/when/who/where), item 32 (own accept: four plan lines on `PlanJoinRail`, logo into the place line),
+  items 34 and 95-98 (in-place state changes).
+- DECLINED (LOCKED): continuously moving gathering cards, an attendee-face orbit, premature business-logo animation (cards stay
+  static; items 97/99).
+- Privacy preserved: discovery cards show strangers attendee counts only; names and faces only to friends and fellow attendees.
+- Item 32 preserved: the business logo enters the plan only after acceptance (no bias between offers).
+- DEFERRED: any visual unification of item 28's join with item 32's plan assembly waits until both are validated on real phones
+  (consistent with item 102).
+- No implementation changes; nothing to device-check beyond items 28/32/43/34's own checklists.
+
 # Item 102 (owner, 2026-10-15) - offer lifecycle end to end + "the biggest animation is the rarest" - MET AS BUILT, NOTHING BUILT
 
 - Proposal (owner's ultimate vision): Nearby should feel like a living local network that responds to what you're trying to
