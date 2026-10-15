@@ -43,6 +43,8 @@ import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows
 import { perkRedemptionState, redemptionsByOffer } from '../utils/perkRedemptionState';
 import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
 import { resultRowView, recommendationContext, contextItem } from '../utils/recommendationContext';
+import useMinuteClock from '../hooks/useMinuteClock';
+import { relativeWindows } from '../utils/minuteClock';
 import { gatheringCardModel } from '../utils/recommendationCard';
 import { openDestination } from '../services/openDestination';
 import { getSocialForecast } from '../services/homeDashboard';
@@ -1958,6 +1960,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
       ...(g.fit?.reasons ?? []),
     ].filter(Boolean);
   }
+
+  // Item 108: "Starts in 42 min" / "Happening now" / "Ends in 12 min" stay true while Discover is open (plain text, no motion).
+  useMinuteClock(relativeWindows(gatherings, searchedGatherings, intentSearch?.items));
 
   // sectionKey: the Discover section the card sits in; its own reason leads the two shown (sectionLeadReason).
   function discoverCard(g, sectionKey = null) {

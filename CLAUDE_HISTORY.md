@@ -1,3 +1,29 @@
+# Item 108 (owner, 2026-10-15) - time should visually matter - WORDING MET; BUILT: shared minute clock (data freshness, no motion)
+
+- Proposal: show "6:30 PM" prominently instead of "Happening today"; "Starts in 42 min" when soon, gently updating; no flashing,
+  no artificial urgency.
+- Already met: `whenLabel` (`utils/timeContext.js`) never says bare "Happening today" ("Today · 6:30 PM", "Tonight · 8 PM",
+  "Starts in 42 min" within the hour, "Happening now" up to 30 min after); cards read it through `timeWindowState`.
+- Gap found: Home, Discover and the gathering detail had no clock tick, so a relative label froze at the screen's last render
+  ("Starts in 42 min" stayed 42; "Starts in 1 min" after the start). Owner approved a narrowly scoped correctness fix.
+- Built: `utils/minuteClock.js` (pure: `relativeWindows`, `nextTickAt`, `startMinuteClock`) + `hooks/useMinuteClock.js`
+  (injects AppState). Ticks on minute boundaries only while a shown window is in its relative span (start - 60 min to end, else
+  start + 30 min, + 1 min for the plain label); before it sleeps until the span starts (capped 1 h, no tick on the cap wake);
+  nothing in or ahead of a span = no timer and no listener; paused on background/inactive, one catch-up tick on return. The
+  screens keep reading the time at render; the clock only guarantees a render. Used only by HomeScreen and DiscoverHubScreen
+  (their loaded gatherings, typed-ask/Surprise items, plans). Plain text: no fade, pulse, flash, bar or urgency styling.
+- Also covered (same engine, disclosed): a gathering with a length ("Happening now · until 8 PM" -> "Ends in N min" -> over) and
+  availability postings. A start-only gathering's card reads "Already happened" after its 30 min (the engine's existing rule;
+  `whenLabel` alone would say "Tonight · 7 PM").
+- Gathering detail: shows an absolute date/time ("Sat, Oct 17, 7:15 PM"), no relative label, so it needs no clock (none added).
+- Not covered: day rollover at midnight ("Tomorrow" -> "Today") while a screen stays open; refreshes on the next render.
+- Unchanged: item 33 distance-first context line; item 47's amber bar offer-only; no motion system change.
+- Tests: `utils/minuteClock.test.js` (11): full progression with both boundaries (18:59 "Starts in 1 min" -> 19:00 "Happening now";
+  19:30 still -> 19:31 plain), durations, sleep-until-span, background pause/resume, inactive, stop(), no subscription when nothing
+  is near, guard that only Home/Discover use it, guard that neither file touches motion. jest 445 suites, 5980 tests pass.
+- Journey: none (client render timing; journeys run DB transactions). Device check C10 added to
+  `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md`. NOT DEVICE-VERIFIED.
+
 # Item 107 (owner, 2026-10-15) - "Very close" should become spatial - MET BY THE DISTANCE-FIRST CONTEXT LINE, PIN ANIMATION DECLINED (LOCKED), NOTHING BUILT
 
 - Proposal: show "0.4 mi" instead of "Very close", perhaps with the map pin briefly connecting to the recommendation, so the person

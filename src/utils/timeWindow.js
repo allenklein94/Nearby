@@ -12,7 +12,7 @@
 import { whenLabel } from './timeContext';
 
 export const ENDING_SOON_MIN = 30;
-const JUST_STARTED_MIN = 30;
+export const JUST_STARTED_MIN = 30;
 const VERB = { event: 'Until', offer: 'Valid until', availability: 'Available until' };
 
 function toMs(v) {

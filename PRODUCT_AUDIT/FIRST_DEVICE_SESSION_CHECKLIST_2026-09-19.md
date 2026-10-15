@@ -36,6 +36,7 @@ has a phone and a browser. **Stop-and-fix any failure before moving on; each ste
 7. Settings: goals edit, interest groups, "Clear my activity history".
 8. Share cards (view-shot) and calendar export.
 9. **Recommendation reasons (item 104, 2026-10-15)**: on Home, Picked For You and Discover cards, the reasons (max 2) + the "distance · when" line + friend social proof read clearly at a glance and aren't truncated. Record any problem as copy/legibility, never as a motion request.
+10. **Live time labels (item 108, 2026-10-15)**: with a gathering starting within the hour, leave Home (then Discover) open: "Starts in N min" counts down once a minute as plain text (no fade/flash), becomes "Happening now" at the start time and the plain label after 30 min. Background the app for a few minutes, return: the label is correct at once.
 
 ## D. Needs both surfaces (state-machine parity)
 Consumer request -> business opportunity appears on web -> Accept/Offer on web -> consumer sees offer on phone -> accept -> reservation on both -> cancel from either side (reason sheet is optional) -> both show the same status.

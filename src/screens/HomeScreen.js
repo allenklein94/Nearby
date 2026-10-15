@@ -8,6 +8,8 @@ import { displayHeroWhen, displayGatheringWhen } from '../i18n/display';
 import { categoryName } from '../i18n/categoryNames';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { resultRowView, contextItem } from '../utils/recommendationContext';
+import useMinuteClock from '../hooks/useMinuteClock';
+import { relativeWindows } from '../utils/minuteClock';
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import InterestedSaved from '../motion/InterestedSaved';
 import { presentRecoverableError } from '../utils/recoverableError';
@@ -547,6 +549,15 @@ export default function HomeScreen({ navigation }) {
       attention.hero?.id, ...attention.items.filter((e) => e.kind === 'gathering').map((e) => e.gathering?.id),
     ].filter(Boolean)),
   });
+
+  // Item 108: "Starts in 42 min" / "Happening now" / "Ends in 12 min" stay true while Home is open (plain text, no motion).
+  useMinuteClock(relativeWindows(
+    homeMerge.hero, homeMerge.cards, homeRecommendations, intentResults?.items,
+    surpriseShown?.lanes?.flatMap((lane) => lane.items ?? []),
+    dashboard?.nearbyGatherings, dashboard?.happeningNow, dashboard?.trendingGatherings, dashboard?.bestPick,
+    dashboard?.plansGoing, dashboard?.plansHosting, dashboard?.plansInterested, dashboard?.friendsActivity,
+    dashboard?.indoorGatheringsToday, dashboard?.outdoorGatheringsToday,
+  ));
 
   // Shared context layer: the card's action and tap destination come from the ONE context object (gatheringCardModel ->
   // utils/recommendationContext.js); this only lays them out.
