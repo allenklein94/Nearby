@@ -1,3 +1,20 @@
+# Item 115 (owner, 2026-10-15) - Business capacity window animates outward - MET AS BUILT, ANIMATION + BROADCAST DECLINED (LOCKED), NOTHING BUILT
+
+- Number note: reuses "item 115" (older items with that number are different).
+- Proposal: business posts "20 spots available"; the availability signal expands outward; consumers see "Available nearby now"
+  (business -> network -> consumer).
+- Owner decision: met by the posted-availability confirmation (`BusinessDashboardScreen.js`, "Posted: {title}" card from
+  `post_business_availability`'s `matchedCount`): >= 5 matches = `ui.bizDash2.nearbyFoundMatchingRequests` + View Opportunities;
+  fewer = `ui.bizDash2.itsLiveNearbySendsIt`, count withheld (floor of 5). Consumer end = a reply to their own request (item 62 push,
+  item 23 travel, item 25 signature).
+- DECLINED (LOCKED): an outward ring from Post (would narrate a network broadcast; availability matches specific open requests only,
+  item 114; motion truth); a match-triggered animation, even at >= 5 (adds nothing over the card; below 5 it would leak the floor);
+  any new business motion (calm tone, items 55/57; the signature stays the consumer's business-response moment); a consumer
+  "Available nearby now" surface or availability feed (items 80/114).
+- Validation: item 89's end-to-end check in `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (real business + customer;
+  needs Anthropic credit). No new check.
+- No code changes.
+
 # Item 114 (owner, 2026-10-15) - Business "drops" - MET BY AVAILABILITY (ITEM 80), DROPS DECLINED (LOCKED), NOTHING BUILT
 
 - Number note: reuses "item 114" (the 2026-09-27 session-intent rule is a different, older item 114).
