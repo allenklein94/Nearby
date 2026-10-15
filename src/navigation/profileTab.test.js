@@ -106,7 +106,8 @@ const names = (s) => s.routes.map((r) => r.name);
 describe('every edit entry pushes Edit Profile on top', () => {
   test('Settings and Dating Preferences push EditProfile with a fresh scroll target, never a tab switch', () => {
     const settings = read('screens/SettingsScreen.js');
-    expect(settings.match(/navigation\.push\('EditProfile', \{ scrollToInterestsSection: Date\.now\(\) \}\)/g)).toHaveLength(2);
+    // one link (the Things to do panel); the Nearby Opportunities panel left with its push (item 114, 2026-10-15)
+    expect(settings.match(/navigation\.push\('EditProfile', \{ scrollToInterestsSection: Date\.now\(\) \}\)/g)).toHaveLength(1);
     expect(settings).not.toMatch(/'Profile', \{ scrollTo/);
     const dp = read('screens/DatingPreferencesScreen.js');
     expect(dp).toMatch(/navigation\.push\('EditProfile', \{ scrollToInterestsSection: Date\.now\(\) \}\)/);

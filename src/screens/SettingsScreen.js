@@ -117,7 +117,7 @@ export default function SettingsScreen({ navigation, route }) {
   // category are now an inline expand-in-place panel
   // (RecommendationCustomizePanel) right under each row's own toggle,
   // expandedRecPanel holding which one (if any) is open.
-  const [expandedRecPanel, setExpandedRecPanel] = useState(null); // null | 'things_to_do' | 'nearby_opportunities'
+  const [expandedRecPanel, setExpandedRecPanel] = useState(null); // null | 'things_to_do'
   const [myInterests, setMyInterests] = useState([]);
   // Item 95: what Nearby has learned from activity (ranking only), shown back with Forget / Add to my interests.
   const [behaviorRows, setBehaviorRows] = useState([]);
@@ -129,10 +129,6 @@ export default function SettingsScreen({ navigation, route }) {
   const [ttdDistance, setTtdDistance] = useState(15);
   const [ttdTimePref, setTtdTimePref] = useState('anytime');
   const [ttdCategories, setTtdCategories] = useState(null); // null = all of myInterests qualify
-  const [noFrequency, setNoFrequency] = useState('few_per_day');
-  const [noDistance, setNoDistance] = useState(15);
-  const [noTimePref, setNoTimePref] = useState('anytime');
-  const [noCategories, setNoCategories] = useState(null);
 
   const [changingPhone, setChangingPhone] = useState(false);
   const [newPhoneInput, setNewPhoneInput] = useState('');
@@ -254,10 +250,6 @@ export default function SettingsScreen({ navigation, route }) {
       setTtdDistance(data.notify_things_to_do_max_distance_miles === undefined ? 15 : data.notify_things_to_do_max_distance_miles);
       setTtdTimePref(data.notify_things_to_do_time_pref ?? 'anytime');
       setTtdCategories(data.notify_things_to_do_categories ?? null);
-      setNoFrequency(data.notify_nearby_opportunities_frequency ?? 'few_per_day');
-      setNoDistance(data.notify_nearby_opportunities_max_distance_miles === undefined ? 15 : data.notify_nearby_opportunities_max_distance_miles);
-      setNoTimePref(data.notify_nearby_opportunities_time_pref ?? 'anytime');
-      setNoCategories(data.notify_nearby_opportunities_categories ?? null);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setShareInterestInDemand(data.share_interest_in_demand ?? true);
@@ -784,32 +776,8 @@ export default function SettingsScreen({ navigation, route }) {
                         onPressAddInterests={() => navigation.push('EditProfile', { scrollToInterestsSection: Date.now() })}
                       />
                     )}
-                    <TouchableOpacity
-                      style={styles.customizeLink}
-                      onPress={() => setExpandedRecPanel(expandedRecPanel === 'nearby_opportunities' ? null : 'nearby_opportunities')}
-                      accessibilityLabel={t('ui.settings.customizeNearbyOpportunitiesNotificationsA11y')}
-                      accessibilityRole="button"
-                      accessibilityState={{ expanded: expandedRecPanel === 'nearby_opportunities' }}
-                    >
-                      <Text style={styles.customizeLinkText}>
-                        {expandedRecPanel === 'nearby_opportunities' ? t('ui.settings.hideNearbyOpportunitiesFrequencyCategories') : t('ui.settings.nearbyOpportunitiesFrequencyCategoriesDistance')}
-                      </Text>
-                    </TouchableOpacity>
-                    {expandedRecPanel === 'nearby_opportunities' && (
-                      <RecommendationCustomizePanel
-                        colors={colors}
-                        myInterests={myInterests}
-                        frequency={noFrequency}
-                        distance={noDistance}
-                        timePref={noTimePref}
-                        selectedCategories={noCategories}
-                        onChangeFrequency={(v) => saveRecPref('notify_nearby_opportunities_frequency', v, setNoFrequency)}
-                        onChangeDistance={(v) => saveRecPref('notify_nearby_opportunities_max_distance_miles', v, setNoDistance)}
-                        onChangeTimePref={(v) => saveRecPref('notify_nearby_opportunities_time_pref', v, setNoTimePref)}
-                        onToggleCategory={(tag) => toggleRecCategory(tag, noCategories, 'notify_nearby_opportunities_categories', setNoCategories)}
-                        onPressAddInterests={() => navigation.push('EditProfile', { scrollToInterestsSection: Date.now() })}
-                      />
-                    )}
+                    {/* Item 114 (owner, LOCKED; 2026-10-15): the "Nearby Opportunities" panel is gone with the push it tuned
+                        (a business's availability no longer notifies anyone by interest; it reaches only matching open requests). */}
                       </>
                     )}
                   </View>

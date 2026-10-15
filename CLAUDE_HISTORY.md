@@ -1,3 +1,24 @@
+# Item 114 implemented (owner, 2026-10-15) - availability never broadcasts by interest; open requests only (LIVE)
+
+- Implementation of the existing locked item 114 decision, not a new product decision (owner). Found during item 116:
+  `notify_matching_business_availability` (trigger `on_business_availability_created_notify_nearby_opportunities`, since
+  20261004) pushed "🌟 This matches you" to nearby people by declared interest whenever availability was inserted.
+- Migration `20270309_availability_no_interest_broadcast.sql` (applied live): drops the trigger and its function. Unchanged:
+  `post_business_availability`'s open-request loop (reply + `business_offer_received` push with collapse_key 'offers:<request id>'
+  through `_send_push`'s outbox, dedupe and mutes; item 62), gathering recommendation pushes and their caps. The
+  `profiles.notify_nearby_opportunities_*` columns stay (no data dropped), now unread.
+- Settings: the "Nearby Opportunities: frequency, categories, distance & time" panel is removed (it tuned only the removed push; a
+  control that controls nothing would be untrue). Its strings stay in the i18n tables, unused. `profileTab.test.js` now expects one
+  "add interests" link. Business web export regenerated (Settings is in the bundle).
+- Tests: journey `availabilityNoBroadcast` 4/4 (a nearby bystander who declared Coffee gets no push from an availability row alone
+  or from post_business_availability; the customer with the matching open request gets the reply and exactly one reply push).
+  Against the live DB before the migration it FAILED (the bystander got 2 pushes), with the migration it passes. Guard
+  `availabilityNoBroadcastGuard.test.js` (migration order: trigger/function dropped, never recreated, no later trigger on
+  business_availability that notifies; post_business_availability's only `_send_push` recipient is `v_req.requester_id`).
+  All 33 journeys 343/343; Jest 5984 passed.
+- Open: the Recommendations switch hint ("Gatherings and places nearby that fit your interests.") still says "places"; rewording is
+  11 languages, owner's call. Item 116's capacity fix untouched. From-scratch migration replay on an empty DB NOT done.
+
 # Item 116 (owner, 2026-10-15) - Availability disappearing - "N spots left" MET; BOOKING CAPACITY FIXED TO COUNT PEOPLE (LIVE); TIGHTENING DECLINED (LOCKED)
 
 - Proposal: "3 spots left" only when it is real inventory; the card visually tightens as availability changes.
