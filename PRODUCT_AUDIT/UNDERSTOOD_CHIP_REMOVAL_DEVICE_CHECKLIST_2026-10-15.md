@@ -23,6 +23,9 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
 13. VoiceOver/TalkBack: each removable chip reads "{label}, selected. Tap to clear" as a button; the loader/People chips read as
     one static label.
 14. Layout: with 4 chips + ✕ on a small phone, the row wraps cleanly (no clipping); at most 4 chips show (the existing cap).
+15. Item 87 (added 2026-10-15): Home asks "coffee outside tonight for 4 people", "grab coffee outside tonight, 4 of us" and
+    "coffee outdoors tonight with 4 friends" each show Coffee · Tonight · Outdoor · People; the count is 4, 4 and 5 (LOCKED rule:
+    total including you; "4 friends" = four companions + you). "coffee outdoors" never shows an "Outdoors" activity chip.
 
 Known limits (disclosed): the cap of 4 understood chips is unchanged, so an ask with activity + time + place + party + count
 drops the count chip; removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,

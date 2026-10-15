@@ -149,6 +149,7 @@ NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE
 
 **Understood chips: People count + remove only (owner, 2026-10-15) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md` is recorded on a real phone (migration 20270306; journey `outdoorMatch`; no new strings). Decision 3 (change/pickers) DEFERRED until a phone shows remove-only isn't enough.
+Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the setting when an activity is named; locked count rule), check 15 of that checklist.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -287,6 +288,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   restrictions, closed hours at a dated time, largest group, category group, radius, budget below minimum
   spend. Everything softer only orders (want-more, groups we take, booking mode, budget, accessibility,
   distance words). Distance words never widen beyond 50 mi; transit has no effect.
+- **Party count (item 87, LOCKED):** People = TOTAL headcount incl. the person, one rule `partySizeFromText`: "4 people / of us / party
+  of 4 / table for 4" = 4; companions add you ("with 4 friends" = 5, "me and 3 friends" = 4); chip, Create and AskBusiness agree.
 - A need = a need category AND task framing in the words; needs order availability > proximity >
   reliability > personalization. Urgency is the spontaneity scale, words only.
 - Surprise Me / "I don't know" = one model: up to 3 labeled rows each backed by a real result, never logged.

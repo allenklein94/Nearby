@@ -183,6 +183,20 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     expect(understoodPieces(finding, text)).toEqual(shown);
   });
 
+  // Item 87 (owner, 2026-10-15): "outdoors" is the setting when the words also name an activity ("coffee outdoors" = Coffee, never
+  // the Outdoors category), and a companion count is the total including the person (LOCKED: "with 4 friends" = 5 people).
+  test('item 87: "coffee outdoors right now with 4 friends" = Coffee + Now + Outdoor + 5 people, and finds the patio cafe', async () => {
+    const { understoodPieces } = require('../utils/askUnderstood');
+    const text = 'coffee outdoors right now with 4 friends';
+    const r = await runIntentSearch(text);
+    expect(r.outcome).toBe('results');
+    expect(r.classifyResult.category).toBe('Coffee');
+    expect(understoodPieces(r.classifyResult, text)).toEqual([
+      { key: 'what', category: 'Coffee' }, { key: 'when', window: 'now' }, { key: 'where', environment: 'outdoor' }, { key: 'people', count: 5 },
+    ]);
+    expect(businessRows(r).map((i) => nameOf(i.partnerId))).toEqual([PATIO]);
+  });
+
   // Owner (2026-10-15): an understood chip can be removed (remove only). Removing WHERE from the real ask re-runs the same words
   // without it: both controls come back, the outdoor reason is gone, and "outside" in the unchanged words is not read again.
   test('understood chip removal: "something outside right now" -> remove Outdoor -> all three cafes, the time kept', async () => {

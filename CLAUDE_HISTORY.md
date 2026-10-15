@@ -1,3 +1,23 @@
+# Item 87 (owner, 2026-10-15) - visible understanding: interpreted chips the person can correct - MET (resolver fix), NOT DEVICE-VERIFIED
+
+- Asked: no "✨ AI powered"; the visible evidence of understanding is the interpreted chips (Tonight, Outdoors, 4 people, Coffee),
+  correctable. Already built by item 45 + the 2026-10-15 chip changes (People count, remove-only ✕); no "AI powered" label exists in
+  the app (only a code comment in `businessOnboardingAssistant.js`). Owner kept it open until the resolver examples were fixed.
+- Found (real resolver): "coffee outdoors tonight with 4 friends" read WHAT = Outdoors, not Coffee: `tagsForPhrase` lets the
+  longest phrase win and the Outdoors tag's own name ("outdoor", 7 chars) beat "coffee"; same miss for "outdoor yoga", "hike
+  outdoors", "dinner outdoors". Fixed (taxonomy-miss process, smallest existing fix, no new category or synonym):
+  `SETTING_KEYS` in `constants/categorySynonyms.js` treats "outdoor(s)" like the generic "class": the activity only when nothing
+  else matched ("outdoors", "something outdoors", "be outdoors" stay Outdoors). Environment still read as WHERE.
+- Counting rule (owner chose Option 1, LOCKED): the People chip is the TOTAL headcount including the person, the existing
+  `partySizeFromText` rule kept unchanged: "4 people", "4 of us", "party of 4", "table for 4" = 4; "with 4 friends" = 5, "me and 3
+  friends" = 4. Create (`quickStartPartySize`) and Ask a Business (`prefillPartySize`) carry the same total. Remove-only kept.
+- Verified: new `utils/item87ChipInterpretation.test.js` (19: six count examples through chip/Create/AskBusiness, the owner's three
+  examples piece by piece, People removal stays removed and is not carried, nine outdoors/class phrase cases; 5 fail without the
+  fix); journey `outdoorMatch` +1 ("coffee outdoors right now with 4 friends" = Coffee/Now/Outdoor/5 people, patio cafe found;
+  fails without the fix). Jest 5957, journeys 323/323. No strings, screens, migration, motion or ranking-rule change.
+  Device: check 15 added to `UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md`. Unchanged/disclosed: "outdoor dining" still
+  reads Outdoors (no "dining" phrase exists; same as before).
+
 # Item 88 (owner, 2026-10-15) - one understood ask carried across destinations - MOSTLY MET, NOTHING BUILT
 
 - Item 88 (what you said travels with you from the ask to wherever it leads) MOSTLY MET by the existing ONE interpretation:

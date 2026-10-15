@@ -206,6 +206,10 @@ export function normalizedWords(text) {
 // Item 182: keys of category names that are only a FORMAT word. Once "class" and "classes" share one key, the generic
 // Classes tag must not outrank a named activity next to it ("yoga class" stays Yoga).
 const GENERIC_FORMAT_KEYS = new Set(['class']);
+// Item 87 (owner, 2026-10-15): "outdoors" is also the WHERE of an ask (the resolver reads it as the outdoor setting), so the
+// Outdoors tag's own name names the activity only when nothing else matched, exactly like "class": "coffee outdoors" = Coffee
+// (setting outdoor), "hike outdoors" = Hiking, "something outdoors" / "be outdoors" = Outdoors.
+const SETTING_KEYS = new Set(['outdoor']);
 
 const PHRASE_TO_TAGS = new Map();
 for (const { tags, phrases } of SYNONYM_GROUPS) {
@@ -278,7 +282,7 @@ export function tagsForPhrase(text) {
   let generic = null;
   for (const [phrase, tags] of map) {
     if (phrase.length < 3 || !padded.includes(` ${phrase} `)) continue;
-    if (GENERIC_FORMAT_KEYS.has(phrase)) { generic = { phrase, tags }; continue; }
+    if (GENERIC_FORMAT_KEYS.has(phrase) || SETTING_KEYS.has(phrase)) { if (!generic || SETTING_KEYS.has(phrase)) generic = { phrase, tags }; continue; }
     if (!best || phrase.length > best.phrase.length) best = { phrase, tags };
     if (tags.length && !tags.every(isDatingTag) && (!concrete || phrase.length > concrete.phrase.length)) concrete = { phrase, tags };
   }
