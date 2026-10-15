@@ -1,3 +1,19 @@
+# Item 110 (owner, 2026-10-15) - Home recommendations as "doors" - MET AS BUILT, EXPANSION + TRANSITION DECLINED (LOCKED), NOTHING BUILT
+
+- Proposal: Home presents opportunities, not a feed ("☀️ Great night for outdoor plans · See what's happening"); a tap expands
+  the card or transitions into the relevant Discover state. Home = "What should I do?", Discover = "Here's what's available."
+- Owner decision: keep the existing Home -> Discover navigation model. Weather card (item 36/192): the outdoor headline only with a
+  real upcoming outdoor gathering and a supporting forecast, indoor for rain; its CTA opens Discover gatherings with the environment
+  filter applied (`initialEnvironment: card.bias`). Surface jobs kept (Home = what should I do, Discover = what exists; max 3 picks,
+  3 plans, 3 Right Now). Doors kept: Right Now -> Happening Now (item 27), Meet People -> People mode (item 109), typed asks (item 45).
+- DECLINED (LOCKED): in-place expansion of Home sections (item 41's "See gatherings" stays the only, limited exception); screen
+  transitions (navigation immediate; Back restores Home or Discover); a decorative glyph on the headline or new weather animation
+  (item 36's wash + condition icon and item 192's wording stay).
+- Device acceptance: check C12 in `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md` (each CTA lands on the exact named
+  state; Back restores); weather card via item 36's checklist. Only a verified phone mismatch is fixed; locked navigation/motion
+  decisions are not reopened.
+- No code changes.
+
 # Item 109 (owner, 2026-10-15) - "Tonight looks great" should be explainable - MET BY ITEM 34, ADDITIONS DECLINED (LOCKED), NOTHING BUILT
 
 - Proposal: "Tonight looks like a great night to meet someone new" needs real reasons (great weather, lots of people active, strong
