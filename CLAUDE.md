@@ -142,7 +142,7 @@ experience checklist passes with a real customer + business (needs Anthropic cre
 `PRODUCT_AUDIT/ITEM_93_INTENT_VISIBILITY_DEVICE_CHECKLIST_2026-10-15.md` is recorded on two phones AND native review of the 3
 `ui.settings` strings is done (migration 20270307; journey `intentVisibility`). Visual merge declined (LOCKED).
 
-**Item 100 (2026-10-15) DONE, APPROVED as built (placements LOCKED): eight motion primitives = documentation-only `MOTION_PRIMITIVES` map + guard `motionPrimitives.test.js`;
+**Item 101 (2026-10-15) DONE: motion spec rule + `PRODUCT_AUDIT/MOTION_SPEC_TEMPLATE.md`; no code or motion changed.** **Item 100 (2026-10-15) DONE, APPROVED as built (placements LOCKED): eight motion primitives = documentation-only `MOTION_PRIMITIVES` map + guard `motionPrimitives.test.js`;
 no motion changed. Item 99 corrected: `occasionParticles` (item 58's locked exception) is the only place particles exist.**
 
 **Item 99 (2026-10-15) motion restraint met by existing rules (items 22/25/36/57/58/122, tap-to-play video, calm tone, 900 ms cap,
@@ -523,6 +523,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Motion primitives (owner item 100, documentation only):** every `SEQUENCES` entry names one of eight forms (pulse, flow, merge,
   reveal, transform, assemble, complete, ambient) in `MOTION_PRIMITIVES` (`constants/motionLanguage.js`); describes, never authorizes
   or unifies (item 56); Ambient = only `responding` + `weatherShift`. Guard `motion/motionPrimitives.test.js`.
+- **Motion spec first (owner item 101):** before building or changing any motion, its build plan or history entry answers eight
+  questions (`PRODUCT_AUDIT/MOTION_SPEC_TEMPLATE.md`): what changed, why motion helps, start state, end state, duration, immediate
+  interaction, Reduce Motion, and does it still read without the animation. Guards: `motionMeaning`, `motionPrimitives`,
+  `animationInterruptible`, `animationNeverDelays`. Prospective only; the existing sequences are not retrofitted.
 - **No screen-wide motion on offer screens (owner, 2026-10-12):** a card animates only its own state change; never `animateLayout`/
   LayoutAnimation, an animated gap-closing height, or a full-screen dim there (accept, arrival pill travel, GroupPlan booked card exit).
   Item 32's scroll, item 55's pulse, the travel's light/frame stay. Guard `motion/offerScreenWideMotion.test.js`.

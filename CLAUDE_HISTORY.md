@@ -1,3 +1,14 @@
+# Item 101 (owner, 2026-10-15) - document motion before building it - RULE + TEMPLATE, NO CODE
+
+- Proposal: before implementing a motion moment, document what changed, why motion is useful, start state, end state, duration,
+  immediate interaction, Reduce Motion (accessibility guidance: never rely on animation alone; support reduced motion).
+- Owner decision: record as item 101; a CLAUDE.md rule + `PRODUCT_AUDIT/MOTION_SPEC_TEMPLATE.md`. Eight questions (the seven + "does
+  the change still read without the animation?") answered in the build plan or history entry before any new or changed motion.
+- References the existing guards (`motionMeaning`, `motionPrimitives`, `animationInterruptible`, `animationNeverDelays`,
+  `motionPerformance`) and rules (item 58 meaning, item 20 interruptible, motion truth, Reduce Motion = settled, info opacity >= 0.6).
+- Not done, by decision: no test of pre-implementation documentation; no retrofit of the 34 existing sequences; no motion changed.
+- Verified: motion guard tests pass (no code changed).
+
 # Item 100 (owner, 2026-10-15) - the Nearby Motion System: eight primitives - DOCUMENTATION-ONLY MAP + GUARD, NO MOTION CHANGED
 
 - Proposal: Pulse, Flow, Merge, Reveal, Transform, Assemble, Complete, Ambient as the primitives that power all motion.
