@@ -1,3 +1,19 @@
+# Item 112 (owner, 2026-10-15) - Best Pick shows why - MET AS BUILT, ADDITIONS DECLINED (LOCKED), NOTHING BUILT
+
+- Number note: this reuses "item 112" (the 2026-09-27 locked rule "never re-ask what Nearby knows" is a different, older item 112).
+- Proposal: Best Pick "Best fit for tonight" with four reasons ("You like live music", "3 friends nearby", "Great weather", "0.8 mi").
+- Owner decision: met by the existing Best Pick. Selection: only a gathering that clears the real fit score
+  (`pickBestGathering` in `services/gatherings.js`, called from `services/homeDashboard.js`); none qualifies = no hero.
+  Reasons: max two real reasons on the card (item 194), distance and time on their own context line; the detail page's
+  "Why this fits you" lists every real reason (item 106). Label "Best Pick Tonight" (`ui.home.bestPickTonight`) stays.
+- DECLINED (LOCKED): more than two reasons on the card; "3 friends nearby" (not a fact Nearby has: item 39 is opt-in, accepted
+  friends, one friend yes/no; the friend reason stays "X is going" / "X is hosting"); "Great weather" unless weather really changed
+  the pick (item 193; otherwise weather speaks only on the Home weather card, item 36); "Best fit for tonight" or any new strength
+  wording without a separate product decision (item 38); any animation (item 111).
+- Device acceptance: check C9 in `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md`, extended to the Best Pick hero:
+  the two reasons and the distance/time line stay readable over the hero image (light and dark).
+- No code changes.
+
 # Item 111 (owner, 2026-10-15) - "Best Pick Tonight" tiny reveal - VERIFIED, DECLINED; CARD STAYS STATIC (LOCKED), NOTHING BUILT
 
 - Proposal: Best Pick shows "Tonight's pick" -> "Coffee + live music" -> the place name, once per user.
