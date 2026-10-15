@@ -1,3 +1,17 @@
+# Item 105 (owner, 2026-10-15) - recommendation confidence visually builds - MET BY ITEM 37, EXPANSION DECLINED (LOCKED), NOTHING BUILT
+
+- Proposal: for a genuinely strong recommendation, interests / time / distance / friends / weather appear briefly and resolve into
+  "Strong fit", teaching that Nearby isn't randomly throwing cards.
+- Owner decision: met by item 37 (`src/utils/strongMatch.js`) as built: on a genuine typed-ask top pick, activity, stated time and
+  close distance tick in sequence, then "A strong match for you".
+- Kept locked: item 38 (interests alone never qualify; Home interest cards stay "You might like this"); item 40 separate ("You +
+  {Name} might like this" is not confirmation a friend attends); item 36 (weather reorders silently, explained only on the Home
+  weather card).
+- DECLINED (LOCKED): interests/friends/weather as ticked pieces, "Strong fit" or any new strength wording ("A strong match for you"
+  stays the one reserved phrase), extending the animation to ordinary recommendation cards (frequency; items 102-104).
+- Device validation: item 37's existing checklist; a clarity problem is fixed in wording/legibility, never by expanding the animation.
+- No new motion, wording, tests or code.
+
 # Item 104 (owner, 2026-10-15) - "Who is this for?" animation - MET BY recommendationContext.js, ANIMATION DECLINED (LOCKED), NOTHING BUILT
 
 - Proposal: when a recommendation opens, visually connect its reason to the card ("coffee" in "Because you like coffee", a
