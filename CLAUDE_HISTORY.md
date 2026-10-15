@@ -1,3 +1,19 @@
+# Item 89 (owner, 2026-10-15) - "business picks up your signal": signal path continuity - IMPLEMENTED IN CODE, E2E VERIFICATION PENDING, NOTHING BUILT
+
+- Proposal: consumer "Coffee tonight" -> business "New nearby request, 4 people are looking for coffee tonight" -> business
+  responds -> consumer "Coastal Coffee picked up your request"; the signal visibly travels Consumer -> Nearby -> Business -> Consumer.
+- Accepted as the existing implementation (same ground as items 59-61, 2026-10-12): (1) request sent = RequestPulse only after the
+  server confirms delivery, with the real "sent to N" line; (2) item 48 signal received (rise + the Pulse's rings from the
+  opportunity's ✨, once per device, live on INSERT); (3) item 25 business responds = the one signature, same for every business;
+  (4) items 23 + 62: reply travels from the request line into its card, one replaced-in-place push per request in the business's
+  own words; (5) items 32 + 52: accept = booking, visit confirmed.
+- Locked exclusions: no "4 people are looking for coffee tonight" (one request = one customer with a party size; item 48's headline
+  and the privacy floor stand); no "X picked up your request" (the locked "X made you an offer"; receiving an offer is not accepting
+  it, acceptance is the booking); no new animation, copy or signal state.
+- Open: the whole chain has never run end to end on real devices. Needs a real customer + real business on phones, server-confirmed
+  delivery, business response, consumer push, offer screening (needs Anthropic credit; fails closed without it) and accept/booking:
+  `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` with items 48/62's checklists. Do not claim the chain passed until then.
+
 # Item 87 (owner, 2026-10-15) - visible understanding: interpreted chips the person can correct - MET (resolver fix), NOT DEVICE-VERIFIED
 
 - Asked: no "✨ AI powered"; the visible evidence of understanding is the interpreted chips (Tonight, Outdoors, 4 people, Coffee),

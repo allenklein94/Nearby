@@ -135,6 +135,9 @@ screen is checked on a real device AND native review of `ui.requestDetail.pickFi
 **Offer screens without screen-wide motion (owner, 2026-10-12) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/OFFER_SCREEN_WIDE_MOTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (incl. whether acceptance / the GroupPlan card exit feel jumpy: report, never add motion).
 
+**Item 89 (signal path, 2026-10-15) is IMPLEMENTED IN CODE (items 48/25/23/62/32/52), nothing built, END-TO-END NOT VERIFIED until** the offer
+experience checklist passes with a real customer + business (needs Anthropic credit); no "4 people are looking", no "picked up your request" (LOCKED).
+
 **Item 88 (2026-10-15) mostly met by items 45/82/84/86, nothing built (no cross-screen travel animation; People only for people asks; LOCKED). Items 65/67/69/70/71/77/78/81/83 recorded as met, 66/68/74 declined, 72/75/76/79/80 partly met (nothing built). Perk redemption claimed vs confirmed (owner, 2026-10-12) is BUILT, LIVE,
 NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (migration 20270305; journey `perkRedemption`; live `confirmed-visit-counts.sql` 16/16).
 
