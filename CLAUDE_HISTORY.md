@@ -1,3 +1,14 @@
+# Item 90 (owner, 2026-10-15) - the hero animation = a real request answered by a real nearby business - MET BY ITEMS 25 + 57, NOTHING BUILT
+
+- Proposal: Nearby's hero animation is not the app opening, a spinning logo or onboarding, but a real consumer request answered by
+  a real nearby business.
+- Owner decision: MET. Item 25 made "a business responds" the ONE signature moment, and item 57 locked Level 3 = exactly that one;
+  app open, the N (loading language only, item 132), onboarding, accept, redemption and plan formation never use it. It plays only
+  on a real server reply (motion-truth rule), is the same for every business (item 50), calm, <= 1.5 s, Reduce Motion = the reply
+  appears. Nothing built.
+- Open: never seen on a real phone; covered by the same end-to-end device session as item 89 (real business reply; offer screening
+  needs Anthropic credit), `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md`.
+
 # Item 91 (owner, 2026-10-15) - "Nearby Match" animation - MET BY ITEMS 25 + 32, NOTHING BUILT
 
 - Proposal: a "MATCH" moment when consumer intent and a business align; reserve "match" for genuine two-sided alignment.
