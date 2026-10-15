@@ -16,7 +16,7 @@ d('journey: propose -> invite -> accept -> budget re-asks -> confirm -> locked',
     const log = await runJourney(`
       v_a uuid := '${f.user_a}'; v_b uuid := '${f.user_b}'; v_c uuid := '${c.id}'; v_d uuid := '${dd.id}'; v_rd uuid; v_offer uuid; v_partner uuid; v_n int;
       v_ra uuid; v_rb uuid; v_p uuid; v_res jsonb; v_msg text; v_st text; v_pst text;`, `
-  update profiles set intent_visibility = 'friends_and_matches' where id in (v_a, v_b, v_d);
+  update profiles set intent_visibility = 'friends' where id in (v_a, v_b, v_d);
   insert into friendships (user_a, user_b, status, requested_by) values (v_a, v_d, 'accepted', v_a) on conflict do nothing;
   perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
   v_res := create_business_request('journey gp a', 40.0, -75.0, 'Coffee', 1, null, 40, null, null, null, 15, null); v_ra := (v_res->>'requestId')::uuid;

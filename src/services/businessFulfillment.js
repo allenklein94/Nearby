@@ -1036,13 +1036,11 @@ export async function getPartnerDeclinePatterns(partnerId, daysBack = 30) {
 // branch you asked bug (PRODUCT_AUDIT/INTENT_LAYER_UX_WALKTHROUGH_
 // 2026-08-14.md, finding 2). dateEnd defaults to dateStart server-side
 // when omitted, so a single-day caller can still pass just dateStart.
-// Each row also carries match_id (nullable) -- see
-// 20260814_business_fulfillment_tier2_weekend_range_match_id.sql,
-// product-critique follow-through recommendation 3 -- a real matches row
-// between the caller and the requester if one exists, null when the only
-// connection is a plain accepted friendship (which has no messages
-// channel behind it at all). Lets the client offer a real Message action
-// only when one is genuinely possible.
+// Previously each row also carried match_id; removed:
+// Item 93 (owner, 2026-10-15; migration 20270307): accepted friends who
+// opted in (intent_visibility = 'friends', OFF by default) only, never
+// dating matches; structured facts only (category, date, party size) --
+// no raw_text, no match_id.
 export async function getConnectedOpenBusinessRequests({ category = null, dateStart = null, dateEnd = null } = {}) {
   const { data, error } = await supabase.rpc('get_connected_open_business_requests', {
     category_param: category,
@@ -1321,9 +1319,8 @@ export async function searchPolicyOnlyBusinesses({ latitude: lat = null, longitu
 // yet, never a fabricated "usually fast!" placeholder.
 // ---- Nearby 2.0 vision, partial build (see CLAUDE.md's "Nearby 2.0
 // Vision" doc + the Aug 15 2026 "Nearby 2.0 partial build" plan) ----
-// Layer 3, "Group intent": the caller's own connected network (accepted
-// friendships union matches, same definition getConnectedOpenBusinessRequests
-// already uses), rolled up to "N people I know are independently looking
+// Layer 3, "Group intent": the caller's accepted friends who opted in
+// (item 93: never matches; same rule getConnectedOpenBusinessRequests uses), rolled up to "N people I know are independently looking
 // for the same kind of thing" -- real counts only, empty array (not a
 // fabricated zero-state) when nothing crosses the real 2+ threshold.
 export async function getMyGroupIntentSignals() {

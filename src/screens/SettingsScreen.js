@@ -100,7 +100,7 @@ export default function SettingsScreen({ navigation, route }) {
   const [shareInterestInDemand, setShareInterestInDemand] = useState(true);
   const [showSponsoredPlaces, setShowSponsoredPlaces] = useState(true);
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
-  const [intentVisibility, setIntentVisibility] = useState('friends_and_matches');
+  const [intentVisibility, setIntentVisibility] = useState('nobody');
 
   // Item 142: notification choices are groups the person turned off (profiles.notification_mutes), one switch per group,
   // grouped by area (constants/notificationPreferences.js). Applied centrally by the server's push sender.
@@ -263,7 +263,7 @@ export default function SettingsScreen({ navigation, route }) {
       setShareInterestInDemand(data.share_interest_in_demand ?? true);
       setShowSponsoredPlaces(data.show_sponsored_places ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
-      setIntentVisibility(data.intent_visibility ?? 'friends_and_matches');
+      setIntentVisibility(data.intent_visibility ?? 'nobody');
     }
   }
 
@@ -275,10 +275,10 @@ export default function SettingsScreen({ navigation, route }) {
     }
   }
 
-  // 10/10 roadmap Part 6: a plain two-option picker, no new taxonomy --
-  // narrows an already-friends/matches-only surface
-  // (get_connected_open_business_requests, Tier 2 of the intent resolver)
-  // further, never widens the locked no-stranger-discovery boundary.
+  // 10/10 roadmap Part 6: a plain two-option picker, no new taxonomy. Item 93 (owner, 2026-10-15): OFF ('nobody') unless the
+  // person chooses 'friends' here (the only place it turns on); accepted friends only, never matches; read by
+  // get_connected_open_business_requests (group-plan candidates + typed-ask Tier 2), get_my_group_intent_signals, the
+  // group-intent push and propose_group_plan, all with the same rule (migration 20270307).
   async function updateIntentVisibility(value) {
     const previous = intentVisibility;
     setIntentVisibility(value);
@@ -1026,12 +1026,12 @@ export default function SettingsScreen({ navigation, route }) {
             </Text>
             <View style={[styles.chipsWrap, { marginTop: spacing.sm }]}>
               <TouchableOpacity
-                style={[styles.chip, intentVisibility === 'friends_and_matches' && styles.chipSelected]}
-                onPress={() => updateIntentVisibility('friends_and_matches')}
+                style={[styles.chip, intentVisibility === 'friends' && styles.chipSelected]}
+                onPress={() => updateIntentVisibility('friends')}
                 accessibilityRole="button"
-                accessibilityLabel={t('ui.settings.friendsMatchesA11y')}
+                accessibilityLabel={t('ui.settings.friendsOnlyA11y')}
               >
-                <Text style={[styles.chipText, intentVisibility === 'friends_and_matches' && styles.chipTextSelected]}>{t('ui.settings.friendsMatches')}</Text>
+                <Text style={[styles.chipText, intentVisibility === 'friends' && styles.chipTextSelected]}>{t('ui.settings.friendsOnly')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.chip, intentVisibility === 'nobody' && styles.chipSelected]}

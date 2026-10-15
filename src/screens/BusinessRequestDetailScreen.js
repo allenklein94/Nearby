@@ -47,6 +47,7 @@ import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { consumerOfferAction } from '../utils/primaryAction';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
+import { sharedRequestFactsLine } from '../utils/sharedRequestFacts';
 import { getGroupPlanCandidates, proposeGroupPlan, inviteToBusinessRequest } from '../services/groupPlans';
 import { getConnectedPeopleWithInterests } from '../services/surpriseMe';
 import { recordIntentSelection } from '../services/intentOutcomes';
@@ -2078,7 +2079,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   accessibilityRole="button"
                 >
                   <Text style={styles.candidateName}>{selected ? '☑' : '☐'} {c.requester_display_name ?? t('ui.requestDetail.someoneYouKnow')}</Text>
-                  {c.raw_text ? <Text style={styles.candidateText} numberOfLines={1}>{c.raw_text}</Text> : null}
+                  {/* Item 93: structured facts only (category · day · party size), never the friend's own words. */}
+                  {sharedRequestFactsLine(c) ? <Text style={styles.candidateText} numberOfLines={1}>{sharedRequestFactsLine(c)}</Text> : null}
                 </TouchableOpacity>
               );
             })}

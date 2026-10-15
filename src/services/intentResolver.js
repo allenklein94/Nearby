@@ -19,6 +19,7 @@ import { applyAskWeather } from '../utils/askWeather';
 import { gatheringEnvironment, businessEnvironment } from '../constants/environmentMatch';
 import { categoryEnvironment } from '../constants/gatheringIndoorOutdoor';
 import { occasionLabel } from '../constants/businessAttributes';
+import { sharedRequestFactsLine } from '../utils/sharedRequestFacts';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals, getPartnerReputations } from './businessFulfillment';
 import { askKind, needAvailabilityWindow, needCaption, orderNeedResults } from '../utils/needAsk';
 import { getWhoForPreferenceSignals } from './preferencePolls';
@@ -327,13 +328,9 @@ async function resolveConnectedRequests(category, dateWindow) {
     id: r.id,
     userId: r.requester_id,
     title: r.requester_display_name ? resultTitleText('friendAlsoLooking', { name: r.requester_display_name }) : resultTitleText('aFriendAlsoLooking'),
-    subtitle: r.raw_text,
-    // Product-critique follow-through, Aug 14 2026 (recommendation 3):
-    // a plain accepted friendship has no messages/matches row behind it
-    // at all -- only a real dating match does -- so Message is only ever
-    // offered when the RPC's own match_id genuinely resolves to one, not
-    // assumed just because this is a "connected" result.
-    matchId: r.match_id ?? null,
+    // Item 93 (owner, 2026-10-15): structured facts only (category, day, party size), never the friend's own words; the RPC
+    // returns accepted friends who opted in, and no match link (dating matches never see a friend's request).
+    subtitle: sharedRequestFactsLine(r),
     // the server filtered these to the asked category when there is one
     ...scored([
       { code: 'base_own_network', delta: SCORE_OWN_NETWORK },

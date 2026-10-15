@@ -1,3 +1,20 @@
+# Item 93 (owner, 2026-10-15) - Phase D aligned with item 92 - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+- Conflict found: Phase D's live "People you know are also asking for this" (group-plan candidates on a request, the typed-ask
+  "{name} is also looking" result, the group-intent signal + push, `propose_group_plan`) showed a request's raw text to friends AND
+  dating matches, with `intent_visibility` defaulting to 'friends_and_matches' (on for everyone), against item 92's lock.
+- Owner decision (option 1, "Align Phase D to item 92"): keep the coordination, narrow it. No merge animation; visual merge declined.
+- Built (migration 20270307, applied live): `intent_visibility` default 'nobody' and EVERY existing profile reset to 'nobody' (nobody
+  silently opted in); allowed values 'friends' | 'nobody' (old value refused); all four readers (`get_connected_open_business_requests`,
+  `get_my_group_intent_signals`, `notify_group_intent_threshold`, `propose_group_plan`) use accepted friendships only + 'friends';
+  the RPC no longer returns `raw_text` or `match_id` (dropped + recreated, one overload). Client: one helper
+  `utils/sharedRequestFacts.js` (`sharedRequestFactsLine`: category · day · party size, unset facts omitted) used by the candidate rows
+  and `resolveConnectedRequests`; Settings defaults to Nobody, choices Friends / Nobody, hint rewritten in 11 languages.
+  Consent-to-merge (`respond_to_group_plan` / `confirm_group_plan`) unchanged. Home's Message button on those results no longer shows.
+- Verified: jest 443 suites pass; journeys 31/31 incl. new `intentVisibility` (default off, opted-out invisible, friend structured
+  only, match not shown/counted/proposable, invite not add, opt-out removes, old value refused). No from-scratch replay.
+- Open: `PRODUCT_AUDIT/ITEM_93_INTENT_VISIBILITY_DEVICE_CHECKLIST_2026-10-15.md` on two phones + native review of the 3 strings.
+
 # Item 92 (owner, 2026-10-15) - three-way plan (two people + one business) - PARTLY MET, NOTHING BUILT
 
 - Proposal: Allen wants coffee + Claude wants coffee + Coastal Coffee can take 2 -> "Perfect plan" with all three.
