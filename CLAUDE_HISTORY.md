@@ -22,9 +22,19 @@
   "something outside right now" -> remove Outdoor -> all three cafes, time kept). Jest 5935, journeys 322/322. Live: migration
   applied; rolled-back check 2/2 (understood_when recorded with its parent; an unknown key dropped). No from-scratch replay.
 - Residuals (disclosed): the 4-chip cap is unchanged (a 5-piece ask drops the count chip); softer ranking reads of the same words
-  (social context, title mentions, `askStatesConstraint`) are not muted, they only order. Item 107's own chips: deselecting
-  Date can still be refilled by partner words (pre-existing, untouched). Device checklist
+  (social context, title mentions, `askStatesConstraint`) are not muted, they only order. Device checklist
   `PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md`.
+- Owner review (2026-10-15): implementation approved; the item stays OPEN until all 14 device checks pass on a real phone (not
+  closed on automated tests or rolled-back DB checks); privacy and ranking rules stay locked; no change/picker controls.
+- Date chip refill fix (owner, 2026-10-15, narrow): turning item 107's Date chip off on "live music tonight with my girlfriend"
+  left the chip off but re-ran the search as a date (party_type 'date', party_size 2, date_friendly) because `resolveIntent`
+  re-read partner words. `applyRefinement` now sets `partnerWordsOff` when Date goes off (cleared or switched) or any who-for chip
+  is cleared, and drops the Date party's own `date_friendly` from the classification; Date back on removes the flag.
+  `resolveClassifiedAsk` passes it as a removed WHO, so `partnerPartyType` and `attributesFromAsk`'s partner path
+  (new `ignorePartnerWords`) are skipped; a date-friendly place asked for in words is still read. Regression tests (+3 in
+  `understoodChipRemoval.test.js`: Date off stays off through later refinements with the words and Under $25 kept, Date -> Solo,
+  Friends cleared on a partner-words ask) fail without the fix and pass with it; the five chip-removal tests are unchanged and pass.
+  No strings, AI calls, screens, migration or ranking rules changed. Jest 5938, journeys 322/322. Device checklist unchanged (14, open).
 
 # Item 86 follow-up (owner, 2026-10-12) - what Nearby understood, above People - BUILT, NOT DEVICE-VERIFIED
 

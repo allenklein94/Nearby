@@ -176,7 +176,9 @@ const ATTRIBUTE_ASKS = [
   ['outdoor_seating', /\b(?:patio|outdoor\s+seating|al\s+fresco|terrace)\b|\b(?:sit(?:ting)?|eat(?:ing)?|dine|dining|drink(?:ing)?)\s+(?:outside|outdoors)\b|\boutside\s+(?:seating|tables?)\b/i],
   ...ACCESSIBILITY_ASKS,
 ];
-export function attributesFromAsk(text, { partyType = null } = {}) {
+// `ignorePartnerWords` (owner, 2026-10-15): the person turned the who-for party off (Date chip or an understood WHO removed),
+// so couple words in the unchanged ask no longer make it date-shaped; a date-friendly place asked for in words still counts.
+export function attributesFromAsk(text, { partyType = null, ignorePartnerWords = false } = {}) {
   if (typeof text !== 'string') return partyType === 'date' ? ['date_friendly'] : [];
   const out = ATTRIBUTE_ASKS.filter(([, re]) => re.test(text)).map(([k]) => k);
   // a terrace / sitting outside in the other 10 languages (constants/environmentWords.js) is the same outdoor_seating ask
@@ -189,7 +191,7 @@ export function attributesFromAsk(text, { partyType = null } = {}) {
   for (const k of vibes.want) if (!out.includes(k)) out.push(k);
   for (const k of vibes.avoid) if (out.includes(k)) out.splice(out.indexOf(k), 1);
   // A date-shaped party (a couple word, or the extractor's own `date`) is the date-friendly quality by definition.
-  if ((partyType === 'date' || partnerPartyType(text)) && !out.includes('date_friendly')) out.push('date_friendly');
+  if ((partyType === 'date' || (!ignorePartnerWords && partnerPartyType(text))) && !out.includes('date_friendly')) out.push('date_friendly');
   return out;
 }
 

@@ -38,7 +38,15 @@ export function nextRefinementStep(classify) {
 export function applyRefinement(classify, key) {
   const c = { ...(classify ?? {}) };
   if (key === 'friends' || key === 'date' || key === 'solo') {
+    const was = c.partyType;
     c.partyType = c.partyType === key ? null : key;
+    // Owner (2026-10-15): Date turned off (cleared or switched to another chip), or any who-for chip cleared, stays off: partner
+    // words in the unchanged ask ("with my girlfriend") must not make the re-run date-shaped again. The resolver reads
+    // `partnerWordsOff` like a removed understood WHO (services/intentResolver.js); turning Date back on ends it.
+    if (c.partyType === 'date') delete c.partnerWordsOff;
+    else if (c.partyType === null || was === 'date') c.partnerWordsOff = true;
+    // the date-shaped quality the Date party carried (askFacets attributesFromAsk) goes with it; one asked for in words is re-read
+    if (was === 'date' && c.partyType !== 'date' && Array.isArray(c.attributes)) c.attributes = c.attributes.filter((a) => a !== 'date_friendly');
     return c;
   }
   if (key === 'under_25') {

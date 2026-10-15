@@ -627,7 +627,8 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
 // filter and never written anywhere.
 export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false, narrowGroup = null, removed = [] }) {
   // Owner (2026-10-15): understood chips the person removed (utils/askUnderstood.js removeUnderstoodPiece). The same words are
-  // never read again for a removed piece: WHO (the party from partner words), WHEN (time words: clock, anchor, spontaneity,
+  // never read again for a removed piece: WHO (the party and its date-friendly quality from partner words; also after the Date chip
+  // was turned off, `partnerWordsOff`), WHEN (time words: clock, anchor, spontaneity,
   // open now, the weather window), WHERE (indoor/outdoor), WHAT (the asked activity and a route's category groups). People
   // needs nothing here: a size is never re-read from the words. Ranking rules themselves are unchanged.
   const removedSet = new Set(Array.isArray(removed) ? removed : []);
@@ -656,7 +657,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const statedPartySize = partySize;
   partySize = datePartySize(rawText, { partyType, occasion, partySize });
   // Items 51/52: pet-friendly / date-friendly / quiet / patio are ATTRIBUTES the ask can name (constants/askFacets.js), unioned with the extractor's.
-  attributes = [...new Set([...(Array.isArray(attributes) ? attributes : []), ...attributesFromAsk(rawText, { partyType })])];
+  attributes = [...new Set([...(Array.isArray(attributes) ? attributes : []), ...attributesFromAsk(rawText, { partyType, ignorePartnerWords: removedSet.has('who') })])];
   // Item 80: private events and catering are asked for only in the person's own words (never inferred from a large party or an
   // occasion), and their lift is owned by the capability pass below, so they are kept out of the generic attribute overlap.
   attributes = wordsBackedAttributes(attributes, rawText).filter((a) => a !== 'private_dining' && a !== 'catering');
@@ -1184,7 +1185,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
 export async function resolveClassifiedAsk(classifyResult, typedText) {
   const { items: resolved, experience, openEndedNote, openNowOnly, audit } = await resolveIntent({
     category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
-    removed: Array.isArray(classifyResult.removedUnderstood) ? classifyResult.removedUnderstood : [],
+    removed: [...(Array.isArray(classifyResult.removedUnderstood) ? classifyResult.removedUnderstood : []), ...(classifyResult.partnerWordsOff ? ['who'] : [])],
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
     cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null, narrowGroup: classifyResult.narrowGroup ?? null,

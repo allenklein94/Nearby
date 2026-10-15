@@ -36,6 +36,7 @@ import { understoodPieces, removeUnderstoodPiece } from '../utils/askUnderstood'
 import { resolveAsk, toClassification, createParamsFromAsk } from '../utils/askResolver';
 import { askBusinessParamsFromAsk } from './askToBusiness';
 import { SEQUENCES } from '../motion/motionBudget';
+import { refinementChips } from '../utils/askRefinements';
 
 const FIXED_NOW = new Date(2026, 8, 30, 15, 0, 0); // a Wednesday, 3 PM local
 jest.useFakeTimers({ now: FIXED_NOW, doNotFake: ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'hrtime', 'performance', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback'] });
@@ -214,5 +215,54 @@ describe('boundaries', () => {
     for (const k of ['understood_what', 'understood_when', 'understood_where', 'understood_who', 'understood_people']) {
       expect(sql.match(new RegExp(`'${k}'`, 'g'))).toHaveLength(2); // the CHECK and the RPC's own validation
     }
+  });
+});
+
+// Owner (2026-10-15): the item-107 Date chip, once turned off, is not refilled by partner words in the unchanged ask.
+describe('Date refinement chip: partner words never refill it', () => {
+  const TEXT = 'live music tonight with my girlfriend';
+  const dateAsk = () => firstSearch({ ...toClassification(resolveAsk(TEXT)), intent: 'gathering', category: 'Live Music' }, TEXT);
+  const dateShaped = (p) => p.interpretation.party_type === 'date' || p.interpretation.party_size === 2 || (p.interpretation.attributes ?? []).includes('date_friendly');
+
+  it('turning Date off keeps it off through the re-run and later refinements; the words and other refinements stay', async () => {
+    let s = await dateAsk();
+    expect(refinementChips(s.classifyResult).find((c) => c.key === 'date').selected).toBe(true); // the partner words selected it
+    s = await refineTypedAsk('home', s, 'under_25');
+    supabase.rpc.mockClear();
+    classifyCreateRequest.mockClear();
+    s = await refineTypedAsk('home', s, 'date');
+    expect(s.typedText).toBe(TEXT);
+    expect(refinementChips(s.classifyResult).filter((c) => c.selected).map((c) => c.key)).toEqual(['under_25']);
+    const off = payloads()[0];
+    expect(off).toMatchObject({ refinement_key: 'date', refinement_action: 'removed' });
+    expect(dateShaped(off)).toBe(false); // without the fix: party_type 'date', party_size 2, date_friendly
+    expect(off.interpretation).toMatchObject({ category: 'Live Music', date_window: 'tonight', budget_max: 25 });
+    // a later, unrelated refinement keeps Date off
+    s = await refineTypedAsk('home', s, 'under_25');
+    expect(refinementChips(s.classifyResult).find((c) => c.key === 'date').selected).toBe(false);
+    expect(dateShaped(payloads()[1])).toBe(false);
+    expect(classifyCreateRequest).not.toHaveBeenCalled();
+    // turning Date back on is a date again
+    s = await refineTypedAsk('home', s, 'date');
+    expect(payloads()[2].interpretation).toMatchObject({ party_type: 'date' });
+    expect(s.classifyResult.partnerWordsOff).toBeUndefined();
+  });
+
+  it('switching Date to Solo leaves nothing date-shaped behind', async () => {
+    let s = await dateAsk();
+    supabase.rpc.mockClear();
+    s = await refineTypedAsk('home', s, 'solo');
+    expect(refinementChips(s.classifyResult).filter((c) => c.selected).map((c) => c.key)).toEqual(['solo']);
+    expect(payloads()[0].interpretation.party_type).toBe('solo');
+    expect(dateShaped(payloads()[0])).toBe(false);
+  });
+
+  it('a who-for chip cleared on a partner-words ask does not become a date', async () => {
+    const text = 'live music tonight with friends and my girlfriend';
+    let s = await firstSearch({ intent: 'gathering', category: 'Live Music', dateWindow: 'tonight', partyType: 'friends', attributes: [] }, text);
+    supabase.rpc.mockClear();
+    s = await refineTypedAsk('home', s, 'friends');
+    expect(refinementChips(s.classifyResult).some((c) => c.selected)).toBe(false);
+    expect(dateShaped(payloads()[0])).toBe(false);
   });
 });
