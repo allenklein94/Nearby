@@ -1,3 +1,17 @@
+# Item 106 (owner, 2026-10-15) - tappable "Why am I seeing this?" - MET BY "Why this fits you", SHEET + ANIMATION DECLINED (LOCKED), NOTHING BUILT
+
+- Proposal: a tappable "Why am I seeing this?" opening a small bottom sheet (✓ You like coffee / ✓ Happening tonight / ✓ 0.7 mi away /
+  ✓ Claude is interested), with the signals assembling.
+- Owner decision: met by the gathering detail page's "Why this fits you" (`ReasonList` in `GatheringDetailScreen.js`): every real
+  reason, uncapped; cards keep their two strongest (item 194). App-wide consistency stays `constants/recommendationSurfaces.js` and
+  its reason-source test.
+- Privacy: another person's Interested is never exposed; friend reasons stay truthful going/hosting ("Sarah is going/hosting").
+- DECLINED (LOCKED): a separate why-sheet (would duplicate the detail page; item 45 same job = same screen) and any assembly animation;
+  items 104/105 unchanged; item 37 stays the one typed-ask match animation.
+- Observations only (no requirement, pending real-device evidence): perk and community details have no full reason list; Discover's
+  Places list shows no personal reason (registry `status: 'gap'`).
+- No code changes.
+
 # Item 105 (owner, 2026-10-15) - recommendation confidence visually builds - MET BY ITEM 37, EXPANSION DECLINED (LOCKED), NOTHING BUILT
 
 - Proposal: for a genuinely strong recommendation, interests / time / distance / friends / weather appear briefly and resolve into
