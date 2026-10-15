@@ -1,3 +1,15 @@
+# Item 96 (owner, 2026-10-15) - "card transformation" - MET BY ITEMS 12/32/34/52, NOTHING BUILT, NOT DEVICE-VERIFIED
+
+- Proposal: offer card -> confirmed plan card -> upcoming plan card -> past plan card, one object transforming instead of navigating.
+- Owner decision: met by existing functionality (accepted as is): item 12 (the offer card becomes its booked state in place, "You're
+  booked" only for a confirmed reservation); item 32 (the booking merges into Your Plan with the approved assembly); confirmed = upcoming
+  (one plan object, states not folders); item 34 (an attended gathering that is over: "Confirmed -> Completed" once + "How was it?");
+  item 52 / the visit-confirmed settle (an offer plan's visit confirmed by the business; rail and logo stay on the completed plan).
+- DECLINED (LOCKED): cross-screen card transformation (item 88: no cross-screen travel); any transition into an "upcoming" state
+  (nothing changes, item 58); any duplicate animation or new card lifecycle over the existing behaviour.
+- Verification: item 12's checks in `OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md`, `ITEM_32_DEVICE_CHECKLIST_2026-10-11.md`, and
+  (for the past-plan step) items 34's and 52's own checklists. Never claim real-device verification until they pass.
+
 # Item 95 (owner, 2026-10-15) - "reservation seam": Offer -> Reservation -> Plan - MET BY ITEMS 12 + 32, NOTHING BUILT, NOT DEVICE-VERIFIED
 
 - Proposal: animate the offer -> reservation -> plan seam as three states of one continuous object.
