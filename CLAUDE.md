@@ -142,6 +142,9 @@ experience checklist passes with a real customer + business (needs Anthropic cre
 `PRODUCT_AUDIT/ITEM_93_INTENT_VISIBILITY_DEVICE_CHECKLIST_2026-10-15.md` is recorded on two phones AND native review of the 3
 `ui.settings` strings is done (migration 20270307; journey `intentVisibility`). Visual merge declined (LOCKED).
 
+**Item 97 (2026-10-15) gathering card lifecycle met by items 30/31/34 + the one viewer relation, nothing built; cross-screen
+transformation, requested/waitlisted moments and motion in the recommended state DECLINED (LOCKED); NOT DEVICE-VERIFIED (follows items 30/31/34).**
+
 **Item 96 (2026-10-15) card transformation met by items 12/32/34/52, nothing built; cross-screen transformation, an upcoming-state
 transition and any duplicate lifecycle DECLINED (LOCKED); NOT DEVICE-VERIFIED until those items' existing checklists pass.**
 

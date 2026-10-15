@@ -1,3 +1,16 @@
+# Item 97 (owner, 2026-10-15) - gathering/event card lifecycle - MET BY ITEMS 30/31/34, NOTHING BUILT, NOT DEVICE-VERIFIED
+
+- Proposal: recommended event -> Interested -> Attending -> Completed as one entity whose state changes and the UI follows.
+- Owner decision: met by existing functionality (events are gatherings + `format`): one card, one primary action (`primaryActionFor`
+  from the ONE viewer relation hosting > attending > requested/waitlisted > interested; never a card per state); item 30 (own tap:
+  "✓ Saved" one pulse -> "★ Interested", Undo; Interested stays private, never shown or counted to others); item 31 ("★ Interested ->
+  ✓ Attending", one glow, only for confirmed attendance; pending/waitlist: none); item 34 (over: first row of Your Plans,
+  "Confirmed -> ✓ Completed" once, "How was it?" inline).
+- DECLINED (LOCKED): cross-screen transformation or travelling animation (item 88); any moment for requested/waitlisted (no confirmed
+  change); any motion in the recommended state (motion only for real, confirmed events).
+- Verification: not device-verified; follows items 30/31/34's existing open checks (item 31: native review of its 11 strings + device
+  check; item 34: its device checklist).
+
 # Item 96 (owner, 2026-10-15) - "card transformation" - MET BY ITEMS 12/32/34/52, NOTHING BUILT, NOT DEVICE-VERIFIED
 
 - Proposal: offer card -> confirmed plan card -> upcoming plan card -> past plan card, one object transforming instead of navigating.
