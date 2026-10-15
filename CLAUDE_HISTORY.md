@@ -1,3 +1,17 @@
+# Item 107 (owner, 2026-10-15) - "Very close" should become spatial - MET BY THE DISTANCE-FIRST CONTEXT LINE, PIN ANIMATION DECLINED (LOCKED), NOTHING BUILT
+
+- Proposal: show "0.4 mi" instead of "Very close", perhaps with the map pin briefly connecting to the recommendation, so the person
+  understands it is physically close, not just algorithmically close.
+- Owner decision: met as built. Cards show the real distance first in the shared context line ("0.4 mi · Tonight · 7 PM",
+  `formatDistance`); `validReasons` in `recommendationContext.js` drops reasons that only restate distance/time (so the ranking's
+  "Close by" reason, `homeRecommendations.js`, never reaches a card); "Why this fits you" keeps the specific figure ("0.3 mi away",
+  `gatherings.js` distanceLabel). "Very close" is not shown anywhere ("Very nearby" is the ask's own distance-willingness option).
+- DECLINED (LOCKED): a pin connecting to a recommendation card (item 104 stays locked; item 58: motion only for a real change).
+  Item 44's pin -> sheet on the Discover map is preserved as the spatial moment.
+- Device validation: a surface showing vague proximity wording instead of a real distance is fixed in the shared reason filter, never
+  with screen-specific animation.
+- No code or animation changes.
+
 # Item 106 (owner, 2026-10-15) - tappable "Why am I seeing this?" - MET BY "Why this fits you", SHEET + ANIMATION DECLINED (LOCKED), NOTHING BUILT
 
 - Proposal: a tappable "Why am I seeing this?" opening a small bottom sheet (✓ You like coffee / ✓ Happening tonight / ✓ 0.7 mi away /
