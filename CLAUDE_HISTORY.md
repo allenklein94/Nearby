@@ -23,6 +23,10 @@
   is near, guard that only Home/Discover use it, guard that neither file touches motion. jest 445 suites, 5980 tests pass.
 - Journey: none (client render timing; journeys run DB transactions). Device check C10 added to
   `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md`. NOT DEVICE-VERIFIED.
+- Owner APPROVED as built (same day): including the "Ends in N min" coverage; "Already happened" stays for start-only gatherings
+  (start-time wording there would be a separate decision); detail gets no clock; Home + Discover only, no subscription when no
+  live label is near; C10 and the CLAUDE.md Truthfulness rule kept; the 11 unit tests are the acceptance; no journey required;
+  visual and motion locks preserved. Midnight rollover tracked SEPARATELY as an open follow-up (not part of this change).
 
 # Item 107 (owner, 2026-10-15) - "Very close" should become spatial - MET BY THE DISTANCE-FIRST CONTEXT LINE, PIN ANIMATION DECLINED (LOCKED), NOTHING BUILT
 
