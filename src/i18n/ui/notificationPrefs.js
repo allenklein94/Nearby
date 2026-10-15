@@ -59,7 +59,7 @@ export default {
       },
       discover_recommendations: {
         label: "Recommendations",
-        hint: "Gatherings and places nearby that fit your interests.",
+        hint: "Gatherings and places you can explore nearby.",
       },
       discover_nearby_people: {
         label: "People you cross paths with",
@@ -142,7 +142,7 @@ export default {
       },
       discover_recommendations: {
         label: "Recomendaciones",
-        hint: "Reuniones y lugares cercanos que encajan con tus intereses.",
+        hint: "Reuniones y lugares cercanos que puedes explorar.",
       },
       discover_nearby_people: {
         label: "Personas con las que te cruzas",
@@ -225,7 +225,7 @@ export default {
       },
       discover_recommendations: {
         label: "Empfehlungen",
-        hint: "Treffen und Orte in der Nähe, die zu deinen Interessen passen.",
+        hint: "Treffen und Orte in der Nähe, die du entdecken kannst.",
       },
       discover_nearby_people: {
         label: "Menschen, denen du begegnest",
@@ -308,7 +308,7 @@ export default {
       },
       discover_recommendations: {
         label: "Recommandations",
-        hint: "Rencontres et lieux proches qui correspondent à vos centres d'intérêt.",
+        hint: "Rencontres et lieux à découvrir près de chez vous.",
       },
       discover_nearby_people: {
         label: "Personnes que vous croisez",
@@ -391,7 +391,7 @@ export default {
       },
       discover_recommendations: {
         label: "Recomendações",
-        hint: "Encontros e lugares por perto que combinam com seus interesses.",
+        hint: "Encontros e lugares por perto para você explorar.",
       },
       discover_nearby_people: {
         label: "Pessoas que cruzam seu caminho",
@@ -474,7 +474,7 @@ export default {
       },
       discover_recommendations: {
         label: "Rekòmandasyon",
-        hint: "Rasanbleman ak kote toupre ki matche ak enterè ou.",
+        hint: "Rasanbleman ak kote toupre ou ka eksplore.",
       },
       discover_nearby_people: {
         label: "Moun ou kwaze",
@@ -557,7 +557,7 @@ export default {
       },
       discover_recommendations: {
         label: "推荐",
-        hint: "附近符合你兴趣的聚会和地点。",
+        hint: "你可以在附近探索的聚会和地点。",
       },
       discover_nearby_people: {
         label: "擦肩而过的人",
@@ -640,7 +640,7 @@ export default {
       },
       discover_recommendations: {
         label: "Gợi ý",
-        hint: "Buổi gặp mặt và địa điểm gần đây hợp với sở thích của bạn.",
+        hint: "Buổi gặp mặt và địa điểm gần đây để bạn khám phá.",
       },
       discover_nearby_people: {
         label: "Người bạn tình cờ gặp",
@@ -723,7 +723,7 @@ export default {
       },
       discover_recommendations: {
         label: "Mga rekomendasyon",
-        hint: "Mga gathering at lugar sa malapit na tugma sa interes mo.",
+        hint: "Mga gathering at lugar sa malapit na puwede mong tuklasin.",
       },
       discover_nearby_people: {
         label: "Mga taong nakakasalubong mo",
@@ -806,7 +806,7 @@ export default {
       },
       discover_recommendations: {
         label: "Рекомендации",
-        hint: "Встречи и места рядом, подходящие под ваши интересы.",
+        hint: "Встречи и места рядом, которые можно открыть для себя.",
       },
       discover_nearby_people: {
         label: "Люди, с которыми вы пересекаетесь",
@@ -889,7 +889,7 @@ export default {
       },
       discover_recommendations: {
         label: "추천",
-        hint: "관심사에 맞는 주변 모임과 장소.",
+        hint: "주변에서 둘러볼 수 있는 모임과 장소.",
       },
       discover_nearby_people: {
         label: "마주친 사람",
