@@ -1,3 +1,16 @@
+# Item 94 (owner, 2026-10-15) - business offer adapts to group size - MET, NOTHING BUILT
+
+- Proposal: the business sees "4 people", offers a "Group coffee deal", and the presentation animates "4 people -> 1 group offer".
+- Owner decision: MET by existing functionality (accepted as is): (1) the business sees party size in the structured summary on
+  opportunity cards and pushes ("Coffee · party of 4 · Oct 10", item 13); (2) Potential value = stated party size x stated budget
+  (item 149); (3) routing: occasion packages and the business's party-size min/max rules account for group size; (4) one offer per
+  request for the party, item 49's live preview shows the customer's card; (5) the booked card shows "4 people" once (item 12) and
+  item 32 carries party size into Your Plan; (6) under item 93's flow, group-plan party sizes combine and the business replies once.
+- DECLINED (LOCKED): any "Group coffee deal" offer type or offer templates (item 50: one card, the business decides WHAT it offers);
+  any "4 people -> 1 group offer" animation (item 25 stays the one signature, item 57's hierarchy locked, item 58: motion only for a
+  real change); any aggregate demand claim like "4 people are looking" (item 89): party size appears only as one customer's stated request.
+- Nothing built; no new templates, animation or aggregate-demand messaging authorized.
+
 # Item 93 (owner, 2026-10-15) - Phase D aligned with item 92 - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 - Conflict found: Phase D's live "People you know are also asking for this" (group-plan candidates on a request, the typed-ask
