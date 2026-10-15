@@ -1,3 +1,16 @@
+# Item 95 (owner, 2026-10-15) - "reservation seam": Offer -> Reservation -> Plan - MET BY ITEMS 12 + 32, NOTHING BUILT, NOT DEVICE-VERIFIED
+
+- Proposal: animate the offer -> reservation -> plan seam as three states of one continuous object.
+- Owner decision: implemented in code by existing work (accepted as is): (1) Offer -> Reservation (item 12): accepting IS the booking;
+  the same card becomes its booked state, no separate reservation hand-off; "You're booked" only for a confirmed stored reservation,
+  "Offer accepted · confirming your booking" before, "didn't go through" on failure; group plans share the lifecycle (Option A).
+  (2) Reservation -> Your Plan (item 32): activity, time, place, people assemble in order, screened logo into the place line,
+  connecting line + one glow. (3) Item 33 (reservation confirmation) stays covered by item 32.
+- DECLINED (LOCKED): any additional "Offer -> Reservation -> Plan" animation (duplicates items 12/32, conflicts with no screen-wide
+  motion on offer screens, item 58: would animate a change already shown).
+- Open: items 12 and 32 never seen on a real phone; their device checks stay in the device session order; the complete experience is
+  not device-verified until they pass.
+
 # Item 94 (owner, 2026-10-15) - business offer adapts to group size - MET, NOTHING BUILT
 
 - Proposal: the business sees "4 people", offers a "Group coffee deal", and the presentation animates "4 people -> 1 group offer".
