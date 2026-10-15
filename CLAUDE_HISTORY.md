@@ -1,3 +1,26 @@
+# Item 116 (owner, 2026-10-15) - Availability disappearing - "N spots left" MET; BOOKING CAPACITY FIXED TO COUNT PEOPLE (LIVE); TIGHTENING DECLINED (LOCKED)
+
+- Proposal: "3 spots left" only when it is real inventory; the card visually tightens as availability changes.
+- Already built (real counts only): "N spots left" in AskBusiness availability results and date proposals (`remaining_capacity`),
+  gathering "almost full" (`gatheringFullness.js`, host included), perks "{left} of {count} spots left" (real redemptions).
+- Gap found and FIXED (owner approved): posting/matching/search compared capacity with PEOPLE (`remaining_capacity >= party_size`),
+  but both accept paths took off 1 per booking and a cancel gave back 1 (20 spots, party of 6 -> showed 19; a party of 6 could book
+  with 2 left). Migration `20270308_booking_capacity_counts_people.sql` (applied live 2026-10-15): ONE pair of helpers,
+  `_take_availability_capacity(availability, party size)` (one atomic conditional UPDATE: whole party or refuse with the existing
+  'This availability just filled up.'; unknown party size holds 1; no limit = nothing held; 'filled' only from 'active') and
+  `_release_availability_capacity(availability, held)` (gives back exactly what was held, never above capacity; filled -> active).
+  `business_request_offers.capacity_held` records each booking's hold (null on pre-116 bookings = they took 1, give back 1).
+  `accept_business_offer`, `_accept_business_offer_internal`, `_cancel_reservation_by_offer` call them (same signatures, one
+  overload each; helpers revoked from public/anon/authenticated). No new strings, no client change.
+- Verification: new journey `bookingCapacity` 8/8 (20 -> party 6 = 14 -> 8 -> 2; party of 6 at 2 refused, nothing booked/taken;
+  cancel restores 6; group path holds 8 and fills; cancel reopens; legacy cancel gives back 1); fails on the unmigrated DB, passes with
+  it. Concurrency checked live once: two parallel sessions on one disposable availability (status 'cancelled' so no trigger fired;
+  deleted after): A held 6 of 10 and slept 3 s, B (0.7 s later) waited on A's lock, then was refused; 4 left, never negative. All 32
+  journeys 339/339, Jest 5980 passed. No from-scratch migration replay.
+- DECLINED (LOCKED): the card shrinking/tightening or any scarcity styling (cards static, items 15/99); live in-place count updates
+  (the count is read on load). Item 47's countdown stays the only urgency motion (its real last 30 minutes).
+- Not device-verified: the "N spots left" lines are unchanged UI; covered by item 89's end-to-end offer check.
+
 # Item 115 (owner, 2026-10-15) - Business capacity window animates outward - MET AS BUILT, ANIMATION + BROADCAST DECLINED (LOCKED), NOTHING BUILT
 
 - Number note: reuses "item 115" (older items with that number are different).
@@ -29,6 +52,12 @@
 - Device/live acceptance: item 89's end-to-end check in `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (real business
   + customer; needs Anthropic credit). No new check.
 - No code changes.
+
+- CORRECTION (2026-10-15, found while building item 116): the "met" record above is incomplete. Posting availability ALSO fires
+  `notify_matching_business_availability` (trigger on business_availability insert, since migration 20261004): a push
+  "🌟 This matches you" to nearby people (push area < 1 h old) whose DECLARED interests match the category, opt-out
+  (`notify_discovery` default on; frequency/distance/time in Settings "Nearby Opportunities"), capped per day. That is the
+  interest-based reach item 114 declined. Left unchanged pending the owner's decision; nothing changed by this note.
 
 # Item 113 (owner, 2026-10-15) - "Something for you" discovery animation - MET BY ITEM 26, ADDITIONS DECLINED (LOCKED), NOTHING BUILT
 
