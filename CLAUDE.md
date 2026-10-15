@@ -142,7 +142,7 @@ experience checklist passes with a real customer + business (needs Anthropic cre
 `PRODUCT_AUDIT/ITEM_93_INTENT_VISIBILITY_DEVICE_CHECKLIST_2026-10-15.md` is recorded on two phones AND native review of the 3
 `ui.settings` strings is done (migration 20270307; journey `intentVisibility`). Visual merge declined (LOCKED).
 
-**Item 101 (2026-10-15) DONE: motion spec rule + `PRODUCT_AUDIT/MOTION_SPEC_TEMPLATE.md`; no code or motion changed.** **Item 100 (2026-10-15) DONE, APPROVED as built (placements LOCKED): eight motion primitives = documentation-only `MOTION_PRIMITIVES` map + guard `motionPrimitives.test.js`;
+**Item 102 (2026-10-15) offer lifecycle + rarest signature MET AS BUILT (items 21/12/32/47/34/52/35/53/54/57), nothing built; signature-only-on-first-reply DEFERRED until a phone shows repetition (would reopen item 25).** **Item 101 (2026-10-15) DONE: motion spec rule + `PRODUCT_AUDIT/MOTION_SPEC_TEMPLATE.md`; no code or motion changed.** **Item 100 (2026-10-15) DONE, APPROVED as built (placements LOCKED): eight motion primitives = documentation-only `MOTION_PRIMITIVES` map + guard `motionPrimitives.test.js`;
 no motion changed. Item 99 corrected: `occasionParticles` (item 58's locked exception) is the only place particles exist.**
 
 **Item 99 (2026-10-15) motion restraint met by existing rules (items 22/25/36/57/58/122, tap-to-play video, calm tone, 900 ms cap,

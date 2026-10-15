@@ -1,3 +1,20 @@
+# Item 102 (owner, 2026-10-15) - offer lifecycle end to end + "the biggest animation is the rarest" - MET AS BUILT, NOTHING BUILT
+
+- Proposal: Business provides -> offer becomes a reservation -> you go -> experience completes -> Nearby learns; the biggest
+  animation should be the rarest.
+- Owner decision: keep the current implementation; the lifecycle is coherent and the signature is already appropriately rare.
+  Business provides = offer assembles (item 21); reservation = booked in place (item 12), merges into Your Plan (item 32); you go =
+  no motion, only the real countdown (item 47) + how-to-redeem instructions; completes = Completed (item 34), visit confirmed
+  (item 52); learns = "How was it?" ranking (item 35), plans this month counts only what happened (item 53), noticed activity only
+  from things done, never views/searches (item 54). Item ownership and sequence preserved.
+- Signature (item 57/25) kept as built: the only signature-tier moment; plays only when a business actually replies to the person's
+  request, once per reply, never on reload, only via the arrival notice for a SINGLE reply (`arrivalDestination` in
+  `services/offerArrivals.js` focuses one offer only when the signal has exactly one item); several replies together = one combined
+  notice ("2 offers came in", item 121 wording) and no signature.
+- Declined for now: "signature only for the first reply per request" (would reopen item 25); revisit only if a real phone shows it
+  repeats too often. No added motion, no stricter playback rule, no change to the learning model.
+- Not device-verified: follows items 12/21/32/34/47/52 and the offer experience checklist (needs Anthropic credit).
+
 # Item 101 (owner, 2026-10-15) - document motion before building it - RULE + TEMPLATE, NO CODE
 
 - Proposal: before implementing a motion moment, document what changed, why motion is useful, start state, end state, duration,
