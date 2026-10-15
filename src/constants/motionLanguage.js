@@ -182,3 +182,56 @@ export const DIRECT_TIER_MEANINGS = Object.freeze({
 // The reviewed lists, kept exact by the guard: adding to either is a review decision, not a default.
 export const RENDERING_TRANSITIONS = Object.freeze(['error_state_fade', 'empty_state_fade']);
 export const GESTURE_MOTIONS = Object.freeze(['swipe_dismiss']);
+// Owner item 100 (2026-10-15, documentation only): the Nearby Motion System's eight PRIMITIVES name the FORM a moment takes;
+// MOTION_MEANINGS above names what it communicates. Every existing sequence (SEQUENCES in motion/motionBudget.js) is listed
+// once below with its primitive, the real event or state change it shows, and the item that approved it. This map DESCRIBES
+// existing behavior: it changes no animation, timing or component, authorizes no new motion, and is never a reason to move,
+// alter or unify an approved moment for consistency (item 56). Ambient stays exactly its two listed cases (item 99: no
+// animated backgrounds, moving cards or decorative motion). Guard: motion/motionPrimitives.test.js.
+export const MOTION_PRIMITIVE_NAMES = Object.freeze([
+  'pulse', // something is being transmitted
+  'flow', // something moves from A to B
+  'merge', // two things became connected
+  'reveal', // something new became available
+  'transform', // an object's state changed
+  'assemble', // a plan is coming together
+  'complete', // something finished
+  'ambient', // the environment is alive, never demanding attention
+]);
+export const MOTION_PRIMITIVES = Object.freeze({
+  requestPulse: { primitive: 'pulse', item: '55', communicates: 'your request really went out to the businesses it reached; the same rings mark a request reaching a business\'s card' },
+  happeningRipple: { primitive: 'pulse', item: '26/55', communicates: 'a gathering happening now that this session has not shown yet appeared in the Right Now section' },
+  pinToSheet: { primitive: 'pulse', item: '44/55', communicates: 'the business sheet you opened belongs to the map pin you tapped' },
+  offerTravel: { primitive: 'flow', item: '23', communicates: 'the reply announced by the arrival pill is this card on the request screen' },
+  businessResponds: { primitive: 'flow', item: '25', communicates: 'a real nearby business answered your request (the ONE signature moment)' },
+  friendJoin: { primitive: 'flow', item: '28/73', communicates: 'a person really joined the host\'s gathering and is now in Who\'s going' },
+  offerToPlan: { primitive: 'merge', item: '32', communicates: 'your confirmed booking is now part of Your Plan' },
+  friendCollision: { primitive: 'merge', item: '40', communicates: 'you and the nearby friend both declared this card\'s interest' },
+  matchIntro: { primitive: 'merge', item: 'match', communicates: 'two people really matched with each other' },
+  offerAssembly: { primitive: 'reveal', item: '21', communicates: 'a newly received reply is on screen, built from its real parts' },
+  opportunityArrival: { primitive: 'reveal', item: '48', communicates: 'a still-answerable opportunity new to this device reached the business' },
+  askUnderstood: { primitive: 'reveal', item: '45', communicates: 'what Nearby understood from the words of this ask' },
+  refineNextStep: { primitive: 'reveal', item: '46', communicates: 'the next unanswered refinement step became available after your tap' },
+  strongMatch: { primitive: 'reveal', item: '37', communicates: 'the top pick really matches the stated activity, time and close distance' },
+  surpriseReveal: { primitive: 'reveal', item: 'surprise', communicates: 'the surprise is revealed after the reveal call succeeded' },
+  hostJoin: { primitive: 'reveal', item: '25 #2', communicates: 'a new join arrived on the host\'s own gathering card' },
+  offerAccepted: { primitive: 'transform', item: '12', communicates: 'the same offer card became its booked state' },
+  offerProgress: { primitive: 'transform', item: '13', communicates: 'the business\'s offer really moved forward (Accepted, Redeemed)' },
+  interestedSaved: { primitive: 'transform', item: '30', communicates: 'your own tap saved this gathering as Interested' },
+  interestedToAttending: { primitive: 'transform', item: '31', communicates: 'your confirmed attendance replaced Interested' },
+  offerCountdown: { primitive: 'transform', item: '47', communicates: 'an open offer\'s real last 30 minutes, one real minute at a time' },
+  bookedExit: { primitive: 'transform', item: 'booked', communicates: 'the GroupPlan booked card leaves after its hold (removed)' },
+  planTogether: { primitive: 'assemble', item: '25 #4/43', communicates: 'every required piece of the plan is confirmed, or the gathering was published' },
+  friendsPlanning: { primitive: 'assemble', item: '41', communicates: 'friends\' plans not shown before came together on Home' },
+  planCompleted: { primitive: 'complete', item: '34', communicates: 'an attended gathering is over: Confirmed became Completed' },
+  visitConfirmed: { primitive: 'complete', item: '52', communicates: 'the business confirmed your visit' },
+  booked: { primitive: 'complete', item: 'booked', communicates: 'the group plan\'s reservation is really confirmed' },
+  successCelebratory: { primitive: 'complete', item: 'success', communicates: 'a plan or occasion was really created' },
+  successBusiness: { primitive: 'complete', item: 'success', communicates: 'a transaction was really confirmed' },
+  responding: { primitive: 'ambient', item: '22/132', communicates: 'Nearby is working on your ask (a capped loader, paused in the background)' },
+  weatherShift: { primitive: 'ambient', item: '36', communicates: 'the weather condition changed today (Home weather card only, once)' },
+  // item 58's ONE approved exception, kept exactly as it is (incl. its existing particles); listed, never extended
+  occasionMorph: { primitive: 'transform', item: '58 exception', exception: 'occasion_celebration', communicates: 'the chosen occasion tile became selected' },
+  occasionLock: { primitive: 'transform', item: '58 exception', exception: 'occasion_celebration', communicates: 'the chosen occasion locked in as the plan\'s occasion' },
+  occasionParticles: { primitive: 'transform', item: '58 exception', exception: 'occasion_celebration', communicates: 'the chosen occasion tile became selected (celebratory, the only particles in the app)' },
+});

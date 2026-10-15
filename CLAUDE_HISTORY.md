@@ -1,3 +1,24 @@
+# Item 100 (owner, 2026-10-15) - the Nearby Motion System: eight primitives - DOCUMENTATION-ONLY MAP + GUARD, NO MOTION CHANGED
+
+- Proposal: Pulse, Flow, Merge, Reveal, Transform, Assemble, Complete, Ambient as the primitives that power all motion.
+- Owner decision: a documentation-only map plus a guard; no animation change, no component refactoring, every approved moment kept
+  as is (item 56); Ambient limited to its approved cases; item 99's history corrected for the existing `occasionParticles` exception.
+- Built: `MOTION_PRIMITIVE_NAMES` (the eight) and `MOTION_PRIMITIVES` in `constants/motionLanguage.js`: all 34 existing `SEQUENCES`,
+  each with one primitive, the real event it shows and its approving item. Pulse = requestPulse, happeningRipple, pinToSheet;
+  Flow = offerTravel, businessResponds, friendJoin; Merge = offerToPlan, friendCollision, matchIntro; Reveal = offerAssembly,
+  opportunityArrival, askUnderstood, refineNextStep, strongMatch, surpriseReveal, hostJoin; Transform = offerAccepted,
+  offerProgress, interestedSaved, interestedToAttending, offerCountdown, bookedExit (+ the occasion exception's three, marked as
+  the exception); Assemble = planTogether, friendsPlanning; Complete = planCompleted, visitConfirmed, booked, successCelebratory,
+  successBusiness; Ambient = responding (capped loader), weatherShift.
+- Guard `motion/motionPrimitives.test.js` (7 tests): exactly the eight; every sequence listed once (same set as SEQUENCES and
+  SEQUENCE_MEANINGS) with a primitive, event text and item; 900 ms cap for all but the signature, which is only businessResponds
+  (<= 1.5 s); Pulse = exactly PULSE_MOMENTS' sequences and the signature stays outside it; Ambient = exactly responding +
+  weatherShift; the occasion exception listed only for its three sequences; no component reads the map (documentation only).
+- Judgement calls (review if wrong): offer-assembly under Reveal and plan assembly under Assemble per the owner's table;
+  opportunityArrival's rise = Reveal while its rings (requestPulse) = Pulse; booked (GroupPlan reservation) = Complete;
+  bookedExit = Transform (removal); strongMatch / hostJoin = Reveal; the occasion sequences = Transform (tile selected).
+- Verified: jest 444 suites, 5969 tests pass. No animation, timing or component changed; nothing to device-check.
+
 # Item 99 (owner, 2026-10-15) - motion restraint ("where I'd draw the line") - MET BY EXISTING RULES, NOTHING BUILT, NO NEW RULE
 
 - Proposal: never build animated backgrounds everywhere, constantly moving cards, giant particles, excessive parallax, autoplaying
@@ -10,6 +31,10 @@
   state; item 58 (motion must explain a real change) + item 55 (never a reason to animate more).
 - Unchanged: item 58's one narrow exception, the occasion tile celebrations (`OccasionAnimation.js`), stays as locked (kept as is,
   nothing added).
+- CORRECTION (owner, same day, with item 100): particles DO exist in the app, in that one exception: the `occasionParticles`
+  sequence (Celebration tile, approved and locked under item 58; tokens pinned by `motion/motionMeaning.test.js`). "No particles"
+  above is true everywhere outside it; particles stay prohibited everywhere else; items 25, 36 and 122 keep their restrictions in
+  their own scope. This documents existing behavior; it does not expand the exception or authorize any further particles.
 - Nothing built; no global animation, ambient motion, decorative effects or new transitions authorized; no new rule.
 
 # Item 98 (owner, 2026-10-15) - one object, evolving through states - MET BY EXISTING PRINCIPLES, NOTHING BUILT, NO NEW RULE
