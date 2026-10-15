@@ -241,25 +241,29 @@ export function statedPartySize(r, typedText) {
 
 export function createParamsFromAsk(r, typedText, current = null) {
   const partyType = current && 'partyType' in current ? (current.partyType ?? null) : r.group.partyType;
+  // Owner (2026-10-15): an understood chip the person removed on the results (current.removedUnderstood) is not carried either.
+  const removed = new Set(Array.isArray(current?.removedUnderstood) ? current.removedUnderstood : []);
   // Item 187: Create's People (and its capacity suggestion) only from a number the person stated, never a date's assumed 2.
-  const statedSize = statedPartySize(r, typedText);
+  const statedSize = removed.has('people') ? null : statedPartySize(r, typedText);
+  const tag = removed.has('what') ? null : r.subcategory;
+  const whenPreset = removed.has('when') ? null : r.time.whenPreset;
   const inf = {
-    tag: r.subcategory,
-    categoryLabel: r.category?.label ?? null,
+    tag,
+    categoryLabel: removed.has('what') ? null : (r.category?.label ?? null),
     partyType,
     partySize: statedSize,
-    whenPreset: r.time.whenPreset,
-    activities: r.activities,
+    whenPreset,
+    activities: removed.has('what') ? [] : r.activities,
   };
   const title = r.title || typedText || null;
   return {
     quickStartTitle: title,
-    quickStartCategory: r.subcategory,
+    quickStartCategory: tag,
     quickStartPartySize: statedSize,
     quickStartPartyType: partyType,
-    ...(r.time.whenPreset ? { quickStartWhenPreset: r.time.whenPreset } : {}),
+    ...(whenPreset ? { quickStartWhenPreset: whenPreset } : {}),
     inferredSummary: inferredSummary(inf),
-    inferredFromText: !!(r.title && r.subcategory),
+    inferredFromText: !!(r.title && tag),
     ...(inviteStepApplies(partyType, typedText) ? { quickStartInvite: true } : {}),
   };
 }

@@ -117,14 +117,13 @@ function scored(parts) {
   return { score: baseSignals.reduce((n, p) => n + p.delta, 0), baseSignals };
 }
 
-async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false) {
+async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false, askedActivities = activitiesFromText(rawText)) {
   const nearby = await getNearbyGatherings(travel ? 'travel' : 'wide');
   const relevant = nearby.filter((g) => {
     if (category && g.interest_tag !== category) return false;
     return matchesDateWindow(g.scheduled_at, dateWindow);
   });
   const meaningfulWords = extractMeaningfulWords(rawText);
-  const askedActivities = activitiesFromText(rawText);
   return relevant.map((gathering) => {
     const { reasons: fitReasons } = getGatheringFitReasons(gathering);
     // item 132: the asked activity reaches gatherings too (same table and weight as businesses, from host-declared facts)
@@ -626,9 +625,15 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false, narrowGroup = null }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false, narrowGroup = null, removed = [] }) {
+  // Owner (2026-10-15): understood chips the person removed (utils/askUnderstood.js removeUnderstoodPiece). The same words are
+  // never read again for a removed piece: WHO (the party from partner words), WHEN (time words: clock, anchor, spontaneity,
+  // open now, the weather window), WHERE (indoor/outdoor), WHAT (the asked activity and a route's category groups). People
+  // needs nothing here: a size is never re-read from the words. Ranking rules themselves are unchanged.
+  const removedSet = new Set(Array.isArray(removed) ? removed : []);
+  const whenText = removedSet.has('when') ? '' : rawText;
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
-  partyType = partyType ?? partnerPartyType(rawText);
+  partyType = partyType ?? (removedSet.has('who') ? null : partnerPartyType(rawText));
   // Item 63: an ask naming two or more parts of an outing ("dinner and something to do after") is ONE plan. A single
   // category would hard-filter every part but one out, so it is dropped here and the cross-category recipe assembles the
   // plan instead; the occasion is filled from the person's own words only when the extractor gave none (utils/planAsk.js).
@@ -734,13 +739,14 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 69: "willing to travel" widens every search one step on the shared radius list (15 -> 30 mi), bounded by its maximum.
   const distanceWillingness = distanceWillingnessFromText(rawText);
   const travelMiles = travelSearchMiles(distanceWillingness);
+  const askedActivities = removedSet.has('what') ? [] : activitiesFromText(rawText);
 
   const branches = await Promise.allSettled([
-    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles),
+    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities),
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow),
     resolvePerks(category, location),
-    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, activitiesFromText(rawText), travelMiles),
+    resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, askedActivities, travelMiles),
     resolvePolicyOnlyBusinesses(location, partySize, travelMiles),
     resolveOccasionPackages(location, occasion, partySize, travelMiles),
     resolveOccasionOfferingBusinesses(location, occasion, travelMiles),
@@ -790,11 +796,15 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // pass, BEFORE any ranking: what fails a rule is removed here and recorded by rule, so nothing that will not be shown can move
   // another result (the stated-distance and travel-mode passes compare results with each other). Unknown stays eligible.
   // The person's words, or Discover's Open-now chip they switched on (openNowChip): one filter either way.
-  const openNowOnly = !!openNowChip || openNowAskFromText(rawText);
-  const restrictionFacts = restrictionAsk(rawText, statedPartySize);
-  const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes, force: !!openEnded });
+  const openNowOnly = !!openNowChip || openNowAskFromText(whenText);
+  const askedRestrictions = restrictionAsk(rawText, statedPartySize);
+  const restrictionFacts = removedSet.has('where') ? { ...askedRestrictions, wantsOutdoor: false, wantsIndoor: false } : askedRestrictions;
+  const openEndedGroups = openEndedAskGroups({ category, rawText, occasion, attributes, force: !!openEnded, removedWhat: removedSet.has('what'), removedWhere: removedSet.has('where') });
   const narrowedGroup = isCategoryGroup(narrowGroup) ? narrowGroup : null;
-  const parsedFacets = parseAskFacets(rawText);
+  const askedFacets = parseAskFacets(rawText);
+  const parsedFacets = removedSet.has('where')
+    ? { ...askedFacets, environment: null, environmentRequired: false, exclude: askedFacets.exclude.filter((k) => k !== 'indoor' && k !== 'outdoor') }
+    : askedFacets;
   const isPartnerResult = (c) => c.partnerId && (BUSINESS_RESULT_TYPES.includes(c.type) || c.type === 'perk');
   // Outdoor / indoor from DECLARED data only (constants/environmentMatch.js, one rule for every surface): a gathering by its
   // host's outdoor seating or its category, a business or perk by its own weather setting / outdoor seating (never its
@@ -832,7 +842,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   try {
     const weather = await weatherPromise;
     const settings = weather ? await getPartnerWeatherSettings(deduped.map((c) => c.partnerId).filter(Boolean)) : null;
-    const applied = applyAskWeather(deduped, weather, { text: rawText, explicitEnvironment: parseAskFacets(rawText).environment ?? null, settingByPartnerId: settings });
+    const applied = applyAskWeather(deduped, weather, { text: whenText, explicitEnvironment: parsedFacets.environment ?? null, settingByPartnerId: settings });
     deduped = applied.items;
     weatherCaption = applied.caption;
   } catch (e) {
@@ -898,8 +908,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   step('time_budget');
   // "today before 3 PM" / "Saturday until 5": used only when the person's words anchor it to a date ("before 3 PM" alone
   // constrains nothing). A gathering whose real start (and usual length) fits lifts, a clear miss sinks; never hides.
-  const clockWindow = clockWindowFromText(rawText);
-  const dateAnchor = clockWindow ? dateAnchorFromText(rawText) : null;
+  const clockWindow = clockWindowFromText(whenText);
+  const dateAnchor = clockWindow ? dateAnchorFromText(whenText) : null;
   deduped = applyClockWindowToCandidates(deduped, clockWindow, dateAnchor);
   step('clock_window');
   const askedEnergies = energiesWithoutIntensity([...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])], askedIntensity);
@@ -908,7 +918,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
 
   // Commitment (item 45) and spontaneity (item 46): ranking only. An immediate ask implies a light commitment unless the person
   // said otherwise; "plan ahead" / "next few hours" have no dateWindow bucket, so they come from the person's own words.
-  const spontaneity = spontaneityOf({ dateWindow, rawText });
+  const spontaneity = spontaneityOf({ dateWindow, rawText: whenText });
   const commitAsk = commitmentAsk(rawText) ?? (isImmediate(spontaneity) ? 'light' : null);
   // Item 86 compatibility (what the words state vs what a business declared) was decided in Stage 1.
   // Item 88: dietary needs the person's own words state ("vegan", "gluten-free", "halal") lift a business that DECLARED every one
@@ -1003,7 +1013,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 162: a NEED (the asked category is a need/service group) is ordered availability > proximity > reliability >
   // personalization, each a tie-breaker for the one before (utils/needAsk.js). A want keeps the order above, unchanged.
   const kind = askKind({ category, rawText });
-  const needWindow = kind === 'need' ? needAvailabilityWindow({ dateWindow, clockWindow, dateAnchor: dateAnchor ?? dateAnchorFromText(rawText), pointClock: pointClockFromText(rawText), spontaneity }) : null;
+  const needWindow = kind === 'need' ? needAvailabilityWindow({ dateWindow, clockWindow, dateAnchor: dateAnchor ?? dateAnchorFromText(whenText), pointClock: pointClockFromText(whenText), spontaneity }) : null;
   if (kind === 'need') {
     let reputations = new Map();
     try {
@@ -1174,6 +1184,7 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
 export async function resolveClassifiedAsk(classifyResult, typedText) {
   const { items: resolved, experience, openEndedNote, openNowOnly, audit } = await resolveIntent({
     category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
+    removed: Array.isArray(classifyResult.removedUnderstood) ? classifyResult.removedUnderstood : [],
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
     cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null, narrowGroup: classifyResult.narrowGroup ?? null,

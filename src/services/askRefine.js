@@ -7,6 +7,7 @@ import { resolveClassifiedAsk } from './intentResolver';
 import { recordTypedAsk } from './typedAskAudit';
 import { applyRefinement, refinementChips } from '../utils/askRefinements';
 import { toggleCategoryNarrow } from '../utils/categoryNarrow';
+import { removeUnderstoodPiece } from '../utils/askUnderstood';
 
 // Re-runs the ask with `refined` and records it against the original ask. Returns the next surface state; an empty result keeps
 // the refined classification (so the chip / category stays selected and can be tapped off).
@@ -23,7 +24,14 @@ async function rerunAsk(surface, prev, refined, key, action) {
 }
 
 // `prev` = the surface's current typed-ask state ({ classifyResult, typedText, submissionId, shown, rootSnapshotId? ... }).
+// Owner (2026-10-15): `understood_<piece>` = the X on an understood chip (utils/askUnderstood.js): remove only, never re-add.
 export async function refineTypedAsk(surface, prev, key) {
+  if (typeof key === 'string' && key.startsWith('understood_')) {
+    // A WHAT chip showing only a Browse group (item 108) is the rail's selection: removing it is the rail's own clear.
+    const c = prev.classifyResult ?? {};
+    if (key === 'understood_what' && !c.category && c.narrowGroup) return narrowTypedAsk(surface, prev, c.narrowGroup);
+    return rerunAsk(surface, prev, removeUnderstoodPiece(prev.classifyResult, key.slice('understood_'.length)), key, 'removed');
+  }
   const wasSelected = !!refinementChips(prev.classifyResult).find((c) => c.key === key)?.selected;
   return rerunAsk(surface, prev, applyRefinement(prev.classifyResult, key), key, wasSelected ? 'removed' : 'applied');
 }

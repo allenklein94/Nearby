@@ -74,7 +74,7 @@ describe('motion and presentation', () => {
     expect(comp).toMatch(/useNativeDriver: true/);
     expect(comp).not.toMatch(/useNativeDriver: false/);
     expect(comp).toMatch(/&& !reduceMotion\)/);
-    expect(comp).toMatch(/pointerEvents="none"/);
+    expect(comp).toMatch(/pointerEvents=\{removable \? 'box-none' : 'none'\}/);
   });
   test('quiet: never coral, no new strings (reuses existing labels)', () => {
     expect(comp).not.toMatch(/colors\.primary/);
@@ -90,8 +90,9 @@ describe('where it shows', () => {
     for (const src of [home, discover]) {
       expect(src).toMatch(/intentPhase\?\.phase === 'finding' && <AskUnderstoodChips classifyResult=\{intentPhase\.classifyResult\} typedText=\{intentPhase\.typedText\} \/>/);
     }
-    expect(home).toMatch(/<View style=\{styles\.intentResults\}>\s*<AskUnderstoodChips classifyResult=\{intentResults\.classifyResult\}/);
-    expect(discover).toMatch(/<View style=\{styles\.intentSearchBlock\}>\s*<AskUnderstoodChips classifyResult=\{intentSearch\.classifyResult\}/);
+    // (owner 2026-10-15: first in the results, now with the remove-only ✕ props; a comment line may precede it)
+    expect(home).toMatch(/<View style=\{styles\.intentResults\}>\s*(\{\/\*[^\n]*\*\/\}\s*)?<AskUnderstoodChips\s+classifyResult=\{intentResults\.classifyResult\}/);
+    expect(discover).toMatch(/<View style=\{styles\.intentSearchBlock\}>\s*(\{\/\*[^\n]*\*\/\}\s*)?<AskUnderstoodChips\s+classifyResult=\{intentSearch\.classifyResult\}/);
   });
   test('Discover has one representation: the old static tag row is gone', () => {
     expect(discover).not.toMatch(/intentSearchTagsRow|ui\.discover\.tagNearby/);

@@ -20,10 +20,12 @@ export const OPEN_ENDED_GROUP_BONUS = 1; // below every real category/interest m
 
 // Group keys the ask can mean, or null when this is not an open-ended ask (a real category, an occasion, or no open phrase).
 // `force`: the caller already knows the ask names no category (a broad Surprise Me), so it is open-ended without a phrase.
-export function openEndedAskGroups({ category = null, rawText = '', occasion = null, attributes = [], force = false } = {}) {
+export function openEndedAskGroups({ category = null, rawText = '', occasion = null, attributes = [], force = false, removedWhat = false, removedWhere = false } = {}) {
   if (category || occasion) return null;
   // A recognised intent (constants/intentRoutes.js) that names category groups limits the ask to exactly those groups.
-  const routed = detectIntentRoute(rawText);
+  // Owner (2026-10-15): not once the person removed the understood WHAT chip, nor "be outdoors" once they removed WHERE.
+  const route = removedWhat ? null : detectIntentRoute(rawText);
+  const routed = removedWhere && route?.key === 'be_outdoors' ? null : route;
   // (A tagged intent like coffee or live music leaves the choice of category to the extractor, so it never limits groups here.)
   // Item 105: "be outdoors" limits to Outdoors only when the outdoor ask is a MUST (the one certainty decision, askFacets); a
   // tentative or hedged one ("maybe something outdoors?") falls through, so indoor options stay and the outdoor lift ranks them.

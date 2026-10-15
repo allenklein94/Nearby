@@ -84,7 +84,9 @@ const SECTION = /^[a-z_]{1,20}(:[a-z_]{1,40})?$/;
 const TYPE = /^[a-z_]{1,40}$/;
 const UUID = /^[0-9a-f-]{36}$/;
 // The refinement chips (utils/askRefinements.js); the server CHECK carries the same list.
-export const REFINEMENT_KEYS = ['friends', 'date', 'solo', 'under_25', 'category']; // 'category' = a Browse category narrowing the ask (item 108)
+export const REFINEMENT_KEYS = ['friends', 'date', 'solo', 'under_25', 'category', // 'category' = a Browse category narrowing the ask (item 108)
+  // an understood chip's X (owner, 2026-10-15; utils/askUnderstood.js), always 'removed'
+  'understood_what', 'understood_when', 'understood_where', 'understood_who', 'understood_people'];
 const KEY = /^[a-z][a-z0-9_]{0,39}$/;
 const ID = /^[A-Za-z0-9_:.-]{1,64}$/;
 

@@ -37,6 +37,7 @@ import { peopleAsk, peopleAskUnderstood, peopleModeParams } from '../utils/peopl
 import { recordTypedAsk } from '../services/typedAskAudit';
 import AskRefinementChips from '../components/AskRefinementChips';
 import AskUnderstoodChips from '../components/AskUnderstoodChips';
+import { canRefine } from '../utils/askRefinements';
 import { refineTypedAsk } from '../services/askRefine';
 import { remainingIntentItems, groupIntentResultsByType, displayedPosition } from '../utils/typedAskAudit';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
@@ -1898,7 +1899,13 @@ export default function HomeScreen({ navigation }) {
 
           {intentResults && (
             <View style={styles.intentResults}>
-              <AskUnderstoodChips classifyResult={intentResults.classifyResult} typedText={intentResults.typedText} />
+              {/* Owner (2026-10-15): on the results each understood chip can be removed (✕), re-running the ask in place (refine path). */}
+              <AskUnderstoodChips
+                classifyResult={intentResults.classifyResult}
+                typedText={intentResults.typedText}
+                onRemove={canRefine(intentResults.classifyResult) ? (piece) => handleIntentRefine(`understood_${piece}`) : null}
+                disabled={intentRefining}
+              />
               {intentResults.items?.length > 0 && <FoundLine text={t('ui.home.foundIdeas')} />}
               {/* Item 107: refine in place (shared with Discover). A tap re-runs the same ask with one change. */}
               <AskRefinementChips

@@ -60,6 +60,7 @@ import { syncDiscoverSession, pushSession, pushClear, sameSession } from '../ser
 import { randomUUID } from 'expo-crypto';
 import AskRefinementChips from '../components/AskRefinementChips';
 import AskUnderstoodChips from '../components/AskUnderstoodChips';
+import { canRefine } from '../utils/askRefinements';
 import { peopleAskUnderstood } from '../utils/peopleAsk';
 import { displayedPosition } from '../utils/typedAskAudit';
 import { submitSurprise, shuffleSurprise, navigateToSurprisePick, surpriseTypesForTab } from '../services/surpriseMe';
@@ -3035,7 +3036,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
           {isSearching && onTopOrNotTabbed && !intentSearching && (intentSearch?.outcome === 'results' || intentSearch?.refined) && (
             <View style={styles.intentSearchBlock}>
-              <AskUnderstoodChips classifyResult={intentSearch.classifyResult} typedText={intentSearch.typedText} />
+              {/* Owner (2026-10-15): on the results each understood chip can be removed (✕), re-running the ask in place (refine path). */}
+              <AskUnderstoodChips
+                classifyResult={intentSearch.classifyResult}
+                typedText={intentSearch.typedText}
+                onRemove={canRefine(intentSearch.classifyResult) ? (piece) => handleIntentRefine(`understood_${piece}`) : null}
+                disabled={intentRefining}
+              />
               {intentSearch.items?.length > 0 && <FoundLine />}
               <AskRefinementChips
                 classifyResult={intentSearch.classifyResult}

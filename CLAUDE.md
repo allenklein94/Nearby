@@ -147,6 +147,9 @@ NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE
 **Item 86 (search -> People) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_86_SEARCH_TO_PEOPLE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `peopleMatch`; no new strings, no migration).
 
+**Understood chips: People count + remove only (owner, 2026-10-15) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md` is recorded on a real phone (migration 20270306; journey `outdoorMatch`; no new strings). Decision 3 (change/pickers) DEFERRED until a phone shows remove-only isn't enough.
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -431,7 +434,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   travels from the pin into its edge. Replaces the slide, adds no other motion; rows and Reduce Motion keep the plain modal animation.
 - **Ask understood (owner item 45):** a typed ask shows quiet chips of what its words gave (WHAT/WHEN/WHERE/WHO; unknown = none; never
   a refinement chip's piece) under the loader and above the results, Home + Discover, from `utils/askUnderstood.js` only
-  (`components/AskUnderstoodChips.js`); settles once per ask (small tier), then static.
+  (`components/AskUnderstoodChips.js`); settles once per ask (small tier), then static. Owner 2026-10-15: + a People chip only for a
+  stated number (`statedPartySize`); on RESULTS each chip has ✕ = remove only (no pickers), via `refineTypedAsk('understood_<piece>')`,
+  recorded as a refinement; `removedUnderstood` on the classification stops the resolver re-reading that piece from the same words
+  and is honoured by Create/AskBusiness params. Loader and People-mode chips stay non-tappable.
 - **Refine next step (owner item 46):** item 107's row unchanged (no time step, no new chips, Under $25); only the next unanswered
   step's chips (Who, then Budget; `nextRefinementStep`) carry a soft wash, fading in after the person's tap; none while refining/empty.
 - **Offer countdown (owner item 47):** only an open offer's real last 30 min (`presentOffer().countdown` <- `offerCountdown`): the existing

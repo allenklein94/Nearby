@@ -183,6 +183,23 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     expect(understoodPieces(finding, text)).toEqual(shown);
   });
 
+  // Owner (2026-10-15): an understood chip can be removed (remove only). Removing WHERE from the real ask re-runs the same words
+  // without it: both controls come back, the outdoor reason is gone, and "outside" in the unchanged words is not read again.
+  test('understood chip removal: "something outside right now" -> remove Outdoor -> all three cafes, the time kept', async () => {
+    const { understoodPieces, removeUnderstoodPiece } = require('../utils/askUnderstood');
+    const { resolveClassifiedAsk } = require('../services/intentResolver');
+    const text = 'something outside right now';
+    const r = await runIntentSearch(text);
+    expect(understoodPieces(r.classifyResult, text).map((p) => p.key)).toContain('where');
+    const c = removeUnderstoodPiece(r.classifyResult, 'where');
+    const next = await resolveClassifiedAsk(c, text);
+    expect(understoodPieces(c, text).map((p) => p.key)).not.toContain('where');
+    expect(c.dateWindow).toBe(r.classifyResult.dateWindow); // unrelated pieces untouched
+    const rows = businessRows(next);
+    expect(rows.map((i) => nameOf(i.partnerId)).sort()).toEqual([INDOOR, PATIO, PLAIN].sort());
+    for (const i of rows) expect(i.reasons ?? []).not.toContain(OUTDOOR_REASON);
+  });
+
   // Owner item 46: the refinement row's next step follows the real ask through real re-runs (Who, then Budget, then nothing).
   test('item 46: "something outside tonight" -> Who is next; With friends -> Budget; Under $25 -> done; the time is never touched', async () => {
     const { applyRefinement, nextRefinementStep } = require('../utils/askRefinements');

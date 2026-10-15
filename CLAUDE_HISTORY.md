@@ -1,3 +1,31 @@
+# Understood chips: People count + remove only (owner, 2026-10-15; reopens item 45 narrowly) - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+- Asked: (1) a People chip only when the words stated a number (item 84's `statedPartySize`, never a date's assumed 2), label =
+  existing "{count} people"; (2) understood chips correctable, REMOVE ONLY: ✕ re-runs the same ask in place (no retyping, AI call,
+  new screen or ranking change), recorded like a refinement; the original words kept, only that piece removed, and the resolver
+  must not read it back from the unchanged words; People-mode chips stay non-tappable; (3) change/pickers DEFERRED.
+- Built: `utils/askUnderstood.js`: `{ key: 'people', count }` piece; `removeUnderstoodPiece` (what -> category null, when ->
+  dateWindow null, who -> partyType null, people -> partySize null, where -> marker only) + `removedUnderstood` list on the
+  classification. `services/askRefine.js` `refineTypedAsk('understood_<piece>')` -> the existing `rerunAsk` (action 'removed');
+  a WHAT chip that is only a Browse group goes through the rail's own `narrowTypedAsk` clear. `resolveIntent({ removed })` (via
+  `resolveClassifiedAsk`): WHO skips `partnerPartyType`; WHEN reads no time words (clock, anchor, point clock, spontaneity, open
+  now, the weather window); WHERE masks the facets' environment/indoor-outdoor excludes, the restriction's wantsOutdoor/Indoor,
+  weather's explicit environment and the "be outdoors" group route; WHAT drops the asked activities and any group route
+  (`openEndedAskGroups({ removedWhat, removedWhere })`); People needs nothing (a size is never re-read). `createParamsFromAsk` and
+  `askBusinessParamsFromAsk` honour the removal (the count now from the current `partySize`). `AskUnderstoodChips` takes
+  `onRemove`/`disabled` (passed only on Home's and Discover's results when `canRefine`): "label ✕", a11y = existing
+  `ui.discover.selectedTapClear`; motion tokens untouched. Migration `20270306_understood_chip_removal.sql` adds the five
+  `understood_*` keys to the refinement CHECK and to `record_typed_ask_snapshot`'s validation (body otherwise 20270281's; single overload).
+- Verified: new `services/understoodChipRemoval.test.js` (14, real resolver: each piece removed stays removed, unrelated pieces
+  and words kept, recorded with parent snapshot, no AI call, Create/AskBusiness carry the correction, People/loader chips have no
+  onRemove, motion tokens unchanged, SQL keys); 4 source guards updated; journey `outdoorMatch` +1 (real deterministic ask
+  "something outside right now" -> remove Outdoor -> all three cafes, time kept). Jest 5935, journeys 322/322. Live: migration
+  applied; rolled-back check 2/2 (understood_when recorded with its parent; an unknown key dropped). No from-scratch replay.
+- Residuals (disclosed): the 4-chip cap is unchanged (a 5-piece ask drops the count chip); softer ranking reads of the same words
+  (social context, title mentions, `askStatesConstraint`) are not muted, they only order. Item 107's own chips: deselecting
+  Date can still be refilled by partner words (pre-existing, untouched). Device checklist
+  `PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md`.
+
 # Item 86 follow-up (owner, 2026-10-12) - what Nearby understood, above People - BUILT, NOT DEVICE-VERIFIED
 
 - Asked: a pure people ask that jumps to People keeps a quiet sign of what Nearby understood, even without "tonight"; reuse the

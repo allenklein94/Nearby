@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { spacing, typography } from '../theme';
@@ -14,9 +14,12 @@ import { understoodPieces, understoodKey, takeUnderstoodPlay } from '../utils/as
 // utils/askUnderstood.js. Not buttons (the refinement chips below are the ones that change the ask), no coral, no new strings:
 // labels reuse the date filter, environment chip, category and party names already shown elsewhere. The first time an ask is
 // understood they settle in one after another (small tier, readable from frame one); Reduce Motion or a repeat = already there.
+// Owner (2026-10-15, reopens "not buttons" narrowly): with `onRemove` (a results list only, never the loader or People mode)
+// each chip carries an ✕, like the category rail's selected chip, and a tap removes that piece (the surface re-runs the ask in
+// place through services/askRefine.js). Remove only: no picker, no change-to. Same look and motion otherwise.
 const T = SEQUENCES.askUnderstood;
 
-export default function AskUnderstoodChips({ classifyResult, typedText }) {
+export default function AskUnderstoodChips({ classifyResult, typedText, onRemove = null, disabled = false }) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const reduceMotion = useReduceMotion();
@@ -38,22 +41,42 @@ export default function AskUnderstoodChips({ classifyResult, typedText }) {
     if (p.key === 'what') return p.category ? categoryName(p.category, language) : groupName(p.group, language);
     if (p.key === 'when') return t(`ui.gatherings.dateFilter.${p.window}`);
     if (p.key === 'where') return t(p.environment === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip');
+    if (p.key === 'people') return t('ui.common.count.people', { count: p.count });
     return p.party === 'groups' ? t('ui.discover.tagBigGroup') : PARTY_TYPE_LABELS[p.party];
   };
   const labels = pieces.map(label);
+  const removable = typeof onRemove === 'function';
   return (
-    <View style={styles.row} pointerEvents="none" accessible accessibilityLabel={labels.join(', ')}>
-      {pieces.map((p, i) => (
-        <Animated.View
-          key={p.key}
-          style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surface }, {
-            opacity: infoOpacity(steps[i]),
-            transform: [{ translateY: steps[i].interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }],
-          }]}
-        >
-          <Text style={[styles.text, { color: colors.textSecondary }]} numberOfLines={1}>{labels[i]}</Text>
-        </Animated.View>
-      ))}
+    <View
+      style={styles.row}
+      pointerEvents={removable ? 'box-none' : 'none'}
+      {...(removable ? {} : { accessible: true, accessibilityLabel: labels.join(', ') })}
+    >
+      {pieces.map((p, i) => {
+        const text = <Text style={[styles.text, { color: colors.textSecondary }]} numberOfLines={1}>{removable ? `${labels[i]} ✕` : labels[i]}</Text>;
+        return (
+          <Animated.View
+            key={p.key}
+            style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surface }, {
+              opacity: infoOpacity(steps[i]),
+              transform: [{ translateY: steps[i].interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }],
+            }]}
+          >
+            {removable ? (
+              <TouchableOpacity
+                onPress={() => onRemove(p.key)}
+                disabled={disabled}
+                accessibilityRole="button"
+                accessibilityState={{ disabled }}
+                accessibilityLabel={t('ui.discover.selectedTapClear', { label: labels[i] })}
+                hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+              >
+                {text}
+              </TouchableOpacity>
+            ) : text}
+          </Animated.View>
+        );
+      })}
     </View>
   );
 }

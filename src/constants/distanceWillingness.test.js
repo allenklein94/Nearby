@@ -87,7 +87,7 @@ describe('willing to travel widens the bounded search', () => {
     for (const k of ['very_nearby', 'nearby', 'anywhere_in_area', null, 'far_away']) expect(travelSearchMiles(k)).toBeNull();
     const src = read('src/services/intentResolver.js');
     expect(src).toContain("getNearbyGatherings(travel ? 'travel' : 'wide')");
-    for (const fn of ['resolvePolicyOnlyBusinesses(location, partySize, travelMiles)', 'resolveOccasionPackages(location, occasion, partySize, travelMiles)', 'resolveOccasionOfferingBusinesses(location, occasion, travelMiles)', 'activitiesFromText(rawText), travelMiles)']) expect(src).toContain(fn);
+    for (const fn of ['resolvePolicyOnlyBusinesses(location, partySize, travelMiles)', 'resolveOccasionPackages(location, occasion, partySize, travelMiles)', 'resolveOccasionOfferingBusinesses(location, occasion, travelMiles)', 'whoForName, askedActivities, travelMiles)']) expect(src).toContain(fn);
     expect(read('src/services/gatherings.js')).toMatch(/tier === 'travel' \? TRAVEL_TIER_MAX_MILES/);
     expect(read('src/screens/AskBusinessScreen.js')).toContain('const RADIUS_OPTIONS = SEARCH_RADIUS_OPTIONS;');
   });

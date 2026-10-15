@@ -9,7 +9,9 @@ import { requestCarriedRows } from '../utils/fromWhatYouSaid';
 export function askBusinessParamsFromAsk({ classifyResult, typedText, submissionId }) {
   const c = classifyResult ?? {};
   // "no rush" / "whenever" (item 163) is the person's own answer to When?: "I'm flexible". Nothing else is filled from it.
-  const dateWindow = c.dateWindow ?? (c.structured?.spontaneity === 'no_rush' ? 'flexible' : null);
+  // A When the person removed from the ask's understood chips (owner, 2026-10-15) stays removed here too.
+  const whenRemoved = Array.isArray(c.removedUnderstood) && c.removedUnderstood.includes('when');
+  const dateWindow = c.dateWindow ?? (!whenRemoved && c.structured?.spontaneity === 'no_rush' ? 'flexible' : null);
   return {
     prefillText: typedText,
     prefillCategory: c.category ?? null,
@@ -23,7 +25,7 @@ export function askBusinessParamsFromAsk({ classifyResult, typedText, submission
     carriedSummary: requestCarriedRows({
       category: c.category ?? null,
       dateWindow,
-      statedPartySize: statedPartySize(c.structured ?? { group: { partySize: c.partySize } }, typedText),
+      statedPartySize: statedPartySize({ group: { partySize: c.partySize }, sources: c.structured?.sources }, typedText),
     }),
   };
 }
