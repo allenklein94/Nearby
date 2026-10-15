@@ -142,6 +142,9 @@ experience checklist passes with a real customer + business (needs Anthropic cre
 `PRODUCT_AUDIT/ITEM_93_INTENT_VISIBILITY_DEVICE_CHECKLIST_2026-10-15.md` is recorded on two phones AND native review of the 3
 `ui.settings` strings is done (migration 20270307; journey `intentVisibility`). Visual merge declined (LOCKED).
 
+**Item 99 (2026-10-15) motion restraint met by existing rules (items 22/25/36/57/58/122, tap-to-play video, calm tone, 900 ms cap,
+Reduce Motion); nothing built, no new rule; no global/ambient/decorative motion or new transitions (LOCKED).**
+
 **Item 98 (2026-10-15) "one object evolving" met by master principle 2, states-not-folders, item 45, item 58 and the in-place
 transformations (items 12/32/30/31/34, 95-97); nothing built, no new rule; authorizes no new motion (LOCKED).**
 

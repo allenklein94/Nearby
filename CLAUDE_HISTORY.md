@@ -1,3 +1,17 @@
+# Item 99 (owner, 2026-10-15) - motion restraint ("where I'd draw the line") - MET BY EXISTING RULES, NOTHING BUILT, NO NEW RULE
+
+- Proposal: never build animated backgrounds everywhere, constantly moving cards, giant particles, excessive parallax, autoplaying
+  video, confetti for normal actions, long transitions, or animation just because it looks cool (Apple: purposeful, brief motion).
+- Owner decision: met by existing rules, reaffirmed: item 36 (weather = a quiet wash on the Home weather card only; never particles);
+  no animated cards/tabs/lists + item 22 (loops only in loaders, capped, paused in background; video never preloaded/autoplayed);
+  items 25/122 (no particles/bounce); parallax: none exists (checked `src`), not authorized (motion only for real changes, cards and
+  lists static); offer video tap-to-play; calm tone for business transactions, no confetti (items 12/31/32; no confetti exists in `src`);
+  `motionBudget.js` 900 ms cap, the business-responds signature (<= 1.5 s, item 57) the established exception; Reduce Motion = finished
+  state; item 58 (motion must explain a real change) + item 55 (never a reason to animate more).
+- Unchanged: item 58's one narrow exception, the occasion tile celebrations (`OccasionAnimation.js`), stays as locked (kept as is,
+  nothing added).
+- Nothing built; no global animation, ambient motion, decorative effects or new transitions authorized; no new rule.
+
 # Item 98 (owner, 2026-10-15) - one object, evolving through states - MET BY EXISTING PRINCIPLES, NOTHING BUILT, NO NEW RULE
 
 - Proposal: animation as the visual counterpart of "one object, multiple states": the same thing evolving instead of a new screen /
