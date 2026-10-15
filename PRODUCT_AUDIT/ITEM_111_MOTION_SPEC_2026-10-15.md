@@ -1,6 +1,7 @@
 # Motion spec — Best Pick first reveal (item 111, 2026-10-15)
 
-Status: SPEC ONLY, nothing built. Owner approved in principle on condition that the reveal fits the locked motion rules and is
+Status: CLOSED 2026-10-15, owner kept the card STATIC; the emphasis variant below was DECLINED and is not to be built.
+Originally: spec only, nothing built. Owner approved in principle on condition that the reveal fits the locked motion rules and is
 not a recurring Home animation; implementation follows item 101 (this file).
 
 ## Verification against the locks (done before building)

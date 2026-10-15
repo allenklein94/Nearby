@@ -1,3 +1,16 @@
+# Item 111 (owner, 2026-10-15) - "Best Pick Tonight" tiny reveal - VERIFIED, DECLINED; CARD STAYS STATIC (LOCKED), NOTHING BUILT
+
+- Proposal: Best Pick shows "Tonight's pick" -> "Coffee + live music" -> the place name, once per user.
+- Owner approved in principle on condition of fitting the locked motion rules; item 101 spec written first
+  (`PRODUCT_AUDIT/ITEM_111_MOTION_SPEC_2026-10-15.md`). Verification: a name-last reveal breaks `animationNeverDelays` (info >= 0.6
+  opacity from frame one) and motion truth (no staged progress on a timer); "Coffee + live music" is not real Best Pick data (always
+  a gathering). Only a compliant emphasis settle (all lines readable, settling in order, once ever) was possible.
+- Owner decision: keep the card STATIC; the emphasis animation is DECLINED (too little value for another Home sequence).
+  "Best Pick Tonight", the genuine reason and the gathering title are readable from the first frame; no staged reveal, suspense,
+  timed progression or delayed title; motion only for a real change; no extra moment where item 40 or item 37 applies; no new
+  animation state, persistence or interaction complexity.
+- No implementation changes.
+
 # Item 110 (owner, 2026-10-15) - Home recommendations as "doors" - MET AS BUILT, EXPANSION + TRANSITION DECLINED (LOCKED), NOTHING BUILT
 
 - Proposal: Home presents opportunities, not a feed ("☀️ Great night for outdoor plans · See what's happening"); a tap expands
