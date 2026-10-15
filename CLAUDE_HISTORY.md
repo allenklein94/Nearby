@@ -1,3 +1,18 @@
+# Item 109 (owner, 2026-10-15) - "Tonight looks great" should be explainable - MET BY ITEM 34, ADDITIONS DECLINED (LOCKED), NOTHING BUILT
+
+- Proposal: "Tonight looks like a great night to meet someone new" needs real reasons (great weather, lots of people active, strong
+  People activity nearby), a "Meet People" CTA straight into People mode, and a transition from the Home recommendation into People.
+- Owner decision: keep the existing experience (`utils/meetTonight.js`, item 34 + items 76/78/137): shown only when evening (5-11 PM
+  local), an explicit meet-people / make-friends goal, and >= 3 real nearby people from the same pool People mode will show; the grey
+  basis line under the claim states the real reason + count; "Meet People" opens People mode directly (Dating/Friends per goals) with
+  the tonight banner, counted people first and the honest zero-count state.
+- DECLINED (LOCKED): weather and general activity signals (item 34's decision; item 36's weather-card scope); "Strong People activity
+  nearby" (the real count is more informative and defensible); any navigation animation (navigation immediate; Back restores Home).
+- Styling as built: claim `insightLine` = `colors.textPrimary` (not red), basis = grey `trendingMeta`.
+- Device validation: check C11 in `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md`; a red claim or a claim without its
+  reason means investigate the actual build (targeted truthfulness/presentation fix), never another UI treatment.
+- No code changes.
+
 # Item 108 (owner, 2026-10-15) - time should visually matter - WORDING MET; BUILT: shared minute clock (data freshness, no motion)
 
 - Proposal: show "6:30 PM" prominently instead of "Happening today"; "Starts in 42 min" when soon, gently updating; no flashing,
