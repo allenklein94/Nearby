@@ -1,3 +1,18 @@
+# Item 114 (owner, 2026-10-15) - Business "drops" - MET BY AVAILABILITY (ITEM 80), DROPS DECLINED (LOCKED), NOTHING BUILT
+
+- Number note: reuses "item 114" (the 2026-09-27 session-intent rule is a different, older item 114).
+- Proposal: a business posts "20 seats available tonight"; Nearby distributes it to people whose intent matches ("Coastal Coffee
+  just opened 20 spots").
+- Owner decision: met by Availability. `post_business_availability` (title, time window, capacity, radius, running
+  `remaining_capacity`) matches only OPEN requests whose location, time and party size fit; each match reaches that person as a reply
+  to their own request (item 62 push, item 23 travel, item 25 signature). Browsing: availability is ranking tier 4, no feed or card.
+- DECLINED (LOCKED): a separate "drops" feature or noun (the business keeps Opportunities, Bookings, Availability, Profile);
+  notifying anyone who has not asked, or targeting by interests/past behavior alone (item 80; businesses buy qualified demand, never
+  reach); scarcity-led promotional copy ("just opened N spots") and any business-controlled prominence (item 50).
+- Device/live acceptance: item 89's end-to-end check in `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (real business
+  + customer; needs Anthropic credit). No new check.
+- No code changes.
+
 # Item 113 (owner, 2026-10-15) - "Something for you" discovery animation - MET BY ITEM 26, ADDITIONS DECLINED (LOCKED), NOTHING BUILT
 
 - Number note: reuses "item 113" (the 2026-09-27 temporary-intent rule and the older "Nearby Motion System" item are different).
