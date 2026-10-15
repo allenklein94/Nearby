@@ -10,6 +10,9 @@
   motion on offer screens, item 58: would animate a change already shown).
 - Open: items 12 and 32 never seen on a real phone; their device checks stay in the device session order; the complete experience is
   not device-verified until they pass.
+- Owner follow-up (same day): acceptance and verification are separate statuses. Verification is the owner's, on a real phone:
+  item 12 = its checks in `OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (needs Anthropic credit); item 32 =
+  `ITEM_32_DEVICE_CHECKLIST_2026-10-11.md`. Never claim device verification until both are recorded as passed.
 
 # Item 94 (owner, 2026-10-15) - business offer adapts to group size - MET, NOTHING BUILT
 
