@@ -1,4 +1,8 @@
-# Item 130 (owner, 2026-10-16) a handful of motion primitives - MET by item 100, nothing built
+# Item 130 (owner, 2026-10-16) a handful of motion primitives - MET by item 100, nothing built, LOCKED
+
+Owner decision (2026-10-16, LOCKED): keep item 100's names and placements exactly; Confirm and Complete stay grouped under the
+existing `complete` primitive (never split, no item 100 entry moved); assemble and ambient stay as they are. The list documents
+existing motion and authorizes none. No renaming, repositioning, animation change or new motion; item 56 stands.
 
 Owner ask: not 50 animations but ~7 primitives (Signal, Connect, Reveal, Merge, Transform, Confirm, Complete). Already exists as item
 100 (2026-10-15, approved as built, placements LOCKED): every `SEQUENCES` entry names one of eight forms in `MOTION_PRIMITIVES`
