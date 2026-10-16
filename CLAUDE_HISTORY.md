@@ -1,4 +1,6 @@
-# Item 118 (owner, 2026-10-16) one business revision of a sent offer - APPROVED, BUILT, NOT DEPLOYED, NOT device-verified
+# Item 118 (owner, 2026-10-16) one business revision of a sent offer - APPROVED, BUILT, LIVE (deployed 2026-10-16), NOT device-verified
+
+**Deployed 2026-10-16 (owner authorized):** pre-check showed prod without `revision` and the old 2-/3-arg accept/confirm signatures; migration 20270312 applied in one transaction; post-check: `revision` + `revised_at` present, exactly one signature each for `accept_business_offer` / `confirm_group_plan_offer` (with `seen_revision_param`), `revise_business_offer` + `_on_business_offer_revised` present, anon cannot execute `revise_business_offer`, `business_offer_revised` in mute group `business_offers`; `send-push` deployed (`business_offer_revised` medium = no sound, `view_offer`). All journeys on prod with NO prelude: 33 suites, 365/365 (rolled back). Before deploying, the review of the six owner-forwarded checks (locking, stale accept, group reset, push safety, DB enforcement, tests) found them met; two caveats recorded: no live concurrency test of a group confirm racing a revision (same row lock + revision check protect it), and the revised push replaces a multi-reply "N replies" notification text until the next reply refreshes it.
 
 - Owner approved the build plan with all five recommendations: price only down or unchanged (a bigger discount counts), time either
   way; a revision clears group confirmations and everyone confirms the revised terms (prior consent never kept, the business never
