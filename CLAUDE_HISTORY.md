@@ -1,3 +1,18 @@
+# Item 139 (owner, 2026-10-16) "Interested could become useful for hosts" - signal MET AS BUILT; "Invite interested people?" DECLINED (privacy lock), nothing built
+
+Owner ask: host sees "8 attending / 5 interested", then "Invite interested people?" as a gentle conversion.
+Already built: the host (only the host) sees the count on their gathering: "☆ 5 people are interested but haven't joined yet."
+(`get_gathering_interested_count`, migration 20270115: host-only, count only, no identities; `g.interestedCount`, a failed read
+shows nothing, never 0), beside the attending figure (`attendingFigure`, host included).
+The conversion already exists from the interested person's own side, never pushed by the host: the "starts soon" reminder
+reaches Interested people (20270150, kept in 20270248's `send_gathering_reminders`), they are told once when an accepted
+FRIEND becomes an attendee (`notify_interested_friend_joined`), and item 31's Interested -> Attending is one tap on their card.
+"Interested people never notify the host" (20270150) stands.
+Declined: an "Invite interested people?" action. Even without names, an invite triggered by Interested tells each person the host
+acted on their private signal ("Interested is private, never shown or counted to another viewer ... never commercial intent"),
+and a host could learn who they are by watching who joins or replies. The host's own invite tools (friends, Circles, share link)
+are unchanged. No strings, no migration.
+
 # Item 138 (owner, 2026-10-16) "Who's going could dynamically organize" - DECLINED as asked (privacy lock), nothing built
 
 Owner ask: Who's going split into Going (Allen, Claude, Sarah) and Interested (Mike), avatars moving between sections as state changes.
