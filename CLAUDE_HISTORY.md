@@ -1,3 +1,12 @@
+# Item 124 (owner, 2026-10-16) "You asked. Coastal Coffee responded. You went." - MET BY ITEM 52, nothing built
+
+Owner ask: after a successful interaction, a "you did this" loop line, delightful the first few times, then unobtrusive. Found:
+item 52 already says "You used Nearby to turn a request into a real-world experience." under "✓ Visit confirmed" on the person's
+first completed offer only (owner chose first-time-only, 2026-10-12). Asked: loop wording for the first 3 visits / loop wording
+first visit only / met by item 52. Owner: MET BY ITEM 52, keep it exactly as built. The loop wording and repeating it beyond the
+first visit are DECLINED (LOCKED). Verification follows item 52's checklist
+(`PRODUCT_AUDIT/ITEM_52_FIRST_REDEMPTION_DEVICE_CHECKLIST_2026-10-12.md`).
+
 # Item 123 (owner, 2026-10-16) "📸 N memories" on the completed gathering's card - BUILT, NOT DEVICE-VERIFIED
 
 Owner ask: once people choose to add photos, the completed card reads "Beach Volleyball / ✓ Completed / 📸 4 memories"; tap opens
