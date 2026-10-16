@@ -1,3 +1,19 @@
+# Item 140 (owner, 2026-10-16) "Auto-accept could have a visual state" - MET AS BUILT, nothing built
+
+Owner ask: when the host enables auto-accept, show "Open to join" instead of "Request to join"; Join -> the attendee state
+transforms at once, no approval screen.
+Already built: Create's "Who can join?" = Anyone (auto-approved) vs Require approval (`requires_approval`; non-public = always
+reviewed). ONE rule `needsApproval` (`utils/gatheringJoinMode.js`, mirrors `join_gathering()`) words the button through
+`gatheringJoinAction` in `primaryAction.js` on every surface (card, Discover, Detail, the confirm button): open = "Join" (or
+"I'm Going" from Interested), approval = "Request to Join", full = "Join Waitlist". So an open gathering already reads as
+joinable on its own button; there is no approval step for it.
+Join: the one confirmation sheet (`GatheringIntentModal`: an optional private "What are you hoping for?", host never sees it;
+"nothing is joined without the confirmation" stands) -> server auto-approves -> the screen becomes You're in
+(`GatheringAttendingSection`, `justJoined`), item 31's "★ ~~Interested~~ → ✓ Attending" when joining from Interested; pending
+and waitlist get no celebration.
+Not built: a separate "Open to join" badge (a second label for what the button already says; one object, one action, item 87;
+new strings). No migration.
+
 # Item 139 (owner, 2026-10-16) "Interested could become useful for hosts" - signal MET AS BUILT; "Invite interested people?" DECLINED (privacy lock), nothing built
 
 Owner ask: host sees "8 attending / 5 interested", then "Invite interested people?" as a gentle conversion.
