@@ -1,3 +1,14 @@
+# Item 127 (owner, 2026-10-16) a redemption moves through the funnel on the same card - MET BY ITEMS 13 + 147, nothing built
+
+Owner ask: Request -> Offer -> Accepted -> Redeemed shown by the same opportunity card changing state, to make business analytics
+easy to read. Found: item 13 (owner APPROVED, LOCKED 2026-10-10, "do not reopen") is exactly this: the business's opportunity
+card shows Offer sent -> Accepted -> Redeemed (`utils/offerProgress.js`, `motion/OfferProgressSteps.js`), read only from the
+offer's stored status, updating live while the dashboard is open (realtime), the newly reached step fading in with one success
+glow once per offer+status per device (no replay on reopen; Reduce Motion = settled). Item 147's pipeline strip (New -> Reviewing ->
+Offered -> Won -> Completed, `utils/businessPipeline.js`, one stage per row) and item 150's month figures summarise the same rows.
+Recorded as MET, not asked (item 13 is locked); a separate funnel visualisation or a card travelling between stages is not built.
+Verification follows item 13's outstanding device/browser checks.
+
 # Item 126 (owner, 2026-10-16) business-side "proof" numbers - MET AS BUILT (item 150), nothing built
 
 Owner ask: the business dashboard shows what Nearby brought ("18 requests, 7 offers accepted, $420 redeemed"), counting up only
