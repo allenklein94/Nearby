@@ -1,3 +1,49 @@
+# From-scratch migration replay, items 114 + 116 (owner, 2026-10-16) - ALL 434 APPLY; journeys 343/343 + concurrency on the rebuilt DB; 1 replay defect, 1 grant drift (fix written, NOT applied to production)
+
+- Owner decisions recorded (2026-10-15): the Settings "Nearby Opportunities" panel stays removed (columns kept, no data deleted);
+  the Recommendations switch hint "Gatherings and places you can explore nearby." in all 11 languages APPROVED (already shipped,
+  c6621485; native review still pending like every machine-authored string); items 114 and 116 stay LOCKED.
+- Tool: `scripts/replay/from-scratch-replay.sh` (repeatable; everything it does besides running the files is listed in its header).
+  `supabase/postgres:15.1.0.147`, empty public schema, each file in ONE transaction with ON_ERROR_STOP, as `postgres`, in filename
+  order. Isolation: the container runs on an internal Docker network with no route out (checked before any migration; positive
+  control: the same check reaches the internet on the default network). Needed because `_push_outbox_deliver` and other functions
+  post to PRODUCTION's edge-function URLs (hard-coded). Nothing was ever queued/sent from earlier runs (queue + responses empty).
+- ENVIRONMENT gaps (the image, not our migrations), patched on the test container only: `auth.users.phone`;
+  `storage.buckets.public/file_size_limit/allowed_mime_types`; `auth.uid()/role()/email()/jwt()` reading `request.jwt.claims` (the
+  image's read only the legacy per-claim settings, so every signed-in journey step saw no user); extensions created as
+  supabase_admin; a placeholder vault secret (not a key). PG 15 vs prod PG 17.6: no MAINTAIN privilege (`m` flag), PG 17's view
+  deparser drops table qualifiers. The hosted storage service's 7 triggers on storage.buckets/objects exist only in prod.
+- REAL REPLAY DEFECT (not environmental): `20270294_v1_category_pass.sql` (item 168) aborts on an empty DB ("The app code inventory
+  has never been synced") because its moves require `sync_category_code_dependencies` to have run, which production did out of band
+  (runbook step 7 and an earlier sync). The script performs that operational step at the same point: before 20270294 with
+  `scripts/taxonomy/code-dependencies.json` at f62ff7e9^1 (production's exact earlier sync is not recorded; 1431 rows), after it with
+  f62ff7e9 (runbook step 7). The post-sync reproduced production's recorded result exactly (1580 rows, 66 follow-ups resolved, 0
+  open). The migration file itself is unchanged; a replay without this step fails at file 418.
+- Result: ALL 434/434 migrations apply (433 + the new 20270310). Compared with production (read-only catalogue query, both sides):
+  same 617 functions (single overloads), 177 relations, 1829 columns, 775 constraints, 348 indexes, 192 policies, 26 cron jobs, 8
+  buckets; every function body identical except one comment block (`get_partner_offer_performance`); 7 views differ only by PG 17
+  rendering. Item 114: trigger `on_business_availability_created_notify_nearby_opportunities` and
+  `notify_matching_business_availability` absent; business_availability's triggers are the 3 non-notifying ones, as in prod.
+- GRANT DRIFT found: production had PUBLIC (and for 80, anon) EXECUTE revoked on 90 baseline-era functions (e.g. `set_premium_status`,
+  `join_gathering`, `generate_monthly_invoices`; 13 are service_role only) but no migration does it (origin not recorded), so a
+  rebuilt DB was WIDER than prod. Production itself is fine. Fix: `20270310_function_execute_grants_match_prod.sql`, generated from
+  production's live grants (revoke from public/anon/authenticated/service_role, grant exactly prod's roles). On the replay it brings
+  all function grants to identical with prod. **NOT APPLIED to production:** running it in a rolled-back transaction on prod was
+  blocked by this session's permission classifier, so its no-op-on-prod claim is by construction only, not executed. Owner: apply it
+  (expected no-op) or have it proven rolled back first. Left as is (effective access identical): 24 redundant column-level grants in
+  prod on gatherings (18 SELECT) and live_tracking_sessions (r on 2 cols) where table-level grants already cover them.
+- Behaviour on the rebuilt DB: `scripts/replay/journey-fixtures.sql` seeds synthetic actors only (6 people, verified + push token, 1
+  group-only Food & Drink business owned by person 1, 1 accepted friendship, 1 business request: the journeys pick actors from
+  existing rows). The journey harness can now target a local DB (`NEARBY_LOCAL_DB_URL`, opt-in; `runSql` unchanged otherwise).
+  ALL 33 journeys 343/343, incl. `availabilityNoBroadcast` 4/4 (only the matching open request's requester gets the reply push) and
+  `bookingCapacity` 8/8 (deduct/restore by full party). New `scripts/replay/booking-capacity-concurrency.js` (local DB only): the
+  app's own `accept_business_offer` from 8-25 simultaneous sessions holding their locks, 4 rounds (10/3, 12/4, 5/6, 20/1), then
+  simultaneous `cancel_business_reservation`: never overbooked, exactly floor(capacity/party) win, losers get "This availability
+  just filled up." and hold nothing, cancels restore full capacity -> all pass. Negative control: a naive read-then-write version
+  booked 24 people into 10 spots and the script failed, so the check is real.
+- Also: journeys 343/343 against production (rolled back, unchanged path); Jest 446 suites, 5984 passed. Production was not
+  modified. Not done: device checks; the 2026-09-20-style comparison of storage/auth-schema objects owned by hosted services.
+
 # Item 114 implemented (owner, 2026-10-15) - availability never broadcasts by interest; open requests only (LIVE)
 
 - Implementation of the existing locked item 114 decision, not a new product decision (owner). Found during item 116:

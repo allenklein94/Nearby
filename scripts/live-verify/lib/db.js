@@ -47,7 +47,25 @@ function requireToken() {
 // the raw last statement -- wrap it in `select count(*) as c from (...)
 // x` instead, which always returns exactly one row regardless, and
 // assert on the count.
+// NEARBY_LOCAL_DB_URL (optional): run against a LOCAL database instead (the from-scratch replay container,
+// scripts/replay/from-scratch-replay.sh), never production. Needs the `pg` client; NEARBY_PG_MODULE may point at a copy
+// outside the app's dependencies. One connection per call, like the Management API; returns the last statement's rows.
+async function runSqlLocal(query) {
+  const { Client } = require(process.env.NEARBY_PG_MODULE || 'pg');
+  const client = new Client({ connectionString: process.env.NEARBY_LOCAL_DB_URL });
+  await client.connect();
+  try {
+    const res = await client.query(query);
+    const results = Array.isArray(res) ? res : [res];
+    const withRows = results.filter((r) => r.rows && r.rows.length);
+    return withRows.length ? withRows[withRows.length - 1].rows : [];
+  } finally {
+    await client.end();
+  }
+}
+
 async function runSql(query) {
+  if (process.env.NEARBY_LOCAL_DB_URL) return runSqlLocal(query);
   const token = requireToken();
   const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`, {
     method: 'POST',

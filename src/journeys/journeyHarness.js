@@ -5,7 +5,8 @@
 // the very rows the database produced. Run: SUPABASE_ACCESS_TOKEN=... npm run journeys   (skipped without a token).
 const { runSql } = require('../../scripts/live-verify/lib/db');
 
-const hasToken = !!process.env.SUPABASE_ACCESS_TOKEN;
+// A local replay database (NEARBY_LOCAL_DB_URL) counts as a target too.
+const hasToken = !!(process.env.SUPABASE_ACCESS_TOKEN || process.env.NEARBY_LOCAL_DB_URL);
 
 // `body` is plpgsql that may use `log` (jsonb array) and the helper pattern:
 //   log := log || jsonb_build_array(jsonb_build_object('step', 'name', 'ok', <boolean>, 'data', <jsonb>));
