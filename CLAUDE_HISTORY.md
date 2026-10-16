@@ -1,3 +1,12 @@
+# Item 125 (owner, 2026-10-16) the app shows its own value - MET BY ITEM 53, nothing built
+
+Owner ask: quantify Nearby's benefit without gamification ("Nearby helped you make 4 plans this month", "3 local businesses
+responded to your requests"). Found: item 53's Home "N plans this month" (only plans that HAPPENED, `get_my_plans_this_month`,
+shown at >= 1, opens Your Activity) is the first example; no cross-request "N businesses responded" figure exists (each request
+shows its own `ui.requestDetail.businessesResponded`). Asked: met by item 53 / a line on Your Activity / a second Home line.
+Owner: MET BY ITEM 53; a cross-request "businesses responded" figure (Home or Your Activity) DECLINED (LOCKED). Verification
+follows item 53's checklist (`PRODUCT_AUDIT/ITEM_53_PLANS_THIS_MONTH_DEVICE_CHECKLIST_2026-10-12.md`).
+
 # Item 124 (owner, 2026-10-16) "You asked. Coastal Coffee responded. You went." - MET BY ITEM 52, nothing built
 
 Owner ask: after a successful interaction, a "you did this" loop line, delightful the first few times, then unobtrusive. Found:

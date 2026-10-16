@@ -108,6 +108,7 @@ Item 124 ("You asked. X responded. You went.", owner 2026-10-16) is MET by item 
 **Item 53 ("N plans this month" + streak push retired) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_53_PLANS_THIS_MONTH_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real device AND native review of
 `ui.home.plansThisMonth` / `plansThisMonthA11y` is done (migrations 20270300 + 20270301; journey `plansThisMonth`; live `streak-nudge-retired.sql` 7/7).
+Item 125 (the app shows its value, owner 2026-10-16) is MET by item 53, nothing built; a cross-request "N businesses responded" figure DECLINED (LOCKED).
 
 **Item 54 ("You've been into X lately") is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_54_NOTICED_ACTIVITY_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real device AND native review of the 3
