@@ -101,7 +101,7 @@ Owner: keep the existing headline (no "Someone is looking for this" unless busin
 **Item 128 ("N people are looking for what you offer" made true, owner 2026-10-16) + follow-up (one eligibility rule, leftover floor) is BUILT, LIVE, NOT BROWSER/DEVICE-VERIFIED until** business Home
 is checked in a real browser and on a phone (migrations 20270316 + 20270317 LIVE; from-scratch replay 441/441 + journeys 399/399 on it; journey `offeredDemand`; no new strings).
 
-**Item 129 (consumer and business as mirrors, owner 2026-10-16) is MET as built, nothing built:** one state machine (`business_requests` + `business_request_offers` status, `objectLifecycle.js` `offerLifecycleState`/`canDo`) read by both sides (customer card via `presentOffer`, business via `offerProgress` item 13 + `businessPipeline` item 147). A shared motion language across the two sides is NOT adopted: item 56/57 keep the signature for the customer's "business responds" and accept/redemption motion as approved (reopening needs the owner).
+**Item 129 (consumer and business as mirrors, owner 2026-10-16) is MET as built, LOCKED, nothing built:** one transaction state, two views: customer = `presentOffer()` (personal), business = item 13's Offer sent -> Accepted -> Redeemed + item 147's pipeline (operational); never identical wording or animation, no business-side signature copy (item 57), item 56's motions unchanged, no new funnel (item 127); business feedback stays item 48 + item 13's step glows.
 **Item 127 (a redemption moves through the funnel on one card, owner 2026-10-16) is MET by item 13 + item 147's pipeline, nothing built; another funnel visualisation or a sliding-card animation DECLINED (LOCKED).**
 **Item 13 (business card Offer sent -> Accepted -> Redeemed, LOCKED; owner re-confirmed 2026-10-16) is APPROVED, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_13_OFFER_PROGRESS_DEVICE_CHECKLIST_2026-10-16.md` passes with a real signed-in business on a phone AND in a browser (statuses vs saved
@@ -445,6 +445,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   thresholds (Trending >= 5) still compare joined guests.
   Events are gatherings + `format`; `ticket_required` is informational only.
 - Each actor reports only its own side's state; server RPCs compute derived state.
+- **Mirrored sides, different voices (owner item 129, LOCKED):** customer and business read the SAME offer/request state (`objectLifecycle.js`)
+  but never share wording or animation: personal for the customer, operational for the business; no business-side signature.
 - **One offer revision (item 118, LOCKED):** a business may change an open, hand-written reply ONCE, price only down (or a bigger
   discount) and its time(s) earlier/later, same number of times; never terms it didn't have, never an automatic reply
   (`revise_business_offer`, client `utils/offerRevision.js`). Same card, current terms + "Updated", never a previous price or saving;

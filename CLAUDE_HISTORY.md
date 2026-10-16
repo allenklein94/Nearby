@@ -1,4 +1,10 @@
-# Item 129 (owner, 2026-10-16) consumer and business as mirrors - MET as built, nothing built
+# Item 129 (owner, 2026-10-16) consumer and business as mirrors - MET as built, LOCKED, nothing built
+
+Owner decision (2026-10-16, LOCKED): the two sides communicate the same underlying transaction state without identical language or
+animation. Customer: `presentOffer()` drives the personal response. Business: the opportunity card + pipeline keep Offer sent ->
+Accepted -> Redeemed. Item 57: "a business responds" stays the single signature, customer side; no second business-side version.
+Item 56: accept/merge, join and redemption animations unchanged, never for uniformity. Item 127: no other funnel visualisation.
+Business feedback stays item 48's "signal received" + item 13's Accepted/Redeemed step glows. Not a request for more implementation.
 
 Owner ask: consumer (request sent -> offer received -> accepted -> redeemed) and business (request received -> offer sent ->
 accepted -> redeemed) as one state machine seen from two sides, ideally with the same motion language. Checked: it already is one
