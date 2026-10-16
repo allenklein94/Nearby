@@ -9,6 +9,7 @@
 // Dating vs Friends from the person's own usage and goals.
 import { subModeFromMotivations } from './peopleSubModePreference';
 import { tr } from '../i18n/translate';
+import { isDatingOptedIn } from './datingCountConsent';
 
 export const MEET_TONIGHT_MIN_PEOPLE = 3;
 export const EVENING_START_HOUR = 17;
@@ -33,6 +34,8 @@ export function hasMeetIntent(motivations) {
 export const TONIGHT_SIGHTING_WINDOW_MS = 24 * 60 * 60 * 1000;
 export function isTonightSupply(person, { subMode = 'dating', now = new Date() } = {}) {
   if (subMode === 'friends') return person?.distance_bucket === 'Nearby';
+  // Item 121 follow-up: only people who explicitly chose Dating are ever counted (utils/datingCountConsent.js).
+  if (!isDatingOptedIn(person)) return false;
   const t = person?.last_seen_at ? new Date(person.last_seen_at).getTime() : NaN;
   return Number.isFinite(t) && t >= now.getTime() - TONIGHT_SIGHTING_WINDOW_MS && t <= now.getTime() + 60 * 1000;
 }

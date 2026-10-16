@@ -87,14 +87,15 @@ describe('wiring: Home claim -> People destination (item 76)', () => {
 
 describe('claim -> inventory check (item 78)', () => {
   const now = new Date(2026, 8, 25, 19, 0, 0); // a Friday evening
+  const dater = { profiles: { onboarding_motivations: ['Go on dates'] } };
   const ago = (h) => new Date(now.getTime() - h * 3600 * 1000).toISOString();
   test('Dating supply counts only people really seen near you in the last 24 h', () => {
     const list = [
-      { last_seen_at: ago(1) }, { last_seen_at: ago(20) },
-      { last_seen_at: ago(30) },            // an old crossing is not "tonight"
-      { last_seen_at: null },               // known only from a past shared gathering
+      { ...dater, last_seen_at: ago(1) }, { ...dater, last_seen_at: ago(20) },
+      { ...dater, last_seen_at: ago(30) },            // an old crossing is not "tonight"
+      { ...dater, last_seen_at: null },               // known only from a past shared gathering
       {},                                   // no sighting at all
-      { last_seen_at: 'garbage' },
+      { ...dater, last_seen_at: 'garbage' },
     ];
     expect(countTonightSupply({ subMode: 'dating', list, now })).toBe(2);
     expect(TONIGHT_SIGHTING_WINDOW_MS).toBe(24 * 3600 * 1000);
@@ -107,13 +108,13 @@ describe('claim -> inventory check (item 78)', () => {
     expect(countTonightSupply({ subMode: 'dating', list: null })).toBeNull();
   });
   test('a Friday evening with too little real supply says nothing', () => {
-    const list = [{ last_seen_at: ago(2) }, { last_seen_at: ago(3) }, { last_seen_at: ago(90) }, { last_seen_at: null }];
+    const list = [{ ...dater, last_seen_at: ago(2) }, { ...dater, last_seen_at: ago(3) }, { ...dater, last_seen_at: ago(90) }, { ...dater, last_seen_at: null }];
     const count = countTonightSupply({ subMode: 'dating', list, now });
     expect(count).toBe(2);
     expect(meetSomeoneTonight({ now, nearbyPeopleCount: count, motivations: ['Go on dates'] })).toBeNull();
   });
   test('enough real supply makes the claim, and the destination banner counts the same way', () => {
-    const list = [1, 2, 3].map((h) => ({ last_seen_at: ago(h) }));
+    const list = [1, 2, 3].map((h) => ({ ...dater, last_seen_at: ago(h) }));
     const count = countTonightSupply({ subMode: 'dating', list, now });
     expect(meetSomeoneTonight({ now, nearbyPeopleCount: count, motivations: ['Go on dates'] })).not.toBeNull();
     expect(peopleTonightBanner({ subMode: 'dating', count }).line).toMatch(/^3 people near you in the last day/);

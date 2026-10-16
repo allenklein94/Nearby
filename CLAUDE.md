@@ -320,7 +320,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Activity, never implied people density (owner item 121, LOCKED):** a map/area/"heat" signal counts activity (public gatherings) and
   says so ("N happening now", "Activity nearby"), never "People nearby", crowds or density. A count of people only from a pool its
   members explicitly opted into (friend discovery, item 39, dating discovery) or real stated requests (business side, floor of 5).
-  Heatmaps/people density stay DEFERRED. Guard: item 121 test in `mapAreaActivity.test.js`.
+  Heatmaps/people density stay DEFERRED; item 120's gathering count stays separate from every people count. Guard: item 121 test in `mapAreaActivity.test.js`.
+- **Dating counts = explicit Dating opt-in only (owner, 2026-10-16):** "N people nearby to meet", "N new people nearby" and Discover's
+  tonight banner count only people whose own "What are you looking for?" is Dating or Both (`'Go on dates'`), via ONE rule
+  `utils/datingCountConsent.js` (`isDatingOptedIn`, used by `isTonightSupply` and `countNewDatingPeople`). A shared gathering, interests,
+  proximity or past interactions are never consent. Threshold (3) unchanged; no new location data. Guard `datingCountConsent.test.js`.
 - Not LinkedIn: no professional search, graph, résumé or job fields; Job Title is never compared.
 
 ### Understanding asks

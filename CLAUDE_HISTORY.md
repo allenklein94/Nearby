@@ -1,3 +1,21 @@
+# Item 121 follow-up (owner, 2026-10-16) Dating counts = explicit Dating opt-in only - BUILT, NOT DEVICE-VERIFIED
+
+Owner approved: Home's Dating counts include only people who explicitly opted in to Dating; attending the same gathering is not consent.
+- No Dating-discovery switch exists (unlike `open_to_friend_discovery`). The existing explicit choice is the person's own
+  "What are you looking for?" answer, Dating or Both, stored as `'Go on dates'` in `profiles.onboarding_motivations` and changeable
+  in Settings (the same token that already starts People on Dating). That is the opt-in used; no schema change, no new location data.
+- ONE rule `src/utils/datingCountConsent.js`: `isDatingOptedIn(person)` (unknown/missing profile = not counted) and
+  `countNewDatingPeople(list, lastVisit)`. `isTonightSupply`'s dating branch requires it, so "N people nearby to meet", the
+  "meet someone tonight" claim (threshold 3, unchanged), Discover's tonight banner and `orderForTonight` (first N cards = the N counted)
+  all agree; Home's "N new people nearby" uses `countNewDatingPeople`. `getNearbyMatches` now also reads `onboarding_motivations`
+  (already readable by authenticated; not displayed). Friends counts unchanged.
+- Tests: new `datingCountConsent.test.js` (8): shared-gathering, friends-only, generic "Meet people", empty, unknown and missing
+  profiles are excluded from both labels; first N = N counted; no location/sighting/gathering read. Existing item 78/137 fixtures
+  now carry the opt-in. Jest 6,040 passed; journeys 373/373 (no journey covers Home's dating counts: uncovered, disclosed).
+- Live fact (2026-10-16): 0 of 4 profiles hold `'Go on dates'`, so both Dating counts are currently 0 / hidden on prod.
+- Still open, NOT changed (outside the approved scope): the Dating deck itself (Crossed Paths/Browse) still lists people who never
+  chose Dating; only the counts are fixed. Owner decision needed on whether the deck should follow the same opt-in.
+
 # Item 121 (owner, 2026-10-16) "heat" never implies people density - rule LOCKED, nothing else built
 
 Owner: use "Activity nearby", never "People nearby", unless people explicitly opted into a visibility model that supports it;

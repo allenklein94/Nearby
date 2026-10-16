@@ -10,6 +10,7 @@ import { getUserLocation } from './userLocation';
 import { subModeFromMotivations } from '../utils/peopleSubModePreference';
 import { getFriendDiscoveryCandidates } from './friendDiscovery';
 import { meetSomeoneTonight, countTonightSupply } from '../utils/meetTonight';
+import { countNewDatingPeople } from '../utils/datingCountConsent';
 import { canonicalizeInterests } from '../constants/interestGraph';
 import { becauseYouLikeCategories } from '../constants/blendedRanking';
 import { getMyLearnedAffinity } from './behaviorSignals';
@@ -645,7 +646,8 @@ export async function getHomeDashboard() {
   // showing something misleading.
   const sinceAway = lastVisit
     ? {
-        newPeopleCount: nearbyPeople.filter((p) => new Date(p.last_seen_at) > lastVisit).length,
+        // Item 121 follow-up: Dating opt-in only (datingCountConsent.js); a shared gathering is never consent to be counted.
+        newPeopleCount: countNewDatingPeople(nearbyPeople, lastVisit),
         newGatheringsCount: nearbyGatherings.filter((g) => new Date(g.created_at ?? g.scheduled_at) > lastVisit).length,
       }
     : null;

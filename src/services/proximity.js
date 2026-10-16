@@ -300,7 +300,7 @@ export async function getNearbyMatches() {
 
   const { data: profiles, error: profilesError } = await supabase
     .from('people_visible_to_me')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, onboarding_motivations')
     .in('id', otherUserIds);
 
   if (profilesError) {

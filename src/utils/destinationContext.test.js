@@ -62,11 +62,12 @@ describe('Morning and afternoon Quick Picks keep their time', () => {
 
 describe('Meet people tonight keeps tonight', () => {
   const now = new Date('2026-10-02T21:00:00Z');
+  const dater = { profiles: { onboarding_motivations: ['Go on dates'] } };
   const dating = [
-    { id: 'old', last_seen_at: '2026-09-20T21:00:00Z' },
-    { id: 'tonight1', last_seen_at: '2026-10-02T20:00:00Z' },
-    { id: 'none' },
-    { id: 'tonight2', last_seen_at: '2026-10-02T10:00:00Z' },
+    { ...dater, id: 'old', last_seen_at: '2026-09-20T21:00:00Z' },
+    { ...dater, id: 'tonight1', last_seen_at: '2026-10-02T20:00:00Z' },
+    { ...dater, id: 'none' },
+    { ...dater, id: 'tonight2', last_seen_at: '2026-10-02T10:00:00Z' },
   ];
   test('the people the banner counted come first, nobody removed, otherwise stable', () => {
     const out = orderForTonight(dating, { subMode: 'dating', now });
