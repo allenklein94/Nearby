@@ -12,6 +12,8 @@ Record: device, OS, appearance mode, date, result per check. Needs 2+ public gat
 7. Back arrow, the active ⚡ chip ✕ and Android back each return to the MAP, at the same position and zoom as before the tap.
 8. Switching to the Today or This Weekend chip from the area list shows the whole window (the area does not carry over).
 9. Gatherings / Perks tabs, a search, or a category view: no pills.
-10. Leaving the screen open past a gathering's window edge: the pill's count updates on the next redraw (known: like the Happening Now section, the clock only wakes from 60 min before a start).
+10. Leaving the screen open past a gathering's window edge: the pill's count updates on the next redraw (known: like the Happening Now section, the clock only wakes from 60 min before a start). Owner (2026-10-16): ACCEPTED for the first release, documented, not a failure: a gathering entering the 2 h window appears only on the next redraw.
+10b. Pill -> list count drift (owner, 2026-10-16, accepted live-data edge case): if a gathering leaves the window between seeing the pill and tapping it, the list may show one fewer than the pill said. Record PASS only if the list then shows the current set and NEVER a gathering outside the window; any ineligible row = FAIL.
 11. Screen reader: the pill reads "N gatherings happening now in this area. Show them" and acts as a button.
-12. Non-English (at least one language): pill, heading and "Show all" read naturally (native review of the 4 `ui.mapView.area*` strings).
+11b. Screen reader on a red pin (owner, 2026-10-16): reads "{title}, hosted by {name}, approximate location, starting soon or under way" (never "happening now", which is the pill's window); the pin's colour, callout "🔴 LIVE NOW" and timing are unchanged.
+12. Non-English (at least one language): pill, heading and "Show all" read naturally (native review of the 4 `ui.mapView.area*` strings AND the reworded `ui.mapView.gatheringLiveA11y`, 10 languages).

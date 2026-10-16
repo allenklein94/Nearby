@@ -1,3 +1,17 @@
+# Item 120 follow-up (owner review, 2026-10-16) - build APPROVED, red-pin screen-reader label fixed, NOT device-verified
+
+Owner approved the build as is; item stays OPEN for the 12+ device checks and native review. Three review points:
+1. **Pill/list count drift** (a gathering leaves the window between seeing the pill and tapping it): ACCEPTED as a live-data edge
+   case, provided the list shows the current set and never an ineligible gathering. Added as checklist 10b. No code change: the
+   list already filters through `buildDiscoverDateView` with `isWithinRightNowWindow` at render.
+2. **Red-pin screen-reader label** said "happening now" though `isMapLiveNow` is a different window (starts within 30 min / started
+   up to 2 h ago). FIXED as a correctness issue: `ui.mapView.gatheringLiveA11y` now ends "starting soon or under way" (11 languages,
+   10 machine-authored, need native review). Pin colour, callout "🔴 LIVE NOW" and timing unchanged. Test in `mapAreaActivity.test.js`
+   (en wording, never "happening now", callout unchanged). Checklist 11b.
+3. **Refresh timing** (a gathering entering the window appears only on the next redraw, like Happening Now): ACCEPTED for the first
+   release, documented in checklist 10.
+Jest: 450 suites, 6,031 passed. No migration, no journey (client-only).
+
 # Item 120 (owner, 2026-10-16) "N happening now" on the Discover map - APPROVED, BUILT, NOT device-verified
 
 - Owner forwarded the "living canvas" idea; I recommended recording it as met (pulse and people density conflict with items

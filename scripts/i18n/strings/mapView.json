@@ -8,7 +8,7 @@
   "publicStory": "📸 Public Story",
   "tapToView": "Tap to view",
   "gatheringA11y": "{title}, hosted by {name}, approximate location",
-  "gatheringLiveA11y": "{title}, hosted by {name}, approximate location, happening now",
+  "gatheringLiveA11y": "{title}, hosted by {name}, approximate location, starting soon or under way",
   "areaCount": {
    "one": "{count} happening now",
    "other": "{count} happening now"
@@ -29,7 +29,7 @@
   "publicStory": "📸 Historia pública",
   "tapToView": "Toca para ver",
   "gatheringA11y": "{title}, organizado por {name}, ubicación aproximada",
-  "gatheringLiveA11y": "{title}, organizado por {name}, ubicación aproximada, en curso ahora",
+  "gatheringLiveA11y": "{title}, organizado por {name}, ubicación aproximada, empieza pronto o ya empezó",
   "areaCount": {
    "one": "{count} pasando ahora",
    "other": "{count} pasando ahora"
@@ -50,7 +50,7 @@
   "publicStory": "📸 Öffentliche Story",
   "tapToView": "Tippen zum Ansehen",
   "gatheringA11y": "{title}, veranstaltet von {name}, ungefährer Ort",
-  "gatheringLiveA11y": "{title}, veranstaltet von {name}, ungefährer Ort, läuft gerade",
+  "gatheringLiveA11y": "{title}, veranstaltet von {name}, ungefährer Ort, beginnt bald oder läuft bereits",
   "areaCount": {
    "one": "{count} gerade los",
    "other": "{count} gerade los"
@@ -71,7 +71,7 @@
   "publicStory": "📸 Story publique",
   "tapToView": "Touche pour voir",
   "gatheringA11y": "{title}, organisé par {name}, lieu approximatif",
-  "gatheringLiveA11y": "{title}, organisé par {name}, lieu approximatif, en ce moment",
+  "gatheringLiveA11y": "{title}, organisé par {name}, lieu approximatif, commence bientôt ou a déjà commencé",
   "areaCount": {
    "one": "{count} en ce moment",
    "other": "{count} en ce moment"
@@ -92,7 +92,7 @@
   "publicStory": "📸 Story pública",
   "tapToView": "Toque para ver",
   "gatheringA11y": "{title}, organizado por {name}, local aproximado",
-  "gatheringLiveA11y": "{title}, organizado por {name}, local aproximado, acontecendo agora",
+  "gatheringLiveA11y": "{title}, organizado por {name}, local aproximado, começa em breve ou já começou",
   "areaCount": {
    "one": "{count} acontecendo agora",
    "other": "{count} acontecendo agora"
@@ -113,7 +113,7 @@
   "publicStory": "📸 Istwa piblik",
   "tapToView": "Tape pou wè",
   "gatheringA11y": "{title}, {name} òganize l, kote apeprè",
-  "gatheringLiveA11y": "{title}, {name} òganize l, kote apeprè, k ap fèt kounye a",
+  "gatheringLiveA11y": "{title}, {name} òganize l, kote apeprè, ap kòmanse byento oswa li deja kòmanse",
   "areaCount": {
    "one": "{count} k ap pase kounye a",
    "other": "{count} k ap pase kounye a"
@@ -134,7 +134,7 @@
   "publicStory": "📸 公开动态",
   "tapToView": "点按查看",
   "gatheringA11y": "{title}，由{name}发起，大致位置",
-  "gatheringLiveA11y": "{title}，由{name}发起，大致位置，正在进行",
+  "gatheringLiveA11y": "{title}，由{name}发起，大致位置，即将开始或已开始",
   "areaCount": {
    "other": "{count} 个正在进行"
   },
@@ -153,7 +153,7 @@
   "publicStory": "📸 Tin công khai",
   "tapToView": "Chạm để xem",
   "gatheringA11y": "{title}, do {name} tổ chức, vị trí gần đúng",
-  "gatheringLiveA11y": "{title}, do {name} tổ chức, vị trí gần đúng, đang diễn ra",
+  "gatheringLiveA11y": "{title}, do {name} tổ chức, vị trí gần đúng, sắp bắt đầu hoặc đã bắt đầu",
   "areaCount": {
    "other": "{count} đang diễn ra"
   },
@@ -172,7 +172,7 @@
   "publicStory": "📸 Pampublikong story",
   "tapToView": "I-tap para makita",
   "gatheringA11y": "{title}, host si {name}, tinatayang lokasyon",
-  "gatheringLiveA11y": "{title}, host si {name}, tinatayang lokasyon, nangyayari ngayon",
+  "gatheringLiveA11y": "{title}, host si {name}, tinatayang lokasyon, malapit nang magsimula o nagsimula na",
   "areaCount": {
    "one": "{count} nangyayari ngayon",
    "other": "{count} nangyayari ngayon"
@@ -193,7 +193,7 @@
   "publicStory": "📸 Публичная история",
   "tapToView": "Нажмите, чтобы посмотреть",
   "gatheringA11y": "{title}, организатор {name}, примерное место",
-  "gatheringLiveA11y": "{title}, организатор {name}, примерное место, идёт сейчас",
+  "gatheringLiveA11y": "{title}, организатор {name}, примерное место, скоро начнётся или уже идёт",
   "areaCount": {
    "one": "{count} идёт сейчас",
    "few": "{count} идут сейчас",
@@ -218,7 +218,7 @@
   "publicStory": "📸 공개 스토리",
   "tapToView": "탭해서 보기",
   "gatheringA11y": "{title}, 호스트 {name}, 대략적인 위치",
-  "gatheringLiveA11y": "{title}, 호스트 {name}, 대략적인 위치, 지금 진행 중",
+  "gatheringLiveA11y": "{title}, 호스트 {name}, 대략적인 위치, 곧 시작하거나 이미 진행 중",
   "areaCount": {
    "other": "{count}개 지금 진행 중"
   },

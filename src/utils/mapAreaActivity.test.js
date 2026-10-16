@@ -106,6 +106,14 @@ describe('red "Live now" pins keep their own rule, now in rightNowWindow.js (own
     expect(map).not.toMatch(/\bAnimated\b|Reanimated|LayoutAnimation/);
   });
 
+  test('a red pin\'s screen-reader label says its own window, never "happening now" (owner, 2026-10-16)', () => {
+    const ui = require('../i18n/ui/mapView').default;
+    for (const strings of Object.values(ui)) expect(strings.gatheringLiveA11y).not.toBe(strings.gatheringA11y);
+    expect(ui.en.gatheringLiveA11y).toBe('{title}, hosted by {name}, approximate location, starting soon or under way');
+    expect(ui.en.gatheringLiveA11y).not.toMatch(/happening now/i);
+    expect(ui.en.liveNow).toBe('🔴 LIVE NOW');
+  });
+
   test('Discover shows areas only on the plain All view and computes them from the list the map pins', () => {
     const hub = src('screens/DiscoverHubScreen.js');
     expect(hub).toMatch(/const mapAreasShown = viewStyle === 'map' && isAll && !isSearching && !expandedContext && showGatherings;/);

@@ -125,7 +125,8 @@ and 32, then items 82 and 84 (one phone, a few minutes), then the offer experien
 
 **Item 120 ("N happening now" on the Discover map, owner approved 2026-10-16) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_120_MAP_AREA_ACTIVITY_DEVICE_CHECKLIST_2026-10-16.md` is recorded on a real phone AND native review of the 4 `ui.mapView.area*`
-strings is done (no migration, no journey: client-only). Pulse/glow, people density, heatmaps, trending areas DEFERRED (owner).
+strings + the reworded red-pin `ui.mapView.gatheringLiveA11y` is done (no migration, no journey: client-only). Build APPROVED (owner, 2026-10-16); red-pin screen-reader
+label FIXED ("starting soon or under way", look/timing unchanged); next-redraw refresh and pill->list drift ACCEPTED (checks 10/10b). Pulse/glow, people density, heatmaps, trending areas DEFERRED (owner).
 
 **Item 62 (several replies -> one notification) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_62_REPLY_PUSH_REPLACE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND Android phone, incl. whether each
