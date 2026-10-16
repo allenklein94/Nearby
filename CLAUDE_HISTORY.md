@@ -1,3 +1,20 @@
+# Item 135 (owner, 2026-10-16) "Invite feels like sending a signal" - MET AS BUILT, nothing built
+
+Owner ask: inviting Claude moves the avatar Your Friends -> Invited, a tiny signal travels to Claude, the state becomes
+"Invitation sent"; when Claude accepts, the signal travels back. Audit of what exists:
+- Send: `InviteFriendsModal` button = Invite -> spinner while the RPC runs -> green "Sent" (disabled, a11y "invite sent") +
+  toast `inviteSentConfirmation` "Invitation sent to {name}" only after the server returns (`invite_friend_to_gathering` /
+  `sendInvite`). The state change is real, immediate and on the row the host tapped.
+- Return: item 28 (LOCKED): when the invitee accepts while the host watches, their face flows into Who's going and the line
+  says "{Name} accepted your invite" only for the host's own accepted invite (`acceptedInviteeIds`); item 73 governs bursts;
+  away from the screen, the host's join push lands on the gathering (item 133).
+Not built, by existing locks: the travelling signal both ways (item 55, owner 2026-10-12: person-to-person moments stay OUT
+of `PULSE_MOMENTS`, the Pulse is never a reason to animate more, no new animated places); moving the avatar between list
+sections (no animated lists; item 103 declined face motion beyond item 28; item 99 no new transitions); a "signal travels
+back" on accept would duplicate item 28's join moment (one moment per event, item 98). Item 58: the "Sent" state already
+explains the change without motion. Reopen only if a device session shows "Sent" is missed (then copy/state first, item 101's
+spec before any motion). Covered by journey: invitation (send -> accept) via existing journeys; no new strings, no migration.
+
 # Item 133 (owner, 2026-10-16) notification -> destination continuity - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Owner ask: a push about something opens THAT thing with what the push said visible ("Claude accepted your gathering" -> the
