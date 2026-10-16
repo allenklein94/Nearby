@@ -1,3 +1,11 @@
+# Item 119b (owner, 2026-10-16) deployed - LIVE, NOT device-verified
+
+**Deployed 2026-10-16 (owner authorized):** pre-check showed prod without `proposed_party_size*`, one `submit_business_offer`, no
+trigger; migration 20270313 applied in one transaction; post-check: both columns + trigger `business_request_offers_party_size_fits`
+present, exactly one `submit_business_offer` (with `proposed_party_size_alt_param`), anon cannot execute it, one overload each for the
+6 other changed functions; `screen-business-content` deployed (v45, verify_jwt kept true). All journeys on prod with NO prelude: 33 suites,
+373/373 (rolled back). NOT done: from-scratch replay, device, business website in a browser, native review of the 6 strings.
+
 # Item 119b (owner, 2026-10-16) a second time for fewer people - BUILT, NOT DEPLOYED, NOT device-verified
 
 - Owner reopened item 119's partial-party lock ("open the lock to build it"; their example "6 people tonight -> 4 at 7 PM or 6 at

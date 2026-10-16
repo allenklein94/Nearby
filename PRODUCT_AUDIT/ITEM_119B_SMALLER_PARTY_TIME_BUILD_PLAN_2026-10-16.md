@@ -14,7 +14,7 @@ Unchanged: item 94 (party size end to end) for every whole-party time; item 116 
 availability capacity, can't carry a second time); item 118 (a revision moves times, never the headcount); item 63 (a smaller
 time never counts as fitting the stated time).
 
-## As built (NOT deployed)
+## As built (LIVE, deployed 2026-10-16)
 
 - Migration `20270313_smaller_party_time.sql`:
   - `business_request_offers.proposed_party_size_alt` (the second time's headcount; null = whole party; only beside a second
@@ -24,7 +24,7 @@ time never counts as fitting the stated time).
     `admin_review_business_content_screening` carries it from a held reply; `accept_business_offer` /
     `_accept_business_offer_internal` write `proposed_party_size`; `confirm_group_plan_offer` refuses the smaller time;
     `get_business_opportunities` and `get_partner_offer_value` read the booked headcount.
-- Edge function `screen-business-content`: passes the headcount through (NOT deployed).
+- Edge function `screen-business-content`: passes the headcount through (deployed, v45).
 - Client: `utils/offerTimes.js` (`timePartySize`, `wholePartyView`, applied once in `getBusinessRequestWithOffers` so every
   reader of a group gets the whole-party view), `replyFit.js`, `acceptedBooking.js`, `offerDraftPreview.js`,
   `planAddonReadiness.js`, `OfferCustomerBody` ("For {count} of your {total}"), `components/SecondTimePartySize.js`
@@ -40,4 +40,6 @@ time never counts as fitting the stated time).
   booking, revision keeps headcount, group never sees/takes the smaller time). Production confirmed unchanged afterwards.
 - Business web export regenerated.
 
-NOT verified: from-scratch replay, any screen on a device, the business website in a browser. Deployment needs owner approval.
+Deployed 2026-10-16: post-checks passed; journeys on prod without prelude 373/373 (rolled back).
+
+NOT verified: from-scratch replay, any screen on a device, the business website in a browser.
