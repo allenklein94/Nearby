@@ -13,7 +13,7 @@ of `PULSE_MOMENTS`, the Pulse is never a reason to animate more, no new animated
 sections (no animated lists; item 103 declined face motion beyond item 28; item 99 no new transitions); a "signal travels
 back" on accept would duplicate item 28's join moment (one moment per event, item 98). Item 58: the "Sent" state already
 explains the change without motion. Reopen only if a device session shows "Sent" is missed (then copy/state first, item 101's
-spec before any motion). Covered by journey: invitation (send -> accept) via existing journeys; no new strings, no migration.
+spec before any motion). Journey `inviteJourney` covers send -> accept (not re-run: nothing changed); no new strings, no migration.
 
 # Item 133 (owner, 2026-10-16) notification -> destination continuity - BUILT, LIVE, NOT DEVICE-VERIFIED
 
