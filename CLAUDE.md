@@ -130,7 +130,8 @@ label FIXED ("starting soon or under way", look/timing unchanged); next-redraw r
 
 **Item 122 (a gathering leaves a memory, owner 2026-10-16, LOCKED) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_122_GATHERING_MEMORY_DEVICE_CHECKLIST_2026-10-16.md` is recorded on real phones AND native review of the 10
-`ui.gatheringMemories.*` strings is done (migration 20270315; journey `gatheringMemory`; from-scratch replay with it not yet done).
+`ui.gatheringMemories.*` strings is done (migration 20270315; journey `gatheringMemory`). Release gate 1 (rebuild) PASSED 2026-10-16:
+from-scratch replay 439/439, journeys 387/387 on it, both concurrency scripts pass, stories/storage policies + functions = prod, grants = prod 623/623.
 
 **Item 121 follow-up (Dating consent, cards + counts, owner 2026-10-16) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_121_DATING_CONSENT_DEVICE_CHECKLIST_2026-10-16.md` is recorded on real phones (migration 20270314; journey `datingConsent`; no new strings).

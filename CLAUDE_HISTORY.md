@@ -44,8 +44,15 @@ Built:
   no execute). It fails on pre-migration production (verified). Jest 452 suites / 6060 pass; journeys 35 suites / 387 pass on
   production (no prelude, rolled back). Babel parse of every changed screen/component/service clean.
 
-Not done / disclosed: no device run (`PRODUCT_AUDIT/ITEM_122_GATHERING_MEMORY_DEVICE_CHECKLIST_2026-10-16.md`, 14 checks); no
-from-scratch replay with 20270315; native review of the 10 strings. The in-chat camera post stays as it was (now also only for
+**From-scratch replay (release gate 1, owner 2026-10-16) PASSED:** `scripts/replay/from-scratch-replay.sh` on an empty database
+(isolated network) applied all 439 migrations incl. #439 20270315 with ON_ERROR_STOP; on the rebuilt DB (journey fixtures loaded):
+journeys 35 suites / 387 tests pass (gatheringMemory 8/8), `booking-capacity-concurrency.js` and `offer-revision-concurrency.js`
+pass; the 5 stories + story-media policies (md5 of name/cmd/roles/qual/check) and the three changed functions' definitions are
+identical to production; public function grants (non-extension) identical, 623/623 (compared byte-sorted; the PG 15 vs 17 collation
+only reorders). The `pg` client was installed outside the app's dependencies (`NEARBY_PG_MODULE`).
+
+Not done / disclosed: no device run (`PRODUCT_AUDIT/ITEM_122_GATHERING_MEMORY_DEVICE_CHECKLIST_2026-10-16.md`, 14 checks);
+native review of the 10 strings. The in-chat camera post stays as it was (now also only for
 people who were there). Ordinary stories of friends/matches are no longer readable after expiry (they never should have been;
 the purge removed them anyway). The new-story push is unchanged for ordinary stories.
 
