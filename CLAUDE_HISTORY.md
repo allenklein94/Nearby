@@ -1,3 +1,19 @@
+# Item 118 (owner, 2026-10-16) offer negotiation - OUT OF SCOPE, documented future gap; nothing built
+
+- Proposal (owner's own framing: a future idea, not to build now): business offers $50, consumer taps "Request changes", business
+  answers $45, the card transforms.
+- Decision: renegotiation stays out of scope. Already covered without haggling: several businesses reply to one request with
+  different offer types (standard/discount/perk/upgrade/alt_time), a business can propose another time (`alt_time` +
+  `proposed_time`), budget and party size are stated up front and "Within your budget" marks replies that meet them (item 63).
+  Conflicts today with the locked "consumer never feels a marketplace" doctrine (2026-09-19), which names "negotiate" as a step
+  Nearby never puts in the consumer's path.
+- Documented gap (first flagged 2026-08): a business changing the terms of an offer it already sent is not built.
+- Guardrails if ever reopened (agreed, not approved for building): (1) one revision per offer, started only by the business, before
+  the consumer acts; no consumer "Request changes" button; (2) the revision replaces the offer in place: no second card, chat thread or
+  negotiation history; (3) only the current terms on the offer card (Nearby has no deals feed); no previous price or savings
+  comparison without an explicit rule; (4) at most a calm in-place state change (item 101 spec first), never the business-responds
+  signature; (5) the business still sees only the minimal request summary. No implementation or new item approval is implied.
+
 # Item 117 (owner, 2026-10-16) "offer competition" - MET as built, nothing built; distance EXCLUDED (LOCKED)
 
 - Proposal: "Dinner for 4 tonight", three businesses respond, "3 offers received", each arrives one after another, one coherent
