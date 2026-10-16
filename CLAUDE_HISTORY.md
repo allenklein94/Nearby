@@ -34,8 +34,9 @@
   never an animation gate); journey `offer` 38/38 (10 new steps: bad second times refused, one row with both times, business view has no
   group field, automatic reply can't hold two, customer card rules on the real rows, accept needs an offered time, picked time booked +
   other reply closed, one-time reply unchanged, group split stays pending + outsider reads nothing, same time books once); all journeys
-  353/353 with the migration as prelude; offer + group booking + booking capacity 59/59 after apply. No from-scratch replay for this
-  migration. NOT verified: any screen on a device, the edge function end to end (Anthropic credit), realtime on GroupPlan.
+  353/353 with the migration as prelude; offer + group booking + booking capacity 59/59 after apply. From-scratch replay DONE (2026-10-16): all 435
+  migrations apply on an empty DB, journeys 353/353 + booking-capacity concurrency pass on the rebuilt DB, and the 5 changed
+  functions' grants match production exactly. NOT verified: any screen on a device, the edge function end to end (Anthropic credit), realtime on GroupPlan.
 
 # Item 119 (owner, 2026-10-16) business "counters" with options - PARTLY MET, nothing built; multi-option replies and partial-party offers EXCLUDED (LOCKED)
 
