@@ -135,7 +135,7 @@ from-scratch replay 439/439, journeys 387/387 on it, both concurrency scripts pa
 
 **Item 123 ("📸 N memories" on Plans -> Past's completed card, owner 2026-10-16) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_123_MEMORY_COUNT_ON_PAST_CARD_DEVICE_CHECKLIST_2026-10-16.md` is recorded on real phones AND native review of
-`ui.gatheringMemories.count` is done (no migration; journey `gatheringMemory` 9/9). Static line; the "animate into" part was not built (items 58/99/122).
+`ui.gatheringMemories.count` is done (no migration; journey `gatheringMemory` 9/9). Static line (owner, 2026-10-16: keep it static, "animate into" DECLINED, LOCKED).
 
 **Item 121 follow-up (Dating consent, cards + counts, owner 2026-10-16) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_121_DATING_CONSENT_DEVICE_CHECKLIST_2026-10-16.md` is recorded on real phones (migration 20270314; journey `datingConsent`; no new strings).

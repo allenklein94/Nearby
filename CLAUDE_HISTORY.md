@@ -8,7 +8,7 @@ a failed read = no line, never 0); `PlanCard` `extraLine` (one static line, part
 one tap opens GatheringDetail with `openMemories`, and `GatheringMemories` `openOnLoad` opens the viewer once the server returns
 at least one memory. New string `ui.gatheringMemories.count` (plural forms, 11 languages machine-authored; needs native review).
 No migration. NOT built: "photos animate into the gathering" (item 122's memories are static; items 58/99 allow motion only for
-a real event seen live, and a count on a list card isn't one). Reopen only on an owner decision. Tests: `gatheringMemory.test.js`
+a real event seen live, and a count on a list card isn't one). Owner (2026-10-16): keep it static; the animation is DECLINED (LOCKED). Tests: `gatheringMemory.test.js`
 item 123 block (+ item 122 guard updated for the new prop); journey `gatheringMemory` 9/9 live on prod, rolled back (step 8:
 host 2, attendee 2, outsider 0); full Jest 6064/6064. Not verified: any phone (checklist
 `PRODUCT_AUDIT/ITEM_123_MEMORY_COUNT_ON_PAST_CARD_DEVICE_CHECKLIST_2026-10-16.md`). The count refreshes on Plans reload, not live.

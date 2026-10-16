@@ -13,7 +13,7 @@ Journey `gatheringMemory` 9/9 live (step 8: host 2, attendee 2, outsider 0). 1 n
 
 Not built, and why: the ask's "photos could animate into the gathering". Item 122's memories are static (no motion), and
 items 58/99 allow motion only for a real event seen as it happens; a count on a list card isn't one. The line is plain
-text. Reopen only on an owner decision.
+text. Owner (2026-10-16): keep it static; animation DECLINED (LOCKED).
 
 Record for each run: device, OS, appearance (light/dark), account roles used, result, notes.
 
