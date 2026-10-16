@@ -1,3 +1,18 @@
+# 20270310 applied to production (owner-approved sequence, 2026-10-16) - rolled-back check 0 changes; applied; prod unchanged; replay = prod
+
+- Snapshot = every public function's EXECUTE ACL exploded (grantee:grantor:privilege:grantable), hashed. Production before:
+  836 functions (incl. extension-owned), md5 `208f894fe521efdf166dd21dab791463`.
+- Rolled-back check on production (begin; snapshot; the migration file; snapshot; compare; rollback): 836 -> 836, 0 rows only
+  before, 0 only after (grantor included). Hash after the rollback: identical.
+- Applied (the file as one Management API query in begin/commit; this project records applied migrations in CLAUDE.md/history,
+  there is no `supabase_migrations` table). Hash after: identical to before (true no-op on prod). Spot checks: anon/authenticated
+  cannot run `generate_monthly_invoices`, service_role can; anon cannot run `unmatch`, authenticated can.
+- Fresh replay (KEEP=1): ALL 434/434 apply; non-extension public functions 617 both sides, ACLs identical 617/617 (0 diffs).
+  Journeys on the rebuilt DB 343/343 (33 suites); `booking-capacity-concurrency.js` all checks pass; Jest 446 suites, 5984 passed.
+- Unchanged as instructed: 20270294 (the replay's inventory sync step stays), the 24 redundant column-level grants, all object
+  definitions. The migration's header comment was corrected earlier (e71ba59f) to stop claiming a check not yet run; SQL unchanged.
+  Access path: a narrow session allow rule for one helper script that posts a SQL file to the Management API (owner-added).
+
 # From-scratch migration replay, items 114 + 116 (owner, 2026-10-16) - ALL 434 APPLY; journeys 343/343 + concurrency on the rebuilt DB; 1 replay defect, 1 grant drift (fix written, NOT applied to production)
 
 - Owner decisions recorded (2026-10-15): the Settings "Nearby Opportunities" panel stays removed (columns kept, no data deleted);
