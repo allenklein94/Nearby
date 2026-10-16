@@ -52,7 +52,7 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
       if (result?.status === 'waitlisted') {
         Alert.alert(t('ui.gatheringParts.gatheringFull'), t('ui.gatheringParts.thisGatheringIsAlreadyAt'));
       } else {
-        Alert.alert(t('ui.gatheringParts.approved'), t('ui.gatheringParts.aMatchWasCreatedYou'));
+        Alert.alert(t('ui.gatheringParts.approved'), t('ui.gatheringParts.youCanNowChatWithThem'));
       }
       refresh();
     } catch (e) {

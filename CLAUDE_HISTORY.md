@@ -1,3 +1,15 @@
+# Item 141 follow-up (owner, 2026-10-16) gathering-approval alert without "match" - BUILT, NOT NATIVE-REVIEWED, NOT DEVICE-VERIFIED
+
+Owner: "Approved! You can now chat with them." Only the alert body changed: `HostAttendeeManager.handleApprove` now shows
+`ui.gatheringParts.approved` + `ui.gatheringParts.youCanNowChatWithThem` (old key `aMatchWasCreatedYou` removed; edited in
+`scripts/i18n/strings/gatheringParts.json`, rebuilt with `build-ns.js`). Each language keeps its old second half, minus the
+"match/connection was created" clause (de "Ihr könnt jetzt chatten.", ko "이제 대화할 수 있어요.", zh "现在可以和对方聊天了。", ...);
+the 10 non-English strings are machine-authored and need native-speaker review. Unchanged: `approve_gathering_interest`
+(still inserts the `matches` row the host-attendee chat uses), the approval flow, the `gathering_approved` push, attendance
+count, waitlist path and its "Gathering full" alert. Guard `src/utils/gatheringApprovalAlert.test.js` (call site, exact English,
+no match word in any language). Full Jest 455 suites / 6081 passed. No migration; no journey change (text only, the journey
+checks DB state, not alert wording; not re-run). Not checked on a device.
+
 # Item 141 (owner, 2026-10-16) "Private gathering should feel different" - MET AS BUILT, nothing built
 
 Owner ask: Private -> CTA "Request to join" -> host sees "Claude wants to join" -> Accept -> Claude moves into Going.
