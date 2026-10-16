@@ -1,3 +1,18 @@
+# Item 131 (owner, 2026-10-16) the Nearby "Aha" animation - DECLINED, LOCKED, nothing built
+
+Owner ask: an animation where Nearby connects independent signals (I like coffee, a friend is interested, Coastal Coffee has
+availability, the weather is good, tonight is open) into "Here's your plan." Decision (owner, 2026-10-16): DECLINED, do not implement.
+Reason: an unprompted plan built from inferred signals breaks the locked principle "the person states the intent; Nearby never invents
+it". Specific conflicts found: Interested is private (never shown to another person); availability reaches only matching open requests
+(item 114); Nearby never invents WHEN and reads no calendar ("tonight is open"); never pair people from coincidental activity (item 92);
+the assembly/why animations were already declined (items 103/104/105/106/111) and no new animated places (items 55/58).
+Met as built: item 37 (strong match: a typed ask's top pick ticks its real activity, stated time and close distance); item 40 (friend +
+activity collision: "You + {Name} might like this" for an interest both declared, explanation only); item 32 (offer -> plan assembly,
+only once the pieces are confirmed); item 43 (formation on publish: "Your gathering is live!"). Preserve: card-level reasons, "Why this
+fits you", item 40's collision and silent weather reranking; no inferred-plan experience, no duplicate motion primitive.
+Reopening condition: a narrower proposal must start from intent the person explicitly entered; one that pairs people (e.g. "coffee
+tonight with Claude") also needs item 92 explicitly reopened first. Recorded only: no screen, motion, ranking or resolver change.
+
 # Item 130 (owner, 2026-10-16) a handful of motion primitives - MET by item 100, nothing built, LOCKED
 
 Owner decision (2026-10-16, LOCKED): keep item 100's names and placements exactly; Confirm and Complete stay grouped under the
