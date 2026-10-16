@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { PullToRefresh, SkeletonFeed } from '../motion';
@@ -13,7 +13,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
 import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus, resolvePlanTableStatus } from '../constants/planStatus';
-import { isGatheringOver } from '../utils/gatheringCompletion';
+import { isGatheringOver, memoryCountFor } from '../utils/gatheringCompletion';
+import { getGatheringMemoryCounts } from '../services/stories';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -61,6 +62,8 @@ export default function PlansScreen({ navigation, route }) {
   const [datePlans, setDatePlans] = useState([]);
   const [experiencePlans, setExperiencePlans] = useState([]);
   const [sharedNights, setSharedNights] = useState([]);
+  // Item 123: memories each past gathering holds that this viewer may see (server-checked read; {} = no lines).
+  const [memoryCounts, setMemoryCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -127,6 +130,13 @@ export default function PlansScreen({ navigation, route }) {
   );
 
   const openGathering = (gatheringId) => navigation.navigate('GatheringDetail', { gatheringId });
+
+  useEffect(() => {
+    const ids = [...attending.past, ...hosting.past].map((g) => g.id);
+    let cancelled = false;
+    getGatheringMemoryCounts(ids).then((c) => { if (!cancelled) setMemoryCounts(c); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [attending.past, hosting.past]);
   const openGroupPlan = (proposalId) => navigation.navigate('GroupPlan', { proposalId });
   const openBusinessRequest = (requestId) => navigation.navigate('BusinessRequestDetail', { requestId });
   const openDatePlan = (matchId) => navigation.navigate('DateProposal', { matchId });
@@ -374,6 +384,11 @@ export default function PlansScreen({ navigation, route }) {
             // Item 122: a past row says Completed only once it is really over (item 34's one rule, isGatheringOver); one
             // that has started but is still going stays Confirmed.
             const status = item.status === 'maybe' ? null : resolveGatheringPlanStatus({ ...legacy, isPast: legacy.isPast && isGatheringOver(g) });
+            // Item 123: Plans -> Past only; a completed gathering with memories says "📸 N memories" (static) and the
+            // whole card opens them directly (GatheringDetail with its Memories viewer open). None = the normal card.
+            const memoryCount = tab === 'past'
+              ? memoryCountFor({ ...g, isHost: item.status === 'hosted', myStatus: item.status === 'attended' ? 'approved' : null }, memoryCounts[g.id])
+              : null;
             return (
               <PlanCard
                 icon={categoryStyleFor(g.interest_tag).icon}
@@ -384,7 +399,8 @@ export default function PlansScreen({ navigation, route }) {
                 peopleCount={peopleCountFor(item)}
                 hostingPartnerId={g.hosting_partner_id}
                 status={status}
-                onPress={() => openGathering(g.id)}
+                extraLine={memoryCount ? t('ui.gatheringMemories.count', { count: memoryCount }) : null}
+                onPress={() => (memoryCount ? navigation.navigate('GatheringDetail', { gatheringId: g.id, openMemories: true }) : openGathering(g.id))}
                 style={styles.planCardSpacing}
               />
             );

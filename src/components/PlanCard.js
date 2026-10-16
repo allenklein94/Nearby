@@ -29,6 +29,8 @@ export default function PlanCard({
   hostingPartnerId,
   venueName: venueNameProp,
   status,
+  // Item 123: one optional, static extra line (e.g. Plans -> Past's "📸 4 memories"); never animated, part of the card's one tap.
+  extraLine = null,
   onPress,
   accessibilityLabel,
   style,
@@ -83,7 +85,7 @@ export default function PlanCard({
       style={[styles.row, style]}
       onPress={onPress}
       activeOpacity={0.85}
-      accessibilityLabel={accessibilityLabel ?? `${title}${subtitle ? `, ${subtitle}` : ''}${meta ? `, ${meta.label}` : ''}`}
+      accessibilityLabel={accessibilityLabel ?? `${title}${subtitle ? `, ${subtitle}` : ''}${meta ? `, ${meta.label}` : ''}${extraLine ? `, ${extraLine}` : ''}`}
       accessibilityRole="button"
     >
       {icon != null && (iconColor ? (
@@ -104,6 +106,11 @@ export default function PlanCard({
         {subtitle ? (
           <Text style={styles.subtitle} numberOfLines={1}>
             {subtitle}
+          </Text>
+        ) : null}
+        {extraLine ? (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {extraLine}
           </Text>
         ) : null}
       </View>

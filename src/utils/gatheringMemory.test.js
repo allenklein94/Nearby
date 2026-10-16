@@ -2,7 +2,7 @@
 // photos the people who were there chose to add, seen ONLY by them, and never a social feed. Journey: gatheringMemory.
 import fs from 'fs';
 import path from 'path';
-import { gatheringMemoryState, isGatheringOver } from './gatheringCompletion';
+import { gatheringMemoryState, isGatheringOver, memoryCountFor } from './gatheringCompletion';
 
 const root = path.join(__dirname, '..', '..');
 const read = (f) => fs.readFileSync(path.join(root, f), 'utf8');
@@ -43,7 +43,7 @@ describe('the screens read that rule', () => {
     const d = code('src/screens/GatheringDetailScreen.js');
     expect(d).toMatch(/const memoryState = gatheringMemoryState\(gathering\)/);
     expect(d).toMatch(/memoryState\.completed \? <Text style=\{styles\.titleCompleted\}>\{` · \$\{PLAN_STATUS_META\[PLAN_STATUS\.COMPLETED\]\.label\}`\}/);
-    expect(d).toMatch(/\{memoryState\.showMemories && <GatheringMemories gatheringId=\{gatheringId\} \/>\}/);
+    expect(d).toMatch(/\{memoryState\.showMemories && <GatheringMemories gatheringId=\{gatheringId\} openOnLoad=\{route\.params\?\.openMemories === true\} \/>\}/);
   });
   test('Plans -> Past: Completed only once really over (a started gathering stays Confirmed)', () => {
     const p = code('src/screens/PlansScreen.js');
@@ -92,5 +92,33 @@ describe('the server decides who sees a memory (migration 20270315)', () => {
     expect(m).toMatch(/bucket_id = 'stories'\s+and exists \(select 1 from public\.stories s where s\.media_path = objects\.name\)/);
     expect(m).toMatch(/and s\.gathering_id is null/);
     expect(m).toMatch(/if new\.gathering_id is not null then\s+return new;/);
+  });
+});
+
+describe('item 123: "📸 N memories" on Plans -> Past only, static, the whole card opens the memories', () => {
+  test('a line only for a completed gathering with at least one visible memory', () => {
+    expect(memoryCountFor({ ...over, isHost: true }, 4, now)).toBe(4);
+    expect(memoryCountFor({ ...over, myStatus: 'approved' }, 1, now)).toBe(1);
+    for (const n of [0, undefined, null, NaN, 2.5]) expect(memoryCountFor({ ...over, isHost: true }, n, now)).toBe(null);
+    expect(memoryCountFor({ ...going, isHost: true }, 4, now)).toBe(null);
+    expect(memoryCountFor({ ...over, myStatus: 'pending' }, 4, now)).toBe(null);
+  });
+  test('Plans: Past tab only; the card one tap opens the gathering with its viewer open; otherwise the normal card', () => {
+    const p = code('src/screens/PlansScreen.js');
+    expect(p).toMatch(/const memoryCount = tab === 'past'\s+\? memoryCountFor\(/);
+    expect(p).toMatch(/extraLine=\{memoryCount \? t\('ui\.gatheringMemories\.count', \{ count: memoryCount \}\) : null\}/);
+    expect(p).toMatch(/onPress=\{\(\) => \(memoryCount \? navigation\.navigate\('GatheringDetail', \{ gatheringId: g\.id, openMemories: true \}\) : openGathering\(g\.id\)\)\}/);
+    expect(ALL.filter((f) => /getGatheringMemoryCounts\(/.test(code(f))).sort()).toEqual(['src/screens/PlansScreen.js', 'src/services/stories.js']);
+    expect(ALL.filter((f) => /extraLine=/.test(code(f)))).toEqual(['src/screens/PlansScreen.js']);
+  });
+  test('the count is the same RLS-checked table read as the photos (no RPC, no second rule)', () => {
+    const s = code('src/services/stories.js');
+    expect(s).toMatch(/from\('stories'\)\.select\('gathering_id'\)\.in\('gathering_id', ids\)/);
+  });
+  test('the detail opens the viewer only via openMemories, once the server returned memories; the line never animates', () => {
+    expect(code('src/screens/GatheringDetailScreen.js')).toMatch(/openOnLoad=\{route\.params\?\.openMemories === true\}/);
+    const c = code('src/components/GatheringMemories.js');
+    expect(c).toMatch(/if \(!openOnLoad \|\| openedOnLoad\.current \|\| !memories \|\| memories\.length === 0\) return;/);
+    expect(code('src/components/PlanCard.js')).not.toMatch(/Animated|motion\//);
   });
 });

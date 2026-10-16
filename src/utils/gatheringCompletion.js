@@ -62,3 +62,10 @@ export function gatheringMemoryState(gathering, now = new Date()) {
   const completed = wasThere && isGatheringOver(gathering, now);
   return { completed, showMemories: completed };
 }
+
+// Owner item 123 (2026-10-16): Plans -> Past's completed card may say "📸 N memories" -- static text, only on a
+// completed gathering (the rule above) with at least one memory the server lets this viewer see (the count comes from the
+// same RLS'd read as the photos, getGatheringMemoryCounts). Zero or not completed = null (no line, normal card).
+export function memoryCountFor(gathering, visibleCount, now = new Date()) {
+  return gatheringMemoryState(gathering, now).completed && Number.isInteger(visibleCount) && visibleCount > 0 ? visibleCount : null;
+}

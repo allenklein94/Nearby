@@ -12,6 +12,7 @@ export default {
     remove: "Remove",
     removeTitle: "Remove this memory?",
     removeBody: "It will be gone for everyone who was there.",
+    count: { one: "📸 {count} memory", other: "📸 {count} memories" },
   },
   es: {
     title: "Recuerdos",
@@ -24,6 +25,7 @@ export default {
     remove: "Quitar",
     removeTitle: "¿Quitar este recuerdo?",
     removeBody: "Desaparecerá para todos los que estuvieron ahí.",
+    count: { one: "📸 {count} recuerdo", other: "📸 {count} recuerdos" },
   },
   de: {
     title: "Erinnerungen",
@@ -36,6 +38,7 @@ export default {
     remove: "Entfernen",
     removeTitle: "Diese Erinnerung entfernen?",
     removeBody: "Sie verschwindet für alle, die dabei waren.",
+    count: { one: "📸 {count} Erinnerung", other: "📸 {count} Erinnerungen" },
   },
   fr: {
     title: "Souvenirs",
@@ -48,6 +51,7 @@ export default {
     remove: "Retirer",
     removeTitle: "Retirer ce souvenir ?",
     removeBody: "Il disparaîtra pour toutes les personnes qui étaient là.",
+    count: { one: "📸 {count} souvenir", other: "📸 {count} souvenirs" },
   },
   pt: {
     title: "Lembranças",
@@ -60,6 +64,7 @@ export default {
     remove: "Remover",
     removeTitle: "Remover esta lembrança?",
     removeBody: "Ela some para todos que estiveram lá.",
+    count: { one: "📸 {count} lembrança", other: "📸 {count} lembranças" },
   },
   ht: {
     title: "Souvni",
@@ -72,6 +77,7 @@ export default {
     remove: "Retire",
     removeTitle: "Retire souvni sa a?",
     removeBody: "Li pap la ankò pou tout moun ki te la.",
+    count: { other: "📸 {count} souvni" },
   },
   zh: {
     title: "回忆",
@@ -84,6 +90,7 @@ export default {
     remove: "移除",
     removeTitle: "移除这条回忆？",
     removeBody: "所有在场的人都将看不到它。",
+    count: { other: "📸 {count} 条回忆" },
   },
   vi: {
     title: "Kỷ niệm",
@@ -96,6 +103,7 @@ export default {
     remove: "Gỡ",
     removeTitle: "Gỡ kỷ niệm này?",
     removeBody: "Nó sẽ biến mất với mọi người đã có mặt.",
+    count: { other: "📸 {count} kỷ niệm" },
   },
   tl: {
     title: "Mga alaala",
@@ -108,6 +116,7 @@ export default {
     remove: "Alisin",
     removeTitle: "Alisin ang alaalang ito?",
     removeBody: "Mawawala ito para sa lahat ng nandoon.",
+    count: { one: "📸 {count} alaala", other: "📸 {count} alaala" },
   },
   ru: {
     title: "Воспоминания",
@@ -120,6 +129,7 @@ export default {
     remove: "Удалить",
     removeTitle: "Удалить это воспоминание?",
     removeBody: "Оно исчезнет у всех, кто там был.",
+    count: { one: "📸 {count} воспоминание", few: "📸 {count} воспоминания", many: "📸 {count} воспоминаний", other: "📸 {count} воспоминания" },
   },
   ko: {
     title: "추억",
@@ -132,5 +142,6 @@ export default {
     remove: "삭제",
     removeTitle: "이 추억을 삭제할까요?",
     removeBody: "그 자리에 있었던 모든 사람에게서 사라져요.",
+    count: { other: "📸 추억 {count}개" },
   },
 };

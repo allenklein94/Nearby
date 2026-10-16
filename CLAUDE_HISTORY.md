@@ -1,3 +1,18 @@
+# Item 123 (owner, 2026-10-16) "📸 N memories" on the completed gathering's card - BUILT, NOT DEVICE-VERIFIED
+
+Owner ask: once people choose to add photos, the completed card reads "Beach Volleyball / ✓ Completed / 📸 4 memories"; tap opens
+the memories; optional. Built on Plans -> Past only (item 122 keeps memories off Home; Past is where "Completed" shows):
+`memoryCountFor` (`utils/gatheringCompletion.js`: item 122's completed rule AND >= 1 visible memory, else null = no line);
+`getGatheringMemoryCounts` (`services/stories.js`: the same RLS-checked `stories` read as the photos, so a non-attendee counts 0;
+a failed read = no line, never 0); `PlanCard` `extraLine` (one static line, part of the card's accessibility label); the card's
+one tap opens GatheringDetail with `openMemories`, and `GatheringMemories` `openOnLoad` opens the viewer once the server returns
+at least one memory. New string `ui.gatheringMemories.count` (plural forms, 11 languages machine-authored; needs native review).
+No migration. NOT built: "photos animate into the gathering" (item 122's memories are static; items 58/99 allow motion only for
+a real event seen live, and a count on a list card isn't one). Reopen only on an owner decision. Tests: `gatheringMemory.test.js`
+item 123 block (+ item 122 guard updated for the new prop); journey `gatheringMemory` 9/9 live on prod, rolled back (step 8:
+host 2, attendee 2, outsider 0); full Jest 6064/6064. Not verified: any phone (checklist
+`PRODUCT_AUDIT/ITEM_123_MEMORY_COUNT_ON_PAST_CARD_DEVICE_CHECKLIST_2026-10-16.md`). The count refreshes on Plans reload, not live.
+
 # Item 122 (owner, 2026-10-16) a gathering can leave a memory - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Owner ask: after completion "Beach Volleyball" becomes "Beach Volleyball · Completed", with a photo or memory if people choose;

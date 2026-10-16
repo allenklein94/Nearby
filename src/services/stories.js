@@ -152,6 +152,22 @@ export async function getGatheringMemories(gatheringId) {
   return data ?? [];
 }
 
+// Item 123: how many memories this viewer may see per gathering (Plans -> Past's "📸 N memories"). The same table read as
+// getGatheringMemories, so RLS (viewer_was_at_gathering) decides: a gathering the viewer wasn't at counts 0 = no line.
+// A failed read = {} (no line), never a guessed number.
+export async function getGatheringMemoryCounts(gatheringIds) {
+  const ids = [...new Set((gatheringIds ?? []).filter(Boolean))];
+  if (ids.length === 0) return {};
+  const { data, error } = await supabase.from('stories').select('gathering_id').in('gathering_id', ids);
+  if (error) {
+    console.error('getGatheringMemoryCounts error', error);
+    return {};
+  }
+  const counts = {};
+  for (const r of data ?? []) counts[r.gathering_id] = (counts[r.gathering_id] ?? 0) + 1;
+  return counts;
+}
+
 // Item 122: a memory is added after the gathering, so it comes from the photo library (the in-chat camera stays for the
 // moment itself). Same result shape as captureStoryMedia; the same upload path (uploadStory with the gathering id).
 export async function pickMemoryMedia() {

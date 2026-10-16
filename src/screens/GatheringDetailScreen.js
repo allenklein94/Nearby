@@ -862,7 +862,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <GatheringFeedbackPrompt gatheringId={gatheringId} />
           )}
 
-          {memoryState.showMemories && <GatheringMemories gatheringId={gatheringId} />}
+          {memoryState.showMemories && <GatheringMemories gatheringId={gatheringId} openOnLoad={route.params?.openMemories === true} />}
 
           {attendeeTotal(gathering) > 0 && (
             <View style={styles.section}>

@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, TouchableOpacity, Image, Modal, ScrollView, StyleSheet, Alert, SafeAreaView } from 'react-native';
 import { Video } from 'expo-av';
 import { useLanguage } from '../context/LanguageContext';
@@ -13,9 +13,11 @@ import { supabase } from '../services/supabase';
 // utils/gatheringCompletion.js: you were there AND it is over), the host and approved attendees see the photos/videos the
 // people who were there chose to add, and may add one themselves (photo library) or remove their own. The server is the
 // authority on who sees them (viewer_was_at_gathering, migration 20270315); this section only renders what it returns.
-// Not a feed (LOCKED): it lives only here, oldest first, no likes, comments, counts elsewhere, push, Home row, anniversary,
+// Not a feed (LOCKED): it lives only here, oldest first, no likes, comments, counts elsewhere (except item 123's Plans -> Past line), push, Home row, anniversary,
 // collage or public sharing. Static (no motion). Video is tap-to-play in the viewer, never autoplayed or preloaded.
-export default function GatheringMemories({ gatheringId }) {
+// Item 123: `openOnLoad` (a tap on Plans -> Past's card with memories) opens the viewer once the server returns at least one
+// memory; Close lands on this gathering's detail. Nothing visible = it simply stays closed.
+export default function GatheringMemories({ gatheringId, openOnLoad = false }) {
   const { t } = useLanguage();
   const m = (key, vars) => t(`ui.gatheringMemories.${key}`, vars);
   const { colors } = useTheme();
@@ -25,6 +27,7 @@ export default function GatheringMemories({ gatheringId }) {
   const [adding, setAdding] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [myUserId, setMyUserId] = useState(null);
+  const openedOnLoad = useRef(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null));
@@ -43,6 +46,12 @@ export default function GatheringMemories({ gatheringId }) {
   }, [gatheringId]);
 
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    if (!openOnLoad || openedOnLoad.current || !memories || memories.length === 0) return;
+    openedOnLoad.current = true;
+    setViewerOpen(true);
+  }, [openOnLoad, memories]);
 
   useEffect(() => {
     if (!viewerOpen || !memories) return;

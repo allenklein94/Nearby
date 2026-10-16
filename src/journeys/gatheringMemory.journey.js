@@ -11,11 +11,13 @@
 //   5  A's ordinary story keeps its rule (F sees it while unexpired; never after expiry)
 //   6  the memory sends no "posted a new story" push to F; A's ordinary story still does
 //   7  the gathering is deleted: the orphaned memory (gathering_id null, past its 24 h) is visible to no one but A
+//   8  item 123: the count read Plans -> Past uses (stories by gathering_id) gives the host/attendee the real number and
+//      F (not there) nothing, so F's card could never say "📸 N memories"
 // Then Jest runs the client rule the screens use (gatheringMemoryState) on the gathering the database returned.
 // Not covered (device only): the Memories section, the photo picker, the viewer, Plans -> Past on a phone.
 const { runSql } = require('../../scripts/live-verify/lib/db');
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
-const { gatheringMemoryState } = require('../utils/gatheringCompletion');
+const { gatheringMemoryState, memoryCountFor } = require('../utils/gatheringCompletion');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -90,6 +92,17 @@ d('journey: a completed gathering keeps memories only the people who were there 
   log := log || jsonb_build_array(jsonb_build_object('step', 'publicMemoryOnMap', 'ok', exists (select 1 from get_public_stories_with_fuzzed_coords() r where r.id = pub)));
   ${asOwner}
 
+  -- 8: the Plans -> Past count read (getGatheringMemoryCounts), with two memories on the gathering
+  ${as('v_h')}
+  log := log || jsonb_build_array(jsonb_build_object('step', 'countHost', 'ok', true, 'data', (select count(*) from stories where gathering_id = g)));
+  ${asOwner}
+  ${as('v_a')}
+  log := log || jsonb_build_array(jsonb_build_object('step', 'countAttendee', 'ok', true, 'data', (select count(*) from stories where gathering_id = g)));
+  ${asOwner}
+  ${as('v_f')}
+  log := log || jsonb_build_array(jsonb_build_object('step', 'countOutsider', 'ok', true, 'data', (select count(*) from stories where gathering_id = g)));
+  ${asOwner}
+
   -- 5: A's ordinary story keeps its rule
   ${as('v_a')}
   insert into stories (user_id, media_path, media_type) values (v_a, v_a::text || '/ordinary-122.jpg', 'image') returning id into ord;
@@ -154,6 +167,17 @@ d('journey: a completed gathering keeps memories only the people who were there 
     expect(s.orphanFriend.ok).toBe(false);
     expect(s.orphanOwn.ok).toBe(true);
     expect(s.anonGrant.ok).toBe(false);
+  });
+
+  test('8 (item 123): the memory count follows the same rule; the card line only for a completed gathering with memories', () => {
+    expect(Number(s.countHost.data)).toBe(2);
+    expect(Number(s.countAttendee.data)).toBe(2);
+    expect(Number(s.countOutsider.data)).toBe(0);
+    const g = s.gathering.data;
+    expect(memoryCountFor({ ...g, isHost: true }, Number(s.countHost.data))).toBe(2);
+    expect(memoryCountFor({ ...g, myStatus: 'approved' }, Number(s.countAttendee.data))).toBe(2);
+    expect(memoryCountFor({ ...g, myStatus: 'approved' }, Number(s.countOutsider.data))).toBe(null);
+    expect(memoryCountFor({ ...g }, Number(s.countHost.data))).toBe(null);
   });
 
   test('client: the screens call it Completed and offer memories only to the people who were there, once it is over', () => {
