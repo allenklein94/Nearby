@@ -141,7 +141,12 @@ export async function notificationDestination(data, { lookupAvailability = async
       return to('MainTabs', { screen: 'Discover', params: { initialMode: 'things', initialTypeTab: 'communities' } });
       break;
     case 'friend_request':
+      return to('Friends');
+      break;
+    // Item 133: "{Name} accepted your friend request." opens that friend (migration 20270318 adds user_id); an older push
+    // without the id still opens Friends.
     case 'friend_accepted':
+      if (data.user_id) return to('ViewProfile', { userId: data.user_id });
       return to('Friends');
       break;
     case 'birthday':

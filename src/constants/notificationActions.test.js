@@ -22,7 +22,7 @@ const actionsNs = require('../i18n/ui/notificationActions').default;
 const destSrc = fs.readFileSync(path.join(__dirname, '..', 'navigation', 'notificationDestinations.js'), 'utf8');
 const PUSH_TYPES = [...destSrc.matchAll(/case '(\w+)':/g)].map((m) => m[1]);
 const FULL = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o', proposal_id: 'p', plan_id: 'pl', partner_id: 'b', business_request_id: 'br',
-  availability_id: 'a', community_id: 'c', birthday_user_id: 'u', other_user_id: 'u', story_user_id: 'u', owner_id: 'u',
+  availability_id: 'a', community_id: 'c', birthday_user_id: 'u', other_user_id: 'u', story_user_id: 'u', owner_id: 'u', user_id: 'u',
   target_type: 'gathering', target_id: 't', occasion_type: 'birthday', who_for_name: 'Sam', has_recall: false };
 
 // What each label promises: the screens its tap may open.
@@ -36,7 +36,7 @@ const ACTION_OPENS = {
   reply: ['Chat', 'PlanChat'], open_chat: ['Chat'], view_notices: ['Notices'],
   see_details: ['AskBusiness', 'BusinessProfile', 'GatheringDetail', 'CommunityDetail'],
   browse_gatherings: ['MainTabs'], find_something_else: ['MainTabs'], // Discover -> Gatherings / Communities (B3, B8)
-  view_friend_request: ['Friends'], view_friends: ['Friends'], view_profile: ['ViewProfile'],
+  view_friend_request: ['Friends'], view_profile: ['ViewProfile'],
   start_planning: ['CelebrateSomething', 'Occasions', 'MainTabs'], plan_visit: ['CreateGathering'],
   view_progress: ['Momentum', 'MainTabs'], open_dashboard: ['BusinessDashboard'], view_application: ['MyBusinessApplication'],
   view_business: ['BusinessProfile'], view_opportunities: ['BusinessDashboard'], view_your_offers: ['BusinessDashboard'],

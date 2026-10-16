@@ -136,7 +136,7 @@ const NOTIFICATION_ACTION_BY_TYPE = {
   community_cancelled: 'find_something_else',
   first_mission_reminder: 'browse_gatherings',
   friend_request: 'view_friend_request',
-  friend_accepted: 'view_friends',
+  friend_accepted: 'view_profile',
   birthday: 'view_profile',
   crossed_paths_sighting: 'view_profile',
   new_story: 'view_profile',

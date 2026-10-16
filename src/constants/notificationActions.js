@@ -13,7 +13,7 @@
 // button; tapping the notification still works.
 export const NOTIFICATION_ACTION_KEYS = [
   'view_plan', 'view_offer', 'review_request', 'view_gathering', 'view_invite', 'view_attendees', 'reply', 'open_chat',
-  'view_notices', 'see_details', 'browse_gatherings', 'find_something_else', 'view_friend_request', 'view_friends',
+  'view_notices', 'see_details', 'browse_gatherings', 'find_something_else', 'view_friend_request',
   'view_profile', 'start_planning', 'plan_visit', 'view_progress', 'open_dashboard', 'view_application', 'view_business',
   'view_opportunities', 'view_your_offers', 'view_booking', 'view_community', 'see_ideas', 'view_proposal', 'answer_question',
 ];
@@ -32,7 +32,7 @@ export const NOTIFICATION_ACTION_BY_TYPE = {
   recommended_gathering: 'view_gathering', friend_joined_gathering: 'view_gathering', recurring_gathering: 'view_gathering',
   gathering_cancelled: 'find_something_else', community_cancelled: 'find_something_else', first_mission_reminder: 'browse_gatherings',
   // people
-  friend_request: 'view_friend_request', friend_accepted: 'view_friends',
+  friend_request: 'view_friend_request', friend_accepted: 'view_profile',
   birthday: 'view_profile', crossed_paths_sighting: 'view_profile', new_story: 'view_profile', occasion_surprise_revealed: 'view_profile',
   // occasions
   birthday_upcoming: 'start_planning', anniversary_upcoming: 'start_planning', occasion_upcoming: 'start_planning',

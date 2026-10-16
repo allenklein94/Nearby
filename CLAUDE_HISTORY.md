@@ -1,3 +1,22 @@
+# Item 133 (owner, 2026-10-16) notification -> destination continuity - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+Owner ask: a push about something opens THAT thing with what the push said visible ("Claude accepted your gathering" -> the
+gathering, not Activity -> find -> open). Audit of `navigation/notificationDestinations.js` against every push type the migrations
+send (all handled): gathering pushes already open GatheringDetail with the push body as the reason banner; the host's join push
+(`gathering_interest`, "{Name} joined \"{title}\"" / asked to join / joined the waitlist) lands on the gathering, where Who's going
+shows the person (item 28's join moment plays only for a join seen live; landing from the push shows it settled). Offers open the
+exact offer (item 136), plans the plan, chats the chat.
+Gap fixed: "{Name} accepted your friend request." carried no person id and opened the Friends list. Migration
+`20270318_friend_accepted_opens_friend.sql` (APPLIED to production 2026-10-16; journey failed 2/2 without it, passed with it as a
+rolled-back prelude) adds `user_id` (the accepter) to the payload; the tap opens ViewProfile (an older push without the id still opens
+Friends); action button `view_profile` in `constants/notificationActions.js` + `send-push` (deployed v25, verify_jwt on, downloaded
+live source = repo before and after); the now-unused `view_friends` label removed (key list + 11 languages), as the no-unused-label
+guard requires. Wording, mute group and dedupe unchanged; no new strings. Left as is: `wave` opens Activity (the waver's identity is
+premium-locked there; opening the profile would bypass it) and `friend_request` opens Friends (where it is answered).
+Tests: `navigation/notificationContinuity.test.js` 5; `notificationActions.test.js` updated; full Jest 6078 passed; journey
+`friendAcceptedPush` 2/2; all journeys on prod 401/401 (no prelude, rolled back). From-scratch replay 442/442, journeys 401/401 on it,
+both concurrency scripts pass. Not verified: a real push tap on a phone.
+
 # Item 132 (owner, 2026-10-16) the "Nearby Moment" notification - MET as built, nothing built
 
 Owner ask: notifications say what happened ("Coastal Coffee responded to your request"), use the tiny pulse language, and a tap opens
