@@ -12,6 +12,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { tr, getCurrentLanguage } from '../i18n/translate';
 import { displayDateTime } from '../i18n/display';
 import { localClock, localWindow } from '../i18n/format';
+import OfferTimeChoice from './OfferTimeChoice';
+import { offerTimes, choosableTimes } from '../utils/offerTimes';
 
 const isEnglish = (language) => !language || language === 'en';
 const minutesOf = (hhmm) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm ?? '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
@@ -40,7 +42,9 @@ export function offerWindowText(from, until, language) {
 // preview cannot drift from what is actually shown. `offer` uses the stored row's field names. `localMedia` (owner
 // preview only) = { uri, type } for a file not uploaded yet. `countdown` (item 47) = presentOffer()'s countdown: in an open
 // offer's last 30 minutes the validity line takes the amber in-progress tone with a thin bar of the time left under it.
-export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null, countdown = null }) {
+// Item 119: a reply with two times shows both inside this one card. `onPickTime` (the customer's own open reply only)
+// makes them selectable; `pickedTime` is the pick; `timeNotes` = { [iso]: text } beside a time ("Fits 7 PM").
+export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null, countdown = null, pickedTime = null, onPickTime = null, timeNotes = {}, pickDisabled = false }) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const styles = getStyles(colors);
@@ -71,7 +75,17 @@ export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typ
         {price ? <Text style={styles.offerPrice}>{price}</Text> : null}
       </AssemblyStep>
       <AssemblyStep step="when">
-        {o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time, language)}</Text> : null}
+        {offerTimes(o).length === 2 ? (
+          <OfferTimeChoice
+            times={offerTimes(o)}
+            selected={pickedTime}
+            onSelect={onPickTime}
+            notes={timeNotes}
+            enabled={choosableTimes(o)}
+            disabled={pickDisabled}
+            format={(iso) => formatProposedTime(iso, language)}
+          />
+        ) : o.proposed_time ? <Text style={styles.offerProposedTime}>🕐 {formatProposedTime(o.proposed_time, language)}</Text> : null}
         {whenDay ? (
           <Text style={styles.offerProposedTime}>🕒 {offerWhenLineText(whenDay, o.available_from, o.available_until, language)}</Text>
         ) : (

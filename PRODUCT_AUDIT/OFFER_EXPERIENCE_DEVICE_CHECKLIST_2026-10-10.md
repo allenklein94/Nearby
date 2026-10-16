@@ -103,6 +103,22 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
 - [ ] Host with their gathering open while someone joins: the Going figure updates within ~1 s and glows once in green;
   no vibration; a second identical event does not replay it. ★
 
+## 9. Two times in one reply (item 119, added 2026-10-16)
+
+- [ ] Business, Make an Offer with "Alt. time": after the first time, "+ Add another time" appears; picking a second time shows it
+  with a Clear chip; Clear removes only the second time. The live Customer Preview shows both times as plain lines.
+- [ ] Business, Offer Alternative sheet: same "+ Add another time"; the sent text reads "...one of these times instead." with two
+  times, "...this time instead." with one.
+- [ ] Customer: ONE card for that business (never two), both times as rows under "Pick a time"; "I'll take this one" is dimmed
+  and does nothing until a time is tapped; the tapped row turns coral at once (no animation). VoiceOver/TalkBack reads each row as
+  "Choose <time>", selected state announced.
+- [ ] Customer asked for 7 PM and the reply offers 8:30 PM and 7 PM: if it is "Our pick", "Fits 7 PM" sits beside the 7 PM row
+  only (not on the pick line, never beside 8:30).
+- [ ] Taking 8:30: the booked card, Your Plan and Plans all say 8:30; no trace of 7 PM anywhere.
+- [ ] Group plan (2+ phones): each person picks a time and confirms; "N of M confirmed" counts the time picked on that phone;
+  people choosing different times = nothing books; one person switching to the others' time books it once, at that time.
+- [ ] A one-time reply looks and books exactly as before (no rows, no "Pick a time").
+
 ## Record
 
 | Step | iPhone | Android | Chrome | Safari | Phone browser | Notes |

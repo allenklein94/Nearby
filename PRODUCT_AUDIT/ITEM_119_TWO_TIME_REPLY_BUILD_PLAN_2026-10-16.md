@@ -1,7 +1,8 @@
-# Item 119: two time options in one business reply - BUILD PLAN (2026-10-16, not approved for building)
+# Item 119: two time options in one business reply - BUILD PLAN (2026-10-16) - APPROVED AND BUILT (migration 20270311, LIVE)
 
-Status: item 119 is recorded as PARTLY MET (LOCKED, nothing built). The owner now leans toward building the two-time version and
-asked for this plan. Nothing here is built until the owner approves it and answers the open decisions at the end.
+Status: owner reopened item 119 and approved this plan (2026-10-16). BUILT and LIVE (migration 20270311, screen-business-content
+redeployed, journey `offer` 38/38). NOT device-verified: section 9 of `OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md`.
+Decision 1 below was REVISED by the owner during the build (see "Owner decisions"): two times everywhere, groups included.
 
 ## What it does
 
@@ -70,3 +71,18 @@ or history, any new motion, two-time automatic replies, different prices per tim
    rule for who picks the time). Two times only on one person's request.
 2. **The quick "Offer Alternative" path:** recommended yes (it is exactly the "6 at 8:30 instead" case), plus Make an Offer.
 3. **Approve the three new strings** above (wording can change).
+
+## Owner decisions (2026-10-16)
+
+1. **Group plans: two times everywhere (REVISED, LOCKED).** The first answer was "one time for groups", but hiding the option or
+   refusing it on a group request would tell the business the request is a group plan (business-privacy rule). Owner chose: every
+   eligible reply may carry two times, groups included; no plan kind, party type or group flag in business-facing data; each
+   participant confirms the offer AND a time (`group_plan_offer_confirmations.chosen_time`, visible only to that group's
+   participants, the existing policy); it books only when everyone chose the SAME time; a split stays pending and Nearby never picks;
+   automatic replies stay one time. Options "accept the leak" and "drop the second time silently" REJECTED.
+   Safeguard checked before building: the existing confirmation table already holds one row per participant per offer and is
+   readable only by the group, so one nullable column + a same-time count covers it with no new visibility.
+2. **Quick "Offer Alternative": yes**, plus Make an Offer.
+3. **Strings approved as written** ("Add another time", "Pick a time", "Choose {time}"); 10 languages machine-authored, native
+   review pending.
+

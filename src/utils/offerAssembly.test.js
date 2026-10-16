@@ -169,9 +169,10 @@ describe('the reveal never gets in the way', () => {
     const closes = (upToButton.match(/<\/AssemblyStep>/g) || []).length;
     expect(opens - closes).toBe(1); // the one open step around the button
     expect(upToButton.slice(upToButton.lastIndexOf('<AssemblyStep '))).toMatch(/^<AssemblyStep step="action">/);
-    // the button is disabled only while that offer is being accepted, never by the animation
+    // the button is disabled only while that offer is being accepted (and, item 119, until a time is picked on a two-time
+    // reply: the person's own choice, never a timer), never by the animation
     const btn = offered.slice(offered.lastIndexOf('<TouchableOpacity', offered.indexOf('handleAccept(o.id)')), offered.indexOf('</TouchableOpacity>', offered.indexOf('handleAccept(o.id)')));
-    expect(btn).toMatch(/disabled=\{actingOfferId === o\.id\}/);
+    expect(btn).toMatch(/disabled=\{actingOfferId === o\.id( \|\| !bookable)?\}/);
     expect(btn).not.toMatch(/assembl|animat|reveal/i);
   });
   test('gentle: no bounce, no loop, no haptic, no sound', () => {

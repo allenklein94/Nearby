@@ -1,3 +1,42 @@
+# Item 119 (owner, 2026-10-16) two times in one business reply - REOPENED, APPROVED, BUILT, LIVE; NOT device-verified
+
+- Reopened by the owner after the PARTLY MET record below (owner leaned toward the small, full-party version); build plan
+  `PRODUCT_AUDIT/ITEM_119_TWO_TIME_REPLY_BUILD_PLAN_2026-10-16.md` approved with three decisions (quick Alternative path: yes; strings
+  approved; groups: see next bullet).
+- Group conflict found while building: "one time for groups" would need the business form to know a request is a group plan, and
+  that is plan kind (business-privacy rule); a server refusal leaks the same. Owner chose (LOCKED): two times everywhere, no group flag to
+  the business, every participant confirms the offer AND a time, books only when all chose the same time, a split stays pending and
+  Nearby never picks; automatic replies one time. Safeguard verified first: `group_plan_offer_confirmations` (one row per participant
+  per offer, RLS = the group's participants) can hold the choice with one nullable column, no new visibility.
+- Migration `20270311_two_time_reply.sql` (rolled-back dry run on prod, then APPLIED 2026-10-16): `business_request_offers.proposed_time_alt`
+  + check (needs a first time, differs from it, never with availability_id / package_id / auto_reply); `group_plan_offer_confirmations.chosen_time`;
+  `_offer_chosen_time` (the ONE server rule; internal only); `submit_business_offer` + `proposed_time_alt_param` (both times ahead,
+  not equal); `accept_business_offer` / `_accept_business_offer_internal` + `chosen_time_param` (chosen written into proposed_time, alt
+  cleared, so every reader after accept is unchanged; item 116 capacity path untouched); `confirm_group_plan_offer` + `chosen_time_param`
+  (re-confirming changes your time; unanimity counted on the same time); `admin_review_business_content_screening` carries
+  `proposedTimeAlt` from a held reply (refuses if it has passed, never drops it); `get_business_opportunities` returns `proposed_time_alt`.
+  Old signatures dropped (one overload each, checked live); grants: public/anon revoked, internal ones service_role only.
+- Edge function `screen-business-content` redeployed (after the migration): `proposedTimeAlt` in the RPC call, the screening snapshot
+  and the queued submission payload (so "Try again" keeps it).
+- Client: `utils/offerTimes.js` (offerTimes / choosableTimes / needsTimePick / timeToBook / canBookWith / groupTimeConfirmations);
+  `components/OfferTimeChoice.js` (rows in the ONE card, coral = picked, instant, "Pick a time" hint, a11y "Choose {time}"; plain lines in
+  the owner's preview); `OfferCustomerBody` renders it for two times; `presentOffer` exposes `times` + `pickTime`; request screen: "I'll
+  take this one" waits for a pick (dimmed, `!bookable`), `handleAccept` sends `timeToBook`; item 63: `replyTimeFit` fits when either time
+  is the stated one, `fittingTime` puts "Fits 7 PM" beside that time only (not on the pick line for a two-time pick); GroupPlan: time rows,
+  "N of M confirmed" counts the time picked on that phone (none until picked), confirm sends the time (also now shows a one-time reply's
+  proposed time, which it never did); business: "+ Add another time" + Clear in Make an Offer and the Offer Alternative sheet,
+  `draftSecondTime` shared by Send and the live preview, draft keeps the second time; `buildAlternativeText(.., { twoTimes })` says
+  "one of these times" (English-only fixed business line, like the existing one). Business web export regenerated.
+- Strings (approved): `ui.bizDash3.addAnotherTime`, `ui.requestDetail.pickATime`, `ui.requestDetail.chooseTimeA11y`; 10 languages machine-
+  authored, native review pending. `scripts/i18n/strings/bizDash3.json` also regained `upToFiveCategories` (it was in the generated file
+  only; a rebuild would have deleted it).
+- Verified: Jest 447 suites / 5995 tests pass (new `utils/offerTimes.test.js`; `offerAssembly.test.js` now allows the pick gate on the accept button,
+  never an animation gate); journey `offer` 38/38 (10 new steps: bad second times refused, one row with both times, business view has no
+  group field, automatic reply can't hold two, customer card rules on the real rows, accept needs an offered time, picked time booked +
+  other reply closed, one-time reply unchanged, group split stays pending + outsider reads nothing, same time books once); all journeys
+  353/353 with the migration as prelude; offer + group booking + booking capacity 59/59 after apply. No from-scratch replay for this
+  migration. NOT verified: any screen on a device, the edge function end to end (Anthropic credit), realtime on GroupPlan.
+
 # Item 119 (owner, 2026-10-16) business "counters" with options - PARTLY MET, nothing built; multi-option replies and partial-party offers EXCLUDED (LOCKED)
 
 - Proposal: "6 people tonight" -> one business replies "4 at 7 PM or 6 at 8:30 PM"; the consumer picks.

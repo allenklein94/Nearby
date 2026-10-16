@@ -5,7 +5,8 @@
 //   - time: the request's date and/or start time (business_requests.date / time_window_start; Ask a business stores a
 //     single start, never an end).
 //       * an alternate-time reply ('alt_time') meets it only when its own proposed_time IS that date (and that minute,
-//         when a time was stated), on the device's local clock like every date in the app;
+//         when a time was stated), on the device's local clock like every date in the app; a reply with two times
+//         (item 119) meets it when either time does, and only that time carries "Fits" (fittingTime);
 //       * a reply with an available window meets a stated time when the start is inside it (from <= start < until);
 //       * any other reply the business itself sent ("Yes, you can host them as requested.") confirms the requested time;
 //       * an automatic reply never checked a single stated time against the business's availability: unknown. That is a
@@ -24,6 +25,7 @@
 // was stated. Nothing here changes how a card looks (item 17); a reply that does not qualify stays in the list.
 import { hasEstablishedRecord } from './reliabilityRecord';
 import { partyBudgetTotal } from './budgetTier';
+import { offerTimes } from './offerTimes';
 
 export const FIT = { FITS: 'fits', FAILS: 'fails', UNKNOWN: 'unknown' };
 
@@ -48,17 +50,35 @@ export function statedBudget(request) {
   return request?.budget_max != null && Number.isFinite(n) && n > 0 ? n : null;
 }
 
+// Whether one offered time IS the stated time: that local day (when a day was stated) and that minute (when a time was).
+function timeIsStated(stated, iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return false;
+  if (stated.date && localDayKey(d) !== stated.date) return false;
+  if (stated.startMin != null && d.getHours() * 60 + d.getMinutes() !== stated.startMin) return false;
+  return true;
+}
+
+// Item 119: on a two-time reply, the one time that matches what the customer stated (null when none does, when nothing
+// was stated, or on a one-time reply). "Fits 7 PM" is shown only beside this time.
+export function fittingTime(request, offer) {
+  const stated = statedTime(request);
+  if (!stated || offer?.offer_type !== 'alt_time') return null;
+  const times = offerTimes(offer);
+  if (times.length < 2) return null;
+  return times.find((iso) => timeIsStated(stated, iso)) ?? null;
+}
+
 // fits | fails | unknown, or null when the customer stated no time.
 export function replyTimeFit(request, offer) {
   const stated = statedTime(request);
   if (!stated) return null;
   if (offer?.availability_id || offer?.package_id || offer?.auto_reply) return FIT.UNKNOWN;
   if (offer?.offer_type === 'alt_time') {
-    const d = offer?.proposed_time ? new Date(offer.proposed_time) : null;
-    if (!d || Number.isNaN(d.getTime())) return FIT.UNKNOWN;
-    if (stated.date && localDayKey(d) !== stated.date) return FIT.FAILS;
-    if (stated.startMin != null && d.getHours() * 60 + d.getMinutes() !== stated.startMin) return FIT.FAILS;
-    return FIT.FITS;
+    // Item 119: a reply with two times fits when either of them is the stated time.
+    const times = offerTimes(offer);
+    if (times.length === 0) return FIT.UNKNOWN;
+    return times.some((iso) => timeIsStated(stated, iso)) ? FIT.FITS : FIT.FAILS;
   }
   const from = minutesOf(offer?.available_from);
   const until = minutesOf(offer?.available_until);

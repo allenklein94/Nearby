@@ -29,9 +29,12 @@ export function standardAvailabilityText(policy) {
   return terms ? `${STANDARD_AVAILABILITY_TEXT} ${terms}` : STANDARD_AVAILABILITY_TEXT;
 }
 
-export function buildAlternativeText(note) {
+// Item 119: with a second time the line says "one of these times" (the reply then carries two).
+export function buildAlternativeText(note, { twoTimes = false } = {}) {
   const n = (note ?? '').trim();
-  const base = "We can't do the requested time, but we can do this time instead.";
+  const base = twoTimes
+    ? "We can't do the requested time, but we can do one of these times instead."
+    : "We can't do the requested time, but we can do this time instead.";
   return n ? `${base} ${n}`.slice(0, 1000) : base;
 }
 

@@ -169,11 +169,13 @@ export async function removeGroupPlanParticipant(proposalId, targetUserId) {
 
 // One confirmation per (offer, participant). Returns allConfirmed=false
 // with the running count until every currently-accepted participant has
-// confirmed -- the real accept only fires on the last one.
-export async function confirmGroupPlanOffer(proposalId, offerId) {
+// confirmed -- the real accept only fires on the last one. Item 119: on a two-time reply each participant confirms a
+// time too (chosenTime; confirming again changes it) and it books only when everyone chose the same time.
+export async function confirmGroupPlanOffer(proposalId, offerId, chosenTime = null) {
   const { data, error } = await supabase.rpc('confirm_group_plan_offer', {
     proposal_id_param: proposalId,
     offer_id_param: offerId,
+    chosen_time_param: chosenTime,
   });
   if (error) throw new Error(error.message);
   return data;
@@ -218,7 +220,7 @@ export async function getGroupPlanDetail(proposalId) {
 
     const { data: confirmRows, error: confirmError } = await supabase
       .from('group_plan_offer_confirmations')
-      .select('offer_id, user_id')
+      .select('offer_id, user_id, chosen_time')
       .eq('proposal_id', proposalId);
     if (confirmError) throw new Error(confirmError.message);
     confirmations = confirmRows ?? [];

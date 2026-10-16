@@ -647,8 +647,9 @@ export async function getBusinessRequestWithOffers(requestId) {
   return { request, offers: offers ?? [] };
 }
 
-export async function acceptBusinessOffer(offerId) {
-  const { data, error } = await supabase.rpc('accept_business_offer', { offer_id_param: offerId });
+// Item 119: chosenTime = the time picked on a two-time reply (offerTimes.timeToBook); null on a one-time reply.
+export async function acceptBusinessOffer(offerId, chosenTime = null) {
+  const { data, error } = await supabase.rpc('accept_business_offer', { offer_id_param: offerId, chosen_time_param: chosenTime });
   if (error) throw new Error(error.message);
   return data;
 }
@@ -893,13 +894,14 @@ export async function getBusinessOpportunities(partnerId) {
   return data ?? [];
 }
 
-export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null}) {
+export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, proposedTimeAlt = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null}) {
   const { data, error } = await supabase.rpc('submit_business_offer', {
     request_id_param: requestId,
     offer_type_param: offerType,
     offer_description_param: offerDescription,
     offer_price_param: offerPrice,
     proposed_time_param: proposedTime,
+    proposed_time_alt_param: proposedTimeAlt,
     experience_id_param: experienceId,
     media_path_param: mediaPath,
     media_type_param: mediaType,
@@ -919,7 +921,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null, creativeId = null, validUntil = null, availableFrom = null, availableUntil = null, queue = false}) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, proposedTimeAlt = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null, creativeId = null, validUntil = null, availableFrom = null, availableUntil = null, queue = false}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -946,6 +948,7 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
       offerDescription,
       offerPrice,
       proposedTime,
+      proposedTimeAlt, // item 119: a second time for the same full party (null = one time)
       experienceId,
       mediaPath,
       mediaType,

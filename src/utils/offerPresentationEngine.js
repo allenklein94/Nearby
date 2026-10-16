@@ -12,7 +12,7 @@
 // It composes the existing single sources and adds no rule of its own: the reply kind (utils/offerCopy.js, item 121),
 // the assembly steps + once-per-new-reply decision (utils/offerAssembly.js), the booking state (utils/acceptedBooking.js,
 // item 12), the lifecycle (utils/objectLifecycle.js), the discount headline (utils/offerPresentation.js, item 11) and the
-// redeem instructions (utils/offerMedia.js).
+// redeem instructions (utils/offerMedia.js) and the offered times (utils/offerTimes.js, item 119).
 //
 // Fairness (item 17, LOCKED): every business replying to the same request gets the same structure; presentation follows
 // only the content the reply carries. Brand assets are limited to the business's name and its screened logo. Nothing here
@@ -24,6 +24,7 @@ import { acceptedBookingState, ACCEPTED_TITLE_KEY } from './acceptedBooking';
 import { offerLifecycleState } from './objectLifecycle';
 import { discountHeadlinePct, offerCountdown } from './offerPresentation';
 import { visibleRedemption } from './offerMedia';
+import { offerTimes, needsTimePick } from './offerTimes';
 import { tr } from '../i18n/translate';
 
 export const OFFER_CARDS = ['waiting', 'open', 'closed', 'booked', 'visited'];
@@ -97,6 +98,10 @@ export function presentOffer(offer, { business = {}, context = {} } = {}) {
     discountPct: discountHeadlinePct(offer),
     // Item 47: the last-30-minutes countdown, only on an open reply (a booked or closed one no longer runs out).
     countdown: card === 'open' ? offerCountdown(offer, now) : null,
+    // Item 119: the time(s) an open reply offers (one, or two for the same full party) and whether the customer still
+    // picks one before booking. The owner's preview shows both times, never a pick.
+    times: card === 'open' ? offerTimes(offer) : [],
+    pickTime: card === 'open' && !preview && needsTimePick(offer, now),
     confirmation: bookingState ? {
       state: bookingState,
       titleKey: ACCEPTED_TITLE_KEY[bookingState],

@@ -989,6 +989,8 @@ Body: ${updateBody || '(none)'}`;
     // below, just the write-path params/snapshot.
     const priceIsPerPerson = body.priceIsPerPerson === true;
     const proposedTime = typeof body.proposedTime === 'string' && body.proposedTime ? body.proposedTime : null;
+    // Item 119: an optional second time for the same full party (submit_business_offer validates it).
+    const proposedTimeAlt = proposedTime && typeof body.proposedTimeAlt === 'string' && body.proposedTimeAlt ? body.proposedTimeAlt : null;
     // Item 92 ("Businesses should be able to respond specifically to the
     // occasion", CLAUDE.md) -- a real, optional structured title ("Special
     // Birthday Offer") and a real included-items checklist, both purely
@@ -1109,7 +1111,7 @@ Body: ${updateBody || '(none)'}`;
       }
       const { riskTier, matchedCategories, reasoning } = result;
 
-      const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions, creativeId, validUntil, availableFrom, availableUntil };
+      const contentSnapshot = { requestId, offerType, offerDescription, offerTitle, includedItems, offerPrice, priceIsPerPerson, discountPct, proposedTime, proposedTimeAlt, experienceId, mediaPath, mediaType, posterPath, framePaths, redemptionInstructions, creativeId, validUntil, availableFrom, availableUntil };
 
       const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
         partner_id_param: partnerId,
@@ -1129,7 +1131,7 @@ Body: ${updateBody || '(none)'}`;
       if (riskTier === 'low') {
         const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('submit_business_offer', {
           request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
-          offer_price_param: offerPrice, proposed_time_param: proposedTime, experience_id_param: experienceId,
+          offer_price_param: offerPrice, proposed_time_param: proposedTime, proposed_time_alt_param: proposedTimeAlt, experience_id_param: experienceId,
           media_path_param: mediaPath, media_type_param: mediaType,
           offer_title_param: offerTitle, included_items_param: includedItems,
           price_is_per_person_param: priceIsPerPerson,
@@ -1167,7 +1169,7 @@ Body: ${updateBody || '(none)'}`;
       if (!submissionId) {
         const { data: created, error: createError } = await admin.from('business_offer_submissions').insert({
           partner_id: partnerId, request_id: requestId, submitted_by: myId, status: 'reviewing',
-          payload: { requestId, offerType, offerDescription, offerPrice, proposedTime, experienceId, mediaPath, mediaType, offerTitle, includedItems, priceIsPerPerson, discountPct, framePaths, redemptionInstructions, creativeId, validUntil, availableFrom, availableUntil },
+          payload: { requestId, offerType, offerDescription, offerPrice, proposedTime, proposedTimeAlt, experienceId, mediaPath, mediaType, offerTitle, includedItems, priceIsPerPerson, discountPct, framePaths, redemptionInstructions, creativeId, validUntil, availableFrom, availableUntil },
         }).select('id').single();
         if (createError) {
           if ((createError as any).code === '23505') return json({ error: 'You already have an offer being reviewed for this request.', code: 'already_reviewing' }, 409);

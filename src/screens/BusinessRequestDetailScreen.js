@@ -1,5 +1,6 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
-import { rankReplies } from '../utils/replyFit';
+import { rankReplies, fittingTime } from '../utils/replyFit';
+import { hasTwoTimes, canBookWith, timeToBook } from '../utils/offerTimes';
 import { useLanguage } from '../context/LanguageContext';
 import { displayClock, displayWeekdayDate } from '../i18n/display';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -209,6 +210,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
   const [unavailable, setUnavailable] = useState(false);
   const [actingOfferId, setActingOfferId] = useState(null);
+  // Item 119: the time picked on each two-time reply (offer id -> ISO), until "I'll take this one" books it.
+  const [pickedTimes, setPickedTimes] = useState({});
   const [cancelling, setCancelling] = useState(false);
   // Success state (per the Nearby Motion Language): accepting an offer used to be a
   // silent state re-render (CLAUDE.md Item 57's own disclosed, unbuilt gap) -- now a
@@ -334,14 +337,26 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   const ranking = useMemo(() => rankReplies(offers, request, partnerStats), [offers, request, partnerStats]);
   const displayOffers = ranking.offers;
   const pickOfferId = ranking.pickOfferId;
-  const pickReasonsLine = useMemo(() => ranking.pickReasons.map((r) => {
-    if (r.kind === 'budget') return t('ui.requestDetail.pickWithinBudget');
+  const fitsTimeText = (r) => {
     const [y, m, d] = (r.date ?? '').split('-').map(Number);
     const at = r.date ? new Date(y, m - 1, d) : new Date();
     if (r.startMin != null) at.setHours(Math.floor(r.startMin / 60), r.startMin % 60, 0, 0);
     const label = r.startMin != null ? displayClock(at.toISOString(), language) : displayWeekdayDate(at.toISOString(), language);
     return label ? t('ui.requestDetail.pickFitsTime', { time: label }) : null;
-  }).filter(Boolean).join(' · ') || null, [ranking, language]);
+  };
+  // Item 119: on a two-time pick, "Fits 7 PM" sits beside the one time that matches (pickTimeNotes), not on the line.
+  const pickOffer = useMemo(() => displayOffers.find((o) => o.id === pickOfferId) ?? null, [displayOffers, pickOfferId]);
+  const pickFitIso = pickOffer && hasTwoTimes(pickOffer) ? fittingTime(request, pickOffer) : null;
+  const pickReasonsLine = useMemo(() => ranking.pickReasons.map((r) => {
+    if (r.kind === 'budget') return t('ui.requestDetail.pickWithinBudget');
+    if (pickFitIso) return null;
+    return fitsTimeText(r);
+  }).filter(Boolean).join(' · ') || null, [ranking, language, pickFitIso]);
+  const pickTimeNotes = useMemo(() => {
+    const r = ranking.pickReasons.find((x) => x.kind === 'time');
+    const text = r && pickFitIso ? fitsTimeText(r) : null;
+    return text ? { [pickFitIso]: text } : {};
+  }, [ranking, language, pickFitIso]);
 
   // Plays only a confirmation that arrived live (a realtime-triggered re-read saw accepted -> completed); the first read
   // of this visit is the baseline, and anything already played on this device is never replayed.
@@ -804,13 +819,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   useEffect(() => subscribeViewedArrivals((id) => { if (id === requestId) load(); }), [requestId, load]);
 
   async function handleAccept(offerId) {
+    // Item 119: a two-time reply books the time picked on its card (utils/offerTimes.js); a one-time reply sends none.
+    const chosenTime = timeToBook(offers.find((x) => x.id === offerId), pickedTimes[offerId] ?? null);
     // One accept in flight: a second tap before the button re-renders as disabled does nothing (the server also refuses a
     // second accept: the offer is no longer 'offered').
     if (acceptingRef.current) return;
     acceptingRef.current = true;
     setActingOfferId(offerId);
     try {
-      const result = await acceptBusinessOffer(offerId);
+      const result = await acceptBusinessOffer(offerId, chosenTime);
       recordAcceptBehavior(request?.id, request?.category); // item 95: private ranking signal, never a profile edit
       // Item 12: the card morphs only from the stored state the reload brings back (accepted + its reservation), never on
       // the tap alone. Only that card animates its own change (owner, 2026-10-12): the rest of the screen updates without a
@@ -1684,7 +1701,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               {o.status === 'offered' && (
                 <>
                   {o.offer_title ? <AssemblyStep step="order"><Text style={styles.offerTitleHeadline}>{o.offer_title}</Text></AssemblyStep> : null}
-                  <OfferCustomerBody offer={o} countdown={shown.countdown} showTypeLabel={showComparison} typeLabel={OFFER_TYPE_LABELS[o.offer_type] ? t(`ui.requestDetail.offerType.${o.offer_type}`) : o.offer_type} />
+                  <OfferCustomerBody offer={o}
+                    countdown={shown.countdown}
+                    showTypeLabel={showComparison}
+                    typeLabel={OFFER_TYPE_LABELS[o.offer_type] ? t(`ui.requestDetail.offerType.${o.offer_type}`) : o.offer_type}
+                    pickedTime={pickedTimes[o.id] ?? null}
+                    onPickTime={shown.pickTime && consumerOfferAction(o, { request, hasWinner, isGroupPlanRequest }).kind === 'accept_offer' ? (iso) => setPickedTimes((prev) => ({ ...prev, [o.id]: iso })) : null}
+                    pickDisabled={actingOfferId === o.id}
+                    timeNotes={pickOfferId === o.id ? pickTimeNotes : {}}
+                  />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>{t('ui.requestDetail.youveSeenThis')}</Text>
                   ) : null}
@@ -1707,12 +1732,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       );
                     }
                     if (action.kind !== 'accept_offer') return null;
+                    // Item 119: a two-time reply books only once a time is picked (the button waits, never guesses).
+                    const bookable = canBookWith(o, pickedTimes[o.id] ?? null);
                     return (
                       <AssemblyStep step="action">
                       <TouchableOpacity
-                        style={styles.acceptButton}
+                        style={[styles.acceptButton, !bookable && styles.acceptButtonWaiting]}
                         onPress={() => handleAccept(o.id)}
-                        disabled={actingOfferId === o.id}
+                        disabled={actingOfferId === o.id || !bookable}
+                        accessibilityState={{ disabled: actingOfferId === o.id || !bookable }}
                         accessibilityLabel={businessReplyKind(o) === 'offer' ? t('ui.requestDetail.acceptOfferFromA11y', { name: o.brand_partners?.name ?? 'this business' }) : t('ui.requestDetail.chooseA11y', { name: o.brand_partners?.name ?? 'this business' })}
                         accessibilityRole="button"
                       >
@@ -2277,6 +2305,7 @@ const getStyles = (colors) => StyleSheet.create({
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
   offerViewedIndicator: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
   acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
+  acceptButtonWaiting: { opacity: 0.5 },
   acceptButtonText: { color: '#fff', fontWeight: '700' },
   completeButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   completeButtonText: { color: colors.primary, fontWeight: '700' },

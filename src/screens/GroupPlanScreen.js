@@ -31,6 +31,9 @@ import { offerPriceLabel } from '../utils/outcomeDisplay';
 import { moneyLabel } from '../utils/outcomeDisplay';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
+import OfferTimeChoice from '../components/OfferTimeChoice';
+import { formatProposedTime } from '../components/OfferCustomerBody';
+import { hasTwoTimes, choosableTimes, timeToBook, groupTimeConfirmations, sameInstant } from '../utils/offerTimes';
 
 // Display labels by stored status, read through ui.groupPlan (status values stay canonical).
 const PARTICIPANT_STATUS_KEYS = ['invited', 'accepted', 'declined', 'left'];
@@ -63,6 +66,8 @@ export default function GroupPlanScreen({ navigation, route }) {
   // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
   const [unavailable, setUnavailable] = useState(false);
   const [acting, setActing] = useState(false);
+  // Item 119: the time I'm about to confirm on each two-time reply (offer id -> ISO); defaults to the one I confirmed.
+  const [pickedTimes, setPickedTimes] = useState({});
   const [budgetInput, setBudgetInput] = useState('');
   const [excludeIds, setExcludeIds] = useState([]);
   const [myDietary, setMyDietary] = useState([]);
@@ -254,13 +259,13 @@ export default function GroupPlanScreen({ navigation, route }) {
     ]);
   }
 
-  function handleConfirmOffer(offerId) {
+  function handleConfirmOffer(offerId, chosenTime = null) {
     Alert.alert(t('ui.groupPlan.confirmThisOfferForThe'), t('ui.groupPlan.onceEveryoneConfirmsTheReservation'), [
       { text: t('ui.groupPlan.neverMind'), style: 'cancel' },
       {
         text: t('ui.groupPlan.confirm'),
         onPress: () => runAction(
-          () => confirmGroupPlanOffer(proposalId, offerId),
+          () => confirmGroupPlanOffer(proposalId, offerId, chosenTime),
           // Same Wave 2B gap as handleConfirm above -- this is the actual
           // "10/10 success case" for the whole feature (a group plan
           // that genuinely turned into a real reservation), and it was
@@ -482,8 +487,16 @@ export default function GroupPlanScreen({ navigation, route }) {
             ) : (
               offers.map((o, offerIndex) => {
                 const confirmedForThisOffer = confirmations.filter((c) => c.offer_id === o.id);
-                const iConfirmed = confirmedForThisOffer.some((c) => c.user_id === myId);
                 const amActiveParticipant = canDo('group_participant', myParticipant?.status, 'confirm_offer');
+                // Item 119: a two-time reply is confirmed per time; it books only when everyone chose the same one.
+                const twoTimes = hasTwoTimes(o);
+                const byTime = groupTimeConfirmations(o, confirmations, myId);
+                const picked = pickedTimes[o.id] ?? byTime.mine ?? null;
+                const chosen = twoTimes ? timeToBook(o, picked) : null;
+                const iConfirmed = twoTimes
+                  ? !!byTime.mine && sameInstant(byTime.mine, chosen)
+                  : confirmedForThisOffer.some((c) => c.user_id === myId);
+                const canConfirm = canDo('offer', offerLifecycleState(o), 'accept') && amActiveParticipant;
                 return (
                   <View key={o.id} style={styles.offerCard}>
                   <View>
@@ -491,13 +504,27 @@ export default function GroupPlanScreen({ navigation, route }) {
                     <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.groupPlan.thisOfferHasExpired') : statusCopy(t, 'offerStatus', OFFER_STATUS_KEYS, o.status)}</Text>
                     {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
                     {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
-                    {canDo('offer', offerLifecycleState(o), 'accept') && amActiveParticipant && (
+                    {twoTimes ? (
+                      <OfferTimeChoice
+                        times={[o.proposed_time, o.proposed_time_alt]}
+                        selected={picked}
+                        onSelect={canConfirm ? (iso) => setPickedTimes((prev) => ({ ...prev, [o.id]: iso })) : null}
+                        enabled={choosableTimes(o)}
+                        disabled={acting}
+                        format={(iso) => formatProposedTime(iso, language)}
+                      />
+                    ) : o.proposed_time ? <Text style={styles.offerPrice}>🕐 {formatProposedTime(o.proposed_time, language)}</Text> : null}
+                    {canConfirm && (
                       <>
-                        <Text style={styles.confirmCountLine}>{confirmedForThisOffer.length} of {acceptedParticipants.length} confirmed</Text>
+                        {/* Item 119: on a two-time reply the count is for the time picked here (it books only when everyone
+                            chose the same time); nothing picked yet = no count. */}
+                        {twoTimes
+                          ? (chosen ? <Text style={styles.confirmCountLine}>{byTime.byTime[chosen] ?? 0} of {acceptedParticipants.length} confirmed</Text> : null)
+                          : <Text style={styles.confirmCountLine}>{confirmedForThisOffer.length} of {acceptedParticipants.length} confirmed</Text>}
                         <TouchableOpacity
-                          style={[styles.acceptButton, iConfirmed && styles.acceptButtonDisabled]}
-                          onPress={() => handleConfirmOffer(o.id)}
-                          disabled={acting || iConfirmed}
+                          style={[styles.acceptButton, (iConfirmed || (twoTimes && !chosen)) && styles.acceptButtonDisabled]}
+                          onPress={() => handleConfirmOffer(o.id, chosen)}
+                          disabled={acting || iConfirmed || (twoTimes && !chosen)}
                           accessibilityLabel={t('ui.groupPlan.confirmThisOfferForTheA11y')}
                           accessibilityRole="button"
                         >

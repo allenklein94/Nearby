@@ -9,7 +9,9 @@ import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { offerPrimaryAction } from '../utils/primaryAction';
 import { buildPlanSummary } from '../utils/planAddonReadiness';
 import { offerToPlanMergeNow } from '../utils/offerToPlanMerge';
-import { rankReplies } from '../utils/replyFit';
+import { rankReplies, fittingTime } from '../utils/replyFit';
+import { offerTimes, canBookWith, timeToBook, groupTimeConfirmations } from '../utils/offerTimes';
+import { presentOffer } from '../utils/offerPresentationEngine';
 
 const d = hasToken ? describe : describe.skip;
 
@@ -486,5 +488,259 @@ d('journey: automatic policy / AI replies never qualify on a stated time they di
     expect(order.slice(1).sort()).toEqual(['ai', 'policy']); // still listed
     expect(r.pickOfferId).toBe(offers.find((o) => names[o.partner_id] === 'own').id);
     expect(r.pickReasons).toEqual([{ kind: 'time', date: request.date, startMin: 23 * 60 }]);
+  });
+});
+
+// Item 119 (owner, 2026-10-16): one business reply offers TWO times for the same full party; the customer picks one and
+// "I'll take this one" books exactly that time. Group plans: every participant confirms the offer AND a time; it books
+// only when everyone chose the SAME time (a split stays pending; Nearby never picks). Rolled back. Not covered: the
+// screens on a device (the time rows, "Pick a time", the waiting button) and the screening edge function (Anthropic credit).
+d('journey: a reply with two times -> the customer picks one -> that time is booked; a group books only on one shared time (item 119)', () => {
+  let s;
+  beforeAll(async () => {
+    const log = await runJourney(`
+      v_c uuid := gen_random_uuid(); v_o1 uuid := gen_random_uuid(); v_o2 uuid := gen_random_uuid();
+      v_g1 uuid := gen_random_uuid(); v_g2 uuid := gen_random_uuid(); v_g3 uuid := gen_random_uuid();
+      v_a uuid := gen_random_uuid(); v_b uuid := gen_random_uuid(); v_auto uuid := gen_random_uuid();
+      v_r uuid := gen_random_uuid(); v_r2 uuid := gen_random_uuid(); v_gr uuid := gen_random_uuid(); v_p uuid := gen_random_uuid();
+      v_day date := current_date + 2; v_t1 timestamptz; v_t2 timestamptz; v_t3 timestamptz;
+      v_msg text; v_res jsonb; v_offer uuid; v_offer_b uuid; v_offer2 uuid; v_goffer uuid; v_row jsonb; v_n int; u uuid; v_src uuid;`, `
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+  perform set_config('app.trusted_update', 'on', true);
+  v_t1 := (v_day + time '19:00')::timestamp at time zone 'UTC';
+  v_t2 := (v_day + time '20:30')::timestamp at time zone 'UTC';
+  v_t3 := (v_day + time '21:00')::timestamp at time zone 'UTC';
+  foreach u in array array[v_c, v_o1, v_o2, v_g1, v_g2, v_g3] loop
+    insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@twotimes.test');
+    insert into profiles (id, display_name, birthdate) values (u, 'TT-' || left(u::text, 4), date '1990-01-01');
+  end loop;
+  insert into brand_partners (id, name, active, latitude, longitude) values
+    (v_a, 'J119 Two Times Bistro', true, 0.5, 0.5), (v_b, 'J119 One Time Grill', true, 0.5, 0.5), (v_auto, 'J119 Auto Cafe', true, 0.5, 0.5);
+  update profiles set managed_partner_id = v_a where id = v_o1;
+  update profiles set managed_partner_id = v_b where id = v_o2;
+  -- the customer asks: a table for 6, the day after tomorrow at 7 PM
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles, date, time_window_start)
+    values (v_r, v_c, 'Table for 6 at 7', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 6, 10, v_day, time '19:00'),
+           (v_r2, v_c, 'Table for 6 another night', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 6, 10, v_day, time '19:00');
+  insert into business_request_offers (request_id, partner_id, status) values (v_r, v_a, 'pending'), (v_r, v_b, 'pending'), (v_r2, v_b, 'pending');
+  select id into v_offer from business_request_offers where request_id = v_r and partner_id = v_a;
+  select id into v_offer_b from business_request_offers where request_id = v_r and partner_id = v_b;
+  select id into v_offer2 from business_request_offers where request_id = v_r2 and partner_id = v_b;
+
+  -- 1. the server refuses a second time with no first, the same time twice, and a time already gone; the row stays waiting
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  v_row := '{}'::jsonb;
+  begin perform submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time', offer_description_param := 'x', proposed_time_alt_param := v_t2); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('no_first', v_msg);
+  begin perform submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time', offer_description_param := 'x', proposed_time_param := v_t1, proposed_time_alt_param := v_t1); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('same', v_msg);
+  begin perform submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time', offer_description_param := 'x', proposed_time_param := v_t1, proposed_time_alt_param := now() - interval '1 hour'); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('past', v_msg, 'status', (select status from business_request_offers where id = v_offer));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'bad_second_time_refused', 'ok', true, 'data', v_row));
+
+  -- 2. the business sends ONE reply with two times (7 PM or 8:30 PM, same party); still one row for this business
+  v_res := submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time',
+    offer_description_param := 'We can''t do the requested time, but we can do one of these times instead.',
+    proposed_time_param := v_t2, proposed_time_alt_param := v_t1);
+  select e into v_row from jsonb_array_elements(get_business_opportunities(v_a)) e where e->>'request_id' = v_r::text;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'two_time_reply_sent', 'ok', (v_res->>'success')::boolean, 'data', jsonb_build_object(
+    'rows_for_business', (select count(*) from business_request_offers where request_id = v_r and partner_id = v_a),
+    'offer', (select jsonb_build_object('status', status, 'proposed_time', proposed_time, 'proposed_time_alt', proposed_time_alt) from business_request_offers where id = v_offer),
+    'business_view', jsonb_build_object('proposed_time', v_row->'proposed_time', 'proposed_time_alt', v_row->'proposed_time_alt',
+       'request_keys', (select jsonb_agg(k order by k) from jsonb_object_keys(v_row->'business_requests') k)))));
+  -- the other business replies with one time
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o2, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r, offer_type_param := 'standard', offer_description_param := 'Yes, as requested.');
+
+  -- 3. an automatic reply can never carry a second time (structural check)
+  begin
+    insert into business_request_offers (request_id, partner_id, status, offer_type, offer_description, auto_reply, proposed_time, proposed_time_alt)
+      values (v_r, v_auto, 'offered', 'alt_time', 'auto', 'policy', v_t1, v_t2);
+    v_msg := 'NO ERROR';
+  exception when others then v_msg := sqlerrm; end;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'automatic_reply_one_time_only', 'ok', v_msg <> 'NO ERROR', 'data', jsonb_build_object('message', v_msg)));
+
+  -- 4. what the customer's screen reads, as the customer (RLS)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'customer_reads', 'ok', true, 'data', jsonb_build_object(
+    'request', (select to_jsonb(r) from business_requests r where id = v_r),
+    'offers', (select jsonb_agg(to_jsonb(o) order by o.created_at, o.id) from business_request_offers o where request_id = v_r and status = 'offered'),
+    'two_time_id', v_offer)));
+  reset role;
+
+  -- 5. accepting without picking, or with a time the business did not offer, is refused; nothing is booked
+  v_row := '{}'::jsonb;
+  begin perform accept_business_offer(v_offer); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('no_pick', v_msg);
+  begin perform accept_business_offer(v_offer, v_t3); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('not_offered', v_msg, 'status', (select status from business_request_offers where id = v_offer),
+    'reservations', (select count(*) from business_reservations where offer_id = v_offer));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'accept_needs_an_offered_time', 'ok', true, 'data', v_row));
+
+  -- 6. the customer picks 7 PM (the business's SECOND time) and takes it: booked at 7 PM, one time left on the offer
+  v_res := accept_business_offer(v_offer, v_t1);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'picked_time_booked', 'ok', (v_res->>'success')::boolean, 'data', jsonb_build_object(
+    'offer', (select jsonb_build_object('status', status, 'proposed_time', proposed_time, 'proposed_time_alt', proposed_time_alt) from business_request_offers where id = v_offer),
+    't1', v_t1,
+    'reservations', (select count(*) from business_reservations where offer_id = v_offer and status = 'confirmed'),
+    'other_reply', (select status from business_request_offers where id = v_offer_b),
+    'request', (select status from business_requests where id = v_r))));
+
+  -- 7. a one-time reply is unchanged: a different time is refused, no choice books its own time
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o2, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r2, offer_type_param := 'alt_time', offer_description_param := 'We can do 8:30.', proposed_time_param := v_t2);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  begin perform accept_business_offer(v_offer2, v_t1); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_res := accept_business_offer(v_offer2);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'one_time_reply_unchanged', 'ok', (v_res->>'success')::boolean, 'data', jsonb_build_object(
+    'wrong_time', v_msg, 't2', v_t2,
+    'offer', (select jsonb_build_object('status', status, 'proposed_time', proposed_time, 'proposed_time_alt', proposed_time_alt) from business_request_offers where id = v_offer2))));
+
+  -- 8. a group plan of three: the business sees an ordinary request and sends two times
+  insert into group_plan_proposals (id, initiator_id, category, status, expires_at, confirmed_at, date, time_window_start)
+    values (v_p, v_g1, 'Restaurants', 'confirmed', now() + interval '1 day', now(), v_day, time '19:00');
+  foreach u in array array[v_g1, v_g2, v_g3] loop
+    insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
+      values (u, 'source', 0.5, 0.5, now() + interval '1 day', 'fulfilled', 'Restaurants', 2, 10) returning id into v_src;
+    insert into group_plan_participants (proposal_id, user_id, source_request_id, party_size, status) values (v_p, u, v_src, 2, 'accepted');
+  end loop;
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles, date, time_window_start, group_plan_id)
+    values (v_gr, v_g1, 'Group dinner for 6', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 6, 10, v_day, time '19:00', v_p);
+  update group_plan_proposals set resulting_request_id = v_gr where id = v_p;
+  insert into business_request_offers (request_id, partner_id, status) values (v_gr, v_a, 'pending') returning id into v_goffer;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_gr, offer_type_param := 'alt_time', offer_description_param := 'Either time works for your party.',
+    proposed_time_param := v_t1, proposed_time_alt_param := v_t2);
+  select e into v_row from jsonb_array_elements(get_business_opportunities(v_a)) e where e->>'request_id' = v_gr::text;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'group_reply_sent', 'ok', v_row is not null, 'data', jsonb_build_object(
+    'leaks', position(v_p::text in v_row::text) > 0 or (v_row->'business_requests') ? 'group_plan_id',
+    'request_keys', (select jsonb_agg(k order by k) from jsonb_object_keys(v_row->'business_requests') k))));
+
+  -- 9. confirming without a time is refused; then a split: g1 7 PM, g2 8:30 PM, g3 7 PM -> still pending, nothing booked
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g1, 'role', 'authenticated')::text, true);
+  begin perform confirm_group_plan_offer(v_p, v_goffer); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_res := confirm_group_plan_offer(v_p, v_goffer, v_t1);
+  v_row := jsonb_build_object('no_time', v_msg, 'g1', v_res);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g2, 'role', 'authenticated')::text, true);
+  v_row := v_row || jsonb_build_object('g2', confirm_group_plan_offer(v_p, v_goffer, v_t2));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g3, 'role', 'authenticated')::text, true);
+  v_row := v_row || jsonb_build_object('g3', confirm_group_plan_offer(v_p, v_goffer, v_t1));
+  -- what a participant reads (RLS: the group's own confirmations, with each chosen time); an outsider reads none
+  set local role authenticated;
+  v_row := v_row || jsonb_build_object('participant_reads', (select jsonb_agg(jsonb_build_object('offer_id', offer_id, 'user_id', user_id, 'chosen_time', chosen_time) order by user_id)
+      from group_plan_offer_confirmations where proposal_id = v_p));
+  reset role;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  select count(*) into v_n from group_plan_offer_confirmations where proposal_id = v_p;
+  reset role;
+  v_row := v_row || jsonb_build_object('outsider_reads', v_n, 'me', v_g3,
+    'offer', (select jsonb_build_object('id', id, 'status', status, 'proposed_time', proposed_time, 'proposed_time_alt', proposed_time_alt) from business_request_offers where id = v_goffer),
+    'reservations', (select count(*) from business_reservations where offer_id = v_goffer));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'group_split_stays_pending', 'ok', true, 'data', v_row));
+
+  -- 10. g2 changes to 7 PM: everyone chose the same time -> booked at 7 PM, exactly one reservation
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g2, 'role', 'authenticated')::text, true);
+  v_res := confirm_group_plan_offer(v_p, v_goffer, v_t1);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'group_same_time_books', 'ok', (v_res->>'allConfirmed')::boolean, 'data', jsonb_build_object(
+    'result', v_res, 't1', v_t1,
+    'offer', (select jsonb_build_object('status', status, 'proposed_time', proposed_time, 'proposed_time_alt', proposed_time_alt) from business_request_offers where id = v_goffer),
+    'reservations', (select count(*) from business_reservations where offer_id = v_goffer and status = 'confirmed'))));`);
+    s = stepMap(log);
+  }, 120000);
+
+  const sameInstant = (a, b) => new Date(a).getTime() === new Date(b).getTime();
+
+  test('a second time with no first, the same time twice, or a past time is refused; the reply still waits', () => {
+    const d1 = s.bad_second_time_refused.data;
+    expect(d1.no_first).toBe('Pick the first time before adding another.');
+    expect(d1.same).toBe('The second time is the same as the first.');
+    expect(d1.past).toBe('Pick times that are later than now.');
+    expect(d1.status).toBe('pending');
+  });
+
+  test('one reply carries both times; the business sees both and no group/plan field', () => {
+    const d2 = s.two_time_reply_sent;
+    expect(d2.ok).toBe(true);
+    expect(d2.data.rows_for_business).toBe(1);
+    expect(d2.data.offer.status).toBe('offered');
+    expect(d2.data.offer.proposed_time_alt).not.toBeNull();
+    expect(sameInstant(d2.data.business_view.proposed_time_alt, d2.data.offer.proposed_time_alt)).toBe(true);
+    expect(d2.data.business_view.request_keys.some((k) => /group|plan_kind|party_type/.test(k))).toBe(false);
+  });
+
+  test('an automatic reply can never hold a second time', () => {
+    expect(s.automatic_reply_one_time_only.ok).toBe(true);
+    expect(s.automatic_reply_one_time_only.data.message).toMatch(/business_request_offers_alt_time_check/);
+  });
+
+  test('the customer\'s card: both times, a pick is required, "Fits" only beside the stated time (item 63)', () => {
+    const { request, offers, two_time_id: id } = s.customer_reads.data;
+    const two = offers.find((o) => o.id === id);
+    const now = new Date();
+    expect(offerTimes(two)).toHaveLength(2);
+    expect(presentOffer(two, { context: { now } })).toMatchObject({ pickTime: true });
+    expect(canBookWith(two, null, now)).toBe(false);
+    // the stated time is 7 PM; the business listed 8:30 PM first and 7 PM second
+    expect(sameInstant(fittingTime(request, two), two.proposed_time_alt)).toBe(true);
+    expect(rankReplies(offers, request, {}).fitById[id]).toMatchObject({ qualifies: true, time: 'fits' });
+    expect(timeToBook(two, two.proposed_time_alt, now)).toBe(two.proposed_time_alt);
+  });
+
+  test('accepting needs one of the offered times', () => {
+    const d5 = s.accept_needs_an_offered_time.data;
+    expect(d5.no_pick).toBe('Pick a time first.');
+    expect(d5.not_offered).toBe('That time is not one this business offered.');
+    expect(d5).toMatchObject({ status: 'offered', reservations: 0 });
+  });
+
+  test('the picked time is booked: one time on the accepted offer, one reservation, the other reply closed', () => {
+    const d6 = s.picked_time_booked;
+    expect(d6.ok).toBe(true);
+    expect(d6.data.offer.status).toBe('accepted');
+    expect(sameInstant(d6.data.offer.proposed_time, d6.data.t1)).toBe(true);
+    expect(d6.data.offer.proposed_time_alt).toBeNull();
+    expect(d6.data).toMatchObject({ reservations: 1, other_reply: 'expired', request: 'fulfilled' });
+    expect(offerTimes(d6.data.offer)).toHaveLength(1);
+  });
+
+  test('a one-time reply books exactly as before', () => {
+    const d7 = s.one_time_reply_unchanged;
+    expect(d7.ok).toBe(true);
+    expect(d7.data.wrong_time).toBe('That time is not one this business offered.');
+    expect(sameInstant(d7.data.offer.proposed_time, d7.data.t2)).toBe(true);
+    expect(d7.data.offer).toMatchObject({ status: 'accepted', proposed_time_alt: null });
+  });
+
+  test('a group\'s request reaches the business with no group flag', () => {
+    expect(s.group_reply_sent.ok).toBe(true);
+    expect(s.group_reply_sent.data.leaks).toBe(false);
+    expect(s.group_reply_sent.data.request_keys).toEqual(s.two_time_reply_sent.data.business_view.request_keys);
+  });
+
+  test('a split group stays pending; each participant sees the group\'s per-time count, an outsider sees nothing', () => {
+    const d9 = s.group_split_stays_pending.data;
+    expect(d9.no_time).toBe('Pick a time first.');
+    expect(d9.g1).toMatchObject({ allConfirmed: false, confirmedCount: 1, requiredCount: 3 });
+    expect(d9.g2).toMatchObject({ allConfirmed: false, confirmedCount: 1, requiredCount: 3 });
+    expect(d9.g3).toMatchObject({ allConfirmed: false, confirmedCount: 2, requiredCount: 3 });
+    expect(d9.offer.status).toBe('offered');
+    expect(d9.reservations).toBe(0);
+    expect(d9.outsider_reads).toBe(0);
+    const g = groupTimeConfirmations(d9.offer, d9.participant_reads, d9.me);
+    expect(g.total).toBe(3);
+    expect(Object.values(g.byTime).sort()).toEqual([1, 2]);
+    expect(sameInstant(g.mine, d9.offer.proposed_time)).toBe(true);
+  });
+
+  test('when everyone chose the same time the group is booked at that time, once', () => {
+    const d10 = s.group_same_time_books;
+    expect(d10.ok).toBe(true);
+    expect(d10.data.result).toMatchObject({ allConfirmed: true, confirmedCount: 3, requiredCount: 3 });
+    expect(d10.data.offer.status).toBe('accepted');
+    expect(sameInstant(d10.data.offer.proposed_time, d10.data.t1)).toBe(true);
+    expect(d10.data.offer.proposed_time_alt).toBeNull();
+    expect(d10.data.reservations).toBe(1);
   });
 });

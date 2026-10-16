@@ -1,11 +1,19 @@
 // Item 49: the owner's live Customer Preview. Maps the offer form's draft to the customer-visible offer
 // row, field for field what handleSubmitOffer would send, so the preview (OfferCustomerBody + presentOffer)
 // shows exactly the card the customer will get. A piece Send would refuse (bad end time, half a window,
-// a discount over the limit, an alternative with no time) is left out, never shown as if it would go.
+// a discount over the limit, an alternative with no time, a second time with no first) is left out, never shown as if it would go.
 // null = nothing to preview yet (no description: Send requires one), so the form shows no placeholder.
 
 import { validUntilFromChoice, availableWindowFromChoice } from './offerMedia';
 import { parseDiscountPct, discountCapProblem } from './discountCap';
+
+// Item 119: the second time a reply sends (ISO) -- only on an alternative-time reply, only beside a first time, and not
+// when it is the same time as the first (that is one time). Send and the preview both use this, so they cannot differ.
+export function draftSecondTime(type, first, second) {
+  const ok = (d) => d instanceof Date && !Number.isNaN(d.getTime());
+  if (type !== 'alt_time' || !ok(first) || !ok(second) || second.getTime() === first.getTime()) return null;
+  return second.toISOString();
+}
 
 export function draftPreviewOffer(draft, now = new Date()) {
   const description = String(draft?.description ?? '').trim();
@@ -23,6 +31,7 @@ export function draftPreviewOffer(draft, now = new Date()) {
     offer_description: description,
     included_items: draft.includedItems ?? [],
     proposed_time: type === 'alt_time' && draft.proposedTime ? draft.proposedTime.toISOString() : null,
+    proposed_time_alt: draftSecondTime(type, draft.proposedTime, draft.proposedTimeAlt),
     offer_price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
     price_is_per_person: !!draft.priceIsPerPerson,
     discount_pct: type === 'discount' && discountOk ? parseDiscountPct(draft.discount) : null,
