@@ -48,3 +48,37 @@ describe('the dashboard reads only this split', () => {
     expect(m).not.toMatch(/business_served_tags\(partner_id_param\)/);
   });
 });
+
+describe('one eligibility rule + leftover floor (migration 20270317)', () => {
+  const m = read('supabase/migrations/20270317_demand_eligibility_one_rule.sql');
+  const fn = (name) => {
+    const i = m.search(new RegExp(`create or replace function public\\.${name}\\(`, 'i'));
+    const j = m.indexOf('$function$;', i) === -1 ? m.indexOf('$$;', i) : m.indexOf('$function$;', i);
+    return m.slice(i, j);
+  };
+  test('business_offered_tags = primary + secondary only, no group fallback, not client-callable', () => {
+    const f = m.slice(m.indexOf('function public.business_offered_tags'), m.indexOf('revoke all on function public.business_offered_tags'));
+    expect(f).toMatch(/array\[bp\.subcategory\] \|\| coalesce\(bp\.categories, array\[\]::text\[\]\)/);
+    expect(f).not.toMatch(/group_key|business_availability/);
+    expect(m).toMatch(/revoke all on function public\.business_offered_tags\(uuid\) from public, anon, authenticated;/);
+  });
+  test('the card, the Home line and the push all use it; none uses business_served_tags', () => {
+    for (const name of ['get_aggregated_demand_for_partner', 'get_partner_demand_signals', 'notify_aggregated_demand_threshold']) {
+      expect(fn(name)).toMatch(/business_offered_tags\(/);
+      expect(fn(name)).not.toMatch(/business_served_tags\(/);
+    }
+    expect(fn('notify_aggregated_demand_threshold')).toMatch(/and new\.category = any\(public\.business_offered_tags\(p\.id\)\)/);
+    // the card's "N businesses offer this nearby" counts other businesses by the same rule, never the group column
+    expect(fn('get_partner_demand_signals')).toMatch(/and u\.category = any\(public\.business_offered_tags\(bp\.id\)\)/);
+    expect(fn('get_partner_demand_signals')).not.toMatch(/bp\.category = u\.category/);
+  });
+  test('every "n of total" breakdown goes through demand_breakdown_visible (leftover 0 or >= floor)', () => {
+    expect(m).toMatch(/and \(total - n = 0 or total - n >= public\.demand_min_people\(\)\)/);
+    const agg = fn('get_aggregated_demand_for_partner');
+    expect(agg).toMatch(/demand_breakdown_visible\(rd\.dom_period_count, rd\.req_count\) then rd\.dom_period end/);
+    expect(agg).toMatch(/demand_breakdown_visible\(rd\.dom_occasion_count, rd\.req_count\) then rd\.dom_occasion end/);
+    const occ = fn('get_occasion_demand_for_partner');
+    expect(occ).toMatch(/demand_breakdown_visible\(rc\.cat_count, count\(distinct n\.req_person\)\) then rc\.req_category end/);
+    expect(occ).toMatch(/demand_breakdown_visible\(count\(distinct n\.req_person\) filter \(where n\.req_date between v_weekend_start and v_weekend_end\), count\(distinct n\.req_person\)\)/);
+  });
+});

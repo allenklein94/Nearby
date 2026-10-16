@@ -20,7 +20,8 @@ d('journey: gathering -> interested -> anonymous demand -> ask business -> offer
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${others[0].id}'; v_fan uuid := '${others[1].id}';
       v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_n int; v_demand jsonb; v_row jsonb; v_seen_req int; v_seen_off int; v_att int;`, `
-  update brand_partners set active = true, latitude = 40.3, longitude = -75.2 where id = v_partner;
+  -- declare Coffee as its primary: demand reaches a business only for categories it declares (20270317, no group fallback)
+  update brand_partners set active = true, latitude = 40.3, longitude = -75.2, subcategory = 'Coffee' where id = v_partner;
   -- lower the floor of 5 to 1 for THIS transaction only (prod has 4 profiles)
   execute 'create or replace function public.demand_min_people() returns integer language sql immutable as ''select 1''';
 

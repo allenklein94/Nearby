@@ -1,3 +1,27 @@
+# Item 128 follow-up (owner, 2026-10-16): one category-eligibility rule + leftover floor - BUILT, LIVE, NOT BROWSER/DEVICE-VERIFIED
+
+Owner ask: close item 128's three residuals. Acceptance: ONE shared definition of business category eligibility governs the
+"Demand near you" card and the "Growing demand nearby" push; a business with no declared category never qualifies through a fallback.
+Built: migration `20270317_demand_eligibility_one_rule.sql` (APPLIED to production 2026-10-16; live function bodies = file):
+(1) `business_offered_tags(partner)` = own primary (`brand_partners.subcategory`) + secondary (`.categories`) only; no group
+fallback, no availability categories; service_role only. Governs `get_aggregated_demand_for_partner` (Home line), `get_partner_demand_signals`
+("Demand near you": was `business_served_tags()` with the group fallback; its "N businesses offer this nearby" supply count now counts
+other businesses by the same rule, it compared a tag against the group column `bp.category` so a business's PRIMARY never counted) and
+`notify_aggregated_demand_threshold` (was every nearby business; threshold, radius, crossing-point dedupe and wording unchanged).
+`business_served_tags()` unchanged for routing. (2) `demand_breakdown_visible(n, total)`: a breakdown shows only when n >= 5, total >= 5
+and the leftover total - n is 0 or >= 5; used for "mostly {period}" / "mostly {occasion}" (aggregated) and the occasion card's weekend
+count + dominant category (`get_occasion_demand_for_partner`); `get_partner_demand_signals` already complement-checked its facts.
+Overall counts never change to hide a breakdown. Same signatures, one overload each, grants = prod.
+Tests: `utils/offeredDemand.test.js` 9 (source guards); journey `offeredDemand` extended (leftover 2 hidden with count unchanged;
+rule at leftover 0/1/4/5/7, n=4, total=4, null; push: P1 primary Coffee + secondary Pastries = two pushes, P4 primary Restaurants,
+no-tag and unrelated-tag businesses none; card: offered categories only, nothing without tags; supply counts primaries).
+`coreLoop` journey fixture now declares Coffee as Coastal Coffee's primary inside its rolled-back transaction (it had relied on the
+removed group fallback; failed 2 tests until then). Full Jest 6073 passed; journeys 399/399 on prod (rolled back, no prelude).
+From-scratch replay: 441/441 migrations, journeys 399/399 on the rebuilt DB, booking + offer-revision concurrency pass, ACLs of the
+six functions = prod. Production: Coastal Coffee (no tags) as its own owner gets no offered tags, no "Demand near you" signals,
+no "looking for what you offer" row. No client code changed (web export not regenerated).
+Not done: business Home in a real browser and on a phone (no signed-in business session or device available here).
+
 # Item 128 (owner, 2026-10-16) "people are looking for what you offer" made true - BUILT, LIVE, NOT BROWSER/DEVICE-VERIFIED
 
 Owner ask: show a business "3 customers are currently looking for what you offer" (demand, not advertising). Found: business Home
