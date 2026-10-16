@@ -1,3 +1,22 @@
+# Item 141 (owner, 2026-10-16) "Private gathering should feel different" - MET AS BUILT, nothing built
+
+Owner ask: Private -> CTA "Request to join" -> host sees "Claude wants to join" -> Accept -> Claude moves into Going.
+Already built, end to end:
+- CTA: ONE rule `needsApproval` (`utils/gatheringJoinMode.js`, mirrors `join_gathering()`): non-public OR host-required
+  approval = "Request to Join" on every surface (`gatheringJoinAction`); invite-only shows no join to the uninvited ("Invite only"
+  status, access resolved on Detail). The requester then sees "Requested" (`primaryActionFor` relation 'requested'), Leave
+  wording for pending; no celebration (item 31 / `justJoined` only for confirmed attendance).
+- Host: the push "{Name} asked to join" lands on the gathering (item 133); Detail's host command center shows "N requests to
+  join · Review" (pending always visible, `HostAttendeeManager`) with Approve/Decline; Activity lists "{name} wants to join {title}"
+  + Approve.
+- Accept: `approve_gathering_interest` (server; full = waitlisted with the host told), the row leaves the pending set at once,
+  the person is in Who's going (counted by `attendingFigure`) and gets `gathering_approved` (plans_changes mute group).
+So the button's words + the request/Requested states already teach public vs private; no new visual language built
+(no new strings, no migration, no motion; item 98 states not folders).
+Observation, not changed: Approve's alert reads "Approved! A match was created — you can now chat with them." It is true
+(`approve_gathering_interest` inserts a `matches` row with `source_gathering_id` for the chat), but "match" on a gathering approval
+may read as Dating; flagged for the owner, wording not touched (needs a decision + native review).
+
 # Item 140 (owner, 2026-10-16) "Auto-accept could have a visual state" - MET AS BUILT, nothing built
 
 Owner ask: when the host enables auto-accept, show "Open to join" instead of "Request to join"; Join -> the attendee state
