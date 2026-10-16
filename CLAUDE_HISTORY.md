@@ -1,3 +1,17 @@
+# Item 118 (owner, 2026-10-16) one business revision of a sent offer - REOPENED FOR SCOPING, SCOPE LOCKED, BUILD PLAN WRITTEN; NOT approved for building, nothing built
+
+- Owner reopened the item after item 119 shipped: negotiation only as ONE business-started, in-place revision, never haggling.
+- Scope (LOCKED): price and time only (package and included items never change through a revision; the option "any offer term"
+  declined because a changed package could quietly remove something the customer relied on); one revision per offer, while open and
+  before the customer acts; same card; current price only, never "was $60" or savings without a separately approved rule; full party
+  and exact chosen time revalidated at acceptance (items 116/119 unchanged); calm, no signature, no urgency; item 119 stays separate.
+- Build plan `PRODUCT_AUDIT/ITEM_118_ONE_OFFER_REVISION_BUILD_PLAN_2026-10-16.md`. Found while reading: `accept_business_offer`
+  reads the offer before taking a lock (harmless today, a stale-price race once offers can change; the plan fixes it), and refusing a
+  revision because some group members confirmed would leak "group plan" to the business (plan recommends clearing confirmations).
+  Open owner decisions: price direction (recommend down only), group confirmations (recommend clear + re-confirm), customer push
+  (recommend one in-place replacement), an "Updated" word on the card (recommend yes), new strings.
+- This scope decision authorizes no build and no production deployment.
+
 # Item 119 (owner, 2026-10-16) two times in one business reply - REOPENED, APPROVED, BUILT, LIVE; NOT device-verified
 
 - Reopened by the owner after the PARTLY MET record below (owner leaned toward the small, full-party version); build plan
