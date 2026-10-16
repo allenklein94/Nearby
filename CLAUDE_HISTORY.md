@@ -1,3 +1,12 @@
+# Item 13 closure criteria + item 127 lock (owner, 2026-10-16)
+
+Owner reviewed item 127's finding: keep item 13 as built; no other funnel visualisation or sliding-card animation (LOCKED). The
+one-time green glow is the dashboard's one approved motion exception (a real status transition) and stays limited to that.
+Close item 13 only after: (1) a real signed-in business on a phone and in a browser, (2) Offer sent -> Accepted -> Redeemed checked
+against actual saved status changes, (3) no glow replay on reopen + Reduce Motion skips it, (4) pipeline and monthly totals agree
+with the underlying records, (5) native-speaker review of the labels. Checklist written:
+`PRODUCT_AUDIT/ITEM_13_OFFER_PROGRESS_DEVICE_CHECKLIST_2026-10-16.md`. No code changed.
+
 # Item 127 (owner, 2026-10-16) a redemption moves through the funnel on the same card - MET BY ITEMS 13 + 147, nothing built
 
 Owner ask: Request -> Offer -> Accepted -> Redeemed shown by the same opportunity card changing state, to make business analytics

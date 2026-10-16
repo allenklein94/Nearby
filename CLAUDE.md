@@ -98,7 +98,10 @@ Owner: keep the existing headline (no "Someone is looking for this" unless busin
 
 **Item 126 (business "proof" numbers, owner 2026-10-16) is MET by item 150 as built (Performance tile + Offer Performance), nothing built; count-up animation and "Nearby generated" wording DECLINED (LOCKED).**
 
-**Item 127 (a redemption moves through the funnel on one card, owner 2026-10-16) is MET by item 13 (LOCKED: Offer sent -> Accepted -> Redeemed on the same card, live) + item 147's pipeline, nothing built.**
+**Item 127 (a redemption moves through the funnel on one card, owner 2026-10-16) is MET by item 13 + item 147's pipeline, nothing built; another funnel visualisation or a sliding-card animation DECLINED (LOCKED).**
+**Item 13 (business card Offer sent -> Accepted -> Redeemed, LOCKED; owner re-confirmed 2026-10-16) is APPROVED, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_13_OFFER_PROGRESS_DEVICE_CHECKLIST_2026-10-16.md` passes with a real signed-in business on a phone AND in a browser (statuses vs saved
+records, no glow replay on reopen, Reduce Motion skips it, pipeline + month totals = the records) AND native review of `ui.bizDash2.progress.*` is done. The glow stays exactly as approved.
 
 **Item 51 (business's first offer confirmation) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_51_FIRST_OFFER_CONFIRMATION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (needs Anthropic credit + a business with no offers yet)
