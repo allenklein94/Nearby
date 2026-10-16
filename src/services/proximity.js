@@ -23,6 +23,7 @@ import { supabase, functionUrl } from './supabase';
 import { calculateCompatibility } from './compatibility';
 import { getMyActiveLiveTrackingSession } from './liveTracking';
 import { mergeCrossedPathsSignals } from './crossedPathsSignals';
+import { isDatingOptedIn } from '../utils/datingCountConsent';
 
 // Unified Crossed Paths, step 3 (CLAUDE.md, 2026-09-10): the shared-
 // gathering-attendance half of the signal union -- see
@@ -299,8 +300,10 @@ export async function getNearbyMatches() {
   const otherUserIds = eligible.map((m) => m.otherUserId);
 
   const { data: profiles, error: profilesError } = await supabase
-    .from('people_visible_to_me')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, onboarding_motivations')
+    // Item 121 follow-up: Dating consent is decided by the server (dating_candidates_visible_to_me, 20270314): a sighting or
+    // a shared gathering whose person never chose Dating returns no profile, so it never becomes a card or a count.
+    .from('dating_candidates_visible_to_me')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -336,7 +339,7 @@ export async function getNearbyMatches() {
         crossedPathsReason: m.crossedPathsReason,
       };
     })
-    .filter((item) => item.profiles !== null)
+    .filter((item) => item.profiles !== null && isDatingOptedIn(item))
     .filter((item) => {
       if (!passesGenderMatch(myProfile, item.profiles)) {
         return false;
@@ -441,8 +444,9 @@ export async function getBrowseMatches(offset = 0) {
   }
 
   const { data: profiles, error } = await supabase
-    .from('people_visible_to_me')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me')
+    // Item 121 follow-up: only people who chose Dating (server-side, dating_candidates_visible_to_me, 20270314).
+    .from('dating_candidates_visible_to_me')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in')
     .in('wide_area', neighborBuckets)
     // A stable order is required for paging: without one, Postgres may return rows in any order per request, so
     // consecutive pages could repeat or skip people (item 131 audit). The batch is then ordered by compatibility below.
@@ -455,7 +459,7 @@ export async function getBrowseMatches(offset = 0) {
   }
 
   return (profiles ?? [])
-    .filter((p) => !excludedUserIds.has(p.id) && !matchedUserIds.has(p.id))
+    .filter((p) => !excludedUserIds.has(p.id) && !matchedUserIds.has(p.id) && isDatingOptedIn({ profiles: p }))
     .filter((p) => passesGenderMatch(myProfile, p))
     .filter((p) => {
       const age = calculateAge(p.birthdate);

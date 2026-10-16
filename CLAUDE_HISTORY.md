@@ -1,3 +1,31 @@
+# Item 121 follow-up 2 (owner, 2026-10-16) Dating cards follow the same opt-in, enforced server-side - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+Owner approved: a person who has not explicitly opted into Dating discovery must not appear in Dating discovery cards or Dating
+counts; the check must happen at the authoritative source, not only in the UI.
+- Card sources found (all through two reads in `services/proximity.js`): `getNearbyMatches` (Crossed Paths = sightings + shared
+  past gatherings) feeds the Dating deck, Home's "You crossed paths with X" row, Activity's crossed-paths rows, Home's two counts
+  and Discover's tonight banner; `getBrowseMatches` feeds Browse. Friends discovery (`friendDiscovery.js`, its own
+  `open_to_friend_discovery` pool and RPC) is untouched.
+- Migration `20270314_dating_discovery_consent.sql` (APPLIED to production 2026-10-16, additive: one function, one view, no data
+  changed): `is_dating_discoverable(text[])` (the ONE rule: 'Go on dates' in onboarding_motivations; revoked from public/anon) and
+  `dating_candidates_visible_to_me` (security invoker over `people_visible_to_me`, so blocks either way and profiles' own
+  verified/not-hidden rule still apply; opted-in people other than the caller only; only the 16 columns the decks read +
+  `dating_opted_in`; SELECT only for authenticated, nothing for anon). Both Dating reads now use it; a sighting or shared-gathering
+  partner who never chose Dating gets no profile, so never becomes a card or a count.
+- Client: `isDatingOptedIn` now trusts only the server's `dating_opted_in === true` (never the token), applied again in both
+  reads and in the counts (cards and counts share one list, so they cannot drift). Threshold 3 unchanged.
+- Verification: new journey `datingConsent` (6/6, prod, rolled back; first with the migration as prelude, then after apply):
+  raw sources still hold the non-opted-in people; the Dating read returns only the opted-in one; consent given/withdrawn; block;
+  anon refused, read-only, exact columns; then the client helpers on those very rows (merge -> cards -> both counts -> Home row
+  -> tonight order) hold only the opted-in person. `datingCountConsent.test.js` 14 tests (incl. every source reads the view,
+  the migration's token = the onboarding token), `blockVisibilityGuard.test.js` updated (proximity reads the Dating view, which
+  sits on people_visible_to_me). Jest 6,046 passed; journeys 379/379 on prod; from-scratch replay 438/438 + journeys 379/379 on it.
+- End-to-end coverage: the server read + client card/count helpers are covered by the journey; the screens' rendering is not
+  (device checklist `PRODUCT_AUDIT/ITEM_121_DATING_CONSENT_DEVICE_CHECKLIST_2026-10-16.md`).
+- Residuals, disclosed, not changed: `profiles` stays readable by id for any signed-in client (a known residual); the crossed-paths
+  push names the other person regardless of Dating consent (it serves Friends too; no sightings producer exists in the repo).
+  Production today: 0 of 4 profiles chose Dating, so every Dating card and count is empty.
+
 # Item 121 follow-up (owner, 2026-10-16) Dating counts = explicit Dating opt-in only - BUILT, NOT DEVICE-VERIFIED
 
 Owner approved: Home's Dating counts include only people who explicitly opted in to Dating; attending the same gathering is not consent.

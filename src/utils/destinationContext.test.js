@@ -62,7 +62,7 @@ describe('Morning and afternoon Quick Picks keep their time', () => {
 
 describe('Meet people tonight keeps tonight', () => {
   const now = new Date('2026-10-02T21:00:00Z');
-  const dater = { profiles: { onboarding_motivations: ['Go on dates'] } };
+  const dater = { profiles: { dating_opted_in: true } };
   const dating = [
     { ...dater, id: 'old', last_seen_at: '2026-09-20T21:00:00Z' },
     { ...dater, id: 'tonight1', last_seen_at: '2026-10-02T20:00:00Z' },

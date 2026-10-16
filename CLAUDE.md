@@ -128,6 +128,9 @@ and 32, then items 82 and 84 (one phone, a few minutes), then the offer experien
 strings + the reworded red-pin `ui.mapView.gatheringLiveA11y` is done (no migration, no journey: client-only). Build APPROVED (owner, 2026-10-16); red-pin screen-reader
 label FIXED ("starting soon or under way", look/timing unchanged); next-redraw refresh and pill->list drift ACCEPTED (checks 10/10b). Pulse/glow, people density, heatmaps, trending areas DEFERRED (owner).
 
+**Item 121 follow-up (Dating consent, cards + counts, owner 2026-10-16) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_121_DATING_CONSENT_DEVICE_CHECKLIST_2026-10-16.md` is recorded on real phones (migration 20270314; journey `datingConsent`; no new strings).
+
 **Item 62 (several replies -> one notification) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_62_REPLY_PUSH_REPLACE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND Android phone, incl. whether each
 replacement sounds/vibrates again (migration 20270303, send-push v23; journey `replyPushCollapse`). Fallback count line: not built unless the device shows it's needed.
@@ -235,7 +238,8 @@ real-browser review of that page (its two headless findings, phone header wrap a
 
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
-returns a verified profile); `viewer_blocked_either_way` / `is_blocked` are client-callable; one-way client
+returns a verified profile, incl. a non-Dating person's, outside Dating discovery); the crossed-paths push (`notify_sighting_crossed_paths`) names
+the other person regardless of Dating consent (no sightings producer exists in the repo; Friends uses sightings too); `viewer_blocked_either_way` / `is_blocked` are client-callable; one-way client
 block filters remain in `gatherings.js`, `stories.js`, `ActivityScreen.js` and inline-block RLS on
 `business_messages`, `stories` and story storage (allow-listed in `blockVisibilityGuard.test.js`); a
 business owner can open a known person's verified profile like any user; a screened logo is an
@@ -321,10 +325,12 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   says so ("N happening now", "Activity nearby"), never "People nearby", crowds or density. A count of people only from a pool its
   members explicitly opted into (friend discovery, item 39, dating discovery) or real stated requests (business side, floor of 5).
   Heatmaps/people density stay DEFERRED; item 120's gathering count stays separate from every people count. Guard: item 121 test in `mapAreaActivity.test.js`.
-- **Dating counts = explicit Dating opt-in only (owner, 2026-10-16):** "N people nearby to meet", "N new people nearby" and Discover's
-  tonight banner count only people whose own "What are you looking for?" is Dating or Both (`'Go on dates'`), via ONE rule
-  `utils/datingCountConsent.js` (`isDatingOptedIn`, used by `isTonightSupply` and `countNewDatingPeople`). A shared gathering, interests,
-  proximity or past interactions are never consent. Threshold (3) unchanged; no new location data. Guard `datingCountConsent.test.js`.
+- **Dating discovery = explicit Dating opt-in only, cards AND counts (owner, 2026-10-16, LOCKED):** a person appears in any Dating
+  card (Crossed Paths, Browse, Home's crossed-paths row, Activity's crossed rows) or count only if their own "What are you looking
+  for?" is Dating or Both (`'Go on dates'`). Decided by the server: `is_dating_discoverable` + `dating_candidates_visible_to_me`
+  (20270314; the only Dating read, narrowed columns), re-checked by `isDatingOptedIn` (reads only the server's `dating_opted_in`).
+  Shared gatherings, interests, proximity or past interactions are never consent; threshold 3 and Friends unchanged.
+  Guards `datingCountConsent.test.js`, `blockVisibilityGuard.test.js`, journey `datingConsent`.
 - Not LinkedIn: no professional search, graph, résumé or job fields; Job Title is never compared.
 
 ### Understanding asks

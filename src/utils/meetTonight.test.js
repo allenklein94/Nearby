@@ -87,7 +87,7 @@ describe('wiring: Home claim -> People destination (item 76)', () => {
 
 describe('claim -> inventory check (item 78)', () => {
   const now = new Date(2026, 8, 25, 19, 0, 0); // a Friday evening
-  const dater = { profiles: { onboarding_motivations: ['Go on dates'] } };
+  const dater = { profiles: { dating_opted_in: true } };
   const ago = (h) => new Date(now.getTime() - h * 3600 * 1000).toISOString();
   test('Dating supply counts only people really seen near you in the last 24 h', () => {
     const list = [
