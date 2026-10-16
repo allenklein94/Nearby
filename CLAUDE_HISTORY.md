@@ -1,3 +1,18 @@
+# Item 129 (owner, 2026-10-16) consumer and business as mirrors - MET as built, nothing built
+
+Owner ask: consumer (request sent -> offer received -> accepted -> redeemed) and business (request received -> offer sent ->
+accepted -> redeemed) as one state machine seen from two sides, ideally with the same motion language. Checked: it already is one
+state machine. One row per business per request (`business_request_offers`: pending -> offered -> accepted -> completed) under one
+request (`business_requests`: open -> fulfilled/expired/cancelled); transitions only server-side (submit/accept/redeem RPCs);
+allowed actions from `objectLifecycle.js` (`canDo`, `offerLifecycleState`, `canRespondToOpportunity`). The customer card reads it
+through `presentOffer()` (waiting/open/booked/visited), the business card through `offerProgress()` (item 13: Offer sent -> Accepted
+-> Redeemed, same stored status) and `businessPipeline.js` (item 147). Neither side keeps its own copy of the state. The words differ by
+perspective on purpose ("X made you an offer" / "Offer sent"; "Visit confirmed" / "Redeemed"). Same motion language: not adopted.
+Item 56 keeps business responds (the one signature, customer side), item 32's accept/merge, item 28's join and the redemption glow
+exactly as approved and never moved for uniformity; item 57 allows exactly one signature, so the business side cannot mirror it; item
+127 declined another funnel visualisation. The business side already has its own moments on the same transitions (item 48 signal
+received = request arrives; item 13's step glow = accepted / redeemed). Reopening any of that is the owner's call.
+
 # Item 128 follow-up (owner, 2026-10-16): one category-eligibility rule + leftover floor - BUILT, LIVE, NOT BROWSER/DEVICE-VERIFIED
 
 Owner ask: close item 128's three residuals. Acceptance: ONE shared definition of business category eligibility governs the
