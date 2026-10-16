@@ -1,3 +1,16 @@
+# Item 119 (owner, 2026-10-16) business "counters" with options - PARTLY MET, nothing built; multi-option replies and partial-party offers EXCLUDED (LOCKED)
+
+- Proposal: "6 people tonight" -> one business replies "4 at 7 PM or 6 at 8:30 PM"; the consumer picks.
+- Met: several businesses reply to one request with different offer types; a business can Accept, Offer an Alternative (one
+  different time) or Decline (item 48). One request -> multiple real options, across businesses.
+- Not supported (unchanged): one business sending two time options in one reply. `business_request_offers_unique_partner`
+  (unique request_id, partner_id; since 20260814, never dropped) allows one reply per business per request.
+- Owner decisions (LOCKED): no partial-party options: every offer accommodates the full requested party; Nearby never silently
+  splits a group or books fewer than asked (item 94). Item 116 stays locked: acceptance deducts the full party or refuses. No
+  migration, multi-option reply form or customer-card change for this item. Card layout (item 21) and matching rules (item 63)
+  unchanged: "Fits 7 PM" only when the proposed time actually matches the stated time.
+- Future: multi-option replies (full party only) may be reconsidered separately; listed in CLAUDE.md's Backlog; not approved.
+
 # Item 118 (owner, 2026-10-16) offer negotiation - OUT OF SCOPE, documented future gap; nothing built
 
 - Proposal (owner's own framing: a future idea, not to build now): business offers $50, consumer taps "Request changes", business
