@@ -347,7 +347,13 @@
     "pausedA11y": "Paused",
     "paused": "Paused",
     "savePolicyA11y": "Save policy",
-    "savePolicy": "Save Policy"
+    "savePolicy": "Save Policy",
+    "changePriceOrTime": "Change price or time",
+    "youCanChangeThisOfferOnce": "You can change this offer once.",
+    "alreadyChangedThisOfferOnce": "You've already changed this offer once.",
+    "updatedOfferOnItsWay": "Your updated offer is on its way",
+    "revisePriceOnlyLower": "A changed price can only be lower or the same.",
+    "reviseDiscountOnlyBigger": "A changed discount can only be bigger or the same."
   },
   "es": {
     "policyActive": "🟢 Activa",
@@ -697,7 +703,13 @@
     "pausedA11y": "En pausa",
     "paused": "En pausa",
     "savePolicyA11y": "Guardar política",
-    "savePolicy": "Guardar política"
+    "savePolicy": "Guardar política",
+    "changePriceOrTime": "Cambiar precio u hora",
+    "youCanChangeThisOfferOnce": "Puedes cambiar esta oferta una vez.",
+    "alreadyChangedThisOfferOnce": "Ya cambiaste esta oferta una vez.",
+    "updatedOfferOnItsWay": "Tu oferta actualizada va en camino",
+    "revisePriceOnlyLower": "Un precio cambiado solo puede ser menor o igual.",
+    "reviseDiscountOnlyBigger": "Un descuento cambiado solo puede ser mayor o igual."
   },
   "de": {
     "policyActive": "🟢 Aktiv",
@@ -1047,7 +1059,13 @@
     "pausedA11y": "Pausiert",
     "paused": "Pausiert",
     "savePolicyA11y": "Richtlinie speichern",
-    "savePolicy": "Richtlinie speichern"
+    "savePolicy": "Richtlinie speichern",
+    "changePriceOrTime": "Preis oder Uhrzeit ändern",
+    "youCanChangeThisOfferOnce": "Du kannst dieses Angebot einmal ändern.",
+    "alreadyChangedThisOfferOnce": "Du hast dieses Angebot bereits einmal geändert.",
+    "updatedOfferOnItsWay": "Dein aktualisiertes Angebot ist unterwegs",
+    "revisePriceOnlyLower": "Ein geänderter Preis kann nur niedriger oder gleich sein.",
+    "reviseDiscountOnlyBigger": "Ein geänderter Rabatt kann nur höher oder gleich sein."
   },
   "fr": {
     "policyActive": "🟢 Active",
@@ -1397,7 +1415,13 @@
     "pausedA11y": "En pause",
     "paused": "En pause",
     "savePolicyA11y": "Enregistrer la politique",
-    "savePolicy": "Enregistrer la politique"
+    "savePolicy": "Enregistrer la politique",
+    "changePriceOrTime": "Modifier le prix ou l'heure",
+    "youCanChangeThisOfferOnce": "Vous pouvez modifier cette offre une seule fois.",
+    "alreadyChangedThisOfferOnce": "Vous avez déjà modifié cette offre une fois.",
+    "updatedOfferOnItsWay": "Votre offre mise à jour est en route",
+    "revisePriceOnlyLower": "Un prix modifié ne peut être que plus bas ou identique.",
+    "reviseDiscountOnlyBigger": "Une remise modifiée ne peut être que plus grande ou identique."
   },
   "pt": {
     "policyActive": "🟢 Ativa",
@@ -1747,7 +1771,13 @@
     "pausedA11y": "Pausada",
     "paused": "Pausada",
     "savePolicyA11y": "Salvar política",
-    "savePolicy": "Salvar política"
+    "savePolicy": "Salvar política",
+    "changePriceOrTime": "Alterar preço ou horário",
+    "youCanChangeThisOfferOnce": "Você pode alterar esta oferta uma vez.",
+    "alreadyChangedThisOfferOnce": "Você já alterou esta oferta uma vez.",
+    "updatedOfferOnItsWay": "Sua oferta atualizada está a caminho",
+    "revisePriceOnlyLower": "Um preço alterado só pode ser menor ou igual.",
+    "reviseDiscountOnlyBigger": "Um desconto alterado só pode ser maior ou igual."
   },
   "ht": {
     "policyActive": "🟢 Aktif",
@@ -2097,7 +2127,13 @@
     "pausedA11y": "An poz",
     "paused": "An poz",
     "savePolicyA11y": "Anrejistre politik la",
-    "savePolicy": "Anrejistre politik la"
+    "savePolicy": "Anrejistre politik la",
+    "changePriceOrTime": "Chanje pri oswa lè",
+    "youCanChangeThisOfferOnce": "Ou ka chanje òf sa a yon sèl fwa.",
+    "alreadyChangedThisOfferOnce": "Ou deja chanje òf sa a yon fwa.",
+    "updatedOfferOnItsWay": "Òf ou mete ajou a ap vini",
+    "revisePriceOnlyLower": "Yon pri ou chanje ka sèlman pi ba oswa menm jan an.",
+    "reviseDiscountOnlyBigger": "Yon rabè ou chanje ka sèlman pi gwo oswa menm jan an."
   },
   "zh": {
     "policyActive": "🟢 启用中",
@@ -2447,7 +2483,13 @@
     "pausedA11y": "已暂停",
     "paused": "已暂停",
     "savePolicyA11y": "保存规则",
-    "savePolicy": "保存规则"
+    "savePolicy": "保存规则",
+    "changePriceOrTime": "修改价格或时间",
+    "youCanChangeThisOfferOnce": "此报价只能修改一次。",
+    "alreadyChangedThisOfferOnce": "你已经修改过一次此报价。",
+    "updatedOfferOnItsWay": "你更新后的报价已发出",
+    "revisePriceOnlyLower": "修改后的价格只能更低或不变。",
+    "reviseDiscountOnlyBigger": "修改后的折扣只能更大或不变。"
   },
   "vi": {
     "policyActive": "🟢 Đang bật",
@@ -2797,7 +2839,13 @@
     "pausedA11y": "Tạm dừng",
     "paused": "Tạm dừng",
     "savePolicyA11y": "Lưu chính sách",
-    "savePolicy": "Lưu chính sách"
+    "savePolicy": "Lưu chính sách",
+    "changePriceOrTime": "Đổi giá hoặc giờ",
+    "youCanChangeThisOfferOnce": "Bạn có thể đổi ưu đãi này một lần.",
+    "alreadyChangedThisOfferOnce": "Bạn đã đổi ưu đãi này một lần rồi.",
+    "updatedOfferOnItsWay": "Ưu đãi đã cập nhật của bạn đang được gửi",
+    "revisePriceOnlyLower": "Giá đã đổi chỉ có thể thấp hơn hoặc giữ nguyên.",
+    "reviseDiscountOnlyBigger": "Mức giảm giá đã đổi chỉ có thể lớn hơn hoặc giữ nguyên."
   },
   "tl": {
     "policyActive": "🟢 Aktibo",
@@ -3147,7 +3195,13 @@
     "pausedA11y": "Naka-pause",
     "paused": "Naka-pause",
     "savePolicyA11y": "I-save ang policy",
-    "savePolicy": "I-save ang policy"
+    "savePolicy": "I-save ang policy",
+    "changePriceOrTime": "Baguhin ang presyo o oras",
+    "youCanChangeThisOfferOnce": "Maaari mong baguhin ang alok na ito nang isang beses.",
+    "alreadyChangedThisOfferOnce": "Nabago mo na ang alok na ito nang isang beses.",
+    "updatedOfferOnItsWay": "Papunta na ang na-update mong alok",
+    "revisePriceOnlyLower": "Ang binagong presyo ay maaari lamang mas mababa o pareho.",
+    "reviseDiscountOnlyBigger": "Ang binagong diskwento ay maaari lamang mas malaki o pareho."
   },
   "ru": {
     "policyActive": "🟢 Активна",
@@ -3497,7 +3551,13 @@
     "pausedA11y": "На паузе",
     "paused": "На паузе",
     "savePolicyA11y": "Сохранить политику",
-    "savePolicy": "Сохранить политику"
+    "savePolicy": "Сохранить политику",
+    "changePriceOrTime": "Изменить цену или время",
+    "youCanChangeThisOfferOnce": "Это предложение можно изменить один раз.",
+    "alreadyChangedThisOfferOnce": "Вы уже изменили это предложение один раз.",
+    "updatedOfferOnItsWay": "Обновлённое предложение отправлено",
+    "revisePriceOnlyLower": "Новая цена может быть только ниже или такой же.",
+    "reviseDiscountOnlyBigger": "Новая скидка может быть только больше или такой же."
   },
   "ko": {
     "policyActive": "🟢 사용 중",
@@ -3847,6 +3907,12 @@
     "pausedA11y": "일시 중지됨",
     "paused": "일시 중지됨",
     "savePolicyA11y": "정책 저장",
-    "savePolicy": "정책 저장"
+    "savePolicy": "정책 저장",
+    "changePriceOrTime": "가격 또는 시간 변경",
+    "youCanChangeThisOfferOnce": "이 제안은 한 번만 변경할 수 있어요.",
+    "alreadyChangedThisOfferOnce": "이 제안은 이미 한 번 변경했어요.",
+    "updatedOfferOnItsWay": "업데이트된 제안을 보내는 중이에요",
+    "revisePriceOnlyLower": "변경한 가격은 더 낮거나 같아야 해요.",
+    "reviseDiscountOnlyBigger": "변경한 할인은 더 크거나 같아야 해요."
   }
 }

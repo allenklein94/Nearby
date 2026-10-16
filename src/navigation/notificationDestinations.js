@@ -318,6 +318,9 @@ export async function notificationDestination(data, { lookupAvailability = async
     // the same request object, just a different state change on it.
     case 'business_offer_withdrawn':
     case 'business_offer_received':
+    // Item 118: a business changed an open offer's price/time. In a group plan (proposal_id: a participant whose
+    // confirmation was cleared) it opens the group plan to confirm the current terms; otherwise the request, on that offer.
+    case 'business_offer_revised':
     // Item 78 (CLAUDE.md, "the notification system becomes dramatically
     // more useful"): a brand-new push -- accept_business_offer() previously
     // only ever notified the business, never the consumer who just booked.
@@ -343,9 +346,12 @@ export async function notificationDestination(data, { lookupAvailability = async
     case 'plan_cancelled':
     case 'plan_addon_removed':
     case 'plan_item_time_changed':
+      if (data.type === 'business_offer_revised' && data.proposal_id) {
+        return to('GroupPlan', { proposalId: data.proposal_id });
+      }
       if (data.request_id) {
         // An offer push opens the request ON that offer (destination contract, item 136); the others carry no offer_id.
-        return to('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null, ...(data.type === 'business_offer_received' && data.offer_id ? { focusOfferId: data.offer_id } : {}) });
+        return to('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null, ...((data.type === 'business_offer_received' || data.type === 'business_offer_revised') && data.offer_id ? { focusOfferId: data.offer_id } : {}) });
       }
       break;
     case 'business_opportunity_received':

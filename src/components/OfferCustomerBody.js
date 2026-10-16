@@ -44,7 +44,9 @@ export function offerWindowText(from, until, language) {
 // offer's last 30 minutes the validity line takes the amber in-progress tone with a thin bar of the time left under it.
 // Item 119: a reply with two times shows both inside this one card. `onPickTime` (the customer's own open reply only)
 // makes them selectable; `pickedTime` is the pick; `timeNotes` = { [iso]: text } beside a time ("Fits 7 PM").
-export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null, countdown = null, pickedTime = null, onPickTime = null, timeNotes = {}, pickDisabled = false }) {
+// Item 118: `updated` (presentOffer().updated) = the business changed this open offer's price or time once; one quiet
+// word above the terms, which are always the current ones (never the previous price or a saving). No motion.
+export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null, countdown = null, pickedTime = null, onPickTime = null, timeNotes = {}, pickDisabled = false, updated = false }) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const styles = getStyles(colors);
@@ -71,6 +73,7 @@ export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typ
         ))}
       </AssemblyStep>
       <AssemblyStep step="price">
+        {updated ? <Text style={styles.offerUpdated}>{t('ui.requestDetail.offerUpdated')}</Text> : null}
         {pct != null ? <Text style={styles.offerDiscount}>{t('ui.requestDetail.percentOff', { pct })}</Text> : null}
         {price ? <Text style={styles.offerPrice}>{price}</Text> : null}
       </AssemblyStep>
@@ -102,6 +105,7 @@ export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typ
 
 const getStyles = (colors) => StyleSheet.create({
   offerTypeLabel: { ...typography.caption, color: colors.info, fontWeight: '700', marginBottom: spacing.xs },
+  offerUpdated: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerIncludedItem: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
   offerProposedTime: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginBottom: spacing.xs },

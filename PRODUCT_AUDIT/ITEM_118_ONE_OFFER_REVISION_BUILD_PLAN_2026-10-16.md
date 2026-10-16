@@ -1,7 +1,9 @@
-# Item 118: one business revision of a sent offer (price and time only) - BUILD PLAN (2026-10-16) - NOT APPROVED FOR BUILDING
+# Item 118: one business revision of a sent offer (price and time only) - BUILD PLAN (2026-10-16) - APPROVED AND BUILT, NOT DEPLOYED
 
-Status: owner reopened item 118 for scoping and LOCKED the scope (2026-10-16): **price and time only**. This plan is written for
-approval. Nothing is built, no migration exists, nothing is deployed. Five owner decisions are open (end of this file).
+Status: owner approved this plan with all five recommendations (2026-10-16). BUILT, migration `20270312_offer_revision.sql`
+(NOT applied to production: deployment is a separate owner approval; the `send-push` edge function change ships with it). Verified
+on a from-scratch replay and in rolled-back transactions on production. NOT device-verified: section 10 of
+`OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md`; native review of the new strings pending. See "As built" at the end.
 
 ## What it does
 
@@ -110,3 +112,34 @@ the card word "Updated".
 4. **Mark the card "Updated"?** Recommended: **yes, one quiet word beside the price/time line** (a true fact, no old value, so a
    customer who saw the first terms knows to look again). Alternative: nothing; only current terms.
 5. **Approve the new strings** above (wording can change).
+
+## Owner decisions (2026-10-16, all five recommendations approved)
+
+1. Price only down or unchanged (a bigger discount counts); never up. Time earlier or later.
+2. Group plans: the revision is allowed, clears every confirmation, and everyone confirms the revised terms; the business is
+   never told whether anyone had confirmed. Prior consent is never kept.
+3. One calm notification "{business} updated their offer", replacing the request's existing notification in place.
+4. "Updated" on the existing card; never the previous price or a saving.
+5. One revision per offer enforced by the database and server; automatic replies can't be revised; no text or media, no screening.
+
+## As built (2026-10-16)
+
+- Migration `20270312_offer_revision.sql`: `revision` (0/1, check) + `revised_at`; the check also forbids a revision on an automatic
+  reply. `revise_business_offer(offer, price, discount, time, time_alt)` (authenticated): locks offer then request; refuses a closed
+  offer/request, an expired offer, an automatic reply, a second revision, a higher price, a smaller discount, a discount over the cap
+  (checked here because the cap trigger skips already-offered rows), adding a price/discount/time the reply never had, a different
+  number of times, a past or duplicate time, and no change. Deletes the offer's group confirmations; emits `BUSINESS_OFFER_REVISED`
+  (added to the `domain_events` CHECK and `DOMAIN_EVENTS`). `_on_business_offer_revised`: the requester gets
+  `business_offer_revised` with the request's collapse key; each other person whose confirmation was cleared gets the group variant
+  (`proposal_id`, opens GroupPlan). `_push_outbox_deliver` drops a revised push whose offer is no longer open at hand-off.
+  `accept_business_offer` + `confirm_group_plan_offer` take `seen_revision_param` (null = 0); `accept_business_offer` now locks the
+  offer row first (it used to read it unlocked). `get_business_opportunities` returns the business's own offer fields the sheet
+  needs (title, items, discount, validity, window, auto_reply, revision). Old signatures dropped; one overload each.
+- Changes from the plan: the revision is audited in `domain_events` (not `business_lifecycle_events`, which records status changes
+  only); the number of times stays the same (a one-time reply's wording "this time" stays true); a price, discount or time is
+  changeable only where the reply already had it; two extra hint strings (price only lower, discount only bigger).
+- Client: `utils/offerRevision.js` (the one client rule), `components/ReviseOfferSheet.js` (dashboard Opportunities), `presentOffer().updated`
+  -> `OfferCustomerBody` "Updated" (+ GroupPlanScreen), accept/confirm send the seen revision, "This offer just changed" re-reads
+  the card. Push type `business_offer_revised`: medium, `view_offer`, `business_offers` mute group, destination request/group plan.
+- Known residual: the reply's free-text description is the business's own words and can't change in a revision; if it states a
+  price ("$60 per person") it will contradict the new price. The sheet's preview shows the description so the business sees it.

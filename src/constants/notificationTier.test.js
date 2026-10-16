@@ -13,7 +13,7 @@ const block = (name) => pushSrc.slice(pushSrc.indexOf(`const ${name} = {`), push
 
 describe('every push type has exactly one priority', () => {
   test('the table covers every type the app handles, and nothing else', () => {
-    expect(TYPES).toHaveLength(89);
+    expect(TYPES).toHaveLength(90);
     expect(Object.keys(NOTIFICATION_PRIORITY_BY_TYPE).sort()).toEqual([...TYPES].sort());
     for (const p of Object.values(NOTIFICATION_PRIORITY_BY_TYPE)) expect(NOTIFICATION_PRIORITIES).toContain(p);
   });

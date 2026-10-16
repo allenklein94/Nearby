@@ -55,7 +55,12 @@ describe('one push sender (item 125 completion)', () => {
 
 describe('domain event registry (item 125)', () => {
   it('the client registry equals the domain_events.type CHECK', () => {
-    const check = /type text not null check \(type in \(([\s\S]*?)\)\)/.exec(MIGRATION)[1];
+    // The latest definition wins: the table's own CHECK (20270247), or a later migration's replacement constraint.
+    let check = /type text not null check \(type in \(([\s\S]*?)\)\)/.exec(MIGRATION)[1];
+    for (const f of fs.readdirSync(MIG_DIR).filter((x) => x.endsWith('.sql')).sort()) {
+      const m = /add constraint domain_events_type_check check \(type in \(([\s\S]*?)\)\)/.exec(fs.readFileSync(path.join(MIG_DIR, f), 'utf8'));
+      if (m) check = m[1];
+    }
     const server = [...check.matchAll(/'([A-Z_]+)'/g)].map((m) => m[1]);
     expect(server.slice().sort()).toEqual(DOMAIN_EVENTS.slice().sort());
   });
@@ -83,6 +88,7 @@ describe('domain event registry (item 125)', () => {
       '_accept_business_offer_internal', 'complete_business_reservation', '_notify_other_plan_participants',
       '_on_gathering_created', '_on_invitation_sent', '_on_business_request_sent', '_on_business_offer_sent',
       '_on_business_offer_accepted', '_dispatch_domain_event', '_emit_event', '_notify_event_recipient',
+      'revise_business_offer', '_on_business_offer_revised',
     ];
     moved.forEach((name) => {
       expect(defs[name]).toBeDefined();
@@ -94,7 +100,9 @@ describe('domain event registry (item 125)', () => {
   });
 
   it('every emission uses a registry name and an idempotency key built from the object', () => {
-    const emits = [...MIGRATION.matchAll(/_emit_event\('([A-Z_]+)'/g)].map((m) => m[1]);
+    const all = fs.readdirSync(MIG_DIR).filter((x) => x.endsWith('.sql') && x >= '20270247').sort()
+      .map((f) => fs.readFileSync(path.join(MIG_DIR, f), 'utf8')).join('\n');
+    const emits = [...all.matchAll(/_emit_event\('([A-Z_]+)'/g)].map((m) => m[1]);
     expect(emits.length).toBeGreaterThan(10);
     emits.forEach((e) => expect(DOMAIN_EVENTS).toContain(e));
     DOMAIN_EVENTS.forEach((e) => expect(emits).toContain(e));

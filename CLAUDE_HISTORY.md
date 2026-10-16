@@ -1,3 +1,31 @@
+# Item 118 (owner, 2026-10-16) one business revision of a sent offer - APPROVED, BUILT, NOT DEPLOYED, NOT device-verified
+
+- Owner approved the build plan with all five recommendations: price only down or unchanged (a bigger discount counts), time either
+  way; a revision clears group confirmations and everyone confirms the revised terms (prior consent never kept, the business never
+  told); one calm notification "{business} updated their offer" replacing the request's notification; "Updated" on the card, never
+  the previous price or a saving; one revision enforced by the database and server, never on automatic replies, no screening.
+  Deployment is a separate owner approval: migration 20270312 is NOT applied to production.
+- Built (details in `PRODUCT_AUDIT/ITEM_118_ONE_OFFER_REVISION_BUILD_PLAN_2026-10-16.md`, "As built"): migration
+  `20270312_offer_revision.sql` (revision/revised_at + check, `revise_business_offer`, `BUSINESS_OFFER_REVISED` + `_on_business_offer_revised`,
+  `_push_outbox_deliver` drops a revised push once the offer closed, `accept_business_offer` / `confirm_group_plan_offer` +
+  `seen_revision_param`, accept locks the offer row first, `get_business_opportunities` + the business's own offer fields);
+  `send-push` edge function: `business_offer_revised` medium + `view_offer` (NOT deployed). Client: `utils/offerRevision.js` (+ test),
+  `components/ReviseOfferSheet.js`, dashboard "Change price or time" / "You've already changed this offer once.", `presentOffer().updated`
+  -> "Updated" on `OfferCustomerBody` and GroupPlanScreen, accept/confirm send the seen revision and show "This offer just changed" then
+  re-read; push type registered (tier, action, mute group, destination incl. GroupPlan for cleared group confirmations).
+- Race found and fixed: `accept_business_offer` read the offer before locking anything; with revisions it could have booked a price
+  the person no longer saw. Now offer then request are locked in the same order as the revision and the group accept.
+- Verified: Jest 448 suites / 6007 passed (UTC); replay from scratch 436/436 apply; journeys on the rebuilt DB 365/365 (33 suites;
+  `offer` 49/49 incl. 11 new item-118 checks, `notificationEvents` 14/14 with a revision step); `booking-capacity-concurrency.js`
+  all pass; new `scripts/replay/offer-revision-concurrency.js` 20 rounds, accept vs revision at the same moment in both start orders:
+  exactly one wins every time, an accept that wins books the $60 it saw (payment $60), a revision that wins leaves nothing booked and
+  the accept gets "This offer just changed"; rolled-back production runs (JOURNEY_PRELUDE_FILE = the migration) `offer` 49/49 and
+  `notificationEvents` 14/14, production confirmed unchanged afterwards (no column, no function); function permissions on the
+  rebuilt DB match production for every changed function and follow the siblings' pattern for the new ones (one overload each).
+  Business web export regenerated. NOT verified: any screen on a device, a real push, the business website in a browser.
+- New strings (8, machine-authored in 10 languages, native review pending): the six `ui.bizDash3.*` and two `ui.requestDetail.*` above;
+  push wording is server English like every push. Known residual: a free-text description that states a price can't be revised.
+
 # Item 118 (owner, 2026-10-16) one business revision of a sent offer - REOPENED FOR SCOPING, SCOPE LOCKED, BUILD PLAN WRITTEN; NOT approved for building, nothing built
 
 - Owner reopened the item after item 119 shipped: negotiation only as ONE business-started, in-place revision, never haggling.

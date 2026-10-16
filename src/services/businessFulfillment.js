@@ -648,8 +648,20 @@ export async function getBusinessRequestWithOffers(requestId) {
 }
 
 // Item 119: chosenTime = the time picked on a two-time reply (offerTimes.timeToBook); null on a one-time reply.
-export async function acceptBusinessOffer(offerId, chosenTime = null) {
-  const { data, error } = await supabase.rpc('accept_business_offer', { offer_id_param: offerId, chosen_time_param: chosenTime });
+// Item 118: seenRevision = the revision on the card the person tapped (offer.revision); the server refuses when the
+// business changed the offer since, so a booking never carries terms the person didn't see.
+export async function acceptBusinessOffer(offerId, chosenTime = null, seenRevision = 0) {
+  const { data, error } = await supabase.rpc('accept_business_offer', {
+    offer_id_param: offerId, chosen_time_param: chosenTime, seen_revision_param: Number(seenRevision ?? 0),
+  });
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+// Item 118: the business's ONE revision of an offer it sent (price only down or the same, its time(s) earlier or later).
+// `params` = utils/offerRevision.js revisionParams(offer, draft); the server is the authority on every rule.
+export async function reviseBusinessOffer(params) {
+  const { data, error } = await supabase.rpc('revise_business_offer', params);
   if (error) throw new Error(error.message);
   return data;
 }

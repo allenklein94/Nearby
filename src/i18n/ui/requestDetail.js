@@ -313,6 +313,8 @@ export default {
     },
     visitConfirmed: "Visit confirmed",
     firstVisitNote: "You used Nearby to turn a request into a real-world experience.",
+    offerUpdated: "Updated",
+    offerJustChanged: "This offer just changed. Check the new terms.",
   },
   es: {
     youreBooked: "Tienes reserva",
@@ -626,6 +628,8 @@ export default {
     },
     visitConfirmed: "Visita confirmada",
     firstVisitNote: "Usaste Nearby para convertir una solicitud en una experiencia real.",
+    offerUpdated: "Actualizada",
+    offerJustChanged: "Esta oferta acaba de cambiar. Revisa las nuevas condiciones.",
   },
   de: {
     youreBooked: "Du bist gebucht",
@@ -939,6 +943,8 @@ export default {
     },
     visitConfirmed: "Besuch bestätigt",
     firstVisitNote: "Du hast mit Nearby aus einer Anfrage ein echtes Erlebnis gemacht.",
+    offerUpdated: "Aktualisiert",
+    offerJustChanged: "Dieses Angebot wurde gerade geändert. Prüfe die neuen Bedingungen.",
   },
   fr: {
     youreBooked: "C'est réservé",
@@ -1252,6 +1258,8 @@ export default {
     },
     visitConfirmed: "Visite confirmée",
     firstVisitNote: "Grâce à Nearby, votre demande est devenue une vraie sortie.",
+    offerUpdated: "Mise à jour",
+    offerJustChanged: "Cette offre vient de changer. Vérifiez les nouvelles conditions.",
   },
   pt: {
     youreBooked: "Reserva feita",
@@ -1565,6 +1573,8 @@ export default {
     },
     visitConfirmed: "Visita confirmada",
     firstVisitNote: "Você usou o Nearby para transformar um pedido em uma experiência real.",
+    offerUpdated: "Atualizada",
+    offerJustChanged: "Esta oferta acabou de mudar. Confira os novos termos.",
   },
   ht: {
     youreBooked: "Ou gen rezèvasyon",
@@ -1878,6 +1888,8 @@ export default {
     },
     visitConfirmed: "Vizit konfime",
     firstVisitNote: "Ou itilize Nearby pou fè yon demann tounen yon vrè eksperyans.",
+    offerUpdated: "Mete ajou",
+    offerJustChanged: "Òf sa a fèk chanje. Gade nouvo kondisyon yo.",
   },
   zh: {
     youreBooked: "已预订",
@@ -2191,6 +2203,8 @@ export default {
     },
     visitConfirmed: "已确认到店",
     firstVisitNote: "你通过 Nearby 把一个请求变成了真实的体验。",
+    offerUpdated: "已更新",
+    offerJustChanged: "此报价刚刚有变化，请查看新条款。",
   },
   vi: {
     youreBooked: "Bạn đã đặt chỗ",
@@ -2504,6 +2518,8 @@ export default {
     },
     visitConfirmed: "Đã xác nhận lượt ghé",
     firstVisitNote: "Bạn đã dùng Nearby để biến một yêu cầu thành trải nghiệm thật.",
+    offerUpdated: "Đã cập nhật",
+    offerJustChanged: "Ưu đãi này vừa thay đổi. Hãy xem điều khoản mới.",
   },
   tl: {
     youreBooked: "Naka-book ka na",
@@ -2817,6 +2833,8 @@ export default {
     },
     visitConfirmed: "Kumpirmado ang pagbisita",
     firstVisitNote: "Ginamit mo ang Nearby para gawing totoong karanasan ang isang kahilingan.",
+    offerUpdated: "Na-update",
+    offerJustChanged: "Nagbago lang ang alok na ito. Tingnan ang mga bagong tuntunin.",
   },
   ru: {
     youreBooked: "Бронь подтверждена",
@@ -3130,6 +3148,8 @@ export default {
     },
     visitConfirmed: "Визит подтверждён",
     firstVisitNote: "С Nearby ваш запрос превратился в настоящее событие.",
+    offerUpdated: "Обновлено",
+    offerJustChanged: "Это предложение только что изменилось. Посмотрите новые условия.",
   },
   ko: {
     youreBooked: "예약 완료",
@@ -3443,5 +3463,7 @@ export default {
     },
     visitConfirmed: "방문 확인됨",
     firstVisitNote: "Nearby로 요청 하나가 실제 경험이 되었어요.",
+    offerUpdated: "업데이트됨",
+    offerJustChanged: "이 제안이 방금 변경됐어요. 새 조건을 확인하세요.",
   },
 };

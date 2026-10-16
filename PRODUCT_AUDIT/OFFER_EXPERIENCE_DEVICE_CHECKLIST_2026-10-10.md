@@ -119,6 +119,30 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
   people choosing different times = nothing books; one person switching to the others' time books it once, at that time.
 - [ ] A one-time reply looks and books exactly as before (no rows, no "Pick a time").
 
+## 10. One business revision: price and time only (item 118, added 2026-10-16)
+
+Revisions carry no text or media, so this section needs no Anthropic credit once an offer exists (the ORIGINAL offer still
+goes through screening). The `send-push` edge function must be redeployed with the migration for the push's calm priority.
+- [ ] Business: under its own open reply (Opportunities), "Change price or time" appears only on a reply it wrote by hand (never on
+  an automatic/availability reply) and only while the offer is open. The sheet shows only the fields that reply has (its price,
+  its discount, its one or two times) and "You can change this offer once."
+- [ ] Business: typing a higher price shows "A changed price can only be lower or the same." and Send stays dimmed; a smaller
+  discount shows the discount line; an unchanged sheet can't be sent. The live Customer Preview shows the new terms with "Updated".
+- [ ] Business: after Send, "Your updated offer is on its way"; the reply now reads "You've already changed this offer once." and
+  the button is gone. The business sees nothing about whether anyone had confirmed or opened it.
+- [ ] Customer, request screen open while the business revises: the same card (never a second card) shows the new price/time and a
+  quiet "Updated" above the price, with no animation, no old price, no strikethrough, no "save $X". A picked time that no longer
+  exists is cleared and "I'll take this one" waits for a new pick.
+- [ ] Customer: one notification "<business> updated their offer" replaces the request's existing one (no second banner in the
+  tray), with no sound (medium priority); tapping it opens the request on that offer. Record whether the replacement re-alerts.
+- [ ] Customer had the card open from before the change and taps "I'll take this one": "Updated / This offer just changed. Check the
+  new terms." and the card refreshes; nothing is booked. Taking it again books the NEW terms (booked card, Your Plan, Plans and any
+  payment amount all show the revised price/time).
+- [ ] Group plan (2+ phones): after some people confirmed, the business revises; every confirmation is cleared, those who had
+  confirmed get "Confirm the current terms in your group plan." (opens the group plan), the card shows "Updated", and it books only
+  when everyone confirms the new terms.
+- [ ] After the customer accepts, a revision is impossible, and a revision push queued just before is not delivered.
+
 ## Record
 
 | Step | iPhone | Android | Chrome | Safari | Phone browser | Notes |

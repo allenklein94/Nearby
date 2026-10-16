@@ -12,6 +12,8 @@ export const DOMAIN_EVENTS = [
   'BUSINESS_OFFER_SENT',
   'BUSINESS_OFFER_ACCEPTED',
   'OFFER_REDEEMED',
+  // Item 118: a business's one change of an open offer's price/time (20270312).
+  'BUSINESS_OFFER_REVISED',
 ];
 
 // Recorded for analysis, never notified (owner decision 4, item 125). A future notification for one of these is a

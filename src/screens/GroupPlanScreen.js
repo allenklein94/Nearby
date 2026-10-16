@@ -34,6 +34,7 @@ import UnavailableState from '../components/UnavailableState';
 import OfferTimeChoice from '../components/OfferTimeChoice';
 import { formatProposedTime } from '../components/OfferCustomerBody';
 import { hasTwoTimes, choosableTimes, timeToBook, groupTimeConfirmations, sameInstant } from '../utils/offerTimes';
+import { isRevisedOffer, isOfferChangedError } from '../utils/offerRevision';
 
 // Display labels by stored status, read through ui.groupPlan (status values stay canonical).
 const PARTICIPANT_STATUS_KEYS = ['invited', 'accepted', 'declined', 'left'];
@@ -149,7 +150,13 @@ export default function GroupPlanScreen({ navigation, route }) {
       await load();
       if (onSuccess) onSuccess(result);
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => runAction(fn, onSuccess) });
+      // Item 118: the business changed an offer after it was shown: re-read so the current terms are what's confirmed.
+      if (isOfferChangedError(e)) {
+        load().catch(() => {});
+        Alert.alert(t('ui.requestDetail.offerUpdated'), t('ui.requestDetail.offerJustChanged'));
+      } else {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => runAction(fn, onSuccess) });
+      }
     }
     setActing(false);
   }
@@ -259,13 +266,13 @@ export default function GroupPlanScreen({ navigation, route }) {
     ]);
   }
 
-  function handleConfirmOffer(offerId, chosenTime = null) {
+  function handleConfirmOffer(offerId, chosenTime = null, seenRevision = 0) {
     Alert.alert(t('ui.groupPlan.confirmThisOfferForThe'), t('ui.groupPlan.onceEveryoneConfirmsTheReservation'), [
       { text: t('ui.groupPlan.neverMind'), style: 'cancel' },
       {
         text: t('ui.groupPlan.confirm'),
         onPress: () => runAction(
-          () => confirmGroupPlanOffer(proposalId, offerId, chosenTime),
+          () => confirmGroupPlanOffer(proposalId, offerId, chosenTime, seenRevision),
           // Same Wave 2B gap as handleConfirm above -- this is the actual
           // "10/10 success case" for the whole feature (a group plan
           // that genuinely turned into a real reservation), and it was
@@ -503,6 +510,9 @@ export default function GroupPlanScreen({ navigation, route }) {
                     <Text style={styles.offerPartnerName}>{o.brand_partners?.name ?? t('ui.groupPlan.aBusiness')}</Text>
                     <Text style={styles.offerStatus}>{offerLifecycleState(o) === 'expired' ? t('ui.groupPlan.thisOfferHasExpired') : statusCopy(t, 'offerStatus', OFFER_STATUS_KEYS, o.status)}</Text>
                     {o.offer_description ? <Text style={styles.offerDescription}>{o.offer_description}</Text> : null}
+                    {/* Item 118: the business changed this open offer's price or time once; the terms below are the current
+                        ones, and every earlier confirmation was cleared (each participant confirms these). */}
+                    {o.status === 'offered' && isRevisedOffer(o) ? <Text style={styles.offerStatus}>{t('ui.requestDetail.offerUpdated')}</Text> : null}
                     {offerPriceLabel(o.offer_price, o.price_is_per_person) ? <Text style={styles.offerPrice}>{offerPriceLabel(o.offer_price, o.price_is_per_person)}</Text> : null}
                     {twoTimes ? (
                       <OfferTimeChoice
@@ -523,7 +533,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                           : <Text style={styles.confirmCountLine}>{confirmedForThisOffer.length} of {acceptedParticipants.length} confirmed</Text>}
                         <TouchableOpacity
                           style={[styles.acceptButton, (iConfirmed || (twoTimes && !chosen)) && styles.acceptButtonDisabled]}
-                          onPress={() => handleConfirmOffer(o.id, chosen)}
+                          onPress={() => handleConfirmOffer(o.id, chosen, o.revision ?? 0)}
                           disabled={acting || iConfirmed || (twoTimes && !chosen)}
                           accessibilityLabel={t('ui.groupPlan.confirmThisOfferForTheA11y')}
                           accessibilityRole="button"

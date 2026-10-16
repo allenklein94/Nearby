@@ -46,7 +46,7 @@ const ACTION_OPENS = {
 
 describe('every notification has one next action', () => {
   test('every push type the app handles has an action, and nothing else does', () => {
-    expect(PUSH_TYPES).toHaveLength(89);
+    expect(PUSH_TYPES).toHaveLength(90);
     expect(Object.keys(NOTIFICATION_ACTION_BY_TYPE).sort()).toEqual([...PUSH_TYPES].sort());
     for (const a of Object.values(NOTIFICATION_ACTION_BY_TYPE)) expect(NOTIFICATION_ACTION_KEYS).toContain(a);
     expect(new Set(Object.values(NOTIFICATION_ACTION_BY_TYPE))).toEqual(new Set(NOTIFICATION_ACTION_KEYS)); // no unused labels

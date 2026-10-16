@@ -87,6 +87,8 @@ import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
 import { draftPreviewOffer, draftSecondTime } from '../utils/offerDraftPreview';
+import ReviseOfferSheet from '../components/ReviseOfferSheet';
+import { canReviseOffer, isRevisedOffer } from '../utils/offerRevision';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
 // already-deployed async submit-then-poll weather RPC every other
 // weather-aware surface already calls -- never a new one.
@@ -775,6 +777,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // Effortless response: Accept -> standard availability / special offer, and Offer Alternative (another time).
   const [acceptSheetRequestId, setAcceptSheetRequestId] = useState(null);
   const [altSheetRequestId, setAltSheetRequestId] = useState(null);
+  // Item 118: the sent offer whose price/time is being changed (its one revision), or null.
+  const [reviseOfferId, setReviseOfferId] = useState(null);
   const [altTime, setAltTime] = useState(null);
   // Item 119: an optional second time in the same reply (same full party).
   const [altTime2, setAltTime2] = useState(null);
@@ -4708,6 +4712,19 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
                         </>
                       )}
+                      {/* Item 118: one change of price or time while the offer is still open, on a reply the business wrote. */}
+                      {canReviseOffer(o) ? (
+                        <TouchableOpacity
+                          style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.border, alignSelf: 'flex-start', marginTop: spacing.sm }]}
+                          onPress={() => setReviseOfferId(o.id)}
+                          accessibilityRole="button"
+                          accessibilityLabel={t('ui.bizDash3.changePriceOrTime')}
+                        >
+                          <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash3.changePriceOrTime')}</Text>
+                        </TouchableOpacity>
+                      ) : o.status === 'offered' && isRevisedOffer(o) ? (
+                        <Text style={[styles.breakdownText, { color: colors.textSecondary }]}>{t('ui.bizDash3.alreadyChangedThisOfferOnce')}</Text>
+                      ) : null}
                     </OpportunityArrival>
                     );
                   });
@@ -7664,6 +7681,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           </View>
         </View>
       </Modal>
+      {reviseOfferId ? (
+        <ReviseOfferSheet
+          offer={opportunities.find((x) => x.id === reviseOfferId) ?? null}
+          business={{ name: selectedPartner?.name ?? null, logoUri: previewLogo }}
+          discountCap={discountCap}
+          onClose={() => setReviseOfferId(null)}
+          onSent={() => { setReviseOfferId(null); if (selectedPartner?.id) loadOpportunities(selectedPartner.id); }}
+        />
+      ) : null}
       <Modal visible={!!altSheetRequestId} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAltSheetRequestId(null)}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

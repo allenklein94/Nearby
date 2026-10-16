@@ -40,7 +40,7 @@ export const NOTIFICATION_ACTION_BY_TYPE = {
   // progress
   momentum_streak_nudge: 'view_progress', reward_tier_nudge: 'view_progress',
   // a request the person made to businesses
-  business_offer_received: 'view_offer', business_reservation_confirmed: 'view_plan', plan_organizer_added: 'view_plan',
+  business_offer_received: 'view_offer', business_offer_revised: 'view_offer', business_reservation_confirmed: 'view_plan', plan_organizer_added: 'view_plan',
   plan_confirmed: 'view_plan', plan_reservation_cancelled: 'view_plan', plan_cancelled: 'view_plan',
   plan_addon_removed: 'view_plan', plan_item_time_changed: 'view_plan',
   business_offer_withdrawn: 'review_request', business_offer_declined: 'review_request',

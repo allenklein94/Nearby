@@ -1,6 +1,7 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
 import { rankReplies, fittingTime } from '../utils/replyFit';
 import { hasTwoTimes, canBookWith, timeToBook } from '../utils/offerTimes';
+import { isOfferChangedError } from '../utils/offerRevision';
 import { useLanguage } from '../context/LanguageContext';
 import { displayClock, displayWeekdayDate } from '../i18n/display';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -827,7 +828,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     acceptingRef.current = true;
     setActingOfferId(offerId);
     try {
-      const result = await acceptBusinessOffer(offerId, chosenTime);
+      // Item 118: the revision on the card the person tapped; the server refuses if the business changed it since.
+      const result = await acceptBusinessOffer(offerId, chosenTime, offers.find((x) => x.id === offerId)?.revision ?? 0);
       recordAcceptBehavior(request?.id, request?.category); // item 95: private ranking signal, never a profile edit
       // Item 12: the card morphs only from the stored state the reload brings back (accepted + its reservation), never on
       // the tap alone. Only that card animates its own change (owner, 2026-10-12): the rest of the screen updates without a
@@ -846,7 +848,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       // Re-read so the card shows what is true now (expired, taken, request closed) rather than a stale button; a refused
       // offer gets the server's reason with no Try again, a service failure keeps the offer and offers Try again.
       load().catch(() => {});
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAccept(offerId) });
+      // Item 118: the business changed this offer after it was shown: the re-read shows the current terms to decide on.
+      if (isOfferChangedError(e)) Alert.alert(t('ui.requestDetail.offerUpdated'), t('ui.requestDetail.offerJustChanged'));
+      else presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAccept(offerId) });
     } finally {
       acceptingRef.current = false;
     }
@@ -1709,6 +1713,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     onPickTime={shown.pickTime && consumerOfferAction(o, { request, hasWinner, isGroupPlanRequest }).kind === 'accept_offer' ? (iso) => setPickedTimes((prev) => ({ ...prev, [o.id]: iso })) : null}
                     pickDisabled={actingOfferId === o.id}
                     timeNotes={pickOfferId === o.id ? pickTimeNotes : {}}
+                    updated={shown.updated}
                   />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>{t('ui.requestDetail.youveSeenThis')}</Text>

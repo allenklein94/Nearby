@@ -12,7 +12,8 @@
 // It composes the existing single sources and adds no rule of its own: the reply kind (utils/offerCopy.js, item 121),
 // the assembly steps + once-per-new-reply decision (utils/offerAssembly.js), the booking state (utils/acceptedBooking.js,
 // item 12), the lifecycle (utils/objectLifecycle.js), the discount headline (utils/offerPresentation.js, item 11) and the
-// redeem instructions (utils/offerMedia.js) and the offered times (utils/offerTimes.js, item 119).
+// redeem instructions (utils/offerMedia.js), the offered times (utils/offerTimes.js, item 119) and whether the business
+// revised it (utils/offerRevision.js, item 118).
 //
 // Fairness (item 17, LOCKED): every business replying to the same request gets the same structure; presentation follows
 // only the content the reply carries. Brand assets are limited to the business's name and its screened logo. Nothing here
@@ -25,6 +26,7 @@ import { offerLifecycleState } from './objectLifecycle';
 import { discountHeadlinePct, offerCountdown } from './offerPresentation';
 import { visibleRedemption } from './offerMedia';
 import { offerTimes, needsTimePick } from './offerTimes';
+import { isRevisedOffer } from './offerRevision';
 import { tr } from '../i18n/translate';
 
 export const OFFER_CARDS = ['waiting', 'open', 'closed', 'booked', 'visited'];
@@ -102,6 +104,9 @@ export function presentOffer(offer, { business = {}, context = {} } = {}) {
     // picks one before booking. The owner's preview shows both times, never a pick.
     times: card === 'open' ? offerTimes(offer) : [],
     pickTime: card === 'open' && !preview && needsTimePick(offer, now),
+    // Item 118: the business changed this open offer's price or time (once). One word on the card; the terms shown are
+    // always the current ones and nothing here carries the previous price. Gone once booked or closed.
+    updated: card === 'open' && isRevisedOffer(offer),
     confirmation: bookingState ? {
       state: bookingState,
       titleKey: ACCEPTED_TITLE_KEY[bookingState],

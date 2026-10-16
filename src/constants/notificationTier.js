@@ -49,8 +49,8 @@ const MEDIUM = [
   'gathering_approved', 'gathering_waitlisted', 'gathering_interest', 'gathering_invite', 'gathering_business_reminder',
   // occasions coming up (days of lead time)
   'birthday_upcoming', 'anniversary_upcoming', 'occasion_upcoming',
-  // your plans and requests
-  'business_reservation_confirmed', 'plan_organizer_added', 'plan_confirmed', 'plan_addon_removed',
+  // your plans and requests (item 118: a business changing an open offer's price/time is calm, never a new alert)
+  'business_offer_revised', 'business_reservation_confirmed', 'plan_organizer_added', 'plan_confirmed', 'plan_addon_removed',
   'business_offer_withdrawn', 'business_offer_declined', 'business_request_all_declined',
   'group_plan_invite', 'group_plan_response', 'group_plan_confirmed', 'group_plan_reservation_confirmed', 'group_plan_removed',
   'social_offer_responded', 'date_proposal', 'date_proposal_response', 'experience_shared', 'preference_poll_received',

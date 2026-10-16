@@ -109,7 +109,7 @@ export const NOTIFICATION_GROUP_BY_TYPE = {
   match_reminder: 'dating', shared_decision_addition: 'dating',
   constitution_addition: 'dating', memory_addition: 'dating', stress_test_addition: 'dating', timeline_addition: 'dating',
   // Businesses (as a customer)
-  business_offer_received: 'business_offers', business_update: 'business_offers', business_recall_outreach: 'business_offers',
+  business_offer_received: 'business_offers', business_offer_revised: 'business_offers', business_update: 'business_offers', business_recall_outreach: 'business_offers',
   business_offer_withdrawn: 'business_responses', business_offer_declined: 'business_responses',
   business_request_all_declined: 'business_responses', business_reservation_confirmed: 'business_responses',
   business_reservation_cancelled: 'business_responses', business_partnership_response: 'business_responses',

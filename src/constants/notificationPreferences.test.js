@@ -17,7 +17,7 @@ const msg = mig('20270262_shared_playlists_trips_notification_group.sql'); // cu
 const moves = ['20270260_messages_notification_group.sql', '20270261_video_calls_notification_group.sql',
   '20270262_shared_playlists_trips_notification_group.sql'].map(mig).join('\n');
 // New push types after the moves, each seeded by its own migration: plan_message (20270298).
-const ADDED_TYPE_MIGRATIONS = ['20270298_plan_message_push.sql'];
+const ADDED_TYPE_MIGRATIONS = ['20270298_plan_message_push.sql', '20270312_offer_revision.sql'];
 
 describe('every push type is placed exactly once', () => {
   test('8. person-mutable groups + account notices = every push type, exactly once', () => {

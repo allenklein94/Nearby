@@ -12,6 +12,7 @@ import { offerToPlanMergeNow } from '../utils/offerToPlanMerge';
 import { rankReplies, fittingTime } from '../utils/replyFit';
 import { offerTimes, canBookWith, timeToBook, groupTimeConfirmations } from '../utils/offerTimes';
 import { presentOffer } from '../utils/offerPresentationEngine';
+import { canReviseOffer, isRevisedOffer, revisionProblem, revisionDraftFrom, isOfferChangedError } from '../utils/offerRevision';
 
 const d = hasToken ? describe : describe.skip;
 
@@ -742,5 +743,299 @@ d('journey: a reply with two times -> the customer picks one -> that time is boo
     expect(sameInstant(d10.data.offer.proposed_time, d10.data.t1)).toBe(true);
     expect(d10.data.offer.proposed_time_alt).toBeNull();
     expect(d10.data.reservations).toBe(1);
+  });
+});
+
+// Item 118 (owner, 2026-10-16): a business changes an offer it already sent ONCE, PRICE AND TIME ONLY: the price only
+// down (or a bigger discount), its time(s) earlier or later; never on an automatic reply. The customer's card shows the
+// current terms with "Updated"; an accept that names the old revision is refused, so a booking only ever carries terms
+// the person saw. Group plans: the revision clears every confirmation and everyone confirms the new terms; the business
+// is never told. One calm push, replacing the request's notification in place, never sent once the offer closed.
+// Rolled back. Not covered: the sheet and card on a device; a real push on a phone; true concurrency (separate script,
+// scripts/replay/offer-revision-concurrency.js).
+d('journey: a business changes its offer once (price down, time moved) -> the customer sees the current terms -> books them (item 118)', () => {
+  let s;
+  beforeAll(async () => {
+    const log = await runJourney(`
+      v_c uuid := gen_random_uuid(); v_o1 uuid := gen_random_uuid(); v_o2 uuid := gen_random_uuid(); v_oa uuid := gen_random_uuid();
+      v_g1 uuid := gen_random_uuid(); v_g2 uuid := gen_random_uuid(); v_g3 uuid := gen_random_uuid();
+      v_a uuid := gen_random_uuid(); v_b uuid := gen_random_uuid(); v_auto uuid := gen_random_uuid();
+      v_r uuid := gen_random_uuid(); v_r2 uuid := gen_random_uuid(); v_gr uuid := gen_random_uuid(); v_p uuid := gen_random_uuid();
+      v_day date := current_date + 2; v_t1 timestamptz; v_t2 timestamptz;
+      v_msg text; v_res jsonb; v_offer uuid; v_disc uuid; v_autooffer uuid; v_goffer uuid; v_row jsonb; u uuid; v_src uuid; v_push bigint;`, `
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+  perform set_config('app.trusted_update', 'on', true);
+  v_t1 := (v_day + time '19:00')::timestamp at time zone 'UTC';
+  v_t2 := (v_day + time '20:30')::timestamp at time zone 'UTC';
+  foreach u in array array[v_c, v_o1, v_o2, v_oa, v_g1, v_g2, v_g3] loop
+    insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@revise.test');
+    insert into profiles (id, display_name, birthdate) values (u, 'RV-' || left(u::text, 4), date '1990-01-01');
+  end loop;
+  insert into brand_partners (id, name, active, latitude, longitude) values
+    (v_a, 'J118 Revise Bistro', true, 0.5, 0.5), (v_b, 'J118 Discount Deli', true, 0.5, 0.5), (v_auto, 'J118 Auto Cafe', true, 0.5, 0.5);
+  update profiles set managed_partner_id = v_a where id = v_o1;
+  update profiles set managed_partner_id = v_b where id = v_o2;
+  update profiles set managed_partner_id = v_auto where id = v_oa;
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles, date, time_window_start, budget_max)
+    values (v_r, v_c, 'Dinner for 4, about $50 each', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 4, 10, v_day, time '19:00', 50),
+           (v_r2, v_c, 'Lunch for 2', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 2, 10, v_day, time '12:00', null);
+  insert into business_request_offers (request_id, partner_id, status) values (v_r, v_a, 'pending'), (v_r2, v_b, 'pending');
+  select id into v_offer from business_request_offers where request_id = v_r and partner_id = v_a;
+  select id into v_disc from business_request_offers where request_id = v_r2 and partner_id = v_b;
+
+  -- 1. the business replies: $60 per person, 7 PM (over the stated budget)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time', offer_description_param := 'Chef''s dinner for your party.',
+    offer_price_param := 60, price_is_per_person_param := true, proposed_time_param := v_t1);
+
+  -- 2. what a revision may not do: raise the price, add a time or a discount, move to the past, change nothing; another business can't touch it
+  v_row := '{}'::jsonb;
+  begin perform revise_business_offer(v_offer, 70, null, v_t1, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('higher', v_msg);
+  begin perform revise_business_offer(v_offer, 50, null, v_t1, v_t2); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('add_time', v_msg);
+  begin perform revise_business_offer(v_offer, 50, 10, v_t1, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('add_discount', v_msg);
+  begin perform revise_business_offer(v_offer, 50, null, now() - interval '1 hour', null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('past', v_msg);
+  begin perform revise_business_offer(v_offer, 60, null, v_t1, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('unchanged', v_msg);
+  begin perform revise_business_offer(v_offer, null, null, v_t1, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('price_removed', v_msg);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o2, 'role', 'authenticated')::text, true);
+  begin perform revise_business_offer(v_offer, 50, null, v_t1, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('other_business', v_msg,
+    'offer', (select jsonb_build_object('offer_price', offer_price, 'revision', revision) from business_request_offers where id = v_offer));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'revision_limits', 'ok', true, 'data', v_row));
+
+  -- 3. the customer's card before the change (what they saw: revision 0)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'customer_before', 'ok', true, 'data',
+    (select to_jsonb(o) from business_request_offers o where id = v_offer)));
+  reset role;
+
+  -- 4. the business changes it once: $50 per person, 8:30 PM
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  select e into v_row from jsonb_array_elements(get_business_opportunities(v_a)) e where e->>'request_id' = v_r::text;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'business_before', 'ok', true, 'data', v_row));
+  v_res := revise_business_offer(v_offer, 50, null, v_t2, null);
+  select e into v_row from jsonb_array_elements(get_business_opportunities(v_a)) e where e->>'request_id' = v_r::text;
+  select id into v_push from push_outbox where recipient_id = v_c and data->>'type' = 'business_offer_revised' and data->>'offer_id' = v_offer::text;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'revised', 'ok', (v_res->>'success')::boolean, 'data', jsonb_build_object(
+    'result', v_res, 't2', v_t2, 'business_view', v_row,
+    'offer', (select jsonb_build_object('offer_price', offer_price, 'proposed_time', proposed_time, 'revision', revision, 'revised_at', revised_at,
+                     'description', offer_description, 'price_is_per_person', price_is_per_person, 'status', status) from business_request_offers where id = v_offer),
+    'events', (select count(*) from domain_events where type = 'BUSINESS_OFFER_REVISED' and object_id = v_offer),
+    'pushes', (select jsonb_agg(jsonb_build_object('recipient', recipient_id, 'title', title, 'body', body, 'data', data)) from push_outbox
+               where data->>'type' = 'business_offer_revised' and data->>'offer_id' = v_offer::text),
+    'customer', v_c)));
+
+  -- 5. a second revision is refused
+  begin perform revise_business_offer(v_offer, 45, null, v_t2, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'second_revision_refused', 'ok', true, 'data', jsonb_build_object('message', v_msg,
+    'offer_price', (select offer_price from business_request_offers where id = v_offer))));
+
+  -- 6. an accept naming the old revision (the card the customer had open, or an app from before revisions) is refused
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  v_row := '{}'::jsonb;
+  begin perform accept_business_offer(v_offer, null, 0::smallint); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('stale', v_msg);
+  begin perform accept_business_offer(v_offer); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('old_app', v_msg, 'status', (select status from business_request_offers where id = v_offer),
+    'reservations', (select count(*) from business_reservations where offer_id = v_offer));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'stale_accept_refused', 'ok', true, 'data', v_row));
+
+  -- 7. the customer's card now (RLS): current terms, revision 1
+  set local role authenticated;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'customer_after', 'ok', true, 'data', jsonb_build_object(
+    'offer', (select to_jsonb(o) from business_request_offers o where id = v_offer),
+    'request', (select to_jsonb(r) from business_requests r where id = v_r))));
+  reset role;
+
+  -- 8. accepting what they now see books the revised terms ($50, 8:30 PM)
+  v_res := accept_business_offer(v_offer, null, 1::smallint);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'revised_terms_booked', 'ok', (v_res->>'success')::boolean, 'data', jsonb_build_object(
+    't2', v_t2,
+    'offer', (select jsonb_build_object('status', status, 'offer_price', offer_price, 'proposed_time', proposed_time) from business_request_offers where id = v_offer),
+    'payment_amount', (select bp.amount from business_payments bp join business_reservations br on br.id = bp.reservation_id where br.offer_id = v_offer),
+    'reservations', (select count(*) from business_reservations where offer_id = v_offer and status = 'confirmed'))));
+
+  -- 9. after the customer acted: no revision; the queued "updated" push is not sent any more
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  begin perform revise_business_offer(v_offer, 40, null, v_t2, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  perform set_config('app.push_handoff_test_failure', 'off', true);
+  v_row := jsonb_build_object('message', v_msg, 'deliver', case when v_push is null then null else _push_outbox_deliver(v_push) end);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'closed_offer', 'ok', true, 'data', v_row || jsonb_build_object(
+    'push', (select jsonb_build_object('status', status, 'last_error', last_error) from push_outbox where id = v_push))));
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+
+  -- 10. a discount only grows; an automatic reply can't be revised (and can't hold a revision)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o2, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r2, offer_type_param := 'discount', offer_description_param := '10% off lunch.', discount_pct_param := 10);
+  v_row := '{}'::jsonb;
+  begin perform revise_business_offer(v_disc, null, 5, null, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('smaller', v_msg);
+  v_res := revise_business_offer(v_disc, null, 15, null, null);
+  v_row := v_row || jsonb_build_object('bigger', v_res, 'discount_pct', (select discount_pct from business_request_offers where id = v_disc));
+  insert into business_request_offers (request_id, partner_id, status, offer_type, offer_description, offer_price, auto_reply)
+    values (v_r2, v_auto, 'offered', 'standard', 'We can take you.', 40, 'policy') returning id into v_autooffer;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_oa, 'role', 'authenticated')::text, true);
+  begin perform revise_business_offer(v_autooffer, 30, null, null, null); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('automatic', v_msg);
+  begin update business_request_offers set revision = 1, revised_at = now() where id = v_autooffer; v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('automatic_structural', v_msg);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'discount_and_automatic', 'ok', true, 'data', v_row));
+
+  -- 11. a group of three: two confirmed $80; the business changes it to $75 -> both confirmations cleared, nobody's consent kept
+  insert into group_plan_proposals (id, initiator_id, category, status, expires_at, confirmed_at, date, time_window_start)
+    values (v_p, v_g1, 'Restaurants', 'confirmed', now() + interval '1 day', now(), v_day, time '19:00');
+  foreach u in array array[v_g1, v_g2, v_g3] loop
+    insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
+      values (u, 'source', 0.5, 0.5, now() + interval '1 day', 'fulfilled', 'Restaurants', 2, 10) returning id into v_src;
+    insert into group_plan_participants (proposal_id, user_id, source_request_id, party_size, status) values (v_p, u, v_src, 2, 'accepted');
+  end loop;
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles, date, time_window_start, group_plan_id)
+    values (v_gr, v_g1, 'Group dinner for 6', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 6, 10, v_day, time '19:00', v_p);
+  update group_plan_proposals set resulting_request_id = v_gr where id = v_p;
+  insert into business_request_offers (request_id, partner_id, status) values (v_gr, v_a, 'pending') returning id into v_goffer;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_gr, offer_type_param := 'standard', offer_description_param := 'Dinner for your party.',
+    offer_price_param := 80, price_is_per_person_param := true);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g1, 'role', 'authenticated')::text, true);
+  perform confirm_group_plan_offer(v_p, v_goffer, null, 0::smallint);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g2, 'role', 'authenticated')::text, true);
+  perform confirm_group_plan_offer(v_p, v_goffer, null, 0::smallint);
+  v_row := jsonb_build_object('confirmed_before', (select count(*) from group_plan_offer_confirmations where offer_id = v_goffer));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  v_res := revise_business_offer(v_goffer, 75, null, null, null);
+  v_row := v_row || jsonb_build_object('result', v_res,
+    'confirmed_after', (select count(*) from group_plan_offer_confirmations where offer_id = v_goffer),
+    'pushes', (select jsonb_agg(jsonb_build_object('recipient', recipient_id, 'body', body, 'data', data) order by recipient_id) from push_outbox
+               where data->>'type' = 'business_offer_revised' and data->>'offer_id' = v_goffer::text),
+    'g1', v_g1, 'g2', v_g2, 'g3', v_g3, 'p', v_p);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'group_revision_clears', 'ok', true, 'data', v_row));
+
+  -- 12. a confirmation naming the old terms is refused; everyone confirms the new ones -> booked at $75, once
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g3, 'role', 'authenticated')::text, true);
+  begin perform confirm_group_plan_offer(v_p, v_goffer, null, 0::smallint); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := jsonb_build_object('stale', v_msg);
+  perform confirm_group_plan_offer(v_p, v_goffer, null, 1::smallint);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g1, 'role', 'authenticated')::text, true);
+  perform confirm_group_plan_offer(v_p, v_goffer, null, 1::smallint);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g2, 'role', 'authenticated')::text, true);
+  v_res := confirm_group_plan_offer(v_p, v_goffer, null, 1::smallint);
+  v_row := v_row || jsonb_build_object('result', v_res,
+    'offer', (select jsonb_build_object('status', status, 'offer_price', offer_price) from business_request_offers where id = v_goffer),
+    'reservations', (select count(*) from business_reservations where offer_id = v_goffer and status = 'confirmed'));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'group_books_new_terms', 'ok', (v_res->>'allConfirmed')::boolean, 'data', v_row));`);
+    s = stepMap(log);
+  }, 120000);
+
+  const sameInstant = (a, b) => new Date(a).getTime() === new Date(b).getTime();
+
+  test('a revision can only lower the price or move the time; never more terms, never another business', () => {
+    const r = s.revision_limits.data;
+    expect(r.higher).toBe('A changed price can only be lower or the same.');
+    expect(r.add_time).toBe('Keep the same number of times.');
+    expect(r.add_discount).toBe('This offer has no discount to change.');
+    expect(r.past).toBe('Pick times that are later than now.');
+    expect(r.unchanged).toBe('Nothing changed.');
+    expect(r.price_removed).toBe('Enter the new price.');
+    expect(r.other_business).toBe('Offer not found.');
+    expect(r.offer).toEqual({ offer_price: 60, revision: 0 });
+  });
+
+  test('the business sees "Change price or time" on its open reply, and the client rules match the server', () => {
+    const before = s.business_before.data;
+    expect(canReviseOffer(before)).toBe(true);
+    expect(revisionProblem(before, { ...revisionDraftFrom(before), price: 70 })).toBe('priceHigher');
+    expect(revisionProblem(before, revisionDraftFrom(before))).toBe('unchanged');
+    expect(before.business_requests).not.toHaveProperty('group_plan_id');
+  });
+
+  test('the one revision changes only price and time, in place, and tells the customer once, calmly, in place', () => {
+    const r = s.revised;
+    expect(r.ok).toBe(true);
+    expect(Object.keys(r.data.result).sort()).toEqual(['offerId', 'revision', 'success']);
+    expect(r.data.offer).toMatchObject({ offer_price: 50, revision: 1, description: "Chef's dinner for your party.", price_is_per_person: true, status: 'offered' });
+    expect(sameInstant(r.data.offer.proposed_time, r.data.t2)).toBe(true);
+    expect(r.data.events).toBe(1);
+    expect(r.data.pushes).toHaveLength(1);
+    const [p] = r.data.pushes;
+    expect(p.recipient).toBe(r.data.customer);
+    expect(p.title).toMatch(/J118 Revise Bistro updated their offer$/);
+    expect(p.data).toMatchObject({ type: 'business_offer_revised', collapse_key: `offers:${p.data.request_id}` });
+    // the business now sees its revision used: no second change offered
+    expect(canReviseOffer(r.data.business_view)).toBe(false);
+    expect(isRevisedOffer(r.data.business_view)).toBe(true);
+  });
+
+  test('a second revision is refused', () => {
+    expect(s.second_revision_refused.data).toEqual({ message: "You've already changed this offer once.", offer_price: 50 });
+  });
+
+  test('an accept naming the terms the customer had open (or from an older app) is refused, nothing booked', () => {
+    const st = s.stale_accept_refused.data;
+    expect(isOfferChangedError({ message: st.stale })).toBe(true);
+    expect(isOfferChangedError({ message: st.old_app })).toBe(true);
+    expect(st).toMatchObject({ status: 'offered', reservations: 0 });
+  });
+
+  test('the customer\'s card: current terms + "Updated", never the previous price', () => {
+    const before = s.customer_before.data;
+    const { offer, request } = s.customer_after.data;
+    expect(presentOffer(before).updated).toBe(false);
+    const shown = presentOffer(offer);
+    expect(shown.updated).toBe(true);
+    expect(Object.values(offer)).not.toContain(60);
+    expect(Object.keys(offer).some((k) => /previous|old_|was_/.test(k))).toBe(false);
+    // item 63: at $50 the reply now meets the stated budget, on the current terms
+    expect(rankReplies([offer], request, {}).fitById[offer.id]).toMatchObject({ budget: 'fits' });
+  });
+
+  test('accepting the current terms books $50 at 8:30 PM, with the payment row carrying $50', () => {
+    const b = s.revised_terms_booked;
+    expect(b.ok).toBe(true);
+    expect(b.data.offer).toMatchObject({ status: 'accepted', offer_price: 50 });
+    expect(sameInstant(b.data.offer.proposed_time, b.data.t2)).toBe(true);
+    expect(b.data.payment_amount).toBe(50);
+    expect(b.data.reservations).toBe(1);
+  });
+
+  test('once the customer acted: no revision, and the "updated" push is not sent', () => {
+    const c = s.closed_offer.data;
+    expect(c.message).toBe('This offer is no longer open.');
+    expect(c.deliver).toBe('failed');
+    expect(c.push).toEqual({ status: 'failed', last_error: 'not sent: the updated offer is no longer open' });
+  });
+
+  test('a discount only grows; an automatic reply is never revised', () => {
+    const x = s.discount_and_automatic.data;
+    expect(x.smaller).toBe('A changed discount can only be bigger or the same.');
+    expect(x.bigger.success).toBe(true);
+    expect(x.discount_pct).toBe(15);
+    expect(x.automatic).toBe('This was an automatic reply. Change what you posted instead.');
+    expect(x.automatic_structural).toMatch(/business_request_offers_revision_check/);
+  });
+
+  test('group: the revision clears earlier confirmations, tells who had confirmed, and tells the business nothing', () => {
+    const g = s.group_revision_clears.data;
+    expect(g.confirmed_before).toBe(2);
+    expect(g.confirmed_after).toBe(0);
+    expect(Object.keys(g.result).sort()).toEqual(['offerId', 'revision', 'success']);
+    const byRecipient = Object.fromEntries(g.pushes.map((p) => [p.recipient, p]));
+    expect(Object.keys(byRecipient).sort()).toEqual([g.g1, g.g2].sort());
+    expect(byRecipient[g.g1].data.collapse_key).toBe(`offers:${byRecipient[g.g1].data.request_id}`); // the requester: in place
+    expect(byRecipient[g.g2].data.proposal_id).toBe(g.p); // a participant who had confirmed: back to the group plan
+    expect(byRecipient[g.g2].body).toBe('Confirm the current terms in your group plan.');
+  });
+
+  test('group: a confirmation of the old terms is refused; everyone on the new terms books $75, once', () => {
+    const g = s.group_books_new_terms;
+    expect(isOfferChangedError({ message: g.data.stale })).toBe(true);
+    expect(g.ok).toBe(true);
+    expect(g.data.offer).toEqual({ status: 'accepted', offer_price: 75 });
+    expect(g.data.reservations).toBe(1);
   });
 });

@@ -212,8 +212,19 @@ d('journey: domain events -> one notification layer (item 125)', () => {
   log := log || jsonb_build_array(jsonb_build_object('step','reads_never_notify','ok',
     (select count(*) from domain_events) = v_before and (select count(*) from jq) = v_q));
 
+  -- 6b. BUSINESS_OFFER_REVISED (item 118): the business lowers its price once; A gets one calm "updated" push, in place
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  perform revise_business_offer(v_offer, 10, null, null, null);
+  log := log || jsonb_build_array(jsonb_build_object('step','offer_revised','ok',
+    (select count(*) from domain_events where type = 'BUSINESS_OFFER_REVISED' and object_id = v_offer) = 1
+    and (select count(*) from jq where b->>'recipient_id' = v_a::text and b->'data'->>'type' = 'business_offer_revised'
+           and b->'data'->>'collapse_key' = 'offers:' || v_req and b->'data'->>'offer_id' = v_offer::text) = 1,
+    'data', jsonb_build_object('title', (select b->>'title' from jq where b->'data'->>'type' = 'business_offer_revised'
+                                           and b->'data'->>'offer_id' = v_offer::text limit 1))));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
+
   -- 7. BUSINESS_OFFER_ACCEPTED: the business is told, and A gets "Reservation Confirmed"
-  v_res := accept_business_offer(v_offer);
+  v_res := accept_business_offer(v_offer, null, 1::smallint);
   log := log || jsonb_build_array(jsonb_build_object('step','offer_accepted','ok',
     (select count(*) from domain_events where type = 'BUSINESS_OFFER_ACCEPTED' and object_id = v_offer) = 1
     and (select count(*) from jq where b->>'recipient_id' = v_owner::text and b->'data'->>'type' = 'business_offer_accepted'
@@ -323,14 +334,16 @@ d('journey: domain events -> one notification layer (item 125)', () => {
       'keys', (select jsonb_agg(distinct k) from domain_events e, jsonb_object_keys(e.payload) k where e.id > v_start),
       'non_id_values', (select jsonb_agg(v) from domain_events e, jsonb_each(e.payload) kv(k, v) where e.id > v_start
           and not (jsonb_typeof(v) = 'boolean' or v #>> '{}' ~ '^[0-9a-f-]{36}$'
+                   -- a list of ids (item 118: the people whose group confirmation a revision cleared)
+                   or (jsonb_typeof(v) = 'array' and not exists (select 1 from jsonb_array_elements_text(v) x where x !~ '^[0-9a-f-]{36}$'))
                    or (k in ('invite_type') and v #>> '{}' in ('gathering', 'community')))),
       -- (pushes of types this layer owns; other legacy triggers, e.g. group_intent_signal, are outside item 125's registry)
       'unrecorded_types', (select jsonb_agg(jq.b->'data'->>'type') from jq where jq.b->'data'->>'type' in ('recommended_gathering', 'gathering_invite', 'business_opportunity_received',
-          'business_offer_received', 'business_offer_accepted', 'business_reservation_confirmed', 'group_plan_reservation_confirmed') and not exists (
+          'business_offer_received', 'business_offer_revised', 'business_offer_accepted', 'business_reservation_confirmed', 'group_plan_reservation_confirmed') and not exists (
           select 1 from domain_event_notifications n where n.outcome = 'sent' and n.recipient_id::text = jq.b->>'recipient_id'
             and n.notification_type = jq.b->'data'->>'type')),
       'unrecorded_pushes', (select count(*) from jq where jq.b->'data'->>'type' in ('recommended_gathering', 'gathering_invite', 'business_opportunity_received',
-          'business_offer_received', 'business_offer_accepted', 'business_reservation_confirmed', 'group_plan_reservation_confirmed') and not exists (
+          'business_offer_received', 'business_offer_revised', 'business_offer_accepted', 'business_reservation_confirmed', 'group_plan_reservation_confirmed') and not exists (
           select 1 from domain_event_notifications n where n.outcome = 'sent' and n.recipient_id::text = jq.b->>'recipient_id'
             and n.notification_type = jq.b->'data'->>'type')))));`);
     s = stepMap(log);
@@ -395,6 +408,10 @@ d('journey: domain events -> one notification layer (item 125)', () => {
     expect(s.offer_accepted.ok).toBe(true);
     expect(s.offer_accepted.data.consumer_title).toMatch(/Reservation Confirmed!$/);
     expect(s.idempotent.ok).toBe(true);
+  });
+  it('BUSINESS_OFFER_REVISED tells the customer once, replacing the request\'s notification in place (item 118)', () => {
+    expect(s.offer_revised.ok).toBe(true);
+    expect(s.offer_revised.data.title).toMatch(/ updated their offer$/);
   });
   it('OFFER_REDEEMED is recorded only', () => {
     expect(s.offer_redeemed.ok).toBe(true);
