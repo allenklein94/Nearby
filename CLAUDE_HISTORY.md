@@ -1,3 +1,12 @@
+# Named principle (owner, 2026-10-16): the system brings the next thing - recorded, nothing built
+
+Owner: the app shouldn't keep saying "tap here, go here, open this screen, now go back"; it should feel like intent appears -> Nearby
+responds -> information unfolds -> people connect -> businesses respond -> plans form. Animation and navigation are the same idea: don't
+make the person jump through the system, let the system bring the next relevant thing to them. Added as one bullet under Product
+doctrine in CLAUDE.md. It restates existing rules (master principle 1, item 45 screen reduction, item 98 one object evolving, item 102,
+items 23/32/44 travel-into-place) and is bounded by item 131 (never unprompted from inferred signals), item 114 (no broadcast) and
+items 50/110 (Home is doors, never expands in place). Authorizes no new screen, motion or feature by itself.
+
 # Item 131 (owner, 2026-10-16) the Nearby "Aha" animation - DECLINED, LOCKED, nothing built
 
 Owner ask: an animation where Nearby connects independent signals (I like coffee, a friend is interested, Coastal Coffee has

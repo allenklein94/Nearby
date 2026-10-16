@@ -290,6 +290,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Availability reaches only matching OPEN requests (item 114, LOCKED):** a business posting or changing availability never notifies
   anyone by interest, distance or time preference; only a matching open request gets the reply + its reply push. Guards
   `availabilityNoBroadcastGuard.test.js`, journey `availabilityNoBroadcast`.
+- **The system brings the next thing; the person never jumps through it (owner, 2026-10-16):** intent appears -> Nearby responds ->
+  information unfolds -> people connect -> businesses respond -> plans form. Navigation and motion are one idea: the next relevant thing
+  comes to the person where they acted (screen reduction item 45, one object evolving item 98, travel-into-place items 23/32/44). Only
+  in response to stated intent, never unprompted from inference (item 131, item 114); Home stays doors, never an unfolding feed (items 50/110).
 - **Nearby is useful without a business**; a business appears only where it genuinely helps fulfil the intent.
   "Ask nearby businesses" is a secondary link after the person's results, absent for public-place asks.
 - **Businesses don't manage Nearby; Nearby manages the complexity.** The owner sees four nouns:
