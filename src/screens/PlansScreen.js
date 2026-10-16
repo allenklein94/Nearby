@@ -13,6 +13,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { GATHERING_STATUS_META } from '../components/GatheringStatusBadge';
 import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus, resolvePlanTableStatus } from '../constants/planStatus';
+import { isGatheringOver } from '../utils/gatheringCompletion';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -370,6 +371,9 @@ export default function PlansScreen({ navigation, route }) {
             }
             const g = item.gathering;
             const legacy = ROLE_STATUS_FROM_LEGACY[item.status] ?? { role: 'attending', isPast: false };
+            // Item 122: a past row says Completed only once it is really over (item 34's one rule, isGatheringOver); one
+            // that has started but is still going stays Confirmed.
+            const status = item.status === 'maybe' ? null : resolveGatheringPlanStatus({ ...legacy, isPast: legacy.isPast && isGatheringOver(g) });
             return (
               <PlanCard
                 icon={categoryStyleFor(g.interest_tag).icon}
@@ -379,7 +383,7 @@ export default function PlansScreen({ navigation, route }) {
                 dateTimeText={displayGatheringWhen(g, language)}
                 peopleCount={peopleCountFor(item)}
                 hostingPartnerId={g.hosting_partner_id}
-                status={item.status === 'maybe' ? null : resolveGatheringPlanStatus(legacy)}
+                status={status}
                 onPress={() => openGathering(g.id)}
                 style={styles.planCardSpacing}
               />

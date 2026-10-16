@@ -52,3 +52,13 @@ export async function takeCompletionMoment(gatheringId, storage) {
   }
   return true;
 }
+
+// Owner item 122 (2026-10-16, LOCKED): a completed gathering can keep memories. ONE rule for every screen, the same "over"
+// as above (never a second definition): `completed` = you were there (host, or approved attendee) AND it is over; the
+// Memories section (photos you chose to add, seen only by the people who were there; the server decides that too,
+// viewer_was_at_gathering, migration 20270315) shows only then. Waiting, pending, interested or just viewing = neither.
+export function gatheringMemoryState(gathering, now = new Date()) {
+  const wasThere = !!gathering && (gathering.isHost === true || gathering.myStatus === 'approved');
+  const completed = wasThere && isGatheringOver(gathering, now);
+  return { completed, showMemories: completed };
+}

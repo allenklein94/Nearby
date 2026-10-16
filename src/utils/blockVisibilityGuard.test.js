@@ -102,11 +102,10 @@ describe('community chat uses the same rule', () => {
 
 describe('no NEW read rule reads blocks inline', () => {
   // Latest definition of every RLS policy across all migrations; flag those whose body queries `blocks` directly.
-  // These three still do (same one-way defect, reported 2026-10-02, not changed yet); remove each as it is fixed.
+  // This one still does (same one-way defect, reported 2026-10-02, not changed yet); remove it when fixed. The stories and
+  // story-media rules moved to viewer_blocked_either_way in 20270315 (item 122).
   const KNOWN_INLINE = [
     'public.business_messages :: Only the follower and business owner can see this conversation,',
-    'public.stories :: Visible to poster, matches, friends, fellow attendees, host, or',
-    'storage.objects :: Story media visible to poster, matches, friends, fellow attende',
   ];
   test('only the known, reported policies remain', () => {
     const latest = new Map();
@@ -145,7 +144,6 @@ describe('client code never decides "who blocked me" (migration 20270265)', () =
     expect(readers).toEqual({
       'src/services/blockedUsers.js': 2,     // the person's own block list + unblock (blocker_id = me): legitimate
       'src/services/gatherings.js': 10,      // reported 2026-10-02, not changed yet
-      'src/services/stories.js': 2,          // reported 2026-10-02, not changed yet
       'src/screens/ActivityScreen.js': 2,    // reported 2026-10-02, not changed yet
     });
   });

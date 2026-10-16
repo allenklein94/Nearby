@@ -32,7 +32,9 @@ describe('surface vocabulary', () => {
     const d = read('screens/DiscoverHubScreen.js');
     expect(d).toMatch(/t\('ui\.discover\.happeningNearby'\)\}<\/Text>/);
     expect(require('../i18n/ui/discover').default.en.happeningNearby).toMatch(/Happening Nearby$/);
-    expect(d).toMatch(/happeningNearby = \[\s*\.\.\.gatheringStories/);
+    // item 122: business moments only; a gathering's photos are its memories, on the gathering itself
+    expect(d).toMatch(/happeningNearby = \[\s*\.\.\.businessMoments/);
+    expect(d).not.toMatch(/gatheringStories|getGatheringStoriesGrouped/);
   });
   it('Trending shares one attendance floor', () => {
     expect(read('constants/trending.js')).toMatch(/TRENDING_ATTENDANCE_MIN = 5/);

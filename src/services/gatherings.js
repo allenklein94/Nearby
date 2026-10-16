@@ -383,7 +383,7 @@ export async function getMyGatherings() {
 
   const { data, error } = await supabase
     .from('gatherings')
-    .select('id, title, description, interest_tag, scheduled_at, show_on_map, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, skill_level, effort_level, timeline_steps, cover_photo_path, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
+    .select('id, title, description, interest_tag, scheduled_at, duration_minutes, show_on_map, hosting_partner_id, energy_level, conversation_level, group_size_feel, beginner_friendly, skill_level, effort_level, timeline_steps, cover_photo_path, interested:gathering_interest(id, user_id, status, profiles(display_name, photo_url))')
     .eq('host_id', userId)
     .order('scheduled_at', { ascending: true });
 

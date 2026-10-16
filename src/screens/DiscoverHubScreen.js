@@ -35,7 +35,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getSignedStoryUrl, getGatheringStoriesGrouped, getBusinessMomentsGrouped, captureStoryMedia, uploadStory } from '../services/stories';
+import { getSignedStoryUrl, getBusinessMomentsGrouped, captureStoryMedia, uploadStory } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
@@ -362,15 +362,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // what lets the "{Category} Near You" section below render only when
   // it's genuinely earned (item 47).
   const [topSearchedCategory, setTopSearchedCategory] = useState(null);
-  const [gatheringStories, setGatheringStories] = useState([]);
   // Real business-authored moments (CLAUDE.md items 11/13) -- the honest,
   // buildable version of "going live to promote a business": a real
   // photo/video post, real 24h expiry, reusing the exact same `stories`
-  // infrastructure gathering memories already use, not real live video
-  // streaming (no paid CDN/ingest vendor exists for this app). Merged
-  // with gatheringStories below into one "Happening Nearby" row -- both
-  // answer the identical job ("what's actually happening near me right
-  // now"), so they read as one section, not two.
+  // infrastructure gathering memories use, not real live video
+  // streaming (no paid CDN/ingest vendor exists for this app). They are
+  // the "Happening Nearby" row. Owner item 122 (2026-10-16, LOCKED): a
+  // gathering's photos are NOT here any more -- they are memories of
+  // something that already happened, seen only by the people who were
+  // there, on that gathering itself (GatheringMemories), never a feed.
   const [businessMoments, setBusinessMoments] = useState([]);
   const [gatheringStoryViewer, setGatheringStoryViewer] = useState(null);
   // Discover UX cleanup item 8 (CLAUDE.md, 2026-09-10): the People tab's
@@ -927,7 +927,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   useFocusEffect(
     useCallback(() => {
-      loadGatheringStories();
       loadBusinessMoments();
       loadCore();
       getMyTopSearchedCategory().then(setTopSearchedCategory);
@@ -1062,14 +1061,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
     return () => clearTimeout(timer);
   }, [searchQuery, userLocation]);
 
-  async function loadGatheringStories() {
-    try {
-      const grouped = await getGatheringStoriesGrouped();
-      setGatheringStories(grouped);
-    } catch (e) {
-      console.error('loadGatheringStories failed', e);
-    }
-  }
   async function loadBusinessMoments() {
     try {
       const grouped = await getBusinessMomentsGrouped();
@@ -1079,18 +1070,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     }
   }
 
-  // One merged "Happening Nearby" list -- gathering memories and real
-  // business moments genuinely answer the same question, so they render
-  // as one section, sorted by real recency, not two competing ones.
+  // "Happening Nearby" = real business moments only, newest first (item 122: gathering memories never join this row).
   const happeningNearby = [
-    ...gatheringStories.map((group) => ({
-      kind: 'gathering',
-      key: `gathering-${group.gatheringId}`,
-      icon: '🎉',
-      title: group.gatheringTitle,
-      posterLabelFallback: group.gatheringTitle,
-      stories: group.stories,
-    })),
     ...businessMoments.map((group) => ({
       kind: 'business',
       key: `business-${group.partnerId}`,

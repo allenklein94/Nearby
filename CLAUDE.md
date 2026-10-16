@@ -128,6 +128,10 @@ and 32, then items 82 and 84 (one phone, a few minutes), then the offer experien
 strings + the reworded red-pin `ui.mapView.gatheringLiveA11y` is done (no migration, no journey: client-only). Build APPROVED (owner, 2026-10-16); red-pin screen-reader
 label FIXED ("starting soon or under way", look/timing unchanged); next-redraw refresh and pill->list drift ACCEPTED (checks 10/10b). Pulse/glow, people density, heatmaps, trending areas DEFERRED (owner).
 
+**Item 122 (a gathering leaves a memory, owner 2026-10-16, LOCKED) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_122_GATHERING_MEMORY_DEVICE_CHECKLIST_2026-10-16.md` is recorded on real phones AND native review of the 10
+`ui.gatheringMemories.*` strings is done (migration 20270315; journey `gatheringMemory`; from-scratch replay with it not yet done).
+
 **Item 121 follow-up (Dating consent, cards + counts, owner 2026-10-16) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_121_DATING_CONSENT_DEVICE_CHECKLIST_2026-10-16.md` is recorded on real phones (migration 20270314; journey `datingConsent`; no new strings).
 
@@ -240,8 +244,8 @@ real-browser review of that page (its two headless findings, phone header wrap a
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
 returns a verified profile, incl. a non-Dating person's, outside Dating discovery); the crossed-paths push (`notify_sighting_crossed_paths`) names
 the other person regardless of Dating consent (no sightings producer exists in the repo; Friends uses sightings too); `viewer_blocked_either_way` / `is_blocked` are client-callable; one-way client
-block filters remain in `gatherings.js`, `stories.js`, `ActivityScreen.js` and inline-block RLS on
-`business_messages`, `stories` and story storage (allow-listed in `blockVisibilityGuard.test.js`); a
+block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RLS on
+`business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
 network failure between its writes; `LOCK TABLE` remains possible with direct DB UPDATE rights.
@@ -321,6 +325,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   it off); accepted friends only, never matches; yes/no, fresh < 30 min, ~1 mi, decided in `get_nearby_friends()` (ONE friend,
   id/name/photo only, every "not nearby" cause = no row); foreground fixes only via `userLocation.js`; Home social line LAST,
   no push/event/analytics. Guards: `friendNearby.test.js`, journey `friendNearby`.
+- **Gathering memories (owner item 122, LOCKED):** a gathering's photos are seen ONLY by its host + approved attendees
+  (`viewer_was_at_gathering` in the stories + storage policies, 20270315; friends/matches/public never grant it), shown only on
+  a completed gathering (`gatheringMemoryState`: was there + item 34's `isGatheringOver`; title "{title} · Completed"), added only
+  by choice. Never a feed: not in Discover/story rings/map, no Home row, push, likes, comments, anniversaries, collages, sharing.
+  Guards `gatheringMemory.test.js`, journey `gatheringMemory`.
 - **Activity, never implied people density (owner item 121, LOCKED):** a map/area/"heat" signal counts activity (public gatherings) and
   says so ("N happening now", "Activity nearby"), never "People nearby", crowds or density. A count of people only from a pool its
   members explicitly opted into (friend discovery, item 39, dating discovery) or real stated requests (business side, floor of 5).

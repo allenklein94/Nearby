@@ -133,40 +133,42 @@ export async function getBusinessMomentsGrouped() {
 // stories)" rather than showing them as unrelated individual posts.
 // These are the featured, focus content the redesign is built
 // around; general stories remain a smaller, secondary layer.
-export async function getGatheringStoriesGrouped() {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const myId = sessionData?.session?.user?.id;
-  if (!myId) return [];
-
-  const { data: blockedByMe } = await supabase.from('blocks').select('blocked_id').eq('blocker_id', myId);
-  const { data: blockedMe } = await supabase.from('blocks').select('blocker_id').eq('blocked_id', myId);
-  const excludedUserIds = new Set([
-    ...(blockedByMe ?? []).map((b) => b.blocked_id),
-    ...(blockedMe ?? []).map((b) => b.blocker_id),
-  ]);
-
+// Owner item 122 (2026-10-16, LOCKED): a completed gathering's memories -- the photos the host and approved attendees chose
+// to attach to it -- live ONLY on that gathering (GatheringDetail's Memories section). Who may see them is decided by the
+// server (viewer_was_at_gathering in the stories + storage policies, migration 20270315): only the people who were there,
+// never the poster's friends or matches. They are never in Discover, the story rings or the map (those reads exclude
+// gathering_id below / in the RPC). Oldest first: a memory reads in the order it was added.
+export async function getGatheringMemories(gatheringId) {
+  if (!gatheringId) return [];
   const { data, error } = await supabase
     .from('stories')
-    .select('id, media_path, media_type, created_at, user_id, gathering_id, gatherings(title), profiles(display_name, photo_url)')
-    .not('gathering_id', 'is', null)
-    .order('created_at', { ascending: false });
-
+    .select('id, user_id, media_path, media_type, created_at, profiles(display_name)')
+    .eq('gathering_id', gatheringId)
+    .order('created_at', { ascending: true });
   if (error) {
-    console.error('getGatheringStoriesGrouped error', error);
-    return [];
+    console.error('getGatheringMemories error', error);
+    throw error;
   }
+  return data ?? [];
+}
 
-  const filtered = (data ?? []).filter((s) => !excludedUserIds.has(s.user_id) && s.gatherings);
+// Item 122: a memory is added after the gathering, so it comes from the photo library (the in-chat camera stays for the
+// moment itself). Same result shape as captureStoryMedia; the same upload path (uploadStory with the gathering id).
+export async function pickMemoryMedia() {
+  const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.All, quality: 0.7, videoMaxDuration: MAX_VIDEO_SECONDS });
+  if (picked.canceled || !picked.assets?.[0]) return null;
+  const a = picked.assets[0];
+  return { uri: a.uri, type: a.type === 'video' ? 'video' : 'image' };
+}
 
-  const grouped = {};
-  for (const story of filtered) {
-    if (!grouped[story.gathering_id]) {
-      grouped[story.gathering_id] = { gatheringId: story.gathering_id, gatheringTitle: story.gatherings.title, stories: [] };
-    }
-    grouped[story.gathering_id].stories.push(story);
-  }
-
-  return Object.values(grouped).sort((a, b) => new Date(b.stories[0].created_at) - new Date(a.stories[0].created_at));
+export async function addGatheringMemory(gatheringId) {
+  const media = await pickMemoryMedia();
+  if (!media) return false;
+  const { data: sessionData } = await supabase.auth.getSession();
+  const myId = sessionData?.session?.user?.id;
+  if (!myId) return false;
+  await uploadStory(myId, media.uri, media.type, false, gatheringId);
+  return true;
 }
 
 export async function getPublicStoriesOnMap() {
@@ -190,6 +192,7 @@ export async function getVisibleStoriesGrouped() {
   const { data, error } = await supabase
     .from('stories')
     .select('id, user_id, media_path, media_type, created_at, expires_at, profiles(display_name, photo_url)')
+    .is('gathering_id', null) // item 122: memories live only on their gathering
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: true });
 
@@ -247,6 +250,7 @@ export async function getStoryPresenceForUsers(userIds) {
     .from('stories')
     .select('id, user_id, media_path, media_type, created_at, expires_at, profiles(display_name, photo_url)')
     .in('user_id', userIds)
+    .is('gathering_id', null) // item 122: memories live only on their gathering
     .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: true });
 

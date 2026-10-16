@@ -58,6 +58,9 @@ import { interestedToAttendingMoment } from '../utils/interestedMoment';
 import { filterToMyFriends } from '../services/friends';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
+import GatheringMemories from '../components/GatheringMemories';
+import { gatheringMemoryState } from '../utils/gatheringCompletion';
+import { PLAN_STATUS, PLAN_STATUS_META } from '../constants/planStatus';
 import GatheringAttendingSection from '../components/GatheringAttendingSection';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import GatheringIntentModal from '../components/GatheringIntentModal';
@@ -162,6 +165,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // Item 39: Interested is part of the same relation (the strongest one wins), never a separate flag per block.
   const viewerInput = gathering ? { ...gathering, isInterested: gathering.myInterested === true } : null;
   const viewer = gathering ? gatheringViewerState(viewerInput) : null;
+  // Item 122: Completed + Memories, one rule (utils/gatheringCompletion.js).
+  const memoryState = gatheringMemoryState(gathering);
   // What this state allows comes from the lifecycle table, not re-derived per block.
   const can = (action) => (gathering ? canDo('gathering', gatheringLifecycleState(viewerInput), action) : false);
   useEffect(() => {
@@ -781,7 +786,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <View style={[styles.categoryBadge, { backgroundColor: categoryStyle.color + '30' }]}>
               <Text style={styles.categoryBadgeIcon}>{categoryStyle.icon}</Text>
             </View>
-            <Text style={styles.title}>{gathering.title}</Text>
+            {/* Item 122: "Beach Volleyball · Completed" once it is over, for the people who were there (item 34's rule). */}
+            <Text style={styles.title}>
+              {gathering.title}
+              {memoryState.completed ? <Text style={styles.titleCompleted}>{` · ${PLAN_STATUS_META[PLAN_STATUS.COMPLETED].label}`}</Text> : null}
+            </Text>
           </View>
           <Text style={styles.metaLine}>
             {displayGatheringDateTime(gathering, language)}{gathering.distanceLabel ? ` · ${gathering.distanceLabel}` : ''}
@@ -852,6 +861,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
           {viewer.relation === 'attending' && viewer.time === 'past' && (
             <GatheringFeedbackPrompt gatheringId={gatheringId} />
           )}
+
+          {memoryState.showMemories && <GatheringMemories gatheringId={gatheringId} />}
 
           {attendeeTotal(gathering) > 0 && (
             <View style={styles.section}>
@@ -1469,6 +1480,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   categoryBadge: { width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center' },
   categoryBadgeIcon: { fontSize: 16 },
   title: { ...typography.title, color: colors.textPrimary, flex: 1 },
+  titleCompleted: { color: colors.textSecondary, fontWeight: '600' },
   metaLine: { color: colors.textSecondary, fontSize: 14, marginTop: spacing.xs },
   capacityLine: { color: colors.textTertiary, fontSize: 13, fontWeight: '600', marginTop: 2 },
   almostFullNudge: { color: colors.warning, fontSize: 13, fontWeight: '700', marginTop: spacing.sm },

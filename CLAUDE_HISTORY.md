@@ -1,3 +1,54 @@
+# Item 122 (owner, 2026-10-16) a gathering can leave a memory - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+Owner ask: after completion "Beach Volleyball" becomes "Beach Volleyball · Completed", with a photo or memory if people choose;
+continuity between planning and the real experience, never another social-media feed. Owner decisions (LOCKED, 2026-10-16):
+(1) only the host and approved attendees see a completed gathering's photos; a friendship or Dating match with the poster never
+grants access, enforced in the authorization (table + storage), not the UI; (2) "{title} · Completed" in Plans -> Past and on the
+detail screen, from item 34's ONE "over" rule; (3) adding photos is optional, via the existing gathering-photo path; (4) gathering
+photos leave Discover's "Happening Nearby" (business moments stay; no duplicate memories); (5) no Home row, reminder push, likes,
+comments, anniversaries, automatic collages or public sharing.
+
+Found before building: gathering-linked stories already existed (gathering chat's camera "post a story"; never purged), but they
+were shown in Discover's recency strip, visible to the poster's friends and matches who were not there (table AND storage
+policy), anyone could attach a story to ANY gathering (insert policy had no gathering check), the new-story push told every
+friend/match about a gathering photo, and a deleted gathering's photos (FK set null) turned into ordinary stories. Plans -> Past
+said Completed from `scheduled_at` alone (a gathering still going read Completed), the detail screen never said it, and the
+completed gathering never showed its own photos.
+
+Built:
+- Migration `20270315_gathering_memories_attendees_only.sql` (APPLIED to production 2026-10-16 after the journey passed with it as a
+  rolled-back prelude; re-applied once to prove it re-runs; production held 0 stories, so no data changed):
+  `viewer_was_at_gathering(uuid)` (the ONE rule: host or approved attendee; security definer; revoked from public/anon);
+  stories SELECT "Stories visible to poster, connections or the people there" (gathering-linked = poster + that rule only, even
+  if `is_public`; ordinary stories keep public/partner/match/friend, now only while unexpired; blocks via
+  `viewer_blocked_either_way`, no inline `from blocks`); INSERT also needs `viewer_was_at_gathering` when a gathering is named;
+  storage SELECT "Story media follows its story's visibility" (= an `exists` on stories, so the media inherits the row's RLS,
+  never a copy of the rule); `get_public_stories_with_fuzzed_coords` skips gathering-linked stories; `notify_new_story` returns
+  early for them and no longer counts them as "already posted today". The two stories policies left the block guard's
+  known-inline list (`blockVisibilityGuard.test.js`), and `stories.js` no longer reads `blocks` (its one-way filter lived in
+  the removed `getGatheringStoriesGrouped`).
+- Client: `gatheringMemoryState` in `utils/gatheringCompletion.js` (completed = host or approved AND `isGatheringOver`;
+  showMemories = completed). GatheringDetail: title + " · Completed" (`PLAN_STATUS_META.completed`, secondary colour) and
+  `components/GatheringMemories.js` (heading, "🔒 Only the people who were there can see these.", horizontal thumbnails oldest
+  first, "＋ Add a photo" from the photo library via `addGatheringMemory` -> `uploadStory(.., gatheringId)`, viewer modal with
+  poster name, Remove on your own (confirm), video tap-to-play with native controls, never preloaded; static, no motion).
+  Plans -> Past: `resolveGatheringPlanStatus({ ...legacy, isPast: legacy.isPast && isGatheringOver(g) })`; `getMyGatherings`
+  now selects `duration_minutes`. Discover: gathering stories removed (`happeningNearby` = business moments). Story rings and
+  avatar presence (`getVisibleStoriesGrouped`, `getStoryPresenceForUsers`) exclude gathering-linked stories.
+- Strings: new namespace `ui.gatheringMemories.*` (10 keys, 11 languages; 10 machine-authored, need native review). Errors reuse
+  `complete that`.
+- Tests: `utils/gatheringMemory.test.js` (rule, screens, no-feed guard, migration shape); journey `gatheringMemory` 8/8 on
+  production (attendee adds; outsider attach refused; host+attendee see it, friend+match+pending and blocked attendee do not;
+  storage object readable by host not friend; a public-marked memory hidden from table and map; ordinary stories unchanged and
+  hidden once expired; memory sends no push, ordinary story pushes the friend; deleted gathering's memory = poster only; anon has
+  no execute). It fails on pre-migration production (verified). Jest 452 suites / 6060 pass; journeys 35 suites / 387 pass on
+  production (no prelude, rolled back). Babel parse of every changed screen/component/service clean.
+
+Not done / disclosed: no device run (`PRODUCT_AUDIT/ITEM_122_GATHERING_MEMORY_DEVICE_CHECKLIST_2026-10-16.md`, 14 checks); no
+from-scratch replay with 20270315; native review of the 10 strings. The in-chat camera post stays as it was (now also only for
+people who were there). Ordinary stories of friends/matches are no longer readable after expiry (they never should have been;
+the purge removed them anyway). The new-story push is unchanged for ordinary stories.
+
 # Item 121 follow-up 2 (owner, 2026-10-16) Dating cards follow the same opt-in, enforced server-side - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Owner approved: a person who has not explicitly opted into Dating discovery must not appear in Dating discovery cards or Dating
