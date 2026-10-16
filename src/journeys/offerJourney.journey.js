@@ -9,8 +9,9 @@ import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { offerPrimaryAction } from '../utils/primaryAction';
 import { buildPlanSummary } from '../utils/planAddonReadiness';
 import { offerToPlanMergeNow } from '../utils/offerToPlanMerge';
-import { rankReplies, fittingTime } from '../utils/replyFit';
-import { offerTimes, canBookWith, timeToBook, groupTimeConfirmations } from '../utils/offerTimes';
+import { rankReplies, fittingTime, replyTimeFit, FIT } from '../utils/replyFit';
+import { offerTimes, canBookWith, timeToBook, groupTimeConfirmations, timePartySize, wholePartyView, needsTimePick } from '../utils/offerTimes';
+import { bookedPartySize } from '../utils/acceptedBooking';
 import { presentOffer } from '../utils/offerPresentationEngine';
 import { canReviseOffer, isRevisedOffer, revisionProblem, revisionDraftFrom, isOfferChangedError } from '../utils/offerRevision';
 
@@ -1037,5 +1038,229 @@ d('journey: a business changes its offer once (price down, time moved) -> the cu
     expect(g.ok).toBe(true);
     expect(g.data.offer).toEqual({ status: 'accepted', offer_price: 75 });
     expect(g.data.reservations).toBe(1);
+  });
+});
+
+// Item 119b (owner reopened item 119's partial-party lock, 2026-10-16): a reply's SECOND time may be for fewer people
+// ("6 at 8:30 PM or 4 at 7 PM"). Owner LOCKED: (1) the first time is always the whole party, so a smaller time is never the
+// only choice; (2) group plans never see it (the server refuses it there). Accepting it books that many: the booking, the
+// business's view and offer value all read the booked headcount. Rolled back. Not covered: the forms and card on a device;
+// the team publishing a held reply (same snapshot field, trigger-checked).
+d('journey: a second time for fewer people -> the person may pick it -> books that many; a group never sees it (item 119b)', () => {
+  let s;
+  beforeAll(async () => {
+    const log = await runJourney(`
+      v_c uuid := gen_random_uuid(); v_o1 uuid := gen_random_uuid();
+      v_g1 uuid := gen_random_uuid(); v_g2 uuid := gen_random_uuid(); v_g3 uuid := gen_random_uuid();
+      v_a uuid := gen_random_uuid();
+      v_r uuid := gen_random_uuid(); v_r2 uuid := gen_random_uuid(); v_r3 uuid := gen_random_uuid(); v_r4 uuid := gen_random_uuid();
+      v_gr uuid := gen_random_uuid(); v_p uuid := gen_random_uuid();
+      v_day date := current_date + 2; v_t1 timestamptz; v_t2 timestamptz;
+      v_msg text; v_res jsonb; v_offer uuid; v_offer2 uuid; v_offer3 uuid; v_offer4 uuid; v_goffer uuid; v_row jsonb; u uuid; v_src uuid;`, `
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+  perform set_config('app.trusted_update', 'on', true);
+  v_t1 := (v_day + time '19:00')::timestamp at time zone 'UTC';
+  v_t2 := (v_day + time '20:30')::timestamp at time zone 'UTC';
+  foreach u in array array[v_c, v_o1, v_g1, v_g2, v_g3] loop
+    insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@fewer.test');
+    insert into profiles (id, display_name, birthdate) values (u, 'FP-' || left(u::text, 4), date '1990-01-01');
+  end loop;
+  insert into brand_partners (id, name, active, latitude, longitude) values (v_a, 'J119b Small Tables', true, 0.5, 0.5);
+  update profiles set managed_partner_id = v_a where id = v_o1;
+  -- a table for 6 at 7 PM (r: the smaller time gets booked; r2: the whole party is booked; r4: a revision); r3 states no party
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles, date, time_window_start)
+    values (v_r, v_c, 'Table for 6 at 7', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 6, 10, v_day, time '19:00'),
+           (v_r2, v_c, 'Table for 6 at 7 again', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 6, 10, v_day, time '19:00'),
+           (v_r3, v_c, 'Dinner at 7', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', null, 10, v_day, time '19:00'),
+           (v_r4, v_c, 'Table for 6, another', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 6, 10, v_day, time '19:00');
+  insert into business_request_offers (request_id, partner_id, status) values (v_r, v_a, 'pending'), (v_r2, v_a, 'pending'), (v_r3, v_a, 'pending'), (v_r4, v_a, 'pending');
+  select id into v_offer from business_request_offers where request_id = v_r;
+  select id into v_offer2 from business_request_offers where request_id = v_r2;
+  select id into v_offer3 from business_request_offers where request_id = v_r3;
+  select id into v_offer4 from business_request_offers where request_id = v_r4;
+
+  -- 1. refused: fewer people with no second time, the whole party (or more) as "fewer", and a request with no party
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  v_row := '{}'::jsonb;
+  begin perform submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time', offer_description_param := 'x', proposed_time_param := v_t2, proposed_party_size_alt_param := 4::smallint); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('no_second_time', v_msg);
+  begin perform submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time', offer_description_param := 'x', proposed_time_param := v_t2, proposed_time_alt_param := v_t1, proposed_party_size_alt_param := 6::smallint); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('not_fewer', v_msg);
+  begin perform submit_business_offer(request_id_param := v_r3, offer_type_param := 'alt_time', offer_description_param := 'x', proposed_time_param := v_t2, proposed_time_alt_param := v_t1, proposed_party_size_alt_param := 1::smallint); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('no_party', v_msg, 'status', (select status from business_request_offers where id = v_offer));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'bad_smaller_time_refused', 'ok', true, 'data', v_row));
+
+  -- 2. one reply: 8:30 PM for all 6, or 7 PM for 4; the business sees both, with the headcount
+  perform submit_business_offer(request_id_param := v_r, offer_type_param := 'alt_time', offer_description_param := 'We can seat all 6 at 8:30, or 4 of you at 7.',
+    offer_price_param := 50, price_is_per_person_param := true, proposed_time_param := v_t2, proposed_time_alt_param := v_t1, proposed_party_size_alt_param := 4::smallint);
+  perform submit_business_offer(request_id_param := v_r2, offer_type_param := 'alt_time', offer_description_param := 'All 6 at 8:30, or 4 at 7.',
+    proposed_time_param := v_t2, proposed_time_alt_param := v_t1, proposed_party_size_alt_param := 4::smallint);
+  select e into v_row from jsonb_array_elements(get_business_opportunities(v_a)) e where e->>'request_id' = v_r::text;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'smaller_time_sent', 'ok', v_row is not null, 'data', jsonb_build_object(
+    'business_view', jsonb_build_object('proposed_party_size_alt', v_row->'proposed_party_size_alt', 'party_size', v_row->'business_requests'->'party_size',
+      'summary', v_row->'business_requests'->>'summary'))));
+
+  -- 3. the database holds the rules on any direct write: the smaller time stays fewer than the party, and a booked
+  --    headcount exists only on an accepted offer with one time
+  reset role;
+  v_row := '{}'::jsonb;
+  begin update business_request_offers set proposed_party_size_alt = 6 where id = v_offer; v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('direct_not_fewer', v_msg);
+  begin update business_request_offers set proposed_party_size = 4 where id = v_offer; v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('direct_booked_on_open', v_msg);
+  begin update business_request_offers set proposed_time_alt = null where id = v_offer; v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('direct_drop_whole_party_option', v_msg,
+    'offer', (select jsonb_build_object('proposed_party_size_alt', proposed_party_size_alt, 'proposed_party_size', proposed_party_size) from business_request_offers where id = v_offer));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'database_enforces', 'ok', true, 'data', v_row));
+
+  -- 4. what the customer's screen reads (RLS)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'customer_reads', 'ok', true, 'data', jsonb_build_object(
+    'request', (select to_jsonb(r) from business_requests r where id = v_r),
+    'offer', (select to_jsonb(o) from business_request_offers o where id = v_offer))));
+  reset role;
+
+  -- 5. the person takes 7 PM for 4: booked for 4, one time and one headcount on the offer; the business sees 4
+  v_res := accept_business_offer(v_offer, v_t1);
+  update business_request_offers set status = 'completed', completed_at = now() where id = v_offer;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  select e into v_row from jsonb_array_elements(get_business_opportunities(v_a)) e where e->>'request_id' = v_r::text;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'smaller_time_booked', 'ok', (v_res->>'success')::boolean, 'data', jsonb_build_object(
+    't1', v_t1,
+    'offer', (select jsonb_build_object('status', status, 'proposed_time', proposed_time, 'proposed_time_alt', proposed_time_alt,
+      'proposed_party_size', proposed_party_size, 'proposed_party_size_alt', proposed_party_size_alt) from business_request_offers where id = v_offer),
+    'reservations', (select count(*) from business_reservations where offer_id = v_offer and status = 'confirmed'),
+    'business_party', v_row->'business_requests'->'party_size',
+    'business_summary', v_row->'business_requests'->>'summary',
+    'request_party', (select party_size from business_requests where id = v_r),
+    'value', (select to_jsonb(v) from get_partner_offer_value(v_a) v))));
+
+  -- 6. the whole-party time books the whole party
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+  v_res := accept_business_offer(v_offer2, v_t2);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'whole_party_time_booked', 'ok', (v_res->>'success')::boolean, 'data', jsonb_build_object(
+    't2', v_t2,
+    'offer', (select jsonb_build_object('status', status, 'proposed_time', proposed_time, 'proposed_party_size', proposed_party_size, 'proposed_party_size_alt', proposed_party_size_alt) from business_request_offers where id = v_offer2))));
+
+  -- 7. a revision moves the times; the headcount stays with the second time
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r4, offer_type_param := 'alt_time', offer_description_param := 'All 6 at 8:30, or 4 at 7.',
+    proposed_time_param := v_t2, proposed_time_alt_param := v_t1, proposed_party_size_alt_param := 4::smallint);
+  perform revise_business_offer(v_offer4, null, null, v_t2 + interval '30 minutes', v_t1 + interval '30 minutes');
+  log := log || jsonb_build_array(jsonb_build_object('step', 'revision_keeps_headcount', 'ok', true, 'data',
+    (select jsonb_build_object('revision', revision, 'proposed_party_size_alt', proposed_party_size_alt) from business_request_offers where id = v_offer4)));
+
+  -- 8. a group plan of three (6 people): the business replies the same way; nobody in the group can take the 7 PM for 4
+  insert into group_plan_proposals (id, initiator_id, category, status, expires_at, confirmed_at, date, time_window_start)
+    values (v_p, v_g1, 'Restaurants', 'confirmed', now() + interval '1 day', now(), v_day, time '19:00');
+  foreach u in array array[v_g1, v_g2, v_g3] loop
+    insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
+      values (u, 'source', 0.5, 0.5, now() + interval '1 day', 'fulfilled', 'Restaurants', 2, 10) returning id into v_src;
+    insert into group_plan_participants (proposal_id, user_id, source_request_id, party_size, status) values (v_p, u, v_src, 2, 'accepted');
+  end loop;
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles, date, time_window_start, group_plan_id)
+    values (v_gr, v_g1, 'Group dinner for 6', 0.5, 0.5, now() + interval '1 day', 'open', 'Restaurants', 6, 10, v_day, time '19:00', v_p);
+  update group_plan_proposals set resulting_request_id = v_gr where id = v_p;
+  insert into business_request_offers (request_id, partner_id, status) values (v_gr, v_a, 'pending') returning id into v_goffer;
+  perform submit_business_offer(request_id_param := v_gr, offer_type_param := 'alt_time', offer_description_param := 'All 6 at 8:30, or 4 at 7.',
+    proposed_time_param := v_t2, proposed_time_alt_param := v_t1, proposed_party_size_alt_param := 4::smallint);
+  v_row := jsonb_build_object('offer', (select to_jsonb(o) from business_request_offers o where id = v_goffer));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g1, 'role', 'authenticated')::text, true);
+  begin perform confirm_group_plan_offer(v_p, v_goffer, v_t1); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('confirm_smaller', v_msg);
+  begin perform accept_business_offer(v_goffer, v_t1); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
+  v_row := v_row || jsonb_build_object('accept_smaller', v_msg, 'status', (select status from business_request_offers where id = v_goffer));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'group_never_takes_smaller', 'ok', true, 'data', v_row));
+
+  -- 9. everyone confirms the whole-party time (sent with no time, as the group's one-time card does): booked for all 6
+  v_res := confirm_group_plan_offer(v_p, v_goffer);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g2, 'role', 'authenticated')::text, true);
+  v_res := confirm_group_plan_offer(v_p, v_goffer, v_t2);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_g3, 'role', 'authenticated')::text, true);
+  v_res := confirm_group_plan_offer(v_p, v_goffer);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'group_books_whole_party', 'ok', (v_res->>'allConfirmed')::boolean, 'data', jsonb_build_object(
+    'result', v_res, 't2', v_t2,
+    'offer', (select jsonb_build_object('status', status, 'proposed_time', proposed_time, 'proposed_time_alt', proposed_time_alt,
+      'proposed_party_size', proposed_party_size, 'proposed_party_size_alt', proposed_party_size_alt) from business_request_offers where id = v_goffer),
+    'reservations', (select count(*) from business_reservations where offer_id = v_goffer and status = 'confirmed'))));`);
+    s = stepMap(log);
+  }, 120000);
+
+  const sameInstant = (a, b) => new Date(a).getTime() === new Date(b).getTime();
+
+  test('a smaller time needs a second time, must be fewer than the party, and needs a stated party', () => {
+    const d1 = s.bad_smaller_time_refused.data;
+    expect(d1.no_second_time).toBe('Add the second time before making it for fewer people.');
+    expect(d1.not_fewer).toBe('The second time must be for fewer than 6 people.');
+    expect(d1.no_party).toBe('This request has no party to offer fewer people.');
+    expect(d1.status).toBe('pending');
+  });
+
+  test('the business sees its reply with the smaller headcount; the request still reads 6', () => {
+    const v = s.smaller_time_sent.data.business_view;
+    expect(v.proposed_party_size_alt).toBe(4);
+    expect(v.party_size).toBe(6);
+    expect(v.summary).toMatch(/party of 6/);
+  });
+
+  test('direct writes cannot bypass the rules', () => {
+    const d3 = s.database_enforces.data;
+    expect(d3.direct_not_fewer).toBe('The second time must be for fewer than 6 people.');
+    expect(d3.direct_booked_on_open).toMatch(/business_request_offers_party_size_check/);
+    expect(d3.direct_drop_whole_party_option).toMatch(/business_request_offers_party_size_check/);
+    expect(d3.offer).toEqual({ proposed_party_size_alt: 4, proposed_party_size: null });
+  });
+
+  test('the customer\'s card: both times, the smaller one labelled, and it never counts as fitting the stated 7 PM', () => {
+    const { request, offer } = s.customer_reads.data;
+    const now = new Date();
+    expect(offerTimes(offer)).toHaveLength(2);
+    expect(timePartySize(offer, offer.proposed_time)).toBeNull();
+    expect(timePartySize(offer, offer.proposed_time_alt)).toBe(4);
+    expect(needsTimePick(offer, now)).toBe(true);
+    expect(canBookWith(offer, offer.proposed_time_alt, now)).toBe(true);
+    expect(replyTimeFit(request, offer)).toBe(FIT.FAILS);
+    expect(fittingTime(request, offer)).toBeNull();
+    expect(rankReplies([offer], request, {}).fitById[offer.id]).toMatchObject({ qualifies: false, time: 'fails' });
+  });
+
+  test('taking the smaller time books that many: the booking, the business view and offer value say 4', () => {
+    const d5 = s.smaller_time_booked;
+    expect(d5.ok).toBe(true);
+    expect(sameInstant(d5.data.offer.proposed_time, d5.data.t1)).toBe(true);
+    expect(d5.data.offer).toMatchObject({ proposed_time_alt: null, proposed_party_size: 4, proposed_party_size_alt: null });
+    expect(d5.data.reservations).toBe(1);
+    expect(d5.data.business_party).toBe(4);
+    expect(d5.data.business_summary).toMatch(/party of 4/);
+    expect(d5.data.business_summary).not.toMatch(/party of 6/);
+    expect(d5.data.request_party).toBe(6); // the ask is unchanged; the booking carries the headcount
+    expect(Number(d5.data.value.all_value)).toBe(200); // $50 per person x 4 booked
+    expect(bookedPartySize({ party_size: d5.data.request_party }, { ...d5.data.offer, status: 'accepted' })).toBe(4);
+  });
+
+  test('taking the whole-party time books the whole party', () => {
+    const d6 = s.whole_party_time_booked;
+    expect(d6.ok).toBe(true);
+    expect(sameInstant(d6.data.offer.proposed_time, d6.data.t2)).toBe(true);
+    expect(d6.data.offer).toMatchObject({ status: 'accepted', proposed_party_size: null, proposed_party_size_alt: null });
+  });
+
+  test('a revision moves the times, never the headcount (item 118)', () => {
+    expect(s.revision_keeps_headcount.data).toEqual({ revision: 1, proposed_party_size_alt: 4 });
+  });
+
+  test('a group never sees or takes the smaller time; it books all 6 at the whole-party time', () => {
+    const g = s.group_never_takes_smaller.data;
+    expect(offerTimes(wholePartyView(g.offer))).toEqual([g.offer.proposed_time]);
+    expect(g.confirm_smaller).toBe('Pick the time for your whole group.');
+    expect(g.accept_smaller).toBe('Pick the time for your whole group.');
+    expect(g.status).toBe('offered');
+    const b = s.group_books_whole_party;
+    expect(b.ok).toBe(true);
+    expect(b.data.result).toMatchObject({ allConfirmed: true, confirmedCount: 3, requiredCount: 3 });
+    expect(sameInstant(b.data.offer.proposed_time, b.data.t2)).toBe(true);
+    expect(b.data.offer).toMatchObject({ status: 'accepted', proposed_time_alt: null, proposed_party_size: null, proposed_party_size_alt: null });
+    expect(b.data.reservations).toBe(1);
   });
 });

@@ -13,7 +13,7 @@ import { tr, getCurrentLanguage } from '../i18n/translate';
 import { displayDateTime } from '../i18n/display';
 import { localClock, localWindow } from '../i18n/format';
 import OfferTimeChoice from './OfferTimeChoice';
-import { offerTimes, choosableTimes } from '../utils/offerTimes';
+import { offerTimes, choosableTimes, timePartySize } from '../utils/offerTimes';
 
 const isEnglish = (language) => !language || language === 'en';
 const minutesOf = (hhmm) => { const m = /^(\d{1,2}):(\d{2})/.exec(String(hhmm ?? '')); return m ? Number(m[1]) * 60 + Number(m[2]) : null; };
@@ -46,7 +46,9 @@ export function offerWindowText(from, until, language) {
 // makes them selectable; `pickedTime` is the pick; `timeNotes` = { [iso]: text } beside a time ("Fits 7 PM").
 // Item 118: `updated` (presentOffer().updated) = the business changed this open offer's price or time once; one quiet
 // word above the terms, which are always the current ones (never the previous price or a saving). No motion.
-export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null, countdown = null, pickedTime = null, onPickTime = null, timeNotes = {}, pickDisabled = false, updated = false }) {
+// Item 119b: a second time made for fewer people says so beside it ("For 4 of your 6"); `partySize` = the request's
+// party. A group plan passes wholePartyView(offer), so it never reaches here with that time.
+export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typeLabel = null, localMedia = null, countdown = null, pickedTime = null, onPickTime = null, timeNotes = {}, pickDisabled = false, updated = false, partySize = null }) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const styles = getStyles(colors);
@@ -56,6 +58,11 @@ export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typ
   // Item 11: Nearby lays the card out from the pieces the business gave: media right under the header, then what they
   // wrote, the discount as a headline, the price, and one "Tonight · 5–9 PM" line when the validity adds nothing to it.
   const whenDay = offerWhenDay(o);
+  const notes = { ...timeNotes };
+  for (const iso of offerTimes(o)) {
+    const count = timePartySize(o, iso);
+    if (count != null) notes[iso] = partySize ? t('ui.requestDetail.forCountOfYour', { count, total: partySize }) : t('ui.requestDetail.forCountPeople', { count });
+  }
   return (
     <View>
       {showTypeLabel && typeLabel ? <Text style={styles.offerTypeLabel}>{typeLabel}</Text> : null}
@@ -83,7 +90,7 @@ export default function OfferCustomerBody({ offer: o, showTypeLabel = false, typ
             times={offerTimes(o)}
             selected={pickedTime}
             onSelect={onPickTime}
-            notes={timeNotes}
+            notes={notes}
             enabled={choosableTimes(o)}
             disabled={pickDisabled}
             format={(iso) => formatProposedTime(iso, language)}

@@ -19,6 +19,7 @@ import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import CommunityCalendar from '../components/CommunityCalendar';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
+import { bookedPartySize } from '../utils/acceptedBooking';
 import InviteFriendsModal from '../components/InviteFriendsModal';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -658,7 +659,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
           acceptedBusinessOffer ? (
             <AcceptedBusinessOfferCard
               offer={acceptedBusinessOffer}
-              partySize={businessRequest?.party_size ?? null}
+              partySize={bookedPartySize(businessRequest, acceptedBusinessOffer)}
               onViewRequest={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
               style={{ marginBottom: spacing.lg }}
             />

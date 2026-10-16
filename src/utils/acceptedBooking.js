@@ -36,3 +36,11 @@ export function acceptedPartySize(request) {
   const n = Number(request?.party_size);
   return Number.isInteger(n) && n > 0 ? n : null;
 }
+
+// Item 119b: the headcount actually booked. An accepted offer whose smaller-party time was picked carries it
+// (proposed_party_size); otherwise the booking is for the request's whole party.
+export function bookedPartySize(request, offer) {
+  const n = Number(offer?.proposed_party_size);
+  if ((offer?.status === 'accepted' || offer?.status === 'completed') && Number.isInteger(n) && n > 0) return n;
+  return acceptedPartySize(request);
+}

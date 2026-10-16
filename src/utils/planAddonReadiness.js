@@ -17,6 +17,7 @@ import { tr, getCurrentLanguage } from '../i18n/translate';
 import { localClock, localWeekday, localDate } from '../i18n/format';
 import { categoryName } from '../i18n/categoryNames';
 import { displayWhen } from '../i18n/display';
+import { bookedPartySize } from './acceptedBooking';
 
 // Display words in the person's language (localization pass 5); English output is unchanged.
 const isEnglish = () => { const l = getCurrentLanguage(); return !l || l === 'en'; };
@@ -464,7 +465,7 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
     businessAddress: acceptedOffer?.brand_partners?.address ?? null,
     businessLatitude: acceptedOffer?.brand_partners?.latitude ?? null,
     businessLongitude: acceptedOffer?.brand_partners?.longitude ?? null,
-    partySize: primary.party_size ?? null,
+    partySize: bookedPartySize(primary, acceptedOffer), // item 119b: the headcount booked (a smaller-party time), else the request's
     statusLabel,
     statusKind,
     joinLine: planJoinLine(statusKind),

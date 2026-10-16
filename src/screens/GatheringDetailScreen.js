@@ -66,6 +66,7 @@ import GatheringStatusBadge, { relationBadgeStatus } from '../components/Gatheri
 import ReasonList from '../components/ReasonList';
 import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
+import { bookedPartySize } from '../utils/acceptedBooking';
 import PlanCompletionRow from '../components/PlanCompletionRow';
 import { getGatheringPlanCompletion, formatPlaceStatusLabel } from '../utils/planCompletion';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
@@ -1118,7 +1119,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   <AcceptedBusinessOfferCard
                     offer={acceptedBusinessOffer}
                     groupCare
-                    partySize={businessRequest?.party_size ?? null}
+                    partySize={bookedPartySize(businessRequest, acceptedBusinessOffer)}
                     onViewRequest={() => navigation.navigate('BusinessRequestDetail', { requestId: businessRequest.id })}
                     style={{ marginTop: spacing.xs }}
                   />
@@ -1270,7 +1271,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 <AcceptedBusinessOfferCard
                   offer={acceptedBusinessOffer}
                   groupCare
-                  partySize={businessRequest?.party_size ?? null}
+                  partySize={bookedPartySize(businessRequest, acceptedBusinessOffer)}
                   style={{ marginBottom: spacing.sm }}
                 />
               )}

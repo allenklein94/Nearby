@@ -353,7 +353,11 @@
     "alreadyChangedThisOfferOnce": "You've already changed this offer once.",
     "updatedOfferOnItsWay": "Your updated offer is on its way",
     "revisePriceOnlyLower": "A changed price can only be lower or the same.",
-    "reviseDiscountOnlyBigger": "A changed discount can only be bigger or the same."
+    "reviseDiscountOnlyBigger": "A changed discount can only be bigger or the same.",
+    "forFewerPeople": "For fewer people",
+    "secondTimeFor": "Second time for {count} of {total}",
+    "onePersonFewerA11y": "One person fewer",
+    "onePersonMoreA11y": "One person more"
   },
   "es": {
     "policyActive": "🟢 Activa",
@@ -709,7 +713,11 @@
     "alreadyChangedThisOfferOnce": "Ya cambiaste esta oferta una vez.",
     "updatedOfferOnItsWay": "Tu oferta actualizada va en camino",
     "revisePriceOnlyLower": "Un precio cambiado solo puede ser menor o igual.",
-    "reviseDiscountOnlyBigger": "Un descuento cambiado solo puede ser mayor o igual."
+    "reviseDiscountOnlyBigger": "Un descuento cambiado solo puede ser mayor o igual.",
+    "forFewerPeople": "Para menos personas",
+    "secondTimeFor": "Segunda hora para {count} de {total}",
+    "onePersonFewerA11y": "Una persona menos",
+    "onePersonMoreA11y": "Una persona más"
   },
   "de": {
     "policyActive": "🟢 Aktiv",
@@ -1065,7 +1073,11 @@
     "alreadyChangedThisOfferOnce": "Du hast dieses Angebot bereits einmal geändert.",
     "updatedOfferOnItsWay": "Dein aktualisiertes Angebot ist unterwegs",
     "revisePriceOnlyLower": "Ein geänderter Preis kann nur niedriger oder gleich sein.",
-    "reviseDiscountOnlyBigger": "Ein geänderter Rabatt kann nur höher oder gleich sein."
+    "reviseDiscountOnlyBigger": "Ein geänderter Rabatt kann nur höher oder gleich sein.",
+    "forFewerPeople": "Für weniger Personen",
+    "secondTimeFor": "Zweite Zeit für {count} von {total}",
+    "onePersonFewerA11y": "Eine Person weniger",
+    "onePersonMoreA11y": "Eine Person mehr"
   },
   "fr": {
     "policyActive": "🟢 Active",
@@ -1421,7 +1433,11 @@
     "alreadyChangedThisOfferOnce": "Vous avez déjà modifié cette offre une fois.",
     "updatedOfferOnItsWay": "Votre offre mise à jour est en route",
     "revisePriceOnlyLower": "Un prix modifié ne peut être que plus bas ou identique.",
-    "reviseDiscountOnlyBigger": "Une remise modifiée ne peut être que plus grande ou identique."
+    "reviseDiscountOnlyBigger": "Une remise modifiée ne peut être que plus grande ou identique.",
+    "forFewerPeople": "Pour moins de personnes",
+    "secondTimeFor": "Second horaire pour {count} sur {total}",
+    "onePersonFewerA11y": "Une personne de moins",
+    "onePersonMoreA11y": "Une personne de plus"
   },
   "pt": {
     "policyActive": "🟢 Ativa",
@@ -1777,7 +1793,11 @@
     "alreadyChangedThisOfferOnce": "Você já alterou esta oferta uma vez.",
     "updatedOfferOnItsWay": "Sua oferta atualizada está a caminho",
     "revisePriceOnlyLower": "Um preço alterado só pode ser menor ou igual.",
-    "reviseDiscountOnlyBigger": "Um desconto alterado só pode ser maior ou igual."
+    "reviseDiscountOnlyBigger": "Um desconto alterado só pode ser maior ou igual.",
+    "forFewerPeople": "Para menos pessoas",
+    "secondTimeFor": "Segundo horário para {count} de {total}",
+    "onePersonFewerA11y": "Uma pessoa a menos",
+    "onePersonMoreA11y": "Uma pessoa a mais"
   },
   "ht": {
     "policyActive": "🟢 Aktif",
@@ -2133,7 +2153,11 @@
     "alreadyChangedThisOfferOnce": "Ou deja chanje òf sa a yon fwa.",
     "updatedOfferOnItsWay": "Òf ou mete ajou a ap vini",
     "revisePriceOnlyLower": "Yon pri ou chanje ka sèlman pi ba oswa menm jan an.",
-    "reviseDiscountOnlyBigger": "Yon rabè ou chanje ka sèlman pi gwo oswa menm jan an."
+    "reviseDiscountOnlyBigger": "Yon rabè ou chanje ka sèlman pi gwo oswa menm jan an.",
+    "forFewerPeople": "Pou mwens moun",
+    "secondTimeFor": "Dezyèm lè a pou {count} sou {total}",
+    "onePersonFewerA11y": "Yon moun mwens",
+    "onePersonMoreA11y": "Yon moun anplis"
   },
   "zh": {
     "policyActive": "🟢 启用中",
@@ -2489,7 +2513,11 @@
     "alreadyChangedThisOfferOnce": "你已经修改过一次此报价。",
     "updatedOfferOnItsWay": "你更新后的报价已发出",
     "revisePriceOnlyLower": "修改后的价格只能更低或不变。",
-    "reviseDiscountOnlyBigger": "修改后的折扣只能更大或不变。"
+    "reviseDiscountOnlyBigger": "修改后的折扣只能更大或不变。",
+    "forFewerPeople": "人数较少",
+    "secondTimeFor": "第二个时间：{total} 人中的 {count} 人",
+    "onePersonFewerA11y": "减少一人",
+    "onePersonMoreA11y": "增加一人"
   },
   "vi": {
     "policyActive": "🟢 Đang bật",
@@ -2845,7 +2873,11 @@
     "alreadyChangedThisOfferOnce": "Bạn đã đổi ưu đãi này một lần rồi.",
     "updatedOfferOnItsWay": "Ưu đãi đã cập nhật của bạn đang được gửi",
     "revisePriceOnlyLower": "Giá đã đổi chỉ có thể thấp hơn hoặc giữ nguyên.",
-    "reviseDiscountOnlyBigger": "Mức giảm giá đã đổi chỉ có thể lớn hơn hoặc giữ nguyên."
+    "reviseDiscountOnlyBigger": "Mức giảm giá đã đổi chỉ có thể lớn hơn hoặc giữ nguyên.",
+    "forFewerPeople": "Cho ít người hơn",
+    "secondTimeFor": "Giờ thứ hai cho {count}/{total} người",
+    "onePersonFewerA11y": "Bớt một người",
+    "onePersonMoreA11y": "Thêm một người"
   },
   "tl": {
     "policyActive": "🟢 Aktibo",
@@ -3201,7 +3233,11 @@
     "alreadyChangedThisOfferOnce": "Nabago mo na ang alok na ito nang isang beses.",
     "updatedOfferOnItsWay": "Papunta na ang na-update mong alok",
     "revisePriceOnlyLower": "Ang binagong presyo ay maaari lamang mas mababa o pareho.",
-    "reviseDiscountOnlyBigger": "Ang binagong diskwento ay maaari lamang mas malaki o pareho."
+    "reviseDiscountOnlyBigger": "Ang binagong diskwento ay maaari lamang mas malaki o pareho.",
+    "forFewerPeople": "Para sa mas kaunting tao",
+    "secondTimeFor": "Ikalawang oras para sa {count} sa {total}",
+    "onePersonFewerA11y": "Bawasan ng isang tao",
+    "onePersonMoreA11y": "Dagdagan ng isang tao"
   },
   "ru": {
     "policyActive": "🟢 Активна",
@@ -3557,7 +3593,11 @@
     "alreadyChangedThisOfferOnce": "Вы уже изменили это предложение один раз.",
     "updatedOfferOnItsWay": "Обновлённое предложение отправлено",
     "revisePriceOnlyLower": "Новая цена может быть только ниже или такой же.",
-    "reviseDiscountOnlyBigger": "Новая скидка может быть только больше или такой же."
+    "reviseDiscountOnlyBigger": "Новая скидка может быть только больше или такой же.",
+    "forFewerPeople": "Для меньшего числа людей",
+    "secondTimeFor": "Второе время: {count} из {total}",
+    "onePersonFewerA11y": "На одного человека меньше",
+    "onePersonMoreA11y": "На одного человека больше"
   },
   "ko": {
     "policyActive": "🟢 사용 중",
@@ -3913,6 +3953,10 @@
     "alreadyChangedThisOfferOnce": "이 제안은 이미 한 번 변경했어요.",
     "updatedOfferOnItsWay": "업데이트된 제안을 보내는 중이에요",
     "revisePriceOnlyLower": "변경한 가격은 더 낮거나 같아야 해요.",
-    "reviseDiscountOnlyBigger": "변경한 할인은 더 크거나 같아야 해요."
+    "reviseDiscountOnlyBigger": "변경한 할인은 더 크거나 같아야 해요.",
+    "forFewerPeople": "더 적은 인원으로",
+    "secondTimeFor": "두 번째 시간: {total}명 중 {count}명",
+    "onePersonFewerA11y": "한 명 줄이기",
+    "onePersonMoreA11y": "한 명 늘리기"
   }
 }

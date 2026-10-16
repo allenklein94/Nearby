@@ -1,3 +1,18 @@
+# Item 119b (owner, 2026-10-16) a second time for fewer people - BUILT, NOT DEPLOYED, NOT device-verified
+
+- Owner reopened item 119's partial-party lock ("open the lock to build it"; their example "6 people tonight -> 4 at 7 PM or 6 at
+  8:30 PM"). Owner decisions (LOCKED): the smaller-party time is only ever the SECOND option beside a whole-party first time; group
+  plans never see it (they confirm only the whole-party time; the server refuses the smaller one; the business is never told it was a group).
+- Built: migration `20270313_smaller_party_time.sql` (`proposed_party_size_alt` + `proposed_party_size`, check + trigger
+  `_offer_party_size_fits_request`, `submit_business_offer` new signature with the old dropped, held-reply approval, accept/internal
+  accept write the booked headcount, group confirm refuses the smaller time, `get_business_opportunities` / `get_partner_offer_value`
+  read it); `screen-business-content` passes it through; client `offerTimes.js` (`timePartySize`, `wholePartyView` applied in
+  `getBusinessRequestWithOffers`), `replyFit`, `acceptedBooking`, `offerDraftPreview`, `planAddonReadiness`, `OfferCustomerBody`,
+  `SecondTimePartySize` (business stepper), `ReviseOfferSheet` preview. 6 new strings (10 languages, native review pending).
+- Verified: Jest 449/6016; journeys on prod with the migration as prelude, rolled back, 373/373 (`offer` +8 steps); prod unchanged
+  afterwards; business web export regenerated. NOT done: deployment (owner approval), from-scratch replay, device, browser.
+- Details: `PRODUCT_AUDIT/ITEM_119B_SMALLER_PARTY_TIME_BUILD_PLAN_2026-10-16.md`.
+
 # Item 118 (owner, 2026-10-16) one business revision of a sent offer - APPROVED, BUILT, LIVE (deployed 2026-10-16), NOT device-verified
 
 **Deployed 2026-10-16 (owner authorized):** pre-check showed prod without `revision` and the old 2-/3-arg accept/confirm signatures; migration 20270312 applied in one transaction; post-check: `revision` + `revised_at` present, exactly one signature each for `accept_business_offer` / `confirm_group_plan_offer` (with `seen_revision_param`), `revise_business_offer` + `_on_business_offer_revised` present, anon cannot execute `revise_business_offer`, `business_offer_revised` in mute group `business_offers`; `send-push` deployed (`business_offer_revised` medium = no sound, `view_offer`). All journeys on prod with NO prelude: 33 suites, 365/365 (rolled back). Before deploying, the review of the six owner-forwarded checks (locking, stale accept, group reset, push safety, DB enforcement, tests) found them met; two caveats recorded: no live concurrency test of a group confirm racing a revision (same row lock + revision check protect it), and the revised push replaces a multi-reply "N replies" notification text until the next reply refreshes it.

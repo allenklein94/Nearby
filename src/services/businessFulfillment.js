@@ -11,6 +11,7 @@ import { requireUserLocation, getUserLocation } from './userLocation';
 import { videoFrameTimes, videoLimitProblem } from '../utils/offerMedia';
 import { uploadResize, OFFER_IMAGE_MAX_PX, LOGO_MAX_PX, UPLOAD_JPEG_QUALITY, createSignedUrlCache, SIGNED_URL_LIFETIME_S } from '../utils/mediaBudget';
 import { throwSingleError } from '../utils/notFound';
+import { wholePartyView } from '../utils/offerTimes';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -477,7 +478,7 @@ export async function getAcceptedOfferForRequest(requestId) {
   if (!requestId) return null;
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, status, partner_id, media_path, media_type, media_poster_path, redemption_instructions, valid_until, available_from, available_until, brand_partners(name, logo_url, address, latitude, longitude)')
+    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, proposed_party_size, status, partner_id, media_path, media_type, media_poster_path, redemption_instructions, valid_until, available_from, available_until, brand_partners(name, logo_url, address, latitude, longitude)')
     .eq('request_id', requestId)
     .in('status', ['accepted', 'completed'])
     .maybeSingle();
@@ -644,7 +645,10 @@ export async function getBusinessRequestWithOffers(requestId) {
     .order('created_at', { ascending: true });
   if (offersError) throw new Error(offersError.message);
 
-  return { request, offers: offers ?? [] };
+  // Item 119b: a group plan's request never shows a reply's smaller-party time (the group books its whole party; the
+  // server refuses the other), so every reader of this request gets the whole-party view.
+  const rows = offers ?? [];
+  return { request, offers: request?.group_plan_id ? rows.map(wholePartyView) : rows };
 }
 
 // Item 119: chosenTime = the time picked on a two-time reply (offerTimes.timeToBook); null on a one-time reply.
@@ -906,7 +910,7 @@ export async function getBusinessOpportunities(partnerId) {
   return data ?? [];
 }
 
-export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, proposedTimeAlt = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null}) {
+export async function submitBusinessOfferResponse(requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, proposedTimeAlt = null, proposedPartySizeAlt = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null}) {
   const { data, error } = await supabase.rpc('submit_business_offer', {
     request_id_param: requestId,
     offer_type_param: offerType,
@@ -914,6 +918,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
     offer_price_param: offerPrice,
     proposed_time_param: proposedTime,
     proposed_time_alt_param: proposedTimeAlt,
+    proposed_party_size_alt_param: proposedTimeAlt ? proposedPartySizeAlt : null, // item 119b
     experience_id_param: experienceId,
     media_path_param: mediaPath,
     media_type_param: mediaType,
@@ -933,7 +938,7 @@ export async function submitBusinessOfferResponse(requestId, { offerType, offerD
 // submitBusinessOfferResponse() above, whose underlying RPC derives
 // ownership internally from request_id_param) since the Edge Function's
 // top-level ownership gate needs it explicitly for every target_type.
-export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, proposedTimeAlt = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null, creativeId = null, validUntil = null, availableFrom = null, availableUntil = null, queue = false}) {
+export async function submitBusinessOfferResponseForScreening(partnerId, requestId, { offerType, offerDescription, offerPrice = null, proposedTime = null, proposedTimeAlt = null, proposedPartySizeAlt = null, experienceId = null, mediaPath = null, mediaType = null, offerTitle = null, includedItems = [], priceIsPerPerson = false , discountPct = null, framePaths = [], redemptionInstructions = null, creativeId = null, validUntil = null, availableFrom = null, availableUntil = null, queue = false}) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -960,7 +965,8 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
       offerDescription,
       offerPrice,
       proposedTime,
-      proposedTimeAlt, // item 119: a second time for the same full party (null = one time)
+      proposedTimeAlt, // item 119: a second time (null = one time)
+      proposedPartySizeAlt: proposedTimeAlt ? proposedPartySizeAlt : null, // item 119b: that time for fewer people (null = whole party)
       experienceId,
       mediaPath,
       mediaType,

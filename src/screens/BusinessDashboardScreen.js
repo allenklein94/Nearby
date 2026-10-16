@@ -16,6 +16,7 @@ import SettingConflictNotice from '../components/SettingConflictNotice';
 import { useSettingConflicts } from '../hooks/useSettingConflicts';
 import { conflictMessages, hasPending, shownValue } from '../utils/settingConflicts';
 import OfferCustomerBody from '../components/OfferCustomerBody';
+import SecondTimePartySize from '../components/SecondTimePartySize';
 import { presentOffer } from '../utils/offerPresentationEngine';
 import BusinessLogoMark from '../components/BusinessLogoMark';
 import { getScreenedLogos } from '../services/businessLogos';
@@ -86,7 +87,7 @@ import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardA
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
-import { draftPreviewOffer, draftSecondTime } from '../utils/offerDraftPreview';
+import { draftPreviewOffer, draftSecondTime, draftSecondPartySize } from '../utils/offerDraftPreview';
 import ReviseOfferSheet from '../components/ReviseOfferSheet';
 import { canReviseOffer, isRevisedOffer } from '../utils/offerRevision';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
@@ -782,6 +783,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [altTime, setAltTime] = useState(null);
   // Item 119: an optional second time in the same reply (same full party).
   const [altTime2, setAltTime2] = useState(null);
+  const [altPartySize2, setAltPartySize2] = useState(null); // item 119b: the second time for fewer people (null = whole party)
   const [showAltPicker2, setShowAltPicker2] = useState(false);
   const [altNote, setAltNote] = useState('');
   const [showAltPicker, setShowAltPicker] = useState(false);
@@ -830,6 +832,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [showOfferTimePicker, setShowOfferTimePicker] = useState(false);
   // Item 119: "Add another time" -- a second time for the same full party, in this one reply.
   const [offerProposedTimeAlt, setOfferProposedTimeAlt] = useState(null);
+  const [offerPartySizeAlt, setOfferPartySizeAlt] = useState(null); // item 119b: the second time for fewer people (null = whole party)
   const [showOfferAltPicker, setShowOfferAltPicker] = useState(false);
   // Phase 4 (media upload, CLAUDE.md) -- an offer response's own optional
   // photo/video, uploaded only at Send time (never orphans a file on
@@ -2138,7 +2141,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       offerType: offerTypeInput, description: offerDescriptionInput, price: offerPriceInput, discount: offerDiscountInput,
       perPerson: offerPriceIsPerPerson, title: offerTitleInput, items: offerIncludedItemsInput, redemption: offerRedemptionInput,
       validDay: offerValidDay, validTime: iso(offerValidTime), availFrom: iso(offerAvailFrom), availUntil: iso(offerAvailUntil),
-      proposedTime: iso(offerProposedTime), proposedTimeAlt: iso(offerProposedTimeAlt), experienceId: selectedExperienceIdInput, creativeId: offerCreativeId,
+      proposedTime: iso(offerProposedTime), proposedTimeAlt: iso(offerProposedTimeAlt), partySizeAlt: offerPartySizeAlt, experienceId: selectedExperienceIdInput, creativeId: offerCreativeId,
       media: serializableAsset(offerPickedMediaAsset, Platform.OS),
     },
     {
@@ -2156,6 +2159,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferProposedTime(proposed && proposed.getTime() > Date.now() ? proposed : null);
     const proposedAlt = fromIso(d.proposedTimeAlt);
     setOfferProposedTimeAlt(proposed && proposedAlt && proposedAlt.getTime() > Date.now() ? proposedAlt : null);
+    setOfferPartySizeAlt(proposed && proposedAlt && proposedAlt.getTime() > Date.now() && Number.isInteger(d.partySizeAlt) ? d.partySizeAlt : null);
     setSelectedExperienceIdInput(d.experienceId ?? null); setOfferCreativeId(d.creativeId ?? null);
     if (d.media && (await assetStillExists(d.media))) setOfferPickedMediaAsset(d.media);
     else if (d.media) Alert.alert(t('ui.bizDash1.photoOrVideoNotRestored'), t('ui.bizDash1.theFileYouPickedIs'));
@@ -2226,7 +2230,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setOfferPriceInput('');
     setOfferDiscountInput('');
     setOfferPriceIsPerPerson(false);
-    setOfferProposedTime(null); setOfferProposedTimeAlt(null);
+    setOfferProposedTime(null); setOfferProposedTimeAlt(null); setOfferPartySizeAlt(null);
     setShowOfferTimePicker(false);
     setShowOfferAltPicker(false);
     setSelectedExperienceIdInput(null);
@@ -2301,7 +2305,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     // still fully editable, never forced.
     setOfferTitleInput(suggestion.title);
     if (suggestedOfferType) {
-      if (suggestedOfferType.offerType !== 'alt_time') { setOfferProposedTime(null); setOfferProposedTimeAlt(null); }
+      if (suggestedOfferType.offerType !== 'alt_time') { setOfferProposedTime(null); setOfferProposedTimeAlt(null); setOfferPartySizeAlt(null); }
       setOfferTypeInput(suggestedOfferType.offerType);
     }
     // Phase 3: record which real Signature Experience this offer was built
@@ -2313,7 +2317,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   function applySuggestedOfferType() {
     if (!suggestedOfferType) return;
-    if (suggestedOfferType.offerType !== 'alt_time') { setOfferProposedTime(null); setOfferProposedTimeAlt(null); }
+    if (suggestedOfferType.offerType !== 'alt_time') { setOfferProposedTime(null); setOfferProposedTimeAlt(null); setOfferPartySizeAlt(null); }
     setOfferTypeInput(suggestedOfferType.offerType);
   }
 
@@ -2356,10 +2360,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
+  // Item 119b: the party a request asked for (the business sees it on the opportunity), for "For fewer people".
+  function partyOfRequest(requestId) {
+    const n = Number(opportunities.find((x) => x.request_id === requestId)?.business_requests?.party_size);
+    return Number.isInteger(n) && n > 0 ? n : null;
+  }
+
   function openAlternativeSheet(requestId) {
     setAltSheetRequestId(requestId);
     setAltTime(null);
     setAltTime2(null);
+    setAltPartySize2(null);
     setAltNote('');
     setShowAltPicker(false);
     setShowAltPicker2(false);
@@ -2419,13 +2430,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setQuickFrom(w.from); setQuickUntil(w.until); setQuickPicker(null);
   }, [acceptSheetRequestId]);
 
-  async function submitQuickResponse(requestId, { offerType, offerDescription, proposedTime = null, proposedTimeAlt = null, availableFrom = null, availableUntil = null }) {
+  async function submitQuickResponse(requestId, { offerType, offerDescription, proposedTime = null, proposedTimeAlt = null, proposedPartySizeAlt = null, availableFrom = null, availableUntil = null }) {
     setRespondingOpportunityId(requestId);
     try {
-      const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, requestId, { offerType, offerDescription, proposedTime, proposedTimeAlt, availableFrom, availableUntil });
+      const result = await submitBusinessOfferResponseForScreening(selectedPartner.id, requestId, { offerType, offerDescription, proposedTime, proposedTimeAlt, proposedPartySizeAlt, availableFrom, availableUntil });
       await handleOfferResult(result, () => { setAcceptSheetRequestId(null); setAltSheetRequestId(null); }, { offer_type: offerType });
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'send your response', error: e, draftKept: true, onRetry: () => submitQuickResponse(requestId, { offerType, offerDescription, proposedTime, proposedTimeAlt, availableFrom, availableUntil }) });
+      presentRecoverableError(Alert, { what: 'send your response', error: e, draftKept: true, onRetry: () => submitQuickResponse(requestId, { offerType, offerDescription, proposedTime, proposedTimeAlt, proposedPartySizeAlt, availableFrom, availableUntil }) });
     }
     setRespondingOpportunityId(null);
   }
@@ -2568,6 +2579,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         offerPrice: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
         proposedTime: offerTypeInput === 'alt_time' && offerProposedTime ? offerProposedTime.toISOString() : null,
         proposedTimeAlt: draftSecondTime(offerTypeInput, offerProposedTime, offerProposedTimeAlt),
+        proposedPartySizeAlt: draftSecondPartySize(offerTypeInput, offerProposedTime, offerProposedTimeAlt, offerPartySizeAlt, partyOfRequest(offerModalRequestId)),
         experienceId: selectedExperienceIdInput,
         mediaPath,
         mediaType,
@@ -7216,7 +7228,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       // instead of prompting a fresh pick. Reset it the moment the type
                       // stops being 'alt_time' -- the submit path already nulled it out of
                       // what got sent, this just keeps the modal's own local state honest.
-                      if (o.key !== 'alt_time') { setOfferProposedTime(null); setOfferProposedTimeAlt(null); }
+                      if (o.key !== 'alt_time') { setOfferProposedTime(null); setOfferProposedTimeAlt(null); setOfferPartySizeAlt(null); }
                       setOfferTypeInput(o.key);
                     }}
                     accessibilityRole="button"
@@ -7268,7 +7280,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                             {offerProposedTimeAlt ? offerProposedTimeAlt.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : t('ui.bizDash3.pickATime')}
                           </Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={[styles.chip, { marginLeft: spacing.sm }]} onPress={() => { setOfferProposedTimeAlt(null); setShowOfferAltPicker(false); }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash1.clear')}>
+                        <TouchableOpacity style={[styles.chip, { marginLeft: spacing.sm }]} onPress={() => { setOfferProposedTimeAlt(null); setOfferPartySizeAlt(null); setShowOfferAltPicker(false); }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash1.clear')}>
                           <Text style={styles.chipText}>{t('ui.bizDash1.clear')}</Text>
                         </TouchableOpacity>
                       </View>
@@ -7277,6 +7289,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         <Text style={styles.chipText}>+ {t('ui.bizDash3.addAnotherTime')}</Text>
                       </TouchableOpacity>
                     )
+                  ) : null}
+                  {/* Item 119b: the second time may be for fewer people; the first always stays for the whole party. */}
+                  {offerProposedTime && offerProposedTimeAlt ? (
+                    <SecondTimePartySize total={partyOfRequest(offerModalRequestId)} value={offerPartySizeAlt} onChange={setOfferPartySizeAlt} />
                   ) : null}
                   {showOfferAltPicker && offerProposedTime && (
                     <PlatformDateTimeInput
@@ -7578,6 +7594,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 const previewOffer = draftPreviewOffer({
                   type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
                   proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
+                  partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
                   discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
                   availFrom: offerAvailFrom, availUntil: offerAvailUntil,
                   creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
@@ -7598,7 +7615,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       <Text style={styles.breakdownText}>{shown.heard}</Text>
                       <Text style={styles.breakdownText}>{shown.statusLine}</Text>
                       {!!previewOffer.offer_title && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{previewOffer.offer_title}</Text>}
-                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} />
+                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} partySize={partyOfRequest(offerModalRequestId)} />
                       <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
                         <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
                       </View>
@@ -7738,7 +7755,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         {altTime2 ? altTime2.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : t('ui.bizDash3.pickATime')}
                       </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[styles.chip, { marginLeft: spacing.sm }]} onPress={() => { setAltTime2(null); setShowAltPicker2(false); }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash1.clear')}>
+                    <TouchableOpacity style={[styles.chip, { marginLeft: spacing.sm }]} onPress={() => { setAltTime2(null); setAltPartySize2(null); setShowAltPicker2(false); }} accessibilityRole="button" accessibilityLabel={t('ui.bizDash1.clear')}>
                       <Text style={styles.chipText}>{t('ui.bizDash1.clear')}</Text>
                     </TouchableOpacity>
                   </View>
@@ -7747,6 +7764,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.chipText}>+ {t('ui.bizDash3.addAnotherTime')}</Text>
                   </TouchableOpacity>
                 )
+              ) : null}
+              {/* Item 119b: the second time may be for fewer people; the first always stays for the whole party. */}
+              {altTime && altTime2 ? (
+                <SecondTimePartySize total={partyOfRequest(altSheetRequestId)} value={altPartySize2} onChange={setAltPartySize2} />
               ) : null}
               {showAltPicker2 && altTime && (
                 <PlatformDateTimeInput
@@ -7773,7 +7794,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 style={styles.submitButton}
                 onPress={() => {
                   const second = draftSecondTime('alt_time', altTime, altTime2);
-                  submitQuickResponse(altSheetRequestId, { offerType: 'alt_time', offerDescription: buildAlternativeText(altNote, { twoTimes: !!second }), proposedTime: altTime.toISOString(), proposedTimeAlt: second });
+                  const fewer = draftSecondPartySize('alt_time', altTime, altTime2, altPartySize2, partyOfRequest(altSheetRequestId));
+                  submitQuickResponse(altSheetRequestId, { offerType: 'alt_time', offerDescription: buildAlternativeText(altNote, { twoTimes: !!second }), proposedTime: altTime.toISOString(), proposedTimeAlt: second, proposedPartySizeAlt: fewer });
                 }}
                 disabled={!altTime || respondingOpportunityId === altSheetRequestId}
                 accessibilityLabel={t('ui.bizDash3.sendAlternativeTimeA11y')}

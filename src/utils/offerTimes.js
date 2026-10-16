@@ -70,4 +70,23 @@ export function groupTimeConfirmations(offer, confirmations, myId) {
   return { total: rows.length, byTime, mine };
 }
 
+// Item 119b (owner reopened the partial-party lock, 2026-10-16): the SECOND time may be for fewer people than the request
+// (proposed_party_size_alt; null = the whole party). The first time is always the whole party, so a smaller time is never
+// the only choice. Accepting the smaller time books that many (the server writes proposed_party_size).
+
+const wholeNumber = (v) => { const n = Number(v); return Number.isInteger(n) && n > 0 ? n : null; };
+
+// The headcount a time is offered for: a number only for the smaller second time, null = the request's whole party.
+export function timePartySize(offer, iso) {
+  const alt = validIso(offer?.proposed_time_alt);
+  return alt && sameInstant(alt, iso) ? wholeNumber(offer?.proposed_party_size_alt) : null;
+}
+
+// Group plans never see the smaller time (owner LOCKED: Nearby never picks who stays home): the offer as a group reads it,
+// the whole-party first time only. Every other reply is returned unchanged.
+export function wholePartyView(offer) {
+  if (!offer || wholeNumber(offer.proposed_party_size_alt) == null || !validIso(offer.proposed_time_alt)) return offer;
+  return { ...offer, proposed_time_alt: null, proposed_party_size_alt: null };
+}
+
 export { sameInstant };

@@ -15,7 +15,7 @@ import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
 import { progressKey, visitConfirmationsToAnimate } from '../utils/offerProgress';
 import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgressShown';
-import { acceptedWhenLine, acceptedPartySize } from '../utils/acceptedBooking';
+import { acceptedWhenLine, bookedPartySize } from '../utils/acceptedBooking';
 import { offerToPlanMergeNow, planMergeScroll, planTogetherYieldsToMerge, mergeTravelPath } from '../utils/offerToPlanMerge';
 import { MergeTravelChip, PlanMergeLanding, PlanAssemblyLine, PlanAssemblyLogo, PlanJoinRail } from '../motion/OfferToPlanMerge';
 import useReduceMotion from '../hooks/useReduceMotion';
@@ -1663,7 +1663,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                 // merged into it); an add-on's own screen has no plan card, so its card keeps them.
                 const factsInPlan = !!planSummary;
                 const whenLine = factsInPlan ? null : acceptedWhenLine({ proposedTimeLabel: o.proposed_time ? formatProposedTime(o.proposed_time, language) : null, dateLabel: null, timeLabel: null });
-                const partySize = factsInPlan ? null : acceptedPartySize(request);
+                const partySize = factsInPlan ? null : bookedPartySize(request, o);
                 return (
                   <OfferAcceptedMorph
                     title={t(confirmation.titleKey)}
@@ -1714,6 +1714,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     pickDisabled={actingOfferId === o.id}
                     timeNotes={pickOfferId === o.id ? pickTimeNotes : {}}
                     updated={shown.updated}
+                    partySize={request.party_size ?? null}
                   />
                   {showComparison && o.viewed_at ? (
                     <Text style={styles.offerViewedIndicator}>{t('ui.requestDetail.youveSeenThis')}</Text>

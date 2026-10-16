@@ -25,7 +25,7 @@
 // was stated. Nothing here changes how a card looks (item 17); a reply that does not qualify stays in the list.
 import { hasEstablishedRecord } from './reliabilityRecord';
 import { partyBudgetTotal } from './budgetTier';
-import { offerTimes } from './offerTimes';
+import { offerTimes, timePartySize } from './offerTimes';
 
 export const FIT = { FITS: 'fits', FAILS: 'fails', UNKNOWN: 'unknown' };
 
@@ -66,7 +66,8 @@ export function fittingTime(request, offer) {
   if (!stated || offer?.offer_type !== 'alt_time') return null;
   const times = offerTimes(offer);
   if (times.length < 2) return null;
-  return times.find((iso) => timeIsStated(stated, iso)) ?? null;
+  // Item 119b: a time for fewer people than asked never fits (the party is a stated constraint too).
+  return times.find((iso) => timePartySize(offer, iso) == null && timeIsStated(stated, iso)) ?? null;
 }
 
 // fits | fails | unknown, or null when the customer stated no time.
@@ -75,10 +76,11 @@ export function replyTimeFit(request, offer) {
   if (!stated) return null;
   if (offer?.availability_id || offer?.package_id || offer?.auto_reply) return FIT.UNKNOWN;
   if (offer?.offer_type === 'alt_time') {
-    // Item 119: a reply with two times fits when either of them is the stated time.
+    // Item 119: a reply with two times fits when either of them is the stated time. Item 119b: only a whole-party time
+    // can fit; the smaller-party time never does.
     const times = offerTimes(offer);
     if (times.length === 0) return FIT.UNKNOWN;
-    return times.some((iso) => timeIsStated(stated, iso)) ? FIT.FITS : FIT.FAILS;
+    return times.some((iso) => timePartySize(offer, iso) == null && timeIsStated(stated, iso)) ? FIT.FITS : FIT.FAILS;
   }
   const from = minutesOf(offer?.available_from);
   const until = minutesOf(offer?.available_until);

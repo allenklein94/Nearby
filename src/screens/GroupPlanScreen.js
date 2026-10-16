@@ -33,7 +33,7 @@ import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import OfferTimeChoice from '../components/OfferTimeChoice';
 import { formatProposedTime } from '../components/OfferCustomerBody';
-import { hasTwoTimes, choosableTimes, timeToBook, groupTimeConfirmations, sameInstant } from '../utils/offerTimes';
+import { hasTwoTimes, choosableTimes, timeToBook, groupTimeConfirmations, sameInstant, wholePartyView } from '../utils/offerTimes';
 import { isRevisedOffer, isOfferChangedError } from '../utils/offerRevision';
 
 // Display labels by stored status, read through ui.groupPlan (status values stay canonical).
@@ -492,7 +492,10 @@ export default function GroupPlanScreen({ navigation, route }) {
             {offers.length === 0 ? (
               <Text style={styles.helperText}>{t('ui.groupPlan.noBusinessesHaveRespondedYet')}</Text>
             ) : (
-              offers.map((o, offerIndex) => {
+              offers.map((row, offerIndex) => {
+                // Item 119b: the group sees only a reply's whole-party time (never one made for fewer people); the
+                // server confirms that time and refuses the other.
+                const o = wholePartyView(row);
                 const confirmedForThisOffer = confirmations.filter((c) => c.offer_id === o.id);
                 const amActiveParticipant = canDo('group_participant', myParticipant?.status, 'confirm_offer');
                 // Item 119: a two-time reply is confirmed per time; it books only when everyone chose the same one.

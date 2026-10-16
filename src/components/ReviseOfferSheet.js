@@ -123,7 +123,7 @@ export default function ReviseOfferSheet({ offer, business = {}, discountCap = n
                   <Text style={styles.previewName}>{business.name}</Text>
                 </View>
                 {!!preview.offer_title && <Text style={styles.previewName}>{preview.offer_title}</Text>}
-                <OfferCustomerBody offer={preview} countdown={shown.countdown} updated={shown.updated} />
+                <OfferCustomerBody offer={preview} countdown={shown.countdown} updated={shown.updated} partySize={offer?.business_requests?.party_size ?? null} />
                 <View style={[styles.submit, { opacity: 0.45 }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
                   <Text style={styles.submitText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
                 </View>

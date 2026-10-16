@@ -15,6 +15,16 @@ export function draftSecondTime(type, first, second) {
   return second.toISOString();
 }
 
+// Item 119b: the second time's headcount when the business made it for fewer people (null = the whole party). Only beside a
+// real second time, and only a whole number from 1 to one fewer than the request's party; anything else sends nothing.
+export function draftSecondPartySize(type, first, second, size, total) {
+  if (!draftSecondTime(type, first, second)) return null;
+  const n = Number(size);
+  const whole = Number(total);
+  if (!Number.isInteger(n) || !Number.isInteger(whole) || whole < 2 || n < 1 || n >= whole) return null;
+  return n;
+}
+
 export function draftPreviewOffer(draft, now = new Date()) {
   const description = String(draft?.description ?? '').trim();
   if (!description) return null;
@@ -32,6 +42,7 @@ export function draftPreviewOffer(draft, now = new Date()) {
     included_items: draft.includedItems ?? [],
     proposed_time: type === 'alt_time' && draft.proposedTime ? draft.proposedTime.toISOString() : null,
     proposed_time_alt: draftSecondTime(type, draft.proposedTime, draft.proposedTimeAlt),
+    proposed_party_size_alt: draftSecondPartySize(type, draft.proposedTime, draft.proposedTimeAlt, draft.partySizeAlt, draft.requestPartySize),
     offer_price: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
     price_is_per_person: !!draft.priceIsPerPerson,
     discount_pct: type === 'discount' && discountOk ? parseDiscountPct(draft.discount) : null,
