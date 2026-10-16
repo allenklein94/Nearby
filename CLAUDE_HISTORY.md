@@ -1,3 +1,32 @@
+# Item 128 (owner, 2026-10-16) "people are looking for what you offer" made true - BUILT, LIVE, NOT BROWSER/DEVICE-VERIFIED
+
+Owner ask: show a business "3 customers are currently looking for what you offer" (demand, not advertising). Found: business Home
+already says "N people are looking for something nearby that you offer." (`ui.bizDash1.peopleLookingForWhatYouOffer`), but the
+live `get_aggregated_demand_for_partner` + the dashboard (1) summed open requests in EVERY nearby category, not only what the
+business offers; (2) summed per-category distinct-people counts (one person in two categories counted twice); (3) returned
+`dominant_occasion_count` as an unfloored request count ("mostly birthday (2 of 6)"). The ask's "3" is below the floor of 5.
+Owner decision (Option 1, 2026-10-16): fix the existing line, same wording and layout, one migration on the existing function;
+own primary + secondary categories only; distinct people; line only at >= 5; occasion only at its own >= 5; a business with no
+declared category gets NO line (never a fallback to all nearby demand).
+Built: migration `20270316_offered_demand_line.sql` (APPLIED to production 2026-10-16 after the journey failed 2/6 without it and
+passed 6/6 with it as a rolled-back prelude; re-run once to prove it re-runs; one overload, grants unchanged: authenticated +
+service_role). The function now returns `is_offered` per category row and ONE summary row (category NULL) with `offered_people`
+= distinct people with an open, unexpired request within the requester's own radius in `brand_partners.subcategory` or
+`.categories`, only at >= `demand_min_people()` (shows even when no single category reaches 5). Occasion counted as distinct
+people, shown only at >= 5. Category rows (Match Radar, demand gaps) otherwise unchanged. Client: `utils/offeredDemand.js`
+`splitAggregatedDemand` (the one split: category rows / `offeredPeople` / `best` = largest OFFERED category row); the dashboard's
+Home line reads `offeredPeople`, "Your best opportunity" reads `best` (extended to the same rule: it never names a category the
+business doesn't offer); a failed read clears both. Tests: `utils/offeredDemand.test.js` 6; journey `offeredDemand` 6/6 live
+(category matching, dedupe across categories 5 not 6, floor at 4, no-category business, occasion withheld at 2 and shown at 5,
+non-owner gets nothing); full Jest 6070/6070; all journeys 36 suites 394/394 on prod (rolled back). Business web export
+regenerated (bundle carries the split). Not done: a from-scratch replay including 20270316; the line on business Home in a real
+browser/phone. Production note: Coastal Coffee (the only partner) declares no primary/secondary tag, so it shows no line until it does.
+Disclosed residuals (not changed, owner's call): (a) "mostly {period/occasion} (n of total)" shows n >= 5, but total - n can be
+1-4 (a complement); (b) the "Growing demand nearby" push (`notify_aggregated_demand_threshold`) tells every nearby business
+about any category reaching 5 (it names the category, never claims "you offer"); (c) the "Demand near you" card
+(`get_partner_demand_signals`) uses `business_served_tags()`, which falls back to the business's whole group when it declared
+no tag, so the two cards define "what you offer" differently for an undeclared business.
+
 # Item 13 closure criteria + item 127 lock (owner, 2026-10-16)
 
 Owner reviewed item 127's finding: keep item 13 as built; no other funnel visualisation or sliding-card animation (LOCKED). The

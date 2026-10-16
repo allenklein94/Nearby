@@ -98,6 +98,10 @@ Owner: keep the existing headline (no "Someone is looking for this" unless busin
 
 **Item 126 (business "proof" numbers, owner 2026-10-16) is MET by item 150 as built (Performance tile + Offer Performance), nothing built; count-up animation and "Nearby generated" wording DECLINED (LOCKED).**
 
+**Item 128 ("N people are looking for what you offer" made true, owner 2026-10-16) is BUILT, LIVE, NOT BROWSER/DEVICE-VERIFIED until** business Home is
+checked in a real browser and phone, and a from-scratch replay includes migration 20270316 (journey `offeredDemand` 6/6; same wording, no new strings).
+Residuals for the owner: period/occasion complement (total - n < 5), the category-blind "Growing demand" push, `business_served_tags` group fallback in "Demand near you".
+
 **Item 127 (a redemption moves through the funnel on one card, owner 2026-10-16) is MET by item 13 + item 147's pipeline, nothing built; another funnel visualisation or a sliding-card animation DECLINED (LOCKED).**
 **Item 13 (business card Offer sent -> Accepted -> Redeemed, LOCKED; owner re-confirmed 2026-10-16) is APPROVED, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_13_OFFER_PROGRESS_DEVICE_CHECKLIST_2026-10-16.md` passes with a real signed-in business on a phone AND in a browser (statuses vs saved
@@ -319,6 +323,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   text, profile data, ids, requester name (except after acceptance), plan kind, party type, attendees or
   social context, in an RPC or a push. Free-text note only on a request addressed to ONE business. Guard:
   `businessPrivacyBoundary.test.js`, `businessPayloadPrivacyGuard.test.js`.
+- **"Looking for what you offer" (item 128):** only the business's own primary + secondary categories, distinct people, >= 5, from `get_aggregated_demand_for_partner`'s summary row via `splitAggregatedDemand`; no declared category = no line, never a fallback.
 - **Floor of 5:** every business-facing aggregate about unconnected people uses `demand_min_people()`
   (distinct people, secondary figures withheld below it, including subtraction leaks). Consumer/community
   coordination pushes stay at 2. Lasting consumer interests shown to a business need 5 sharing them.

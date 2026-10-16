@@ -81,6 +81,7 @@ import { businessLocationNotice } from '../utils/businessLocationNotice';
 import { dashboardGlance, visitHasPassed } from '../utils/dashboardGlance';
 import { businessHomeTiles } from '../utils/businessHomeTiles';
 import { businessPipeline, PIPELINE_STAGES, isPipelineWon } from '../utils/businessPipeline';
+import { splitAggregatedDemand } from '../utils/offeredDemand';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
 import { matchFitLine } from '../utils/matchFitLine';
 import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardAvailabilityText, requestedWindowDefaults } from '../utils/quickOfferResponse';
@@ -555,6 +556,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }, [offerModalRequestId, selectedPartner?.id, selectedPartner?.logo_url]);
   const offerInFlight = useMemo(() => inFlightRequestIds(offerSubmissions), [offerSubmissions]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
+  // Item 128: the server's floored count of distinct people asking for what this business offers (null = no line).
+  const [offeredDemandPeople, setOfferedDemandPeople] = useState(null);
+  const [bestOfferedDemand, setBestOfferedDemand] = useState(null);
   // "Demand near you" card: null = not loaded yet; otherwise the privacy-floored RPC payload.
   const [demandSignals, setDemandSignals] = useState(null);
   // Item 79 (CLAUDE.md, "businesses get a new demand signal"): the
@@ -2111,10 +2115,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   async function loadAggregatedDemand(partnerId) {
     try {
-      const results = await getAggregatedDemandForPartner(partnerId);
-      setAggregatedDemand(results);
+      const { categories, offeredPeople, best } = splitAggregatedDemand(await getAggregatedDemandForPartner(partnerId));
+      setAggregatedDemand(categories);
+      setOfferedDemandPeople(offeredPeople);
+      setBestOfferedDemand(best);
     } catch (e) {
-      // Non-fatal -- the rest of the dashboard already loaded independently.
+      // Non-fatal -- the rest of the dashboard already loaded independently. A failed read never keeps another figure.
+      setOfferedDemandPeople(null);
+      setBestOfferedDemand(null);
     }
   }
 
@@ -3770,8 +3778,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     priority order, never an LLM call. */}
                 {selectedPartner && (() => {
                   const pendingCount = opportunities.filter((o) => canRespondToOpportunity(o)).length;
-                  const totalDemand = aggregatedDemand.reduce((sum, d) => sum + (Number(d.request_count) || 0), 0);
-                  const bestDemand = [...aggregatedDemand].sort((a, b) => (Number(b.request_count) || 0) - (Number(a.request_count) || 0))[0];
+                  // Item 128: only what this business offers, each person once, floored server-side (utils/offeredDemand.js).
+                  const totalDemand = offeredDemandPeople ?? 0;
+                  const bestDemand = bestOfferedDemand;
                   // Business Intelligence Phase 5 (Intelligence): a real
                   // demand-gap category -- real nearby signal (either a
                   // real open request or real unmet intent) in a category
