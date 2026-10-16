@@ -66,3 +66,17 @@ export function isWithinRightNowWindow(scheduledAt, now = new Date()) {
   const nowMs = now.getTime();
   return date.getTime() >= nowMs - RIGHT_NOW_WINDOW_PAST_MS && date.getTime() <= nowMs + RIGHT_NOW_WINDOW_FUTURE_MS;
 }
+
+// Item 120 (owner, 2026-10-16): the Discover map's red "Live now" pin is a DIFFERENT, older rule, kept as it was (owner: its
+// meaning and behaviour unchanged) but defined here so the map holds no private copy: a gathering that starts within the
+// next 30 minutes or started up to 2 hours ago. It is NOT "Happening Now": the map's "N happening now" area label counts
+// isWithinRightNowWindow, the same set Happening Now lists.
+export const MAP_LIVE_BEFORE_START_MS = 30 * 60 * 1000; // 30 minutes
+export const MAP_LIVE_AFTER_START_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+export function isMapLiveNow(scheduledAt, now = new Date()) {
+  if (!scheduledAt) return false;
+  const start = new Date(scheduledAt).getTime();
+  const nowMs = now.getTime();
+  return nowMs >= start - MAP_LIVE_BEFORE_START_MS && nowMs <= start + MAP_LIVE_AFTER_START_MS;
+}

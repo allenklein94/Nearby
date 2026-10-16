@@ -1,3 +1,17 @@
+# Item 120 (owner, 2026-10-16) "N happening now" on the Discover map - APPROVED, BUILT, NOT device-verified
+
+- Owner forwarded the "living canvas" idea; I recommended recording it as met (pulse and people density conflict with items
+  55/58/99/100 and the privacy rules). Owner chose to build the minimal static public-activity version now; pulse/glow, people
+  density, heatmaps, trending areas, new pipelines DEFERRED.
+- Found while planning: the map's red "Live now" pins used a private window (starts within 30 min / started up to 2 h ago), not
+  Happening Now's (`isWithinRightNowWindow`: started up to 30 min ago / starts within 2 h). Owner chose option A: the label counts
+  exactly the Happening Now set; red pins unchanged but their rule moved to `rightNowWindow.js` (`isMapLiveNow`).
+- Built: see `PRODUCT_AUDIT/ITEM_120_MAP_AREA_ACTIVITY_BUILD_PLAN_2026-10-16.md` "As built" (`utils/mapAreaActivity.js`, `areaIds`
+  on the date view, static pill markers, return to the map at the saved region, vocabulary entry, 4 strings in 11 languages).
+- Verified: Jest 450 / 6030 (+14 in `mapAreaActivity.test.js`), Babel parse, web build. No server change, so no journey covers it.
+  NOT verified: device (checklist written), native review. Residuals: minute-clock entry edge (same as the Happening Now section),
+  a window edge between seeing and tapping, red pin's a11y "happening now" under its own window (kept per owner).
+
 # Item 119b (2026-10-16) from-scratch replay after deploy
 
 `scripts/replay/from-scratch-replay.sh` on an empty isolated DB: ALL 437/437 migrations applied (through 20270313); journeys on the

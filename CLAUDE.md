@@ -123,6 +123,10 @@ incl. item 73's checks 15-16: four joins in 10 s = one full + three small, full 
 **Device session order (owner, 2026-10-12):** item 55 first (its overlap map records shared results against items 44/48), then items 28
 and 32, then items 82 and 84 (one phone, a few minutes), then the offer experience once Anthropic credit exists (never bypass screening). One phone first is fine: other platform stays PENDING.
 
+**Item 120 ("N happening now" on the Discover map, owner approved 2026-10-16) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_120_MAP_AREA_ACTIVITY_DEVICE_CHECKLIST_2026-10-16.md` is recorded on a real phone AND native review of the 4 `ui.mapView.area*`
+strings is done (no migration, no journey: client-only). Pulse/glow, people density, heatmaps, trending areas DEFERRED (owner).
+
 **Item 62 (several replies -> one notification) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_62_REPLY_PUSH_REPLACE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real iPhone AND Android phone, incl. whether each
 replacement sounds/vibrates again (migration 20270303, send-push v23; journey `replyPushCollapse`). Fallback count line: not built unless the device shows it's needed.
@@ -560,6 +564,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   only from the words, else the person's own default; tonight context only for the resolver's "tonight" ("now" = no banner).
   Activity asks keep results; the meet-people row opens People -> Friends in place from tabs, the FriendDiscovery presentation from stack screens.
   Above People, item 45's `AskUnderstoodChips` show what the ask said (`peopleAskUnderstood`; none = nothing, never a filler cue).
+- **Map area activity (owner item 120):** "N happening now" pill on the Discover map only from `happeningNowAreas` (`utils/mapAreaActivity.js`):
+  pins the viewer already sees, inside `isWithinRightNowWindow`, 400 m single-link, 2+; plain All view only; static; tap = Happening Now limited
+  to that area (`buildDiscoverDateView` `areaIds`), back returns to the map. Red "Live now" pins keep their own rule (`isMapLiveNow`, unchanged).
 - **Right Now radar (owner item 27):** a still dot+ring mark (`components/RightNowMark.js`, never animates on its own) on those
   two headings, wording unchanged; item 26's ring is its only motion. The heading opens Discover's Happening Now view (Home via
   `RIGHT_NOW_VIEW`, the one link allowed to land in a date view; closing it restores Discover's prior mode/tab/search/category).

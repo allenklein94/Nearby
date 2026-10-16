@@ -90,6 +90,7 @@ import { localizeAskNote } from '../i18n/askNoteView';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { splitTonight } from '../utils/categoryTonight';
 import { buildDiscoverSections, buildDiscoverDateView, compareDiscover, sectionLeadReason, TIME_CHIPS, discoverTileVariant, sectionHeroEyebrowCode } from '../utils/discoverSections';
+import { happeningNowAreas } from '../utils/mapAreaActivity';
 import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
@@ -621,6 +622,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // sections at the scroll position they were left at.
   // Item 27: a first mount opened by a Right Now link starts inside its date view (later links: the params effect above).
   const [dateView, setDateView] = useState(() => (TIME_CHIPS.includes(route.params?.openDateView) ? route.params.openDateView : null));
+  // Item 120: a map area's "N happening now" opens Happening Now limited to that area's gathering ids (null = all of it).
+  // Leaving the view returns to the map where it was (areaReturnRef holds that region while the view is open).
+  const [dateViewArea, setDateViewArea] = useState(null);
+  const areaReturnRef = useRef(null);
+  const mapRegionRef = useRef(null);
+  const [restoreMapRegion, setRestoreMapRegion] = useState(null);
   const mainScrollRef = useRef(null);
   const mainScrollY = useRef(0);
   const restoreScrollY = useRef(null);
@@ -720,7 +727,21 @@ export default function DiscoverHubScreen({ navigation, route }) {
       setSearchQuery(back.searchQuery);
       setExpandedContext(back.expandedContext);
     }
+    const area = areaReturnRef.current;
+    areaReturnRef.current = null;
+    if (area) {
+      setRestoreMapRegion(area.region);
+      setViewStyle('map');
+    }
     setDateView(null);
+  }
+
+  // Item 120: tap on a map area's label.
+  function openMapArea(area) {
+    areaReturnRef.current = { region: mapRegionRef.current };
+    setDateViewArea(area.ids);
+    setViewStyle('list');
+    openDateView('now');
   }
 
   // Item 34: the time chips open the same in-place date view as "See all". One at a time; the active chip closes it; another
@@ -1292,12 +1313,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Item 206: the full date view, from the same filtered list the sections read (so Open now / Outdoor still apply). Only on
   // the plain All view: a search, another type tab or a category view replaces it.
   const dateViewData = dateView && isAll && !isSearching && !expandedContext
-    ? buildDiscoverDateView({ gatherings: filteredGatherings, dateFilter: dateView, score: scoreGathering })
+    ? buildDiscoverDateView({ gatherings: filteredGatherings, dateFilter: dateView, score: scoreGathering, areaIds: dateViewArea })
     : null;
   // A search, another type tab or a category view ends the date view (it never reappears later on its own).
   useEffect(() => {
     if (dateView && (!isAll || isSearching || expandedContext)) setDateView(null);
     if (!dateView) linkReturnRef.current = null; // item 27: a link's return state lives only while its date view is open
+    // Item 120: the area applies only to Happening Now (another chip, or leaving, drops it); its way back to the map lives
+    // only while a date view is open.
+    if (dateView !== 'now') setDateViewArea(null);
+    if (!dateView) areaReturnRef.current = null;
   }, [dateView, isAll, isSearching, expandedContext]);
 
   // Phase 8 section F -- the expanded context's own real content, filtered
@@ -1503,6 +1528,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const kindView = (kind) => (resultTabsActive ? resultKindView(kind, resultTab, topKinds) : { show: true, cap: isAll ? PREVIEW_COUNT : null });
   const capList = (list, kind) => { const { cap } = kindView(kind); return cap == null ? list : list.slice(0, cap); };
   const showGatherings = typeShowsGatherings && kindView('plans').show;
+  // Item 120: map areas from exactly the list the map pins and Happening Now's view reads, recomputed every render (so the
+  // count follows the pins and the clock); none outside the plain All view.
+  const mapAreasShown = viewStyle === 'map' && isAll && !isSearching && !expandedContext && showGatherings;
+  const mapAreas = mapAreasShown ? happeningNowAreas(filteredGatherings) : [];
   const showFlatGatheringsSection = showGatherings && !(isAll && !isSearching);
   const showCommunities = typeShowsCommunities && kindView('activities').show;
   const showPlaces = typeShowsPlaces && kindView('places').show;
@@ -2532,7 +2561,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               {showViewToggle && (
                 <TouchableOpacity
                   style={styles.viewToggleButton}
-                  onPress={() => setViewStyle(viewStyle === 'list' ? 'map' : 'list')}
+                  onPress={() => { setRestoreMapRegion(null); setViewStyle(viewStyle === 'list' ? 'map' : 'list'); }}
                   accessibilityLabel={t(viewStyle === 'list' ? 'ui.discover.toMap' : 'ui.discover.toList')}
                   accessibilityRole="button"
                 >
@@ -2833,6 +2862,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
         /* Item 206: the full Tonight/Today or This Weekend list, in place of the capped sections (so nothing shows twice).
            The breadcrumb's back arrow (or Android back) returns to the sections where they were left. */
         <ScrollView contentContainerStyle={styles.scrollContent}>
+          {dateViewData.area && (
+            <View style={styles.areaHeadingRow}>
+              <Text style={styles.areaHeadingText}>{t('ui.mapView.areaHeading')}</Text>
+              <TouchableOpacity onPress={() => setDateViewArea(null)} accessibilityRole="button" accessibilityLabel={t('ui.mapView.areaShowAll')}>
+                <Text style={styles.emptyActionText}>{t('ui.mapView.areaShowAll')}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
           {dateViewData.items.length > 0
             ? dateViewData.items.map((g, i) => renderGatheringTile(g, i))
             : (
@@ -2854,6 +2891,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
             onSelectGathering={(g) => openDestination(navigation, discoverCard(g).destination)}
             onSelectDeal={(d) => { setViewStyle('list'); selectPerk(d.id); setScrollToPerk(d.id); }}
             onSelectBusiness={(b, spot) => { setPreviewPinSpot(spot ?? null); setPreviewBusiness(b); }}
+            // Item 120: only on the plain All view, the one place Happening Now's list exists and reads this same list.
+            areas={mapAreas}
+            onSelectArea={mapAreasShown ? openMapArea : undefined}
+            restoreRegion={restoreMapRegion}
+            onRegionChangeComplete={(r) => { mapRegionRef.current = r; }}
           />
         </View>
       ) : (
@@ -3754,6 +3796,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   breadcrumbBackButton: { paddingVertical: spacing.xs, paddingRight: spacing.xs },
   breadcrumbBack: { color: colors.textPrimary, fontSize: 20, fontWeight: '700' },
   breadcrumbText: { flex: 1, color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
+  areaHeadingRow: { marginBottom: spacing.md },
+  areaHeadingText: { color: colors.textSecondary, fontSize: 14, fontWeight: '600', marginBottom: spacing.xs },
   // The gathering the user actually tapped to get here, marked so it
   // doesn't get lost among its own neighbours. A border tint only -- never
   // coral, which is reserved for actions.

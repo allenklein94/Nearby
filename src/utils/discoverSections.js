@@ -152,11 +152,16 @@ export function buildDiscoverDateView({
   score = (g) => ({ ...g, fit: g.fit ?? { score: 0, reasons: [] } }),
   now = new Date(),
   isInWindow = matchesDateFilter,
+  areaIds = null,
 } = {}) {
   if (!DATE_VIEW_FILTERS.includes(dateFilter)) return null;
   const inWindow = dateFilter === 'now' ? (at) => isWithinRightNowWindow(at, now) : isInWindow;
-  const items = gatherings.filter((g) => g && inWindow(g.scheduled_at, dateFilter)).map(score).sort(compareDiscover);
-  if (dateFilter === 'now') return { key: 'now', dateFilter, title: '⚡ Happening Now', items };
+  // Item 120: a map area's label opens Happening Now limited to that area's gatherings (utils/mapAreaActivity.js), through
+  // this same builder and window, so the list is the label's set. Only for 'now'; ids no longer in the window drop out.
+  const inArea = dateFilter === 'now' && Array.isArray(areaIds) ? new Set(areaIds) : null;
+  const items = gatherings.filter((g) => g && (!inArea || inArea.has(g.id)) && inWindow(g.scheduled_at, dateFilter))
+    .map(score).sort(compareDiscover);
+  if (dateFilter === 'now') return { key: 'now', dateFilter, title: '⚡ Happening Now', items, area: !!inArea };
   if (dateFilter === 'weekend') return { key: 'weekend', dateFilter, title: '🌴 This Weekend', items };
   // Unlike the section, the full view also holds what is starting right now, so an evening start counts as tonight either way.
   const isTonight = (g) => {

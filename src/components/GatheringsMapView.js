@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { BUSINESS_PIN_COLOR } from '../motion/PinToSheetFrame';
 import { PIN_HEAD_LIFT } from '../motion/pinToSheet';
+import { isMapLiveNow } from '../utils/rightNowWindow';
 
 // Shows gatherings, brand deals, businesses, and public stories together
 // on one map. Gatherings use fuzzed_lat/fuzzed_lng (server-computed,
@@ -22,14 +23,8 @@ import { PIN_HEAD_LIFT } from '../motion/pinToSheet';
 // buckets). Communities aren't plotted either — communities have no
 // location of their own anywhere in the schema, so there's no real
 // coordinate to honestly show.
-function isHappeningNow(scheduledAt) {
-  if (!scheduledAt) return false;
-  const start = new Date(scheduledAt).getTime();
-  const now = Date.now();
-  return now >= start - 30 * 60 * 1000 && now <= start + 2 * 60 * 60 * 1000;
-}
 
-export default function GatheringsMapView({ gatherings, deals = [], businesses = [], stories = [], storyPhotoUrls = {}, userLocation, onSelectGathering, onSelectDeal, onSelectBusiness, onSelectStory }) {
+export default function GatheringsMapView({ gatherings, deals = [], businesses = [], stories = [], storyPhotoUrls = {}, userLocation, onSelectGathering, onSelectDeal, onSelectBusiness, onSelectStory, areas = [], onSelectArea, restoreRegion = null, onRegionChangeComplete }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -55,7 +50,10 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
 
   const firstPin = pinnableGatherings[0] || pinnableDeals[0] || pinnableBusinesses[0] || pinnableStories[0];
 
-  const initialRegion = userLocation
+  // Item 120: coming back from an area's list, the map opens where the person left it.
+  const initialRegion = restoreRegion
+    ? restoreRegion
+    : userLocation
     ? {
         latitude: userLocation.latitude,
         longitude: userLocation.longitude,
@@ -83,12 +81,13 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
       ref={mapRef}
       style={StyleSheet.absoluteFill}
       initialRegion={initialRegion}
+      onRegionChangeComplete={onRegionChangeComplete}
       showsUserLocation
       showsMyLocationButton
     >
       {pinnableGatherings.map((g) => {
         const categoryStyle = categoryStyleFor(g.interest_tag);
-        const live = isHappeningNow(g.scheduled_at);
+        const live = isMapLiveNow(g.scheduled_at);
         return (
           <Marker
             key={`gathering-${g.id}`}
@@ -160,6 +159,23 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
           </Callout>
         </Marker>
       ))}
+      {/* Item 120 (owner, approved): "N happening now" over an area with 2+ Happening Now gatherings already pinned here
+          (utils/mapAreaActivity.js is the one rule). A static pill: no pulse, glow or entrance. Tap = Happening Now, that area. */}
+      {onSelectArea && areas.map((a) => (
+        <Marker
+          key={`area-${a.key}`}
+          coordinate={{ latitude: a.latitude, longitude: a.longitude }}
+          anchor={{ x: 0.5, y: 0.5 }}
+          zIndex={1}
+          onPress={() => onSelectArea(a)}
+          accessibilityRole="button"
+          accessibilityLabel={t('ui.mapView.areaCountA11y', { count: a.count })}
+        >
+          <View style={styles.areaPill}>
+            <Text style={styles.areaPillText}>{t('ui.mapView.areaCount', { count: a.count })}</Text>
+          </View>
+        </Marker>
+      ))}
     </MapView>
     </View>
   );
@@ -179,4 +195,9 @@ const getStyles = (colors) => StyleSheet.create({
   calloutHost: { color: '#666', fontSize: 12, marginTop: 2 },
   calloutDistance: { color: '#888', fontSize: 11, marginTop: 2 },
   calloutAction: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 6 },
+  areaPill: {
+    backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.full,
+    paddingHorizontal: spacing.sm, paddingVertical: 4,
+  },
+  areaPillText: { color: colors.textPrimary, fontSize: 12, fontWeight: '700' },
 });

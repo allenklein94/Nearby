@@ -74,7 +74,10 @@ describe('Discover date view wiring (item 206 guards)', () => {
     const close = src.match(/function closeDateView\(\) \{([\s\S]*?)\n  \}/)[1];
     expect(close.replace(/\s+/g, ' ').trim()).toBe(
       'const back = linkReturnRef.current; linkReturnRef.current = null; if (back) { setMode(back.mode); setTypeFilter(back.typeFilter); '
-      + 'setSearchQuery(back.searchQuery); setExpandedContext(back.expandedContext); } setDateView(null);',
+      + 'setSearchQuery(back.searchQuery); setExpandedContext(back.expandedContext); } '
+      // Item 120 (owner, 2026-10-16): a view a map area's label opened goes back to the map where it was left.
+      + 'const area = areaReturnRef.current; areaReturnRef.current = null; if (area) { setRestoreMapRegion(area.region); setViewStyle(\'map\'); } '
+      + 'setDateView(null);',
     );
   });
 
