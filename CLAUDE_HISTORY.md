@@ -1,3 +1,13 @@
+# Item 126 (owner, 2026-10-16) business-side "proof" numbers - MET AS BUILT (item 150), nothing built
+
+Owner ask: the business dashboard shows what Nearby brought ("18 requests, 7 offers accepted, $420 redeemed"), counting up only
+on a real change. Found: item 150 already shows this month's figures from the business's own data: business Home's Performance
+tile ("N sent · N accepted · N redeemed" + "Value of offers redeemed: $X", `businessHomeTiles`) and Offer Performance's rows
+(Opportunities / Offers sent / Offers accepted / Redemptions / Value, `offerFunnelView` <- `get_partner_offer_funnel` +
+`get_partner_offer_value`, owner-set prices on confirmed redemptions, never "revenue"). Asked: count up on a real change
+(item 53's CountRoll) / met as built. Owner: MET AS BUILT, static; count-up animation and "Nearby generated" wording DECLINED
+(LOCKED). Not device/browser-verified (business web export and phone never rendered).
+
 # Item 125 (owner, 2026-10-16) the app shows its own value - MET BY ITEM 53, nothing built
 
 Owner ask: quantify Nearby's benefit without gamification ("Nearby helped you make 4 plans this month", "3 local businesses

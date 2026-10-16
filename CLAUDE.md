@@ -96,6 +96,8 @@ Owner: keep the existing headline (no "Someone is looking for this" unless busin
 **Item 49 (live Customer Preview in Make an Offer) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_49_LIVE_CUSTOMER_PREVIEW_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone and the business website (journey `offer`; no new strings).
 
+**Item 126 (business "proof" numbers, owner 2026-10-16) is MET by item 150 as built (Performance tile + Offer Performance), nothing built; count-up animation and "Nearby generated" wording DECLINED (LOCKED).**
+
 **Item 51 (business's first offer confirmation) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_51_FIRST_OFFER_CONFIRMATION_DEVICE_CHECKLIST_2026-10-12.md` is recorded (needs Anthropic credit + a business with no offers yet)
 AND native review of the 2 `ui.bizHelp.confirm.first*Title` strings (migration 20270299; journey `offer`; `partner-first-offer.sql` 13/13).
