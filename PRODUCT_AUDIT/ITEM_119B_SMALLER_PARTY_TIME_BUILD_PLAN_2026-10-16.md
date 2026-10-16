@@ -42,4 +42,7 @@ time never counts as fitting the stated time).
 
 Deployed 2026-10-16: post-checks passed; journeys on prod without prelude 373/373 (rolled back).
 
-NOT verified: from-scratch replay, any screen on a device, the business website in a browser.
+From-scratch replay after deploy: 437/437 apply; journeys on the rebuilt DB 373/373; booking-capacity and offer-revision
+concurrency all pass; function execute grants replay = prod 621/621.
+
+NOT verified: any screen on a device, the business website in a browser, native review of the 6 strings.

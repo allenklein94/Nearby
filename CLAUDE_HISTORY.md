@@ -1,3 +1,10 @@
+# Item 119b (2026-10-16) from-scratch replay after deploy
+
+`scripts/replay/from-scratch-replay.sh` on an empty isolated DB: ALL 437/437 migrations applied (through 20270313); journeys on the
+rebuilt DB 33 suites 373/373; `booking-capacity-concurrency.js` all checks passed; `offer-revision-concurrency.js` all checks passed
+(accept won 10, revision won 10); public non-extension function execute grants (anon/authenticated) replay = prod, 621/621 identical.
+Container removed afterwards. (The `pg` client for local-DB journeys was installed outside the repo via NEARBY_PG_MODULE.)
+
 # Item 119b (owner, 2026-10-16) deployed - LIVE, NOT device-verified
 
 **Deployed 2026-10-16 (owner authorized):** pre-check showed prod without `proposed_party_size*`, one `submit_business_offer`, no
