@@ -242,6 +242,8 @@ gathering stops create no child plans.
 Occasion group planning v2: complex RSVP, elaborate invitations, gift registries, seating charts, big
 event pages, multi-day calendars. Also: per-offer weather override; Places as experience components;
 cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (decided NOT to build).
+Offer renegotiation (item 118): a business revising an offer it already sent; out of scope now, reopen only under the five
+guardrails in CLAUDE_HISTORY.md (one business-started revision, replaced in place, current terms only, calm, minimal summary).
 
 ## Standing conventions (locked; full text and history in CLAUDE_HISTORY.md)
 
