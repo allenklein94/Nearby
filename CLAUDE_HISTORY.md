@@ -1,3 +1,16 @@
+# Item 142 (owner, 2026-10-16) "Event capacity could be animated" - MET AS BUILT, nothing built
+
+Owner ask: "10 / 20 spots" -> someone joins -> "11 / 20" updates subtly; full -> "Full" + "Join waitlist"; no fake urgency.
+Already built (real counts, host included, `utils/gatheringFullness.js`):
+- Detail capacity line: "{n}/{cap} spots filled", full: "🔒 Full — {n}/{cap} spots taken" (`getGatheringFullness().people`).
+- Full -> the one join rule (`gatheringJoinAction`) says "Join Waitlist" on every surface; the server waitlists (also on approve).
+- Cards: `gatheringFullnessLabel` ("almost full" only below the real threshold: max(2, 20% of capacity) spots left).
+- The host already sees a join move the number: item 28's count roll on the attending figure for a join seen live (item 73 for bursts).
+- The "🔥 Almost full — only N spots left. Invite more people" nudge is inside the host banner only (host's own action, real count).
+Not built: a live, animated count for other viewers. Item 116 (owner, LOCKED 2026-10-15) declined live in-place count updates
+(counts are read on load) and any scarcity styling; cards static (items 15/99); item 47's countdown stays the only urgency motion.
+No strings, no migration.
+
 # Item 141 follow-up (owner, 2026-10-16) gathering-approval alert without "match" - BUILT, NOT NATIVE-REVIEWED, NOT DEVICE-VERIFIED
 
 Owner: "Approved! You can now chat with them." Only the alert body changed: `HostAttendeeManager.handleApprove` now shows
