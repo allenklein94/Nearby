@@ -1,3 +1,17 @@
+# Item 138 (owner, 2026-10-16) "Who's going could dynamically organize" - DECLINED as asked (privacy lock), nothing built
+
+Owner ask: Who's going split into Going (Allen, Claude, Sarah) and Interested (Mike), avatars moving between sections as state changes.
+Blocked by a locked privacy rule: **Interested is private, never shown or counted to another viewer** (Standing conventions >
+Privacy). An "Interested" section with named faces would show Mike's private signal to everyone. What exists instead:
+- Who's going = approved attendees incl. the host (`attendingFigure`, item 28's overlapping cluster); names only for friends and
+  fellow attendees, counts for others (attendee-identity rule).
+- A join already moves a face in: item 28's flow-in for a join the host sees live (item 73 for bursts); item 31's
+  "★ ~~Interested~~ → ✓ Attending" is the viewer's OWN change on their own button, never shown to others.
+- The host alone sees the states that need them: pending join requests (always shown, they need a decision), the invitations
+  they sent with each friend's real status (item 143), waitlist count, and Interested as a count only (`g.interestedCount`).
+Not built: an Interested section, faces moving between sections (no animated lists; item 97 declined cross-state motion;
+item 98 one object, states not folders). No strings, no migration.
+
 # Item 136 (owner, 2026-10-16) "Group invite could be a burst" - MET AS BUILT, nothing built
 
 Owner ask: select Claude, Sarah, Mike -> Invite -> one outward pulse -> "3 invitations sent" instead of three confirmations.
