@@ -1,3 +1,14 @@
+# Item 130 (owner, 2026-10-16) a handful of motion primitives - MET by item 100, nothing built
+
+Owner ask: not 50 animations but ~7 primitives (Signal, Connect, Reveal, Merge, Transform, Confirm, Complete). Already exists as item
+100 (2026-10-15, approved as built, placements LOCKED): every `SEQUENCES` entry names one of eight forms in `MOTION_PRIMITIVES`
+(`constants/motionLanguage.js`, guard `motion/motionPrimitives.test.js`), 34 entries in all. Mapping: Signal = pulse (request sent,
+happening near you, pin -> sheet: item 55's Nearby Pulse); Connect = flow (reply travel, business responds, friend join); Reveal,
+Merge, Transform = same names; Confirm + Complete = complete (visit confirmed, booked, business success, plan completed). Item 130's
+list has no name for assemble (plan comes together, friends planning) or ambient (loader, weather shift). Not renamed: item 100's
+names and placements are locked, the map is documentation only (describes, never authorizes or unifies; item 56), and a rename is churn
+with no user-visible effect. Splitting Confirm from Complete would move entries item 100 placed; owner's call if wanted.
+
 # Item 129 (owner, 2026-10-16) consumer and business as mirrors - MET as built, LOCKED, nothing built
 
 Owner decision (2026-10-16, LOCKED): the two sides communicate the same underlying transaction state without identical language or
