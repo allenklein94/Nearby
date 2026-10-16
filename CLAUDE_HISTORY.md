@@ -1,3 +1,18 @@
+# Item 136 (owner, 2026-10-16) "Group invite could be a burst" - MET AS BUILT, nothing built
+
+Owner ask: select Claude, Sarah, Mike -> Invite -> one outward pulse -> "3 invitations sent" instead of three confirmations.
+Audit: inviting several people at once already exists, with one confirmation, in two places:
+- Create's "Who's invited" step: pick several friends; they are sent together at publish (`sendGatheringInvites`) and the
+  published card's Who piece says it once from the real result: "🤝 We invited {sent} of {count} people you picked."
+  (`formationPieces` <- `preInviteResult`; item 43, LOCKED: four pieces, settles via the shared `PlanComesTogether`, no new motion).
+- The published panel's "Invite a Circle" (`handleInviteCircle`): one tap invites every not-yet-invited member, one success haptic,
+  each row turns "Sent" and the circle reads "✓ {name}"; a partial failure says "Invited {sent} of {total}" with the rest retryable.
+The post-publish per-friend list (`InviteFriendsModal`, panel list) invites one row per tap; there is one toast host, so a new
+"Invitation sent to {name}" replaces the previous one; three toasts never pile up.
+Not built: the outward pulse (item 55: person-to-person moments stay out of the Pulse, no new animated places; item 43 no new
+motion on formation); multi-select on the post-publish list (a second way to do what Create's step + Circles already do; item 45).
+No new strings, no migration; journeys `gatheringFormation` / `inviteJourney` cover the batch and single paths (not re-run).
+
 # Item 135 (owner, 2026-10-16) "Invite feels like sending a signal" - MET AS BUILT, nothing built
 
 Owner ask: inviting Claude moves the avatar Your Friends -> Invited, a tiny signal travels to Claude, the state becomes
