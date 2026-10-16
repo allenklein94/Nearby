@@ -1,3 +1,15 @@
+# Item 132 (owner, 2026-10-16) the "Nearby Moment" notification - MET as built, nothing built
+
+Owner ask: notifications say what happened ("Coastal Coffee responded to your request"), use the tiny pulse language, and a tap opens
+the exact offer so notification and app feel like one interaction. Checked: (1) wording: the reply push title is
+"{category emoji} {Business} responded" with a body saying what they sent ("They sent an offer for your {what}: {title}" / "They can
+take you for your {what}." / "They suggested another time..."), `_business_reply_push` (20270303), replaced in place per request with
+the live count at 2+ (item 62). (2) tap: `notificationDestinations.js` opens BusinessRequestDetail with `focusOfferId` (item 136's
+destination contract): the screen scrolls once to that offer and outlines it; item 23's travel lands a pending reply into its card.
+(3) pulse: a push banner is drawn by iOS/Android, not by the app, so it cannot carry Nearby's motion; adding a pulse to the landing
+would be a new animated place (item 55) on top of item 25's signature and item 23's travel. Nothing built. Device check of the push
+wording + tap landing belongs to item 62's and the offer experience checklists.
+
 # Named principle (owner, 2026-10-16): the system brings the next thing - recorded, nothing built
 
 Owner: the app shouldn't keep saying "tap here, go here, open this screen, now go back"; it should feel like intent appears -> Nearby
