@@ -1,8 +1,9 @@
 -- From-scratch replay (2026-10-16): a database rebuilt from this folder granted EXECUTE to PUBLIC (and anon) on 90
 -- functions where production does not. Production was narrowed outside this folder at some point (no migration
 -- revokes them; origin not recorded), the same kind of drift 20270144 closed for column grants. This sets each one to
--- production's exact grants, read live on 2026-10-16. On production it is a no-op (verified: every public function's
--- grants identical before and after, rolled back); on a replay it removes the extra PUBLIC/anon EXECUTE. Owner
+-- production's exact grants, read live on 2026-10-16. On production it is expected to be a no-op (built from production's
+-- own grants; the rolled-back before/after check on production has NOT been run yet); on a replay it removes the extra
+-- PUBLIC/anon EXECUTE. Owner
 -- (postgres) privileges are untouched. Function bodies are unchanged (all 617 identical to production).
 
 revoke all on function public.admin_approve_id_verification(uuid,boolean) from public, anon, authenticated, service_role;
