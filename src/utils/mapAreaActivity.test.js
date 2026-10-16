@@ -114,6 +114,15 @@ describe('red "Live now" pins keep their own rule, now in rightNowWindow.js (own
     expect(ui.en.liveNow).toBe('🔴 LIVE NOW');
   });
 
+  test('item 121: map activity counts activity, never people density (no people source, no people words)', () => {
+    const rule = src('utils/mapAreaActivity.js').replace(/^\s*\/\/.*$/gm, '');
+    expect(rule).not.toMatch(/supabase|sighting|profiles|people_visible|nearbyPeople|friendDiscovery|heat|density/i);
+    const ui = require('../i18n/ui/mapView').default.en;
+    for (const k of ['areaCount', 'areaCountA11y', 'areaHeading', 'areaShowAll']) {
+      expect(JSON.stringify(ui[k])).not.toMatch(/people|person|crowd|busy|heat/i);
+    }
+  });
+
   test('Discover shows areas only on the plain All view and computes them from the list the map pins', () => {
     const hub = src('screens/DiscoverHubScreen.js');
     expect(hub).toMatch(/const mapAreasShown = viewStyle === 'map' && isAll && !isSearching && !expandedContext && showGatherings;/);

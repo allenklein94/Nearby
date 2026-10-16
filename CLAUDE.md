@@ -317,6 +317,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   it off); accepted friends only, never matches; yes/no, fresh < 30 min, ~1 mi, decided in `get_nearby_friends()` (ONE friend,
   id/name/photo only, every "not nearby" cause = no row); foreground fixes only via `userLocation.js`; Home social line LAST,
   no push/event/analytics. Guards: `friendNearby.test.js`, journey `friendNearby`.
+- **Activity, never implied people density (owner item 121, LOCKED):** a map/area/"heat" signal counts activity (public gatherings) and
+  says so ("N happening now", "Activity nearby"), never "People nearby", crowds or density. A count of people only from a pool its
+  members explicitly opted into (friend discovery, item 39, dating discovery) or real stated requests (business side, floor of 5).
+  Heatmaps/people density stay DEFERRED. Guard: item 121 test in `mapAreaActivity.test.js`.
 - Not LinkedIn: no professional search, graph, résumé or job fields; Job Title is never compared.
 
 ### Understanding asks

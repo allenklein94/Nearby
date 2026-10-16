@@ -1,3 +1,18 @@
+# Item 121 (owner, 2026-10-16) "heat" never implies people density - rule LOCKED, nothing else built
+
+Owner: use "Activity nearby", never "People nearby", unless people explicitly opted into a visibility model that supports it;
+privacy is fundamental. Recorded as a standing Privacy convention in CLAUDE.md.
+- Item 120's map pill already complies: it counts public gatherings in the Happening Now window ("N happening now"), reads no
+  people source. New guard test in `mapAreaActivity.test.js`: the rule file reads no supabase/sightings/profiles/people source
+  and the 4 English `ui.mapView.area*` strings never say people/person/crowd/busy/heat. No heatmap or density surface exists.
+- Audit of existing "people nearby" counts (not changed; each rests on an opt-in pool or stated requests):
+  Home "N people nearby to meet" / "N new people nearby" (dating pool from crossed paths + shared gatherings, or the
+  `open_to_friend_discovery` pool); business "N people nearby are looking for X" (real open requests, floor of 5);
+  business "N people nearby are interested in {category} gatherings" (consent switch, floored). Open question for the owner, not
+  verified here: whether every member of the DATING pool counted on Home made an explicit discovery opt-in (no producer of
+  `sightings` rows exists in the repo; the pool is mostly shared-gathering partners).
+Jest: mapAreaActivity 16/16. No migration, no strings.
+
 # Item 120 follow-up (owner review, 2026-10-16) - build APPROVED, red-pin screen-reader label fixed, NOT device-verified
 
 Owner approved the build as is; item stays OPEN for the 12+ device checks and native review. Three review points:
