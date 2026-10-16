@@ -1,3 +1,20 @@
+# Item 117 (owner, 2026-10-16) "offer competition" - MET as built, nothing built; distance EXCLUDED (LOCKED)
+
+- Proposal: "Dinner for 4 tonight", three businesses respond, "3 offers received", each arrives one after another, one coherent
+  experience, compare price / distance / time / perks / business.
+- Met by: item 62 (one push per request, replaced in place, count wording) + the arrival pill combining simultaneous replies ("3 offers
+  came in", item 121) = the phone-wide counts; real arrivals travel into their card and build in (items 23/25); all replies on ONE
+  request screen in `rankReplies` order (item 63: every stated constraint met first, track record only breaks ties, "✨ Our pick" only
+  when qualifying + established record); one card layout for every business (item 21, `OfferCustomerBody` via `presentOffer`):
+  business name, screened logo, price or per-person price, proposed time or window, what's included, validity; "Fits 7 PM" /
+  "Within your budget" only for constraints actually stated and met.
+- Owner decisions (LOCKED): replies that already exist show together, never staged or animated in (motion truth, item 63's no
+  reveal/lift); only genuine arrivals animate. No comparison table, no special "best" card, no price-based ranking. **Distance is
+  explicitly excluded:** no distance line on reply cards, no extra business location data exposed for it.
+- Not verified (documented, not claimed): whether the request screen shows a count heading above the reply cards (a string search of
+  `BusinessRequestDetailScreen.js` found none; not rendered); phone rendering. The push/pill counts are separate from any such heading.
+  The offer experience device checklist stays a separate open task; this decision does not waive it.
+
 # 20270310 applied to production (owner-approved sequence, 2026-10-16) - rolled-back check 0 changes; applied; prod unchanged; replay = prod
 
 - Snapshot = every public function's EXECUTE ACL exploded (grantee:grantor:privilege:grantable), hashed. Production before:
