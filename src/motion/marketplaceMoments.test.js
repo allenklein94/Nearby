@@ -65,6 +65,17 @@ describe('moment 1: request sent pulse', () => {
     expect(screen).toContain('const isDuplicate = route.params?.duplicate ?? false;');
     expect(screen).toMatch(/justSentLine\(notifiedCount, targetPartnerName\)/);
   });
+  // Item 159 (owner, LOCKED): nothing claims "asked"/"sent" before the server confirms; a failure keeps the draft and retries.
+  it('AskBusiness: the sent moment opens only after the server returns; a failure keeps the draft and offers retry', () => {
+    const ask = src('screens/AskBusinessScreen.js');
+    const body = ask.slice(ask.indexOf('async function handleSubmit()'), ask.indexOf("what: 'send your request'") + 200);
+    const lastAwait = body.lastIndexOf('result = await ');
+    expect(lastAwait).toBeGreaterThan(-1);
+    expect(body.indexOf('askDraft.clear();')).toBeGreaterThan(lastAwait); // the draft is cleared only on success
+    expect(body.indexOf("navigation.replace('BusinessRequestDetail'")).toBeGreaterThan(body.indexOf('askDraft.clear();'));
+    expect(body).toMatch(/presentRecoverableError\(Alert, \{ what: 'send your request', error: e, draftKept: true, onRetry: \(\) => handleSubmit\(\) \}\)/);
+    expect(ask).toMatch(/\{submitting \? <ActivityIndicator color="#fff" \/> :/); // the wait = the button spinner only
+  });
   it('Reduce Motion: the line alone, no rings', () => {
     expect(src('motion/RequestPulse.js')).toMatch(/const animate = useRef\(play && !reduceMotion\)\.current;/);
   });

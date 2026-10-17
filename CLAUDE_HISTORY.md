@@ -1,3 +1,21 @@
+# Don't imply businesses received it until they did (owner item 159, 2026-10-17): MET AS BUILT, LOCKED, pending real-phone verification
+
+Idea: an animation for "Nearby is finding eligible businesses", then "Sent to 3 businesses" only after the backend confirms delivery.
+Found as built: all three senders (AskBusiness, GroupOccasionPlan's book, CelebrateSomething's selected requests) await the
+create-request RPC and only then `navigation.replace` to BusinessRequestDetail; while waiting AskBusiness shows only the Send
+button's `ActivityIndicator` (disabled). The RPC returns after every reached business's `business_request_offers` row exists
+in the same transaction (journey `requestSentCount`), so "We asked N…" + rings + SuccessAnimation never precede that. Failure:
+`presentRecoverableError` ("send your request", `draftKept: true`, Retry = handleSubmit); `askDraft.clear()` only after success.
+What the confirmation does NOT establish: push/digest delivery to the business (outbox, async, per their settings) or that an
+owner has seen it; the copy claims neither ("We asked" = in their Opportunities; "You'll be notified" = the customer).
+Owner decision (2026-10-17, LOCKED): met as built; keep the button spinner; nothing says "asked"/"sent" or animates success
+before the server confirms; success = 158's locked copy + real count + Pulse rings; failure = existing retry, draft kept.
+DECLINED: a "finding eligible businesses" animation (one quick RPC; item 58), changing copy to "Sent to 3 businesses" (158's copy locked).
+"Met as built" confirms the implementation, NOT the phone: offer checklist section 1 gets a slow-connection check and a
+failure/retry check (draft kept, sends once); the gap stays open until they pass.
+Guard added (`motion/marketplaceMoments.test.js`): AskBusiness clears the draft and opens the sent moment only after the last
+`await`, failure = draft kept + Retry, the wait = the button spinner only. Jest 468 suites pass. No app code, string or motion change.
+
 # "Ask nearby businesses" shows the request spreading (owner idea "158", 2026-10-17): MET AS BUILT, LOCKED; count proven by a new journey
 
 Idea: tap Ask nearby businesses -> the request signal expands outward -> "3 businesses can potentially help" (a larger animation).

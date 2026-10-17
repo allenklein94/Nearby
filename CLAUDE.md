@@ -58,6 +58,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Ask nearby businesses" spreading (owner idea "158", 2026-10-17) MET AS BUILT, LOCKED, nothing built in the app:** "We asked N nearby businesses. You'll be notified when they respond." at once, N = businesses REALLY reached (one offer row each, from `create_business_request`'s `notifiedCount`; never searched/matched; duplicate and nobody-reached = 0, no rings), item 55's two soft rings behind it, Reduce Motion = line only, form replaced by the request screen. DECLINED: a larger animation, the count after the animation, "N businesses can potentially help". Proven by journey `requestSentCount` 6/6 (prod journeys 551/551) + `marketplaceMoments.test.js`; NOT DEVICE-VERIFIED: offer checklist section 1.
 
+**No premature "sent" (owner item 159, 2026-10-17) MET AS BUILT, LOCKED, PENDING REAL-PHONE VERIFICATION (offer checklist section 1, slow-connection + failure checks):** while sending only the button spinner; "We asked N…" + rings + success animation only after the server returns (requests saved to the reached businesses' Opportunities; never claims push delivery or that an owner saw it); failure = existing retry, draft kept. DECLINED: a "finding eligible businesses" animation, "Sent to 3 businesses" copy. Guard `marketplaceMoments.test.js`.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

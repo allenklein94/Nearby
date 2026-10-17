@@ -37,6 +37,10 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
   side (each reached business sees the opportunity) or `select count(*) from business_request_offers where request_id = ...`
   (service role). Never the number searched. One business reached = "We asked 1 nearby business."
 - [ ] (idea 158) Reduce Motion on: the line only, no rings, nothing else changes. No larger animation, no extra confirmation screen.
+- [ ] (item 159) Slow connection (e.g. Network Link Conditioner / a weak signal): after Send, only the button spinner shows;
+  no "asked", "sent", rings or success animation until the request screen appears with the real count.
+- [ ] (item 159) Failure (airplane mode, then Send): the "Try again" error appears, nothing implies the request went out, the
+  typed ask and every filled field are still there; Retry after reconnecting sends it once and shows the real count.
 - [ ] Business gets the opportunity push/digest per its rules; the card opens on Opportunities.
 - [ ] (idea 157) Ask ONE business (Ask Coastal Coffee): Send replaces the form with the request screen at once (no
   confirmation step, no return to Home/Discover); the line reads "Request sent to Coastal Coffee. You'll be notified when
