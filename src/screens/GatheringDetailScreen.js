@@ -31,6 +31,8 @@ import {
   getGatheringRequestsForHost,
   cancelGathering,
   stopRecurringSeries,
+  getMyWaitlistPromotion,
+  markMyWaitlistPromotionSeen,
 } from '../services/gatherings';
 import { filterToMyConnections } from '../services/connections';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
@@ -55,6 +57,7 @@ import { AvatarArrive } from '../motion/JoinArrival';
 import InterestedSaved from '../motion/InterestedSaved';
 import InterestedToAttending from '../motion/InterestedToAttending';
 import { interestedToAttendingMoment } from '../utils/interestedMoment';
+import { waitlistPromotionMoment, waitlistPromotionA11y } from '../utils/waitlistPromotion';
 import { filterToMyFriends } from '../services/friends';
 import { invitationRows, hostBusinessLine } from '../utils/hostCommandCenter';
 import GatheringFeedbackPrompt from '../components/GatheringFeedbackPrompt';
@@ -124,6 +127,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
   // Item 31: this visit's own join, kept in memory only ({ wasInterested, joinStatus }); the Interested -> Attending moment
   // shows when it was an approved join from Interested AND the stored attendance says approved (interestedToAttendingMoment).
   const [ownJoin, setOwnJoin] = useState(null);
+  // Item 143: set once when the server's record says this attendance was moved off the waitlist and it was never shown;
+  // kept for the rest of the visit (only ever set to true), so a reload never removes or replays it.
+  const [waitlistMoment, setWaitlistMoment] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
@@ -213,6 +219,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
     }
     setGathering(g);
     if (!liveJoinReload) recordBehaviorEvent('open', 'gathering', g.id, g.interest_tag);
+    if (!g.isHost && g.myStatus === 'approved') {
+      getMyWaitlistPromotion(gatheringId).then((promotion) => {
+        if (!waitlistPromotionMoment({ storedStatus: g.myStatus, promotion })) return;
+        setWaitlistMoment(true);
+        markMyWaitlistPromotionSeen(gatheringId);
+      });
+    }
     setLoadError(false);
     setLoading(false);
 
@@ -1266,6 +1279,14 @@ export default function GatheringDetailScreen({ route, navigation }) {
                   fromLabel={t('ui.actions.interestedOn')}
                   toLabel={t('ui.actions.attendingNow')}
                   a11yLabel={t('ui.actions.interestedToAttendingA11y')}
+                />
+              )}
+              {/* Item 143: moved off the waitlist into Attending (the server's record), shown once per gathering. */}
+              {waitlistMoment && !interestedToAttendingMoment({ ...ownJoin, storedStatus: gathering.myStatus }) && (
+                <InterestedToAttending
+                  fromLabel={t('ui.actions.onWaitlist')}
+                  toLabel={t('ui.actions.attendingNow')}
+                  a11yLabel={waitlistPromotionA11y(t('ui.actions.onWaitlist'), t('ui.actions.attendingNow'))}
                 />
               )}
               <Text style={styles.youreInTitle}>{t('ui.gatheringDetail.youreIn')}</Text>

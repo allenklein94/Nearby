@@ -438,6 +438,20 @@ export async function setGatheringInterested(gatheringId, interested) {
   return { interested: !!data?.interested, alreadyJoined: !!data?.already_joined };
 }
 
+// Item 143: the viewer's own waitlist promotion for this gathering ({ promoted_at, seen_at }), recorded by the server when
+// their attendance went waitlisted -> approved (migration 20270319); null when there is none or the read fails.
+export async function getMyWaitlistPromotion(gatheringId) {
+  const { data, error } = await supabase.rpc('get_my_waitlist_promotion', { gathering_id_param: gatheringId });
+  if (error) return null;
+  return (Array.isArray(data) ? data[0] : data) ?? null;
+}
+
+// Item 143: stamps that promotion seen, so the moment shows once per gathering (a failure only means it may show again).
+export async function markMyWaitlistPromotionSeen(gatheringId) {
+  const { error } = await supabase.rpc('mark_my_waitlist_promotion_seen', { gathering_id_param: gatheringId });
+  return !error;
+}
+
 export async function isGatheringInterested(gatheringId) {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;

@@ -1,3 +1,25 @@
+# Item 143 (owner, approved 2026-10-16) moved off the waitlist -> item 31's moment - BUILT, LIVE, NOT DEVICE-VERIFIED (2026-10-17)
+
+Owner: promotion from the waitlist is a confirmed change of attendance (unlike Requested or a normal join), so it reuses item 31's
+row: "~~On waitlist~~ → ✓ Attending", one glow, the first time the person opens that gathering afterwards, once per gathering ever.
+Never for waitlisted -> Requested on an approval-needed gathering, never for a normal join. Reduce Motion = finished state; taps at
+once; "You're in" reads correctly without the animation. No new strings, no new motion primitive.
+- Migration `20270319_waitlist_promotion_moment.sql` (LIVE; live function bodies + grants checked = the file 2026-10-17): private table
+  `gathering_waitlist_promotions` (PK = the attendance row, cascade), written only by trigger `on_gathering_interest_waitlist_promotion`
+  on waitlisted -> approved (every path: `_promote_from_waitlist`, capacity change, host approval); any other status change removes it.
+  Own table, not a `gathering_interest` column (attendee rows are visible to others; who was waitlisted is private). No client grants;
+  `get_my_waitlist_promotion` (own row while still approved) + `mark_my_waitlist_promotion_seen` (idempotent), both closed to anon.
+  Promotion order, capacity, "A spot opened up" pushes and the approval flow unchanged.
+- Client: ONE rule `waitlistPromotionMoment` (`src/utils/waitlistPromotion.js`): stored approved + server record + unseen.
+  GatheringDetail reads it for a non-host approved attendance, shows `motion/InterestedToAttending` with `ui.actions.onWaitlist` /
+  `attendingNow` above the unchanged You're in title, marks it seen; held for the visit; never together with item 31's own moment.
+  `MOTION_PRIMITIVES.interestedToAttending` now names items 31/143.
+- Verified: `waitlistPromotion.test.js` + motion guards; full Jest 456 suites / 6091 passed; journey `waitlistPromotion` 8/8 on prod
+  (rolled back; A promoted -> moment, seen -> no replay; B approval-needed -> Requested -> no record, host approval -> none; C normal
+  join -> none; D others can't read/mark, no table grants; E leaving removes it); all journeys 409/409. From-scratch replay 443/443, journeys 409/409 on it, both concurrency scripts pass, the new table/function grants = prod.
+- Not verified: any device. Checklist `PRODUCT_AUDIT/ITEM_143_WAITLIST_PROMOTION_DEVICE_CHECKLIST_2026-10-17.md` (14 checks).
+  Limits: a failed "seen" stamp may let it show once more; promotions before 20270319 have no record and never play.
+
 # Item 142 (owner, 2026-10-16) "Event capacity could be animated" - MET AS BUILT, nothing built
 
 Owner ask: "10 / 20 spots" -> someone joins -> "11 / 20" updates subtly; full -> "Full" + "Join waitlist"; no fake urgency.

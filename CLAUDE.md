@@ -210,6 +210,9 @@ NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE
 `PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md` is recorded on a real phone (migration 20270306; journey `outdoorMatch`; no new strings). Decision 3 (change/pickers) DEFERRED until a phone shows remove-only isn't enough.
 Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the setting when an activity is named; locked count rule), check 15 of that checklist.
 
+**Item 143 (moved off the waitlist -> "~~On waitlist~~ → ✓ Attending", item 31's moment once per gathering; owner approved 2026-10-16) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_143_WAITLIST_PROMOTION_DEVICE_CHECKLIST_2026-10-17.md` is recorded on real phones (migration 20270319 LIVE; journey `waitlistPromotion` 8/8; replay 443/443 + journeys 409/409; no new strings). Never for Requested or a normal join (LOCKED).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 

@@ -71,7 +71,7 @@ describe('regression: the other join outcomes and the success vibration are unch
     expect(motion).not.toMatch(/Haptics|playHaptic/); // the moment adds none
   });
   test('the You\'re in panel keeps its title and prompt for every approved viewer (plain joins included)', () => {
-    const panel = detail.slice(detail.indexOf("gathering.myStatus === 'approved' ? ("), detail.indexOf("gathering.myStatus === 'approved' ? (") + 1200);
+    const panel = detail.slice(detail.indexOf("gathering.myStatus === 'approved' ? ("), detail.indexOf("gathering.myStatus === 'approved' ? (") + 2000);
     expect(panel).toMatch(/<Text style=\{styles\.youreInTitle\}>\{t\('ui\.gatheringDetail\.youreIn'\)\}<\/Text>\s*<Text style=\{styles\.youreInSub\}>\{t\('ui\.gatheringDetail\.sayHelloPrompt'\)\}<\/Text>/);
   });
 });

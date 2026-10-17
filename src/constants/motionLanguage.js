@@ -218,7 +218,7 @@ export const MOTION_PRIMITIVES = Object.freeze({
   offerAccepted: { primitive: 'transform', item: '12', communicates: 'the same offer card became its booked state' },
   offerProgress: { primitive: 'transform', item: '13', communicates: 'the business\'s offer really moved forward (Accepted, Redeemed)' },
   interestedSaved: { primitive: 'transform', item: '30', communicates: 'your own tap saved this gathering as Interested' },
-  interestedToAttending: { primitive: 'transform', item: '31', communicates: 'your confirmed attendance replaced Interested' },
+  interestedToAttending: { primitive: 'transform', item: '31/143', communicates: 'your confirmed attendance replaced Interested, or you were moved off the waitlist into Attending' },
   offerCountdown: { primitive: 'transform', item: '47', communicates: 'an open offer\'s real last 30 minutes, one real minute at a time' },
   bookedExit: { primitive: 'transform', item: 'booked', communicates: 'the GroupPlan booked card leaves after its hold (removed)' },
   planTogether: { primitive: 'assemble', item: '25 #4/43', communicates: 'every required piece of the plan is confirmed, or the gathering was published' },
