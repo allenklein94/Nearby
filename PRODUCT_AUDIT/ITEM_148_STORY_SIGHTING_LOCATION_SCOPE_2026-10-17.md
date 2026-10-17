@@ -4,7 +4,7 @@ Owner decision (2026-10-17): its own security item, separate from item 146 (gath
 (non-public gathering rows, open). (Unrelated to the older "Item 148" of 2026-09-19 in CLAUDE_HISTORY.md, business
 notification mute groups.)
 
-**Status (2026-10-17): APPROVED (owner, D1-D4 LOCKED), BUILT, LIVE, NOT DEVICE-VERIFIED.** Migration
+**Status (2026-10-17): IMPLEMENTED (owner, D1-D4 LOCKED), LIVE; device and residual checks OPEN (see "Still open" at the end). Not complete.** Migration
 `20270321_story_sighting_location_privacy.sql` applied to production; build + verification record at the end of this file
 ("Build and verification"). Device checks: `ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md`. Photo/video
 metadata (finding 7) stays DEFERRED and UNRESOLVED until a real-device test.
@@ -70,8 +70,8 @@ the exposure is in the design and starts with the first public story.
 
 - `approx_area` is a text `"lat,lng"`. The only production row has 4 decimals (~11 m), so the name "approx" is not true.
   The other person in a sighting learns where they crossed paths to ~11 m (where the other person was at that time).
-- No producer exists in the repo (clients cannot insert: RLS refused the probe's insert; no RPC writes it), so precision is
-  whatever the absent producer wrote. `get_sighting_fuzzed_coords` has no client caller (dead) and its md5 offset is
+- Clients cannot insert (RLS refused the probe's insert). CORRECTED below: the producer is the deployed `report-presence`
+  edge function (its repo source was an empty file), writing the client's 4-decimal area. `get_sighting_fuzzed_coords` has no client caller (dead) and its md5 offset is
   reversible, but moot next to the direct read.
 - Related, already in residuals and NOT part of this item: the crossed-paths push names the other person regardless of
   Dating consent.
@@ -182,3 +182,47 @@ production backups/PITR history, which may still hold the one sighting row's pre
 **Not done / not verified:** device checks (checklist); EXIF/metadata in story media (DEFERRED, unresolved); a signed-in
 REST probe through the real API (no test account; the journey runs the same roles inside the database); item 146's
 averaging weakness (documented in its scope doc, not changed).
+
+## Follow-up (2026-10-17): corrections, open checks, new findings
+
+**Correction: a sightings producer DOES exist, live.** Earlier this document (and CLAUDE.md) said none exists. The repo's
+`supabase/functions/report-presence/index.ts` was an EMPTY file, but `report-presence` v11 is deployed and ACTIVE. Its
+source (recovered read-only from the deployed bundle's source map, now restored verbatim into the repo; not redeployed)
+takes the client's 4-decimal area (`proximity.js` `coarseAreaLabel`, ~11 m), upserts `presence_reports` (one row per
+person, area + time), finds others in the same ~11 m bucket (3x3 for premium) within 10 min, and upserts a `sightings` row
+per pair with `approx_area` = that area. Item 148's trigger pins `approx_area` on that upsert too, so crossed-paths
+detection keeps working (it matches on `presence_reports`, not on `approx_area`) and sightings no longer keep the ~11 m value.
+The device checklist's check 8 covers crossed paths still appearing.
+
+**New finding A (reported, not changed): `presence_reports` keeps each person's last area at ~11 m indefinitely.**
+Server-only (RLS on, no policies: clients read and write nothing; `confidenceMode.js`'s read of it therefore always gets 0
+rows), 2 rows in prod (latest 2026-10-17). The matching needs a fine bucket while fresh (10-minute window), but
+`purge_expired_sightings()` (which deletes presence rows older than 1 h and expired sightings) is **not scheduled**: there
+is no cron job for it, so presence rows never age out and the one sighting (expired 2026-09-07) was never deleted.
+Smallest fix to propose: schedule the existing purge (e.g. every 10 min). Needs its own approval (it deletes data).
+
+**New finding B (reported, not changed): two more deployed edge functions have EMPTY sources in the repo:**
+`delete-account` (v8, ACTIVE) and `moderate-photo` (v16, ACTIVE). A redeploy from the repo would deploy nothing. Not
+location-related; recovering their sources the same way is a separate step.
+
+**Production backups (the old ~11 m sighting value):** organisation plan = Free. Management API
+`/database/backups`: `pitr_enabled = false`, **0 backups listed**, `walg_enabled = true` (WAL archiving is on:
+`archive_command = admin-mgr wal-push`). So no backup the owner can restore exists, but Supabase's internal WAL archive
+may still hold the row's earlier values (written 2026-08-23 .. 2026-09-05, overwritten 2026-10-17). Its retention for a
+Free project is not published in anything this session can read and cannot be inspected through the API. **Not assumed
+gone:** the owner must ask Supabase support for the WAL/backup retention of project `enmosvippabmuqslzrox`, and record the
+answer and the resulting expiry date here. (`presence_reports` still holds current ~11 m areas live, finding A, which
+matters more than the archive.)
+
+**Signed-in API test: still OPEN.** The journey covers the `authenticated` role inside the database; a request through
+the real REST API with a real session has not been made. It needs an authorized disposable test account (create, probe
+`stories?select=latitude`, `select=*`, the map RPC, `sightings?select=approx_area`, `rpc/get_sighting_fuzzed_coords`,
+then delete the account), which needs the owner's go-ahead.
+
+### Still open (item 148 is not complete until each is recorded)
+
+1. Photo/video GPS metadata: unresolved until device check 10; then scope removal if present.
+2. Device checklist `ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md`, checks 1-9.
+3. Signed-in API test through the real API with an authorized test account.
+4. Backup/WAL retention confirmed with Supabase and the expiry date recorded.
+5. (Related, separate approvals) presence purge scheduling (finding A); empty function sources (finding B).

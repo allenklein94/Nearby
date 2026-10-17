@@ -220,14 +220,21 @@ Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the
 `PRODUCT_AUDIT/ITEM_146_PRECISE_LOCATION_DEVICE_CHECKLIST_2026-10-17.md` is recorded (migration 20270320 LIVE; journey `preciseLocation` 17/17 under
 real roles; replay 444/444 + journeys 431/431; grants replay = prod 1556/1556; scope + results `ITEM_146_PRECISE_LOCATION_SECURITY_SCOPE_2026-10-17.md`).
 
-**Item 147 (non-public gathering rows readable by anyone, owner 2026-10-17: HIGH PRIORITY SECURITY) is SCOPED, NOT STARTED, OPEN:**
+**Item 147 (non-public gathering rows readable by anyone, owner 2026-10-17: HIGH PRIORITY SECURITY) is SCOPED, NOT STARTED, AWAITING THE OWNER'S BUILD APPROVAL (recommended 2026-10-17, not yet approved):**
 `gatherings`' SELECT policy is `qual = true`, so anon reads every invite-only/friends/community gathering's title, description, host and time;
 item 146 fixed coordinates only, never call gathering privacy done. Scope `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_SCOPE_2026-10-17.md`; needs its build approval.
 
 **Item 148 (Stories & Sightings location privacy, owner approved D1-D4 2026-10-17, LOCKED) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md` is recorded (migration 20270321 LIVE; journey `storySightingLocation` 14/14;
 replay 445/445 + journeys 445/445; grants = prod). Story/business-moment media GPS metadata DEFERRED, UNRESOLVED until check 10 runs on a device.
-Item 146's repeated-gathering averaging weakness is documented in its scope doc, not fixed, owner to assess (item 146 not reopened).
+Also OPEN: a signed-in test through the real API (needs an authorized test account), backup/WAL retention for the old sighting value
+(Free plan, 0 restorable backups, WAL archiving on: ask Supabase support, record expiry; never assume gone). Reported, not changed:
+`presence_reports` keeps everyone's last ~11 m area forever because `purge_expired_sightings` has no cron; `delete-account` and
+`moderate-photo` are deployed but their repo sources are empty (`report-presence`'s restored from its live bundle). Do not call location privacy complete.
+
+**Item 146 pin averaging (owner 2026-10-17): ASSESSMENT REOPENED, implementation unchanged** until a reviewed fix is approved: per-gathering
+pins average out for a host's repeated gatherings at one point (prod: up to 4 at one point; recurring series = 52/year).
+`PRODUCT_AUDIT/ITEM_146_PIN_AVERAGING_ASSESSMENT_2026-10-17.md` (recommends item 148's host+cell pin; options A/B, owner decides).
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -280,7 +287,7 @@ real-browser review of that page (its two headless findings, phone header wrap a
 **Known residuals, reported and left as is:** `submit_business_offer` is directly callable, so offer TEXT
 can skip the classifier via a direct call; `profiles` itself is not block-filtered (a direct read by id
 returns a verified profile, incl. a non-Dating person's, outside Dating discovery); the crossed-paths push (`notify_sighting_crossed_paths`) names
-the other person regardless of Dating consent (no sightings producer exists in the repo; Friends uses sightings too); `viewer_blocked_either_way` / `is_blocked` are client-callable; one-way client
+the other person regardless of Dating consent (producer: the live `report-presence` edge function; Friends uses sightings too); `viewer_blocked_either_way` / `is_blocked` are client-callable; one-way client
 block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RLS on
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an

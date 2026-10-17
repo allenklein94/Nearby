@@ -1,3 +1,15 @@
+# Item 148 follow-up + item 146 averaging assessment (2026-10-17) - nothing changed live
+
+Owner: three separate decisions. (1) Item 146: assessment of the repeated-pin averaging weakness REOPENED, implementation unchanged:
+`PRODUCT_AUDIT/ITEM_146_PIN_AVERAGING_ASSESSMENT_2026-10-17.md` (prod: 25 pointed gatherings, 2 hosts, up to 4 at one point; recurring
+series = 52 pins/year; recommends item 148's host+cell pin, option A 0.007 deg vs B 0.0035 deg; point-keyed offsets rejected as known-point unsafe).
+(2) Item 148 kept OPEN: device checklist, media GPS metadata, a signed-in real-API test (needs an authorized test account), backup retention.
+Backups: Free plan, `pitr_enabled` false, 0 backups listed, WAL archiving on; retention not inspectable, ask Supabase support. Correction: the
+sightings producer is the live `report-presence` edge function (repo source was empty; restored verbatim from its deployed v11 bundle, not
+redeployed); item 148's trigger pins its upserts. Reported, not changed: `purge_expired_sightings` has no cron (presence_reports keep ~11 m
+areas forever; an expired sighting never deleted); `delete-account` and `moderate-photo` deployed with empty repo sources.
+(3) Item 147: awaiting the owner's build approval (recommended, not approved).
+
 # Item 148 (owner, approved D1-D4 2026-10-17, LOCKED) Story & sighting location privacy - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 (Unrelated to the September "Item 148", business notification mute groups.) Scope, findings, build and full verification record:
