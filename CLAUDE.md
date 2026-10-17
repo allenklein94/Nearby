@@ -41,6 +41,8 @@ Locked items say "do not reopen": respect that unless the owner reopens them.
 not more features: `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (not yet run; needs
 Anthropic credit first).
 
+**"Save for later" (owner idea "152", 2026-10-17) MET BY ITEMS 30 + 31 + Plans' "☆ Interested" row, LOCKED, nothing built:** no separate Save/bookmark state, no "You saved this" or other saved-state strings, no saved businesses/places/favourites list. OWNER DECISION PENDING: the lock said Interested is never counted to the host, but item 139's host-only anonymous count ("☆ N people are interested but haven't joined yet") exists; kept as is until the owner decides. NOT DEVICE-VERIFIED: items 30/31 phone checks + item 31 native review.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -405,7 +407,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   keyed by person + 0.007 deg cell, so repeated posts share one pin); business moments store none; no client SELECT on
   `stories.latitude/longitude` / `sightings.approx_area` (a new column on either needs its own grant). Guard `storySightingLocationGuard.test.js`, journey `storySightingLocation`.
 - **Interested is private:** never shown or counted to another viewer, never a business request, never
-  commercial intent; the only business use is the anonymous floored aggregate (consent switch).
+  commercial intent; the only business use is the anonymous floored aggregate (consent switch). Exception: the host's
+  anonymous count (item 139, no names), under owner review (2026-10-17). It is the ONE saved state: never a second
+  Save/bookmark, "You saved this" wording, or saved businesses/places (owner idea "152", LOCKED).
 - **Blocks hide both ways, server-side,** via `viewer_blocked_either_way` / `is_blocked` inside the read;
   never an inline `from blocks` in RLS, never a client read of `blocks` (`blockVisibilityGuard.test.js`).
 - Behavior signals are private (`behavior_events`, owner-only, 90 days, Forget/Clear). Stated dietary/access

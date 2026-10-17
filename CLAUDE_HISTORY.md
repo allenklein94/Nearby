@@ -1,3 +1,16 @@
+# "Save for later" MET BY ITEMS 30 + 31, LOCKED (2026-10-17, owner idea "152"; nothing built)
+
+"152" is already item 152 (intent -> action conversion, waiting on evidence). Owner decision (LOCKED): items 30 ("✓ Saved" pulse ->
+"★ Interested", Undo toast) and 31 ("★ ~~Interested~~ → ✓ Attending" on an auto-approved join), together with Plans -> Upcoming's
+"☆ Interested" row (plus the starts-soon reminder and friend-joined push that already reach Interested people), satisfy the requirement
+as built. No separate Save/bookmark state; no "You saved this" or redundant saved-state strings; no saved businesses, saved places or
+Yelp-style favourites list; no second saved state beside Interested (master principle 2, product doctrine).
+Privacy: the owner's lock says Interested is never shown or counted to the host or other people. Recorded discrepancy, NOT changed: item
+139 (owner approved 2026-10-16) shows the HOST an anonymous count ("☆ N people are interested but haven't joined yet", count only, no
+names; `GatheringDetailScreen.js`, `ui.gatheringDetail.interestedCount`). The earlier summary in this conversation wrongly said no count
+reaches the host. Owner to decide: keep item 139's count (rule = no identities to anyone, anonymous count to the host only) or remove it.
+NOT DEVICE-VERIFIED: items 30 and 31 phone checks; native review of item 31's strings; results and defects to be recorded before closing.
+
 # Expired offer visibility MET AS BUILT + business-card expiry gap FIXED (2026-10-17, owner idea "151")
 
 Owner approved both decisions (`PRODUCT_AUDIT/EXPIRED_OFFER_VISIBILITY_SCOPE_2026-10-17.md`).
