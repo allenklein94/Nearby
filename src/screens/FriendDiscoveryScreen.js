@@ -225,7 +225,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
   // recorded). Owner idea 156: one decide path for both modes (list button,
   // deck button, deck swipe). The person leaves at once; if the write fails
   // they come back (list row / top of the deck) and the alert offers a
-  // real retry -- recordFriendDiscoverySwipe only needs their id.
+  // real retry -- recordFriendDiscoverySwipe only needs their id. Resolves
+  // whether it was saved (the deck's controller restores the person on false).
   async function handleDecide(item, direction) {
     setDecidedIds((prev) => new Set(prev).add(item.id));
     try {
@@ -233,6 +234,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
       if (isMutualMatch) {
         setMatchModal({ theirName: item.display_name, theirPhotoUrl: photoUrls[item.id] || null, matchId });
       }
+      return true;
     } catch (e) {
       console.error('recordFriendDiscoverySwipe failed', e);
       setDecidedIds((prev) => { const next = new Set(prev); next.delete(item.id); return next; });
@@ -244,6 +246,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
           { text: t('ui.friends.retry'), onPress: () => handleDecide(item, direction) },
         ]
       );
+      return false;
     }
   }
 

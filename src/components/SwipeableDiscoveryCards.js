@@ -1,6 +1,6 @@
 import { datingCardFacts } from '../utils/datingCardReasons';
 import EmptyCopy from './EmptyCopy';
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +9,7 @@ import { typography, spacing, radius } from '../theme';
 import { formatCrossedPathsTimeShort, gatheringReasonText } from '../services/crossedPathsSignals';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
+import { createSwipeDeck, releaseDirection } from '../utils/swipeDeck';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 
@@ -26,82 +27,78 @@ const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
 // per-candidate reason (shared gathering attendance when it exists,
 // proximity sighting otherwise) -- never both, never a guess.
 export default function SwipeableDiscoveryCards({
-  data, photoUrls, onlineStatuses, storyByUserId = {}, onViewStory, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths', onShowCompatibility, freeTonightIds = null,
+  data, photoUrls, onlineStatuses, storyByUserId = {}, onViewStory, onNotice, onWave, onViewProfile, onReport, compatibilityColor, onNeedMore, discoveryMode = 'crossedPaths', onShowCompatibility, freeTonightIds = null, restoreUserId = null, restoreSeq = 0,
 }) {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const styles = getStyles(colors, shadow);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [lastSkippedIndex, setLastSkippedIndex] = useState(null);
   const position = useRef(new Animated.ValueXY()).current;
   const rotate = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
     outputRange: ['-8deg', '0deg', '8deg'],
   });
+  const [, rerender] = useState(0);
+
+  // The shared deck controller (utils/swipeDeck.js): the pan handler below is still built once, but it only calls this
+  // long-lived controller, which reads the CURRENT data and callbacks (synced every render), so a swipe always acts on
+  // the person visible when it completes, exactly like the buttons. Swipes/taps during a fly-off are ignored; a Notice
+  // that fails (limit reached, network) brings the person back instead of silently moving past them.
+  const deckRef = useRef(null);
+  if (!deckRef.current) {
+    deckRef.current = createSwipeDeck({
+      // A decision is about a person, so the deck tracks people (not rows): a reload or a second row for the same
+      // person never brings back someone already decided.
+      keyOf: (row) => row.otherUserId ?? row.id,
+      animateOut: (direction, done) => {
+        const x = direction === 'right' ? SCREEN_WIDTH * 1.2 : -SCREEN_WIDTH * 1.2;
+        Animated.timing(position, { toValue: { x, y: 0 }, duration: MOTION_BUDGET.small.ms, useNativeDriver: false }).start(() => done());
+      },
+      resetPosition: () => position.setValue({ x: 0, y: 0 }),
+      onBegin: (direction) => Haptics.impactAsync(direction === 'right' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light),
+      onChange: () => rerender((n) => n + 1),
+    });
+  }
+  const deck = deckRef.current;
+  deck.sync({
+    items: data,
+    // Skipping never persists anything server-side (rewind is local). A Notice reports whether it was saved.
+    onDecide: (person, direction) => (direction === 'right' ? onNotice(person.otherUserId) : true),
+    // Request more results once only a few cards remain, so the stack rarely actually runs dry mid-swipe.
+    onAdvanced: onNeedMore ? (remaining) => { if (remaining <= 3) onNeedMore(); } : null,
+  });
+
+  // A Notice undone from the screen's Undo banner brings that person back into the deck.
+  useEffect(() => {
+    if (restoreUserId) deck.restore(restoreUserId);
+  }, [restoreUserId, restoreSeq]);
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 8,
+      onMoveShouldSetPanResponder: (_, gesture) => !deck.isBusy() && Math.abs(gesture.dx) > 8,
       onPanResponderMove: Animated.event([null, { dx: position.x, dy: position.y }], { useNativeDriver: false }),
       onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > SWIPE_THRESHOLD) {
-          forceSwipe('right');
-        } else if (gesture.dx < -SWIPE_THRESHOLD) {
-          forceSwipe('left');
-        } else {
+        const direction = releaseDirection(gesture.dx, SWIPE_THRESHOLD);
+        if (!direction || !deck.swipe(direction)) {
           Animated.spring(position, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
         }
       },
     })
   ).current;
 
-  function forceSwipe(direction) {
-    const x = direction === 'right' ? SCREEN_WIDTH * 1.2 : -SCREEN_WIDTH * 1.2;
-    Haptics.impactAsync(direction === 'right' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
-    Animated.timing(position, { toValue: { x, y: 0 }, duration: MOTION_BUDGET.small.ms, useNativeDriver: false }).start(() => {
-      onSwipeComplete(direction);
-    });
-  }
-
-  function onSwipeComplete(direction) {
-    const item = data[currentIndex];
-    if (direction === 'right' && item) {
-      onNotice(item.otherUserId);
-    }
-    // Skipping never persists anything server-side — so rewinding is
-    // just moving the local index back, nothing to undo remotely.
-    if (direction === 'left') {
-      setLastSkippedIndex(currentIndex);
-    } else {
-      setLastSkippedIndex(null);
-    }
-    position.setValue({ x: 0, y: 0 });
-    const nextIndex = currentIndex + 1;
-    setCurrentIndex(nextIndex);
-
-    // Request more results once only a few cards remain, so the
-    // stack rarely actually runs dry mid-swipe.
-    if (onNeedMore && data.length - nextIndex <= 3) {
-      onNeedMore();
-    }
-  }
-
   function handleRewind() {
-    if (lastSkippedIndex === null) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setCurrentIndex(lastSkippedIndex);
-    setLastSkippedIndex(null);
+    if (deck.rewind()) Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   }
 
   function handleButtonSkip() {
-    forceSwipe('left');
+    deck.swipe('left');
   }
 
   function handleButtonNotice() {
-    forceSwipe('right');
+    deck.swipe('right');
   }
 
-  if (currentIndex >= data.length) {
+  const item = deck.visible();
+  if (!item) {
     return (
       <View style={styles.emptyState}>
         <Text style={styles.emptyEmoji}>📍</Text>
@@ -110,8 +107,7 @@ export default function SwipeableDiscoveryCards({
     );
   }
 
-  const item = data[currentIndex];
-  const nextItem = data[currentIndex + 1];
+  const nextItem = deck.next();
   const crossedPathsTime = formatCrossedPathsTimeShort(item.last_seen_at);
   const gatheringText = discoveryMode === 'browse' ? null : gatheringReasonText(item.crossedPathsReason);
   const facts = datingCardFacts(item, { mode: discoveryMode, gatheringText, crossedPathsTime: discoveryMode === 'browse' ? null : crossedPathsTime, mutualFreeTonight: !!freeTonightIds?.has(item.otherUserId) });
@@ -200,7 +196,7 @@ export default function SwipeableDiscoveryCards({
       </Animated.View>
 
       <View style={styles.buttonRow}>
-        {lastSkippedIndex !== null && (
+        {deck.canRewind() && (
           <TouchableOpacity
             style={styles.rewindButton}
             onPress={handleRewind}

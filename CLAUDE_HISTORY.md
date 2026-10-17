@@ -1,3 +1,38 @@
+# Swipe-deck stale-card defect FIXED in both decks (2026-10-17, owner-ordered; not device-verified)
+
+Defect: Dating's `SwipeableDiscoveryCards` (and Friends' deck before idea 156's interim patch) built its PanResponder once
+(`useRef(PanResponder.create(...))`); the handler closed over the FIRST render's `data`, `currentIndex` and callbacks. A swipe
+after the first therefore acted on the first card again (a second Notice to, or skip of, the same person, while a different
+person was on screen) and the deck stopped advancing (index stuck at 1). The buttons, recreated each render, were correct.
+Also: a failed save advanced the deck anyway (Dating: limit reached / insert error moved past the person after the alert).
+Owner: fix it now, the underlying state issue (not a per-gesture workaround); every swipe acts on the person visible when the
+gesture completes; Dating's buttons and product behavior unchanged; pools, display preferences and privacy stay separate.
+
+Fix:
+- `utils/swipeDeck.js` (pure): `createSwipeDeck` = the ONE deck controller both decks use. `sync` on every render gives it the
+  current items/callbacks; the visible person = first not-yet-decided item (decided tracked by key: Dating by PERSON
+  `otherUserId`, so a reload or second row never brings back a decided person; Friends by id). `swipe(dir)` takes the visible
+  person at release; while a card flies off every further swipe/tap/rewind is ignored (never queued) and the pan handler declines
+  to start (`isBusy`); at the end the person is marked decided, `onDecide` runs, and a `false` / throw / rejection restores
+  them (back on top, never silently skipped). `rewind()` = Dating's ↺ (last skip only, cleared by a Notice); `restore(key)`.
+  `releaseDirection(dx, threshold)` = the one release rule. The superseded interim Friends patch (topRef/onSwipeRef) removed.
+- `components/SwipeableDiscoveryCards.js` (Dating): index state, `forceSwipe`, `onSwipeComplete` replaced by the controller;
+  same animation (fly-off small tier, spring back, stamps, rotation), same haptics, same buttons/symbols/a11y labels, Wave still
+  never advances, right = Notice, left = local skip, `onNeedMore` at <= 3 remaining. New props `restoreUserId` / `restoreSeq`.
+- `screens/DiscoveryScreen.js`: `sendNotice` resolves true (saved, or already noticed / wave upgraded) or false (limit, error);
+  `handleCardNotice` returns it; Undo on the banner restores that person into the deck (`deckRestore`), since the deck now
+  remembers decided people instead of an index.
+- `components/FriendDiscoverySwipeCards.js` on the same controller; `FriendDiscoveryScreen.handleDecide` resolves true/false.
+Verification: `src/utils/swipeDeck.test.js` 23: several consecutive swipes through a handler captured once (each acts on the
+next person, deck advances), current callback not the first render's, mixed swipe/button order, person taken at release even
+if data changes mid-flight, appends/reorders, Dating by person, rapid swipes/taps during a fly-off ignored, failures (false,
+async false, throw, reject, late failure after moving on) restore exactly that person, success keeps it advanced, rewind/Notice
+clearing, Undo restore, load-more count; guards: both decks only through the controller with no index/forceSwipe/captured
+lookups (the old Dating file fails them), Dating's buttons/symbols/labels/meanings unchanged. Jest 468 suites; prod journeys
+545/545 (no DB change). NOT DONE: device checks 17-25 in `PRODUCT_AUDIT/IDEA_156_FRIENDS_LIST_FIRST_DEVICE_CHECKLIST_2026-10-17.md`
+on both decks. Correction to the idea-156 audit: Dating's deck buttons are symbols on screen (✕ 👋 ♡ ↺), worded only for screen
+readers (the audit said "labelled"); left unchanged per the owner's "no other product changes", owner to decide.
+
 # Swipe is a choice: Friends discovery list-first BUILT, LIVE (2026-10-17, owner idea "156", LOCKED; not device-verified)
 
 Owner decisions (LOCKED): Nearby never becomes swipe-left/swipe-right; decisions use explicit actions. Idea 156 recorded as MET

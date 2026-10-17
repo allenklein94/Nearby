@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
@@ -8,6 +8,7 @@ import { typography, spacing, radius } from '../theme';
 import FriendCandidateDetails, { DISTANCE_BUCKET_KEYS } from './FriendCandidateDetails';
 import FriendDecisionButtons from './FriendDecisionButtons';
 import { FRIEND_DECISIONS } from '../utils/friendDiscoveryView';
+import { createSwipeDeck, releaseDirection } from '../utils/swipeDeck';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -40,8 +41,8 @@ export function FriendDiscoveryEmpty({ navigation }) {
 // Friend Discovery's OPTIONAL deck (owner idea 156: the list is the default; this mode is the person's own choice). Shares
 // SwipeableDiscoveryCards' swipe mechanics (PanResponder threshold, animated stamps, a two-deep stack) but not the same
 // component: the card answers "would I want this person as a friend?" (FriendCandidateDetails, the same card the list shows).
-// It always shows data[0]: the screen removes a decided person (undecidedCandidates), so a failed write puts them back on
-// top and a person decided in the list never reappears here. Swiping is optional: the labelled Pass / Connect buttons do
+// The screen also removes a decided person (undecidedCandidates), so a person decided in the list never appears here, and
+// a failed write puts them back on top. Swiping is optional: the labelled Pass / Connect buttons do
 // exactly what the swipe does (FriendDecisionButtons, FRIEND_DECISIONS).
 export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe, navigation }) {
   const { t } = useLanguage();
@@ -52,43 +53,46 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
     outputRange: ['-8deg', '0deg', '8deg'],
   });
-  // The pan handler is created once (a closure from the first render); it reads the current top card and the current
-  // onSwipe through refs, so a swipe always decides the person on screen.
-  const topRef = useRef(null);
-  topRef.current = data[0] ?? null;
-  const onSwipeRef = useRef(onSwipe);
-  onSwipeRef.current = onSwipe;
+  const [, rerender] = useState(0);
+
+  // The shared deck controller (utils/swipeDeck.js), same as Dating's: the once-built pan handler and the buttons both
+  // call it, it reads the CURRENT data and onSwipe, so every swipe decides the person on screen; swipes/taps during a
+  // fly-off are ignored; a failed save (onSwipe resolves false) brings the person back.
+  const deckRef = useRef(null);
+  if (!deckRef.current) {
+    deckRef.current = createSwipeDeck({
+      animateOut: (direction, done) => {
+        const x = direction === 'right' ? SCREEN_WIDTH * 1.2 : -SCREEN_WIDTH * 1.2;
+        Animated.timing(position, { toValue: { x, y: 0 }, duration: MOTION_BUDGET.small.ms, useNativeDriver: false }).start(() => done());
+      },
+      resetPosition: () => position.setValue({ x: 0, y: 0 }),
+      onBegin: (direction) => Haptics.impactAsync(direction === 'right' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light),
+      onChange: () => rerender((n) => n + 1),
+    });
+  }
+  const deck = deckRef.current;
+  deck.sync({
+    items: data,
+    onDecide: (person, direction) => onSwipe(person, direction === 'right' ? FRIEND_DECISIONS.connect.direction : FRIEND_DECISIONS.pass.direction),
+  });
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 8,
+      onMoveShouldSetPanResponder: (_, gesture) => !deck.isBusy() && Math.abs(gesture.dx) > 8,
       onPanResponderMove: Animated.event([null, { dx: position.x, dy: position.y }], { useNativeDriver: false }),
       onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > SWIPE_THRESHOLD) {
-          forceSwipe('right');
-        } else if (gesture.dx < -SWIPE_THRESHOLD) {
-          forceSwipe('left');
-        } else {
+        const direction = releaseDirection(gesture.dx, SWIPE_THRESHOLD);
+        if (!direction || !deck.swipe(direction)) {
           Animated.spring(position, { toValue: { x: 0, y: 0 }, useNativeDriver: false }).start();
         }
       },
     })
   ).current;
 
-  function forceSwipe(direction) {
-    const x = direction === 'right' ? SCREEN_WIDTH * 1.2 : -SCREEN_WIDTH * 1.2;
-    Haptics.impactAsync(direction === 'right' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
-    const item = topRef.current;
-    Animated.timing(position, { toValue: { x, y: 0 }, duration: MOTION_BUDGET.small.ms, useNativeDriver: false }).start(() => {
-      position.setValue({ x: 0, y: 0 });
-      if (item) onSwipeRef.current(item, direction === 'right' ? FRIEND_DECISIONS.connect.direction : FRIEND_DECISIONS.pass.direction);
-    });
-  }
+  const item = deck.visible();
+  if (!item) return <FriendDiscoveryEmpty navigation={navigation} />;
 
-  if (!data.length) return <FriendDiscoveryEmpty navigation={navigation} />;
-
-  const item = data[0];
-  const nextItem = data[1];
+  const nextItem = deck.next();
   const storyGroup = storyByUserId[item.id] ?? null;
   const cardStyle = { transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }] };
   const likeOpacity = position.x.interpolate({ inputRange: [0, SWIPE_THRESHOLD], outputRange: [0, 1], extrapolate: 'clamp' });
@@ -138,7 +142,7 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
       <View style={styles.buttonRow}>
         <FriendDecisionButtons
           name={item.display_name}
-          onDecide={(direction) => forceSwipe(direction === FRIEND_DECISIONS.connect.direction ? 'right' : 'left')}
+          onDecide={(direction) => deck.swipe(direction === FRIEND_DECISIONS.connect.direction ? 'right' : 'left')}
         />
       </View>
     </View>

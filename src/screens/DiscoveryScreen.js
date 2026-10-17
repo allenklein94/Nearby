@@ -106,6 +106,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   const [advancedFilters, setAdvancedFilters] = useState({});
   const [ageRangeFilter, setAgeRangeFilter] = useState({ min: 18, max: 99 });
   const [viewStyle, setViewStyle] = useState('list');
+  const [deckRestore, setDeckRestore] = useState({ userId: null, seq: 0 });
   const [discoveryMode, setDiscoveryMode] = useState('crossedPaths');
   const [browseOffset, setBrowseOffset] = useState(0);
   const [browseHasMore, setBrowseHasMore] = useState(true);
@@ -401,6 +402,8 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   async function handleUndo() {
     if (!undoState) return;
     if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    // The card deck keeps who was decided by person (utils/swipeDeck.js): an undone Notice brings them back into it.
+    setDeckRestore((prev) => ({ userId: undoState.otherUserId, seq: prev.seq + 1 }));
 
     await supabase.from('notices').delete().eq('id', undoState.noticeId);
 
@@ -419,6 +422,8 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     load();
   }
 
+  // Resolves true when the Notice/Wave is saved (or already was), false otherwise; the card deck brings the person
+  // back on false. The list's buttons ignore the result.
   async function sendNotice(toUserId, isWave = false) {
     const limitCheck = isWave ? await checkWaveLimit() : await checkNoticeLimit();
     if (!limitCheck.allowed) {
@@ -430,7 +435,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
           { text: t('ui.dating.upgradeToPremium'), onPress: () => navigation.navigate('Paywall') },
         ]
       );
-      return;
+      return false;
     }
 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -460,23 +465,24 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
 
           if (updateError) {
             Alert.alert(t('ui.dating.waveNotSent'), updateError.message);
-            return;
+            return false;
           }
           posthog.capture('wave_sent');
           showUndoBanner(existing.id, true, toUserId);
-          return;
+          return true;
         }
 
         Alert.alert(t('ui.dating.alreadySent'), t('ui.dating.youveAlreadyNoticedThisPerson'));
-        return;
+        return true;
       }
 
       Alert.alert(isWave ? t('ui.dating.waveNotSent') : t('ui.dating.noticeNotSent'), insertError.message);
-      return;
+      return false;
     }
 
     posthog.capture(isWave ? 'wave_sent' : 'notice_sent');
     showUndoBanner(inserted.id, isWave, toUserId);
+    return true;
   }
 
   function confirmWave(toUserId) {
@@ -491,7 +497,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   }
 
   function handleCardNotice(toUserId) {
-    sendNotice(toUserId, false);
+    return sendNotice(toUserId, false);
   }
 
   function handleCardWave(toUserId) {
@@ -674,6 +680,8 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
             discoveryMode={discoveryMode}
             onShowCompatibility={showCompatibilityReport}
             freeTonightIds={freeTonightIds}
+            restoreUserId={deckRestore.userId}
+            restoreSeq={deckRestore.seq}
           />
         )
       ) : (
