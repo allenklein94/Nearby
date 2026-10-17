@@ -1,3 +1,14 @@
+# Business "offer lifecycle" MET BY ITEM 13, LOCKED (2026-10-17, owner idea "150"; nothing built)
+
+Owner idea: the business sees Draft -> Live -> Accepted -> Redeemed on one evolving card. "150" is already item 150 (Performance tile).
+Owner decision (LOCKED): item 13's existing Offer sent -> Accepted -> Redeemed on the business's opportunity card (`utils/offerProgress.js`,
+`motion/OfferProgressSteps.js`, read only from the stored offer status, live while open, one glow per newly reached step) satisfies it as
+built. No saved Draft state, no draft-offer persistence, no draft-management table; "Offer sent" stays (never "Live": a reply goes to one
+customer, not published); item 49's live Customer Preview stays the view while Make an Offer is being completed; the business view stays
+practical and operational, distinct from the customer's (item 129); no other funnel view or sliding-card animation (item 127 stays declined).
+NOT DEVICE-VERIFIED until `PRODUCT_AUDIT/ITEM_13_OFFER_PROGRESS_DEVICE_CHECKLIST_2026-10-16.md` passes: a real signed-in business on a
+physical phone, the business flow in a browser, native review of `ui.bizDash2.progress.*`; outcomes and defects recorded there. No code changed.
+
 # Offer validity window MET AS BUILT, LOCKED (2026-10-17, owner idea "149"; nothing built)
 
 Owner approved the scope (`PRODUCT_AUDIT/OFFER_VALIDITY_WINDOW_SCOPE_2026-10-17.md`). LOCKED: the reply-timing requirement is met as built:
