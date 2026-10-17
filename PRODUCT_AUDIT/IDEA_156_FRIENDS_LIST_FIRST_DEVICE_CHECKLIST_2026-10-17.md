@@ -44,5 +44,18 @@ Before the fix, a swipe after the first acted on the FIRST card again and the de
 | 24 | Dating: deck reaches its last few cards (Browse) | More load; nobody already decided reappears | | n/a |
 | 25 | Visual: drag, stamps, fly-off, next card | Looks exactly as before the fix (no visual change intended) | | |
 
+## Dating deck: visible words under the buttons (owner, 2026-10-17; `utils/datingDeckActions.js`)
+
+Each Dating deck button keeps its symbol, circle, colour and screen-reader label; a word now sits under it (↺ Rewind,
+✕ Skip, 👋 Wave, ♡ Notice; the word and the whole column are tappable). Behaviour is unchanged.
+
+| # | Check | Expected | Result |
+|---|-------|----------|--------|
+| 26 | Open the Dating deck | Each button shows its word under the symbol: Skip, Wave, Notice (+ Rewind after a skip); circles look as before | |
+| 27 | Tap each word (not the circle) | Same action as the circle: Skip skips, Wave sends a Wave (deck stays), Notice sends a Notice, Rewind brings the skipped person back | |
+| 28 | VoiceOver / TalkBack | Each reads exactly as before ("Skip {name}", "Send a Wave to {name}", "Send a Notice to {name}", "Rewind to the person you just skipped"), the word is not read twice | |
+| 29 | German / Russian / Korean / Tagalog, small phone, light + dark | Words fit on one line, readable, the row doesn't overflow the screen or cover the card's text | |
+
 Also outstanding: native-speaker review of the 10 machine-authored languages for `ui.friends.passAction`, `connect`,
-`connectWithA11y`, `meetNewPeopleIntro`, `likeFailed` (reworded) and `ui.settings.friendsDisplayStyle`, `chooseHowFriendsAreShown`.
+`connectWithA11y`, `meetNewPeopleIntro`, `likeFailed` (reworded) and `ui.settings.friendsDisplayStyle`, `chooseHowFriendsAreShown`;
+and of the 4 Dating deck words `ui.swipeCards.deckSkip`, `deckWave`, `deckNotice`, `deckRewind`.

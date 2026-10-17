@@ -9,7 +9,11 @@
   "rewindToThePersonYouA11y": "Rewind to the person you just skipped",
   "skipA11y": "Skip {name}",
   "sendAWaveToA11y": "Send a Wave to {name}",
-  "sendANoticeToA11y": "Send a Notice to {name}"
+  "sendANoticeToA11y": "Send a Notice to {name}",
+  "deckSkip": "Skip",
+  "deckWave": "Wave",
+  "deckNotice": "Notice",
+  "deckRewind": "Rewind"
  },
  "es": {
   "why": "{compatibilityScore}% · ¿Por qué?",
@@ -21,7 +25,11 @@
   "rewindToThePersonYouA11y": "Volver a la persona que acabas de saltar",
   "skipA11y": "Saltar a {name}",
   "sendAWaveToA11y": "Enviar un saludo a {name}",
-  "sendANoticeToA11y": "Enviar un aviso a {name}"
+  "sendANoticeToA11y": "Enviar un aviso a {name}",
+  "deckSkip": "Saltar",
+  "deckWave": "Saludo",
+  "deckNotice": "Aviso",
+  "deckRewind": "Volver"
  },
  "de": {
   "why": "{compatibilityScore}% · Warum?",
@@ -33,7 +41,11 @@
   "rewindToThePersonYouA11y": "Zurück zur Person, die du gerade übersprungen hast",
   "skipA11y": "{name} überspringen",
   "sendAWaveToA11y": "{name} zuwinken",
-  "sendANoticeToA11y": "{name} einen Hinweis geben"
+  "sendANoticeToA11y": "{name} einen Hinweis geben",
+  "deckSkip": "Überspringen",
+  "deckWave": "Winken",
+  "deckNotice": "Hinweis",
+  "deckRewind": "Zurück"
  },
  "fr": {
   "why": "{compatibilityScore} % · Pourquoi ?",
@@ -45,7 +57,11 @@
   "rewindToThePersonYouA11y": "Revenir à la personne que tu viens de passer",
   "skipA11y": "Passer {name}",
   "sendAWaveToA11y": "Envoyer un signe à {name}",
-  "sendANoticeToA11y": "Envoyer un avis à {name}"
+  "sendANoticeToA11y": "Envoyer un avis à {name}",
+  "deckSkip": "Passer",
+  "deckWave": "Signe",
+  "deckNotice": "Avis",
+  "deckRewind": "Revenir"
  },
  "pt": {
   "why": "{compatibilityScore}% · Por quê?",
@@ -57,7 +73,11 @@
   "rewindToThePersonYouA11y": "Voltar para a pessoa que você acabou de pular",
   "skipA11y": "Pular {name}",
   "sendAWaveToA11y": "Enviar um aceno para {name}",
-  "sendANoticeToA11y": "Enviar um aviso para {name}"
+  "sendANoticeToA11y": "Enviar um aviso para {name}",
+  "deckSkip": "Pular",
+  "deckWave": "Aceno",
+  "deckNotice": "Aviso",
+  "deckRewind": "Voltar"
  },
  "ht": {
   "why": "{compatibilityScore}% · Poukisa?",
@@ -69,7 +89,11 @@
   "rewindToThePersonYouA11y": "Retounen sou moun ou fèk sote a",
   "skipA11y": "Sote {name}",
   "sendAWaveToA11y": "Voye yon salitasyon bay {name}",
-  "sendANoticeToA11y": "Voye yon avi bay {name}"
+  "sendANoticeToA11y": "Voye yon avi bay {name}",
+  "deckSkip": "Sote",
+  "deckWave": "Salitasyon",
+  "deckNotice": "Avi",
+  "deckRewind": "Retounen"
  },
  "zh": {
   "why": "{compatibilityScore}% · 为什么？",
@@ -81,7 +105,11 @@
   "rewindToThePersonYouA11y": "回到刚跳过的人",
   "skipA11y": "跳过{name}",
   "sendAWaveToA11y": "向 {name} 招手",
-  "sendANoticeToA11y": "提醒 {name}"
+  "sendANoticeToA11y": "提醒 {name}",
+  "deckSkip": "跳过",
+  "deckWave": "招手",
+  "deckNotice": "提醒",
+  "deckRewind": "回到"
  },
  "vi": {
   "why": "{compatibilityScore}% · Vì sao?",
@@ -93,7 +121,11 @@
   "rewindToThePersonYouA11y": "Quay lại người bạn vừa bỏ qua",
   "skipA11y": "Bỏ qua {name}",
   "sendAWaveToA11y": "Vẫy tay với {name}",
-  "sendANoticeToA11y": "Gửi thông báo cho {name}"
+  "sendANoticeToA11y": "Gửi thông báo cho {name}",
+  "deckSkip": "Bỏ qua",
+  "deckWave": "Vẫy tay",
+  "deckNotice": "Thông báo",
+  "deckRewind": "Quay lại"
  },
  "tl": {
   "why": "{compatibilityScore}% · Bakit?",
@@ -105,7 +137,11 @@
   "rewindToThePersonYouA11y": "Bumalik sa taong kakalaktaw mo lang",
   "skipA11y": "Laktawan si {name}",
   "sendAWaveToA11y": "Magpadala ng Wave kay {name}",
-  "sendANoticeToA11y": "Mag-abiso kay {name}"
+  "sendANoticeToA11y": "Mag-abiso kay {name}",
+  "deckSkip": "Laktawan",
+  "deckWave": "Wave",
+  "deckNotice": "Abiso",
+  "deckRewind": "Bumalik"
  },
  "ru": {
   "why": "{compatibilityScore}% · Почему?",
@@ -117,7 +153,11 @@
   "rewindToThePersonYouA11y": "Вернуться к человеку, которого вы только что пропустили",
   "skipA11y": "Пропустить {name}",
   "sendAWaveToA11y": "Отправить взмах: {name}",
-  "sendANoticeToA11y": "Отправить уведомление: {name}"
+  "sendANoticeToA11y": "Отправить уведомление: {name}",
+  "deckSkip": "Пропустить",
+  "deckWave": "Взмах",
+  "deckNotice": "Уведомление",
+  "deckRewind": "Вернуться"
  },
  "ko": {
   "why": "{compatibilityScore}% · 왜?",
@@ -129,6 +169,10 @@
   "rewindToThePersonYouA11y": "방금 건너뛴 사람으로 되돌리기",
   "skipA11y": "{name} 건너뛰기",
   "sendAWaveToA11y": "{name}님에게 웨이브 보내기",
-  "sendANoticeToA11y": "{name}님에게 알림 보내기"
+  "sendANoticeToA11y": "{name}님에게 알림 보내기",
+  "deckSkip": "건너뛰기",
+  "deckWave": "웨이브",
+  "deckNotice": "알림",
+  "deckRewind": "되돌리기"
  }
 }

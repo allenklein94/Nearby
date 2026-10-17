@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 import { createSwipeDeck, releaseDirection } from './swipeDeck';
+import { DATING_DECK_ACTIONS } from './datingDeckActions';
 
 const people = (...ids) => ids.map((id) => ({ id, otherUserId: `u-${id}` }));
 
@@ -214,8 +215,11 @@ describe('guards: both decks use the controller; Dating\'s buttons are unchanged
   });
 
   it('Dating keeps its buttons, symbols, screen-reader labels and swipe meanings', () => {
-    for (const k of ['rewindToThePersonYouA11y', 'skipA11y', 'sendAWaveToA11y', 'sendANoticeToA11y']) expect(dating).toContain(`ui.swipeCards.${k}`);
-    for (const g of ['>↺<', '>✕<', '>👋<', '>♡<']) expect(dating).toContain(g);
+    // symbols + screen-reader labels unchanged, now read from DATING_DECK_ACTIONS
+    expect(DATING_DECK_ACTIONS.rewind).toMatchObject({ glyph: '↺', a11yKey: 'ui.swipeCards.rewindToThePersonYouA11y' });
+    expect(DATING_DECK_ACTIONS.skip).toMatchObject({ glyph: '✕', a11yKey: 'ui.swipeCards.skipA11y' });
+    expect(DATING_DECK_ACTIONS.wave).toMatchObject({ glyph: '👋', a11yKey: 'ui.swipeCards.sendAWaveToA11y' });
+    expect(DATING_DECK_ACTIONS.notice).toMatchObject({ glyph: '♡', a11yKey: 'ui.swipeCards.sendANoticeToA11y' });
     expect(dating).toContain("onPress={() => onWave(item.otherUserId)}"); // Wave never advances the deck
     expect(dating).toMatch(/direction === 'right' \? onNotice\(person\.otherUserId\) : true/); // right = Notice, left = local skip
     expect(dating).toContain("deck.swipe('left')");
@@ -226,5 +230,49 @@ describe('guards: both decks use the controller; Dating\'s buttons are unchanged
     const screen = read('screens/DiscoveryScreen.js');
     expect(screen).toContain('return sendNotice(toUserId, false);');
     expect(screen).toMatch(/restoreUserId=\{deckRestore\.userId\}/);
+  });
+});
+
+describe('Dating deck: each visible word matches what its button does (owner, 2026-10-17)', () => {
+  const dating = fs.readFileSync(path.join(__dirname, '..', 'components/SwipeableDiscoveryCards.js'), 'utf8');
+  const strings = require('../i18n/ui/swipeCards').default;
+  const LANGS = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
+  const key = (k) => k.replace('ui.swipeCards.', '');
+  // each button: its handler, plus its symbol, word and screen-reader label all from ONE table entry
+  const BUTTONS = [
+    ['rewind', 'onPress={handleRewind}'],
+    ['skip', 'onPress={handleButtonSkip}'],
+    ['wave', 'onPress={() => onWave(item.otherUserId)}'],
+    ['notice', 'onPress={handleButtonNotice}'],
+  ];
+
+  it.each(BUTTONS)('%s: handler, symbol, word and screen-reader label sit on the same button', (name, handler) => {
+    const at = dating.indexOf(handler);
+    expect(at).toBeGreaterThan(-1);
+    const button = dating.slice(dating.lastIndexOf('<TouchableOpacity', at), dating.indexOf('</TouchableOpacity>', at));
+    expect(button).toContain(`accessibilityLabel={t(${name}.a11yKey`);
+    expect(button).toContain(`{${name}.glyph}`);
+    expect(button).toContain(`{t(${name}.labelKey)}`);
+  });
+
+  it('the visible word is the short form of the screen-reader label in English', () => {
+    const en = strings.en;
+    for (const [name] of BUTTONS) {
+      const a = DATING_DECK_ACTIONS[name];
+      expect(en[key(a.a11yKey)].toLowerCase()).toContain(en[key(a.labelKey)].toLowerCase());
+    }
+  });
+
+  it('every language has all four words, short enough for a caption', () => {
+    for (const l of LANGS) for (const [name] of BUTTONS) {
+      const word = strings[l][key(DATING_DECK_ACTIONS[name].labelKey)];
+      expect(typeof word).toBe('string');
+      expect(word.length).toBeGreaterThan(0);
+      expect(word.length).toBeLessThanOrEqual(14);
+    }
+  });
+
+  it('no swipe instruction in the words (idea 156)', () => {
+    for (const l of LANGS) for (const [name] of BUTTONS) expect(strings[l][key(DATING_DECK_ACTIONS[name].labelKey)]).not.toMatch(/swipe/i);
   });
 });

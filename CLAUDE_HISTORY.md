@@ -1,3 +1,24 @@
+# Dating deck buttons get visible words (2026-10-17, owner-approved; not device-verified)
+
+Owner: add visible words to Dating's deck buttons to match the worded Friends deck; keep every action, meaning, backend
+behaviour, styling, animation, screen-reader label and swipe meaning; pools, privacy and display settings stay separate.
+A UI consistency change, not a redesign.
+
+Built:
+- `utils/datingDeckActions.js`: `DATING_DECK_ACTIONS` (rewind / skip / wave / notice -> glyph, labelKey, a11yKey), the one
+  table the deck reads for each button's symbol, word and screen-reader label (mirrors `FRIEND_DECISIONS`).
+- `components/SwipeableDiscoveryCards.js`: each button = its unchanged circle (same size, colour, symbol) + a 12 pt word under
+  it; the whole column is the tap target; `accessibilityLabel` unchanged so the word isn't read twice; handlers, swipe deck,
+  stamps and animation untouched. Row aligns to the top so circles of different sizes keep their words on one line.
+- 4 new strings `ui.swipeCards.deckSkip` / `deckWave` / `deckNotice` / `deckRewind` (English: Skip, Wave, Notice, Rewind),
+  each the short form of that button's existing screen-reader label, in all 11 languages (10 machine-authored, need native review).
+
+Verification: `swipeDeck.test.js` 23 -> 30 (each button's handler, symbol, word and screen-reader label come from the same
+table entry, the four new checks fail on the previous file; English word contained in its screen-reader label; all 11
+languages have all four words, <= 14 characters, never "swipe"; the stale-card guards unchanged and passing). Jest 468 suites,
+6280 tests pass. No migration, no journey change (client-only). Device checks 26-29 added to
+`PRODUCT_AUDIT/IDEA_156_FRIENDS_LIST_FIRST_DEVICE_CHECKLIST_2026-10-17.md`, not run; checks 17-25 for both decks still not run.
+
 # Swipe-deck stale-card defect FIXED in both decks (2026-10-17, owner-ordered; not device-verified)
 
 Defect: Dating's `SwipeableDiscoveryCards` (and Friends' deck before idea 156's interim patch) built its PanResponder once

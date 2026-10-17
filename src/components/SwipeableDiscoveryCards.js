@@ -10,8 +10,10 @@ import { formatCrossedPathsTimeShort, gatheringReasonText } from '../services/cr
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import { createSwipeDeck, releaseDirection } from '../utils/swipeDeck';
+import { DATING_DECK_ACTIONS } from '../utils/datingDeckActions';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
+const { rewind, skip, wave, notice } = DATING_DECK_ACTIONS;
 
 // A genuinely optional alternative to the list view — swipe right to
 // send a Notice, swipe left to move on with no action taken. Wave
@@ -198,37 +200,49 @@ export default function SwipeableDiscoveryCards({
       <View style={styles.buttonRow}>
         {deck.canRewind() && (
           <TouchableOpacity
-            style={styles.rewindButton}
+            style={styles.deckAction}
             onPress={handleRewind}
-            accessibilityLabel={t('ui.swipeCards.rewindToThePersonYouA11y')}
+            accessibilityLabel={t(rewind.a11yKey)}
             accessibilityRole="button"
           >
-            <Text style={styles.rewindButtonText}>↺</Text>
+            <View style={styles.rewindButton}>
+              <Text style={styles.rewindButtonText}>{rewind.glyph}</Text>
+            </View>
+            <Text style={styles.deckActionLabel} numberOfLines={1}>{t(rewind.labelKey)}</Text>
           </TouchableOpacity>
         )}
         <TouchableOpacity
-          style={styles.skipButton}
+          style={styles.deckAction}
           onPress={handleButtonSkip}
-          accessibilityLabel={t('ui.swipeCards.skipA11y', { name: item.profiles?.display_name })}
+          accessibilityLabel={t(skip.a11yKey, { name: item.profiles?.display_name })}
           accessibilityRole="button"
         >
-          <Text style={styles.skipButtonText}>✕</Text>
+          <View style={styles.skipButton}>
+            <Text style={styles.skipButtonText}>{skip.glyph}</Text>
+          </View>
+          <Text style={styles.deckActionLabel} numberOfLines={1}>{t(skip.labelKey)}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.waveButton}
+          style={styles.deckAction}
           onPress={() => onWave(item.otherUserId)}
-          accessibilityLabel={t('ui.swipeCards.sendAWaveToA11y', { name: item.profiles?.display_name })}
+          accessibilityLabel={t(wave.a11yKey, { name: item.profiles?.display_name })}
           accessibilityRole="button"
         >
-          <Text style={styles.waveButtonText}>👋</Text>
+          <View style={styles.waveButton}>
+            <Text style={styles.waveButtonText}>{wave.glyph}</Text>
+          </View>
+          <Text style={styles.deckActionLabel} numberOfLines={1}>{t(wave.labelKey)}</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.noticeButton}
+          style={styles.deckAction}
           onPress={handleButtonNotice}
-          accessibilityLabel={t('ui.swipeCards.sendANoticeToA11y', { name: item.profiles?.display_name })}
+          accessibilityLabel={t(notice.a11yKey, { name: item.profiles?.display_name })}
           accessibilityRole="button"
         >
-          <Text style={styles.noticeButtonText}>♡</Text>
+          <View style={styles.noticeButton}>
+            <Text style={styles.noticeButtonText}>{notice.glyph}</Text>
+          </View>
+          <Text style={styles.deckActionLabel} numberOfLines={1}>{t(notice.labelKey)}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -270,8 +284,11 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   bio: { ...typography.body, color: colors.textSecondary },
   sharedText: { color: colors.primary, fontSize: 12, fontWeight: '600', marginTop: spacing.xs },
   buttonRow: {
-    position: 'absolute', bottom: spacing.xl, flexDirection: 'row', gap: spacing.lg, alignItems: 'center',
+    position: 'absolute', bottom: spacing.xl, flexDirection: 'row', gap: spacing.lg, alignItems: 'flex-start',
   },
+  // each button = its unchanged circle + the visible word under it (the whole column is the tap target)
+  deckAction: { alignItems: 'center', gap: 4, minWidth: 60, maxWidth: 84 },
+  deckActionLabel: { fontSize: 12, fontWeight: '600', color: colors.textSecondary, textAlign: 'center' },
   rewindButton: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface,
     borderWidth: 1, borderColor: '#f59e0b', justifyContent: 'center', alignItems: 'center', ...shadow.card,
