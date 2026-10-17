@@ -1,3 +1,26 @@
+# Item 146 pin averaging: Option A built (2026-10-17, owner approved Option A, LOCKED; B and C rejected)
+
+Gathering pins were the precise point + a secret offset keyed by the GATHERING, so a host's repeated gatherings at one point (a weekly
+series = 52 pins/year) averaged toward the point. `supabase/migrations/20270324_gathering_pin_host_cell.sql` (applied 2026-10-17):
+`private.gathering_location_pin(host, gathering, lat, lng)` = item 148's `private.location_pin('gathering', host, ...)` (a pin inside
+the point's 0.007 deg cell chosen by the secret, keyed by host + cell, independent of where in the cell the point is: no offset to
+recover; 'gathering' scope never equals a story pin; hostless gathering keys on its id); `private.gathering_pin` DROPPED;
+`get_gathering_distances` + `get_bounded_nearby_gathering_ids` use it (item 147's row rule kept), pre-filter widened 0.0035 -> 0.007,
+radius test on the pin. Exact point (host + approved attendees via `get_gathering_meetup_point`), row and column rules unchanged.
+Map: `src/utils/mapPinStacks.js` `stackGatheringPins` (gatherings sharing a pin on a ~22 m client ring around it, fixed time/id order,
+each its own marker + callout, computed from the pin only), used by `GatheringsMapView`; guard `mapPinStacks.test.js`. No new strings.
+The owner's spec also said "keyed by a gathering-specific identifier"; that contradicts the locked "same host, same area = one pin"
+(a per-gathering key is the averaging weakness), so the lock was followed.
+Verified: journey `preciseLocation` 21/21 (+4: 14 gatherings incl. a 10-week series at one point = 1 pin, mean = pin; spread point and
+far cell corner share it; option C's known-point offset misses by > 0.001 deg; other host / next cell differ; radius boundary on the
+pin; far corner found via the widened pre-filter; old function gone); with the old pin restored in the replay container the 4 new
+checks FAIL and 17 pass. Jest 462 suites all pass; replay 448/448 + journeys 477/477 + both concurrency scripts; prod journeys 477/477
+(rolled back); `gathering-precise-location-access.sql` as expected; grants + touched function definitions replay = prod 7220/7220
+(extension-owned functions excluded: btree_gist/pg_trgm live in prod's public schema). Residuals: cell edges (as item 148); `area`
+(0.01 deg, readable) intersected with the cell: per axis >= ~111 m (median ~668 m; old pin went to ~3 m), never narrowing with repeats;
+`count_gatherings_near_batch` still locates public discoverable gatherings to ~110 m (item 146 LOCKED, owner to decide); NOT
+device-verified (item 146 checklist 1-3 + new 12). Signed-in real-API test for items 147/148 stays DEFERRED (owner).
+
 # Presence retention + recovered edge function sources (2026-10-17, owner approved both "after verification")
 
 Presence: `purge_expired_sightings` (baseline) was never scheduled, so `presence_reports` kept each person's last ~11 m area forever.

@@ -8,11 +8,14 @@ import { typography, spacing, radius } from '../theme';
 import { BUSINESS_PIN_COLOR } from '../motion/PinToSheetFrame';
 import { PIN_HEAD_LIFT } from '../motion/pinToSheet';
 import { isMapLiveNow } from '../utils/rightNowWindow';
+import { stackGatheringPins } from '../utils/mapPinStacks';
 
 // Shows gatherings, brand deals, businesses, and public stories together
-// on one map. Gatherings use fuzzed_lat/fuzzed_lng (server-computed,
-// jittered by roughly a quarter mile) — the app never has access to
-// a gathering's exact coordinates on the client, by design. Public
+// on one map. Gatherings use fuzzed_lat/fuzzed_lng (server-computed from
+// a secret, keyed by host + a ~780 m cell, item 146 Option A) — the app
+// never has access to a gathering's exact coordinates on the client, by
+// design; a host's gatherings in one cell share a pin and are drawn as
+// one stack (utils/mapPinStacks.js). Public
 // stories use the same fuzzing treatment, since they're a personal
 // post, not a business location. Deals and businesses use real
 // coordinates — they're legitimate public business locations, not a
@@ -85,13 +88,13 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
       showsUserLocation
       showsMyLocationButton
     >
-      {pinnableGatherings.map((g) => {
+      {stackGatheringPins(pinnableGatherings).map(({ gathering: g, latitude, longitude }) => {
         const categoryStyle = categoryStyleFor(g.interest_tag);
         const live = isMapLiveNow(g.scheduled_at);
         return (
           <Marker
             key={`gathering-${g.id}`}
-            coordinate={{ latitude: g.latitude, longitude: g.longitude }}
+            coordinate={{ latitude, longitude }}
             pinColor={live ? '#e63946' : categoryStyle.color}
             accessibilityLabel={t(live ? 'ui.mapView.gatheringLiveA11y' : 'ui.mapView.gatheringA11y', { title: g.title, name: g.host?.display_name ?? '' })}
           >

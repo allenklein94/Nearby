@@ -1,7 +1,8 @@
 # Item 146: gathering-pin averaging, security assessment (2026-10-17)
 
 Owner (2026-10-17): reopen the security ASSESSMENT of item 146's pin; do not change the implementation without a reviewed
-fix. Item 146 status: implemented, averaging risk still requires assessment. **Nothing changed by this document.**
+fix. **Decision (owner, 2026-10-17, LOCKED): Option A approved and BUILT (migration 20270324, LIVE); B and C rejected.**
+Results are at the end of this document.
 
 ## The weakness
 
@@ -62,3 +63,23 @@ protection without that.
   point reveals nothing about the others; radius tests on the pin; distances to the pin. Full journeys, from-scratch replay,
   grants parity, device checks (item 146 checklist 1-3 re-run).
 - Independent of item 147, but item 147 narrows who can collect pins at all; doing item 147 first is consistent with that.
+
+## Built: Option A (2026-10-17, migration 20270324, LIVE)
+
+- `private.gathering_location_pin(host, gathering, lat, lng)` = `private.location_pin('gathering', host, ...)` (item 148's
+  secret-keyed host+cell pin; a hostless gathering keys on its own id). `private.gathering_pin` (per-gathering offset) DROPPED.
+  `get_gathering_distances` and `get_bounded_nearby_gathering_ids` use it; the pre-filter widens 0.0035 -> 0.007; the radius
+  test stays on the pin. Exact-point access (`get_gathering_meetup_point`), row and column rules unchanged.
+- Map: `utils/mapPinStacks.js` (`stackGatheringPins`) draws gatherings sharing a pin as one ~22 m client-side ring around the
+  pin, fixed order (time, id), each its own marker + callout; computed from the pin alone. Guard `mapPinStacks.test.js`.
+- Journey `preciseLocation` 21/21 (+4): 14 gatherings (4 + a 10-week series) at one point = 1 pin, mean = the pin; another
+  point in the cell and the far cell corner share it; option C's offset attack from a known point misses by > 0.001 deg;
+  another host / the next cell = another pin; radius boundary on the pin (+/- 0.001 mi); far-corner point found via the widened
+  pre-filter; old function gone. The 4 new checks FAIL with the old per-gathering pin restored (replay container), 17 pass.
+- Verified: Jest all pass; replay 448/448 + journeys 477/477 + both concurrency scripts; journeys 477/477 on prod (rolled back);
+  live-verify script as expected; grants + touched function definitions replay = prod 7220/7220 (extension-owned functions excluded).
+- Residuals: (1) cell edges, as item 148; (2) `area` (point rounded to 0.01 deg, readable with the row) intersected with the
+  pin's cell: per axis never below ~111 m (simulated: median ~668 m, 1st pct ~111 m; the old pin went down to ~3 m) and
+  repeats cannot narrow it further; (3) `count_gatherings_near_batch` (item 146, public + discoverable only) still counts on
+  the precise point in a ~110 m box at caller-chosen points, so a public discoverable gathering can be grid-scanned to ~110 m
+  (unchanged, item 146 LOCKED; reported for an owner decision); (4) not device-verified (checklist 1-3 + new 12).

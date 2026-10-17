@@ -239,9 +239,11 @@ sightings are NOT purged yet: Crossed Paths ignores `expires_at`, so purging wou
 13 live functions have NO repo source (export-data, revenuecat-webhook, review-login, setup-review-account, moderate-text, moderate-chat-image,
 translate-message, get-online-status, rehearsal-chat, generate-courage-message/-icebreaker/-introduction/-strengths): not recovered, owner to decide. Do not call location privacy complete.
 
-**Item 146 pin averaging (owner 2026-10-17): ASSESSMENT REOPENED, implementation unchanged** until a reviewed fix is approved: per-gathering
-pins average out for a host's repeated gatherings at one point (prod: up to 4 at one point; recurring series = 52/year).
-`PRODUCT_AUDIT/ITEM_146_PIN_AVERAGING_ASSESSMENT_2026-10-17.md` (recommends item 148's host+cell pin; options A/B, owner decides).
+**Item 146 pin averaging, Option A (owner approved 2026-10-17, LOCKED; B/C rejected) is BUILT, LIVE, NOT DEVICE-VERIFIED until** checks 1-3 + 12
+of item 146's device checklist pass (migration 20270324: pin keyed by host + ~780 m cell via item 148's `private.location_pin`, per-gathering
+`gathering_pin` dropped; map stacks shared pins via `utils/mapPinStacks.js`; journey `preciseLocation` 21/21; replay 448/448 + journeys 477/477;
+prod journeys 477/477; grants = prod 7220/7220). Reported, unchanged: `count_gatherings_near_batch` still grid-scans public gatherings to ~110 m
+(item 146 LOCKED, owner to decide). Results: `PRODUCT_AUDIT/ITEM_146_PIN_AVERAGING_ASSESSMENT_2026-10-17.md`.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -299,7 +301,7 @@ block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RL
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
-network failure between its writes; story media may carry GPS metadata (item 148 check 10, unverified); gathering pins are keyed per gathering, so many gatherings hosted from one point can be averaged (item 146 scope doc, owner to assess); `LOCK TABLE` remains possible with direct DB UPDATE rights.
+network failure between its writes; story media may carry GPS metadata (item 148 check 10, unverified); public discoverable gatherings can be located to ~110 m through `count_gatherings_near_batch` (item 146 Option A doc); `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
 gathering stops create no child plans.
 
@@ -375,7 +377,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Gathering rows (item 147):** readable only per `_gathering_row_visible` (the gatherings SELECT policy; signed out = none); by-id RPCs and
   id lists apply it; joining/Interested/inviting/asking never grant visibility (trigger 'Gathering not found'). Guard `gatheringRowPrivacyGuard.test.js`, journey `gatheringRowPrivacy`.
 - **A gathering's precise point (item 146, LOCKED):** only host + approved attendees, only via `get_gathering_meetup_point`; precise_lat/lng
-  have no client SELECT (column allowlist on `gatherings`); pins/distances/radius only from the secret-keyed pin (`private.gathering_pin`);
+  have no client SELECT (column allowlist on `gatherings`); pins/distances/radius only from the secret-keyed host + cell pin (`private.gathering_location_pin`, Option A; shared pins stack on the map);
   place counts public + discoverable only, max 20 points. A migration adding a gatherings column must `grant select (<col>)` to anon,
   authenticated (guard `gatheringPreciseLocationGuard.test.js`, journey `preciseLocation`).
 - **Story & sighting location (item 148, LOCKED):** never stored precisely: triggers store only `private.location_pin` (item 146's secret,
