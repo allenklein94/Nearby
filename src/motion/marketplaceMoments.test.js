@@ -46,6 +46,28 @@ describe('moment 1: request sent pulse', () => {
   it('fits under 500 ms', () => {
     expect(settleMs('requestPulse')).toBeLessThan(500);
   });
+  // Idea 158 (owner, LOCKED): the count is the businesses the request REALLY reached, straight from the create-request
+  // result (journey requestSentCount), never one searched/matched; every screen that opens the sent moment passes it.
+  it.each([
+    ['screens/AskBusinessScreen.js', 'result'],
+    ['screens/GroupOccasionPlanScreen.js', 'result'],
+    ['screens/CelebrateSomethingScreen.js', 'succeeded\\[0\\]'],
+  ])('%s passes notifiedCount and duplicate from the create-request result', (file, from) => {
+    const s = src(file);
+    const at = s.indexOf('justSubmitted: true');
+    expect(at).toBeGreaterThan(-1);
+    const params = s.slice(at, at + 200);
+    expect(params).toMatch(new RegExp(`notifiedCount: ${from}\\.notifiedCount,`));
+    expect(params).toMatch(new RegExp(`duplicate: ${from}\\.duplicate,`));
+  });
+  it('the screen reads the count only from those params, defaulting to nothing reached', () => {
+    expect(screen).toContain('const notifiedCount = route.params?.notifiedCount ?? 0;');
+    expect(screen).toContain('const isDuplicate = route.params?.duplicate ?? false;');
+    expect(screen).toMatch(/justSentLine\(notifiedCount, targetPartnerName\)/);
+  });
+  it('Reduce Motion: the line alone, no rings', () => {
+    expect(src('motion/RequestPulse.js')).toMatch(/const animate = useRef\(play && !reduceMotion\)\.current;/);
+  });
 });
 
 describe('moment 6: Visit confirmed', () => {

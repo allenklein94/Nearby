@@ -1,3 +1,32 @@
+# "Ask nearby businesses" shows the request spreading (owner idea "158", 2026-10-17): MET AS BUILT, LOCKED; count proven by a new journey
+
+Idea: tap Ask nearby businesses -> the request signal expands outward -> "3 businesses can potentially help" (a larger animation).
+Found as built: BusinessRequestDetail's sent banner shows `justSentLine` -> "We asked {count} nearby businesses. You'll be notified
+when they respond." at once inside `RequestPulse` (item 55 `request_sent`: two soft rings, medium tier, < 500 ms, behind the text,
+untouchable), rings only when `!isDuplicate && notifiedCount > 0`, Reduce Motion = line only; AskBusiness `navigation.replace`s
+the form with the request screen, which is where replies land and become the offer (items 23/98).
+Owner decision (2026-10-17, LOCKED): approve as built. Exact copy above; N = the actual businesses reached; rings only when
+really reached (duplicate / zero = none); Reduce Motion = text only; text visible immediately; form replaced by the request
+screen. DECLINED: a larger animation (items 55/57/25), showing the count after the animation (animation never delays
+information), "N businesses can potentially help" (a capability claim the data doesn't back).
+Owner's implementation detail: distinguish attempted / reached / zero from the actual result, never from searched or matched.
+Verified against live code (production `create_business_request`): `notifiedCount` = `_business_request_fanout`'s count of
+`business_request_offers` rows actually INSERTED for this request (top 10 eligible; the `considered` set is never counted) +
+each automatic matcher's (availability / policy / package / AI) count of businesses that had NO row for this request yet
+(`v_already_offered`), and the table is unique per (request, business), so the sum = distinct businesses reached; targeted
+= 1 (the request is new, so the directed insert can't conflict; an inactive business raises before anything is saved);
+duplicate (spam guard / same target within 10 min) = 0 + `duplicate`. No code change needed.
+Added: journey `src/journeys/requestSentCount.journey.js` (6/6 on prod, rolled back): broadcast at an empty map spot reaches
+exactly the 3 in-range coffee places (never the far cafe or the yoga studio), `notifiedCount` 3 = rows = distinct businesses,
+fewer than considered; the business also auto-replying from a picked availability counts once (its row 'offered'); same ask
+again = duplicate, 0, no new rows; nobody near = 0, not duplicate, no rows; one business = 1, one directed row; and the
+real helper's lines from those results. Guard additions in `motion/marketplaceMoments.test.js`: all three screens opening
+the sent moment (AskBusiness, GroupOccasionPlan, CelebrateSomething single-success) pass `notifiedCount`/`duplicate` from the
+create-request result; the screen reads only those params (default 0 = nothing reached); Reduce Motion = no rings.
+Not shown: the new journey failing against a wrong count (no broken version to run it against). Jest 468 suites / 6285 tests;
+prod journeys 551/551. Offer checklist section 1 gets the immediate-text / exact-copy / true-count and Reduce Motion checks.
+No app code, string, migration or motion change.
+
 # "Ask a business" signature interaction (owner idea "157", 2026-10-17): MET AS BUILT, LOCKED, nothing built
 
 Idea: tapping "Ask Coastal Coffee" folds the request card into a compact signal, "Sent to Coastal Coffee", the person

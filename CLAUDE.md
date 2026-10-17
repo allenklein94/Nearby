@@ -56,6 +56,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Ask a business" signature (owner idea "157", 2026-10-17) MET AS BUILT, LOCKED, nothing built:** Send replaces the form with the request screen ("Request sent to {name}. You'll be notified when they respond." + item 55's Pulse rings only when really reached); a reply travels into that screen's card (item 23, the ONE signature, item 25); the push opens that exact reply (items 62/132). DECLINED: a signature on Ask, a folding card, a redirect to Home/Discover. NOT DEVICE-VERIFIED: offer checklist section 1 (incl. whether N->✨->✓ + rings together feel like too much; report only).
 
+**"Ask nearby businesses" spreading (owner idea "158", 2026-10-17) MET AS BUILT, LOCKED, nothing built in the app:** "We asked N nearby businesses. You'll be notified when they respond." at once, N = businesses REALLY reached (one offer row each, from `create_business_request`'s `notifiedCount`; never searched/matched; duplicate and nobody-reached = 0, no rings), item 55's two soft rings behind it, Reduce Motion = line only, form replaced by the request screen. DECLINED: a larger animation, the count after the animation, "N businesses can potentially help". Proven by journey `requestSentCount` 6/6 (prod journeys 551/551) + `marketplaceMoments.test.js`; NOT DEVICE-VERIFIED: offer checklist section 1.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -389,6 +391,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   attendee still taps, location never sent or stored for it. `PRODUCT_AUDIT/PLAN_LIFECYCLE_AND_YOURE_HERE_SCOPE_2026-10-17.md`.
 - **Relative time labels stay true while open (item 108):** only via `hooks/useMinuteClock.js` (`utils/minuteClock.js`; Home + Discover,
   guard `minuteClock.test.js`): ticks only near a shown window, paused in background, plain text, never motion or urgency styling.
+- **"Request sent" count (idea 158, LOCKED):** "We asked N nearby businesses" = businesses really reached by that call (`notifiedCount`,
+  one `business_request_offers` row each), never searched/considered/matched; 0 or duplicate = no line of reach, no rings (journey `requestSentCount`).
 - A Home claim needs a visible, substantiated trigger of its own kind, and its CTA names where it goes.
   Home may say nothing; no filler rows or zero stats (`homeQuiet.js`).
 

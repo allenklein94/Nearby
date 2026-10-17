@@ -32,6 +32,11 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
 - [ ] Customer asks for coffee for 4 tonight. The just-sent line reads "We asked N nearby businesses…" and two soft rings
   go out behind it once. ★ With Reduce Motion: the line only, no rings.
 - [ ] A duplicate request, or one that reached nobody: no rings.
+- [ ] (idea 158) The line is readable from the very first frame (never after the rings), reads exactly "We asked N nearby
+  businesses. You'll be notified when they respond.", and N = the businesses that really got it: compare with the business
+  side (each reached business sees the opportunity) or `select count(*) from business_request_offers where request_id = ...`
+  (service role). Never the number searched. One business reached = "We asked 1 nearby business."
+- [ ] (idea 158) Reduce Motion on: the line only, no rings, nothing else changes. No larger animation, no extra confirmation screen.
 - [ ] Business gets the opportunity push/digest per its rules; the card opens on Opportunities.
 - [ ] (idea 157) Ask ONE business (Ask Coastal Coffee): Send replaces the form with the request screen at once (no
   confirmation step, no return to Home/Discover); the line reads "Request sent to Coastal Coffee. You'll be notified when
