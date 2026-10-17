@@ -1,3 +1,16 @@
+# Item 144 (owner, 2026-10-17) "Last spot" restrained animation - MET AS BUILT, highlight DECLINED (item 116 LOCKED), nothing built
+
+Owner ask: one real spot left -> "1 spot available" with a subtle highlight (not flashing); the person takes it -> "You're in ✓" -> "20 / 20".
+Already built (real counts, host included, `utils/gatheringFullness.js`):
+- One spot left: detail capacity line "{n}/{cap} spots filled" (e.g. 19/20); cards "almost full" only below the real threshold;
+  host-only nudge "🔥 Almost full — only 1 spot left. Invite more people…".
+- Taking it: the join reloads the gathering; the panel says "You're in" (item 31's "~~Interested~~ → ✓ Attending" once when from Interested).
+- Then: the same line reads "🔒 Full — 20/20 spots taken"; every surface's button becomes "Join Waitlist" (`gatheringJoinAction`);
+  the next join is waitlisted (item 143 covers moving off it). The host sees item 28's count roll + avatar.
+Not built: the highlight on "1 spot available" = scarcity styling, declined by item 116 (LOCKED; counts read on load, item 47's
+countdown the only urgency motion) and items 15/99 (cards static); a count is not a real event (motion-truth rule). "20/20" is the
+reloaded line, not a separate moment. Owner (2026-10-17): recorded as met as built. No strings, no migration, no code change.
+
 # Item 143 (owner, approved 2026-10-16) moved off the waitlist -> item 31's moment - BUILT, LIVE, NOT DEVICE-VERIFIED (2026-10-17)
 
 Owner: promotion from the waitlist is a confirmed change of attendance (unlike Requested or a normal join), so it reuses item 31's
