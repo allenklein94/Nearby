@@ -242,11 +242,11 @@ translate-message, get-online-status, rehearsal-chat, generate-courage-message/-
 **Item 146 pin averaging, Option A (owner approved 2026-10-17, LOCKED; B/C rejected) is BUILT, LIVE, NOT DEVICE-VERIFIED until** checks 1-3 + 12
 of item 146's device checklist pass (migration 20270324: pin keyed by host + ~780 m cell via item 148's `private.location_pin`, per-gathering
 `gathering_pin` dropped; map stacks shared pins via `utils/mapPinStacks.js`; journey `preciseLocation` 21/21; replay 448/448 + journeys 477/477;
-prod journeys 477/477; grants = prod 7220/7220). Reported, unchanged: `count_gatherings_near_batch` still grid-scans public gatherings to ~110 m
-(item 146 LOCKED, owner to decide). Results: `PRODUCT_AUDIT/ITEM_146_PIN_AVERAGING_ASSESSMENT_2026-10-17.md`.
-**Place-count oracle (owner asked to scope, 2026-10-17) is SCOPED, NOTHING CHANGED, AWAITING THE OWNER'S PICK:** the fix conflicts with item 146's
-approved change 3; options A (remove the count, recommended) / B (past gatherings, >= 5 distinct hosts, + rate limit) / C (keep) and the
-"pin is approximate" UI gap (visible text implies an exact pin; only a11y says approximate) in `PRODUCT_AUDIT/PLACE_COUNT_ORACLE_SCOPE_2026-10-17.md`.
+prod journeys 477/477; grants = prod 7220/7220). Results: `PRODUCT_AUDIT/ITEM_146_PIN_AVERAGING_ASSESSMENT_2026-10-17.md`.
+**Place-count oracle removed + approximate location in words (owner Option A, final, 2026-10-17) is BUILT, LIVE, NOT DEVICE-VERIFIED until** item 146
+checklist checks 1-3, 9, 12 and new 13 pass on a real phone AND native review of the 3 new strings (`reasons.approxDistance` / `approxDistanceAway`,
+`ui.mapView.gatheringPinsApproximate`) is done (migration 20270325 LIVE drops `count_gatherings_near_batch`; journey `preciseLocation` 21/21, fails on the
+old DB; guard `approximateGatheringLocation.test.js`; replay 449/449 + journeys 477/477; grants = prod 3339/3339). `PRODUCT_AUDIT/PLACE_COUNT_ORACLE_SCOPE_2026-10-17.md`.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -304,7 +304,7 @@ block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RL
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
-network failure between its writes; story media may carry GPS metadata (item 148 check 10, unverified); public discoverable gatherings can be located to ~110 m through `count_gatherings_near_batch` (item 146 Option A doc); `LOCK TABLE` remains possible with direct DB UPDATE rights.
+network failure between its writes; story media may carry GPS metadata (item 148 check 10, unverified); `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
 gathering stops create no child plans.
 
@@ -381,7 +381,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   id lists apply it; joining/Interested/inviting/asking never grant visibility (trigger 'Gathering not found'). Guard `gatheringRowPrivacyGuard.test.js`, journey `gatheringRowPrivacy`.
 - **A gathering's precise point (item 146, LOCKED):** only host + approved attendees, only via `get_gathering_meetup_point`; precise_lat/lng
   have no client SELECT (column allowlist on `gatherings`); pins/distances/radius only from the secret-keyed host + cell pin (`private.gathering_location_pin`, Option A; shared pins stack on the map);
-  place counts public + discoverable only, max 20 points. A migration adding a gatherings column must `grant select (<col>)` to anon,
+  no place gathering counts (removed, 20270325; never a pin count, place id or rate-limited variant). A gathering's distance always reads
+  "About x mi" (`approximateMiles` in `utils/formatDistance.js`, miles only) and the map says its pins are approximate, in words. A migration adding a gatherings column must `grant select (<col>)` to anon,
   authenticated (guard `gatheringPreciseLocationGuard.test.js`, journey `preciseLocation`).
 - **Story & sighting location (item 148, LOCKED):** never stored precisely: triggers store only `private.location_pin` (item 146's secret,
   keyed by person + 0.007 deg cell, so repeated posts share one pin); business moments store none; no client SELECT on

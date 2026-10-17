@@ -9,7 +9,7 @@ describe('gatheringCardModel', () => {
     const m = gatheringCardModel(g, { myUserId: 'me' });
     expect(m.what).toBe('Coffee gathering');
     expect(m.why).toBe('Because you like Coffee');
-    expect(m.meta).toMatch(/^1\.2 mi · /);
+    expect(m.meta).toMatch(/^About 1\.2 mi · /);
     expect(m.social).toBeNull();
     expect(m.action.kind).toBeDefined();
     expect(m.fields).toEqual(CARD_FIELD_ORDER.filter((f) => f !== 'social'));

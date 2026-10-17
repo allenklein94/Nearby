@@ -46,7 +46,7 @@ export const REASON_PARSE_ORDER = [
   'reasons.format', 'reasons.skill', 'reasons.timeAbout', 'reasons.timeUsually', 'reasons.clockBetween', 'reasons.clockBefore', 'reasons.clockAfter',
   'reasons.suitedAgesRange', 'reasons.suitedAge', 'reasons.suitedAgesFrom', 'reasons.suitedAgesUpTo',
   'reasons.dietaryDeclared', 'reasons.dietaryList', 'reasons.attributeList', 'reasons.whoForLikes', 'reasons.theyLike', 'reasons.whoForTaste', 'reasons.theirTaste',
-  'reasons.distanceAway',
+  'reasons.approxDistanceAway', 'reasons.approxDistance', 'reasons.distanceAway',
   'reasons.energyFit.low_key', 'reasons.energyFit.social', 'reasons.energyFit.active', 'reasons.energyFit.high_energy', 'reasons.energyFit.romantic', 'reasons.energyFit.adventurous',
   'reasons.intensityPace.low_key', 'reasons.intensityPace.moderate', 'reasons.intensityPace.high_energy',
   'reasons.effortLevel.light', 'reasons.effortLevel.moderate', 'reasons.effortLevel.challenging',

@@ -42,7 +42,7 @@ describe('one explanation, one destination, one action across Home, Discover and
     expect(home.why).toBe('Because you like Coffee');
     expect(disc.reasons[0]).toBe('Because you like Coffee');
     expect(row.reason).toBe('Because you like Coffee');
-    expect(home.meta).toBe('1.1 mi · Tonight · 6:30 PM');
+    expect(home.meta).toBe('About 1.1 mi · Tonight · 6:30 PM');
     expect(disc.meta).toBe(home.meta);
     expect(row.meta).toBe(home.meta);
     const dest = { kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: 'g1' } };
@@ -96,7 +96,7 @@ describe('gathering join states drive the action on every surface', () => {
     expect(card.action).toMatchObject({ kind: 'interested', label: '★ Interested' });
   });
   it('a finished gathering says so instead of dropping its time', () => {
-    expect(homeCard(gathering({ scheduled_at: at(10, 0, -2) })).meta).toBe('1.1 mi · Already happened');
+    expect(homeCard(gathering({ scheduled_at: at(10, 0, -2) })).meta).toBe('About 1.1 mi · Already happened');
   });
 });
 
@@ -252,7 +252,7 @@ describe('Gatherings feed', () => {
   it('identity, when/where, destination and join action from the context object', () => {
     const card = feedCard(gathering());
     expect(card.entity).toEqual({ kind: 'gathering', id: 'g1', title: 'Coffee meetup' });
-    expect(card.meta).toBe('1.1 mi · Tonight · 6:30 PM');
+    expect(card.meta).toBe('About 1.1 mi · Tonight · 6:30 PM');
     expect(card.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: 'g1' } });
     expect(card.action).toMatchObject({ kind: 'join', label: 'Join' });
   });

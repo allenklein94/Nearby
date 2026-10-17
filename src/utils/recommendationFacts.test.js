@@ -7,8 +7,8 @@ describe('recommendationFacts (why / how far / when)', () => {
   test('names the matched interest, distance and time', () => {
     const f = recommendationFacts({ matchesYourInterests: true, interest_tag: 'Coffee', distanceMiles: 1.34, scheduled_at: soon });
     expect(f.why).toBe('Because you like Coffee');
-    expect(f.distance).toBe('1.3 mi');
-    expect(f.meta).toMatch(/^1\.3 mi · /);
+    expect(f.distance).toBe('About 1.3 mi'); // a gathering's pin distance is approximate
+    expect(f.meta).toMatch(/^About 1\.3 mi · /);
   });
 
   test('onboarding matchScore also counts as an interest match', () => {
@@ -63,7 +63,7 @@ describe('Discover and Gatherings cards use the same rule', () => {
   const read = (p) => fs.readFileSync(path.join(__dirname, p), 'utf8');
   const { factsMeta } = require('./recommendationFacts');
   test('factsMeta puts distance first and honours a surface\'s own time wording', () => {
-    expect(factsMeta({ distanceMiles: 1.3 }, 'Tonight · 6:30 PM')).toBe('1.3 mi · Tonight · 6:30 PM');
+    expect(factsMeta({ distanceMiles: 1.3 }, 'Tonight · 6:30 PM')).toBe('About 1.3 mi · Tonight · 6:30 PM');
     expect(factsMeta({}, 'Tonight · 6:30 PM')).toBe('Tonight · 6:30 PM');
     expect(factsMeta({}, null)).toBeNull();
   });
@@ -93,13 +93,13 @@ describe('recommendationRow (Nearby Right Now)', () => {
       data: { distanceMiles: 1.3, scheduled_at: at },
     });
     expect(r.why).toBe('Because you like Coffee');
-    expect(r.meta).toMatch(/^1\.3 mi · (Today|Tonight|Tomorrow|Starts in|Happening now)/);
+    expect(r.meta).toMatch(/^About 1\.3 mi · (Today|Tonight|Tomorrow|Starts in|Happening now)/);
   });
 
   test('only distance/time reasons: the meta line carries them, nothing is said twice', () => {
     const r = recommendationRow({ type: 'gathering', reasons: ['Close by', 'Happening today'], data: { distanceMiles: 0.6, scheduled_at: at } });
     expect(r.why).toBeNull();
-    expect(r.meta).toMatch(/^0\.6 mi · (Today|Tonight|Tomorrow|Starts in|Happening now)/);
+    expect(r.meta).toMatch(/^About 0\.6 mi · (Today|Tonight|Tomorrow|Starts in|Happening now)/);
   });
 
   test('a perk shows distance only, never an invented time', () => {

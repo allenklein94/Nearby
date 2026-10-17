@@ -19,3 +19,24 @@ export function formatDistanceAway(miles) {
   const d = formatDistance(miles);
   return d ? reasonText('distanceAway', { distance: d }) : null;
 }
+
+// A gathering's distance (owner, 2026-10-17): measured to its privacy-shifted pin (item 146 Option A: host + cell, up to
+// ~0.5 mi from the meet-up point), so it is never shown as an exact figure. Miles only (feet would claim a precision the pin
+// does not have), at least 0.1, same rounding as formatDistance otherwise: "About 0.3 mi", "About 12 mi".
+// -> { value, decimals } or null; i18n/format.js localApproxDistance reads the same decision.
+export function approximateMiles(miles) {
+  if (typeof miles !== 'number' || !Number.isFinite(miles) || miles < 0) return null;
+  if (miles >= 9.95) return { value: Math.round(miles), decimals: 0 };
+  return { value: Math.max(0.1, Number(miles.toFixed(1))), decimals: 1 };
+}
+
+export function formatApproxDistance(miles) {
+  const a = approximateMiles(miles);
+  return a ? reasonText('approxDistance', { distance: `${a.value.toFixed(a.decimals)} mi` }) : null;
+}
+
+// "About 0.3 mi away" (a gathering's reason / detail line).
+export function formatApproxDistanceAway(miles) {
+  const a = approximateMiles(miles);
+  return a ? reasonText('approxDistanceAway', { distance: `${a.value.toFixed(a.decimals)} mi` }) : null;
+}

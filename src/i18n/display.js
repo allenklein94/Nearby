@@ -3,10 +3,10 @@
 // Display only: nothing here is ever stored or compared.
 import { DEFAULT_LANGUAGE, translate } from './translate';
 import { whenLabel, formatHeroDateTime, clockRange } from '../utils/timeContext';
-import { formatDistance, formatDistanceAway } from '../utils/formatDistance';
+import { formatDistance, formatDistanceAway, formatApproxDistance } from '../utils/formatDistance';
 import { formatDay, formatDateTime, formatAgo, parseDate, formatLocalHour } from '../utils/timeLabels';
 import { timeWindowState, gatheringDisplayEnd } from '../utils/timeWindow';
-import { localWindow, localClockRange, localWhen, localDistance, localDate, localClockOfDate, vocabValue, localMoney } from './format';
+import { localWindow, localClockRange, localWhen, localDistance, localApproxDistance, localDate, localClockOfDate, vocabValue, localMoney } from './format';
 
 const isEnglish = (language) => !language || language === DEFAULT_LANGUAGE;
 const c = (language, key, vars) => translate(language, `ui.common.${key}`, vars);
@@ -32,6 +32,10 @@ export function displayGatheringWhen(g, language, now = new Date()) {
 // "1.2 mi" (miles everywhere; words and decimal mark localized)
 export function displayDistance(miles, language) {
   return isEnglish(language) ? formatDistance(miles) : localDistance(miles, language);
+}
+// A gathering's distance (measured to its privacy-shifted pin): "About 0.3 mi", never an exact figure.
+export function displayApproxDistance(miles, language) {
+  return isEnglish(language) ? formatApproxDistance(miles) : localApproxDistance(miles, language);
 }
 export function displayDistanceAway(miles, language) {
   if (isEnglish(language)) return formatDistanceAway(miles);

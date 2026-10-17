@@ -3,7 +3,7 @@ import { completedPlanFor } from '../utils/gatheringCompletion';
 import { TRAVEL_SEARCH_MILES, boundedSearchMiles } from '../constants/searchRadius';
 import { searchScope } from '../constants/categoryTree';
 import { groupForTag } from '../constants/gatheringCategories';
-import { formatDistanceAway } from '../utils/formatDistance';
+import { formatApproxDistanceAway } from '../utils/formatDistance';
 import { supabase } from './supabase';
 import { tr } from '../i18n/translate';
 import { randomUUID } from 'expo-crypto';
@@ -230,7 +230,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
         // A tag only RELATED to a declared hobby (hobbyRelations.js); never set for a declared tag.
         relatedHobby: gathering.interest_tag ? relatedHobbyFor(gathering.interest_tag, myInterests) : null,
         distanceLabel: distanceMiles !== null
-          ? formatDistanceAway(distanceMiles)
+          ? formatApproxDistanceAway(distanceMiles)
           : 'Nearby',
         distanceMiles,
         latitude: gathering.show_on_map ? (dist?.fuzzed_lat ?? null) : null,
@@ -1094,7 +1094,7 @@ export async function getGatheringById(gatheringId) {
       });
       distanceMiles = distances?.[0]?.distance_miles ?? null;
       distanceLabel = distanceMiles !== null
-        ? formatDistanceAway(distanceMiles)
+        ? formatApproxDistanceAway(distanceMiles)
         : null;
       // Same fuzzed coordinates the map view already uses (never the
       // real precise_lat/lng) — good enough for a local weather lookup,

@@ -15,6 +15,7 @@ export default {
     areaCountA11y: { one: "{count} gathering happening now in this area. Show it", other: "{count} gatherings happening now in this area. Show them" },
     areaHeading: "Happening now in this area",
     areaShowAll: "Show all happening now",
+    gatheringPinsApproximate: "Gathering pins show an approximate area, not the exact spot",
   },
   es: {
     liveNow: "🔴 EN VIVO",
@@ -30,6 +31,7 @@ export default {
     areaCountA11y: { one: "{count} reunión pasando ahora en esta zona. Mostrarla", other: "{count} reuniones pasando ahora en esta zona. Mostrarlas" },
     areaHeading: "Pasando ahora en esta zona",
     areaShowAll: "Ver todo lo que pasa ahora",
+    gatheringPinsApproximate: "Los pines de reuniones muestran un área aproximada, no el lugar exacto",
   },
   de: {
     liveNow: "🔴 JETZT LIVE",
@@ -45,6 +47,7 @@ export default {
     areaCountA11y: { one: "{count} Treffen gerade los in dieser Gegend. Anzeigen", other: "{count} Treffen gerade los in dieser Gegend. Anzeigen" },
     areaHeading: "Gerade los in dieser Gegend",
     areaShowAll: "Alles anzeigen, was gerade los ist",
+    gatheringPinsApproximate: "Treffen-Pins zeigen einen ungefähren Bereich, nicht den genauen Ort",
   },
   fr: {
     liveNow: "🔴 EN DIRECT",
@@ -60,6 +63,7 @@ export default {
     areaCountA11y: { one: "{count} rencontre en ce moment dans ce secteur. Afficher", other: "{count} rencontres en ce moment dans ce secteur. Afficher" },
     areaHeading: "En ce moment dans ce secteur",
     areaShowAll: "Voir tout ce qui se passe en ce moment",
+    gatheringPinsApproximate: "Les repères des rassemblements montrent une zone approximative, pas le lieu exact",
   },
   pt: {
     liveNow: "🔴 AO VIVO",
@@ -75,6 +79,7 @@ export default {
     areaCountA11y: { one: "{count} encontro acontecendo agora nesta área. Mostrar", other: "{count} encontros acontecendo agora nesta área. Mostrar" },
     areaHeading: "Acontecendo agora nesta área",
     areaShowAll: "Ver tudo o que está acontecendo agora",
+    gatheringPinsApproximate: "Os marcadores de encontros mostram uma área aproximada, não o local exato",
   },
   ht: {
     liveNow: "🔴 AN DIRÈK",
@@ -90,6 +95,7 @@ export default {
     areaCountA11y: { one: "{count} rasanbleman k ap pase kounye a nan zòn sa a. Montre li", other: "{count} rasanbleman k ap pase kounye a nan zòn sa a. Montre yo" },
     areaHeading: "K ap pase kounye a nan zòn sa a",
     areaShowAll: "Wè tout sa k ap pase kounye a",
+    gatheringPinsApproximate: "Pin rasanbleman yo montre yon zòn apeprè, pa kote egzak la",
   },
   zh: {
     liveNow: "🔴 正在进行",
@@ -105,6 +111,7 @@ export default {
     areaCountA11y: { other: "此区域有 {count} 个聚会正在进行。点按查看" },
     areaHeading: "此区域正在进行",
     areaShowAll: "查看所有正在进行的",
+    gatheringPinsApproximate: "聚会图钉显示的是大致区域，不是确切地点",
   },
   vi: {
     liveNow: "🔴 ĐANG DIỄN RA",
@@ -120,6 +127,7 @@ export default {
     areaCountA11y: { other: "{count} buổi gặp mặt đang diễn ra trong khu vực này. Xem" },
     areaHeading: "Đang diễn ra trong khu vực này",
     areaShowAll: "Xem tất cả đang diễn ra",
+    gatheringPinsApproximate: "Ghim buổi gặp chỉ khu vực gần đúng, không phải vị trí chính xác",
   },
   tl: {
     liveNow: "🔴 LIVE NGAYON",
@@ -135,6 +143,7 @@ export default {
     areaCountA11y: { one: "{count} pagtitipon na nangyayari ngayon sa lugar na ito. Ipakita", other: "{count} pagtitipon na nangyayari ngayon sa lugar na ito. Ipakita" },
     areaHeading: "Nangyayari ngayon sa lugar na ito",
     areaShowAll: "Ipakita lahat ng nangyayari ngayon",
+    gatheringPinsApproximate: "Ang mga pin ng pagtitipon ay nagpapakita ng tinatayang lugar, hindi ang eksaktong lugar",
   },
   ru: {
     liveNow: "🔴 СЕЙЧАС",
@@ -150,6 +159,7 @@ export default {
     areaCountA11y: { one: "{count} встреча идёт сейчас в этом районе. Показать", few: "{count} встречи идут сейчас в этом районе. Показать", many: "{count} встреч идут сейчас в этом районе. Показать", other: "{count} встречи идут сейчас в этом районе. Показать" },
     areaHeading: "Идёт сейчас в этом районе",
     areaShowAll: "Показать всё, что идёт сейчас",
+    gatheringPinsApproximate: "Метки встреч показывают примерный район, а не точное место",
   },
   ko: {
     liveNow: "🔴 진행 중",
@@ -165,5 +175,6 @@ export default {
     areaCountA11y: { other: "이 지역에서 {count}개의 모임이 지금 진행 중입니다. 보기" },
     areaHeading: "이 지역에서 지금 진행 중",
     areaShowAll: "지금 진행 중인 것 모두 보기",
+    gatheringPinsApproximate: "모임 핀은 정확한 장소가 아닌 대략적인 지역을 보여줍니다",
   },
 };

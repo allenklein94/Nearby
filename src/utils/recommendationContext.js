@@ -13,13 +13,13 @@
 // A surface that starts from a raw row (a gathering, perk, community, business, request or offer) passes it through
 // contextItem(kind, row, { reasons }) first, so the reason / context / destination / action rules exist once. Surfaces may look
 // different; they never decide these four things themselves.
-import { formatDistance } from './formatDistance';
+import { formatDistance, formatApproxDistance } from './formatDistance';
 import { timeWindowState, windowPhrase } from './timeWindow';
 import { gatheringPrimaryAction, offerPrimaryAction } from './primaryAction';
 import { isContextRestatement } from '../constants/recommendationReasonVocabulary';
 import { strongestReasons } from '../constants/signalPriority';
 import { localizeReasons, localizeNote, localizeTitle } from './reasonLocalization';
-import { localDistance, localWindow } from '../i18n/format';
+import { localDistance, localApproxDistance, localWindow } from '../i18n/format';
 import { translate, DEFAULT_LANGUAGE } from '../i18n/translate';
 import { BUSINESS_RESULT_TYPES, businessActionForItem, intentResultBusinessRoute } from './businessAction';
 import { buildDirectionsUrl } from './planLogisticsActions';
@@ -59,8 +59,13 @@ function whenFor(item, now, language = DEFAULT_LANGUAGE) {
   return null;
 }
 
-// "1.2 mi" in English; the same figure in the person's words otherwise (miles stay miles, i18n/format.js).
-const distanceFor = (miles, language) => (!language || language === DEFAULT_LANGUAGE ? formatDistance(miles) : localDistance(miles, language));
+// "1.2 mi" in English; the same figure in the person's words otherwise (miles stay miles, i18n/format.js). A gathering's distance
+// is measured to its privacy-shifted pin, so it reads "About 1.2 mi" (utils/formatDistance.js approximateMiles).
+function distanceFor(item, language) {
+  const english = !language || language === DEFAULT_LANGUAGE;
+  if (item.type === 'gathering') return english ? formatApproxDistance(item.distanceMiles) : localApproxDistance(item.distanceMiles, language);
+  return english ? formatDistance(item.distanceMiles) : localDistance(item.distanceMiles, language);
+}
 
 // A perk opens Discover -> Perks with that perk selected in place (owner, 2026-10-04: one canonical Perks surface; the
 // selected perk shows its redemption controls under its own card, never a separate perk screen).
@@ -131,7 +136,7 @@ function actionFor(item, { myUserId = null, now = new Date(), actionOpts = {} } 
 export function recommendationContext(item, opts = {}) {
   const now = opts.now instanceof Date ? opts.now : new Date(opts.now ?? Date.now());
   if (!item || !item.type) return { entity: null, reason: null, context: null, destination: null, action: null, reasons: [], canonicalReasons: [], fields: [] };
-  const context = [distanceFor(item.distanceMiles, opts.language), whenFor(item, now, opts.language)].filter(Boolean).join(' · ') || null;
+  const context = [distanceFor(item, opts.language), whenFor(item, now, opts.language)].filter(Boolean).join(' · ') || null;
   // selection happens on the canonical English reasons; only the shown text is put in the person's language (opts.language)
   const canonical = validReasons(item);
   // item 194: only the one or two strongest reasons are shown (`canonicalReasons` keeps them all for dedupe and evidence)

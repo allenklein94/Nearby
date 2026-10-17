@@ -20,7 +20,7 @@ const coffee = (extra = {}) => ({ type: 'gathering', category: 'Coffee', startsA
 describe('strongMatchPieces: all three stated pieces really match, or no claim', () => {
   test('activity + time + place -> the three pieces, in order', () => {
     expect(strongMatchPieces(coffee(), ask, NOW)).toEqual([
-      { key: 'activity', value: 'Coffee' }, { key: 'time', value: at(19) }, { key: 'place', value: 0.4 },
+      { key: 'activity', value: 'Coffee' }, { key: 'time', value: at(19) }, { key: 'place', value: 0.4, approximate: true },
     ]);
   });
   test('a different activity, or an ask that named none -> nothing', () => {

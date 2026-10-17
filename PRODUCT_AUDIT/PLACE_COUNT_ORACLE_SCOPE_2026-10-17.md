@@ -1,7 +1,10 @@
 # Place-count side channel (`count_gatherings_near_batch`): scope + lock conflict (2026-10-17)
 
-Owner asked (2026-10-17) to scope item 146 / item 146 Option A's remaining limitation #1. Nothing is changed yet: the
-fix conflicts with item 146's locked behaviour, so per the owner's instruction this proposes the smallest safe revision first.
+**Decision (owner, 2026-10-17): Option A, final, plus a visible approximate-area line. BUILT + LIVE (migration 20270325); see
+CLAUDE_HISTORY.md "Place-count oracle removed". Phone checks and native review still open.**
+
+Owner asked (2026-10-17) to scope item 146 / item 146 Option A's remaining limitation #1. At scoping time nothing was changed: the
+fix conflicted with item 146's locked behaviour, so per the owner's instruction this proposed the smallest safe revision first.
 
 ## Audit (as live, migration 20270320 section 4; 20270324 left it unchanged)
 

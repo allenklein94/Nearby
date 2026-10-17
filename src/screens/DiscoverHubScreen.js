@@ -2123,8 +2123,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // The one real "why this place, right now" line, shared verbatim by the
   // main Places section and the expanded context's own Places list rather
   // than written out twice. Every part of it is a real Google Places
-  // Basic-Data field or this app's own real gathering count -- falls back
-  // to the address when none of them came back.
+  // Basic-Data field (no gathering count: removed 2026-10-17, it located
+  // gatherings) -- falls back to the address when none of them came back.
   // Shared context layer: a Google place gets its distance and directions destination from the one context object; it has no
   // recommendation reason and no booking mode (neither is invented). Rating / price / open now are the provider's own facts.
   function placeContext(p) {
@@ -2137,7 +2137,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
       p.priceLevel === 0 ? t('ui.places.free') : priceLevelLabel(p.priceLevel),
       p.openNow !== null ? t(p.openNow ? 'ui.places.openNowPlain' : 'ui.places.closedPlain') : null,
       placeContext(p).context,
-      p.gatheringCount > 0 ? t('ui.places.gatheringsHere', { count: p.gatheringCount }) : null,
     ].filter(Boolean).join('  ·  ') || p.address;
   }
 

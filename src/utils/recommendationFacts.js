@@ -7,7 +7,7 @@ import { canonicalizeInterests } from '../constants/interestGraph';
 // Each part appears only when it is real: no distance without a measured distance, no reason without a real signal.
 import { becauseYouLikeReason, isContextRestatement, reasonText } from '../constants/recommendationReasonVocabulary';
 import { formatHeroDateTime } from './timeContext';
-import { formatDistance } from './formatDistance';
+import { formatDistance, formatApproxDistance } from './formatDistance';
 import { recommendationContext, contextItemFromRecommendation } from './recommendationContext';
 import { localizeReasons } from './reasonLocalization';
 
@@ -20,7 +20,7 @@ export function recommendationFacts(g) {
   // A distance/time reason ("Happening today") is the WHEN/WHERE fact, shown once as the measured meta line, never as the WHY.
   const firstWhy = (g.reasons ?? []).find((r) => r && !isContextRestatement(r)) ?? null;
   const why = interestMatched ? becauseYouLikeReason(g.interest_tag) : firstWhy;
-  const distance = formatDistance(g.distanceMiles);
+  const distance = formatApproxDistance(g.distanceMiles); // a gathering's pin distance is approximate
   const when = g.scheduled_at ? gatheringWhen(g) : null;
   return { why, distance, when, meta: [distance, when].filter(Boolean).join(' · ') || null };
 }
@@ -37,7 +37,7 @@ export function readyCardWhy(r) {
 
 // "1.3 mi · Today · 6:30 PM" for surfaces that already format their own time wording (e.g. Discover's "Tonight").
 export function factsMeta(g, when = null) {
-  const parts = [formatDistance(g?.distanceMiles), when ?? (g?.scheduled_at ? formatHeroDateTime(g.scheduled_at) : null)].filter(Boolean);
+  const parts = [formatApproxDistance(g?.distanceMiles), when ?? (g?.scheduled_at ? formatHeroDateTime(g.scheduled_at) : null)].filter(Boolean);
   return parts.length ? parts.join(' · ') : null;
 }
 

@@ -20,15 +20,7 @@
   "something": "something",
   "openNowA11y": "open now",
   "closedNowA11y": "closed now",
-  "hostedHereA11y": {
-   "one": "{count} gathering hosted here",
-   "other": "{count} gatherings hosted here"
-  },
   "free": "Free",
-  "gatheringsHere": {
-   "one": "🎉 {count} gathering here",
-   "other": "🎉 {count} gatherings here"
-  },
   "openNowPlain": "Open now",
   "closedPlain": "Closed"
  },
@@ -53,15 +45,7 @@
   "something": "algo",
   "openNowA11y": "abierto ahora",
   "closedNowA11y": "cerrado ahora",
-  "hostedHereA11y": {
-   "one": "{count} reunión organizada aquí",
-   "other": "{count} reuniones organizadas aquí"
-  },
   "free": "Gratis",
-  "gatheringsHere": {
-   "one": "🎉 {count} reunión aquí",
-   "other": "🎉 {count} reuniones aquí"
-  },
   "openNowPlain": "Abierto ahora",
   "closedPlain": "Cerrado"
  },
@@ -86,15 +70,7 @@
   "something": "etwas",
   "openNowA11y": "jetzt geöffnet",
   "closedNowA11y": "jetzt geschlossen",
-  "hostedHereA11y": {
-   "one": "{count} Treffen hier veranstaltet",
-   "other": "{count} Treffen hier veranstaltet"
-  },
   "free": "Kostenlos",
-  "gatheringsHere": {
-   "one": "🎉 {count} Treffen hier",
-   "other": "🎉 {count} Treffen hier"
-  },
   "openNowPlain": "Jetzt geöffnet",
   "closedPlain": "Geschlossen"
  },
@@ -119,15 +95,7 @@
   "something": "quelque chose",
   "openNowA11y": "ouvert maintenant",
   "closedNowA11y": "fermé maintenant",
-  "hostedHereA11y": {
-   "one": "{count} rassemblement organisé ici",
-   "other": "{count} rassemblements organisés ici"
-  },
   "free": "Gratuit",
-  "gatheringsHere": {
-   "one": "🎉 {count} rassemblement ici",
-   "other": "🎉 {count} rassemblements ici"
-  },
   "openNowPlain": "Ouvert maintenant",
   "closedPlain": "Fermé"
  },
@@ -152,15 +120,7 @@
   "something": "algo",
   "openNowA11y": "aberto agora",
   "closedNowA11y": "fechado agora",
-  "hostedHereA11y": {
-   "one": "{count} encontro realizado aqui",
-   "other": "{count} encontros realizados aqui"
-  },
   "free": "Grátis",
-  "gatheringsHere": {
-   "one": "🎉 {count} encontro aqui",
-   "other": "🎉 {count} encontros aqui"
-  },
   "openNowPlain": "Aberto agora",
   "closedPlain": "Fechado"
  },
@@ -185,15 +145,7 @@
   "something": "yon bagay",
   "openNowA11y": "louvri kounye a",
   "closedNowA11y": "fèmen kounye a",
-  "hostedHereA11y": {
-   "one": "{count} rasanbleman òganize isit la",
-   "other": "{count} rasanbleman òganize isit la"
-  },
   "free": "Gratis",
-  "gatheringsHere": {
-   "one": "🎉 {count} rasanbleman isit la",
-   "other": "🎉 {count} rasanbleman isit la"
-  },
   "openNowPlain": "Louvri kounye a",
   "closedPlain": "Fèmen"
  },
@@ -218,13 +170,7 @@
   "something": "好玩的事",
   "openNowA11y": "营业中",
   "closedNowA11y": "已打烊",
-  "hostedHereA11y": {
-   "other": "这里举办过 {count} 场聚会"
-  },
   "free": "免费",
-  "gatheringsHere": {
-   "other": "🎉 这里有 {count} 场聚会"
-  },
   "openNowPlain": "营业中",
   "closedPlain": "已打烊"
  },
@@ -249,13 +195,7 @@
   "something": "điều gì đó",
   "openNowA11y": "đang mở cửa",
   "closedNowA11y": "đã đóng cửa",
-  "hostedHereA11y": {
-   "other": "{count} buổi gặp được tổ chức ở đây"
-  },
   "free": "Miễn phí",
-  "gatheringsHere": {
-   "other": "🎉 {count} buổi gặp ở đây"
-  },
   "openNowPlain": "Đang mở cửa",
   "closedPlain": "Đã đóng cửa"
  },
@@ -280,15 +220,7 @@
   "something": "kahit ano",
   "openNowA11y": "bukas ngayon",
   "closedNowA11y": "sarado ngayon",
-  "hostedHereA11y": {
-   "one": "{count} pagtitipong ginanap dito",
-   "other": "{count} pagtitipong ginanap dito"
-  },
   "free": "Libre",
-  "gatheringsHere": {
-   "one": "🎉 {count} pagtitipon dito",
-   "other": "🎉 {count} pagtitipon dito"
-  },
   "openNowPlain": "Bukas ngayon",
   "closedPlain": "Sarado"
  },
@@ -313,19 +245,7 @@
   "something": "что-нибудь",
   "openNowA11y": "сейчас открыто",
   "closedNowA11y": "сейчас закрыто",
-  "hostedHereA11y": {
-   "one": "здесь прошла {count} встреча",
-   "few": "здесь прошли {count} встречи",
-   "many": "здесь прошло {count} встреч",
-   "other": "здесь прошло {count} встречи"
-  },
   "free": "Бесплатно",
-  "gatheringsHere": {
-   "one": "🎉 {count} встреча здесь",
-   "few": "🎉 {count} встречи здесь",
-   "many": "🎉 {count} встреч здесь",
-   "other": "🎉 {count} встречи здесь"
-  },
   "openNowPlain": "Сейчас открыто",
   "closedPlain": "Закрыто"
  },
@@ -350,13 +270,7 @@
   "something": "재미있는 것",
   "openNowA11y": "영업 중",
   "closedNowA11y": "영업 종료",
-  "hostedHereA11y": {
-   "other": "이곳에서 열린 모임 {count}개"
-  },
   "free": "무료",
-  "gatheringsHere": {
-   "other": "🎉 이곳의 모임 {count}개"
-  },
   "openNowPlain": "영업 중",
   "closedPlain": "영업 종료"
  }

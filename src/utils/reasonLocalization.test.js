@@ -340,12 +340,12 @@ describe('the context line, notes and headline on the shared layer', () => {
     scheduled_at: new Date(2026, 8, 28, 18, 30).toISOString(), distanceMiles: 1.23, attendees: [], approvedCount: 0 };
   it('the distance/time line is composed from localized values', () => {
     const line = (language) => gatheringCardModel(g, { signals: [], myUserId: 'me', now: NOW.getTime(), language }).meta;
-    expect(line('en')).toBe(`1.2 mi · ${whenLabel(g.scheduled_at, NOW)}`);
-    expect(line('de')).toBe('1,2 Meilen · Heute Abend · 18:30 Uhr');
-    expect(line('es')).toBe('1.2 mi · Esta noche · 6:30 p. m.');
-    expect(line('zh')).toBe('1.2英里 · 今晚 · 下午6:30');
+    expect(line('en')).toBe(`About 1.2 mi · ${whenLabel(g.scheduled_at, NOW)}`);
+    expect(line('de')).toBe('Etwa 1,2 Meilen · Heute Abend · 18:30 Uhr');
+    expect(line('es')).toBe('Aprox. 1.2 mi · Esta noche · 6:30 p. m.');
+    expect(line('zh')).toBe('约1.2英里 · 今晚 · 下午6:30');
     const past = gatheringCardModel({ ...g, scheduled_at: new Date(2026, 8, 27, 10).toISOString() }, { signals: [], now: NOW.getTime(), language: 'fr' }).meta;
-    expect(past).toBe('1,2 mi · Déjà passé');
+    expect(past).toBe('Environ 1,2 mi · Déjà passé');
   });
   it('a typed-search row\'s status note is localized, a business\'s own words are not', () => {
     const full = resultRowView({ type: 'gathering', ...g, startsAt: g.scheduled_at, reasons: [], subtitle: resultNoteText('fullWaitlistCount', { going: 4, capacity: 4 }) }, { now: NOW, language: 'es' });

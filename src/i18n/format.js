@@ -13,6 +13,7 @@ import { translations } from './translations';
 import { translate, DEFAULT_LANGUAGE } from './translate';
 import { whenParts } from '../utils/timeContext';
 import { timeWindowParts } from '../utils/timeWindow';
+import { approximateMiles } from '../utils/formatDistance';
 
 // A raw vocab value (arrays such as weekday names), in the language or English.
 export function vocabValue(language, path) {
@@ -38,6 +39,14 @@ export function localDistance(miles, language) {
   const n = miles >= 9.95 ? localNumber(value, language) : localNumber(value, language, 1);
   // a one-decimal figure ("1.0", "1.2") takes the language's fractional form, so its plural count is never a whole number
   return v(language, 'units.miles', { n, count: miles >= 9.95 ? value : 0.5 });
+}
+
+// Same decision as formatApproxDistance (utils/formatDistance.js approximateMiles): a gathering's distance, miles only, "About".
+export function localApproxDistance(miles, language) {
+  const a = approximateMiles(miles);
+  if (!a) return null;
+  const distance = v(language, 'units.miles', { n: localNumber(a.value, language, a.decimals || null), count: a.decimals ? 0.5 : a.value });
+  return translate(language, 'reasons.approxDistance', { distance });
 }
 
 // Same rule as durationLabel: under 15 = none, under an hour in minutes, else hours to one decimal.

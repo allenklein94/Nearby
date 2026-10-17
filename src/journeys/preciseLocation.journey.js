@@ -7,14 +7,15 @@
 //     gives the point to the host + approved attendee only (anon cannot call it).
 //   RPC paths, as the invitee: get_gathering_distances' pin is no longer the md5 offset (the old reversal fails), lies in the
 //     point's 0.007 deg cell, and distance_miles is measured to the pin; get_bounded_nearby_gathering_ids tests the pin, never the
-//     point; count_gatherings_near_batch counts only public + discoverable gatherings and refuses more than 20 points.
+//     point; the place-count oracle count_gatherings_near_batch is gone (owner Option A, 20270325): a grid scan as a signed-in
+//     user cannot even call it, and no public count_gatherings* function exists.
 //   Pin averaging (item 146 Option A, owner 2026-10-17): the pin is keyed by host + cell, never the gathering: a host's
 //     gatherings at one point (a weekly series), or spread inside one cell, share ONE pin; knowing one gathering's real point
 //     gives no offset that recovers another's; another host or another cell gets another pin; the radius boundary is the pin;
 //     the pre-filter still finds a gathering whose point is at the far corner of its cell from the pin.
 //   Grants: no table-wide SELECT; the client-readable columns = every column except precise_lat/lng; the secret, its schema
 //     and the pin function are out of client reach; count_gatherings_near is gone.
-// Rolled back. Coordinates are mid-Atlantic so no real gathering shares the ~110 m count box.
+// Rolled back. Coordinates are mid-Atlantic so no real gathering shares their cell.
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
@@ -136,14 +137,16 @@ d('journey: precise gathering location only for the host and approved attendees,
     'around_pin', exists (select 1 from get_bounded_nearby_gathering_ids(v_pin.fuzzed_lat, v_pin.fuzzed_lng, 0.01) b where b.id = v_priv),
     'around_point', exists (select 1 from get_bounded_nearby_gathering_ids(${LAT}, ${LNG},
         (select distance_miles from get_gathering_distances(${LAT}, ${LNG}, array[v_priv])) / 2) b where b.id = v_priv))));
-  begin perform count_gatherings_near_batch(array_fill(${LAT}::double precision, array[21]), array_fill(${LNG}::double precision, array[21]));
-    v_err := 'accepted';
-  exception when others then v_err := sqlerrm; end;
+  -- Place-count oracle (owner Option A, 20270325): the old grid scan (20 points around three public + discoverable journey
+  -- gatherings at the point) can no longer be run at all; dynamic SQL so the journey itself compiles without the function.
+  begin execute format('select * from public.count_gatherings_near_batch(array_fill(%s::double precision, array[20]), array_fill(%s::double precision, array[20]))', ${LAT}, ${LNG});
+    v_err := 'callable';
+  exception when undefined_function then v_err := 'undefined';
+  when others then v_err := sqlstate; end;
   log := log || jsonb_build_array(jsonb_build_object('step', 'counts', 'ok', true, 'data', jsonb_build_object(
-    -- four journey gatherings at the point: three public + discoverable (open, approval, full), one invite-only
-    'at_point', (select gathering_count from count_gatherings_near_batch(array[${LAT}::double precision], array[${LNG}::double precision])),
-    'twenty_one', v_err,
-    'twenty_ok', (select count(*) from count_gatherings_near_batch(array_fill(${LAT}::double precision, array[20]), array_fill(${LNG}::double precision, array[20]))))));
+    'grid_scan', v_err,
+    'count_functions', (select coalesce(jsonb_agg(proname::text order by proname), '[]'::jsonb) from pg_proc
+      where pronamespace = 'public'::regnamespace and proname like 'count_gatherings%'))));
   reset role;
 
   -- Pin averaging (item 146 Option A): pins read as the host (who may see all of these), radius tests as the stranger.
@@ -285,10 +288,8 @@ d('journey: precise gathering location only for the host and approved attendees,
     expect(data('bounded')).toEqual({ around_pin: true, around_point: false });
   });
 
-  test('count_gatherings_near_batch: public + discoverable only; at most 20 points', () => {
-    expect(data('counts').at_point).toBe(3);
-    expect(data('counts').twenty_one).toMatch(/at most 20 points/);
-    expect(data('counts').twenty_ok).toBe(20);
+  test('place counts are gone: a signed-in grid scan cannot run, and no count_gatherings* function exists', () => {
+    expect(data('counts')).toEqual({ grid_scan: 'undefined', count_functions: [] });
   });
 
   test('pin averaging: one host, one point = one pin for every gathering (a weekly series included); the mean is that pin', () => {

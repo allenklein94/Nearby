@@ -1,3 +1,35 @@
+# Place-count oracle removed + approximate gathering location in words (2026-10-17, owner: Option A, final)
+
+Owner chose Option A of `PRODUCT_AUDIT/PLACE_COUNT_ORACLE_SCOPE_2026-10-17.md` (B and C's count behaviour explicitly rejected) plus a
+visible approximate-area line. Revises item 146's approved compatibility change 3.
+1. Count removed: `supabase/migrations/20270325_drop_place_gathering_count.sql` (applied 2026-10-17) drops
+   `public.count_gatherings_near_batch(double precision[], double precision[])` (and `count_gatherings_near` if it ever reappears).
+   `src/services/places.js` `searchNearbyPlaces` no longer calls it (no `gatheringCount` field; the unused `supabase` import removed);
+   `DiscoverHubScreen.js` `placeReasonLine` lost the "🎉 N gatherings here" part; `ui.places.gatheringsHere` and the never-used
+   `ui.places.hostedHereA11y` removed in 11 languages (`scripts/i18n/strings/places.json`, rebuilt). Nothing replaces it.
+   Journey `preciseLocation`: the count checks became "a signed-in grid scan cannot run (undefined function), no count_gatherings*
+   function exists" (21/21 with the migration; FAILS on prod before it); live-verify `gathering-precise-location-access.sql` adds
+   `count_batch = false`. Real API after deploy: the RPC returns 404 PGRST202.
+2. Approximate location: one rule `approximateMiles` / `formatApproxDistance` / `formatApproxDistanceAway` (`utils/formatDistance.js`;
+   miles only, never feet, min 0.1; "About 0.3 mi", "About 0.3 mi away"); localized by `localApproxDistance` (`i18n/format.js`) and
+   `displayApproxDistance` (`i18n/display.js`); templates `reasons.approxDistance` / `approxDistanceAway` (11 languages, machine-authored),
+   registered in `REASON_PARSE_ORDER` and categorized as DISTANCE (so they stay the context line). Used by every gathering distance:
+   `recommendationContext` (type 'gathering'; every card/row on Home, Discover, typed asks), `recommendationFacts` / `factsMeta`,
+   `services/gatherings.js` `distanceLabel` (detail meta line, map callout, fit reasons), `OnboardingRecommendationsScreen`, item 37's
+   place tick (`strongMatchPieces` marks `approximate` for a gathering; `motion/StrongMatch.js`). Business/perk/place/community distances unchanged.
+   Discover map (`GatheringsMapView`): a gathering callout adds the existing "An approximate area, not an exact location"; one static
+   caption "Gathering pins show an approximate area, not the exact spot" (`ui.mapView.gatheringPinsApproximate`, 11 languages, new,
+   `pointerEvents="none"`, top-left, clear of the my-location button) whenever a gathering pin is shown. Host/approved attendees keep the
+   exact meet-up map + directions (item 145); radius still tested on the displayed pin; no coordinates exposed.
+Verified: guard `src/utils/approximateGatheringLocation.test.js` 13/13; Jest 463 suites, 6175 pass (11 old expectations updated
+"1.1 mi" -> "About 1.1 mi"); prod journeys 477/477 with the migration as prelude and again after applying; from-scratch replay 449/449
++ journeys 477/477 + both concurrency scripts; grants replay = prod 3339/3339 (functions + tables, public + private, extension-owned
+excluded); business web export regenerated (no reference left). Item 146 device checklist: check 2 and 9 rewritten, new check 13.
+NOT verified: any phone (item 146 checks 1-3, 9, 12, 13 never run); native review of the 3 new strings; the signed-in real-API test
+for items 147/148 (still DEFERRED by the owner). Remaining limitations: area value x cell narrows to >= ~111 m per axis (median ~670 m);
+a spot within GPS jitter of a cell edge can show two neighbouring pins; pins and distances can be off by up to ~0.5 mi (now said in words);
+the detail meta line and map callout distance (`distanceLabel`) are English in every language (pre-existing; the context line is localized).
+
 # Item 146 pin averaging: Option A built (2026-10-17, owner approved Option A, LOCKED; B and C rejected)
 
 Gathering pins were the precise point + a secret offset keyed by the GATHERING, so a host's repeated gatherings at one point (a weekly

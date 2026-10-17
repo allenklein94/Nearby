@@ -12,7 +12,7 @@ import { readyCardWhy } from '../utils/recommendationFacts';
 import { gatheringPrimaryAction } from '../utils/primaryAction';
 import { gatheringRowAction } from '../utils/recommendationContext';
 import { localizeReason } from '../utils/reasonLocalization';
-import { displayDistance, displayWhen, displayGatheringWhen } from '../i18n/display';
+import { displayApproxDistance, displayWhen, displayGatheringWhen } from '../i18n/display';
 import LoadErrorState from '../components/LoadErrorState';
 
 import { NLoader } from '../motion';
@@ -68,7 +68,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
             <Text style={styles.foundText}>{t('ui.onboarding.foundCount', { count: recommendations.length })}</Text>
             {recommendations.map((r) => {
               const why = readyCardWhy(r);
-              const meta = [displayDistance(r.distanceMiles, language), displayGatheringWhen(r, language)].filter(Boolean).join(' · ') || null;
+              const meta = [displayApproxDistance(r.distanceMiles, language), displayGatheringWhen(r, language)].filter(Boolean).join(' · ') || null;
               const facts = { why: why ? localizeReason(why, language) : null, meta };
               // item 196: the one state-aware action (Join / Request to Join / Join Waitlist / View Plan / Requested...), or none
               const action = gatheringRowAction(gatheringPrimaryAction(r, myUserId));

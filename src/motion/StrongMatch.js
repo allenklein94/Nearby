@@ -6,7 +6,7 @@ import useReduceMotion from '../hooks/useReduceMotion';
 import { SEQUENCES, infoOpacity } from './motionBudget';
 import { translate } from '../i18n/translate';
 import { categoryName } from '../i18n/categoryNames';
-import { displayWhen, displayDistance } from '../i18n/display';
+import { displayWhen, displayDistance, displayApproxDistance } from '../i18n/display';
 
 // Owner item 37 (2026-10-11): the strong-match moment on the top result of the person's own typed ask (utils/strongMatch.js
 // decides IF; this only shows it). The pieces of the ask that really matched line up one after another, each ticking ✓
@@ -39,7 +39,7 @@ export default function StrongMatch({ pieces, language, playKey }) {
 
   if (!Array.isArray(pieces) || pieces.length !== T.pieces.length) return null;
   const styles = getStyles(colors);
-  const label = (p) => (p.key === 'activity' ? categoryName(p.value, language) : p.key === 'time' ? displayWhen(p.value, language) : displayDistance(p.value, language));
+  const label = (p) => (p.key === 'activity' ? categoryName(p.value, language) : p.key === 'time' ? displayWhen(p.value, language) : (p.approximate ? displayApproxDistance : displayDistance)(p.value, language));
 
   return (
     <View pointerEvents="none" style={styles.block}>

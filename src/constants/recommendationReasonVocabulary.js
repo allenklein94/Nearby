@@ -198,6 +198,8 @@ const PATTERN_MATCHES = [
   { pattern: /^\d+ of your friends (is|are) attending$/, category: REASON_CATEGORIES.CONTEXT },
   // The standard distance label (utils/formatDistance.js formatDistanceAway): "1.2 mi away", "800 ft away", "Under 100 ft away".
   { pattern: /^(\d+(\.\d+)? mi away|\d+ ft away|Under 100 ft away)$/, category: REASON_CATEGORIES.DISTANCE },
+  // A gathering's approximate distance (formatApproxDistanceAway / formatApproxDistance): "About 0.3 mi away", "About 0.3 mi".
+  { pattern: /^About \d+(\.\d+)? mi( away)?$/, category: REASON_CATEGORIES.DISTANCE },
   // FriendDiscoverySwipeCards.js's real sharedBits entries.
   { pattern: /^\d+ interests? in common$/, category: REASON_CATEGORIES.INTEREST },
   { pattern: /^in \d+ of your communities$/, category: REASON_CATEGORIES.CONTEXT },

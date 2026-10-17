@@ -750,6 +750,8 @@ export const translations = {
       whoForTaste: "Matches {name}'s taste",
       theirTaste: "Matches their taste",
       distanceAway: "{distance} away",
+      approxDistance: "About {distance}",
+      approxDistanceAway: "About {distance} away",
       energyFit: {
         "low_key": "Fits a low-key plan",
         "social": "Fits a social plan",
@@ -1880,6 +1882,8 @@ export const translations = {
       whoForTaste: "Va con los gustos de {name}",
       theirTaste: "Va con sus gustos",
       distanceAway: "A {distance}",
+      approxDistance: "Aprox. {distance}",
+      approxDistanceAway: "A unos {distance}",
       energyFit: {
         "low_key": "Ideal para un plan tranquilo",
         "social": "Ideal para un plan social",
@@ -2978,6 +2982,8 @@ export const translations = {
       whoForTaste: "Trifft den Geschmack von {name}",
       theirTaste: "Trifft den Geschmack",
       distanceAway: "{distance} entfernt",
+      approxDistance: "Etwa {distance}",
+      approxDistanceAway: "Etwa {distance} entfernt",
       energyFit: {
         "low_key": "Passt zu einem entspannten Plan",
         "social": "Passt zu einem geselligen Plan",
@@ -4085,6 +4091,8 @@ export const translations = {
       whoForTaste: "Correspond aux goûts de {name}",
       theirTaste: "Correspond à ses goûts",
       distanceAway: "À {distance}",
+      approxDistance: "Environ {distance}",
+      approxDistanceAway: "À environ {distance}",
       energyFit: {
         "low_key": "Idéal pour un plan tranquille",
         "social": "Idéal pour un plan convivial",
@@ -5198,6 +5206,8 @@ export const translations = {
       whoForTaste: "Combina com o gosto de {name}",
       theirTaste: "Combina com o gosto da pessoa",
       distanceAway: "A {distance}",
+      approxDistance: "Cerca de {distance}",
+      approxDistanceAway: "A cerca de {distance}",
       energyFit: {
         "low_key": "Combina com um plano tranquilo",
         "social": "Combina com um plano social",
@@ -6298,6 +6308,8 @@ export const translations = {
       whoForTaste: "Sa mache ak gou {name}",
       theirTaste: "Sa mache ak gou li",
       distanceAway: "A {distance}",
+      approxDistance: "Anviwon {distance}",
+      approxDistanceAway: "Anviwon {distance}",
       energyFit: {
         "low_key": "Bon pou yon plan trankil",
         "social": "Bon pou yon plan sosyal",
@@ -7398,6 +7410,8 @@ export const translations = {
       whoForTaste: "符合{name}的口味",
       theirTaste: "符合TA的口味",
       distanceAway: "距离{distance}",
+      approxDistance: "约{distance}",
+      approxDistanceAway: "距离约{distance}",
       energyFit: {
         "low_key": "适合轻松的安排",
         "social": "适合社交的安排",
@@ -8496,6 +8510,8 @@ export const translations = {
       whoForTaste: "Hợp khẩu vị của {name}",
       theirTaste: "Hợp khẩu vị của người ấy",
       distanceAway: "Cách {distance}",
+      approxDistance: "Khoảng {distance}",
+      approxDistanceAway: "Cách khoảng {distance}",
       energyFit: {
         "low_key": "Hợp với một kế hoạch nhẹ nhàng",
         "social": "Hợp với một kế hoạch giao lưu",
@@ -9596,6 +9612,8 @@ export const translations = {
       whoForTaste: "Swak sa panlasa ni {name}",
       theirTaste: "Swak sa panlasa nila",
       distanceAway: "{distance} ang layo",
+      approxDistance: "Mga {distance}",
+      approxDistanceAway: "Mga {distance} ang layo",
       energyFit: {
         "low_key": "Bagay sa isang chill na plano",
         "social": "Bagay sa isang sosyal na plano",
@@ -10726,6 +10744,8 @@ export const translations = {
       whoForTaste: "Во вкусе {name}",
       theirTaste: "В его или её вкусе",
       distanceAway: "В {distance} отсюда",
+      approxDistance: "Примерно {distance}",
+      approxDistanceAway: "Примерно в {distance} отсюда",
       energyFit: {
         "low_key": "Подходит для спокойных планов",
         "social": "Подходит для общения",
@@ -11826,6 +11846,8 @@ export const translations = {
       whoForTaste: "{name}님 취향에 맞아요",
       theirTaste: "그분 취향에 맞아요",
       distanceAway: "{distance} 거리",
+      approxDistance: "약 {distance}",
+      approxDistanceAway: "약 {distance} 거리",
       energyFit: {
         "low_key": "여유로운 계획에 맞아요",
         "social": "어울리는 계획에 맞아요",

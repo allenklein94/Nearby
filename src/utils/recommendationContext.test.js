@@ -31,7 +31,7 @@ describe('the context object', () => {
     const c = recommendationContext({ type: 'gathering', id: 'g1', title: 'Coffee', startsAt: tonight, distanceMiles: 0.4,
       reasons: ['Happening today', 'Because you like Coffee'] }, { now: NOW });
     expect(c.reason).toBe('Because you like Coffee'); // a time-only reason is context, never the why
-    expect(c.context).toMatch(/^0\.4 mi · /);
+    expect(c.context).toMatch(/^About 0\.4 mi · /);
     expect(c.destination).toEqual({ kind: 'navigate', screen: 'GatheringDetail', params: { gatheringId: 'g1' } });
     expect(c.action).toBeTruthy(); // from gatheringPrimaryAction (unknown viewer state = View)
   });

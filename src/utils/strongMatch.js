@@ -33,5 +33,6 @@ export function strongMatchPieces(item, ask, now = new Date()) {
   if (startMs < now.getTime() - 3 * 3600 * 1000) return null; // long over: never "a match"
   const miles = item.distanceMiles;
   if (typeof miles !== 'number' || !Number.isFinite(miles) || miles < 0 || miles >= CLOSE_DISTANCE_MILES) return null;
-  return [{ key: 'activity', value: category }, { key: 'time', value: start }, { key: 'place', value: miles }];
+  // a gathering's distance is to its privacy-shifted pin: the tick reads "About 0.3 mi" (approximate), a business's is exact
+  return [{ key: 'activity', value: category }, { key: 'time', value: start }, { key: 'place', value: miles, approximate: item.type === 'gathering' }];
 }

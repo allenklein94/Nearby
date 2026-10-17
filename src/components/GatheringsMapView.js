@@ -104,6 +104,8 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
                 <Text style={styles.calloutTitle} numberOfLines={1}>{categoryStyle.icon} {g.title}</Text>
                 <Text style={styles.calloutHost} numberOfLines={1}>{g.host?.display_name ? t('ui.activity.hostedBy', { name: g.host.display_name }) : t('ui.activity.hostedByUnknown')}</Text>
                 <Text style={styles.calloutDistance}>{g.distanceLabel}</Text>
+                {/* The pin is privacy-shifted (item 146 Option A): said in words, not only to a screen reader. */}
+                <Text style={styles.calloutDistance}>{t('ui.smallParts.anApproximateAreaNotAn')}</Text>
                 <Text style={styles.calloutAction}>{t('ui.mapView.tapToViewDetails')}</Text>
               </View>
             </Callout>
@@ -180,6 +182,13 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
         </Marker>
       ))}
     </MapView>
+    {/* Gathering pins are privacy-shifted (item 146 Option A, up to ~0.5 mi from the meet-up point): one quiet, static caption
+        whenever any is on the map, so a sighted viewer never reads a pin as the exact spot. Business pins are exact. */}
+    {pinnableGatherings.length > 0 && (
+      <View style={styles.approxCaption} pointerEvents="none">
+        <Text style={styles.approxCaptionText}>{t('ui.mapView.gatheringPinsApproximate')}</Text>
+      </View>
+    )}
     </View>
   );
 }
@@ -198,6 +207,11 @@ const getStyles = (colors) => StyleSheet.create({
   calloutHost: { color: '#666', fontSize: 12, marginTop: 2 },
   calloutDistance: { color: '#888', fontSize: 11, marginTop: 2 },
   calloutAction: { color: colors.primary, fontSize: 11, fontWeight: '700', marginTop: 6 },
+  approxCaption: {
+    position: 'absolute', top: spacing.sm, left: spacing.sm, right: 64,
+    backgroundColor: colors.surfaceElevated, borderRadius: radius.md, paddingHorizontal: spacing.sm, paddingVertical: 4, opacity: 0.92,
+  },
+  approxCaptionText: { color: colors.textSecondary, fontSize: 11 },
   areaPill: {
     backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1, borderRadius: radius.full,
     paddingHorizontal: spacing.sm, paddingVertical: 4,
