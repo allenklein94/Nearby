@@ -248,6 +248,11 @@ checklist checks 1-3, 9, 12 and new 13 pass on a real phone AND native review of
 `ui.mapView.gatheringPinsApproximate`) is done (migration 20270325 LIVE drops `count_gatherings_near_batch`; journey `preciseLocation` 21/21, fails on the
 old DB; guard `approximateGatheringLocation.test.js`; replay 449/449 + journeys 477/477; grants = prod 3339/3339). `PRODUCT_AUDIT/PLACE_COUNT_ORACLE_SCOPE_2026-10-17.md`.
 
+**Plan lifecycle + "You're here" (owner ideas numbered 147/148, 2026-10-17; numbers clash with items 147/148) is SCOPED, NOTHING BUILT, AWAITING THE OWNER:**
+lifecycle stages met as built; two gaps found (G1: the attending hub's own 3 h clock `getCountdownLabel` disagrees with `timeWindowParts`/item 34;
+G2: check-in accepted any time, server too); "You're here" options A manual / B on-device suggestion / C automatic in
+`PRODUCT_AUDIT/PLAN_LIFECYCLE_AND_YOURE_HERE_SCOPE_2026-10-17.md`.
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
