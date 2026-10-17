@@ -223,11 +223,15 @@ real roles; replay 444/444 + journeys 431/431; grants replay = prod 1556/1556; s
 **Item 147 (non-public gathering rows, owner approved 2026-10-17, HIGH PRIORITY SECURITY) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_DEVICE_CHECKLIST_2026-10-17.md` is recorded on real phones (migration 20270322 LIVE; journey
 `gatheringRowPrivacy` 28/28 under real roles; journeys 473/473 on prod; replay 446/446 + journeys 473/473; parity 12451/12451). Signed-in real-API test still open.
+**Signed-in real-API test for items 147 + 148 DEFERRED (owner, 2026-10-17), OPEN until it actually passes:** database-level journeys are NOT proof the real API
+blocks a signed-in user. Before running: an authorized operator checks `auth.users` for an account left by the interrupted 2026-10-17 run and deletes
+one only after verifying it belongs to that run (never by creation time or a test-looking email alone). Then a dedicated test account created only at
+run time, cleanup guaranteed even on failure, deletion verified, results recorded. Never bypass production safeguards to finish it.
 
 **Item 148 (Stories & Sightings location privacy, owner approved D1-D4 2026-10-17, LOCKED) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md` is recorded (migration 20270321 LIVE; journey `storySightingLocation` 14/14;
 replay 445/445 + journeys 445/445; grants = prod). Story/business-moment media GPS metadata DEFERRED, UNRESOLVED until check 10 runs on a device.
-Also OPEN: a signed-in test through the real API (needs an authorized test account), backup/WAL retention for the old sighting value
+Also OPEN: a signed-in test through the real API (DEFERRED, see item 147's line), backup/WAL retention for the old sighting value
 (Free plan, 0 restorable backups, WAL archiving on: ask Supabase support, record expiry; never assume gone). Presence retention FIXED
 2026-10-17: `purge_stale_presence_reports` every 10 min (migration 20270323 LIVE; deletes reports > 1 h, every reader uses <= 1 h). Expired
 sightings are NOT purged yet: Crossed Paths ignores `expires_at`, so purging would drop people 48 h after last crossing (owner to decide).
