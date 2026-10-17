@@ -250,7 +250,7 @@ old DB; guard `approximateGatheringLocation.test.js`; replay 449/449 + journeys 
 
 **Gathering clock + check-in window (owner 2026-10-17: fix G1 + G2, "You're here" option A manual only, no new headlines) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone (migration 20270326 LIVE; journey `gatheringCheckIn` 22/22 incl. ms-exact
-boundaries; prod journeys 499/499; replay 450/450 + concurrency; no new strings). Option B (on-device suggestion) only after this passes on a phone.
+boundaries; prod journeys 499/499; replay 450/450 + concurrency; no new strings). "You're here" = Option A, LOCKED (owner, 2026-10-17); Option B DEFERRED until this passes on a phone.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -363,6 +363,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   exact end (exclusive everywhere: `timeWindowParts`, `whenLabel`, SQL `_gathering_ends_at`); Home, Discover, detail, Messages, needs and
   strong match all read it (guard `gatheringCheckInWindow.test.js`). Check-in only in [start - 30 min, end), enforced by `check_in_to_gathering`
   + trigger `gathering_interest_check_in_guard` (idempotent, never moved, never on insert); never a redemption. The "Right Now" discovery window is separate, unchanged.
+- **"You're here" = manual check-in only (owner, 2026-10-17, LOCKED):** in the check-in window an eligible attendee sees Check in, Message
+  group, Directions; nothing decided from location (no automatic arrival, no "Looks like you're here"); no new stage headlines ("Time to go",
+  "You're here"); check-in never redeems (only a business-confirmed visit does; offer-booked plans keep their visit flow). Option B only
+  after the check-in checklist passes on a phone, and then: already-granted foreground permission, compared on the phone only, the
+  attendee still taps, location never sent or stored for it. `PRODUCT_AUDIT/PLAN_LIFECYCLE_AND_YOURE_HERE_SCOPE_2026-10-17.md`.
 - **Relative time labels stay true while open (item 108):** only via `hooks/useMinuteClock.js` (`utils/minuteClock.js`; Home + Discover,
   guard `minuteClock.test.js`): ticks only near a shown window, paused in background, plain text, never motion or urgency styling.
 - A Home claim needs a visible, substantiated trigger of its own kind, and its CTA names where it goes.

@@ -59,3 +59,11 @@ rule) and would publish a person's arrival to others without a tap.
 ## Owner decisions (2026-10-17) and outcome
 Fix G1 + G2 now; "You're here" = A; no new headlines. BUILT, LIVE (migration 20270326), NOT DEVICE-VERIFIED:
 `GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md`. Record in CLAUDE_HISTORY.md (2026-10-17, "Gathering clock (G1) + check-in window (G2)").
+
+## Owner lock (2026-10-17, confirmed)
+LOCKED: manual check-in only (during the window an eligible attendee sees Check in, Message group, Directions); no location-based
+behaviour (neither C nor B); no new stage headlines ("Time to go", "You're here" or others); check-in never creates or triggers a
+redemption (only a business-confirmed visit counts; offer-booked plans keep their visit flow). Option B DEFERRED: reconsider only after
+`GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md` passes on a physical phone; any later build must require foreground location
+permission already granted, compare on the device only, keep the attendee's own tap to check in, and never transmit or store location
+for the suggestion. Nothing built by this decision.

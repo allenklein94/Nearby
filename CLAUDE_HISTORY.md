@@ -1,3 +1,13 @@
+# "You're here" Option A LOCKED (2026-10-17, owner confirmed; nothing built)
+
+Owner: keep Option A (manual check-in only) and no new stage headlines. LOCKED: during the check-in window an eligible attendee sees
+Check in, Message group, Directions; no automatic arrival (C) and no "Looks like you're here · Check in" suggestion (B); no "Time to go" /
+"You're here" or other new stage headlines; check-in never creates or triggers a redemption (only business-confirmed visits; offer-booked
+plans keep their visit flow). Option B DEFERRED until the check-in window passes the physical-phone checklist
+(`PRODUCT_AUDIT/GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md`); then only with already-granted foreground permission, an
+on-device comparison, the attendee's own tap, and no location sent or stored for it. Recorded in the scope doc and CLAUDE.md's
+standing conventions. Re-verification with this record: Jest 464/464 suites (6207 tests), prod journeys 499/499 (rolled back), `gatheringCheckIn` 22/22. NOT device-verified.
+
 # Exact end-boundary regression cases (2026-10-17, owner: the end is exclusive everywhere)
 
 Client (`utils/gatheringCheckInWindow.test.js`, frozen system clock, helpers called with no `now` exactly as the screens call them):
