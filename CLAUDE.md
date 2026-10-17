@@ -220,9 +220,9 @@ Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the
 `PRODUCT_AUDIT/ITEM_146_PRECISE_LOCATION_DEVICE_CHECKLIST_2026-10-17.md` is recorded (migration 20270320 LIVE; journey `preciseLocation` 17/17 under
 real roles; replay 444/444 + journeys 431/431; grants replay = prod 1556/1556; scope + results `ITEM_146_PRECISE_LOCATION_SECURITY_SCOPE_2026-10-17.md`).
 
-**Item 147 (non-public gathering rows readable by anyone, owner 2026-10-17: HIGH PRIORITY SECURITY) is SCOPED, NOT STARTED, AWAITING THE OWNER'S BUILD APPROVAL (recommended 2026-10-17, not yet approved):**
-`gatherings`' SELECT policy is `qual = true`, so anon reads every invite-only/friends/community gathering's title, description, host and time;
-item 146 fixed coordinates only, never call gathering privacy done. Scope `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_SCOPE_2026-10-17.md`; needs its build approval.
+**Item 147 (non-public gathering rows, owner approved 2026-10-17, HIGH PRIORITY SECURITY) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_DEVICE_CHECKLIST_2026-10-17.md` is recorded on real phones (migration 20270322 LIVE; journey
+`gatheringRowPrivacy` 28/28 under real roles; journeys 473/473 on prod; replay 446/446 + journeys 473/473; parity 12451/12451). Signed-in real-API test still open.
 
 **Item 148 (Stories & Sightings location privacy, owner approved D1-D4 2026-10-17, LOCKED) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md` is recorded (migration 20270321 LIVE; journey `storySightingLocation` 14/14;
@@ -292,7 +292,7 @@ block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RL
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
-network failure between its writes; non-public `gatherings` rows readable by anon (item 147, open); story media may carry GPS metadata (item 148 check 10, unverified); gathering pins are keyed per gathering, so many gatherings hosted from one point can be averaged (item 146 scope doc, owner to assess); `LOCK TABLE` remains possible with direct DB UPDATE rights.
+network failure between its writes; story media may carry GPS metadata (item 148 check 10, unverified); gathering pins are keyed per gathering, so many gatherings hosted from one point can be averaged (item 146 scope doc, owner to assess); `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
 gathering stops create no child plans.
 
@@ -365,6 +365,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Shared business requests (item 93, LOCKED):** "People you know are also asking" = `intent_visibility` 'friends' (OFF by default,
   only Settings turns it on), accepted friends only, never matches; shows only `sharedRequestFactsLine` (category · day · party
   size), never raw text; combining still needs each person's consent; no merge animation.
+- **Gathering rows (item 147):** readable only per `_gathering_row_visible` (the gatherings SELECT policy; signed out = none); by-id RPCs and
+  id lists apply it; joining/Interested/inviting/asking never grant visibility (trigger 'Gathering not found'). Guard `gatheringRowPrivacyGuard.test.js`, journey `gatheringRowPrivacy`.
 - **A gathering's precise point (item 146, LOCKED):** only host + approved attendees, only via `get_gathering_meetup_point`; precise_lat/lng
   have no client SELECT (column allowlist on `gatherings`); pins/distances/radius only from the secret-keyed pin (`private.gathering_pin`);
   place counts public + discoverable only, max 20 points. A migration adding a gatherings column must `grant select (<col>)` to anon,

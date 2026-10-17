@@ -1,3 +1,24 @@
+# Item 147 (owner, approved 2026-10-17, HIGH PRIORITY SECURITY) Non-public gathering rows - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+(Unrelated to the September "Item 147".) Full record: `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_SCOPE_2026-10-17.md` ("Build +
+verification"); device checks `ITEM_147_NON_PUBLIC_GATHERING_ROWS_DEVICE_CHECKLIST_2026-10-17.md`.
+Found: `gatherings`' only SELECT policy was `true` (anon read every invite-only/friends/community row); a join row grants visibility and
+`join_gathering` / a direct join insert / Interested / `send_social_invite` accepted gatherings the caller could not see; the women-only
+insert policy would have silently passed once rows were private; Q&A readable by anyone; cover-photo read policy bucket-only; six by-id
+RPCs / id lists unchecked; partner businesses on someone else's gathering needed a rule.
+Built (`supabase/migrations/20270322_non_public_gathering_rows.sql`, applied 2026-10-17): ONE rule `_gathering_row_visible(row columns)`
+(host, join row, pending/accepted invite, partner business or pending/approved partnership request, else block + women-only +
+everyone/link-only / friends / community; signed out = no) used by the gatherings SELECT policy, `_viewer_can_see_gathering` (still not
+client-callable), `get_gathering_distances`, `get_gathering_approved_counts`, `get_gathering_attendee_breakdown`,
+`get_gathering_first_timer_count`, `get_bounded_nearby_gathering_ids`, `get_trending_gathering_ids`; BEFORE INSERT trigger
+`_own_gathering_write_needs_visibility` on gathering_interest / gathering_interested / social_invites ('Gathering not found');
+gathering_questions read+ask and gathering-photos read require the gathering row to be readable.
+Verified: journey `gatheringRowPrivacy` 28/28 (18 fail on prod before the migration); `preciseLocation` + `friendsPlanning` updated;
+journeys 473/473 (prelude, then prod); Jest all pass (new guard `gatheringRowPrivacyGuard.test.js`, `businessPrivacyBoundary` updated);
+replay 446/446 + journeys 473/473 + both concurrency scripts; parity replay = prod 12451/12451; real API signed out: gatherings `[]`,
+Q&A `[]`, invite preview works. Reported, unchanged: invite preview by id (by design), host stats/reputation aggregates,
+gathering_feedback readable by signed-in users. Open: device checks, signed-in real-API test.
+
 # Item 148 follow-up + item 146 averaging assessment (2026-10-17) - nothing changed live
 
 Owner: three separate decisions. (1) Item 146: assessment of the repeated-pin averaging weakness REOPENED, implementation unchanged:

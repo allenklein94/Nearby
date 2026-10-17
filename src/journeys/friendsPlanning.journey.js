@@ -57,10 +57,11 @@ d('journey: friends are making plans - the 3-day window, visibility, one per fri
   const titles = (rows) => rows.map((r) => r.title).sort();
 
   test('the 3-day window: the 4-day-old plan never comes back; the query\'s bound matches the client\'s', () => {
-    expect(titles(s.rows.data)).toEqual(['J41 friends', 'J41 invite', 'J41 link', 'J41 recent', 'J41 second']);
+    // item 147: the database no longer returns a friend's invite-only plan A was not invited to
+    expect(titles(s.rows.data)).toEqual(['J41 friends', 'J41 link', 'J41 recent', 'J41 second']);
     expect(Date.parse(friendsActivitySince()) - Date.now()).toBeGreaterThan(-(3 * 86400000 + 60000));
   });
-  test('the client gate drops invite_only and Link-only (RLS returns them); one plan per friend', () => {
+  test('the client gate drops Link-only (RLS returns it: reachable by id, never listed); one plan per friend', () => {
     const picked = selectFriendsActivity(s.rows.data, { visibilityContext: ctx() });
     expect(titles(picked)).toEqual(['J41 friends', 'J41 recent']);
   });

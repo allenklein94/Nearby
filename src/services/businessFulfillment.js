@@ -881,9 +881,8 @@ export async function submitOfferOutcome(offerId, { satisfactionRating, wouldRep
 // Gap 3 of the merged gathering/date <-> business UX (see CLAUDE.md's own
 // plan): gathering_id/match_id, plus a nested gatherings(title,
 // scheduled_at) embed, so a real accepted offer can be named by the
-// actual real-world thing it's tied to -- gatherings' own SELECT RLS is
-// world-readable ("Anyone can view gatherings"), so this embed needs no
-// new policy. Used to build BusinessDashboardScreen's "Upcoming Nearby
+// actual real-world thing it's tied to (gatherings' SELECT RLS has been
+// visibility-scoped since item 147; see the RPC note below). Used to build BusinessDashboardScreen's "Upcoming Nearby
 // Visits" card -- naming the specific gathering/date, not a generic
 // accepted-offer row. price_level/party_type were added for Phase 3 (see
 // CLAUDE.md's own plan) -- a real, gathering-sourced signal for the

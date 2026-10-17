@@ -5,7 +5,7 @@
 //     direct `precise_lat` read, `select *`, a whole-row read (what an embed `gatherings(*)` does), a filter on the column
 //     (`?precise_lat=gt.0` would be an oracle) -> all refused; an ordinary read of the allowed columns works; the lookup
 //     gives the point to the host + approved attendee only (anon cannot call it).
-//   RPC paths, as a stranger: get_gathering_distances' pin is no longer the md5 offset (the old reversal fails), stays within
+//   RPC paths, as the invitee: get_gathering_distances' pin is no longer the md5 offset (the old reversal fails), stays within
 //     the 0.0035 deg bound, and distance_miles is measured to the pin; get_bounded_nearby_gathering_ids tests the pin, never the
 //     point; count_gatherings_near_batch counts only public + discoverable gatherings and refuses more than 20 points.
 //   Grants: no table-wide SELECT; the client-readable columns = every column except precise_lat/lng; the secret, its schema
@@ -112,8 +112,8 @@ d('journey: precise gathering location only for the host and approved attendees,
   ${probe('host', 'authenticated', 'v_host', 'v_open')}
   ${probe('host_invite_only', 'authenticated', 'v_host', 'v_priv')}
 
-  -- RPC paths, as a stranger under the real role
-  perform set_config('request.jwt.claims', json_build_object('sub', v_str, 'role', 'authenticated')::text, true);
+  -- RPC paths, as the invitee (item 147: a stranger now gets nothing for an invite-only gathering) under the real role
+  perform set_config('request.jwt.claims', json_build_object('sub', v_inv, 'role', 'authenticated')::text, true);
   set local role authenticated;
   select * into v_pin from get_gathering_distances(0, 0, array[v_priv]);
   v_md5_lat := v_pin.fuzzed_lat - ((((('x' || substr(md5(v_priv::text || 'lat'), 1, 8))::bit(32)::bigint % 1000) / 1000.0 - 0.5) * 0.007));
@@ -187,13 +187,13 @@ d('journey: precise gathering location only for the host and approved attendees,
     expect(data(k).meet).toEqual(exact);
   });
 
-  test('ordinary reads of the allowed columns keep working for every actor (no other gathering access changed)', () => {
-    for (const k of ['anon_public', 'stranger_public', 'pending', 'waitlisted', 'approved', 'host']) {
+  test('ordinary reads of the allowed columns keep working for every actor who may see the row', () => {
+    for (const k of ['stranger_public', 'pending', 'waitlisted', 'approved', 'host']) {
       expect(data(k).safe).toEqual({ title: expect.stringMatching(/^J146 /), area: 'journey', visibility: 'everyone' });
     }
-    // D3 (separate item, not fixed here): non-public rows are still readable by anyone. Recorded so this test fails, and
-    // gets updated, when that item lands.
-    expect(data('anon_invite_only').safe).toEqual({ title: 'J146 invite-only', area: 'journey', visibility: 'invite_only' });
+    // Item 147 (2026-10-17): rows reach only who may see them (journey gatheringRowPrivacy); signed out = no row at all.
+    expect(data('invited').safe).toEqual({ title: 'J146 invite-only', area: 'journey', visibility: 'invite_only' });
+    for (const k of ['anon_public', 'anon_invite_only', 'stranger_invite_only']) expect(data(k).safe).toBeNull();
   });
 
   test('get_gathering_distances: a keyed pin within the bound, stable, not reversible by the old md5 offset, distance to the pin', () => {

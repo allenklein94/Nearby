@@ -80,10 +80,16 @@ describe('gathering group insights', () => {
     expect(h).toBeDefined();
     const sql = fs.readFileSync(path.join(dir, h.file), 'utf8');
     expect(sql).toMatch(/revoke all on function public\._viewer_can_see_gathering\(uuid\) from public, anon, authenticated/i);
-    expect(h.body).toMatch(/viewer_blocked_either_way/);
-    expect(h.body).toMatch(/women_only/);
-    ["'everyone'", "'friends'", "'community'"].forEach((v) => expect(h.body).toContain(v));
-    expect(h.body).toMatch(/else false/i); // invite_only and anything unknown: no
+    // item 147: the rule itself lives in _gathering_row_visible (the gatherings SELECT policy's function); the helper reads
+    // the row and calls it, so there is one rule
+    expect(h.body).toMatch(/_gathering_row_visible\(g\.id, g\.host_id, g\.visibility, g\.women_only, g\.community_id, g\.hosting_partner_id\)/);
+    const rule = latest.get('_gathering_row_visible');
+    expect(rule).toBeDefined();
+    expect(rule.body).toMatch(/if v_uid is null or g_id is null then return false/i);
+    expect(rule.body).toMatch(/viewer_blocked_either_way/);
+    expect(rule.body).toMatch(/g_women_only/);
+    ["'everyone'", "'friends'", "'community'"].forEach((v) => expect(rule.body).toContain(v));
+    expect(rule.body).toMatch(/else false/i); // invite_only and anything unknown: no
   });
   it('every interest aggregate uses the one floor, never a hard-coded 1-person-capable count', () => {
     const b = body();
