@@ -9,6 +9,8 @@ import { categoryName } from '../i18n/categoryNames';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { resultRowView, contextItem } from '../utils/recommendationContext';
 import useMinuteClock from '../hooks/useMinuteClock';
+import useNotInterested from '../hooks/useNotInterested';
+import { NotInterestedMore, NotInterestedRow, NotInterestedLine } from '../components/NotInterested';
 import { relativeWindows } from '../utils/minuteClock';
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import InterestedSaved from '../motion/InterestedSaved';
@@ -407,6 +409,9 @@ export default function HomeScreen({ navigation }) {
     Object.entries(interestedOverride).forEach(([id, on]) => (on ? set.add(id) : set.delete(id)));
     return set;
   }, [dashboard?.interestedIds, interestedOverride]);
+  // Owner idea "153": "Not interested" on Picked For You / Nearby Right Now cards (utils/notInterested.js). Interested unknown
+  // (dashboard not loaded) = no menu. `hidden` leaves the dismissed gatherings out of every recommendation placement below.
+  const notInterested = useNotInterested({ myUserId, interestedIds: Array.isArray(dashboard?.interestedIds) ? interestedSet : null, feedback: experienceFeedback });
   // Item 30: one save per card at a time (a second tap while it runs is ignored), and the brief "✓ Saved" moment per card.
   const interestedBusyRef = useRef(new Set());
   const [interestedFlash, setInterestedFlash] = useState({});
@@ -513,7 +518,7 @@ export default function HomeScreen({ navigation }) {
     });
   })() : null;
   const goodWeatherOk = goodWeatherCardAllowed({ loaded: goodWeatherDay.loaded, storedDay: goodWeatherDay.day, todayKey: localDayKey(), shownThisSession: goodWeatherShownNow });
-  const weatherCard = cardWithoutIds(weatherCardRaw && weatherCardRaw.bias === 'outdoor' && !goodWeatherOk ? null : weatherCardRaw, aboveWeather);
+  const weatherCard = cardWithoutIds(weatherCardRaw && weatherCardRaw.bias === 'outdoor' && !goodWeatherOk ? null : weatherCardRaw, new Set([...aboveWeather, ...notInterested.hidden]));
   const goodWeatherShowing = !!weatherCard && weatherCard.bias === 'outdoor';
   useEffect(() => {
     if (!goodWeatherShowing || goodWeatherShownNow) return;
@@ -522,7 +527,8 @@ export default function HomeScreen({ navigation }) {
   }, [goodWeatherShowing, goodWeatherShownNow]);
   // Every engine feeds ONE capped list (utils/homeAttention.js): Home shows the few things that deserve attention now.
   const attention = selectHomeAttention({
-    exclude: new Set([...aboveWeather, ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : [])]),
+    // A dismissed gathering ("Not interested") is left out like one shown above: Best Pick included, the slot refills.
+    exclude: new Set([...aboveWeather, ...notInterested.hidden, ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : [])]),
     // The active Ask-Nearby search is the strongest signal (constants/signalPriority.js): matching gatherings rank first.
     intentTags: typeof intentResults?.classifyResult?.category === 'string' ? new Set([intentResults.classifyResult.category.toLowerCase()]) : null,
     hero: homeMerge.hero,
@@ -544,7 +550,7 @@ export default function HomeScreen({ navigation }) {
   const rightNow = selectRightNow({
     gatherings: dashboard?.nearbyGatherings ?? [],
     exclude: new Set([
-      ...aboveWeather, ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : []),
+      ...aboveWeather, ...notInterested.hidden, ...(weatherCard ? weatherCard.gatherings.map((g) => g.id) : []),
       attention.hero?.id, ...attention.items.filter((e) => e.kind === 'gathering').map((e) => e.gathering?.id),
     ].filter(Boolean)),
   });
@@ -591,9 +597,15 @@ export default function HomeScreen({ navigation }) {
     const card = homeGatheringCard(g, { signals, variant });
     const timing = hasFriend && g.scheduled_at ? describeFriendGatheringTiming(g.scheduled_at) : null;
     const past = !!timing?.isPast;
+    // Owner idea "153": dismissed = the card's place holds one line + Undo, at once, no motion.
+    const dismissed = notInterested.line(g.id);
+    if (dismissed) {
+      return <NotInterestedLine key={g.id} title={g.title} kindDownRanked={dismissed.kindDownRanked} onUndo={() => notInterested.undo(g)} />;
+    }
+    const canDismiss = notInterested.eligible(g);
     return (
+      <View key={g.id}>
       <TouchableOpacity
-        key={g.id}
         style={styles.trendingCard}
         onPress={() => openDestination(navigation, card.destination)}
         accessibilityLabel={`${[g.title, card.why, card.meta].filter(Boolean).join(', ')}`}
@@ -613,8 +625,15 @@ export default function HomeScreen({ navigation }) {
             {gatheringFullnessLabel(g)}
           </Text>
         )}
-        {!past && card.action && <View style={{ marginTop: spacing.xs }}>{renderGatheringCta(g, card, variant)}</View>}
+        {(!past && card.action) || canDismiss ? (
+          <View style={styles.cardActionRow}>
+            {!past && card.action ? renderGatheringCta(g, card, variant) : <View />}
+            {canDismiss ? <NotInterestedMore title={g.title} open={notInterested.menuOpen(g.id)} onPress={() => notInterested.toggleMenu(g.id)} /> : null}
+          </View>
+        ) : null}
+        {canDismiss && notInterested.menuOpen(g.id) ? <NotInterestedRow title={g.title} onPress={() => notInterested.dismiss(g)} /> : null}
       </TouchableOpacity>
+      </View>
     );
   };
 
@@ -3253,6 +3272,7 @@ const getStyles = (colors) => StyleSheet.create({
   },
   heroCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
   ctaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  cardActionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
   rowCta: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2, alignSelf: 'flex-start' },
   rowCtaText: { color: '#FFFFFF', fontWeight: '700', fontSize: 12 },
   rowCtaGhost: { borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.xs + 2 },

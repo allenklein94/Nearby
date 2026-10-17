@@ -1,3 +1,60 @@
+# "Not interested" on recommended gathering cards BUILT, LIVE (2026-10-17, owner idea "153", LOCKED; not device-verified)
+
+Owner decisions (LOCKED): (1) item 200 reopened ONLY for a quiet ⋯ menu on eligible recommended gathering cards; the card's
+primary action unchanged; no second visible button, no long-press. (2) Affects the gathering and its category, never the host
+or business. (3) Removed at once with no motion; "We'll show you less like this" + Undo. (4) Home Picked For You, Home Nearby
+Right Now, Discover's recommended (browse) gathering cards; NOT typed-search results, own plans, Best Pick or other card types.
+Never promise "less like this" unless the ranking really changes.
+
+Built:
+- Migration `20270327_gathering_not_interested.sql` (LIVE 2026-10-17, applied as one transaction): table `gathering_dismissals`
+  (user, gathering, the gathering's interest_tag at dismissal, created_at; unique per person + gathering; gathering
+  `on delete set null`; RLS on, NO policy, all privileges revoked from public/anon/authenticated). RPCs, owner-scoped
+  (auth.uid()), revoked from anon: `dismiss_recommended_gathering` (refuses signed out, a gathering the caller may not see
+  (`_gathering_row_visible`, same "Gathering not found" as item 147), their own, one they joined/requested/waitlisted or marked
+  Interested ("Already in your plans"); purges their rows > 90 days; returns `kind_down_ranked` = tag present and not
+  never-learned), `undo_dismiss_recommended_gathering`, `forget_my_not_interested_category`; `clear_my_behavior_history` now also
+  clears dismissals; `get_my_experience_feedback` (drop + create, same grants) adds `not_interested_categories` (a 'not_interested'
+  word on the KIND in the same latest-word-per-kind union as "How was it?", 90 days, never-learned excluded) and
+  `dismissed_gathering_ids` (within 90 days AND the gathering's current tag = the dismissed tag).
+- Changed gathering: time/title/place edit = still hidden; kind edit = shown again, down-rank stays on the original kind;
+  cancelled (= deleted) = kind word kept, nothing to hide; recreated = new id, not hidden (kind down-rank only).
+- Ranking: `utils/experienceFeedback.js` reads both new columns; `feedbackFor` returns `explicit: true` for a Not-interested kind;
+  new `feedbackDelta` = the ONE conversion to points for every surface (homeRecommendations x2, homeAttention, Discover's
+  scoreGathering, applyExperienceFeedback): a Not interested is never maturity-scaled (a new account's maturity is 0, which
+  would have made the promise false), "How was it?" words keep their scaling. A Not-interested kind also drops the learned lift.
+  Typed asks: `forTypedAsk(feedback, [category, preferredTag, dateTag])` removes the word for a kind the ask names (explicit
+  intent); otherwise it ranks like Not for me (history; tie-breaker under a stated constraint).
+- Client: `utils/notInterested.js` (eligibility `canDismissRecommendation` = known viewer state `upcoming_none` + not
+  Interested + signed in; Interested unknown = no menu; `dismissLowersKind`, `dismissedLineKey`, `hiddenRecommendationIds`,
+  `withoutHidden`), `services/notInterested.js` (the three RPCs + a session store so Home and Discover agree at once),
+  `hooks/useNotInterested.js` (menu, the line, optimistic replace from the gathering's kind then the server's answer; a failed
+  write puts the card back with the "couldn't complete that" error + Try Again; Undo puts it back at once),
+  `components/NotInterested.js` (⋯, the one inline row, the line + Undo; static). Home: `renderAttentionEntry` (Picked For You +
+  Nearby Right Now), hidden ids added to the weather card, attention (incl. Best Pick) and Right Now exclusions. Discover:
+  `renderGatheringTile` (hero/standard/compact; `CompactRow` gains `trailing`), only when not searching; browse lists use
+  `browseGatherings` (search still finds a dismissed gathering). Discover reads the person's Interested ids on focus
+  (`getMyInterestedGatheringIds`, null on failure). Settings: "You said Not interested" list under the noticed activity with
+  Forget per kind; Clear also empties it.
+- Strings: new namespace `ui.notInterested` (11 keys x 11 languages; 10 machine-authored, NOT native-reviewed).
+Verification:
+- Journey `src/journeys/notInterested.journey.js` 20/20 (real roles): dismiss returns kind lowered, no push; the person's
+  feedback = that gathering hidden + Coffee word, no host/business word; ranking flips Coffee below Hiking at maturity 0 through
+  the real `selectHomeAttention`; typed ask naming Coffee ignores it; host, attendee, partner business owner, stranger: table read
+  refused and their own feedback carries nothing; signed out refused; no direct insert; another user cannot undo/forget it;
+  refusals (own, Interested, joined, friends-only invisible, unknown); Faith & Spirituality hidden without a kind word; older
+  "loved it" loses / newer replaces; edits; Undo; Forget; cancel; 90 days; Clear; the functions touching the table pinned (5).
+  Fails on the pre-migration DB. `interestedPrivacy` reviewed-readers list gains `dismiss_recommended_gathering` (reads only
+  the caller's own mark). Prod journeys 539/539 after applying.
+- Unit + guards `src/utils/notInterested.test.js` (19): eligibility, line wording, hide rule, full weight, typed-ask override,
+  no direct maturity scaling left, ⋯ only in Home's compact card (one `renderGatheringCta` still) and Discover browse tiles
+  (never Best Pick, search, typed-ask rows), no motion, no table access / RPC outside the service, no analytics/behavior/push/AI
+  call, migration grants, strings in 11 languages. Jest 466 suites pass.
+- From-scratch replay (empty Docker DB, isolated network) after applying: 451/451 migrations, journeys 539/539 on it; grants on
+  the new table + 5 functions identical to prod (anon none; authenticated execute only; table: no client privilege).
+NOT DONE: device checks (`PRODUCT_AUDIT/ITEM_153_NOT_INTERESTED_DEVICE_CHECKLIST_2026-10-17.md`, 21 checks, not run); native
+review of the 10 non-English versions. Business web export not regenerated (no business-facing screen changed).
+
 # Interested host count DECIDED: kept, host-only, aggregate-only (2026-10-17, owner, follow-up to idea "152"; no feature change)
 
 Owner decision (LOCKED), resolving the discrepancy recorded in the entry below: item 139's anonymous count stays.

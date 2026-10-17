@@ -29,6 +29,7 @@ export default function CompactRow({
   divider = true,
   style,
   testID,
+  trailing = null, // an extra quiet control after the action (Discover's "Not interested" ⋯, owner idea "153")
 }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -73,6 +74,7 @@ export default function CompactRow({
       ) : (
         <Text style={styles.chevron}>›</Text>
       )}
+      {trailing}
     </TouchableOpacity>
   );
 }

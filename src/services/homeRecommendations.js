@@ -33,7 +33,7 @@ import { REASON_TEXT, becauseYouLikeReason, reasonText } from '../constants/reco
 // weightSignal() itself, so tagging them here is documentation, not a
 // behavior lever.
 import { SIGNAL_SOURCES, computeAccountMaturity, weightSignal } from '../constants/signalSourceMaturity';
-import { feedbackFor, feedbackWeight } from '../utils/experienceFeedback';
+import { feedbackFor, feedbackDelta } from '../utils/experienceFeedback';
 
 // Item 131 audit: this is the CANDIDATE pool, not what Home shows. Home's attention list (utils/homeAttention.js) picks and
 // caps at MAX_HOME_ATTENTION by the shared tier ladder; a cut here at 5 let this file's point total decide which candidates the
@@ -137,7 +137,7 @@ function scoreGathering(gathering, weather, feedback, socialComfortLevel, maturi
   // early rating from a new account must not carry full weight (owner, 2026-10-11).
   const fb = feedbackFor({ hostId: gathering.host_id, partnerId: gathering.hosting_partner_id, category: gathering.interest_tag }, feedback);
   if (fb.direction !== 0) {
-    score += fb.direction * feedbackWeight(maturity, fb.scope === 'kind' ? SCORE_INTEREST_MATCH : SCORE_OWN_NETWORK);
+    score += feedbackDelta(fb, maturity, fb.scope === 'kind' ? SCORE_INTEREST_MATCH : SCORE_OWN_NETWORK);
     if (fb.reason) reasons.push(fb.reason);
   }
   const comfortBonus = socialComfortBonus(gathering.group_size_feel, socialComfortLevel);
@@ -171,7 +171,7 @@ function scoreOffer(offer, feedback, maturity, weather = null) {
   // Item 35: the same feedback reader as scoreGathering (a loved / Not for me business, else the offer's kind).
   const fb = feedbackFor({ partnerId: offer.partner_id, category: offer.target_interest_tag ?? offer.brand_partners?.category ?? null }, feedback);
   if (fb.direction !== 0) {
-    score += fb.direction * feedbackWeight(maturity, fb.scope === 'kind' ? SCORE_INTEREST_MATCH : SCORE_OWN_NETWORK);
+    score += feedbackDelta(fb, maturity, fb.scope === 'kind' ? SCORE_INTEREST_MATCH : SCORE_OWN_NETWORK);
     if (fb.reason) reasons.push(fb.reason);
   }
 

@@ -1,6 +1,6 @@
 import { recordSearchBehavior, getMyLearnedAffinity } from './behaviorSignals';
 import { applyLearnedAffinity, askStatesConstraint, comparePersonalTieBreak } from '../utils/learnedAffinity';
-import { applyExperienceFeedback } from '../utils/experienceFeedback';
+import { applyExperienceFeedback, forTypedAsk } from '../utils/experienceFeedback';
 import { getMyExperienceFeedback } from './experienceFeedback';
 import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
@@ -964,10 +964,11 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // ask ALREADY returned, below a declared interest, as history: the session-intent pass right after keeps it to a
   // tie-breaker when the ask states any explicit constraint (time, budget, environment, vibe...). Never adds, removes or
   // narrows anything (utils/learnedAffinity.js).
-  const feedback = await experienceFeedbackPromise;
+  // A Not interested on the kind this ask names does not apply to it (explicit current intent; utils/experienceFeedback.js).
+  const feedback = forTypedAsk(await experienceFeedbackPromise, [category, preferredTag, dateTag]);
   const learned = await learnedAffinityPromise;
   const constrained = askStatesConstraint(rawText, { dateWindow, priceLevel, budgetMax, openNowChip, narrowGroup });
-  deduped = applyLearnedAffinity(deduped, learned, { constrained, notForMeKinds: feedback?.notForMeKinds });
+  deduped = applyLearnedAffinity(deduped, learned, { constrained, notForMeKinds: new Set([...(feedback?.notForMeKinds ?? []), ...(feedback?.notInterestedKinds ?? [])]) });
   step('learned_affinity');
   // Item 35: the person's latest "How was it?" word (utils/experienceFeedback.js): loved lifts, Not for me lowers, same rules
   // as the learned affinity above (history; a literal tie-breaker under a stated constraint). Only reorders what the ask returned.

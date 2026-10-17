@@ -490,6 +490,16 @@ export async function getGatheringInterestedCount(gatheringId) {
   return data ?? 0;
 }
 
+// The ids the caller marked Interested (their own rows only, RLS). null on failure: unknown is never "none".
+export async function getMyInterestedGatheringIds() {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return null;
+  const { data, error } = await supabase.from('gathering_interested').select('gathering_id').eq('user_id', userId);
+  if (error) return null;
+  return new Set((data ?? []).map((r) => r.gathering_id));
+}
+
 // Upcoming gatherings the caller marked Interested and has not (yet) joined.
 export async function getMyInterestedGatherings() {
   const { data: sessionData } = await supabase.auth.getSession();

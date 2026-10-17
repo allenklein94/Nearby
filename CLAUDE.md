@@ -43,6 +43,10 @@ Anthropic credit first).
 
 **"Save for later" (owner idea "152", 2026-10-17) MET BY ITEMS 30 + 31 + Plans' "☆ Interested" row, LOCKED, nothing built:** no separate Save/bookmark state, no "You saved this" or other saved-state strings, no saved businesses/places/favourites list. Host count DECIDED (owner, 2026-10-17, LOCKED): item 139's anonymous count stays, host-only, aggregate-only (privacy bullet "Interested is private"); journey `interestedPrivacy` 12/12 under real roles, guard `interestedHostCountGuard.test.js`. NOT DEVICE-VERIFIED: items 30/31 phone checks + item 31 native review; record results and defects before closing.
 
+**"Not interested" (owner idea "153", 2026-10-17, LOCKED) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_153_NOT_INTERESTED_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone AND native review of the 11
+`ui.notInterested.*` strings is done (migration 20270327 LIVE; journey `notInterested` 20/20 under real roles; prod journeys 539/539; replay 451/451 + journeys 539/539).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -469,6 +473,14 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `utils/experienceFeedback.js`): loved +5 / Not for me -5 in the interest tier, scaled by account maturity (`feedbackWeight`:
   one early rating weighs less), most specific wins, cancels learned behavior for a Not-for-me kind; reorders only; Not for me
   shows no reason. Home, Picked For You, Discover gatherings, typed asks; NOT Discover business/perk lists, communities, people.
+- **"Not interested" (owner idea "153", 2026-10-17, LOCKED):** ⋯ -> one inline "Not interested" row on Home's Picked For You +
+  Nearby Right Now cards and Discover browse gathering tiles only (never Best Pick, typed-ask/search results, own plans, other
+  card types), only for an upcoming gathering with no viewer relation and not Interested (`utils/notInterested.js`, server
+  re-checks). Hides that gathering for that person and is a kind word in `get_my_experience_feedback` (latest word per kind,
+  never host/business), at FULL weight (`feedbackDelta`); a typed ask naming the kind ignores it (`forTypedAsk`). Card replaced at
+  once, no motion, by "We'll show you less like this." (only when a kind is lowered) or "You won't see this one again." + Undo
+  (reverses both). 90 days; a kind edit lifts the hide, cancel keeps the kind word. Private: table has no client grant, only the
+  owner's RPCs (migration 20270327). Settings Forget per kind; Clear clears it. Journey `notInterested`, guard `notInterested.test.js`.
 - **Replies to one request (owner item 63, LOCKED):** `rankReplies` in `utils/replyFit.js` only: replies meeting every STATED
   constraint (time; budget when given) first, track record only breaks ties per tier, unknown never counts, price never a weight;
   "✨ Our pick" = first + qualifies + established record; reasons only the constraints met ("Fits 7 PM", "Within your budget").
@@ -515,7 +527,8 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 ### State and actions
 - Objects have named, finite states; derived states come from `utils/objectState.js`; allowed actions from
   `objectLifecycle.js` (`canDo`); CTAs from `primaryActionFor` in `primaryAction.js`. Never a CTA label or
-  availability condition inline in a screen; fix "wrong button" bugs in the table. One explicit action per card.
+  availability condition inline in a screen; fix "wrong button" bugs in the table. One explicit action per card (item 200; ONE
+  exception: idea 153's quiet ⋯ "Not interested" on the cards listed under Recommendations, never a second visible button).
 - Capacity = TOTAL people including the host (`_gathering_guest_limit`, `gatheringFullness.js`).
   Every shown attending/going figure includes the host too (`attendingFigure`; host + 3 joined = "4 attending");
   thresholds (Trending >= 5) still compare joined guests.

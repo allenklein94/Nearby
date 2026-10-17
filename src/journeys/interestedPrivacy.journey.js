@@ -172,6 +172,7 @@ d('journey: Interested stays private; only the host sees an aggregate count', ()
   test('the readers of Interested marks are exactly the reviewed set', () => {
     expect(s.readers.data).toEqual([
       'clear_interested_on_join', // the joiner's own mark, removed on join
+      'dismiss_recommended_gathering', // the caller's OWN mark only, to refuse Not interested on their own plan (idea 153)
       'get_gathering_interested_count', // host only, aggregate
       'get_partner_demand_signals', // category aggregate, floor of 5 distinct people, opt-out switch, no ids
       'notify_gathering_cancelled', // tells each interested person themselves

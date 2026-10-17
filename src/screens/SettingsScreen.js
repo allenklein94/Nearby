@@ -20,6 +20,8 @@ import { clearMyBehaviorHistory, getMyBehaviorCategories, forgetBehaviorCategory
 import { learnedAffinities } from '../utils/learnedAffinity';
 import { usualTripRows } from '../utils/learnedProximity';
 import { getMyLearnedProximity, resetLearnedProximityCache } from '../services/learnedProximity';
+import { getMyExperienceFeedback, resetExperienceFeedbackCache } from '../services/experienceFeedback';
+import { forgetNotInterestedCategory, afterActivityCleared } from '../services/notInterested';
 import RecommendationCustomizePanel from '../components/RecommendationCustomizePanel';
 import { ONBOARDING_INTEREST_GROUPS, sanitizeInterestGroups } from '../constants/interestGraph';
 import { ONBOARDING_GOALS, goalLabelsFrom, motivationsWithGoals } from '../constants/onboardingGoals';
@@ -124,7 +126,14 @@ export default function SettingsScreen({ navigation, route }) {
   const learned = learnedAffinities(behaviorRows, myInterests);
   const [usualTrips, setUsualTrips] = useState([]);
   const loadUsualTrips = () => { resetLearnedProximityCache(); return getMyLearnedProximity().then((m) => setUsualTrips(usualTripRows(m))).catch(() => setUsualTrips([])); };
-  const loadLearned = () => { loadUsualTrips(); return getMyBehaviorCategories().then(setBehaviorRows).catch(() => setBehaviorRows([])); };
+  // Owner idea "153": the kinds the person said Not interested to (their latest word on that kind, 90 days), listed under
+  // What Nearby has noticed with Forget; Clear my activity history removes them too.
+  const [notInterestedKinds, setNotInterestedKinds] = useState([]);
+  const loadNotInterested = () => {
+    resetExperienceFeedbackCache();
+    return getMyExperienceFeedback().then((f) => setNotInterestedKinds([...(f?.notInterestedKinds ?? [])].sort())).catch(() => setNotInterestedKinds([]));
+  };
+  const loadLearned = () => { loadUsualTrips(); loadNotInterested(); return getMyBehaviorCategories().then(setBehaviorRows).catch(() => setBehaviorRows([])); };
   const [ttdFrequency, setTtdFrequency] = useState('few_per_day');
   const [ttdDistance, setTtdDistance] = useState(15);
   const [ttdTimePref, setTtdTimePref] = useState('anytime');
@@ -912,10 +921,30 @@ export default function SettingsScreen({ navigation, route }) {
                   ))}
                 </View>
               )}
+              {notInterestedKinds.length > 0 && (
+                <View style={{ marginTop: spacing.sm }}>
+                  <Text style={styles.settingLabel}>{t('ui.notInterested.settingsTitle')}</Text>
+                  <Text style={styles.helperText}>{t('ui.notInterested.settingsHelper')}</Text>
+                  {notInterestedKinds.map((category) => (
+                    <View key={category} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 6, gap: spacing.sm }}>
+                      <Text style={[styles.helperText, { flex: 1 }]}>{categoryName(category, language)}</Text>
+                      <TouchableOpacity
+                        onPress={() => forgetNotInterestedCategory(category)
+                          .then(() => { loadNotInterested(); showSuccessToast(t('ui.settings.forgotten'), t('ui.notInterested.forgottenBody', { category: categoryName(category, language) })); })
+                          .catch((e) => presentRecoverableError(Alert, { what: 'forget that', error: e }))}
+                        accessibilityLabel={t('ui.notInterested.forgetA11y', { category: categoryName(category, language) })}
+                        accessibilityRole="button"
+                      >
+                        <Text style={styles.customizeLinkText}>{t('ui.settings.forget')}</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                </View>
+              )}
               <TouchableOpacity
                 style={styles.customizeLink}
                 onPress={() => clearMyBehaviorHistory()
-                  .then(() => { setBehaviorRows([]); setUsualTrips([]); resetLearnedProximityCache(); return showSuccessToast(t('ui.settings.activityCleared'), t('ui.settings.yourPicksWillRelyOn')); })
+                  .then(() => { setBehaviorRows([]); setUsualTrips([]); setNotInterestedKinds([]); resetLearnedProximityCache(); afterActivityCleared(); return showSuccessToast(t('ui.settings.activityCleared'), t('ui.settings.yourPicksWillRelyOn')); })
                   .catch((e) => presentRecoverableError(Alert, { what: 'complete that', error: e }))}
                 accessibilityLabel={t('ui.settings.clearMyActivityHistoryA11y')}
                 accessibilityRole="button"

@@ -20,7 +20,7 @@ import PlacesToGoSection from '../components/PlacesToGoSection';
 import { askBusinessesFits } from '../utils/placesToGo';
 import { learnedProximityFor } from '../utils/learnedProximity';
 import { behaviorNudge, broadGroupNudge, relatedHobbyNudge, forYouBlend, COMFORT_POINTS } from '../constants/blendedRanking';
-import { feedbackFor, feedbackWeight } from '../utils/experienceFeedback';
+import { feedbackFor, feedbackDelta } from '../utils/experienceFeedback';
 import { comfortFits } from '../constants/socialComfort';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
@@ -37,7 +37,10 @@ import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getSignedStoryUrl, getBusinessMomentsGrouped, captureStoryMedia, uploadStory } from '../services/stories';
 import { getSignedPhotoUrl } from '../services/photos';
-import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons } from '../services/gatherings';
+import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons, getMyInterestedGatheringIds } from '../services/gatherings';
+import useNotInterested from '../hooks/useNotInterested';
+import { NotInterestedMore, NotInterestedRow, NotInterestedLine } from '../components/NotInterested';
+import { withoutHidden } from '../utils/notInterested';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows } from '../services/brandOffers';
 import { perkRedemptionState, redemptionsByOffer } from '../utils/perkRedemptionState';
@@ -278,6 +281,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // uses, pre-selected to Dating (still the same real destination content)
   // but with Friends one tap away -- see HomeScreen.js's own call site.
   const personalization = usePersonalization();
+  // Owner idea "153": "Not interested" on Discover's browse gathering tiles (never on search / typed-ask results). The person's
+  // Interested ids are read on focus; unknown (null) = no menu (utils/notInterested.js).
+  const [myInterestedIds, setMyInterestedIds] = useState(null);
+  const notInterested = useNotInterested({ myUserId, interestedIds: myInterestedIds, feedback: personalization.feedback });
   const [mode, setMode] = useState(() => route.params?.initialMode ?? 'things');
   const [peopleSubMode, setPeopleSubMode] = useState(() => route.params?.initialPeopleSubMode ?? 'dating');
 
@@ -930,6 +937,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       loadBusinessMoments();
       loadCore();
       getMyTopSearchedCategory().then(setTopSearchedCategory);
+      getMyInterestedGatheringIds().then(setMyInterestedIds).catch(() => setMyInterestedIds(null));
     }, [])
   );
 
@@ -1109,8 +1117,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Outdoor / Indoor (carried in from a Home weather card): one declared-data rule for every kind (constants/environmentMatch.js).
   // Unknown is left out; a business's side is only what it declared, never its type; Google places declare nothing.
   const applyEnv = (list, kind) => filterByEnvironment(list, kind, environmentFilter);
+  // Browsing leaves out what the person said Not interested to (a search still finds it: explicit intent).
+  const browseGatherings = withoutHidden(gatherings, notInterested.hidden);
   const environmentGatherings = filterGatheringsByEnvironment(
-    applyOpenNow(isSearching ? (searchResultsFresh ? searchedGatherings : []) : gatherings, gatheringEntity),
+    applyOpenNow(isSearching ? (searchResultsFresh ? searchedGatherings : []) : browseGatherings, gatheringEntity),
     environmentFilter,
   );
   // B3: the Gatherings tab's own filters narrow only that tab; every other view reads the list unchanged.
@@ -1188,8 +1198,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // Item 35: the person's latest "How was it?" word (utils/experienceFeedback.js). A kind they called Not for me also
     // cancels the learned-behavior lift for it (explicit feedback > guessing).
     const fb = feedbackFor({ hostId: g.host_id, partnerId: g.hosting_partner_id, category: g.interest_tag }, personalization.feedback);
-    const feedbackDelta = fb.direction * feedbackWeight(personalization.maturity); // scaled for a new account
-    if (feedbackDelta !== 0) fit.score += feedbackDelta;
+    const fbDelta = feedbackDelta(fb, personalization.maturity); // scaled for a new account (a Not interested never is)
+    if (fbDelta !== 0) fit.score += fbDelta;
     if (fb.reason) fit.reasons = [...fit.reasons, fb.reason];
     const nudge = fb.dropsLearned ? 0 : behaviorNudge(g.interest_tag, personalization);
     if (nudge > 0) {
@@ -1316,7 +1326,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // real and already applied -- the label names the constraint that's
   // genuinely in force rather than claiming one that isn't.
   const contextGatheringsAll = expandedContext
-    ? filterGatheringsByEnvironment(applyOpenNow(gatherings, gatheringEntity), environmentFilter).filter((g) => (expandedContext.categoryTags
+    ? filterGatheringsByEnvironment(applyOpenNow(browseGatherings, gatheringEntity), environmentFilter).filter((g) => (expandedContext.categoryTags
         ? (expandedContext.categoryTags.includes(g.interest_tag) || (isFamilyView(expandedContext) && gatheringDeclaresFamily(g)))
         : g.interest_tag === expandedContext.interestTag && gatheringTimeBadge(g.scheduled_at) === expandedContext.timeBucket))
     : [];
@@ -1329,7 +1339,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // is always empty there -- not a second, redundant listing of the exact
   // same rows.
   const contextOtherTimeAll = expandedContext && !expandedContext.categoryTags
-    ? filterGatheringsByEnvironment(applyOpenNow(gatherings, gatheringEntity), environmentFilter).filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
+    ? filterGatheringsByEnvironment(applyOpenNow(browseGatherings, gatheringEntity), environmentFilter).filter((g) => g.interest_tag === expandedContext.interestTag && !contextGatheringIds.has(g.id))
     : [];
   // "Happening tonight": a slice of the two lists above (same rows, same time badge); a gathering shown there is removed from
   // the list it came from, so it never appears twice. Empty (and not rendered) when nothing is on tonight.
@@ -2199,6 +2209,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Today/This Weekend sections below, instead of three copies of this
   // block drifting apart.
   function renderGatheringTile(g, index, sectionKey = null) {
+    // Owner idea "153": a dismissed tile's place holds one line + Undo (at once, no motion); browse tiles only, never search.
+    const dismissed = notInterested.line(g.id);
+    if (dismissed) {
+      return <NotInterestedLine key={g.id} title={g.title} kindDownRanked={dismissed.kindDownRanked} onUndo={() => notInterested.undo(g)} />;
+    }
+    const canDismiss = !isSearching && notInterested.eligible(g);
+    const more = (color) => (canDismiss ? <NotInterestedMore title={g.title} color={color} open={notInterested.menuOpen(g.id)} onPress={() => notInterested.toggleMenu(g.id)} /> : null);
+    const menuRow = canDismiss && notInterested.menuOpen(g.id) ? <NotInterestedRow title={g.title} onPress={() => notInterested.dismiss(g)} /> : null;
     const card = discoverCard(g, sectionKey);
     const action = gatheringActionInfo(g, card);
     const reasonLine = card.reasons[0] ?? null;
@@ -2226,7 +2244,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
               onPress: () => openDestination(navigation, card.destination),
               accessibilityLabel: `${action.label}: ${g.title}`,
             }}
+            trailing={more()}
           />
+          {menuRow}
         </View>
       );
     }
@@ -2306,8 +2326,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 <Text style={styles.heroStatePillText}>{action.label}</Text>
               </View>
             )}
+            {more('#FFFFFF')}
           </View>
         </TouchableOpacity>
+        {menuRow}
         </View>
       );
     }
@@ -2354,7 +2376,9 @@ export default function DiscoverHubScreen({ navigation, route }) {
         ) : (
           <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
         )}
+        {more()}
       </TouchableOpacity>
+      {menuRow}
       </View>
     );
   }
