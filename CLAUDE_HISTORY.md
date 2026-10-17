@@ -1,3 +1,21 @@
+# Presence retention + recovered edge function sources (2026-10-17, owner approved both "after verification")
+
+Presence: `purge_expired_sightings` (baseline) was never scheduled, so `presence_reports` kept each person's last ~11 m area forever.
+Inspected first: every reader uses <= 1 h (`push_target_areas` consumers `notify_gathering_interest_threshold` / `_on_gathering_created`
+filter `reported_at > now() - 1 h`; `report-presence` reads others' last 10 min + the person's own previous report for the 700 mph check,
+skipped after an hour away; `services/confidenceMode.js` reads it as the client and gets nothing). Built
+`supabase/migrations/20270323_purge_stale_presence_reports.sql` (applied 2026-10-17): `purge_stale_presence_reports()` (same 1 h rule, not
+client-callable) + cron `purge-stale-presence-reports` */10 (job 53). Tested rolled back (61-min row deleted, 5-min row kept, sightings
+untouched); applied on the replay DB too. NOT scheduled: the sightings half. `proximity.js` / `friendDiscovery.js` read sightings without
+`expires_at`, so deleting expired ones would remove people from Crossed Paths 48 h after their last crossing (today: forever); owner decides.
+Edge functions: `delete-account` (v8) and `moderate-photo` (v16) were live with EMPTY repo `index.ts`; recovered verbatim from the live
+bundles' embedded original TypeScript (source map `sourcesContent`; method checked byte for byte against `report-presence`), read in full,
+no inline secrets (env only; AWS_* secrets exist), NOT redeployed. Guard `src/utils/edgeFunctionSourcesGuard.test.js` (no empty sources;
+deletion order incl. ID-verification files; moderation fails closed; report-presence window). Found: 13 live functions have no repo
+directory at all (listed in CLAUDE.md, not recovered); CLI-deployed bundles keep type-stripped JS, so repo-vs-live drift cannot be compared
+byte for byte for them. Observation, unchanged: `delete-account` removes profile photos, voice messages and ID images but not story media
+or gathering cover photos the person uploaded.
+
 # Item 147 (owner, approved 2026-10-17, HIGH PRIORITY SECURITY) Non-public gathering rows - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 (Unrelated to the September "Item 147".) Full record: `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_SCOPE_2026-10-17.md` ("Build +

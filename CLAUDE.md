@@ -228,9 +228,12 @@ real roles; replay 444/444 + journeys 431/431; grants replay = prod 1556/1556; s
 `PRODUCT_AUDIT/ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md` is recorded (migration 20270321 LIVE; journey `storySightingLocation` 14/14;
 replay 445/445 + journeys 445/445; grants = prod). Story/business-moment media GPS metadata DEFERRED, UNRESOLVED until check 10 runs on a device.
 Also OPEN: a signed-in test through the real API (needs an authorized test account), backup/WAL retention for the old sighting value
-(Free plan, 0 restorable backups, WAL archiving on: ask Supabase support, record expiry; never assume gone). Reported, not changed:
-`presence_reports` keeps everyone's last ~11 m area forever because `purge_expired_sightings` has no cron; `delete-account` and
-`moderate-photo` are deployed but their repo sources are empty (`report-presence`'s restored from its live bundle). Do not call location privacy complete.
+(Free plan, 0 restorable backups, WAL archiving on: ask Supabase support, record expiry; never assume gone). Presence retention FIXED
+2026-10-17: `purge_stale_presence_reports` every 10 min (migration 20270323 LIVE; deletes reports > 1 h, every reader uses <= 1 h). Expired
+sightings are NOT purged yet: Crossed Paths ignores `expires_at`, so purging would drop people 48 h after last crossing (owner to decide).
+`delete-account` / `moderate-photo` repo sources recovered verbatim from their live bundles (not redeployed; guard `edgeFunctionSourcesGuard.test.js`);
+13 live functions have NO repo source (export-data, revenuecat-webhook, review-login, setup-review-account, moderate-text, moderate-chat-image,
+translate-message, get-online-status, rehearsal-chat, generate-courage-message/-icebreaker/-introduction/-strengths): not recovered, owner to decide. Do not call location privacy complete.
 
 **Item 146 pin averaging (owner 2026-10-17): ASSESSMENT REOPENED, implementation unchanged** until a reviewed fix is approved: per-gathering
 pins average out for a host's repeated gatherings at one point (prod: up to 4 at one point; recurring series = 52/year).
