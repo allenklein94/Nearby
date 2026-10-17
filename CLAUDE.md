@@ -252,6 +252,8 @@ old DB; guard `approximateGatheringLocation.test.js`; replay 449/449 + journeys 
 `PRODUCT_AUDIT/GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone (migration 20270326 LIVE; journey `gatheringCheckIn` 22/22 incl. ms-exact
 boundaries; prod journeys 499/499; replay 450/450 + concurrency; no new strings). "You're here" = Option A, LOCKED (owner, 2026-10-17); Option B DEFERRED until this passes on a phone.
 
+**Offer validity window (owner idea "149", 2026-10-17) SCOPED, nothing built, OWNER DECISION PENDING:** reply end ("Valid until" -> "Ends in N min" -> expired) and availability start/end already change one card in place on the shared time engine; a start time on replies NOT recommended (acceptance is the booking). `PRODUCT_AUDIT/OFFER_VALIDITY_WINDOW_SCOPE_2026-10-17.md`.
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
