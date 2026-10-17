@@ -216,6 +216,10 @@ Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the
 **Item 145 ("Get directions" on a gathering's meet-up point, owner 2026-10-17) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_145_GATHERING_DIRECTIONS_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone (journey `gatheringDirections`; no migration, no new strings). Ready-state motion, urgency styling and last-hour reordering DECLINED, met as built (item 108, LOCKED).
 
+**Item 146 (gathering precise-location security, owner 2026-10-17) is SCOPED, NOT BUILT, awaiting owner decisions D1-D3** in
+`PRODUCT_AUDIT/ITEM_146_PRECISE_LOCATION_SECURITY_SCOPE_2026-10-17.md`: exact points leak via the table grant (anon, every gathering incl. invite-only)
+AND `get_gathering_distances` (md5 pin offset reversible, exact distances); `get_bounded_nearby_gathering_ids` / `count_gatherings_near_batch` are oracles. All confirmed live, rolled back.
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -272,7 +276,7 @@ block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RL
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
-network failure between its writes; `gatherings.precise_lat/lng` are directly selectable by anon/authenticated (table grant + RLS; the app never selects them; found 2026-10-17, item 145, owner to decide); `LOCK TABLE` remains possible with direct DB UPDATE rights.
+network failure between its writes; `gatherings.precise_lat/lng` exposure (direct table read + three RPC paths) is now item 146 (open work); `gatherings` rows of every visibility are readable by anon (`qual = true`; scope pending, item 146 D3); `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
 gathering stops create no child plans.
 

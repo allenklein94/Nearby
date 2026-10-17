@@ -1,3 +1,19 @@
+# Item 146 (owner, 2026-10-17) Gathering precise-location database security - SCOPED, NOT BUILT
+
+Owner: scope item 145's reported exposure as its own security item (outcome, constraints and acceptance in the scope doc
+`PRODUCT_AUDIT/ITEM_146_PRECISE_LOCATION_SECURITY_SCOPE_2026-10-17.md`). Audit, live, rolled back, disposable invite-only gathering:
+- P1 table-level SELECT for anon/authenticated + SELECT policy `qual = true`: anon read an INVITE-ONLY gathering's exact point (every
+  gathering, not only visible ones). A column REVOKE alone does nothing; the table grant must become a column list.
+- P2 `get_gathering_distances` (authenticated, any id, no visibility check): fuzz = md5(id), so a stranger recovered the exact point;
+  `distance_miles` is unrounded to the precise point (trilateration). P3 `get_bounded_nearby_gathering_ids` and P4
+  `count_gatherings_near_batch` (any visibility, ~110 m box, no cap; `count_gatherings_near` uncalled) are location oracles.
+- Not leaking: meetup point lookup, plans (own only), business_requests copies (participants only), views (no client grants), realtime
+  (not published), pg_graphql (absent), policies. Client: all reads name columns, none precise; `createGathering`'s bare `.select()`
+  would break under column grants (fix included).
+- Found, out of scope: non-public gathering ROWS readable by anon (`qual = true`); proposed as its own item (D3).
+Proposed fix + compatibility changes (pins move once, distances shift up to ~0.25 mi, Places count public-only, host direct read denied,
+new columns need explicit grants) + verification plan in the scope doc. Owner decisions D1-D3 pending. No code, DB or string change.
+
 # Item 145 (owner, 2026-10-17) gathering day-of: "Get directions" BUILT, NOT DEVICE-VERIFIED; ready-state motion MET AS BUILT
 
 Owner ask: attending something that starts in 30 min -> the plan transitions to "Starting soon" and Get directions / Invite /
