@@ -1,11 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import { offerProgress, offersToAnimate, progressKey, rememberShown, PROGRESS_STEPS } from './offerProgress';
+import { offerProgress, offersToAnimate, progressKey, rememberShown, PROGRESS_STEPS, businessCardStatus } from './offerProgress';
+import { isPipelineOffered } from './businessPipeline';
+import { consumerOfferAction } from './primaryAction';
+import { presentOffer } from './offerPresentationEngine';
 import { SEQUENCES, settleMs, MOTION_BUDGET } from '../motion/motionBudget';
 import { notificationDestination } from '../navigation/notificationDestinations';
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
-const offer = (id, status, request_id = `r-${id}`) => ({ id, status, request_id });
+const offer = (id, status, request_id = `r-${id}`) => ({ id, status, request_id, business_requests: { status: 'open', expires_at: null } });
 
 describe('owner item 13: Offer sent -> Accepted -> Redeemed from the stored status only', () => {
   it('maps the three path statuses and nothing else', () => {
@@ -100,5 +103,57 @@ describe('push + live wiring', () => {
     const strings = JSON.parse(read('../scripts/i18n/strings/bizDash2.json'));
     expect(strings.en['pipeline.completed']).toBe('Completed');
     expect(strings.en['progress.redeemed']).toBe('Redeemed');
+  });
+});
+
+// Owner, 2026-10-17 (idea "151"): the business card follows the shared open rule at the exact expiry instant, before the hourly
+// sweep stores 'expired'. Customer card, business card and pipeline agree at -1 ms / 0 / +1 ms.
+describe('expiry boundary: customer card, business card and pipeline agree (frozen instants)', () => {
+  const END = Date.parse('2026-10-17T20:00:00.000-04:00'); // 8:00:00.000 PM, valid_until
+  const DEADLINE = Date.parse('2026-10-17T21:00:00.000-04:00');
+  const stored = (over = {}) => ({ id: 'o', status: 'offered', request_id: 'r', valid_until: new Date(END).toISOString(),
+    business_requests: { status: 'open', expires_at: new Date(DEADLINE).toISOString() }, ...over });
+  const views = (o, ms) => {
+    const now = new Date(ms);
+    return {
+      businessSteps: offerProgress(o, now),
+      businessStatus: businessCardStatus(o, now),
+      pipelineOffered: isPipelineOffered(o, now),
+      customerAction: consumerOfferAction(o, { request: o.business_requests, now }).kind,
+      customerCard: presentOffer(o, { context: { now } }).card,
+    };
+  };
+
+  it('1 ms before valid_until: open everywhere ("Offer sent", Offered, accept, open card)', () => {
+    expect(views(stored(), END - 1)).toEqual({ businessSteps: { current: 0 }, businessStatus: 'offered', pipelineOffered: true, customerAction: 'accept_offer', customerCard: 'open' });
+  });
+  it.each([['exactly at', 0], ['1 ms after', 1]])('%s valid_until: closed everywhere ("No longer open", not Offered, no accept, closed card)', (_l, d) => {
+    expect(views(stored(), END + d)).toEqual({ businessSteps: null, businessStatus: 'expired', pipelineOffered: false, customerAction: 'view', customerCard: 'closed' });
+  });
+  it('the request deadline closes it the same way at its exact instant (no valid_until)', () => {
+    const o = stored({ valid_until: null });
+    expect(views(o, DEADLINE - 1)).toMatchObject({ businessSteps: { current: 0 }, businessStatus: 'offered', pipelineOffered: true, customerAction: 'accept_offer' });
+    for (const d of [0, 1]) {
+      expect(views(o, DEADLINE + d)).toMatchObject({ businessSteps: null, businessStatus: 'expired', pipelineOffered: false, customerAction: 'view' });
+    }
+  });
+  it('the same instant written in another offset decides the same', () => {
+    const o = stored({ valid_until: '2026-10-18T05:45:00.000+05:45' }); // = 8:00 PM -04:00
+    expect(views(o, END - 1).businessStatus).toBe('offered');
+    expect(views(o, END).businessStatus).toBe('expired');
+  });
+  it('accepted / redeemed steps and the stored-expired line are unchanged by the clock', () => {
+    for (const ms of [END - 1, END, END + 1]) {
+      expect(offerProgress(stored({ status: 'accepted' }), new Date(ms))).toEqual({ current: 1 });
+      expect(offerProgress(stored({ status: 'completed' }), new Date(ms))).toEqual({ current: 2 });
+      expect(businessCardStatus(stored({ status: 'expired' }), new Date(ms))).toBe('expired');
+      expect(businessCardStatus(stored({ status: 'accepted' }), new Date(ms))).toBe('accepted');
+    }
+  });
+  it('the dashboard status line reads businessCardStatus, and the label stays "No longer open"', () => {
+    const src = read('screens/BusinessDashboardScreen.js');
+    expect(src).toMatch(/\[businessCardStatus\(o\)\]/);
+    expect(src).toMatch(/expired: t\('ui\.bizDash2\.noLongerOpen'\)/);
+    expect(src).not.toMatch(/\}\[o\.status\] \?\? o\.status\}/);
   });
 });

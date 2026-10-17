@@ -4,15 +4,27 @@
 // business itself confirms (6-digit code or Mark as completed). The pipeline tile keeps its locked "Completed" wording
 // (item 147); "Redeemed" is the card's word only.
 
+import { isOfferOpen } from './objectLifecycle';
+
 export const PROGRESS_STEPS = ['sent', 'accepted', 'redeemed'];
 
 const STEP_OF_STATUS = { offered: 0, accepted: 1, completed: 2 };
 
 // { current: 0..2 } for an offer on the Offer sent -> Accepted -> Redeemed path; null for every other state
 // (pending, declined, expired, cancelled, withdrawn, not chosen...), which keeps its own status line and no steps.
-export function offerProgress(offer) {
+// "Offer sent" only while the offer is still open (isOfferOpen, the pipeline's and the customer's rule): from the exact
+// valid_until / request deadline it is no longer open, even before the hourly sweep stores 'expired' (owner, 2026-10-17).
+export function offerProgress(offer, now = new Date()) {
   const current = STEP_OF_STATUS[offer?.status];
-  return current == null ? null : { current };
+  if (current == null) return null;
+  if (current === 0 && !isOfferOpen(offer, now)) return null;
+  return { current };
+}
+
+// The status the business card's status line shows: a stored 'offered' that is no longer open reads as 'expired'
+// ("No longer open"), so the card, the pipeline and the customer's card agree at the same instant.
+export function businessCardStatus(offer, now = new Date()) {
+  return offer?.status === 'offered' && !isOfferOpen(offer, now) ? 'expired' : offer?.status;
 }
 
 // The one key a transition is remembered by: an offer reaching a status. Shown once, never replayed.

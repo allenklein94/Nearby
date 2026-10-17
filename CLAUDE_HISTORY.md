@@ -1,3 +1,27 @@
+# Expired offer visibility MET AS BUILT + business-card expiry gap FIXED (2026-10-17, owner idea "151")
+
+Owner approved both decisions (`PRODUCT_AUDIT/EXPIRED_OFFER_VISIBILITY_SCOPE_2026-10-17.md`).
+1. MET AS BUILT: expired offers are never deleted (expiry is a status set by the hourly `expire_stale_business_requests`); the customer's
+   card closes in place ("This offer has expired"); the business keeps it in history ("No longer open"). Item 13's steps and glow
+   unchanged; "Offer sent" stays the wording while open; no new strings, migration, motion or expired-count tile.
+2. FIXED (gap G1): the business card read the raw stored status, so for up to an hour after `valid_until` it showed "Offer sent" while
+   the customer's card and the pipeline already said closed. Now ONE rule `isOfferOpen(offer, now)` in `utils/objectLifecycle.js`
+   (offerLifecycleState = offered, i.e. before valid_until, AND requestLifecycleState of the embedded request = open): the pipeline's
+   `isPipelineOffered` returns it; `offerProgress(offer, now)` gives "Offer sent" only while it holds; new `businessCardStatus(offer, now)`
+   maps a stored 'offered' that is no longer open to 'expired' ("No longer open", wording unchanged) for the dashboard status line.
+   The card updates on the dashboard's next load / realtime change (no new timer on the dashboard).
+Files: `src/utils/objectLifecycle.js`, `src/utils/offerProgress.js`, `src/utils/businessPipeline.js`, `src/screens/BusinessDashboardScreen.js`,
+`src/utils/offerProgress.test.js`, `src/journeys/offerJourney.journey.js`, `docs/business/` (web export regenerated).
+Tests: unit (frozen instants, offerProgress.test.js): valid_until -1 ms open everywhere (business steps "Offer sent", status offered,
+pipeline Offered, customer accept, open card); exactly at and +1 ms closed everywhere; same for the request deadline; another offset
+decides the same; accepted/redeemed steps unchanged. Journey `offer`, new block (8 tests): the DB's own now() placed 1 ms before / at /
+1 ms after valid_until; rows read as the dashboard (get_business_opportunities as the owner) and the customer (RLS): before = server
+accepts (rolled back) + all sides open; at / after = server refuses "This offer has expired.", still stored 'offered', 0 reservations,
+all sides closed; after the sweep the row is kept, stored 'expired', still listed, "No longer open". Mutation: the old raw-status rule
+fails 2 journey + 4 unit tests. Results: Jest 464/464 suites (6214 tests); prod journeys 507/507 (rolled back). No schema change.
+NOT VERIFIED: production has 0 offer rows (real-data expiry never ran); no phone or browser check (item 13's checklist; the offer
+experience checklist is blocked on Anthropic credit).
+
 # Business "offer lifecycle" MET BY ITEM 13, LOCKED (2026-10-17, owner idea "150"; nothing built)
 
 Owner idea: the business sees Draft -> Live -> Accepted -> Redeemed on one evolving card. "150" is already item 150 (Performance tile).

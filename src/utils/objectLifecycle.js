@@ -96,6 +96,14 @@ export function requestLifecycleState(request, now = new Date()) {
   return Number.isFinite(t) && t <= new Date(now).getTime() ? 'expired' : 'open';
 }
 
+// An offer the customer can still take: stored `offered`, not past its own valid_until (offerLifecycleState) and its request
+// (embedded as business_requests) still open before its own deadline. Exact instants: open until valid_until / expires_at,
+// closed AT them, whatever the hourly sweep has stored yet. The business pipeline's Offered stage and the business card's
+// "Offer sent" read this; the customer's accept (consumerOfferAction) applies the same two checks to its own request.
+export function isOfferOpen(offer, now) {
+  return offerLifecycleState(offer, now) === 'offered' && requestLifecycleState(offer?.business_requests, now) === 'open';
+}
+
 export function canRespondToOpportunity(opportunity, now) {
   return canDo('request', requestLifecycleState(opportunity?.business_requests, now), 'respond') && canDo('offer', opportunity?.status, 'respond');
 }

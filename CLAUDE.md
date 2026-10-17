@@ -104,6 +104,7 @@ is checked in a real browser and on a phone (migrations 20270316 + 20270317 LIVE
 **Item 129 (consumer and business as mirrors, owner 2026-10-16) is MET as built, LOCKED, nothing built:** one transaction state, two views: customer = `presentOffer()` (personal), business = item 13's Offer sent -> Accepted -> Redeemed + item 147's pipeline (operational); never identical wording or animation, no business-side signature copy (item 57), item 56's motions unchanged, no new funnel (item 127); business feedback stays item 48 + item 13's step glows.
 **Item 127 (a redemption moves through the funnel on one card, owner 2026-10-16) is MET by item 13 + item 147's pipeline, nothing built; another funnel visualisation or a sliding-card animation DECLINED (LOCKED).**
 **Business offer lifecycle (owner idea "150", 2026-10-17) MET BY ITEM 13 as built, LOCKED, nothing built:** no Draft state, draft persistence or draft table; "Offer sent" never renamed "Live"; item 49's live preview stays the pre-send view; business view stays operational (item 129); no other funnel or sliding card (item 127). Verification = item 13's checklist below.
+**Expired offer visibility (owner idea "151", 2026-10-17) MET AS BUILT + business-card gap FIXED, NOT DEVICE/BROWSER-VERIFIED:** expired offers are never deleted (customer closed card, business "No longer open" in history); the business card now reads `isOfferOpen` at the exact expiry like the customer card + pipeline (journey `offer` expiry block 8/8; no strings, migration, motion or tile). Prod has 0 offers: real-data expiry unverified; phone/browser via item 13's checklist + offer checklist (Anthropic credit).
 **Item 13 (business card Offer sent -> Accepted -> Redeemed, LOCKED; owner re-confirmed 2026-10-16) is APPROVED, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_13_OFFER_PROGRESS_DEVICE_CHECKLIST_2026-10-16.md` passes with a real signed-in business on a phone AND in a browser (statuses vs saved
 records, no glow replay on reopen, Reduce Motion skips it, pipeline + month totals = the records) AND native review of `ui.bizDash2.progress.*` is done. The glow stays exactly as approved.
@@ -513,6 +514,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   thresholds (Trending >= 5) still compare joined guests.
   Events are gatherings + `format`; `ticket_required` is informational only.
 - Each actor reports only its own side's state; server RPCs compute derived state.
+- **One "offer still open" rule (owner, 2026-10-17):** `isOfferOpen` (`objectLifecycle.js`: offered, before its `valid_until` and its request's deadline,
+  closed AT them, before the hourly sweep stores it) decides the business card's "Offer sent" (`offerProgress`, `businessCardStatus` -> "No longer open")
+  and the pipeline's Offered; the customer's accept applies the same checks. Expired offers are never deleted (history + analytics); no expired tile.
 - **Mirrored sides, different voices (owner item 129, LOCKED):** customer and business read the SAME offer/request state (`objectLifecycle.js`)
   but never share wording or animation: personal for the customer, operational for the business; no business-side signature.
 - **One offer revision (item 118, LOCKED):** a business may change an open, hand-written reply ONCE, price only down (or a bigger

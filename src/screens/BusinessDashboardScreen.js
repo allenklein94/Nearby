@@ -34,7 +34,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import OfferProgressSteps, { OfferProgressGlow } from '../motion/OfferProgressSteps';
-import { offerProgress, offersToAnimate, progressKey } from '../utils/offerProgress';
+import { businessCardStatus, offerProgress, offersToAnimate, progressKey } from '../utils/offerProgress';
 import { loadShownProgress, saveShownProgress, loadArrivedOpportunities, saveArrivedOpportunities } from '../services/offerProgressShown';
 import { newArrivals, arrivalSlots, arrivalKey } from '../utils/opportunityArrival';
 import OpportunityArrival, { ArrivalSignal } from '../motion/OpportunityArrival';
@@ -4728,7 +4728,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       {o.status !== 'pending' && !offerProgress(o) && (
                         <>
                           <Text style={styles.breakdownText}>
-                            {{ offered: t('ui.bizDash2.youMadeAnOffer'), accepted: t('ui.bizDash2.theyAcceptedYourOffer'), declined: t('ui.bizDash2.youDeclined'), expired: t('ui.bizDash2.noLongerOpen'), cancelled: t('ui.bizDash2.theyCancelled'), completed: t('ui.bizDash2.completed') }[o.status] ?? o.status}
+                            {{ offered: t('ui.bizDash2.youMadeAnOffer'), accepted: t('ui.bizDash2.theyAcceptedYourOffer'), declined: t('ui.bizDash2.youDeclined'), expired: t('ui.bizDash2.noLongerOpen'), cancelled: t('ui.bizDash2.theyCancelled'), completed: t('ui.bizDash2.completed') }[businessCardStatus(o)] ?? o.status}
                           </Text>
                           <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
                         </>

@@ -1,5 +1,4 @@
-import { canRespondToOpportunity, requestLifecycleState } from './objectLifecycle';
-import { isOfferExpired } from './objectState';
+import { canRespondToOpportunity, isOfferOpen } from './objectLifecycle';
 import { localDayKey } from './dashboardGlance';
 
 // Owner item 147: the business's requests read as one lightweight pipeline, New -> Reviewing -> Offered -> Won ->
@@ -34,7 +33,7 @@ export function isPipelineNew(o, reviewingIds = new Set(), now = new Date()) {
 }
 
 export function isPipelineOffered(o, now = new Date()) {
-  return o?.status === 'offered' && !isOfferExpired(o, now) && requestLifecycleState(o?.business_requests, now) === 'open';
+  return isOfferOpen(o, now);
 }
 
 export function isPipelineWon(o, noShowIds = new Set()) {

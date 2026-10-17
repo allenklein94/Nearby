@@ -40,3 +40,8 @@ business figure needs its own ask and real data).
 
 Verification either way: none of this has been seen on a phone or in a browser (offer experience checklist, needs Anthropic credit;
 item 13's checklist). Live prod has 0 offer rows, so nothing about expiry has run on real data.
+
+## Owner decision (2026-10-17): both approved; outcome
+1 recorded as met as built; 2 FIXED via one rule `isOfferOpen` (business card + pipeline; customer applies the same checks), "No longer open"
+kept, no strings/migration/motion/tile. Unit boundary tests + journey `offer` expiry block 8/8; Jest 464/464, prod journeys 507/507.
+Not verified: real-data expiry (prod has 0 offers), phone and browser (item 13's checklist; offer checklist needs Anthropic credit).

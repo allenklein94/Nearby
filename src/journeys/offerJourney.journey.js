@@ -1264,3 +1264,106 @@ d('journey: a second time for fewer people -> the person may pick it -> books th
     expect(b.data.reservations).toBe(1);
   });
 });
+
+// Owner, 2026-10-17 (idea "151"): an expired offer never vanishes, and the business card, the pipeline and the customer's
+// card agree with the server on whether it is open at the exact valid_until. The offer's valid_until is placed so the
+// database's own now() sits 1 ms before / exactly at / 1 ms after it; at each, the row is read exactly as the dashboard
+// (get_business_opportunities, as the owner) and the customer (RLS, as the requester) read it, and an accept is tried
+// in a subtransaction (rolled back if it succeeds). Then the hourly sweep runs: the row is kept and stays listed.
+d('journey: an expired offer stays, and every side agrees at the exact expiry', () => {
+  let s;
+  beforeAll(async () => {
+    const log = await runJourney(`
+      v_c uuid := gen_random_uuid(); v_o uuid := gen_random_uuid(); v_p uuid := gen_random_uuid(); v_r uuid := gen_random_uuid();
+      v_offer uuid; v_msg text; v_row jsonb; v_cust jsonb; v_label text; v_delta interval;`, `
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+  foreach v_label in array array['c', 'o'] loop
+    insert into auth.users (id, aud, role, email) values (case v_label when 'c' then v_c else v_o end, 'authenticated', 'authenticated',
+      (case v_label when 'c' then v_c else v_o end) || '@expiry.test');
+    insert into profiles (id, display_name, birthdate) values (case v_label when 'c' then v_c else v_o end, 'EX-' || v_label, date '1990-01-01');
+  end loop;
+  insert into brand_partners (id, name, active, latitude, longitude) values (v_p, 'J151 Expiry Cafe', true, 0.5, 0.5);
+  update profiles set managed_partner_id = v_p where id = v_o;
+  insert into business_requests (id, requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
+    values (v_r, v_c, 'Coffee for 2', 0.5, 0.5, now() + interval '1 day', 'open', 'Coffee', 2, 10);
+  insert into business_request_offers (request_id, partner_id, status) values (v_r, v_p, 'pending');
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o, 'role', 'authenticated')::text, true);
+  perform submit_business_offer(request_id_param := v_r, offer_type_param := 'standard',
+    offer_description_param := 'Two coffees, window seats.', offer_price_param := 8, valid_until_param := now() + interval '18 minutes');
+  select id into v_offer from business_request_offers where request_id = v_r and partner_id = v_p;
+
+  foreach v_label in array array['before', 'at', 'after'] loop
+    v_delta := case v_label when 'before' then interval '1 millisecond' when 'at' then interval '0' else interval '-1 millisecond' end;
+    perform set_config('request.jwt.claims', '', true);
+    perform set_config('app.trusted_update', 'on', true);
+    update business_request_offers set valid_until = now() + v_delta where id = v_offer;
+    perform set_config('app.trusted_update', 'off', true);
+    -- the dashboard's read, as the owner
+    perform set_config('request.jwt.claims', json_build_object('sub', v_o, 'role', 'authenticated')::text, true);
+    select e into v_row from jsonb_array_elements(get_business_opportunities(v_p)) e where (e->>'id')::uuid = v_offer;
+    -- the customer's read, as the requester (RLS)
+    perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
+    set local role authenticated;
+    select jsonb_build_object('status', o.status, 'valid_until', o.valid_until, 'request', jsonb_build_object('status', r.status, 'expires_at', r.expires_at))
+      into v_cust from business_request_offers o join business_requests r on r.id = o.request_id where o.id = v_offer;
+    reset role;
+    -- the server's own accept at this instant (a success is rolled back by the raise)
+    begin perform accept_business_offer(v_offer); raise exception 'ACCEPTED_THEN_ROLLED_BACK'; exception when others then v_msg := sqlerrm; end;
+    log := log || jsonb_build_array(jsonb_build_object('step', 'expiry_' || v_label, 'ok', v_row is not null and v_cust is not null,
+      'data', jsonb_build_object('now', now(), 'business_row', v_row, 'customer_row', v_cust, 'accept', v_msg,
+        'stored_after', (select status from business_request_offers where id = v_offer),
+        'reservations', (select count(*) from business_reservations where offer_id = v_offer))));
+  end loop;
+
+  -- the hourly sweep: the row is kept (never deleted), stored 'expired', and still on the dashboard
+  perform set_config('request.jwt.claims', '', true);
+  perform expire_stale_business_requests();
+  perform set_config('request.jwt.claims', json_build_object('sub', v_o, 'role', 'authenticated')::text, true);
+  select e into v_row from jsonb_array_elements(get_business_opportunities(v_p)) e where (e->>'id')::uuid = v_offer;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'expiry_swept', 'ok', v_row is not null,
+    'data', jsonb_build_object('now', now(), 'business_row', v_row, 'rows', (select count(*) from business_request_offers where id = v_offer))));
+`);
+    s = stepMap(log);
+  }, 60000);
+
+  const { offerProgress, businessCardStatus } = require('../utils/offerProgress');
+  const { isPipelineOffered } = require('../utils/businessPipeline');
+  const { consumerOfferAction } = require('../utils/primaryAction');
+  // every side's verdict, from the rows each side really read, at the database's own instant
+  const sides = (step) => {
+    const { now, business_row: b, customer_row: c } = s[step].data;
+    const at = new Date(now);
+    return {
+      exactOffset: new Date(b.valid_until).getTime() - at.getTime(),
+      businessSteps: offerProgress(b, at),
+      businessStatus: businessCardStatus(b, at),
+      pipelineOffered: isPipelineOffered(b, at),
+      customerAction: consumerOfferAction(c, { request: c.request, now: at }).kind,
+      customerCard: presentOffer(c, { context: { now: at } }).card,
+    };
+  };
+
+  test.each(['expiry_before', 'expiry_at', 'expiry_after', 'expiry_swept'])('step %s', (name) => {
+    expect(s[name]).toBeDefined();
+    expect(s[name].ok).toBe(true);
+  });
+  test('1 ms before valid_until: the server accepts, and every side says open ("Offer sent")', () => {
+    expect(sides('expiry_before')).toEqual({ exactOffset: 1, businessSteps: { current: 0 }, businessStatus: 'offered',
+      pipelineOffered: true, customerAction: 'accept_offer', customerCard: 'open' });
+    expect(s.expiry_before.data.accept).toBe('ACCEPTED_THEN_ROLLED_BACK');
+  });
+  test.each([['expiry_at', 0], ['expiry_after', -1]])('%s: the server refuses, stored still "offered", and every side says closed ("No longer open")', (step, offset) => {
+    expect(sides(step)).toEqual({ exactOffset: offset, businessSteps: null, businessStatus: 'expired',
+      pipelineOffered: false, customerAction: 'view', customerCard: 'closed' });
+    expect(s[step].data.accept).toBe('This offer has expired.');
+    expect(s[step].data.stored_after).toBe('offered'); // the sweep has not run: the client rule alone closes it
+    expect(s[step].data.reservations).toBe(0);
+  });
+  test('after the sweep the offer is kept, stored expired, still listed, still "No longer open"', () => {
+    const { business_row: b, now, rows } = s.expiry_swept.data;
+    expect(rows).toBe(1);
+    expect(b.status).toBe('expired');
+    expect(offerProgress(b, new Date(now))).toBeNull();
+    expect(businessCardStatus(b, new Date(now))).toBe('expired');
+  });
+});
