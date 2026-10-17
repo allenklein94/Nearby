@@ -19,6 +19,7 @@ import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
 import { attendeeTotal, attendingFigure, isGatheringFull } from '../utils/gatheringFullness';
 import { cleanFeatures } from '../utils/gatheringPractical';
 import { cleanAgeRange } from '../utils/suitedAges';
+import { isValidCoordinate } from '../utils/planLogisticsActions';
 import { resetExperienceFeedbackCache } from './experienceFeedback';
 
 function localArea(latitude, longitude) {
@@ -1365,7 +1366,11 @@ export async function getGatheringMeetupPoint(gatheringId) {
   }
   const point = data?.[0];
   if (!point || point.latitude == null || point.longitude == null) return null;
-  return { latitude: point.latitude, longitude: point.longitude };
+  // Item 145: a point off the globe (or not a number) is no point: no map, Uber or directions link to a broken destination.
+  const latitude = Number(point.latitude);
+  const longitude = Number(point.longitude);
+  if (!isValidCoordinate(latitude, longitude)) return null;
+  return { latitude, longitude };
 }
 
 // Group Insights plan (2026-09-18): thin wrapper over a SECURITY DEFINER

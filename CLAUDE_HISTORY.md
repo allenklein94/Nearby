@@ -1,3 +1,28 @@
+# Item 145 (owner, 2026-10-17) gathering day-of: "Get directions" BUILT, NOT DEVICE-VERIFIED; ready-state motion MET AS BUILT
+
+Owner ask: attending something that starts in 30 min -> the plan transitions to "Starting soon" and Get directions / Invite /
+Message group become more prominent. Owner decision (2026-10-17): build the directions gap only; the rest met as built.
+- Already built: "Starts in N min" in the last hour (`whenLabel`, `STARTS_IN_WINDOW_MIN` 60; item 108's minute clock on Home +
+  Discover; the day-of block's own `getCountdownLabel`); the "Gathering starting soon" reminder push (up to 2 h before, host,
+  attendees, Interested; opens the gathering); the day-of block for host + approved (`GatheringAttendingSection`): Say hello /
+  ice breakers (group chat), Invite / Share link, meet-up point map + Uber, I'm on my way, I'm here, then who's here / Say hi / Photos.
+- BUILT: "🧭 Get Directions" under the meet-up map beside "Get an Uber there" (existing `ui.requestDetail.getDirections` /
+  `getDirectionsA11y` / `couldntOpenMaps` / `error`, 11 languages): `Linking.openURL(buildDirectionsUrl(meetupPoint))`, the booked
+  plan's builder (Google Maps turn-by-turn; the maps app chooses walking/driving). `buildDirectionsUrl` now takes coordinates only
+  when `isValidCoordinate` (finite, on the globe; else the address fallback or null), and `getGatheringMeetupPoint` returns no point
+  for invalid coordinates (no map/Uber/directions to a broken destination). Point = `get_gathering_meetup_point` (host/approved only,
+  unchanged). No migration, no new strings, no motion.
+- DECLINED / met as built (LOCKED): ready-state transition, urgency styling, motion, and moving day-of actions to the top in the
+  last hour (item 108: time labels plain text; a clock crossing a threshold is not an event). On my way and chat unchanged.
+- Verified: `src/utils/gatheringDirections.test.js` (invalid inputs, wiring, wording in every language, no motion); journey
+  `gatheringDirections` 5/5 on prod rolled back (host + approved get the exact link; requested/waitlisted/stranger nothing; anon
+  can't call the lookup); full Jest 457 suites / 6107 passed; all journeys 414/414. No from-scratch replay (no migration).
+- FOUND, PRE-EXISTING, REPORTED, NOT FIXED: `gatherings.precise_lat/lng` are selectable by anon and authenticated via the table's
+  own SELECT grant + RLS: a direct API read of a visible (e.g. public) gathering returns the exact coordinates (probed in a rolled-
+  back transaction 2026-10-17: stranger and anon both got 26.4615). The app never selects them (`SAFE_GATHERING_FIELDS`), so the
+  host/attendee-only rule holds only in the client. Fix needs its own decision (column grants or a view), owner to decide.
+- Not verified: any device. Checklist `PRODUCT_AUDIT/ITEM_145_GATHERING_DIRECTIONS_DEVICE_CHECKLIST_2026-10-17.md` (11 checks).
+
 # Item 144 (owner, 2026-10-17) "Last spot" restrained animation - MET AS BUILT, highlight DECLINED (item 116 LOCKED), nothing built
 
 Owner ask: one real spot left -> "1 spot available" with a subtle highlight (not flashing); the person takes it -> "You're in ✓" -> "20 / 20".

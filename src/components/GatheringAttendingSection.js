@@ -13,7 +13,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, Share } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, Share, Linking } from 'react-native';
 import MeetupPointMap from './MeetupPointMap';
 import {
   getGatheringMeetupPoint,
@@ -30,6 +30,7 @@ import { getSignedPhotoUrl } from '../services/photos';
 import { iceBreakersFor, prepTipsFor } from '../constants/gatheringHubContent';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { openUberToDestination } from '../utils/uberDeepLink';
+import { buildDirectionsUrl } from '../utils/planLogisticsActions';
 import InviteFriendsModal from './InviteFriendsModal';
 import { sendNoticeTo } from '../services/noticeActions';
 import { getMyBlockedUsers } from '../services/blockedUsers';
@@ -171,6 +172,13 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
   const checkedIn = gathering.approvedAttendees.filter((a) => a.checked_in_at);
   const iAmCheckedIn = !!gathering.myAttendee?.checked_in_at;
   const iAmOnMyWay = !!gathering.myAttendee?.on_my_way_at;
+  // Item 145: directions to the meet-up point (host/attendee-only RPC), the same link builder the booked plan uses; no
+  // valid point = no link (never a broken maps destination).
+  const directionsUrl = meetupPoint ? buildDirectionsUrl({ latitude: meetupPoint.latitude, longitude: meetupPoint.longitude }) : null;
+  function handleGetDirections() {
+    if (!directionsUrl) return;
+    Linking.openURL(directionsUrl).catch(() => Alert.alert(t('ui.requestDetail.error'), t('ui.requestDetail.couldntOpenMaps')));
+  }
   const countdown = getCountdownLabel(gathering.scheduled_at);
   const isOver = countdown === null;
 
@@ -346,6 +354,16 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>{t('ui.gatheringHub.meetUpPoint')}</Text>
               <MeetupPointMap point={meetupPoint} color={categoryStyle.color} style={styles.map} />
+              {directionsUrl && (
+                <TouchableOpacity
+                  style={styles.uberLink}
+                  onPress={handleGetDirections}
+                  accessibilityLabel={t('ui.requestDetail.getDirectionsA11y')}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.uberLinkText}>{t('ui.requestDetail.getDirections')}</Text>
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 style={styles.uberLink}
                 onPress={() => openUberToDestination({ ...meetupPoint, nickname: gathering.title })}

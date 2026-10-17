@@ -213,6 +213,9 @@ Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the
 **Item 143 (moved off the waitlist -> "~~On waitlist~~ → ✓ Attending", item 31's moment once per gathering; owner approved 2026-10-16) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_143_WAITLIST_PROMOTION_DEVICE_CHECKLIST_2026-10-17.md` is recorded on real phones (migration 20270319 LIVE; journey `waitlistPromotion` 8/8; replay 443/443 + journeys 409/409; no new strings). Never for Requested or a normal join (LOCKED).
 
+**Item 145 ("Get directions" on a gathering's meet-up point, owner 2026-10-17) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_145_GATHERING_DIRECTIONS_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone (journey `gatheringDirections`; no migration, no new strings). Ready-state motion, urgency styling and last-hour reordering DECLINED, met as built (item 108, LOCKED).
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -269,7 +272,7 @@ block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RL
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
-network failure between its writes; `LOCK TABLE` remains possible with direct DB UPDATE rights.
+network failure between its writes; `gatherings.precise_lat/lng` are directly selectable by anon/authenticated (table grant + RLS; the app never selects them; found 2026-10-17, item 145, owner to decide); `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
 gathering stops create no child plans.
 

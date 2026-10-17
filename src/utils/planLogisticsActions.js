@@ -45,9 +45,16 @@ export function buildPlanCalendarEvent({ title, rawDate, rawTime, businessAddres
 
 // A real turn-by-turn directions link (not just a centered pin) -- prefers real coordinates,
 // falls back to the business's own real street address, returns null when neither is known
-// (never a fabricated destination).
-export function buildDirectionsUrl({ latitude, longitude, address, placeId }) {
-  if (latitude != null && longitude != null) {
+// (never a fabricated destination). Item 145: coordinates count only when both are finite numbers
+// on the globe (a null, NaN, string or out-of-range value never becomes a broken maps link).
+export function isValidCoordinate(latitude, longitude) {
+  return typeof latitude === 'number' && typeof longitude === 'number'
+    && Number.isFinite(latitude) && Number.isFinite(longitude)
+    && Math.abs(latitude) <= 90 && Math.abs(longitude) <= 180;
+}
+
+export function buildDirectionsUrl({ latitude, longitude, address, placeId } = {}) {
+  if (isValidCoordinate(latitude, longitude)) {
     const pid = placeId ? `&destination_place_id=${encodeURIComponent(placeId)}` : '';
     return `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}${pid}`;
   }
