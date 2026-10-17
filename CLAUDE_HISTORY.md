@@ -1,3 +1,25 @@
+# Exact end-boundary regression cases (2026-10-17, owner: the end is exclusive everywhere)
+
+Client (`utils/gatheringCheckInWindow.test.js`, frozen system clock, helpers called with no `now` exactly as the screens call them):
+A (6 PM, 60 min) 6:59:59.999 active / 7:00:00.000 + 7:00:00.001 ended; B (6 PM, no duration) 6:29:59.999 active / 6:30:00.000 +
+6:30:00.001 ended; at each: detail countdown, attendee actions, "Have fun!" panel, Home/Discover card context, Home Completed,
+whenLabel (B), check-in state agree. Opening 5:29:59.999 before / 5:30:00.000 + .001 open. Host never gets guest actions.
+Same instant in +00:00 / +05:45 / -09:30 offsets decides the same. Right Now window unchanged (includes +30:00.000, not +30:00.001).
+The attending section's visibility moved into ONE pure helper `attendingDayOf` (`utils/gatheringAttending.js`: showHaveFun /
+showOnMyWay / showCheckIn) so it is tested directly; the component renders from it (no behaviour change).
+Server (journey `gatheringCheckIn`, second block, 13 tests): gatherings placed so the DB's own now() is exactly 1 ms before / at /
+1 ms after the opening (60 min), the 60-min end and the no-duration end; stored via +05:45 / -09:30 text under session zone
+Pacific/Chatham. Results: 5:29:59.999 reject, 5:30:00.000 ok, 5:30:00.001 ok, 6:59:59.999 ok, 7:00:00.000 reject, 7:00:00.001 reject,
+6:29:59.999 ok, 6:30:00.000 reject, 6:30:00.001 reject; every reject repeated 3x (all CHECK_IN_CLOSED); after the rejects check-in
+state, visible counts, plans this month, offers and offer_redemptions are byte-identical; accepted check-ins stamped with the
+server's now(); `check_in_to_gathering` takes only the gathering id (no client time). Mutation check: an inclusive-end /
+exclusive-open copy of `_check_in_window_open` (rolled-back prelude) fails 10 tests, incl. all three exact boundaries.
+Sweep: no remaining gathering lifecycle calculations outside the shared rule. Non-gathering inclusive comparisons left as is
+(different objects): business availability postings (`businessOpportunityCard.js` `at <= end`), time-of-day preference ranges
+(`priorityTimeRange.js`). Client `windowEnd` ignores durations < 15 min while SQL uses any: identical because the column CHECK allows
+only null or 15-720 (20270194; guarded). A follow-up migration for it was drafted and discarded (not needed, never applied).
+Results: Jest 464/464 suites (6207 tests); prod journeys 499/499 (rolled back). No schema change in this step. NOT device-verified.
+
 # One gathering end, LOCKED + remaining end rules aligned (2026-10-17, owner approved the exclusive end)
 
 Owner (LOCKED): end = start + duration, else start + 30 min; a gathering is not active at the exact end timestamp; check-in closes at

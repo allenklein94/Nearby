@@ -35,8 +35,10 @@ describe('bug 1: the attending section uses the shared end, not a fixed 3 h', ()
     const src = require('fs').readFileSync(require('path').join(__dirname, 'gatheringAttending.js'), 'utf8');
     expect(src).not.toMatch(/HOURS_CONSIDERED_OVER|3600000|60 \* 60/);
     const section = require('fs').readFileSync(require('path').join(__dirname, '../components/GatheringAttendingSection.js'), 'utf8');
-    expect(section).toMatch(/const isOver = isGatheringOver\(gathering\);/);
-    expect(section).toMatch(/\{checkInOpen && \(/);
+    expect(section).toMatch(/const day = attendingDayOf\(gathering\);/);
+    expect(section).toMatch(/\{day\.showCheckIn && \(/);
+    expect(section).toMatch(/\{day\.showOnMyWay && \(/);
+    expect(section).toMatch(/\{day\.showHaveFun \? \(/);
   });
 });
 
@@ -177,5 +179,101 @@ describe('the exact end boundary: every surface agrees (owner, 2026-10-17, LOCKE
   test('the "Right Now" discovery window is a separate rule and stays unchanged (inclusive 30 min back)', () => {
     const { isWithinRightNowWindow } = require('./rightNowWindow');
     expect(isWithinRightNowWindow(new Date(START.getTime() - 30 * 60000).toISOString(), START)).toBe(true);
+  });
+});
+
+// Exact millisecond boundaries on a frozen system clock (owner, 2026-10-17): the helpers are called with NO `now`, exactly as
+// the attending section, Home and Discover call them, so the fixed clock is the only clock. 6 PM local on a fixed day.
+describe('exact boundaries on a fixed clock (Home, Discover, detail, attendee actions)', () => {
+  const { attendingDayOf } = require('./gatheringAttending');
+  const { recommendationContext, contextItem } = require('./recommendationContext');
+  const { isWithinRightNowWindow } = require('./rightNowWindow');
+  const T = (h, m, s = 0, ms = 0) => new Date(2026, 9, 17, h, m, s, ms);
+  const SIX = T(18, 0);
+  const row = (dur, extra = {}) => ({ id: 'g', scheduled_at: SIX.toISOString(), duration_minutes: dur, ...extra });
+  const guest = (dur, checkedIn = false) => row(dur, { isHost: false, myAttendee: { checked_in_at: checkedIn ? T(18, 5).toISOString() : null } });
+  const card = (dur) => recommendationContext(contextItem('gathering', row(dur))).context ?? '';
+  const live = (txt) => /Happening now|Ends in/.test(txt);
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+  const at = (d) => jest.setSystemTime(d);
+
+  test.each([
+    // [name, instant, duration, active]
+    ['A 6:59:59.999 PM', T(18, 59, 59, 999), 60, true],
+    ['A 7:00:00.000 PM', T(19, 0, 0, 0), 60, false],
+    ['A 7:00:00.001 PM', T(19, 0, 0, 1), 60, false],
+    ['B 6:29:59.999 PM', T(18, 29, 59, 999), null, true],
+    ['B 6:30:00.000 PM', T(18, 30, 0, 0), null, false],
+    ['B 6:30:00.001 PM', T(18, 30, 0, 1), null, false],
+  ])('%s: active = %p everywhere', (_name, instant, dur, active) => {
+    at(instant);
+    // gathering detail: the countdown line and the attendee's actions
+    expect(getCountdownLabel(row(dur)) === 'Happening now').toBe(active);
+    expect(getCountdownLabel(row(dur)) === null).toBe(!active);
+    const d = attendingDayOf(guest(dur));
+    expect(d.isOver).toBe(!active);
+    expect(d.showOnMyWay).toBe(active);
+    expect(d.showCheckIn).toBe(active);
+    expect(attendingDayOf(guest(dur, true)).showHaveFun).toBe(active); // "Have fun!" absent at and after the end
+    // Home + Discover cards (the one card context engine) and Home's Completed
+    expect(live(card(dur))).toBe(active);
+    expect(isGatheringOver(row(dur))).toBe(!active);
+    if (dur == null) expect(require('./timeContext').whenLabel(SIX.toISOString()) === 'Happening now').toBe(active);
+    // check-in
+    expect(checkInWindowState(row(dur))).toBe(active ? 'open' : 'closed');
+  });
+
+  test.each([
+    ['5:29:59.999 PM', T(17, 29, 59, 999), 'before'],
+    ['5:30:00.000 PM', T(17, 30, 0, 0), 'open'],
+    ['5:30:00.001 PM', T(17, 30, 0, 1), 'open'],
+  ])('check-in opening, %s: %s', (_name, instant, state) => {
+    at(instant);
+    expect(checkInWindowState(row(60))).toBe(state);
+    expect(attendingDayOf(guest(60)).showCheckIn).toBe(state === 'open');
+    expect(attendingDayOf(guest(60)).showOnMyWay).toBe(true); // "I'm on my way" is not window-bound before the end
+  });
+
+  test('the host never gets the guest actions, at any instant', () => {
+    for (const instant of [T(17, 30), T(18, 0), T(18, 59, 59, 999)]) {
+      at(instant);
+      expect(attendingDayOf(row(60, { isHost: true }))).toMatchObject({ showOnMyWay: false, showCheckIn: false });
+    }
+  });
+
+  test('time zones: the same instant written with any offset decides the same; only the instant matters', () => {
+    const offsets = (d) => [d.toISOString(), d.toISOString().replace('Z', '+00:00'),
+      new Date(d).toLocaleString('sv-SE', { timeZone: 'Asia/Kathmandu' }).replace(' ', 'T') + '+05:45',
+      new Date(d).toLocaleString('sv-SE', { timeZone: 'Pacific/Marquesas' }).replace(' ', 'T') + '-09:30'];
+    for (const iso of offsets(SIX)) expect(new Date(iso).getTime()).toBe(SIX.getTime());
+    for (const [instant, state] of [[T(17, 29, 59, 999), 'before'], [T(17, 30), 'open'], [T(18, 59, 59, 999), 'open'], [T(19, 0), 'closed']]) {
+      at(instant);
+      for (const iso of offsets(SIX)) {
+        expect(checkInWindowState({ scheduled_at: iso, duration_minutes: 60 })).toBe(state);
+        expect(getCountdownLabel({ scheduled_at: iso, duration_minutes: 60 }) === null).toBe(state === 'closed');
+      }
+    }
+  });
+
+  test('client and server ends cannot differ by duration: the column only allows null or 15-720 min (20270194)', () => {
+    // the client's windowEnd ignores a duration under 15 min; the server's _gathering_ends_at uses any duration. The column's
+    // CHECK makes those identical, so this guard fails if either side or the constraint changes.
+    const fs = require('fs');
+    const path = require('path');
+    expect(fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270194_gathering_equipment_duration.sql'), 'utf8'))
+      .toMatch(/check \(duration_minutes is null or duration_minutes between 15 and 720\)/);
+    expect(fs.readFileSync(path.join(__dirname, 'timeWindow.js'), 'utf8')).toMatch(/durationMinutes >= 15 \? s \+ durationMinutes \* 60000 : null/);
+    expect(fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270326_gathering_check_in_window.sql'), 'utf8'))
+      .toMatch(/make_interval\(mins => coalesce\(p_duration_minutes, 30\)\)/);
+    at(T(18, 14, 59, 999));
+    expect(checkInWindowState(row(15))).toBe('open');
+    at(T(18, 15));
+    expect(checkInWindowState(row(15))).toBe('closed'); // the shortest allowed: ends at +15 on both sides
+  });
+
+  test('the "Right Now" discovery window is unchanged: still includes a gathering that started exactly 30 min ago', () => {
+    expect(isWithinRightNowWindow(SIX.toISOString(), T(18, 30))).toBe(true);
+    expect(isWithinRightNowWindow(SIX.toISOString(), T(18, 30, 0, 1))).toBe(false);
   });
 });

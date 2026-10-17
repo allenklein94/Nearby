@@ -249,8 +249,8 @@ checklist checks 1-3, 9, 12 and new 13 pass on a real phone AND native review of
 old DB; guard `approximateGatheringLocation.test.js`; replay 449/449 + journeys 477/477; grants = prod 3339/3339). `PRODUCT_AUDIT/PLACE_COUNT_ORACLE_SCOPE_2026-10-17.md`.
 
 **Gathering clock + check-in window (owner 2026-10-17: fix G1 + G2, "You're here" option A manual only, no new headlines) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
-`PRODUCT_AUDIT/GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone (migration 20270326 LIVE; journey `gatheringCheckIn` 9/9;
-prod journeys 486/486; replay 450/450 + journeys 486/486 + concurrency; no new strings). Option B (on-device suggestion) only after this passes on a phone.
+`PRODUCT_AUDIT/GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone (migration 20270326 LIVE; journey `gatheringCheckIn` 22/22 incl. ms-exact
+boundaries; prod journeys 499/499; replay 450/450 + concurrency; no new strings). Option B (on-device suggestion) only after this passes on a phone.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).

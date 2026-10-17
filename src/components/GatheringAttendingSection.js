@@ -36,8 +36,7 @@ import { sendNoticeTo } from '../services/noticeActions';
 import { getMyBlockedUsers } from '../services/blockedUsers';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { getCountdownLabel, showsAttendingSection } from '../utils/gatheringAttending';
-import { isGatheringOver, checkInWindowState } from '../utils/gatheringCompletion';
+import { getCountdownLabel, showsAttendingSection, attendingDayOf } from '../utils/gatheringAttending';
 
 export default function GatheringAttendingSection({ gathering, gatheringId, navigation, justJoined = false, onChanged }) {
   const { t } = useLanguage();
@@ -174,7 +173,6 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
   const others = gathering.approvedAttendees.filter((a) => a.user_id !== gathering.myAttendee?.user_id && !blockedIds.has(a.user_id));
   const onTheWay = gathering.approvedAttendees.filter((a) => a.on_my_way_at);
   const checkedIn = gathering.approvedAttendees.filter((a) => a.checked_in_at);
-  const iAmCheckedIn = !!gathering.myAttendee?.checked_in_at;
   const iAmOnMyWay = !!gathering.myAttendee?.on_my_way_at;
   // Item 145: directions to the meet-up point (host/attendee-only RPC), the same link builder the booked plan uses; no
   // valid point = no link (never a broken maps destination).
@@ -185,9 +183,9 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
   }
   // One lifecycle rule (utils/timeWindow.js via gatheringCompletion.js): over at start + duration, else start + 30 min.
   const countdown = getCountdownLabel(gathering);
-  const isOver = isGatheringOver(gathering);
-  // Check in only from 30 min before the start until the end (the server refuses outside it too).
-  const checkInOpen = checkInWindowState(gathering) === 'open';
+  // What shows now, from the one end rule (utils/gatheringAttending.js attendingDayOf): Have fun only while checked in and not
+  // over; I'm on my way only for a guest before the end; I'm here only inside [start - 30 min, end) (the server refuses outside it).
+  const day = attendingDayOf(gathering);
 
   // Every true fact stacks; only real signals already fetched above, never a single best-guess line.
   function meetPersonLines(attendee) {
@@ -247,7 +245,7 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
         </View>
       )}
 
-      {iAmCheckedIn && !isOver ? (
+      {day.showHaveFun ? (
         <View style={styles.duringPanel}>
           <Text style={styles.duringTitle}>{t('ui.gatheringHub.haveFun')}</Text>
           <Text style={styles.duringSub}>{t('ui.gatheringHub.wellSeeYouAfterwards')}</Text>
@@ -382,7 +380,7 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
             </View>
           )}
 
-          {!gathering.isHost && !isOver && (
+          {day.showOnMyWay && (
             <View style={styles.section}>
               {onTheWay.length > 0 && (
                 <Text style={styles.onTheWayText}>
@@ -401,7 +399,7 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
                   {iAmOnMyWay ? t('ui.gatheringHub.onYourWayTapTo') : t('ui.gatheringHub.imOnMyWay')}
                 </Text>
               </TouchableOpacity>
-              {checkInOpen && (
+              {day.showCheckIn && (
                 <TouchableOpacity
                   style={styles.checkInLink}
                   onPress={handleCheckIn}

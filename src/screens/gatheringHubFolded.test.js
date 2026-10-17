@@ -93,8 +93,8 @@ describe('every day-of capability survived the move', () => {
     ['meet-up point + Uber', /getGatheringMeetupPoint\(gatheringId\)[\s\S]*<MeetupPointMap point=\{meetupPoint\}[\s\S]*openUberToDestination/],
     ['on my way is a toggle', /if \(iAmOnMyWay\) \{\s*await unsetGatheringOnMyWay\(gatheringId\);\s*\} else \{\s*await setGatheringOnMyWay\(gatheringId\);/],
     ['check in', /await checkInToGathering\(gatheringId\);/],
-    ['on my way / check in only for attendees, only before it is over', /\{!gathering\.isHost && !isOver && \(/],
-    ['checked in: who\'s here, Say hi, Photos', /iAmCheckedIn && !isOver \?[\s\S]*ui\.gatheringHub\.whosHere[\s\S]*ui\.gatheringHub\.sayHi[\s\S]*ui\.gatheringHub\.photos/],
+    ['on my way / check in only for attendees, only before it is over', /\{day\.showOnMyWay && \(/],
+    ['checked in: who\'s here, Say hi, Photos', /day\.showHaveFun \?[\s\S]*ui\.gatheringHub\.whosHere[\s\S]*ui\.gatheringHub\.sayHi[\s\S]*ui\.gatheringHub\.photos/],
     ['after joining: You\'re in, then bring someone (invite or share link)', /\{showJoinedBanner && \([\s\S]*ui\.gatheringHub\.youreIn[\s\S]*\{showGrowthPrompt && \([\s\S]*setGrowthInviteModalVisible\(true\)[\s\S]*onPress=\{handleGrowthShareLink\}/],
     ['the share link is the plain https invite link', /async function handleGrowthShareLink[\s\S]*gatheringInviteShareUrl\(gatheringId\)/],
   ])('%s', (_label, re) => {

@@ -180,3 +180,104 @@ d('journey: check in only inside the window, enforced by the server', () => {
     expect(getCountdownLabel(s.rpc.data.gatherings.f, now.getTime())).toBeNull();
   });
 });
+
+// Exact boundaries (owner, 2026-10-17, LOCKED: the end is exclusive everywhere). The server clock is the only clock: each
+// gathering is placed so that the database's own now() sits exactly 1 ms before / at / 1 ms after a boundary (timestamptz is
+// microsecond-precise), and check_in_to_gathering takes no time argument, so a caller can't supply one. Every rejected call is
+// repeated 3 times; nothing it could touch (check-in state, the visible count, plans this month, offers, redemptions) changes.
+// The same instants are stored written in other time zones' offsets, under another session time zone: same answers.
+const EXACT = [
+  // [key, start relative to now(), duration] -> the instant now() represents
+  ['open_m1', "now() + interval '30 minutes' + interval '1 millisecond'", 60, 'reject'], // 5:29:59.999 for a 6 PM start
+  ['open_0', "now() + interval '30 minutes'", 60, 'ok'], //                                    5:30:00.000
+  ['open_p1', "now() + interval '30 minutes' - interval '1 millisecond'", 60, 'ok'], //        5:30:00.001
+  ['end60_m1', "now() - interval '60 minutes' + interval '1 millisecond'", 60, 'ok'], //       6:59:59.999
+  ['end60_0', "now() - interval '60 minutes'", 60, 'reject'], //                              7:00:00.000
+  ['end60_p1', "now() - interval '60 minutes' - interval '1 millisecond'", 60, 'reject'], //   7:00:00.001
+  ['end30_m1', "now() - interval '30 minutes' + interval '1 millisecond'", null, 'ok'], //     6:29:59.999 (no duration)
+  ['end30_0', "now() - interval '30 minutes'", null, 'reject'], //                            6:30:00.000
+  ['end30_p1', "now() - interval '30 minutes' - interval '1 millisecond'", null, 'reject'], // 6:30:00.001
+];
+
+d('journey: the exact check-in boundaries, server clock only', () => {
+  let s;
+  beforeAll(async () => {
+    const people = await runSql(`select id from profiles order by created_at limit 3;`);
+    const keys = EXACT.map(([k]) => k);
+    // a host may create 10 gatherings a day: any beyond 9 come from a second host
+    const make = keys.map((k, i) => `
+  perform set_config('request.jwt.claims', json_build_object('sub', ${i < 9 ? 'v_host' : 'v_host2'}, 'role', 'authenticated')::text, true);
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
+    values (${i < 9 ? 'v_host' : 'v_host2'}, 'JCX ${k}', now() + interval '3 days', 40.3, -75.2, 'Coffee', 'journey', 10, 'everyone') returning id into v_id;
+  v_ids := v_ids || jsonb_build_object('${k}', v_id);`).join('');
+    // stored through text in a +05:45 / -09:30 offset (the same instant), so the comparison can only be instant-based
+    const move = EXACT.map(([k, at, dur], i) => `
+  update gatherings set scheduled_at = to_char((${at}) at time zone '${i % 2 ? '-09:30' : '+05:45'}', 'YYYY-MM-DD"T"HH24:MI:SS.US')::timestamp at time zone '${i % 2 ? '-09:30' : '+05:45'}',
+    duration_minutes = ${dur ?? 'null'} where id = (v_ids->>'${k}')::uuid;`).join('');
+    const attempt = (k) => `
+  begin
+    perform check_in_to_gathering((v_ids->>'${k}')::uuid);
+    v_res := v_res || jsonb_build_object('${k}', coalesce(v_res->'${k}', '[]'::jsonb) || '"ok"'::jsonb);
+  exception when others then
+    v_res := v_res || jsonb_build_object('${k}', coalesce(v_res->'${k}', '[]'::jsonb) || to_jsonb(sqlerrm));
+  end;`;
+    const SNAP = `jsonb_build_object(
+    'checked', (select jsonb_object_agg(substr(g.title, 5), gi.checked_in_at) from gathering_interest gi join gatherings g on g.id = gi.gathering_id where g.title like 'JCX %' and gi.user_id = v_fan),
+    'counts', (select jsonb_object_agg(substr(g.title, 5), (select count(*) from gathering_interest x where x.gathering_id = g.id and x.checked_in_at is not null)) from gatherings g where g.title like 'JCX %'),
+    'plans', (select coalesce(jsonb_agg(m.plan_key order by m.plan_key), '[]') from public.get_my_plans_this_month(now() - interval '30 days', now() + interval '1 day') m),
+    'offers', (select md5(coalesce(string_agg(id::text || status || coalesce(completed_at::text, ''), ',' order by id), '')) from business_request_offers),
+    'redemptions', (select md5(coalesce(string_agg(id::text || coalesce(confirmed_at::text, ''), ',' order by id), '')) from offer_redemptions))`;
+    const log = await runJourney(`
+      v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}'; v_host2 uuid := '${people[2].id}';
+      v_id uuid; v_ids jsonb := '{}'::jsonb; v_res jsonb := '{}'::jsonb; v_before jsonb;`, `
+  ${make}
+  perform set_config('request.jwt.claims', '{}', true);
+  update gatherings set wide_area = '40.3,-75.2', is_public = true where title like 'JCX %';
+  perform set_config('request.jwt.claims', json_build_object('sub', v_fan, 'role', 'authenticated')::text, true);
+  ${keys.map((k) => `perform join_gathering((v_ids->>'${k}')::uuid);`).join(' ')}
+  perform set_config('request.jwt.claims', '{}', true);
+  perform set_config('timezone', 'Pacific/Chatham', true); -- an unusual session zone (+12:45/+13:45): must not matter
+  ${move}
+  perform set_config('request.jwt.claims', json_build_object('sub', v_fan, 'role', 'authenticated')::text, true);
+  v_before := ${SNAP};
+  -- rejected ones first, each 3 times; then nothing they could touch has changed
+  ${EXACT.filter((c) => c[3] === 'reject').map(([k]) => attempt(k) + attempt(k) + attempt(k)).join('')}
+  log := log || jsonb_build_array(jsonb_build_object('step','after_rejects','ok', true, 'data', jsonb_build_object('before', v_before, 'after', ${SNAP})));
+  ${EXACT.filter((c) => c[3] === 'ok').map(([k]) => attempt(k)).join('')}
+  log := log || jsonb_build_array(jsonb_build_object('step','exact','ok', true, 'data', jsonb_build_object('res', v_res, 'now', now(),
+    'starts', (select jsonb_object_agg(substr(g.title, 5), jsonb_build_object('scheduled_at', g.scheduled_at, 'duration_minutes', g.duration_minutes)) from gatherings g where g.title like 'JCX %'),
+    'after', ${SNAP},
+    'rpc_args', (select pg_get_function_identity_arguments('public.check_in_to_gathering'::regproc)))));`);
+    s = stepMap(log);
+  }, 120000);
+
+  test.each(EXACT)('%s: %s', (k, _at, _dur, expected) => {
+    const r = s.exact.data.res[k];
+    if (expected === 'ok') expect(r).toEqual(['ok']);
+    else expect(r).toEqual(['CHECK_IN_CLOSED', 'CHECK_IN_CLOSED', 'CHECK_IN_CLOSED']); // repeating never gets through
+  });
+
+  test('the rejected calls changed nothing: check-in state, visible counts, plans this month, offers, redemptions', () => {
+    const { before, after } = s.after_rejects.data;
+    expect(after).toEqual(before);
+    for (const [k, , , expected] of EXACT) if (expected === 'reject') expect(after.checked[k]).toBeNull();
+  });
+
+  test('accepted ones are checked in at the server time, counted once', () => {
+    for (const [k, , , expected] of EXACT) {
+      expect([k, s.exact.data.after.counts[k]]).toEqual([k, expected === 'ok' ? 1 : 0]);
+      if (expected === 'ok') expect(new Date(s.exact.data.after.checked[k]).getTime()).toBe(new Date(s.exact.data.now).getTime());
+    }
+  });
+
+  test('the server takes no time from the caller (one argument, the gathering id)', () => {
+    expect(s.exact.data.rpc_args).toBe('gathering_id_param uuid');
+  });
+
+  test('the app decides the same at the same instants (the stored starts came back as absolute instants)', () => {
+    const now = new Date(s.exact.data.now);
+    for (const [k, , , expected] of EXACT) {
+      expect([k, checkInWindowState(s.exact.data.starts[k], now) === 'open']).toEqual([k, expected === 'ok']);
+    }
+  });
+});
