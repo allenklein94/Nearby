@@ -1,6 +1,6 @@
 import { tr } from '../i18n/translate';
 // The clearest honest temporal wording for an upcoming/current scheduled time (owner item 47). One function decides:
-//   started <= 30 min ago         -> "Happening now"     (the canonical Right Now past window; no duration is invented,
+//   started < 30 min ago          -> "Happening now"     (the canonical Right Now past window; no duration is invented,
 //                                                          so anything that started earlier just shows its start time)
 //   starts within the next hour   -> "Starts in 45 min"
 //   later today                   -> "Today · 6:30 PM"   ("Tonight · 8 PM" from 6 PM on)
@@ -27,7 +27,7 @@ export function whenParts(iso, now = new Date(), endIso = null) {
   const e = endIso == null ? null : new Date(endIso);
   const end = e && Number.isFinite(e.getTime()) && e.getTime() > d.getTime() ? e : null;
   const diffMs = d.getTime() - now.getTime();
-  if (diffMs <= 0 && -diffMs <= HAPPENING_NOW_PAST_MS) return { form: 'now', date: d };
+  if (diffMs <= 0 && -diffMs < HAPPENING_NOW_PAST_MS) return { form: 'now', date: d };
   if (diffMs > 0 && diffMs <= STARTS_IN_WINDOW_MIN * 60000) return { form: 'startsIn', minutes: Math.max(1, Math.ceil(diffMs / 60000)), date: d };
   const isSameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
   const tomorrow = new Date(now);

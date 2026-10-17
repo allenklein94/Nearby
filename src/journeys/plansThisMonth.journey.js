@@ -64,7 +64,9 @@ d('journey: things happen -> only what really happened counts -> "N plans this m
   log := log || jsonb_build_array(jsonb_build_object('step','over_no_evidence','ok', true, 'data', jsonb_build_object('mine', ${MINE})));
 
   -- evidence: checked in at A, D (still going) and I (last month); answered "How was it?" for C; nothing for B
-  update gathering_interest set checked_in_at = now() - interval '2 hours' where user_id = v_fan and gathering_id in (v_a, v_d, v_i);
+  -- (each check-in at start + 10 min: inside its gathering's check-in window, migration 20270326, as the app would have made it)
+  update gathering_interest gi set checked_in_at = least(g.scheduled_at + interval '10 minutes', now())
+    from gatherings g where g.id = gi.gathering_id and gi.user_id = v_fan and gi.gathering_id in (v_a, v_d, v_i);
   insert into gathering_feedback (gathering_id, reviewer_id, satisfaction_rating) values (v_c, v_fan, 'good');
   log := log || jsonb_build_array(jsonb_build_object('step','with_evidence','ok', true, 'data', jsonb_build_object('mine', ${MINE},
     'ids', jsonb_build_object('a', v_a, 'b', v_b, 'c', v_c, 'd', v_d, 'e', v_e, 'f', v_f, 'i', v_i, 'rg', v_rg),

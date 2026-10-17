@@ -74,11 +74,12 @@ describe('who gets the attending section (the Hub\'s own rule, unchanged)', () =
     }
     expect(showsAttendingSection(null)).toBe(false);
   });
-  test('the day-of countdown: upcoming, happening now (3 h), then over', () => {
+  test('the day-of countdown: upcoming, happening now until the shared end, then over', () => {
     const now = Date.UTC(2026, 9, 8, 18, 0);
-    expect(getCountdownLabel(new Date(now + 30 * 60000).toISOString(), now)).toMatch(/30/);
-    expect(getCountdownLabel(new Date(now - 60 * 60000).toISOString(), now)).toBeTruthy();
-    expect(getCountdownLabel(new Date(now - 4 * 3600000).toISOString(), now)).toBeNull();
+    const at = (minFromNow, duration_minutes = 120) => ({ scheduled_at: new Date(now + minFromNow * 60000).toISOString(), duration_minutes });
+    expect(getCountdownLabel(at(30), now)).toMatch(/30/);
+    expect(getCountdownLabel(at(-60), now)).toBeTruthy();
+    expect(getCountdownLabel(at(-4 * 60), now)).toBeNull();
   });
 });
 
@@ -93,7 +94,7 @@ describe('every day-of capability survived the move', () => {
     ['on my way is a toggle', /if \(iAmOnMyWay\) \{\s*await unsetGatheringOnMyWay\(gatheringId\);\s*\} else \{\s*await setGatheringOnMyWay\(gatheringId\);/],
     ['check in', /await checkInToGathering\(gatheringId\);/],
     ['on my way / check in only for attendees, only before it is over', /\{!gathering\.isHost && !isOver && \(/],
-    ['checked in: who\'s here, Say hi, Photos', /iAmCheckedIn \?[\s\S]*ui\.gatheringHub\.whosHere[\s\S]*ui\.gatheringHub\.sayHi[\s\S]*ui\.gatheringHub\.photos/],
+    ['checked in: who\'s here, Say hi, Photos', /iAmCheckedIn && !isOver \?[\s\S]*ui\.gatheringHub\.whosHere[\s\S]*ui\.gatheringHub\.sayHi[\s\S]*ui\.gatheringHub\.photos/],
     ['after joining: You\'re in, then bring someone (invite or share link)', /\{showJoinedBanner && \([\s\S]*ui\.gatheringHub\.youreIn[\s\S]*\{showGrowthPrompt && \([\s\S]*setGrowthInviteModalVisible\(true\)[\s\S]*onPress=\{handleGrowthShareLink\}/],
     ['the share link is the plain https invite link', /async function handleGrowthShareLink[\s\S]*gatheringInviteShareUrl\(gatheringId\)/],
   ])('%s', (_label, re) => {

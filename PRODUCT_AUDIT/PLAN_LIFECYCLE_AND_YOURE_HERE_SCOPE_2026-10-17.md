@@ -55,3 +55,7 @@ rule) and would publish a person's arrival to others without a tap.
 1. Fix G1 (one clock) and G2 (check-in window, server-enforced) now? Recommended: yes, both (journey-level fixes, no new strings).
 2. "You're here": A, B or C? Recommended: A now; B only after A passes on a phone.
 3. New stage headlines ("Time to go", "You're here"): recommended no (existing labels already say it).
+
+## Owner decisions (2026-10-17) and outcome
+Fix G1 + G2 now; "You're here" = A; no new headlines. BUILT, LIVE (migration 20270326), NOT DEVICE-VERIFIED:
+`GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md`. Record in CLAUDE_HISTORY.md (2026-10-17, "Gathering clock (G1) + check-in window (G2)").

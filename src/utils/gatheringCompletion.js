@@ -10,7 +10,7 @@
 //   - The move plays once per gathering, ever (stored ids below); afterwards the card shows the settled "Completed" badge.
 //     Reduce Motion: the settled row at once (still counts as played).
 // Pure: storage (AsyncStorage on the phone) is passed in by the caller.
-import { timeWindowParts } from './timeWindow';
+import { timeWindowParts, windowEnd, JUST_STARTED_MIN } from './timeWindow';
 import { PLAN_STATUS } from '../constants/planStatus';
 
 export const COMPLETION_MOMENT_KEY = 'nearby.completionMomentPlayed.v1';
@@ -20,6 +20,27 @@ export const COMPLETION_MOMENT_KEEP = 50;
 // The card moves from what it said while upcoming (resolveGatheringPlanStatus -> Confirmed) to Completed.
 export const COMPLETION_FROM = PLAN_STATUS.CONFIRMED;
 export const COMPLETION_TO = PLAN_STATUS.COMPLETED;
+
+// When a gathering ends, in ms (the same end timeWindowParts uses: start + the host's duration, else start + the shared
+// 30-minute "just started" rule). The server's _gathering_ends_at (migration 20270326) is the SQL copy. Null = unknown start.
+export function gatheringEndMs(gathering) {
+  const s = gathering?.scheduled_at ? new Date(gathering.scheduled_at).getTime() : NaN;
+  if (!Number.isFinite(s)) return null;
+  return windowEnd({ start: gathering.scheduled_at, durationMinutes: gathering.duration_minutes ?? null }) ?? s + JUST_STARTED_MIN * 60000;
+}
+
+// Check-in window (owner, 2026-10-17): from 30 min before the start (inclusive) until the gathering ends (exclusive).
+// The server (check_in_to_gathering) enforces the same window and refuses outside it; this only decides what the screen offers.
+export const CHECK_IN_OPENS_BEFORE_MIN = 30;
+//   'unknown' (no start) | 'before' | 'open' | 'closed'
+export function checkInWindowState(gathering, now = new Date()) {
+  const end = gatheringEndMs(gathering);
+  if (end == null) return 'unknown';
+  const t = now instanceof Date ? now.getTime() : Number(now);
+  const opens = new Date(gathering.scheduled_at).getTime() - CHECK_IN_OPENS_BEFORE_MIN * 60000;
+  if (t < opens) return 'before';
+  return t < end ? 'open' : 'closed';
+}
 
 export function isGatheringOver(gathering, now = new Date()) {
   if (!gathering?.scheduled_at) return false;

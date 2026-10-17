@@ -34,7 +34,7 @@ beforeEach(() => jest.useFakeTimers());
 afterEach(() => jest.useRealTimers());
 
 describe('label progression (frozen clock)', () => {
-  it('Starts in 42 min -> 41 -> ... -> 1 -> Happening now for 30 min -> the plain label, one change per minute, then stops', () => {
+  it('Starts in 42 min -> 41 -> ... -> 1 -> Happening now for 30 min (to +29) -> the plain label, one change per minute, then stops', () => {
     const row = { id: 'g', scheduled_at: iso(at(19)) };
     const { shown } = run(row, at(18, 18), 90, { appState: fakeAppState() });
     const labels = shown.map((s) => s.label);
@@ -44,9 +44,10 @@ describe('label progression (frozen clock)', () => {
     // boundary 1: the start minute itself flips to Happening now
     expect(shown.find((s) => s.at === at(19).getTime()).label).toBe('Happening now');
     expect(shown.find((s) => s.at === at(18, 59).getTime()).label).toBe('Starts in 1 min');
-    // boundary 2: still Happening now at +30, the plain label at +31 (start-only: the engine's own "over" wording)
-    expect(shown.find((s) => s.at === at(19, 30).getTime()).label).toBe('Happening now');
-    const after = shown.find((s) => s.at === at(19, 31).getTime());
+    // boundary 2: still Happening now at +29, the plain label at +30 (start-only: the engine's own "over" wording; the end is
+    // exclusive, as for a gathering with a length, and the same instant the check-in window closes, migration 20270326)
+    expect(shown.find((s) => s.at === at(19, 29).getTime()).label).toBe('Happening now');
+    const after = shown.find((s) => s.at === at(19, 30).getTime());
     expect(after.label).toBe('Already happened');
     expect(whenLabel(iso(at(19)), new Date(after.at))).toBe('Tonight · 7 PM');
     // every tick is a minute boundary and nothing ticks after the window

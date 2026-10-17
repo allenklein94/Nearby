@@ -37,6 +37,7 @@ import { getMyBlockedUsers } from '../services/blockedUsers';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { getCountdownLabel, showsAttendingSection } from '../utils/gatheringAttending';
+import { isGatheringOver, checkInWindowState } from '../utils/gatheringCompletion';
 
 export default function GatheringAttendingSection({ gathering, gatheringId, navigation, justJoined = false, onChanged }) {
   const { t } = useLanguage();
@@ -148,7 +149,10 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
       await checkInToGathering(gatheringId);
       await onChanged?.();
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCheckIn() });
+      // The window closed (or had not opened) while the screen was open: nothing changed on the server; reloading redraws
+      // the section for the real time, so the check-in link goes away. Never "Try again" for a closed window.
+      if (e?.message === 'CHECK_IN_CLOSED') await onChanged?.();
+      else presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleCheckIn() });
     }
     setCheckInBusy(false);
   }
@@ -179,8 +183,11 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
     if (!directionsUrl) return;
     Linking.openURL(directionsUrl).catch(() => Alert.alert(t('ui.requestDetail.error'), t('ui.requestDetail.couldntOpenMaps')));
   }
-  const countdown = getCountdownLabel(gathering.scheduled_at);
-  const isOver = countdown === null;
+  // One lifecycle rule (utils/timeWindow.js via gatheringCompletion.js): over at start + duration, else start + 30 min.
+  const countdown = getCountdownLabel(gathering);
+  const isOver = isGatheringOver(gathering);
+  // Check in only from 30 min before the start until the end (the server refuses outside it too).
+  const checkInOpen = checkInWindowState(gathering) === 'open';
 
   // Every true fact stacks; only real signals already fetched above, never a single best-guess line.
   function meetPersonLines(attendee) {
@@ -240,7 +247,7 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
         </View>
       )}
 
-      {iAmCheckedIn ? (
+      {iAmCheckedIn && !isOver ? (
         <View style={styles.duringPanel}>
           <Text style={styles.duringTitle}>{t('ui.gatheringHub.haveFun')}</Text>
           <Text style={styles.duringSub}>{t('ui.gatheringHub.wellSeeYouAfterwards')}</Text>
@@ -394,15 +401,17 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
                   {iAmOnMyWay ? t('ui.gatheringHub.onYourWayTapTo') : t('ui.gatheringHub.imOnMyWay')}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.checkInLink}
-                onPress={handleCheckIn}
-                disabled={checkInBusy}
-                accessibilityLabel={t('ui.gatheringHub.imHereCheckInA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.checkInLinkText}>{t('ui.gatheringHub.imHereCheckIn')}</Text>
-              </TouchableOpacity>
+              {checkInOpen && (
+                <TouchableOpacity
+                  style={styles.checkInLink}
+                  onPress={handleCheckIn}
+                  disabled={checkInBusy}
+                  accessibilityLabel={t('ui.gatheringHub.imHereCheckInA11y')}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.checkInLinkText}>{t('ui.gatheringHub.imHereCheckIn')}</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )}
         </>

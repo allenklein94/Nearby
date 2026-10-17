@@ -43,7 +43,7 @@ export function timeWindowParts(win, now = new Date(), kind = 'event') {
   if (s != null && s > nowMs) return { phase: 'upcoming', form: 'upcoming', kind, nowMs, startMs: s, endMs: e };
   if (e == null) {
     // Start only: the shared "just started" rule; never claims it is still going after that.
-    return nowMs - s <= JUST_STARTED_MIN * 60000 ? { phase: 'live', form: 'justStarted', kind, nowMs } : { phase: 'over', form: 'over', kind, nowMs };
+    return nowMs - s < JUST_STARTED_MIN * 60000 ? { phase: 'live', form: 'justStarted', kind, nowMs } : { phase: 'over', form: 'over', kind, nowMs };
   }
   if (e <= nowMs) return { phase: 'over', form: 'overEnded', kind, nowMs, minutesLeft: 0 };
   const minutesLeft = Math.ceil((e - nowMs) / 60000);

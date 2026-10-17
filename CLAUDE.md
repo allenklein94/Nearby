@@ -248,10 +248,9 @@ checklist checks 1-3, 9, 12 and new 13 pass on a real phone AND native review of
 `ui.mapView.gatheringPinsApproximate`) is done (migration 20270325 LIVE drops `count_gatherings_near_batch`; journey `preciseLocation` 21/21, fails on the
 old DB; guard `approximateGatheringLocation.test.js`; replay 449/449 + journeys 477/477; grants = prod 3339/3339). `PRODUCT_AUDIT/PLACE_COUNT_ORACLE_SCOPE_2026-10-17.md`.
 
-**Plan lifecycle + "You're here" (owner ideas numbered 147/148, 2026-10-17; numbers clash with items 147/148) is SCOPED, NOTHING BUILT, AWAITING THE OWNER:**
-lifecycle stages met as built; two gaps found (G1: the attending hub's own 3 h clock `getCountdownLabel` disagrees with `timeWindowParts`/item 34;
-G2: check-in accepted any time, server too); "You're here" options A manual / B on-device suggestion / C automatic in
-`PRODUCT_AUDIT/PLAN_LIFECYCLE_AND_YOURE_HERE_SCOPE_2026-10-17.md`.
+**Gathering clock + check-in window (owner 2026-10-17: fix G1 + G2, "You're here" option A manual only, no new headlines) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone (migration 20270326 LIVE; journey `gatheringCheckIn` 9/9;
+prod journeys 486/486; replay 450/450 + journeys 486/486 + concurrency; no new strings). Option B (on-device suggestion) only after this passes on a phone.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -360,6 +359,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   "revenue", "earnings" or customer spend without an explicit transaction amount (none exists).
 - Trending = >= `TRENDING_ATTENDANCE_MIN` (5) approved attendees, everywhere (`constants/trending.js`).
   Place/time labels each mean one thing (`constants/surfaceVocabulary.js`); add a label there before using it.
+- **One gathering end, one check-in window (owner, 2026-10-17):** a gathering ends at start + duration, else start + 30 min, end exclusive
+  (`timeWindowParts`; SQL `_gathering_ends_at`); every surface (incl. the attending section) reads it. Check-in only in [start - 30 min, end),
+  enforced by `check_in_to_gathering` + trigger `gathering_interest_check_in_guard` (idempotent, never moved, never on insert); a check-in is never a redemption.
 - **Relative time labels stay true while open (item 108):** only via `hooks/useMinuteClock.js` (`utils/minuteClock.js`; Home + Discover,
   guard `minuteClock.test.js`): ticks only near a shown window, paused in background, plain text, never motion or urgency styling.
 - A Home claim needs a visible, substantiated trigger of its own kind, and its CTA names where it goes.

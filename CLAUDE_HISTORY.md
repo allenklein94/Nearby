@@ -1,3 +1,39 @@
+# Gathering clock (G1) + check-in window (G2) fixed (2026-10-17, owner: fix both now, "You're here" option A, no new headlines)
+
+Owner decisions (locked): bug 1 and bug 2 fixed now; "You're here" = A (manual check-in only; no location suggestion, background
+location or automatic arrival; B reconsidered only after A passes on a phone); no new stage headlines or strings; arrival/check-in
+never triggers a redemption (only the business's confirmation counts). End boundary: check-in allowed at/after the opening time and
+strictly before the end; at the end the server refuses.
+
+**G1, one clock.** `getCountdownLabel` (`utils/gatheringAttending.js`) no longer has its own 3 h rule: it takes the gathering and
+reads `timeWindowParts` (live/ending_soon = "Happening now", upcoming = the existing "Starts in" wording, over = null).
+`GatheringAttendingSection` uses `isGatheringOver` for `isOver`, hides the "Have fun!" panel once over, and shows "I'm here — check in"
+only when `checkInWindowState(gathering) === 'open'`; a `CHECK_IN_CLOSED` refusal reloads the section (no "Try again").
+Boundary alignment: the no-duration "just started" end is now exclusive in `timeWindowParts` (`<`) and `whenLabel`'s
+`timeContext` (`<`), so "Happening now" runs to +29:59 and is over at +30:00, exactly as a gathering with a length is over at its
+end. `utils/minuteClock.test.js` updated accordingly (item 108's progression: Happening now to +29, plain label at +30). The
+discovery "Right Now" window (`rightNowWindow.js`) is a separate inclusion window and was not changed.
+
+**G2, the window.** Client: `gatheringEndMs` + `checkInWindowState` in `utils/gatheringCompletion.js` ([start - 30 min, end)).
+Server (migration `20270326_gathering_check_in_window.sql`, APPLIED to production 2026-10-17): `_gathering_ends_at` (start +
+coalesce(duration, 30)), `_check_in_window_open`; `check_in_to_gathering` (same signature/grants) raises `NOT_ATTENDING` for a
+non-approved caller, returns without change if already checked in (idempotent, first time kept), raises `CHECK_IN_CLOSED` outside
+the window; trigger `gathering_interest_check_in_guard` (BEFORE INSERT OR UPDATE OF checked_in_at, any writer): a row can never be
+inserted already checked in, a check-in is never moved, only approved rows, only inside the window. `get_my_plans_this_month` reads
+`_gathering_ends_at` (identical predicate). No client UPDATE grant on checked_in_at existed (authenticated may UPDATE `status` only).
+Prod data before applying: 1 check-in total, 0 outside the window (nothing to clean). Redemption untouched (no offer/perk table in the RPC).
+
+**Verification.** Jest 464/464 suites (new `utils/gatheringCheckInWindow.test.js`: 1-hour gathering at 90 min, -31/-30 min,
+during, end - 1 ms, end, +1 min, +3 days, no-duration, label = `timeWindowParts` every minute for 4 durations, closed exactly when
+over; `gatheringHubFolded.test.js` updated). New journey `gatheringCheckIn` 9/9 (server called directly: A -31 refused, B -30 ok,
+C during ok + second call no change, D at end / E +3 days / F 1-hour at 90 min refused, G no-duration 29 min ok, H 30 min refused,
+I pending NOT_ATTENDING, direct insert/move/late update refused; visible counts and plans this month hold only real check-ins;
+business offers and offer_redemptions unchanged; the client helper agrees with the server on the same rows). It fails 7/9 on the
+pre-migration DB. `plansThisMonth` journey fixture now checks in at start + 10 min (it wrote out-of-window times directly before).
+Prod journeys 486/486 (rolled back); from-scratch replay 450/450 + journeys 486/486 + both concurrency scripts; grants of the 5
+touched functions replay = prod. NOT device-verified: `PRODUCT_AUDIT/GATHERING_CHECK_IN_WINDOW_DEVICE_CHECKLIST_2026-10-17.md`.
+Not covered: a signed-in real-API call (the same open item as items 147/148).
+
 # Place-count oracle removed + approximate gathering location in words (2026-10-17, owner: Option A, final)
 
 Owner chose Option A of `PRODUCT_AUDIT/PLACE_COUNT_ORACLE_SCOPE_2026-10-17.md` (B and C's count behaviour explicitly rejected) plus a
