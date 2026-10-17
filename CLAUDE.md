@@ -244,6 +244,9 @@ of item 146's device checklist pass (migration 20270324: pin keyed by host + ~78
 `gathering_pin` dropped; map stacks shared pins via `utils/mapPinStacks.js`; journey `preciseLocation` 21/21; replay 448/448 + journeys 477/477;
 prod journeys 477/477; grants = prod 7220/7220). Reported, unchanged: `count_gatherings_near_batch` still grid-scans public gatherings to ~110 m
 (item 146 LOCKED, owner to decide). Results: `PRODUCT_AUDIT/ITEM_146_PIN_AVERAGING_ASSESSMENT_2026-10-17.md`.
+**Place-count oracle (owner asked to scope, 2026-10-17) is SCOPED, NOTHING CHANGED, AWAITING THE OWNER'S PICK:** the fix conflicts with item 146's
+approved change 3; options A (remove the count, recommended) / B (past gatherings, >= 5 distinct hosts, + rate limit) / C (keep) and the
+"pin is approximate" UI gap (visible text implies an exact pin; only a11y says approximate) in `PRODUCT_AUDIT/PLACE_COUNT_ORACLE_SCOPE_2026-10-17.md`.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
