@@ -86,3 +86,96 @@ describe('bug 2: one check-in window, [start - 30 min, end)', () => {
     expect(body).not.toMatch(/business_request_offers|offer_redemptions|confirmed_at|completed/);
   });
 });
+
+// Owner, 2026-10-17 (LOCKED): end = start + duration, else start + 30 min; NOT active at the exact end; check-in closes at
+// that same timestamp; Home, Discover, the detail screen (and every other surface) agree. The expected lifecycle state at
+// each instant, for a 60-min gathering and one with no duration (end = +30):
+//   instant            phase     detail line        Home/Discover card   check-in   Home Completed   Messages chip
+//   start - 31 min     upcoming  "Starts in 31 min" "Starts in 31 min"   before     no               -
+//   start - 30 min     upcoming  "Starts in 30 min" "Starts in 30 min"   open       no               -
+//   start              live      "Happening now"    "Happening now"      open       no               -
+//   end - 1 ms         live      "Happening now"    live                 open       no               -
+//   end (exact)        over      none               not live             closed     yes              Past
+//   end + 1 ms, +3 d   over      none               not live             closed     yes              Past
+describe('the exact end boundary: every surface agrees (owner, 2026-10-17, LOCKED)', () => {
+  const { whenLabel } = require('./timeContext');
+  const { recommendationContext, contextItem } = require('./recommendationContext');
+  const { getOperatingStatus, gatheringEntity } = require('./operatingStatus');
+  const { strongMatchPieces } = require('./strongMatch');
+  const HAPPENING = 'Happening now';
+  const iso = START.toISOString();
+
+  const INSTANTS = (dur) => {
+    const end = START.getTime() + (dur ?? 30) * 60000;
+    return [
+      ['start - 31 min', START.getTime() - 31 * 60000, 'upcoming'],
+      ['start - 30 min', START.getTime() - 30 * 60000, 'upcoming'],
+      ['start', START.getTime(), 'live'],
+      ['end - 1 ms', end - 1, 'live'],
+      ['end', end, 'over'],
+      ['end + 1 ms', end + 1, 'over'],
+      ['end + 3 days', end + 3 * 24 * 3600000, 'over'],
+    ];
+  };
+
+  test.each([[60], [null]])('duration %p: phase, detail line, check-in, Home Completed, operating status', (dur) => {
+    for (const [name, t, expected] of INSTANTS(dur)) {
+      const now = new Date(t);
+      const p = timeWindowParts({ start: iso, durationMinutes: dur }, now, 'event');
+      const phase = p.phase === 'ending_soon' ? 'live' : p.phase;
+      expect([name, phase]).toEqual([name, expected]);
+      // detail screen (attending section)
+      const line = getCountdownLabel(g(dur), t);
+      expect([name, line === HAPPENING]).toEqual([name, expected === 'live']);
+      expect([name, line === null]).toEqual([name, expected === 'over']);
+      // Home's Completed + Messages' Past chip (isGatheringOver)
+      expect([name, isGatheringOver(g(dur), now)]).toEqual([name, expected === 'over']);
+      // check-in: open from -30 min, closed at the exact end
+      const ci = checkInWindowState(g(dur), now);
+      expect([name, ci]).toEqual([name, name === 'start - 31 min' ? 'before' : expected === 'over' ? 'closed' : 'open']);
+      // needs/availability (operatingStatus): open while live, closed when over or upcoming
+      expect([name, getOperatingStatus(gatheringEntity(g(dur)), now)]).toEqual([name, expected === 'live' ? 'open' : 'closed']);
+    }
+  });
+
+  test.each([[60], [null]])('duration %p: Home/Discover card wording (recommendationContext) is live exactly when the detail is', (dur) => {
+    for (const [name, t, expected] of INSTANTS(dur)) {
+      const now = new Date(t);
+      const cardLine = recommendationContext(contextItem('gathering', { id: 'g', scheduled_at: iso, duration_minutes: dur }), { now }).context ?? '';
+      expect([name, cardLine.includes(HAPPENING) || /Ends in/.test(cardLine)]).toEqual([name, expected === 'live']);
+    }
+  });
+
+  test('no duration: whenLabel says "Happening now" up to end - 1 ms, never at the exact end', () => {
+    const end = START.getTime() + 30 * 60000;
+    expect(whenLabel(iso, new Date(end - 1))).toBe(HAPPENING);
+    expect(whenLabel(iso, new Date(end))).not.toBe(HAPPENING);
+  });
+
+  test('a strong match is never claimed for a gathering that is over, at the exact end included', () => {
+    const ask = { category: 'Coffee', dateWindow: 'today' };
+    const item = (dur) => ({ type: 'gathering', category: 'Coffee', startsAt: iso, durationMinutes: dur, distanceMiles: 0.3 });
+    expect(strongMatchPieces(item(60), ask, new Date(START.getTime() + 59 * 60000))).not.toBeNull();
+    expect(strongMatchPieces(item(60), ask, new Date(START.getTime() + 60 * 60000))).toBeNull();
+    expect(strongMatchPieces(item(60), ask, new Date(START.getTime() + 90 * 60000))).toBeNull(); // the old 3 h rule allowed it
+    expect(strongMatchPieces(item(null), ask, new Date(START.getTime() + 30 * 60000))).toBeNull();
+  });
+
+  test('no surface keeps its own end rule for a gathering', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
+    expect(read('gatheringAttending.js')).not.toMatch(/HOURS_CONSIDERED_OVER|3600/);
+    expect(read('operatingStatus.js')).not.toMatch(/JUST_STARTED_MS|it may still be going/);
+    expect(read('strongMatch.js')).toMatch(/item\.type === 'gathering'\) \{\s*if \(timeWindowParts\(/);
+    expect(read('timeWindow.js')).toMatch(/nowMs - s < JUST_STARTED_MIN \* 60000/);
+    expect(read('timeContext.js')).toMatch(/-diffMs < HAPPENING_NOW_PAST_MS/);
+    expect(read('../screens/MessagesScreen.js')).toMatch(/isPast: isGatheringOver\(g\)/);
+    expect(read('../screens/HomeScreen.js')).toMatch(/isPast: \(g\) => isGatheringOver\(g\)/);
+  });
+
+  test('the "Right Now" discovery window is a separate rule and stays unchanged (inclusive 30 min back)', () => {
+    const { isWithinRightNowWindow } = require('./rightNowWindow');
+    expect(isWithinRightNowWindow(new Date(START.getTime() - 30 * 60000).toISOString(), START)).toBe(true);
+  });
+});

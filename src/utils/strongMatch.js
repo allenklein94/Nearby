@@ -12,6 +12,7 @@
 import { matchesDateWindow } from '../services/intentResolverScoring';
 import { CLOSE_DISTANCE_MILES } from '../constants/distanceWillingness';
 import { TONIGHT_START_HOUR } from './timeContext';
+import { timeWindowParts } from './timeWindow';
 
 export const STRONG_MATCH_PIECES = ['activity', 'time', 'place'];
 
@@ -30,7 +31,11 @@ export function strongMatchPieces(item, ask, now = new Date()) {
   if (!dw || dw === 'flexible' || !Number.isFinite(startMs)) return null;
   if (!matchesDateWindow(start, dw)) return null;
   if (dw === 'tonight' && new Date(startMs).getHours() < TONIGHT_START_HOUR) return null;
-  if (startMs < now.getTime() - 3 * 3600 * 1000) return null; // long over: never "a match"
+  // over: never "a match". A gathering ends by the one end rule (start + duration, else + 30 min, end exclusive; owner
+  // 2026-10-17); a business posting has no end of its own here, so it keeps the 3 h "long over" cut.
+  if (item.type === 'gathering') {
+    if (timeWindowParts({ start, durationMinutes: item.durationMinutes ?? null }, now, 'event').phase === 'over') return null;
+  } else if (startMs < now.getTime() - 3 * 3600 * 1000) return null;
   const miles = item.distanceMiles;
   if (typeof miles !== 'number' || !Number.isFinite(miles) || miles < 0 || miles >= CLOSE_DISTANCE_MILES) return null;
   // a gathering's distance is to its privacy-shifted pin: the tick reads "About 0.3 mi" (approximate), a business's is exact

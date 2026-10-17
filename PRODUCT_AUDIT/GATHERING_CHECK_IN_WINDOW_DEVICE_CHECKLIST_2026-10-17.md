@@ -20,6 +20,8 @@ Setup: a host account + an attendee account (approved). Create gatherings with t
 | 10 | Host's view during the gathering | Host never sees "I'm on my way" / "I'm here" (unchanged) | |
 | 11 | Check-in never redeems: a booked-offer plan's attendee checks in | Nothing on the business side changes; redemption only when the business confirms | |
 | 12 | Light and dark mode, large text | Nothing new to render; no layout shift where the button is absent | |
+| 13 | Same gathering, same minute, on Home, Discover, the detail screen and Messages (around the exact end) | All say live, or all say over; Messages shows "Past" only once over (not while it is happening) | |
+| 14 | A friend's gathering that is happening now, on Home | Reason reads "hosting", never "hosted", until it is over | |
 
 Covered without a phone: Jest `utils/gatheringCheckInWindow.test.js` (boundaries -31/-30/0/end-1 ms/end/+1/+3 days, no-duration,
 label = timeWindowParts at every minute), `screens/gatheringHubFolded.test.js`; journey `gatheringCheckIn` 9/9 (server called

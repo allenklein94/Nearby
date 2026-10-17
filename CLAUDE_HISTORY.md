@@ -1,3 +1,24 @@
+# One gathering end, LOCKED + remaining end rules aligned (2026-10-17, owner approved the exclusive end)
+
+Owner (LOCKED): end = start + duration, else start + 30 min; a gathering is not active at the exact end timestamp; check-in closes at
+that same timestamp; Home, Discover and gathering detail agree; the "Right Now" discovery window stays unchanged; item 108's
+minute-clock test reflects the shared rule (done in the previous entry: Happening now to +29, plain label at +30).
+Audit for remaining independent rules found four, all aligned to `timeWindowParts` / `isGatheringOver` (no new strings):
+- `utils/strongMatch.js`: a gathering is never "a strong match" once over by the shared end (was a fixed 3 h cut; a 1-hour gathering
+  at 90 min could still get the claim). Business postings keep the 3 h cut (no end of their own).
+- `utils/operatingStatus.js` (needs/availability tier): a no-duration gathering after 30 min was 'unknown' ("may still be going");
+  now 'closed' exactly at the end, like one with a duration. `JUST_STARTED_MS` removed.
+- `screens/MessagesScreen.js`: the group-chat "Past" chip used `isGatheringPast` (= started), so a live gathering read "Past"; now
+  `isGatheringOver` (`getMyGatheringChats` selects `duration_minutes`, column granted).
+- `screens/HomeScreen.js`: "{Name} hosted" vs "hosting" reason wording, same fix.
+Left as is (different concepts, documented): `objectState.isGatheringPast` (= started; mirrors join_gathering refusing a started
+gathering), `rightNowWindow.js` (discovery inclusion window, inclusive 30 min back), server reminders/expiries/recurrence.
+Live SQL swept: no function makes its own over/live decision besides `_gathering_ends_at`.
+Tests: `utils/gatheringCheckInWindow.test.js` now 19 (lifecycle-state table per instant -31/-30 min, start, end - 1 ms, exact end,
+end + 1 ms, +3 days, for 60 min and no duration, across detail line, Home/Discover card context, Home Completed, check-in,
+operating status, whenLabel, strong match; source guard against any own end rule; Right Now unchanged). Jest 464/464 suites
+(6194 tests); prod journeys 486/486 (rolled back; no schema change in this step). NOT device-verified (checklist checks 13-14 added).
+
 # Gathering clock (G1) + check-in window (G2) fixed (2026-10-17, owner: fix both now, "You're here" option A, no new headlines)
 
 Owner decisions (locked): bug 1 and bug 2 fixed now; "You're here" = A (manual check-in only; no location suggestion, background

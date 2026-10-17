@@ -20,7 +20,7 @@
 // only 'available' and 'open'; without it, unknown stays eligible and nothing is hidden.
 import { tr } from '../i18n/translate';
 import { bookingModeOf, NEEDS_BOOKING_FIRST } from '../constants/bookingMode';
-import { timeWindowState, windowEnd } from './timeWindow';
+import { timeWindowState } from './timeWindow';
 import { isGatheringFull } from './gatheringFullness';
 
 export const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
@@ -30,7 +30,6 @@ export const MAX_SPECIAL_DAYS = 60;
 export const PLACE_OPEN_NOW_FRESH_MS = 30 * 60 * 1000;
 // The pulse is shown on a profile for 24 h, but as a "right now" signal it only counts for 2 h.
 export const PULSE_NOW_FRESH_MS = 2 * 60 * 60 * 1000;
-const JUST_STARTED_MS = 30 * 60 * 1000;
 const TIME_RE = /^([01]\d|2[0-3]):([0-5]\d)$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -275,8 +274,7 @@ export function getOperatingStatus(entity, at = new Date()) {
       const s = ms(entity.startsAt);
       if (s == null) return 'unknown';
       if (s > t) return 'closed';
-      const hasEnd = windowEnd({ start: entity.startsAt, durationMinutes: entity.durationMinutes }) != null;
-      if (!hasEnd && t - s > JUST_STARTED_MS) return 'unknown'; // it may still be going; never claim either way
+      // One end rule (owner, 2026-10-17, LOCKED): start + duration, else start + 30 min, end exclusive; over = closed.
       const phase = timeWindowState({ start: entity.startsAt, durationMinutes: entity.durationMinutes }, new Date(t), 'event').phase;
       return phase === 'live' || phase === 'ending_soon' ? 'open' : phase === 'unknown' ? 'unknown' : 'closed';
     }

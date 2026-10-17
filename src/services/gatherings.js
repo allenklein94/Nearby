@@ -1576,8 +1576,8 @@ export async function getMyGatheringChats() {
   const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
   const [{ data: hosting }, { data: attending }] = await Promise.all([
-    supabase.from('gatherings').select('id, title, scheduled_at').eq('host_id', myId).gte('scheduled_at', since),
-    supabase.from('gathering_interest').select('gatherings(id, title, scheduled_at)').eq('user_id', myId).eq('status', 'approved'),
+    supabase.from('gatherings').select('id, title, scheduled_at, duration_minutes').eq('host_id', myId).gte('scheduled_at', since),
+    supabase.from('gathering_interest').select('gatherings(id, title, scheduled_at, duration_minutes)').eq('user_id', myId).eq('status', 'approved'),
   ]);
 
   const byId = new Map();

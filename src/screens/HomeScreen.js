@@ -58,7 +58,7 @@ import { buildHomeRecommendations } from '../services/homeRecommendations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GatheringFeedbackInline from '../components/GatheringFeedbackInline';
 import PlanCompleted from '../motion/PlanCompleted';
-import { takeCompletionMoment, COMPLETION_FROM, COMPLETION_TO } from '../utils/gatheringCompletion';
+import { takeCompletionMoment, COMPLETION_FROM, COMPLETION_TO, isGatheringOver } from '../utils/gatheringCompletion';
 import { getMyPlansThisMonth } from '../services/plansThisMonth';
 import { plansThisMonthCount, showPlansThisMonth, takePlansThisMonthMoment } from '../utils/plansThisMonth';
 import { CountRoll } from '../motion/JoinArrival';
@@ -84,7 +84,6 @@ import ExperienceComponentList from '../components/ExperienceComponentList';
 import TabHeaderActions from '../components/TabHeaderActions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { isGatheringPast } from '../utils/objectState';
 import { recommendationRow } from '../utils/recommendationFacts';
 import { openDestination, navigateKeepingTrail } from '../services/openDestination';
 import { selectHomeAttention, cardWithoutIds, expandedListIds, selectHomePlans, selectRightNow } from '../utils/homeAttention';
@@ -462,7 +461,7 @@ export default function HomeScreen({ navigation }) {
     friends: dashboard?.friendsActivity,
     soon: dashboard?.happeningNow,
     friendIds: dashboard?.friendIds ? new Set(dashboard.friendIds) : null,
-    isPast: (g) => isGatheringPast(g),
+    isPast: (g) => isGatheringOver(g), // "hosted" only once it is over (the one end rule), never while it is happening
     declaredInterests: dashboard?.declaredInterests ?? null,
     activityCategories: dashboard?.learnedCategories ?? [], // item 158: only categories really learned, never the declared ones
     friendInterests: dashboard?.friendInterestByTag ?? null,

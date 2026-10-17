@@ -133,12 +133,15 @@ describe('existing sources keep working through the same resolver', () => {
     expect(getOperatingStatus(placeEntity({ openNow: true, fetchedAt: old }), MON_10AM)).toBe('unknown');
     expect(getOperatingStatus(placeEntity({ openNow: true }), MON_10AM)).toBe('unknown');
   });
-  test('gatherings: live window open, upcoming closed, no end past 30 min unknown, full unavailable', () => {
+  test('gatherings: live window open, upcoming closed, no end over at 30 min (the shared end rule), full unavailable', () => {
     const at = MON_10AM.getTime();
     const g = (minsAgo, extra = {}) => ({ scheduled_at: new Date(at - minsAgo * 60000).toISOString(), ...extra });
     expect(getOperatingStatus(gatheringEntity(g(10)), MON_10AM)).toBe('open');
     expect(getOperatingStatus(gatheringEntity(g(-60)), MON_10AM)).toBe('closed');
-    expect(getOperatingStatus(gatheringEntity(g(90)), MON_10AM)).toBe('unknown');
+    expect(getOperatingStatus(gatheringEntity(g(29)), MON_10AM)).toBe('open');
+    expect(getOperatingStatus(gatheringEntity(g(30)), MON_10AM)).toBe('closed');
+    expect(getOperatingStatus(gatheringEntity(g(90)), MON_10AM)).toBe('closed');
+    expect(getOperatingStatus(gatheringEntity(g(120, { duration_minutes: 120 })), MON_10AM)).toBe('closed');
     expect(getOperatingStatus(gatheringEntity(g(90, { duration_minutes: 120 })), MON_10AM)).toBe('open');
     expect(getOperatingStatus(gatheringEntity(g(150, { duration_minutes: 120 })), MON_10AM)).toBe('closed');
     expect(getAvailabilityStatus(gatheringEntity(g(10, { isFull: true })), MON_10AM)).toBe('unavailable');

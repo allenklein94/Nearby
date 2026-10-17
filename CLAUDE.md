@@ -359,9 +359,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   "revenue", "earnings" or customer spend without an explicit transaction amount (none exists).
 - Trending = >= `TRENDING_ATTENDANCE_MIN` (5) approved attendees, everywhere (`constants/trending.js`).
   Place/time labels each mean one thing (`constants/surfaceVocabulary.js`); add a label there before using it.
-- **One gathering end, one check-in window (owner, 2026-10-17):** a gathering ends at start + duration, else start + 30 min, end exclusive
-  (`timeWindowParts`; SQL `_gathering_ends_at`); every surface (incl. the attending section) reads it. Check-in only in [start - 30 min, end),
-  enforced by `check_in_to_gathering` + trigger `gathering_interest_check_in_guard` (idempotent, never moved, never on insert); a check-in is never a redemption.
+- **One gathering end, one check-in window (owner, 2026-10-17, LOCKED):** end = start + duration, else start + 30 min; NOT active at the
+  exact end (exclusive everywhere: `timeWindowParts`, `whenLabel`, SQL `_gathering_ends_at`); Home, Discover, detail, Messages, needs and
+  strong match all read it (guard `gatheringCheckInWindow.test.js`). Check-in only in [start - 30 min, end), enforced by `check_in_to_gathering`
+  + trigger `gathering_interest_check_in_guard` (idempotent, never moved, never on insert); never a redemption. The "Right Now" discovery window is separate, unchanged.
 - **Relative time labels stay true while open (item 108):** only via `hooks/useMinuteClock.js` (`utils/minuteClock.js`; Home + Discover,
   guard `minuteClock.test.js`): ticks only near a shown window, paused in background, plain text, never motion or urgency styling.
 - A Home claim needs a visible, substantiated trigger of its own kind, and its CTA names where it goes.
