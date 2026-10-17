@@ -47,6 +47,12 @@ Anthropic credit first).
 `PRODUCT_AUDIT/ITEM_153_NOT_INTERESTED_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone AND native review of the 11
 `ui.notInterested.*` strings is done (migration 20270327 LIVE; journey `notInterested` 20/20 under real roles; prod journeys 539/539; replay 451/451 + journeys 539/539).
 
+**Swipe is a choice, never the default (owner idea "156", 2026-10-17, LOCKED) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/IDEA_156_FRIENDS_LIST_FIRST_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone AND native review of the 7 new/reworded
+strings is done (migration 20270328 LIVE; journey `friendDiscoveryChoice` 6/6; prod journeys 545/545; replay 452/452 + journeys 545/545). Met everywhere
+else as built. Found, NOT fixed (Dating behavior preserved by owner order): Dating's deck gesture reads its first render's card (stale closure), so a
+swipe after the first may Notice/skip the wrong person; its buttons are correct. Needs an owner go-ahead.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -529,6 +535,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   `objectLifecycle.js` (`canDo`); CTAs from `primaryActionFor` in `primaryAction.js`. Never a CTA label or
   availability condition inline in a screen; fix "wrong button" bugs in the table. One explicit action per card (item 200; ONE
   exception: idea 153's quiet ⋯ "Not interested" on the cards listed under Recommendations, never a second visible button).
+- **Swipe is a choice, never a requirement (owner idea "156", LOCKED):** decisions are explicit labelled actions (Join, Interested,
+  Invite, Ask, View, Accept, Pass, Connect); a swipe only dismisses an overlay (item 20) or is an OPTIONAL people deck the person chose.
+  Dating and Friends open as lists (`discovery_view_style` / `friend_discovery_view_style`, separate columns, default 'list'); a deck
+  always has the same worded buttons (Friends: `FriendDecisionButtons` from `FRIEND_DECISIONS`, `utils/friendDiscoveryView.js`); never a
+  bare-symbol decision button, never copy telling people to swipe. Guard `friendDiscoveryView.test.js`, journey `friendDiscoveryChoice`.
 - Capacity = TOTAL people including the host (`_gathering_guest_limit`, `gatheringFullness.js`).
   Every shown attending/going figure includes the host too (`attendingFigure`; host + 3 joined = "4 attending");
   thresholds (Trending >= 5) still compare joined guests.

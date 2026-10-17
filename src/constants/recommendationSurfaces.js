@@ -15,7 +15,7 @@ export const RECOMMENDATION_SURFACES = [
   { surface: 'Discover: communities', file: 'screens/DiscoverHubScreen.js', marker: 'communityReason', status: 'reasoned' },
   { surface: 'Discover: perks', file: 'screens/DiscoverHubScreen.js', marker: 'target_interest_tag', status: 'reasoned' },
   { surface: 'Gathering detail: Why this fits you', file: 'screens/GatheringDetailScreen.js', marker: 'ReasonList', status: 'reasoned' },
-  { surface: 'Friend discovery cards', file: 'components/FriendDiscoverySwipeCards.js', marker: 'ReasonList', status: 'reasoned', optional: true },
+  { surface: 'Friend discovery cards (list + optional deck)', file: 'components/FriendCandidateDetails.js', marker: 'sharedBits', status: 'reasoned', optional: true },
   { surface: 'Business opportunity card', file: 'utils/businessOpportunityCard.js', marker: 'buildMatchReasons', status: 'reasoned' },
   { surface: 'Activity: business response', file: 'utils/offerCopy.js', marker: 'made you an offer', status: 'reasoned' },
   { surface: 'Discover: Places list', file: 'screens/DiscoverHubScreen.js', marker: 'PlaceCard', status: 'gap', note: 'shows category/open-now/rating facts, not a personal reason' },

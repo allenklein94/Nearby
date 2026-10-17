@@ -19,6 +19,8 @@ import StoryViewerModal from '../components/StoryViewerModal';
 import { calculateFriendCompatibility } from '../services/compatibility';
 import { supabase } from '../services/supabase';
 import FriendDiscoverySwipeCards, { DISTANCE_BUCKET_KEYS } from '../components/FriendDiscoverySwipeCards';
+import FriendDiscoveryList from '../components/FriendDiscoveryList';
+import { friendViewStyle, otherFriendViewStyle, undecidedCandidates } from '../utils/friendDiscoveryView';
 import LoadErrorState from '../components/LoadErrorState';
 import { PERSONAL_INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import useCategoryNames from '../hooks/useCategoryNames';
@@ -116,6 +118,12 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
   // (getFriendDiscoveryCandidates). Browse stays the default so existing
   // behavior is unchanged for anyone who hasn't tried the new mode yet.
   const [discoveryMode, setDiscoveryMode] = useState('browse');
+  // Owner idea 156 (2026-10-17): list by default, the swipe deck only by the person's own choice (header button or
+  // Settings), stored in its own column so it never changes Dating's view. decidedIds = people Passed/Connected this load,
+  // left out of BOTH modes (undecidedCandidates); a failed write takes the id back out, so the person returns.
+  const [viewStyle, setViewStyle] = useState('list');
+  const [myUserId, setMyUserId] = useState(null);
+  const [decidedIds, setDecidedIds] = useState(() => new Set());
 
   // Wave 2B of the full-system acceptance audit (see
   // PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md) found this had zero
@@ -136,11 +144,13 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
         const { data: sessionData } = await supabase.auth.getSession();
         const userId = sessionData?.session?.user?.id;
         if (userId) {
+          setMyUserId(userId);
           const { data: mine } = await supabase.from('profiles')
-            .select('friend_quick_filter_order, friend_quick_filter_visible')
+            .select('friend_quick_filter_order, friend_quick_filter_visible, friend_discovery_view_style')
             .eq('id', userId).single();
           if (mine?.friend_quick_filter_order) setQuickFilterOrder(mine.friend_quick_filter_order);
           if (mine?.friend_quick_filter_visible) setQuickFilterVisible(mine.friend_quick_filter_visible);
+          setViewStyle(friendViewStyle(mine?.friend_discovery_view_style));
         }
       } catch (e) {
         console.error('load friend quick filter config failed', e);
@@ -152,6 +162,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
           // Item 137: opened from "meet someone new tonight" -> really-nearby candidates lead (ordering only).
           : (tonight ? orderForTonight(await getFriendDiscoveryCandidates(20), { subMode: 'friends' }) : await getFriendDiscoveryCandidates(20));
         setCandidates(results);
+        setDecidedIds(new Set());
 
         const urlEntries = await Promise.all(
           results.map(async (item) => {
@@ -209,18 +220,14 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
     }
   }
 
-  // Wave 2B (see PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md) found a real
-  // failed swipe was previously invisible: FriendDiscoverySwipeCards
-  // advances the deck regardless of whether onSwipe's promise resolves,
-  // so a network drop mid-swipe left the user believing they'd swiped
-  // (the card is gone) while the swipe was never recorded server-side --
-  // worst case, a genuine mutual "like" could silently never register,
-  // with no way for the user to know or retry. This can't un-animate the
-  // card (the deck has already moved on), but it can tell the user
-  // honestly what happened and offer a real, working retry for that same
-  // person -- recordFriendDiscoverySwipe only needs their id, not their
-  // still-visible position in the deck.
-  async function handleSwipe(item, direction) {
+  // Wave 2B (see PRODUCT_AUDIT/ACCEPTANCE_AUDIT_PROGRESS.md) found a failed
+  // swipe used to be invisible (the card was gone, the choice never
+  // recorded). Owner idea 156: one decide path for both modes (list button,
+  // deck button, deck swipe). The person leaves at once; if the write fails
+  // they come back (list row / top of the deck) and the alert offers a
+  // real retry -- recordFriendDiscoverySwipe only needs their id.
+  async function handleDecide(item, direction) {
+    setDecidedIds((prev) => new Set(prev).add(item.id));
     try {
       const { isMutualMatch, matchId } = await recordFriendDiscoverySwipe(item.id, direction);
       if (isMutualMatch) {
@@ -228,14 +235,25 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
       }
     } catch (e) {
       console.error('recordFriendDiscoverySwipe failed', e);
+      setDecidedIds((prev) => { const next = new Set(prev); next.delete(item.id); return next; });
       Alert.alert(
         t('ui.friends.couldntSaveThat'),
         t(direction === 'like' ? 'ui.friends.likeFailed' : 'ui.friends.passFailed', { name: item.display_name ?? t('ui.friends.thisPerson') }),
         [
           { text: t('ui.friends.dismiss'), style: 'cancel' },
-          { text: t('ui.friends.retry'), onPress: () => handleSwipe(item, direction) },
+          { text: t('ui.friends.retry'), onPress: () => handleDecide(item, direction) },
         ]
       );
+    }
+  }
+
+  // Same shape as DiscoveryScreen's toggleViewStyle, on Friends' own column.
+  async function toggleViewStyle() {
+    const next = otherFriendViewStyle(viewStyle);
+    setViewStyle(next);
+    if (myUserId) {
+      const { error } = await supabase.from('profiles').update({ friend_discovery_view_style: next }).eq('id', myUserId);
+      if (error) console.error('save friend discovery view style failed', error);
     }
   }
 
@@ -261,6 +279,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
     const matchesOnline = !onlineOnlyFilter || onlineStatuses[c.id];
     return matchesInterest && matchesDistance && matchesVerified && matchesOnline;
   });
+  const shownCandidates = undecidedCandidates(filteredCandidates, decidedIds);
   const filtersActive = interestFilters.length > 0 || !!distanceFilter || verifiedOnlyFilter || onlineOnlyFilter;
 
   // Real values only, never an invented distance number -- distanceFilter
@@ -293,6 +312,16 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
           </Text>
         ) : (
           <View style={{ flex: 1 }} />
+        )}
+        {enabled && (
+          <TouchableOpacity
+            onPress={toggleViewStyle}
+            style={styles.headerIconButton}
+            accessibilityLabel={viewStyle === 'cards' ? t('ui.dating.currentlyOnCardViewSwitchA11y') : t('ui.dating.currentlyOnListViewSwitchA11y')}
+            accessibilityRole="button"
+          >
+            <Text style={styles.headerIconText}>{viewStyle === 'cards' ? '🃏' : '📋'}</Text>
+          </TouchableOpacity>
         )}
         {enabled && (
           <View style={styles.headerToggle}>
@@ -340,7 +369,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
           <Text style={styles.explainerEmoji}>🤝</Text>
           <Text style={styles.explainerTitle}>{t('ui.friends.meetNewFriends')}</Text>
           <Text style={styles.explainerBody}>
-            {t('ui.friends.swipeToMeetNewPeople')}
+            {t('ui.friends.meetNewPeopleIntro')}
           </Text>
           <TouchableOpacity
             style={styles.enableButton}
@@ -514,7 +543,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
       )}
 
       <View style={{ flex: 1 }}>
-      {filtersActive && filteredCandidates.length === 0 ? (
+      {filtersActive && shownCandidates.length === 0 ? (
         <View style={styles.centered}>
           <Text style={styles.explainerBody}>
             {t('ui.friends.noOneNearbyMatchesThese')}
@@ -537,16 +566,29 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
           </TouchableOpacity>
         </View>
       ) : (
-        <FriendDiscoverySwipeCards
-          data={filteredCandidates}
-          photoUrls={photoUrls}
-          onlineStatuses={onlineStatuses}
-          storyByUserId={storyByUserId}
-          onViewStory={setViewingStoryGroup}
-          compatibilityColor={compatibilityColor}
-          onSwipe={handleSwipe}
-          navigation={navigation}
-        />
+        viewStyle === 'cards' ? (
+          <FriendDiscoverySwipeCards
+            data={shownCandidates}
+            photoUrls={photoUrls}
+            onlineStatuses={onlineStatuses}
+            storyByUserId={storyByUserId}
+            onViewStory={setViewingStoryGroup}
+            compatibilityColor={compatibilityColor}
+            onSwipe={handleDecide}
+            navigation={navigation}
+          />
+        ) : (
+          <FriendDiscoveryList
+            data={shownCandidates}
+            photoUrls={photoUrls}
+            onlineStatuses={onlineStatuses}
+            storyByUserId={storyByUserId}
+            onViewStory={setViewingStoryGroup}
+            compatibilityColor={compatibilityColor}
+            onDecide={handleDecide}
+            navigation={navigation}
+          />
+        )
       )}
       </View>
 
@@ -584,6 +626,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
   headerToggle: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  // Same values as DiscoveryScreen.js's own headerIconButton/headerIconText (its list/cards toggle).
+  headerIconButton: { padding: spacing.xs, marginRight: spacing.xs },
+  headerIconText: { fontSize: 17, color: colors.textSecondary },
   headerToggleLabel: { ...typography.small, color: colors.textTertiary },
   // Unified Crossed Paths, step 5: same two-button switcher shape used
   // elsewhere in this app for a binary mode choice, built from this

@@ -54,7 +54,6 @@
     "findingPeopleWhoMatch": "Finding people who match…",
     "couldntLoadMeetNewFriends": "Couldn't load Meet New Friends.",
     "meetNewFriends": "Meet New Friends",
-    "swipeToMeetNewPeople": "Swipe to meet new people nearby who are also open to making friends. This is completely separate from dating — turning it on here never affects your dating profile or preferences, and only people who've also explicitly turned this on can ever show up in your deck.",
     "turnOnMeetNewFriendsA11y": "Turn on Meet New Friends",
     "turningOn": "Turning on…",
     "turnOn": "Turn On",
@@ -80,10 +79,7 @@
     "inviteFriendsA11y": "Invite friends",
     "inviteFriends": "Invite Friends →",
     "viewSStoryA11y": "View {name}'s story",
-    "like": "LIKE",
-    "pass": "PASS",
     "passOnA11y": "Pass on {name}",
-    "likeAsAPotentialFriendA11y": "Like {name} as a potential friend",
     "mutualFriends": {
       "one": "{count} mutual friend",
       "other": "{count} mutual friends"
@@ -94,7 +90,6 @@
     },
     "inCircleA11y": "{name}, in this circle",
     "notInCircleA11y": "{name}, not in this circle",
-    "likeFailed": "Your like on {name} didn't go through. Check your connection.",
     "passFailed": "Your pass on {name} didn't go through. Check your connection.",
     "thisPerson": "this person",
     "bucket.nearby": "Nearby",
@@ -112,7 +107,12 @@
       "other": "in {count} of your communities"
     },
     "viewProfileA11y": "View {name}'s profile",
-    "viewProfileWithA11y": "View {name}'s profile, {detail}"
+    "viewProfileWithA11y": "View {name}'s profile, {detail}",
+    "passAction": "Pass",
+    "connect": "Connect",
+    "connectWithA11y": "Connect with {name}",
+    "meetNewPeopleIntro": "Meet new people nearby who are also open to making friends. This is completely separate from dating — turning it on here never affects your dating profile or preferences, and only people who've also explicitly turned this on can ever show up here.",
+    "likeFailed": "Connecting with {name} didn't go through. Check your connection."
   },
   "es": {
     "noNewMatches": "No hay coincidencias nuevas",
@@ -169,7 +169,6 @@
     "findingPeopleWhoMatch": "Buscando personas afines…",
     "couldntLoadMeetNewFriends": "No pudimos cargar Conocer nuevos amigos.",
     "meetNewFriends": "Conocer nuevos amigos",
-    "swipeToMeetNewPeople": "Desliza para conocer gente cercana que también quiere hacer amigos. Esto es totalmente aparte de las citas: activarlo aquí nunca afecta tu perfil ni tus preferencias de citas, y solo pueden aparecer en tu mazo personas que también lo activaron.",
     "turnOnMeetNewFriendsA11y": "Activar Conocer nuevos amigos",
     "turningOn": "Activando…",
     "turnOn": "Activar",
@@ -195,23 +194,7 @@
     "inviteFriendsA11y": "Invitar amigos",
     "inviteFriends": "Invitar amigos →",
     "viewSStoryA11y": "Ver la historia de {name}",
-    "like": "ME GUSTA",
-    "pass": "PASO",
     "passOnA11y": "Pasar de {name}",
-    "likeAsAPotentialFriendA11y": "Dar me gusta a {name} como posible amistad",
-    "inCircleA11y": "{name}, en este círculo",
-    "notInCircleA11y": "{name}, no está en este círculo",
-    "likeFailed": "Tu me gusta a {name} no se guardó. Revisa tu conexión.",
-    "passFailed": "Tu paso de {name} no se guardó. Revisa tu conexión.",
-    "thisPerson": "esta persona",
-    "bucket.nearby": "Cerca",
-    "bucket.fewMiles": "A unas pocas millas",
-    "bucket.wider": "En la zona más amplia",
-    "crossedPathsCard": "Se cruzaron",
-    "crossedPathsCardWhen": "Se cruzaron {time}",
-    "compatMatch": "🤝 {score}% de afinidad",
-    "viewProfileA11y": "Ver el perfil de {name}",
-    "viewProfileWithA11y": "Ver el perfil de {name}, {detail}",
     "mutualFriends": {
       "one": "{count} amigo en común",
       "other": "{count} amigos en común"
@@ -220,6 +203,16 @@
       "one": "{name}, {count} amigo. Mantén presionado para eliminar.",
       "other": "{name}, {count} amigos. Mantén presionado para eliminar."
     },
+    "inCircleA11y": "{name}, en este círculo",
+    "notInCircleA11y": "{name}, no está en este círculo",
+    "passFailed": "Tu paso de {name} no se guardó. Revisa tu conexión.",
+    "thisPerson": "esta persona",
+    "bucket.nearby": "Cerca",
+    "bucket.fewMiles": "A unas pocas millas",
+    "bucket.wider": "En la zona más amplia",
+    "crossedPathsCard": "Se cruzaron",
+    "crossedPathsCardWhen": "Se cruzaron {time}",
+    "compatMatch": "🤝 {score}% de afinidad",
     "interestsInCommon": {
       "one": "{count} interés en común",
       "other": "{count} intereses en común"
@@ -227,7 +220,14 @@
     "inYourCommunities": {
       "one": "en {count} de tus comunidades",
       "other": "en {count} de tus comunidades"
-    }
+    },
+    "viewProfileA11y": "Ver el perfil de {name}",
+    "viewProfileWithA11y": "Ver el perfil de {name}, {detail}",
+    "passAction": "Pasar",
+    "connect": "Conectar",
+    "connectWithA11y": "Conectar con {name}",
+    "meetNewPeopleIntro": "Conoce gente cercana que también quiere hacer amigos. Esto es totalmente aparte de las citas: activarlo aquí nunca afecta tu perfil ni tus preferencias de citas, y solo pueden aparecer aquí personas que también lo activaron.",
+    "likeFailed": "No se pudo conectar con {name}. Revisa tu conexión."
   },
   "de": {
     "noNewMatches": "Keine neuen Treffer",
@@ -284,7 +284,6 @@
     "findingPeopleWhoMatch": "Suche passende Leute…",
     "couldntLoadMeetNewFriends": "„Neue Freunde finden\" konnte nicht geladen werden.",
     "meetNewFriends": "Neue Freunde finden",
-    "swipeToMeetNewPeople": "Wische, um Leute in der Nähe kennenzulernen, die auch offen für neue Freundschaften sind. Das ist komplett getrennt vom Dating: Das Einschalten hier ändert nie dein Dating-Profil oder deine Vorlieben, und nur Leute, die es ebenfalls ausdrücklich eingeschaltet haben, können in deinem Stapel auftauchen.",
     "turnOnMeetNewFriendsA11y": "„Neue Freunde finden\" einschalten",
     "turningOn": "Wird eingeschaltet…",
     "turnOn": "Einschalten",
@@ -310,23 +309,7 @@
     "inviteFriendsA11y": "Freunde einladen",
     "inviteFriends": "Freunde einladen →",
     "viewSStoryA11y": "Story von {name} ansehen",
-    "like": "GEFÄLLT MIR",
-    "pass": "WEITER",
     "passOnA11y": "{name} überspringen",
-    "likeAsAPotentialFriendA11y": "{name} als mögliche Freundschaft liken",
-    "inCircleA11y": "{name}, in diesem Kreis",
-    "notInCircleA11y": "{name}, nicht in diesem Kreis",
-    "likeFailed": "Dein Like für {name} ging nicht durch. Prüfe deine Verbindung.",
-    "passFailed": "Dein Überspringen von {name} ging nicht durch. Prüfe deine Verbindung.",
-    "thisPerson": "diese Person",
-    "bucket.nearby": "In der Nähe",
-    "bucket.fewMiles": "Ein paar Meilen entfernt",
-    "bucket.wider": "In der weiteren Umgebung",
-    "crossedPathsCard": "Begegnet",
-    "crossedPathsCardWhen": "Begegnet {time}",
-    "compatMatch": "🤝 {score}% Übereinstimmung",
-    "viewProfileA11y": "Profil von {name} ansehen",
-    "viewProfileWithA11y": "Profil von {name} ansehen, {detail}",
     "mutualFriends": {
       "one": "{count} gemeinsamer Freund",
       "other": "{count} gemeinsame Freunde"
@@ -335,6 +318,16 @@
       "one": "{name}, {count} Freund. Lange drücken zum Löschen.",
       "other": "{name}, {count} Freunde. Lange drücken zum Löschen."
     },
+    "inCircleA11y": "{name}, in diesem Kreis",
+    "notInCircleA11y": "{name}, nicht in diesem Kreis",
+    "passFailed": "Dein Überspringen von {name} ging nicht durch. Prüfe deine Verbindung.",
+    "thisPerson": "diese Person",
+    "bucket.nearby": "In der Nähe",
+    "bucket.fewMiles": "Ein paar Meilen entfernt",
+    "bucket.wider": "In der weiteren Umgebung",
+    "crossedPathsCard": "Begegnet",
+    "crossedPathsCardWhen": "Begegnet {time}",
+    "compatMatch": "🤝 {score}% Übereinstimmung",
     "interestsInCommon": {
       "one": "{count} gemeinsames Interesse",
       "other": "{count} gemeinsame Interessen"
@@ -342,7 +335,14 @@
     "inYourCommunities": {
       "one": "in {count} deiner Communities",
       "other": "in {count} deiner Communities"
-    }
+    },
+    "viewProfileA11y": "Profil von {name} ansehen",
+    "viewProfileWithA11y": "Profil von {name} ansehen, {detail}",
+    "passAction": "Überspringen",
+    "connect": "Verbinden",
+    "connectWithA11y": "Mit {name} verbinden",
+    "meetNewPeopleIntro": "Lerne Leute in der Nähe kennen, die auch offen für neue Freundschaften sind. Das ist komplett getrennt vom Dating: Das Einschalten hier ändert nie dein Dating-Profil oder deine Vorlieben, und nur Leute, die es ebenfalls ausdrücklich eingeschaltet haben, können hier auftauchen.",
+    "likeFailed": "Die Verbindung mit {name} ging nicht durch. Prüfe deine Verbindung."
   },
   "fr": {
     "noNewMatches": "Aucune nouvelle correspondance",
@@ -399,7 +399,6 @@
     "findingPeopleWhoMatch": "Recherche de personnes qui correspondent…",
     "couldntLoadMeetNewFriends": "Impossible de charger Nouveaux amis.",
     "meetNewFriends": "Nouveaux amis",
-    "swipeToMeetNewPeople": "Balaie pour rencontrer des personnes à proximité qui veulent aussi se faire des amis. C’est totalement séparé des rencontres amoureuses : l’activer ici ne change jamais ton profil ni tes préférences de rencontre, et seules les personnes qui l’ont aussi activé peuvent apparaître.",
     "turnOnMeetNewFriendsA11y": "Activer Nouveaux amis",
     "turningOn": "Activation…",
     "turnOn": "Activer",
@@ -425,23 +424,7 @@
     "inviteFriendsA11y": "Inviter des amis",
     "inviteFriends": "Inviter des amis →",
     "viewSStoryA11y": "Voir la story de {name}",
-    "like": "J’AIME",
-    "pass": "PASSER",
     "passOnA11y": "Passer {name}",
-    "likeAsAPotentialFriendA11y": "Aimer {name} comme ami potentiel",
-    "inCircleA11y": "{name}, dans ce cercle",
-    "notInCircleA11y": "{name}, pas dans ce cercle",
-    "likeFailed": "Ton j’aime pour {name} n’est pas passé. Vérifie ta connexion.",
-    "passFailed": "Ton passage de {name} n’est pas passé. Vérifie ta connexion.",
-    "thisPerson": "cette personne",
-    "bucket.nearby": "À proximité",
-    "bucket.fewMiles": "À quelques miles",
-    "bucket.wider": "Dans les environs",
-    "crossedPathsCard": "Croisés",
-    "crossedPathsCardWhen": "Croisés {time}",
-    "compatMatch": "🤝 {score} % de compatibilité",
-    "viewProfileA11y": "Voir le profil de {name}",
-    "viewProfileWithA11y": "Voir le profil de {name}, {detail}",
     "mutualFriends": {
       "one": "{count} ami en commun",
       "other": "{count} amis en commun"
@@ -450,6 +433,16 @@
       "one": "{name}, {count} ami. Appui long pour supprimer.",
       "other": "{name}, {count} amis. Appui long pour supprimer."
     },
+    "inCircleA11y": "{name}, dans ce cercle",
+    "notInCircleA11y": "{name}, pas dans ce cercle",
+    "passFailed": "Ton passage de {name} n’est pas passé. Vérifie ta connexion.",
+    "thisPerson": "cette personne",
+    "bucket.nearby": "À proximité",
+    "bucket.fewMiles": "À quelques miles",
+    "bucket.wider": "Dans les environs",
+    "crossedPathsCard": "Croisés",
+    "crossedPathsCardWhen": "Croisés {time}",
+    "compatMatch": "🤝 {score} % de compatibilité",
     "interestsInCommon": {
       "one": "{count} centre d’intérêt en commun",
       "other": "{count} centres d’intérêt en commun"
@@ -457,7 +450,14 @@
     "inYourCommunities": {
       "one": "dans {count} de tes communautés",
       "other": "dans {count} de tes communautés"
-    }
+    },
+    "viewProfileA11y": "Voir le profil de {name}",
+    "viewProfileWithA11y": "Voir le profil de {name}, {detail}",
+    "passAction": "Passer",
+    "connect": "Se connecter",
+    "connectWithA11y": "Se connecter avec {name}",
+    "meetNewPeopleIntro": "Rencontre des personnes à proximité qui veulent aussi se faire des amis. C’est totalement séparé des rencontres amoureuses : l’activer ici ne change jamais ton profil ni tes préférences de rencontre, et seules les personnes qui l’ont aussi activé peuvent apparaître ici.",
+    "likeFailed": "La connexion avec {name} n’est pas passée. Vérifie ta connexion."
   },
   "pt": {
     "noNewMatches": "Nenhuma correspondência nova",
@@ -514,7 +514,6 @@
     "findingPeopleWhoMatch": "Procurando pessoas compatíveis…",
     "couldntLoadMeetNewFriends": "Não foi possível carregar Conhecer novos amigos.",
     "meetNewFriends": "Conhecer novos amigos",
-    "swipeToMeetNewPeople": "Deslize para conhecer pessoas por perto que também querem fazer amigos. Isso é totalmente separado dos encontros: ativar aqui nunca afeta seu perfil ou suas preferências de encontro, e só aparecem pessoas que também ativaram.",
     "turnOnMeetNewFriendsA11y": "Ativar Conhecer novos amigos",
     "turningOn": "Ativando…",
     "turnOn": "Ativar",
@@ -540,23 +539,7 @@
     "inviteFriendsA11y": "Convidar amigos",
     "inviteFriends": "Convidar amigos →",
     "viewSStoryA11y": "Ver o story de {name}",
-    "like": "CURTIR",
-    "pass": "PASSAR",
     "passOnA11y": "Passar {name}",
-    "likeAsAPotentialFriendA11y": "Curtir {name} como possível amizade",
-    "inCircleA11y": "{name}, neste círculo",
-    "notInCircleA11y": "{name}, fora deste círculo",
-    "likeFailed": "Sua curtida em {name} não foi registrada. Verifique sua conexão.",
-    "passFailed": "Seu pulo de {name} não foi registrado. Verifique sua conexão.",
-    "thisPerson": "esta pessoa",
-    "bucket.nearby": "Por perto",
-    "bucket.fewMiles": "A algumas milhas",
-    "bucket.wider": "Na região mais ampla",
-    "crossedPathsCard": "Cruzaram",
-    "crossedPathsCardWhen": "Cruzaram {time}",
-    "compatMatch": "🤝 {score}% de afinidade",
-    "viewProfileA11y": "Ver o perfil de {name}",
-    "viewProfileWithA11y": "Ver o perfil de {name}, {detail}",
     "mutualFriends": {
       "one": "{count} amigo em comum",
       "other": "{count} amigos em comum"
@@ -565,6 +548,16 @@
       "one": "{name}, {count} amigo. Toque e segure para excluir.",
       "other": "{name}, {count} amigos. Toque e segure para excluir."
     },
+    "inCircleA11y": "{name}, neste círculo",
+    "notInCircleA11y": "{name}, fora deste círculo",
+    "passFailed": "Seu pulo de {name} não foi registrado. Verifique sua conexão.",
+    "thisPerson": "esta pessoa",
+    "bucket.nearby": "Por perto",
+    "bucket.fewMiles": "A algumas milhas",
+    "bucket.wider": "Na região mais ampla",
+    "crossedPathsCard": "Cruzaram",
+    "crossedPathsCardWhen": "Cruzaram {time}",
+    "compatMatch": "🤝 {score}% de afinidade",
     "interestsInCommon": {
       "one": "{count} interesse em comum",
       "other": "{count} interesses em comum"
@@ -572,7 +565,14 @@
     "inYourCommunities": {
       "one": "em {count} das suas comunidades",
       "other": "em {count} das suas comunidades"
-    }
+    },
+    "viewProfileA11y": "Ver o perfil de {name}",
+    "viewProfileWithA11y": "Ver o perfil de {name}, {detail}",
+    "passAction": "Passar",
+    "connect": "Conectar",
+    "connectWithA11y": "Conectar com {name}",
+    "meetNewPeopleIntro": "Conheça pessoas por perto que também querem fazer amigos. Isso é totalmente separado dos encontros: ativar aqui nunca afeta seu perfil ou suas preferências de encontro, e só aparecem aqui pessoas que também ativaram.",
+    "likeFailed": "Não foi possível conectar com {name}. Verifique sua conexão."
   },
   "ht": {
     "noNewMatches": "Pa gen nouvo moun",
@@ -629,7 +629,6 @@
     "findingPeopleWhoMatch": "N ap chèche moun ki koresponn…",
     "couldntLoadMeetNewFriends": "Nou pa t ka chaje Rankontre nouvo zanmi.",
     "meetNewFriends": "Rankontre nouvo zanmi",
-    "swipeToMeetNewPeople": "Glise pou rankontre moun toupre ki ouvè pou fè zanmi tou. Sa a apa nèt de randevou: aktive l isit la pa janm chanje pwofil randevou w oswa preferans ou, epi se sèlman moun ki aktive l tou ki ka parèt.",
     "turnOnMeetNewFriendsA11y": "Aktive Rankontre nouvo zanmi",
     "turningOn": "N ap aktive…",
     "turnOn": "Aktive",
@@ -655,13 +654,15 @@
     "inviteFriendsA11y": "Envite zanmi",
     "inviteFriends": "Envite zanmi →",
     "viewSStoryA11y": "Wè istwa {name}",
-    "like": "RENMEN",
-    "pass": "PASE",
     "passOnA11y": "Pase {name}",
-    "likeAsAPotentialFriendA11y": "Renmen {name} kòm yon zanmi posib",
+    "mutualFriends": {
+      "other": "{count} zanmi an komen"
+    },
+    "circleA11y": {
+      "other": "{name}, {count} zanmi. Peze lontan pou efase."
+    },
     "inCircleA11y": "{name}, nan sèk sa a",
     "notInCircleA11y": "{name}, pa nan sèk sa a",
-    "likeFailed": "Renmen ou pou {name} pa t pase. Tcheke koneksyon w.",
     "passFailed": "Pase ou pou {name} pa t pase. Tcheke koneksyon w.",
     "thisPerson": "moun sa a",
     "bucket.nearby": "Toupre",
@@ -670,20 +671,19 @@
     "crossedPathsCard": "Kwaze",
     "crossedPathsCardWhen": "Kwaze {time}",
     "compatMatch": "🤝 {score}% konpatib",
-    "viewProfileA11y": "Wè pwofil {name}",
-    "viewProfileWithA11y": "Wè pwofil {name}, {detail}",
-    "mutualFriends": {
-      "other": "{count} zanmi an komen"
-    },
-    "circleA11y": {
-      "other": "{name}, {count} zanmi. Peze lontan pou efase."
-    },
     "interestsInCommon": {
       "other": "{count} enterè an komen"
     },
     "inYourCommunities": {
       "other": "nan {count} nan kominote ou yo"
-    }
+    },
+    "viewProfileA11y": "Wè pwofil {name}",
+    "viewProfileWithA11y": "Wè pwofil {name}, {detail}",
+    "passAction": "Pase",
+    "connect": "Konekte",
+    "connectWithA11y": "Konekte ak {name}",
+    "meetNewPeopleIntro": "Rankontre moun toupre ki ouvè pou fè zanmi tou. Sa a apa nèt de randevou: aktive l isit la pa janm chanje pwofil randevou w oswa preferans ou, epi se sèlman moun ki aktive l tou ki ka parèt isit la.",
+    "likeFailed": "Koneksyon ak {name} pa t pase. Tcheke koneksyon w."
   },
   "zh": {
     "noNewMatches": "没有新的匹配",
@@ -740,7 +740,6 @@
     "findingPeopleWhoMatch": "正在寻找合适的人…",
     "couldntLoadMeetNewFriends": "无法加载「结交新朋友」。",
     "meetNewFriends": "结交新朋友",
-    "swipeToMeetNewPeople": "滑动认识附近同样愿意交朋友的人。这与约会完全分开：在这里开启不会影响你的约会资料或偏好，只有同样明确开启的人才会出现在你的卡片中。",
     "turnOnMeetNewFriendsA11y": "开启「结交新朋友」",
     "turningOn": "正在开启…",
     "turnOn": "开启",
@@ -766,13 +765,15 @@
     "inviteFriendsA11y": "邀请朋友",
     "inviteFriends": "邀请朋友 →",
     "viewSStoryA11y": "查看 {name} 的动态",
-    "like": "喜欢",
-    "pass": "跳过",
     "passOnA11y": "跳过 {name}",
-    "likeAsAPotentialFriendA11y": "把 {name} 标为可能的朋友",
+    "mutualFriends": {
+      "other": "{count} 位共同好友"
+    },
+    "circleA11y": {
+      "other": "{name}，{count} 位好友。长按可删除。"
+    },
     "inCircleA11y": "{name}，在此圈子中",
     "notInCircleA11y": "{name}，不在此圈子中",
-    "likeFailed": "你对 {name} 的喜欢未成功，请检查网络连接。",
     "passFailed": "你对 {name} 的跳过未成功，请检查网络连接。",
     "thisPerson": "此人",
     "bucket.nearby": "附近",
@@ -781,20 +782,19 @@
     "crossedPathsCard": "擦肩而过",
     "crossedPathsCardWhen": "擦肩而过 {time}",
     "compatMatch": "🤝 匹配度 {score}%",
-    "viewProfileA11y": "查看 {name} 的资料",
-    "viewProfileWithA11y": "查看 {name} 的资料，{detail}",
-    "mutualFriends": {
-      "other": "{count} 位共同好友"
-    },
-    "circleA11y": {
-      "other": "{name}，{count} 位好友。长按可删除。"
-    },
     "interestsInCommon": {
       "other": "{count} 个共同兴趣"
     },
     "inYourCommunities": {
       "other": "在你的 {count} 个社群中"
-    }
+    },
+    "viewProfileA11y": "查看 {name} 的资料",
+    "viewProfileWithA11y": "查看 {name} 的资料，{detail}",
+    "passAction": "跳过",
+    "connect": "结识",
+    "connectWithA11y": "结识 {name}",
+    "meetNewPeopleIntro": "认识附近同样愿意交朋友的人。这与约会完全分开：在这里开启不会影响你的约会资料或偏好，只有同样明确开启的人才会出现在这里。",
+    "likeFailed": "结识 {name} 未成功，请检查网络连接。"
   },
   "vi": {
     "noNewMatches": "Không có kết quả mới",
@@ -851,7 +851,6 @@
     "findingPeopleWhoMatch": "Đang tìm người phù hợp…",
     "couldntLoadMeetNewFriends": "Không thể tải Gặp bạn mới.",
     "meetNewFriends": "Gặp bạn mới",
-    "swipeToMeetNewPeople": "Vuốt để gặp những người gần bạn cũng muốn kết bạn. Tính năng này hoàn toàn tách biệt với hẹn hò: bật ở đây không bao giờ ảnh hưởng đến hồ sơ hay sở thích hẹn hò của bạn, và chỉ những người cũng đã bật mới xuất hiện.",
     "turnOnMeetNewFriendsA11y": "Bật Gặp bạn mới",
     "turningOn": "Đang bật…",
     "turnOn": "Bật",
@@ -877,13 +876,15 @@
     "inviteFriendsA11y": "Mời bạn bè",
     "inviteFriends": "Mời bạn bè →",
     "viewSStoryA11y": "Xem tin của {name}",
-    "like": "THÍCH",
-    "pass": "BỎ QUA",
     "passOnA11y": "Bỏ qua {name}",
-    "likeAsAPotentialFriendA11y": "Thích {name} như một người bạn tiềm năng",
+    "mutualFriends": {
+      "other": "{count} bạn chung"
+    },
+    "circleA11y": {
+      "other": "{name}, {count} bạn. Nhấn giữ để xóa."
+    },
     "inCircleA11y": "{name}, trong nhóm này",
     "notInCircleA11y": "{name}, không trong nhóm này",
-    "likeFailed": "Lượt thích {name} chưa được gửi. Hãy kiểm tra kết nối.",
     "passFailed": "Lượt bỏ qua {name} chưa được gửi. Hãy kiểm tra kết nối.",
     "thisPerson": "người này",
     "bucket.nearby": "Gần đây",
@@ -892,20 +893,19 @@
     "crossedPathsCard": "Đã gặp ngang qua",
     "crossedPathsCardWhen": "Đã gặp ngang qua {time}",
     "compatMatch": "🤝 Phù hợp {score}%",
-    "viewProfileA11y": "Xem hồ sơ của {name}",
-    "viewProfileWithA11y": "Xem hồ sơ của {name}, {detail}",
-    "mutualFriends": {
-      "other": "{count} bạn chung"
-    },
-    "circleA11y": {
-      "other": "{name}, {count} bạn. Nhấn giữ để xóa."
-    },
     "interestsInCommon": {
       "other": "{count} sở thích chung"
     },
     "inYourCommunities": {
       "other": "trong {count} cộng đồng của bạn"
-    }
+    },
+    "viewProfileA11y": "Xem hồ sơ của {name}",
+    "viewProfileWithA11y": "Xem hồ sơ của {name}, {detail}",
+    "passAction": "Bỏ qua",
+    "connect": "Kết nối",
+    "connectWithA11y": "Kết nối với {name}",
+    "meetNewPeopleIntro": "Gặp những người gần bạn cũng muốn kết bạn. Tính năng này hoàn toàn tách biệt với hẹn hò: bật ở đây không bao giờ ảnh hưởng đến hồ sơ hay sở thích hẹn hò của bạn, và chỉ những người cũng đã bật mới xuất hiện ở đây.",
+    "likeFailed": "Chưa kết nối được với {name}. Hãy kiểm tra kết nối."
   },
   "tl": {
     "noNewMatches": "Walang bagong nahanap",
@@ -962,7 +962,6 @@
     "findingPeopleWhoMatch": "Hinahanap ang mga tugmang tao…",
     "couldntLoadMeetNewFriends": "Hindi ma-load ang Makakilala ng Bagong Kaibigan.",
     "meetNewFriends": "Makakilala ng Bagong Kaibigan",
-    "swipeToMeetNewPeople": "Mag-swipe para makakilala ng mga tao sa malapit na bukas ding makipagkaibigan. Hiwalay ito sa dating: ang pag-on dito ay hindi kailanman makakaapekto sa dating profile o preferences mo, at ang mga nag-on lang din nito ang puwedeng lumabas.",
     "turnOnMeetNewFriendsA11y": "I-on ang Makakilala ng Bagong Kaibigan",
     "turningOn": "Ino-on…",
     "turnOn": "I-on",
@@ -988,23 +987,7 @@
     "inviteFriendsA11y": "Mag-imbita ng mga kaibigan",
     "inviteFriends": "Mag-imbita ng Kaibigan →",
     "viewSStoryA11y": "Tingnan ang story ni {name}",
-    "like": "LIKE",
-    "pass": "PASS",
     "passOnA11y": "I-pass si {name}",
-    "likeAsAPotentialFriendA11y": "I-like si {name} bilang posibleng kaibigan",
-    "inCircleA11y": "{name}, nasa bilog na ito",
-    "notInCircleA11y": "{name}, wala sa bilog na ito",
-    "likeFailed": "Hindi pumasok ang like mo kay {name}. Tingnan ang koneksyon mo.",
-    "passFailed": "Hindi pumasok ang pass mo kay {name}. Tingnan ang koneksyon mo.",
-    "thisPerson": "ang taong ito",
-    "bucket.nearby": "Malapit",
-    "bucket.fewMiles": "Ilang milya ang layo",
-    "bucket.wider": "Sa mas malawak na lugar",
-    "crossedPathsCard": "Nagkasalubong",
-    "crossedPathsCardWhen": "Nagkasalubong {time}",
-    "compatMatch": "🤝 {score}% Tugma",
-    "viewProfileA11y": "Tingnan ang profile ni {name}",
-    "viewProfileWithA11y": "Tingnan ang profile ni {name}, {detail}",
     "mutualFriends": {
       "one": "{count} kaibigang magkapareho",
       "other": "{count} kaibigang magkapareho"
@@ -1013,6 +996,16 @@
       "one": "{name}, {count} kaibigan. Pindutin nang matagal para i-delete.",
       "other": "{name}, {count} kaibigan. Pindutin nang matagal para i-delete."
     },
+    "inCircleA11y": "{name}, nasa bilog na ito",
+    "notInCircleA11y": "{name}, wala sa bilog na ito",
+    "passFailed": "Hindi pumasok ang pass mo kay {name}. Tingnan ang koneksyon mo.",
+    "thisPerson": "ang taong ito",
+    "bucket.nearby": "Malapit",
+    "bucket.fewMiles": "Ilang milya ang layo",
+    "bucket.wider": "Sa mas malawak na lugar",
+    "crossedPathsCard": "Nagkasalubong",
+    "crossedPathsCardWhen": "Nagkasalubong {time}",
+    "compatMatch": "🤝 {score}% Tugma",
     "interestsInCommon": {
       "one": "{count} magkaparehong interes",
       "other": "{count} magkaparehong interes"
@@ -1020,7 +1013,14 @@
     "inYourCommunities": {
       "one": "nasa {count} sa mga komunidad mo",
       "other": "nasa {count} sa mga komunidad mo"
-    }
+    },
+    "viewProfileA11y": "Tingnan ang profile ni {name}",
+    "viewProfileWithA11y": "Tingnan ang profile ni {name}, {detail}",
+    "passAction": "I-pass",
+    "connect": "Kumonekta",
+    "connectWithA11y": "Kumonekta kay {name}",
+    "meetNewPeopleIntro": "Makakilala ng mga tao sa malapit na bukas ding makipagkaibigan. Hiwalay ito sa dating: ang pag-on dito ay hindi kailanman makakaapekto sa dating profile o preferences mo, at ang mga nag-on lang din nito ang puwedeng lumabas dito.",
+    "likeFailed": "Hindi pumasok ang pagkonekta mo kay {name}. Tingnan ang koneksyon mo."
   },
   "ru": {
     "noNewMatches": "Новых совпадений нет",
@@ -1077,7 +1077,6 @@
     "findingPeopleWhoMatch": "Ищем подходящих людей…",
     "couldntLoadMeetNewFriends": "Не удалось загрузить «Новые друзья».",
     "meetNewFriends": "Новые друзья",
-    "swipeToMeetNewPeople": "Листайте, чтобы знакомиться с людьми поблизости, которые тоже хотят найти друзей. Это полностью отдельно от свиданий: включение здесь никогда не влияет на ваш профиль для знакомств и предпочтения, и в подборке появятся только те, кто тоже это включил.",
     "turnOnMeetNewFriendsA11y": "Включить «Новые друзья»",
     "turningOn": "Включаем…",
     "turnOn": "Включить",
@@ -1103,23 +1102,7 @@
     "inviteFriendsA11y": "Пригласить друзей",
     "inviteFriends": "Пригласить друзей →",
     "viewSStoryA11y": "Посмотреть историю: {name}",
-    "like": "НРАВИТСЯ",
-    "pass": "ПРОПУСТИТЬ",
     "passOnA11y": "Пропустить {name}",
-    "likeAsAPotentialFriendA11y": "Отметить {name} как возможного друга",
-    "inCircleA11y": "{name}, в этом круге",
-    "notInCircleA11y": "{name}, не в этом круге",
-    "likeFailed": "Ваша отметка «нравится» для {name} не сохранилась. Проверьте подключение.",
-    "passFailed": "Пропуск {name} не сохранился. Проверьте подключение.",
-    "thisPerson": "этого человека",
-    "bucket.nearby": "Рядом",
-    "bucket.fewMiles": "В нескольких милях",
-    "bucket.wider": "В окрестностях",
-    "crossedPathsCard": "Пересекались",
-    "crossedPathsCardWhen": "Пересекались {time}",
-    "compatMatch": "🤝 Совпадение {score}%",
-    "viewProfileA11y": "Открыть профиль: {name}",
-    "viewProfileWithA11y": "Открыть профиль: {name}, {detail}",
     "mutualFriends": {
       "one": "{count} общий друг",
       "few": "{count} общих друга",
@@ -1132,6 +1115,16 @@
       "many": "{name}, {count} друзей. Удерживайте, чтобы удалить.",
       "other": "{name}, {count} друзей. Удерживайте, чтобы удалить."
     },
+    "inCircleA11y": "{name}, в этом круге",
+    "notInCircleA11y": "{name}, не в этом круге",
+    "passFailed": "Пропуск {name} не сохранился. Проверьте подключение.",
+    "thisPerson": "этого человека",
+    "bucket.nearby": "Рядом",
+    "bucket.fewMiles": "В нескольких милях",
+    "bucket.wider": "В окрестностях",
+    "crossedPathsCard": "Пересекались",
+    "crossedPathsCardWhen": "Пересекались {time}",
+    "compatMatch": "🤝 Совпадение {score}%",
     "interestsInCommon": {
       "one": "{count} общий интерес",
       "few": "{count} общих интереса",
@@ -1143,7 +1136,14 @@
       "few": "в {count} из ваших сообществ",
       "many": "в {count} из ваших сообществ",
       "other": "в {count} из ваших сообществ"
-    }
+    },
+    "viewProfileA11y": "Открыть профиль: {name}",
+    "viewProfileWithA11y": "Открыть профиль: {name}, {detail}",
+    "passAction": "Пропустить",
+    "connect": "Познакомиться",
+    "connectWithA11y": "Познакомиться с {name}",
+    "meetNewPeopleIntro": "Знакомьтесь с людьми поблизости, которые тоже хотят найти друзей. Это полностью отдельно от свиданий: включение здесь никогда не влияет на ваш профиль для знакомств и предпочтения, и здесь появятся только те, кто тоже это включил.",
+    "likeFailed": "Не удалось познакомиться с {name}. Проверьте подключение."
   },
   "ko": {
     "noNewMatches": "새로 찾은 사람이 없어요",
@@ -1200,7 +1200,6 @@
     "findingPeopleWhoMatch": "잘 맞는 사람을 찾는 중…",
     "couldntLoadMeetNewFriends": "새 친구 만나기를 불러오지 못했어요.",
     "meetNewFriends": "새 친구 만나기",
-    "swipeToMeetNewPeople": "스와이프해서 근처에서 친구를 사귀고 싶은 사람을 만나 보세요. 데이트와는 완전히 별개예요. 여기서 켜도 데이트 프로필이나 선호에는 영향이 없고, 똑같이 켠 사람만 나타나요.",
     "turnOnMeetNewFriendsA11y": "새 친구 만나기 켜기",
     "turningOn": "켜는 중…",
     "turnOn": "켜기",
@@ -1226,13 +1225,15 @@
     "inviteFriendsA11y": "친구 초대하기",
     "inviteFriends": "친구 초대하기 →",
     "viewSStoryA11y": "{name}님의 스토리 보기",
-    "like": "좋아요",
-    "pass": "패스",
     "passOnA11y": "{name}님 패스",
-    "likeAsAPotentialFriendA11y": "{name}님을 친구 후보로 좋아요",
+    "mutualFriends": {
+      "other": "함께 아는 친구 {count}명"
+    },
+    "circleA11y": {
+      "other": "{name}, 친구 {count}명. 길게 눌러 삭제."
+    },
     "inCircleA11y": "{name}, 이 서클에 있음",
     "notInCircleA11y": "{name}, 이 서클에 없음",
-    "likeFailed": "{name}님에게 보낸 좋아요가 전송되지 않았어요. 연결을 확인하세요.",
     "passFailed": "{name}님 패스가 전송되지 않았어요. 연결을 확인하세요.",
     "thisPerson": "이 사람",
     "bucket.nearby": "근처",
@@ -1241,19 +1242,18 @@
     "crossedPathsCard": "마주쳤어요",
     "crossedPathsCardWhen": "마주쳤어요 {time}",
     "compatMatch": "🤝 {score}% 일치",
-    "viewProfileA11y": "{name}님의 프로필 보기",
-    "viewProfileWithA11y": "{name}님의 프로필 보기, {detail}",
-    "mutualFriends": {
-      "other": "함께 아는 친구 {count}명"
-    },
-    "circleA11y": {
-      "other": "{name}, 친구 {count}명. 길게 눌러 삭제."
-    },
     "interestsInCommon": {
       "other": "공통 관심사 {count}개"
     },
     "inYourCommunities": {
       "other": "내 커뮤니티 {count}곳에 있음"
-    }
+    },
+    "viewProfileA11y": "{name}님의 프로필 보기",
+    "viewProfileWithA11y": "{name}님의 프로필 보기, {detail}",
+    "passAction": "패스",
+    "connect": "연결하기",
+    "connectWithA11y": "{name}님과 연결하기",
+    "meetNewPeopleIntro": "근처에서 친구를 사귀고 싶은 사람을 만나 보세요. 데이트와는 완전히 별개예요. 여기서 켜도 데이트 프로필이나 선호에는 영향이 없고, 똑같이 켠 사람만 여기에 나타나요.",
+    "likeFailed": "{name}님과 연결하지 못했어요. 연결을 확인하세요."
   }
 }

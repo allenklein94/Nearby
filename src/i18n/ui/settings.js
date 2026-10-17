@@ -151,6 +151,8 @@ export default {
     signOutA11y: "Sign out",
     signingOut: "Signing Out...",
     signOut: "Sign Out",
+    friendsDisplayStyle: "Friends Display Style",
+    chooseHowFriendsAreShown: "Choose how people are shown in Friends. Entirely optional — the list stays the default.",
   },
   es: {
     enterTheCodeSentTo: "Introduce el código enviado a {newPhoneInput}",
@@ -302,6 +304,8 @@ export default {
     signOutA11y: "Cerrar sesión",
     signingOut: "Cerrando sesión...",
     signOut: "Cerrar sesión",
+    friendsDisplayStyle: "Estilo de visualización en Amigos",
+    chooseHowFriendsAreShown: "Elige cómo se muestran las personas en Amigos. Totalmente opcional: la lista sigue siendo la opción predeterminada.",
   },
   de: {
     enterTheCodeSentTo: "Gib den Code ein, der an {newPhoneInput} gesendet wurde",
@@ -453,6 +457,8 @@ export default {
     signOutA11y: "Abmelden",
     signingOut: "Wird abgemeldet...",
     signOut: "Abmelden",
+    friendsDisplayStyle: "Anzeigestil für Freunde",
+    chooseHowFriendsAreShown: "Wähle, wie Leute bei Freunde angezeigt werden. Ganz optional — die Liste bleibt der Standard.",
   },
   fr: {
     enterTheCodeSentTo: "Saisissez le code envoyé au {newPhoneInput}",
@@ -604,6 +610,8 @@ export default {
     signOutA11y: "Se déconnecter",
     signingOut: "Déconnexion...",
     signOut: "Se déconnecter",
+    friendsDisplayStyle: "Style d’affichage des Amis",
+    chooseHowFriendsAreShown: "Choisis comment les personnes s’affichent dans Amis. Entièrement facultatif — la liste reste l’affichage par défaut.",
   },
   pt: {
     enterTheCodeSentTo: "Digite o código enviado para {newPhoneInput}",
@@ -755,6 +763,8 @@ export default {
     signOutA11y: "Sair",
     signingOut: "Saindo...",
     signOut: "Sair",
+    friendsDisplayStyle: "Estilo de exibição em Amigos",
+    chooseHowFriendsAreShown: "Escolha como as pessoas aparecem em Amigos. Totalmente opcional — a lista continua sendo o padrão.",
   },
   ht: {
     enterTheCodeSentTo: "Antre kòd yo voye bay {newPhoneInput} la",
@@ -906,6 +916,8 @@ export default {
     signOutA11y: "Dekonekte",
     signingOut: "N ap dekonekte...",
     signOut: "Dekonekte",
+    friendsDisplayStyle: "Estil afichaj Zanmi",
+    chooseHowFriendsAreShown: "Chwazi kijan moun parèt nan Zanmi. Se ou ki deside — lis la rete chwa default la.",
   },
   zh: {
     enterTheCodeSentTo: "输入发送到 {newPhoneInput} 的验证码",
@@ -1057,6 +1069,8 @@ export default {
     signOutA11y: "退出登录",
     signingOut: "正在退出...",
     signOut: "退出登录",
+    friendsDisplayStyle: "朋友显示方式",
+    chooseHowFriendsAreShown: "选择在“朋友”中如何显示他人。完全可选——默认仍为列表。",
   },
   vi: {
     enterTheCodeSentTo: "Nhập mã đã gửi tới {newPhoneInput}",
@@ -1208,6 +1222,8 @@ export default {
     signOutA11y: "Đăng xuất",
     signingOut: "Đang đăng xuất...",
     signOut: "Đăng xuất",
+    friendsDisplayStyle: "Kiểu hiển thị Bạn bè",
+    chooseHowFriendsAreShown: "Chọn cách hiển thị mọi người trong Bạn bè. Hoàn toàn tùy chọn — danh sách vẫn là mặc định.",
   },
   tl: {
     enterTheCodeSentTo: "Ilagay ang code na ipinadala sa {newPhoneInput}",
@@ -1359,6 +1375,8 @@ export default {
     signOutA11y: "Mag-sign out",
     signingOut: "Nagsa-sign out...",
     signOut: "Mag-sign Out",
+    friendsDisplayStyle: "Display Style ng Friends",
+    chooseHowFriendsAreShown: "Piliin kung paano ipinapakita ang mga tao sa Friends. Opsyonal lang — listahan pa rin ang default.",
   },
   ru: {
     enterTheCodeSentTo: "Введите код, отправленный на {newPhoneInput}",
@@ -1510,6 +1528,8 @@ export default {
     signOutA11y: "Выйти",
     signingOut: "Выходим...",
     signOut: "Выйти",
+    friendsDisplayStyle: "Вид раздела «Друзья»",
+    chooseHowFriendsAreShown: "Выберите, как показывать людей в разделе «Друзья». Полностью по желанию — по умолчанию остаётся список.",
   },
   ko: {
     enterTheCodeSentTo: "{newPhoneInput}(으)로 보낸 코드를 입력하세요",
@@ -1661,5 +1681,7 @@ export default {
     signOutA11y: "로그아웃",
     signingOut: "로그아웃 중...",
     signOut: "로그아웃",
+    friendsDisplayStyle: "친구 표시 방식",
+    chooseHowFriendsAreShown: "친구에서 사람들이 표시되는 방식을 선택하세요. 완전히 선택 사항이며, 기본값은 목록이에요.",
   },
 };

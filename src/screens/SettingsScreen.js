@@ -2,6 +2,7 @@ import BlockedUsersSection from '../components/BlockedUsersSection';
 import React, { useEffect, useRef, useState } from 'react';
 import { PERKS_TAB } from '../utils/recommendationContext';
 import { navigateKeepingTrail } from '../services/openDestination';
+import { FRIEND_VIEW_STYLES, friendViewStyle } from '../utils/friendDiscoveryView';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
@@ -95,6 +96,8 @@ export default function SettingsScreen({ navigation, route }) {
   const [userId, setUserId] = useState(null);
   const [showBlocked, setShowBlocked] = useState(false); // Blocked users open in place (audit B10)
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
+  // Owner idea 156: Friends discovery's own list/cards choice (list by default), separate from Dating's above.
+  const [friendDiscoveryViewStyle, setFriendDiscoveryViewStyle] = useState('list');
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
   // Item 39: "Let friends know when I'm nearby" -- OFF by default; this toggle is the ONLY way to turn it on.
   const [friendNearbyOn, setFriendNearbyOn] = useState(false);
@@ -260,6 +263,7 @@ export default function SettingsScreen({ navigation, route }) {
       setTtdTimePref(data.notify_things_to_do_time_pref ?? 'anytime');
       setTtdCategories(data.notify_things_to_do_categories ?? null);
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
+      setFriendDiscoveryViewStyle(friendViewStyle(data.friend_discovery_view_style));
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
       setShareInterestInDemand(data.share_interest_in_demand ?? true);
       setShowSponsoredPlaces(data.show_sponsored_places ?? true);
@@ -273,6 +277,14 @@ export default function SettingsScreen({ navigation, route }) {
     const { error } = await supabase.from('profiles').update({ discovery_view_style: style }).eq('id', userId);
     if (error) {
       presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => updateDiscoveryViewStyle(style) });
+    }
+  }
+
+  async function updateFriendDiscoveryViewStyle(style) {
+    setFriendDiscoveryViewStyle(style);
+    const { error } = await supabase.from('profiles').update({ friend_discovery_view_style: style }).eq('id', userId);
+    if (error) {
+      presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => updateFriendDiscoveryViewStyle(style) });
     }
   }
 
@@ -603,6 +615,26 @@ export default function SettingsScreen({ navigation, route }) {
               >
                 <Text style={[styles.chipText, discoveryViewStyle === 'cards' && styles.chipTextSelected]}>{t('ui.settings.cards')}</Text>
               </TouchableOpacity>
+            </View>
+          </View>
+          <View style={styles.divider} />
+          <View style={{ paddingVertical: spacing.sm }}>
+            <Text style={styles.settingLabel}>{t('ui.settings.friendsDisplayStyle')}</Text>
+            <Text style={styles.helperText}>{t('ui.settings.chooseHowFriendsAreShown')}</Text>
+            <View style={[styles.chipsWrap, { marginTop: spacing.sm }]}>
+              {FRIEND_VIEW_STYLES.map((style) => (
+                <TouchableOpacity
+                  key={style}
+                  style={[styles.chip, friendDiscoveryViewStyle === style && styles.chipSelected]}
+                  onPress={() => updateFriendDiscoveryViewStyle(style)}
+                  activeOpacity={0.85}
+                  accessibilityLabel={t(style === 'cards' ? 'ui.settings.cardSwipeViewA11y' : 'ui.settings.listViewA11y')}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: friendDiscoveryViewStyle === style }}
+                >
+                  <Text style={[styles.chipText, friendDiscoveryViewStyle === style && styles.chipTextSelected]}>{t(style === 'cards' ? 'ui.settings.cards' : 'ui.settings.list')}</Text>
+                </TouchableOpacity>
+              ))}
             </View>
           </View>
         </View>

@@ -1,3 +1,53 @@
+# Swipe is a choice: Friends discovery list-first BUILT, LIVE (2026-10-17, owner idea "156", LOCKED; not device-verified)
+
+Owner decisions (LOCKED): Nearby never becomes swipe-left/swipe-right; decisions use explicit actions. Idea 156 recorded as MET
+everywhere except Friends discovery (audit: gatherings, invitations, asks, requests, offers, bookings have no swipe, one labelled
+action each; swipe only dismisses overlays (item 20: arrival pill, Undo toast, match modal); Dating already opens as a list with
+the deck optional and worded Skip/Wave/Notice/Rewind). Friends discovery was deck-only with bare ✕ / 🤝 buttons and "Swipe to
+meet new people…". Changed: list by default like Dating; deck optional (header button or Settings); labelled Pass / Connect;
+list-first opening copy; eligibility, opt-in, the separate Friends pool and privacy unchanged; Dating's behavior untouched; no
+second interaction framework.
+
+Built:
+- Migration `20270328_friend_discovery_view_style.sql` (LIVE 2026-10-17): `profiles.friend_discovery_view_style text not null
+  default 'list'`, check in ('list','cards'); its own column so a Friends choice never changes Dating's `discovery_view_style`.
+  No new grants/policies (table-level grants + the self-row UPDATE policy, like `friend_quick_filter_order`). Every existing
+  person starts on the list. Not read by any candidate RPC or another person's read.
+- `utils/friendDiscoveryView.js`: `friendViewStyle` (anything but 'cards' = list), `otherFriendViewStyle`, `FRIEND_DECISIONS` (the
+  ONE table: pass -> 'pass', connect -> 'like', label + a11y keys), `undecidedCandidates` (one decided set for both modes).
+- `components/FriendDecisionButtons.js` (the worded pair, both modes), `components/FriendCandidateDetails.js` (the card's facts,
+  moved out of the deck unchanged so list and deck show the same card; `DISTANCE_BUCKET_KEYS` moved with it, re-exported),
+  `components/FriendDiscoveryList.js` (static FlatList, Dating's list card values; no swipe, motion or haptic; same empty state).
+- `components/FriendDiscoverySwipeCards.js`: shows `data[0]` (the screen removes decided people), worded buttons replace ✕ / 🤝,
+  stamps read Connect / Pass, exports `FriendDiscoveryEmpty`. FIXED a pre-existing bug: the pan handler was created once and read
+  the first render's `data`/`currentIndex`, so a SWIPE after the first recorded the first card again and the deck stuck; it now
+  reads the top card and `onSwipe` through refs. Buttons were already correct.
+- `FriendDiscoveryScreen.js`: `viewStyle` state ('list') from Friends' column, 📋/🃏 header toggle (Dating's a11y strings, same
+  shape as `toggleViewStyle`), one `handleDecide` for list buttons, deck buttons and swipes: the person leaves at once; a failed write
+  puts them back and the existing "Couldn't save that" + Retry alert shows (before: the deck moved on regardless).
+- Settings: "Friends Display Style" List / Cards under Dating's "Nearby Display Style", writing only Friends' column.
+- Strings: `ui.friends.passAction` / `connect` / `connectWithA11y` / `meetNewPeopleIntro` added, `likeFailed` reworded ("Connecting
+  with {name} didn't go through."), `swipeToMeetNewPeople` / `like` / `pass` / `likeAsAPotentialFriendA11y` removed;
+  `ui.settings.friendsDisplayStyle` / `chooseHowFriendsAreShown`. 11 languages, 10 machine-authored, NOT native-reviewed.
+  `scripts/i18n/strings/friends.json` regenerated from the JS (rebuild = identical output). NOTE: `settings.json` is STALE versus
+  `src/i18n/ui/settings.js` (a rebuild would drop later strings, e.g. item 93's); the two keys were added to the JS directly.
+- `recommendationSurfaces.js`: the Friend card registry entry now points at `FriendCandidateDetails.js` (marker `sharedBits`).
+Verification:
+- Journey `src/journeys/friendDiscoveryChoice.journey.js` 6/6 under real roles: column default 'list' not null; a new person reads
+  'list'; own switch to cards and back; Dating's setting unchanged; junk value refused by the check; another person's update
+  touches 0 rows; Pass and Connect store 'pass' / 'like' and both people leave the candidates (= the client's
+  `undecidedCandidates`); Connect both ways = mutual match + accepted friendship; a never-opted-in person is never a candidate,
+  cannot be connected to (no row), sees nobody; a bad direction is refused. 3 of 6 fail on the pre-migration DB.
+- Guard + unit `src/utils/friendDiscoveryView.test.js` (11): view-style rule, decided set, labels are words in 11 languages, no
+  Friends text says swipe/deck, screen starts on the list and reads its own column, both modes use the one pair and decide path,
+  no bare-symbol decision button (catches the old deck), list/buttons have no swipe/motion/haptic, Dating keeps its own column.
+- Jest 467 suites pass. Prod journeys 545/545 after applying. From-scratch replay 452/452, journeys 545/545 on it; the new
+  column's grants on the replay = prod.
+NOT DONE: device checks (`PRODUCT_AUDIT/IDEA_156_FRIENDS_LIST_FIRST_DEVICE_CHECKLIST_2026-10-17.md`, 16 checks, not run); native
+review. Found and NOT fixed (owner: preserve Dating's behavior): Dating's `SwipeableDiscoveryCards` has the same stale pan-handler
+closure (a swipe after the first Notices/skips the first card again and the deck stops advancing; its buttons work). Business web
+export not regenerated (no business-facing screen changed).
+
 # "Not interested" on recommended gathering cards BUILT, LIVE (2026-10-17, owner idea "153", LOCKED; not device-verified)
 
 Owner decisions (LOCKED): (1) item 200 reopened ONLY for a quiet ⋯ menu on eligible recommended gathering cards; the card's

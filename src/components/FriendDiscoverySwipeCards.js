@@ -1,43 +1,63 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-// P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): the same shared
-// recommendation-reason vocabulary Best Pick/Nearby Right Now/Ask
-// Nearby already use, tagging this card's own real shared-context bits
-// (never a new invented signal -- the three counts below already came
-// from get_friend_discovery_candidates()) so the leading icon matches
-// the same category glyph wherever that category appears app-wide.
-import { REASON_CATEGORIES, REASON_CATEGORY_ICONS } from '../constants/recommendationReasonVocabulary';
-import { gatheringReasonText, formatCrossedPathsTimeShort } from '../services/crossedPathsSignals';
+import FriendCandidateDetails, { DISTANCE_BUCKET_KEYS } from './FriendCandidateDetails';
+import FriendDecisionButtons from './FriendDecisionButtons';
+import { FRIEND_DECISIONS } from '../utils/friendDiscoveryView';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = SCREEN_WIDTH * 0.28;
-// Display keys for the RPC's stored distance buckets (ui.friends.bucket.*); the stored value itself is never translated.
-export const DISTANCE_BUCKET_KEYS = { Nearby: 'nearby', 'A few miles away': 'fewMiles', 'In the wider area': 'wider' };
+export { DISTANCE_BUCKET_KEYS };
 
-// Friend Discovery's own card -- shares SwipeableDiscoveryCards' swipe
-// mechanics (PanResponder threshold, animated stamps, a two-deep stack)
-// but deliberately not the same component: the card answers "would I
-// want this person as a friend?", so it surfaces interests/communities/
-// mutual-friends/bio, never a dating-oriented proximity/compatibility
-// readout. Distance is a coarse bucket from the RPC (never exact miles),
-// matching the locked "no location-discovery tool" decision.
-export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe, navigation }) {
-  const { t, language } = useLanguage();
+// The empty state both Friends modes share (list and deck): a real next action, not a dead end -- the same InviteFriends
+// destination every other empty state routes to (Thursday plan item 25).
+export function FriendDiscoveryEmpty({ navigation }) {
+  const { t } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  return (
+    <View style={styles.emptyState}>
+      <Text style={styles.emptyEmoji}>🤝</Text>
+      <EmptyCopy id="friend_discovery_empty" />
+      {navigation && (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('InviteFriends')}
+          accessibilityLabel={t('ui.friends.inviteFriendsA11y')}
+          accessibilityRole="button"
+        >
+          <Text style={styles.emptyActionText}>{t('ui.friends.inviteFriends')}</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+// Friend Discovery's OPTIONAL deck (owner idea 156: the list is the default; this mode is the person's own choice). Shares
+// SwipeableDiscoveryCards' swipe mechanics (PanResponder threshold, animated stamps, a two-deep stack) but not the same
+// component: the card answers "would I want this person as a friend?" (FriendCandidateDetails, the same card the list shows).
+// It always shows data[0]: the screen removes a decided person (undecidedCandidates), so a failed write puts them back on
+// top and a person decided in the list never reappears here. Swiping is optional: the labelled Pass / Connect buttons do
+// exactly what the swipe does (FriendDecisionButtons, FRIEND_DECISIONS).
+export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatuses = {}, storyByUserId = {}, onViewStory, compatibilityColor, onSwipe, navigation }) {
+  const { t } = useLanguage();
+  const { colors, shadow } = useTheme();
+  const styles = getStyles(colors, shadow);
   const position = useRef(new Animated.ValueXY()).current;
   const rotate = position.x.interpolate({
     inputRange: [-SCREEN_WIDTH / 2, 0, SCREEN_WIDTH / 2],
     outputRange: ['-8deg', '0deg', '8deg'],
   });
+  // The pan handler is created once (a closure from the first render); it reads the current top card and the current
+  // onSwipe through refs, so a swipe always decides the person on screen.
+  const topRef = useRef(null);
+  topRef.current = data[0] ?? null;
+  const onSwipeRef = useRef(onSwipe);
+  onSwipeRef.current = onSwipe;
 
   const panResponder = useRef(
     PanResponder.create({
@@ -58,72 +78,21 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
   function forceSwipe(direction) {
     const x = direction === 'right' ? SCREEN_WIDTH * 1.2 : -SCREEN_WIDTH * 1.2;
     Haptics.impactAsync(direction === 'right' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light);
+    const item = topRef.current;
     Animated.timing(position, { toValue: { x, y: 0 }, duration: MOTION_BUDGET.small.ms, useNativeDriver: false }).start(() => {
-      const item = data[currentIndex];
       position.setValue({ x: 0, y: 0 });
-      setCurrentIndex((i) => i + 1);
-      if (item) onSwipe(item, direction === 'right' ? 'like' : 'pass');
+      if (item) onSwipeRef.current(item, direction === 'right' ? FRIEND_DECISIONS.connect.direction : FRIEND_DECISIONS.pass.direction);
     });
   }
 
-  if (!data.length || currentIndex >= data.length) {
-    return (
-      <View style={styles.emptyState}>
-        <Text style={styles.emptyEmoji}>🤝</Text>
-        <EmptyCopy id="friend_discovery_empty" />
-        {/* Thursday plan item 25: a real next action, not a dead end --
-            the same InviteFriends destination every other empty state in
-            this pass routes to. */}
-        {navigation && (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('InviteFriends')}
-            accessibilityLabel={t('ui.friends.inviteFriendsA11y')}
-            accessibilityRole="button"
-          >
-            <Text style={styles.emptyActionText}>{t('ui.friends.inviteFriends')}</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  }
+  if (!data.length) return <FriendDiscoveryEmpty navigation={navigation} />;
 
-  const item = data[currentIndex];
-  const nextItem = data[currentIndex + 1];
+  const item = data[0];
+  const nextItem = data[1];
   const storyGroup = storyByUserId[item.id] ?? null;
   const cardStyle = { transform: [{ translateX: position.x }, { translateY: position.y }, { rotate }] };
   const likeOpacity = position.x.interpolate({ inputRange: [0, SWIPE_THRESHOLD], outputRange: [0, 1], extrapolate: 'clamp' });
   const skipOpacity = position.x.interpolate({ inputRange: [-SWIPE_THRESHOLD, 0], outputRange: [1, 0], extrapolate: 'clamp' });
-
-  // Tagged with the same shared vocabulary Best Pick/Nearby Right Now/
-  // Ask Nearby already use -- the joined line stays one compact string
-  // (this card has no room for a stacked reason-per-line layout the way
-  // GatheringDetailScreen/HomeScreen's Best Pick do), but its one leading
-  // icon reflects the strongest real signal present, in the same
-  // priority order these three checks already ran in.
-  const sharedBits = [];
-  if (item.shared_interest_count > 0) {
-    sharedBits.push({ text: t('ui.friends.interestsInCommon', { count: item.shared_interest_count }), category: REASON_CATEGORIES.INTEREST });
-  }
-  if (item.shared_community_count > 0) {
-    sharedBits.push({ text: t('ui.friends.inYourCommunities', { count: item.shared_community_count }), category: REASON_CATEGORIES.CONTEXT });
-  }
-  if (item.mutual_friend_count > 0) {
-    sharedBits.push({ text: t('ui.friends.mutualFriends', { count: item.mutual_friend_count }), category: REASON_CATEGORIES.CONTEXT });
-  }
-
-  // Unified Crossed Paths, step 6 (CLAUDE.md, 2026-09-10): only present
-  // on a real Crossed Paths candidate (never on a Browse-mode one) --
-  // gathering attendance is always the preferred, real explanation when
-  // it exists; a proximity-only match gets today's existing Dating
-  // Crossed Paths wording, never blended together.
-  const crossedPathsText = item.crossedPathsReason?.type === 'gathering'
-    ? gatheringReasonText(item.crossedPathsReason)
-    : item.crossedPathsReason?.type === 'proximity'
-      ? (() => {
-          const time = formatCrossedPathsTimeShort(item.crossedPathsReason.lastSeenAt);
-          return time ? t('ui.friends.crossedPathsCardWhen', { time }) : t('ui.friends.crossedPathsCard');
-        })()
-      : null;
 
   return (
     <View style={styles.stackContainer}>
@@ -135,11 +104,9 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
 
       <Animated.View style={[styles.card, cardStyle]} {...panResponder.panHandlers}>
         {/* Discover UX cleanup item 8 (CLAUDE.md, 2026-09-10): this deck
-            has no "view profile" tap at all today (Like/Pass buttons only)
-            -- adding one is a separate product decision, out of scope
-            here. Only the real addition: a story ring + tap-to-view when a
-            visible (in practice, public) story exists; no story, no
-            change from today's plain, non-tappable avatar. */}
+            has no "view profile" tap at all today -- adding one is a
+            separate product decision, out of scope here. Only a story ring
+            + tap-to-view when a visible (in practice, public) story exists. */}
         {storyGroup ? (
           <TouchableOpacity
             activeOpacity={0.85}
@@ -157,69 +124,22 @@ export default function FriendDiscoverySwipeCards({ data, photoUrls, onlineStatu
         )}
         {onlineStatuses[item.id] && <View style={styles.onlineDot} />}
         <Animated.View style={[styles.stampLike, { opacity: likeOpacity }]}>
-          <Text style={styles.stampLikeText}>{t('ui.friends.like')}</Text>
+          <Text style={styles.stampLikeText}>{t(FRIEND_DECISIONS.connect.labelKey)}</Text>
         </Animated.View>
         <Animated.View style={[styles.stampSkip, { opacity: skipOpacity }]}>
-          <Text style={styles.stampSkipText}>{t('ui.friends.pass')}</Text>
+          <Text style={styles.stampSkipText}>{t(FRIEND_DECISIONS.pass.labelKey)}</Text>
         </Animated.View>
 
         <View style={styles.cardBody}>
-          <View style={styles.nameRow}>
-            <Text style={styles.name}>{item.display_name}</Text>
-            {item.photo_verified && <Text style={styles.verifiedBadge}>✓</Text>}
-            {typeof item.compatScore === 'number' && compatibilityColor && (
-              <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatScore) }]}>
-                <Text style={[styles.compatText, { color: compatibilityColor(item.compatScore) }]}>{t('ui.friends.compatMatch', { score: item.compatScore })}</Text>
-              </View>
-            )}
-            {item.distance_bucket && <Text style={styles.distance}>{DISTANCE_BUCKET_KEYS[item.distance_bucket] ? t(`ui.friends.bucket.${DISTANCE_BUCKET_KEYS[item.distance_bucket]}`) : item.distance_bucket}</Text>}
-          </View>
-          {crossedPathsText && (
-            <Text style={styles.crossedPathsText}>
-              {item.crossedPathsReason?.type === 'gathering' ? '🗓️ ' : '📍 '}{crossedPathsText}
-            </Text>
-          )}
-          {sharedBits.length > 0 && (
-            <View style={styles.sharedRow}>
-              <Ionicons
-                name={REASON_CATEGORY_ICONS[sharedBits[0].category]}
-                size={13}
-                color={colors.primary}
-                style={styles.sharedIcon}
-              />
-              <Text style={styles.sharedText}>{sharedBits.map((b) => b.text).join(' · ')}</Text>
-            </View>
-          )}
-          {item.bio ? <Text style={styles.bio} numberOfLines={3}>{item.bio}</Text> : null}
-          {item.interests?.length > 0 && (
-            <View style={styles.chipsWrap}>
-              {item.interests.slice(0, 6).map((tag) => (
-                <View key={tag} style={styles.chip}>
-                  <Text style={styles.chipText}>{tag}</Text>
-                </View>
-              ))}
-            </View>
-          )}
+          <FriendCandidateDetails item={item} compatibilityColor={compatibilityColor} />
         </View>
       </Animated.View>
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity
-          style={styles.skipButton}
-          onPress={() => forceSwipe('left')}
-          accessibilityLabel={t('ui.friends.passOnA11y', { name: item.display_name })}
-          accessibilityRole="button"
-        >
-          <Text style={styles.skipButtonText}>✕</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.likeButton}
-          onPress={() => forceSwipe('right')}
-          accessibilityLabel={t('ui.friends.likeAsAPotentialFriendA11y', { name: item.display_name })}
-          accessibilityRole="button"
-        >
-          <Text style={styles.likeButtonText}>🤝</Text>
-        </TouchableOpacity>
+        <FriendDecisionButtons
+          name={item.display_name}
+          onDecide={(direction) => forceSwipe(direction === FRIEND_DECISIONS.connect.direction ? 'right' : 'left')}
+        />
       </View>
     </View>
   );
@@ -236,10 +156,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   avatar: { width: '100%', height: 340, backgroundColor: colors.surfaceElevated },
   avatarRingUnviewed: { borderWidth: 2.5, borderColor: colors.textPrimary },
   avatarRingViewed: { borderWidth: 2.5, borderColor: colors.border },
-  // Same treatment as SwipeableDiscoveryCards.js's own onlineDot/
-  // verifiedBadge/compatBadge/compatText -- values copied verbatim so the
-  // two surfaces read as the same product, per this file's own established
-  // "verbatim, not approximated" convention.
+  // Same treatment as SwipeableDiscoveryCards.js's own onlineDot -- values
+  // copied verbatim so the two surfaces read as the same product.
   onlineDot: {
     position: 'absolute', top: spacing.md, right: spacing.md,
     width: 16, height: 16, borderRadius: 8, backgroundColor: colors.success, borderWidth: 2.5, borderColor: colors.surface,
@@ -255,36 +173,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   stampSkipText: { color: colors.danger, fontWeight: '800', fontSize: 20, letterSpacing: 1 },
   cardBody: { padding: spacing.md },
-  nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: spacing.xs, flexWrap: 'wrap' },
-  name: { ...typography.headline, color: colors.textPrimary },
-  verifiedBadge: { color: colors.success, fontSize: 16, fontWeight: '700' },
-  compatBadge: { borderWidth: 1, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 2 },
-  compatText: { fontSize: 11, fontWeight: '700' },
-  distance: { ...typography.small, color: colors.textTertiary },
-  // sharedText itself keeps its own marginBottom -- sharedRow adds no
-  // margin of its own, matching ReasonList.js's own "don't double the
-  // gap" convention.
-  crossedPathsText: { ...typography.small, color: colors.textTertiary, marginBottom: spacing.xs },
-  sharedRow: { flexDirection: 'row', alignItems: 'center' },
-  sharedIcon: { marginRight: 4 },
-  sharedText: { ...typography.small, color: colors.primary, fontWeight: '600', marginBottom: spacing.xs },
-  bio: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.sm, paddingVertical: 4 },
-  chipText: { ...typography.small, color: colors.textSecondary },
   buttonRow: { position: 'absolute', bottom: spacing.xl, flexDirection: 'row', gap: spacing.xl, alignItems: 'center' },
-  skipButton: {
-    width: 56, height: 56, borderRadius: 28, backgroundColor: colors.surface,
-    borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center', ...shadow.card,
-  },
-  skipButtonText: { color: colors.textTertiary, fontSize: 24, fontWeight: '700' },
-  likeButton: {
-    width: 64, height: 64, borderRadius: 32, backgroundColor: colors.primary,
-    justifyContent: 'center', alignItems: 'center', ...shadow.button,
-  },
-  likeButtonText: { fontSize: 28 },
   emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
   emptyEmoji: { fontSize: 40, marginBottom: spacing.md },
-  emptyText: { ...typography.body, color: colors.textTertiary, textAlign: 'center' },
   emptyActionText: { ...typography.body, color: colors.primary, fontWeight: '700', marginTop: spacing.md },
 });

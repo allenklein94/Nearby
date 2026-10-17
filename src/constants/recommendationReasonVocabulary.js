@@ -3,7 +3,7 @@
 // Distance / Time / Context / Availability / Capacity / Popularity --
 // reused across Best Pick + Ask Nearby (both source their reasons from
 // services/gatherings.js's getGatheringFitReasons()), Nearby Right Now
-// (services/homeRecommendations.js), and Friends (FriendDiscoverySwipeCards.js's
+// (services/homeRecommendations.js), and Friends (FriendCandidateDetails.js's
 // own shared-context line). This deliberately does NOT merge those four
 // systems' independent scoring formulas into one universal score --
 // each surface still computes its own real numeric score from its own
@@ -200,7 +200,7 @@ const PATTERN_MATCHES = [
   { pattern: /^(\d+(\.\d+)? mi away|\d+ ft away|Under 100 ft away)$/, category: REASON_CATEGORIES.DISTANCE },
   // A gathering's approximate distance (formatApproxDistanceAway / formatApproxDistance): "About 0.3 mi away", "About 0.3 mi".
   { pattern: /^About \d+(\.\d+)? mi( away)?$/, category: REASON_CATEGORIES.DISTANCE },
-  // FriendDiscoverySwipeCards.js's real sharedBits entries.
+  // FriendCandidateDetails.js's real sharedBits entries.
   { pattern: /^\d+ interests? in common$/, category: REASON_CATEGORIES.INTEREST },
   { pattern: /^in \d+ of your communities$/, category: REASON_CATEGORIES.CONTEXT },
   { pattern: /^\d+ mutual friends?$/, category: REASON_CATEGORIES.CONTEXT },
