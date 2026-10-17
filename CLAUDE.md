@@ -54,6 +54,8 @@ else as built. Swipe stale-card defect (both decks: a swipe after the first acte
 shared `utils/swipeDeck.js` (owner-ordered; regression `swipeDeck.test.js` 23); NOT DEVICE-VERIFIED (checks 17-25 of that checklist, both decks).
 Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / Rewind, owner 2026-10-17, `utils/datingDeckActions.js`); NOT DEVICE-VERIFIED (checks 26-29) and its 4 `ui.swipeCards.deck*` strings need native review.
 
+**"Ask a business" signature (owner idea "157", 2026-10-17) MET AS BUILT, LOCKED, nothing built:** Send replaces the form with the request screen ("Request sent to {name}. You'll be notified when they respond." + item 55's Pulse rings only when really reached); a reply travels into that screen's card (item 23, the ONE signature, item 25); the push opens that exact reply (items 62/132). DECLINED: a signature on Ask, a folding card, a redirect to Home/Discover. NOT DEVICE-VERIFIED: offer checklist section 1 (incl. whether N->✨->✓ + rings together feel like too much; report only).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

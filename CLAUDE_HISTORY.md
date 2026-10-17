@@ -1,3 +1,20 @@
+# "Ask a business" signature interaction (owner idea "157", 2026-10-17): MET AS BUILT, LOCKED, nothing built
+
+Idea: tapping "Ask Coastal Coffee" folds the request card into a compact signal, "Sent to Coastal Coffee", the person
+returns to Discover/Home, later "Coastal Coffee responded".
+Found as built: AskBusinessScreen's Send `navigation.replace`s to BusinessRequestDetail (`justSubmitted`), no confirmation
+step; the banner line is `justSentLine` -> `ui.requestDetail.justSent.target` "Request sent to {name}. You'll be notified when
+they respond." inside `RequestPulse` (item 55 `request_sent`), rings only when `notifiedCount > 0` and not a duplicate; the
+reply push "{emoji} {Business} responded" (item 62) opens that exact reply (item 132's `focusOfferId`); a reply arriving
+while the request is on screen travels into its card (item 23), the one signature (item 25).
+Owner decision (2026-10-17, LOCKED): keep the existing flow. Each animation communicates something distinct; sending and a
+business responding are different events, only the response gets the signature. DECLINED: a signature on Ask (items 25/57),
+a folding card (item 55: a connection moment reuses the Pulse; item 58), a redirect to Home/Discover (the request screen is
+where the reply lands and evolves into the offer: items 23/98; Home has no open-request row, item 110).
+Added to `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` section 1: the single-business send check, and a
+report-only check of whether the success banner's N->✨->✓ (item 112 follow-up) plus the Pulse rings feel like too much.
+No code, string, migration or motion change.
+
 # Dating deck buttons get visible words (2026-10-17, owner-approved; not device-verified)
 
 Owner: add visible words to Dating's deck buttons to match the worded Friends deck; keep every action, meaning, backend

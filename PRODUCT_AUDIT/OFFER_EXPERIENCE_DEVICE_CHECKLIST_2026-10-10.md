@@ -33,6 +33,11 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
   go out behind it once. ★ With Reduce Motion: the line only, no rings.
 - [ ] A duplicate request, or one that reached nobody: no rings.
 - [ ] Business gets the opportunity push/digest per its rules; the card opens on Opportunities.
+- [ ] (idea 157) Ask ONE business (Ask Coastal Coffee): Send replaces the form with the request screen at once (no
+  confirmation step, no return to Home/Discover); the line reads "Request sent to Coastal Coffee. You'll be notified when
+  they respond."; rings only when it really reached them. Later, the reply push opens that exact reply.
+- [ ] (idea 157) The success banner plays N -> ✨ -> ✓ AND the Pulse rings together: record whether the pair feels like
+  too much ("a massive confirmation"). Report only; both are approved, never change motion from this check.
 
 ## 2. Business replies
 
