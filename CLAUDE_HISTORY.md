@@ -1,3 +1,30 @@
+# Interested host count DECIDED: kept, host-only, aggregate-only (2026-10-17, owner, follow-up to idea "152"; no feature change)
+
+Owner decision (LOCKED), resolving the discrepancy recorded in the entry below: item 139's anonymous count stays.
+Visibility rule: the HOST of that gathering may see the current number of people marked Interested, never who (no names, photos,
+identities, list or per-person record). The interested person sees only their own mark. Other attendees, unrelated viewers, signed-out
+viewers and businesses see neither the count nor any mark. Interested is never a business request, lead or booking; no notification or
+analytics event identifies an interested person. Placement: only the host's own GatheringDetail host view (`HostCommandCenter`'s stats,
+"N interested" + "Interested is private: you see how many, never who."); never on Home/Discover cards, public detail or other attendees'
+views. After cancel (= delete) no count for anyone, so retention never creates a new audience. No Save/bookmark, saved places,
+"You saved this" wording, public popularity signal or new screen.
+Audit (nothing violated the rule, so the implementation is unchanged):
+- Server, journey `src/journeys/interestedPrivacy.journey.js` (new, rolled back, every actor under the REAL API role + JWT claims, so RLS,
+  grants and the function's host check run): host count 3 and zero rows; each interested person only their own row, no count; attendee,
+  stranger, business owner, signed out: count refused, zero rows; nobody inserts/updates/deletes another person's mark; the host cannot
+  mark their own; marking sends the host no push; the business demand read carries no Interested row below the floor and no gathering or
+  person id; after one unmark + one join the host count is 1 (current aggregate); after cancel the count is refused for host and
+  interested person. The set of DB functions that read `gathering_interested` is pinned (8, each annotated): a new reader fails the journey
+  until reviewed. Ran on production: 12/12.
+- Client, guard `src/utils/interestedHostCountGuard.test.js` (new, 5): only `services/gatherings.js` calls the RPC, only when `isHost`;
+  only GatheringDetail reads `interestedCount`, inside its host branch; `HostCommandCenter` renders only there, inside
+  `gathering.isHost ? (`; the command center never reads people. No analytics call on marking Interested (checked; only the person's own row).
+Freshness (reported, not changed): the count is re-read on every load, focus and host live-join reload (a join clears Interested, so
+joins update it at once); another person marking/unmarking while the host keeps the screen open shows on the next reload. No realtime
+subscription is possible without exposing rows to the host (RLS shows them none), and it is labelled as a plain figure, not "live".
+STILL OUTSTANDING (not done): items 30 and 31 physical-phone checks; native review of item 31's strings; results and defects to be recorded
+before either is marked verified.
+
 # "Save for later" MET BY ITEMS 30 + 31, LOCKED (2026-10-17, owner idea "152"; nothing built)
 
 "152" is already item 152 (intent -> action conversion, waiting on evidence). Owner decision (LOCKED): items 30 ("✓ Saved" pulse ->
