@@ -1,3 +1,25 @@
+# Item 148 (owner, approved D1-D4 2026-10-17, LOCKED) Story & sighting location privacy - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+(Unrelated to the September "Item 148", business notification mute groups.) Scope, findings, build and full verification record:
+`PRODUCT_AUDIT/ITEM_148_STORY_SIGHTING_LOCATION_SCOPE_2026-10-17.md`; device checks `ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md`.
+Found (live, rolled back, real roles): any signed-in user read a live public story's / business moment's exact GPS point and could reverse
+the map pin's md5(id) offset; a sighting's other participant read `approx_area` at ~11 m; anon got no rows. Prod then: 0 stories, 1 sighting.
+Built (`supabase/migrations/20270321_story_sighting_location_privacy.sql`, applied 2026-10-17):
+- `private.location_pin`: 0.007 deg grid cell + an HMAC(item 146's `private.pin_secret`, scope+owner+cell) pin inside it; depends only on
+  (person, cell), so repeated posts share one pin (D2, nothing to average); idempotent.
+- BEFORE triggers store only the pin: `story_location_to_pin` (stories; business moment = no location, D3; invalid = none) and
+  `sighting_area_to_pin` (pair-keyed, 6 decimals, D4). Existing sighting re-pinned.
+- Column allowlists: no client SELECT on stories.latitude/longitude, sightings.approx_area (forward rule: new columns need a grant).
+- Map RPC returns the stored pin; `get_sighting_fuzzed_coords` dropped (no caller since 2026-07-28, commit 00005af2; sighting map pins
+  have been empty since and stay so).
+- Client `uploadStory`: location only for a public personal story, rounded to 3 decimals before sending. Business web export regenerated.
+Verified: journey `storySightingLocation` 14/14 (mutation: 8 fail with trigger dropped + grant restored); guard
+`storySightingLocationGuard.test.js` 8/8; Jest 459 suites / 6121; journeys 445/445 with prelude and on prod after apply; replay 445/445,
+journeys 445/445 on it, both concurrency scripts pass, grants replay = prod 1177/1177, new function definitions identical; probe script
+shows direct reads denied and the md5 reversal ~430 m off. Behaviour: story pins anywhere in their ~780 m cell (up to ~1 km from the post),
+stacked per person+place; edge-of-cell residual documented. Not verified / deferred: device checks; media GPS metadata (DEFERRED, unresolved,
+check 10); signed-in REST probe (no test account). Item 146's repeated-gathering averaging weakness documented in its scope doc, not fixed.
+
 # Item 146 (owner, approved 2026-10-17) Gathering precise-location security - BUILT, LIVE, NOT DEVICE-VERIFIED
 
 Owner approval: D1 yes (pins move once), D2 public only (+ max 20 points), D3 = separate high-priority item 147 (scoped:

@@ -224,11 +224,10 @@ real roles; replay 444/444 + journeys 431/431; grants replay = prod 1556/1556; s
 `gatherings`' SELECT policy is `qual = true`, so anon reads every invite-only/friends/community gathering's title, description, host and time;
 item 146 fixed coordinates only, never call gathering privacy done. Scope `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_SCOPE_2026-10-17.md`; needs its build approval.
 
-**Item 148 (Stories & Sightings location privacy, owner 2026-10-17: HIGH PRIORITY PRIVACY) is SCOPED + INVESTIGATED, NOT STARTED, OPEN:**
-any signed-in user reads a live public story's / business moment's exact GPS point (`stories.latitude/longitude` + RLS) and reverses
-the map pin's md5(id) offset; a sighting's other participant reads `approx_area` at ~11 m. Anon: no rows. Prod today: 0 stories, 1 sighting.
-Scope + proposal (store only a secret-keyed person+cell pin, revoke columns, no business-moment GPS, coarsen sightings; D1-D4) and the
-unverified EXIF path: `PRODUCT_AUDIT/ITEM_148_STORY_SIGHTING_LOCATION_SCOPE_2026-10-17.md`; probe `scripts/live-verify/item-148-story-sighting-location-probe.js`. Needs build approval.
+**Item 148 (Stories & Sightings location privacy, owner approved D1-D4 2026-10-17, LOCKED) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md` is recorded (migration 20270321 LIVE; journey `storySightingLocation` 14/14;
+replay 445/445 + journeys 445/445; grants = prod). Story/business-moment media GPS metadata DEFERRED, UNRESOLVED until check 10 runs on a device.
+Item 146's repeated-gathering averaging weakness is documented in its scope doc, not fixed, owner to assess (item 146 not reopened).
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -286,7 +285,7 @@ block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RL
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
-network failure between its writes; non-public `gatherings` rows readable by anon (item 147, open); stories/sightings exact location readable by signed-in users / the other sighting participant (item 148, open); `LOCK TABLE` remains possible with direct DB UPDATE rights.
+network failure between its writes; non-public `gatherings` rows readable by anon (item 147, open); story media may carry GPS metadata (item 148 check 10, unverified); gathering pins are keyed per gathering, so many gatherings hosted from one point can be averaged (item 146 scope doc, owner to assess); `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
 gathering stops create no child plans.
 
@@ -363,6 +362,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   have no client SELECT (column allowlist on `gatherings`); pins/distances/radius only from the secret-keyed pin (`private.gathering_pin`);
   place counts public + discoverable only, max 20 points. A migration adding a gatherings column must `grant select (<col>)` to anon,
   authenticated (guard `gatheringPreciseLocationGuard.test.js`, journey `preciseLocation`).
+- **Story & sighting location (item 148, LOCKED):** never stored precisely: triggers store only `private.location_pin` (item 146's secret,
+  keyed by person + 0.007 deg cell, so repeated posts share one pin); business moments store none; no client SELECT on
+  `stories.latitude/longitude` / `sightings.approx_area` (a new column on either needs its own grant). Guard `storySightingLocationGuard.test.js`, journey `storySightingLocation`.
 - **Interested is private:** never shown or counted to another viewer, never a business request, never
   commercial intent; the only business use is the anonymous floored aggregate (consent switch).
 - **Blocks hide both ways, server-side,** via `viewer_blocked_either_way` / `is_blocked` inside the read;

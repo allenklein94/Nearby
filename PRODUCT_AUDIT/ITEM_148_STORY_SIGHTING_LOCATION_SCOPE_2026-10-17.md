@@ -4,8 +4,10 @@ Owner decision (2026-10-17): its own security item, separate from item 146 (gath
 (non-public gathering rows, open). (Unrelated to the older "Item 148" of 2026-09-19 in CLAUDE_HISTORY.md, business
 notification mute groups.)
 
-**Status: SCOPED, INVESTIGATED, NOT STARTED, OPEN.** Nothing changed. The fix needs the owner's approval of a remediation
-plan (proposal below, decisions D1-D4).
+**Status (2026-10-17): APPROVED (owner, D1-D4 LOCKED), BUILT, LIVE, NOT DEVICE-VERIFIED.** Migration
+`20270321_story_sighting_location_privacy.sql` applied to production; build + verification record at the end of this file
+("Build and verification"). Device checks: `ITEM_148_STORY_SIGHTING_LOCATION_DEVICE_CHECKLIST_2026-10-17.md`. Photo/video
+metadata (finding 7) stays DEFERRED and UNRESOLVED until a real-device test.
 
 Acceptance criterion (owner): no unauthorized user can retrieve or reconstruct a person's precise location through Stories
 or Sightings, while approved location-dependent features keep working.
@@ -121,3 +123,62 @@ So the smallest safe fix is to **never keep the exact point**, rather than guard
 Gathering coordinates (item 146, done; finding 6 noted only). Non-public gathering rows (item 147). The crossed-paths push
 naming (existing residual). Any other table holding a person's location (e.g. profile/last-known location) is not audited
 here; worth a separate pass if the owner wants one.
+
+## Build and verification (2026-10-17, owner approved D1-D4)
+
+**Built (migration 20270321, LIVE):**
+- `private.location_pin(scope, owner_key, lat, lng)`: the point's cell on a fixed 0.007 deg grid and a pin inside it
+  chosen by HMAC-SHA256 with item 146's server-only secret (`private.pin_secret`) over scope + owner + cell. It depends only
+  on (person, cell), never on where in the cell the point was, so repeated posts from one place give ONE pin and averaging
+  learns nothing beyond the cell. Middle 90% of the cell, so pinning a pin returns itself.
+- Stories: BEFORE INSERT/UPDATE trigger `story_location_to_pin` stores the pin in `latitude/longitude` in place of the
+  point (D1, D2); a business moment (`partner_id`) stores nothing (D3); half/out-of-range/NaN stores nothing.
+- Sightings: BEFORE INSERT/UPDATE trigger `sighting_area_to_pin` stores the pair's pin (order-independent key) in
+  `approx_area` at 6 decimals; unparseable stores nothing (D4). The one production row was re-pinned in place.
+- Column allowlists (defence in depth only): no client SELECT on `stories.latitude/longitude` or `sightings.approx_area`.
+  Forward rule: a new column on either table needs `grant select (<col>)` in its migration.
+- `get_public_stories_with_fuzzed_coords` returns the stored pin (same signature, grants: authenticated only); also never
+  a business moment. `get_sighting_fuzzed_coords` DROPPED: no caller anywhere (its only client call was removed on
+  2026-07-28 in commit 00005af2), so the sighting map pins (`SightingsOverviewMap`, the single-sighting map button) have had
+  no coordinates since then and still have none. Restoring them would need its own decision (a pin-returning read).
+- Client: `uploadStory` asks for a location only for a public personal story (never a business moment) and sends it
+  rounded to 3 decimals (~110 m), so the exact fix never leaves the phone. Business web export regenerated.
+
+**Paths audited:** grants (table, column, function) for anon/authenticated; the RLS policies on stories, sightings,
+story_views and story storage (the storage policy reads only `media_path`, granted); no views/rules over either table; not
+in the realtime publication; no edge function reads them; every SECURITY DEFINER function touching them (purge, delete-
+expired, daily limit, new-story push, crossed-paths push: none returns a location); every client select (guard). Postgres
+logging: `log_statement = ddl`, parameters never logged on error (`log_parameter_max_length_on_error = 0`), no pgaudit, so
+an insert's values are not written to the database logs; combined with client rounding the server never receives the
+exact fix. Not inspectable from here: Supabase's own API gateway logs (request bodies are not normally logged) and
+production backups/PITR history, which may still hold the one sighting row's previous 4-decimal value until they age out.
+
+**Verified:**
+- Journey `storySightingLocation` (14 tests, real roles): stored value is the pin in the right cell, no column holds the
+  exact value; 31 posts from one place with ~30 m jitter + one ~250 m away in the same cell = 1 distinct pin, mean = the
+  pin; another cell / another person = another pin; a trusted rewrite to the exact point stores the pin again; business
+  moment stores null; half/invalid coordinates store null; map RPC = stored pin, md5 reversal no longer gives the point,
+  no business moment on the map; sighting = pair pin (either order), unparseable = null, old RPC gone; direct reads
+  (column, `*`, filter, whole row) refused for anon, stranger, friend, poster; the app's own column lists still read;
+  pin/trigger functions and the secret unreachable. Mutation check on the rebuilt DB: with the story trigger dropped and
+  the table grant restored, 8 of 14 fail; restored, 14/14.
+- Guard `src/utils/storySightingLocationGuard.test.js` (8): client selects name granted columns only, no location embed,
+  nothing calls the dropped RPC, `uploadStory` capture rule + rounding, triggers + secret in the migration, forward rule.
+- Full Jest 459 suites / 6121 passed. Journeys 445/445 with the migration as prelude on prod, then 445/445 on prod after
+  applying (no prelude). From-scratch replay 445/445 migrations, journeys 445/445 on it, booking + offer-revision
+  concurrency pass; grants replay = prod 1177/1177 (tables, the three tables' column SELECTs, non-extension functions in
+  public/private); the four new/changed function definitions identical (md5). Probe
+  `scripts/live-verify/item-148-story-sighting-location-probe.js` on prod after: direct reads "permission denied", the
+  md5 reversal returns a point ~0.004 deg (~430 m) off, not the point, the sighting RPC does not exist.
+
+**Behaviour changes to know about:**
+- Story map pins: the pin is anywhere in the ~780 m x ~700 m cell (South Palm Beach) holding the post, so it can sit up to
+  ~1 km from where it was posted (before: up to ~550 m, but reversible). What an observer can narrow the post to is the
+  cell, about the same area as the old +/- 0.0035 box. Several stories by one person from one place stack on one pin.
+- Known residual (documented, accepted by design): a place within GPS jitter of a cell edge can land in two neighbouring
+  cells across posts; two pins then reveal the point is near their shared edge (one axis narrowed; a point only near a corner).
+- Story pins carry `user_id` as before (the map shows whose story it is); only the location became coarse.
+
+**Not done / not verified:** device checks (checklist); EXIF/metadata in story media (DEFERRED, unresolved); a signed-in
+REST probe through the real API (no test account; the journey runs the same roles inside the database); item 146's
+averaging weakness (documented in its scope doc, not changed).

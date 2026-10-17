@@ -1,4 +1,4 @@
-// Item 148 (2026-10-17, scope evidence): who can read or reconstruct a story's / sighting's location, under the REAL
+// Item 148 (2026-10-17, scope evidence; after migration 20270321 it shows the fix: reads denied, md5 reversal off): who can read or reconstruct a story's / sighting's location, under the REAL
 // database roles (anon / authenticated + JWT claims). Prints the step log; asserts nothing (it records the leak as found).
 // One transaction, ALWAYS rolled back (journey harness). Run: SUPABASE_ACCESS_TOKEN=... node scripts/live-verify/item-148-story-sighting-location-probe.js
 const { runJourney } = require('../../src/journeys/journeyHarness');

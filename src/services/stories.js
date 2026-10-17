@@ -69,18 +69,17 @@ export async function uploadStory(userId, uri, mediaType, isPublic = false, gath
     .upload(path, bytes, { contentType });
   if (error) throw error;
 
-  // Only public stories (and business moments, which are always real,
-  // publicly-visible promotional content — see the RLS policy) need a
-  // location captured — private ones are matches/friends-only and never
-  // appear on the map, so there's no reason to prompt for location
-  // access in the common case.
+  // Only a public personal story is placed on the map, so only it asks for a location. Item 148 (owner, 2026-10-17,
+  // LOCKED): the server stores only a blurred, stable pin (story_location_to_pin, migration 20270321), never the exact
+  // point; the phone sends ~110 m (3 decimals) so the exact fix never leaves it. A business moment stores no location
+  // (D3: no feature uses it; the business's place is its profile); friends-only stories and gathering memories send none.
   let latitude = null;
   let longitude = null;
-  if (isPublic || partnerId) {
+  if (isPublic && !partnerId) {
     const location = await getUserLocation();
     if (location) {
-      latitude = location.coords.latitude;
-      longitude = location.coords.longitude;
+      latitude = Math.round(location.coords.latitude * 1000) / 1000;
+      longitude = Math.round(location.coords.longitude * 1000) / 1000;
     }
   }
 

@@ -142,3 +142,15 @@ g. **New convention (forward compatibility):** Postgres column grants do not cov
 - **D1** Re-key the pin offset (compatibility 1-2). Recommended: yes. P2 can't be closed otherwise.
 - **D2** Places count: public + discoverable only, capped at 20 (recommended), or remove the count.
 - **D3** Row-level exposure of non-public gatherings: scope as its own item? Recommended: yes, high priority.
+
+## Known weakness found by item 148 (2026-10-17): repeated-gathering averaging - NOT FIXED, assess separately
+
+Item 146 is NOT fully protected against this attack; do not describe it as such. `private.gathering_pin` gives each
+gathering its own keyed offset (+/- 0.0035 deg per axis). A host who hosts many gatherings from the same point (e.g. home)
+publishes many independent pins around it: the point lies inside the intersection of their boxes, whose expected width is
+about 0.014/(n+1) deg per axis (10 gatherings ~= 140 m, 30 ~= 50 m), and the mean of the pins converges on it too. Who can
+collect the pins: any signed-in caller of `get_gathering_distances` for gathering ids they hold (and today, with item 147
+open, every gathering id is readable). Item 148 fixed the same weakness for stories by keying the pin on person + grid cell
+(`private.location_pin`, migration 20270321), so repeated posts from one place share one pin. Whether gatherings should
+move to the same rule (it changes every gathering pin again and puts all of one host's gatherings in a cell on one spot)
+is an owner decision; item 146 is not reopened by item 148.
