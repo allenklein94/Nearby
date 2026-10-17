@@ -1,3 +1,13 @@
+# Offer validity window MET AS BUILT, LOCKED (2026-10-17, owner idea "149"; nothing built)
+
+Owner approved the scope (`PRODUCT_AUDIT/OFFER_VALIDITY_WINDOW_SCOPE_2026-10-17.md`). LOCKED: the reply-timing requirement is met as built:
+a reply's `valid_until` ("Valid until" -> item 47's "Ends in N min" -> "This offer has expired", same card, live on the request screen via
+`nextValidityRefreshMs`) and a business availability posting's start/end ("Starts in N min" -> "Happening now" -> "Available until" ->
+"Ends in N min", item 108's minute clock on Home + Discover), both on the shared time engine. No separate start-time field on business
+replies or offers; the proposed visit time (`proposed_time`, plus item 119's second time) stays the one source of timing; accepting is the
+booking, no activation delay; no migration, no Make an Offer field, no "Offer is active" wording; the offer and booking lifecycle are
+unchanged. NOT DEVICE-VERIFIED: the offer experience checklist (blocked on Anthropic credit), item 47's and item 108's (C10) phone checks.
+
 # "You're here" Option A LOCKED (2026-10-17, owner confirmed; nothing built)
 
 Owner: keep Option A (manual check-in only) and no new stage headlines. LOCKED: during the check-in window an eligible attendee sees

@@ -39,3 +39,9 @@ styling); no separate screens (item 45); no availability broadcast (item 114).
 
 Verification status either way: none of these state changes has been seen on a phone (offer experience checklist; item 47 and item 108
 checklists; needs Anthropic credit for live offers).
+
+## Owner decision (2026-10-17): option 1, LOCKED
+Met as built. No separate start-time field on business replies or offers; the proposed visit time (incl. item 119's second time) stays the
+source of timing; accepting is the booking, no activation delay; no migration, no Make an Offer field, no "Offer is active" wording; the
+offer and booking lifecycle are preserved. Phone verification NOT done: offer experience checklist (needs Anthropic credit), item 47's
+checklist, item 108's check C10.
