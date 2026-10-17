@@ -46,4 +46,4 @@ must not be mistaken for complete gathering privacy. (Unrelated to the older "It
 
 ## Not in scope
 
-Coordinates (item 146, done). Stories/sightings pins (reported separately, see CLAUDE.md known residuals).
+Coordinates (item 146, done). Stories/sightings location (item 148, scoped separately).

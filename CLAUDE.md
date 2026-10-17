@@ -224,6 +224,12 @@ real roles; replay 444/444 + journeys 431/431; grants replay = prod 1556/1556; s
 `gatherings`' SELECT policy is `qual = true`, so anon reads every invite-only/friends/community gathering's title, description, host and time;
 item 146 fixed coordinates only, never call gathering privacy done. Scope `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_SCOPE_2026-10-17.md`; needs its build approval.
 
+**Item 148 (Stories & Sightings location privacy, owner 2026-10-17: HIGH PRIORITY PRIVACY) is SCOPED + INVESTIGATED, NOT STARTED, OPEN:**
+any signed-in user reads a live public story's / business moment's exact GPS point (`stories.latitude/longitude` + RLS) and reverses
+the map pin's md5(id) offset; a sighting's other participant reads `approx_area` at ~11 m. Anon: no rows. Prod today: 0 stories, 1 sighting.
+Scope + proposal (store only a secret-keyed person+cell pin, revoke columns, no business-moment GPS, coarsen sightings; D1-D4) and the
+unverified EXIF path: `PRODUCT_AUDIT/ITEM_148_STORY_SIGHTING_LOCATION_SCOPE_2026-10-17.md`; probe `scripts/live-verify/item-148-story-sighting-location-probe.js`. Needs build approval.
+
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
@@ -280,7 +286,7 @@ block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RL
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
-network failure between its writes; non-public `gatherings` rows readable by anon (item 147, open); stories and sightings pins use the same reversible md5(id) offset as gatherings did before item 146 (`get_public_stories_with_fuzzed_coords`, `get_sighting_fuzzed_coords`) and `stories.latitude/longitude` are directly selectable by anon/authenticated (found 2026-10-17, item 146 audit, not probed for exact recovery, owner to decide); `LOCK TABLE` remains possible with direct DB UPDATE rights.
+network failure between its writes; non-public `gatherings` rows readable by anon (item 147, open); stories/sightings exact location readable by signed-in users / the other sighting participant (item 148, open); `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
 gathering stops create no child plans.
 
