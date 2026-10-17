@@ -216,9 +216,13 @@ Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the
 **Item 145 ("Get directions" on a gathering's meet-up point, owner 2026-10-17) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_145_GATHERING_DIRECTIONS_DEVICE_CHECKLIST_2026-10-17.md` is recorded on a real phone (journey `gatheringDirections`; no migration, no new strings). Ready-state motion, urgency styling and last-hour reordering DECLINED, met as built (item 108, LOCKED).
 
-**Item 146 (gathering precise-location security, owner 2026-10-17) is SCOPED, NOT BUILT, awaiting owner decisions D1-D3** in
-`PRODUCT_AUDIT/ITEM_146_PRECISE_LOCATION_SECURITY_SCOPE_2026-10-17.md`: exact points leak via the table grant (anon, every gathering incl. invite-only)
-AND `get_gathering_distances` (md5 pin offset reversible, exact distances); `get_bounded_nearby_gathering_ids` / `count_gatherings_near_batch` are oracles. All confirmed live, rolled back.
+**Item 146 (gathering precise-location security, owner approved 2026-10-17) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_146_PRECISE_LOCATION_DEVICE_CHECKLIST_2026-10-17.md` is recorded (migration 20270320 LIVE; journey `preciseLocation` 17/17 under
+real roles; replay 444/444 + journeys 431/431; grants replay = prod 1556/1556; scope + results `ITEM_146_PRECISE_LOCATION_SECURITY_SCOPE_2026-10-17.md`).
+
+**Item 147 (non-public gathering rows readable by anyone, owner 2026-10-17: HIGH PRIORITY SECURITY) is SCOPED, NOT STARTED, OPEN:**
+`gatherings`' SELECT policy is `qual = true`, so anon reads every invite-only/friends/community gathering's title, description, host and time;
+item 146 fixed coordinates only, never call gathering privacy done. Scope `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_SCOPE_2026-10-17.md`; needs its build approval.
 
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
@@ -276,7 +280,7 @@ block filters remain in `gatherings.js`, `ActivityScreen.js` and inline-block RL
 `business_messages` (allow-listed in `blockVisibilityGuard.test.js`; stories + story storage fixed by 20270315); a
 business owner can open a known person's verified profile like any user; a screened logo is an
 owner-hosted URL; video duration metadata that lies consistently passes; Tell Nearby can half-save on a
-network failure between its writes; `gatherings.precise_lat/lng` exposure (direct table read + three RPC paths) is now item 146 (open work); `gatherings` rows of every visibility are readable by anon (`qual = true`; scope pending, item 146 D3); `LOCK TABLE` remains possible with direct DB UPDATE rights.
+network failure between its writes; non-public `gatherings` rows readable by anon (item 147, open); stories and sightings pins use the same reversible md5(id) offset as gatherings did before item 146 (`get_public_stories_with_fuzzed_coords`, `get_sighting_fuzzed_coords`) and `stories.latitude/longitude` are directly selectable by anon/authenticated (found 2026-10-17, item 146 audit, not probed for exact recovery, owner to decide); `LOCK TABLE` remains possible with direct DB UPDATE rights.
 Older disclosed gaps: surprise-excluded person not pre-filtered in invite pickers (server enforces);
 gathering stops create no child plans.
 
@@ -349,6 +353,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Shared business requests (item 93, LOCKED):** "People you know are also asking" = `intent_visibility` 'friends' (OFF by default,
   only Settings turns it on), accepted friends only, never matches; shows only `sharedRequestFactsLine` (category · day · party
   size), never raw text; combining still needs each person's consent; no merge animation.
+- **A gathering's precise point (item 146, LOCKED):** only host + approved attendees, only via `get_gathering_meetup_point`; precise_lat/lng
+  have no client SELECT (column allowlist on `gatherings`); pins/distances/radius only from the secret-keyed pin (`private.gathering_pin`);
+  place counts public + discoverable only, max 20 points. A migration adding a gatherings column must `grant select (<col>)` to anon,
+  authenticated (guard `gatheringPreciseLocationGuard.test.js`, journey `preciseLocation`).
 - **Interested is private:** never shown or counted to another viewer, never a business request, never
   commercial intent; the only business use is the anonymous floored aggregate (consent switch).
 - **Blocks hide both ways, server-side,** via `viewer_blocked_either_way` / `is_blocked` inside the read;

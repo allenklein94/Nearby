@@ -1,3 +1,29 @@
+# Item 146 (owner, approved 2026-10-17) Gathering precise-location security - BUILT, LIVE, NOT DEVICE-VERIFIED
+
+Owner approval: D1 yes (pins move once), D2 public only (+ max 20 points), D3 = separate high-priority item 147 (scoped:
+`PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_SCOPE_2026-10-17.md`). Built (`supabase/migrations/20270320_gathering_precise_location_security.sql`):
+- `gatherings`: table-wide SELECT revoked from anon/authenticated, SELECT granted on every column except precise_lat/lng (INSERT/UPDATE
+  unchanged; the host's direct read refused too, the lookup is the one route). Forward rule: new gatherings columns need an explicit grant.
+- Server-only secret `private.pin_secret` (schema + table no client grants, schema not exposed by the API); `private.gathering_pin()` =
+  HMAC-SHA256(id, secret) offset, same +/-0.0035 deg bound. `get_gathering_distances` returns that pin and measures distance_miles to it;
+  `get_bounded_nearby_gathering_ids` tests the radius on it (index pre-filter widened by the bound). `count_gatherings_near_batch`:
+  visibility 'everyone' + discoverable only, > 20 points refused; uncalled `count_gatherings_near` dropped. Same signatures, one overload each.
+- Client: `createGathering` returns `SAFE_GATHERING_FIELDS` (a bare `.select()` = `*` would be refused). Business web export regenerated.
+- Not built (deviation from the scope's proposal b): no row-visibility check in `get_gathering_distances` (row visibility = item 147).
+Verified: new journey `preciseLocation` (17 tests) runs every actor under the REAL role (`set local role anon/authenticated`): signed-out
+(public + invite-only), stranger (both), pending, waitlisted, invited-not-joined, approved, host: direct column read, `select *`, whole-row
+(embed), filter on the point all refused; ordinary columns readable; lookup = host + approved only; host still inserts (returning named
+columns) and edits, `returning *` refused; old md5 reversal no longer gives the point; distance = to the pin; radius on the pin; counts
+3 public / 0 private, 21 points refused; grants as designed. Shown to fail with the table-wide grant put back. Guard
+`src/utils/gatheringPreciseLocationGuard.test.js` (every client gatherings select names granted columns, no `*`/bare select, no point; no
+`gatherings(*)` embed; forward rule; mutation-checked). `ticketRequired.test.js` widened to allow the grant list (a grant is not a read).
+Full Jest 458 suites / 6113; journeys 431/431 with prelude on prod; from-scratch replay 444/444, journeys 431/431 on it, booking + offer-
+revision concurrency pass; applied to prod 2026-10-17; journeys 431/431 on prod; live-verify `gathering-precise-location-access.sql`; grants
+replay = prod 1556/1556; location function definitions identical. REST as signed-out (read-only): point/`*`/filter/order/embed 42501, RPCs
+refused, `count_gatherings_near` 404, private schema 406. Found, reported, not changed: stories/sightings use the same reversible md5 pin and
+`stories.latitude/longitude` are client-readable (owner to decide). Not verified: device (`ITEM_146_PRECISE_LOCATION_DEVICE_CHECKLIST_2026-10-17.md`),
+a signed-in REST probe (no test account).
+
 # Item 146 (owner, 2026-10-17) Gathering precise-location database security - SCOPED, NOT BUILT
 
 Owner: scope item 145's reported exposure as its own security item (outcome, constraints and acceptance in the scope doc

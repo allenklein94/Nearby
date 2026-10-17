@@ -135,7 +135,8 @@ export async function createGathering({ title, description, interestTag, schedul
       // host's own ask and never lets it change afterwards.
       ...(submissionId ? { submission_id: submissionId } : {}),
     })
-    .select()
+    // Item 146: named columns, never `*` (precise_lat/lng are not client-readable; a bare select() is refused).
+    .select(SAFE_GATHERING_FIELDS)
     .single();
   if (error) throw error;
   return data;

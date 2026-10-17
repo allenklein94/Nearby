@@ -42,7 +42,11 @@ describe('item 188: ticket needed is a declared fact only', () => {
   it('no server function, policy, view or edge function reads it', () => {
     const migs = fs.readdirSync(path.join(ROOT, 'supabase/migrations'))
       .filter((f) => /ticket_required/.test(fs.readFileSync(path.join(ROOT, 'supabase/migrations', f), 'utf8')));
-    expect(migs).toEqual(['20270282_gathering_ticket_required.sql']);
+    // 20270320 (item 146) only lists it in the gatherings column SELECT grant, never reads it.
+    expect(migs).toEqual(['20270282_gathering_ticket_required.sql', '20270320_gathering_precise_location_security.sql']);
+    const grant = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20270320_gathering_precise_location_security.sql'), 'utf8');
+    const outsideGrant = grant.replace(/grant select \([^)]*\) on public\.gatherings to anon, authenticated;/, '');
+    expect(outsideGrant).not.toMatch(/ticket_required/);
     const edge = walk(path.join(ROOT, 'supabase/functions')).filter((p) => /ticket_required/.test(fs.readFileSync(p, 'utf8')));
     expect(edge).toEqual([]);
     const sql = fs.readFileSync(path.join(ROOT, 'supabase/migrations/20270282_gathering_ticket_required.sql'), 'utf8');

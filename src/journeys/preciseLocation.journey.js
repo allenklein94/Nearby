@@ -1,0 +1,228 @@
+// Owner item 146 (2026-10-17, approved): a gathering's precise point reaches only its host and approved attendees, only
+// through get_gathering_meetup_point. Unlike most journeys, every actor here runs under the REAL database role the API uses
+// (`set local role anon` / `authenticated` + the JWT claims), so table and column grants are exercised, not bypassed:
+//   per actor (signed-out visitor, stranger, pending request, waitlisted, invited-not-joined, approved attendee, host):
+//     direct `precise_lat` read, `select *`, a whole-row read (what an embed `gatherings(*)` does), a filter on the column
+//     (`?precise_lat=gt.0` would be an oracle) -> all refused; an ordinary read of the allowed columns works; the lookup
+//     gives the point to the host + approved attendee only (anon cannot call it).
+//   RPC paths, as a stranger: get_gathering_distances' pin is no longer the md5 offset (the old reversal fails), stays within
+//     the 0.0035 deg bound, and distance_miles is measured to the pin; get_bounded_nearby_gathering_ids tests the pin, never the
+//     point; count_gatherings_near_batch counts only public + discoverable gatherings and refuses more than 20 points.
+//   Grants: no table-wide SELECT; the client-readable columns = every column except precise_lat/lng; the secret, its schema
+//     and the pin function are out of client reach; count_gatherings_near is gone.
+// Rolled back. Coordinates are mid-Atlantic so no real gathering shares the ~110 m count box.
+const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+
+const d = hasToken ? describe : describe.skip;
+
+const LAT = 12.345678;
+const LNG = -45.678912;
+
+// One actor's probes against gathering `gid`, under `role` with JWT subject `sub` (null = signed out).
+function probe(step, role, sub, gid) {
+  const claims = sub
+    ? `json_build_object('sub', ${sub}, 'role', 'authenticated')::text`
+    : `json_build_object('role', 'anon')::text`;
+  return `
+  perform set_config('request.jwt.claims', ${claims}, true);
+  set local role ${role};
+  begin perform precise_lat from gatherings where id = ${gid}; v_direct := 'readable';
+  exception when insufficient_privilege then v_direct := 'denied'; end;
+  begin perform * from gatherings where id = ${gid}; v_star := 'readable';
+  exception when insufficient_privilege then v_star := 'denied'; end;
+  begin perform (select g from gatherings g where g.id = ${gid}); v_row := 'readable';
+  exception when insufficient_privilege then v_row := 'denied'; end;
+  begin perform 1 from gatherings where id = ${gid} and precise_lat > 0; v_filter := 'readable';
+  exception when insufficient_privilege then v_filter := 'denied'; end;
+  begin select jsonb_build_object('title', title, 'area', area, 'visibility', visibility) into v_safe from gatherings where id = ${gid};
+  exception when insufficient_privilege then v_safe := '"denied"'::jsonb; end;
+  begin select coalesce(jsonb_agg(jsonb_build_object('lat', latitude, 'lng', longitude)), '[]'::jsonb) into v_meet
+    from get_gathering_meetup_point(${gid});
+  exception when insufficient_privilege then v_meet := '"denied"'::jsonb; end;
+  reset role;
+  log := log || jsonb_build_array(jsonb_build_object('step', '${step}', 'ok', true, 'data', jsonb_build_object(
+    'direct', v_direct, 'star', v_star, 'row', v_row, 'filter', v_filter, 'safe', v_safe, 'meet', v_meet)));`;
+}
+
+function miles(lat1, lng1, lat2, lng2) {
+  const r = Math.PI / 180;
+  const c = Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.cos((lng2 - lng1) * r) + Math.sin(lat1 * r) * Math.sin(lat2 * r);
+  return 3958.8 * Math.acos(Math.min(1, Math.max(-1, c)));
+}
+
+d('journey: precise gathering location only for the host and approved attendees, on every database path', () => {
+  let s;
+  beforeAll(async () => {
+    const log = await runJourney(`
+      v_host uuid := gen_random_uuid(); v_fan uuid := gen_random_uuid(); v_req uuid := gen_random_uuid();
+      v_wait uuid := gen_random_uuid(); v_inv uuid := gen_random_uuid(); v_str uuid := gen_random_uuid(); u uuid;
+      v_open uuid; v_appr uuid; v_full uuid; v_priv uuid;
+      v_direct text; v_star text; v_row text; v_filter text; v_safe jsonb; v_meet jsonb;
+      v_pin record; v_safe_id uuid; v_md5_lat double precision; v_md5_lng double precision; v_err text;`, `
+  foreach u in array array[v_host, v_fan, v_req, v_wait, v_inv, v_str] loop
+    insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@j146.test');
+    insert into profiles (id, display_name, birthdate) values (u, 'J146-' || left(u::text, 4), date '1990-01-01');
+  end loop;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
+    values (v_host, 'J146 open', now() + interval '1 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 10, 'everyone') returning id into v_open;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility, requires_approval)
+    values (v_host, 'J146 approval', now() + interval '1 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 10, 'everyone', true) returning id into v_appr;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
+    values (v_host, 'J146 full', now() + interval '1 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 2, 'everyone') returning id into v_full;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility, is_public)
+    values (v_host, 'J146 invite-only', now() + interval '1 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 10, 'invite_only', false) returning id into v_priv;
+  insert into social_invites (inviter_id, invitee_id, invite_type, target_id, status) values (v_host, v_inv, 'gathering', v_priv, 'pending');
+
+  perform set_config('request.jwt.claims', json_build_object('sub', v_fan, 'role', 'authenticated')::text, true);
+  perform join_gathering(v_open);
+  perform join_gathering(v_full); -- takes the full gathering's one guest spot
+  perform set_config('request.jwt.claims', json_build_object('sub', v_req, 'role', 'authenticated')::text, true);
+  perform join_gathering(v_appr);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_wait, 'role', 'authenticated')::text, true);
+  perform join_gathering(v_full);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'statuses', 'ok', true, 'data', jsonb_build_object(
+    'approved', (select status from gathering_interest where gathering_id = v_open and user_id = v_fan),
+    'pending', (select status from gathering_interest where gathering_id = v_appr and user_id = v_req),
+    'waitlisted', (select status from gathering_interest where gathering_id = v_full and user_id = v_wait))));
+  -- the host's own writes the way the app makes them: insert returning named columns (createGathering), an edit (updateGathering)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility)
+    values (v_host, 'J146 created', now() + interval '2 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 'invite_only')
+    returning id into v_safe_id;
+  update gatherings set title = 'J146 edited' where id = v_safe_id;
+  begin insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility)
+      values (v_host, 'J146 star', now() + interval '2 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 'invite_only') returning * into v_pin;
+    v_err := 'readable';
+  exception when insufficient_privilege then v_err := 'denied'; end;
+  reset role;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'host_writes', 'ok', true, 'data', jsonb_build_object(
+    'edited', (select title from gatherings where id = v_safe_id),
+    'point_stored', (select precise_lat = ${LAT} and precise_lng = ${LNG} from gatherings where id = v_safe_id),
+    'returning_star', v_err)));
+  ${probe('anon_public', 'anon', null, 'v_open')}
+  ${probe('anon_invite_only', 'anon', null, 'v_priv')}
+  ${probe('stranger_public', 'authenticated', 'v_str', 'v_open')}
+  ${probe('stranger_invite_only', 'authenticated', 'v_str', 'v_priv')}
+  ${probe('pending', 'authenticated', 'v_req', 'v_appr')}
+  ${probe('waitlisted', 'authenticated', 'v_wait', 'v_full')}
+  ${probe('invited', 'authenticated', 'v_inv', 'v_priv')}
+  ${probe('approved', 'authenticated', 'v_fan', 'v_open')}
+  ${probe('host', 'authenticated', 'v_host', 'v_open')}
+  ${probe('host_invite_only', 'authenticated', 'v_host', 'v_priv')}
+
+  -- RPC paths, as a stranger under the real role
+  perform set_config('request.jwt.claims', json_build_object('sub', v_str, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  select * into v_pin from get_gathering_distances(0, 0, array[v_priv]);
+  v_md5_lat := v_pin.fuzzed_lat - ((((('x' || substr(md5(v_priv::text || 'lat'), 1, 8))::bit(32)::bigint % 1000) / 1000.0 - 0.5) * 0.007));
+  v_md5_lng := v_pin.fuzzed_lng - ((((('x' || substr(md5(v_priv::text || 'lng'), 1, 8))::bit(32)::bigint % 1000) / 1000.0 - 0.5) * 0.007));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'distances', 'ok', true, 'data', jsonb_build_object(
+    'pin_lat', v_pin.fuzzed_lat, 'pin_lng', v_pin.fuzzed_lng, 'distance_from_origin', v_pin.distance_miles,
+    'md5_recovered_lat', v_md5_lat, 'md5_recovered_lng', v_md5_lng,
+    'again', (select jsonb_build_object('lat', fuzzed_lat, 'lng', fuzzed_lng) from get_gathering_distances(1, 1, array[v_priv])),
+    'from_precise', (select distance_miles from get_gathering_distances(${LAT}, ${LNG}, array[v_priv])))));
+  log := log || jsonb_build_array(jsonb_build_object('step', 'bounded', 'ok', true, 'data', jsonb_build_object(
+    -- a radius around the PIN finds the invite-only gathering; a radius around the precise point smaller than the pin's
+    -- distance from it does not
+    'around_pin', exists (select 1 from get_bounded_nearby_gathering_ids(v_pin.fuzzed_lat, v_pin.fuzzed_lng, 0.01) b where b.id = v_priv),
+    'around_point', exists (select 1 from get_bounded_nearby_gathering_ids(${LAT}, ${LNG},
+        (select distance_miles from get_gathering_distances(${LAT}, ${LNG}, array[v_priv])) / 2) b where b.id = v_priv))));
+  begin perform count_gatherings_near_batch(array_fill(${LAT}::double precision, array[21]), array_fill(${LNG}::double precision, array[21]));
+    v_err := 'accepted';
+  exception when others then v_err := sqlerrm; end;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'counts', 'ok', true, 'data', jsonb_build_object(
+    -- four journey gatherings at the point: three public + discoverable (open, approval, full), one invite-only
+    'at_point', (select gathering_count from count_gatherings_near_batch(array[${LAT}::double precision], array[${LNG}::double precision])),
+    'twenty_one', v_err,
+    'twenty_ok', (select count(*) from count_gatherings_near_batch(array_fill(${LAT}::double precision, array[20]), array_fill(${LNG}::double precision, array[20]))))));
+  reset role;
+
+  log := log || jsonb_build_array(jsonb_build_object('step', 'grants', 'ok', true, 'data', jsonb_build_object(
+    'anon_table_select', has_table_privilege('anon', 'public.gatherings', 'SELECT'),
+    'auth_table_select', has_table_privilege('authenticated', 'public.gatherings', 'SELECT'),
+    'unreadable_for_anon', (select coalesce(jsonb_agg(attname order by attname), '[]'::jsonb) from pg_attribute
+      where attrelid = 'public.gatherings'::regclass and attnum > 0 and not attisdropped
+        and not has_column_privilege('anon', 'public.gatherings', attname, 'SELECT')),
+    'unreadable_for_authenticated', (select coalesce(jsonb_agg(attname order by attname), '[]'::jsonb) from pg_attribute
+      where attrelid = 'public.gatherings'::regclass and attnum > 0 and not attisdropped
+        and not has_column_privilege('authenticated', 'public.gatherings', attname, 'SELECT')),
+    'host_can_still_write_point', has_column_privilege('authenticated', 'public.gatherings', 'precise_lat', 'INSERT'),
+    'private_schema_usage', has_schema_privilege('authenticated', 'private', 'USAGE') or has_schema_privilege('anon', 'private', 'USAGE'),
+    'secret_readable', has_table_privilege('authenticated', 'private.pin_secret', 'SELECT') or has_table_privilege('anon', 'private.pin_secret', 'SELECT'),
+    'pin_fn_callable', has_function_privilege('authenticated', 'private.gathering_pin(uuid, double precision, double precision)', 'execute')
+      or has_function_privilege('anon', 'private.gathering_pin(uuid, double precision, double precision)', 'execute'),
+    'count_single_exists', exists (select 1 from pg_proc where proname = 'count_gatherings_near' and pronamespace = 'public'::regnamespace),
+    'anon_distances', has_function_privilege('anon', 'public.get_gathering_distances(double precision, double precision, uuid[])', 'execute'),
+    'anon_meetup', has_function_privilege('anon', 'public.get_gathering_meetup_point(uuid)', 'execute'))));`);
+    s = stepMap(log);
+  }, 180000);
+
+  const data = (k) => s[k].data;
+  const refused = { direct: 'denied', star: 'denied', row: 'denied', filter: 'denied' };
+  const exact = [{ lat: LAT, lng: LNG }];
+  const pick = (k) => ({ direct: data(k).direct, star: data(k).star, row: data(k).row, filter: data(k).filter });
+
+  test('the actors are in the states they claim', () => {
+    expect(data('statuses')).toEqual({ approved: 'approved', pending: 'pending', waitlisted: 'waitlisted' });
+  });
+
+  test("the host still creates (insert returning named columns) and edits a gathering; `returning *` is refused", () => {
+    expect(data('host_writes')).toEqual({ edited: 'J146 edited', point_stored: true, returning_star: 'denied' });
+  });
+
+    test.each(['anon_public', 'anon_invite_only'])('signed-out visitor (%s): every direct read of the point refused; cannot call the lookup', (k) => {
+    expect(pick(k)).toEqual(refused);
+    expect(data(k).meet).toBe('denied');
+  });
+
+  test.each(['stranger_public', 'stranger_invite_only', 'pending', 'waitlisted', 'invited'])('%s: every direct read refused; the lookup gives nothing', (k) => {
+    expect(pick(k)).toEqual(refused);
+    expect(data(k).meet).toEqual([]);
+  });
+
+  test.each(['approved', 'host', 'host_invite_only'])('%s: direct reads refused too; the lookup gives the exact point', (k) => {
+    expect(pick(k)).toEqual(refused);
+    expect(data(k).meet).toEqual(exact);
+  });
+
+  test('ordinary reads of the allowed columns keep working for every actor (no other gathering access changed)', () => {
+    for (const k of ['anon_public', 'stranger_public', 'pending', 'waitlisted', 'approved', 'host']) {
+      expect(data(k).safe).toEqual({ title: expect.stringMatching(/^J146 /), area: 'journey', visibility: 'everyone' });
+    }
+    // D3 (separate item, not fixed here): non-public rows are still readable by anyone. Recorded so this test fails, and
+    // gets updated, when that item lands.
+    expect(data('anon_invite_only').safe).toEqual({ title: 'J146 invite-only', area: 'journey', visibility: 'invite_only' });
+  });
+
+  test('get_gathering_distances: a keyed pin within the bound, stable, not reversible by the old md5 offset, distance to the pin', () => {
+    const p = data('distances');
+    expect(Math.abs(p.pin_lat - LAT)).toBeLessThanOrEqual(0.0035);
+    expect(Math.abs(p.pin_lng - LNG)).toBeLessThanOrEqual(0.0035);
+    expect(p.again).toEqual({ lat: p.pin_lat, lng: p.pin_lng });
+    expect(Math.abs(p.md5_recovered_lat - LAT) + Math.abs(p.md5_recovered_lng - LNG)).toBeGreaterThan(1e-6);
+    expect(p.distance_from_origin).toBeCloseTo(miles(0, 0, p.pin_lat, p.pin_lng), 6);
+    expect(p.from_precise).toBeCloseTo(miles(LAT, LNG, p.pin_lat, p.pin_lng), 6);
+    expect(p.from_precise).toBeGreaterThan(0);
+  });
+
+  test('get_bounded_nearby_gathering_ids tests the pin, never the precise point', () => {
+    expect(data('bounded')).toEqual({ around_pin: true, around_point: false });
+  });
+
+  test('count_gatherings_near_batch: public + discoverable only; at most 20 points', () => {
+    expect(data('counts').at_point).toBe(3);
+    expect(data('counts').twenty_one).toMatch(/at most 20 points/);
+    expect(data('counts').twenty_ok).toBe(20);
+  });
+
+  test('grants: column allowlist (all but the point), host still writes it, secret + pin function unreachable, single count gone', () => {
+    expect(data('grants')).toEqual({
+      anon_table_select: false, auth_table_select: false,
+      unreadable_for_anon: ['precise_lat', 'precise_lng'], unreadable_for_authenticated: ['precise_lat', 'precise_lng'],
+      host_can_still_write_point: true, private_schema_usage: false, secret_readable: false, pin_fn_callable: false,
+      count_single_exists: false, anon_distances: false, anon_meetup: false,
+    });
+  });
+});

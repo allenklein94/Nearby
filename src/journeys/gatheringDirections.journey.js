@@ -7,9 +7,8 @@
 //   waitlisted (full gathering)            -> nothing         -> no link
 //   a stranger who never joined it         -> nothing         -> no link (the requester, on the open gathering)
 //   anon cannot call the lookup at all.
-// Rolled back. No migration: the lookup is the existing host/attendee-only RPC. NOT covered (found while building, reported to
-// the owner 2026-10-17, pre-existing): `gatherings.precise_lat/lng` are selectable by anon/authenticated through the table's own
-// grants + RLS (a direct read of a visible gathering returns them); the app never selects them (SAFE_GATHERING_FIELDS).
+// Rolled back. No migration: the lookup is the existing host/attendee-only RPC. Direct reads of the point and the RPC paths
+// (item 146, migration 20270320) are covered per real database role by journey `preciseLocation`.
 const { runSql } = require('../../scripts/live-verify/lib/db');
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
 import { buildDirectionsUrl, isValidCoordinate } from '../utils/planLogisticsActions';

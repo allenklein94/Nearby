@@ -4,8 +4,22 @@ Owner decision (2026-10-17): scope as its own security item, separate from item 
 (`get_gathering_meetup_point`) is the approved route, but it is not enough on its own.
 (Unrelated to the older "Item 146 (2026-09-18) Universal Plan, pass D".)
 
-**Status: SCOPED, NOT BUILT.** Nothing in the database or app changed for this document. Every probe below ran on
-production inside a transaction that was rolled back, on a disposable gathering (`...0a1450`, invite-only, not public).
+**Status (2026-10-17): APPROVED (owner: D1 yes, D2 public only, D3 separate item 147), BUILT, LIVE, NOT DEVICE-VERIFIED.**
+Migration `20270320_gathering_precise_location_security.sql` applied to production 2026-10-17 after: journey `preciseLocation`
+17/17 + all journeys 431/431 with it as a prelude (rolled back); full Jest 458 suites / 6113 tests; a from-scratch replay
+(444/444 migrations, journeys 431/431 on it, both concurrency scripts pass). After applying: journeys 431/431 on prod (no
+prelude); `scripts/live-verify/gathering-precise-location-access.sql` as expected; grants replay = prod 1556/1556 (function
+execute for anon/authenticated over public + private, every gatherings column, the secret's table + schema); the five
+location functions' definitions identical (md5). REST probes as a signed-out visitor (real API, read-only): allowed columns
+200; `precise_lat`, `select=*`, no select, filter/order on the point, an embed `gatherings(*)` / `gatherings(precise_lat)`
+from rows that exist -> 42501 refused; `get_gathering_distances` / `get_gathering_meetup_point` refused for anon;
+`count_gatherings_near` gone (404); the `private` schema is not served (406). The journey was also shown to FAIL when the
+table-wide grant is put back (every actor's direct read = readable).
+Not verified: any device (`ITEM_146_PRECISE_LOCATION_DEVICE_CHECKLIST_2026-10-17.md`); a signed-in REST probe (no real test
+account; the journey covers `authenticated` at the database).
+**Deviation from proposal (b):** `get_gathering_distances` does NOT add a `_viewer_can_see_gathering` row check. That is row
+visibility (item 147), and the pin it returns is the intended ~390 m public resolution; it is recorded in item 147.
+The audit below is the pre-build record (2026-10-17, probes rolled back, disposable invite-only gathering `...0a1450`).
 
 ## Required outcome (owner)
 
