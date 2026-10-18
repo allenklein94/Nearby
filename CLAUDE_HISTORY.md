@@ -1,3 +1,21 @@
+# Checkout gets focus (owner idea "235", 2026-10-18; NOT item 235): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: when money is involved, Review -> Payment -> Confirmation deserves focus; never cram payment into a tiny sheet.
+- Met (code reading; never run on a device, Stripe test mode only, live blocked on the owner's `STRIPE_LIVE_APPROVED`):
+  1. Review = the offer card on the request screen: real price/discount and terms (`presentOffer`), item 119's time pick when there
+     are two times, item 118's `seen_revision_param` (the server refuses if the business changed the offer since).
+  2. Booking = "I'll take this one" (`accept_business_offer`): acceptance IS the booking and never waits on payment.
+  3. Payment: only when the offer has a price AND the business's Stripe account can take charges (server sets `business_payments`
+     'pending', returns `paymentRequired`); then `collectPayment` (`BusinessRequestDetailScreen.js`) opens Stripe's own PaymentSheet
+     (full native sheet, Stripe's card / wallet UI, direct charge on the business's connected account). Not configured = "Payment
+     not yet available / You're still booked..."; cancelled = nothing lost.
+  4. Confirmation: "You're booked" (item 12) + the card's payment line from `business_payments.status` (sent to the business /
+     didn't go through + Try payment again / refunded / Complete payment for a skipped sheet).
+- Not changed: no dedicated checkout screen or three-step flow (a second representation of the offer card, an extra navigation,
+  and doctrine refuses reservation management beyond offer -> booking). Observation only: payment success is a system alert
+  ("Payment sent") followed by the card's line; revisit on device evidence.
+- Recommendation: close as met as built; no new rule.
+
 # Complex editing gets a focused workflow (owner idea "234", 2026-10-18; NOT item 234): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built, no new rule or code changes. Edit Gathering keeps the existing focused screen
