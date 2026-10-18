@@ -1,3 +1,19 @@
+# "A window into the local moment" (owner idea "201", 2026-10-18; NOT item 201): ASSESSED, MET AS BUILT within the intent doctrine, OWNER DECISION PENDING, nothing built
+
+- Proposal (an objective, no feature): not "a database of places" but "here's what's happening around you right now"; motion
+  reinforces that.
+- Met as built: Discover's surface job is "what exists around me" (Surface jobs) with Happening Now / Right Now as its live window
+  (items 26/27: one ring for a not-yet-seen gathering, the still Right Now mark; item 120's "N happening now" map pill; item 108's live
+  time labels); Home answers "what should I do now" (doors, items 50/110); item 102 ("living local network") and idea "171" (cause and
+  effect chain) are met; motion appears only where something real happened (motion truth, items 58/164, idea "198").
+- Tension to keep explicit: the locked doctrine's one concept is "What do you want to do nearby?" (intent-first; not an events app,
+  social network or timeline). "What's happening right now" as THE objective would tilt Nearby toward an events feed; as built, the
+  local moment serves the person's intent (Happening Now is one view of Discover, not the product's frame). "Motion reinforces it" is
+  bounded by the motion locks: motion marks real changes, never ambience (Ambient = only `responding` + `weatherShift`, idea "168";
+  item 99; idea "200" declined a live stream).
+- Recommendation: (a) record as met; keep "What do you want to do nearby?" as the one concept, with the local moment as how Nearby
+  answers it, not a second north star; no new rule, no build. No code, migration, string or motion changed.
+
 # "Live local pulse" on Discover (owner idea "200", 2026-10-18; NOT item 200, one explicit action per card): KEEP AS BUILT (owner approved), live Discover stream DECLINED, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): keep the event-specific signals. New nearby activity = item 26's single Happening Now ring; rows and map
