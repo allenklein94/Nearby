@@ -1,3 +1,18 @@
+# Many contexts, one object (owner idea "259", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+Already master principle 2 (one source of truth per object) + Rule 14 + item 45 + "States, not folders" + "One object, once per
+surface, all its real reasons" + ideas 256-258. As built, an object may APPEAR on many surfaces (Home card, Discover tile, map pin,
+Activity row, Profile/Plans row, a gathering's linked request, a business's Opportunity), each a small representation from a shared
+helper (`recommendationContext.js`, `gatheringCardModel`, `presentOffer`, `primaryActionFor`), and every one opens the SAME canonical
+screen: a gathering -> `GatheringDetail`; a business request / reply -> `BusinessRequestDetail` (+ `focusOfferId`); a business ->
+item 17's sheet / `BusinessProfile`; a person -> their profile; a match -> its chat. Screen-reduction audit B2 (2026-10-08) already
+removed the duplicate: a plan that IS one gathering / request / match opens that object's own screen (`utils/planDestination.js`
+`canonicalPlanDestination`), PlanDetail kept only for multi-object plans (night out, occasion), guarded by
+`screens/planDetailMultiObjectOnly.test.js`; GatheringHub and GatheringConfirmation folded into GatheringDetail (audits B1/B5,
+`RULE14_DECISIONS.folded`), and `ctaDestinationGuard.test.js` keeps buttons naming their real destination. Registered screens 87 -> 73
+since that audit (idea 252). A new representation = a new card/row from the shared helper, never a new screen; a new screen still
+needs its own Rule 14 job. Nothing to build; device session first (idea 252).
+
 # The "same object" rule for a request (owner idea "258", 2026-10-18): MET AS BUILT for "one object, not six systems"; "Searching" and split Responses / Offer / Accepted / Complete DECLINED as separate states; CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; design decision closed, NOT DEVICE-VERIFIED (offer checklist sections 1 + 11 still to run on a real phone)
 
 Met by idea "173" (the saved request IS the evolving intent object) + idea "184" (`requestTimeline.js`) + ideas 256/257. As built,
