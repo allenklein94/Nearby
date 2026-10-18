@@ -1,3 +1,20 @@
+# Activity taps resolve immediately (owner idea "241", 2026-10-18; NOT item 241): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: tapping "Coastal Coffee sent an offer" in Activity opens the offer at once (never Activity -> Offer Inbox -> Offer ->
+  Business); Back returns to Activity.
+- Met (code reading; never run on a device):
+  1. Business rows (`business_reply`, `business_offer_accepted`, `business_reservation_confirmed`, from
+     `getMyBusinessEcosystemActivity`) take their destination from the one context layer: `recommendationContext(contextItem(
+     'business_offer', ...))` -> `BusinessRequestDetail` with `{ requestId, focusOfferId }` (`utils/recommendationContext.js`), so the
+     request screen opens on that exact offer, scrolled to and outlined (the same focus the reply push uses, items 132/136). A reply
+     still open also shows its one action on the row (`offerPrimaryAction`). There is no offer inbox; the business profile is never
+     a step in between. Back returns to Activity (stack screen over the tab).
+  2. Other rows resolve in one tap too: join requests Approve inline, friend requests and invitations accept / decline inline, a
+     group-plan ask opens `GroupPlan` on that proposal, Today's gathering opens its GatheringDetail (same context layer), waves /
+     notices / crossed paths open that person's profile (Paywall where the identity is premium-locked).
+- Recommendation: close as met as built; no new rule. Device check would ride the offer checklist (Activity row -> exact offer ->
+  Back to Activity).
+
 # Activity as events, not notifications (owner idea "240", 2026-10-18; NOT item 240): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
 
 - Proposal: Activity as "Things happening because of you", not a generic notification inbox: "Claude accepted your plan",
