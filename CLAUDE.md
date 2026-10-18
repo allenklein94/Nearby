@@ -139,7 +139,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Trending animation from real momentum (owner idea "199", 2026-10-18; NOT item 199) KEEP AS BUILT, CLOSED, LOCKED (item 75 re-confirmed), nothing built:** attendance popularity + Trending section kept; cards and discovery lists static; Interested never a signal for others; no growth-rate/momentum signal without usage evidence; no animation on reaching 5 attendees; item 26's Happening Now ring stays the one discovery-motion exception.
 
-**"Live local pulse" on Discover (owner idea "200", 2026-10-18; NOT item 200) ASSESSED, MET WHERE THE LOCKS ALLOW, OWNER DECISION PENDING, nothing built:** real events already signal through one channel each (item 26 ring + item 120 pill for new activity, item 165 pill / item 62 push for a business reply, items 28/73/41/39 for friends). Card entrances, live row insertion and an update stream on Discover conflict with items 113/15/26/165/164 + no-feed doctrine. Recommended: keep as built.
+**"Live local pulse" on Discover (owner idea "200", 2026-10-18; NOT item 200) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** one signal per real event: item 26's Happening Now ring (rows + map indicators static), item 165's pill + item 62's push for a business reply, items 28/39/41/73 for friends. DECLINED: live card entrances, moving rows, timed update stream, friend-joined feed on Discover, cross-app animation layer; rows stay static until normal refresh.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).

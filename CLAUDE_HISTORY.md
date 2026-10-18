@@ -1,4 +1,10 @@
-# "Live local pulse" on Discover (owner idea "200", 2026-10-18; NOT item 200, one explicit action per card): ASSESSED, MET WHERE THE LOCKS ALLOW, OWNER DECISION PENDING, nothing built
+# "Live local pulse" on Discover (owner idea "200", 2026-10-18; NOT item 200, one explicit action per card): KEEP AS BUILT (owner approved), live Discover stream DECLINED, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): keep the event-specific signals. New nearby activity = item 26's single Happening Now ring; rows and map
+  indicators static. Business responds = item 165's arrival pill + item 62's per-request push; no Discover-specific notice. Friend
+  joins = host moments + friend-planning signals (items 28/39/41/73); no friend-joined feed on Discover. DECLINED: live card entrances,
+  moving rows, a timed update stream, a cross-app animation layer. Home, Discover and gathering rows stay static until their normal
+  refresh. No code changes.
 
 - Proposal: Discover at 7 PM is not static; every so often "New nearby activity" appears and a card enters, then "A friend just
   joined", then "A business just responded"; the screen feels alive, but only real events cause movement.
