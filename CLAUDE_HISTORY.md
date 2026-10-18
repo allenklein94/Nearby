@@ -1,3 +1,5 @@
+# Idea "253" closed (owner, 2026-10-18): covered by items 45/29 + ideas 224/226/227/106; both disputed cases kept as built; no new rule; CLAUDE.md pending line removed (back to its pre-idea state); no app change.
+
 # The "3-second rule" (owner idea "253", 2026-10-18): MOSTLY MET, assessed, owner decision pending, no new rule, nothing built
 
 Met: time/distance inline, invitation accept inline, Interested inline. Conflicts: attendees-sheet (idea 227/224 locked) and why-sheet
