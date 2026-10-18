@@ -1,4 +1,10 @@
-# Your Plans expands inline on Home (owner idea "218", 2026-10-18; NOT item 218): ASSESSED, owner decision pending, nothing built
+# Your Plans expands inline on Home (owner idea "218", 2026-10-18; NOT item 218): MET AS BUILT under idea "216", CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built under idea "216"'s decision. Plans stays the single source of truth for
+  Upcoming / Hosting / Past; Home keeps its existing layout (no inline expansion, no duplicate plan lists); Profile's plan-stat
+  links, Celebrate Something, Shared Night and Past's gathering memories preserved; item 110 and "Home never expands sections in
+  place" stay locked. Revisit only if real-phone check C12 shows the transition to Plans breaks the flow. No new rule, no new
+  screen, no code changes.
 
 - Proposal: Home -> Your Plans expands inline -> tap plan -> gathering detail ("one screen eliminated").
 - Same as idea "216"'s example, closed the same day as KEEP AS BUILT (revisit only on check C12 evidence). Also against item 110
