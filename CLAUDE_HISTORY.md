@@ -1,4 +1,8 @@
-# Quiet mode (owner idea "205", 2026-10-18; NOT item 205): ASSESSED, owner decision pending, nothing built
+# Quiet mode (owner idea "205", 2026-10-18; NOT item 205): MET AS BUILT (owner chose (a)), CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): option (a). The phone's native Reduce Motion / Remove animations stays the single source of truth;
+  `motion/motionPolicy.js` preserved; animations, settled states and sound cues stay governed by it. No Full / Reduced / Minimal levels,
+  no "Reduce motion in Nearby" switch, no new settings, translations or code; idea "169"'s sound-cue setting stays independent.
 
 - Proposal: motion settings Full / Reduced / Minimal; respect system Reduce Motion; fully functional without animation.
 - System Reduce Motion: MET. ONE store `motion/motionPolicy.js` (one AccessibilityInfo subscription, live on change; iOS Reduce Motion,
