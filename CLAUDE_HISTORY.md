@@ -1,4 +1,11 @@
-# Tap changes the card's state in place (owner idea "273", 2026-10-18; NOT item 273): PARTLY MET, ASSESSED, recommended keep as built, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+# Tap changes the card's state in place (owner idea "273", 2026-10-18; NOT item 273): KEEP AS BUILT, CLOSED, LOCKED (owner, 2026-10-18), card-level join NOT reopened; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+Owner decision (2026-10-18): keep the 2026-09-20 decision. Interested = lightweight, updates in place on the card; Join / Request to
+Join = a commitment that passes through GatheringDetail and its shared join sheet; access checks stay mandatory (join limit +
+upgrade, host approval, women-only, invite-only); no separate confirmation screen (existing state changes communicate the result).
+Card-level join would duplicate the checks or risk bypassing them: not worth the small reduction in taps. Verify the existing flow
+on a real phone (card Join -> detail -> join sheet -> You're in / Requested; Interested in place; Back to the card showing the new
+state on reload) before considering any redesign.
 
 Checked in code 2026-10-18. Interested: MET in place (Home rows' toggle + GatheringDetail: "✓ Saved" + one small pulse -> "★ Interested",
 item 30; toast with Undo; the FIRST-ever Interested routes to detail once for the anonymous-demand disclosure). Join / Request to Join
