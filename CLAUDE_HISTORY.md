@@ -5,7 +5,7 @@ Already the Home placement rule (`utils/homeAttention.js`, guards `homeAttention
 rightNow; a gathering renders in the FIRST placement that would surface it, every later one suppresses it and refills (item 52: once
 across the whole surface, reasons merged). Your Plans sits above every recommendation and includes the person's going, hosting, group
 and Interested plans (`selectHomePlans`, max 3, item 33), so a gathering in Your Plans never reappears as a Best Pick, Picked For You,
-weather or Nearby Right Now card; item 41's friends-planning chips skip Your Plans too (`splitFriendsActivity`).
+weather or Nearby Right Now card (the exclusion is ALL your upcoming plan + Interested ids, `HomeScreen.js` `yourPlansIds` from `upcomingPlanIds` + `interestedIds`, so a 4th+ plan beyond the cap of 3 is not recommended back to you either); item 41's friends-planning chips skip Your Plans too (`splitFriendsActivity`).
 "Quick Picks" on Home are not gathering cards: they are the time-of-day category shortcuts (idea "202": open the matching Discover time
 filter), so nothing can repeat there.
 The only deliberate places a plan of yours shows again on Home ARE the "very strong reason" the idea allows, each a different object or
