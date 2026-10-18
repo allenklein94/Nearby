@@ -1,3 +1,8 @@
+# The "3-second rule" (owner idea "253", 2026-10-18): MOSTLY MET, assessed, owner decision pending, no new rule, nothing built
+
+Met: time/distance inline, invitation accept inline, Interested inline. Conflicts: attendees-sheet (idea 227/224 locked) and why-sheet
+(item 106/idea 226 locked). Rule overlap: item 45 + item 29 q3 + Rule 14. Idea 252's freeze (device session first) also applies.
+
 # Idea "252" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; next = first real-device session (C17/C18 included); no feature work or new compression audit before it; no app change.
 
 # "Nearby unfolds for me" + compression phase (owner idea "252", 2026-10-18): goal met as doctrine, assessed, owner decision pending, nothing built
