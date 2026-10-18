@@ -1,4 +1,9 @@
-# Home is a preview, never the whole list (owner idea "220", 2026-10-18; NOT item 220): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+# Home is a preview, never the whole list (owner idea "220", 2026-10-18; NOT item 220): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built. Home stays concise, max 3 items per section; Your Plans keeps its rows (what,
+  when, party size) with attending/hosting first; "See all plans" keeps opening Plans (Upcoming / Hosting / Past); item 110 stays
+  locked (no in-place expansion); empty sections stay hidden, no placeholders. The count-and-title-chips variation is NOT built (a
+  separate design decision). No new rule or code changes.
 
 - Proposal: Home shows a preview, not the entire database (e.g. Your Plans "3 upcoming" + [Coffee] [Beach Volleyball] + See all ->
   an expanded surface); Home never expands infinitely.
