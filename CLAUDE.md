@@ -195,6 +195,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Card -> detail transformation (owner idea "230", 2026-10-18; NOT item 230) DECLINED as written, CLOSED, LOCKED, no new animation, rule or code:** items 95/96/97/103 stay locked (no card-to-detail-screen morph); no request-specific offer anchored to a business card for browsing (idea "228"); continuity kept: gathering/perk cards open in place, business previews over Discover, map pins via item 44, Back restores prior state. Prerequisites before any motion extension: item 101's spec + item 44 tested on real phones.
 
+**Gathering card expands into full detail (owner idea "231", 2026-10-18; NOT item 231) CONFLICTS WITH LOCKS, ASSESSED, recommended DECLINE as written, owner decision pending, nothing built:** a gathering's full detail (attendees, place, linked offer/plan, actions) is GatheringDetail (item 45 names it a dedicated screen; registry jobs A/B/C, host management there); growing a card into it = the card-to-detail morph DECLINED under idea "230" (items 95/96/97/103 LOCKED); a full inline copy on the card = a second GatheringDetail (master principle 2) and against "one explicit action per card" (item 200). Kept: Discover's in-place context expansion (`openContextFor`: same interest + time, related places, accepted connections), cards with What/Why/one line/one action, detail on top with Back restoring state.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

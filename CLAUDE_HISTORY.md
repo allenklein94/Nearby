@@ -1,3 +1,21 @@
+# Gathering card expands into full detail (owner idea "231", 2026-10-18; NOT item 231): CONFLICTS WITH LOCKS, recommended DECLINE as written, owner decision pending, nothing built
+
+- Proposal: tapping "Coffee tonight" expands the gathering card; attendees, location, business offer and actions appear (same
+  object, more information).
+- Conflicts:
+  1. Item 45 (LOCKED) lists "a gathering's detail" as a dedicated screen: GatheringDetail (`screenRegistry.js` jobs A Decision,
+     B Commitment, C Management: decide and join, hosts manage attendees, edit, cancel). The approved continuity is that it opens on
+     top and Back restores exact state.
+  2. Growing the card into that detail is the card-to-detail morph declined under idea "230" minutes earlier (items 95, 96, 97,
+     103 LOCKED).
+  3. Putting attendees, place, offer and every action on the card itself = a second GatheringDetail (master principle 2: one source
+     per object; it would drift) and breaks "one explicit action per card" (item 200).
+- Already in place: Discover's gathering tap expands in place into its context (`openContextFor` in `DiscoverHubScreen.js`: the
+  same interest + time bucket, related places, accepted connections RSVP'd to those gatherings; falls back to the detail when the
+  gathering has no interest tag); cards show What / Why / one "distance · when" line / one state-aware action; Who's going,
+  meet-up point (item 146: approved attendees only), the linked offer / Your Plan (item 32) and actions live on GatheringDetail.
+- Recommendation: decline as written; nothing built.
+
 # Card -> detail transformation (owner idea "230", 2026-10-18; NOT item 230): DECLINED as written, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): decline as written; items 95, 96, 97 and 103 stay locked. No card-to-detail-screen morphing; no
