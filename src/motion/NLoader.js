@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, StyleSheet, Easing } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -17,24 +17,17 @@ import useReduceMotion from '../hooks/useReduceMotion';
 // shape. Two different meanings, two different treatments. Small inline spinners inside buttons/footers stay plain ActivityIndicators --
 // those are in-flight feedback on a control, not Nearby loading content.
 const ICON_SIZES = { default: 88, compact: 56, inline: 32 };
-const CAPTION_STEP_MS = 900;
 const BAR_WIDTH = 120;
 const BAR_HEIGHT = 3;
 const SWEEP_WIDTH = 46;
 
 // Item 132: THE loading treatment. `kind`/`caption` say what Nearby is working on (see
-// loadingLanguage.js); `captions` cycles a multi-stage narration; `size` is 'default' (a whole
-// screen / boot), 'compact' (a content area), or 'inline' (a small row).
-export default function NLoader({ fullScreen = true, kind, caption, captions, size = 'default' }) {
+// loadingLanguage.js), one caption for the whole wait; `size` is 'default' (a whole screen / boot),
+// 'compact' (a content area), or 'inline' (a small row). Idea "175" (owner, 2026-10-18): the timed caption cycle prop is removed;
+// a caption changes only when the caller's real phase changes (motion truth: never staged progress on a timer).
+export default function NLoader({ fullScreen = true, kind, caption, size = 'default' }) {
   const iconSize = ICON_SIZES[size] ?? ICON_SIZES.default;
-  const [captionIndex, setCaptionIndex] = useState(0);
-  useEffect(() => {
-    if (!captions || captions.length < 2) return undefined;
-    // Caption rotation is real informational content, so it keeps cycling under Reduce Motion.
-    const id = setInterval(() => setCaptionIndex((i) => (i + 1) % captions.length), CAPTION_STEP_MS);
-    return () => clearInterval(id);
-  }, [captions]);
-  const captionText = captions?.length ? captions[captionIndex % captions.length] : resolveLoadingCaption({ kind, caption });
+  const captionText = resolveLoadingCaption({ kind, caption });
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const sweep = useRef(new Animated.Value(0)).current;

@@ -1,3 +1,16 @@
+# Don't fake AI thinking (owner idea "175", 2026-10-18): MET by the motion truth rule, LOCKED; one preventive cleanup
+
+Idea: no fake "Thinking…" for seconds, no meaningless animated dots; animation must match a real operation. Scan: no artificial
+minimum loader duration, no sleep before results, no typing-dot animation; the 700 ms timers in BusinessRequestDetail /
+GatheringDetail only batch live reloads. `NLoader` shows only while its caller's request is pending; its sweep/pulse loops are
+governed app-wide (`motionPolicy.js` `governLoop`: capped at `AMBIENT.maxLoopMs`, paused in the background, none under Reduce
+Motion). Two "Thinking…" captions sit on real AI calls (`BusinessAIAssistantScreen.js` loader, `DatingPreferencesScreen.js`
+button): kept, rewording DECLINED (no translation work without a shown UX problem). Cleanup 2 (approved): removed `NLoader`'s
+unused `captions` prop, its `setInterval` cycle and `CAPTION_STEP_MS` (no caller used it; one caption per wait, changing only with
+the caller's real phase); `motion/motionTruth.test.js` now also fails if NLoader regains a `captions` prop, `setInterval` or
+`CAPTION_STEP_MS`. Results: motion suites + undefinedNames + intentPhaseCaption pass; full Jest 471 suites / 6354 passed. No
+visible behaviour, wording or timing change; not device-verified (nothing to see).
+
 # "Nearby is working on it" (owner idea "174", 2026-10-18): MET AS BUILT, LOCKED, nothing built
 
 Idea: instead of "Loading...", "Finding the best nearby options…" with tiny signals moving You -> time -> place -> activity.

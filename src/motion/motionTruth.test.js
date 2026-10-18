@@ -48,6 +48,10 @@ describe('motion amplifies correct data', () => {
     const offenders = walk(path.join(__dirname, '..'))
       .filter((f) => /captions=\{/.test(fs.readFileSync(f, 'utf8')))
       .map((f) => path.relative(path.join(__dirname, '..'), f));
-    expect(offenders).toEqual([]); // a new staged loader needs real stages driving it, not NLoader's timer
+    expect(offenders).toEqual([]); // a new staged loader needs real stages driving it, never a timer
+    // Idea "175" (owner, 2026-10-18): NLoader itself has no caption timer to bring back.
+    const loader = read('motion/NLoader.js');
+    expect(loader).not.toMatch(/\bcaptions\b/);
+    expect(loader).not.toMatch(/setInterval\(|CAPTION_STEP_MS/);
   });
 });
