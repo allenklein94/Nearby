@@ -1,3 +1,16 @@
+# Discover filters survive opening an event (owner idea "280", 2026-10-18; NOT item 280): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+Checked in code 2026-10-18. Discover (`DiscoverHubScreen.js`) is a tab that stays mounted; its filters are that screen's state
+(`gatheringFilters`: when chips, ~1 mi, For You, Trending, price, plan kind; `environmentFilter`: Indoor / Outdoor; `dateView`: Tonight /
+time views via `openDateView`), and a gathering opens as GatheringDetail pushed OVER it, so Back returns with every filter, the scroll
+and the open view intact (locked rule "Back restores exact prior state and scroll"; idea "219": in-place views restore Discover's prior
+state). A Home tap with NEW context deliberately replaces only what it names; the tab bar re-opens Discover with the same params, so
+nothing re-applies or clears. A typed ask goes further: its session survives leaving Discover and app restarts, cached on the device,
+synced to the account (`services/discoverSession.js` / `discoverSessionSync.js`), until cleared or its time is over (item 113).
+Example note: there is no "Within 2 miles" choice; the nearby chip is "~1 mi" and the search radius list is 15 / 30 / 50 mi
+(`SEARCH_RADIUS_OPTIONS`, idea "178" LOCKED). Browse chips (unlike a typed ask) are not kept across an app restart: not proposed here,
+would need its own decision. Phone check: C12 + a filter-then-open-then-Back pass (Tonight + Outdoor + ~1 mi -> a gathering -> Back).
+
 # Don't make people go "back" unnecessarily (owner idea "279", 2026-10-18; NOT item 279): MET AS BUILT, ASSESSED, recommended close, owner decision pending; premise "Home expands Your Plans" does not apply (item 110 LOCKED); no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 Checked in code 2026-10-18. Home never expands Your Plans in place (item 110 + ideas "216"/"218", LOCKED); its up-to-3 rows open the plan
