@@ -1,4 +1,10 @@
-# "Who's going?" sheet (owner idea "227", 2026-10-18; NOT item 227): PARTLY MET + CONFLICTS WITH LOCKS, recommended DECLINE as written, owner decision pending, nothing built
+# "Who's going?" sheet (owner idea "227", 2026-10-18; NOT item 227): DECLINED as written, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): decline as written; the existing experience covers the legitimate need. Attendee information stays
+  on the gathering (no separate Attendees screen); Who's going faces + "+N" stay inline; names only to friends and people also
+  going, everyone else sees counts; "Who you'll meet" stays on the gathering with host attendee management on the same screen; an
+  individual's Interested status is never shown by name (host-only total count); item 138 stays locked (no Going / Interested
+  split); idea "224" holds (visible inline content never moves into a sheet). No new screen, sheet or rule.
 
 - Proposal: a bottom sheet "Going: Allen, Claude, Sarah / Interested: Mike / Done"; no separate Attendees screen.
 - Met: there is no Attendees screen. GatheringHub was folded into GatheringDetail's attending section (screen-reduction audit B1,
