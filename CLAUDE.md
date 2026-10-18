@@ -109,6 +109,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Business request knows what was said (owner idea "183", 2026-10-18; NOT item 183) MET by item 84 (+ items 87/112; item 190 = link placement), LOCKED, nothing built, NOT DEVICE-VERIFIED:** item 84 checklist, checks 13-14 added (example + link placement).
 
+**"What happened to my request?" (owner idea "184", 2026-10-18; NOT item 184) MET AS BUILT, LOCKED, nothing built, NOT DEVICE-VERIFIED:** request-screen status line (`requestTimeline.js`, real events + times only) + "Next:" line + items 158/159/160/62/165/173; "Looking" step, split Responses/Offer steps and "Your request is active" DECLINED; offer checklist section 11 added.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

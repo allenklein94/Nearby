@@ -1,3 +1,18 @@
+# "What happened to my request?" (owner idea "184", 2026-10-18; NOT item 184): MET AS BUILT, LOCKED, nothing built
+
+Idea: after sending, "Your request is active" + a small status indicator Looking -> Responses -> Offer -> Accepted; the person
+can leave and the request stays alive. Finding (kept as is): the request screen's status line (`utils/requestTimeline.js`,
+items 39/122): Request sent -> the reply named by its real kind (item 121; several = "N businesses responded") -> You're booked
+(then item 52's Visit confirmed), each step only when its real event happened, with its real timestamp (missing = no time, never
+invented); the "Next:" line while open ("We'll let you know when a business responds." -> "Pick one" / pick with your group);
+"We asked N..." after Send only once the server returns (items 158/159); away from the screen: Home Your Plans + Plans reply
+tally on load (item 160), one in-place push per request opening that reply (item 62), the arrival pill (item 165), one evolving
+request object (idea "173"). Owner decisions (LOCKED): "Looking" step DECLINED (implies activity Nearby cannot verify; the
+timeline deliberately has no viewed/picked-up step, items 89/159/161); each reply stays ONE event named by its real outcome,
+never split Responses / Offer steps; "Your request is active" DECLINED (duplicates "We asked N" + "Next:"). No new timeline or
+status wording. Verification OPEN: offer experience device checklist, new section 11 (status line + "Next:" line + leaving the
+request) added 2026-10-18; never claim it verified before it passes. Only the checklist file changed.
+
 # Business request knows what was said (owner idea "183", 2026-10-18; NOT item 183): MET by item 84 (+ items 87, 112), LOCKED, nothing built
 
 Idea: "Dinner for 4 Saturday" -> Ask businesses -> the request already knows Dinner, 4, Saturday; the person only fills in what

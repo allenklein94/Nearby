@@ -167,6 +167,20 @@ goes through screening). The `send-push` edge function must be redeployed with t
   when everyone confirms the new terms.
 - [ ] After the customer accepts, a revision is impossible, and a revision push queued just before is not delivered.
 
+## 11. Request status line and "Next:" line (owner idea "184", added 2026-10-18)
+
+No new code: this checks the existing `utils/requestTimeline.js` status line on the request screen.
+- [ ] Right after Send: the status line shows only "Request sent" with its real time, and "Next: We'll let you know when a
+  business responds."; nothing says "Looking", "Searching", "viewed" or "picked up".
+- [ ] One reply: a second step names it by its real kind ("Coastal Coffee made you an offer" / "...can take you" / "...suggested
+  another time"), with its price or discount when it is an offer and its real time; "Next:" becomes "Pick one" (group plan:
+  pick with your group). Several replies: ONE step "N businesses responded", never separate Responses and Offer steps.
+- [ ] After "I'll take this one": "You're booked" is added with its real time and the "Next:" line is gone.
+- [ ] Leave the request (Home, another tab, app in background): Home's Your Plans and Plans show the request's reply count on
+  return; a reply while away = one push opening that exact reply; while the app is open elsewhere = the arrival pill.
+- [ ] Light and dark, longest language (de / tl): the steps and the "Next:" line read clearly and wrap cleanly. Report whether a
+  person could ever wonder what happened to their request; don't change anything.
+
 ## Record
 
 | Step | iPhone | Android | Chrome | Safari | Phone browser | Notes |
