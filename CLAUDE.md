@@ -167,6 +167,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"One surface, many states" (owner idea "216", 2026-10-18; NOT item 216) KEEP AS BUILT, CLOSED, LOCKED, no new rule, nothing built; revisit only if check C12 on a real phone shows the hop to Plans breaks the flow:** the principle is already the core rule (item 45 screen reduction: change content > expand inline > sheet > screen; states-not-folders; item 98). The example (Home's "See all plans" expanding Upcoming/Hosting/Past in place) CONFLICTS with "Home never expands sections in place" + item 110 (in-place Home expansion DECLINED, LOCKED) and the See-all rule (a list with its own management job opens its destination: Plans, registry job C). Recommended: keep as built (Home's "See all plans" -> Plans; Plans already = Upcoming/Hosting/Past on one surface; a tap there opens the detail).
 
+**"Depth budget" (owner idea "217", 2026-10-18; NOT item 217) MET AS BUILT (assessed), owner decision pending, no new rule, nothing built:** Level 0-1 = item 45's ladder (change content > expand inline > sheet; filters/modes never navigate); Level 2-3 = Rule 14 (a dedicated screen only with a registered job A-F in `constants/screenRegistry.js`, guard `screenRegistry.test.js`) + presentation routes on top (`openOnTop`, Back restores). A per-screen depth number would be a second representation of the registry's jobs.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

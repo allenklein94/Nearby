@@ -1,3 +1,17 @@
+# "Depth budget" (owner idea "217", 2026-10-18; NOT item 217): MET AS BUILT (assessed), owner decision pending, nothing built
+
+- Proposal: every interaction has a depth: Level 0 current screen, 1 inline expansion / bottom sheet, 2 full-screen detail, 3 rare
+  dedicated workflow; most stay at 0-1, only complex things reach 2, 3 is rare.
+- Met: item 45's screen reduction is the same ladder (same job = same screen; change content > expand inline > sheet > dedicated
+  screen only for an entity, distinct workflow, management, communication or transaction); filters/modes never navigate; "See all"
+  expands in place unless the list has its own management job. Rule 14 (2026-10-04, LOCKED) gates Levels 2-3: every route has a
+  `SCREEN_REGISTRY` entry with a job A-F (Decision, Commitment, Management, Communication, Transaction, Deep information) or is a
+  top-level surface; `screenRegistry.test.js` fails an unregistered screen. Presentation routes render on top of where the person
+  was (`openOnTop`, return trail) and Back restores exact state, so a detail never loses Level 0.
+- Observation: the registry has ~70 entries, most with job C (settings and business tools); Level 3 "rare" is enforced by the
+  required job, not by a count.
+- Not built: a depth level per screen or a depth counter (a second representation beside the registry's jobs; master principle 2).
+
 # "One surface, many states" (owner idea "216", 2026-10-18; NOT item 216): KEEP AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): keep as built. No new rule, no Home expansion; Home keeps its limits and layout; "See all plans"
