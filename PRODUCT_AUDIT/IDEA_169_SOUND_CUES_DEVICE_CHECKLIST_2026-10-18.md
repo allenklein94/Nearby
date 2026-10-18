@@ -28,13 +28,19 @@ business that can confirm a visit (offer experience checklist set-up; needs Anth
 10. Reduce Motion on (Settings > Accessibility > Motion): no cue in checks 4-7, even with the switch on.
 11. Music or a podcast playing: the cue mixes in briefly; the music does not pause, stop or duck.
 12. Do Not Disturb / a Focus on: record what happens. Known limit: iOS gives apps no way to see a Focus without an
-    entitlement, so the cue still plays with the ringer on. Owner to decide whether that is acceptable.
+    entitlement, so the cue still plays with the ringer on. ACCEPTED by the owner (2026-10-18): record the result; a cue
+    playing in a Focus with the ringer on is expected, not a defect (no entitlement or workaround).
 13. App closed or in the background when a reply arrives: only the phone's own push sound, never an in-app cue on return.
     App open when the reply push arrives: the push sound only, no chime on top within 10 s.
 14. Android: Settings shows no "Sound cues" switch and no cue ever plays (Android gives the app no silent/Do Not Disturb signal
-    without a new native module).
+    without a new native module). Owner DECIDED (2026-10-18): stays this way; no native Android code for this feature.
 15. Recording a voice note in chat when a reply arrives: the recording continues uninterrupted and no cue plays.
 16. Business side (business account, dashboard and website): no sound anywhere.
 
 ## Feel (report only)
 17. Do the three sounds feel subtle, distinct and not like notification spam? Is the volume right next to system sounds?
+
+## Status (2026-10-18)
+- Device checklist (real iPhone): NOT RUN. Results: none recorded yet.
+- Native-speaker review of `ui.settings.soundCues` / `soundCuesHelp` / `soundCuesA11y` (10 machine-authored languages): NOT DONE.
+Report these two separately; neither is complete until actually verified. A defect found is fixed without expanding scope.

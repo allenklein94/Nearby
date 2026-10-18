@@ -1,3 +1,12 @@
+# Optional sound cues (owner idea "169"): both open decisions settled, 2026-10-18
+
+Owner approved as built: iOS-only. iOS keeps the switch (off by default) and the three cues, obeys the silent switch, and the
+Focus/DND limit is ACCEPTED (a cue may play in a Focus while the ringer is on; no Apple entitlement or other workaround).
+Android keeps the switch hidden and every in-app cue disabled; no native Android code for this feature. Remaining work is
+verification only: the real-iPhone checklist (`PRODUCT_AUDIT/IDEA_169_SOUND_CUES_DEVICE_CHECKLIST_2026-10-18.md`, checks 12/14
+reworded to the decisions, status section added: NOT RUN) and native review of the 3 `ui.settings.soundCues*` strings (NOT
+DONE), reported separately. No code change; guard `utils/soundCues.test.js` 37/37 re-run.
+
 # Motion hierarchy (owner idea "168"): owner re-confirmed as built, 2026-10-18
 
 Owner: keep as built; do NOT reopen item 167 or the Signature rule. Priority level = how strongly a moment interrupts; full-screen

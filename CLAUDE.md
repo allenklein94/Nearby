@@ -79,7 +79,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Optional sound cues (owner idea "169", 2026-10-18; NOT item 169, the Food & Drink spec) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/IDEA_169_SOUND_CUES_DEVICE_CHECKLIST_2026-10-18.md` is recorded on a real iPhone (incl. silent switch + Reduce Motion) AND native review of the 3
-`ui.settings.soundCues*` strings is done (no migration; guard `utils/soundCues.test.js`). Owner to decide: iOS Focus/DND can't be detected (check 12); Android has no switch (check 14).
+`ui.settings.soundCues*` strings is done (no migration; guard `utils/soundCues.test.js`). Owner DECIDED (2026-10-18, LOCKED): iOS-only; the Focus/DND limit is accepted (cues may play in a Focus with the ringer on; no Apple entitlement or workaround); Android keeps the switch hidden and no cue, no native Android code. Remaining = verification only: device checklist + native review, reported separately, neither claimed until done; fix found defects without expanding scope.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
@@ -739,7 +739,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   approved small animation. A new full-screen moment needs the owner to reopen the relevant item. Other modals are tools the person opens.
 - **Sound cues (owner idea "169", LOCKED):** the ONLY in-app sounds: three customer cues (`SOUND_CUES`: reply arrives while open, from
   `offerArrivals`' `onArrival`; own accept/confirm, with its haptic; "✓ Visit confirmed"'s first play), one rule `utils/soundCues.js`
-  (wired by `services/soundCues.js`). Off by default (one Settings switch, kept on the phone), iOS only (ambient session: silent switch,
+  (wired by `services/soundCues.js`). Off by default (one Settings switch, kept on the phone), iOS only, Focus limit accepted, no Android native code (owner, 2026-10-18) (ambient session: silent switch,
   mixes), silent under Reduce Motion (asked fresh, unknown = silent), in the background, while recording, or within 10 s of a reply
   push's own sound; never awaited, never instead of a visual or a push sound, never on the business side or for any other moment.
   Files are Nearby's own (`scripts/sounds/generate-sound-cues.py`). Guard `utils/soundCues.test.js`.
