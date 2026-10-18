@@ -1,3 +1,18 @@
+# Intent as a living object (owner idea "173", 2026-10-18): MET AS BUILT, LOCKED, nothing built
+
+Idea: "Coffee tonight" becomes an intent object (☕ Coffee · Tonight · 4 people) that evolves Searching -> Businesses found ->
+Offer received -> Accepted -> Plan confirmed. Finding: that object is the saved business request (`create_business_request`,
+`BusinessRequestDetailScreen`): carried stated facts only (item 84: activity, the day said, People only when stated) -> "We asked N
+nearby businesses" with N really reached + item 55 rings, only after the server returns (items 158/159/161) -> the one signature +
+travel into its card (items 25/23), arrival pill / per-request push elsewhere (items 165/62) -> "I'll take this one" -> "You're
+booked" on the same card (item 12) -> merge into Your Plan, "{what} at {business}" + join rail (item 32) -> "✓ Visit confirmed"
+(item 52) -> Completed (item 34); every other surface reads the same request's tally (item 160, `tallyBusinessReplies`) under
+master principle 2 / item 98. (The owner's decision text cites "items 60 and 98"; the reply-count rule is item 160, recorded so.)
+Plain searches stay temporary by lock: temporary intent expires (`intentExpiry.js`), typed ask text purged after 180 days, never
+shown to another person (item 92), no timeline/search-history feed. Kept declined: a second offer -> reservation -> plan animation
+(item 95), cross-screen card transformation (items 96/97). Owner: met as built, locked; no code, screens, animation or scope.
+Device validation stays separate (offer experience checklist, needs Anthropic credit).
+
 # "What do you feel like?" (owner idea "172", 2026-10-18): MET BY ITEM 45, LOCKED, nothing built
 
 Idea: natural-language asks surface visual intent chips ("I want to get out tonight but don't know what" -> Social · Casual ·

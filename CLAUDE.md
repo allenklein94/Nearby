@@ -87,6 +87,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"What do you feel like?" (owner idea "172", 2026-10-18) MET BY ITEM 45, LOCKED, nothing built:** chips only from stated words, never inferred mood chips (Social, Casual, ...). "...get out tonight but don't know what" = `Tonight` chip + open-ended results (Nightlife + Food & Drink); "...don't know what to do" = item 90's labelled rows; the difference is ACCEPTED (phrase fix DECLINED: it would change the answer format). Revisit only on real-usage evidence.
 
+**Intent as a living object (owner idea "173", 2026-10-18) MET AS BUILT, LOCKED, nothing built:** the saved business request IS the evolving intent object: stated facts only (item 84) -> server-confirmed "We asked N" + rings (items 55/158/159, no searching animation) -> reply signature + arrival/push (items 25/23/165/62) -> "You're booked" on the same card (item 12) -> merged into Your Plan (item 32) -> Visit confirmed / Completed (items 52/34); one request = the source of every count/status (items 160/98). Searches stay temporary: no saved search objects or search-history feed (intent expiry, 180-day typed-ask purge kept); no second offer-to-plan animation or cross-screen morph (items 95-97). NOT DEVICE-VERIFIED: offer checklist (separate).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
