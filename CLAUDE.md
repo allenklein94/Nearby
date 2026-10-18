@@ -169,6 +169,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Depth budget" (owner idea "217", 2026-10-18; NOT item 217) MET AS BUILT, CLOSED, LOCKED, no new rule, nothing built:** Level 0-1 = item 45's ladder (change content > expand inline > sheet; filters/modes never navigate); Level 2-3 = Rule 14 (a dedicated screen only with a registered job A-F in `constants/screenRegistry.js`, guard `screenRegistry.test.js`) + presentation routes on top (`openOnTop`, Back restores). A per-screen depth number would be a second representation of the registry's jobs.
 
+**Your Plans expands inline on Home (owner idea "218", 2026-10-18; NOT item 218) = idea "216"'s example, ASSESSED, owner decision pending, nothing built:** closed today as keep as built (idea "216"); would reopen "216", item 110 and "Home never expands sections in place". No screen would be eliminated: Plans is also opened from Profile's three stats, Celebrate, Shared Night and item 123's Past card, and holds Past.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

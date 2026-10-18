@@ -1,3 +1,14 @@
+# Your Plans expands inline on Home (owner idea "218", 2026-10-18; NOT item 218): ASSESSED, owner decision pending, nothing built
+
+- Proposal: Home -> Your Plans expands inline -> tap plan -> gathering detail ("one screen eliminated").
+- Same as idea "216"'s example, closed the same day as KEEP AS BUILT (revisit only on check C12 evidence). Also against item 110
+  (in-place Home expansion DECLINED, LOCKED), "Home never expands sections in place" and the See-all rule (a list with its own
+  management job opens its destination, e.g. Plans).
+- No screen eliminated: `navigate('Plans')` is also called from Profile's three quick stats (with `initialTab`), Celebrate
+  Something and Shared Night; Plans also holds Past (item 123's memory count on completed cards). Home's inline list would be a
+  second representation of Plans' Upcoming / Hosting / Past (master principle 2).
+- Recommendation: keep as built, as decided under idea "216".
+
 # "Depth budget" (owner idea "217", 2026-10-18; NOT item 217): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built. Rule 14 stays locked with its six jobs (Decision, Commitment, Management,
