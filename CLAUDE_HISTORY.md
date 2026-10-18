@@ -1,3 +1,15 @@
+# "Nearby is working on it" (owner idea "174", 2026-10-18): MET AS BUILT, LOCKED, nothing built
+
+Idea: instead of "Loading...", "Finding the best nearby options…" with tiny signals moving You -> time -> place -> activity.
+Finding (Home/Discover typed asks): `NLoader` (ambient) with `intentPhaseCaption` (`services/intentResolverScoring.js`):
+'understanding' = "Understanding your request…"; once `classifyCreateRequest` returns, 'finding' = "Finding activities…"
+(community "Finding communities…", business_availability "Checking availability…") and item 45's `AskUnderstoodChips` appear under
+the loader, then results below the same chips. Every switch is a real stage completing. Declined (owner, LOCKED): the moving
+signals (the search is one server call exposing no time/place/activity stages; staged progress on a timer is what the
+2026-10-11 motion truth audit removed from the Occasion loader, row 22), placeholder-triggered motion, the business-search
+animation (items 159/161), and "Finding the best nearby options…" (a ranking claim before ranking). No code, animation or
+wording change. Whether the wait feels clear and trustworthy is a device-session question (item 45 checklist), kept separate.
+
 # Intent as a living object (owner idea "173", 2026-10-18): MET AS BUILT, LOCKED, nothing built
 
 Idea: "Coffee tonight" becomes an intent object (☕ Coffee · Tonight · 4 people) that evolves Searching -> Businesses found ->

@@ -89,6 +89,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Intent as a living object (owner idea "173", 2026-10-18) MET AS BUILT, LOCKED, nothing built:** the saved business request IS the evolving intent object: stated facts only (item 84) -> server-confirmed "We asked N" + rings (items 55/158/159, no searching animation) -> reply signature + arrival/push (items 25/23/165/62) -> "You're booked" on the same card (item 12) -> merged into Your Plan (item 32) -> Visit confirmed / Completed (items 52/34); one request = the source of every count/status (items 160/98). Searches stay temporary: no saved search objects or search-history feed (intent expiry, 180-day typed-ask purge kept); no second offer-to-plan animation or cross-screen morph (items 95-97). NOT DEVICE-VERIFIED: offer checklist (separate).
 
+**"Nearby is working on it" (owner idea "174", 2026-10-18) MET AS BUILT, LOCKED, nothing built:** typed-ask wait = ambient N loader "Understanding your request…" -> real-phase caption (`intentPhaseCaption`: "Finding activities…" / "Finding communities…" / "Checking availability…") + item 45 chips when the reading returns -> results under the same chips. DECLINED: moving You -> time -> place -> activity signals (no such stages exist), timer-driven captions, placeholder motion, the business-search animation (items 159/161), "Finding the best nearby options…" (unsupported ranking claim). NOT DEVICE-VERIFIED: item 45 checklist (separate).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
