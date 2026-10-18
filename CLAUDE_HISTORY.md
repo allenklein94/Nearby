@@ -1,3 +1,13 @@
+# Primary CTA reflects certainty (owner idea "272", 2026-10-18; NOT item 272): MET AS BUILT by the one action table, ASSESSED, recommended close, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
+
+Already `gatheringPrimaryAction` / `gatheringJoinAction` (`utils/primaryAction.js`, states from `objectLifecycle.js` `canDo`), on
+every gathering card (Home hero + rows, Discover, Friends' Activity) and GatheringDetail's own join button: can join now = Join;
+needs approval or non-public = Request to Join; full = Join Waitlist; already Interested = I'm Going; low-commitment popularity rows
+(Trending, `lowCommitment`) = ★ Interested (private, item 30); requested/waitlisted = status; attending/hosting = View Plan; View
+only when nothing stronger is true (started, invite-only without access, unknown attendance, past). Idea "271" confirmed Best Pick
+uses it. "If they aren't ready -> Interested": Nearby cannot know readiness (never inferred, item 131), so Interested is chosen by
+the card's context (popularity rows) and stays available on GatheringDetail, never guessed per person; one action per card (item 200).
+
 # Not every CTA on the first card (owner idea "271", 2026-10-18; NOT item 271): MET AS BUILT, premise outdated, ASSESSED, recommended close, owner decision pending; a second button (Interested beside Join) and an Invite button on the card DECLINED (item 200, LOCKED); no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
 
 Premise ("Best Pick Tonight currently only has View") checked against code 2026-10-18: no longer true. The hero renders
