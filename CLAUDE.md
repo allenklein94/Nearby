@@ -153,6 +153,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **No motion question in onboarding (owner idea "206", 2026-10-18; NOT item 206) MET BY IDEA "205", CLOSED, LOCKED, nothing built:** onboarding asks no animation preference (none exists; only the loader animates there); the phone's setting is respected. A later "Motion" entry in Settings would reopen idea "205" (DECLINED there), never added on its own.
 
+**Animation budget per screen (owner idea "207", 2026-10-18; NOT item 207) ASSESSED, PARTLY MET, owner decision pending, nothing built:** `motion/motionBudget.js` budgets TIME only; concurrency is met per moment (item 73 joins, item 23 travel one at a time, item 32 replaces plan-comes-together, offer-screen ban) but Home has NO cross-module rule: up to 5 independent arrival moments (PlanCompleted, plans-this-month CountRoll, FriendCollision, FriendsPlanning, HappeningRipple; + ambient WeatherShift) can start on one Home view (code reading; never seen on a phone). Recommended (a): Home plays at most ONE contextual arrival moment per view (topmost in section order), the rest show settled and count as seen; exempt: ambient, own-tap feedback, typed-ask results; no dispatcher, no queue.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

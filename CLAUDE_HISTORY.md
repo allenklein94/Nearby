@@ -1,3 +1,22 @@
+# Animation budget per screen (owner idea "207", 2026-10-18; NOT item 207): ASSESSED, PARTLY MET, owner decision pending, nothing built
+
+- Proposal: per screen max 1 major animation at a time, 2-3 micro transitions, no competing movement; Home never animates several
+  modules at once.
+- Met: `motion/motionBudget.js` (item 131) caps each transition's TIME (tiny/small/medium/special, max 900 ms; signature 1.5 s) but
+  says nothing about concurrency. Concurrency is handled per moment: item 73 (several joins = one full, rest small, no stagger), item 23
+  (one reply travels at a time), item 32 (merge replaces plan-comes-together), offer screens never move screen-wide, one signature,
+  one full-screen moment (item 167), cards/lists static (items 15/57).
+- Gap (code reading, HomeScreen.js; never observed on a phone): Home has no cross-module rule. Independent "first viewing" moments can
+  start on the same Home view: PlanCompleted (Your Plans, medium), plans-this-month CountRoll, FriendCollision (Best Pick / Picked For
+  You, medium), FriendsPlanning (social line, medium), HappeningRipple (Nearby Right Now heading, Pulse ring), plus ambient WeatherShift.
+  E.g. the morning after a gathering with a weather change and friends planning: up to five at once.
+- Recommendation (a): one Home rule, a pure function over the moments that would play on this view: at most ONE contextual (Level 2)
+  arrival moment plays, the topmost in Home's fixed section order; the others render settled and are recorded as seen (item 164: a first
+  viewing MAY animate; never replayed later). Exempt: Level 0 ambient (WeatherShift), Level 1 own-tap feedback (Saved, toasts, buttons),
+  typed-ask result moments (StrongMatch, chips, FoundLine: a response to the person's own action). No dispatcher, queue or staging
+  (sequencing would make Home move longer; item 164 declined a central dispatcher). Guard test; device check. (b) record as met, no
+  change (not recommended: the gap is real in code). "2-3 micro transitions" not made a count: micro motion is own-tap feedback only.
+
 # No motion question in onboarding (owner idea "206", 2026-10-18; NOT item 206): MET BY IDEA "205", CLOSED, LOCKED, nothing built
 
 - Proposal: never "Choose your animation preference." in onboarding (too much); just respect system settings; maybe later a "Motion"
