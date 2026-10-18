@@ -1,4 +1,4 @@
-# Same object, different information hierarchy (owner idea "263", 2026-10-18): MET AS BUILT (item 194's section lead reason, LOCKED); both proposed rewordings DECLINED; assessed, recommended close with no new rule or string, nothing built; CLAUDE.md not changed
+# Same object, different information hierarchy (owner idea "263", 2026-10-18): MET AS BUILT (item 194's section lead reason, LOCKED); both proposed rewordings DECLINED; CLOSED (owner), no new rule or string, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 The hierarchy already changes by placement: item 194's refinement (2026-10-04, LOCKED; `sectionLeadReason` in
 `utils/discoverSections.js`) puts the reason of the section a card sits in FIRST when the card really carries it, then the next
