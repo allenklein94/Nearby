@@ -1,3 +1,21 @@
+# One recommendation combines several signals (owner idea "268", 2026-10-18; NOT item 268): MET AS BUILT by Best Pick (item 112), ASSESSED, recommended close, owner decision pending; "Claude is interested" + weather line DECLINED; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
+
+Compression is already the model: the signals are combined in RANKING, not shown as sections. The 10-tier ladder
+(`constants/signalPriority.js`, `compareRanked`: intent > constraints > friends > availability > time > interests > business >
+weather > popularity > discovery) merges them into one order; Best Pick Tonight (`pickBestGathering`, only above the real fit
+score, else no hero) is the one card; it shows what, max 2 strongest real reasons, one "distance · when" line ("0.8 mi · 7:30 PM",
+`formatDistance` / `whenLabel`) and ONE action (`recommendationContext.js`, `gatheringCardModel`); all reasons on detail ("Why this
+fits you", item 106). Weather, trending and friends have no section of their own on Home (idea "267").
+Against the example card:
+- "Tonight's Best Fit": keep "Best Pick Tonight" (item 112; new strength wording needs item 38's product decision).
+- "Outdoor movie", "0.8 mi", "7:30 PM": as built.
+- "72° and clear": DECLINED as a standing card line (item 112/193: weather appears as a reason only when it really changed the
+  pick; otherwise weather speaks only on the Home weather card, item 36, LOCKED).
+- "Claude is interested": DECLINED (Interested is private, LOCKED: never a name to anyone; host-only aggregate count). The friend
+  reason stays "{Name} is going" / "{Name} is hosting" (+ item 40's "You + {Name} might like this" for a mutually declared interest).
+- Five visible signals: DECLINED (max 2 reasons + the context line, item 112); the other signals still shape the pick silently.
+Nothing to build; device check C9 (Best Pick hero legibility) as before; device session first (idea "252").
+
 # No section just because the backend has data (owner idea "267", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (Home checks C12/C16)
 
 Already locked several ways: "A Home claim needs a visible, substantiated trigger of its own kind ... Home may say nothing; no filler
