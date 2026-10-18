@@ -1,3 +1,22 @@
+# Business details sheet (owner idea "228", 2026-10-18; NOT item 228): MET BY ITEM 17 (LOCKED), ASSESSED, owner decision pending, nothing built
+
+- Proposal: tapping "Coastal Coffee" opens a sheet: name / 📍 0.7 mi / ⭐ rating / Open until 9 PM / Current offer / Get directions /
+  View business; only deeper interest opens the full business profile.
+- Met by item 17 (owner 2026-10-04, LOCKED; `src/components/BusinessPreviewSheet.js`, content only from `src/utils/businessPreview.js`):
+  Discover's business rows and map pins (item 19: one tap; item 44: grows out of the pin) open the sheet with name, measured
+  distance, open status from declared hours, up to 2 declared qualities (each line only when real), the business's own action
+  (`businessPrimaryAction`: Go now / Get Directions / Reserve / Book / Request; no mode = "Get an offer", a request addressed to
+  that one business) and "View business" -> `BusinessProfile` (job F). Closing leaves Discover's search, filters, scroll untouched;
+  the sheet closes before anything opens (idea "225"). A business's distance may be exact (item 146's "About" is for gatherings).
+- Not in the sheet, and recommended to stay out:
+  1. "⭐ rating": Nearby refuses the step toward reviews (product doctrine); "How was it?" ratings are personal ranking signals
+     (item 35), never public; no public rating exists to show (no invented numbers).
+  2. "Current offer": an offer is a business's reply to one person's request (never a deals feed or a standing deal shown to
+     browsers); perks have their own in-place expansion on Discover; item 17 says the sheet is not a mini profile.
+  3. A separate always-on "Get directions" beside the action: directions already IS the action when that is the business's mode;
+     a second button would break one explicit action per card (item 200).
+- Recommendation: close as met by item 17; decline the rating and current-offer lines; nothing built.
+
 # "Who's going?" sheet (owner idea "227", 2026-10-18; NOT item 227): DECLINED as written, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): decline as written; the existing experience covers the legitimate need. Attendee information stays
