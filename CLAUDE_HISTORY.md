@@ -1,4 +1,4 @@
-# One gathering, many surfaces, reflected visually (owner idea "260", 2026-10-18): MET AS BUILT on the consumer side; a visual link on the business side DECLINED (privacy); assessed, recommended close with no new rule, token or badge, nothing built; CLAUDE.md not changed
+# One gathering, many surfaces, reflected visually (owner idea "260", 2026-10-18): MET AS BUILT on the consumer side; a visual link on the business side DECLINED (privacy); badge, colour and "same object" marker DECLINED, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; Activity icon revisited only on device evidence; NOT DEVICE-VERIFIED (whether the shared look aids recognition = real-device check)
 
 The one-source part is idea "259" (closed): every surface reads the same gathering row and opens the same `GatheringDetail`. The
 visual part is already shared on the consumer side: the gathering's category look comes from ONE helper, `categoryStyleFor`
