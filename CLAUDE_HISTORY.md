@@ -1,3 +1,19 @@
+# Creation gets a focused mode (owner idea "233", 2026-10-18; NOT item 233): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: creation (a gathering, a business offer) is a focused task and deserves a dedicated screen: a clean environment, no
+  distracting feed, no giant Home.
+- Met:
+  1. Create Gathering: its own screen (`CreateGathering`, registry job C, the Create tab's workflow): five steps (What, When &
+     where, Who's invited, Details, Review & Publish), no feed or Home sections, step vs publish validation
+     (`createGatheringValidation.js`); `EditGathering` likewise.
+  2. Ask a business: `AskBusiness` is its own screen (item 84's carried facts + missing fields before Send).
+  3. Make an Offer: one focused form in a modal over the Opportunities dashboard (`BusinessDashboardScreen.js`), the dashboard dimmed
+     and not tappable behind it; item 49's live Customer Preview above Send Offer; device draft recovery (`useFormDraft`,
+     Continue editing / Start over; 2026-09-20 "Drafts survive failure", not idea "150"'s declined lifecycle Draft state).
+- Not changed: Make an Offer stays one form in its modal (owner, ideas "222" and "225"); moving it to a separate full screen would add
+  a navigation without a new job, and its opportunity stays the context it answers.
+- Recommendation: close as met as built; no new rule.
+
 # Every navigation has a cognitive cost (owner idea "232", 2026-10-18; NOT item 232): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built, no new rule. Where am I = every dedicated screen has a registered job (Rule

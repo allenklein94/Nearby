@@ -199,6 +199,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Every navigation has a cognitive cost (owner idea "232", 2026-10-18; NOT item 232) MET AS BUILT, CLOSED, LOCKED, no new rule or code:** where am I = every dedicated screen has a registered job (Rule 14); how do I get back = Back restores the previous context incl. Discover's state + scroll; where did it go = in-place views keep the surrounding context, sheets close without replacing Discover; notifications/links open over the existing context and keep the return path. Item 45 unchanged (ideas "221"-"224").
 
+**Creation gets a focused mode (owner idea "233", 2026-10-18; NOT item 233) MET AS BUILT, ASSESSED, recommended close, owner decision pending, nothing built:** Create Gathering = its own screen (Create tab, five steps, no feed or Home content; registry job C); AskBusiness = its own screen; Make an Offer = one focused form in a modal over the dimmed Opportunities (`BusinessDashboardScreen.js`), nothing behind it tappable, item 49's live preview above Send, device draft recovery (item 82 of 2026-09-20). Not changed: Make an Offer stays one form in its modal (ideas "222"/"225"); a separate full screen would add a navigation without a new job.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
