@@ -1,4 +1,4 @@
-# The "30-second rule" (owner idea "254", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# The "30-second rule" (owner idea "254", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed
 
 Covered by Rule 14 (a dedicated screen for a distinct job) + item 45 + ideas 233/234. Examples as built: Create Gathering = its own
 five-step screen; Edit Gathering = `EditGathering`; fill out a business request = `AskBusiness` (own screen, pre-filled, item 84/111);
