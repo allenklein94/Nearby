@@ -171,6 +171,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Your Plans expands inline on Home (owner idea "218", 2026-10-18; NOT item 218) MET AS BUILT under idea "216"'s decision, CLOSED, LOCKED, no new rule, no new screen, nothing built:** Plans stays the one source for Upcoming / Hosting / Past; Home keeps its layout (no inline expansion, no duplicate plan list); Profile's three plan-stat links, Celebrate Something, Shared Night and Past's memory counts (item 123) kept; item 110 and "Home never expands sections in place" stay locked. Revisit only if check C12 on a real phone shows the hop to Plans breaks the flow.
 
+**Happening Now in place on Discover (owner idea "219", 2026-10-18; NOT item 219) MET AS BUILT, ASSESSED, owner decision pending, nothing built:** on Discover the Happening Now heading (item 27), the time chips (item 34), "See all" (item 206) and the map's "N happening now" pill (item 120) all call `openDateView` in `DiscoverHubScreen.js`: a state change, no navigation, no separate screen in `screenRegistry.js`; the full list replaces the capped sections in place (nothing shown twice), Back/✕ restores the sections at their scroll. Home's heading switches to the Discover tab already inside that view (`RIGHT_NOW_VIEW`). "Happening Nearby" is a different row (business moments -> story viewer).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

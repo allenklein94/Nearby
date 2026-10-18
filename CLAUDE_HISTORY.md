@@ -1,3 +1,15 @@
+# Happening Now in place on Discover (owner idea "219", 2026-10-18; NOT item 219): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+
+- Proposal: on Discover, Happening Now populates right there (Discover -> Happening Now -> results underneath), never Discover ->
+  Happening Nearby screen -> results.
+- Met: every Happening Now entry on Discover is `openDateView('now')` (`src/screens/DiscoverHubScreen.js`): the heading with the Right
+  Now mark (item 27), the time chips (item 34), "See all" (item 206), the map pill (item 120, `areaIds`). It sets local state only;
+  `buildDiscoverDateView` renders the full list in place of the capped sections (so nothing shows twice), breadcrumb back / ✕ / Android
+  back restore the sections at their scroll (`restoreScrollY`). No Happening screen exists in `constants/screenRegistry.js`. Home's
+  heading switches tabs into the same view (`RIGHT_NOW_VIEW`), closing restores Discover's prior mode/tab/search/category.
+- Not the same thing: "🔴 Happening Nearby" is the business-moments row (opens the story viewer), not a results screen.
+- Recommendation: close as met as built; no change.
+
 # Your Plans expands inline on Home (owner idea "218", 2026-10-18; NOT item 218): MET AS BUILT under idea "216", CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built under idea "216"'s decision. Plans stays the single source of truth for
