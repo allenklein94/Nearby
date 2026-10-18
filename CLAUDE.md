@@ -213,6 +213,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Per-tab motion personality (owner idea "239", 2026-10-18; NOT item 239) DECLINED as a new rule, CLOSED, LOCKED, keep motion as built, nothing built:** item 164 (state, not screens) + the existing motion hierarchy stay the one motion language (Pulse, levels, the one signature, the one full-screen match); no tab-specific animation styles or per-tab animation quota. Not a ban: a future animation on any tab (incl. Activity, Profile) is allowed only when it justifies itself through a real state change and follows the existing motion rules (items 58/101/164).
 
+**Activity as events, not notifications (owner idea "240", 2026-10-18; NOT item 240) MET AS BUILT, ASSESSED, recommended close, owner decision pending, nothing built:** `ActivityScreen.js` (title "Activity", never "Notifications") is one feed of named real events in three groups: Needs Your Attention ("{name} wants to join {title}", invitations, group-plan asks, "wants to be friends"), Today (your gatherings "starting soon" / "in N hours", hosting or hosted by), Earlier (waves/notices, crossed paths, business replies, accepted offers, "{name} confirmed your reservation"; `getMyBusinessEcosystemActivity`), interleaved by real timestamps. DECLINE in the examples: "Sarah is interested" (Interested is private, LOCKED; host sees only the aggregate count). No "Things happening because of you" heading, no new event types or motion (idea "239").
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

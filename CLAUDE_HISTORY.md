@@ -1,3 +1,24 @@
+# Activity as events, not notifications (owner idea "240", 2026-10-18; NOT item 240): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: Activity as "Things happening because of you", not a generic notification inbox: "Claude accepted your plan",
+  "Coastal Coffee sent an offer", "Sarah is interested", "Your gathering starts in 45 min". Events, not notifications.
+- Met (`screens/ActivityScreen.js`, strings `i18n/ui/activity.js`): the tab is titled "Activity" (never "Notifications") and is
+  one feed of named real events, each with the person/business and the object, in three groups:
+  1. Needs Your Attention: "{name} wants to join {title}" + Approve, invitations ("invited you to a gathering: {title}", accept /
+     decline), "{name} wants to make your {category} request a group plan" + View & Respond, "wants to be friends" + accept.
+  2. Today: the person's own gatherings today, "starting soon" / "in N hours", "You're hosting" / "Hosted by {name}".
+  3. Earlier: waves and notices ("{name} sent you a Wave", premium-locked identity kept), "Crossed paths with {name}", and the
+     business events from `getMyBusinessEcosystemActivity` (`business_reply`, `business_offer_accepted`,
+     `business_reservation_confirmed` = "{name} confirmed your reservation"), interleaved by their real timestamps.
+  Pushes are worded as events too (item 62's "{Business} responded" + what it sent; item 28's "{Name} accepted your invite" on the
+  host's gathering; "{Name} accepted your friend request" opening that profile, item 133).
+- Declined from the examples: "Sarah is interested" (Interested is private, LOCKED: never a name to anyone; the host sees only the
+  aggregate count on their own gathering, item 139).
+- Not changed: no "Things happening because of you" heading or rename; no new event types, feed or motion (idea "239", item 164);
+  Activity keeps its registry job B (things that need an answer + what happened). "Starts in 45 min" style: Today reads "in N
+  hours" / "starting soon" (observation only; item 108's live minute labels cover Home + Discover).
+- Recommendation: close as met as built; no new rule.
+
 # Per-tab motion personality (owner idea "239", 2026-10-18; NOT item 239): DECLINED as a new rule, CLOSED, LOCKED, keep as built, nothing built
 
 - Owner decision (2026-10-18): decline as a new rule; keep item 164 and the existing motion hierarchy; add no tab-specific animation
