@@ -69,6 +69,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Animation driven by state, not screens (owner item 164, 2026-10-18) MET AS BUILT, LOCKED, nothing built:** each moment's shared rule (`offersToAnimate`, `offerToPlanMerge`, `replyToTravel`, `newJoinsToAnimate`, `interestedToAttendingMoment`, `planComesTogetherNow`, ...) decides from real saved state (item 162's `MOTION_TRIGGERS`); motion only on the object's own card or its authorized place; elsewhere the notification opens the exact item. DECLINED: app-wide/full-screen confirmations, a central animation dispatcher or event platform (item 125), new animation places (item 55). "A first viewing may animate; revisiting never replays" (see Motion).
 
+**A reply arriving on any screen (owner item 165, 2026-10-18) MET AS BUILT, LOCKED, nothing built, NOT DEVICE-VERIFIED:** the ONE in-app signal = the arrival pill (`components/OfferArrivalSignal.js` in `App.js`, rules `services/offerArrivals.js`): genuinely new unviewed replies on open requests, never when that request is on screen; name for one, count for several close together; tap = that request (exact reply + item 23 travel for a single reply; several requests = Activity); leaves after 6 s (first-ever reply 9 s) or a swipe (item 20); no sound/vibration/blocking; Reduce Motion = no animation; app closed = the per-request push (item 62). Home/Discover/gathering rows stay static until their normal refresh (item 160), no surface-specific notices; not a general animation layer (item 164).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

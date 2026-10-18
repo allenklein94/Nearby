@@ -1,3 +1,21 @@
+# A new reply can arrive on any screen (owner item 165, 2026-10-18): MET AS BUILT, LOCKED, nothing built
+
+Idea: event-driven animation means no screen per event; an offer can arrive on Home, Discover or a gathering and the UI
+responds in context. Found as built: the offer arrival pill (Layer 1, owner 2026-10-09), mounted once in `App.js`
+(`components/OfferArrivalSignal.js` draws; `services/offerArrivals.js` decides). Checked against the owner's rules in code:
+announces only replies with status 'offered', not viewed (`viewed_at`), on an open request, new since the baseline taken when
+the app became active, never twice in a session, never while that request is on screen (`isViewingRequest`); several within
+700 ms = one signal with a count; tap -> `arrivalDestination`: one request = BusinessRequestDetail (with `focusOfferId` and
+item 23's `startOfferTravel` from the pill only when the signal is ONE reply), several requests = Activity; leaves after
+`OFFER_ARRIVAL_HOLD_MS` 6 s, the first-ever single reply "A local business just responded to your request" holds 9 s
+(`OFFER_ARRIVAL_FIRST_HOLD_MS`, owner 2026-10-10); swipe dismisses at once (`useSwipeToDismiss`, item 20); no sound or vibration,
+`pointerEvents="box-none"` so only the pill is touchable; Reduce Motion sets opacity directly (no fade/pulse); app in background
+= listening paused, the per-request push replaces it (item 62). `offerArrivals.test.js` 28/28 (unit tests only).
+Locked: the one in-app signal for new replies; Home/Discover/gathering rows stay static until their normal load/focus refresh
+(item 160, item 15); no surface-specific notices, new screens, events or animations; the pill is an existing approved arrival
+signal, not permission for a general animation layer (item 164). Items 20/23/45/160/164 preserved. Documentation only; no
+code changed; NOT device-verified (nothing has run on a phone).
+
 # Animation driven by events, not screens (owner item 164, 2026-10-18): MET AS BUILT, LOCKED, nothing built
 
 Idea: never "on screen X play animation #17"; when offer.accepted occurs, trigger the confirmation, wherever the user is.
