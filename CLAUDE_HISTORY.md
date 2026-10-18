@@ -1,3 +1,23 @@
+# "Live local pulse" on Discover (owner idea "200", 2026-10-18; NOT item 200, one explicit action per card): ASSESSED, MET WHERE THE LOCKS ALLOW, OWNER DECISION PENDING, nothing built
+
+- Proposal: Discover at 7 PM is not static; every so often "New nearby activity" appears and a card enters, then "A friend just
+  joined", then "A business just responded"; the screen feels alive, but only real events cause movement.
+- Met as built, each by its one approved channel: new nearby activity = item 26's single ring from the Happening Now heading when the
+  section shows a gathering not yet seen this session (rows never move, item 15) + item 120's static "N happening now" map pill + item
+  108's live time labels (text only); a business responding = item 165's arrival pill on any screen (genuinely new replies only; tap =
+  that request + item 23's travel; leaves after 6 s or a swipe; never hijacks, item 166) and the per-request push when closed (item 62);
+  a friend joining = item 28/73's host-side moment on the host's own gathering, friends' plans on Home (item 41) and item 39's opt-in
+  "{Name} is nearby"; all within item 102's "living local network" (met as built).
+- Conflicts with locks: cards entering / live row insertion on Discover = DECLINED by item 113 (card entrances, live row insertion) and
+  item 15/26 (rows never move); no animated cards/lists (Motion); a periodic stream of updates = an unfolding feed / timeline (doctrine:
+  refuse a timeline; Home stays doors, items 50/110; Discover = what exists, read on load); item 165 already decided "Home/Discover/
+  gathering rows stay static until their normal refresh, no surface-specific notices"; item 164 declined an app-wide animation layer or
+  dispatcher; "A friend just joined" broadcast to non-hosts on Discover = a new social-activity feed (item 55: person-to-person stays out
+  of the Pulse; Interested private; join visibility only where attendee rules already allow, item 28); every-so-often timing risks
+  timer-driven motion (motion truth rule, idea "175").
+- Recommendation: (a) keep as built; decline the live Discover stream, card entrances and the friend-joined/business-responded notices
+  on Discover. No code, migration, string or motion changed.
+
 # Trending animation from real momentum (owner idea "199", 2026-10-18; NOT item 199): KEEP AS BUILT (owner approved; item 75 re-confirmed), CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18; worded "close item 75 as keep as built", i.e. idea "199" closed and item 75 re-confirmed): attendance-based
