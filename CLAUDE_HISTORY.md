@@ -1,3 +1,19 @@
+# Stable structure, changing content (owner idea "203", 2026-10-18; NOT item 203): ASSESSED, MET AS BUILT, OWNER DECISION PENDING, nothing built
+
+- Proposal (a principle): don't constantly change the interface; personalization can disorient; the structure stays stable, the content
+  changes; people always know where they are.
+- Met as built (code reading + standing conventions): five fixed tabs (Home, Discover, Create, Activity, Profile); surface jobs fixed;
+  Home's layout order is fixed (intent box -> Picked For You -> Your Plans -> social line -> Nearby Right Now; `HOME_SECTION_PRIORITY` in
+  `utils/homeAttention.js` only decides which ONE placement an object takes, never reorders sections); Home never expands sections in
+  place; Discover's sections are built in a fixed code order (`utils/discoverSections.js`: now, today, because, friends, trending,
+  weekend; personalization only orders items INSIDE a section via `compareDiscover`); rows never move (items 15/26), cards and lists
+  static, filters/modes never navigate, Back restores exact prior state and scroll, pushes open on top with a return trail (`openOnTop`);
+  idea "202": only the period WORDING and picks change, the layout does not. Sections absent when empty (truthfulness: Home may say
+  nothing, `homeQuiet.js`) are the one structural variation, and their order never changes.
+- Recommendation: (a) record as met; no new rule (the conventions above already enforce it). Alternative (b): one short Navigation
+  bullet "structure stable, content changes; personalization orders content within fixed sections, never moves sections or controls".
+  No code, migration, string or motion changed.
+
 # Home changes with the moment (owner idea "202", 2026-10-18; NOT item 202): KEEP AS BUILT (owner approved), CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): `getTimePeriod` stays the single period rule; time-aware greeting, subtitle and quick picks kept in all

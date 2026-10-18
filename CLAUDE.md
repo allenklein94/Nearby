@@ -145,6 +145,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Home changes with the moment (owner idea "202", 2026-10-18; NOT item 202) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** `getTimePeriod` = the one period rule for greeting, subtitle "What sounds good …?" and quick picks (11 languages), picks open the matching Discover time filter (item 137b), time ranking + Best Pick wording kept, Home static; no "What's happening…" / "What are you doing tonight?" wording. **Follow-up, OPEN, not scoped:** period wording changes only on the next redraw when Home stays open across a boundary (like item 108's midnight rollover).
 
+**Stable structure, changing content (owner idea "203", 2026-10-18; NOT item 203) ASSESSED, MET AS BUILT, OWNER DECISION PENDING, nothing built:** fixed tabs + surface jobs, fixed Home and Discover section order (personalization orders only within a section), rows/cards static, Back restores state, idea "202" changes wording only; empty sections may be absent, order never changes. Recommended: record as met, no new rule (alt: one Navigation bullet).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
