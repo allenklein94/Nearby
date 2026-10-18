@@ -1,3 +1,19 @@
+# Offer comparison with motion (owner idea "195", 2026-10-18; NOT item 195): ASSESSED, MET BY ITEMS 63 + 117, OWNER DECISION PENDING, nothing built
+
+- Proposal: three offers ($12 / $15 / $18); the strongest is visually emphasized on real criteria; cards settle (no dramatic flying)
+  into an understandable hierarchy; the person then compares.
+- Met as built (code reading, `BusinessRequestDetailScreen.js:338-340`, `utils/replyFit.js`): replies are already in ONE real-criteria
+  hierarchy from frame one, `rankReplies` (item 63): replies meeting every STATED constraint (time; budget when given) first, track
+  record only breaks ties, unknown never counts, price never a weight; "✨ Our pick" line (screen line ~1637) only on the first reply
+  when it qualifies AND has an established record; reasons only for constraints met ("Fits 7 PM", "Within your budget"). Every reply
+  uses the one card (item 21), all shown together (item 117).
+- Conflicts with locks: a "settle into hierarchy" animation = animating existing replies into order, DECLINED by item 117 (existing
+  replies show together, never staged or animated in; only a genuine arrival animates) and item 63 (no lift or reveal), plus no animated
+  lists (Motion) and the offer-screen whole-screen motion ban (owner 2026-10-12); emphasis by price ("$12 is strongest") = price
+  ranking, DECLINED by items 63/117 (price never a weight; price is shown, a budget is only a stated-constraint check); a stronger visual
+  emphasis than the "✨ Our pick" line = a special "best" card, DECLINED (items 63/117; never "best").
+- Recommendation: (a) keep as built; nothing to build. No code, migration, string or motion changed.
+
 # "Pass" feels frictionless (owner idea "194", 2026-10-18; NOT item 194, reason cap): KEEP AS BUILT (owner chose (a)), CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): option (a). The friction targeted does not justify a Pass action or a dismissal workflow. Preserved:
