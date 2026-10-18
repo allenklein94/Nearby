@@ -1,16 +1,15 @@
-# Offer "physicality" on arrival (owner idea "192", 2026-10-18; NOT item 192, weather copy): ASSESSED, OWNER DECISION PENDING, nothing built
+# Offer "physicality" on arrival (owner idea "192", 2026-10-18; NOT item 192, weather copy): MET BY ITEM 25, CLOSED, LOCKED, nothing built
 
-Idea: when an offer arrives the card shows slight depth, a spring, a subtle shadow transition and a micro-scale, then settles, so
-it feels like it has weight. Found (code read this session; no tests run, nothing rendered): an arriving reply already plays item
-25's ONE signature (`businessResponds`, <= 1.5 s, calm, same for every business): a light travels into the card while a soft frame
-grows from the signal's shape into it (`motion/offerTravel.js`, `OfferTravelOverlay`), then the card assembles (`utils/offerAssembly.js`:
-steps fade + rise 6 px, one coral outline glow, a shadowed layer faded by opacity on the native driver) and settles. The assembly
-comment reserves "ring, spring or background change" for You're booked (item 12). The offer card itself is flat (border, no shadow;
-`styles.offerCard` in BusinessRequestDetailScreen), unlike theme cards with `shadow`. Recommendation: arrival motion MET by item 25;
-DECLINE adding a spring (reserved for You're booked), an animated shadow/elevation (not native-driver animatable, item 22), and a
-card micro-scale/bounce (item 25/56 locked as approved; item 58 meaning; offer-screen rule). Only open option: a STATIC resting
-depth (the theme's existing card shadow on the offer card, no motion, same for every business) = a small visual change needing
-owner approval + device check. Awaiting the owner.
+Requirement (owner, exact): when a business offer arrives, the customer experiences a single, polished, calm animation that makes
+the offer feel like it arrives and assembles into the card, with a sense of movement and depth; consistent across businesses, no
+longer than 1.5 s. Met by item 25's existing signature (`businessResponds`), preserved exactly as implemented: a point of light
+moves into the offer card and a soft frame grows from the arrival signal's shape into it (`motion/offerTravel.js`,
+`OfferTravelOverlay`); the card's contents fade in and rise 6 px; a coral outline glow appears and fades; the card settles
+(`utils/offerAssembly.js`, `components/OfferAssembly.js`). DECLINED (LOCKED): spring, bounce, micro-scale, animated shadow; the spring
+stays reserved for "You're booked" (item 12); items 22/25/56/58 unchanged. The proposed static shadow on the offer card is NOT
+authorized; no visual change under this idea. Evidence: implementation read in code this session (assessment recorded in 07949cca);
+no tests and no real-phone check were run for this review. Device verification stays pending: the arrival/signature checks of
+`PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (needs Anthropic credit).
 
 # Every offer image shown whole, never cropped (owner, idea "191" follow-up, 2026-10-18; changes item 10): BUILT, NOT DEVICE/BROWSER-VERIFIED
 
