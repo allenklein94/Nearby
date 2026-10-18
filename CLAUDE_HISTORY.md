@@ -1,4 +1,9 @@
-# Nearby Network Visualization (owner idea "209", 2026-10-18; NOT item 209): ASSESSED, owner decision pending, nothing built
+# Nearby Network Visualization (owner idea "209", 2026-10-18; NOT item 209): DECLINED, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): decline. Keep the request screen and its real-state explanations (From what you said; We asked N
+  nearby businesses; status line + "Next:"; offer cards -> You're booked -> Visit confirmed). No people-network nodes,
+  reached-business map, glowing connections, staged progress, branded motion or new full-screen animation. If phone testing
+  shows the chain is unclear, improve the wording in `requestTimeline.js`, never another view. No implementation.
 
 - Proposal: an occasional, optional "network" view when opening a request: YOU at the center, signals to People / Places /
   Activities / Businesses, relevant connections lighting up (YOU -> Coffee -> Coastal Coffee -> Offer); branded, spectacular,
