@@ -1,3 +1,5 @@
+# Idea "247" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; label rewording DECLINED; free text only to one business, structured options for several; no app change.
+
 # Request form asks the real questions (owner idea "247", 2026-10-18): MET AS BUILT, assessed, owner decision pending, nothing built
 
 Checked `AskBusinessScreen.js` labels (`ui.askBusiness.*`): whatDoYouWant "What do you want?" (placeholder "Dinner for 4 tonight…"),
