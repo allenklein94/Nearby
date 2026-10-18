@@ -1,4 +1,7 @@
-# One clean card instead of five badges (owner idea "287", 2026-10-18; NOT item 287): "less visual noise" MET AS BUILT; the "subtle entrance" DECLINED (cards static, LOCKED); "one reason" = existing max 2 (items 112/194 LOCKED); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (C9)
+# One clean card instead of five badges (owner idea "287", 2026-10-18; NOT item 287): "less visual noise" MET AS BUILT; the "subtle entrance" DECLINED (cards static, LOCKED); "one reason" = existing max 2 (items 112/194 LOCKED); CLOSED (owner, 2026-10-18): MET AS BUILT, entrance declined, up to two reasons retained; nothing built; CLAUDE.md not changed; MET, VERIFICATION PENDING (C9)
+
+Owner (2026-10-18): close as met; closing means the behavior meets the agreed requirements, NOT that the phone check is done: card
+readability on a device stays pending check C9. No code changes.
 
 Checked in code 2026-10-18. No card stacks status badges: the one card hierarchy (`utils/recommendationCard.js`, item 46: WHAT / WHY /
 one "distance · when" line / accepted-friend social proof / ONE action) shows only fields with real data; WHY + social proof together
