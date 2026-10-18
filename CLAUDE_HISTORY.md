@@ -1,3 +1,20 @@
+# Activity as a change log, categorized on one surface (owner idea "243", 2026-10-18; NOT item 243): recommended KEEP AS BUILT, owner decision pending, nothing built
+
+- Proposal: Activity as a "change log of your world" rather than a notification center, optionally categorized into Plans,
+  People, Offers, Businesses, kept on one surface.
+- Already true: Activity is one surface (titled "Activity", never "Notifications") of named real events (idea "240"): Needs Your
+  Attention (join requests, invitations, group-plan asks, friend requests), Today (your gatherings today), Earlier (waves,
+  crossed paths, business replies, accepted offers, confirmed reservations), interleaved by real timestamps; every row opens its
+  object in one tap (idea "241").
+- Categories: NOT recommended. Activity's grouping is by what the event asks of the person (answer now -> today -> already
+  happened), which is the job idea "238" locked ("What needs my answer?"). Type sections (Plans / People / Offers / Businesses)
+  would split that: a join request (People), an invitation (Plans) and an open offer (Offers) all need an answer and belong
+  together at the top. Type filter chips would be an in-place filter (allowed by item 45) but add a control with no evidence it is
+  needed (Activity rarely holds many rows before a live market). Offers vs Businesses would also be one category (a business's
+  reply is the offer).
+- Recommendation: keep as built; no rename, no categories, no new rule. Revisit only if a real phone (or real usage) shows
+  Activity too long to scan; then an in-place type filter on the same surface, never separate sections or screens.
+
 # Notifications deep-link to the object that changed (owner idea "242", 2026-10-18; NOT item 242): MET AS BUILT, CLOSED, LOCKED, no app change
 
 - Owner decision (2026-10-18): close as met, conditional on the navigation test passing across EVERY notification type; record one
