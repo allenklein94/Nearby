@@ -1,3 +1,14 @@
+# Every navigation has a cognitive cost (owner idea "232", 2026-10-18; NOT item 232): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: every navigation costs "Where am I? How do I get back? Why did I end up here? Where did the thing I was looking at go?";
+  inline expansion preserves context.
+- Met: this is the rationale of item 45's screen reduction (change content > expand inline > sheet > dedicated screen). Each cost
+  already has its answer in place: "Where am I / why did I end up here?" = a dedicated screen only for a registered job A-F (Rule
+  14, `screenRegistry.test.js`); "How do I get back?" = pushes and links open on top of where the person was (`openOnTop`, return
+  trail; `pushNavigationContract.test.js`); "Where did the thing go?" = Back restores exact prior state and scroll, Discover's
+  in-place views restore the sections where they were left (`restoreScrollY`, idea "219"), sheets leave Discover untouched (item 17).
+- Recommendation: close as met as built; no new rule (a rationale, not a behaviour; ideas "221"-"223" already kept item 45's text).
+
 # Gathering card expands into full detail (owner idea "231", 2026-10-18; NOT item 231): DECLINED as written, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): decline as written; items 45, 95, 96, 97 and 103 stay locked. The gathering's full detail stays its
