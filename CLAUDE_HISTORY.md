@@ -1,3 +1,19 @@
+# The "same object" rule (owner idea "256", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+Already the core of the locked rules: master principle 2 (one source of truth per object), "States, not folders" (one viewer relation
+per gathering, hosting > attending > requested/waitlisted > interested, filtered by surfaces, never a screen per state), item 98 (one
+object evolving), item 45 (same job = same screen) and Rule 14. The gathering's states as built, all on ONE detail screen
+(`GatheringDetail`, jobs A/B/C) plus the card where it was found: Discover/Home preview = the card (one state-aware action from
+`primaryActionFor`); Interested = the same button in place (item 30's "✓ Saved"); Attending = the same screen's attending section
+(GatheringHub folded into it, audit B1; item 31's "~~Interested~~ → ✓ Attending"; waitlist -> Attending item 143); Upcoming = a filter
+on Plans (Upcoming / Hosting / Past tabs on one screen, `PlansScreen.js`), each row opening that same GatheringDetail; Happening = the
+same detail in its check-in window (Check in / Message group / Directions, one end + window rule, 2026-10-17); Past = the same detail
+completed (item 34's "~~Confirmed~~ → ✓ Completed" + "How was it?", item 122 memories, item 123 count on Past's card). The publish
+confirmation is a panel on GatheringDetail too (audit B5). So there are not six destinations: one object page, the card it was found
+on, and Plans as the list of your own (its own management job; Home's "See all plans" -> Plans kept, ideas "216"/"218"/"221").
+Chat (GatheringChat) and EditGathering stay separate because their JOB changes (communication, focused editing; ideas "222"/"234"),
+not the object's state. Nothing to build; device session first (idea 252).
+
 # The "deep task" rule (owner idea "255", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed
 
 Covered by Rule 14 (`RULE14_JOBS` incl. C Management, E Transaction) + item 45 + ideas 222/233/234/235/236. As built: lots of input /
