@@ -1,3 +1,23 @@
+# Complex editing gets a focused workflow (owner idea "234", 2026-10-18; NOT item 234): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: editing a gathering (title, description, date, time, location, visibility, capacity, invitations, business request) is
+  complex enough to justify a focused workflow.
+- Met: `EditGathering` (`screens/EditGatheringScreen.js`, registry job C "Edit a gathering you host and its settings") is its own
+  screen, opened by the host from GatheringDetail's host command center. On it: title, category (when none), description, date +
+  time, cover photo, vibe and details (energy, conversation, features, ticket, equipment, duration, genre, format, skill, effort,
+  ages), and ONE "Gathering settings" section (item 73 of 2026-09-20): link only (item 74), Who can join (approval), Limit
+  attendees + capacity, Allow business requests (`ask_local_businesses`, consent only), guests can invite, host notifications.
+- Not on Edit, by design:
+  1. Location, visibility, recurrence: fixed at creation; the screen says "cancel and recreate if those need to change"; visibility
+     is shown read-only (item 73: changing who can see a gathering people already joined is its own decision). Location also feeds
+     item 146's approximate pin and the approved attendees' meet-up point.
+  2. Invitations: the host command center's invite panel (`InviteFriendsModal`) on GatheringDetail (inviting is communication, not
+     editing a field).
+  3. The business request itself: GatheringDetail's business section (ask now, choose a business, booked card); Edit holds only the
+     consent switch.
+- Recommendation: close as met as built; no new rule. Making location or visibility editable, or folding invitations / the business
+  request into Edit, would each be a separate decision (privacy, attendee notification, item 146).
+
 # Creation gets a focused mode (owner idea "233", 2026-10-18; NOT item 233): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built, no new rule. Create Gathering keeps its dedicated five-step screen (What,
