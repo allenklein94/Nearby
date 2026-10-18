@@ -9,6 +9,7 @@ import { categoryName } from '../i18n/categoryNames';
 import { quickOptionLabel } from '../i18n/optionLabels';
 import { resultRowView, contextItem } from '../utils/recommendationContext';
 import useMinuteClock from '../hooks/useMinuteClock';
+import usePeriodClock from '../hooks/usePeriodClock';
 import useNotInterested from '../hooks/useNotInterested';
 import { NotInterestedMore, NotInterestedRow, NotInterestedLine } from '../components/NotInterested';
 import { relativeWindows } from '../utils/minuteClock';
@@ -380,6 +381,9 @@ export default function HomeScreen({ navigation }) {
   const [homeRecommendations, setHomeRecommendations] = useState([]);
   const [experienceFeedback, setExperienceFeedback] = useState(EMPTY_EXPERIENCE_FEEDBACK); // item 35
   const [experienceMaturity, setExperienceMaturity] = useState(null);
+  // Idea "202" follow-up: a re-render at the real noon / 6 PM / midnight change, so the greeting, subtitle and quick picks
+  // below (all read at render from getTimePeriod / getGreeting) never stay on the previous period while Home is open.
+  usePeriodClock();
   const period = getTimePeriod();
   // Impression analytics dedupe: this screen's own useFocusEffect re-runs the
   // "should I show a nudge" check on every focus, so a plain "log shown here"

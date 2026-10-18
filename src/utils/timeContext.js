@@ -93,12 +93,31 @@ export function describeFriendGatheringTiming(iso) {
   return { isPast: true, text: formatHeroDateTime(iso) };
 }
 
-export function getGreeting() {
-  const hour = new Date().getHours();
+function greetingPart(date = new Date()) {
+  const hour = date.getHours();
+  if (hour < 12) return 'morning';
+  if (hour < 18) return 'afternoon';
+  return 'evening';
+}
+
+export function getGreeting(date = new Date()) {
   // Read in the person's language (ui.homeParts.greeting); English: Good morning / Good afternoon / Good evening.
-  if (hour < 12) return tr('ui.homeParts.greeting.morning');
-  if (hour < 18) return tr('ui.homeParts.greeting.afternoon');
-  return tr('ui.homeParts.greeting.evening');
+  return tr(`ui.homeParts.greeting.${greetingPart(date)}`);
+}
+
+// Idea "202" follow-up (2026-10-18): everything time-of-day on Home (greeting, getTimePeriod's subtitle, quick-pick header
+// and picks) can change only at local noon, 6 PM or midnight (midnight also covers the weekend's start and end). The key
+// changes exactly when one of them does; the boundary is when it next may. Local wall clock (DST-safe via the Date ctor).
+export function homeMomentKey(date = new Date()) {
+  return `${getTimePeriod(date)}|${greetingPart(date)}`;
+}
+
+export function nextHomeMomentBoundary(date = new Date()) {
+  const y = date.getFullYear(); const m = date.getMonth(); const d = date.getDate();
+  for (const at of [new Date(y, m, d, 12), new Date(y, m, d, 18), new Date(y, m, d + 1, 0)]) {
+    if (at.getTime() > date.getTime()) return at.getTime();
+  }
+  return new Date(y, m, d + 1, 0).getTime();
 }
 
 export function getTimePeriod(date = new Date()) {

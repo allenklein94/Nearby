@@ -1,3 +1,24 @@
+# Home period-boundary refresh (idea "202" follow-up, owner-requested fix, 2026-10-18): BUILT, AUTOMATED-TEST VERIFIED (code level), NOT DEVICE-VERIFIED
+
+- Problem: Home's greeting, subtitle, quick-pick header and picks are read at render from `getTimePeriod` / `getGreeting`, so a Home left
+  open across noon, 6 PM or midnight kept the previous period until something else redrew it.
+- Fix (no second period system): `utils/timeContext.js` gains `homeMomentKey(date)` (`getTimePeriod` + the greeting's part; the greeting
+  also changes at a weekend noon/6 PM) and `nextHomeMomentBoundary(date)` (next local 12:00 / 18:00 / 00:00 via the Date ctor, DST-safe;
+  midnight covers the weekend's start and end); `getGreeting` now takes an optional date (same output). `utils/periodClock.js`
+  `startPeriodClock`: one timer to the next boundary (capped at 60 min, re-checked silently), calls back only when the key really
+  changed, no timer in the background, one re-check on return to the foreground, stop() clears timer + listener; pure, injectable
+  (mirrors item 108's `minuteClock`). `hooks/usePeriodClock.js`: runs only while Home is focused (`useIsFocused`), re-checks on regaining
+  focus; HomeScreen calls it right before `const period = getTimePeriod()` (above every early return). Nothing else changed: wording,
+  11 languages, quick-pick logic, `PERIOD_DATE_FILTER` (item 137b), ranking; no animation, polling loop or new screen.
+- Tests: `utils/periodClock.test.js` (12): key/boundary rule; 5:59 -> 6:00 PM; midnight Fri -> Sat (weekend) and Sun -> Mon; no boundary =
+  no call through capped wake-ups; never more than one timer; background = no timer, resume past a boundary = correct period at once,
+  resume without = no call; start while backgrounded; stop(); only Home uses it; no motion/setInterval; Home still reads the one rule at
+  render; hook uses focus. Full Jest 475 suites / 6,389 passed (11 todo). No journey (client-only render timing; DB journeys can't see it;
+  uncovered step = the on-screen switch). Business web export unaffected (consumer Home only, not regenerated).
+- Not verified: anything on a phone; check C14 added to `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md`. Known limit
+  (disclosed): a manual phone-clock change while Home stays open is picked up on the next resume/focus, not at once (timers count
+  elapsed time). Item 108's midnight "Tomorrow" -> "Today" relative-label rollover is a separate, still-unscoped follow-up.
+
 # Stable structure, changing content (owner idea "203", 2026-10-18; NOT item 203): MET AS BUILT (owner chose (a)), CLOSED, LOCKED, no new rule, nothing built
 
 - Owner decision (2026-10-18): record as met; no new rule (it would duplicate existing constraints without changing behavior). Already
