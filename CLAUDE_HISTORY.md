@@ -1,3 +1,12 @@
+# Request form asks the real questions (owner idea "247", 2026-10-18): MET AS BUILT, assessed, owner decision pending, nothing built
+
+Checked `AskBusinessScreen.js` labels (`ui.askBusiness.*`): whatDoYouWant "What do you want?" (placeholder "Dinner for 4 tonight…"),
+category, when "When?", timeOptional "Time (optional)", partySize "Party size", More options (budget/occasion/radius), anythingElseOptional
+"Anything else? (optional)" only under `targetPartner` (item 29 note exception; privacy guard allows it only there); gathering mode
+`anythingSpecificYoudLikeThe` + items/dietary pickers + targeted note. Pre-fill + missing-field marks = items 82/84. The only note-only
+screen left is `RequestBusinessPartnerScreen` ("Add a note for them"), a community/gathering PARTNERSHIP request, a different job, not
+a customer request. Gap = wording only; recommended keep. Journey coverage: `outdoorMatch` (ask -> AskBusiness carry-over); device: item 84 checklist.
+
 # Idea "246" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; distance on the Opportunity card DECLINED; rough band DEFERRED behind item 159's evidence; no app change.
 
 # The business gets the whole request (owner idea "246", 2026-10-18): MOSTLY MET, assessed, owner decision pending, nothing built
