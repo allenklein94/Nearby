@@ -1,4 +1,7 @@
-# Motion serves the product story (owner idea "211", 2026-10-18; NOT item 211): MET AS BUILT (assessed), owner confirmation pending, nothing built
+# Motion serves the product story (owner idea "211", 2026-10-18; NOT item 211): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built. No new rule, no six-step map, no change to the motion system. Caveat kept:
+  whether the full story reads instantly is unverified until the device session and idea "210"'s recording confirm it.
 
 - Proposal: optimize animation for "how do we make Nearby's unique value instantly understandable?", not prettier UI; the system
   should reinforce Intent -> Discovery -> Connection -> Offer -> Plan -> Real-world experience.
