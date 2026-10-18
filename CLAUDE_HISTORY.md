@@ -1,3 +1,16 @@
+# "Don't navigate away to see more of the same" (owner idea "221", 2026-10-18; NOT item 221): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+
+- Proposal: the rule isn't "never use new screens"; it's "don't navigate away when the person is simply asking to see more of the
+  same information".
+- Met: item 45's screen reduction (same job = same screen; change content > expand inline > sheet > dedicated screen only for an
+  entity, distinct workflow, management, communication or transaction; filters/modes never navigate; "See all" expands in place)
+  + Rule 14 (a dedicated screen needs a registered job A-F in `src/constants/screenRegistry.js`). Examples in place: Discover's
+  Happening Now / time chips / See all (idea "219", `openDateView`), Discover's context expansion, perks/gatherings in-place expansion.
+- The one exception already written: "See all" on a list with its own management job opens its destination. Home's "See all
+  plans" -> Plans (`Plans: { jobs: ['C'] }`, Upcoming / Hosting / Past + managing each plan), kept by the owner under ideas "216",
+  "218" and "220" + item 110 ("Home never expands sections in place"). Read literally, "221" would call that hop a violation.
+- Recommendation: keep the existing rule text as is; no rewording and no new rule (it would be a second statement of item 45).
+
 # Home is a preview, never the whole list (owner idea "220", 2026-10-18; NOT item 220): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built. Home stays concise, max 3 items per section; Your Plans keeps its rows (what,

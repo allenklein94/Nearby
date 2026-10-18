@@ -175,6 +175,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Home is a preview, never the whole list (owner idea "220", 2026-10-18; NOT item 220) MET AS BUILT, CLOSED, LOCKED, no new rule or code:** max 3 per Home section (`utils/homeAttention.js`); Your Plans keeps its rows (what, when, party size), attending/hosting first; "See all plans" opens Plans (Upcoming / Hosting / Past); item 110 locked (no in-place expansion); empty sections hidden, never placeholders. Count-and-title-chips variation NOT built (a separate design decision).
 
+**"Don't navigate away to see more of the same" (owner idea "221", 2026-10-18; NOT item 221) MET AS BUILT, ASSESSED, owner decision pending, nothing built:** already the screen-reduction rule (item 45: same job = same screen; "See all" expands in place; a new screen only for a registered job, Rule 14). Its ONE stated exception: a list with its own management job opens its destination (Home's "See all plans" -> Plans, registry job C), as kept under ideas "216"/"218"/"220". Taken literally, "221" would make that hop wrong; recommended: keep the rule as written (no rewording, no new rule).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
