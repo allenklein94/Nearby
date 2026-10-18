@@ -1,4 +1,10 @@
-# Every navigation has a cognitive cost (owner idea "232", 2026-10-18; NOT item 232): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+# Every navigation has a cognitive cost (owner idea "232", 2026-10-18; NOT item 232): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built, no new rule. Where am I = every dedicated screen has a registered job (Rule
+  14); how do I get back = Back restores the previous context incl. Discover's state and scroll; where did it go = in-place views
+  preserve the surrounding context and sheets close without replacing Discover; notifications and links open over the existing
+  context and preserve the return path. Item 45 unchanged (ideas "221"-"224"); idea "232" explains how the existing principles
+  answer these questions, no new behaviour or duplicate rules, no code changes.
 
 - Proposal: every navigation costs "Where am I? How do I get back? Why did I end up here? Where did the thing I was looking at go?";
   inline expansion preserves context.
