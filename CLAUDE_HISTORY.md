@@ -1,4 +1,4 @@
-# Many contexts, one object (owner idea "259", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# Many contexts, one object (owner idea "259", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule (restates principle 2 + Rule 14), nothing built; CLAUDE.md not changed; design decision closed, NOT DEVICE-VERIFIED
 
 Already master principle 2 (one source of truth per object) + Rule 14 + item 45 + "States, not folders" + "One object, once per
 surface, all its real reasons" + ideas 256-258. As built, an object may APPEAR on many surfaces (Home card, Discover tile, map pin,
