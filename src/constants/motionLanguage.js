@@ -92,8 +92,16 @@ export const PULSE_MOMENTS = Object.freeze([
 //                          signature. Offer acceptance, redemption, the first business interaction (words only, items 51/52) and
 //                          plan formation (items 25 #4, 43) stay at their approved behavior and tier.
 //   Level 3 signature   -- exactly ONE moment: a business responds to a customer's request (SIGNATURE_MOMENT).
+// Owner idea "168" (2026-10-18, documentation only; not item 168, the V1 category set) adds two names on two INDEPENDENT axes:
+//   Attention (how loudly a moment speaks): Ambient < Micro < Contextual < Signature.
+//     Level 0 ambient   -- almost invisible: ONLY the existing responding loader and the weatherShift fade (item 100's `ambient`
+//                          primitive). It names sequences, not tiers: each keeps its own tier (responding small, weatherShift special).
+//   Presentation (where a moment appears): full-screen is a FLAG, never an attention level (MOTION_PRESENTATIONS). Only matchIntro
+//                          (the mutual friend/dating match, item 167) may use it; it keeps its medium tier and never outranks the
+//                          signature. No new animation, timing, screen or primitive comes from either name.
 // Guard: motion/motionLevels.test.js.
 export const MOTION_LEVELS = Object.freeze([
+  { level: 0, key: 'ambient', tiers: [], sequences: ['responding', 'weatherShift'] },
   { level: 1, key: 'micro', tiers: ['tiny', 'small'] },
   { level: 2, key: 'contextual', tiers: ['medium', 'special'] },
   { level: 3, key: 'signature', tiers: ['signature'] },
@@ -102,6 +110,9 @@ export function motionLevelOf(tier) {
   const found = MOTION_LEVELS.find((l) => l.tiers.includes(tier));
   return found ? found.level : null;
 }
+export const MOTION_PRESENTATIONS = Object.freeze({
+  fullScreen: Object.freeze({ sequences: ['matchIntro'], component: 'motion/MatchAnimation.js' }),
+});
 // Owner item 58 (2026-10-12, LOCKED): animation must explain something. It shows a real change, a meaningful connection, or a
 // narrowly documented exception; decoration alone is not enough. Every animation sequence (SEQUENCES in motion/motionBudget.js)
 // and every file that animates on a raw tier token (MOTION_BUDGET.<tier>.ms) declares what it communicates, using only this

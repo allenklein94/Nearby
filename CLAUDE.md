@@ -75,6 +75,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Full-screen moments are extremely rare (owner item 167, 2026-10-18) MET AS BUILT (stricter than proposed), LOCKED, nothing built, NOT DEVICE-VERIFIED:** see the Motion bullet; first offer, accept/confirmation, bookings, business transactions and gathering creation keep their inline/context presentation (items 12/25/32/43/44/51 + offer-screen rule).
 
+**Motion hierarchy, two axes (owner idea "168", 2026-10-18; NOT item 168, the V1 category set) MET AS BUILT + documented and guarded, LOCKED:** see the Motion levels bullet. Documentation only; no animation, timing or screen changed.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -711,7 +713,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Motion levels (owner item 57, documentation only):** `MOTION_LEVELS` in `constants/motionLanguage.js` names the existing tiers:
   Level 1 micro = tiny/small (functional, only where locks permit; cards, lists, recommendations static; mode/filter changes instant),
   Level 2 contextual = medium/special (meaningful, never signature), Level 3 = signature, exactly ONE: a business responds. Accept,
-  redemption, first business interaction, plan formation stay as approved. Guard `motion/motionLevels.test.js`.
+  redemption, first business interaction, plan formation stay as approved. Owner idea "168" (LOCKED): two independent axes. Attention =
+  Ambient (Level 0: only `responding` + `weatherShift`, each keeps its tier) < Micro < Contextual < Signature; Presentation = full-screen
+  is a flag, never a level (`MOTION_PRESENTATIONS.fullScreen`: only `matchIntro`, stays medium, never outranks the signature). Guard `motion/motionLevels.test.js`.
 - **Animation must explain something (owner item 58, LOCKED):** a real change, a meaningful connection, or a narrowly documented
   exception; never decoration alone. Every `SEQUENCES` entry and every file animating on a raw tier token declares its meaning
   (`MOTION_MEANINGS`, `SEQUENCE_MEANINGS`, `DIRECT_TIER_MEANINGS` in `constants/motionLanguage.js`), a label only when accurate. The ONE

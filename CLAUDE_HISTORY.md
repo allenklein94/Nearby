@@ -1,3 +1,18 @@
+# Motion hierarchy on two axes (owner idea "168", 2026-10-18): MET AS BUILT, documented + guarded, LOCKED
+
+Numbered "168" by the owner; it is NOT item 168 (the V1 category set, migration 20270294), which keeps its number. Proposal:
+Ambient / Micro / Contextual / Signature / Full-screen. Finding: Micro/Contextual/Signature = item 57's `MOTION_LEVELS` (1-3),
+Ambient = item 100's `ambient` primitive (`responding` loader, `weatherShift` fade), full-screen = item 167 (match modal only).
+Ranking full-screen above Signature would have let the match (medium tier) outrank the ONE signature (item 25). Owner approved:
+two independent axes. Attention: `MOTION_LEVELS` gains `{ level: 0, key: 'ambient', tiers: [], sequences: ['responding',
+'weatherShift'] }` (names sequences, no tier of its own; responding stays small, weatherShift special); Levels 1-3 unchanged.
+Presentation: new `MOTION_PRESENTATIONS.fullScreen = { sequences: ['matchIntro'], component: 'motion/MatchAnimation.js' }`, a flag,
+never a level; matchIntro stays medium (Level 2), `SIGNATURE_MOMENT` stays `businessResponds`. Guard `motion/motionLevels.test.js`
+(+3 tests): ambient = exactly those two and agrees with `MOTION_PRIMITIVES`; full-screen held only by matchIntro, no level named
+full-*, matchIntro medium/Level 2, not the signature; the only `src/motion` file rendering a JSX `<Modal ` is MatchAnimation.js.
+Existing level/tier/sequence tests unchanged (only the levels table gained the level-0 row). Results: motionLevels 18/18, full Jest
+470 suites / 6317 passed. No animation, timing, screen or primitive changed; nothing device-verified.
+
 # Full-screen moments should be extremely rare (owner item 167, 2026-10-18): MET AS BUILT (stricter), LOCKED, nothing built
 
 Idea: reserve full-screen moments for first-ever offer, major confirmation, important transaction, maybe plan created;
