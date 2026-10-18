@@ -1,3 +1,27 @@
+# "Crazy but smart" shortlist (owner, 2026-10-18; 15 moments, NOT numbered items): ASSESSED, owner decision pending on #15, nothing built
+
+- #1 request signal to businesses = "We asked N" + two soft rings after the server returns (items 55/158/159; nothing travels to
+  named businesses, idea "209"). #2 offer back = travel into its card + the ONE signature (items 23/25), pill/push elsewhere
+  (165/62). #3 several businesses = one collapsing push (62), all replies together, no staged reveal (117/195). #4 offer ->
+  reservation = "You're booked" in place (12; extra animation declined, 95). #5 people assembling = item 28's flow-in + cluster,
+  item 73's one full rest small. #6 intent -> plan = merge into Your Plan + line assembly (32), formation on publish (43).
+  #7 search -> Create = "From what you said" card settling (82/85/idea "182"); cross-screen transformation DECLINED. #8 pin -> card
+  = item 44 for business pins; gathering pins open normally (not built). #9 friend + activity + place converging = item 40 (friend +
+  shared interest, faces converge); a place element is not part of it (item 131: no inferred composition). #10 gathering lifecycle =
+  Interested -> Attending (30/31), waitlist -> Attending (143), Confirmed -> Completed (34); "Starting / Happening" are item 108's
+  live text labels, never motion. #11 real-time pulse = item 26's Happening Now ring only (ideas "199"/"200" declined live motion).
+  #12 business lifecycle = item 13's Offer sent -> Accepted -> Redeemed glows + item 147's pipeline. #13 "understood you" = item 45's
+  chips (+ idea "174"'s real-phase caption). #14 "Can't find it?" = item 81's empty state + Create/Ask links (idea "181"; universal
+  menu declined).
+- #15 first-ever business response as a full-screen, "borderline unforgettable" signature: today the first-ever reply already gets
+  its own words ("Your first reply from a local business", `ui.offerCopy.firstReplyHeard`, `isFirstEverReply`) + the longer arrival
+  notice inside the same signature (owner 2026-10-10, LOCKED). A full-screen version conflicts with item 167 (full-screen = mutual
+  match only, LOCKED; "first offer ... stays inline"), item 25 (the signature is the same for every reply, <= 1.5 s) and item 102
+  (signature-only-on-first-reply DEFERRED until a phone shows repetition). It would need the owner to reopen 167 and 25.
+- Recommendation: keep #1-#14 as built (no new work). For #15, decide only after the existing signature has been seen on a real
+  phone (offer checklist arrival checks); if it then underwhelms, the change is a #15 spec under item 101's motion-spec template,
+  not a new full-screen layer. Nothing built.
+
 # Motion serves the product story (owner idea "211", 2026-10-18; NOT item 211): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built. No new rule, no six-step map, no change to the motion system. Caveat kept:
