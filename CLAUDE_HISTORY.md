@@ -1,4 +1,4 @@
-# The animation makes the connection obvious (owner idea "261", 2026-10-18): MET AS BUILT for "the reply attaches to the same plan"; "the card expands" on tap DECLINED; assessed, recommended close with no new motion or rule, nothing built; CLAUDE.md not changed
+# The animation makes the connection obvious (owner idea "261", 2026-10-18): MET AS BUILT for "the reply attaches to the same plan"; "the card expands" on tap DECLINED; CLOSED (owner), no new motion or rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (offer checklist arrival checks + item 32 checks on a real phone)
 
 Part 1, "tap Your plan: Coffee -> the card expands": DECLINED, all LOCKED: Home never expands sections or cards in place (item 110,
 ideas "216"/"218"/"237"); no card-to-detail morph (items 95/96/97/103, ideas "230"/"231"); cards static (items 15/111). A tap opens
