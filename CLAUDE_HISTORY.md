@@ -12,8 +12,17 @@ every named server function exists in a migration; client kinds name no server a
 the sequence (or is its `MARKETPLACE_MOMENTS` component); no delivery/seen wording; no component reads it; no domain event
 named. Two existing guards adjusted for the documentation text: the friendCollision entry names the item 39 service instead
 of `get_nearby_friends` (friendNearby guard stays strict); `friendCollision.test.js` lists `constants/motionLanguage.js` as
-a documentation-only mention. No app behaviour, motion, string or migration change. Jest 6310 pass; 1 pre-existing
-date-dependent failure (`gatheringCheckInWindow.test.js`) unrelated.
+a documentation-only mention. No app behaviour, motion, string or migration change.
+Owner (2026-10-18): implementation ACCEPTED; full-suite verification qualified until the one failing test was accounted for.
+Full suite on 49aed6a1: 470 suites, 6322 tests = 6310 pass, 11 todo, 1 fail. Item 162's own: `motionTriggers.test.js` 7/7,
+`friendNearby.test.js` and `friendCollision.test.js` pass. The one failure, `gatheringCheckInWindow.test.js` "a strong match
+is never claimed for a gathering that is over, at the exact end included", is NOT item 162: same failure (1 failed / 31
+passed) on bb05b885, the commit before item 162 (separate worktree); with the clock set to 2026-10-17 12:00 local the whole
+file passes 32/32. Cause = a real latent defect, not just a stale fixture: `strongMatchPieces(item, ask, now)` honours `now`
+for the "over" check but calls `matchesDateWindow(start, dw)` (`services/intentResolverScoring.js`), which reads the real
+clock, so the 'today' check judges the fixture's 2026-10-17 against the real date. Not user-visible today (Home and Discover
+call it without `now`, so both read the same clock), but the function's `now` is half-honoured. Not fixed here (no behaviour
+change authorized); assertions untouched. Tracked as its own open line in CLAUDE.md.
 
 # Don't make the person wait on "Searching…" (owner idea "161", 2026-10-18): MET AS BUILT + empty state reworded (option a), LOCKED
 

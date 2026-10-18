@@ -283,6 +283,11 @@ boundaries; prod journeys 499/499; replay 450/450 + concurrency; no new strings)
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
+**Strong-match clock defect (found 2026-10-18 during item 162 verification) is OPEN, not fixed, needs an owner go-ahead:** `strongMatchPieces`
+(`utils/strongMatch.js`) takes `now` but its date-window step (`matchesDateWindow` in `services/intentResolverScoring.js`) reads the real clock;
+not user-visible (callers pass no `now`), but `gatheringCheckInWindow.test.js`'s exact-end strong-match test fails on any day but 2026-10-17
+(fails on bb05b885 too; passes 32/32 with the clock at 2026-10-17). Proposed fix: pass `now` through to `matchesDateWindow` (default = real clock), no assertion change.
+
 **Blocked on the owner:**
 - **Anthropic credit:** every AI edge function returns 500 ("credit balance is too low"). Never run live:
   the intent extractor, offer/creative/logo/video screening (owner-typed content fails closed to "Try
