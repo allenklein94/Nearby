@@ -1,3 +1,10 @@
+# Kept state makes the app feel faster (owner idea "282", 2026-10-18; NOT item 282): rationale for ideas "279"-"281", MET AS BUILT, recorded, no new rule, metric or code; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+The reason behind ideas "279" (one Back from a Home plan row), "280" (Discover filters kept) and "281" (search kept): the person never
+rebuilds their context, so the app feels faster without any speed change. Already the locked "Back restores exact prior state and
+scroll" + idea "232" (every navigation has a cognitive cost) + "Infer first; never re-ask". Perceived speed is a phone judgement:
+check C12 and the 279-281 Back passes; a place where context is lost = fix that shared state, never a per-screen workaround.
+
 # Search state persists through opening a result (owner idea "281", 2026-10-18; NOT item 281): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 Checked in code 2026-10-18 (`DiscoverHubScreen.js`). "Coffee" -> Coastal Coffee: a business row opens item 17's `BusinessPreviewSheet`
