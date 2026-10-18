@@ -159,6 +159,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Nearby Network Visualization (owner idea "209", 2026-10-18; NOT item 209) DECLINED, CLOSED, LOCKED, nothing built:** the request screen's real-state words stay the explanation ("From what you said", "We asked N", `requestTimeline.js` status + "Next:", offer cards -> You're booked -> Visit confirmed). No network view, people nodes, reached-business map, glowing connections, staged progress, branded motion or new full-screen moment (items 103/92/158/188/55/167, motion truth). If a phone shows the chain unclear, fix `requestTimeline.js` wording, never another view.
 
+**60-second product demo (owner idea "210", 2026-10-18; NOT item 210) ASSESSED, owner decision pending, nothing built:** every step already exists as real behaviour (ask understood item 45 -> "We asked N" + rings items 55/158/159 -> business's signal received item 48 -> reply signature + travel items 25/23 -> "I'll take this one" / You're booked item 12 -> merge into Your Plan item 32). Recommended: the demo = a recording of the REAL flow on two phones (customer + a seeded test business), which is the offer checklist run (Next priority; needs Anthropic credit + a device); never a scripted/demo mode, fake data or staged animation in the app (motion truth, no invented states).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

@@ -1,3 +1,17 @@
+# 60-second product demo (owner idea "210", 2026-10-18; NOT item 210): ASSESSED, owner decision pending, nothing built
+
+- Proposal: a 60-second demo of the platform: ask for coffee tonight -> signal travels -> Nearby finds businesses -> Coastal Coffee
+  receives demand -> business sends offer -> offer travels back -> accept -> plan forms ("this isn't just another events app").
+- Met as real behaviour, step for step: typed ask + understood chips (item 45); "We asked N nearby businesses" + two soft rings only
+  after the server returns (items 55/158/159; no "finding businesses" animation, item 161); the business's Opportunity arrival with
+  the request pulse (item 48); the reply signature + travel into its card (items 25/23; pill/push if elsewhere, items 165/62);
+  "I'll take this one" -> "You're booked" (item 12); merge into Your Plan with the plan line assembly (item 32).
+- Never run end to end: no device, AI functions down (offer screening fails closed; the intent extractor falls back to the
+  deterministic resolver), no seeded businesses in the market.
+- Recommendation: no app work. The demo = a screen recording of the real flow on two phones (customer + a seeded test business),
+  i.e. offer checklist sections 1-6, which is already the Next priority. Never a demo mode, scripted data, fake business or staged
+  animation inside the app (motion truth; no invented numbers/states), and not idea "209"'s declined network view.
+
 # Nearby Network Visualization (owner idea "209", 2026-10-18; NOT item 209): DECLINED, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): decline. Keep the request screen and its real-state explanations (From what you said; We asked N
