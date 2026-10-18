@@ -1,3 +1,19 @@
+# Business personality within Nearby's system (owner idea "190", 2026-10-18; NOT item 190, the "Ask nearby businesses" link placement): MET AS BUILT, LOCKED, nothing built
+
+Idea: a business brings its own video, logo, photos and offer artwork; Nearby controls typography, spacing, interaction, CTA,
+animation physics, accessibility and structure, so it has personality without redesigning Nearby. Finding (kept as is): this IS
+item 50 (LOCKED: businesses get freedom over WHAT they offer, never over how prominently it is designed). Business-supplied: the
+offer's photo or video (offer "artwork" = an attached photo; items 10/50: whole in the fixed frame, video tap-to-play, muted, only
+with a screened poster), the screened logo beside the name only (`get_screened_business_logos`, logo item LOCKED), the offer's own
+words/price/times (screened). Nearby-controlled: one card structure and presentation for every business (`presentOffer` in
+`utils/offerPresentationEngine.js` reads only name + screened logo as brand assets; items 11/17/21), the locked CTAs ("I'll take
+this one" / "You're booked"), coral as Nearby's colour, theme typography and spacing, the one signature motion identical for every
+business (item 25), calm tone for business transactions, Reduce Motion and screen-reader rules, item 49's live preview showing the
+business exactly that card. DECLINED (LOCKED): "branded motion" in any form (business-chosen animation, entrance, timing or
+physics), brand colours, fonts, templates, button styles, layout options, autoplaying video, a media chooser (item 50). No code,
+strings, migration or checklist changed. Verification = existing checklists (item 49 incl. checks 11-13, item 50's media/logo via
+the offer checklist); no real screened logo or offer media exists in production (needs Anthropic credit).
+
 # Business previews exactly what the customer sees (owner idea "189", 2026-10-18; NOT item 189): MET AS BUILT, LOCKED, nothing built
 
 Idea: while creating an offer the business sees a live Consumer Preview (image, video, headline, price, availability) and Send

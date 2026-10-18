@@ -121,6 +121,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Business previews what the customer sees (owner idea "189", 2026-10-18; NOT item 189) MET AS BUILT by items 49/50/21/119, LOCKED, nothing built, NOT DEVICE/BROWSER-VERIFIED:** live preview above Send Offer from the one mapping; no preview step, templates or new motion; side-by-side DECLINED unless item 49 checklist check 13 (website) shows the preview is hard to see while editing (checks 11-13 added).
 
+**Business personality within Nearby's system (owner idea "190", 2026-10-18; NOT item 190) MET AS BUILT by item 50 (+ items 10/21/25/49 + logo item), LOCKED, nothing built:** business supplies offer photo/video (tap-to-play), screened logo beside the name, its own words; Nearby owns structure, type, spacing, CTA, motion, accessibility (`presentOffer`). Branded motion, brand colours/fonts/templates/button styles DECLINED. NOT DEVICE-VERIFIED: item 49 checklist + offer checklist.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
