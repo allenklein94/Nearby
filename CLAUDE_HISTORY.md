@@ -1,3 +1,19 @@
+# "Who's going?" sheet (owner idea "227", 2026-10-18; NOT item 227): PARTLY MET + CONFLICTS WITH LOCKS, recommended DECLINE as written, owner decision pending, nothing built
+
+- Proposal: a bottom sheet "Going: Allen, Claude, Sarah / Interested: Mike / Done"; no separate Attendees screen.
+- Met: there is no Attendees screen. GatheringHub was folded into GatheringDetail's attending section (screen-reduction audit B1,
+  2026-10-08; `screenRegistry.js` removed-screen note). Going is shown inline on GatheringDetail: the Who's going cluster (host
+  included, "+N" count, item 28) + `attendeeSummary` (`utils/gatheringAttendeeDisplay.js`: names only for friends and fellow
+  attendees, others see counts; guard `attendeeIdentityPrivacy.test.js`); approved attendees see the named "Who you'll meet" list
+  (`components/GatheringAttendingSection.js`, profile tap + Notice); the host manages requests/attendees in the same screen.
+- Conflicts:
+  1. The "Interested: Mike" section breaks "Interested is private" (owner 2026-10-17, LOCKED: never a name, photo or list to anyone;
+     only the host's aggregate count) and item 138 (Who's going with Going / Interested sections DECLINED, LOCKED).
+  2. Moving the inline Who's going into a sheet contradicts idea "224" (closed today: existing inline content is never moved into
+     sheets; attendee faces stay in their current context).
+  3. A full named Going list to every viewer would break the attendee-identity rule (strangers see counts).
+- Recommendation: decline as written; nothing built.
+
 # "Why am I seeing this?" sheet (owner idea "226", 2026-10-18; NOT item 226): DECLINED as written, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): decline as written; the goal is covered by the existing experience. Item 106 stays locked (no
