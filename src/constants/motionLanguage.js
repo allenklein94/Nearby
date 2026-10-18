@@ -235,3 +235,84 @@ export const MOTION_PRIMITIVES = Object.freeze({
   occasionLock: { primitive: 'transform', item: '58 exception', exception: 'occasion_celebration', communicates: 'the chosen occasion locked in as the plan\'s occasion' },
   occasionParticles: { primitive: 'transform', item: '58 exception', exception: 'occasion_celebration', communicates: 'the chosen occasion tile became selected (celebratory, the only particles in the app)' },
 });
+
+// Owner item 162 (2026-10-18): every animation has a truthful, identifiable trigger. Documentation only, beside items 100/101:
+// it records what already makes each sequence play, authorizes no motion, no event and no behaviour, and no component reads
+// it. Kinds (MOTION_TRIGGER_KINDS):
+//   server_change  a stored state really changed (`state` names the row/column; `actions` the server function that changes it)
+//   server_read    real server rows this device has not shown before (`actions` = the read)
+//   clock          the device clock against a saved time
+//   weather        the weather data
+//   tap            the person's own tap
+//   words          Nearby's reading of the words the person typed
+//   client_rule    a deterministic app rule over real data already on screen
+// Not every animation needs a server event. Item 125 stands: no event platform; a new server event only when a real server
+// action needs one, never because an animation exists. No trigger may claim push delivery or that someone saw a
+// notification (item 159): "request sent" = the request was saved to the reached businesses' Opportunities.
+export const MOTION_TRIGGER_KINDS = Object.freeze(['server_change', 'server_read', 'clock', 'weather', 'tap', 'words', 'client_rule']);
+export const MOTION_TRIGGERS = Object.freeze({
+  requestPulse: { kind: 'server_change', actions: ['create_business_request'], plays: ['motion/RequestPulse.js', 'motion/OpportunityArrival.js'],
+    state: "business_request_offers rows inserted for the new request: the call returned notifiedCount > 0 and not a duplicate (on a business's card: opportunityArrival's trigger)" },
+  happeningRipple: { kind: 'server_read', actions: [], plays: ['motion/HappeningRipple.js'],
+    state: 'a gatherings row in the Right Now / Happening Now section (gatherings.scheduled_at inside isWithinRightNowWindow) that this session has not shown yet (utils/happeningSeen.js)' },
+  pinToSheet: { kind: 'tap', plays: ['motion/PinToSheetFrame.js'], state: "the person's tap on a business pin on the Discover map" },
+  offerTravel: { kind: 'server_change', actions: ['submit_business_offer'], plays: ['motion/OfferTravelOverlay.js'],
+    state: "business_request_offers.status = 'offered' for an unviewed, unexpired reply arriving while its request is on screen (replyToTravel)" },
+  businessResponds: { kind: 'server_change', actions: ['submit_business_offer'], plays: ['motion/OfferTravelOverlay.js'],
+    state: "business_request_offers.status = 'offered': a business's reply reached the person's open request (the ONE signature)" },
+  friendJoin: { kind: 'server_change', actions: ['join_gathering'], plays: ['motion/JoinArrival.js'],
+    state: "gathering_interest.status = 'approved' for a person not approved at the previous read, the server's going count up, from a realtime reload (newJoinsToAnimate)" },
+  hostJoin: { kind: 'server_change', actions: ['join_gathering'], plays: ['components/HostCommandCenter.js'],
+    state: "gathering_interest.status = 'approved' for a new person on the host's own gathering (the same live joins as friendJoin)" },
+  offerToPlan: { kind: 'server_change', actions: ['accept_business_offer'], plays: ['motion/OfferToPlanMerge.js'],
+    state: "business_request_offers.status = 'accepted' after the person's own accept returned" },
+  friendCollision: { kind: 'server_read', actions: [], plays: ['motion/FriendCollision.js'],
+    state: "a row from the one nearby-friend service (services/friendNearby.js, item 39) and its server-computed shared_tags matching the card's interest; once per friend + gathering per session" },
+  matchIntro: { kind: 'server_change', actions: ['respond_to_friend_request', 'record_friend_discovery_swipe'], plays: ['motion/MatchAnimation.js'],
+    state: "friendships.status = 'accepted' (an accepted request, or a swipe that returned a mutual match), or an unseen Dating matches row" },
+  offerAssembly: { kind: 'server_change', actions: ['submit_business_offer'], plays: ['components/OfferAssembly.js'],
+    state: "business_request_offers.status = 'offered', not viewed (viewed_at), not expired and not yet played (shouldAssemble)" },
+  opportunityArrival: { kind: 'server_change', actions: ['create_business_request'], plays: ['motion/OpportunityArrival.js'],
+    state: 'a business_request_offers row for this business, still answerable (canRespondToOpportunity) and new to this device, on load or a live INSERT' },
+  askUnderstood: { kind: 'words', plays: ['components/AskUnderstoodChips.js', 'components/FromWhatYouSaidCard.js'],
+    state: "the pieces the ask's own words gave (utils/askUnderstood.js), once per ask" },
+  refineNextStep: { kind: 'tap', plays: ['components/AskRefinementChips.js'], state: "the person's tap on a refinement chip; the next unanswered step's chips" },
+  strongMatch: { kind: 'client_rule', plays: ['motion/StrongMatch.js'],
+    state: "utils/strongMatch.js: the top pick's real activity, stated time and close distance all match the ask's words (unknown never counts)" },
+  surpriseReveal: { kind: 'server_change', actions: ['reveal_occasion', 'reveal_occasion_group_plan'], plays: ['motion/SurpriseRevealAnimation.js'],
+    state: 'the occasion row is no longer in surprise mode: the reveal call returned success before the animation starts' },
+  offerAccepted: { kind: 'server_change', actions: ['accept_business_offer'], plays: ['motion/OfferAcceptedMorph.js'],
+    state: "business_request_offers.status = 'accepted'" },
+  offerProgress: { kind: 'server_change', actions: ['accept_business_offer', 'complete_business_reservation'], plays: ['motion/OfferProgressSteps.js'],
+    state: "business_request_offers.status moved forward to 'accepted' or 'completed' since the card last showed it (offersToAnimate); 'offered' never animates" },
+  interestedSaved: { kind: 'server_change', actions: ['set_gathering_interested'], plays: ['motion/InterestedSaved.js'],
+    state: "a gathering_interested row saved by the person's own tap (the call returned)" },
+  interestedToAttending: { kind: 'server_change', actions: ['join_gathering'], plays: ['motion/InterestedToAttending.js'],
+    state: "gathering_interest.status = 'approved' from Interested (interestedToAttendingMoment) or moved off the waitlist (item 143)" },
+  offerCountdown: { kind: 'clock', plays: ['components/OfferCountdown.js'],
+    state: "the device clock inside an open offer's last 30 minutes before its saved valid_until, one real minute at a time" },
+  bookedExit: { kind: 'clock', plays: ['motion/BookedCelebration.js'],
+    state: "the hold after a server-confirmed booking (booked) ends; the card leaves, claiming nothing new" },
+  planTogether: { kind: 'server_change', actions: [], plays: ['motion/PlanComesTogether.js'],
+    state: "the plan's primary booking and every add-on stored as confirmed (business_requests.status fulfilled/merged or an accepted business_request_offers row; isPlanFullyConfirmed), changing while this screen is open (planComesTogetherNow); or the gatherings row the publish returned (item 43)" },
+  friendsPlanning: { kind: 'server_read', actions: [], plays: ['motion/FriendsPlanning.js'],
+    state: "gatherings rows hosted by accepted friends (friendships.status = 'accepted', gatherings.host_id; selectFriendsActivity) whose set has an id not shown before on this device" },
+  planCompleted: { kind: 'clock', plays: ['motion/PlanCompleted.js'],
+    state: "the device clock passing the end (timeWindowParts) of a gathering the server says the person attended; once per gathering ever" },
+  visitConfirmed: { kind: 'server_change', actions: ['complete_business_reservation'], plays: ['motion/VisitConfirmed.js'],
+    state: "business_request_offers.status = 'completed': the business confirmed the visit" },
+  booked: { kind: 'server_change', actions: ['confirm_group_plan_offer'], plays: ['motion/BookedCelebration.js'],
+    state: 'every group plan participant confirmed the same offer: the call returned allConfirmed' },
+  successCelebratory: { kind: 'server_change', actions: ['create_business_request'], plays: ['motion/SuccessAnimation.js'],
+    state: 'the request call returned notifiedCount > 0 and not a duplicate; or a communities row was just created ("Your community is live")' },
+  successBusiness: { kind: 'server_change', actions: ['confirm_group_plan'], plays: ['motion/SuccessAnimation.js'],
+    state: "the group plan was confirmed and its business_requests row created (the call returned)" },
+  responding: { kind: 'server_read', actions: ['get_responding_businesses'], plays: ['motion/RespondingStatus.js'],
+    state: 'a reply that business sent is being checked (get_responding_businesses rows, until it publishes or stalls at stale_at)' },
+  weatherShift: { kind: 'weather', plays: ['motion/WeatherShift.js'],
+    state: "the weather data's condition changed today (utils/weatherShiftSeen.js), Home weather card only, once" },
+  // item 58's ONE exception, documented as is
+  occasionMorph: { kind: 'tap', plays: ['motion/OccasionAnimation.js'], state: "the person's tap choosing an occasion tile" },
+  occasionLock: { kind: 'tap', plays: ['motion/OccasionAnimation.js'], state: "the person's tap locking in the chosen occasion" },
+  occasionParticles: { kind: 'tap', plays: ['motion/OccasionAnimation.js'], state: "the person's tap choosing an occasion tile" },
+});

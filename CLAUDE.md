@@ -712,6 +712,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Motion primitives (owner item 100, documentation only):** every `SEQUENCES` entry names one of eight forms (pulse, flow, merge,
   reveal, transform, assemble, complete, ambient) in `MOTION_PRIMITIVES` (`constants/motionLanguage.js`); describes, never authorizes
   or unifies (item 56); Ambient = only `responding` + `weatherShift`. Guard `motion/motionPrimitives.test.js`.
+- **Truthful triggers (owner item 162, documentation only):** every `SEQUENCES` entry names its trigger in `MOTION_TRIGGERS`
+  (`constants/motionLanguage.js`: kind, stored state or real source, server function, playing files); a new sequence registers
+  its trigger; no new server event just for an animation (item 125); never claims delivery (item 159). Guard `motion/motionTriggers.test.js`.
 - **Motion spec first (owner item 101):** before building or changing any motion, its build plan or history entry answers eight
   questions (`PRODUCT_AUDIT/MOTION_SPEC_TEMPLATE.md`): what changed, why motion helps, start state, end state, duration, immediate
   interaction, Reduce Motion, and does it still read without the animation. Guards: `motionMeaning`, `motionPrimitives`,

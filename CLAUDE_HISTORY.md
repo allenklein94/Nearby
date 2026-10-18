@@ -1,3 +1,20 @@
+# Every animation has a truthful trigger (owner item 162, 2026-10-18): DONE, documentation + guard only
+
+Ask: every animation must be tied to a real, identifiable trigger (e.g. "Accepted" = `business_request_offers.status =
+'accepted'`), never decoration or an assumed state. Built: `MOTION_TRIGGERS` + `MOTION_TRIGGER_KINDS` in
+`constants/motionLanguage.js`, beside items 100/101: one entry per `SEQUENCES` key (35), each with a kind (server_change,
+server_read, clock, weather, tap, words, client_rule), the stored state or real source in words, the server function(s) that
+change/read it (server kinds only) and the files that play it. Documentation only: authorizes no motion, event or behaviour,
+read by no component. Not every animation needs a server event; item 125 stands (no event platform; a new server event only
+when a real server action needs one). No trigger claims push delivery or that someone saw a notification (item 159).
+Guard `motion/motionTriggers.test.js` (7): the table covers exactly the sequences and `MOTION_PRIMITIVES`; known kinds/fields;
+every named server function exists in a migration; client kinds name no server action; every playing file exists and uses
+the sequence (or is its `MARKETPLACE_MOMENTS` component); no delivery/seen wording; no component reads it; no domain event
+named. Two existing guards adjusted for the documentation text: the friendCollision entry names the item 39 service instead
+of `get_nearby_friends` (friendNearby guard stays strict); `friendCollision.test.js` lists `constants/motionLanguage.js` as
+a documentation-only mention. No app behaviour, motion, string or migration change. Jest 6310 pass; 1 pre-existing
+date-dependent failure (`gatheringCheckInWindow.test.js`) unrelated.
+
 # Don't make the person wait on "Searching…" (owner idea "161", 2026-10-18): MET AS BUILT + empty state reworded (option a), LOCKED
 
 Idea: never sit on "Searching..." for ten seconds; say "We'll let you know when businesses respond" and get out of the way.

@@ -74,7 +74,8 @@ describe('guards', () => {
     };
     const users = walk(SRC).filter((f) => /FriendCollision|friendCollision\(|ui\.friendNearby\.together/.test(fs.readFileSync(f, 'utf8')))
       .map((f) => path.relative(SRC, f).split(path.sep).join('/')).sort();
-    expect(users).toEqual(['motion/FriendCollision.js', 'motion/index.js', 'motion/motionBudget.js', 'screens/HomeScreen.js', 'utils/friendCollision.js']);
+    // constants/motionLanguage.js only documents the trigger (item 162, read by no component)
+    expect(users).toEqual(['constants/motionLanguage.js', 'motion/FriendCollision.js', 'motion/index.js', 'motion/motionBudget.js', 'screens/HomeScreen.js', 'utils/friendCollision.js']);
   });
   test('it explains, never ranks: no ranking code reads it, and it never says the friend is going', () => {
     for (const f of ['utils/homeAttention.js', 'utils/homeSignalMerge.js', 'constants/signalPriority.js', 'services/homeDashboard.js']) {
