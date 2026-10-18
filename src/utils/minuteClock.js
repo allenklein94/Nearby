@@ -11,6 +11,9 @@
 //   to    end, else start + JUST_STARTED_MIN ("Happening now" stops), + one minute so the plain label replaces it
 // Before `from` the clock sleeps until `from` (capped at MAX_SLEEP_MS); after `to` the window needs nothing. Nothing in or
 // ahead of its span = no timer and no AppState listener at all.
+// Midnight follow-up (owner, 2026-10-18): an upcoming window's day word (whenParts: Today/Tonight, Tomorrow, then the date)
+// also changes at local midnight: the day before its start ("Mon, Oct 19" -> "Tomorrow") and its own day ("Tomorrow" ->
+// "Today"). Those two midnights are ticks too, so no second clock: same timer, same cap, same background pause.
 // Pure and React-free (the hook hooks/useMinuteClock.js injects AppState), so it runs under the plain Node jest setup.
 import { STARTS_IN_WINDOW_MIN } from './timeContext';
 import { windowEnd, ENDING_SOON_MIN, JUST_STARTED_MIN } from './timeWindow';
@@ -58,6 +61,17 @@ export function relativeSpan({ start, end }) {
   return { from, to };
 }
 
+// The next local midnight (ms) at which an upcoming start's day word changes, or null (already started, or its day is
+// today). Local wall clock via the Date ctor: DST, month-end and year-end safe.
+export function dayWordChangeAt(start, nowMs) {
+  if (start == null || start <= nowMs) return null;
+  const s = new Date(start);
+  for (const t of [new Date(s.getFullYear(), s.getMonth(), s.getDate() - 1), new Date(s.getFullYear(), s.getMonth(), s.getDate())]) {
+    if (t.getTime() > nowMs) return t.getTime();
+  }
+  return null;
+}
+
 // When any shown label can next change (ms), or null when none ever will.
 export function nextTickAt(windows, nowMs) {
   let next = null;
@@ -66,6 +80,8 @@ export function nextTickAt(windows, nowMs) {
     if (nowMs >= to) continue;
     const t = nowMs >= from ? (Math.floor(nowMs / MINUTE_MS) + 1) * MINUTE_MS : from;
     if (next == null || t < next) next = t;
+    const day = dayWordChangeAt(w.start, nowMs);
+    if (day != null && day < next) next = day;
   }
   return next;
 }

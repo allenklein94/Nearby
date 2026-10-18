@@ -1,7 +1,7 @@
 // Owner item 108: relative time labels stay true while a screen is open (data freshness, not motion).
 const fs = require('fs');
 const path = require('path');
-import { startMinuteClock, nextTickAt, relativeWindows, windowOf, windowsKey, MINUTE_MS } from './minuteClock';
+import { startMinuteClock, nextTickAt, dayWordChangeAt, relativeWindows, windowOf, windowsKey, MINUTE_MS } from './minuteClock';
 import { recommendationContext, contextItem } from './recommendationContext';
 import { whenLabel } from './timeContext';
 
@@ -169,5 +169,79 @@ describe('windows from what a screen shows', () => {
     expect(windowOf({ title: 'x' })).toBeNull();
     const a = relativeWindows([{ startsAt: iso(at(19)) }], { scheduled_at: iso(at(20)) });
     expect(windowsKey(a)).toBe(windowsKey([...a].reverse()));
+  });
+});
+
+// Midnight follow-up (owner, 2026-10-18): the day word follows the real calendar day while the screen stays open.
+describe('day word at local midnight', () => {
+  const d = (y, mo, day, h, m = 0) => new Date(y, mo, day, h, m);
+  const labelsAcross = (rows, from, minutes, opts = {}) => {
+    jest.setSystemTime(from);
+    const read = (nowMs) => rows.map((r) => cardWhen(r, nowMs));
+    const shown = [{ at: Date.now(), labels: read(Date.now()) }];
+    const stop = startMinuteClock(relativeWindows(rows), (nowMs) => shown.push({ at: nowMs, labels: read(nowMs) }), opts);
+    for (let i = 0; i < minutes; i += 1) jest.advanceTimersByTime(MINUTE_MS);
+    return { shown, stop };
+  };
+
+  it('11:59 PM Tomorrow -> 12:00 AM Today; the event a day later becomes Tomorrow; several days away keeps its date', () => {
+    const next = { id: 'a', scheduled_at: iso(d(2026, 9, 18, 10)) };
+    const later = { id: 'b', scheduled_at: iso(d(2026, 9, 19, 10)) };
+    const far = { id: 'c', scheduled_at: iso(d(2026, 9, 23, 10)) };
+    const { shown } = labelsAcross([next, later, far], d(2026, 9, 17, 23, 59), 2, { appState: fakeAppState() });
+    expect(shown[0].labels).toEqual(['Tomorrow · 10 AM', whenLabel(later.scheduled_at, d(2026, 9, 17, 23, 59)), whenLabel(far.scheduled_at, d(2026, 9, 17, 23, 59))]);
+    expect(shown[0].labels[1]).not.toMatch(/^(Today|Tomorrow)/);
+    // exactly one tick, at midnight, with every label re-read
+    expect(shown).toHaveLength(2);
+    expect(shown[1].at).toBe(d(2026, 9, 18, 0).getTime());
+    expect(shown[1].labels[0]).toBe('Today · 10 AM');
+    expect(shown[1].labels[1]).toBe('Tomorrow · 10 AM');
+    expect(shown[1].labels[2]).toBe(shown[0].labels[2]);
+    expect(shown[1].labels[2]).not.toMatch(/^(Today|Tomorrow)/);
+  });
+
+  it('an evening start reads Tonight after midnight (the engine\'s own Today/Tonight rule, unchanged)', () => {
+    const row = { id: 'g', scheduled_at: iso(d(2026, 9, 18, 19)) };
+    const { shown } = labelsAcross([row], d(2026, 9, 17, 23, 59), 2, { appState: fakeAppState() });
+    expect(shown.map((s) => s.labels[0])).toEqual(['Tomorrow · 7 PM', 'Tonight · 7 PM']);
+  });
+
+  it('month-end and year-end', () => {
+    expect(dayWordChangeAt(d(2026, 10, 1, 10).getTime(), d(2026, 9, 31, 12).getTime())).toBe(d(2026, 10, 1, 0).getTime());
+    expect(dayWordChangeAt(d(2027, 0, 1, 10).getTime(), d(2026, 11, 31, 12).getTime())).toBe(d(2027, 0, 1, 0).getTime());
+    expect(dayWordChangeAt(d(2027, 0, 2, 10).getTime(), d(2026, 11, 31, 12).getTime())).toBe(d(2027, 0, 1, 0).getTime());
+    const row = { id: 'y', scheduled_at: iso(d(2027, 0, 1, 10)) };
+    const { shown } = labelsAcross([row], d(2026, 11, 31, 23, 59), 2, { appState: fakeAppState() });
+    expect(shown.map((s) => s.labels[0])).toEqual(['Tomorrow · 10 AM', 'Today · 10 AM']);
+  });
+
+  it('dayWordChangeAt: the day before, then the day itself; null once started or already today', () => {
+    const start = d(2026, 9, 20, 10).getTime();
+    expect(dayWordChangeAt(start, d(2026, 9, 17, 12).getTime())).toBe(d(2026, 9, 19, 0).getTime());
+    expect(dayWordChangeAt(start, d(2026, 9, 19, 12).getTime())).toBe(d(2026, 9, 20, 0).getTime());
+    expect(dayWordChangeAt(start, d(2026, 9, 20, 8).getTime())).toBeNull();
+    expect(dayWordChangeAt(start, start + 1)).toBeNull();
+    expect(dayWordChangeAt(null, start)).toBeNull();
+  });
+
+  it('backgrounded across midnight: no tick while away, the right label at once on return', () => {
+    const app = fakeAppState();
+    const row = { id: 'g', scheduled_at: iso(d(2026, 9, 18, 10)) };
+    jest.setSystemTime(d(2026, 9, 17, 23, 50));
+    const shown = [];
+    startMinuteClock(relativeWindows(row), (nowMs) => shown.push(cardWhen(row, nowMs)), { appState: app });
+    app.emit('background');
+    expect(jest.getTimerCount()).toBe(0);
+    jest.setSystemTime(d(2026, 9, 18, 7));
+    expect(shown).toEqual([]);
+    app.emit('active');
+    expect(shown).toEqual(['Today · 10 AM']);
+  });
+
+  it('one timer however many day-labelled things are shown; no ticks between midnights beyond the hourly cap re-plan', () => {
+    const rows = [1, 2, 3, 4].map((n) => ({ id: `g${n}`, scheduled_at: iso(d(2026, 9, 17 + n, 10)) }));
+    const { shown } = labelsAcross(rows, d(2026, 9, 17, 12), 12 * 60, { appState: fakeAppState() });
+    expect(jest.getTimerCount()).toBe(1);
+    expect(shown.slice(1).map((s) => s.at)).toEqual([d(2026, 9, 18, 0).getTime()]);
   });
 });

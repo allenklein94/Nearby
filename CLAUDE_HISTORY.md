@@ -1,3 +1,21 @@
+# Midnight day-word rollover (item 108 follow-up, owner-scoped 2026-10-18): BUILT, AUTOMATED-TEST VERIFIED (code level), NOT DEVICE-VERIFIED
+
+- Problem: a Home or Discover card reading "Tomorrow · 10 AM" kept it past midnight until something else redrew the screen.
+- Inspection: the label comes from the one engine (`whenParts` / `whenLabel` in `utils/timeContext.js`, via `recommendationContext` /
+  `gatheringCardModel`), read at render on both screens. Home already re-rendered at midnight through idea "202"'s period clock (the
+  greeting part always changes then); Discover had nothing. Item 108's minute clock (`utils/minuteClock.js`) only woke near a window's
+  "Starts in" span, never at midnight.
+- Fix (no second clock): `dayWordChangeAt(start, now)` = the next local midnight that changes an upcoming start's day word (the day
+  before its start: date -> "Tomorrow"; its own day: "Tomorrow" -> "Today"/"Tonight"); `nextTickAt` takes it as one more candidate.
+  Same single timer, 60-min cap, background pause and resume tick; local wall clock via the Date ctor (month-end, year-end, DST safe).
+  Started/today windows add nothing. Engine, wording, strings, ranking, layout, navigation and motion unchanged.
+- Tests: `utils/minuteClock.test.js` 11 -> 17: 11:59 PM Tomorrow -> 12:00 AM Today, the next day's event -> Tomorrow, several days out
+  keeps its date (one tick, at midnight); evening start -> Tonight; month-end + year-end; `dayWordChangeAt` rule; backgrounded across
+  midnight = no tick away, right label at once on return; one timer for many shown items, no extra ticks. Full Jest 475 suites / 6,395
+  passed (11 todo). No journey (client-only render timing; uncovered step = the on-screen switch).
+- Not verified: anything on a phone; check C15 added to `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md`. Idea "202" and
+  idea "203" not reopened.
+
 # Home period-boundary refresh (idea "202" follow-up, owner-requested fix, 2026-10-18): BUILT, AUTOMATED-TEST VERIFIED (code level), NOT DEVICE-VERIFIED
 
 - Problem: Home's greeting, subtitle, quick-pick header and picks are read at render from `getTimePeriod` / `getGreeting`, so a Home left
