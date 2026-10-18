@@ -1,3 +1,20 @@
+# Rarely a "Success!" screen; confirm inline (owner idea "274", 2026-10-18; NOT item 274): MOSTLY MET (item 123 + inline moments), ASSESSED, owner decision pending on 10 residual OK-dialogs; nothing built; CLAUDE.md not changed
+
+Checked in code 2026-10-18. No success SCREEN exists (no confirmation screen in `src/screens`); no "Success!" string outside the item
+123 comment (`utils/actionConfirmations.js` is the one wording source; a guard fails on a bare "Success!"). Core actions confirm where
+they happen: business request = the request screen's "Request sent to {name}…" / "We asked N…" (ideas 157/158/159); accept = "You're
+booked" on the card (item 12); invite = inline "✓ Sent" + "Invitation sent to {name}" toast; Interested = "✓ Saved" (item 30); join =
+You're in / Requested on GatheringDetail (item 31, idea 273); publish = "Your gathering is live!" panel (item 43); business reply =
+`replySentConfirmation` toast (57 `showSuccessToast` call sites).
+Residual: blocking OK-dialogs (`Alert.alert`) that only confirm a success: `RequestBusinessPartnerScreen.js:71` requestSent,
+`BusinessRequestDetailScreen.js:892` paymentSent (idea 235's follow-up), `HostAttendeeManager.js:55` approved (item 141's wording),
+`ChatScreen.js:718` chat.updated, `ReviseOfferSheet.js:49` updatedOfferOnItsWay, `BusinessDashboardScreen.js:1680` addedToYourProfile +
+`:2386` submittedForReview, `RelationshipLegacyScreen.js:49` thankYou, `ReportBlockModal.js:51` reportSubmitted,
+`IdVerificationScreen.js:68` idVerification.submitted. Kept as dialogs regardless (they explain, not celebrate): offerUpdated
+(item 118's changed-terms stop), requestDetail.added ("we couldn't find a nearby…", nobody reached), paywall welcomeToPremium (after a purchase).
+Option: switch the 10 residual dialogs to the existing `showSuccessToast` with their existing words (no new strings, no motion, no
+new component); item 141's approve wording unchanged. Owner to decide.
+
 # Tap changes the card's state in place (owner idea "273", 2026-10-18; NOT item 273): KEEP AS BUILT, CLOSED, LOCKED (owner, 2026-10-18), card-level join NOT reopened; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 Owner decision (2026-10-18): keep the 2026-09-20 decision. Interested = lightweight, updates in place on the card; Join / Request to
