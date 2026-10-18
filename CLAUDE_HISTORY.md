@@ -1,3 +1,22 @@
+# The animation makes the connection obvious (owner idea "261", 2026-10-18): MET AS BUILT for "the reply attaches to the same plan"; "the card expands" on tap DECLINED; assessed, recommended close with no new motion or rule, nothing built; CLAUDE.md not changed
+
+Part 1, "tap Your plan: Coffee -> the card expands": DECLINED, all LOCKED: Home never expands sections or cards in place (item 110,
+ideas "216"/"218"/"237"); no card-to-detail morph (items 95/96/97/103, ideas "230"/"231"); cards static (items 15/111). A tap opens
+that object's own screen (`GatheringDetail` or `BusinessRequestDetail`, idea "259"), over Home, Back returns.
+Part 2, "Coastal Coffee responded attaches to that same plan": MET, the reply never appears as a separate object:
+- the reply is saved on the plan's own request (one row, idea "258") and lands on the request screen as a card under its request
+  line: item 23 travels it from that line into its card (both ends visible), then item 25's signature builds it in;
+- the plan's row on Home Your Plans / Plans / GatheringDetail carries it as that plan's own status ("Coastal Coffee can take you",
+  "N offers — choose one"; item 160 `tallyBusinessReplies`, read on load/focus, static, never live);
+- app open elsewhere: the arrival pill names the business and opens THAT request on that reply with item 23's travel (item 165);
+  app closed: one per-request push replaced in place, opening the exact reply (items 62/132, idea "242");
+- on "I'll take this one": item 32 merges the booking INTO Your Plan (chip travels up, plan assembles, logo into the place line,
+  `PlanJoinRail` turns solid), "{what} at {business}".
+Deliberately not before acceptance: no logo or business on the plan card until booked (item 32, no bias between offers); no
+animation on Home rows when a reply arrives (items 160/165, idea "200"); no cross-screen morph (items 95-97). Nothing to build;
+whether the attachment FEELS connected = offer checklist arrival + item 32 checks on a real phone (idea "171"); a disconnected link is
+fixed at its shared source, never with added motion.
+
 # One gathering, many surfaces, reflected visually (owner idea "260", 2026-10-18): MET AS BUILT on the consumer side; a visual link on the business side DECLINED (privacy); badge, colour and "same object" marker DECLINED, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; Activity icon revisited only on device evidence; NOT DEVICE-VERIFIED (whether the shared look aids recognition = real-device check)
 
 The one-source part is idea "259" (closed): every surface reads the same gathering row and opens the same `GatheringDetail`. The
