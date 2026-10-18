@@ -1,3 +1,17 @@
+# "Almost found it" (owner idea "177", 2026-10-18): MET by items 81 + 69, LOCKED, nothing built
+
+Idea: on partial information say "We found something close.", then offer "Need a different time?" / "Want to expand your
+distance?" instead of an error state. Finding: an empty typed ask is already not a dead end: item 81's empty state (Home +
+Discover) offers Create it yourself (words carried), Ask Nearby Businesses when a business fits (`askBusinessesFits`) and Places
+to go for public-place asks; item 69's words ("worth the drive", "don't mind driving") widen the search one step 15 -> 30 mi on
+`SEARCH_RADIUS_OPTIONS`, never past 50. Owner decisions (LOCKED): "We found something close." DECLINED (item 81 Gap 1: never an
+option from outside the permitted radius, even labelled); "Need a different time?" DECLINED (items 107/46: no time chip, a search
+never asks to change the time, time only from the person's words); "Want to expand your distance?" DEFERRED behind item 81's
+evidence gate (item 128's unmatched/recurring-empty analysis AND real-device validation). If that evidence shows people regularly
+hit the radius: reconsider ONE explicit, person-tapped expansion to 30 mi on the existing 15/30/50 list; never automatic, never
+beyond 50 mi. Principle: empty results stay truthful; recovery improves only where evidence identifies the actual problem. No
+copy, chips, search behaviour or code changed.
+
 # "Found something" (owner idea "176", 2026-10-18): MET by FoundLine + item 37, LOCKED; separate bug fix: FoundLine untranslated on Discover + Celebrate
 
 Idea: a "Found something…" line when results arrive. Finding: the beat already exists: `motion/FoundLine.js` (item 135's tiny
