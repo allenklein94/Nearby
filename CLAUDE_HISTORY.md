@@ -1,3 +1,28 @@
+# Messages keep the plan attached (owner idea "244", 2026-10-18; NOT item 244): PARTLY MET, owner decision pending, nothing built
+
+- Proposal: a friend's message about a gathering ("Are we still going Saturday?") carries the gathering's context (Beach
+  Volleyball / Saturday · 4 PM / View plan), so the conversation and the plan stay connected.
+- Met:
+  1. A gathering's conversation is its own group chat, `GatheringChat` (`gathering_messages`, attendees only), reached from
+     GatheringDetail (host command center Message group, attendee button) and Messages' group-chat chips ("{title} Chat", past
+     marked). Its header title is tappable and opens that gathering's GatheringDetail (`RootNavigator.js` GatheringChat options);
+     Back returns to the chat.
+  2. A business plan's chat, `PlanChat`, heads with the plan's title and its people (roster toggle); `plan_message` pushes open that
+     chat (idea "242").
+  3. A 1:1 `Chat` that started from a gathering (`matches.source_gathering_id`) names it in the empty state ("Say hi, you're both
+     attending {title}").
+- Gaps:
+  1. GatheringChat's header shows the title only: no "Saturday · 4 PM" line and no visible "View plan" wording (the title itself is
+     the link).
+  2. A 1:1 message is never linked to a gathering; there is no per-message context.
+- Recommendation:
+  - Optional small build (needs the owner's yes): a when line under GatheringChat's header title from the shared time engine
+    (`whenLabel`, the same "Saturday · 4 PM" style the cards use; tap = the same GatheringDetail), so the chat always shows which
+    plan and when. No new motion; at most one new screen-reader label.
+  - Decline per-message context inferred from the words: Nearby never decides from free text which plan a message is about (item
+    131's "never from inference"; a wrong guess would attach the wrong plan). A 1:1 context card would only follow an explicit
+    action the person takes ("share this gathering into a chat"), which does not exist and would be its own decision.
+
 # Activity as a change log, categorized on one surface (owner idea "243", 2026-10-18; NOT item 243): MET AS BUILT, CLOSED, LOCKED, categories DECLINED, nothing built
 
 - Owner decision (2026-10-18): close as met as built; no new rules, UI or app changes. Change log = met (Activity records real
