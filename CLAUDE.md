@@ -127,6 +127,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Offer "physicality" (owner idea "192", 2026-10-18; NOT item 192) MET BY ITEM 25, CLOSED, LOCKED, nothing built:** the signature stays exactly as built (light travels in, frame grows into the card, contents fade + rise 6 px, one coral glow, settle; same for every business, <= 1.5 s). Spring (reserved for You're booked), bounce, micro-scale, animated shadow DECLINED; static offer-card shadow NOT authorized. NOT DEVICE-VERIFIED: offer checklist's arrival checks.
 
+**"Accept" feels decisive (owner idea "193", 2026-10-18; NOT item 193) ASSESSED, OWNER DECISION PENDING, nothing built:** met by item 12 (tapped button locks + spinner, server-confirmed in-place morph ~520 ms, ✓ "You're booked", haptic); timer-driven "Confirmed" and renaming declined; open: press compression on the button, and showing other offers' buttons disabled during a booking.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

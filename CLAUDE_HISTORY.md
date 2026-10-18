@@ -1,3 +1,18 @@
+# "Accept" feels physically decisive (owner idea "193", 2026-10-18; NOT item 193, weather mention): ASSESSED, OWNER DECISION PENDING, nothing built
+
+Idea: tap Accept Offer -> the button compresses slightly -> the offer card locks -> "Confirmed", in ~300-500 ms. Found (code read
+this session; no tests run, nothing rendered), `screens/BusinessRequestDetailScreen.js` `handleAccept` + the accept button:
+tap = TouchableOpacity's opacity dip (no compression); the tapped button disables and shows a spinner (`actingOfferId`), its time
+picker locks; `acceptingRef` refuses any second accept, but the OTHER offers' "I'll take this one" buttons still look enabled
+(a tap on them during the booking silently does nothing). After the server returns and the reload brings the stored 'accepted'
+state, the same card morphs (item 12, `motion/OfferAcceptedMorph.js`, `SEQUENCES.offerAccepted` checkMs 220 + morphMs 300 = ~520
+ms): ✓ ring + "You're booked", facts fade + rise 6 px, success haptic (own tap) + idea "169"'s optional cue. Met: the card's lock
+on the tapped offer, the fast in-place confirmation, haptic. Recommended DECLINED: a "Confirmed" shown on a 300-500 ms timer or
+before the server returns (motion truth rule, item 159), renaming "I'll take this one" / "You're booked" (locked wording). Open
+for the owner: (1) press compression on "I'll take this one" (the app has `components/ScaleButton.js`, used only on Discovery,
+whose release is a bouncy spring: a transaction would need no bounce; new micro motion, item 101 spec); (2) while one offer is
+booking, show the other offers' accept buttons as disabled (a state-truth fix: they are already refused).
+
 # Offer "physicality" on arrival (owner idea "192", 2026-10-18; NOT item 192, weather copy): MET BY ITEM 25, CLOSED, LOCKED, nothing built
 
 Requirement (owner, exact): when a business offer arrives, the customer experiences a single, polished, calm animation that makes
