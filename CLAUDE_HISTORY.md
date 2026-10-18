@@ -1,3 +1,15 @@
+# One clean card instead of five badges (owner idea "287", 2026-10-18; NOT item 287): "less visual noise" MET AS BUILT; the "subtle entrance" DECLINED (cards static, LOCKED); "one reason" = existing max 2 (items 112/194 LOCKED); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (C9)
+
+Checked in code 2026-10-18. No card stacks status badges: the one card hierarchy (`utils/recommendationCard.js`, item 46: WHAT / WHY /
+one "distance · when" line / accepted-friend social proof / ONE action) shows only fields with real data; WHY + social proof together
+carry at most the TWO strongest reasons (items 112/194; "Trending" is a reason only when its criteria hold, `constants/trending.js`, never
+a 🔥 badge); a "new" badge does not exist (newness is item 26's one heading ring); "recommended"/"suggested" are not badges (the section
+title says it once: Picked For You); "available" = the action itself (Join / Request to Join / Join Waitlist, `primaryAction.js`). The only
+card marks are mutually exclusive top-pick labels on a typed ask's FIRST result (`StrongMatch` OR `NearbyPickBadge`, `HomeScreen.js` /
+`DiscoverHubScreen.js`) and the map's red "Live now" pin (map only). DECLINED: a card entrance animation (cards/lists static: items
+15/111/113, ideas "204"/"208"; item 37's strong-match ticks are the one card moment, on a typed ask's top pick only). Not changed: max 2
+reasons stays (item 112 LOCKED); cutting to one would drop a real reason. Phone check: C9 (card reasons readable, no clutter).
+
 # Only the highest-priority thing moves (owner idea "286", 2026-10-18; NOT item 286): MET AS BUILT by idea "207" + item 57 + idea "208", ASSESSED, recommended close, owner decision pending; no new rule or motion; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C16)
 
 Already locked: idea "207" (one animation per Home visit: of Home's arrival moments only the highest in `HOME_MOMENT_ORDER` moves, the rest
