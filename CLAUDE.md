@@ -119,6 +119,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Business is interested" state (owner idea "188", 2026-10-18; NOT item 188) MET AS BUILT, LOCKED, nothing built:** items 48/13/140/151/187 (opportunity arrives, stays open to the deadline, expiry warning, state-driven actions, Offer sent -> Accepted -> Redeemed / expired); "Considering"/"Interested" state DECLINED both sides, no business draft/shortlist (idea "150"); see the meaningful-response bullet.
 
+**Business previews what the customer sees (owner idea "189", 2026-10-18; NOT item 189) MET AS BUILT by items 49/50/21/119, LOCKED, nothing built, NOT DEVICE/BROWSER-VERIFIED:** live preview above Send Offer from the one mapping; no preview step, templates or new motion; side-by-side DECLINED unless item 49 checklist check 13 (website) shows the preview is hard to see while editing (checks 11-13 added).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

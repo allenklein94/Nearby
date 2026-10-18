@@ -16,6 +16,9 @@ opportunity is needed; send at least one offer to a real customer account on a s
 | 8 | Keyboard: the preview never covers the field being typed in; scrolling to Send Offer passes the preview (iOS + Android). | |
 | 9 | Light and dark mode: the preview card and the disabled "I'll take this one" are readable. | |
 | 10 | Screen reader: the preview's disabled button announces as the preview of the customer's button, not as an action. | |
+| 11 | (Idea "189", added 2026-10-18) A set price (not a discount): type a price, change it, clear it. The preview's price line follows each change at once and matches the customer's card in check 7. | |
+| 12 | (Idea "189") An Alternative with two times (item 119; and item 119b's smaller-party second time if offered): both times show in the preview exactly as the customer's time choice shows them; removing the second time removes it from the preview. | |
+| 13 | (Idea "189") Business website in a real desktop browser: while editing the fields near the top of the form, can the owner see the preview without losing their place? Record yes/no + a screenshot. Report only: a "no" is the evidence that would reopen a side-by-side layout (declined until then); nothing changes on this check alone. | |
 
 Not covered by this item: AI screening of the content (needs Anthropic credit), the one-tap Standard availability /
 Alternative responses (fixed text, no preview, unchanged).

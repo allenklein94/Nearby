@@ -1,3 +1,15 @@
+# Business previews exactly what the customer sees (owner idea "189", 2026-10-18; NOT item 189): MET AS BUILT, LOCKED, nothing built
+
+Idea: while creating an offer the business sees a live Consumer Preview (image, video, headline, price, availability) and Send
+delivers that exact card. Finding (kept as is): item 49's live Customer Preview directly above Send Offer, updated as each field
+changes, from the ONE mapping `utils/offerDraftPreview.js` -> `OfferCustomerBody` + `presentOffer` (field for field what Send
+sends; a piece Send would refuse is left out; no card before a description); media whole in the fixed frame, video tap-to-play
+(items 10/50); one standard card for every business, screened logo only, no templates/fonts/brand colours (items 21/50); two
+times (item 119/119b). Owner decisions (LOCKED): no separate preview step, no new animation or business "delivered" moment (items
+129/51 unchanged); side-by-side layout DECLINED unless the website browser check shows the preview is hard to see while editing.
+Verification OPEN: item 49's checklist on a real phone + the business website (checks 11-13 added: set price, two times, the
+browser visibility evidence check); a real screened offer needs Anthropic credit. Only the checklist file changed.
+
 # "Business is interested" as a state (owner idea "188", 2026-10-18; NOT item 188): MET AS BUILT, LOCKED, nothing built
 
 Idea: Request received -> Considering -> Offer sent, so a business can work through demand without committing at once.
