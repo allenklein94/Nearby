@@ -1,3 +1,5 @@
+# Idea "248" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; device check C19 added (card facts = the business's Opportunity, nothing re-asked); no app change.
+
 # Gathering request inherits the gathering (owner idea "248", 2026-10-18): MET AS BUILT by item 111 (+ 65/29), assessed, owner decision pending, nothing built
 
 Checked `AskBusinessScreen.js` gathering mode (`getGatheringById` -> `GatheringAskFacts`; text/category/when/party inputs hidden; Category
