@@ -1,3 +1,5 @@
+# Idea "251" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; card expansion / detail opening / in-place mode switches stay unanimated; card-to-detail morph not reopened; no app change.
+
 # Animate state changes (owner idea "251", 2026-10-18): MET AS BUILT, assessed, owner decision pending, nothing built
 
 Each listed transition mapped to its existing moment (items 55/158/159, 12/32, 31/143, 28, 32, 52/34); card -> expanded card stays
