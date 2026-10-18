@@ -1,4 +1,8 @@
-# "One surface, many states" (owner idea "216", 2026-10-18; NOT item 216): ASSESSED, owner decision pending, nothing built
+# "One surface, many states" (owner idea "216", 2026-10-18; NOT item 216): KEEP AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): keep as built. No new rule, no Home expansion; Home keeps its limits and layout; "See all plans"
+  opens Plans (Upcoming / Hosting / Past on one surface); a plan tap opens its detail; Back restores Home. Revisit only if the
+  real-phone check C12 shows navigating to Plans breaks the flow. Items 45 and 110 preserved.
 
 - Proposal: a core rule "one surface -> state changes -> information expands/collapses" instead of screen chains; e.g. Home's "See
   all plans" expands Your Plans in place into Upcoming / Hosting / Past, and only a tap on a plan opens its detail.
