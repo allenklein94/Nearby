@@ -1,4 +1,4 @@
-# Contextual mini-cards instead of repeated cards (owner idea "264", 2026-10-18): MET AS BUILT where it applies; "5 people interested" DECLINED (privacy); new per-section mini-card variants DECLINED; assessed, recommended close with no new rule, card or string, nothing built; CLAUDE.md not changed
+# Contextual mini-cards instead of repeated cards (owner idea "264", 2026-10-18): MET AS BUILT where it applies; "5 people interested" DECLINED (privacy); new per-section mini-card variants DECLINED; CLOSED (owner), no new rule, card or string, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 Premise: the same full card three times on one surface does not happen as built: Discover shows a gathering once, in its first
 qualifying section (item 91), Home once across the surface (item 52), Top Results drops the found block (item 134); see ideas 262/263.
