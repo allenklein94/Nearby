@@ -1,3 +1,12 @@
+# Haptics for major moments (owner idea "170", 2026-10-18): MET AS BUILT, LOCKED, nothing built
+
+Idea: subtle iPhone haptics for offer received / accepted / confirmed. Inventory: one helper `motion/haptics.js` (light for
+match / friend accepted, iOS success for confirmations), success only after the person's own tap (accept, group confirm,
+reservation, plan creation); none on push handling or arrivals (guards `haptics.test.js`, `hapticsRespect.test.js`,
+`offerArrivals.test.js`); Visit confirmed (business-confirmed) none. Owner kept it as built and locked it: no haptic when an offer
+arrives (pill only in-app; OS handles the push when closed), no new haptic moment; arrival lock, item 165 and own-tap-only not
+reopened. Decision + separate device checks (NOT RUN): `PRODUCT_AUDIT/IDEA_170_HAPTICS_DECISION_2026-10-18.md`. No code change.
+
 # Optional sound cues (owner idea "169"): both open decisions settled, 2026-10-18
 
 Owner approved as built: iOS-only. iOS keeps the switch (off by default) and the three cues, obeys the silent switch, and the

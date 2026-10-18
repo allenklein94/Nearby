@@ -81,6 +81,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 `PRODUCT_AUDIT/IDEA_169_SOUND_CUES_DEVICE_CHECKLIST_2026-10-18.md` is recorded on a real iPhone (incl. silent switch + Reduce Motion) AND native review of the 3
 `ui.settings.soundCues*` strings is done (no migration; guard `utils/soundCues.test.js`). Owner DECIDED (2026-10-18, LOCKED): iOS-only; the Focus/DND limit is accepted (cues may play in a Focus with the ringer on; no Apple entitlement or workaround); Android keeps the switch hidden and no cue, no native Android code. Remaining = verification only: device checklist + native review, reported separately, neither claimed until done; fix found defects without expanding scope.
 
+**Haptics for major moments (owner idea "170", 2026-10-18) MET AS BUILT, LOCKED, nothing built:** success haptic only after the person's own accept/confirm/plan creation; an arriving offer = pill only (app open) or the OS push (closed), never a haptic; Visit confirmed none. Arrival lock, item 165 and own-tap-only NOT reopened. NOT DEVICE-VERIFIED (separate): `PRODUCT_AUDIT/IDEA_170_HAPTICS_DECISION_2026-10-18.md` checks 1-6.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -598,7 +600,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - Glyphs: N = system thinking, ✨ = discovery, ❤️ = romantic, 🤝 = platonic, 🎉 = celebration, ✓ = done, 🔒 = privacy.
 - Motion only for real events (the six marketplace moments, matches, confirmations, a join seen by the host);
   no animated cards/tabs/lists. Budget tiers in `motion/motionBudget.js` (max 900 ms); tokens, never literal
-  durations. Reduce Motion = settled state. Haptics only after the person's own tap. Sound = only idea "169"'s cues (below). Business transactions
+  durations. Reduce Motion = settled state. Haptics only after the person's own tap, never on an arrival (idea "170", LOCKED). Sound = only idea "169"'s cues (below). Business transactions
   use the calm tone; no confetti. **Animation never delays information:** info text starts >= 0.6 opacity
   (`infoOpacity`, guard `animationNeverDelays.test.js`). No category animations; no offer templates; offer video is tap-to-play.
 - **Motion amplifies correct data, never hides incorrect data (owner, 2026-10-11):** a moment animates only data that is
