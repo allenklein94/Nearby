@@ -147,7 +147,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Stable structure, changing content (owner idea "203", 2026-10-18; NOT item 203) MET AS BUILT, CLOSED, LOCKED, no new rule, nothing built:** fixed tabs + jobs, fixed Home/Discover section order (personalization changes content/ranking within a section), static cards/lists, Back restores state, idea "202" changes wording only, empty sections omitted without reordering.
 
-**Stable structure, meaningful motion (owner idea "204", 2026-10-18; NOT item 204, demand-backed acquisition) ASSESSED: MET AS BUILT, owner decision pending (recommended: record as met, no new rule), nothing built:** motion only for real events (items 58/99/164, motion truth rule), cards/lists/rows static, no screen-wide motion, one signature (item 25), full-screen = mutual match only (item 167), Reduce Motion = settled.
+**Stable structure, meaningful motion (owner idea "204", 2026-10-18; NOT item 204, demand-backed acquisition) MET AS BUILT, CLOSED, LOCKED, no new rule, nothing built:** motion only for real events (items 58/99/164, motion truth rule), cards/lists/rows/tabs static, no screen-wide motion, one signature (item 25, outside the Pulse), full-screen = mutual match only (item 167), interruptible (item 20), Reduce Motion = settled; no motion decision reopened.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).

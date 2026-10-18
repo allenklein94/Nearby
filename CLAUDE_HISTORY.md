@@ -1,4 +1,6 @@
-# Stable structure, meaningful motion (owner idea "204", 2026-10-18; NOT item 204): ASSESSED, MET AS BUILT, owner decision pending, nothing built
+# Stable structure, meaningful motion (owner idea "204", 2026-10-18; NOT item 204): MET AS BUILT (owner chose (a)), CLOSED, LOCKED, no new rule, nothing built
+
+- Owner decision (2026-10-18): record as met; no new rule, no code changes, no existing motion decision reopened.
 
 - Proposal (a principle): the same philosophy as idea "203" applies to animation; structure stays stable, meaningful events create
   motion; personality without chaos.
