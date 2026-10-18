@@ -105,6 +105,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Ask instead" escape hatch (owner idea "181", 2026-10-18) MET AS BUILT, LOCKED, nothing built:** item 81's typed-ask empty state + empty category "Create {topic}" + Create's invites (items 135/136) + item 93's opt-in; universal "Can't find it? Ask Nearby" menu DECLINED (items 190/92/45). Observation: time-view empty state offers only "Show everything"; revisit only on device evidence.
 
+**Create preserves everything (owner idea "182", 2026-10-18; NOT item 182) MET AS BUILT by items 82/85/187, LOCKED, nothing built, NOT DEVICE-VERIFIED (item 82 checklist):** carry-over only from the words; no location/setting row ("near me", "beach"); card settles once; cross-screen animation DECLINED (items 82/88).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

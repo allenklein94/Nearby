@@ -1,3 +1,17 @@
+# Create preserves everything (owner idea "182", 2026-10-18; NOT item 182): MET AS BUILT by items 82 + 85 + 187, LOCKED, nothing built
+
+Idea (owner's words): "Beach volleyball Saturday" -> nothing exists -> tap Create it -> Nearby carries Beach volleyball, Saturday,
+Nearby into Create, no retyping, and an animation visually moves those pieces into the creation form. Finding (kept as is):
+"Create it yourself" opens Create with the "From what you said" card (`utils/fromWhatYouSaid.js`,
+`components/FromWhatYouSaidCard.js`): only rows the ask's own words support (activity, purpose, the day said, people only when
+stated); a fully understood ask opens on When & where (item 85); journey `outdoorMatch`. Owner decisions (LOCKED): carry-over
+stays as built; no-location-row rule kept (never turn "near me" or "beach" into an inferred location/setting row; "near me" is
+Create's default; the card reflects what the person said); the card settles once on the opening step, Reduce Motion = there at
+once; cross-screen animation DECLINED (no pieces travel from Discover/search into Create; items 82/88 lock cross-screen travel
+and transitions; navigation never waits for animation). Verification OPEN: polish only via
+`PRODUCT_AUDIT/ITEM_82_CREATE_FROM_ASK_DEVICE_CHECKLIST_2026-10-12.md` (not run); never claim it verified before then. No
+animation, screen, navigation or code changed.
+
 # "Ask instead" escape hatch (owner idea "181", 2026-10-18): MET AS BUILT, LOCKED, nothing built
 
 Idea: when Discover lacks what the person wants, "Can't find it? Ask Nearby." -> Ask friends / Ask a business / Create a
