@@ -1,4 +1,9 @@
-# Sheets never become mini-apps (owner idea "225", 2026-10-18; NOT item 225): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+# Sheets never become mini-apps (owner idea "225", 2026-10-18; NOT item 225): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built, no new rule. The 19 sheets and pop-up panels stay as they are, single
+  purpose (one question or one quick action); sheets keep closing before opening a dedicated screen; Create Gathering, Edit
+  Gathering and Settings stay on their own screens; Make an Offer stays a single form; the compatibility report's three views
+  (Matches, Dating) stay unchanged at one level. Item 45 + Rule 14 govern; no duplicate rules, new sheets or code changes.
 
 - Proposal: a sheet answers one question or performs one quick action; navigation inside navigation inside a sheet recreates the
   screen-chain problem in a different container.
