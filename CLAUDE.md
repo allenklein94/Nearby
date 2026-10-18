@@ -131,7 +131,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Pass" feels frictionless (owner idea "194", 2026-10-18; NOT item 194) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** no Pass action or dismissal workflow; unwanted offers stay unanswered to expiry or until another is booked (booking closes the rest by their real state); all offers stay visible together (items 117/63); confirms only for real consequences. DECLINED: Pass button, offer-card ⋯ "Not for me", dismissal animation, business told of a declined offer; item 200's exception not widened; offer-screen whole-screen motion ban stands.
 
-**Offer comparison with motion (owner idea "195", 2026-10-18; NOT item 195) ASSESSED, MET BY ITEMS 63 + 117, OWNER DECISION PENDING, nothing built:** replies already sit in one real-criteria order from frame one (`rankReplies`: stated constraints met first, record breaks ties, never price) with "✨ Our pick" only when earned; a settle-into-order animation, price-based emphasis and a stronger "best" card conflict with items 63/117 + the offer-screen motion ban. Recommended: keep as built.
+**Offer comparison with motion (owner idea "195", 2026-10-18; NOT item 195) KEEP AS BUILT, MET BY ITEMS 63 + 117, CLOSED, LOCKED, nothing built:** `rankReplies` order + eligibility kept, price never ranks, "✨ Our pick" only when earned, all replies in one card format together with no staging/entrance animation; no extra emphasis or offer-screen change.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).

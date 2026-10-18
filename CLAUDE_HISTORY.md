@@ -1,4 +1,8 @@
-# Offer comparison with motion (owner idea "195", 2026-10-18; NOT item 195): ASSESSED, MET BY ITEMS 63 + 117, OWNER DECISION PENDING, nothing built
+# Offer comparison with motion (owner idea "195", 2026-10-18; NOT item 195): KEEP AS BUILT (owner approved), MET BY ITEMS 63 + 117, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): approved, keep as built; no code changes. Preserved: `rankReplies` ordering and eligibility rules; price
+  stays out of ranking; "✨ Our pick" only when earned; all replies in the same card, together, no staging or entrance animation; no
+  additional visual emphasis or change to the offer screen.
 
 - Proposal: three offers ($12 / $15 / $18); the strongest is visually emphasized on real criteria; cards settle (no dramatic flying)
   into an understandable hierarchy; the person then compares.
