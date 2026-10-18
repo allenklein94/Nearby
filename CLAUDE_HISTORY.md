@@ -1,3 +1,16 @@
+# "Return to where I was" is a first-class principle (owner idea "283", 2026-10-18; NOT item 283): MET IN SUBSTANCE (locked Navigation bullet + ideas "232"/"279"-"282"), ASSESSED, owner decision pending on a one-line clarification of the existing bullet; no new rule, nothing built; CLAUDE.md not changed yet
+
+Already locked: Navigation "Pushes and links open on top of where the person was (`openOnTop`, return trail); Back restores exact prior
+state and scroll" + idea "232". As built it preserves CONTENT state, not just the stack: tab screens stay mounted under pushed detail, so
+Discover keeps its query, typed-ask interpretation + chips, filters, open time view and scroll (ideas "280"/"281"); Home keeps its scroll
+(idea "279"); in-place views restore the prior mode/tab/search/category on close (idea "219", item 27); a typed ask survives restarts
+(`discoverSession`); pushes restore the return trail (`pushNavigationContract.test.js`). Deliberate, reviewed exceptions: the business
+preview sheet closes when its screen loses focus (no stale sheet on Back); a perk selection ends on a tab switch (kept under a pushed
+profile); a Home tap with new context replaces only what it names; browse chips are not kept across an app restart (not proposed).
+Gap: no automated test proves content state survives Back (only the stack); it rests on screens staying mounted, so the proof is the phone
+(C12 + the 279-281 passes). Proposed (owner to decide): reword the existing bullet's tail to "Back restores the exact prior content state
+(query, filters, open view, selection, scroll), not just the stack" -- a clarification of the same rule, not a second one.
+
 # Kept state makes the app feel faster (owner idea "282", 2026-10-18; NOT item 282): rationale for ideas "279"-"281", MET AS BUILT, recorded, no new rule, metric or code; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 The reason behind ideas "279" (one Back from a Home plan row), "280" (Discover filters kept) and "281" (search kept): the person never
