@@ -75,7 +75,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Full-screen moments are extremely rare (owner item 167, 2026-10-18) MET AS BUILT (stricter than proposed), LOCKED, nothing built, NOT DEVICE-VERIFIED:** see the Motion bullet; first offer, accept/confirmation, bookings, business transactions and gathering creation keep their inline/context presentation (items 12/25/32/43/44/51 + offer-screen rule).
 
-**Motion hierarchy, two axes (owner idea "168", 2026-10-18; NOT item 168, the V1 category set) MET AS BUILT + documented and guarded, LOCKED:** see the Motion levels bullet. Documentation only; no animation, timing or screen changed.
+**Motion hierarchy, two axes (owner idea "168", 2026-10-18; NOT item 168, the V1 category set) MET AS BUILT + documented and guarded, LOCKED:** see the Motion levels bullet. Documentation only; no animation, timing or screen changed. Owner re-confirmed 2026-10-18 (keep as built; items 167 + signature NOT reopened). NOT DEVICE-VERIFIED until check C13 of `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md` is recorded (a verification item, never a reason to reopen the design).
 
 **Optional sound cues (owner idea "169", 2026-10-18; NOT item 169, the Food & Drink spec) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/IDEA_169_SOUND_CUES_DEVICE_CHECKLIST_2026-10-18.md` is recorded on a real iPhone (incl. silent switch + Reduce Motion) AND native review of the 3

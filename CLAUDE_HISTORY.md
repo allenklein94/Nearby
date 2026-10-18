@@ -1,3 +1,11 @@
+# Motion hierarchy (owner idea "168"): owner re-confirmed as built, 2026-10-18
+
+Owner: keep as built; do NOT reopen item 167 or the Signature rule. Priority level = how strongly a moment interrupts; full-screen
+= where it appears, not how important. Match modal stays Contextual (Level 2) though full-screen; Signature keeps its priority;
+first offer, acceptance, bookings and gathering creation stay inline. Documentation + guard (`motion/motionLevels.test.js`, 18/18
+re-run 2026-10-18) kept unchanged; no animation, timing or screen change. Outstanding: not device-verified, recorded as check C13
+of `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md` (verification only, not a reason to reopen the design).
+
 # Optional sound cues (owner idea "169", 2026-10-18): BUILT, NOT DEVICE-VERIFIED
 
 Numbered "169" by the owner; NOT item 169 (Food & Drink coverage), which keeps its number. Owner chose option (c) over defer/decline:
