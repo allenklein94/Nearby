@@ -1,3 +1,22 @@
+# Same object, different information hierarchy (owner idea "263", 2026-10-18): MET AS BUILT (item 194's section lead reason, LOCKED); both proposed rewordings DECLINED; assessed, recommended close with no new rule or string, nothing built; CLAUDE.md not changed
+
+The hierarchy already changes by placement: item 194's refinement (2026-10-04, LOCKED; `sectionLeadReason` in
+`utils/discoverSections.js`) puts the reason of the section a card sits in FIRST when the card really carries it, then the next
+strongest INDEPENDENT reason; distance + time stay the separate context line. As built for the three examples:
+- Because you like Coffee -> lead "Because you like Coffee" (declared interest only) = personal relevance;
+- Trending Near You -> lead "{n} attending" (`attendingCount`, only at >= `TRENDING_ATTENDANCE_MIN` 5, host included) = local momentum,
+  stated as the real count;
+- Friends are into X -> lead "{Name} is into Coffee" (`friendsInterestReason`, accepted friends' DECLARED interest); a friend hosting
+  shows "{name} is hosting this" (`reasons.friendHosting`, 11 languages; past = "hosted") wherever it is true (Home merge, cards); on
+  Home, item 41's friends-planning line carries the social context ("faces + chips").
+Plus item 91's one dedupe chain, so in Discover the object appears in ONE of these sections, with that section's hierarchy (idea 262).
+DECLINED: "Getting attention nearby" in place of the attendance count: vague, and "attention" implies views / Interested / a growth
+rate, none of which may be shown (Interested is private, LOCKED; viewing never becomes a signal, item 89/idea 188; no momentum signal
+without usage evidence, idea 199; social proof cites its real source, idea 198). The real count is the truthful local reason; the
+section heading "Trending Near You" stays (item 91, LOCKED order/names). "Claude created this gathering" in place of "{name} is hosting
+this": same fact, the existing string is the present, accurate one (the host may not be the creator in wording terms, and "created"
+reads as past news); 11-language cost, no evidence of confusion. Nothing to build; device session first (idea 252).
+
 # Each placement has a different purpose (owner idea "262", 2026-10-18): MET AS BUILT (items 52/91/194 + item 28's cross-surface test, all LOCKED); one within-Home observation kept as a device-testing note (not a defect, not a rule); CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 The rule already exists, word for word in spirit: item 28's cross-surface test (owner, 2026-10-08, LOCKED): the same gathering may
