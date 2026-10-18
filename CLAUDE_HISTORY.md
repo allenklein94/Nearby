@@ -1,3 +1,11 @@
+# The "30-second rule" (owner idea "254", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+Covered by Rule 14 (a dedicated screen for a distinct job) + item 45 + ideas 233/234. Examples as built: Create Gathering = its own
+five-step screen; Edit Gathering = `EditGathering`; fill out a business request = `AskBusiness` (own screen, pre-filled, item 84/111);
+"configure an event" = the same Create (events are gatherings + `format`, no separate flow); build a business offer = Make an Offer,
+a focused surface but ONE modal form over the dimmed Opportunities page, never its own screen or a wizard (idea 233 LOCKED: keeps the
+request in view). Idea 252's freeze applies (device session first).
+
 # Idea "253" closed (owner, 2026-10-18): covered by items 45/29 + ideas 224/226/227/106; both disputed cases kept as built; no new rule; CLAUDE.md pending line removed (back to its pre-idea state); no app change.
 
 # The "3-second rule" (owner idea "253", 2026-10-18): MOSTLY MET, assessed, owner decision pending, no new rule, nothing built
