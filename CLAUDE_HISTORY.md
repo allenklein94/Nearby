@@ -1,4 +1,11 @@
-# Activity as a change log, categorized on one surface (owner idea "243", 2026-10-18; NOT item 243): recommended KEEP AS BUILT, owner decision pending, nothing built
+# Activity as a change log, categorized on one surface (owner idea "243", 2026-10-18; NOT item 243): MET AS BUILT, CLOSED, LOCKED, categories DECLINED, nothing built
+
+- Owner decision (2026-10-18): close as met as built; no new rules, UI or app changes. Change log = met (Activity records real
+  events and opens the relevant object when tapped). Categories: do not add Plans, People, Offers or Businesses. Needs Your
+  Attention keeps actionable requests together regardless of category (an invitation, a friend request and a business offer all
+  ask for the same thing: a response); Today keeps today's gatherings grouped separately; Earlier keeps completed or informational
+  events in chronological order. Filters deferred until real usage demonstrates a need. Activity is organized by what needs your
+  attention, not by what type of thing happened (idea "238").
 
 - Proposal: Activity as a "change log of your world" rather than a notification center, optionally categorized into Plans,
   People, Offers, Businesses, kept on one surface.
