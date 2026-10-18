@@ -1,3 +1,18 @@
+# "New screen when the job changes" (owner idea "222", 2026-10-18; NOT item 222): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+
+- Proposal: same job -> stay on the same surface; new job -> new surface. Examples: browsing events stays on Discover; viewing all
+  your plans could expand; editing a gathering, creating a business offer, account/security settings = dedicated workflows.
+- Met: item 45's "same job = same screen" (change content > expand inline > sheet > dedicated screen only for an entity, distinct
+  workflow, management, communication, transaction) + Rule 14 (`src/constants/screenRegistry.js`, jobs A-F, guard
+  `screenRegistry.test.js`); idea "221" (closed today) kept that text unchanged.
+- Examples checked: Discover browsing, filters, time views and context expansion stay in place (idea "219"); `EditGathering` and
+  `CreateGathering` are registered workflows (job C); Make an Offer is its own modal workflow on the business dashboard
+  (`BusinessDashboardScreen.js`, item 49's live preview inside it), opened from the opportunity; account and privacy controls live
+  in `Settings` (job C).
+- Differs: "viewing all your plans -> could expand". Home's "See all plans" opens Plans (job C), kept as built under ideas "216",
+  "218", "220" and "221" + item 110; not reopened.
+- Recommendation: close as met as built; no new rule (it would be a second statement of item 45 / Rule 14).
+
 # "Don't navigate away to see more of the same" (owner idea "221", 2026-10-18; NOT item 221): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built; existing rule text unchanged. Item 45 stays the single source of truth for

@@ -177,6 +177,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Don't navigate away to see more of the same" (owner idea "221", 2026-10-18; NOT item 221) MET AS BUILT, CLOSED, LOCKED, rule text unchanged, no new rule or code:** item 45 stays the single source for screen reduction; Rule 14 governs when a dedicated screen is justified; the exception stands ("See all" opens a dedicated screen when the list has its own management job, e.g. Home -> Plans). No duplicate rule, no rewrite of item 45, no other version of the principle.
 
+**"New screen when the job changes" (owner idea "222", 2026-10-18; NOT item 222) MET AS BUILT, ASSESSED, owner decision pending, nothing built:** already item 45 ("same job = same screen") + Rule 14 (a dedicated screen needs a registered job A-F), as kept under idea "221". Examples hold: browsing stays on Discover; editing a gathering = `EditGathering` (job C); Make an Offer = its own modal workflow over Opportunities (item 49 preview inside it); account/security = Settings (job C). One example differs: "viewing all your plans -> could expand" = Home -> Plans, kept as built under ideas "216"/"218"/"220"/"221". Recommended: close as met, no new rule.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
