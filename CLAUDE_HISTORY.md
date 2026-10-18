@@ -1,3 +1,17 @@
+# "Why this?" as the escape valve (owner idea "288", 2026-10-18; NOT item 288): MET AS BUILT per surface (reasons shown where the decision is); a universal "Why am I seeing this?" control/sheet DECLINED (item 106 + idea "226", LOCKED); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+Each listed decision already shows its real reasoning in place (item 104 "Who is this for?", `recommendationContext.js`):
+recommendations = max 2 real reasons on the card + all of them on GatheringDetail's "Why this fits you" (`ReasonList`, item 106);
+Best Pick = the same (item 112, fit-score threshold, reasons + separate distance/time line); weather = the Home weather card says when and
+why ("Rain expected tonight", item 192) and weather otherwise reranks silently; "Tonight looks great" = item 109's grey reason line
+(`meetTonight.js`); People = only connected/opted-in people with their own shared facts (items 86/121), never inferred pairing (item 92);
+business matching (customer) = "From what you said" on the request + "We asked N" + reply reasons only for stated constraints ("Fits 7 PM",
+"Within your budget", item 63; "✨ Our pick" only when earned); (business) = the Opportunity card's request facts (idea "246"); a typed ask's
+top pick = item 37's ticked pieces + item 45's understood chips (each removable). Learning is inspectable and reversible: Settings "What
+Nearby has noticed" (item 54, Forget per kind / Clear), "Not interested" (idea "153"). DECLINED as written: a "Why am I seeing this?" control
+on every surface (item 106 LOCKED: no why-sheet; idea "226" DECLINED it; would be a second representation of the same reasons and a sheet per
+card). Rule kept: a reason shown must be real; one that can't be explained is not shown. Phone check: C9 + C11.
+
 # One clean card instead of five badges (owner idea "287", 2026-10-18; NOT item 287): "less visual noise" MET AS BUILT; the "subtle entrance" DECLINED (cards static, LOCKED); "one reason" = existing max 2 (items 112/194 LOCKED); CLOSED (owner, 2026-10-18): MET AS BUILT, entrance declined, up to two reasons retained; nothing built; CLAUDE.md not changed; MET, VERIFICATION PENDING (C9)
 
 Owner (2026-10-18): close as met; closing means the behavior meets the agreed requirements, NOT that the phone check is done: card
