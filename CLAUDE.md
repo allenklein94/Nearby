@@ -85,6 +85,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Cause and effect, one connected chain (owner idea "171", 2026-10-18) MET AS BUILT, LOCKED north star, nothing built:** ask -> response -> join -> reply -> accept -> booking -> arrive -> redeem -> complete is delivered by items 45/55/158/159, 28/73, 25/23/165/48/13, 12/32, the manual check-in, 52/34 under items 98/162/164/58/99/167. No location-inferred arrival (Option B stays deferred). NOT VERIFIED that the chain FEELS connected: only the device session (order below) can establish it; a disconnected link is fixed at its shared source, never with added motion.
 
+**"What do you feel like?" (owner idea "172", 2026-10-18) MET BY ITEM 45, LOCKED, nothing built:** chips only from stated words, never inferred mood chips (Social, Casual, ...). "...get out tonight but don't know what" = `Tonight` chip + open-ended results (Nightlife + Food & Drink); "...don't know what to do" = item 90's labelled rows; the difference is ACCEPTED (phrase fix DECLINED: it would change the answer format). Revisit only on real-usage evidence.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

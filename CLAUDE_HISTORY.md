@@ -1,3 +1,14 @@
+# "What do you feel like?" (owner idea "172", 2026-10-18): MET BY ITEM 45, LOCKED, nothing built
+
+Idea: natural-language asks surface visual intent chips ("I want to get out tonight but don't know what" -> Social · Casual ·
+Tonight), then recommendations. Checked on the deterministic resolver (live while AI is down): chips = `Tonight` only; the ask is
+open-ended (`openEndedAskGroups` -> entertainment_nightlife + food_drink, services dropped); not undecided
+(`undecidedAskFromText` false; "...don't know what to do" is true and routes to item 90's labelled rows via `pickForMeKind`).
+Owner decisions: item 45 stays authoritative, chips only from stated words, inferred mood chips DECLINED (truthfulness, item 131).
+A one-phrase fix (sentence-final "don't know what" = undecided) was approved, then DECLINED by the owner once it was shown that
+undecided recognition only routes to item 90's labelled-rows answer (losing the Tonight chip); the wording difference between the
+two phrasings is ACCEPTED. No code, tests, routing, chips, filtering or resolver change. Revisit only if real usage shows a problem.
+
 # Cause and effect, one connected chain (owner idea "171", 2026-10-18): MET AS BUILT, LOCKED north star, nothing built
 
 Idea: not lots of animation but cause and effect, every transition connected: you ask -> something responds; someone joins ->
