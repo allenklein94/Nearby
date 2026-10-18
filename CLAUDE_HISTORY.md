@@ -1,4 +1,4 @@
-# The "same object" rule (owner idea "256", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# The "same object" rule (owner idea "256", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (the mapping is implemented, not yet confirmed on a phone)
 
 Already the core of the locked rules: master principle 2 (one source of truth per object), "States, not folders" (one viewer relation
 per gathering, hosting > attending > requested/waitlisted > interested, filtered by surfaces, never a screen per state), item 98 (one
