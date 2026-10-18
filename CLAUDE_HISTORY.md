@@ -1,4 +1,10 @@
-# Bottom sheets keep context (owner idea "224", 2026-10-18; NOT item 224): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+# Bottom sheets keep context (owner idea "224", 2026-10-18; NOT item 224): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built, no new sheets. Item 45 stays unchanged as the single source of truth for the
+  screen-reduction hierarchy; the business preview sheet, invite panel and native share sheet are preserved; filters, quick
+  details, attendee faces, location details, offer previews and recommendation reasoning stay visible in their current contexts;
+  existing inline content is never moved into sheets and no separate recommendation-reasoning sheet is added (item 106 LOCKED).
+  No new rule, no additional sheets, no code changes.
 
 - Proposal: bottom sheets handle filters, quick details, attendee list, offer preview, recommendation reasoning, share, invite,
   location details and business information without taking the person out of context.
