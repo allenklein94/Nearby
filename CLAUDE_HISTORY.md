@@ -1,4 +1,4 @@
-# The "deep task" rule (owner idea "255", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# The "deep task" rule (owner idea "255", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed
 
 Covered by Rule 14 (`RULE14_JOBS` incl. C Management, E Transaction) + item 45 + ideas 222/233/234/235/236. As built: lots of input /
 several decisions = Create (five steps), EditGathering, AskBusiness; important settings = `Settings` (own screen, idea 236) + EditProfile;
