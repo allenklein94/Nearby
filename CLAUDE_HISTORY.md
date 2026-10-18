@@ -1,4 +1,13 @@
-# Checkout gets focus (owner idea "235", 2026-10-18; NOT item 235): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+# Checkout gets focus (owner idea "235", 2026-10-18; NOT item 235): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built; no new rule, checkout screen or code changes; no locked decision reopened.
+  Review = the existing offer card (real pricing or discounts, terms, optional time choices, the offer-change check); booking =
+  "I'll take this one", never waiting for payment; payment = Stripe's native payment sheet for eligible paid offers, funds to the
+  business's Stripe account, not configured = the customer stays booked and pays the business directly; confirmation = "You're
+  booked" on the card with the existing payment status and recovery actions. No separate Review -> Payment -> Confirmation
+  workflow (it would duplicate the offer card and add navigation).
+- Follow-up retained (verification only, never a reason to redesign checkout): the "Payment sent" system pop-up and the card's
+  update on a real phone; added as section 12 of `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (4 checks).
 
 - Proposal: when money is involved, Review -> Payment -> Confirmation deserves focus; never cram payment into a tiny sheet.
 - Met (code reading; never run on a device, Stripe test mode only, live blocked on the owner's `STRIPE_LIVE_APPROVED`):

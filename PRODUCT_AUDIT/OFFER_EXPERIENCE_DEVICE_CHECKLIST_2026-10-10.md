@@ -204,6 +204,19 @@ No new code: this checks the existing `utils/requestTimeline.js` status line on 
 - [ ] Same, customer opens the request for the first time after that reply arrived: its existing moment may play once; leaving and
   reopening never replays it (item 164). A plain search with no request behind it never comes back later as a push or a result.
 
+## 12. Paying for a booked offer (owner idea "235", added 2026-10-18)
+
+Needs Stripe test mode on the build, a business whose Stripe account can take charges, and an offer with a price. Verification
+only: report results, never redesign checkout.
+
+- [ ] Accept a priced offer: "You're booked" comes first (booking never waits on payment), then Stripe's payment sheet opens full
+  height with the right amount; pay with a Stripe test card.
+- [ ] After paying: the "Payment sent" system pop-up reads correctly with the amount; once dismissed, the card shows "Payment sent
+  to the business" without leaving or reloading the screen. Report whether the pop-up then the card line feels like one step or two.
+- [ ] Cancel the sheet: still booked, the card shows Complete payment; tapping it reopens the sheet. A failed test card shows
+  "didn't go through" + Try payment again.
+- [ ] A business without Stripe set up: accept books, "Payment not yet available / You're still booked..." shows, no Pay button.
+
 ## Record
 
 | Step | iPhone | Android | Chrome | Safari | Phone browser | Notes |
