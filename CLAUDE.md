@@ -179,6 +179,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"New screen when the job changes" (owner idea "222", 2026-10-18; NOT item 222) MET AS BUILT, CLOSED, LOCKED, no new rule, duplicate principle or code:** item 45 + Rule 14 stay the unchanged sources; Discover browsing, filters, time views and Happening Now stay in place; editing a gathering (`EditGathering`), Make an Offer (its modal workflow) and account/security (`Settings`) keep their workflows; Home's "See all plans" -> Plans kept (ideas "216"/"218"/"220"/"221").
 
+**"Is the person doing something fundamentally different?" (owner idea "223", 2026-10-18; NOT item 223) MET AS BUILT, ASSESSED, owner decision pending, nothing built:** the same rule as ideas "221"/"222" (closed today): item 45 (same job = same screen) + Rule 14, whose registry already forces that question before any new screen (a route ships with its job A-F entry or `screenRegistry.test.js` fails). Recommended: close as met, no new rule or rewording.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

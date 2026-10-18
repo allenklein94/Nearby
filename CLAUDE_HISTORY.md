@@ -1,3 +1,13 @@
+# "Is the person doing something fundamentally different?" (owner idea "223", 2026-10-18; NOT item 223): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+
+- Proposal: a universal navigation rule: before creating a new screen, ask "is the person doing something fundamentally
+  different?" No = don't navigate; yes = navigate.
+- Met: the same principle as ideas "221" and "222" (both closed today, rule text unchanged): item 45's "same job = same screen"
+  + Rule 14. The question is already enforced at build time: every route needs a `SCREEN_REGISTRY` entry naming its job A-F
+  (Decision, Commitment, Management, Communication, Transaction, Deep information) or `screenRegistry.test.js` fails; "doing
+  something fundamentally different" = having one of those jobs. The See-all management exception (Home -> Plans) stays.
+- Recommendation: close as met as built; no new rule, no rewording (a third statement of item 45 / Rule 14).
+
 # "New screen when the job changes" (owner idea "222", 2026-10-18; NOT item 222): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built. Item 45 and Rule 14 stay unchanged as the sources of truth; Discover
