@@ -1,3 +1,20 @@
+# Motion serves the product story (owner idea "211", 2026-10-18; NOT item 211): MET AS BUILT (assessed), owner confirmation pending, nothing built
+
+- Proposal: optimize animation for "how do we make Nearby's unique value instantly understandable?", not prettier UI; the system
+  should reinforce Intent -> Discovery -> Connection -> Offer -> Plan -> Real-world experience.
+- Met, step by step (every moment from real saved state, item 162's `MOTION_TRIGGERS`): Intent = item 45's understood chips;
+  Discovery = item 26's Happening Now ring, item 37's strong match, FoundLine (idea "176"); Connection = item 55's Pulse (request
+  sent with "We asked N", item 48's signal received, pin -> sheet) + item 28's join (item 40's collision for friends); Offer = the ONE
+  signature (item 25) + travel into its card (item 23) + arrival pill (item 165); Plan = "You're booked" (item 12), merge + plan
+  line assembly (item 32), formation on publish (item 43); Real-world experience = "Visit confirmed" + first-visit note (item 52),
+  "Completed" (item 34).
+- Already the rule: item 58 (animation must explain a real change or connection, never decoration), idea "171" (the cause-and-effect
+  chain is the north star; a weak link is fixed at its source, never with added motion), item 102 (the biggest animation is the
+  rarest), idea "208" (hierarchy kept).
+- Not built: a six-step registry or tag on `SEQUENCES` (a second representation beside `MOTION_PRIMITIVES` / `MOTION_TRIGGERS`,
+  master principle 2), any new motion to "fill" a step. Whether the story reads instantly is unverified: device session + idea
+  "210"'s real-flow recording.
+
 # 60-second product demo (owner idea "210", 2026-10-18; NOT item 210): CLOSED as recommended, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as recommended; no demo mode, no app changes. Use the real flow (ask -> businesses receive

@@ -161,6 +161,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **60-second product demo (owner idea "210", 2026-10-18; NOT item 210) CLOSED as recommended, LOCKED, nothing built:** the demo = a recording of the REAL flow (ask coffee tonight -> "We asked N" -> business Opportunity -> reply signature + travel -> accept -> You're booked -> Your Plan; items 45/55/158/159/48/25/23/12/32). No demo mode, scripted data, fake businesses, staged states or extra animations; idea "209" stays declined. Record only after the full flow passes end to end on two phones with a seeded test business + Anthropic credit (offer checklist); too fast on camera = edit the video, never the app.
 
+**Motion serves the product story (owner idea "211", 2026-10-18; NOT item 211) MET AS BUILT (assessed), owner confirmation pending, no new rule, nothing built:** Intent (item 45 chips) -> Discovery (item 26 ring, item 37 strong match, FoundLine) -> Connection (item 55 Pulse: request sent / signal received; item 28 joins) -> Offer (item 25 signature + item 23 travel) -> Plan (items 12/32/43) -> Real-world experience (item 52 Visit confirmed, item 34 Completed). Enforced by item 58 (never decoration) + idea "171" (the chain north star); no separate six-step map (would duplicate `MOTION_PRIMITIVES` / `MOTION_TRIGGERS`).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
