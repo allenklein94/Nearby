@@ -1,4 +1,8 @@
-# "Depth budget" (owner idea "217", 2026-10-18; NOT item 217): MET AS BUILT (assessed), owner decision pending, nothing built
+# "Depth budget" (owner idea "217", 2026-10-18; NOT item 217): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built. Rule 14 stays locked with its six jobs (Decision, Commitment, Management,
+  Communication, Transaction, Deep information); dedicated screens stay rare by purpose, never by a screen-count or depth limit;
+  no depth field or duplicate registry; details keep opening over the previous context with Back restoring exact state.
 
 - Proposal: every interaction has a depth: Level 0 current screen, 1 inline expansion / bottom sheet, 2 full-screen detail, 3 rare
   dedicated workflow; most stay at 0-1, only complex things reach 2, 3 is rare.
