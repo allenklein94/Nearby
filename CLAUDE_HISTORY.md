@@ -1,3 +1,17 @@
+# Preserve the person's "anchor" (owner idea "276", 2026-10-18; NOT item 276): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+Checked in code 2026-10-18. Both examples hold. (1) Business -> its offer: every reply card carries the business's name + screened logo
+beside it from `presentOffer()` (`utils/offerPresentationEngine.js` `business: { name, logoUri }`, item 50; one card for customer and
+preview, item 49); a reply arriving on screen travels from the request line into its card with both ends visible (item 23); a push or
+Activity row opens that request with the exact offer outlined (`focusOfferId`, ideas 187/241); a map pin grows into the business sheet
+headed by the business's name (item 44 / item 17). (2) Gathering -> attendees: there is no attendees screen (idea 227); Who's going and the
+host's attendee management (`HostAttendeeManager`, toggled by HostCommandCenter's Manage) expand IN PLACE on GatheringDetail under the
+gathering's title; the group chat keeps the gathering's title + when line in its header, tapping back to it (idea 244). Same principle is
+already the combined rules: item 45 (same job = same screen, change content > inline > sheet), idea 224 (sheets keep context), idea 232
+(where am I / where did it go / Back restores state), items 95-97/103 (no card-to-detail morph: continuity comes from the kept identity,
+not motion). A separate "anchor" rule would restate these (declined as a duplicate). Phone check: covered by checks C12/C17 + the offer
+checklist (business name/logo visible on every reply).
+
 # Full-screen only for emotionally meaningful moments (owner idea "275", 2026-10-18; NOT item 275): "everything else inline" MET; the three examples as full-screen CONFLICT with item 167 (LOCKED); CLOSED, KEEP AS BUILT (owner, 2026-10-18, LOCKED); "major gathering" full-screen DECLINED; nothing built
 
 Owner decision (2026-10-18): keep item 167 unchanged; no new animations, full-screen moments or rules; shortlist #15 stays gated on the
