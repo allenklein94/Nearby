@@ -180,6 +180,12 @@ No new code: this checks the existing `utils/requestTimeline.js` status line on 
   return; a reply while away = one push opening that exact reply; while the app is open elsewhere = the arrival pill.
 - [ ] Light and dark, longest language (de / tl): the steps and the "Next:" line read clearly and wrap cleanly. Report whether a
   person could ever wonder what happened to their request; don't change anything.
+- [ ] (Owner idea "185", added 2026-10-18; item 89's late-reply check.) Customer sends a request no business has answered and
+  closes the app. Later the business posts Availability that matches it (Availability tab): the customer gets ONE reply push
+  ("<business> responded" + what it sent, never "A new option just became available") opening that exact reply; nothing is sent
+  to anyone without a matching open request (item 114). With the app open elsewhere instead: the arrival pill, tap = that reply.
+- [ ] Same, customer opens the request for the first time after that reply arrived: its existing moment may play once; leaving and
+  reopening never replays it (item 164). A plain search with no request behind it never comes back later as a push or a result.
 
 ## Record
 

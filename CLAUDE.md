@@ -111,6 +111,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"What happened to my request?" (owner idea "184", 2026-10-18; NOT item 184) MET AS BUILT, LOCKED, nothing built, NOT DEVICE-VERIFIED:** request-screen status line (`requestTimeline.js`, real events + times only) + "Next:" line + items 158/159/160/62/165/173; "Looking" step, split Responses/Offer steps and "Your request is active" DECLINED; offer checklist section 11 added.
 
+**A request quietly becomes active again (owner idea "185", 2026-10-18; NOT item 185) MET for sent requests (items 80/114/62/165/23/25/164/160/173), LOCKED, nothing built, NOT VERIFIED (item 89's late-reply check, offer checklist section 11):** plain searches never reactivate (no saved-search alerts, no inferred reactivation); "A new option just became available" DECLINED.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

@@ -1,3 +1,18 @@
+# A request quietly becomes active again (owner idea "185", 2026-10-18; NOT item 185): MET for sent requests, LOCKED, nothing built
+
+Idea: the person found nothing; later "A new option just became available" and the request receives a new result, animated to
+say Nearby kept working after they left. Finding (kept as is): an open request keeps receiving replies until its deadline; a
+business's later Availability reaches matching OPEN requests only (items 80/114); delivery = one in-place push per request
+worded from the real reply, opening that reply (item 62), the arrival pill when the app is open elsewhere (item 165), the
+travel + signature when the request is on screen (items 23/25), an unseen reply's moment once on first viewing, never replayed
+(item 164), Home + Plans reply counts on load (item 160), one evolving request object (idea "173"). Owner decisions (LOCKED):
+plain typed searches stay temporary and are never reactivated (no saved searches, no saved-search alerts); sending a request is
+the way to keep an ask active; no interest-based or inferred reactivation (items 114/131); the generic "A new option just became
+available" wording DECLINED (the push and pill already say who replied and what they sent). Verification OPEN: item 89's
+end-to-end late-reply check via the offer experience checklist with a real customer + business (needs Anthropic credit; the
+owner runs device checks); two checks added to its section 11 (late Availability -> one reply push/pill; first viewing once, no
+replay; plain search never returns). Never claim it verified before it passes. Only the checklist file changed.
+
 # "What happened to my request?" (owner idea "184", 2026-10-18; NOT item 184): MET AS BUILT, LOCKED, nothing built
 
 Idea: after sending, "Your request is active" + a small status indicator Looking -> Responses -> Offer -> Accepted; the person
