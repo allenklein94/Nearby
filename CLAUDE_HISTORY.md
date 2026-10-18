@@ -1,3 +1,11 @@
+# The "deep task" rule (owner idea "255", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+Covered by Rule 14 (`RULE14_JOBS` incl. C Management, E Transaction) + item 45 + ideas 222/233/234/235/236. As built: lots of input /
+several decisions = Create (five steps), EditGathering, AskBusiness; important settings = `Settings` (own screen, idea 236) + EditProfile;
+careful review before booking = the offer card itself (price, terms, time choice, change check; idea 235). Two deliberate exceptions to
+"dedicated screen", both LOCKED: paying = Stripe's native PaymentSheet over the offer card, no checkout screen (idea 235; the sheet is
+itself a focused, full-attention surface); Make an Offer = one focused modal form over Opportunities (idea 233). Device session first (idea 252).
+
 # The "30-second rule" (owner idea "254", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed
 
 Covered by Rule 14 (a dedicated screen for a distinct job) + item 45 + ideas 233/234. Examples as built: Create Gathering = its own
