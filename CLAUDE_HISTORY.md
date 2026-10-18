@@ -1,4 +1,4 @@
-# Home prioritizes, no repeat of Your Plans (owner idea "265", 2026-10-18): MET AS BUILT (item 52 + `HOME_SECTION_PRIORITY`), assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# Home prioritizes, no repeat of Your Plans (owner idea "265", 2026-10-18): MET AS BUILT (item 52 + `HOME_SECTION_PRIORITY`), CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (idea 262 note stays a device question, not a reopen)
 
 Already the Home placement rule (`utils/homeAttention.js`, guards `homeAttention.test.js`, `homeInformationBudget.test.js`,
 `homeExpandedList.test.js`): `HOME_SECTION_PRIORITY` = firstRun > yourPlans > expandedList > weather > bestPick > pickedForYou >
