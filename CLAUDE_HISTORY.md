@@ -1,3 +1,5 @@
+# Idea "252" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; next = first real-device session (C17/C18 included); no feature work or new compression audit before it; no app change.
+
 # "Nearby unfolds for me" + compression phase (owner idea "252", 2026-10-18): goal met as doctrine, assessed, owner decision pending, nothing built
 
 Registry count today: 73 routes in `SCREEN_REGISTRY` (was 87 registered in the 2026-10-08 audit; B1-B8 built). Evidence-gated removals
