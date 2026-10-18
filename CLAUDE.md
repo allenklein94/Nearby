@@ -93,6 +93,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Don't fake AI thinking (owner idea "175", 2026-10-18) MET by the motion truth rule, LOCKED:** loaders reflect real work only (guard `motion/motionTruth.test.js`). Cleanup DONE: `NLoader`'s unused timed caption-cycle prop removed + guarded; no visible change. The two "Thinking…" captions (business AI assistant, dating strengths) stay: both sit on real AI calls (rewording DECLINED).
 
+**"Found something" (owner idea "176", 2026-10-18) MET by FoundLine + item 37, LOCKED:** no new "Found something…" string (items 113/37/38/61). Bug FIXED: Discover + Celebrate's FoundLine was English-only; now `ui.common.foundResults` (11 languages; 10 machine-authored, need native review; guard `motion/foundLine.test.js`).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

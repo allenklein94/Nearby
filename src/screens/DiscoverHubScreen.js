@@ -3094,7 +3094,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 onRemove={canRefine(intentSearch.classifyResult) ? (piece) => handleIntentRefine(`understood_${piece}`) : null}
                 disabled={intentRefining}
               />
-              {intentSearch.items?.length > 0 && <FoundLine />}
+              {intentSearch.items?.length > 0 && <FoundLine text={t('ui.common.foundResults')} />}
               <AskRefinementChips
                 classifyResult={intentSearch.classifyResult}
                 onRefine={handleIntentRefine}

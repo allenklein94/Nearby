@@ -2,6 +2,8 @@
 // outside English; needs native-speaker review. Count nouns are plural objects chosen by {count} (i18n/translate.js).
 export default {
   en: {
+    // Idea "176" fix (2026-10-18): FoundLine on Discover + Celebrate (was an English-only default).
+    foundResults: "Here's what we found.",
     cancel: 'Cancel', ok: 'OK', save: 'Save', saving: 'Saving…', done: 'Done', close: 'Close', back: '← Back', next: 'Next',
     continue: 'Continue', skip: 'Skip', edit: 'Edit', remove: 'Remove', delete: 'Delete', send: 'Send', sending: 'Sending…',
     tryAgain: 'Try again', tryAgainArrow: 'Try again →', retry: 'Retry', seeAll: 'See all →', seeAllPlain: 'See all', viewAll: 'View all',
@@ -37,6 +39,7 @@ export default {
     },
   },
   es: {
+    foundResults: "Esto es lo que encontramos.",
     cancel: 'Cancelar', ok: 'Aceptar', save: 'Guardar', saving: 'Guardando…', done: 'Listo', close: 'Cerrar', back: '← Atrás', next: 'Siguiente',
     continue: 'Continuar', skip: 'Omitir', edit: 'Editar', remove: 'Quitar', delete: 'Eliminar', send: 'Enviar', sending: 'Enviando…',
     tryAgain: 'Intentar de nuevo', tryAgainArrow: 'Intentar de nuevo →', retry: 'Reintentar', seeAll: 'Ver todo →', seeAllPlain: 'Ver todo', viewAll: 'Ver todo',
@@ -72,6 +75,7 @@ export default {
     },
   },
   de: {
+    foundResults: "Das haben wir gefunden.",
     cancel: 'Abbrechen', ok: 'OK', save: 'Speichern', saving: 'Wird gespeichert…', done: 'Fertig', close: 'Schließen', back: '← Zurück', next: 'Weiter',
     continue: 'Weiter', skip: 'Überspringen', edit: 'Bearbeiten', remove: 'Entfernen', delete: 'Löschen', send: 'Senden', sending: 'Wird gesendet…',
     tryAgain: 'Erneut versuchen', tryAgainArrow: 'Erneut versuchen →', retry: 'Wiederholen', seeAll: 'Alle ansehen →', seeAllPlain: 'Alle ansehen', viewAll: 'Alle ansehen',
@@ -107,6 +111,7 @@ export default {
     },
   },
   fr: {
+    foundResults: "Voici ce que nous avons trouvé.",
     cancel: 'Annuler', ok: 'OK', save: 'Enregistrer', saving: 'Enregistrement…', done: 'Terminé', close: 'Fermer', back: '← Retour', next: 'Suivant',
     continue: 'Continuer', skip: 'Passer', edit: 'Modifier', remove: 'Retirer', delete: 'Supprimer', send: 'Envoyer', sending: 'Envoi…',
     tryAgain: 'Réessayer', tryAgainArrow: 'Réessayer →', retry: 'Réessayer', seeAll: 'Tout voir →', seeAllPlain: 'Tout voir', viewAll: 'Tout voir',
@@ -142,6 +147,7 @@ export default {
     },
   },
   pt: {
+    foundResults: "Veja o que encontramos.",
     cancel: 'Cancelar', ok: 'OK', save: 'Salvar', saving: 'Salvando…', done: 'Concluído', close: 'Fechar', back: '← Voltar', next: 'Próximo',
     continue: 'Continuar', skip: 'Pular', edit: 'Editar', remove: 'Remover', delete: 'Excluir', send: 'Enviar', sending: 'Enviando…',
     tryAgain: 'Tentar novamente', tryAgainArrow: 'Tentar novamente →', retry: 'Tentar de novo', seeAll: 'Ver tudo →', seeAllPlain: 'Ver tudo', viewAll: 'Ver tudo',
@@ -177,6 +183,7 @@ export default {
     },
   },
   ht: {
+    foundResults: "Men sa nou jwenn.",
     cancel: 'Anile', ok: 'OK', save: 'Anrejistre', saving: "N ap anrejistre…", done: 'Fini', close: 'Fèmen', back: '← Retounen', next: 'Swivan',
     continue: 'Kontinye', skip: 'Sote', edit: 'Modifye', remove: 'Retire', delete: 'Efase', send: 'Voye', sending: "N ap voye…",
     tryAgain: 'Eseye ankò', tryAgainArrow: 'Eseye ankò →', retry: 'Eseye ankò', seeAll: 'Wè tout →', seeAllPlain: 'Wè tout', viewAll: 'Wè tout',
@@ -212,6 +219,7 @@ export default {
     },
   },
   zh: {
+    foundResults: "这是我们找到的结果。",
     cancel: '取消', ok: '好', save: '保存', saving: '正在保存…', done: '完成', close: '关闭', back: '← 返回', next: '下一步',
     continue: '继续', skip: '跳过', edit: '编辑', remove: '移除', delete: '删除', send: '发送', sending: '正在发送…',
     tryAgain: '重试', tryAgainArrow: '重试 →', retry: '重试', seeAll: '查看全部 →', seeAllPlain: '查看全部', viewAll: '查看全部',
@@ -231,6 +239,7 @@ export default {
     },
   },
   vi: {
+    foundResults: "Đây là những gì chúng tôi tìm thấy.",
     cancel: 'Hủy', ok: 'OK', save: 'Lưu', saving: 'Đang lưu…', done: 'Xong', close: 'Đóng', back: '← Quay lại', next: 'Tiếp',
     continue: 'Tiếp tục', skip: 'Bỏ qua', edit: 'Sửa', remove: 'Gỡ', delete: 'Xóa', send: 'Gửi', sending: 'Đang gửi…',
     tryAgain: 'Thử lại', tryAgainArrow: 'Thử lại →', retry: 'Thử lại', seeAll: 'Xem tất cả →', seeAllPlain: 'Xem tất cả', viewAll: 'Xem tất cả',
@@ -250,6 +259,7 @@ export default {
     },
   },
   tl: {
+    foundResults: "Ito ang nakita namin.",
     cancel: 'Kanselahin', ok: 'OK', save: 'I-save', saving: 'Sine-save…', done: 'Tapos na', close: 'Isara', back: '← Bumalik', next: 'Susunod',
     continue: 'Magpatuloy', skip: 'Laktawan', edit: 'I-edit', remove: 'Alisin', delete: 'Burahin', send: 'Ipadala', sending: 'Ipinapadala…',
     tryAgain: 'Subukan muli', tryAgainArrow: 'Subukan muli →', retry: 'Subukan muli', seeAll: 'Tingnan lahat →', seeAllPlain: 'Tingnan lahat', viewAll: 'Tingnan lahat',
@@ -274,6 +284,7 @@ export default {
     },
   },
   ru: {
+    foundResults: "Вот что мы нашли.",
     cancel: 'Отмена', ok: 'ОК', save: 'Сохранить', saving: 'Сохранение…', done: 'Готово', close: 'Закрыть', back: '← Назад', next: 'Далее',
     continue: 'Продолжить', skip: 'Пропустить', edit: 'Изменить', remove: 'Убрать', delete: 'Удалить', send: 'Отправить', sending: 'Отправка…',
     tryAgain: 'Повторить', tryAgainArrow: 'Повторить →', retry: 'Повторить', seeAll: 'Смотреть все →', seeAllPlain: 'Смотреть все', viewAll: 'Смотреть все',
@@ -309,6 +320,7 @@ export default {
     },
   },
   ko: {
+    foundResults: "찾은 결과입니다.",
     cancel: '취소', ok: '확인', save: '저장', saving: '저장 중…', done: '완료', close: '닫기', back: '← 뒤로', next: '다음',
     continue: '계속', skip: '건너뛰기', edit: '편집', remove: '삭제', delete: '삭제', send: '보내기', sending: '보내는 중…',
     tryAgain: '다시 시도', tryAgainArrow: '다시 시도 →', retry: '다시 시도', seeAll: '모두 보기 →', seeAllPlain: '모두 보기', viewAll: '모두 보기',

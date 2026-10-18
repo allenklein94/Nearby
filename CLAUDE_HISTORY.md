@@ -1,3 +1,17 @@
+# "Found something" (owner idea "176", 2026-10-18): MET by FoundLine + item 37, LOCKED; separate bug fix: FoundLine untranslated on Discover + Celebrate
+
+Idea: a "Found something…" line when results arrive. Finding: the beat already exists: `motion/FoundLine.js` (item 135's tiny
+fade the instant real results render; Home "Got it. Here are a few ideas.", Discover + Celebrate "Here's what we found.") and,
+for a typed ask's top pick whose activity, stated time and distance all really match, item 37's "A strong match for you".
+DECLINED (owner, LOCKED): a new "Found something you might like" / "Found something…" string (item 113 already declined it;
+items 37/38/61 keep "A strong match for you" as the only strength wording; a third version of the same beat). Bug found while
+checking (fixed separately, approved): Discover (`DiscoverHubScreen`) and Celebrate (`CelebrateSomethingScreen`) rendered
+`<FoundLine />` with its built-in English default, so it showed in English in every language. Fix: new key
+`ui.common.foundResults` in 11 languages (English unchanged; 10 machine-authored, NEED NATIVE REVIEW), passed by both screens via
+`t(...)`; FoundLine's English default removed. Guard `motion/foundLine.test.js` (no default text; Home/Discover/Celebrate pass a
+translated key; every screen's FoundLine has a translated `text`; key present in all 11). No motion, timing or wording change in
+English. Full Jest 472 suites / 6360 passed. Not device-verified.
+
 # Don't fake AI thinking (owner idea "175", 2026-10-18): MET by the motion truth rule, LOCKED; one preventive cleanup
 
 Idea: no fake "Thinking…" for seconds, no meaningless animated dots; animation must match a real operation. Scan: no artificial

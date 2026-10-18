@@ -1341,7 +1341,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                   <View style={styles.customResultsBlock}>
                     {customSearchResult.items.length > 0 ? (
                       <>
-                        <FoundLine />
+                        <FoundLine text={t('ui.common.foundResults')} />
                         <Text style={styles.sublabel}>
                           {customSearchResult.experience?.title ?? intentSearchFallbackTitle(customSearchResult.classifyResult)}
                         </Text>
