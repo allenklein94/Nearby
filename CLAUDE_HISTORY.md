@@ -1,4 +1,21 @@
-# Notifications deep-link to the object that changed (owner idea "242", 2026-10-18; NOT item 242): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+# Notifications deep-link to the object that changed (owner idea "242", 2026-10-18; NOT item 242): MET AS BUILT, CLOSED, LOCKED, no app change
+
+- Owner decision (2026-10-18): close as met, conditional on the navigation test passing across EVERY notification type; record one
+  shared Notifications rule; no new screens, no change to the exceptions. Preserve: direct navigation to the exact request, offer,
+  booking, gathering, chat, group plan or profile named; the destination opens over the existing context with normal Back;
+  business pushes open the relevant request in Opportunities when one exists, else Opportunities for cancellations, digests and
+  demand updates; exceptions unchanged (waves -> Activity, friend requests -> Friends, cancelled gatherings/communities -> their
+  originating lists).
+- Verification gap found and closed (test only, no app code): `pushNavigationContract.test.js` drove only a subset of types
+  through the real routers; all 90 were checked only against the destination table. Added the idea "242" block: `test.each` over
+  every `case` in `notificationDestinations.js` with a full payload, the real `routeNotificationTap` + React Navigation Stack/Tab
+  routers over every screen registered in `RootNavigator.js` plus a neutral origin screen on the Profile tab: the top screen =
+  the table's destination with its params, and Back returns to the very same mounted origin; tab pushes switch to that tab, keep
+  the origin as the return trail and `restoreTrail` reopens it; a null destination leaves the person where they were. The screen
+  list regex (`<Stack.Screen name=`) missed multi-line registrations (e.g. `PlanChat`, so `plan_message` failed at first); fixed to
+  `<Stack.Screen\s+name=` in both audit blocks. Result: 90/90 types pass; navigation suites 178/178; full Jest 476 suites / 6502
+  tests pass. Device NOT run (no push has ever been tapped on a real phone).
+- Rule folded as ONE bullet under Standing conventions -> Notifications.
 
 - Proposal (a rule): notifications deep-link to the object that changed, never merely to where notifications are stored.
 - Met: one destination table, `navigation/notificationDestinations.js` (item 139 of the push-navigation contract; header: "the

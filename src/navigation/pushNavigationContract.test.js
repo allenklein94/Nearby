@@ -59,8 +59,8 @@ const SIGNED_OUT = ['Onboarding', 'Login'];
 const TABS = ['Home', 'Discover', 'Create', 'Activity', 'Profile'];
 const opts = (names) => ({ routeNames: names, routeParamList: {}, routeGetIdList: {} });
 
-function makeRef({ signedIn = true } = {}) {
-  const names = signedIn ? SIGNED_IN : SIGNED_OUT;
+function makeRef({ signedIn = true, routeNames = null } = {}) {
+  const names = routeNames ?? (signedIn ? SIGNED_IN : SIGNED_OUT);
   const stack = routers.StackRouter({});
   const tabs = routers.TabRouter({});
   let state = stack.getInitialState(opts(names));
@@ -389,7 +389,7 @@ describe('the audit: every push type has one registered destination', () => {
   const dest = fs.readFileSync(path.join(__dirname, 'notificationDestinations.js'), 'utf8');
   const types = [...dest.matchAll(/case '(\w+)':/g)].map((m) => m[1]);
   const root = fs.readFileSync(path.join(__dirname, 'RootNavigator.js'), 'utf8');
-  const registered = new Set([...root.matchAll(/<Stack\.Screen name="(\w+)"/g)].map((m) => m[1]));
+  const registered = new Set([...root.matchAll(/<Stack\.Screen\s+name="(\w+)"/g)].map((m) => m[1]));
   test('90 push types, each handled once', () => {
     expect(types).toHaveLength(90);
     expect(new Set(types).size).toBe(types.length);
@@ -465,3 +465,44 @@ describe('wave push -> Activity (Notices is Activity presented on top, owner 202
   });
 });
 
+
+// Owner idea "242" (2026-10-18): every push type, driven through the real handler + routers (not just the destination table):
+// the tap lands on the exact destination the table names (a tab push switches to that tab and keeps the screens as the trail),
+// and Back returns to the very screen the person was on.
+describe('idea "242": every push type opens its object through real navigation, and Back returns', () => {
+  const dest = fs.readFileSync(path.join(__dirname, 'notificationDestinations.js'), 'utf8');
+  const types = [...dest.matchAll(/case '(\w+)':/g)].map((m) => m[1]);
+  const root = fs.readFileSync(path.join(__dirname, 'RootNavigator.js'), 'utf8');
+  const registered = [...new Set([...root.matchAll(/<Stack\.Screen\s+name="(\w+)"/g)].map((m) => m[1]))];
+  // A screen no push ever opens, so the destination can never be "already on top" and refreshed in place.
+  const ORIGIN = 'PushTestOrigin';
+  const routeNames = ['MainTabs', ...registered.filter((n) => n !== 'MainTabs'), ORIGIN];
+  const full = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o', proposal_id: 'p', plan_id: 'pl', partner_id: 'b',
+    community_id: 'c', birthday_user_id: 'u', other_user_id: 'u', story_user_id: 'u', user_id: 'u', owner_id: 'u', target_type: 'gathering',
+    target_id: 't', occasion_type: 'birthday', who_for_name: 'Sam', has_recall: false, business_request_id: 'br', body: 'Why' };
+
+  test.each(types)('%s', async (type) => {
+    const expected = await notificationDestination({ type, ...full });
+    const ref = makeRef({ routeNames });
+    ref.switchTab('Profile');
+    ref.open(ORIGIN, { from: 'test' });
+    const origin = ref.top();
+    await tap(ref, { type, ...full });
+    if (!expected) {
+      expect(ref.top()).toBe(origin); // nothing to open: the person stays where they were
+      return;
+    }
+    if (expected.name === 'MainTabs') {
+      expect(ref.names()).toEqual(['MainTabs']);
+      expect(ref.tab()).toBe(expected.params.screen);
+      expect(T.getTrail().routes.map((r) => r.name)).toEqual([ORIGIN]);
+      expect(await restoreTrail(ref)).toBe(true);
+      expect(ref.top().name).toBe(ORIGIN);
+      return;
+    }
+    expect(ref.top().name).toBe(expected.name);
+    expect(ref.top().params ?? {}).toMatchObject(expected.params ?? {});
+    ref.back();
+    expect(ref.top()).toBe(origin); // the same mounted screen: its state survives
+  });
+});
