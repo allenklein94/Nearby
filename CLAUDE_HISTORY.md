@@ -1,3 +1,8 @@
+# "Less screens" means "less work" (owner idea "249", 2026-10-18): MET AS BUILT, assessed, owner decision pending, no new rule, nothing built
+
+Mapped to item 29 (six-question test + question 7), item 31 (inline counterweight), items 32/33 (information budget), Rule 14, the
+never-re-ask rule (items 82/84/111, ideas 245/248), ideas 225/232/233. No metric or new rule proposed (would duplicate these).
+
 # Idea "248" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; device check C19 added (card facts = the business's Opportunity, nothing re-asked); no app change.
 
 # Gathering request inherits the gathering (owner idea "248", 2026-10-18): MET AS BUILT by item 111 (+ 65/29), assessed, owner decision pending, nothing built
