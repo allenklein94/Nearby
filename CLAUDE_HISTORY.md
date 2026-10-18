@@ -1,3 +1,20 @@
+# Idea "193" gap 2: other offers visibly unavailable while one is booking (owner, 2026-10-18): BUILT, NOT DEVICE-VERIFIED; idea "193" otherwise MET by item 12, CLOSED
+
+Owner decision: fix gap 2 only; SKIP press compression (no ScaleButton, press-scale, bounce or other new micro-motion; no motion
+spec needed). Built: `utils/offerAcceptLock.js` `offerAcceptButtonState(offerId, actingOfferId, bookable)` is the one rule for
+every "I'll take this one" on the request screen: the offer being booked = spinner + disabled (as before); while ANY offer is
+booking every other one is disabled AND dimmed (the existing `acceptButtonWaiting` 0.5 opacity, also used for item 119's
+waiting-for-a-time state) with `accessibilityState.disabled`; when `handleAccept` finishes, success or failure (`setActingOfferId(null)`
+after its try/finally, after the reload), each button follows its reloaded, server-confirmed state again (an offer closed by the
+booking shows its closed card; a failed booking leaves the others bookable). The "Confirm with your group" button (navigation,
+not a booking) is unchanged. Preserved: "I'll take this one" / "You're booked", spinner + the booked offer's time-picker lock,
+in-place change only after the server confirms (item 12), the ~520 ms morph, the success haptic, idea "169"'s cue. Tests:
+`utils/offerAcceptLock.test.js` (states + wiring + no ScaleButton on the screen), `offerAssembly.test.js`'s item 20 guard updated
+(button disabled only by bookings/time pick, the rule reads no animation/timer); full Jest 474 suites / 6,378 passed. No journey
+(client-only UI state; the DB-level `offer` journey cannot see it; uncovered step = the on-screen disabled look). Business web
+export unaffected (this screen is not in its bundle; verified by a clean export). NOT VERIFIED on a phone: offer experience
+checklist section 6 check added (other offers visibly disabled during booking; recover after success and after a forced failure).
+
 # "Accept" feels physically decisive (owner idea "193", 2026-10-18; NOT item 193, weather mention): ASSESSED, OWNER DECISION PENDING, nothing built
 
 Idea: tap Accept Offer -> the button compresses slightly -> the offer card locks -> "Confirmed", in ~300-500 ms. Found (code read

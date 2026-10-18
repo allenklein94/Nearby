@@ -169,11 +169,14 @@ describe('the reveal never gets in the way', () => {
     const closes = (upToButton.match(/<\/AssemblyStep>/g) || []).length;
     expect(opens - closes).toBe(1); // the one open step around the button
     expect(upToButton.slice(upToButton.lastIndexOf('<AssemblyStep '))).toMatch(/^<AssemblyStep step="action">/);
-    // the button is disabled only while that offer is being accepted (and, item 119, until a time is picked on a two-time
-    // reply: the person's own choice, never a timer), never by the animation
+    // the button is disabled only while an offer on this screen is being booked (idea "193": that one or another one) and,
+    // item 119, until a time is picked on a two-time reply (the person's own choice, never a timer), never by the animation
     const btn = offered.slice(offered.lastIndexOf('<TouchableOpacity', offered.indexOf('handleAccept(o.id)')), offered.indexOf('</TouchableOpacity>', offered.indexOf('handleAccept(o.id)')));
-    expect(btn).toMatch(/disabled=\{actingOfferId === o\.id( \|\| !bookable)?\}/);
+    expect(btn).toMatch(/disabled=\{acceptState\.disabled\}/);
     expect(btn).not.toMatch(/assembl|animat|reveal/i);
+    expect(offered).toMatch(/const acceptState = offerAcceptButtonState\(o\.id, actingOfferId, bookable\);/);
+    const rule = read('utils/offerAcceptLock.js').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    expect(rule).not.toMatch(/assembl|animat|reveal|motion|timer|setTimeout/i);
   });
   test('gentle: no bounce, no loop, no haptic, no sound', () => {
     const src = read('components/OfferAssembly.js').split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');

@@ -115,6 +115,10 @@ Anthropic credit is a prerequisite (Setup), not an owner.
 ## 6. Acceptance (moment 4)
 
 - [ ] Tap "I'll take this one" (one tap only; a second tap does nothing while it is working).
+- [ ] (Idea "193", added 2026-10-18) With two or more open offers on the request: while one is booking (spinner), every OTHER
+  "I'll take this one" is visibly dimmed and does nothing when tapped; VoiceOver/TalkBack reads them as disabled. After
+  success: the booked card + the others in their real closed state. After a forced failure (airplane mode during the tap):
+  the error shows and every other offer is bookable again. No press-scale or bounce on any of them.
 - [ ] The same card becomes the booked card: ✓ ring + "You're booked", then business, when, "4 people", then How to redeem.
   Success vibration once. ★ With Reduce Motion: the finished card, no animation.
 - [ ] The rest of the screen does NOT slide or fade to its new layout (screen-wide smoothing removed, owner 2026-10-12): only the

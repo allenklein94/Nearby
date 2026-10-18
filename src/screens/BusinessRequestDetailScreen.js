@@ -1,6 +1,7 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
 import { rankReplies, fittingTime } from '../utils/replyFit';
 import { hasTwoTimes, canBookWith, timeToBook } from '../utils/offerTimes';
+import { offerAcceptButtonState } from '../utils/offerAcceptLock';
 import { isOfferChangedError } from '../utils/offerRevision';
 import { useLanguage } from '../context/LanguageContext';
 import { displayClock, displayWeekdayDate } from '../i18n/display';
@@ -1742,17 +1743,19 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     if (action.kind !== 'accept_offer') return null;
                     // Item 119: a two-time reply books only once a time is picked (the button waits, never guesses).
                     const bookable = canBookWith(o, pickedTimes[o.id] ?? null);
+                    // Idea "193": while any offer is booking, the others are visibly unavailable too.
+                    const acceptState = offerAcceptButtonState(o.id, actingOfferId, bookable);
                     return (
                       <AssemblyStep step="action">
                       <TouchableOpacity
-                        style={[styles.acceptButton, !bookable && styles.acceptButtonWaiting]}
+                        style={[styles.acceptButton, acceptState.dimmed && styles.acceptButtonWaiting]}
                         onPress={() => handleAccept(o.id)}
-                        disabled={actingOfferId === o.id || !bookable}
-                        accessibilityState={{ disabled: actingOfferId === o.id || !bookable }}
+                        disabled={acceptState.disabled}
+                        accessibilityState={{ disabled: acceptState.disabled, busy: acceptState.busy }}
                         accessibilityLabel={businessReplyKind(o) === 'offer' ? t('ui.requestDetail.acceptOfferFromA11y', { name: o.brand_partners?.name ?? 'this business' }) : t('ui.requestDetail.chooseA11y', { name: o.brand_partners?.name ?? 'this business' })}
                         accessibilityRole="button"
                       >
-                        {actingOfferId === o.id ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{action.label}</Text>}
+                        {acceptState.busy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.acceptButtonText}>{action.label}</Text>}
                       </TouchableOpacity>
                       </AssemblyStep>
                     );
