@@ -1,3 +1,18 @@
+# "Ask instead" escape hatch (owner idea "181", 2026-10-18): MET AS BUILT, LOCKED, nothing built
+
+Idea: when Discover lacks what the person wants, "Can't find it? Ask Nearby." -> Ask friends / Ask a business / Create a
+gathering, so Discover never dead-ends. Finding (kept as is): typed asks (Discover's search box is the ask) end in item 81's
+empty state: Create it yourself (words carried), Ask Nearby Businesses only when a business genuinely fits (`askBusinessesFits`,
+item 190), Places to go for public-place asks (item 189); an empty Discover category shows "No {topic} gatherings nearby" +
+"Create {topic}" opening Create with the topic prefilled (`DiscoverHubScreen.js`, `context_gatherings`); friends are reached
+through Create's real-plan invitations (items 135/136); shared business requests only via item 93's Settings opt-in. Owner
+decisions (LOCKED): the universal "Can't find it? Ask Nearby" menu DECLINED: a universal business-request option conflicts with
+item 190; a separate "Ask friends" would expose typed asks (item 92); a new menu duplicates existing entry points (item 45).
+Observation only, unchanged: Happening Now / time view's empty state "Nothing nearby for this time yet" offers only "Show
+everything" (`discover_date_empty`); revisit only if real-device testing shows that recovery path is insufficient. Principle:
+offer the right next step for the person's actual intent, never a universal menu of actions that may not apply. No menu, screen,
+link or code changed.
+
 # Category expansion (owner idea "180", 2026-10-18): COVERED by item 81's Gap 2 hold, LOCKED, nothing built
 
 Idea: "Coffee" with no good result -> "Try similar: Cafés · Dessert · Tea · Brunch" as connected suggestions instead of "No

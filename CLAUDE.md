@@ -103,6 +103,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Category expansion (owner idea "180", 2026-10-18) COVERED by item 81's Gap 2 hold, LOCKED, nothing built:** empty state unchanged; any future "try similar" = existing taxonomy relations only (no curated similarity without a V1 taxonomy decision), never a synonym of the ask ("Cafés" = Coffee), only with a real result behind it, labelled + static, never AI-guessed.
 
+**"Ask instead" escape hatch (owner idea "181", 2026-10-18) MET AS BUILT, LOCKED, nothing built:** item 81's typed-ask empty state + empty category "Create {topic}" + Create's invites (items 135/136) + item 93's opt-in; universal "Can't find it? Ask Nearby" menu DECLINED (items 190/92/45). Observation: time-view empty state offers only "Show everything"; revisit only on device evidence.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
