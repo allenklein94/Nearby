@@ -1,4 +1,10 @@
-# "Why am I seeing this?" sheet (owner idea "226", 2026-10-18; NOT item 226): CONFLICTS WITH LOCKS, recommended DECLINE, owner decision pending, nothing built
+# "Why am I seeing this?" sheet (owner idea "226", 2026-10-18; NOT item 226): DECLINED as written, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): decline as written; the goal is covered by the existing experience. Item 106 stays locked (no
+  separate "why" sheet); never reveal whether a specific friend marked a gathering Interested (only the host's total count, as
+  already permitted); item 146 stays locked (approximate distance, e.g. "About 2 mi", never exact). Kept: up to two strongest
+  genuine reasons + one distance-and-time line on the card (interest reason only for an explicitly declared interest); "Why this
+  fits you" on the gathering; Back returns to Discover with its prior state. No new rule, no new sheet, no locked decision reopened.
 
 - Proposal: a bottom sheet "Why this is recommended": ☕ You like coffee / 📍 0.7 mi / 🕕 Tonight at 6:30 / 👤 Claude is interested;
   Done closes it back to Discover.
