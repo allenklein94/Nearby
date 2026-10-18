@@ -1,4 +1,9 @@
-# Home changes with the moment (owner idea "202", 2026-10-18; NOT item 202): ASSESSED, MET AS BUILT, OWNER DECISION PENDING, nothing built
+# Home changes with the moment (owner idea "202", 2026-10-18; NOT item 202): KEEP AS BUILT (owner approved), CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): `getTimePeriod` stays the single period rule; time-aware greeting, subtitle and quick picks kept in all
+  11 languages; quick picks keep opening Discover with the matching time filter (item 137b); time-based ranking and Best Pick wording
+  kept; Home static, no new animation; wording NOT changed to "What's happening..." / "What are you doing tonight?". The period-boundary
+  refresh observation is a SEPARATE follow-up (OPEN, not scoped), not part of this decision. No code changes.
 
 - Proposal: Home's language and recommendations change with the time of day (morning "What's happening today?", afternoon "What's
   happening this afternoon?", evening "What are you doing tonight?"); no big animation.
