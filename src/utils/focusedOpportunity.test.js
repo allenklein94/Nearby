@@ -109,3 +109,36 @@ describe('server delivery rules (migration 20270257)', () => {
     expect(code).not.toMatch(/gathering_reminder|send_gathering_reminders/);
   });
 });
+
+describe('idea "187": the single-request opportunity push uses the same focus', () => {
+  const dash = fs.readFileSync(path.join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
+  test('a request push (direct, urgent or an automatic reply) opens on that request; no id = the plain list', async () => {
+    expect(await notificationDestination({ type: 'business_opportunity_received', request_id: 'r1' }))
+      .toEqual({ name: 'BusinessDashboard', params: { initialSection: 'requests', focusRequestId: 'r1' } });
+    expect(await notificationDestination({ type: 'business_opportunity_received' }))
+      .toEqual({ name: 'BusinessDashboard', params: { initialSection: 'requests' } });
+  });
+  test('a stale or unknown request fails safe: "no longer available", nothing outlined, the list unchanged', () => {
+    const list = [opp({ id: 'o1', request_id: 'r1' }), opp({ id: 'o2', request_id: 'r2' })];
+    expect(focusedOpportunityView(list, 'gone', { now: NOW })).toEqual({ kind: 'unavailable' });
+    expect(focusFirst(list, 'gone')).toBe(list);
+    expect(focusedOpportunityView([], 'r1', { now: NOW })).toEqual({ kind: 'unavailable' });
+    expect(focusedOpportunityView(list, 'r1', { now: NOW, loadFailed: true })).toEqual({ kind: 'unavailable' });
+    expect(focusedOpportunityView(null, 'r1', { now: NOW })).toEqual({ kind: 'unavailable' });
+    // Already answered or expired since the push: its true state, never a stale action.
+    expect(focusedOpportunityView([opp({ status: 'offered' })], 'r1', { now: NOW })).toEqual({ kind: 'state', key: 'youReplied' });
+    expect(focusedOpportunityView([opp({}, { expires_at: inHours(-1) })], 'r1', { now: NOW }).kind).toBe('state');
+  });
+  test('the matching card is first and the only one outlined', () => {
+    const list = [opp({ id: 'o2', request_id: 'r2' }), opp({ id: 'o1', request_id: 'r1' })];
+    expect(focusFirst(list, 'r1').map((o) => o.id)).toEqual(['o1', 'o2']);
+    expect(dash).toMatch(/o\.request_id === focusRequestId && \{ borderColor: colors\.primary, borderWidth: 2 \}/);
+  });
+  test('the dashboard scrolls the focus line (right above the outlined card) into view once per request, after the list loads', () => {
+    expect(dash).toMatch(/<View ref=\{focusPanelRef\} collapsable=\{false\}/);
+    const effect = dash.slice(dash.indexOf('const focusScrolledForRef'), dash.indexOf('}, [focusRequestId, opportunitiesLoaded]);'));
+    expect(effect).toMatch(/opportunitiesLoaded === null \|\| focusScrolledForRef\.current === focusRequestId\) return/);
+    expect(effect).toMatch(/panel\.measureLayout\(scroller\.getInnerViewNode\?\.\(\) \?\? scroller/);
+    expect(effect).toMatch(/scroller\.scrollTo\(\{ y: Math\.max\(0, y - spacing\.lg\), animated: true \}\)/);
+  });
+});

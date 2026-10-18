@@ -115,6 +115,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Retention from relevant events (owner idea "186", 2026-10-18; NOT item 186) MET + RETIRED, LIVE, LOCKED:** `first_mission_reminder` and `reward_tier_nudge` pushes + their jobs removed (migration 20270329 LIVE; live check 7/7; guard `engagementNudgesRetired.test.js`; replay 453/453, prod journeys 558/558). Retention effect and phone behaviour NOT verified.
 
+**Business side asynchronous (owner idea "187", 2026-10-18; NOT item 187) MET AS BUILT, LOCKED:** direct/urgent request pushes, hourly digest, automatic-reply pushes, item 48's arrival, items 62/165 for the customer; "New nearby demand" DECLINED (one request = an opportunity; "demand" = item 128 aggregates). **Exact-opportunity push (idea 187 fix) BUILT, NOT DEVICE-VERIFIED:** `business_opportunity_received` with a request id opens Opportunities on that request (item 140's focus + outline, scrolled into view once; stale = "no longer available", nothing outlined); journey `notificationAction` 9/9, prod journeys 559/559. Open: real push on a phone, the scroll on a device, email fallback (Resend secrets).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

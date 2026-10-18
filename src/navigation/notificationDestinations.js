@@ -359,7 +359,12 @@ export async function notificationDestination(data, { lookupAvailability = async
         return to('BusinessRequestDetail', { requestId: data.request_id, notificationReason: data.body ?? null, ...((data.type === 'business_offer_received' || data.type === 'business_offer_revised') && data.offer_id ? { focusOfferId: data.offer_id } : {}) });
       }
       break;
+    // Owner idea "187": a push about ONE request (a customer asked you directly, an urgent request, an automatic reply
+    // sent for you) opens the Opportunities tab ON that request, like item 140's "Request expires soon": outlined, first,
+    // its current state re-read. No request id = the plain list below.
     case 'business_opportunity_received':
+      if (data.request_id) return to('BusinessDashboard', { initialSection: 'requests', focusRequestId: data.request_id });
+      return to('BusinessDashboard', { initialSection: 'requests' });
     case 'business_opportunities_digest':
     // Item 83: an offer's background review finished -- the "Your offers" list is on the same tab.
     case 'business_offer_review_result':

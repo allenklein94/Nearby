@@ -172,6 +172,22 @@ d('journey: every notification leads to one direct next action (items 140 + 141)
     expect(notificationPriority(p.data.type)).toBe('high');
   });
 
+  test('idea "187": a customer asks the business directly -> the owner\'s push opens Opportunities ON that request', async () => {
+    const { request } = s.offer.data;
+    const owner = s.expiring.data.owner;
+    for (const req of [request, s.expiring.data.request]) {
+      const p = find(owner, 'business_opportunity_received', 'request_id', req);
+      expect(p).toBeDefined();
+      expect(p.title).toBe('A customer asked for your business');
+      expect(await notificationDestination(p.data)).toEqual({ name: 'BusinessDashboard', params: { initialSection: 'requests', focusRequestId: req } });
+    }
+    // The first request was already answered before the tap: the push still names it; the dashboard re-reads it and says
+    // "you replied" (focusedOpportunityView, never the push's wording).
+    // Nothing about the customer rides in the push beyond the safe summary (privacy boundary).
+    const p = find(owner, 'business_opportunity_received', 'request_id', request);
+    expect(Object.keys(p.data).sort()).toEqual(['request_id', 'type']);
+  });
+
   test('something nearby fits you -> View Gathering -> that gathering, low (never interrupts)', async () => {
     const { gathering, guest } = s.recommended.data;
     const p = pushes.find((x) => x.to === guest && x.data.gathering_id === gathering);

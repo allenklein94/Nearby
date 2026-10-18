@@ -1,3 +1,27 @@
+# Business side asynchronous (owner idea "187", 2026-10-18; NOT item 187): MET AS BUILT, LOCKED + exact-opportunity push FIXED
+
+Idea: the business needn't sit in the dashboard: a request comes in later ("New nearby demand"), the opportunity appears, the
+business responds, the customer is notified. Finding (kept as is, LOCKED): a request addressed to the business pushes every
+managing owner at once ("A customer asked for your business"); an urgent request pushes "New opportunity nearby!" with
+`business_safe_request_summary()` (`_on_business_request_sent`); other matched requests are batched hourly
+(`send_business_opportunity_digests`: "N new opportunities that fit your business"); automatic replies say what was sent
+(`_on_business_offer_sent`); item 48's one-time arrival (max 3 per load) on Opportunities; customer side items 62/165/23/25. The
+business website has no push; the email fallback stays inert until the Resend secrets are set. "New nearby demand" wording
+DECLINED: one request is an opportunity; "demand" stays for item 128's aggregates (floor 5).
+FIX (owner approved, client only): `business_opportunity_received` with a `request_id` now opens Opportunities ON that request
+(`notificationDestinations.js` -> `BusinessDashboard { initialSection: 'requests', focusRequestId }`, item 140's existing focus:
+the card first + coral outline, the focus line re-reading its current state via `focusedOpportunityView`); new: once the list
+loads, the dashboard scrolls the focus line (right above the outlined card) into view once per request (`focusPanelRef`,
+`measureLayout` like Discover's perk scroll). The outline is item 140's (stays while the screen is open on that request; no new
+motion). Missing id = the plain list; stale/unknown/failed load = "no longer available" line, no card outlined, list unchanged;
+already answered = its true state. Digest and every other push unchanged; no wording, delivery, batching or payload change.
+Tests: `pushNavigationContract.test.js` (+5: from another screen + Back, on the dashboard elsewhere vs same request, cold start
+kept-then-opened-once, live+launch response once, no id/digest = plain list), `focusedOpportunity.test.js` (+4: destination,
+stale/missing fail-safe, only the matching card outlined, scroll guard); 4 fail on the old routing. Journey `notificationAction`
+9/9 (+1: the real direct-request push -> focused destination, payload = request_id + type only). Jest 473 suites / 6374 pass,
+prod journeys 559/559; business web export regenerated. NOT verified: a real push on a real phone (none ever), the scroll on a
+device, the business website in a browser, the email fallback (inert).
+
 # Retention from relevant events, never nudges (owner idea "186", 2026-10-18; NOT item 186): MET + two engagement pushes RETIRED, LOCKED
 
 Idea: retention through "something relevant happened", never "come back for your daily streak". Finding: met by item 53 (streak

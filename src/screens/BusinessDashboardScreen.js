@@ -2099,6 +2099,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSection('opportunities');
     if (selectedPartner) loadOpportunities(selectedPartner.id);
   }, [focusRequestId]);
+  // Idea "187": once the list has loaded, bring the focus line (and the outlined card right under it) into view, once per
+  // request. A stale or unknown request scrolls to the same line saying it is no longer available; no card is outlined.
+  const focusPanelRef = useRef(null);
+  const focusScrolledForRef = useRef(null);
+  useEffect(() => {
+    if (!focusRequestId || opportunitiesLoaded === null || focusScrolledForRef.current === focusRequestId) return undefined;
+    const timer = setTimeout(() => {
+      const panel = focusPanelRef.current;
+      const scroller = mainScrollRef.current;
+      if (!panel || !scroller) return;
+      focusScrolledForRef.current = focusRequestId;
+      try {
+        panel.measureLayout(scroller.getInnerViewNode?.() ?? scroller, (_x, y) => {
+          scroller.scrollTo({ y: Math.max(0, y - spacing.lg), animated: true });
+        }, () => {});
+      } catch (e) { /* measuring is best-effort: the request is still first and outlined */ }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [focusRequestId, opportunitiesLoaded]);
 
   // Nearby 2.0 vision layer 1, "Aggregated demand -> business
   // opportunities" (see CLAUDE.md's "Nearby 2.0 Vision" doc): real,
@@ -4523,7 +4542,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     : fv.kind === 'respondable' ? (fv.expiresAt ? t('ui.bizDash2.focus.respondBy', { when: deadlineLabel(fv.expiresAt, language) }) : t('ui.bizDash2.focus.respondOpen'))
                     : t(`ui.bizDash2.focus.${fv.key}`);
                   return (
-                    <View style={[styles.gatheringRow, { borderColor: colors.primary, borderWidth: 1 }]} accessibilityLiveRegion="polite">
+                    <View ref={focusPanelRef} collapsable={false} style={[styles.gatheringRow, { borderColor: colors.primary, borderWidth: 1 }]} accessibilityLiveRegion="polite">
                       <Text style={styles.notesLabel}>{t('ui.bizDash2.focus.title')}</Text>
                       <Text style={[styles.breakdownText, { fontWeight: '700', color: fv.kind === 'respondable' ? colors.textPrimary : colors.textSecondary }]}>{line}</Text>
                     </View>

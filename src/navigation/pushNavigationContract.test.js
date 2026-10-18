@@ -54,7 +54,7 @@ const T = require('./returnTrail');
 
 // The signed-in root stack (a representative subset) and the signed-out one.
 const SIGNED_IN = ['MainTabs', 'GatheringDetail', 'ViewProfile', 'Chat', 'BusinessRequestDetail', 'Notices', 'CommunityDetail',
-  'AskBusiness', 'BusinessProfile', 'Gatherings', 'GroupPlan', 'BusinessPartnerApply'];
+  'AskBusiness', 'BusinessProfile', 'Gatherings', 'GroupPlan', 'BusinessPartnerApply', 'BusinessDashboard'];
 const SIGNED_OUT = ['Onboarding', 'Login'];
 const TABS = ['Home', 'Discover', 'Create', 'Activity', 'Profile'];
 const opts = (names) => ({ routeNames: names, routeParamList: {}, routeGetIdList: {} });
@@ -177,6 +177,53 @@ describe('3. a deep link while another full-screen destination is active', () =>
     const linkState = { index: 1, routes: [{ name: 'MainTabs' }, { name: 'GatheringDetail', params: { gatheringId: 'A' } }] };
     ref.dispatch(linkActionFromState(ref)(linkState, {}));
     expect(ref.names()).toEqual(['MainTabs', 'GatheringDetail']);
+  });
+});
+
+describe('idea "187": a business push about ONE request opens Opportunities on that request', () => {
+  const push = { type: 'business_opportunity_received', request_id: 'r7', body: 'New request: Coffee · Sat · 4 people' };
+  const focused = { initialSection: 'requests', focusRequestId: 'r7' };
+  test('from another screen: on top of where the owner was, focused on that request; Back returns', async () => {
+    const ref = makeRef();
+    ref.switchTab('Discover');
+    ref.open('BusinessProfile', { partnerId: 'b1' });
+    await tap(ref, push);
+    expect(ref.names()).toEqual(['MainTabs', 'BusinessProfile', 'BusinessDashboard']);
+    expect(ref.top().params).toEqual(focused);
+    ref.back();
+    expect(ref.top().name).toBe('BusinessProfile');
+  });
+  test('already on the dashboard on another tab: opens its own focused copy; on that same request: refreshed in place', async () => {
+    const ref = makeRef();
+    ref.open('BusinessDashboard', { initialSection: 'profile' });
+    await tap(ref, push);
+    expect(ref.names()).toEqual(['MainTabs', 'BusinessDashboard', 'BusinessDashboard']);
+    expect(ref.top().params).toEqual(focused);
+    await tap(ref, push);
+    expect(ref.names()).toEqual(['MainTabs', 'BusinessDashboard', 'BusinessDashboard']);
+  });
+  test('cold start: a tap that launches the app is kept, then opens the focused request exactly once', async () => {
+    const out = makeRef({ signedIn: false });
+    await tap(out, push);
+    expect(out.names()).toEqual(['Onboarding']);
+    const ref = makeRef();
+    expect(await consumePendingNotificationTap(ref)).toBe(true);
+    expect(ref.names()).toEqual(['MainTabs', 'BusinessDashboard']);
+    expect(ref.top().params).toEqual(focused);
+    await consumePendingNotificationTap(ref);
+    expect(ref.names()).toEqual(['MainTabs', 'BusinessDashboard']);
+  });
+  test('the live tap and the launch response for the same push open it once', async () => {
+    const ref = makeRef();
+    await handleNotificationResponse(response('n187', push), ref);
+    await handleNotificationResponse(response('n187', push), ref);
+    expect(ref.names()).toEqual(['MainTabs', 'BusinessDashboard']);
+  });
+  test('no request id: the plain Opportunities list, nothing focused; the hourly digest stays the plain list', async () => {
+    const ref = makeRef();
+    await tap(ref, { type: 'business_opportunity_received' });
+    expect(ref.top().params).toEqual({ initialSection: 'requests' });
+    expect(await notificationDestination({ type: 'business_opportunities_digest', count: 3 })).toEqual({ name: 'BusinessDashboard', params: { initialSection: 'requests' } });
   });
 });
 
