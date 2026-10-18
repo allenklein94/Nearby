@@ -1,4 +1,9 @@
-# "Return to where I was" is a first-class principle (owner idea "283", 2026-10-18; NOT item 283): MET IN SUBSTANCE (locked Navigation bullet + ideas "232"/"279"-"282"), ASSESSED, owner decision pending on a one-line clarification of the existing bullet; no new rule, nothing built; CLAUDE.md not changed yet
+# "Return to where I was" is a first-class principle (owner idea "283", 2026-10-18; NOT item 283): MET IN SUBSTANCE (locked Navigation bullet + ideas "232"/"279"-"282"), CLOSED (owner, 2026-10-18, LOCKED): existing Navigation bullet clarified, no second rule, no app code; NOT DEVICE-VERIFIED
+
+Owner decision (2026-10-18): the Navigation bullet's tail now reads "Back restores the exact prior content state (query, filters, open
+view, selection, scroll), not just the stack." Intentional exceptions unchanged (preview sheet closes on leaving its screen; perk
+selection ends on a tab switch; a Home tap with new context replaces only what it names; filter chips not kept across restarts). Tests
+prove stack restoration only; content restoration stays to be confirmed on a phone: C12 + the Back checks of ideas "279"-"281".
 
 Already locked: Navigation "Pushes and links open on top of where the person was (`openOnTop`, return trail); Back restores exact prior
 state and scroll" + idea "232". As built it preserves CONTENT state, not just the stack: tab screens stay mounted under pushed detail, so

@@ -727,7 +727,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Rule 14:** every route has a registry entry with a job A-F (`constants/screenRegistry.js`); presentation
   routes render an existing surface on top (`navigation/presentationRoutes.js`). A new screen ships with its entry.
 - Five tabs: Home, Discover, Create, Activity, Profile. Pushes and links open on top of where the person was
-  (`openOnTop`, return trail); Back restores exact prior state and scroll.
+  (`openOnTop`, return trail); Back restores the exact prior content state (query, filters, open view, selection, scroll), not just the stack (idea "283").
 - States, not folders: one viewer relation per gathering (hosting > attending > requested/waitlisted >
   interested), filtered by surfaces, never a screen per state.
 - Create Gathering: five steps (What, When & where, Who's invited, Details, Review & Publish); step
