@@ -57,6 +57,18 @@ describe('the rule', () => {
     expect(playing(decide({ focused: true, candidates: ALL }))).toEqual(['friendCollision']);
   });
 
+  it('while Home is loading nothing is decided: the first frame after the spinner ranks everything that has landed', () => {
+    // Home passes focused: homeFocused && !loading. Behind the spinner the load's results arrive one by one; the bottom
+    // moment landing first must not take the slot from a higher one that lands a moment later.
+    const decide = createHomeMomentBudget();
+    const loading = true;
+    expect(playing(decide({ focused: true && !loading, candidates: { plansThisMonth: 'k' } }))).toEqual([]);
+    expect(playing(decide({ focused: true && !loading, candidates: { plansThisMonth: 'k', happeningRipple: 'x' } }))).toEqual([]);
+    const done = decide({ focused: true, candidates: { plansThisMonth: 'k', happeningRipple: 'x', planCompleted: 'g' } });
+    expect(playing(done)).toEqual(['planCompleted']);
+    expect(done).toMatchObject({ happeningRipple: false, plansThisMonth: false });
+  });
+
   it('nothing ready = nothing plays; empty keys are not candidates', () => {
     const decide = createHomeMomentBudget();
     expect(playing(decide({ focused: true, candidates: {} }))).toEqual([]);
@@ -93,7 +105,7 @@ describe('wiring', () => {
 
   it('Home asks once per render, with every moment\'s own rule as its candidate', () => {
     expect(home).toMatch(/createHomeMomentBudget\(\)/);
-    expect(home).toMatch(/focused: homeFocused/);
+    expect(home).toMatch(/focused: homeFocused && !loading,/); // never decided behind the loading spinner
     expect(home).toMatch(/friendCollision: collisionWouldPlay\(collision\)/);
     expect(home).toMatch(/planCompleted: homePlans\.completed && completedPlan\?\.play/);
     expect(home).toMatch(/friendsPlanningPlay === friendsPlanningKey/);

@@ -153,7 +153,9 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **No motion question in onboarding (owner idea "206", 2026-10-18; NOT item 206) MET BY IDEA "205", CLOSED, LOCKED, nothing built:** onboarding asks no animation preference (none exists; only the loader animates there); the phone's setting is respected. A later "Motion" entry in Settings would reopen idea "205" (DECLINED there), never added on its own.
 
-**One animation per Home visit (owner idea "207", 2026-10-18; NOT item 207) BUILT, option (a), LOCKED, NOT DEVICE-VERIFIED:** `utils/homeMomentBudget.js` gates Home's five arrival moments (see the Motion bullet); guard `homeMomentBudget.test.js` (16); Jest 476/6411; check C16 of the first-session checklist.
+**One animation per Home visit (owner idea "207", 2026-10-18; NOT item 207) BUILT, option (a), LOCKED, NOT DEVICE-VERIFIED:** `utils/homeMomentBudget.js` gates Home's five arrival moments (see the Motion bullet); guard `homeMomentBudget.test.js` (17); check C16 of the first-session checklist. Loading-gate fix (owner, 2026-10-18): nothing is decided while the spinner is up (`homeFocused && !loading`); limitation kept: a friend moment landing after the spinner clears settles if another already started.
+
+**Animation priority follows importance (owner idea "208", 2026-10-18; NOT item 208) MET AS BUILT by item 57 + idea "168"'s `MOTION_LEVELS`, nothing built:** new business offer = Signature (Level 3, the ONE, item 25); friend accepted / joined = Contextual (Level 2, item 28's join); recommendation changed, card loaded = no motion at all (cards/lists static, items 15/111/113); tab selected = instant (Level 1 forbids mode/tab motion). Stricter than proposed: the 3/1/1-star rows get no animation. No star scale, ranking table or new level added.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).

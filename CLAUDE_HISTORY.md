@@ -1,4 +1,29 @@
+# Animation priority follows importance (owner idea "208", 2026-10-18; NOT item 208): MET AS BUILT, nothing built
+
+- Proposal: priority by importance, e.g. new business offer 5 stars, friend accepted 4, recommendation changed 3, card loaded 1, tab
+  selected 1.
+- Met by item 57's `MOTION_LEVELS` + idea "168"'s two axes (`constants/motionLanguage.js`, guard `motion/motionLevels.test.js`):
+  a business responding = Level 3 Signature, exactly one (item 25, <= 1.5 s); a friend accepting your invite / joining = Level 2
+  Contextual (item 28's count roll + avatar + named line, medium tier; item 73 = one full, rest small); a friend request accepted =
+  a push opening their profile (item 133), no animation.
+- Stricter than proposed: "recommendation changed" (3 stars) and "card loaded" (1 star) get NO motion (cards/lists static, items
+  15/57; Best Pick reveal declined item 111; card entrances declined item 113; recommendations rerank silently); "tab selected" is
+  instant (Level 1: mode/filter/tab changes never animate). Concurrency inside the hierarchy = idea "207" (one Home moment per visit).
+- Not built: a star/importance scale, a priority table, or any new level; documenting low-importance rows would imply they may
+  animate. Not device-verified (motion overall: device checklists).
+
 # One animation per Home visit (owner idea "207", 2026-10-18; NOT item 207): BUILT (owner chose (a)), AUTOMATED-TEST VERIFIED (code level), NOT DEVICE-VERIFIED
+
+- Loading-gate fix (owner approved 2026-10-18, after review of the timing caveat): Home passes `focused: homeFocused && !loading`, so
+  nothing is decided while the loading spinner is up (nothing can animate behind it, so no wait is added). The spinner clears in one
+  update that already holds the dashboard (Right Now), Completed, plans-this-month and Picked For You, so those are ranked together on
+  the first frame after it, plus the friend moments whenever their data is already in (the usual case: the load still awaits offers
+  and "How was it?" after its main batch). Regression test in `homeMomentBudget.test.js` (17) + wiring guard on the exact gate. Full Jest 476 suites / 6,412 passed (11 todo). Not device-verified (check C16, slow-connection step added).
+  Remaining limitation (documented, NOT fixed, owner): a friend collision (own nearby-friend fetch) or friends-planning line (photos
+  signed after the dashboard) that lands AFTER the spinner clears still settles if a moment already started; guaranteeing screen
+  order would need delaying an animation or a queue, neither approved. Also: a moment's component treats "not allowed" as finished
+  and marks it seen, so "undecided" cannot be held open. Returning to Home reloads with the screen visible, so moments rank in
+  arrival order there (inherent to never delaying the screen). No animation, timing, wording, exemption or Reduce Motion change.
 
 - Owner decision (2026-10-18): option (a). Only the highest-positioned eligible Home moment animates on a visit; the others appear
   finished and count as seen (never replay); no queue, no sequential playback; exempt: weather fade, direct-interaction feedback,
@@ -13,9 +38,9 @@
   `HappeningRipple` take an `allowed` prop (default true; Discover unchanged) and still record seen through their own stores;
   `PlanCompleted` (`play`), `FriendsPlanning` (`playKey` null) and `CountRoll` (`play`) use their existing props. HomeScreen computes
   the decision above every early return (`useIsFocused` + one ref).
-- Timing (disclosed): Home's main load awaits Completed, plans-this-month and the Right Now data together, so those three are ranked
-  together; the friend collision (nearby friend, own fetch) and friends planning (photos signed after load) usually arrive later, so
-  if one of the first three already moved, they settle. That is the "one per visit, no queue" rule, not a defect.
+- Timing (disclosed at build; CORRECTED by the loading-gate fix below): the claim that Completed, plans-this-month and the Right Now
+  data were "ranked together" was wrong. Each is saved as its own request returns, and the rule was already deciding behind the
+  loading spinner, so whichever returned first took the slot (e.g. plans-this-month over Completed on a slow network).
 - Tests: `utils/homeMomentBudget.test.js` (16: highest of several, one per visit incl. a later higher one, stable re-renders, seen
   never replays or steals a later visit's slot, new visit, unfocused, empty keys, peeks never mark seen, every Home moment gated,
   decision above early returns, settled moments still recorded, exempt moments not asked, no timer/queue/animation in the rule);

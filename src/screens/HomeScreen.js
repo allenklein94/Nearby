@@ -563,13 +563,15 @@ export default function HomeScreen({ navigation }) {
 
   // Owner idea "207": one meaningful animation per Home visit (utils/homeMomentBudget.js). Each moment still decides by its
   // own rule whether it would play; only the highest on the screen moves, every other one shows its finished state and
-  // counts as seen. Weather fade, own-tap feedback and typed-ask result moments are exempt.
+  // counts as seen. Weather fade, own-tap feedback and typed-ask result moments are exempt. Nothing is decided while the
+  // loading spinner is up: the load's results land one by one behind it, and deciding then would hand the visit's slot to
+  // whichever request returned first instead of the highest moment on the screen.
   const homeFocused = useIsFocused();
   const homeMomentBudgetRef = useRef(null);
   if (!homeMomentBudgetRef.current) homeMomentBudgetRef.current = createHomeMomentBudget();
   const rightNowIds = rightNow.map((g) => g.id);
   const homeMoments = homeMomentBudgetRef.current({
-    focused: homeFocused,
+    focused: homeFocused && !loading,
     candidates: {
       friendCollision: collisionWouldPlay(collision) ? collisionPlayKey(collision) : null,
       planCompleted: homePlans.completed && completedPlan?.play ? homePlans.completed.id : null,
