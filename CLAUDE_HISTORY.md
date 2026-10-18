@@ -1,3 +1,19 @@
+# Home hierarchy: Intent > Immediate > Personalized > Social > Explore (owner idea "285", 2026-10-18; NOT item 285): LARGELY MET by the locked Home order; differs in ONE place (Best Pick / Picked For You sits above Your Plans + Nearby Right Now); "everything else contextually" = idea "284"'s lower tail, DEFERRED to the phone; ASSESSED, recommend no reorder before the phone, owner decision pending; nothing built; CLAUDE.md not changed
+
+As built (Home hierarchy of 2026-10-08, `utils/homeAttention.js` header + CLAUDE.md Recommendations "Home: intent box -> Picked For You
+(max 3) -> Your Plans (max 3) -> social line -> Nearby Right Now (max 3)"; fixed order, idea "203"): 1 Intent = the search box (met);
+2 Immediate relevance = Your Plans + Nearby Right Now (met as sections, but below the picks); Tonight is not a section (the time period
+drives the greeting, subtitle and quick picks, idea "202"; time ranks picks); 3 Personalized = Best Pick inside Picked For You (met, but
+ABOVE tier 2); 4 Social = the one friends line (items 39/40/41; met, after Your Plans); 5 Explore = Nearby Right Now's heading opens Happening
+Now and the Discover tab is "what exists" (no "More nearby" block; none needed: Discover is one tap, idea "238").
+The one real difference is order: the owner's list puts the person's own plans and what is happening now above the recommendation;
+today the recommendation leads. Trade-off: plans-first answers "what's next for me" at once but pushes the one recommendation down for
+people with plans; pick-first keeps Home's "what should I do" job leading (surface jobs). Recommendation: do not reorder before the first
+phone session (ideas "252"/"284": no Home restructure without device evidence; one change at a time). On the phone (attach to C12): with
+an account holding 1-3 plans and a live Right Now, judge whether the plans/right-now rows should lead; if so, the reorder is a small change
+to the fixed order (HomeScreen render order only; the dedupe priority `HOME_SECTION_PRIORITY` already ranks yourPlans above the picks),
+with C12 re-run. Everything below tier 5 = idea "284"'s observation (fold/move only what the phone shows).
+
 # Home doesn't compete with itself (owner idea "284", 2026-10-18; NOT item 284): MOSTLY MET (first viewport budgeted, recommendations pooled, one object once); the example order is not Home's; a long conditional lower tail EXISTS; ASSESSED, recommend no change before the phone (idea "252" LOCKED), owner decision pending (DEFERRED TO THE PHONE by the owner, 2026-10-18); nothing built; CLAUDE.md not changed
 
 Owner (2026-10-18): wait for the first phone session; do not trim Home yet ("defer the decision, not the concern"). Observation attached
