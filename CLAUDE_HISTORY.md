@@ -1,3 +1,15 @@
+# Time expansion (owner idea "179", 2026-10-18): MET by item 45 + the time-intent rules, LOCKED, nothing built
+
+Idea: "Nothing tonight." -> Nearby offers Tonight -> Tomorrow -> This weekend in place, no new screen. Finding: item 45's
+understood chips already let the person drop the time in place: ✕ on the When chip (`utils/askUnderstood.js`, key 'when' clears
+`dateWindow`; `removedUnderstood` stops the resolver re-reading it from the same words) re-runs the same search without the time
+limit, no retyping, no new screen; a different time is typed in the person's own words. Owner decisions (LOCKED): the time
+ladder DECLINED (a time suggestion nudging the person to change their plans; items 107/46: no time chip prompting a change, a
+search never asks to change its time, time only from the person's words; same as idea "177"'s declined "Need a different
+time?"). Future in-place time editing stays the understood-chips decision 3 (change/pickers), DEFERRED 2026-10-15 until a real
+phone shows remove-only isn't enough. Principle: Nearby interprets the time the person states; it never decides when they ought
+to go. No suggestions, prompts, chips, pickers, search behaviour or code changed.
+
 # Visual distance expansion (owner idea "178", 2026-10-18): COVERED by idea "177"'s deferral, LOCKED, nothing built
 
 Idea: "Pickleball" -> "Nothing within 2 miles." -> person picks 2 mi -> 5 mi -> 10 mi while the search radius expands visually.

@@ -99,6 +99,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Visual distance expansion (owner idea "178", 2026-10-18) COVERED by idea "177"'s deferral, LOCKED, nothing built:** radii only from `SEARCH_RADIUS_OPTIONS` (15/30/50; no other ladder, no "Nothing within 2 miles" state); expanding-radius animation DECLINED (items 55/58/101; any later one needs its own motion spec + approval, never before the server returns).
 
+**Time expansion (owner idea "179", 2026-10-18) MET by item 45 (✕ on the When chip, in place) + time from the person's words, LOCKED, nothing built:** Tonight -> Tomorrow -> This weekend ladder DECLINED (items 107/46, idea "177"); time editing stays behind the understood-chips change/pickers deferral (2026-10-15).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
