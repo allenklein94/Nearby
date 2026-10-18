@@ -1,4 +1,9 @@
-# Stable structure, changing content (owner idea "203", 2026-10-18; NOT item 203): ASSESSED, MET AS BUILT, OWNER DECISION PENDING, nothing built
+# Stable structure, changing content (owner idea "203", 2026-10-18; NOT item 203): MET AS BUILT (owner chose (a)), CLOSED, LOCKED, no new rule, nothing built
+
+- Owner decision (2026-10-18): record as met; no new rule (it would duplicate existing constraints without changing behavior). Already
+  established: five fixed tabs + screen jobs; Home and Discover sections keep their order (personalization changes content / ranking
+  within a section, not layout); cards and lists never move or animate into new positions; Back restores state + scroll, pushed screens
+  give a way back; idea "202" changes wording and quick picks, not layout; empty sections may be omitted, the rest keep their order.
 
 - Proposal (a principle): don't constantly change the interface; personalization can disorient; the structure stays stable, the content
   changes; people always know where they are.
