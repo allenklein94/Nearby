@@ -143,6 +143,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"A window into the local moment" (owner idea "201", 2026-10-18; NOT item 201) MET BY EXISTING IMPLEMENTATION, CLOSED, LOCKED, nothing built:** "What do you want to do nearby?" stays the one concept; Discover = what exists nearby (Happening Now one view, not the objective); Home = decide what to do; items 26/27/108/120 kept; motion only for real events. No second north star, rule or build.
 
+**Home changes with the moment (owner idea "202", 2026-10-18; NOT item 202) ASSESSED, MET AS BUILT, OWNER DECISION PENDING, nothing built:** `getTimePeriod` already drives the greeting, the subtitle "What sounds good this morning / this afternoon / tonight / this weekend?", the quick-picks header + picks, and their Discover time filter (item 137b); ranking already weighs time. Proposed "What's happening…" / "What are you doing tonight?" reframe Home away from intent; recommended keep as built.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

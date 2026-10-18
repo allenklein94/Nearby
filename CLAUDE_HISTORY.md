@@ -1,3 +1,21 @@
+# Home changes with the moment (owner idea "202", 2026-10-18; NOT item 202): ASSESSED, MET AS BUILT, OWNER DECISION PENDING, nothing built
+
+- Proposal: Home's language and recommendations change with the time of day (morning "What's happening today?", afternoon "What's
+  happening this afternoon?", evening "What are you doing tonight?"); no big animation.
+- Met as built (code reading, `screens/HomeScreen.js`, `utils/timeContext.js`): one period rule `getTimePeriod` (weekend; else morning
+  < 12, afternoon < 18, evening) drives (1) the greeting `getGreeting` ("Good morning / afternoon / evening, {name} 👋", line ~1777);
+  (2) the subtitle `ui.home.periodSubtitle.<period>` ("What sounds good this morning? / this afternoon? / tonight? / this weekend?",
+  11 languages, line ~1778); (3) the quick-picks header `ui.home.period.*` ("Good Morning / This Afternoon / Tonight / This Weekend")
+  and the quick picks themselves (`getPersonalizedQuickPicks(period, ...)`); (4) each pick opens Discover under the same time
+  (`PERIOD_DATE_FILTER`, item 137b: evening -> Tonight filter, morning/afternoon filters). Recommendations already weigh time (ranking
+  ladder tier 5; Best Pick "Tonight" only when the pick is tonight, item 112). No motion involved (Home is doors, item 110).
+- Proposed wording differences, not recommended: "What's happening ..." frames Home as an events window, against Home's job ("what
+  should I do now", intent-first, idea "201" just closed); "What are you doing tonight?" asks what the person is already doing. The
+  built "What sounds good ...?" asks for intent. Changing it = 4 strings x 11 languages for no functional gain.
+- Observation only (not a defect claim, not built): `period` is read at render, so a Home left open across a boundary (e.g. 5:59 ->
+  6:00 PM) changes wording on the next redraw, like item 108's separate midnight-rollover follow-up.
+- Recommendation: (a) keep as built. No code, migration, string or motion changed.
+
 # "A window into the local moment" (owner idea "201", 2026-10-18; NOT item 201): MET BY EXISTING IMPLEMENTATION (owner final), CLOSED, LOCKED, nothing built
 
 - Owner final decision (2026-10-18): met. "What do you want to do nearby?" stays the single guiding concept; Discover stays focused on
