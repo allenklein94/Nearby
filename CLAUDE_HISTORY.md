@@ -1,4 +1,4 @@
-# Each placement has a different purpose (owner idea "262", 2026-10-18): MET AS BUILT (items 52/91/194 + item 28's cross-surface test, all LOCKED); one within-Home observation recorded for the device session; assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# Each placement has a different purpose (owner idea "262", 2026-10-18): MET AS BUILT (items 52/91/194 + item 28's cross-surface test, all LOCKED); one within-Home observation kept as a device-testing note (not a defect, not a rule); CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 The rule already exists, word for word in spirit: item 28's cross-surface test (owner, 2026-10-08, LOCKED): the same gathering may
 appear on different surfaces only when each copy gives a DIFFERENT reason or action (Home = act now with personal reasons; Discover =
