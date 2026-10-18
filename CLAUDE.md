@@ -345,7 +345,7 @@ Travel & Getaways interest weakly matching the 10 lodging categories.
 **Waiting on evidence (do not build without it):** Momentum fold decision (`momentum_viewed` /
 `momentum_cta_tapped` usage); removal of any relationship tool (B9 usage review); item 152 intent ->
 action conversion; item 159 business-declared reach (only if requests are consistently too far); item
-128 unmatched-ask analysis (trigger script `scripts/analysis/item-128-unmatched-ask-trigger.sql`); item 204
+128 unmatched-ask analysis (also gates idea "177"'s person-tapped radius step; trigger script `scripts/analysis/item-128-unmatched-ask-trigger.sql`); item 204
 demand-backed acquisition (needs >= 25 distinct people per category in the market); a "High demand"
 label (needs real comparison data); Discover first-viewport fit (needs a phone).
 
