@@ -1,4 +1,10 @@
-# Home hierarchy: Intent > Immediate > Personalized > Social > Explore (owner idea "285", 2026-10-18; NOT item 285): LARGELY MET by the locked Home order; differs in ONE place (Best Pick / Picked For You sits above Your Plans + Nearby Right Now); "everything else contextually" = idea "284"'s lower tail, DEFERRED to the phone; ASSESSED, recommend no reorder before the phone, owner decision pending; nothing built; CLAUDE.md not changed
+# Home hierarchy: Intent > Immediate > Personalized > Social > Explore (owner idea "285", 2026-10-18; NOT item 285): LARGELY MET by the locked Home order; differs in ONE place (Best Pick / Picked For You sits above Your Plans + Nearby Right Now); "everything else contextually" = idea "284"'s lower tail, DEFERRED to the phone; KEEP AS BUILT, decision pending device evidence (owner, 2026-10-18); nothing built; CLAUDE.md not changed
+
+Owner (2026-10-18): keep the current order. Home has two jobs (what could I do / what is already happening in my life); neither is assumed
+to matter more. The dedupe rule (Your Plans wins when a gathering would show twice) is separate and stays; it does not move the section.
+C12 answers three questions for an account with 1-3 plans + a live Right Now (plans understood at once? recommendation still prominent?
+Home reads as discovery, not an activity dashboard?). If plans + live activity deserve priority: change ONLY Home's display order; no
+broader restructure, no new screens, nothing before the evidence (consistent with idea "284").
 
 As built (Home hierarchy of 2026-10-08, `utils/homeAttention.js` header + CLAUDE.md Recommendations "Home: intent box -> Picked For You
 (max 3) -> Your Plans (max 3) -> social line -> Nearby Right Now (max 3)"; fixed order, idea "203"): 1 Intent = the search box (met);
