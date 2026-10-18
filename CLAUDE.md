@@ -117,6 +117,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Business side asynchronous (owner idea "187", 2026-10-18; NOT item 187) MET AS BUILT, LOCKED:** direct/urgent request pushes, hourly digest, automatic-reply pushes, item 48's arrival, items 62/165 for the customer; "New nearby demand" DECLINED (one request = an opportunity; "demand" = item 128 aggregates). **Exact-opportunity push (idea 187 fix) BUILT, NOT DEVICE-VERIFIED:** `business_opportunity_received` with a request id opens Opportunities on that request (item 140's focus + outline, kept as built, no fade; scrolled into view once; stale = "no longer available", nothing outlined; navigation tests 47/47); journey `notificationAction` 9/9, prod journeys 559/559. Open: real push on a phone, the scroll on a device, email fallback (Resend secrets).
 
+**"Business is interested" state (owner idea "188", 2026-10-18; NOT item 188) MET AS BUILT, LOCKED, nothing built:** items 48/13/140/151/187 (opportunity arrives, stays open to the deadline, expiry warning, state-driven actions, Offer sent -> Accepted -> Redeemed / expired); "Considering"/"Interested" state DECLINED both sides, no business draft/shortlist (idea "150"); see the meaningful-response bullet.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -362,7 +364,7 @@ empty DB (never done). `item168_backup` (the rollback snapshot) stays (owner re-
 ends the clean rollback (`PRODUCT_AUDIT/ITEM_168_MIGRATION_RUNBOOK_2026-10-11.md`). Later: relevance review of a broad
 Travel & Getaways interest weakly matching the 10 lodging categories.
 
-**Waiting on evidence (do not build without it):** Momentum fold decision (`momentum_viewed` /
+**Waiting on evidence (do not build without it):** a business "set aside" for requests (idea "188": only if real owners show the need); Momentum fold decision (`momentum_viewed` /
 `momentum_cta_tapped` usage); removal of any relationship tool (B9 usage review); item 152 intent ->
 action conversion; item 159 business-declared reach (only if requests are consistently too far); item
 128 unmatched-ask analysis (also gates idea "177"'s person-tapped radius step; trigger script `scripts/analysis/item-128-unmatched-ask-trigger.sql`); item 204
@@ -452,6 +454,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   guard `minuteClock.test.js`): ticks only near a shown window, paused in background, plain text, never motion or urgency styling.
 - **"Request sent" count (idea 158, LOCKED):** "We asked N nearby businesses" = businesses really reached by that call (`notifiedCount`,
   one `business_request_offers` row each), never searched/considered/matched; 0 or duplicate = no line of reach, no rings (journey `requestSentCount`).
+- **Only a meaningful response reaches the customer (item 89 + idea "188", LOCKED):** a real recorded business action that communicates an
+  outcome or concrete option (offer, genuine alternative, explicit decline where the workflow tells them, another substantive reply;
+  automatic replies are real offers). Viewing, opening, leaving open, considering, delivery or receipt never make a customer status,
+  push, timeline step or implied commitment; a recorded action not shown today needs its own decision before it notifies.
 - A Home claim needs a visible, substantiated trigger of its own kind, and its CTA names where it goes.
   Home may say nothing; no filler rows or zero stats (`homeQuiet.js`).
 

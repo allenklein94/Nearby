@@ -1,3 +1,21 @@
+# "Business is interested" as a state (owner idea "188", 2026-10-18; NOT item 188): MET AS BUILT, LOCKED, nothing built
+
+Idea: Request received -> Considering -> Offer sent, so a business can work through demand without committing at once.
+Finding (kept as is): new opportunity = item 48's one-time arrival + "New opportunity" / "Good match for your business" (direct
+or urgent requests also push and open that request, idea "187"); an unanswered opportunity stays open until the request
+deadline, never a forced reply; "Request expires soon" ~2 h before opens that exact request with its current state (item
+140); each card's action comes from its real state (`opportunityPrimaryAction`: Accept & Offer / Alternative / Decline); Offer
+sent -> Accepted -> Redeemed on the same card (item 13), "No longer open" once expired (idea "151"). Owner decisions (LOCKED):
+NO "Considering"/"Interested" state for business or customer; no business-side draft or shortlist the owner must manage (idea
+"150", four nouns). Item 89 clarified (owner, LOCKED): the customer is told only a meaningful response = a real recorded business
+action that communicates an outcome or concrete option (offer sent, a genuine alternative, an explicit decline where the
+existing workflow communicates it, another substantive reply the workflow supports; automatic replies are real offers). NEVER
+counts: opening/viewing, leaving open, saving/considering, internal events, a push delivered or the request received, inferred
+intent; none of these produces a customer status, push, timeline step or implied commitment ("picked up", "considering",
+"reviewing"). An action recorded but not shown to the customer today does not by that alone get a new notification (separate
+decision). Business-internal tracking and item 48 are unaffected. Waiting on evidence: real owners needing to set requests
+aside reopens it; never built without it. Verification = existing checklists (items 48, 13, 140 + offer checklist).
+
 # Business side asynchronous (owner idea "187", 2026-10-18; NOT item 187): MET AS BUILT, LOCKED + exact-opportunity push FIXED
 
 Idea: the business needn't sit in the dashboard: a request comes in later ("New nearby demand"), the opportunity appears, the
