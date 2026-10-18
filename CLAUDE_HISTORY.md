@@ -1,4 +1,8 @@
-# "Crazy but smart" shortlist (owner, 2026-10-18; 15 moments, NOT numbered items): ASSESSED, owner decision pending on #15, nothing built
+# "Crazy but smart" shortlist (owner, 2026-10-18; 15 moments, NOT numbered items): #1-#14 MET AS BUILT, CLOSED; #15 DEFERRED, nothing built
+
+- Owner decision (2026-10-18): close #1-#14 as met as built. #15 DEFERRED, not permanently rejected: no build now; items 167 and
+  25 stay LOCKED; see the existing first-reply signature on a real phone first; if it underwhelms, revisit #15 using item 101's
+  motion-spec template.
 
 - #1 request signal to businesses = "We asked N" + two soft rings after the server returns (items 55/158/159; nothing travels to
   named businesses, idea "209"). #2 offer back = travel into its card + the ONE signature (items 23/25), pill/push elsewhere
