@@ -1,3 +1,14 @@
+# Don't make the user remember context (owner idea "245", 2026-10-18): MET AS BUILT, assessed, owner decision pending, nothing built
+
+Principle already locked as "Infer first; never re-ask what Nearby knows" + item 112 (carry party size/time/category/place forward).
+Carriers checked in code: `utils/askUnderstood.js` (item 45 chips), `utils/fromWhatYouSaid.js` + `FromWhatYouSaidCard` (Create, items
+82/85), `services/askToBusiness.js` `askBusinessParamsFromAsk` / `prefillFromAsk` + `askMissingFields` (AskBusiness, item 84: only
+missing required fields are asked), `partySizeFromText` (item 87), `utils/requestTimeline.js` (request status), `presentOffer` +
+item 32's plan card ("{what} at {business}", day/time/party once), `recommendationContext.js` (why), GatheringChat header when line
+(idea "244"). Journey coverage: `outdoorMatch` (ask -> Create/AskBusiness carry-over), `offer` (request -> booked plan), `peopleMatch`.
+Uncovered: the chat header line (client-only), all device checks. Deliberate limits: no WHERE row in Create (idea "182"), no inferred
+facts, no 1:1 plan card (idea "244" deferred). No new rule (would duplicate the locked one).
+
 # Messages keep the plan attached (owner idea "244", 2026-10-18): DECIDED, header when line BUILT, NOT DEVICE-VERIFIED
 
 Owner decision: approve the small header improvement, decline inferred message context, defer sharing a plan into a 1:1 chat.
