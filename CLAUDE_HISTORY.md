@@ -1,4 +1,10 @@
-# Trending animation from real momentum (owner idea "199", 2026-10-18; NOT item 199): ASSESSED, LARGELY DECIDED BY ITEM 75, OWNER DECISION PENDING, nothing built
+# Trending animation from real momentum (owner idea "199", 2026-10-18; NOT item 199): KEEP AS BUILT (owner approved; item 75 re-confirmed), CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18; worded "close item 75 as keep as built", i.e. idea "199" closed and item 75 re-confirmed): attendance-based
+  popularity and the Trending section kept; recommendation cards and discovery lists stay static; private Interested is never a signal
+  for other viewers; no attendance growth-rate or momentum signal without usage evidence; no animation when a gathering reaches five
+  approved attendees (the narrow variant DECLINED); item 26's single ring on the Happening Now heading stays the one discovery-motion
+  exception. No code changes or new animations.
 
 - Proposal: when something genuinely gains interest, "Trending near you" gets a subtle upward motion, then settles; no flashing, no
   fake activity.
