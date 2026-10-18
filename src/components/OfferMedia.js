@@ -5,31 +5,19 @@ import { Video, ResizeMode } from 'expo-av';
 import { getSignedBusinessOfferMediaUrl } from '../services/businessFulfillment';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
-import { mediaFitMode } from '../utils/mediaFit';
+import { OFFER_MEDIA_FIT } from '../utils/mediaFit';
 import { offerMediaView } from '../utils/offerPresentationEngine';
 
-// Item 10: the business's own image, formatted to the frame. Shaped like the frame = fills it; any other shape (a flyer, a
-// square graphic, a phone video's poster) = shown whole over a blurred copy of itself, so nothing the business made is cut.
+// Item 10: the business's own image, formatted to the frame. Always shown whole (idea "191": never cropped, whatever its
+// shape), over a blurred copy of itself that fills the rest of the frame, so nothing the business made is cut.
 function FittedImage({ uri, style, absolute = false, onFail }) {
-  const [frame, setFrame] = useState(null);
-  const [size, setSize] = useState(null);
-  useEffect(() => {
-    let cancelled = false;
-    setSize(null);
-    if (uri) Image.getSize(uri, (w, h) => { if (!cancelled) setSize({ w, h }); }, () => {});
-    return () => { cancelled = true; };
-  }, [uri]);
-  const mode = mediaFitMode(size?.w, size?.h, frame?.w, frame?.h);
   const fill = { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, width: '100%', height: '100%' };
   // The backdrop overhangs the frame so the blur's soft edge falls outside the clip (no light halo at the edges).
   const overhang = { position: 'absolute', top: -BLUR_OVERHANG, left: -BLUR_OVERHANG, right: -BLUR_OVERHANG, bottom: -BLUR_OVERHANG };
   return (
-    <View
-      style={[absolute ? fill : style, { overflow: 'hidden' }]}
-      onLayout={(e) => setFrame({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
-    >
-      {mode === 'contain' ? <Image source={{ uri }} style={overhang} resizeMode="cover" blurRadius={18} accessible={false} /> : null}
-      <Image source={{ uri }} style={fill} resizeMode={mode} onError={onFail} />
+    <View style={[absolute ? fill : style, { overflow: 'hidden' }]}>
+      <Image source={{ uri }} style={overhang} resizeMode="cover" blurRadius={18} accessible={false} />
+      <Image source={{ uri }} style={fill} resizeMode={OFFER_MEDIA_FIT} onError={onFail} />
     </View>
   );
 }

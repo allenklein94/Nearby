@@ -1,3 +1,19 @@
+# Every offer image shown whole, never cropped (owner, idea "191" follow-up, 2026-10-18; changes item 10): BUILT, NOT DEVICE/BROWSER-VERIFIED
+
+Owner decision: show every photo whole inside the existing fixed frame, including photos shaped close to the frame; keep the
+frame, accept empty space; no change to card structure, no new preview screen. Built: `utils/mediaFit.js` now exports one
+`OFFER_MEDIA_FIT = 'contain'`; `mediaFitMode` and `COVER_TOLERANCE` (item 10's near-frame "cover" case, up to ~20% trimmed) are
+removed. `components/OfferMedia.js` `FittedImage` always draws the whole image over its blurred copy (the existing item 10 "whole"
+treatment; the image-size/frame measuring it needed for the cover decision is gone). Applies everywhere reply media renders, since
+all of them go through `OfferMedia`: customer offer card (`OfferCustomerBody`), the business's live Customer Preview (item 49),
+`AcceptedBusinessOfferCard`, BusinessRequestDetail; the video poster before tap too. Unchanged: screened video muted + tap-to-play
+(playing video already CONTAIN), legacy "Video attached", logo beside the name only (`LOGO_FIT` contain), media only from the reply,
+the 180-pt frame, the card structure. Not touched: the business's own creative-library thumbnails (a picker, not reply media).
+Tests: `mediaFit.test.js` rewritten (one fit, cover case gone, OfferMedia never crops business media except the blurred backdrop);
+full Jest 473 suites / 6,370 passed. Business web export regenerated. Checklists: offer section 5 photo check rewritten to "every
+image whole" + a 16:9 photo check (record how the thin blurred strips look; report only); item 49 check 14 reads "the whole photo,
+never cropped". NOT VERIFIED: no phone or browser has rendered it; offer section 5 + item 49 check 14 still to run.
+
 # Status terminology: met vs verified (owner, 2026-10-18, LOCKED)
 
 Owner rule, recorded as given: MET = the required behavior is already implemented (cite the items, code paths or existing tests;

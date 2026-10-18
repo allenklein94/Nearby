@@ -95,8 +95,9 @@ Anthropic credit is a prerequisite (Setup), not an owner.
 
 ## 5. Media presentation (items 10-11, locked by item 17)
 
-- [ ] Landscape photo fills the frame; portrait flyer, square graphic with text and 9:16 video poster are shown whole over
-  a blurred copy (no text cut off, no bars). Note how strong the blur looks on iOS vs Android.
+- [ ] (Updated for idea "191", 2026-10-18) EVERY image is shown whole, never cropped: a landscape photo shaped almost like the
+  frame, a portrait flyer, a square graphic with text and a 9:16 video poster all show every edge (no text or product cut off),
+  with a blurred copy of the image filling the rest of the frame (no hard bars). Note how strong the blur looks on iOS vs Android.
 - [ ] Video: poster only, nothing plays or downloads until tapped; then plays muted with controls.
 - [ ] Wide wordmark logo and square logo both fit their circle without touching the edge.
 - [ ] Two businesses replying to the same request: both cards have the same structure; only content differs.
@@ -106,8 +107,8 @@ Anthropic credit is a prerequisite (Setup), not an owner.
   the business profile (also when the profile has photos).
 - [ ] (Idea "191") The logo appears only beside the business name (same small circle on every card); a business with no screened
   logo shows no logo and no placeholder; no colour wash, enlarged logo or artwork made from it anywhere on the card.
-- [ ] (Idea "191") Note for the owner: a photo shaped roughly like the frame fills it with a small crop (item 10); record whether
-  any such photo lost something that mattered (text, product edge). Report only.
+- [ ] (Idea "191") A 16:9 landscape photo (close to the frame's shape): all four edges of the photo are visible; record how the
+  thin blurred strips at the sides/top look (acceptable vs distracting). Report only; the no-crop rule stays.
 - [ ] "Today · 5–9 PM" combined line when valid until is at or after the window end; the countdown keeps its own line
   when ending soon, and updates without leaving the screen.
 
