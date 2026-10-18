@@ -1,4 +1,11 @@
-# Sheets animate from their object (owner idea "229", 2026-10-18; NOT item 229): MET WHERE AUTHORIZED, recommended KEEP AS BUILT, owner decision pending, nothing built
+# Sheets animate from their object (owner idea "229", 2026-10-18; NOT item 229): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built, no new motion or rules. Item 44's map-pin-to-business-sheet transition kept
+  (travelling pin-coloured outline; text readable and buttons usable from the first frame; Reduce Motion = plain slide); business
+  list rows keep the plain slide (item 44 applies only to map pins); gathering and perk cards keep opening in place on Discover;
+  detail screens keep opening over the existing context with Back restoring exact state; items 95, 96, 97 and 103 stay locked
+  against card-to-detail morphing. Next step: test item 44 on a real iPhone and Android phone before considering any motion
+  extension. No code changes, no new rule, no locked decision reopened.
 
 - Proposal: sheets animate from the object that triggered them (tap a card -> the card expands; continuity), never "card disappears
   -> mysterious new screen appears".
