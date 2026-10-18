@@ -1,3 +1,18 @@
+# Social proof never fake (owner idea "198", 2026-10-18; NOT item 198): MET AS BUILT + RECORDED AS ONE STANDING RULE, LOCKED, nothing built
+
+- Proposal: put into the product rules: never animate "People are interested" unless people actually are; never manufacture
+  "Trending" unless the ranking criteria support it; never create fake urgency.
+- Already enforced (cited, not re-run): "No invented numbers, signals or states" (Truthfulness); Interested is private (2026-10-17,
+  LOCKED; no "N people are interested" anywhere, `utils/recommendationCard.js`; host-only aggregate, guard
+  `interestedHostCountGuard.test.js`); Trending = >= 5 approved attendees everywhere (`constants/trending.js`,
+  `TRENDING_ATTENDANCE_MIN`); urgency: item 47 (countdown only in an open offer's real last 30 min, amber never red,
+  `offerCountdown.test.js`), item 116 (real spot counts, no scarcity styling; item 144's "1 spot left" highlight declined), item 108
+  (minute clock, never urgency styling, `minuteClock.test.js`), item 89/159/186 (no fake progress, no "still waiting" pushes); motion
+  truth rule (`motion/motionTruth.test.js`).
+- Done: one short bullet under CLAUDE.md "Truthfulness" naming the rule and its existing sources; adds the requirement that a new
+  social-proof or urgency cue cites its real source before shipping. Documentation only: no code, guard, string, migration or motion
+  changed; no new test written (the existing guards above cover today's surfaces; a cross-cutting guard was not built).
+
 # "Friends liked this too" (owner idea "197", 2026-10-18; NOT item 197): KEEP AS BUILT (owner approved), all three additions DECLINED, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): keep as built. DECLINED: "{Friend} is interested" (exposes private Interested; 2026-10-17 privacy rule,

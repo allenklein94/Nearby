@@ -461,6 +461,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Money figures never mix:** fee owed (billing estimate, itemized), value of offers redeemed
   (`get_partner_offer_value`, owner-set prices), potential value ("up to $X", request data only). Never
   "revenue", "earnings" or customer spend without an explicit transaction amount (none exists).
+- **Social proof and urgency are never fake (owner idea "198", 2026-10-18, LOCKED):** no "people are interested" line, count or motion
+  unless real people are (and Interested itself is never shown beyond the host's aggregate, see Privacy); "Trending" only when its
+  criteria hold (`constants/trending.js`); no fake urgency: countdowns only from a real deadline (item 47's last 30 min, amber, never
+  red), "N spots left" only from real counts with no scarcity styling (item 116), time labels never urgency-styled (item 108), motion
+  never claims what the data doesn't (motion truth rule). A new social-proof or urgency cue cites its real source before it ships.
 - Trending = >= `TRENDING_ATTENDANCE_MIN` (5) approved attendees, everywhere (`constants/trending.js`).
   Place/time labels each mean one thing (`constants/surfaceVocabulary.js`); add a label there before using it.
 - **One gathering end, one check-in window (owner, 2026-10-17, LOCKED):** end = start + duration, else start + 30 min; NOT active at the
