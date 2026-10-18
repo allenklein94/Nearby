@@ -1,4 +1,9 @@
-# "New screen when the job changes" (owner idea "222", 2026-10-18; NOT item 222): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+# "New screen when the job changes" (owner idea "222", 2026-10-18; NOT item 222): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built. Item 45 and Rule 14 stay unchanged as the sources of truth; Discover
+  browsing, filters, time views and Happening Now stay in place; editing a gathering, creating a business offer and
+  account/security tasks keep their justified workflows; Home's "See all plans" -> Plans kept as decided under ideas "216",
+  "218", "220" and "221". No new rule, duplicate principle or code changes.
 
 - Proposal: same job -> stay on the same surface; new job -> new surface. Examples: browsing events stays on Discover; viewing all
   your plans could expand; editing a gathering, creating a business offer, account/security settings = dedicated workflows.
