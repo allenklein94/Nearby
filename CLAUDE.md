@@ -173,6 +173,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Happening Now in place on Discover (owner idea "219", 2026-10-18; NOT item 219) MET AS BUILT, CLOSED, LOCKED, no new rule, screen or code:** the Happening Now heading (item 27), time chips (item 34), "See all" (item 206) and map pill (item 120) switch Discover to the full list in place via `openDateView` (no navigation, no separate screen); the full list replaces the shorter sections (no duplicate gatherings); returning restores Discover's prior state + scroll; Home opens Discover straight into that list (`RIGHT_NOW_VIEW`) and leaving restores Discover's prior state; "🔴 Happening Nearby" stays the separate business-moments viewer.
 
+**Home is a preview, never the whole list (owner idea "220", 2026-10-18; NOT item 220) MET AS BUILT, ASSESSED, owner decision pending, nothing built:** `utils/homeAttention.js` caps Home: `MAX_HOME_ATTENTION` / `MAX_HOME_PLANS` / `MAX_HOME_RIGHT_NOW` = 3 each; Your Plans' "See all plans" opens Plans (the expanded surface, ideas "216"/"218"); Home never expands in place (item 110); empty sections omitted (`homeQuiet.js`). Not built: a "3 upcoming" count heading or chip row instead of rows (a new Your Plans design; the rows already show what/when/party).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

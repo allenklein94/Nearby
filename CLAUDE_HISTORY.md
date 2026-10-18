@@ -1,3 +1,15 @@
+# Home is a preview, never the whole list (owner idea "220", 2026-10-18; NOT item 220): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+
+- Proposal: Home shows a preview, not the entire database (e.g. Your Plans "3 upcoming" + [Coffee] [Beach Volleyball] + See all ->
+  an expanded surface); Home never expands infinitely.
+- Met: `src/utils/homeAttention.js` caps every Home list at 3 (`MAX_HOME_ATTENTION` incl. the Best Pick lead, `MAX_HOME_PLANS`,
+  `MAX_HOME_RIGHT_NOW`; `selectHomePlans` puts commitments first, the full list lives on Plans); "See all plans"
+  (`HomeScreen.js`) navigates to Plans (Upcoming / Hosting / Past), as kept under ideas "216" and "218"; "Home never expands
+  sections in place" + item 110 (LOCKED); empty sections are omitted, never filler (`homeQuiet.js`).
+- Difference: the example's "3 upcoming" count + title chips is a different Your Plans presentation; today Home shows up to 3
+  rows (what, when, party). Not built: changing it would be a new design with its own ask.
+- Recommendation: close as met as built.
+
 # Happening Now in place on Discover (owner idea "219", 2026-10-18; NOT item 219): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built. Heading, time chips, See all and map pill keep switching to the full list in
