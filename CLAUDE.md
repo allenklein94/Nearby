@@ -73,6 +73,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **The app never hijacks you (owner item 166, 2026-10-18) MET BY ITEMS 20 + 165, LOCKED, nothing built, NOT DEVICE-VERIFIED until** offer checklist section 4's two item 166 checks (non-interruption + VoiceOver/TalkBack) are recorded: the arrival pill never navigates by itself, blocks or interrupts scrolling; tap = the request + item 23 travel; leaves after 6 s (first-ever 9 s) or a swipe; polite screen-reader announcement; Reduce Motion = no animation. No visible ✕ or screen-reader dismiss action unless that phone test shows a concrete defect.
 
+**Full-screen moments are extremely rare (owner item 167, 2026-10-18) MET AS BUILT (stricter than proposed), LOCKED, nothing built, NOT DEVICE-VERIFIED:** see the Motion bullet; first offer, accept/confirmation, bookings, business transactions and gathering creation keep their inline/context presentation (items 12/25/32/43/44/51 + offer-screen rule).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -723,6 +725,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Truthful triggers (owner item 162, documentation only):** every `SEQUENCES` entry names its trigger in `MOTION_TRIGGERS`
   (`constants/motionLanguage.js`: kind, stored state or real source, server function, playing files); a new sequence registers
   its trigger; no new server event just for an animation (item 125); never claims delivery (item 159). Guard `motion/motionTriggers.test.js`.
+- **Full-screen celebration = the mutual match only (owner item 167, LOCKED):** the match modal (`motion/MatchAnimation.js`, 🤝/❤️) is
+  the ONE full-screen overlay moment; first offer (items 25/51), accept/confirm (items 12/32), bookings and business transactions
+  (calm tone, no confetti), gathering creation (item 43's panel) and everything else stay inline, in an existing sheet/banner or an
+  approved small animation. A new full-screen moment needs the owner to reopen the relevant item. Other modals are tools the person opens.
 - **First viewing may animate, revisiting never replays (owner item 164):** a real change the person has not seen plays its existing
   moment once when they arrive (push tap included: items 13/21/132/48 as locked); already seen = never again; state and text readable
   from frame one; Reduce Motion = settled; no app-wide layer, dispatcher or new animated place.

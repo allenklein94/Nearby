@@ -1,3 +1,17 @@
+# Full-screen moments should be extremely rare (owner item 167, 2026-10-18): MET AS BUILT (stricter), LOCKED, nothing built
+
+Idea: reserve full-screen moments for first-ever offer, major confirmation, important transaction, maybe plan created;
+everything else inline / bottom sheet / banner / micro-animation. Inventory of `src/motion` + `src/components` (Modal /
+absoluteFill): the ONLY full-screen celebration is the match modal (`motion/MatchAnimation.js`, two `<Modal>` variants:
+🤝 friend, ❤️ dating; item 20 tap-to-end + swipe-down). Other absoluteFill uses sit inside one card; other Modals are tools
+the person opens (filters, invite, report, OfferOutcomeModal, story viewer, ...), not moments. The proposal's candidates are
+already inline: first-ever reply (pill + card line, 9 s hold) / business first offer words only (items 25/51); accept =
+card morph in place + merge into Your Plan (items 12/32); "✓ Visit confirmed" on the card; group "You're booked" card
+(`BookedCelebration`, calm); gathering creation = Create's own "Your gathering is live!" panel (item 43); pin sheet (item 44);
+arrival pill (items 165/166). Owner LOCKED: full-screen overlays only for the existing mutual friend/dating match; the rest keep
+their presentation; no new full-screen celebration, overlay or animation; reopening a locked item needs explicit owner approval.
+Documentation only (no code, no guard). Records the product rule; no screen verified on a device.
+
 # The app never hijacks you (owner item 166, 2026-10-18): MET BY ITEMS 20 + 165, LOCKED, nothing built, NOT DEVICE-VERIFIED
 
 Idea: while browsing a small "New offer" appears; tap = view, dismiss = keep browsing; the app doesn't hijack you.
