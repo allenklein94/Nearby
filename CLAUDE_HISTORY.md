@@ -1,3 +1,21 @@
+# Retention from relevant events, never nudges (owner idea "186", 2026-10-18; NOT item 186): MET + two engagement pushes RETIRED, LOCKED
+
+Idea: retention through "something relevant happened", never "come back for your daily streak". Finding: met by item 53 (streak
+push retired) and the event-driven pushes (reply arrives item 62, friend joined, starts soon, plan confirmed/changed, messages;
+idea "185"; items 114/131: nothing by interest or inference). Two live scheduled pushes contradicted it and are RETIRED (owner,
+2026-10-18): `first_mission_reminder` ("Your mission is still waiting", daily job `send-first-mission-reminders`, day 3-4 after
+signup with no join) and `reward_tier_nudge` ("Almost at {tier}", Wednesday job `send-momentum-reward-nudges`; item 53's
+20270300 had kept it as a separate decision). Migration `20270329_retire_engagement_nudges.sql` unschedules both jobs, drops
+`send_first_mission_reminders()` and `send_momentum_nudges()` (nothing left in it), fails any queued/retrying push of either type.
+KEPT (owner): every event-driven push, match reminders (a real match with no message yet), user-entered birthday/occasion
+reminders, stalled group-plan nudges, reward tiers and the streak display (item 53 unchanged). Client tap/priority/mute tables
+keep both types for pushes already delivered (like item 53). Verification: live check
+`scripts/live-verify/engagement-nudges-retired.sql` 4 fail before / 7/7 after (rolled back; the kept reminder jobs run and write no
+retired push); a rolled-back dry run of migration + checks first; APPLIED to production 2026-10-18; guard
+`utils/engagementNudgesRetired.test.js` (5; `streakNudgeRetired.test.js` notes the drop); jest 473 suites / 6365 pass; prod journeys
+558/558; from-scratch replay 453/453. `streak-nudge-retired.sql` applies only before 20270329 (its function is gone). NOT claimed:
+any retention effect or real-phone behaviour (no device has run the app). No other notification change authorized.
+
 # A request quietly becomes active again (owner idea "185", 2026-10-18; NOT item 185): MET for sent requests, LOCKED, nothing built
 
 Idea: the person found nothing; later "A new option just became available" and the request receives a new result, animated to

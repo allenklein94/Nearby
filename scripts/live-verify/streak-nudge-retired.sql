@@ -1,7 +1,9 @@
 -- Owner item 53: the "Keep your streak going" push (momentum_streak_nudge) is retired. A person who WOULD have qualified
 -- under the old rule (active 3 weeks in a row, nothing yet this week, discovery pushes on) gets no streak push when the
 -- weekly job runs; the reward-tier push is still in the function. Rolled back always (pg_net's queue rolls back with it).
--- Run after migration 20270300 is applied.
+-- Run after migration 20270300 is applied and BEFORE 20270329 (idea 186), which drops send_momentum_nudges() and its
+-- weekly job; after 20270329 the streak push is covered by scripts/live-verify/engagement-nudges-retired.sql's
+-- 'no database function sends' check plus streakNudgeRetired.test.js.
 begin;
 create temp table r(check_name text, ok boolean);
 create temp table fx as

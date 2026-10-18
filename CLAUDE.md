@@ -113,6 +113,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **A request quietly becomes active again (owner idea "185", 2026-10-18; NOT item 185) MET for sent requests (items 80/114/62/165/23/25/164/160/173), LOCKED, nothing built, NOT VERIFIED (item 89's late-reply check, offer checklist section 11):** plain searches never reactivate (no saved-search alerts, no inferred reactivation); "A new option just became available" DECLINED.
 
+**Retention from relevant events (owner idea "186", 2026-10-18; NOT item 186) MET + RETIRED, LIVE, LOCKED:** `first_mission_reminder` and `reward_tier_nudge` pushes + their jobs removed (migration 20270329 LIVE; live check 7/7; guard `engagementNudgesRetired.test.js`; replay 453/453, prod journeys 558/558). Retention effect and phone behaviour NOT verified.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -831,6 +833,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - Reply pushes (`business_offer_received`, item 62): one notification per request, replaced in place (`collapse_key` 'offers:<request id>' ->
   Expo collapseId + tag); worded by `_refresh_reply_push` from the LIVE open replies at every hand-off (1 = the reply's own words, 2+ = count,
   0 = not sent); every reply still pushes at once; never grouped across requests, never delayed or staged.
+- **No engagement nudges (item 53 + idea "186", LOCKED):** a push only for something relevant that happened to the person's own things
+  (or a real unfinished thing they started/entered: match with no message, own birthday/occasion, stalled group plan); never a
+  streak, tier, "still waiting" or come-back push (guards `streakNudgeRetired.test.js`, `engagementNudgesRetired.test.js`).
 - Plan group chat pushes (`plan_message`): recipients = `_plan_participant_rows()` (the chat roster's one source) minus the writer and
   blocks either way; the Messages switch; at most one per person per plan per 2 min; tap opens PlanChat.
 - Each push type has one priority (`notificationTier.js`), one navigation-only action button

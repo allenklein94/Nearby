@@ -26,6 +26,7 @@ describe('the streak push is retired (item 53)', () => {
     expect(definers[definers.length - 1]).toBe(RETIRE);
   });
 
+  // Its reward-tier branch was kept here; idea 186 later retired that push and dropped the function (20270329).
   it('its send_momentum_nudges() never sends the streak push, and keeps the reward-tier push', () => {
     const sql = fs.readFileSync(path.join(migrations, RETIRE), 'utf8');
     const body = sql.slice(sql.indexOf('create or replace function public.send_momentum_nudges()'), sql.indexOf('$function$;'));
