@@ -1,4 +1,10 @@
-# Settings stays separate (owner idea "236", 2026-10-18; NOT item 236): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+# Settings stays separate (owner idea "236", 2026-10-18; NOT item 236): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built; no new rule or code changes. Settings remains a dedicated screen for
+  preferences, privacy, notifications and account controls. Navigation kept: Profile's gear and Settings section, plus the
+  contextual links from Discover and Home; Back returns to the previous context. Profile holds information about you; Settings
+  holds your preferences about others and your app/account controls. Edit Profile stays its own dedicated screen. Settings already
+  has a distinct job under Rule 14: no additional screen, duplicate rule or navigation changes.
 
 - Proposal: Settings stays a separate screen because it isn't part of the immediate discovery task; this is why Profile vs
   Settings matters.
