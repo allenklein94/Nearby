@@ -185,6 +185,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Sheets never become mini-apps (owner idea "225", 2026-10-18; NOT item 225) MET AS BUILT, CLOSED, LOCKED, no new rule, sheets or code:** the 19 sheets/panels in `src/components/` stay as they are, one question or one quick action each; a sheet closes before opening a dedicated screen; multi-step work stays on its own screen (Create Gathering, Edit Gathering, Settings); Make an Offer stays one form; `CompatibilityReportModal`'s three views stay (one level, no nesting). Governed by item 45 + Rule 14.
 
+**"Why am I seeing this?" sheet (owner idea "226", 2026-10-18; NOT item 226) CONFLICTS WITH LOCKS, ASSESSED, recommended DECLINE, owner decision pending, nothing built:** a why-sheet was DECLINED by item 106 (LOCKED) and re-confirmed under idea "224" today; the same reasons already show on the card (max 2 + one distance/when line) and in full under GatheringDetail's "Why this fits you" (`ReasonList`). "👤 {Friend} is interested" breaks "Interested is private" (LOCKED: never shown to anyone but the host's aggregate); a gathering's distance must read "About 0.7 mi" (item 146), never exact. Kept: "Because you like X" only for a declared interest; friend reasons only for going/hosting.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

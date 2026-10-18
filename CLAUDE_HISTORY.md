@@ -1,3 +1,20 @@
+# "Why am I seeing this?" sheet (owner idea "226", 2026-10-18; NOT item 226): CONFLICTS WITH LOCKS, recommended DECLINE, owner decision pending, nothing built
+
+- Proposal: a bottom sheet "Why this is recommended": ☕ You like coffee / 📍 0.7 mi / 🕕 Tonight at 6:30 / 👤 Claude is interested;
+  Done closes it back to Discover.
+- Conflicts:
+  1. Item 106 (2026-10-15, LOCKED): the why-sheet was DECLINED; tappable "why" is met by GatheringDetail's "Why this fits you"
+     (`ReasonList`, all real reasons) + `recommendationSurfaces.js`. The owner re-confirmed it today under idea "224" ("no separate
+     recommendation-reasoning sheet; item 106 remains locked").
+  2. "👤 {Friend} is interested" breaks "Interested is private" (owner 2026-10-17, LOCKED): a person's Interested mark is never shown
+     to anyone; the only exception is the host's aggregate count. Idea "197" already DECLINED "{Friend} is interested". Friend
+     reasons stay "going" / "hosting" (accepted friends only).
+  3. "📍 0.7 mi" for a gathering: item 146 (LOCKED) requires "About 0.7 mi" (`approximateMiles`), never an exact distance.
+- Already met: every card shows What / Why (max 2 strongest real reasons; "Because you like X" only for a declared interest) / one
+  "distance · when" line (`recommendationContext.js`, `formatDistance`, `whenLabel`); tapping the card opens the detail with every
+  reason; Back restores Discover's exact state.
+- Recommendation: decline; nothing built.
+
 # Sheets never become mini-apps (owner idea "225", 2026-10-18; NOT item 225): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built, no new rule. The 19 sheets and pop-up panels stay as they are, single
