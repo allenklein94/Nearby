@@ -1,3 +1,17 @@
+# Visual distance expansion (owner idea "178", 2026-10-18): COVERED by idea "177"'s deferral, LOCKED, nothing built
+
+Idea: "Pickleball" -> "Nothing within 2 miles." -> person picks 2 mi -> 5 mi -> 10 mi while the search radius expands visually.
+Finding: a typed ask never searches 2 mi; it starts at 15 mi on the ONE shared list `SEARCH_RADIUS_OPTIONS` [15, 30, 50]
+(`constants/searchRadius.js`), so the "Nothing within 2 miles" state cannot occur and a 2/5/10 ladder would be a second distance
+model (master principle 2). Person-chosen distance already exists where a request needs it (AskBusiness "How far?" on the same
+list) and "worth the drive" widens a typed ask to 30 mi (item 69). Owner decisions (LOCKED): the 15/30/50 list stays the only
+radius source, no separate ladder or fictional small-radius state; AskBusiness "How far?" and item 69 kept; a search distance chip
+stays DEFERRED behind idea "177"'s evidence gate (item 128 empty-results analysis + real device), a visual treatment never
+bypasses it; expanding-radius animation DECLINED for now (items 55/58/101). If a person-triggered expansion is approved later:
+re-run the search on the shared list and show returned results normally; any animation needs its own motion spec + explicit
+approval; never animate a wider search or imply new results before the server confirms them (motion truth). No chips, radius
+controls, animations or code changed.
+
 # "Almost found it" (owner idea "177", 2026-10-18): MET by items 81 + 69, LOCKED, nothing built
 
 Idea: on partial information say "We found something close.", then offer "Need a different time?" / "Want to expand your

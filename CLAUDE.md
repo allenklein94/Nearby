@@ -97,6 +97,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Almost found it" (owner idea "177", 2026-10-18) MET by items 81 + 69, LOCKED, nothing built:** "We found something close." DECLINED (item 81 Gap 1); "Need a different time?" DECLINED (items 107/46); "Want to expand your distance?" DEFERRED behind item 81's evidence gate (item 128 analysis + real device); if reconsidered, one person-tapped step to 30 mi on the 15/30/50 list, never automatic or past 50.
 
+**Visual distance expansion (owner idea "178", 2026-10-18) COVERED by idea "177"'s deferral, LOCKED, nothing built:** radii only from `SEARCH_RADIUS_OPTIONS` (15/30/50; no other ladder, no "Nothing within 2 miles" state); expanding-radius animation DECLINED (items 55/58/101; any later one needs its own motion spec + approval, never before the server returns).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
