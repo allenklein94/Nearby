@@ -1,3 +1,21 @@
+# The "same object" rule for a request (owner idea "258", 2026-10-18): MET AS BUILT for "one object, not six systems"; "Searching" and split Responses / Offer / Accepted / Complete DECLINED as separate states; assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+Met by idea "173" (the saved request IS the evolving intent object) + idea "184" (`requestTimeline.js`) + ideas 256/257. As built,
+two surfaces, each with its own job, and the request never leaves its one screen once sent:
+- Draft = the AskBusiness form itself (pre-filled from the ask, items 82/84/111); not a stored request state: an unsent ask is kept on
+  the device only (`useFormDraft`, survives a failed send, leaving and a restart; item 159 "draft kept" on failure).
+- Sent onward = ONE stored `business_requests` row (states open / fulfilled / expired / cancelled / merged, `objectLifecycle.js`) on ONE
+  screen, `BusinessRequestDetail`: Send replaces the form with it ("We asked N…" + rings after the server returns, items 55/158/159);
+  its status line `requestTimeline` = Request sent -> the reply (named by its kind) -> You're booked, real events and times only,
+  + one "Next:" line; reply cards arrive in place (items 25/23, pill/push open this screen, items 165/62); accept = "You're booked" on the
+  reply's card (item 12) and Your Plan (item 32); visit = "✓ Visit confirmed" on that card (item 52); expired = reopen on the same row.
+Mapping the proposed seven: Draft = the form (device only) | Sent = "Request sent" | Searching DECLINED (no searching screen, loader or
+step: items 159/161/209, "Looking" step declined in idea "184"; nothing searches after Send, the request was already delivered) |
+Responses + Offer = ONE step (split Responses/Offer steps declined in idea "184": a reply is named by its real kind, "N businesses
+responded" for several) | Accepted = "You're booked" (acceptance IS the booking, idea 257) | Complete = "✓ Visit confirmed" (idea 257:
+Redeemed and Completed are one fact). Nothing to build; device session first (idea 252); verification = offer checklist sections 1 + 11
+(needs Anthropic credit).
+
 # The "same object" rule for an offer (owner idea "257", 2026-10-18): MET AS BUILT for "one object, many states", "Viewed" and separate Reserved / Completed states DECLINED, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; design decision closed, NOT DEVICE-VERIFIED (offer experience checklist + item 13 checklist still to run on a real phone)
 
 The principle is met exactly as for idea 256: one stored offer row (`business_request_offers.status`), its states from `objectLifecycle.js`
