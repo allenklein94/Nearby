@@ -1,4 +1,4 @@
-# Idea "193" gap 2: other offers visibly unavailable while one is booking (owner, 2026-10-18): BUILT, NOT DEVICE-VERIFIED; idea "193" otherwise MET by item 12, CLOSED
+# Idea "193" gap 2: other offers visibly unavailable while one is booking (owner, 2026-10-18): IMPLEMENTED + AUTOMATED-TEST VERIFIED (code level), DEVICE VERIFICATION OPEN; idea "193" otherwise MET by item 12, CLOSED
 
 Owner decision: fix gap 2 only; SKIP press compression (no ScaleButton, press-scale, bounce or other new micro-motion; no motion
 spec needed). Built: `utils/offerAcceptLock.js` `offerAcceptButtonState(offerId, actingOfferId, bookable)` is the one rule for
@@ -14,6 +14,14 @@ in-place change only after the server confirms (item 12), the ~520 ms morph, the
 (client-only UI state; the DB-level `offer` journey cannot see it; uncovered step = the on-screen disabled look). Business web
 export unaffected (this screen is not in its bundle; verified by a clean export). NOT VERIFIED on a phone: offer experience
 checklist section 6 check added (other offers visibly disabled during booking; recover after success and after a forced failure).
+Owner recorded (2026-10-18): gap 2 implemented and automated-test verified; keep `utils/offerAcceptLock.js` as is; no further
+implementation unless device verification shows a defect. Evidence, exactly: TESTED (Jest, pure + source checks) = the rule's
+states (other offers disabled + dimmed while one books, spinner on the booked one, all free when none), the screen passes them
+to the button, the lock-clearing call sits after the try/finally, the rule reads no animation/timer, no ScaleButton on the screen;
+full suite 474 / 6,378 passed. FROM CODE READING ONLY (no rendering or booking test exists) = screen readers receive the disabled
+state (`accessibilityState`), success shows the booked card + others' closed state via the reload, failure shows the error and
+leaves other eligible offers bookable. Automated tests are code-level evidence, never proof of on-device appearance, touch
+handling or accessibility announcement. Device verification OPEN: offer checklist section 6, idea "193" check, >= 2 open offers.
 
 # "Accept" feels physically decisive (owner idea "193", 2026-10-18; NOT item 193, weather mention): ASSESSED, OWNER DECISION PENDING, nothing built
 
