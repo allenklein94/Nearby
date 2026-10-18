@@ -11,6 +11,8 @@ Kept as dialogs (they explain): offerUpdated (item 118, request detail + GroupPl
 (nobody reached), welcomeToPremium. Guards: new `motion/confirmInline.test.js` (10 toasts, 4 kept dialog sites, goBack, no double haptic),
 `utils/gatheringApprovalAlert.test.js` updated; full Jest 478/6522. Business web export regenerated. NOT DEVICE-VERIFIED: each toast
 readable and self-clearing on a real phone (first-session checklist C20).
+Owner (2026-10-18): ACCEPTED AS BUILT, incl. the partner-request auto-return and the removed duplicate haptics; no further strings,
+components, animation or scope. Remaining: C20 on a real phone, with the partner-request return and the single vibration called out.
 
 # Rarely a "Success!" screen; confirm inline (owner idea "274", 2026-10-18; NOT item 274): MOSTLY MET (item 123 + inline moments), ASSESSED, owner decision pending on 10 residual OK-dialogs; nothing built; CLAUDE.md not changed
 
