@@ -1,4 +1,11 @@
-# "Pass" feels frictionless (owner idea "194", 2026-10-18; NOT item 194, reason cap): ASSESSED, OWNER DECISION PENDING, nothing built
+# "Pass" feels frictionless (owner idea "194", 2026-10-18; NOT item 194, reason cap): KEEP AS BUILT (owner chose (a)), CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): option (a). The friction targeted does not justify a Pass action or a dismissal workflow. Preserved:
+  unwanted offers may stay unanswered until they expire or another is booked; all offers stay visible together (no sequential
+  presentation); booking one closes the others by their real state; confirmation prompts only for actions with real consequences.
+  DECLINED: (b) and (c): no Pass button, no offer-card "Not for me"/⋯ action, no dismissal animation, no business notification of a
+  declined offer; item 200's exception NOT widened; no new privacy behavior. Items 117 and 63 and the offer-screen whole-screen motion
+  ban stand. No implementation work required.
 
 - Proposal: on an offer that isn't good, Pass -> the offer moves away -> Nearby immediately shows the next offer; no "Are you sure?"
   unless there is a meaningful consequence.
