@@ -1,3 +1,15 @@
+# The app never hijacks you (owner item 166, 2026-10-18): MET BY ITEMS 20 + 165, LOCKED, nothing built, NOT DEVICE-VERIFIED
+
+Idea: while browsing a small "New offer" appears; tap = view, dismiss = keep browsing; the app doesn't hijack you.
+Met by the arrival pill (item 165, `components/OfferArrivalSignal.js`) + item 20 (animation is interruptible): never navigates
+on its own; `pointerEvents="box-none"` so only the pill takes touches and the screen stays usable; tap = that request with item
+23's travel; leaves after 6 s (first-ever single reply 9 s) or at once on a swipe (`useSwipeToDismiss`); no sound/vibration;
+`accessibilityRole="button"` + `accessibilityLiveRegion="polite"`; Reduce Motion = appears/disappears without animation.
+Observed while checking: no visible ✕ and no screen-reader dismiss action; a screen-reader user can ignore it (it leaves and
+blocks nothing). Owner (2026-10-18): leave unchanged; automatic dismissal may not suffice for every screen-reader user, so
+two checks were added to `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` section 4 (non-interruption;
+VoiceOver + TalkBack). Reopen only on a concrete defect from that test. No code, controls or animation. Not device-verified.
+
 # A new reply can arrive on any screen (owner item 165, 2026-10-18): MET AS BUILT, LOCKED, nothing built
 
 Idea: event-driven animation means no screen per event; an offer can arrive on Home, Discover or a gathering and the UI

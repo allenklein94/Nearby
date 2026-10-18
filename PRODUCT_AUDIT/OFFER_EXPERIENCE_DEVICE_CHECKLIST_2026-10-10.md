@@ -81,6 +81,13 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
 - [ ] Reopening the request later: the card is already finished, nothing replays.
 - [ ] First-ever reply: pill reads "A local business just responded to your request"; the card says "Your first reply
   from a local business". Never again after that.
+- [ ] Item 166 (pill never takes over): while the pill is up, keep scrolling and tap things under/around it: everything works,
+  the scroll is not interrupted, nothing navigates by itself. Swipe the pill up or sideways: it leaves at once. Ignore it:
+  it leaves after ~6 s (first-ever reply ~9 s). No sound or vibration from the pill itself (the OS push is separate).
+- [ ] Item 166 screen reader (VoiceOver on iPhone AND TalkBack on Android): the pill is announced politely, without cutting
+  off what is being read; it can be found and activated as a button (opens the request); what happens if the person never
+  reaches it before it leaves, and whether they can tell it was there or get rid of it sooner. Record the result; a concrete
+  defect reopens item 166 (no ✕ or dismiss action is added without it).
 
 ## 5. Media presentation (items 10-11, locked by item 17)
 
