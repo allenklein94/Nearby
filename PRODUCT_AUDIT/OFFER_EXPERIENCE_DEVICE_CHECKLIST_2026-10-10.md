@@ -41,6 +41,9 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
   no "asked", "sent", rings or success animation until the request screen appears with the real count.
 - [ ] (item 159) Failure (airplane mode, then Send): the "Try again" error appears, nothing implies the request went out, the
   typed ask and every filled field are still there; Retry after reconnecting sends it once and shows the real count.
+- [ ] (item 161) Before any reply, the request screen's empty state reads exactly "No responses yet" / "You'll be notified when
+  a business responds." (no "matching"/"searching" line, no loader or spinner, no animation of its own); leaving the screen
+  at once is fine and the reply still arrives (push, Plans row). Repeat in one other language and note it for native review.
 - [ ] Business gets the opportunity push/digest per its rules; the card opens on Opportunities.
 - [ ] (idea 157) Ask ONE business (Ask Coastal Coffee): Send replaces the form with the request screen at once (no
   confirmation step, no return to Home/Discover); the line reads "Request sent to Coastal Coffee. You'll be notified when

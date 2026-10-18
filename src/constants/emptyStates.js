@@ -41,7 +41,7 @@ export const EMPTY_STATES = {
   business_messages: { title: "No messages yet", body: "Messages from your community will appear here." },
   community_members: { title: "No members yet", body: "People who join will appear here." },
   community_calendar: { title: "Nothing on the calendar", body: "Be the first to plan something." },
-  request_no_responses: { title: "No responses yet", body: "Nearby is matching your request with businesses. You'll be notified when one responds." },
+  request_no_responses: { title: "No responses yet", body: "You'll be notified when a business responds." },
   communities_mine: { title: "You're not in any communities yet", body: "Find one to join in Discover, or start your own." },
   emergency_contacts: { title: "No emergency contacts yet", body: "Add someone you trust for date safety." },
   friend_circles: { title: "No circles yet", body: "Group your friends into circles to plan together." },

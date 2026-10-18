@@ -63,6 +63,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 **Plans response count (owner item 160, 2026-10-18, option (b), LOCKED) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_160_PLANS_REPLY_COUNT_DEVICE_CHECKLIST_2026-10-18.md` is recorded on a real phone (no migration, no new strings; journey `plansReplyCount` 7/7; prod journeys 558/558).
 
+**"Get out of the way" after Send (owner idea "161", 2026-10-18, option a, LOCKED) is MET AS BUILT + empty state reworded, NOT DEVICE-VERIFIED:** no searching screen or loader after Send (item 159's button spinner only); `request_no_responses` = "No responses yet" / "You'll be notified when a business responds." (11 languages; 10 machine-authored, need native review; guard in `emptyStateLanguage.test.js`); offer checklist section 1 check (item 161).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

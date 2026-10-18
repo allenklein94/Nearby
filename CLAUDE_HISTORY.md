@@ -1,3 +1,23 @@
+# Don't make the person wait on "Searching…" (owner idea "161", 2026-10-18): MET AS BUILT + empty state reworded (option a), LOCKED
+
+Idea: never sit on "Searching..." for ten seconds; say "We'll let you know when businesses respond" and get out of the way.
+Found as built: after Send the only wait is the Send button spinner while one create-request call runs (item 159). The form is
+then replaced by the request screen with "We asked N nearby businesses. You'll be notified when they respond." (idea 158).
+There is no searching screen; the screen's only loader is its own first load of the request. The person can leave at once:
+replies come by the collapsed reply push (item 62), the Plans/Home row (item 160) and the travel into the card (item 23).
+Gap: the no-replies empty state said "Nearby is matching your request with businesses.", which implies a search still running.
+Matching is done at send.
+Owner decision (2026-10-18): option (a), exact copy "No responses yet" / "You'll be notified when a business responds." The
+owner's note also said to keep "when one responds"; with the first sentence gone "one" has nothing to refer to, so the
+owner's exact empty-state text was used. DECLINED: (b) "Businesses are looking at your request…" (unnecessary explanation).
+Built: `request_no_responses` body in `constants/emptyStates.js` + `i18n/ui/empty.js` (en + 10 languages, each now only the
+"you'll be notified when a business responds" sentence; 10 machine-authored, need native review). No behaviour, loader,
+motion or other string change. Tests: `constants/emptyStateLanguage.test.js` item 161 block (exact English; no language says
+searching/matching/Nearby; the no-replies block renders EmptyCopy statically with no loader/animation; the screen's only
+NLoader is its first load). Jest 6303 pass; 1 pre-existing date-dependent failure (`gatheringCheckInWindow.test.js`, see
+item 160) unrelated. Device check added to offer checklist section 1. The compiled `docs/business/` bundle still holds the old
+string (consumer screen; regenerated only with a business-facing change).
+
 # Plans response count (owner item 160, 2026-10-18): BUILT (option b), NOT DEVICE-VERIFIED
 
 Owner decision (2026-10-18): option (b). Fix the shared source first, then extend it to Plans. "N offers — choose one" only

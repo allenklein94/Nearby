@@ -51,3 +51,32 @@ describe('empty-state language (item 80)', () => {
     }
   });
 });
+
+// Owner item 161 (2026-10-18, option a): matching is done when the request is sent, so the request screen's empty state only
+// says nothing has come back yet and that the person will hear when it does. Never a search in progress.
+describe('request with no responses yet (item 161)', () => {
+  const { translate } = require('../i18n/translate');
+  const { UI_LANGUAGES } = require('../i18n/ui');
+  it('says exactly the owner\'s words in English', () => {
+    expect(emptyCopy('request_no_responses')).toEqual({ title: 'No responses yet', body: "You'll be notified when a business responds." });
+    expect(translate('en', 'ui.empty.request_no_responses.body')).toBe("You'll be notified when a business responds.");
+  });
+  it('no language claims Nearby is still searching or matching, and every language has its own body', () => {
+    const searching = /matching|searching|buscando|sucht|cherche|chèche|匹配|đang tìm|Hinahanapan|подбирает|찾고|Nearby/i;
+    for (const lang of UI_LANGUAGES) {
+      const body = translate(lang, 'ui.empty.request_no_responses.body');
+      expect(body).toBeTruthy();
+      expect(body).not.toMatch(searching);
+      expect(translate(lang, 'ui.empty.request_no_responses.title')).toBeTruthy();
+    }
+  });
+  it('the screen shows it statically when there are no replies: no loader, no searching state, no animation of its own', () => {
+    const screen = read('screens/BusinessRequestDetailScreen.js');
+    const block = screen.slice(screen.indexOf('{offers.length === 0 ? ('), screen.indexOf('<EmptyCopy id="request_no_responses" />') + 40);
+    expect(block).toMatch(/<EmptyCopy id="request_no_responses" \/>/);
+    expect(block).not.toMatch(/NLoader|ActivityIndicator|Animated|SEQUENCES/);
+    // the only full loader is the screen's own first load of the request
+    expect(screen.match(/<NLoader/g)).toHaveLength(1);
+    expect(screen).toMatch(/if \(loading && !request\) \{\s*return \(\s*<SafeAreaView style=\{styles\.container\}>\s*<NLoader/);
+  });
+});
