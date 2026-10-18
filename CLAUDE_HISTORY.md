@@ -1,3 +1,11 @@
+# Gathering request inherits the gathering (owner idea "248", 2026-10-18): MET AS BUILT by item 111 (+ 65/29), assessed, owner decision pending, nothing built
+
+Checked `AskBusinessScreen.js` gathering mode (`getGatheringById` -> `GatheringAskFacts`; text/category/when/party inputs hidden; Category
+only when `interest_tag` missing; `submitBusinessRequestForGathering` sends only the host's local date/time + optional structured
+answers; server derives the rest from the gathering). Owner example (Coffee / Aug 31 / 6:30 PM / 4 people) = the card's category, when
+line and party; nothing re-entered. Party note: the business is asked for max(people going incl. host, capacity), never capacity + 1.
+Device: not run (item 84/111 phone checks outstanding).
+
 # Idea "247" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; label rewording DECLINED; free text only to one business, structured options for several; no app change.
 
 # Request form asks the real questions (owner idea "247", 2026-10-18): MET AS BUILT, assessed, owner decision pending, nothing built
