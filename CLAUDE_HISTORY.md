@@ -1,3 +1,32 @@
+# Optional sound cues (owner idea "169", 2026-10-18): BUILT, NOT DEVICE-VERIFIED
+
+Numbered "169" by the owner; NOT item 169 (Food & Drink coverage), which keeps its number. Owner chose option (c) over defer/decline:
+three tiny optional customer-side cues, reopening only what they need. Reopened narrowly: item 165 / the arrival signal's "no
+sound" (now: no sound except this cue), item 52's words-only redemption (the cue rides on the same settle), the offer-assembly
+"no sound" rule (an on-screen arrival may sound; `OfferAssembly.js` itself still has none, its guard unchanged). Unchanged: item 48 /
+51 business side silent, no vibration on arrivals, haptics only after own tap, push sounds (item 141) untouched.
+
+Built: `utils/soundCues.js` (the one rule: `SOUND_CUES` offerArrived / offerAccepted / visitConfirmed, `soundCueDecision`,
+`createSoundCuePlayer` with injected phone deps), `services/soundCues.js` (AsyncStorage key `nearby.soundCues.enabled.v1`, default
+off; expo-av ambient session `playsInSilentModeIOS: false` + `MixWithOthers`, unload after play; Reduce Motion asked fresh via
+`AccessibilityInfo` each cue, failure = silent; skips while `isRecordingVoiceNote()` (new, `services/voiceNotes.js`) so a recording is
+never interrupted). Triggers: `createOfferArrivals` gained `onArrival` (once per look with genuinely new replies, after the pill is
+set or the on-screen request is told to reload; baseline/declined/opened never), wired in `OfferArrivalSignal.js`, and a reply push
+received while open calls `noteOsOfferSound()` so the cue never doubles the OS sound for 10 s; `OfferAcceptedMorph` / `BookedCelebration`
+take `soundCue` and play it with the success haptic (own tap + real booking; GroupPlan only on allConfirmed); `VisitConfirmed` plays it
+with `play` (first viewing only). Same cue within 3 s = once. iOS only: Android exposes no ringer/DND state without a new native module,
+so its switch is hidden and nothing plays. iOS Focus/DND is not detectable either (needs an entitlement): it obeys the silent switch
+only; owner to decide (checklist 12). Settings > Appearance "Sound cues" switch + helper (`ui.settings.soundCues` / `soundCuesHelp` /
+`soundCuesA11y`, 11 languages, 10 machine-authored). Added straight into `src/i18n/ui/settings.js` and its JSON: the JSON source is
+OLDER than the generated file, so `build-ns.js settings` would revert newer strings (usual-trip lines, intent-visibility hint): do not
+rebuild settings from it until reconciled. Sounds: `assets/sounds/{offer-arrived,offer-accepted,visit-confirmed}.wav`, synthesized
+from sine tones by `scripts/sounds/generate-sound-cues.py` (Nearby's own work, `assets/sounds/LICENSE.md`), mono 16-bit, <= 0.56 s,
+peak -12 dBFS. Guard `utils/soundCues.test.js` (decision table, player on/off/persist/Reduce Motion/background/recording/Android/
+push window/failure, arrival triggering, caller allow-list, wiring, never awaited, silent-switch session, Settings, strings, file
+format + provenance); pins updated in `offerAcceptedMorph.test.js`, `bookedCelebration.test.js`, `bookedLifecycle.test.js`.
+Results: full Jest 471 suites / 6354 passed; `expo export -p ios` bundles with the three wavs. Not device-tested:
+`PRODUCT_AUDIT/IDEA_169_SOUND_CUES_DEVICE_CHECKLIST_2026-10-18.md`. Business web export not regenerated (no business-facing change).
+
 # Motion hierarchy on two axes (owner idea "168", 2026-10-18): MET AS BUILT, documented + guarded, LOCKED
 
 Numbered "168" by the owner; it is NOT item 168 (the V1 category set, migration 20270294), which keeps its number. Proposal:

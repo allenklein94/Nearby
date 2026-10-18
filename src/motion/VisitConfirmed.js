@@ -4,21 +4,25 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { SEQUENCES, infoOpacity } from './motionBudget';
+import { playSoundCue } from '../services/soundCues';
 
 // Marketplace moment 6, the customer side of redemption (2026-10-10): the booked card's final step, "✓ Visit confirmed",
 // shown whenever the offer is stored as `completed` (the business confirmed the visit). `play` (decided once at mount)
 // = the confirmation arrived while the screen was open: the line settles in (fade + slight rise); the card's glow is
 // OfferProgressGlow with SEQUENCES.visitConfirmed. Arrival-driven: no haptic. Reduce Motion = the settled line.
 // Item 52: `note` = the first-ever redemption's one extra line, settling in with the label (words only, no motion of its own).
+// Idea "169": `soundCue` plays once with `play` (the confirmation's first viewing), never on a revisit; the line is already
+// readable without it. Off by default; silent under Reduce Motion (services/soundCues.js).
 const T = SEQUENCES.visitConfirmed;
 
-export default function VisitConfirmed({ label, note = null, play = false }) {
+export default function VisitConfirmed({ label, note = null, play = false, soundCue = null }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   const animate = useRef(play && !reduceMotion).current;
   const v = useRef(new Animated.Value(animate ? 0 : 1)).current;
 
   useEffect(() => {
+    if (play && soundCue) playSoundCue(soundCue);
     if (!animate) return undefined;
     const anim = Animated.timing(v, { toValue: 1, duration: T.stepMs, easing: Easing.bezier(0.2, 0, 0, 1), useNativeDriver: true });
     anim.start();

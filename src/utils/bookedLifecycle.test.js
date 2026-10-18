@@ -107,7 +107,7 @@ describe('wiring (source guards)', () => {
     // Item 12: the request screen no longer shows this card (its offer card morphs in place and stays).
     expect(detail).not.toMatch(/BookedCelebration|setJustAccepted\(false\)/);
     expect(group).toMatch(/if \(kind !== 'reservation'\) successBannerTimerRef/);
-    expect(group).toMatch(/<BookedCelebration haptic title=\{t\('ui\.requestDetail\.youreBooked'\)\} onDone=/);
+    expect(group).toMatch(/<BookedCelebration haptic soundCue=\{SOUND_CUES\.offerAccepted\} title=\{t\('ui\.requestDetail\.youreBooked'\)\} onDone=/);
   });
   test('one success vibration (the person tapped), no extra vibration or sound', () => {
     const code = card.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');

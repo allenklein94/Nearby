@@ -65,7 +65,7 @@ describe('component guards', () => {
   });
   test('plays once, decided at mount; Reduce Motion = settled; ✓ and vibration only for a real booking the person tapped', () => {
     expect(src).toMatch(/useRef\(play && !reduceMotion\)\.current/);
-    expect(src).toMatch(/if \(play && haptic && booked\) playHaptic\(HAPTIC_MOMENTS\.success\)/);
+    expect(src).toMatch(/if \(play && haptic && booked\) \{?\s*playHaptic\(HAPTIC_MOMENTS\.success\)/);
     expect(src).toMatch(/\{booked \? \(/);
   });
 });

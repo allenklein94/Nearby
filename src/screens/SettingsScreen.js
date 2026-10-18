@@ -32,6 +32,8 @@ import { typography, spacing, radius } from '../theme';
 
 import { showSuccessToast } from '../motion';
 import { clearHiddenSponsors } from '../services/sponsored';
+import { loadSoundCuesEnabled, setSoundCuesEnabled, subscribeSoundCuesEnabled } from '../services/soundCues';
+import { soundCuesSupported } from '../utils/soundCues';
 function toE164(rawInput) {
   const digits = rawInput.replace(/\D/g, '');
   if (digits.length === 10) return `+1${digits}`;
@@ -95,6 +97,13 @@ export default function SettingsScreen({ navigation, route }) {
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
   const [showBlocked, setShowBlocked] = useState(false); // Blocked users open in place (audit B10)
+  // Idea "169": optional sound cues, off by default, a choice kept on this phone (iOS only: see utils/soundCues.js).
+  const [soundCuesOn, setSoundCuesOn] = useState(false);
+  useEffect(() => {
+    if (!soundCuesSupported(Platform.OS)) return undefined;
+    loadSoundCuesEnabled().then(setSoundCuesOn).catch(() => {});
+    return subscribeSoundCuesEnabled(setSoundCuesOn);
+  }, []);
   const [discoveryViewStyle, setDiscoveryViewStyle] = useState('list');
   // Owner idea 156: Friends discovery's own list/cards choice (list by default), separate from Dating's above.
   const [friendDiscoveryViewStyle, setFriendDiscoveryViewStyle] = useState('list');
@@ -590,6 +599,23 @@ export default function SettingsScreen({ navigation, route }) {
               accessibilityLabel={t('ui.settings.darkModeA11y')}
             />
           </View>
+          {soundCuesSupported(Platform.OS) ? (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.settingRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingLabel}>{t('ui.settings.soundCues')}</Text>
+                  <Text style={styles.helperText}>{t('ui.settings.soundCuesHelp')}</Text>
+                </View>
+                <Switch
+                  value={soundCuesOn}
+                  onValueChange={(v) => { setSoundCuesEnabled(v).catch(() => {}); }}
+                  trackColor={{ true: colors.primary, false: colors.border }}
+                  accessibilityLabel={t('ui.settings.soundCuesA11y')}
+                />
+              </View>
+            </>
+          ) : null}
           <View style={styles.divider} />
           <View style={{ paddingVertical: spacing.sm }}>
             <Text style={styles.settingLabel}>{t('ui.settings.nearbyDisplayStyle')}</Text>

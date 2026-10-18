@@ -44,6 +44,7 @@ export function createOfferArrivals({
   isViewingRequest = () => false,
   onViewedArrival = () => {}, // (requestId) => the request on screen got a new reply: reload it
   onChange = () => {}, // (signal | null)
+  onArrival = () => {}, // idea "169": once per look that found genuinely new replies (pill or the request on screen), after the visual
   setTimer = setTimeout,
   clearTimer = clearTimeout,
   holdMs = OFFER_ARRIVAL_HOLD_MS,
@@ -76,6 +77,7 @@ export function createOfferArrivals({
   // Which rows are genuinely new (marks them seen). Pure bookkeeping; commit() shows them.
   const collect = (rows) => {
     const fresh = [];
+    let viewed = 0;
     for (const r of rows ?? []) {
       if (!r?.id || known.has(r.id)) continue;
       // Already opened = nothing to announce, ever. Not a live reply yet (or its request closed) = not remembered, so it
@@ -83,10 +85,10 @@ export function createOfferArrivals({
       if (r.viewed_at) { known.add(r.id); continue; }
       if (!isAnnounceableReply(r)) continue;
       known.add(r.id);
-      if (isViewingRequest(r.request_id)) { onViewedArrival(r.request_id); continue; }
+      if (isViewingRequest(r.request_id)) { onViewedArrival(r.request_id); viewed += 1; continue; }
       fresh.push({ offerId: r.id, requestId: r.request_id, partnerId: r.partner_id ?? null, partnerName: r.partner_name ?? null, offer: r });
     }
-    return fresh;
+    return { fresh, viewed };
   };
 
   // firstEver only for a signal that is exactly this one new reply; anything joining it makes it a normal "N replies".
@@ -134,11 +136,12 @@ export function createOfferArrivals({
     try {
       const rows = await fetchReplies();
       if (gen !== generation || !active) return;
-      const fresh = collect(rows);
-      if (fresh.length === 0) return;
+      const { fresh, viewed } = collect(rows);
+      if (fresh.length === 0) { if (viewed > 0) onArrival(); return; }
       const firstEver = await firstEverFor(fresh);
       if (gen !== generation || !active) return;
       commit(fresh, firstEver);
+      onArrival();
     } catch {
       // A failed refresh announces nothing and changes nothing.
     }

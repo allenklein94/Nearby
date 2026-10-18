@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, typography, radius } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
+import { playSoundCue } from '../services/soundCues';
 import { SEQUENCES, infoOpacity } from './motionBudget';
 import { bookedDetailsLine } from '../utils/bookedDetails';
 import { createBookedLifecycle } from '../utils/bookedLifecycle';
@@ -25,7 +26,7 @@ const RING = 44;
 
 export { bookedDetailsLine };
 
-export default function BookedCelebration({ title, details = null, haptic = false, holdMs = BOOKED_HOLD_MS, onDone = null }) {
+export default function BookedCelebration({ title, details = null, haptic = false, soundCue = null, holdMs = BOOKED_HOLD_MS, onDone = null }) {
   const { colors, shadow } = useTheme();
   const reduceMotion = useReduceMotion();
   const card = useRef(new Animated.Value(0)).current;
@@ -41,7 +42,11 @@ export default function BookedCelebration({ title, details = null, haptic = fals
 
   // Once per mount: a re-render, a refreshed booking or a change of the Reduce Motion setting never replays it.
   useEffect(() => {
-    if (haptic) playHaptic(HAPTIC_MOMENTS.success);
+    if (haptic) {
+      playHaptic(HAPTIC_MOMENTS.success);
+      // Idea "169": only with the person's own confirm (the haptic's rule); optional, never instead of the card.
+      if (soundCue) playSoundCue(soundCue);
+    }
     const running = [];
     const run = (anim, cb) => { running.push(anim); anim.start(({ finished }) => { if (finished && cb) cb(); }); };
     if (reduceMotion) [card, ring, check, text, ripple].forEach((v) => v.setValue(1));

@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { playHaptic, HAPTIC_MOMENTS } from './haptics';
+import { playSoundCue } from '../services/soundCues';
 import { SEQUENCES, infoOpacity } from './motionBudget';
 
 // The offer card morphs in place once the booking is real (owner item 12, 2026-10-10). Replaces the separate
@@ -14,11 +15,12 @@ import { SEQUENCES, infoOpacity } from './motionBudget';
 // then the business and the real facts below it settle in (fade + 6 px rise). Item 122: a transaction, so success
 // colour, no particles, no confetti, no bounce, no loop. Success vibration only because the person tapped (`haptic`).
 // `booked` false (accepted but no confirmed reservation) = no ✓ and a neutral heading: never imply a booking.
-// Reduce Motion, or any later visit: the settled card at once.
+// Reduce Motion, or any later visit: the settled card at once. Idea "169": `soundCue` (the customer's own accept only) plays
+// with the haptic, beside the visual and never before it; off by default and silent under Reduce Motion (services/soundCues.js).
 const T = SEQUENCES.offerAccepted;
 const RING = 26;
 
-export default function OfferAcceptedMorph({ title, booked = true, warn = false, play = false, haptic = false, children }) {
+export default function OfferAcceptedMorph({ title, booked = true, warn = false, play = false, haptic = false, soundCue = null, children }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
   // Decided once, at mount: a re-render, a reload or a refreshed booking never replays it.
@@ -27,7 +29,10 @@ export default function OfferAcceptedMorph({ title, booked = true, warn = false,
   const body = useRef(new Animated.Value(animate ? 0 : 1)).current;
 
   useEffect(() => {
-    if (play && haptic && booked) playHaptic(HAPTIC_MOMENTS.success);
+    if (play && haptic && booked) {
+      playHaptic(HAPTIC_MOMENTS.success);
+      if (soundCue) playSoundCue(soundCue);
+    }
     if (!animate) return undefined;
     const ease = Easing.bezier(0.2, 0, 0, 1);
     const anim = Animated.sequence([

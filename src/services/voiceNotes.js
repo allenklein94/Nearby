@@ -57,6 +57,11 @@ export async function startRecording() {
   return recording;
 }
 
+// Idea "169": a sound cue never plays (or changes the audio session) while a voice note is being recorded.
+export function isRecordingVoiceNote() {
+  return activeRecording != null;
+}
+
 export async function stopRecording(recording) {
   await recording.stopAndUnloadAsync();
   await Audio.setAudioModeAsync({ allowsRecordingIOS: false });

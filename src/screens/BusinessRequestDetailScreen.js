@@ -70,6 +70,7 @@ import UnavailableState from '../components/UnavailableState';
 import BusinessLogoMark from '../components/BusinessLogoMark';
 import { getScreenedLogos } from '../services/businessLogos';
 import { logoFor } from '../utils/businessLogo';
+import { SOUND_CUES } from '../utils/soundCues';
 
 // Wording lives in ui.requestDetail.status.<status> / offerStatus.<status> / offerType.<type>; these list the known keys.
 const STATUS_COPY = {
@@ -1671,6 +1672,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     warn={confirmation.warn}
                     play={confirmation.plays}
                     haptic
+                    soundCue={SOUND_CUES.offerAccepted}
                   >
                     {businessHead}
                     {whenLine ? <Text style={styles.acceptedFact}>{whenLine}</Text> : null}
@@ -1678,7 +1680,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     {/* Marketplace moment 6: the business confirmed the visit. A fact, never something to do. Item 52: on the
                         person's first-ever redemption, one more line says what they just did (words only). */}
                     {confirmation.visitConfirmed ? (
-                      <VisitConfirmed key={progressKey(o)} label={t('ui.requestDetail.visitConfirmed')} note={confirmation.firstVisitNote} play={visitPlayKeys.has(progressKey(o))} />
+                      <VisitConfirmed key={progressKey(o)} label={t('ui.requestDetail.visitConfirmed')} note={confirmation.firstVisitNote} play={visitPlayKeys.has(progressKey(o))} soundCue={SOUND_CUES.visitConfirmed} />
                     ) : null}
                   </OfferAcceptedMorph>
                 );

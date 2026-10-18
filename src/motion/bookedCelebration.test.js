@@ -26,7 +26,7 @@ describe('locked constraints (source guards)', () => {
     expect(src).not.toMatch(/#[0-9a-fA-F]{3,6}\b/);
   });
   test('vibrates only when the person tapped (opt-in prop), Reduce Motion lands on the settled card', () => {
-    expect(src).toMatch(/if \(haptic\) playHaptic\(HAPTIC_MOMENTS\.success\)/);
+    expect(src).toMatch(/if \(haptic\) \{?\s*playHaptic\(HAPTIC_MOMENTS\.success\)/);
     expect(src).toMatch(/if \(reduceMotion\) \[card, ring, check, text, ripple\]\.forEach\(\(v\) => v\.setValue\(1\)\)/);
   });
   test('GroupPlan\'s reservation confirm uses it, with haptic; the request screen morphs the offer card instead (item 12)', () => {

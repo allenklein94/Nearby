@@ -69,13 +69,17 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Animation driven by state, not screens (owner item 164, 2026-10-18) MET AS BUILT, LOCKED, nothing built:** each moment's shared rule (`offersToAnimate`, `offerToPlanMerge`, `replyToTravel`, `newJoinsToAnimate`, `interestedToAttendingMoment`, `planComesTogetherNow`, ...) decides from real saved state (item 162's `MOTION_TRIGGERS`); motion only on the object's own card or its authorized place; elsewhere the notification opens the exact item. DECLINED: app-wide/full-screen confirmations, a central animation dispatcher or event platform (item 125), new animation places (item 55). "A first viewing may animate; revisiting never replays" (see Motion).
 
-**A reply arriving on any screen (owner item 165, 2026-10-18) MET AS BUILT, LOCKED, nothing built, NOT DEVICE-VERIFIED:** the ONE in-app signal = the arrival pill (`components/OfferArrivalSignal.js` in `App.js`, rules `services/offerArrivals.js`): genuinely new unviewed replies on open requests, never when that request is on screen; name for one, count for several close together; tap = that request (exact reply + item 23 travel for a single reply; several requests = Activity); leaves after 6 s (first-ever reply 9 s) or a swipe (item 20); no sound/vibration/blocking; Reduce Motion = no animation; app closed = the per-request push (item 62). Home/Discover/gathering rows stay static until their normal refresh (item 160), no surface-specific notices; not a general animation layer (item 164).
+**A reply arriving on any screen (owner item 165, 2026-10-18) MET AS BUILT, LOCKED, nothing built, NOT DEVICE-VERIFIED:** the ONE in-app signal = the arrival pill (`components/OfferArrivalSignal.js` in `App.js`, rules `services/offerArrivals.js`): genuinely new unviewed replies on open requests, never when that request is on screen; name for one, count for several close together; tap = that request (exact reply + item 23 travel for a single reply; several requests = Activity); leaves after 6 s (first-ever reply 9 s) or a swipe (item 20); no vibration/blocking, no sound except idea "169"'s optional cue; Reduce Motion = no animation; app closed = the per-request push (item 62). Home/Discover/gathering rows stay static until their normal refresh (item 160), no surface-specific notices; not a general animation layer (item 164).
 
 **The app never hijacks you (owner item 166, 2026-10-18) MET BY ITEMS 20 + 165, LOCKED, nothing built, NOT DEVICE-VERIFIED until** offer checklist section 4's two item 166 checks (non-interruption + VoiceOver/TalkBack) are recorded: the arrival pill never navigates by itself, blocks or interrupts scrolling; tap = the request + item 23 travel; leaves after 6 s (first-ever 9 s) or a swipe; polite screen-reader announcement; Reduce Motion = no animation. No visible ✕ or screen-reader dismiss action unless that phone test shows a concrete defect.
 
 **Full-screen moments are extremely rare (owner item 167, 2026-10-18) MET AS BUILT (stricter than proposed), LOCKED, nothing built, NOT DEVICE-VERIFIED:** see the Motion bullet; first offer, accept/confirmation, bookings, business transactions and gathering creation keep their inline/context presentation (items 12/25/32/43/44/51 + offer-screen rule).
 
 **Motion hierarchy, two axes (owner idea "168", 2026-10-18; NOT item 168, the V1 category set) MET AS BUILT + documented and guarded, LOCKED:** see the Motion levels bullet. Documentation only; no animation, timing or screen changed.
+
+**Optional sound cues (owner idea "169", 2026-10-18; NOT item 169, the Food & Drink spec) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/IDEA_169_SOUND_CUES_DEVICE_CHECKLIST_2026-10-18.md` is recorded on a real iPhone (incl. silent switch + Reduce Motion) AND native review of the 3
+`ui.settings.soundCues*` strings is done (no migration; guard `utils/soundCues.test.js`). Owner to decide: iOS Focus/DND can't be detected (check 12); Android has no switch (check 14).
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
@@ -594,7 +598,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - Glyphs: N = system thinking, ✨ = discovery, ❤️ = romantic, 🤝 = platonic, 🎉 = celebration, ✓ = done, 🔒 = privacy.
 - Motion only for real events (the six marketplace moments, matches, confirmations, a join seen by the host);
   no animated cards/tabs/lists. Budget tiers in `motion/motionBudget.js` (max 900 ms); tokens, never literal
-  durations. Reduce Motion = settled state. Haptics only after the person's own tap. Business transactions
+  durations. Reduce Motion = settled state. Haptics only after the person's own tap. Sound = only idea "169"'s cues (below). Business transactions
   use the calm tone; no confetti. **Animation never delays information:** info text starts >= 0.6 opacity
   (`infoOpacity`, guard `animationNeverDelays.test.js`). No category animations; no offer templates; offer video is tap-to-play.
 - **Motion amplifies correct data, never hides incorrect data (owner, 2026-10-11):** a moment animates only data that is
@@ -690,7 +694,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   Words only; never on the queued "saved" step; the customer's first-reply moment stays as locked.
 - **First redemption (owner item 52):** the customer's earliest-ever completed offer (server: min `completed_at` on their own requests,
   `fetchFirstRedemptionId`, read with the offers) adds "You used Nearby to turn a request into a real-world experience." under
-  "✓ Visit confirmed" (`presentOffer().confirmation.firstVisitNote`); words only, inside VisitConfirmed's one settle; later ones: none.
+  "✓ Visit confirmed" (`presentOffer().confirmation.firstVisitNote`); words only, inside VisitConfirmed's one settle (+ idea "169"'s optional cue, same for every visit); later ones: none.
 - **Plans this month (owner item 53):** Home's "N plans this month" (replaced the weekly recap; opens Your Activity) counts only what HAPPENED,
   decided by `get_my_plans_this_month` (attended + over + checked in or answered "How was it?", or an offer visit completed; one plan once;
   hosting/RSVP/Interested never) over the device's local month; shown at >= 1 only; rolls once via `CountRoll` for a new plan key
@@ -733,6 +737,12 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   the ONE full-screen overlay moment; first offer (items 25/51), accept/confirm (items 12/32), bookings and business transactions
   (calm tone, no confetti), gathering creation (item 43's panel) and everything else stay inline, in an existing sheet/banner or an
   approved small animation. A new full-screen moment needs the owner to reopen the relevant item. Other modals are tools the person opens.
+- **Sound cues (owner idea "169", LOCKED):** the ONLY in-app sounds: three customer cues (`SOUND_CUES`: reply arrives while open, from
+  `offerArrivals`' `onArrival`; own accept/confirm, with its haptic; "✓ Visit confirmed"'s first play), one rule `utils/soundCues.js`
+  (wired by `services/soundCues.js`). Off by default (one Settings switch, kept on the phone), iOS only (ambient session: silent switch,
+  mixes), silent under Reduce Motion (asked fresh, unknown = silent), in the background, while recording, or within 10 s of a reply
+  push's own sound; never awaited, never instead of a visual or a push sound, never on the business side or for any other moment.
+  Files are Nearby's own (`scripts/sounds/generate-sound-cues.py`). Guard `utils/soundCues.test.js`.
 - **First viewing may animate, revisiting never replays (owner item 164):** a real change the person has not seen plays its existing
   moment once when they arrive (push tap included: items 13/21/132/48 as locked); already seen = never again; state and text readable
   from frame one; Reduce Motion = settled; no app-wide layer, dispatcher or new animated place.

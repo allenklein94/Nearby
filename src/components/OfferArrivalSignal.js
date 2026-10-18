@@ -11,6 +11,7 @@ import { MOTION_BUDGET } from '../motion/motionBudget';
 import { navigationRef } from '../navigation/RootNavigator';
 import { openOnTop } from '../navigation/openOnTop';
 import { createOfferArrivals, arrivalDestination, emitViewedArrival } from '../services/offerArrivals';
+import { playSoundCue, noteOsOfferSound, SOUND_CUES } from '../services/soundCues';
 import { fetchMyLiveReplies, fetchFirstReplyState, subscribeToOfferChanges } from '../services/offerArrivalSource';
 import { fetchReplyGlyphs } from '../services/replyGlyphs';
 import { arrivalSignalTitle, arrivalSignalA11y, pillGlyph } from '../utils/offerCopy';
@@ -23,7 +24,8 @@ import { pillLogoPartnerId, logoFor } from '../utils/businessLogo';
 // Offer arrival signal, Layer 1 (owner, 2026-10-09). The rules for WHICH replies are announced live in
 // services/offerArrivals.js; this file only listens (realtime, a push received while open, app foreground/background) and
 // draws one small pill near the top. Restrained on purpose: a short fade, two soft pulses of the glyph (the push's, item 18), then it rests and
-// leaves by itself (or at once when swiped away, owner item 20). Never sound or vibration (the operating system handles the push itself), never blocks: the pill is the
+// leaves by itself (or at once when swiped away, owner item 20). No vibration; sound only as idea "169"'s optional cue (off by default,
+// services/soundCues.js), never doubling the push's own sound (the operating system handles the push itself). Never blocks: the pill is the
 // only touchable area, the rest of the screen stays usable. Reduce Motion: it simply appears and disappears.
 // The sequential offer reveal and the "You're booked" celebration are deferred until the flow has been seen on a device.
 
@@ -49,6 +51,7 @@ export default function OfferArrivalHost() {
       isViewingRequest,
       onViewedArrival: emitViewedArrival,
       onChange: setSignal,
+      onArrival: () => playSoundCue(SOUND_CUES.offerArrived),
     });
     controllerRef.current = controller;
     let unsubscribe = null;
@@ -66,7 +69,7 @@ export default function OfferArrivalHost() {
       else if (state === 'background') end();
     });
     const pushSub = Notifications.addNotificationReceivedListener((n) => {
-      if (OFFER_PUSH_TYPES.has(n?.request?.content?.data?.type)) controller.check();
+      if (OFFER_PUSH_TYPES.has(n?.request?.content?.data?.type)) { noteOsOfferSound(); controller.check(); }
     });
     return () => {
       appSub.remove();
