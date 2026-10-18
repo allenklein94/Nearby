@@ -1,4 +1,11 @@
-# Complex editing gets a focused workflow (owner idea "234", 2026-10-18; NOT item 234): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+# Complex editing gets a focused workflow (owner idea "234", 2026-10-18; NOT item 234): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built, no new rule or code changes. Edit Gathering keeps the existing focused screen
+  for the gathering's basics and settings. Location and visibility stay fixed after creation; item 73 remains in force and is NOT
+  reopened (changing either after people have joined requires a separate decision). Invitations stay on the gathering page
+  (inviting is a communication action, not editing a field). The business request flow and booked card stay on the gathering page;
+  Edit Gathering retains only the "Allow business requests" setting. No extra screens; invitations and business requests are not
+  moved into Edit Gathering.
 
 - Proposal: editing a gathering (title, description, date, time, location, visibility, capacity, invitations, business request) is
   complex enough to justify a focused workflow.
