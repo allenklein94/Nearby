@@ -1,4 +1,10 @@
-# Business details sheet (owner idea "228", 2026-10-18; NOT item 228): MET BY ITEM 17 (LOCKED), ASSESSED, owner decision pending, nothing built
+# Business details sheet (owner idea "228", 2026-10-18; NOT item 228): MET AS BUILT under item 17, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18; the owner's message said "223", the content is idea "228"): met as built under item 17, no new
+  rule. Item 17's business preview sheet stays unchanged (name, real business distance, hours, up to two business-provided
+  qualities, primary action, optional View business). Declined: public star ratings (no public review-rating system); showing a
+  person's request-specific offer as a standing deal to everyone browsing (perks keep their existing Discover place); a duplicate
+  Directions button when the primary action already provides directions. No new rule or code changes.
 
 - Proposal: tapping "Coastal Coffee" opens a sheet: name / 📍 0.7 mi / ⭐ rating / Open until 9 PM / Current offer / Get directions /
   View business; only deeper interest opens the full business profile.
