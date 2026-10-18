@@ -1,3 +1,21 @@
+# Home as a decision surface, one question per module (owner idea "266", 2026-10-18): MET AS BUILT for four of five modules; a separate "Business Offers" module on Home DECLINED; assessed, recommended close with no new rule, module or string, nothing built; CLAUDE.md not changed
+
+Already the surface-jobs doctrine (Home = what should I do now) + idea "238" (Home = doors; Activity = what needs my answer) + idea
+"237" (max 3 per section, only real content) + `HOME_SECTION_PRIORITY` (each gathering once, idea "265"). As built, each module answers
+its own question:
+- Your Plans = what have I committed to (going, hosting, group plans, Interested; max 3, "See all plans" -> Plans), its rows carrying
+  each plan's own reply status (item 160: "Coastal Coffee can take you" / "N offers — choose one");
+- Nearby Right Now = what is happening now (canonical Right Now window, item 26 ring, item 27 mark);
+- Best Pick Tonight + Picked For You = what should I consider (fit threshold, max 2 reasons; Best Pick wording idea "202");
+- friends' line = what are my people doing (item 41 friends planning, item 39 friend nearby, item 40 collision; social line last);
+- plus the ask box (what do you want to do?), the weather card only when it changes picks (item 36) and "N plans this month" (item 53).
+DECLINED: a "Business Offers" module on Home. "Did someone respond to me?" already has its owners, and a Home module would be a
+duplicate destination (idea "238" safeguard; master principle 2): the arrival pill on any screen (item 165), the per-request push
+(item 62), Activity's business-reply rows opening that exact offer (ideas "240"/"241"), the request's own screen and its row on Plans,
+and, for a gathering's request, its Your Plans row on Home (item 160). An offer is a reply to a request, so it lives with that request,
+never in a separate offer inbox (idea "241": there is no offer inbox). No per-module question labels or headings change (11 languages,
+no evidence). Nothing to build; device session first (idea 252; Home checks C12/C16).
+
 # Home prioritizes, no repeat of Your Plans (owner idea "265", 2026-10-18): MET AS BUILT (item 52 + `HOME_SECTION_PRIORITY`), CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (idea 262 note stays a device question, not a reopen)
 
 Already the Home placement rule (`utils/homeAttention.js`, guards `homeAttention.test.js`, `homeInformationBudget.test.js`,
