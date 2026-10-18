@@ -1,3 +1,16 @@
+# Card -> detail transformation (owner idea "230", 2026-10-18; NOT item 230): CONFLICTS WITH LOCKS, recommended DECLINE, owner decision pending, nothing built
+
+- Proposal: tapping "☕ Coastal Coffee" expands the card into the detail surface, image / title / location / offer visually
+  anchored, so the person knows it is the same thing.
+- Conflicts: card-to-detail (cross-screen) transformation was DECLINED by items 95, 96, 97 and 103 (LOCKED), and the owner
+  re-confirmed that lock minutes earlier when closing idea "229" ("Keep items 95, 96, 97 and 103 locked against card-to-detail
+  morphing"; next step = item 44 on real phones before any motion extension). Item 82/88: no cross-screen travel animation.
+  "Offer" anchored on a business card: a request-specific offer is never shown as a standing deal to browsers (idea "228").
+- Continuity already given: Discover gathering and perk cards expand in place; a business tap opens item 17's sheet over Discover
+  (item 44: grows out of a map pin); detail screens open on top (`openOnTop`) and Back restores exact state.
+- Recommendation: decline; reopening would need items 95/96/97/103 reopened by the owner, an item 101 motion spec, and item 44
+  verified on phones first.
+
 # Sheets animate from their object (owner idea "229", 2026-10-18; NOT item 229): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built, no new motion or rules. Item 44's map-pin-to-business-sheet transition kept
