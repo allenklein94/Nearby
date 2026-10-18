@@ -207,6 +207,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Settings stays separate (owner idea "236", 2026-10-18; NOT item 236) MET AS BUILT, CLOSED, LOCKED, no new rule, screen, navigation or code:** `Settings` stays the dedicated screen for preferences, privacy, notifications and account controls (its own Rule 14 job); reached from Profile's gear + Settings section and the contextual links from Discover (preferences) and Home ("See what Nearby noticed"), Back returns to the previous context; Profile = information about you, Settings = your preferences about others + app/account controls; `EditProfile` stays its own screen.
 
+**Home gets shorter, not longer (owner idea "237", 2026-10-18; NOT item 237) MET AS BUILT, ASSESSED, recommended close, owner decision pending, nothing built:** Home = the most relevant previews only (`utils/homeAttention.js`: at most 3 things to act on incl. Best Pick, Your Plans max 3, Nearby Right Now max 3; empty sections omitted, Home may say nothing, `homeQuiet.js`, item 79). One wording difference: a tap on Home never expands content IN PLACE on Home (item 110 + "Home never expands sections in place", LOCKED; ideas "216"/"218"/"220"); it opens the object's detail or its destination (Plans, Discover's filtered view, Happening Now), which is where the relevant content expands. No new rule.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

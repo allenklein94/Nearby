@@ -1,3 +1,20 @@
+# Home gets shorter, not longer (owner idea "237", 2026-10-18; NOT item 237): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: following the screen rules, Home contains the most relevant previews, not every detail, so it gets shorter; tapping
+  something expands the relevant content.
+- Met:
+  1. Previews only: `utils/homeAttention.js` caps what deserves attention at `MAX_HOME_ATTENTION` = 3 (Best Pick counts as one),
+     Your Plans at `MAX_HOME_PLANS` = 3 (full list on Plans, item 33), Nearby Right Now at `MAX_HOME_RIGHT_NOW` = 3; idea "220" kept
+     this (max 3 per section, empty sections hidden, never placeholders).
+  2. Home may say nothing (item 79, `homeQuiet.js`): a row exists only when there is something real to act on; no zeros, filler
+     or unknown counts; Home claims need a visible trigger (Truthfulness).
+  3. Home = doors (item 110): every row names where it goes.
+- Wording difference, kept as locked: "tapping expands the relevant content" happens at the destination, never on Home. Item 110
+  and "Home never expands sections in place" are LOCKED (ideas "216", "218", "220" re-confirmed): a tap opens the object's detail
+  (GatheringDetail, the request screen) or its destination (Plans for "See all plans", Discover's filtered time view for quick picks
+  and the weather card, Happening Now via `RIGHT_NOW_VIEW`), over the existing context with Back restoring Home.
+- Recommendation: close as met as built; no new rule.
+
 # Settings stays separate (owner idea "236", 2026-10-18; NOT item 236): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built; no new rule or code changes. Settings remains a dedicated screen for
