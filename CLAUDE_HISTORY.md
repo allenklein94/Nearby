@@ -1,3 +1,5 @@
+# Idea "250" closed (owner, 2026-10-18): MET AS BUILT, no new rule text; Stripe's sheet and the one-form Make an Offer are intentional exceptions; CLAUDE.md left as before the idea (its pending line removed); no app change.
+
 # "Nearby's Navigation Rule" as a foundational rule (owner idea "250", 2026-10-18): MET AS BUILT, assessed, no new rule text recommended, owner decision pending, nothing built
 
 Clause-by-clause map to item 45, Rule 14 (`RULE14_JOBS` A-F), item 29 q7, ideas 221-223/225/232/233/234/235/242/245/248. Verbatim
