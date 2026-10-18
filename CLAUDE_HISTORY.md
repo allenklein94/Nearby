@@ -1,4 +1,4 @@
-# The "same object" rule for a request (owner idea "258", 2026-10-18): MET AS BUILT for "one object, not six systems"; "Searching" and split Responses / Offer / Accepted / Complete DECLINED as separate states; assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# The "same object" rule for a request (owner idea "258", 2026-10-18): MET AS BUILT for "one object, not six systems"; "Searching" and split Responses / Offer / Accepted / Complete DECLINED as separate states; CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; design decision closed, NOT DEVICE-VERIFIED (offer checklist sections 1 + 11 still to run on a real phone)
 
 Met by idea "173" (the saved request IS the evolving intent object) + idea "184" (`requestTimeline.js`) + ideas 256/257. As built,
 two surfaces, each with its own job, and the request never leaves its one screen once sent:
