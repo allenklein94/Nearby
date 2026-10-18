@@ -1,3 +1,16 @@
+# No section just because the backend has data (owner idea "267", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+Already locked several ways: "A Home claim needs a visible, substantiated trigger of its own kind ... Home may say nothing; no filler
+rows or zero stats" (`homeQuiet.js`); item 32/33's information budget (Home max 3 per section, `homeAttention.js`); idea "237" (Home
+gets shorter: only real, actionable content, no zero counts or placeholders, item 79); idea "238" (Home = doors, no stats/count tiles,
+no manufactured content); idea "266" (each module answers its own question; the "Business Offers" module DECLINED exactly because the
+data exists elsewhere, ideas 238/241). Data sources that exist but do NOT get their own Home section, by decision: weather (only when it
+materially changes the picks, items 36/193), trending (a Discover section only, `constants/trending.js`), business offers (live with
+their request), noticed activity (one line under Picked For You, item 54), learned behaviour (ranks silently, never a section),
+demand/aggregates (business side only, floor of 5). Discover's contextual sections (item 91) are each a reason to browse, omitted when
+empty, one dedupe chain (idea 262). The test is "what should I do?" (surface jobs: Home = what should I do now); a new section must
+answer a distinct question for the person, never mirror a table. Nothing to build; device session first (idea 252).
+
 # Home as a decision surface, one question per module (owner idea "266", 2026-10-18): MET AS BUILT for four of five modules; a separate "Business Offers" module on Home DECLINED; CLOSED (owner), headings kept unless real usage shows confusion, no new rule, module or string, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (Home checks C12/C16)
 
 Already the surface-jobs doctrine (Home = what should I do now) + idea "238" (Home = doors; Activity = what needs my answer) + idea
