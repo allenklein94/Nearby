@@ -1,3 +1,20 @@
+# One gathering, many surfaces, reflected visually (owner idea "260", 2026-10-18): MET AS BUILT on the consumer side; a visual link on the business side DECLINED (privacy); assessed, recommended close with no new rule, token or badge, nothing built; CLAUDE.md not changed
+
+The one-source part is idea "259" (closed): every surface reads the same gathering row and opens the same `GatheringDetail`. The
+visual part is already shared on the consumer side: the gathering's category look comes from ONE helper, `categoryStyleFor`
+(`constants/gatheringCategoryStyles.js`: icon + colour per category), used by Home, Discover (`DiscoverHubScreen`), the map
+(`GatheringsMapView`), Plans, GatheringDetail, the published panel and item 41's chips; the same real title everywhere; the same when
+line from the one whenLabel engine (`displayWhen` / `displayGatheringWhen`, incl. GatheringChat's header, idea "244"); the same cover
+(host's photo, else the one curated photo per category, `constants/gatheringCoverPhotos.js`). So "Your Plan: Coffee tonight" (Home),
+"Coffee gathering nearby" (Discover) and the Plans -> Upcoming row (Profile's plan-stat links open Plans) already carry the same icon,
+title and time. Activity rows are EVENTS led by the person who acted ("{name} accepted your invite" / "wants to join {title}"), naming the
+gathering's title and opening it (ideas 240/241): kept, no category icon added without device evidence.
+DECLINED: the business side reflecting the gathering. A business sees a REQUEST, not the gathering (idea "246", privacy boundary:
+category + start + party + price level; title only when directed + screened; never attendees, social context, host, cover or the
+gathering's look), so "Coffee request from 4 people" must NOT visually identify which gathering it is; the business keeps its own
+operational card (item 129). No new cross-surface badge, colour token or "same object" marker (it would be a second representation of
+`categoryStyleFor`). Nothing to build; whether the shared look reads as one object = a device-session observation (idea 252).
+
 # Many contexts, one object (owner idea "259", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule (restates principle 2 + Rule 14), nothing built; CLAUDE.md not changed; design decision closed, NOT DEVICE-VERIFIED
 
 Already master principle 2 (one source of truth per object) + Rule 14 + item 45 + "States, not folders" + "One object, once per
