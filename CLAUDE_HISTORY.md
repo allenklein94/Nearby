@@ -1,3 +1,24 @@
+# Home as a dashboard of doors (owner idea "238", 2026-10-18; NOT item 238): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: Home answers What should I do? What's happening with my plans? What matters right now? What should I know? Then
+  Discover explores, Create creates, People connects, Activity holds responses, Profile holds identity/account.
+- Met: the surface jobs (Standing conventions: Home = what should I do now; Discover = what exists around me; Create = make it
+  happen; People = who with) and Rule 14's registry (`constants/screenRegistry.js`: Home "what should I do right now (one capped
+  attention list)", Discover "what exists around me", Create "start a gathering, a community or a plan for someone", Activity
+  "invitations, requests and replies that need an answer", Profile "you, your interests, friends, gatherings, business and the way
+  into Settings"). Home's four questions map to what is built: intent box + Picked For You / Best Pick (what to do), Your Plans
+  (my plans), Nearby Right Now + item 26's ring (what matters now), the social line / weather card when it materially changes the
+  picks / item 79's real stat rows (what to know); max 3 each (idea "237"), Home may say nothing.
+- Differences, kept as built:
+  1. People is not a tab. The five tabs (Home, Discover, Create, Activity, Profile) are LOCKED; People is Discover's People mode
+     (Friends / Dating lists, item 86's people asks, idea "156"), with `FriendDiscovery` as a presentation route, never a separate
+     surface. A sixth tab would duplicate Discover's People mode.
+  2. "Where responses live": Activity holds what needs an answer (invitations, join requests, waves, replies); a business reply
+     to a request lives on that request's screen (item 23's travel, item 62's push, item 165's pill opening it), Plans holds the
+     plans.
+  3. "Dashboard" here = previews that are doors (items 110/237), never a stats dashboard, tiles or zero counts (item 79).
+- Recommendation: close as met as built; no new rule, tab or screen.
+
 # Home gets shorter, not longer (owner idea "237", 2026-10-18; NOT item 237): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built; no new rule, no Home expansion, no code changes. Home stays a concise preview
