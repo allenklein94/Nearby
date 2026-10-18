@@ -446,11 +446,12 @@ export function startOfDay(d) {
 // "Right Now" window (utils/rightNowWindow.js -- the same definition
 // GatheringsScreen.js's own "Right Now" filter chip already used),
 // instead of the same broad match a plain "today"/"tonight" ask gets.
-export function matchesDateWindow(scheduledAt, dateWindow) {
+// `now` (optional, default the real clock) lets a caller that already holds a clock judge every window against it (strong-match
+// clock fix, 2026-10-18: strongMatchPieces passed its `now` to its "over" check but this read the real clock).
+export function matchesDateWindow(scheduledAt, dateWindow, now = new Date()) {
   if (!dateWindow || dateWindow === 'flexible') return true;
-  if (dateWindow === 'now') return isWithinRightNowWindow(scheduledAt);
+  if (dateWindow === 'now') return isWithinRightNowWindow(scheduledAt, now);
   const date = new Date(scheduledAt);
-  const now = new Date();
   const todayStart = startOfDay(now);
   const tomorrowStart = new Date(todayStart);
   tomorrowStart.setDate(tomorrowStart.getDate() + 1);

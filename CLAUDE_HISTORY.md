@@ -1,3 +1,17 @@
+# Strong-match clock defect (found during item 162 verification, owner approved the fix 2026-10-18): FIXED, VERIFIED
+
+Defect: `strongMatchPieces(item, ask, now)` (`utils/strongMatch.js`) used `now` for its "over" check but its date-window step
+`matchesDateWindow(start, dw)` (`services/intentResolverScoring.js`) read the real clock, so `gatheringCheckInWindow.test.js`'s
+exact-end strong-match test failed on every day but 2026-10-17 (reproduced on bb05b885, before item 162). Not user-visible:
+Home and Discover call it with no `now`. Fix: `matchesDateWindow(scheduledAt, dateWindow, now = new Date())` judges every
+window (today/tonight/tomorrow/weekend, and 'now' via `isWithinRightNowWindow(.., now)`) against the caller's clock; real
+clock when none is given; `strongMatchPieces` passes its `now`. The only other caller (`intentResolver.js`) passes two arguments,
+unchanged. No behaviour, animation, event, database, string or screen change; no assertion changed.
+Tests added: `intentResolverScoring.test.js` (every window follows an injected now with the system clock set to 2030; no now =
+the real clock), `motion/strongMatch.test.js` (injected now decides the time piece; with none, the real clock). Mutation check:
+with the old source, 3 fail (the 2 new + the gatheringCheckInWindow test); with the fix all pass. Targeted 136/136; full Jest
+470/470 suites, 6314 pass, 11 todo, 0 fail; journey `strongMatch` 4/4 on prod (rolled back). Item 162 stays accepted as is.
+
 # Every animation has a truthful trigger (owner item 162, 2026-10-18): DONE, documentation + guard only
 
 Ask: every animation must be tied to a real, identifiable trigger (e.g. "Accepted" = `business_request_offers.status =

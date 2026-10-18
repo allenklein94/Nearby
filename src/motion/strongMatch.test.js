@@ -18,6 +18,17 @@ const ask = { category: 'Coffee', dateWindow: 'tonight' };
 const coffee = (extra = {}) => ({ type: 'gathering', category: 'Coffee', startsAt: at(19), distanceMiles: 0.4, ...extra });
 
 describe('strongMatchPieces: all three stated pieces really match, or no claim', () => {
+  // Strong-match clock fix (2026-10-18): the time piece is judged against the caller's `now`, not the device clock.
+  test('the date window follows an injected now; with none, the real clock', () => {
+    jest.setSystemTime(new Date(2026, 9, 12, 15, 0)); // the "real" clock is two days later
+    try {
+      expect(strongMatchPieces(coffee(), ask, NOW)?.map((p) => p.key)).toEqual(['activity', 'time', 'place']);
+      expect(strongMatchPieces(coffee(), ask)).toBeNull(); // no now: judged on the 12th, so the 10th is not tonight
+      expect(strongMatchPieces(coffee({ startsAt: new Date(2026, 9, 12, 19, 0).toISOString() }), ask)?.length).toBe(3);
+    } finally {
+      jest.setSystemTime(NOW);
+    }
+  });
   test('activity + time + place -> the three pieces, in order', () => {
     expect(strongMatchPieces(coffee(), ask, NOW)).toEqual([
       { key: 'activity', value: 'Coffee' }, { key: 'time', value: at(19) }, { key: 'place', value: 0.4, approximate: true },

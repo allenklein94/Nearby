@@ -29,7 +29,7 @@ export function strongMatchPieces(item, ask, now = new Date()) {
   const start = startOf(item);
   const startMs = start ? new Date(start).getTime() : NaN;
   if (!dw || dw === 'flexible' || !Number.isFinite(startMs)) return null;
-  if (!matchesDateWindow(start, dw)) return null;
+  if (!matchesDateWindow(start, dw, now)) return null;
   if (dw === 'tonight' && new Date(startMs).getHours() < TONIGHT_START_HOUR) return null;
   // over: never "a match". A gathering ends by the one end rule (start + duration, else + 30 min, end exclusive; owner
   // 2026-10-17); a business posting has no end of its own here, so it keeps the 3 h "long over" cut.

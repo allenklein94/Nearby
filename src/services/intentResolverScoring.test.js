@@ -385,6 +385,41 @@ describe('matchesDateWindow', () => {
     }
   });
 
+  // Strong-match clock fix (2026-10-18): a caller's own `now` decides every window; without one, the real clock does.
+  it('judges every window against an injected now, never the real clock', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2030, 0, 2, 12, 0)); // the "real" clock, far from the injected day
+    try {
+      const now = new Date(2026, 9, 17, 12, 0); // Saturday 17 Oct 2026, local
+      const today = new Date(2026, 9, 17, 18, 0).toISOString();
+      const tomorrow = new Date(2026, 9, 18, 10, 0).toISOString();
+      const monday = new Date(2026, 9, 19, 10, 0).toISOString();
+      expect(matchesDateWindow(today, 'today', now)).toBe(true);
+      expect(matchesDateWindow(today, 'tonight', now)).toBe(true);
+      expect(matchesDateWindow(tomorrow, 'today', now)).toBe(false);
+      expect(matchesDateWindow(tomorrow, 'tomorrow', now)).toBe(true);
+      expect(matchesDateWindow(tomorrow, 'weekend', now)).toBe(true);
+      expect(matchesDateWindow(monday, 'weekend', now)).toBe(false);
+      expect(matchesDateWindow(new Date(2026, 9, 17, 13, 0).toISOString(), 'now', now)).toBe(true);
+      expect(matchesDateWindow(today, 'now', now)).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
+  it('falls back to the real clock when no now is given (the existing callers)', () => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 9, 18, 12, 0));
+    try {
+      const yesterday = new Date(2026, 9, 17, 18, 0).toISOString();
+      const laterToday = new Date(2026, 9, 18, 18, 0).toISOString();
+      expect(matchesDateWindow(laterToday, 'today')).toBe(true);
+      expect(matchesDateWindow(yesterday, 'today')).toBe(false);
+      expect(matchesDateWindow(new Date(2026, 9, 18, 13, 0).toISOString(), 'now')).toBe(true);
+      expect(matchesDateWindow(laterToday, 'now')).toBe(false);
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('the exported window constants match the real [-30min, +2h] shape', () => {
     expect(RIGHT_NOW_WINDOW_PAST_MS).toBe(30 * 60 * 1000);
     expect(RIGHT_NOW_WINDOW_FUTURE_MS).toBe(2 * 60 * 60 * 1000);
