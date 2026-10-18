@@ -1,3 +1,20 @@
+# Settings stays separate (owner idea "236", 2026-10-18; NOT item 236): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal: Settings stays a separate screen because it isn't part of the immediate discovery task; this is why Profile vs
+  Settings matters.
+- Met:
+  1. `Settings` is its own dedicated screen (`constants/screenRegistry.js`: job C, "Preferences, privacy, notifications and
+     account controls"); not one of the five tabs, never inside Home or Discover.
+  2. Entry points: Profile's header gear and its Settings section (Preferences "Control who and what Nearby shows you", Settings);
+     in context only where a setting answers what the person is looking at: Discover's preferences link (`scrollToPreferences`),
+     Home's "See what Nearby noticed" (item 54, `scrollToNoticed`). Back returns to where they were.
+  3. Profile vs Settings: Profile (registry: "you, your interests, friends, gatherings, business and the way into Settings") = who
+     you are; self-description facts (gender identity, ethnicity) and their hide switches moved to Profile; Settings keeps
+     preferences about other people (age range, ethnicity preferences, Looking For) and app/account controls
+     (Profile/Dating/Settings reorganization, see "Profile/Dating/Settings identity-field reorganization -- DONE"). Editing the
+     profile itself is `EditProfile` (item 35).
+- Recommendation: close as met as built; no new rule (Rule 14's registry already records each screen's job).
+
 # Checkout gets focus (owner idea "235", 2026-10-18; NOT item 235): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built; no new rule, checkout screen or code changes; no locked decision reopened.
