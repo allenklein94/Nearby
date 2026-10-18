@@ -1,3 +1,20 @@
+# Nearby Network Visualization (owner idea "209", 2026-10-18; NOT item 209): ASSESSED, owner decision pending, nothing built
+
+- Proposal: an occasional, optional "network" view when opening a request: YOU at the center, signals to People / Places /
+  Activities / Businesses, relevant connections lighting up (YOU -> Coffee -> Coastal Coffee -> Offer); branded, spectacular,
+  explanatory, never the normal UI.
+- Met in words: the request screen already explains the chain from real saved state: item 84's "From what you said" card (what
+  the words gave), "We asked N nearby businesses" (items 158/159, really reached), the status line + "Next:" (`requestTimeline.js`,
+  idea "184", real events + times only), each reply on its card (items 23/25), "You're booked" (item 12), Visit confirmed (item 52).
+- Conflicts (code/doc reading): item 103 (orbit / relationship network motion DECLINED, LOCKED); item 92 + Privacy (a People node
+  on an ask implies pairing or showing people around a typed ask); items 158/188 (Business nodes for reached businesses would show
+  who saw it but did not respond, i.e. viewing/receipt as a customer state); motion truth (connections lighting up in sequence =
+  staged progress on a timer; the only real events already have their moments); item 55 (no new animated places; a connection
+  moment reuses the Pulse); idea "190" (branded motion DECLINED); item 167 (a spectacular overlay = full-screen, match only);
+  item 102 (the biggest animation is the rarest: the business reply signature); screen reduction (a new view for the same job).
+- Recommendation: DECLINE as a visualization. If the chain proves unclear on a phone (offer checklist section 11), fix the
+  request screen's words (`requestTimeline.js`), never add a network view.
+
 # Animation priority follows importance (owner idea "208", 2026-10-18; NOT item 208): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): keep as built. No star scale, priority table, new animation categories, rules or animations; idea
