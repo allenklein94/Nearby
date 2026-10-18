@@ -123,6 +123,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Business personality within Nearby's system (owner idea "190", 2026-10-18; NOT item 190) MET AS BUILT by item 50 (+ items 10/21/25/49 + logo item), LOCKED, nothing built:** business supplies offer photo/video (tap-to-play), screened logo beside the name, its own words; Nearby owns structure, type, spacing, CTA, motion, accessibility (`presentOffer`). Branded motion, brand colours/fonts/templates/button styles DECLINED. NOT DEVICE-VERIFIED: item 49 checklist + offer checklist.
 
+**Offer card adapts to the media (owner idea "191", 2026-10-18; NOT item 191) MET AS BUILT by item 21 (`offerMediaView`) + items 10/50, LOCKED, nothing built:** screened video = tap-to-play, photo = whole in the frame, none = plain card, screened logo beside the name. Autoplaying "video-backed" card and dressing up logo-only replies DECLINED. NOT DEVICE-VERIFIED: offer + item 49 checklists.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

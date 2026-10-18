@@ -1,3 +1,16 @@
+# Offer card adapts to the business's media (owner idea "191", 2026-10-18; NOT item 191, weather rank-only): MET AS BUILT, LOCKED, nothing built
+
+Idea: a business that uploads a short video gets a video-backed card; one with only a logo gets a beautiful static version; the
+system adapts automatically. Finding (kept as is): `offerMediaView` in `utils/offerPresentationEngine.js` (item 21) already picks
+the card's media from what THIS reply carries: video with a screened poster = tap-to-play muted video in the fixed frame; older
+unscreened video = honest "Video attached" label; photo = whole image in the fixed frame (item 10); no media = the plain card.
+The screened logo sits beside the name on every card that has one (logo item). Same card structure for all (items 11/17/50);
+`OfferCustomerBody` renders it for the customer card and item 49's preview. Owner decisions (LOCKED): a video BACKING the card
+(autoplaying/looping background video) DECLINED (items 22/50: video never preloaded or autoplayed, tap-to-play); a logo-only reply
+is never dressed up (no artwork, hero, colour wash or enlarged logo generated from the logo; item 50 + logo item: logo beside the
+name only, no prominence lever); media comes only from the reply, never borrowed from the business profile. No code, strings,
+migration or checklist changed. Verification = offer checklist + item 49 checklist (no real screened offer media in production; needs Anthropic credit).
+
 # Business personality within Nearby's system (owner idea "190", 2026-10-18; NOT item 190, the "Ask nearby businesses" link placement): MET AS BUILT, LOCKED, nothing built
 
 Idea: a business brings its own video, logo, photos and offer artwork; Nearby controls typography, spacing, interaction, CTA,
