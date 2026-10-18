@@ -1,3 +1,14 @@
+# The business gets the whole request (owner idea "246", 2026-10-18): MOSTLY MET, assessed, owner decision pending, nothing built
+
+Checked: latest `get_business_opportunities` (20270313) returns category, party_size (item 119b booked headcount), budget_min/max,
+date, time_window_start/end, attributes, dietary, cuisine, requested_items, occasion, experience_level, surprise_mode, add-on, plan_time,
+note (only `is_directed`), gatherings {interest_tag, title only directed + `_title_safe_for_business`, scheduled_at, price_level},
+requester name only after acceptance. `buildOpportunityCard` renders title, "N people · day · time", feel/budget line, `requestTimingLabel`
+("Today at 6:30 PM"), `potentialValue`. Owner's example: Coffee / 4 people / Tonight / 6:30 / optional note / gathering context = met
+(note + gathering title within the item 29 / privacy limits). 0.7 mi = NOT shown and not in the payload; recommended keep off
+(privacy: minimum business payload; location of one person at a named time), coarse band only with item 159 evidence + a privacy decision.
+"#29" read as owner item 29 (ask a specific business = one request model; the note exception).
+
 # Don't make the user remember context (owner idea "245", 2026-10-18): MET AS BUILT, assessed, owner decision pending, nothing built
 
 Principle already locked as "Infer first; never re-ask what Nearby knows" + item 112 (carry party size/time/category/place forward).
