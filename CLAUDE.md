@@ -83,6 +83,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Haptics for major moments (owner idea "170", 2026-10-18) MET AS BUILT, LOCKED, nothing built:** success haptic only after the person's own accept/confirm/plan creation; an arriving offer = pill only (app open) or the OS push (closed), never a haptic; Visit confirmed none. Arrival lock, item 165 and own-tap-only NOT reopened. NOT DEVICE-VERIFIED (separate): `PRODUCT_AUDIT/IDEA_170_HAPTICS_DECISION_2026-10-18.md` checks 1-6.
 
+**Cause and effect, one connected chain (owner idea "171", 2026-10-18) MET AS BUILT, LOCKED north star, nothing built:** ask -> response -> join -> reply -> accept -> booking -> arrive -> redeem -> complete is delivered by items 45/55/158/159, 28/73, 25/23/165/48/13, 12/32, the manual check-in, 52/34 under items 98/162/164/58/99/167. No location-inferred arrival (Option B stays deferred). NOT VERIFIED that the chain FEELS connected: only the device session (order below) can establish it; a disconnected link is fixed at its shared source, never with added motion.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

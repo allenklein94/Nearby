@@ -1,3 +1,19 @@
+# Cause and effect, one connected chain (owner idea "171", 2026-10-18): MET AS BUILT, LOCKED north star, nothing built
+
+Idea: not lots of animation but cause and effect, every transition connected: you ask -> something responds; someone joins ->
+the plan changes; a business responds -> the opportunity changes; you accept -> the offer becomes a reservation; you arrive ->
+the plan becomes real; you redeem -> the transaction completes. Mapping (customer / business-host): ask = item 45 chips + items
+55/158/159 "We asked N" rings after the server returns / item 48 arrival; join = reload / items 28/73 flow-in + count roll; reply =
+items 25 signature + 23 travel + 165 pill / item 13 "Offer sent"; accept = items 12/32 booked + merge into Your Plan / item 13
+"Accepted"; arrive = manual check-in only (locked 2026-10-17, no arrival moment, Option B deferred); redeem = item 52 Visit
+confirmed + item 34 Completed / item 13 "Redeemed". Governing rules kept: one object changes in place (item 98, "the system brings
+the next thing"), real saved state triggers (item 162), first viewing only (item 164), motion explains a real change and stays
+restrained (items 58/99/167/"168"), haptics own-tap only ("170"), sound optional ("169"), business side calm (item 129).
+Owner decision: met by the existing design + implementation, locked; no new screens, animations, timing or features.
+Validation: automated tests prove each link fires from the right state; whether the whole chain FEELS connected is NOT verified
+and only the real-device session can establish it. A link that feels disconnected there is fixed at its shared source; no
+pre-emptive motion or scope. No code change.
+
 # Haptics for major moments (owner idea "170", 2026-10-18): MET AS BUILT, LOCKED, nothing built
 
 Idea: subtle iPhone haptics for offer received / accepted / confirmed. Inventory: one helper `motion/haptics.js` (light for
