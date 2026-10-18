@@ -1,4 +1,11 @@
-# Creation gets a focused mode (owner idea "233", 2026-10-18; NOT item 233): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+# Creation gets a focused mode (owner idea "233", 2026-10-18; NOT item 233): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built, no new rule. Create Gathering keeps its dedicated five-step screen (What,
+  When & Where, Who's Invited, Details, Review & Publish); Edit Gathering keeps its existing focused workflow; Ask a business keeps
+  its dedicated screen; Make an Offer keeps the single focused form over the dimmed Opportunities page, with the live customer
+  preview above Send Offer and device-saved draft recovery. Make an Offer is NOT turned into another dedicated screen: as decided
+  under ideas "222" and "225", the form provides focus while preserving the request's context and avoiding an unnecessary
+  navigation step. No new screen, rule or code changes.
 
 - Proposal: creation (a gathering, a business offer) is a focused task and deserves a dedicated screen: a clean environment, no
   distracting feed, no giant Home.
