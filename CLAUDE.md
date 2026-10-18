@@ -239,6 +239,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Confirm inline (owner idea "274", 2026-10-18; NOT item 274) DECIDED + BUILT, ACCEPTED AS BUILT (owner, 2026-10-18; no more strings/components/motion/scope), NOT DEVICE-VERIFIED:** the 10 success-only OK-dialogs are now `showSuccessToast` with their existing words (guard `motion/confirmInline.test.js`); offerUpdated, "We couldn't find a nearby business…" and Welcome to Premium stay dialogs. Remaining = check C20 of the first-session checklist only (esp. partner request returns by itself, one buzz on relationship advice + ID verification).
 
+**Full-screen only for meaningful moments (owner idea "275", 2026-10-18; NOT item 275) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** item 167 unchanged (mutual match = the only full-screen moment); first offer/reply, booking, visit confirmed, gathering published stay inline (items 51/25/12/52/43); "major gathering" full-screen DECLINED (no definition; no headcount-based celebration); #15 stays gated on the phone; any later full-screen = reopen item 167 + a motion spec per moment.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

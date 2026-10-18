@@ -1,4 +1,9 @@
-# Full-screen only for emotionally meaningful moments (owner idea "275", 2026-10-18; NOT item 275): "everything else inline" MET; the three examples as full-screen CONFLICT with item 167 (LOCKED); ASSESSED, recommended keep item 167, owner decision pending; nothing built; CLAUDE.md not changed
+# Full-screen only for emotionally meaningful moments (owner idea "275", 2026-10-18; NOT item 275): "everything else inline" MET; the three examples as full-screen CONFLICT with item 167 (LOCKED); CLOSED, KEEP AS BUILT (owner, 2026-10-18, LOCKED); "major gathering" full-screen DECLINED; nothing built
+
+Owner decision (2026-10-18): keep item 167 unchanged; no new animations, full-screen moments or rules; shortlist #15 stays gated on the
+real-device check; a full-screen "major gathering created" moment DECLINED (no definition of "major"; headcount would be an arbitrary
+size-based celebration rule). If full-screen moments are reconsidered later: reopen item 167 and write a motion spec (item 101) per moment
+first. Next step = the phone test, not another implementation pass.
 
 Checked in code 2026-10-18. The only full-screen moment is the mutual match (`MOTION_PRESENTATIONS.fullScreen` = `matchIntro`,
 `motion/MatchAnimation.js`; guard `motion/motionLevels.test.js`). Item 167 (LOCKED, stricter than this idea) keeps the three examples inline:
