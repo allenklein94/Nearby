@@ -141,7 +141,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Live local pulse" on Discover (owner idea "200", 2026-10-18; NOT item 200) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** one signal per real event: item 26's Happening Now ring (rows + map indicators static), item 165's pill + item 62's push for a business reply, items 28/39/41/73 for friends. DECLINED: live card entrances, moving rows, timed update stream, friend-joined feed on Discover, cross-app animation layer; rows stay static until normal refresh.
 
-**"A window into the local moment" (owner idea "201", 2026-10-18; NOT item 201) ASSESSED, MET AS BUILT, OWNER DECISION PENDING, nothing built:** Discover's job "what exists around me" + Happening Now (items 26/27/120/108) + item 102/idea "171"; motion only for real changes. Recommended: record as met, keep "What do you want to do nearby?" as the one concept (the local moment answers it; not a second north star or an events feed); no new rule, no build.
+**"A window into the local moment" (owner idea "201", 2026-10-18; NOT item 201) MET BY EXISTING IMPLEMENTATION, CLOSED, LOCKED, nothing built:** "What do you want to do nearby?" stays the one concept; Discover = what exists nearby (Happening Now one view, not the objective); Home = decide what to do; items 26/27/108/120 kept; motion only for real events. No second north star, rule or build.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).

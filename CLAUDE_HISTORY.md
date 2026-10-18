@@ -1,4 +1,8 @@
-# "A window into the local moment" (owner idea "201", 2026-10-18; NOT item 201): ASSESSED, MET AS BUILT within the intent doctrine, OWNER DECISION PENDING, nothing built
+# "A window into the local moment" (owner idea "201", 2026-10-18; NOT item 201): MET BY EXISTING IMPLEMENTATION (owner final), CLOSED, LOCKED, nothing built
+
+- Owner final decision (2026-10-18): met. "What do you want to do nearby?" stays the single guiding concept; Discover stays focused on
+  what exists nearby with Happening Now as one view, not the app's primary objective; Home stays focused on deciding what to do; items
+  26/27/108/120 preserved; motion truth kept (real events, never background ambience). No second north star, new rule or implementation.
 
 - Proposal (an objective, no feature): not "a database of places" but "here's what's happening around you right now"; motion
   reinforces that.
