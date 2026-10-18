@@ -1,4 +1,15 @@
-# Home as a dashboard of doors (owner idea "238", 2026-10-18; NOT item 238): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+# Home as a dashboard of doors (owner idea "238", 2026-10-18; NOT item 238): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built; never create navigation just to make every feature visible. Locked:
+  Home = "What should I do?" (search box, Picked For You, Best Pick, Nearby Right Now, relevant friends/weather context; sections
+  only when there is something real and useful). Discover = "What can I find?" (places, activities, people; Friends and Dating stay
+  modes inside Discover, never bottom tabs). Activity = "What needs my answer?" (invitations, join requests, waves, replies needing
+  attention; business replies open the relevant request, never another inbox). Plans = "What's happening with my plans?" (committed
+  plans stay in Plans; Home previews and links there without duplicating it). Dashboard = previews, not statistics (previews lead
+  to the existing destination; no extra dashboard screen, empty-state count tiles or redundant navigation).
+- Safeguards: (1) no sixth tab, the five tabs stay Home, Discover, Create, Activity, Profile; (2) no manufactured content, weather
+  only when it changes the recommendations, other Home sections only with relevant content; (3) no duplicate destinations, a preview
+  links to the real screen that owns the information. Implementation not reopened unless a concrete behaviour contradicts it.
 
 - Proposal: Home answers What should I do? What's happening with my plans? What matters right now? What should I know? Then
   Discover explores, Create creates, People connects, Activity holds responses, Profile holds identity/account.
