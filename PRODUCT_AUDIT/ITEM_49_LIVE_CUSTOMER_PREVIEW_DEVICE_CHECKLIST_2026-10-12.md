@@ -19,6 +19,7 @@ opportunity is needed; send at least one offer to a real customer account on a s
 | 11 | (Idea "189", added 2026-10-18) A set price (not a discount): type a price, change it, clear it. The preview's price line follows each change at once and matches the customer's card in check 7. | |
 | 12 | (Idea "189") An Alternative with two times (item 119; and item 119b's smaller-party second time if offered): both times show in the preview exactly as the customer's time choice shows them; removing the second time removes it from the preview. | |
 | 13 | (Idea "189") Business website in a real desktop browser: while editing the fields near the top of the form, can the owner see the preview without losing their place? Record yes/no + a screenshot. Report only: a "no" is the evidence that would reopen a side-by-side layout (declined until then); nothing changes on this check alone. | |
+| 14 | (Idea "191", added 2026-10-18) Parity per media case, on the phone AND the business website: send one offer each with a screened video, a photo, and no attachment (and, if one exists, a legacy unscreened video). For each, the preview and the delivered customer card show the same media treatment (tap-to-play poster / whole or framed photo / plain card / "Video attached"), the same logo beside the name, nothing autoplaying. Record each pair with a screenshot. | |
 
 Not covered by this item: AI screening of the content (needs Anthropic credit), the one-tap Standard availability /
 Alternative responses (fixed text, no preview, unchanged).

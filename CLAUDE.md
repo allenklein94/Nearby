@@ -123,7 +123,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Business personality within Nearby's system (owner idea "190", 2026-10-18; NOT item 190) MET AS BUILT by item 50 (+ items 10/21/25/49 + logo item), LOCKED, nothing built:** business supplies offer photo/video (tap-to-play), screened logo beside the name, its own words; Nearby owns structure, type, spacing, CTA, motion, accessibility (`presentOffer`). Branded motion, brand colours/fonts/templates/button styles DECLINED. NOT DEVICE-VERIFIED: item 49 checklist + offer checklist.
 
-**Offer card adapts to the media (owner idea "191", 2026-10-18; NOT item 191) MET AS BUILT by item 21 (`offerMediaView`) + items 10/50, LOCKED, nothing built:** screened video = tap-to-play, photo = whole in the frame, none = plain card, screened logo beside the name. Autoplaying "video-backed" card and dressing up logo-only replies DECLINED. NOT DEVICE-VERIFIED: offer + item 49 checklists.
+**Offer card adapts to the media (owner idea "191", 2026-10-18; NOT item 191) MET, VERIFICATION PENDING, LOCKED, nothing built (no implementation authorized):** screened video = muted, fixed frame, tap-to-play; legacy unscreened = "Video attached"; photo = item 10's frame fit; none = plain card; screened logo beside the name only; media only from the reply, never the profile; one card + one component for customer card and preview. Video/looping backgrounds, autoplay, logo artwork, colour washes, enlarged logos, business styling DECLINED (items 22/50). OPEN QUESTION (owner): owner wording says photos never cropped, but item 10 crops a near-frame-shaped photo up to ~20% (`COVER_TOLERANCE`); not changed. Verification: offer checklist section 5 + item 49 check 14.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
@@ -442,6 +442,10 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 ### Truthfulness
 - **No invented numbers, signals or states.** Every figure, badge, reason and button traces to a real query
   result; unknown renders as nothing, never 0 or a guess. The screen agreeing with its data is the test (global rule 7).
+- **Met vs verified (owner, 2026-10-18, LOCKED):** MET = implemented (cite items/code/tests; no duplicate build); VERIFIED = the specified
+  checks actually ran and passed in the specified environment, results recorded; MET, VERIFICATION PENDING = built, checks outstanding;
+  NOT MET = missing, wrong or failing. A checklist, plan, code review or "it's built" is never verification; a defect found is fixed
+  without rebuilding what works; never claim inspection or test runs that didn't happen.
 - **Money figures never mix:** fee owed (billing estimate, itemized), value of offers redeemed
   (`get_partner_offer_value`, owner-set prices), potential value ("up to $X", request data only). Never
   "revenue", "earnings" or customer spend without an explicit transaction amount (none exists).

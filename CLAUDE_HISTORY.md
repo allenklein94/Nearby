@@ -1,15 +1,36 @@
-# Offer card adapts to the business's media (owner idea "191", 2026-10-18; NOT item 191, weather rank-only): MET AS BUILT, LOCKED, nothing built
+# Status terminology: met vs verified (owner, 2026-10-18, LOCKED)
+
+Owner rule, recorded as given: MET = the required behavior is already implemented (cite the items, code paths or existing tests;
+never authorizes duplicate implementation). VERIFIED = the specified checklist/tests were actually executed and passed in the
+specified environment (device, browser, production), results recorded. MET, VERIFICATION PENDING = implemented, one or more
+required checks outstanding. NOT MET = a required behavior is missing, incorrect or demonstrably fails its acceptance criteria. A
+planned test, an existing checklist, a code review or a claim that something is built is never proof that device, browser or
+production verification passed. An idea is recorded met when implemented even with verification pending; verification stays open
+until the checks pass; a defect found in verification is recorded and fixed without rebuilding behavior that already works.
+Statuses describe actual evidence: never claim code inspection or test execution that did not occur. Principle: don't build what
+already exists, don't claim what hasn't been tested. Folded into CLAUDE.md as one Truthfulness bullet.
+
+# Offer card adapts to the business's media (owner idea "191", 2026-10-18; NOT item 191, weather rank-only): MET, VERIFICATION PENDING, LOCKED, nothing built
 
 Idea: a business that uploads a short video gets a video-backed card; one with only a logo gets a beautiful static version; the
-system adapts automatically. Finding (kept as is): `offerMediaView` in `utils/offerPresentationEngine.js` (item 21) already picks
-the card's media from what THIS reply carries: video with a screened poster = tap-to-play muted video in the fixed frame; older
-unscreened video = honest "Video attached" label; photo = whole image in the fixed frame (item 10); no media = the plain card.
-The screened logo sits beside the name on every card that has one (logo item). Same card structure for all (items 11/17/50);
-`OfferCustomerBody` renders it for the customer card and item 49's preview. Owner decisions (LOCKED): a video BACKING the card
-(autoplaying/looping background video) DECLINED (items 22/50: video never preloaded or autoplayed, tap-to-play); a logo-only reply
-is never dressed up (no artwork, hero, colour wash or enlarged logo generated from the logo; item 50 + logo item: logo beside the
-name only, no prominence lever); media comes only from the reply, never borrowed from the business profile. No code, strings,
-migration or checklist changed. Verification = offer checklist + item 49 checklist (no real screened offer media in production; needs Anthropic credit).
+system adapts automatically. Owner confirmed (2026-10-18): met by the existing reply-card media behavior; no new implementation
+authorized. Evidence for "met": code read this session (`offerMediaView` in `utils/offerPresentationEngine.js`, `utils/mediaFit.js`,
+`OfferCustomerBody` rendering `OfferMedia`); no tests were run for this record. Rules preserved (LOCKED):
+- Screened video (has a screened poster): muted, fixed-frame, plays only when tapped.
+- Unscreened legacy video: the honest "Video attached" label.
+- Photo: in the fixed frame per item 10. NOTE, flagged to the owner: the owner's wording was "full image without cropping", but item
+  10 as built shows a photo whole ("contain" over a blurred copy) only when its shape differs from the frame; a photo shaped roughly
+  like the frame fills it with a small even crop (`COVER_TOLERANCE` 1.25, up to ~20% trimmed; unknown size = whole). Recorded as
+  built; NOT changed (no implementation authorized); owner to decide whether item 10's cover case should go.
+- No attachment: the standard plain card.
+- Business logo: screened logo beside the business name only (logo item).
+- Media source: only media attached to the actual reply, never inferred from or borrowed from the business profile.
+- Same card structure for every business; the same component (`OfferCustomerBody` + `presentOffer`) for the customer's card and
+  the business's live preview (items 11/17/21/49).
+DECLINED (LOCKED): video backgrounds, autoplay, looping backgrounds, logo-derived artwork, colour washes, enlarged logo treatments,
+business-specific card styling. Items 22 and 50 preserved. VERIFICATION OPEN: offer experience checklist section 5 (checks added:
+legacy video label, no-media plain card, logo beside the name only, no media borrowed from the profile) and item 49 checklist
+(check 14 added: preview vs delivered card parity for each media case, phone + website). Not verified until those pass.
 
 # Business personality within Nearby's system (owner idea "190", 2026-10-18; NOT item 190, the "Ask nearby businesses" link placement): MET AS BUILT, LOCKED, nothing built
 

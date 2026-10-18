@@ -100,6 +100,14 @@ Anthropic credit is a prerequisite (Setup), not an owner.
 - [ ] Video: poster only, nothing plays or downloads until tapped; then plays muted with controls.
 - [ ] Wide wordmark logo and square logo both fit their circle without touching the edge.
 - [ ] Two businesses replying to the same request: both cards have the same structure; only content differs.
+- [ ] (Idea "191", added 2026-10-18) A legacy video with no screened poster shows only the "Video attached" label (nothing
+  plays, no blank frame).
+- [ ] (Idea "191") A reply with no attachment is the standard plain card: no empty frame, no placeholder, no image taken from
+  the business profile (also when the profile has photos).
+- [ ] (Idea "191") The logo appears only beside the business name (same small circle on every card); a business with no screened
+  logo shows no logo and no placeholder; no colour wash, enlarged logo or artwork made from it anywhere on the card.
+- [ ] (Idea "191") Note for the owner: a photo shaped roughly like the frame fills it with a small crop (item 10); record whether
+  any such photo lost something that mattered (text, product edge). Report only.
 - [ ] "Today · 5–9 PM" combined line when valid until is at or after the window end; the countdown keeps its own line
   when ending soon, and updates without leaving the screen.
 
