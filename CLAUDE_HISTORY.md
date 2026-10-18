@@ -1,3 +1,29 @@
+# Notifications deep-link to the object that changed (owner idea "242", 2026-10-18; NOT item 242): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+
+- Proposal (a rule): notifications deep-link to the object that changed, never merely to where notifications are stored.
+- Met: one destination table, `navigation/notificationDestinations.js` (item 139 of the push-navigation contract; header: "the
+  tap opens the object the push names; a payload without the id it needs opens nothing; an object deleted by design opens the
+  browse list it came from"), opened by `services/notifications.js` through `openOnTop` (on top of the current history, return
+  trail kept); guard `navigation/pushNavigationContract.test.js` drives it end to end through the real routers.
+  Object destinations: `business_offer_received` / `_revised` / `_withdrawn` / `business_reservation_confirmed` and related ->
+  `BusinessRequestDetail` on that request (reply types add `focusOfferId`, items 132/136); every gathering push ->
+  `GatheringDetail` + the push's own sentence (`notificationReason`); match/message/Together pushes -> that `Chat`;
+  `plan_message` -> that `PlanChat`; group-plan events -> that `GroupPlan`; business `business_opportunity_received` /
+  `business_offer_accepted` / `business_request_expiring` -> Opportunities focused on that request (`focusRequestId`, idea "187");
+  `friend_accepted` (item 133), `crossed_paths_sighting`, `new_story`, `birthday` -> that profile; birthday/occasion planning ->
+  Celebrate Something prefilled; `business_update` -> that business.
+- Exceptions (each deliberate, none "the notification list" by default):
+  1. `wave` -> Activity (Notices): who waved is premium-locked there (item 133 kept it).
+  2. `friend_request` -> Friends, where requests are answered (observation: could open the requester; not changed).
+  3. Deleted by design: `gathering_cancelled` -> Discover gatherings; `community_cancelled` -> Discover communities.
+  4. Business side without one live object: `business_request_cancelled` / `reservation_cancelled_by_customer`, the hourly digest,
+     `aggregated_demand_growing` / `occasion_demand_growing` -> Opportunities.
+  5. `occasion_upcoming` with a recall and `group_intent_signal` -> Home, whose card is the one place that renders them.
+  6. Retired types (`first_mission_reminder`, `reward_tier_nudge`, `momentum_streak_nudge`) keep a case only for pushes already
+     delivered (idea "186", item 53).
+- Recommendation: close as met as built. The rule lives in the destination table's header and item 139's contract, not in
+  CLAUDE.md's Standing conventions; the owner may approve folding ONE short Notifications bullet (wording only, no code).
+
 # Activity taps resolve immediately (owner idea "241", 2026-10-18; NOT item 241): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
 
 - Proposal: tapping "Coastal Coffee sent an offer" in Activity opens the offer at once (never Activity -> Offer Inbox -> Offer ->
