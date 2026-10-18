@@ -5,6 +5,10 @@ covered by Jest / journeys / rolled-back live scripts; none of it has been seen 
 
 **Status: not yet executed.** Mark each line pass / fail / note, with the device, OS version and build.
 
+**Who runs it (owner, 2026-10-18):** the owner, as for every device checklist (item 95; device session order). No item gets its
+own verification owner (idea 185 included): each item's checks live here and stay open until the owner records them as passed.
+Anthropic credit is a prerequisite (Setup), not an owner.
+
 ## Setup
 
 - Two signed-in accounts: a **customer** and a **business owner** (an approved business with an address, hours and a
