@@ -1,4 +1,10 @@
-# Home gets shorter, not longer (owner idea "237", 2026-10-18; NOT item 237): MET AS BUILT, recommended CLOSE, owner decision pending, nothing built
+# Home gets shorter, not longer (owner idea "237", 2026-10-18; NOT item 237): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built; no new rule, no Home expansion, no code changes. Home stays a concise preview
+  with at most 3 items per section, the Best Pick counting toward its limit; Your Plans at 3 rows maximum, "See all plans" opens
+  Plans; Nearby Right Now at 3 items maximum; only real, actionable content (no zero counts, filler rows or empty placeholders);
+  Home stays a set of doors to the rest of Nearby. Home taps do not expand sections in place: item 110 and the existing Home
+  expansion decision stay locked; taps open the relevant detail screen or destination and Back returns to Home.
 
 - Proposal: following the screen rules, Home contains the most relevant previews, not every detail, so it gets shorter; tapping
   something expands the relevant content.
