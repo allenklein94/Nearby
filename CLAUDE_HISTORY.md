@@ -1,4 +1,10 @@
-# 60-second product demo (owner idea "210", 2026-10-18; NOT item 210): ASSESSED, owner decision pending, nothing built
+# 60-second product demo (owner idea "210", 2026-10-18; NOT item 210): CLOSED as recommended, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as recommended; no demo mode, no app changes. Use the real flow (ask -> businesses receive
+  the request -> Coastal Coffee responds -> offer travels into its card -> accept -> "You're booked" -> plan in Your Plans). No
+  scripted data, fake businesses, staged states or extra animations. Verify before recording: the full flow end to end on two
+  phones with a seeded test business and Anthropic credit. Idea "209" stays declined; if moments feel too fast on camera, edit
+  the recording, not the app.
 
 - Proposal: a 60-second demo of the platform: ask for coffee tonight -> signal travels -> Nearby finds businesses -> Coastal Coffee
   receives demand -> business sends offer -> offer travels back -> accept -> plan forms ("this isn't just another events app").
