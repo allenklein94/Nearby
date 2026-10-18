@@ -1,3 +1,13 @@
+# One conclusion, expand for why (owner idea "269", 2026-10-18; NOT item 269): MET AS BUILT by items 106/112 + idea "268", ASSESSED, recommended close, owner decision pending; an on-card expansion or "why" sheet DECLINED (item 106 + idea "226", LOCKED); no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
+
+The conclusion: the card is one pick (Best Pick only above the real fit score, else none) with what, max 2 strongest real reasons,
+one "distance · when" line and ONE action (`recommendationContext.js`, `gatheringCardModel`, item 112); the other signals rank it
+silently (`constants/signalPriority.js`). The expansion: a tap opens GatheringDetail, whose "Why this fits you" (`ReasonList`,
+item 106) lists every real reason, over the existing context, Back restoring prior state. DECLINED (LOCKED): expanding the card in
+place (cards static, items 15/111; Home never expands in place, item 110; idea "251"), a "Why am I seeing this?" sheet (item 106,
+idea "226"), showing raw signals/scores (no invented or internal numbers; Interested never by name; weather only when it changed
+the pick, item 193). Perk/community full reasons + the Places personal reason remain item 106's observations, pending device evidence.
+
 # One recommendation combines several signals (owner idea "268", 2026-10-18; NOT item 268): MET AS BUILT by Best Pick (item 112), ASSESSED, recommended close, owner decision pending; "Claude is interested" + weather line DECLINED; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
 
 Compression is already the model: the signals are combined in RANKING, not shown as sections. The 10-tier ladder
