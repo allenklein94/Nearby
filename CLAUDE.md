@@ -137,6 +137,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Friends liked this too" (owner idea "197", 2026-10-18; NOT item 197) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** DECLINED "{Friend} is interested" (Interested is private, items 138/194), "Friends liked this" (item 35 ratings stay personal) and an entering-avatar animation (item 40's converging faces = the only friend animation on recommendation cards). Kept: friend going/hosting reasons outrank popularity in reasons + ranking; item 40's line only for mutually declared interests.
 
+**Trending animation from real momentum (owner idea "199", 2026-10-18; NOT item 199) ASSESSED, OWNER DECISION PENDING, nothing built:** item 75 already declined card motion, Interested as the signal and a growth-rate signal; Trending is a static >= 5 attendee threshold, no momentum data exists; upward motion = an animated card/new animated place (items 55/26). Recommended: keep as built (narrow "first crosses 5" animation noted, not recommended).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

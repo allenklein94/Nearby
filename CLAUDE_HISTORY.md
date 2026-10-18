@@ -1,3 +1,20 @@
+# Trending animation from real momentum (owner idea "199", 2026-10-18; NOT item 199): ASSESSED, LARGELY DECIDED BY ITEM 75, OWNER DECISION PENDING, nothing built
+
+- Proposal: when something genuinely gains interest, "Trending near you" gets a subtle upward motion, then settles; no flashing, no
+  fake activity.
+- Already decided: item 75 ("momentum", card more prominent as activity rises) was HALF MET by attendance (popularity tier 9 of the
+  ladder; Trending = >= 5 approved attendees, "N attending" reason, Discover Trending section) and DECLINED: Interested as the signal
+  (never counted to other viewers), any visual change on the card (cards static), and a growth-rate signal without usage evidence.
+- Facts (code reading): Trending is a static threshold, not momentum (`constants/trending.js`, `utils/discoverSections.js`); no stored
+  rate of change exists; "gains interest" cannot use Interested (private, 2026-10-17 LOCKED; idea "198"'s rule).
+- Conflicts with motion locks: an upward motion on a card or section = an animated card/list (Motion: no animated cards/tabs/lists);
+  no new animated places (item 55); the happening-now heading's single ring (item 26) is the only discovery-section motion; a
+  growth-rate trigger would be a new server signal just for an animation (item 125/162).
+- Possible narrow variant, NOT recommended: animate once when a gathering first crosses the >= 5 threshold (a real state change, item
+  58/164 "first viewing may animate"); it still reopens item 75's static-card decision and adds a new animated place.
+- Recommendation: (a) keep as built; decline the motion and a momentum signal (re-confirms item 75). No code, migration, string or
+  motion changed.
+
 # Social proof never fake (owner idea "198", 2026-10-18; NOT item 198): MET AS BUILT + RECORDED AS ONE STANDING RULE, LOCKED, nothing built
 
 - Proposal: put into the product rules: never animate "People are interested" unless people actually are; never manufacture
