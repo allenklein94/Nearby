@@ -67,6 +67,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **One state, several presentations (owner item 163, 2026-10-18) MET AS BUILT, LOCKED, nothing built:** a reply (`submit_business_offer`, status `offered`, `BUSINESS_OFFER_SENT`) = customer's signature + travel into its card + one in-place push opening that reply, and the business's own card at "Offer sent" (never animates); a request (`create_business_request`, `BUSINESS_REQUEST_SENT`) = business's Opportunity arrival + customer's "We asked N" moment. Same state, own voice per side (item 129); documented in item 162's `MOTION_TRIGGERS`. No animation, event or database work.
 
+**Animation driven by state, not screens (owner item 164, 2026-10-18) MET AS BUILT, LOCKED, nothing built:** each moment's shared rule (`offersToAnimate`, `offerToPlanMerge`, `replyToTravel`, `newJoinsToAnimate`, `interestedToAttendingMoment`, `planComesTogetherNow`, ...) decides from real saved state (item 162's `MOTION_TRIGGERS`); motion only on the object's own card or its authorized place; elsewhere the notification opens the exact item. DECLINED: app-wide/full-screen confirmations, a central animation dispatcher or event platform (item 125), new animation places (item 55). "A first viewing may animate; revisiting never replays" (see Motion).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -717,6 +719,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Truthful triggers (owner item 162, documentation only):** every `SEQUENCES` entry names its trigger in `MOTION_TRIGGERS`
   (`constants/motionLanguage.js`: kind, stored state or real source, server function, playing files); a new sequence registers
   its trigger; no new server event just for an animation (item 125); never claims delivery (item 159). Guard `motion/motionTriggers.test.js`.
+- **First viewing may animate, revisiting never replays (owner item 164):** a real change the person has not seen plays its existing
+  moment once when they arrive (push tap included: items 13/21/132/48 as locked); already seen = never again; state and text readable
+  from frame one; Reduce Motion = settled; no app-wide layer, dispatcher or new animated place.
 - **Motion spec first (owner item 101):** before building or changing any motion, its build plan or history entry answers eight
   questions (`PRODUCT_AUDIT/MOTION_SPEC_TEMPLATE.md`): what changed, why motion helps, start state, end state, duration, immediate
   interaction, Reduce Motion, and does it still read without the animation. Guards: `motionMeaning`, `motionPrimitives`,

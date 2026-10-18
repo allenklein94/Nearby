@@ -1,3 +1,19 @@
+# Animation driven by events, not screens (owner item 164, 2026-10-18): MET AS BUILT, LOCKED, nothing built
+
+Idea: never "on screen X play animation #17"; when offer.accepted occurs, trigger the confirmation, wherever the user is.
+Found as built: no screen decides a moment itself; one shared rule per moment decides from real saved state vs what the person
+last saw (`offersToAnimate` in `utils/offerProgress.js`, `offerToPlanMerge`, `replyToTravel` in `motion/offerTravel.js`,
+`newJoinsToAnimate`/`joinArrivalPlan` in `utils/hostLiveJoins.js`, `interestedToAttendingMoment`, `planComesTogetherNow`,
+`shouldAssemble`, `newArrivals`), each drawn by the one component where the object lives; triggers documented in item 162's
+`MOTION_TRIGGERS`. Away from the object the notification opens the exact item (items 62/133).
+DECLINED (owner): app-wide or full-screen confirmation animations; a central animation dispatcher or new event platform
+(item 125); new animation locations outside the object's own card (item 55, no screen-wide motion on offer screens).
+Clarified rule (owner, 2026-10-18, after the first draft "no missed animation on return" was found to contradict locked
+items): a first viewing of a real change plays its existing moment once when the person arrives, including from a push
+(item 13's push-tap step glow `offersToAnimate` focus; items 21/132's build-in for a never-viewed reply `shouldAssemble`;
+item 48's arrival `newArrivals`); an already-seen change never replays (device memory or `viewed_at`); state and essential text
+readable from the first frame (`infoOpacity`); Reduce Motion = settled. Documentation only; no locked item reopened, no code.
+
 # One state, several presentations (owner item 163, 2026-10-18): MET AS BUILT, LOCKED, nothing built
 
 Idea: one event (e.g. offer_created) -> consumer animation, business animation and notification; one source of truth.
