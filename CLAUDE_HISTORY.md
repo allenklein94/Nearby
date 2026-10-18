@@ -1,3 +1,19 @@
+# Quiet mode (owner idea "205", 2026-10-18; NOT item 205): ASSESSED, owner decision pending, nothing built
+
+- Proposal: motion settings Full / Reduced / Minimal; respect system Reduce Motion; fully functional without animation.
+- System Reduce Motion: MET. ONE store `motion/motionPolicy.js` (one AccessibilityInfo subscription, live on change; iOS Reduce Motion,
+  Android Remove animations; web fails safe to motion allowed) read via `hooks/useReduceMotion.js` in 49 files; `installReducedMotionPolicy`
+  makes every `Animated.spring` instant and every `Animated.loop` a no-op app-wide, so components that never branch (skeletons, the
+  published panel's spring) are covered; every moment's own Reduce Motion rule = settled state (items 22/32/44/55, ...); idea "169"'s
+  sound cues are silent under it too.
+- Fully functional without animation: MET in code (taps act at once and interrupt, item 20; info text >= 0.6 opacity from frame one,
+  `animationNeverDelays.test.js`; every moment reads without its animation, item 101). NOT DEVICE-VERIFIED (never run on a phone).
+- In-app Full / Reduced / Minimal: NOT built. Assessment: motion is already restrained (item 58: only real events; one signature; one
+  full-screen moment), so there is no real middle tier between "as designed" and "settled"; three levels would need a new "Reduced"
+  definition per moment. Options: (a) recommended, no in-app setting, rely on the system setting (one source, nothing to keep in sync);
+  (b) one Settings switch "Reduce motion in Nearby" (off by default, kept on the phone, OR'd into the same motionPolicy store, so every
+  moment's existing settled state applies; 1 new string x 11 languages; idea "169"'s switch is the precedent); three levels DECLINED.
+
 # Stable structure, meaningful motion (owner idea "204", 2026-10-18; NOT item 204): MET AS BUILT (owner chose (a)), CLOSED, LOCKED, no new rule, nothing built
 
 - Owner decision (2026-10-18): record as met; no new rule, no code changes, no existing motion decision reopened.
