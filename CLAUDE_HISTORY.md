@@ -1,3 +1,9 @@
+# "Nearby's Navigation Rule" as a foundational rule (owner idea "250", 2026-10-18): MET AS BUILT, assessed, no new rule text recommended, owner decision pending, nothing built
+
+Clause-by-clause map to item 45, Rule 14 (`RULE14_JOBS` A-F), item 29 q7, ideas 221-223/225/232/233/234/235/242/245/248. Verbatim
+adoption would contradict two locked decisions: payment uses Stripe's native PaymentSheet on the offer card (no checkout screen, idea
+235) and Make an Offer is one modal form, never its own screen (idea 233). Ideas 221-223 already declined a duplicate principle.
+
 # Idea "249" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; tap/decision-count metric DECLINED; an overloaded screen on a phone = fix under Rule 14 + item 31; no app change.
 
 # "Less screens" means "less work" (owner idea "249", 2026-10-18): MET AS BUILT, assessed, owner decision pending, no new rule, nothing built
