@@ -1,4 +1,7 @@
-# Animation priority follows importance (owner idea "208", 2026-10-18; NOT item 208): MET AS BUILT, nothing built
+# Animation priority follows importance (owner idea "208", 2026-10-18; NOT item 208): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): keep as built. No star scale, priority table, new animation categories, rules or animations; idea
+  "207" governs competing Home moments inside this hierarchy and is not a new motion system; item 133's friend-accepted push stays.
 
 - Proposal: priority by importance, e.g. new business offer 5 stars, friend accepted 4, recommendation changed 3, card loaded 1, tab
   selected 1.
