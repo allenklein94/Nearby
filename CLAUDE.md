@@ -101,6 +101,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Time expansion (owner idea "179", 2026-10-18) MET by item 45 (✕ on the When chip, in place) + time from the person's words, LOCKED, nothing built:** Tonight -> Tomorrow -> This weekend ladder DECLINED (items 107/46, idea "177"); time editing stays behind the understood-chips change/pickers deferral (2026-10-15).
 
+**Category expansion (owner idea "180", 2026-10-18) COVERED by item 81's Gap 2 hold, LOCKED, nothing built:** empty state unchanged; any future "try similar" = existing taxonomy relations only (no curated similarity without a V1 taxonomy decision), never a synonym of the ask ("Cafés" = Coffee), only with a real result behind it, labelled + static, never AI-guessed.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

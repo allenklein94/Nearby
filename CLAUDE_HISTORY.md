@@ -1,3 +1,18 @@
+# Category expansion (owner idea "180", 2026-10-18): COVERED by item 81's Gap 2 hold, LOCKED, nothing built
+
+Idea: "Coffee" with no good result -> "Try similar: Cafés · Dessert · Tea · Brunch" as connected suggestions instead of "No
+results found." Finding: this is item 81 Gap 2 ("similar activities"), HELD until item 128's unmatched-ask analysis AND a real
+device show empty results recur. "Cafés" is not an alternative: cafe/café/coffee shop are Coffee synonyms
+(`constants/categorySynonyms.js`), so it repeats the same search. Tea, Dessert & Ice Cream and Brunch are real tags, but the
+taxonomy is flat (group -> tag): their only relation to Coffee is the 20-tag Food & Drink group, so a "similar" set would need a
+new curated relationship (a V1 taxonomy change). The empty state is already not "No results found": Create it yourself, Ask
+Nearby Businesses when it fits (`askBusinessesFits`), Places to go (items 81/26/190/189). Owner decisions (LOCKED): empty state
+unchanged. Any future similar-activity suggestion, still behind Gap 2's gate, must (1) use existing taxonomy relationships only,
+no curated similarity without an explicit product decision approving a V1 taxonomy change; (2) never offer a synonym of the ask
+as an alternative; (3) show only when a real result exists behind it, never implying availability before results return;
+(4) stay labelled and static: no AI-guessed similarity, speculative animation or implied relationship. Principle: a fallback is
+useful only if it genuinely changes the available options, not the wording of the same search. No taxonomy, UI or code changed.
+
 # Time expansion (owner idea "179", 2026-10-18): MET by item 45 + the time-intent rules, LOCKED, nothing built
 
 Idea: "Nothing tonight." -> Nearby offers Tonight -> Tomorrow -> This weekend in place, no new screen. Finding: item 45's
