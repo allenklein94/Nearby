@@ -1,3 +1,20 @@
+# "Your choice" confirmation (owner idea "196", 2026-10-18; NOT item 196): ASSESSED, MET BY ITEMS 12 + 32 (+ 63/119), OWNER DECISION PENDING, nothing built
+
+- Proposal: after selecting an offer, a "Your choice" summary (Coastal Coffee / $12 / Tonight / 4 people), then Accept; reinforces
+  agency: Nearby recommends, you decide.
+- Met as built (code reading): the decision is already the person's, in their own voice, on the card that carries the facts:
+  "I'll take this one" (item 12, LOCKED wording) on the one reply card (item 21: business name, screened logo, price or per-person
+  price, proposed time, what's included, validity); Nearby only recommends via item 63's earned "✨ Our pick" and stated-constraint
+  reasons; a reply with two times asks for the pick first (item 119, `OfferTimeChoice`), the one pre-accept choice; the request's party
+  is part of the request itself. After the server confirms, the same card reads "You're booked" (LOCKED) and the booking merges into
+  Your Plan as "{what} at {business}" with day / time / party shown once (item 32, `acceptedWhenLine`, `bookedPartySize`) = the
+  "your choice" summary, after the fact and true.
+- Conflicts with locks: a summary step between selecting and Accept = a second tap before booking, against item 12 (acceptance IS the
+  booking, one tap) and idea "193" (accept stays decisive; renaming declined); a pre-booking confirm on facts already on the card is the
+  kind of prompt idea "194" kept only for real consequences not already visible; a "Your choice" heading replacing "You're booked"
+  changes locked wording; item 32 already shows day/time/party once (a second summary would repeat them).
+- Recommendation: (a) keep as built; nothing to build. No code, migration, string or motion changed.
+
 # Offer comparison with motion (owner idea "195", 2026-10-18; NOT item 195): KEEP AS BUILT (owner approved), MET BY ITEMS 63 + 117, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): approved, keep as built; no code changes. Preserved: `rankReplies` ordering and eligibility rules; price
