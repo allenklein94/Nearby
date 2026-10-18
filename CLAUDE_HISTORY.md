@@ -1,3 +1,14 @@
+# A sheet that grows too tall is the signal for a screen (owner idea "278", 2026-10-18; NOT item 278): MET AS BUILT by idea "225" + item 45 + Rule 14, ASSESSED, recommended close, owner decision pending; no new rule, height limit or code; CLAUDE.md not changed
+
+Already the locked rules: idea "225" (sheets never become mini-apps: one question or one quick action each; a sheet closes before a
+dedicated screen opens; multi-step work stays on its own screen: Create Gathering, Edit Gathering, Settings; Make an Offer stays one
+form; `CompatibilityReportModal`'s three views one level, no nesting), item 45's ladder (inline > sheet > dedicated screen when the job is
+an entity, distinct workflow, management, communication or transaction) and Rule 14 (that screen needs its registered job A-F,
+`constants/screenRegistry.js`). Idea "225" reviewed the 19 sheets/panels in `src/components/` against this on 2026-10-18; none holds a
+whole workflow. A height threshold would be a second, pixel-based representation of the same job test (declined; the job decides, not
+the height). If a phone shows a sheet that scrolls past a screenful or feels cramped, judge it by its job under item 45 and move it to a
+registered screen if it has one; never stack sheets or add steps inside it.
+
 # Contextual sheets keep you where you were (owner idea "277", 2026-10-18; NOT item 277): principle MET AS BUILT (idea "224"); the example's combined plan sheet NOT built (would duplicate item 32's plan card); ASSESSED, recommended close, owner decision pending; no new rule, sheet or code; CLAUDE.md not changed
 
 The principle is idea "224" (LOCKED): sheets keep context (item 17's `BusinessPreviewSheet`, the invite panel, the native share sheet;
