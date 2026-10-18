@@ -183,6 +183,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Bottom sheets keep context (owner idea "224", 2026-10-18; NOT item 224) MET AS BUILT, CLOSED, LOCKED, no new rule, sheets or code:** item 45 stays the one screen-reduction ladder; the business preview sheet (item 17), invite panel (`InviteFriendsModal`) and native share sheet stay; filters, quick details, Who's going faces, location details, offer preview (item 49) and recommendation reasoning stay visible in their current contexts; never move inline content into a sheet; no reasoning sheet (item 106 LOCKED).
 
+**Sheets never become mini-apps (owner idea "225", 2026-10-18; NOT item 225) MET AS BUILT, ASSESSED, owner decision pending, nothing built:** all 19 sheets/modals in `src/components/` checked: none has steps or navigation inside it; each answers one question or does one quick action; a sheet that leads elsewhere closes first, then opens the screen on top (`BusinessPreviewSheet` -> `BusinessProfile` / booking, `StartSomethingModal` -> `CreateGathering`). Observation only: `CompatibilityReportModal` (Matches / Dating) has a 3-way Details / Compass / Talk about toggle = three views of one report, one level, no nesting. Multi-step jobs are already screens (Create, Edit, Settings). Recommended: close as met; no new rule.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

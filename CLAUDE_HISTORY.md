@@ -1,3 +1,19 @@
+# Sheets never become mini-apps (owner idea "225", 2026-10-18; NOT item 225): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+
+- Proposal: a sheet answers one question or performs one quick action; navigation inside navigation inside a sheet recreates the
+  screen-chain problem in a different container.
+- Checked all 19 sheet/modal components in `src/components/` (ActionSheet, BusinessPreview, CancellationReason,
+  CompatibilityReport, DateCheckIn, DatingPreferencesPrompt, DiningPreferencesPrompt, Filters, GatheringIntent, GifPicker,
+  InviteFriends, OfferOutcome, QuickPicksEdit, ReportBlock, ReviseOffer, SightingMap, StartSomething, StoryViewer, SurpriseMe):
+  none has step/page state or a navigator inside it. A sheet that leads elsewhere closes and then opens the screen on top:
+  `BusinessPreviewSheet` (-> `BusinessProfile` or the business's booking route), `StartSomethingModal` (-> `CreateGathering`
+  with params), `DateCheckInModal` (-> `EmergencyContacts`).
+- Observation, not a defect: `CompatibilityReportModal` (Matches, Discovery) toggles Details / Compass / Talk about: three views of
+  one report, one level, no nesting.
+- Multi-step jobs are already dedicated screens with registry jobs (Rule 14): `CreateGathering` (five steps), `EditGathering`,
+  `Settings`; Make an Offer is one form (item 49 preview inside it).
+- Recommendation: close as met as built; no new rule (item 45's ladder + Rule 14 already send multi-step work to a screen).
+
 # Bottom sheets keep context (owner idea "224", 2026-10-18; NOT item 224): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built, no new sheets. Item 45 stays unchanged as the single source of truth for the
