@@ -19,13 +19,13 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import ReturnTrailChip from '../components/ReturnTrailChip';
 import { View, Text, TextInput, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Image } from 'react-native';
 import { NLoader, PullToRefresh, AnticipationText, NearbyPickBadge, StrongMatch, FriendCollision, FriendsPlanning, FoundLine, showSuccessToast, HappeningRipple } from '../motion';
-import { friendCollision } from '../utils/friendCollision';
+import { friendCollision, collisionWouldPlay, collisionPlayKey } from '../utils/friendCollision';
 import { takeFriendsPlanningMoment } from '../utils/friendsPlanningMoment';
 import { strongMatchPieces } from '../utils/strongMatch';
 import RightNowMark from '../components/RightNowMark';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { getMyFriendNearbySharing, getNearbyFriend, setFriendNearbySharing } from '../services/friendNearby';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
@@ -65,6 +65,8 @@ import { takeCompletionMoment, COMPLETION_FROM, COMPLETION_TO, isGatheringOver }
 import { getMyPlansThisMonth } from '../services/plansThisMonth';
 import { plansThisMonthCount, showPlansThisMonth, takePlansThisMonthMoment } from '../utils/plansThisMonth';
 import { CountRoll } from '../motion/JoinArrival';
+import { createHomeMomentBudget } from '../utils/homeMomentBudget';
+import { hasNewHappening } from '../utils/happeningSeen';
 import { getMyNoticedCategories } from '../services/behaviorSignals';
 import { noticedCategories, takeNoticedMoment } from '../utils/noticedActivity';
 import { joinAnd } from '../i18n/list';
@@ -559,6 +561,24 @@ export default function HomeScreen({ navigation }) {
     ].filter(Boolean)),
   });
 
+  // Owner idea "207": one meaningful animation per Home visit (utils/homeMomentBudget.js). Each moment still decides by its
+  // own rule whether it would play; only the highest on the screen moves, every other one shows its finished state and
+  // counts as seen. Weather fade, own-tap feedback and typed-ask result moments are exempt.
+  const homeFocused = useIsFocused();
+  const homeMomentBudgetRef = useRef(null);
+  if (!homeMomentBudgetRef.current) homeMomentBudgetRef.current = createHomeMomentBudget();
+  const rightNowIds = rightNow.map((g) => g.id);
+  const homeMoments = homeMomentBudgetRef.current({
+    focused: homeFocused,
+    candidates: {
+      friendCollision: collisionWouldPlay(collision) ? collisionPlayKey(collision) : null,
+      planCompleted: homePlans.completed && completedPlan?.play ? homePlans.completed.id : null,
+      friendsPlanning: homeInsight?.kind === 'friends_planning' && !homeInsight.person && friendsPlanningKey && friendsPlanningPlay === friendsPlanningKey ? friendsPlanningKey : null,
+      happeningRipple: rightNowIds.length > 0 && hasNewHappening(rightNowIds) ? rightNowIds.join('|') : null,
+      plansThisMonth: plansMonth?.play && showPlansThisMonth(plansMonth.count) ? plansMonth.rollKey : null,
+    },
+  });
+
   // Item 108: "Starts in 42 min" / "Happening now" / "Ends in 12 min" stay true while Home is open (plain text, no motion).
   useMinuteClock(relativeWindows(
     homeMerge.hero, homeMerge.cards, homeRecommendations, intentResults?.items,
@@ -617,7 +637,7 @@ export default function HomeScreen({ navigation }) {
       >
         <Text style={styles.trendingTitle}>{categoryStyleFor(g.interest_tag).icon} {g.title}</Text>
         {collision?.gatheringId === g.id
-          ? <FriendCollision collision={collision} myPhotoUrl={myPhotoUrl} friendPhotoUrl={nearbyFriendPhoto} language={language} textStyle={styles.trendingMeta} />
+          ? <FriendCollision collision={collision} myPhotoUrl={myPhotoUrl} friendPhotoUrl={nearbyFriendPhoto} language={language} textStyle={styles.trendingMeta} allowed={homeMoments.friendCollision} />
           : confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
         {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
         <Text style={styles.trendingMeta}>
@@ -2178,7 +2198,7 @@ export default function HomeScreen({ navigation }) {
                     <View style={{ flex: 1, marginRight: spacing.sm }}>
                       <Text style={styles.heroTitle} numberOfLines={1}>{attention.hero.title}</Text>
                       {collision?.gatheringId === attention.hero.id ? (
-                        <FriendCollision collision={collision} myPhotoUrl={myPhotoUrl} friendPhotoUrl={nearbyFriendPhoto} language={language} textStyle={styles.heroMeta} />
+                        <FriendCollision collision={collision} myPhotoUrl={myPhotoUrl} friendPhotoUrl={nearbyFriendPhoto} language={language} textStyle={styles.heroMeta} allowed={homeMoments.friendCollision} />
                       ) : confidenceHeadline(attention.hero.reasons.map((text) => ({ text })), { language }) ? (
                         <Text style={styles.heroMeta} numberOfLines={1}>{confidenceHeadline(attention.hero.reasons.map((text) => ({ text })), { language })}</Text>
                       ) : null}
@@ -2240,7 +2260,7 @@ export default function HomeScreen({ navigation }) {
                     onPress={() => navigation.navigate('GatheringDetail', { gatheringId: homePlans.completed.id })}
                   />
                   {completedPlan?.play && (
-                    <PlanCompleted fromLabel={PLAN_STATUS_META[COMPLETION_FROM].label} toLabel={PLAN_STATUS_META[COMPLETION_TO].label} />
+                    <PlanCompleted fromLabel={PLAN_STATUS_META[COMPLETION_FROM].label} toLabel={PLAN_STATUS_META[COMPLETION_TO].label} play={homeMoments.planCompleted} />
                   )}
                   <GatheringFeedbackInline
                     key={homePlans.completed.id}
@@ -2356,7 +2376,7 @@ export default function HomeScreen({ navigation }) {
                   <Text style={[styles.insightLine, { marginBottom: 0, flex: 1 }]}>{insight.text}</Text>
                 </View>
               ) : insight.kind === 'friends_planning' ? (
-                <FriendsPlanning people={insight.people} photoUrls={friendsPlanningPhotos} text={insight.text} textStyle={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]} playKey={friendsPlanningPlay} onOpen={(p) => openDestination(navigation, p.destination)} />
+                <FriendsPlanning people={insight.people} photoUrls={friendsPlanningPhotos} text={insight.text} textStyle={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]} playKey={homeMoments.friendsPlanning ? friendsPlanningPlay : null} onOpen={(p) => openDestination(navigation, p.destination)} />
               ) : (
                 <Text style={[styles.insightLine, { marginBottom: insight.basis ? 2 : 0 }]}>{insight.text}</Text>
               )}
@@ -2413,7 +2433,7 @@ export default function HomeScreen({ navigation }) {
               accessibilityLabel={t('ui.discover.rightNowA11y')}
               accessibilityRole="button"
             >
-              <HappeningRipple ids={rightNow.map((g) => g.id)} color={colors.info}>
+              <HappeningRipple ids={rightNowIds} color={colors.info} allowed={homeMoments.happeningRipple}>
                 <RightNowMark color={colors.info} />
               </HappeningRipple>
               <Text style={[styles.sectionHeaderText, styles.rightNowHeading]}>{t('ui.home.nearbyRightNow')}</Text>
@@ -2956,7 +2976,7 @@ export default function HomeScreen({ navigation }) {
             <View style={styles.recapSummaryWrap}>
               <CountRoll
                 key={`plansMonth:${plansMonth.rollKey}`}
-                play={plansMonth.play}
+                play={homeMoments.plansThisMonth}
                 previous={plansMonth.previous ? <Text style={styles.recapSummary}>{t('ui.home.plansThisMonth', { count: plansMonth.previous })}</Text> : null}
               >
                 <Text style={styles.recapSummary}>{t('ui.home.plansThisMonth', { count: plansMonth.count })}</Text>

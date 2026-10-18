@@ -22,10 +22,11 @@ function Face({ uri, style, colors }) {
     : <View style={[styles.face, styles.faceEmpty, { borderColor: colors.surface, backgroundColor: colors.border }, style]}><Ionicons name="person" size={10} color={colors.textTertiary} /></View>;
 }
 
-export default function FriendCollision({ collision, myPhotoUrl, friendPhotoUrl, language, textStyle }) {
+// `allowed` (idea "207", Home's one moment per visit): false = the settled pair, still counted as played.
+export default function FriendCollision({ collision, myPhotoUrl, friendPhotoUrl, language, textStyle, allowed = true }) {
   const { colors } = useTheme();
   const reduceMotion = useReduceMotion();
-  const [play] = useState(() => takeCollisionPlay(collision) && !reduceMotion);
+  const [play] = useState(() => takeCollisionPlay(collision) && allowed && !reduceMotion);
   const meet = useRef(new Animated.Value(play ? 0 : 1)).current;
   const text = useRef(new Animated.Value(play ? 0 : 1)).current;
 

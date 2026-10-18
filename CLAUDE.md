@@ -153,7 +153,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **No motion question in onboarding (owner idea "206", 2026-10-18; NOT item 206) MET BY IDEA "205", CLOSED, LOCKED, nothing built:** onboarding asks no animation preference (none exists; only the loader animates there); the phone's setting is respected. A later "Motion" entry in Settings would reopen idea "205" (DECLINED there), never added on its own.
 
-**Animation budget per screen (owner idea "207", 2026-10-18; NOT item 207) ASSESSED, PARTLY MET, owner decision pending, nothing built:** `motion/motionBudget.js` budgets TIME only; concurrency is met per moment (item 73 joins, item 23 travel one at a time, item 32 replaces plan-comes-together, offer-screen ban) but Home has NO cross-module rule: up to 5 independent arrival moments (PlanCompleted, plans-this-month CountRoll, FriendCollision, FriendsPlanning, HappeningRipple; + ambient WeatherShift) can start on one Home view (code reading; never seen on a phone). Recommended (a): Home plays at most ONE contextual arrival moment per view (topmost in section order), the rest show settled and count as seen; exempt: ambient, own-tap feedback, typed-ask results; no dispatcher, no queue.
+**One animation per Home visit (owner idea "207", 2026-10-18; NOT item 207) BUILT, option (a), LOCKED, NOT DEVICE-VERIFIED:** `utils/homeMomentBudget.js` gates Home's five arrival moments (see the Motion bullet); guard `homeMomentBudget.test.js` (16); Jest 476/6411; check C16 of the first-session checklist.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
@@ -833,6 +833,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **First viewing may animate, revisiting never replays (owner item 164):** a real change the person has not seen plays its existing
   moment once when they arrive (push tap included: items 13/21/132/48 as locked); already seen = never again; state and text readable
   from frame one; Reduce Motion = settled; no app-wide layer, dispatcher or new animated place.
+- **One animation per Home visit (owner idea "207", LOCKED):** of Home's arrival moments (friend collision, Completed, friends planning, Right Now ring, plans-this-month roll; `HOME_MOMENT_ORDER`) only the highest that would play moves on a visit (a focus); the rest show settled and count as seen (never replay, never take a later visit's slot); one later-ready moment after a winner settles; no queue/sequence/delay; `utils/homeMomentBudget.js` only. Exempt: weather fade, own-tap feedback, typed-ask result moments. A new Home arrival moment joins `HOME_MOMENT_ORDER`.
 - **Motion spec first (owner item 101):** before building or changing any motion, its build plan or history entry answers eight
   questions (`PRODUCT_AUDIT/MOTION_SPEC_TEMPLATE.md`): what changed, why motion helps, start state, end state, duration, immediate
   interaction, Reduce Motion, and does it still read without the animation. Guards: `motionMeaning`, `motionPrimitives`,

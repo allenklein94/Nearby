@@ -16,6 +16,11 @@ export function takeNewHappening(ids, store = seen) {
   return fresh;
 }
 
+// Idea "207": whether takeNewHappening would find something new, without marking anything (Home's one-moment-per-visit rule asks).
+export function hasNewHappening(ids, store = seen) {
+  return (ids ?? []).some((id) => id != null && !store.has(id));
+}
+
 export function resetHappeningSeen(store = seen) {
   store.clear();
 }

@@ -1,4 +1,28 @@
-# Animation budget per screen (owner idea "207", 2026-10-18; NOT item 207): ASSESSED, PARTLY MET, owner decision pending, nothing built
+# One animation per Home visit (owner idea "207", 2026-10-18; NOT item 207): BUILT (owner chose (a)), AUTOMATED-TEST VERIFIED (code level), NOT DEVICE-VERIFIED
+
+- Owner decision (2026-10-18): option (a). Only the highest-positioned eligible Home moment animates on a visit; the others appear
+  finished and count as seen (never replay); no queue, no sequential playback; exempt: weather fade, direct-interaction feedback,
+  typed-ask result moments. Complements the duration budget; no animation design, trigger or broader motion rule changed.
+- Build: `utils/homeMomentBudget.js` (`HOME_MOMENT_ORDER` = friendCollision, planCompleted, friendsPlanning, happeningRipple,
+  plansThisMonth, Home's top-to-bottom order; `createHomeMomentBudget()` -> `decide({ focused, candidates })`). A visit = a focus
+  stretch; each candidate is a stable key for the instance that would play by its own existing rule; the first undecided candidate
+  of a visit (topmost if several are ready in the same render) gets true, every other one false; decisions are remembered per
+  instance (stable across re-renders, so a playing moment is never cut; a settled one never replays or takes a later visit's slot);
+  while Home is not focused nothing is decided. Peeks added so Home can ask without marking seen: `hasNewHappening`
+  (`utils/happeningSeen.js`), `collisionWouldPlay` / `collisionPlayKey` (`utils/friendCollision.js`). `FriendCollision` and
+  `HappeningRipple` take an `allowed` prop (default true; Discover unchanged) and still record seen through their own stores;
+  `PlanCompleted` (`play`), `FriendsPlanning` (`playKey` null) and `CountRoll` (`play`) use their existing props. HomeScreen computes
+  the decision above every early return (`useIsFocused` + one ref).
+- Timing (disclosed): Home's main load awaits Completed, plans-this-month and the Right Now data together, so those three are ranked
+  together; the friend collision (nearby friend, own fetch) and friends planning (photos signed after load) usually arrive later, so
+  if one of the first three already moved, they settle. That is the "one per visit, no queue" rule, not a defect.
+- Tests: `utils/homeMomentBudget.test.js` (16: highest of several, one per visit incl. a later higher one, stable re-renders, seen
+  never replays or steals a later visit's slot, new visit, unfocused, empty keys, peeks never mark seen, every Home moment gated,
+  decision above early returns, settled moments still recorded, exempt moments not asked, no timer/queue/animation in the rule);
+  guards updated for the new props: `happeningRipple.test.js`, `nearbyPulse.test.js`, `plansThisMonth.test.js`. Full Jest 476 suites /
+  6,411 passed (11 todo). No journey (client-only; uncovered step = what actually moves on screen).
+- Not verified: anything on a phone; check C16 added to the first-session checklist.
+- Assessment (before the decision):
 
 - Proposal: per screen max 1 major animation at a time, 2-3 micro transitions, no competing movement; Home never animates several
   modules at once.

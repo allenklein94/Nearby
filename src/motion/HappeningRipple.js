@@ -17,7 +17,9 @@ const T = SEQUENCES.happeningRipple;
 
 // Item 27: its child is the Right Now radar mark (components/RightNowMark.js); the ring goes out from the mark, then the
 // mark is simply still again.
-export default function HappeningRipple({ ids = [], color, children }) {
+// `allowed` (idea "207", Home's one moment per visit): false = no ring, the ids still marked seen. Read when the ring would
+// start, never a dependency, so a later re-render cannot cut a ring already going out. Discover leaves it on.
+export default function HappeningRipple({ ids = [], color, children, allowed = true }) {
   const focused = useIsFocused();
   const reduceMotion = useReduceMotion();
   const pulse = usePulseRings(T);
@@ -26,7 +28,7 @@ export default function HappeningRipple({ ids = [], color, children }) {
   useEffect(() => {
     if (!focused) return undefined;
     const fresh = takeNewHappening(ids);
-    if (fresh.length === 0 || reduceMotion) return undefined;
+    if (fresh.length === 0 || reduceMotion || !allowed) return undefined;
     const anim = pulse.start();
     return () => anim.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps

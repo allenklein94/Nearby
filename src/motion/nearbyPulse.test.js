@@ -103,7 +103,7 @@ describe('consolidation changed no approved timing, size or colour', () => {
     expect(read('components/RightNowMark.js')).toMatch(/size=\{14\} dot=\{6\} ringOpacity=\{0\.45\}/);
   });
   test('the screens still pass the same colours (info for rings and the mark)', () => {
-    expect(read('screens/HomeScreen.js')).toMatch(/<HappeningRipple ids=\{rightNow\.map\(\(g\) => g\.id\)\} color=\{colors\.info\}>/);
+    expect(read('screens/HomeScreen.js')).toMatch(/<HappeningRipple ids=\{rightNowIds\} color=\{colors\.info\} allowed=\{homeMoments\.happeningRipple\}>/);
     expect(read('screens/BusinessRequestDetailScreen.js')).toMatch(/<RequestPulse play=\{!isDuplicate && notifiedCount > 0\} color=\{colors\.info\}>/);
     expect(read('screens/BusinessDashboardScreen.js')).toMatch(/<ArrivalSignal color=\{colors\.info\}>/);
   });

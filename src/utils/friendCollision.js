@@ -26,9 +26,16 @@ export function friendCollision({ friend, gatherings, myUserId = null, myDeclare
 // The moment plays once per (friend, gathering) per app session (module memory, like utils/happeningSeen.js): coming Back,
 // switching tabs or a refresh shows the settled pair without replaying. Returns true only the first time.
 const played = new Set();
+export function collisionPlayKey(collision) {
+  return collision ? `${collision.friend.id}:${collision.gatheringId}` : null;
+}
+// Idea "207": whether takeCollisionPlay would return true, without taking it.
+export function collisionWouldPlay(collision, store = played) {
+  return !!collision && !store.has(collisionPlayKey(collision));
+}
 export function takeCollisionPlay(collision, store = played) {
   if (!collision) return false;
-  const key = `${collision.friend.id}:${collision.gatheringId}`;
+  const key = collisionPlayKey(collision);
   if (store.has(key)) return false;
   store.add(key);
   return true;

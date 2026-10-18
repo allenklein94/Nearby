@@ -53,16 +53,18 @@ test('the ripple is decoration: native driver, no touches, no haptic, Reduce Mot
   expect(pulse).toMatch(/useNativeDriver: true/);
   expect(pulse).toMatch(/<View pointerEvents="none" style=\{style\}>/);
   expect(s).toMatch(/useIsFocused/);
-  expect(s).toMatch(/if \(fresh\.length === 0 \|\| reduceMotion\) return/);
+  expect(s).toMatch(/if \(fresh\.length === 0 \|\| reduceMotion \|\| !allowed\) return/);
   expect(s).not.toMatch(/playHaptic|Animated\.loop|Animated\.stagger/);
   // the seen record is marked BEFORE the reduce-motion check, so nothing replays when Reduce Motion is turned off later
-  expect(s.indexOf('takeNewHappening(ids)')).toBeLessThan(s.indexOf('reduceMotion) return'));
-  expect(s.indexOf('reduceMotion) return')).toBeLessThan(s.indexOf('pulse.start()'));
+  expect(s.indexOf('takeNewHappening(ids)')).toBeLessThan(s.indexOf('!allowed) return'));
+  expect(s.indexOf('!allowed) return')).toBeLessThan(s.indexOf('pulse.start()'));
+  // idea "207": `allowed` is read when the ring would start, never an effect dependency (a re-render can't cut a ring)
+  expect(s).toMatch(/\}, \[focused, key\]\);/);
 });
 
 test('Home and Discover wrap only the still radar mark, never the rows (item 27)', () => {
   const home = read('screens/HomeScreen.js');
-  expect(home).toMatch(/<HappeningRipple ids=\{rightNow\.map\(\(g\) => g\.id\)\}[^>]*>\s*<RightNowMark [^>]*\/>\s*<\/HappeningRipple>/);
+  expect(home).toMatch(/<HappeningRipple ids=\{rightNowIds\}[^>]*>\s*<RightNowMark [^>]*\/>\s*<\/HappeningRipple>/);
   const discover = read('screens/DiscoverHubScreen.js');
   expect(discover).toMatch(/<HappeningRipple ids=\{section\.items\.map\(\(g\) => g\.id\)\}[^>]*>\s*<RightNowMark [^>]*\/>\s*<\/HappeningRipple>/);
   expect(home.match(/<HappeningRipple/g)).toHaveLength(1);

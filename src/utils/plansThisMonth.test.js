@@ -82,7 +82,7 @@ describe('Home wiring', () => {
     expect(home).not.toMatch(/weeklyRecap|formatWeeklyRecap|weekRecapA11y/);
     expect(home).toMatch(/showPlansThisMonth\(plansMonth\?\.count\) &&/);
     expect(home).toMatch(/navigation\.navigate\('Momentum', \{ source: 'home_plans_this_month' \}\)/);
-    expect(home).toMatch(/<CountRoll\s+key=\{`plansMonth:\$\{plansMonth\.rollKey\}`\}\s+play=\{plansMonth\.play\}/);
+    expect(home).toMatch(/<CountRoll\s+key=\{`plansMonth:\$\{plansMonth\.rollKey\}`\}\s+play=\{homeMoments\.plansThisMonth\}/);
     expect(home).toMatch(/takePlansThisMonthMoment\(\{ userId: myId, keys \}, AsyncStorage\)/);
   });
   it('the count comes only from the server rows, never from Home data', () => {
