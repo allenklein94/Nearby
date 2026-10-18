@@ -125,6 +125,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Offer card adapts to the media (owner idea "191", 2026-10-18; NOT item 191) MET, VERIFICATION PENDING, LOCKED:** screened video = muted, fixed frame, tap-to-play; legacy unscreened = "Video attached"; none = plain card; screened logo beside the name only; media only from the reply, never the profile; one card + one component for customer card and preview. **Every image whole, never cropped (owner, 2026-10-18; changes item 10) BUILT, NOT DEVICE/BROWSER-VERIFIED:** `OFFER_MEDIA_FIT = 'contain'` over the blurred copy, near-frame cover case removed. Video/looping backgrounds, autoplay, logo artwork, colour washes, enlarged logos, business styling DECLINED (items 22/50). Verification: offer checklist section 5 + item 49 check 14, phone + website.
 
+**Offer "physicality" (owner idea "192", 2026-10-18; NOT item 192) ASSESSED, OWNER DECISION PENDING, nothing built:** arrival motion met by item 25's signature (frame grows into the card, assembly rise + one glow, settle); spring (reserved for You're booked), animated shadow (item 22) and micro-scale recommended DECLINED; open option = static theme card shadow on the offer card (no motion), needs approval.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

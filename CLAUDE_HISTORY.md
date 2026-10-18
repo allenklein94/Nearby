@@ -1,3 +1,17 @@
+# Offer "physicality" on arrival (owner idea "192", 2026-10-18; NOT item 192, weather copy): ASSESSED, OWNER DECISION PENDING, nothing built
+
+Idea: when an offer arrives the card shows slight depth, a spring, a subtle shadow transition and a micro-scale, then settles, so
+it feels like it has weight. Found (code read this session; no tests run, nothing rendered): an arriving reply already plays item
+25's ONE signature (`businessResponds`, <= 1.5 s, calm, same for every business): a light travels into the card while a soft frame
+grows from the signal's shape into it (`motion/offerTravel.js`, `OfferTravelOverlay`), then the card assembles (`utils/offerAssembly.js`:
+steps fade + rise 6 px, one coral outline glow, a shadowed layer faded by opacity on the native driver) and settles. The assembly
+comment reserves "ring, spring or background change" for You're booked (item 12). The offer card itself is flat (border, no shadow;
+`styles.offerCard` in BusinessRequestDetailScreen), unlike theme cards with `shadow`. Recommendation: arrival motion MET by item 25;
+DECLINE adding a spring (reserved for You're booked), an animated shadow/elevation (not native-driver animatable, item 22), and a
+card micro-scale/bounce (item 25/56 locked as approved; item 58 meaning; offer-screen rule). Only open option: a STATIC resting
+depth (the theme's existing card shadow on the offer card, no motion, same for every business) = a small visual change needing
+owner approval + device check. Awaiting the owner.
+
 # Every offer image shown whole, never cropped (owner, idea "191" follow-up, 2026-10-18; changes item 10): BUILT, NOT DEVICE/BROWSER-VERIFIED
 
 Owner decision: show every photo whole inside the existing fixed frame, including photos shaped close to the frame; keep the
