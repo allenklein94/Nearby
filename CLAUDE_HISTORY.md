@@ -1,3 +1,5 @@
+# Idea "246" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; distance on the Opportunity card DECLINED; rough band DEFERRED behind item 159's evidence; no app change.
+
 # The business gets the whole request (owner idea "246", 2026-10-18): MOSTLY MET, assessed, owner decision pending, nothing built
 
 Checked: latest `get_business_opportunities` (20270313) returns category, party_size (item 119b booked headcount), budget_min/max,
