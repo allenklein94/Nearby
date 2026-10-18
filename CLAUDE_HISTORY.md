@@ -1,3 +1,17 @@
+# Not every CTA on the first card (owner idea "271", 2026-10-18; NOT item 271): MET AS BUILT, premise outdated, ASSESSED, recommended close, owner decision pending; a second button (Interested beside Join) and an Invite button on the card DECLINED (item 200, LOCKED); no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
+
+Premise ("Best Pick Tonight currently only has View") checked against code 2026-10-18: no longer true. The hero renders
+`renderGatheringCta(attention.hero, heroCard, 'hero')` (`HomeScreen.js`) from `gatheringCardModel` -> `gatheringPrimaryAction`
+(`utils/primaryAction.js`, hero = no lowCommitment); Best Pick's pool comes from `getNearbyGatherings` WITH attendee rows and excludes
+your own plans, so an upcoming pick shows its real join action: Join / Request to Join (approval or non-public) / Join Waitlist
+(full) / I'm Going (already Interested). View is the action only when nothing stronger is true: already started, invite-only
+without access, attendance unknown (e.g. signed out), past. The whole card opens the gathering, so View is never a second button.
+Context-prioritised = the one lifecycle table (`objectLifecycle.js` `canDo`), never a per-screen rule (master principle 2).
+DECLINED (item 200 LOCKED: one explicit action per card, the only exception idea "153"'s quiet ⋯ "Not interested"): Join + Interested
+side by side (Interested is the low-commitment action on Trending rows; on Best Pick, Join is the stronger true action, and Interested
+stays on GatheringDetail); Invite on the card (invites live on GatheringDetail / Create's Who's invited, items 135/136; item 39's
+"{Name} is nearby · Invite" stays the only Home invite). Device: check C9 (hero button readable, tap reaches the join confirmation).
+
 # Progressive disclosure ladder (owner idea "270", 2026-10-18; NOT item 270): MET AS BUILT in two levels (card -> detail), ASSESSED, recommended close, owner decision pending; a separate "Why recommended" step and Join gated behind full details DECLINED; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
 
 Proposed ladder: title -> distance · time -> why recommended -> full details -> Join. As built: the CARD carries the first rungs at
