@@ -1,4 +1,8 @@
-# Preserve the person's "anchor" (owner idea "276", 2026-10-18; NOT item 276): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+# Preserve the person's "anchor" (owner idea "276", 2026-10-18; NOT item 276): MET AS BUILT, CLOSED (owner, 2026-10-18), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+Owner decision (2026-10-18): close as Met, As Built; no app changes or additional rules; history only. (The owner's reply said "Idea 268";
+its content is this idea, 276. Idea "268", one recommendation combining several signals, is a separate entry and was not changed.)
+Real-device verification outstanding: checks C12, C17 and the offer checklist, before claiming continuity is verified in practice.
 
 Checked in code 2026-10-18. Both examples hold. (1) Business -> its offer: every reply card carries the business's name + screened logo
 beside it from `presentOffer()` (`utils/offerPresentationEngine.js` `business: { name, logoUri }`, item 50; one card for customer and
