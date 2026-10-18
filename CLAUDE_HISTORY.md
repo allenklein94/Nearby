@@ -1,4 +1,11 @@
-# Gathering card expands into full detail (owner idea "231", 2026-10-18; NOT item 231): CONFLICTS WITH LOCKS, recommended DECLINE as written, owner decision pending, nothing built
+# Gathering card expands into full detail (owner idea "231", 2026-10-18; NOT item 231): DECLINED as written, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): decline as written; items 45, 95, 96, 97 and 103 stay locked. The gathering's full detail stays its
+  dedicated screen for deciding, joining and managing; no Discover card morphs into it; attendees, location details, offers and
+  management actions are not duplicated on the Discover card (one action per card, one source of truth). Kept: Discover cards show
+  what, why, one distance-and-time line and one action, a tap expands in place into related discovery context; GatheringDetail keeps
+  attendees, approved-attendee meet-up information, linked offers or plans and all gathering actions together; detail opens over
+  the existing context and Back restores the exact previous state. No new rule, duplicate gathering screen or animation.
 
 - Proposal: tapping "Coffee tonight" expands the gathering card; attendees, location, business offer and actions appear (same
   object, more information).
