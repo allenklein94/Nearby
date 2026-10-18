@@ -1,4 +1,9 @@
-# "Don't navigate away to see more of the same" (owner idea "221", 2026-10-18; NOT item 221): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+# "Don't navigate away to see more of the same" (owner idea "221", 2026-10-18; NOT item 221): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built; existing rule text unchanged. Item 45 stays the single source of truth for
+  screen reduction; Rule 14 governs when a dedicated screen is justified; the exception is preserved ("See all" opens a dedicated
+  screen when the list has its own management job, as with Home -> Plans). No duplicate rule, no rewrite of item 45, no other
+  version of the screen-reduction principle. No new rule or code changes.
 
 - Proposal: the rule isn't "never use new screens"; it's "don't navigate away when the person is simply asking to see more of the
   same information".
