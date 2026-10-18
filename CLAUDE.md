@@ -107,6 +107,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Create preserves everything (owner idea "182", 2026-10-18; NOT item 182) MET AS BUILT by items 82/85/187, LOCKED, nothing built, NOT DEVICE-VERIFIED (item 82 checklist):** carry-over only from the words; no location/setting row ("near me", "beach"); card settles once; cross-screen animation DECLINED (items 82/88).
 
+**Business request knows what was said (owner idea "183", 2026-10-18; NOT item 183) MET by item 84 (+ items 87/112; item 190 = link placement), LOCKED, nothing built, NOT DEVICE-VERIFIED:** item 84 checklist, checks 13-14 added (example + link placement).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

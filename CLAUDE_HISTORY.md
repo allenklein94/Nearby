@@ -1,3 +1,16 @@
+# Business request knows what was said (owner idea "183", 2026-10-18; NOT item 183): MET by item 84 (+ items 87, 112), LOCKED, nothing built
+
+Idea: "Dinner for 4 Saturday" -> Ask businesses -> the request already knows Dinner, 4, Saturday; the person only fills in what
+is missing. Finding (kept as is): item 84's "Ask Nearby Businesses" from an ask opens AskBusiness with the "From what you said"
+card (`askBusinessParamsFromAsk` / `requestCarriedRows`: activity, the day said, People only via `statedPartySize`; never
+purpose/budget/defaults) and marks only missing REQUIRED fields under their labels (`askMissingFields`; Send's alert stays the
+backstop); item 87's one party rule reads "Dinner for 4 Saturday" and "dinner for four saturday" as 4 (checked 2026-10-18);
+item 112 = never re-ask what Nearby knows; journey `outdoorMatch`. Item 190 is the placement rule, not a feature: the link is a
+secondary link after the results for business asks (even with good results), absent for public-place asks (`askBusinessesFits`).
+Owner decision: met as built, no build authorized. Verification OPEN: item 84's device checklist (not run), now with checks 13
+(the idea's example + link after good results) and 14 (no link for a public-place ask) added; never claim device-verified before
+it passes. Only the checklist file changed (two checks appended).
+
 # Create preserves everything (owner idea "182", 2026-10-18; NOT item 182): MET AS BUILT by items 82 + 85 + 187, LOCKED, nothing built
 
 Idea (owner's words): "Beach volleyball Saturday" -> nothing exists -> tap Create it -> Nearby carries Beach volleyball, Saturday,

@@ -22,3 +22,8 @@ Setup: Home or Discover, a typed ask, then "Ask Nearby Businesses" (shown only w
     and no inline marks (Send's alert only, as before).
 11. Light and dark: the amber marks are readable and not mistaken for errors; longest language (de / tl) wraps cleanly.
 12. Judge on the phone whether three marks at once (check 5) feels heavy: report, don't change.
+13. (Added 2026-10-18 for owner idea "183"; item 190 placement.) "Dinner for 4 Saturday": "Ask Nearby Businesses" shows as a
+    secondary link AFTER the results, even when there are good results. Tapping it: the card shows Activity Dinner, Time Saturday,
+    People 4; no field is marked for anything the words said.
+14. (Added 2026-10-18, item 190.) A public-place ask (e.g. "a park to walk my dog"): no "Ask Nearby Businesses" link anywhere in
+    the results or the empty state.
