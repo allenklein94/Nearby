@@ -1,4 +1,4 @@
-# Home as a decision surface, one question per module (owner idea "266", 2026-10-18): MET AS BUILT for four of five modules; a separate "Business Offers" module on Home DECLINED; assessed, recommended close with no new rule, module or string, nothing built; CLAUDE.md not changed
+# Home as a decision surface, one question per module (owner idea "266", 2026-10-18): MET AS BUILT for four of five modules; a separate "Business Offers" module on Home DECLINED; CLOSED (owner), headings kept unless real usage shows confusion, no new rule, module or string, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (Home checks C12/C16)
 
 Already the surface-jobs doctrine (Home = what should I do now) + idea "238" (Home = doors; Activity = what needs my answer) + idea
 "237" (max 3 per section, only real content) + `HOME_SECTION_PRIORITY` (each gathering once, idea "265"). As built, each module answers
