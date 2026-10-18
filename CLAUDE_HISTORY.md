@@ -1,3 +1,20 @@
+# Each placement has a different purpose (owner idea "262", 2026-10-18): MET AS BUILT (items 52/91/194 + item 28's cross-surface test, all LOCKED); one within-Home observation recorded for the device session; assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+The rule already exists, word for word in spirit: item 28's cross-surface test (owner, 2026-10-08, LOCKED): the same gathering may
+appear on different surfaces only when each copy gives a DIFFERENT reason or action (Home = act now with personal reasons; Discover =
+browse, section reason; Plans = manage your own; detail = decide/commit); a copy that adds neither is consolidated. Enforced by:
+- Discover: ONE dedupe chain (item 91, `buildDiscoverSections`): a gathering shows once, in the FIRST section it qualifies for, so the
+  "#32" case (Coffee near you / Trending Near You / Friends are into) can no longer show one card three times; the section's reason
+  leads the card (item 194 refinement, `sectionLeadReason`), never a second copy to expose another reason;
+- Home: once across the whole surface with its reasons merged (item 52, `homeSignalMerge.js`); item 41's friends-planning chips
+  skip anything already in Your Plans and "See gatherings" never repeats the chips (`splitFriendsActivity`);
+- search: Top Results drops what the found block shows (item 134, `searchTopDedupe.js`); item 27 (dedupe by viewport) met by these.
+Observation (not a defect under item 28, not built): `splitFriendsActivity` excludes Your Plans but not Picked For You / Best Pick, so
+one gathering can be a Picked For You card AND a chip in the friends-planning line on the same Home. The purposes differ (a pick for
+you vs "your friends are making plans", the chip = glyph + title only), which item 28 allows; if the device session (check C12 area)
+shows it reads as a repeat, the fix is one exclusion in `splitFriendsActivity`, never a new rule. Nothing to build; device session
+first (idea 252).
+
 # The animation makes the connection obvious (owner idea "261", 2026-10-18): MET AS BUILT for "the reply attaches to the same plan"; "the card expands" on tap DECLINED; CLOSED (owner), no new motion or rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (offer checklist arrival checks + item 32 checks on a real phone)
 
 Part 1, "tap Your plan: Coffee -> the card expands": DECLINED, all LOCKED: Home never expands sections or cards in place (item 110,
