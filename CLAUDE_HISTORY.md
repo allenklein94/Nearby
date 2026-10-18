@@ -1,4 +1,9 @@
-# Happening Now in place on Discover (owner idea "219", 2026-10-18; NOT item 219): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+# Happening Now in place on Discover (owner idea "219", 2026-10-18; NOT item 219): MET AS BUILT, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): close as met as built. Heading, time chips, See all and map pill keep switching to the full list in
+  place without a new screen; the full results keep replacing the shorter sections (no duplicate gatherings); the previous Discover
+  state is preserved on return; Home keeps opening Discover directly into the Happening Now list and restoring its prior state on
+  leaving; "Happening Nearby" stays the separate local-business-post viewer. No new rule, screen or code changes.
 
 - Proposal: on Discover, Happening Now populates right there (Discover -> Happening Now -> results underneath), never Discover ->
   Happening Nearby screen -> results.
