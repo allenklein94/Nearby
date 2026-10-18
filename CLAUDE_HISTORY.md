@@ -1,3 +1,17 @@
+# Full-screen only for emotionally meaningful moments (owner idea "275", 2026-10-18; NOT item 275): "everything else inline" MET; the three examples as full-screen CONFLICT with item 167 (LOCKED); ASSESSED, recommended keep item 167, owner decision pending; nothing built; CLAUDE.md not changed
+
+Checked in code 2026-10-18. The only full-screen moment is the mutual match (`MOTION_PRESENTATIONS.fullScreen` = `matchIntro`,
+`motion/MatchAnimation.js`; guard `motion/motionLevels.test.js`). Item 167 (LOCKED, stricter than this idea) keeps the three examples inline:
+(1) a business's first offer = item 51's words "Your first offer/reply is on its way" in the sent toast (`BusinessDashboardScreen.js`
+`replySentConfirmation(.., { first })`, server-decided `partner_first_offers`); the customer's first reply = item 25's signature on the card
+(crazy-but-smart #15, a full-screen first reply, DEFERRED until the signature is seen on a phone). (2) Reservation completed = item 52's
+"✓ Visit confirmed" settle on the card + first-visit note (+ idea 169's optional cue); booking itself = "You're booked" on the card (item 12).
+(3) Gathering created = item 43's published panel "Your gathering is live!" / "Your first gathering is live!" (`GatheringPublishedPanel.js`).
+"Major gathering" has no definition in Nearby (no size/importance rule); a full-screen moment for it would need one, and size-based
+celebration would rank gatherings by headcount. Making any of the three full-screen = reopening item 167 (and items 51/52/43 for their
+presentation) + a motion spec per item 101 + check against item 58/164 and idea "207". Recommended: keep item 167 as is; the first-reply
+full-screen question stays with #15's phone-evidence gate. Owner to decide.
+
 # Confirm inline, the 10 residual OK-dialogs switched to toasts (owner idea "274", 2026-10-18; NOT item 274): DECIDED (owner: "Switch the 10 to toasts, keep the other three"), BUILT, NOT DEVICE-VERIFIED
 
 The 10 success-only `Alert.alert` dialogs listed below now call the existing `showSuccessToast` (`motion/SuccessToast.js`, item 137) with
