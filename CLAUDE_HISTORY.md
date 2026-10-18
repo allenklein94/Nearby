@@ -1,3 +1,21 @@
+# Contextual mini-cards instead of repeated cards (owner idea "264", 2026-10-18): MET AS BUILT where it applies; "5 people interested" DECLINED (privacy); new per-section mini-card variants DECLINED; assessed, recommended close with no new rule, card or string, nothing built; CLAUDE.md not changed
+
+Premise: the same full card three times on one surface does not happen as built: Discover shows a gathering once, in its first
+qualifying section (item 91), Home once across the surface (item 52), Top Results drops the found block (item 134); see ideas 262/263.
+What remains is cross-surface repetition, already contextual:
+- Recommended (Home Picked For You / Discover "Because you like"): the ONE card model (`gatheringCardModel` / `recommendationContext`):
+  category glyph + title, max 2 reasons with the section's reason first ("Because you like Coffee", item 194), one "distance · when" line,
+  one state-aware action = the proposed first mini-card;
+- Trending: same card, lead reason the real "{n} attending" (>= 5, host included; idea 263);
+- Friend activity: Home's friends-planning line (item 41) is ALREADY person-led and compact: the friends' faces, then a one-line chip
+  per plan (category glyph + real title, opens that gathering), then the line; "{name} is hosting this" where true = the proposed third.
+DECLINED: "5 people interested" (Interested is private, LOCKED: never shown beyond the host's aggregate; Trending counts approved
+attendees only, `constants/trending.js`; ideas 198/199/263). DECLINED: separate mini-card designs per section (a Recommended / Trending /
+Friend variant each with its own fields): a second representation of the one card model (master principle 2, item 33's one compact
+card for Picked For You + Nearby Right Now, Discover's existing hero/standard tiles chosen by fit, `discoverTileVariant`); the
+hierarchy changes through the lead reason, not a new card. Image size already varies by placement (hero vs standard tile, compact
+Home rows). Nothing to build; whether cross-surface repeats read as reinforcement = device session (idea 252, with idea 262's note).
+
 # Same object, different information hierarchy (owner idea "263", 2026-10-18): MET AS BUILT (item 194's section lead reason, LOCKED); both proposed rewordings DECLINED; CLOSED (owner), no new rule or string, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 The hierarchy already changes by placement: item 194's refinement (2026-10-04, LOCKED; `sectionLeadReason` in
