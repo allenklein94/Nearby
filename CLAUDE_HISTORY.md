@@ -1,3 +1,12 @@
+# Only the highest-priority thing moves (owner idea "286", 2026-10-18; NOT item 286): MET AS BUILT by idea "207" + item 57 + idea "208", ASSESSED, recommended close, owner decision pending; no new rule or motion; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C16)
+
+Already locked: idea "207" (one animation per Home visit: of Home's arrival moments only the highest in `HOME_MOMENT_ORDER` moves, the rest
+show settled and count as seen; `utils/homeMomentBudget.js`, guard `homeMomentBudget.test.js`); item 57 + idea "168" (`MOTION_LEVELS`:
+exactly ONE signature, a business responds; cards, lists, rows, tabs static); idea "208" (priority follows importance; recommendation
+changes and card loads get no motion); item 58 + motion truth (motion only for a real change); item 167 (one full-screen moment). Off Home,
+each screen's moments are already single-object (offer screens: no screen-wide motion; item 73: one full join, the rest small). Exempt by
+design: the weather fade, own-tap feedback, typed-ask result moments (idea "207"). Phone check: C16.
+
 # Home hierarchy: Intent > Immediate > Personalized > Social > Explore (owner idea "285", 2026-10-18; NOT item 285): LARGELY MET by the locked Home order; differs in ONE place (Best Pick / Picked For You sits above Your Plans + Nearby Right Now); "everything else contextually" = idea "284"'s lower tail, DEFERRED to the phone; KEEP AS BUILT, decision pending device evidence (owner, 2026-10-18); nothing built; CLAUDE.md not changed
 
 Owner (2026-10-18): keep the current order. Home has two jobs (what could I do / what is already happening in my life); neither is assumed
