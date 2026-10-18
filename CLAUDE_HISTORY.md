@@ -1,4 +1,9 @@
-# Home doesn't compete with itself (owner idea "284", 2026-10-18; NOT item 284): MOSTLY MET (first viewport budgeted, recommendations pooled, one object once); the example order is not Home's; a long conditional lower tail EXISTS; ASSESSED, recommend no change before the phone (idea "252" LOCKED), owner decision pending; nothing built; CLAUDE.md not changed
+# Home doesn't compete with itself (owner idea "284", 2026-10-18; NOT item 284): MOSTLY MET (first viewport budgeted, recommendations pooled, one object once); the example order is not Home's; a long conditional lower tail EXISTS; ASSESSED, recommend no change before the phone (idea "252" LOCKED), owner decision pending (DEFERRED TO THE PHONE by the owner, 2026-10-18); nothing built; CLAUDE.md not changed
+
+Owner (2026-10-18): wait for the first phone session; do not trim Home yet ("defer the decision, not the concern"). Observation attached
+to check C12 of the first-session checklist (how many lower blocks appear together, which compete or repeat, which give a distinct reason
+to stay, which belong in an existing destination). If the phone confirms clutter: fold or move only the blocks that demonstrably cause it
+(combine related prompts / move secondary info to existing destinations before adding anything), idea "237". App code and CLAUDE.md unchanged.
 
 Checked in code 2026-10-18 (`HomeScreen.js`, `utils/homeAttention.js`). The example's eight competing blocks are not Home as built:
 "This is Nearby" (`ui.home.firstRunHeading`) shows only on the first-ever visit (`seenFirstRunMoment === false`), then never; Trending,
