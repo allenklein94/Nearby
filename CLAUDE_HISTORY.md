@@ -1,3 +1,17 @@
+# Tap changes the card's state in place (owner idea "273", 2026-10-18; NOT item 273): PARTLY MET, ASSESSED, recommended keep as built, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+Checked in code 2026-10-18. Interested: MET in place (Home rows' toggle + GatheringDetail: "✓ Saved" + one small pulse -> "★ Interested",
+item 30; toast with Undo; the FIRST-ever Interested routes to detail once for the anonymous-demand disclosure). Join / Request to Join
+on GatheringDetail: MET in place on that screen (You're in; item 31's "★ ~~Interested~~ → ✓ Attending" from Interested; Requested /
+On waitlist status; item 143 waitlist -> Attending); no separate confirmation SCREEN exists anywhere. NOT in place: Join / Request to
+Join on a Home or Discover CARD opens GatheringDetail with `openJoin` (`HomeScreen.js` `renderGatheringCta` -> `GatheringDetailScreen.js`
+effect), which raises the join sheet (`GatheringIntentModal`: optional private "what are you hoping for?" + Confirm) and runs the
+interest limit (Paywall), approval, women-only and invite-only checks; the card itself shows the new state (View Plan / Requested)
+on the next Home load. Deliberate since 2026-09-20 ("so limits/approval/women-only are never bypassed"): one join flow, one place
+(master principle 2). Recommended keep: an in-card join would need a second copy of those checks or skip them. If the owner wants
+card-level join, it is a reopen of the 2026-09-20 decision + its own build plan (shared join helper used by both, motion spec per
+item 101, the card's change = existing item 30/31 forms only). No new motion either way (items 58/164).
+
 # Primary CTA reflects certainty (owner idea "272", 2026-10-18; NOT item 272): MET AS BUILT by the one action table, ASSESSED, recommended close, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
 
 Already `gatheringPrimaryAction` / `gatheringJoinAction` (`utils/primaryAction.js`, states from `objectLifecycle.js` `canDo`), on
