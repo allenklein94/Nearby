@@ -1,3 +1,14 @@
+# Progressive disclosure ladder (owner idea "270", 2026-10-18; NOT item 270): MET AS BUILT in two levels (card -> detail), ASSESSED, recommended close, owner decision pending; a separate "Why recommended" step and Join gated behind full details DECLINED; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
+
+Proposed ladder: title -> distance · time -> why recommended -> full details -> Join. As built: the CARD carries the first rungs at
+once (what; max 2 strongest real reasons; one "0.8 mi · 7:30 PM" line, `formatDistance` / `whenLabel`) plus its ONE state-aware
+action (`primaryActionFor`: Join / Request to Join / Join Waitlist / You're in), items 112/200; a tap opens GatheringDetail = full
+details + "Why this fits you" (item 106) + the same action, Back restores prior state. Same ladder as ideas "268"/"269".
+DECLINED: "Why recommended" as its own step between card and detail (item 106 + idea "226", LOCKED: no why sheet, no on-card
+expansion; the card's 2 reasons are the short why); Join only after full details (a person ready to join finishes on the card:
+idea "249" less work, item 29's "can the person finish without leaving?"; detail stays one tap away for anyone who wants more);
+staged reveal of card lines (cards static, all information from frame one, items 111/15, `animationNeverDelays`).
+
 # One conclusion, expand for why (owner idea "269", 2026-10-18; NOT item 269): MET AS BUILT by items 106/112 + idea "268", ASSESSED, recommended close, owner decision pending; an on-card expansion or "why" sheet DECLINED (item 106 + idea "226", LOCKED); no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C9)
 
 The conclusion: the card is one pick (Best Pick only above the real fit score, else none) with what, max 2 strongest real reasons,
