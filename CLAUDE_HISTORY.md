@@ -1,3 +1,22 @@
+# Sheets animate from their object (owner idea "229", 2026-10-18; NOT item 229): MET WHERE AUTHORIZED, recommended KEEP AS BUILT, owner decision pending, nothing built
+
+- Proposal: sheets animate from the object that triggered them (tap a card -> the card expands; continuity), never "card disappears
+  -> mysterious new screen appears".
+- Met:
+  1. Item 44 (owner 2026-10-11, approved, BUILT, NOT DEVICE-VERIFIED): a Discover map business pin opens item 17's sheet growing out
+     of the pin (`motion/PinToSheetFrame.js`, `motion/pinToSheet.js`, `SEQUENCES.pinToSheet`, medium tier; a pin-coloured outline
+     travels from the pin into the sheet's edge; text readable and buttons live from frame one; Reduce Motion = plain modal).
+  2. Gatherings and perks on Discover expand in place (item 18: their in-place expansion is locked), so the tapped card itself
+     opens; no screen replaces it.
+  3. Detail screens open on top of where the person was (`openOnTop`) and Back restores exact state, so Discover never "disappears".
+- Not extended (locked scope):
+  1. Business ROWS keep the plain slide: item 44 is scoped to pins ("rows and Reduce Motion keep the plain modal animation");
+     changes only on device evidence.
+  2. Card -> detail-screen morphs: cross-screen transformation DECLINED (items 95, 96, 97, 103; items 82/88 no cross-screen travel).
+  3. Any new motion needs item 101's eight-question spec + owner approval, and must explain a real change (item 58); no new
+     animated places (item 55).
+- Recommendation: keep as built; verify item 44 on a real iPhone + Android phone (its checklist) before considering more.
+
 # Business details sheet (owner idea "228", 2026-10-18; NOT item 228): MET AS BUILT under item 17, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18; the owner's message said "223", the content is idea "228"): met as built under item 17, no new

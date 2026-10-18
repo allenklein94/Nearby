@@ -191,6 +191,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Business details sheet (owner idea "228", 2026-10-18; NOT item 228) MET AS BUILT under item 17, CLOSED, LOCKED, no new rule or code:** item 17's `BusinessPreviewSheet` unchanged (name, real business distance, hours, up to 2 business-provided qualities, the primary action, optional "View business"). DECLINED: public star ratings (Nearby has no public review-rating system); a person's request-specific offer shown as a standing deal to browsers (perks keep their Discover place); a duplicate Directions button when the primary action already gives directions.
 
+**Sheets animate from their object (owner idea "229", 2026-10-18; NOT item 229) MET WHERE AUTHORIZED, ASSESSED, recommended keep as built, owner decision pending, nothing built:** item 44 already grows the business sheet out of the tapped map pin (`PinToSheetFrame`, Pulse journey); gatherings and perks expand in place on Discover (the card itself opens, no new screen). Not extended: business rows keep the plain slide (item 44 scoped to pins, LOCKED; `PIN_HEAD_LIFT` etc. change only on device evidence); card -> detail-screen morphs DECLINED (items 95-97, 103, 82/88: no cross-screen transformation); any new motion needs item 101's spec + approval. Verify item 44 on phones first.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
