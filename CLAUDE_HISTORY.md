@@ -1,3 +1,16 @@
+# Stable structure, meaningful motion (owner idea "204", 2026-10-18; NOT item 204): ASSESSED, MET AS BUILT, owner decision pending, nothing built
+
+- Proposal (a principle): the same philosophy as idea "203" applies to animation; structure stays stable, meaningful events create
+  motion; personality without chaos.
+- Already established: animation must explain a real change or connection, never decoration (item 58; one exception, the occasion
+  tiles); motion only for real events and only on data that is already final (motion truth rule, items 99/162/164); cards, lists,
+  rows, tabs and recommendations static, mode/filter changes instant (items 15/57, idea "203"); no screen-wide motion on offer screens;
+  no app-wide, ambient or decorative layer (items 99/164/200); personality = a few calm, owned moments (business responds = the ONE
+  signature, item 25; the Pulse for connections, item 55; full-screen only for the mutual match, item 167); Reduce Motion = settled
+  state; every tap and swipe interrupts motion (item 20).
+- Recommendation: (a) record as met, no new rule (it would restate items 58/99/164 + idea "203"). Alternative (b): one short line in the
+  Motion conventions. Nothing built either way.
+
 # Midnight day-word rollover (item 108 follow-up, owner-scoped 2026-10-18): BUILT, AUTOMATED-TEST VERIFIED (code level), NOT DEVICE-VERIFIED
 
 - Problem: a Home or Discover card reading "Tomorrow · 10 AM" kept it past midnight until something else redrew the screen.
