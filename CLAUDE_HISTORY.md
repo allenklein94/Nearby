@@ -1,3 +1,11 @@
+# No motion question in onboarding (owner idea "206", 2026-10-18; NOT item 206): MET BY IDEA "205", CLOSED, LOCKED, nothing built
+
+- Proposal: never "Choose your animation preference." in onboarding (too much); just respect system settings; maybe later a "Motion"
+  entry in Settings.
+- Met: onboarding has no motion step (checked: the only motion there is `NLoader` in OnboardingRecommendationsScreen); system Reduce
+  Motion / Remove animations governs everything via `motion/motionPolicy.js` (idea "205"). The "maybe later" Settings entry is idea
+  "205"'s declined option (b): only if the owner reopens idea "205". No code, strings or settings changed.
+
 # Quiet mode (owner idea "205", 2026-10-18; NOT item 205): MET AS BUILT (owner chose (a)), CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): option (a). The phone's native Reduce Motion / Remove animations stays the single source of truth;

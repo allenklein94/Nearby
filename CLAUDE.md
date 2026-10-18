@@ -151,6 +151,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Quiet mode (owner idea "205", 2026-10-18; NOT item 205) MET AS BUILT, option (a), CLOSED, LOCKED, nothing built:** the phone's Reduce Motion / Remove animations is the ONE source (`motion/motionPolicy.js` + `useReduceMotion`; springs instant + loops off app-wide; each moment = settled state; sound cues silent under it). No in-app motion setting: Full/Reduced/Minimal and a "Reduce motion in Nearby" switch DECLINED; idea "169"'s sound-cue switch stays independent. Works-without-animation NOT DEVICE-VERIFIED.
 
+**No motion question in onboarding (owner idea "206", 2026-10-18; NOT item 206) MET BY IDEA "205", CLOSED, LOCKED, nothing built:** onboarding asks no animation preference (none exists; only the loader animates there); the phone's setting is respected. A later "Motion" entry in Settings would reopen idea "205" (DECLINED there), never added on its own.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
