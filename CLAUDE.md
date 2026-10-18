@@ -181,6 +181,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Is the person doing something fundamentally different?" (owner idea "223", 2026-10-18; NOT item 223) MET AS BUILT, CLOSED, LOCKED, no new rule or rewording:** same rule as ideas "221"/"222": item 45 (same job = same screen) + Rule 14, whose registry forces the question (a route needs its job A-F entry or `screenRegistry.test.js` fails); See-all management exception (Home -> Plans) kept.
 
+**Bottom sheets keep context (owner idea "224", 2026-10-18; NOT item 224) MET AS BUILT, ASSESSED, owner decision pending, nothing built:** sheets are rung 3 of item 45's ladder (change content > expand inline > sheet > screen), used where they fit: business info = item 17's preview sheet (full profile = `BusinessProfile`, job F), invite = `InviteFriendsModal` over the gathering, share = the phone's share sheet. The rest already sit on a LOWER rung: filters change content in place (never navigate), quick gathering details expand in place on Discover, Who's going = inline cluster on GatheringDetail, location = detail's place line + Directions (item 145), offer preview = live inside Make an Offer (item 49, no separate step, LOCKED), reasoning = "Why this fits you" on detail (why-sheet DECLINED, item 106 LOCKED). Recommended: close as met; no new sheets.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

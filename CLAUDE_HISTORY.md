@@ -1,3 +1,19 @@
+# Bottom sheets keep context (owner idea "224", 2026-10-18; NOT item 224): MET AS BUILT, ASSESSED, owner decision pending, nothing built
+
+- Proposal: bottom sheets handle filters, quick details, attendee list, offer preview, recommendation reasoning, share, invite,
+  location details and business information without taking the person out of context.
+- Met by item 45's ladder: change content > expand inline > sheet > dedicated screen. A sheet is one rung, used where the lower
+  rungs don't fit; moving something that already stays in place into a sheet would be a step UP the ladder.
+- Already a sheet/overlay: business information (item 17's preview sheet over Discover, rows + map pins, item 44's pin -> sheet;
+  the full profile is `BusinessProfile`, job F); invite (`InviteFriendsModal` over GatheringDetail); share (the phone's share
+  sheet via `Share.share`); also the cancellation reason sheet and the story viewer.
+- Already lower (in place, no sheet): filters and modes change Discover's content (never navigate); quick gathering details expand
+  in place on Discover (context expansion); attendee list = Who's going cluster inline on GatheringDetail (item 28); location =
+  the detail's place line + Directions (item 145; approximate distance in words, item 146); offer preview = live above Send Offer
+  inside Make an Offer (item 49, no separate preview step, LOCKED); recommendation reasoning = "Why this fits you" (`ReasonList`)
+  on GatheringDetail + card reasons (item 106: why-sheet DECLINED, LOCKED).
+- Recommendation: close as met as built; no new sheets, no new rule.
+
 # "Is the person doing something fundamentally different?" (owner idea "223", 2026-10-18; NOT item 223): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built, no new rule. Item 45 + Rule 14 stay unchanged.
