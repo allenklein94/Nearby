@@ -1,4 +1,10 @@
-# Card -> detail transformation (owner idea "230", 2026-10-18; NOT item 230): CONFLICTS WITH LOCKS, recommended DECLINE, owner decision pending, nothing built
+# Card -> detail transformation (owner idea "230", 2026-10-18; NOT item 230): DECLINED as written, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): decline as written; items 95, 96, 97 and 103 stay locked. No card-to-detail-screen morphing; no
+  request-specific offer anchored to a business card for general browsing (idea "228" kept); existing continuity preserved
+  (gathering and perk cards open in place, business previews over Discover, map-pin transitions = item 44, Back restores the prior
+  state); item 101's motion spec and item 44's real-phone test stay prerequisites before any motion extension. No new animation,
+  no new rule, no locked decision reopened.
 
 - Proposal: tapping "☕ Coastal Coffee" expands the card into the detail surface, image / title / location / offer visually
   anchored, so the person knows it is the same thing.
