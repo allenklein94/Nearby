@@ -7,6 +7,8 @@ import FadeInState from '../components/FadeInState';
 import { NLoader, showSuccessToast } from '../motion';
 import * as Haptics from 'expo-haptics';
 import { getGatheringMessagesPage, getGatheringMessageById, sendGatheringMessage } from '../services/gatheringChat';
+import { getGatheringWhenFields } from '../services/gatherings';
+import { displayGatheringWhen } from '../i18n/display';
 import { getSignedPhotoUrl } from '../services/photos';
 import { captureStoryMedia, uploadStory } from '../services/stories';
 import ReportBlockModal from '../components/ReportBlockModal';
@@ -105,6 +107,18 @@ export default function GatheringChatScreen({ route, navigation }) {
   const [myUserId, setMyUserId] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [reportTarget, setReportTarget] = useState(null);
+
+  // Idea "244": the header shows when this gathering is, under its title, from the same when engine as every card.
+  // Re-read on each focus so a "Happening now" label never outlives the gathering; no time = no line.
+  useEffect(() => {
+    let alive = true;
+    const refresh = () => getGatheringWhenFields(gatheringId)
+      .then((g) => { if (alive) navigation.setParams({ gatheringWhen: displayGatheringWhen(g, language) ?? null }); })
+      .catch(() => {});
+    refresh();
+    const unsubscribe = navigation.addListener('focus', refresh);
+    return () => { alive = false; unsubscribe(); };
+  }, [gatheringId, language, navigation]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setMyUserId(data?.session?.user?.id ?? null));

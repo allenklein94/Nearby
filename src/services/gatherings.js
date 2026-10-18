@@ -1497,6 +1497,19 @@ export async function getHostSentInvitations(gatheringId) {
 // Count-only, for the host command center's Message action -- a real number without pulling any message body or sender
 // down. Read through gathering_messages RLS (host + approved attendees, blocked senders excluded either way), so it is
 // exactly the chat the caller can open. A failed lookup is unknown (null), never "0 messages".
+// The gathering chat header's when line (idea "244"): just the two fields the shared when engine reads
+// (displayGatheringWhen), through the same RLS-scoped gatherings read. null = no line.
+export async function getGatheringWhenFields(gatheringId) {
+  const { data, error } = await supabase
+    .from('gatherings')
+    .select('scheduled_at, duration_minutes')
+    .eq('id', gatheringId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return data;
+}
+
 export async function getGatheringMessageCount(gatheringId) {
   const { count, error } = await supabase
     .from('gathering_messages')

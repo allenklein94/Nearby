@@ -469,12 +469,18 @@ export default function RootNavigator() {
                 headerTitle: () => (
                   <TouchableOpacity
                     onPress={() => route.params?.gatheringId && navigation.navigate('GatheringDetail', { gatheringId: route.params.gatheringId })}
-                    accessibilityLabel={route.params?.gatheringTitle ? t('ui.nav.viewA11y', { title: route.params.gatheringTitle }) : t('ui.nav.viewGatheringA11y')}
+                    accessibilityLabel={[route.params?.gatheringTitle ? t('ui.nav.viewA11y', { title: route.params.gatheringTitle }) : t('ui.nav.viewGatheringA11y'), route.params?.gatheringWhen].filter(Boolean).join(', ')}
                     accessibilityRole="button"
                   >
                     <Text style={{ color: colors.textPrimary, fontSize: 17, fontWeight: '600' }}>
                       {route.params?.gatheringTitle ? t('ui.groupChat.chat', { title: route.params.gatheringTitle }) : t('ui.nav.groupChat')}
                     </Text>
+                    {/* Idea "244": when the gathering is, set by GatheringChatScreen from displayGatheringWhen; same tap. */}
+                    {route.params?.gatheringWhen ? (
+                      <Text style={{ color: colors.textSecondary, fontSize: 13 }} numberOfLines={1}>
+                        {route.params.gatheringWhen}
+                      </Text>
+                    ) : null}
                   </TouchableOpacity>
                 ),
                 headerStyle: { backgroundColor: colors.background },

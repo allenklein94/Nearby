@@ -5810,6 +5810,19 @@ Choices are stashed in the existing `pending_onboarding_answers` blob and Comple
 columns, one store). Not surfaced at onboarding: Community. No migration. Jest 685/685. Device-unverified. Business export re-run: byte-identical (not in the bundle), nothing to commit.
 (verified by rebuilding).
 
+## Owner idea "244" decided + header when line built (2026-10-18)
+
+Owner decision: approve the small header improvement, decline inferred message context, defer sharing a plan into a 1:1 chat.
+Built: `getGatheringWhenFields(gatheringId)` (`services/gatherings.js`: `scheduled_at, duration_minutes` through the RLS-scoped
+gatherings read); `GatheringChatScreen` sets route param `gatheringWhen = displayGatheringWhen(g, language)` on mount and every focus
+(a "Happening now" label is re-read on return); `RootNavigator`'s GatheringChat `headerTitle` renders it as a second, smaller
+`textSecondary` line inside the existing TouchableOpacity that navigates to `GatheringDetail` (so every entry point, incl. pushes and
+Messages chips that pass only the id/title, gets it). Accessibility label = existing `ui.nav.viewA11y` / `viewGatheringA11y` joined
+with the when line by ", " (no new strings, no native review needed). No motion, no screen, no migration. Business web navigator's
+GatheringChat header unchanged. Guard `src/screens/gatheringChatWhenLine.test.js` (4); full Jest 477 suites / 6506 passed.
+NOT DEVICE-VERIFIED: header fit on iOS (centred) and Android (left-aligned), tap, VoiceOver/TalkBack reading.
+Journey: none (client-only header; no server state changed).
+
 ## Sep 18 2026 — Location powers the whole system ("the user should never repeatedly tell Nearby where they are") — DONE
 
 Direct request. Built in increments, each committed + pushed; Jest 677/677; nothing exercised on a device.
