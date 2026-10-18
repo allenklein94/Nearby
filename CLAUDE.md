@@ -133,7 +133,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Offer comparison with motion (owner idea "195", 2026-10-18; NOT item 195) KEEP AS BUILT, MET BY ITEMS 63 + 117, CLOSED, LOCKED, nothing built:** `rankReplies` order + eligibility kept, price never ranks, "✨ Our pick" only when earned, all replies in one card format together with no staging/entrance animation; no extra emphasis or offer-screen change.
 
-**"Your choice" confirmation (owner idea "196", 2026-10-18; NOT item 196) ASSESSED, MET BY ITEMS 12 + 32, OWNER DECISION PENDING, nothing built:** "I'll take this one" on the card with the facts is the person's decision (Nearby only recommends via item 63's earned "✨ Our pick"); after the server confirms, "You're booked" + Your Plan's "{what} at {business}" with day/time/party once is the summary. A summary step before Accept (second tap, items 12/193) or a "Your choice" heading (locked wording) conflicts. Recommended: keep as built.
+**"Your choice" confirmation (owner idea "196", 2026-10-18; NOT item 196) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** flow stays earned "✨ Our pick" -> "I'll take this one" on the card -> time pick only if two times -> server confirms "You're booked" -> Your Plan "{what} at {business}" with day/time/party once. No extra confirmation tap, summary or replacement heading (items 12/32/63/119/193/194).
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).

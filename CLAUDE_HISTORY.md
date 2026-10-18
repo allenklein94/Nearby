@@ -1,4 +1,10 @@
-# "Your choice" confirmation (owner idea "196", 2026-10-18; NOT item 196): ASSESSED, MET BY ITEMS 12 + 32 (+ 63/119), OWNER DECISION PENDING, nothing built
+# "Your choice" confirmation (owner idea "196", 2026-10-18; NOT item 196): KEEP AS BUILT (owner), MET BY ITEMS 12 + 32 (+ 63/119), CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): keep as built; no "Your choice" summary before Accept. Locked flow: (1) Nearby recommends: "✨ Our pick"
+  only when earned, factual reasons; (2) you decide: "I'll take this one" on the existing card; (3) a time pick only when the reply
+  offers two; (4) the server confirms: the same card reads "You're booked"; (5) Your Plan: "{what} at {business}" with day, time and
+  party size once. No extra confirmation tap, redundant summary or replacement heading. Preserves item 12's one-tap booking and items
+  32, 63, 119, 193, 194.
 
 - Proposal: after selecting an offer, a "Your choice" summary (Coastal Coffee / $12 / Tonight / 4 people), then Accept; reinforces
   agency: Nearby recommends, you decide.
