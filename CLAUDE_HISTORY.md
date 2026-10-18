@@ -1,3 +1,23 @@
+# Per-tab motion personality (owner idea "239", 2026-10-18; NOT item 239): recommended DECLINE as a rule, keep as built, owner decision pending, nothing built
+
+- Proposal: a motion hierarchy per tab: Home gentle contextual, Discover activity/discovery, Create focused transformation,
+  People social connection, Activity response/status, Profile minimal; each tab its own personality without inconsistency.
+- Conflict: item 164 (LOCKED) = animation is driven by the object's real state, never by screens; motion plays only on the
+  object's own card or authorized place. Motion has ONE language: item 55's Pulse for connections, item 57 + idea "168"'s
+  `MOTION_LEVELS` (attention axis), item 58's "must explain something", item 25's ONE signature, item 167's one full-screen
+  moment, idea "205"'s Reduce Motion. A per-tab personality would be a second representation of those levels and an implied
+  licence to add motion per tab (items 55/99/164: no new animated places).
+- What is already true as built (a consequence of where events happen, not a rule):
+  1. Home: idea "207" lets only one arrival moment move per visit (friend collision 40, Completed 34, friends planning 41, Right Now
+     ring 26, plans-this-month roll 53) + item 36's weather fade on the card.
+  2. Discover: item 26's Happening Now ring, item 44's pin -> sheet; cards and lists static.
+  3. Create: item 43's formation on publish, item 82/85's "From what you said" settle.
+  4. People (Discover mode): the mutual match modal (`motion/MatchAnimation.js`, item 167); swipe decks only when chosen (idea "156").
+  5. Responses: the request screen (opened from Activity, pushes, item 165's pill) carries item 25's signature and item 23's travel;
+     the Activity tab screen itself and Profile import no motion (checked: no `motion/` imports in `ActivityScreen.js` /
+     `ProfileScreen.js`).
+- Recommendation: decline as a rule, keep as built; no new rule, motion or tab style.
+
 # Home as a dashboard of doors (owner idea "238", 2026-10-18; NOT item 238): MET AS BUILT, CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): close as met as built; never create navigation just to make every feature visible. Locked:
