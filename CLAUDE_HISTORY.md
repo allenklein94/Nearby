@@ -1,3 +1,5 @@
+# Idea "249" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; tap/decision-count metric DECLINED; an overloaded screen on a phone = fix under Rule 14 + item 31; no app change.
+
 # "Less screens" means "less work" (owner idea "249", 2026-10-18): MET AS BUILT, assessed, owner decision pending, no new rule, nothing built
 
 Mapped to item 29 (six-question test + question 7), item 31 (inline counterweight), items 32/33 (information budget), Rule 14, the
