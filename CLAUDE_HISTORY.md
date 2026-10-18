@@ -1,3 +1,15 @@
+# Search state persists through opening a result (owner idea "281", 2026-10-18; NOT item 281): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+Checked in code 2026-10-18 (`DiscoverHubScreen.js`). "Coffee" -> Coastal Coffee: a business row opens item 17's `BusinessPreviewSheet`
+over the results (closing it = the same results, same scroll); "View business" opens the profile pushed over the still-mounted Discover
+(the sheet clears on blur, line 626, so Back lands on the Coffee results without a stale sheet). The query (`searchQuery`), the searched
+lists (`searchedTerm`), the typed-ask interpretation and its chips (`intentSearch`) are Discover's own state; returning re-runs only
+`loadCore` (gatherings/communities refresh) and `syncFromAccount` (adopts a NEWER session from another device, latest-wins; same session =
+no change), never a reset to generic Discover. The typed-ask session also survives leaving Discover and app restarts (device cache +
+account copy, `services/discoverSession.js`), until the person clears it, the 180-day words limit, or its stated time ends (item 113).
+Same rule as idea "280" and the locked "Back restores exact prior state and scroll". Phone check: C12 + search "coffee" -> a business ->
+View business -> Back -> still on the coffee results.
+
 # Discover filters survive opening an event (owner idea "280", 2026-10-18; NOT item 280): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 Checked in code 2026-10-18. Discover (`DiscoverHubScreen.js`) is a tab that stays mounted; its filters are that screen's state
