@@ -1,4 +1,4 @@
-# No section just because the backend has data (owner idea "267", 2026-10-18): MET AS BUILT, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# No section just because the backend has data (owner idea "267", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (Home checks C12/C16)
 
 Already locked several ways: "A Home claim needs a visible, substantiated trigger of its own kind ... Home may say nothing; no filler
 rows or zero stats" (`homeQuiet.js`); item 32/33's information budget (Home max 3 per section, `homeAttention.js`); idea "237" (Home
