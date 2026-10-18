@@ -60,6 +60,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **No premature "sent" (owner item 159, 2026-10-17) MET AS BUILT, LOCKED, PENDING REAL-PHONE VERIFICATION (offer checklist section 1, slow-connection + failure checks):** while sending only the button spinner; "We asked N…" + rings + success animation only after the server returns (requests saved to the reached businesses' Opportunities; never claims push delivery or that an owner saw it); failure = existing retry, draft kept. DECLINED: a "finding eligible businesses" animation, "Sent to 3 businesses" copy. Guard `marketplaceMoments.test.js`.
 
+**Plans response count (owner item 160, 2026-10-18) is APPROVED FOR IMPLEMENTATION, NOT BUILT:** Plans' standalone request row reuses the shared reply-count wording + counts (on load / on focus, never live; no new strings, motion, migration; request screen, push, signature unchanged). DECLINED: "N offers received", a self-animating count. Blocked on an owner wording call: the shared `formatPlaceStatusLabel` count calls plain/automatic availability replies "offers" (item 121) and counts expired-unswept offers; fix in the shared source first (CLAUDE_HISTORY.md, item 160).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

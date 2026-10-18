@@ -1,3 +1,25 @@
+# Plans response count on standalone request rows (owner item 160, 2026-10-18): APPROVED FOR IMPLEMENTATION, NOT BUILT
+
+Gap: a business request not tied to a gathering appears on Plans -> Upcoming (`businessRequestPlanRow` in `PlansScreen.js`) with only
+`resolvePlanTableStatus(plan.status)`; how many businesses replied shows only in the push or on the request screen.
+Owner decision (2026-10-18): approve. The row reuses the shared reply-count wording + counts the gathering "Your Plans" rows use
+(`formatPlaceStatusLabel` over `getGatheringPlaceStatuses`-style pending/offered counts); real replies counted on load, refreshed
+when Plans regains focus, never live. No new strings, motion or migration; request screen, reply push and the one signature
+(business responds, item 25) unchanged. DECLINED: "N offers received" as a universal label (not every reply is an offer, item
+121); a count that animates or ticks up on its own (items 15/55/58). Owner qualification: record "met as built" only if already
+present with passing tests, else "approved for implementation" with verification outstanding.
+Checked 2026-10-18: NOT present. The count exists only on gathering rows (Home Your Plans, GatheringDetail, Matches,
+DateProposal), keyed by `gathering_id`; Plans' standalone request row has none. So: APPROVED FOR IMPLEMENTATION.
+Found while checking (the owner's "verify wording for offers, non-offer replies and automatic responses"): the shared source
+does not yet meet that. `getGatheringPlaceStatuses` counts every `business_request_offers` row in status 'offered' as an offer,
+and `formatPlaceStatusLabel` words it "N offers — choose one"; a plain availability reply (manual or automatic) is also
+'offered', and item 121 says it is never called an offer (`businessReplyKind` in `utils/offerCopy.js`). Declines are not
+counted at all (status 'declined' excluded), which is correct. Expired-but-unswept offers (past `valid_until`, before the hourly
+sweep) also still count, unlike `isOfferOpen`. Reusing the shared wording as is would copy both gaps onto Plans; the fix belongs
+in the shared source (master principle 2) and needs an owner wording call for a mix of kinds (existing candidates:
+`ui.offerCopy.arrivalReplies` "N replies came in", `ui.requestDetail.timeline.businessesResponded` "N businesses responded").
+Nothing built; no code, string, motion or migration change.
+
 # Don't imply businesses received it until they did (owner item 159, 2026-10-17): MET AS BUILT, LOCKED, pending real-phone verification
 
 Idea: an animation for "Nearby is finding eligible businesses", then "Sent to 3 businesses" only after the backend confirms delivery.
