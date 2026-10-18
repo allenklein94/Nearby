@@ -1,3 +1,15 @@
+# Don't make people go "back" unnecessarily (owner idea "279", 2026-10-18; NOT item 279): MET AS BUILT, ASSESSED, recommended close, owner decision pending; premise "Home expands Your Plans" does not apply (item 110 LOCKED); no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+
+Checked in code 2026-10-18. Home never expands Your Plans in place (item 110 + ideas "216"/"218", LOCKED); its up-to-3 rows open the plan
+DIRECTLY: `HomeScreen.js` rows -> `navigation.navigate('GatheringDetail', { gatheringId })` (completed, attending, hosting rows) or
+`GroupPlan` for a group plan, pushed over the still-mounted Home, so closing Coffee = ONE Back to Home exactly as it was (scroll and
+state kept, no re-mount). The example's unwanted path (Home -> Your Plans screen -> Coffee -> Your Plans -> Home) never happens from a
+row; it only exists when the person deliberately taps "See all plans" (-> Plans, the list's own management destination, idea "221"'s
+exception), and then Back walks the path they chose. Pushes and links open on top of where the person was (`openOnTop` + return trail,
+idea "242": tab pushes restore the trail, `pushNavigationContract.test.js`); Discover's in-place views restore its prior state + scroll
+(idea "219"). Already the locked rule "Back restores exact prior state and scroll" (Navigation) + idea "232". Phone check: C12 (Home row ->
+detail -> Back lands on Home at the same scroll).
+
 # A sheet that grows too tall is the signal for a screen (owner idea "278", 2026-10-18; NOT item 278): MET AS BUILT by idea "225" + item 45 + Rule 14, ASSESSED, recommended close, owner decision pending; no new rule, height limit or code; CLAUDE.md not changed
 
 Already the locked rules: idea "225" (sheets never become mini-apps: one question or one quick action each; a sheet closes before a
