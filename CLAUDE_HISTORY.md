@@ -1,3 +1,22 @@
+# The "same object" rule for an offer (owner idea "257", 2026-10-18): MET AS BUILT for "one object, many states", two proposed states DECLINED, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+The principle is met exactly as for idea 256: one stored offer row (`business_request_offers.status`), its states from `objectLifecycle.js`
+(`isOfferOpen`, `canDo`), presented ONLY by `presentOffer()` (`OFFER_CARDS` = waiting / open / closed / booked / visited) on ONE card on
+the request screen (`BusinessRequestDetail`), changing in place: open (item 25 signature + item 23 travel on arrival, item 47 countdown,
+item 118 "Updated", item 119 time choice) -> "I'll take this one" -> "You're booked" on the same card (item 12; item 32 merges it into
+Your Plan) -> "✓ Visit confirmed" on the same card (item 52) -> closed if it expires or another is booked (never deleted, idea 151).
+Business side mirrors the same row in its own voice (item 129): Offer sent -> Accepted -> Redeemed on one Opportunities card (item 13).
+Pushes and Activity rows open that exact offer on that card (`focusOfferId`, ideas 241/242), never another destination.
+The proposed ladder has six steps; as built it has four, on purpose:
+- "Viewed": DECLINED. No such stored state (`objectLifecycle.js`: "seen"/"viewed" is not invented); viewing/opening never becomes a
+  status for either side (item 89 + idea "188", LOCKED); telling a business its offer was viewed would also report on the customer.
+- "Accepted -> Reserved" as two steps: DECLINED. Acceptance IS the booking (doctrine; "I'll take this one" -> "You're booked", LOCKED
+  wording); a separate Reserved state would be a second representation of one fact.
+- "Redeemed -> Completed" as two steps: one state (`completed`): the business confirms the visit (business "Redeemed", customer
+  "✓ Visit confirmed"); same fact, two voices (item 129), not two states.
+So: Available (open) -> Accepted = Reserved (booked) -> Redeemed = Completed (visited), plus closed. Nothing to build; device session
+first (idea 252); verification = the offer experience checklist (needs Anthropic credit) + item 13's checklist.
+
 # The "same object" rule (owner idea "256", 2026-10-18): MET AS BUILT, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (the mapping is implemented, not yet confirmed on a phone)
 
 Already the core of the locked rules: master principle 2 (one source of truth per object), "States, not folders" (one viewer relation
