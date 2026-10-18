@@ -1,4 +1,4 @@
-# The "same object" rule for an offer (owner idea "257", 2026-10-18): MET AS BUILT for "one object, many states", two proposed states DECLINED, assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+# The "same object" rule for an offer (owner idea "257", 2026-10-18): MET AS BUILT for "one object, many states", "Viewed" and separate Reserved / Completed states DECLINED, CLOSED (owner), no new rule, nothing built; CLAUDE.md not changed; design decision closed, NOT DEVICE-VERIFIED (offer experience checklist + item 13 checklist still to run on a real phone)
 
 The principle is met exactly as for idea 256: one stored offer row (`business_request_offers.status`), its states from `objectLifecycle.js`
 (`isOfferOpen`, `canDo`), presented ONLY by `presentOffer()` (`OFFER_CARDS` = waiting / open / closed / booked / visited) on ONE card on
