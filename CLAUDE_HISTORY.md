@@ -1,3 +1,15 @@
+# Contextual sheets keep you where you were (owner idea "277", 2026-10-18; NOT item 277): principle MET AS BUILT (idea "224"); the example's combined plan sheet NOT built (would duplicate item 32's plan card); ASSESSED, recommended close, owner decision pending; no new rule, sheet or code; CLAUDE.md not changed
+
+The principle is idea "224" (LOCKED): sheets keep context (item 17's `BusinessPreviewSheet`, the invite panel, the native share sheet;
+item 44's pin -> sheet), and idea "225": each sheet answers one question or one quick action, closes before a dedicated screen. The example's
+four facts (Coffee tonight / 4 attending / Coastal Coffee offer / 6:30 PM) are already shown together, once, by item 32's plan card ("Your
+Plan": activity, time, place, people, joined by `PlanJoinRail`; booked = "{what} at {business}" + screened logo; built from
+`buildPlanSummary`) on the request screen, and summarized in Home's Your Plans row (what, when, party, item 220), whose tap opens the
+plan's own screen (Home never expands in place, item 110). A separate sheet carrying the same plan would be a second representation of it
+(master principle 2) and a sheet holding another object's detail (idea "225"). Guardrails if a sheet ever shows these facts: "4 attending"
+via `attendingFigure` (host included), names only to friends/fellow attendees; an offer only to the person it was made for (a request-specific
+offer is never a standing deal to browsers, ideas "228"/"230"); time via `displayWhen`. Phone check: item 32's checklist + C12.
+
 # Preserve the person's "anchor" (owner idea "276", 2026-10-18; NOT item 276): MET AS BUILT, CLOSED (owner, 2026-10-18), no new rule, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 Owner decision (2026-10-18): close as Met, As Built; no app changes or additional rules; history only. (The owner's reply said "Idea 268";
