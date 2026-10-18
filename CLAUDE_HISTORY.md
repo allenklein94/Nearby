@@ -1,3 +1,23 @@
+# "Friends liked this too" (owner idea "197", 2026-10-18; NOT item 197): ASSESSED, "is interested" CONFLICTS WITH A LOCKED PRIVACY RULE, social proof MET as built, OWNER DECISION PENDING, nothing built
+
+- Proposal: when data exists, "Claude is interested" on a recommendation, the friend's avatar gently entering the card; stronger than
+  a generic "Popular near you".
+- Blocked part: "{Friend} is interested" reveals a person's Interested mark to another viewer, against "Interested is private" (owner,
+  2026-10-17, LOCKED: never a name, photo, list or per-person record to anyone; the ONE exception is the host's aggregate count) and
+  item 138; the same line was already NOT built under item 194 (2026-10-04: "Your friend Claude is interested", Interested is private).
+  "Friends liked this" from history ("How was it?" Loved it) would equally expose a private rating (item 35: feedback ranks only, the
+  latest word per kind is the person's own).
+- Met as built (code reading): cards carry social proof limited to what the viewer may already see: an accepted friend GOING or HOSTING
+  (`utils/recommendationCard.js` lines 13-15, `friendGoingReason` in `recommendationFacts`, `homeSignalMerge.js`: "{Name} is hosting",
+  friend-going variants), never "N people are interested". It already outranks popularity both in the reason order (`reasonTier`:
+  friend going/hosting first, popularity last; item 194's cap of 2) and in the ranking ladder (friends = tier 3, popularity = tier 9,
+  `constants/signalPriority.js`). Item 40 adds "You + {Name} might like this" from SHARED DECLARED interests only (Home, one card).
+- Conflicts with motion locks: an avatar entering a recommendation = an animated card (no animated cards/lists; item 111 Best Pick
+  static; item 112); person-to-person moments stay out of the Pulse (item 55); item 40's converging faces is the one approved
+  friend motion on a recommendation and was not to be widened.
+- Recommendation: (a) keep as built; decline the Interested line, a "liked" line and the avatar entrance. No code, migration, string
+  or motion changed.
+
 # "Your choice" confirmation (owner idea "196", 2026-10-18; NOT item 196): KEEP AS BUILT (owner), MET BY ITEMS 12 + 32 (+ 63/119), CLOSED, LOCKED, nothing built
 
 - Owner decision (2026-10-18): keep as built; no "Your choice" summary before Accept. Locked flow: (1) Nearby recommends: "✨ Our pick"
