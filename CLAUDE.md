@@ -135,7 +135,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Your choice" confirmation (owner idea "196", 2026-10-18; NOT item 196) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** flow stays earned "✨ Our pick" -> "I'll take this one" on the card -> time pick only if two times -> server confirms "You're booked" -> Your Plan "{what} at {business}" with day/time/party once. No extra confirmation tap, summary or replacement heading (items 12/32/63/119/193/194).
 
-**"Friends liked this too" (owner idea "197", 2026-10-18; NOT item 197) ASSESSED, OWNER DECISION PENDING, nothing built:** "{Friend} is interested" breaks the locked "Interested is private" rule (item 138; already not built under item 194); a "liked" line would expose private feedback (item 35). Met as built: accepted-friend going/hosting social proof, which already outranks popularity (`reasonTier`, ladder tier 3 vs 9), + item 40's shared-declared-interest line. Avatar entrance = an animated card (declined by the motion locks). Recommended: keep as built.
+**"Friends liked this too" (owner idea "197", 2026-10-18; NOT item 197) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** DECLINED "{Friend} is interested" (Interested is private, items 138/194), "Friends liked this" (item 35 ratings stay personal) and an entering-avatar animation (item 40's converging faces = the only friend animation on recommendation cards). Kept: friend going/hosting reasons outrank popularity in reasons + ranking; item 40's line only for mutually declared interests.
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).

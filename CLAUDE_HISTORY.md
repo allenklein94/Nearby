@@ -1,4 +1,10 @@
-# "Friends liked this too" (owner idea "197", 2026-10-18; NOT item 197): ASSESSED, "is interested" CONFLICTS WITH A LOCKED PRIVACY RULE, social proof MET as built, OWNER DECISION PENDING, nothing built
+# "Friends liked this too" (owner idea "197", 2026-10-18; NOT item 197): KEEP AS BUILT (owner approved), all three additions DECLINED, CLOSED, LOCKED, nothing built
+
+- Owner decision (2026-10-18): keep as built. DECLINED: "{Friend} is interested" (exposes private Interested; 2026-10-17 privacy rule,
+  items 138/194); "Friends liked this" ("How was it?" ratings stay personal ranking signals, item 35); the entering-avatar animation
+  (item 40's converging faces stays the sole approved friend animation on recommendation cards). Preserved: visible friend-going /
+  friend-hosting stay eligible reasons; friend signals keep outranking popularity in reason selection and ranking; "You + {Name} might
+  like this" stays limited to mutually declared interests (item 40). No code changes.
 
 - Proposal: when data exists, "Claude is interested" on a recommendation, the friend's avatar gently entering the card; stronger than
   a generic "Popular near you".
