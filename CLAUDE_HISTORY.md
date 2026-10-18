@@ -1,3 +1,18 @@
+# Home prioritizes, no repeat of Your Plans (owner idea "265", 2026-10-18): MET AS BUILT (item 52 + `HOME_SECTION_PRIORITY`), assessed, recommended close with no new rule, nothing built; CLAUDE.md not changed
+
+Already the Home placement rule (`utils/homeAttention.js`, guards `homeAttention.test.js`, `homeInformationBudget.test.js`,
+`homeExpandedList.test.js`): `HOME_SECTION_PRIORITY` = firstRun > yourPlans > expandedList > weather > bestPick > pickedForYou >
+rightNow; a gathering renders in the FIRST placement that would surface it, every later one suppresses it and refills (item 52: once
+across the whole surface, reasons merged). Your Plans sits above every recommendation and includes the person's going, hosting, group
+and Interested plans (`selectHomePlans`, max 3, item 33), so a gathering in Your Plans never reappears as a Best Pick, Picked For You,
+weather or Nearby Right Now card; item 41's friends-planning chips skip Your Plans too (`splitFriendsActivity`).
+"Quick Picks" on Home are not gathering cards: they are the time-of-day category shortcuts (idea "202": open the matching Discover time
+filter), so nothing can repeat there.
+The only deliberate places a plan of yours shows again on Home ARE the "very strong reason" the idea allows, each a different object or
+job, not the same card: your own typed ask's results (your query), action nudges about a plan you own (venue needed, RSVPs outstanding,
+poll), group plans (a different object). Hidden placement = refill, never an empty placeholder (items 79/237). One open overlap, not a
+Your Plans repeat: idea 262's device note (Picked For You vs the friends-planning chip). Nothing to build; device session first (idea 252).
+
 # Contextual mini-cards instead of repeated cards (owner idea "264", 2026-10-18): MET AS BUILT where it applies; "5 people interested" DECLINED (privacy); new per-section mini-card variants DECLINED; CLOSED (owner), no new rule, card or string, nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 Premise: the same full card three times on one surface does not happen as built: Discover shows a gathering once, in its first
