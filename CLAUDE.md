@@ -237,6 +237,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Nearby unfolds for me" + compression (owner idea "252", 2026-10-18; NOT item 252) MET AS BUILT, CLOSED, LOCKED, nothing built:** doctrine "The system brings the next thing; the person never jumps through it" stands. Next priority = the first real-device session (incl. C17 + C18), recording concrete friction/failures and fixing those first; NO new feature work and NO fresh compression audit until then (a later audit only from device/usage evidence). Safeguards kept: one inline expansion at a time (item 31), none on Home (item 110), no feature removed without evidence (B9 relationship tools, Momentum fold stay on hold). Screens: 87 -> 73 registered since the 2026-10-08 audit.
 
+**Confirm inline (owner idea "274", 2026-10-18; NOT item 274) DECIDED + BUILT, NOT DEVICE-VERIFIED:** the 10 success-only OK-dialogs are now `showSuccessToast` with their existing words (guard `motion/confirmInline.test.js`); offerUpdated, "We couldn't find a nearby business…" and Welcome to Premium stay dialogs. Check C20 of the first-session checklist.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

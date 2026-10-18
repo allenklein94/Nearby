@@ -3,7 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyPartnershipTargets, requestBusinessPartnership } from '../services/businessPartnerships';
 import BusinessPicker from '../components/BusinessPicker';
@@ -68,9 +68,8 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
         partnerId: selectedPartner.id,
         message: message.trim() || null,
       });
-      Alert.alert(t('ui.requestPartner.requestSent'), t('ui.requestPartner.willBeNotifiedYoullHear', { name: selectedPartner.name }), [
-        { text: t('ui.requestPartner.ok'), onPress: () => navigation.goBack() },
-      ]);
+      showSuccessToast(t('ui.requestPartner.requestSent'), t('ui.requestPartner.willBeNotifiedYoullHear', { name: selectedPartner.name }));
+      navigation.goBack();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
     }

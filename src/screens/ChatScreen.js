@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
 import FadeInState from '../components/FadeInState';
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import { useHeaderHeight } from '@react-navigation/elements';
 import { Audio, Video } from 'expo-av';
 import { supabase, functionUrl } from '../services/supabase';
@@ -715,7 +715,7 @@ export default function ChatScreen({ route, navigation }) {
     }
     setDisappearingMode(mode);
     const labels = { off: t('ui.chat.messagesWillNowBeKept'), '24h': t('ui.chat.newMessagesWillAutomaticallyDelete'), instant: t('ui.chat.newMessagesWillDisappearShortly') };
-    Alert.alert(t('ui.chat.updated'), labels[mode]);
+    showSuccessToast(t('ui.chat.updated'), labels[mode]);
   }
 
   function confirmUnmatch() {

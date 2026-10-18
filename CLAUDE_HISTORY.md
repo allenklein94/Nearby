@@ -1,3 +1,17 @@
+# Confirm inline, the 10 residual OK-dialogs switched to toasts (owner idea "274", 2026-10-18; NOT item 274): DECIDED (owner: "Switch the 10 to toasts, keep the other three"), BUILT, NOT DEVICE-VERIFIED
+
+The 10 success-only `Alert.alert` dialogs listed below now call the existing `showSuccessToast` (`motion/SuccessToast.js`, item 137) with
+the SAME title + message keys: partner request sent (`RequestBusinessPartnerScreen`, then goes Back as the old OK did), payment sent
+(`BusinessRequestDetailScreen`), host approval ("Approved! You can now chat with them.", item 141 wording unchanged, `HostAttendeeManager`),
+chat setting updated (`ChatScreen`), revised offer on its way (`ReviseOfferSheet`), added to your profile + submitted for review
+(`BusinessDashboardScreen`), relationship advice thank-you (`RelationshipLegacyScreen`), report submitted (`ReportBlockModal`), ID
+verification submitted (`IdVerificationScreen`). The last two screens' own success haptic was removed (the toast plays the one success
+haptic, after the person's own tap, idea 170). No new strings, component or motion; no Undo on any of them (they reach someone else).
+Kept as dialogs (they explain): offerUpdated (item 118, request detail + GroupPlan), requestDetail.added "We couldn't find a nearby…"
+(nobody reached), welcomeToPremium. Guards: new `motion/confirmInline.test.js` (10 toasts, 4 kept dialog sites, goBack, no double haptic),
+`utils/gatheringApprovalAlert.test.js` updated; full Jest 478/6522. Business web export regenerated. NOT DEVICE-VERIFIED: each toast
+readable and self-clearing on a real phone (first-session checklist C20).
+
 # Rarely a "Success!" screen; confirm inline (owner idea "274", 2026-10-18; NOT item 274): MOSTLY MET (item 123 + inline moments), ASSESSED, owner decision pending on 10 residual OK-dialogs; nothing built; CLAUDE.md not changed
 
 Checked in code 2026-10-18. No success SCREEN exists (no confirmation screen in `src/screens`); no "Success!" string outside the item

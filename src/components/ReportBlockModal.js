@@ -6,7 +6,7 @@ import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
-import { modalAnimation } from '../motion';
+import { modalAnimation, showSuccessToast } from '../motion';
 // `value` is what is saved in reports.reason and read by the admin queue (English, unchanged); `key` names the chip label
 // in the person's language (ui.reportBlock.reason.<key>).
 const REPORT_REASONS = [
@@ -48,7 +48,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
       presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => submitReport() });
       return;
     }
-    Alert.alert(t('ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
+    showSuccessToast(t('ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
     setSelectedReason(null);
     setDetails('');
     onClose();

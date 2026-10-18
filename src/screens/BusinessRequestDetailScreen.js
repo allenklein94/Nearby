@@ -10,7 +10,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Image, Platform, Linking, Dimensions } from 'react-native';
 import * as Calendar from 'expo-calendar';
-import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestPulse, VisitConfirmed, RespondingStatus } from '../motion';
+import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestPulse, VisitConfirmed, RespondingStatus, showSuccessToast } from '../motion';
 import { getRespondingBusinesses, subscribeToRespondingChanges, nextRespondingCheckMs } from '../services/offerResponding';
 import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
@@ -889,7 +889,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         }
         return;
       }
-      Alert.alert(t('ui.requestDetail.paymentSent'), t('ui.requestDetail.yourPaymentIsOnIts', { amount: Number(amount).toFixed(2) }));
+      showSuccessToast(t('ui.requestDetail.paymentSent'), t('ui.requestDetail.yourPaymentIsOnIts', { amount: Number(amount).toFixed(2) }));
       await load();
     } catch (e) {
       Alert.alert(t('ui.requestDetail.paymentError'), e.message);

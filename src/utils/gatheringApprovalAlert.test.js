@@ -8,9 +8,9 @@ const parts = require('../i18n/ui/gatheringParts').default;
 const MANAGER = fs.readFileSync(path.join(__dirname, '../components/HostAttendeeManager.js'), 'utf8');
 const MATCH_WORDS = /match|совпаден|매치|配对|配對|emparej|correspond/i;
 
-describe('gathering approval alert', () => {
-  test('HostAttendeeManager shows "Approved!" with the chat line', () => {
-    expect(MANAGER).toMatch(/Alert\.alert\(t\('ui\.gatheringParts\.approved'\), t\('ui\.gatheringParts\.youCanNowChatWithThem'\)\)/);
+describe('gathering approval toast', () => {
+  test('HostAttendeeManager confirms "Approved!" with the chat line as a toast (idea 274)', () => {
+    expect(MANAGER).toMatch(/showSuccessToast\(t\('ui\.gatheringParts\.approved'\), t\('ui\.gatheringParts\.youCanNowChatWithThem'\)\)/);
     expect(MANAGER).not.toMatch(/aMatchWasCreatedYou/);
   });
 

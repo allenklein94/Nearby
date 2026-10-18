@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ActivityIndicator } from 'react-native';
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import { takeVerificationPhoto, submitVerification, getMyVerificationStatus } from '../services/idVerification';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
-import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -63,9 +62,8 @@ export default function IdVerificationScreen() {
     setSubmitting(true);
     try {
       await submitVerification(userId, selfieAsset, idAsset);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('id_verification_submitted');
-      Alert.alert(t('ui.idVerification.submitted'), t('ui.idVerification.wellReviewYourSubmissionThis'));
+      showSuccessToast(t('ui.idVerification.submitted'), t('ui.idVerification.wellReviewYourSubmissionThis'));
       setSelfieAsset(null);
       setIdAsset(null);
       load();

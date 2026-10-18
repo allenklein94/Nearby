@@ -5,7 +5,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
-import { modalAnimation } from '../motion';
+import { modalAnimation, showSuccessToast } from '../motion';
 import PlatformDateTimeInput from './PlatformDateTimeInput';
 import OfferCustomerBody from './OfferCustomerBody';
 import BusinessLogoMark from './BusinessLogoMark';
@@ -46,7 +46,7 @@ export default function ReviseOfferSheet({ offer, business = {}, discountCap = n
     setSending(true);
     try {
       await reviseBusinessOffer(revisionParams(offer, draft));
-      Alert.alert(t('ui.bizDash3.updatedOfferOnItsWay'));
+      showSuccessToast(t('ui.bizDash3.updatedOfferOnItsWay'));
       onSent?.();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'send your response', error: e, draftKept: true, onRetry: send });

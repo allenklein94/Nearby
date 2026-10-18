@@ -4,8 +4,8 @@ import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAr
 import { submitLegacyEntry } from '../services/relationshipLegacy';
 import { checkTextModeration } from '../services/textModeration';
 import { usePostHog } from 'posthog-react-native';
-import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
+import { showSuccessToast } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 
@@ -44,9 +44,8 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
         whatMadeUsStronger,
         whatWeWishWeDiscussedEarlier,
       });
-     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       posthog.capture('relationship_legacy_submitted');
-      Alert.alert(t('ui.relationshipLegacy.thankYou'), t('ui.relationshipLegacy.yourWisdomIsNowPart'));
+      showSuccessToast(t('ui.relationshipLegacy.thankYou'), t('ui.relationshipLegacy.yourWisdomIsNowPart'));
       navigation.goBack();
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSubmit() });

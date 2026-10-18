@@ -1677,7 +1677,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setTeachNearbyInput('');
       setTeachNearbyExtracted(null);
       getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
-      Alert.alert(t('ui.bizDash1.addedToYourProfile'), t('ui.bizDash1.theseNowShowUpUnder'));
+      showSuccessToast(t('ui.bizDash1.addedToYourProfile'), t('ui.bizDash1.theseNowShowUpUnder'));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmTeachNearby() });
     }
@@ -2383,7 +2383,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       );
     } else {
       close();
-      Alert.alert(t('ui.bizDash1.submittedForReview'), t('ui.bizDash1.yourResponseIsBeingReviewed'));
+      showSuccessToast(t('ui.bizDash1.submittedForReview'), t('ui.bizDash1.yourResponseIsBeingReviewed'));
     }
   }
 

@@ -4,6 +4,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringRequestsForHost, approveInterest, hostRemoveAttendee } from '../services/gatherings';
 import { useTheme } from '../context/ThemeContext';
+import { showSuccessToast } from '../motion';
 import { spacing, radius } from '../theme';
 import { pendingReview, applyDecision, moderationActions } from '../utils/hostCommandCenter';
 import { blockAndUnmatch } from '../services/blockedUsers';
@@ -52,7 +53,7 @@ export default function HostAttendeeManager({ gatheringId, onChanged, expanded =
       if (result?.status === 'waitlisted') {
         Alert.alert(t('ui.gatheringParts.gatheringFull'), t('ui.gatheringParts.thisGatheringIsAlreadyAt'));
       } else {
-        Alert.alert(t('ui.gatheringParts.approved'), t('ui.gatheringParts.youCanNowChatWithThem'));
+        showSuccessToast(t('ui.gatheringParts.approved'), t('ui.gatheringParts.youCanNowChatWithThem'));
       }
       refresh();
     } catch (e) {
