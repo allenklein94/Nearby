@@ -60,7 +60,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **No premature "sent" (owner item 159, 2026-10-17) MET AS BUILT, LOCKED, PENDING REAL-PHONE VERIFICATION (offer checklist section 1, slow-connection + failure checks):** while sending only the button spinner; "We asked N…" + rings + success animation only after the server returns (requests saved to the reached businesses' Opportunities; never claims push delivery or that an owner saw it); failure = existing retry, draft kept. DECLINED: a "finding eligible businesses" animation, "Sent to 3 businesses" copy. Guard `marketplaceMoments.test.js`.
 
-**Plans response count (owner item 160, 2026-10-18) is APPROVED FOR IMPLEMENTATION, NOT BUILT:** Plans' standalone request row reuses the shared reply-count wording + counts (on load / on focus, never live; no new strings, motion, migration; request screen, push, signature unchanged). DECLINED: "N offers received", a self-animating count. Blocked on an owner wording call: the shared `formatPlaceStatusLabel` count calls plain/automatic availability replies "offers" (item 121) and counts expired-unswept offers; fix in the shared source first (CLAUDE_HISTORY.md, item 160).
+**Plans response count (owner item 160, 2026-10-18, option (b), LOCKED) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/ITEM_160_PLANS_REPLY_COUNT_DEVICE_CHECKLIST_2026-10-18.md` is recorded on a real phone (no migration, no new strings; journey `plansReplyCount` 7/7; prod journeys 558/558).
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
@@ -561,6 +562,9 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **One "offer still open" rule (owner, 2026-10-17):** `isOfferOpen` (`objectLifecycle.js`: offered, before its `valid_until` and its request's deadline,
   closed AT them, before the hourly sweep stores it) decides the business card's "Offer sent" (`offerProgress`, `businessCardStatus` -> "No longer open")
   and the pipeline's Offered; the customer's accept applies the same checks. Expired offers are never deleted (history + analytics); no expired tile.
+- **One reply tally (owner item 160, LOCKED):** every row counting a request's replies (Home Your Plans, Plans, GatheringDetail + host line,
+  Matches, DateProposal) reads `tallyBusinessReplies` / `requestReplyStatuses` / `placeStatusLine` (`utils/planCompletion.js`): open replies only
+  (`isOfferOpen`), "N offers — choose one" only when every one is an offer (`businessReplyKind`), else "N businesses responded"; read on load/focus, never live.
 - **Mirrored sides, different voices (owner item 129, LOCKED):** customer and business read the SAME offer/request state (`objectLifecycle.js`)
   but never share wording or animation: personal for the customer, operational for the business; no business-side signature.
 - **One offer revision (item 118, LOCKED):** a business may change an open, hand-written reply ONCE, price only down (or a bigger

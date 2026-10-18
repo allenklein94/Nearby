@@ -6,6 +6,7 @@
 //   - Interested is a COUNT only (item 37: Interested is private; never a name, never per invitee),
 //   - the business line from the gathering's own business request and its offers (the requester's own rows).
 // Unknown (a failed lookup) is null and is left out, never shown as 0.
+import { businessReplyTitle } from './offerCopy';
 
 // What the stats row shows, in this order. Going is always shown when known; the rest only when there is something.
 export function hostStats({ going, requests, waitlisted, interested } = {}) {
@@ -88,14 +89,18 @@ export function invitationRows(invites, attendance, { past = false } = {}) {
 
 // The business side in one line. Only used while nothing is booked: a booked offer has its own card with the details.
 //   request: the gathering's business request (open/fulfilled) or null
-//   offers: { pendingCount, offeredCount, offeredNames } from the request's live offers
+//   offers: tallyBusinessReplies' { pendingCount, offeredCount, allOffers, offeredNames, offered } (utils/planCompletion.js)
 //   partnership: the host's "this specific business" co-host request, if any { status, partnerName }
+// Item 160: "Offer received" only when every open reply really is an offer; a plain or automatic reply keeps its own words
+// ("Coastal Coffee can take you", item 121) and several mixed replies read "N businesses responded".
 export function hostBusinessLine({ request, offers, partnership } = {}) {
   if (request) {
     const offered = offers?.offeredCount ?? 0;
     const waiting = offers?.pendingCount ?? 0;
-    if (offered === 1) return { state: 'offer_received', name: offers?.offeredNames?.[0] ?? null };
-    if (offered > 1) return { state: 'offers_received', count: offered };
+    const allOffers = offers?.allOffers === true;
+    if (offered === 1 && allOffers) return { state: 'offer_received', name: offers?.offeredNames?.[0] ?? null };
+    if (offered === 1) return { state: 'reply_received', title: businessReplyTitle(offers?.offered?.[0]?.brand_partners?.name ?? null, offers?.offered?.[0]) };
+    if (offered > 1) return allOffers ? { state: 'offers_received', count: offered } : { state: 'replies_received', count: offered };
     if (waiting > 0) return { state: 'waiting', count: waiting };
     return { state: 'asked' };
   }

@@ -386,6 +386,7 @@ export default function MatchesScreen({ navigation }) {
                   place: 'pending',
                   pendingCount: activePlan?.pendingCount ?? 0,
                   offeredCount: activePlan?.offeredCount ?? 0,
+                  allOffers: activePlan?.allOffers ?? false,
                 }),
                 todo: t('ui.planCompletion.findPlace'),
               }

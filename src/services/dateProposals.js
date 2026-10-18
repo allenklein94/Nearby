@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
 import { searchActiveBusinessAvailability } from './businessFulfillment';
 import { requireUserLocation } from './userLocation';
+import { tallyBusinessReplies } from '../utils/planCompletion';
 
 // "The Offer System" Phase 5 (see CLAUDE.md's own plan, Decision 4): the
 // locked Match -> Proposal -> Other person accepts -> Dating Experience ->
@@ -128,7 +129,7 @@ export async function getMyActivePlansByMatch(matchIds) {
 
   const { data: requests, error: rErr } = await supabase
     .from('business_requests')
-    .select('id, match_id, status, party_size')
+    .select('id, match_id, status, party_size, expires_at')
     .in('match_id', matchIds)
     .in('status', ['open', 'fulfilled']);
   if (rErr) throw new Error(rErr.message);
@@ -146,18 +147,23 @@ export async function getMyActivePlansByMatch(matchIds) {
   if (requestIds.length > 0) {
     const { data: offers, error: oErr } = await supabase
       .from('business_request_offers')
-      .select('id, request_id, status, proposed_time, offer_type, offer_price, offer_description, brand_partners(name, latitude, longitude, address)')
+      .select('id, request_id, status, proposed_time, offer_type, offer_price, offer_description, valid_until, offer_title, discount_pct, included_items, brand_partners(name, latitude, longitude, address)')
       .in('request_id', requestIds)
       .in('status', ['pending', 'offered', 'accepted', 'completed']);
     if (oErr) throw new Error(oErr.message);
+    const openRows = {};
     for (const o of offers ?? []) {
       if (o.status === 'accepted' || o.status === 'completed') {
         acceptedByRequest[o.request_id] = o;
       } else {
-        const counts = (offerCountsByRequest[o.request_id] ??= { pendingCount: 0, offeredCount: 0 });
-        if (o.status === 'offered') counts.offeredCount += 1;
-        else counts.pendingCount += 1;
+        (openRows[o.request_id] ??= []).push(o);
       }
+    }
+    // Item 160: the one tally (open replies only, closed at their exact end; offer vs plain reply).
+    const requestById = Object.fromEntries((requests ?? []).map((r) => [r.id, r]));
+    for (const [requestId, rows] of Object.entries(openRows)) {
+      const { pendingCount, offeredCount, allOffers } = tallyBusinessReplies(rows, { request: requestById[requestId] });
+      offerCountsByRequest[requestId] = { pendingCount, offeredCount, allOffers };
     }
   }
 

@@ -46,7 +46,7 @@ import { refineTypedAsk } from '../services/askRefine';
 import { remainingIntentItems, groupIntentResultsByType, displayedPosition } from '../utils/typedAskAudit';
 import { recordIntentSelection, recordIntentSubmission, getPendingIntentOutcomePrompt, recordIntentOutcome, dismissIntentOutcomePrompt, getMyIntentPatterns, recordNudgeEvent } from '../services/intentOutcomes';
 import { getMyGroupIntentSignals, getGatheringPlaceStatuses } from '../services/businessFulfillment';
-import { formatPlaceStatusLabel } from '../utils/planCompletion';
+import { placeStatusLine } from '../utils/planCompletion';
 import { getUpcomingConnectedBirthdays } from '../services/friends';
 import { getUpcomingOccasions, getOccasionRecall, setOccasionRecallShareable } from '../services/occasions';
 import { formatOccasionRecallSummary, occasionRecallLikedText } from '../utils/occasionRecall';
@@ -1732,15 +1732,9 @@ export default function HomeScreen({ navigation }) {
   // gathering with no entry at all (nothing ever asked) returns undefined,
   // so PlanCard falls back to its existing hostingPartnerId lookup
   // unchanged.
+  // Item 160: the same line Plans' request rows show (placeStatusLine over the one reply tally).
   function venueNameForPlan(gatheringId) {
-    const status = planPlaceStatus[gatheringId];
-    if (!status) return undefined;
-    if (status.state === 'done') return status.venueName;
-    return formatPlaceStatusLabel({
-      place: 'pending',
-      pendingCount: status.pendingCount ?? 0,
-      offeredCount: status.offeredCount ?? 0,
-    });
+    return placeStatusLine(planPlaceStatus[gatheringId]);
   }
 
   const quickPicks = pinnedQuickPicks && pinnedQuickPicks.length > 0

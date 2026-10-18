@@ -12,6 +12,7 @@ import { videoFrameTimes, videoLimitProblem } from '../utils/offerMedia';
 import { uploadResize, OFFER_IMAGE_MAX_PX, LOGO_MAX_PX, UPLOAD_JPEG_QUALITY, createSignedUrlCache, SIGNED_URL_LIFETIME_S } from '../utils/mediaBudget';
 import { throwSingleError } from '../utils/notFound';
 import { wholePartyView } from '../utils/offerTimes';
+import { tallyBusinessReplies, requestReplyStatuses, REPLY_TALLY_COLUMNS } from '../utils/planCompletion';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -500,28 +501,19 @@ export async function getAcceptedOfferForRequest(requestId) {
 // accepted offer yet -- a genuinely new, tiny query, not a widened one, so
 // getAcceptedOfferForRequest's already-verified contract is untouched.
 export async function getOpenOfferCounts(requestId) {
-  if (!requestId) return { pendingCount: 0, offeredCount: 0, offeredNames: [] };
+  if (!requestId) return { pendingCount: 0, offeredCount: 0, allOffers: false, offeredNames: [], offered: [] };
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('status, brand_partners(name)')
+    .select(`${REPLY_TALLY_COLUMNS}, business_requests(status, expires_at)`)
     .eq('request_id', requestId)
     .in('status', ['pending', 'offered']);
   if (error) {
     console.error('getOpenOfferCounts error', error);
-    return { pendingCount: 0, offeredCount: 0, offeredNames: [] };
+    return { pendingCount: 0, offeredCount: 0, allOffers: false, offeredNames: [], offered: [] };
   }
-  let pendingCount = 0;
-  let offeredCount = 0;
-  // Names only of businesses that actually replied with an offer (the host command center's
-  // "<business> · Offer received"); a business that has not answered is never named.
-  const offeredNames = [];
-  for (const row of data ?? []) {
-    if (row.status === 'offered') {
-      offeredCount += 1;
-      if (row.brand_partners?.name) offeredNames.push(row.brand_partners.name);
-    } else pendingCount += 1;
-  }
-  return { pendingCount, offeredCount, offeredNames };
+  // Item 160: the one tally (open replies only, offer vs plain reply). Names only of businesses that actually replied
+  // (the host command center's line); a business that has not answered is never named.
+  return tallyBusinessReplies(data);
 }
 
 // Batched, list-shaped counterpart to getBusinessRequestForGathering()/
@@ -545,47 +537,32 @@ export async function getGatheringPlaceStatuses(gatheringIds) {
     return {};
   }
 
-  const requestByGathering = {};
-  for (const r of requests ?? []) requestByGathering[r.gathering_id] = r;
-
-  const requestIds = (requests ?? []).map((r) => r.id);
-  const acceptedByRequest = {};
-  // Aug 30 2026 (CLAUDE.md, "unfinished plan" persistent-state follow-up):
-  // also fetch pending/offered status so a real "N businesses found" /
-  // "N offers -- choose one" sub-state is available for every row in the
-  // batch, at no extra query -- just widening the same in-clause this
-  // function already had.
-  const offerCountsByRequest = {};
-  if (requestIds.length > 0) {
-    const { data: offers, error: oErr } = await supabase
-      .from('business_request_offers')
-      .select('id, request_id, status, brand_partners(name)')
-      .in('request_id', requestIds)
-      .in('status', ['pending', 'offered', 'accepted', 'completed']);
-    if (!oErr) {
-      for (const o of offers ?? []) {
-        if (o.status === 'accepted' || o.status === 'completed') {
-          acceptedByRequest[o.request_id] = o;
-        } else {
-          const counts = (offerCountsByRequest[o.request_id] ??= { pendingCount: 0, offeredCount: 0 });
-          if (o.status === 'offered') counts.offeredCount += 1;
-          else counts.pendingCount += 1;
-        }
-      }
-    }
-  }
-
+  const byRequest = await getRequestReplyStatuses((requests ?? []).map((r) => r.id));
   const result = {};
-  for (const gatheringId of gatheringIds) {
-    const request = requestByGathering[gatheringId];
-    if (!request) continue;
-    const accepted = acceptedByRequest[request.id];
-    const counts = offerCountsByRequest[request.id] ?? { pendingCount: 0, offeredCount: 0 };
-    result[gatheringId] = accepted
-      ? { state: 'done', venueName: accepted.brand_partners?.name ?? null, ...counts }
-      : { state: 'pending', venueName: null, ...counts };
+  for (const r of requests ?? []) {
+    if (byRequest[r.id]) result[r.gathering_id] = byRequest[r.id];
   }
   return result;
+}
+
+// Item 160 (owner, 2026-10-18): the request-keyed core of getGatheringPlaceStatuses, also read by Plans' standalone
+// request rows, so a gathering row and a request row word the same replies the same way. Per request:
+//   { state: 'done', venueName, ... } once a reply is accepted/completed, else { state: 'pending', venueName: null, ... }
+// plus tallyBusinessReplies' counts (open replies only, closed at their exact end; offer vs plain reply). Read on load;
+// never live.
+export async function getRequestReplyStatuses(requestIds) {
+  const ids = (requestIds ?? []).filter(Boolean);
+  if (ids.length === 0) return {};
+  const { data: offers, error } = await supabase
+    .from('business_request_offers')
+    .select(`id, request_id, ${REPLY_TALLY_COLUMNS}, business_requests(status, expires_at)`)
+    .in('request_id', ids)
+    .in('status', ['pending', 'offered', 'accepted', 'completed']);
+  if (error) {
+    console.error('getRequestReplyStatuses error', error);
+    return {};
+  }
+  return requestReplyStatuses(ids, offers);
 }
 
 const OFFER_TYPE_LABELS = {

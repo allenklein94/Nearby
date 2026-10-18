@@ -110,20 +110,29 @@ describe('Interested stays private: a count, never a person', () => {
 
 describe('business line', () => {
   test('owner example: one offer -> "Coastal Coffee · Offer received"', () => {
-    const line = hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 2, offeredCount: 1, offeredNames: ['Coastal Coffee'] } });
+    const line = hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 2, offeredCount: 1, allOffers: true, offeredNames: ['Coastal Coffee'] } });
     expect(line).toEqual({ state: 'offer_received', name: 'Coastal Coffee' });
     expect(translate('en', 'ui.hostCenter.biz.offerReceived', { name: line.name })).toBe('Coastal Coffee · Offer received');
   });
   test('several offers, waiting, asked; nothing asked = no line (the existing ask flows show instead)', () => {
-    expect(hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 0, offeredCount: 3 } })).toEqual({ state: 'offers_received', count: 3 });
+    expect(hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 0, offeredCount: 3, allOffers: true } })).toEqual({ state: 'offers_received', count: 3 });
     expect(hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 4, offeredCount: 0 } })).toEqual({ state: 'waiting', count: 4 });
     expect(hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 0, offeredCount: 0 } })).toEqual({ state: 'asked' });
     expect(hostBusinessLine({ request: null })).toBeNull();
     expect(translate('en', 'ui.hostCenter.biz.waiting', { count: 1 })).toBe('Waiting for 1 business to reply');
   });
-  test('a business that has not replied is never named', () => {
-    const svc = read('services/businessFulfillment.js');
-    expect(svc).toMatch(/if \(row\.status === 'offered'\) \{\s*offeredCount \+= 1;\s*if \(row\.brand_partners\?\.name\) offeredNames\.push/);
+  test('a business that has not replied is never named (the one tally names only counted replies)', () => {
+    const svc = read('utils/planCompletion.js');
+    expect(svc).toMatch(/isOfferOpen\(withRequest, now\)\) \{[^}]*offeredCount \+= 1;[\s\S]*?if \(row\.brand_partners\?\.name\) offeredNames\.push/);
+    expect(read('services/businessFulfillment.js')).toMatch(/return tallyBusinessReplies\(data\)/);
+  });
+  test('item 160: a plain reply is never "Offer received"; mixed replies = "N businesses responded"', () => {
+    const plain = { status: 'offered', offer_type: 'standard', brand_partners: { name: 'Coastal Coffee' } };
+    expect(hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 0, offeredCount: 1, allOffers: false, offeredNames: ['Coastal Coffee'], offered: [plain] } }))
+      .toEqual({ state: 'reply_received', title: 'Coastal Coffee can take you' });
+    expect(hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 0, offeredCount: 2, allOffers: false } })).toEqual({ state: 'replies_received', count: 2 });
+    expect(hostBusinessLine({ request: { id: 'r' }, offers: { pendingCount: 0, offeredCount: 2 } })).toEqual({ state: 'replies_received', count: 2 }); // unknown = not all offers
+    expect(translate('en', 'ui.requestDetail.timeline.businessesResponded', { count: 2 })).toBe('2 businesses responded');
   });
 });
 

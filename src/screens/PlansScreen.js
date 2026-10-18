@@ -15,6 +15,8 @@ import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus, resolvePlanTableStatus } from '../constants/planStatus';
 import { isGatheringOver, memoryCountFor } from '../utils/gatheringCompletion';
 import { getGatheringMemoryCounts } from '../services/stories';
+import { getRequestReplyStatuses } from '../services/businessFulfillment';
+import { placeStatusLine } from '../utils/planCompletion';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -64,6 +66,9 @@ export default function PlansScreen({ navigation, route }) {
   const [sharedNights, setSharedNights] = useState([]);
   // Item 123: memories each past gathering holds that this viewer may see (server-checked read; {} = no lines).
   const [memoryCounts, setMemoryCounts] = useState({});
+  // Item 160: each standalone request's replies, the same tally and line as Home's Your Plans ({} = no line). Read when
+  // the rows load (so again each time Plans regains focus), never live.
+  const [requestReplyStatus, setRequestReplyStatus] = useState({});
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -137,6 +142,12 @@ export default function PlansScreen({ navigation, route }) {
     getGatheringMemoryCounts(ids).then((c) => { if (!cancelled) setMemoryCounts(c); }).catch(() => {});
     return () => { cancelled = true; };
   }, [attending.past, hosting.past]);
+  useEffect(() => {
+    const ids = businessRequestPlans.map((plan) => plan.resulting_business_request_id);
+    let cancelled = false;
+    getRequestReplyStatuses(ids).then((r) => { if (!cancelled) setRequestReplyStatus(r); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [businessRequestPlans]);
   const openGroupPlan = (proposalId) => navigation.navigate('GroupPlan', { proposalId });
   const openBusinessRequest = (requestId) => navigation.navigate('BusinessRequestDetail', { requestId });
   const openDatePlan = (matchId) => navigation.navigate('DateProposal', { matchId });
@@ -327,6 +338,7 @@ export default function PlansScreen({ navigation, route }) {
                   roleLabel={p('businessRequest')}
                   dateTimeText={plan.scheduled_at ? displayHeroWhen(plan.scheduled_at, language) : null}
                   peopleCount={plan.party_size}
+                  venueName={placeStatusLine(requestReplyStatus[plan.resulting_business_request_id])}
                   status={resolvePlanTableStatus(plan.status)}
                   onPress={() => openBusinessRequest(plan.resulting_business_request_id)}
                   style={styles.planCardSpacing}

@@ -712,7 +712,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const hostBusinessText = !hostBizLine ? null
     : hostBizLine.state === 'offer_received'
       ? (hostBizLine.name ? t('ui.hostCenter.biz.offerReceived', { name: hostBizLine.name }) : t('ui.hostCenter.biz.offerReceivedNoName'))
+      : hostBizLine.state === 'reply_received' ? hostBizLine.title
       : hostBizLine.state === 'offers_received' ? t('ui.hostCenter.biz.offersReceived', { count: hostBizLine.count })
+      : hostBizLine.state === 'replies_received' ? t('ui.requestDetail.timeline.businessesResponded', { count: hostBizLine.count })
         : hostBizLine.state === 'waiting' ? t('ui.hostCenter.biz.waiting', { count: hostBizLine.count })
           : t('ui.hostCenter.biz.asked');
   const planCompletion = getGatheringPlanCompletion({

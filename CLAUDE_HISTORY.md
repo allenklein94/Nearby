@@ -1,3 +1,32 @@
+# Plans response count (owner item 160, 2026-10-18): BUILT (option b), NOT DEVICE-VERIFIED
+
+Owner decision (2026-10-18): option (b). Fix the shared source first, then extend it to Plans. "N offers — choose one" only
+when every open reply is a real offer, otherwise the existing "N businesses responded" (`ui.requestDetail.timeline.businessesResponded`).
+An offer stops counting at its exact end. Plans counts on load and refreshes on return. No new strings, motion or migration.
+The request screen, the reply push and the signature moment are unchanged.
+Built: `utils/planCompletion.js` has ONE tally `tallyBusinessReplies` (open replies via `isOfferOpen`, closed at valid_until or the
+request deadline before the hourly sweep; pending counted only while the request is open; declines/withdrawals/expired never;
+`allOffers` from `businessReplyKind`), `requestReplyStatuses` (per request: accepted = done + business name, else the tally)
+and `placeStatusLine`. `formatPlaceStatusLabel` takes `allOffers` (unknown = false = "N businesses responded").
+Services: `getOpenOfferCounts` and the new request-keyed `getRequestReplyStatuses` (which `getGatheringPlaceStatuses` now
+wraps) select `REPLY_TALLY_COLUMNS` + the request embed; `dateProposals` tallies with its own request rows. Screens: Home's
+`venueNameForPlan` = `placeStatusLine`; Plans' standalone request rows show the same line (`getRequestReplyStatuses` re-read
+whenever the rows load, i.e. on each focus / pull to refresh); Matches passes `allOffers`; the host command center's business
+line no longer says "Offer received" for a plain reply (one = `businessReplyTitle`, e.g. "Coastal Coffee can take you";
+several mixed = "N businesses responded").
+`isOfferOpen` itself needed no change: it already closed at the exact instant. The gap was that the counters did not use it.
+Visible change beyond Plans: Home, GatheringDetail, Matches and DateProposal now say "N businesses responded" for a mix of
+replies (they used to say "N offers").
+Tests: `utils/planReplyCount.test.js` (new; mixed, automatic, alt time, declines, exact valid_until, request deadline,
+unknown kind, per-request grouping, one-source guards), `hostCommandCenter.test.js` updated plus an item 160 case. Jest: 469
+suites, 6300 pass. The 1 failure is pre-existing and unrelated: `gatheringCheckInWindow.test.js` strong-match test hard-codes
+2026-10-17 as "today", so it fails from 2026-10-18 on the clean tree too. It is not fixed and is reported to the owner.
+Journey `plansReplyCount` (new, 7/7 on production, rolled back): real `submit_business_offer` / `withdraw_business_offer`,
+customer reads under the `authenticated` role. Standalone and gathering requests give the same line at each stage: waiting 3,
+2 offers, plus a plain reply = "3 businesses responded", withdrawn = back to 2 offers. An automatic (policy-marked) reply gives
+"2 businesses responded". An offer stops counting at its saved valid_until while the stored status is still 'offered'.
+Production journeys 558/558. NOT covered: a phone (checklist), and native review is not needed (existing strings).
+
 # Plans response count on standalone request rows (owner item 160, 2026-10-18): APPROVED FOR IMPLEMENTATION, NOT BUILT
 
 Gap: a business request not tied to a gathering appears on Plans -> Upcoming (`businessRequestPlanRow` in `PlansScreen.js`) with only
