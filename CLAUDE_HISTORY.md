@@ -1,4 +1,10 @@
-# Per-tab motion personality (owner idea "239", 2026-10-18; NOT item 239): recommended DECLINE as a rule, keep as built, owner decision pending, nothing built
+# Per-tab motion personality (owner idea "239", 2026-10-18; NOT item 239): DECLINED as a new rule, CLOSED, LOCKED, keep as built, nothing built
+
+- Owner decision (2026-10-18): decline as a new rule; keep item 164 and the existing motion hierarchy; add no tab-specific animation
+  styles; no app changes. One motion language (Nearby Pulse, the motion levels, the business-response signature, the mutual-match
+  full-screen moment) stays coherent; no animation quota or identity per tab; meaning over decoration (arrival, publication,
+  matching and business responses animate when those real events occur). Distinction: declining does NOT forbid motion on Activity
+  or Profile forever; any future animation must justify itself through a real state change and follow the existing motion rules.
 
 - Proposal: a motion hierarchy per tab: Home gentle contextual, Discover activity/discovery, Create focused transformation,
   People social connection, Activity response/status, Profile minimal; each tab its own personality without inconsistency.
