@@ -1,3 +1,8 @@
+# Animate state changes (owner idea "251", 2026-10-18): MET AS BUILT, assessed, owner decision pending, nothing built
+
+Each listed transition mapped to its existing moment (items 55/158/159, 12/32, 31/143, 28, 32, 52/34); card -> expanded card stays
+unanimated (items 15/111/95-97/103, ideas 230/231). Governing rules: items 58, 162, 164, 98, motion truth. No new motion or rule.
+
 # Idea "250" closed (owner, 2026-10-18): MET AS BUILT, no new rule text; Stripe's sheet and the one-form Make an Offer are intentional exceptions; CLAUDE.md left as before the idea (its pending line removed); no app change.
 
 # "Nearby's Navigation Rule" as a foundational rule (owner idea "250", 2026-10-18): MET AS BUILT, assessed, no new rule text recommended, owner decision pending, nothing built
