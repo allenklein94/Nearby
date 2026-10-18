@@ -1,3 +1,16 @@
+# One state, several presentations (owner item 163, 2026-10-18): MET AS BUILT, LOCKED, nothing built
+
+Idea: one event (e.g. offer_created) -> consumer animation, business animation and notification; one source of truth.
+Found as built, checked against item 162's `MOTION_TRIGGERS` and the code: a business reply is one `business_request_offers`
+row reaching `offered` (`submit_business_offer`; domain event `BUSINESS_OFFER_SENT`). Customer: the ONE signature, the reply
+travelling into its card when the request is on screen (item 23), the card build-in; the push from `_on_business_offer_sent`
+-> `_business_reply_push` reading that same row, one per request replaced in place (item 62), tap opens that exact reply
+(item 132). Business: its own reply card at "Offer sent" on item 13's track (`offerProgress`: 'offered' never animates).
+Correction to the idea's example: the business's "Opportunity appears" comes from the REQUEST (`create_business_request`,
+`BUSINESS_REQUEST_SENT`; `opportunityArrival`), alongside the customer's "We asked N" rings (`requestPulse`), not from the offer.
+Shared state never means identical wording or motion (item 129): customer personal, business operational, signature
+customer-only. No animation, event or database work authorized.
+
 # Strong-match clock defect (found during item 162 verification, owner approved the fix 2026-10-18): FIXED, VERIFIED
 
 Defect: `strongMatchPieces(item, ask, now)` (`utils/strongMatch.js`) used `now` for its "over" check but its date-window step

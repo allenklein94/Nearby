@@ -65,6 +65,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Get out of the way" after Send (owner idea "161", 2026-10-18, option a, LOCKED) is MET AS BUILT + empty state reworded, NOT DEVICE-VERIFIED:** no searching screen or loader after Send (item 159's button spinner only); `request_no_responses` = "No responses yet" / "You'll be notified when a business responds." (11 languages; 10 machine-authored, need native review; guard in `emptyStateLanguage.test.js`); offer checklist section 1 check (item 161).
 
+**One state, several presentations (owner item 163, 2026-10-18) MET AS BUILT, LOCKED, nothing built:** a reply (`submit_business_offer`, status `offered`, `BUSINESS_OFFER_SENT`) = customer's signature + travel into its card + one in-place push opening that reply, and the business's own card at "Offer sent" (never animates); a request (`create_business_request`, `BUSINESS_REQUEST_SENT`) = business's Opportunity arrival + customer's "We asked N" moment. Same state, own voice per side (item 129); documented in item 162's `MOTION_TRIGGERS`. No animation, event or database work.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
