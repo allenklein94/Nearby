@@ -1,3 +1,22 @@
+# Home doesn't compete with itself (owner idea "284", 2026-10-18; NOT item 284): MOSTLY MET (first viewport budgeted, recommendations pooled, one object once); the example order is not Home's; a long conditional lower tail EXISTS; ASSESSED, recommend no change before the phone (idea "252" LOCKED), owner decision pending; nothing built; CLAUDE.md not changed
+
+Checked in code 2026-10-18 (`HomeScreen.js`, `utils/homeAttention.js`). The example's eight competing blocks are not Home as built:
+"This is Nearby" (`ui.home.firstRunHeading`) shows only on the first-ever visit (`seenFirstRunMoment === false`), then never; Trending,
+Friends' Activity, Best Pick, Because You Like, Starting Soon and perks are not separate sections: they all FEED one selector
+(`selectHomeAttention`, item 50 "Home is not a feed of feeds") capped at 3 (`MAX_HOME_ATTENTION`, Best Pick counts as one), ranked by the
+one ladder (`signalPriority.js`), one gathering once on Home (`HOME_SECTION_PRIORITY`, items 51/52); businesses appear only inside those
+picks (no Business section); weather speaks only when it changes picks (item 36). First viewport (items 32/33 budget, LOCKED): intent box ->
+Best Pick / Picked For You (max 3) -> Your Plans (max 3 + See all) -> the one social line -> Nearby Right Now (max 3); empty = omitted.
+One arrival animation per visit (idea "207").
+What DOES exist below that: a conditional tail, each block shown only with real content (item 79, `homeQuiet.js`): occasion/birthday
+nudge + occasion recall + upcoming-occasions preview (items 101/104/123), a returning-customer consent prompt (item 102), an offer "How
+was it?" prompt, invitations / gift banners, the weather card, "since you were away", "What you're here to do" chips, quick picks, the
+location prompt, quick stats. On a busy account several can show at once below the fold; they never outrank the first viewport (fixed
+order, idea "203"). Recommendation: no change now. Idea "252" (LOCKED) forbids a fresh compression audit before the first device session;
+judge the tail on a real phone (how many blocks a real account sees, whether anything below Nearby Right Now feels like competition), then
+fold or move only what the phone shows, under item 45 / idea "237" (Home gets shorter, not longer). Phone check: C12 + note the count of
+lower blocks seen.
+
 # "Return to where I was" is a first-class principle (owner idea "283", 2026-10-18; NOT item 283): MET IN SUBSTANCE (locked Navigation bullet + ideas "232"/"279"-"282"), CLOSED (owner, 2026-10-18, LOCKED): existing Navigation bullet clarified, no second rule, no app code; NOT DEVICE-VERIFIED
 
 Owner decision (2026-10-18): the Navigation bullet's tail now reads "Back restores the exact prior content state (query, filters, open
