@@ -129,6 +129,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Accept" feels decisive (owner idea "193", 2026-10-18; NOT item 193) MET BY ITEM 12, CLOSED, LOCKED; gap 2 IMPLEMENTED + AUTOMATED-TEST VERIFIED (code level: rule states + wiring; screen-reader state and success/failure recovery from code reading only), DEVICE VERIFICATION OPEN, no further changes unless a defect:** while one offer books, every other "I'll take this one" is visibly disabled (`utils/offerAcceptLock.js`), restored from the reloaded server state after success or failure. Press compression SKIPPED (owner: no ScaleButton/press-scale/bounce); timer-driven "Confirmed" and renaming declined. Verification: offer checklist section 6 (new check).
 
+**"Pass" feels frictionless (owner idea "194", 2026-10-18; NOT item 194) ASSESSED, OWNER DECISION PENDING, nothing built:** no customer Pass exists; passing = ignoring (replies stay listed to expiry or until another is booked); no-confirm rule already met (confirms only on cancel/remove). "Next offer" staging and "moves away" motion conflict with items 117/63 + the offer-screen motion lock; a visible Pass conflicts with item 200. Recommended (a) met as built; alternative (b) private ⋯ "Not for me" + Undo (idea "153" pattern).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

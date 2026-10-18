@@ -1,3 +1,25 @@
+# "Pass" feels frictionless (owner idea "194", 2026-10-18; NOT item 194, reason cap): ASSESSED, OWNER DECISION PENDING, nothing built
+
+- Proposal: on an offer that isn't good, Pass -> the offer moves away -> Nearby immediately shows the next offer; no "Are you sure?"
+  unless there is a meaningful consequence.
+- Found (code reading, `BusinessRequestDetailScreen.js`, `objectLifecycle.js`): the customer has NO Pass/decline on a business reply.
+  `objectLifecycle` lists 'decline' for an offered offer, but no customer UI or RPC uses it (status 'declined' is the BUSINESS
+  declining). Passing today = doing nothing: every reply stays listed until it expires (`isOfferOpen`) or the person books another
+  (the booking closes the rest, shown in their real closed state). Nothing forces a choice or nags (idea "186": no come-back pushes).
+- "No 'Are you sure?' unless a meaningful consequence" is already MET: the screen's only confirmations are cancel reservation ("The
+  business will be notified"), cancel request ("Businesses will no longer be able to respond") and remove co-organizer; "I'll take
+  this one" books on one tap (item 12) with no confirm.
+- Conflicts with locks if built as proposed: "shows the next offer" = one-at-a-time / staged replies, DECLINED by item 117 (existing
+  replies show together, never staged) and item 63 (a non-qualifying reply stays listed); "moves away" = an animated exit + gap
+  closing, forbidden on offer screens (owner 2026-10-12, no screen-wide motion; guard `offerScreenWideMotion.test.js`); a visible Pass
+  button = a second explicit action on the card (item 200; the only exception is idea "153"'s quiet ⋯ on gathering cards).
+- Open questions a Pass would raise: does the business learn of it (today's business card keeps "Offer sent" to the deadline, which is
+  true; a customer decline reaching the business is a new business-visible signal, item 129 mirrors / idea "188"); is it reversible.
+- Options for the owner: (a) RECOMMENDED: met as built, nothing built (passing = ignoring; the friction the idea targets does not
+  exist); (b) a private customer-only "Not for me" in a quiet ⋯ on the reply card, card replaced at once with no motion + Undo (idea
+  "153"'s pattern), business never told, other replies already visible, no confirm; needs item 200's exception widened; (c) (b) plus
+  the business told: needs its own privacy/mirror decision. No code, migration, string or motion changed.
+
 # Idea "193" gap 2: other offers visibly unavailable while one is booking (owner, 2026-10-18): IMPLEMENTED + AUTOMATED-TEST VERIFIED (code level), DEVICE VERIFICATION OPEN; idea "193" otherwise MET by item 12, CLOSED
 
 Owner decision: fix gap 2 only; SKIP press compression (no ScaleButton, press-scale, bounce or other new micro-motion; no motion
