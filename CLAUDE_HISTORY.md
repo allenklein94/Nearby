@@ -1,3 +1,9 @@
+# "Nearby unfolds for me" + compression phase (owner idea "252", 2026-10-18): goal met as doctrine, assessed, owner decision pending, nothing built
+
+Registry count today: 73 routes in `SCREEN_REGISTRY` (was 87 registered in the 2026-10-08 audit; B1-B8 built). Evidence-gated removals
+still pending (B9 relationship tools, Momentum fold). Options offered: (a) keep course = device verification first (recommended), (b) a fresh
+read-only compression audit document.
+
 # Idea "251" closed (owner, 2026-10-18): MET AS BUILT, LOCKED; card expansion / detail opening / in-place mode switches stay unanimated; card-to-detail morph not reopened; no app change.
 
 # Animate state changes (owner idea "251", 2026-10-18): MET AS BUILT, assessed, owner decision pending, nothing built
