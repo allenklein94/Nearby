@@ -1,3 +1,20 @@
+# "One surface, many states" (owner idea "216", 2026-10-18; NOT item 216): ASSESSED, owner decision pending, nothing built
+
+- Proposal: a core rule "one surface -> state changes -> information expands/collapses" instead of screen chains; e.g. Home's "See
+  all plans" expands Your Plans in place into Upcoming / Hosting / Past, and only a tap on a plan opens its detail.
+- Principle met: item 45's screen reduction (same job = same screen; change content > expand inline > sheet > dedicated screen only
+  for an entity, distinct workflow, management, communication, transaction); filters/modes never navigate; states, not folders (one
+  viewer relation per gathering); item 98 (one object evolving, in-place transformations 12/32/30/31/34); the owner's 2026-10-16
+  "the system brings the next thing" bullet.
+- Example conflicts (LOCKED): "Home never expands sections in place" (Recommendations; Home caps 3 picks / 3 plans / 3 Right Now);
+  item 110 DECLINED in-place expansion of Home sections (item 41's "See gatherings" the only limited exception); the See-all rule
+  ("expands in place unless the list has its own management job, then its destination, e.g. Plans"). Plans is registered job C
+  (`constants/screenRegistry.js`: upcoming, hosting and past; the way into managing each one).
+- As built: Home's "See all plans" (`HomeScreen.js`) opens Plans immediately; Plans shows Upcoming / Hosting / Past on one surface;
+  a tap on a plan opens its detail; Back restores Home's exact state. That is already "one surface, many states", one level down.
+- Recommendation: keep as built; no new rule (it would restate item 45), no Home expansion. Reopen only if a phone shows the hop to
+  Plans breaks the flow (item 110's check C12).
+
 # "Crazy but smart" shortlist (owner, 2026-10-18; 15 moments, NOT numbered items): #1-#14 MET AS BUILT, CLOSED; #15 DEFERRED, nothing built
 
 - Owner decision (2026-10-18): close #1-#14 as met as built. #15 DEFERRED, not permanently rejected: no build now; items 167 and

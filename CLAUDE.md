@@ -165,6 +165,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Crazy but smart" shortlist (owner, 2026-10-18; 15 moments) #1-#14 MET AS BUILT, CLOSED, LOCKED; #15 DEFERRED (not rejected), nothing built:** #1-#14 = items 55/158, 23/25, 62/117, 12, 28/73, 32/43, 82/85, 44, 40, 30/31/34/143 + 108, 26, 13, 45, 81/181 (see history). #15 (first-ever reply as a FULL-SCREEN signature) DEFERRED until the existing signature (+ "Your first reply from a local business" + longer arrival notice, 2026-10-10 LOCKED) is seen on a real phone (offer checklist arrival checks); items 167 and 25 stay LOCKED; only if it underwhelms there, revisit #15 with item 101's motion-spec template.
 
+**"One surface, many states" (owner idea "216", 2026-10-18; NOT item 216) ASSESSED, owner decision pending, nothing built:** the principle is already the core rule (item 45 screen reduction: change content > expand inline > sheet > screen; states-not-folders; item 98). The example (Home's "See all plans" expanding Upcoming/Hosting/Past in place) CONFLICTS with "Home never expands sections in place" + item 110 (in-place Home expansion DECLINED, LOCKED) and the See-all rule (a list with its own management job opens its destination: Plans, registry job C). Recommended: keep as built (Home's "See all plans" -> Plans; Plans already = Upcoming/Hosting/Past on one surface; a tap there opens the detail).
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
