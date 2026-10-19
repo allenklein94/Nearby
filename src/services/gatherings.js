@@ -1231,13 +1231,18 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
 // Home's Best Pick: ONE gathering. Eligibility is the surface's own rule (a pick must clear a fit score of 5, so an ordinary
 // night has no pick); among the eligible, the one ranking ladder picks (compareRanked on the tier vector). Friends attending are
 // counted from the approved attendees the viewer can already see, accepted friends only.
+// Item 112 reopened narrowly (owner, 2026-10-19, with idea "291"): the score establishes fit, not personal relevance, so a pick
+// ALSO needs a personal reason: a declared interest, accepted friends attending, or an accepted friend hosting. "Close by" +
+// "Happening today" (3 + 2) alone reach 5 but never make a Best Pick. Score, threshold, reasons and ranking are unchanged.
 export const BEST_PICK_MIN_SCORE = 5;
+export const BEST_PICK_PERSONAL_CODES = Object.freeze(['interest_match', 'friends_attending']);
 export function pickBestGathering(pool, { friendIds = null, myUserId = null } = {}) {
   const friends = friendIds instanceof Set ? friendIds : new Set(friendIds ?? []);
   const scored = (pool ?? []).map((g) => {
     const friendAttendeeCount = (g?.approvedAttendees ?? []).filter((a) => a?.user_id && a.user_id !== myUserId && friends.has(a.user_id)).length;
     return { gathering: g, ...getGatheringFitReasons(g, { friendAttendeeCount }) };
-  }).filter((x) => x.score >= BEST_PICK_MIN_SCORE);
+  }).filter((x) => x.score >= BEST_PICK_MIN_SCORE)
+    .filter((x) => x.parts.some((p) => BEST_PICK_PERSONAL_CODES.includes(p.code)) || (!!x.gathering?.host_id && x.gathering.host_id !== myUserId && friends.has(x.gathering.host_id)));
   const top = scored.sort(compareRanked)[0];
   return top ? { ...top.gathering, reasons: top.reasons } : null;
 }

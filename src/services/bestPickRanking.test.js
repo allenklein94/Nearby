@@ -48,6 +48,23 @@ describe('Best Pick follows the one ranking ladder', () => {
     expect(pickBestGathering([plain])).toBeNull();
   });
 
+  it('item 112 reopened (idea "291"): a score of 5 without a personal reason is never a pick', () => {
+    const nearToday = g('near', { scheduled_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), distanceMiles: 0.5, distanceLabel: '0.5 mi away' });
+    expect(getGatheringFitReasons(nearToday).score).toBeGreaterThanOrEqual(BEST_PICK_MIN_SCORE);
+    expect(pickBestGathering([nearToday])).toBeNull();
+    const crowd = g('crowd', { approvedCount: 10, approvedAttendees: attendees(10) });
+    expect(pickBestGathering([crowd])).toBeNull(); // popularity alone, however high
+  });
+
+  it('a declared interest, friends attending or a friend hosting qualify; the score threshold still applies', () => {
+    const nearToday = (id, extra) => g(id, { scheduled_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), distanceMiles: 0.5, distanceLabel: '0.5 mi away', ...extra });
+    expect(pickBestGathering([nearToday('i', { matchesYourInterests: true })]).id).toBe('i');
+    expect(pickBestGathering([nearToday('f', { approvedCount: 1, approvedAttendees: [{ user_id: 'f1' }] })], { friendIds: ['f1'] }).id).toBe('f');
+    expect(pickBestGathering([nearToday('h', { host_id: 'f1' })], { friendIds: ['f1'] }).id).toBe('h');
+    expect(pickBestGathering([nearToday('own', { host_id: 'me' })], { friendIds: ['me'], myUserId: 'me' })).toBeNull();
+    expect(pickBestGathering([g('far', { host_id: 'f1' })], { friendIds: ['f1'] })).toBeNull(); // personal but under 5
+  });
+
   it('my own attendance is never a friend attending', () => {
     const x = g('x', { approvedCount: 1, approvedAttendees: [{ user_id: 'me' }] });
     const fit = getGatheringFitReasons(x, {});

@@ -23,11 +23,11 @@ export const MAX_HOME_ATTENTION = 3;
 export const MAX_HOME_PLANS = 3;
 export const MAX_HOME_RIGHT_NOW = 3;
 
-// Owner idea "291" (2026-10-19): "Picked For You" is a personal promise, so every card in it (not the Best Pick lead, item
-// 112's own rule) needs at least one PERSONAL reason: a declared interest (or the person's own activity / a related hobby, all
+// Owner idea "291" (2026-10-19): "Picked For You" is a personal promise, so every card in it needs at least one PERSONAL reason: a declared interest (or the person's own activity / a related hobby, all
 // read by interestMatch), a friend hosting or going, a loved "How was it?" word, or their social comfort. Being close by,
 // happening today, starting soon, trending, weather or a business alone never qualify; those gatherings stay in Nearby Right
 // Now and Discover. A friend's own interest ("Sam is into Coffee") is a reason on a card already earned, never the qualifier.
+// The Best Pick lead is gated upstream, where it is chosen (pickBestGathering, item 112 reopened 2026-10-19).
 export const PERSONAL_SIGNAL_KINDS = Object.freeze(['interest', 'friend', 'going']);
 const PERSONAL_TIERS = new Set([SIGNAL_TIERS.interest, SIGNAL_TIERS.planFriend]);
 function hasPersonalSignal(signals) {

@@ -241,7 +241,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Full-screen only for meaningful moments (owner idea "275", 2026-10-18; NOT item 275) KEEP AS BUILT, CLOSED, LOCKED, nothing built:** item 167 unchanged (mutual match = the only full-screen moment); first offer/reply, booking, visit confirmed, gathering published stay inline (items 51/25/12/52/43); "major gathering" full-screen DECLINED (no definition; no headcount-based celebration); #15 stays gated on the phone; any later full-screen = reopen item 167 + a motion spec per moment.
 
-**Picked For You personal gate (owner idea "291", 2026-10-19) is BUILT, NOT DEVICE-VERIFIED until** check C21 of the first-session checklist (new-account + sparse-data Home) is recorded on a real phone (no migration, no new strings; Jest 478/6533, journeys 559/559).
+**Picked For You + Best Pick personal gate (owner idea "291" + item 112 reopened, 2026-10-19) is BUILT, NOT DEVICE-VERIFIED until** check C21 of the first-session checklist (new-account + sparse-data Home) is recorded on a real phone (no migration, no new strings; Jest 478/6535, journeys 559/559).
 
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
@@ -704,11 +704,12 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   action. "Because you like X" only for a declared interest; never "Matches your interests". Distance via
   `formatDistance`, time via `whenLabel`/`timeWindowState`.
 - Home: intent box -> Picked For You (max 3) -> Your Plans (max 3) -> social line -> Nearby Right Now (max 3).
-- **Picked For You is personal (owner idea "291", 2026-10-19, LOCKED):** every card in it (not the Best Pick lead, item 112's own rule) needs
+- **Picked For You is personal (owner idea "291", 2026-10-19, LOCKED):** every card in it needs
   a reason about the person: a declared interest/group (or own activity / related hobby via `interestMatch`), a friend hosting or going, a
   loved "How was it?" word, social comfort, or the active ask's category; close by, today, starting soon, trending, weather, a business or
   a friend's own interest alone never qualify (they stay in Nearby Right Now / Discover). One gate in `selectHomeAttention`
   (`utils/homeAttention.js`) + the pool's `personal` flag (`services/homeRecommendations.js`); no combined threshold (each claim keeps its own cutoff).
+  Best Pick (item 112 reopened narrowly): fit score >= 5 AND a declared interest, friends attending or a friend hosting (`pickBestGathering`).
   Home never expands sections in place.
 - **Empty asks (owner item 81, LOCKED):** no out-of-radius fallback, even labelled (the radius stays a hard filter; only an explicit
   rule change reopens it); no "similar activities" until item 128's analysis AND a real phone show empty results recur (then labelled,

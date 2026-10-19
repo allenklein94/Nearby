@@ -93,7 +93,7 @@ describe('Picked For You needs a personal reason (owner idea "291")', () => {
     expect(out.absorbed.get('s')).toEqual(['Starting soon']);
     expect(out.absorbed.has('n')).toBe(true);
   });
-  it('the Best Pick lead keeps its own rule (item 112)', () => {
+  it('the lead is gated where it is chosen (pickBestGathering), not re-judged here', () => {
     const out = selectHomeAttention({ hero: { id: 'h', reasons: ['Close by', 'Happening today'] }, now });
     expect(out.hero?.id).toBe('h');
   });

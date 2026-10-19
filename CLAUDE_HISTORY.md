@@ -1,3 +1,15 @@
+# Best Pick needs a personal reason too (item 112 reopened narrowly by the owner, 2026-10-19, with idea "291"): BUILT, NOT DEVICE-VERIFIED (check C21)
+
+Owner (2026-10-19): a high score establishes fit, not personal relevance. Keep item 112's fit score >= 5 AND require a personal reason;
+keep the idea "291" Picked For You gate (the active ask's category counts: current intent); keep the first-run card unchanged (explicit
+onboarding exception, not a generic pick labelled personal); run C21 on brand-new AND sparse accounts. Idea "288" stays separate.
+BUILT: `pickBestGathering` (`services/gatherings.js`) keeps only candidates with score >= `BEST_PICK_MIN_SCORE` (5) AND a personal reason:
+fit part `interest_match` or `friends_attending` (`BEST_PICK_PERSONAL_CODES`), or an accepted friend hosting (never the viewer). Before,
+"Close by" (3) + "Happening today" (2), or attendance alone (up to 10), could make a Best Pick. Score, threshold, reason text and the
+ranking ladder unchanged; `selectHomeAttention` does not re-judge the lead (gated where it is chosen). Tests: `bestPickRanking.test.js`
+(+2: score 5 without a personal reason / popularity alone = no pick; interest, friends attending, friend hosting qualify, own hosting
+does not, threshold still applies). Jest 478 suites / 6535 passed; journeys 48 / 559 passed. C21 updated to cover the lead.
+
 # Explicit thresholds for recommendations (owner idea "291", 2026-10-19; NOT item 291): MET AS BUILT per surface (each has its own explicit, deterministic, tested gate); a single combined threshold across weather/time/availability/user/social DECLINED (would be a second, additive representation beside the lexicographic ladder); CLOSED (owner, 2026-10-19): MET AS BUILT, combined threshold declined; Picked For You option (b) BUILT (needs a personal reason); NOT DEVICE-VERIFIED (check C21)
 
 Owner (2026-10-19): keep the individual cutoffs (different claims, different evidence; a weighted sum would let weak signals beat a
