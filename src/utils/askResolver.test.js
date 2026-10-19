@@ -98,3 +98,21 @@ describe('every entry point uses the one resolver', () => {
     expect(mod).not.toMatch(/fetch\(|supabase|anthropic|AsyncStorage/i);
   });
 });
+
+// Owner idea "296" (2026-10-19): search bypasses the category structure. Words alone (no AI) land on the exact tag, its
+// group and the stated time; "padel" stays its own sport.
+describe('idea 296: the words find the sport, no category picking', () => {
+  it.each(['pickleball tonight', 'pickle ball tonight', 'pickleball court tonight', 'paddle tonight'])('%s -> Pickleball, tonight', (text) => {
+    const r = resolveAsk(text, null);
+    expect(r.subcategory).toBe('Pickleball');
+    expect(r.category.key).toBe('sports_fitness');
+    expect(r.time.dateWindow).toBe('tonight');
+    expect(r.usedAi).toBe(false);
+  });
+
+  it('padel tonight -> Padel, never Pickleball', () => {
+    const r = resolveAsk('padel tonight', null);
+    expect(r.subcategory).toBe('Padel');
+    expect(r.time.dateWindow).toBe('tonight');
+  });
+});

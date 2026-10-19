@@ -1,4 +1,4 @@
-# Categories discoverable, not mandatory (owner idea "296", 2026-10-19; NOT item 296): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no intermediate levels (Ball Sports / Racquet Sports) to add; nothing built; CLAUDE.md not changed
+# Categories discoverable, not mandatory (owner idea "296", 2026-10-19; NOT item 296): CLOSED (owner, 2026-10-19): MET AS DESIGNED; no taxonomy restructuring; phrase check ADDED (Jest, words-only path PASSES); live search-flow verification PENDING
 
 Checked in code 2026-10-19. Search bypasses the structure: a typed ask ("pickleball tonight") goes through the one resolver; Pickleball
 is its own tag (`gatheringCategories.js`, Sports & Fitness) and `categorySynonyms.js` maps "pickle ball", "pickleball court", "paddle"
@@ -10,6 +10,11 @@ filtering (Discover category filter, in place, item 45); business onboarding (on
 tags never declared, item 185); recommendation (declared interests, ranking ladder's interest tier, typed-ask category match); analytics
 (item 128 demand by the business's own categories, floor of 5; never-learned categories never stored or counted). Pickleball phrase
 resolution read in code, not run live here.
+Owner decision (2026-10-19): close as met as designed; no taxonomy restructuring; code reading is not proof, so keep a focused check
+for the four Pickleball phrases and "padel". DONE the same day at the resolver level: `src/utils/askResolver.test.js` block "idea 296"
+runs "pickleball tonight", "pickle ball tonight", "pickleball court tonight", "paddle tonight" -> Pickleball, Sports & Fitness, tonight,
+no AI; "padel tonight" -> Padel (askResolver suite 21/21). STILL PENDING: the live search flow end to end (AI classifier path, needs
+Anthropic credit; results on a real phone).
 
 # Activities: backend complexity, frontend simplicity (owner idea "295", 2026-10-19; NOT item 295): CLOSED (owner, 2026-10-19): MET AS BUILT; new Games and Hobbies groups DECLINED; V1 taxonomy freeze preserved; phone check (findability under More) OPEN; nothing built
 

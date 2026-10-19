@@ -249,6 +249,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Activities: simple front, rich back (owner idea "295", 2026-10-19; NOT item 295) MET AS BUILT, CLOSED, LOCKED, nothing built:** typed asks + Discover's Browse rail (`DISCOVER_RAIL_PRIMARY`, rest under More); Games and Hobbies groups DECLINED (would move categories, V1 freeze kept). OPEN: phone check whether important categories are too hard to find under More; a real problem there gets a specific fix, never an automatic taxonomy restructure.
 
+**Categories discoverable, not mandatory (owner idea "296", 2026-10-19; NOT item 296) MET AS DESIGNED, CLOSED, LOCKED, no taxonomy restructuring:** words bypass categories (flat, max two taps to browse; Create/Ask infer it). Words-only phrase check PASSES (`askResolver.test.js` "idea 296": 4 Pickleball phrases + "padel" stays Padel); live search flow (AI path + phone results) PENDING.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
