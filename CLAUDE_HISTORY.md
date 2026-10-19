@@ -19,6 +19,13 @@ through the real search path); (2) AI-assisted resolution once Anthropic credit 
 apart. Note from code: `resolveAsk` lets a real AI tag win over the words' tag (only a dating tag yields to a concrete word tag), so a
 wrong AI tag WOULD override "padel" -> Padel; this check is real, not a formality; (3) real phone: the searches give the intended results
 and a usable Discover experience.
+Owner decision (2026-10-19): AI precedence risk DOCUMENTED; current behaviour unchanged until the AI-enabled check runs. Check (2) tests
+specifically whether "padel" can become Pickleball and whether the four Pickleball phrases stay correct with AI on. If it fails,
+APPROVED narrow fix: when the person's words genuinely identify an exact category, that category beats a conflicting AI guess; keep the
+dating-category exception; no change to ranking, taxonomy or unrelated intent resolution. Nuance (owner): only a genuine identification,
+never a loosely related keyword, or it would block valid AI readings of ambiguous asks. Open point for that build: "paddle" -> Pickleball is
+itself a looser synonym than "pickleball" / "padel" (canonical names); define "genuine" (e.g. a canonical tag name or a specific phrase,
+not a broad one) in the fix's plan before coding.
 
 # Activities: backend complexity, frontend simplicity (owner idea "295", 2026-10-19; NOT item 295): CLOSED (owner, 2026-10-19): MET AS BUILT; new Games and Hobbies groups DECLINED; V1 taxonomy freeze preserved; phone check (findability under More) OPEN; nothing built
 
