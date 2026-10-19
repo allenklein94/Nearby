@@ -1,3 +1,15 @@
+# New business types map into the existing structure first (owner idea "298", 2026-10-19; NOT item 298): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no demand threshold for a new major group defined (none needed until a real case); nothing built; CLAUDE.md not changed
+
+Checked 2026-10-19. Already the locked taxonomy-miss process: a reported real miss -> test case -> smallest existing fix (synonym,
+attribute combination, existing mapping); a new category only if truly needed; never because a business asked; never mined from raw
+search text; changes only through the canonical path (`admin_preview_category_change` + `admin_*_category_tag`). V1 groups frozen (19,
+item 168). Precedent: item 170's new activities became leaf tags under an existing group, not a new group; Health & Personal Care,
+Education & Classes and Attractions "stay majors until supply says otherwise" (`discoverCategoryRail.js`). Interface stability already
+holds even if a group were added: `railGroups` puts any group not in `DISCOVER_RAIL_PRIMARY` under More, so the Browse rail never changes
+by itself. Not yet defined: what "enough real consumer demand" means for a NEW MAJOR group (nearest existing evidence rules: item 128's
+unmatched-ask analysis, item 204's >= 25 distinct people per category in the market). Recommend defining it only when a real candidate
+appears, as part of that decision, not now.
+
 # "Taxonomy lives underneath the experience" (owner idea "297", 2026-10-19; NOT item 297): CLOSED (owner, 2026-10-19): MET AS BUILT; no duplicate doctrine; no taxonomy expansion; nothing built
 
 Checked 2026-10-19. Already the combined locked rules: the one resolver + synonyms read the person's words, so nobody navigates
