@@ -1,3 +1,24 @@
+# Explicit thresholds for recommendations (owner idea "291", 2026-10-19; NOT item 291): MET AS BUILT per surface (each has its own explicit, deterministic, tested gate); a single combined threshold across weather/time/availability/user/social DECLINED as written (would be a second, additive representation beside the lexicographic ladder); ONE OBSERVATION for the owner (Picked For You's gate); ASSESSED, owner decision pending; nothing built; CLAUDE.md not changed
+
+Checked in code 2026-10-19. Gates (below = not surfaced), all named constants or pure rules with Jest guards:
+- Best Pick: fit score >= `BEST_PICK_MIN_SCORE` (5) (`pickBestGathering`, `services/gatherings.js`), then `compareRanked`.
+- Strong match: activity + stated time + close distance ALL really met (`utils/strongMatch.js`, unknown never counts).
+- Weather card: real gathering in a materially relevant window; good weather only `exceptional` (65F+ band, clearly dry), once a day
+  (`constants/weatherRelevance.js`); typed-ask weather only by hour-by-hour consensus (`utils/askWeather.js`) (idea "290").
+- "Tonight looks great": evening + own meet goal + >= `MEET_TONIGHT_MIN_PEOPLE` (3) real people (`utils/meetTonight.js`) (idea "289").
+- Trending: >= `TRENDING_ATTENDANCE_MIN` (5) approved attendees. Map "N happening now": >= `MAP_AREA_MIN` (2).
+- Learned interest: 2+ separate pieces of evidence (`LEARNED_MIN_WEIGHT`, `MIN_CHOICES`); "Our pick": every stated constraint met +
+  established record (`RELIABILITY_MIN_OPPORTUNITIES` 5). Business-facing aggregates: floor of 5 (`demand_min_people()`).
+- Typed asks: hard filters first (eligibility), then the ranking ladder; nothing is removed by ranking.
+Why no combined threshold: ranking is lexicographic on purpose (`constants/signalPriority.js`: "many weak signals cannot add up to beat
+one strong one"); a weighted 5-dimension sum would re-create the additive score the ladder replaced, and each dimension already has its
+own gate where it speaks.
+OBSERVATION (not a defect, owner decision): Picked For You's only gate is ">= 1 real reason" (`buildHomeRecommendations`,
+`services/homeRecommendations.js` lines 214-223), so a gathering that is only "Close by" (< 2 mi) or only "Happening today" can be listed
+under "Picked For You" with no personal reason (interest, friend, feedback, comfort). Options: (a) keep as built (Home stays useful for a
+new account with no interests); (b) require at least one personal reason for Picked For You, leaving pure close/today items to Nearby
+Right Now / Discover. Not changed pending the owner.
+
 # No recommendation without supporting signals (owner idea "290", 2026-10-19; NOT item 290): CLOSED (owner, 2026-10-19): MET AS SPECIFIED; no new rule (already "No invented numbers, signals or states" + "A Home claim needs a visible, substantiated trigger" + "Weather reranks silently and speaks only when it materially changes the picks"); nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (checks C11 + item 36's weather checklist)
 
 Checked in code 2026-10-19. Every statement that could be "manufactured" returns null unless its own real conditions hold:
