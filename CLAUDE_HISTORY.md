@@ -13,8 +13,12 @@ resolution read in code, not run live here.
 Owner decision (2026-10-19): close as met as designed; no taxonomy restructuring; code reading is not proof, so keep a focused check
 for the four Pickleball phrases and "padel". DONE the same day at the resolver level: `src/utils/askResolver.test.js` block "idea 296"
 runs "pickleball tonight", "pickle ball tonight", "pickleball court tonight", "paddle tonight" -> Pickleball, Sports & Fitness, tonight,
-no AI; "padel tonight" -> Padel (askResolver suite 21/21). STILL PENDING: the live search flow end to end (AI classifier path, needs
-Anthropic credit; results on a real phone).
+no AI; "padel tonight" -> Padel (askResolver suite 21/21). Owner (2026-10-19): phrase-mapping unit test VERIFIED (narrow result; no
+broader suite run needed to accept it); flat taxonomy unchanged. STILL PENDING, three checks: (1) full search flow end to end (results
+through the real search path); (2) AI-assisted resolution once Anthropic credit exists: confirm the AI step keeps Padel and Pickleball
+apart. Note from code: `resolveAsk` lets a real AI tag win over the words' tag (only a dating tag yields to a concrete word tag), so a
+wrong AI tag WOULD override "padel" -> Padel; this check is real, not a formality; (3) real phone: the searches give the intended results
+and a usable Discover experience.
 
 # Activities: backend complexity, frontend simplicity (owner idea "295", 2026-10-19; NOT item 295): CLOSED (owner, 2026-10-19): MET AS BUILT; new Games and Hobbies groups DECLINED; V1 taxonomy freeze preserved; phone check (findability under More) OPEN; nothing built
 
