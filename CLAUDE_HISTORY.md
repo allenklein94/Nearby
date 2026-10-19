@@ -26,6 +26,12 @@ dating-category exception; no change to ranking, taxonomy or unrelated intent re
 never a loosely related keyword, or it would block valid AI readings of ambiguous asks. Open point for that build: "paddle" -> Pickleball is
 itself a looser synonym than "pickleball" / "padel" (canonical names); define "genuine" (e.g. a canonical tag name or a specific phrase,
 not a broad one) in the fix's plan before coding.
+Owner rule (2026-10-19), "genuinely identifies" DEFINED for that conditional fix (production unchanged until the AI-on test runs):
+exact category name wins over a conflicting AI guess ("pickleball tonight" -> Pickleball, "padel tonight" -> Padel); an explicitly
+approved, tested, unambiguous phrase wins too ("pickleball court", "pickle ball" -> Pickleball); ambiguous/broad words never force an
+override: "paddle" stays open to the AI unless the words give specific context (pickleball vs paddleboarding); dating exception kept.
+A synonym mapping existing does NOT make a phrase protected: protection needs its own explicit approval. "paddle tonight" stays in the
+AI-on test as a deliberate ambiguity case. The words-only unit test's "paddle" case is annotated as today's mapping only, not protected.
 
 # Activities: backend complexity, frontend simplicity (owner idea "295", 2026-10-19; NOT item 295): CLOSED (owner, 2026-10-19): MET AS BUILT; new Games and Hobbies groups DECLINED; V1 taxonomy freeze preserved; phone check (findability under More) OPEN; nothing built
 

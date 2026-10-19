@@ -100,7 +100,8 @@ describe('every entry point uses the one resolver', () => {
 });
 
 // Owner idea "296" (2026-10-19): search bypasses the category structure. Words alone (no AI) land on the exact tag, its
-// group and the stated time; "padel" stays its own sport.
+// group and the stated time; "padel" stays its own sport. "paddle" -> Pickleball pins today's synonym mapping only: it is NOT an
+// approved unambiguous phrase (owner, 2026-10-19: could mean paddleboarding) and must never be protected over an AI reading.
 describe('idea 296: the words find the sport, no category picking', () => {
   it.each(['pickleball tonight', 'pickle ball tonight', 'pickleball court tonight', 'paddle tonight'])('%s -> Pickleball, tonight', (text) => {
     const r = resolveAsk(text, null);
