@@ -87,7 +87,11 @@ real count is more informative; item 121: never implied people density); "You ha
 count in the line. A ✓ checklist would also borrow item 37's strong-match ticks, reserved for a typed ask's top pick (item 38). Device:
 C11 (claim not red, reason line visible, Meet People lands in People with the banner).
 
-# "Why this?" as the escape valve (owner idea "288", 2026-10-18; NOT item 288): MET AS BUILT per surface (reasons shown where the decision is); a universal "Why am I seeing this?" control/sheet DECLINED (item 106 + idea "226", LOCKED); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
+# "Why this?" as the escape valve (owner idea "288", 2026-10-18; NOT item 288): MET AS BUILT per surface (reasons shown where the decision is); a universal "Why am I seeing this?" control/sheet DECLINED (item 106 + idea "226", LOCKED); CLOSED (owner, 2026-10-19): MET AS BUILT, universal "Why?" control declined; nothing built; CLAUDE.md not changed; MET, VERIFICATION PENDING (C9 + C11)
+
+Owner (2026-10-19): Nearby explains each decision where the person needs it; explanations must be accurate, not merely available behind
+another button. Item 106 stays LOCKED; no code changes; C9 + C11 pending. Reopen only if a specific surface fails to explain itself
+(evidence of a real explanation gap), never for a universal control.
 
 Each listed decision already shows its real reasoning in place (item 104 "Who is this for?", `recommendationContext.js`):
 recommendations = max 2 real reasons on the card + all of them on GatheringDetail's "Why this fits you" (`ReasonList`, item 106);
