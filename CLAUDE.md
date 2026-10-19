@@ -247,6 +247,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Nearby handles the taxonomy" (owner idea "294", 2026-10-19; NOT item 294) MET AS BUILT, CLOSED, LOCKED, nothing built:** people type ("coffee tonight"), the resolver + synonyms map it; V1 taxonomy stays flat (deep hierarchy DECLINED); Restaurants not a category (item 169); Pizza/Burgers/Steakhouse = accepted V1 gap (item 77), never quietly add categories. Structure settled; item 168's native review + phone check stay open.
 
+**Activities: simple front, rich back (owner idea "295", 2026-10-19; NOT item 295) MET AS BUILT, CLOSED, LOCKED, nothing built:** typed asks + Discover's Browse rail (`DISCOVER_RAIL_PRIMARY`, rest under More); Games and Hobbies groups DECLINED (would move categories, V1 freeze kept). OPEN: phone check whether important categories are too hard to find under More; a real problem there gets a specific fix, never an automatic taxonomy restructure.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

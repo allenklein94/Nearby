@@ -1,4 +1,4 @@
-# Activities: backend complexity, frontend simplicity (owner idea "295", 2026-10-19; NOT item 295): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new consumer "Activities" grouping, no group moves, no Games / Hobbies groups; nothing built; CLAUDE.md not changed
+# Activities: backend complexity, frontend simplicity (owner idea "295", 2026-10-19; NOT item 295): CLOSED (owner, 2026-10-19): MET AS BUILT; new Games and Hobbies groups DECLINED; V1 taxonomy freeze preserved; phone check (findability under More) OPEN; nothing built
 
 Checked in code 2026-10-19. Same pattern as idea "294": people type the activity ("tennis tomorrow", "board games tonight") and the one
 resolver + `categorySynonyms.js` map it; Discover's browse rail is the short consumer structure (`DISCOVER_RAIL_PRIMARY`, item 34/91:
@@ -11,6 +11,10 @@ Board Games, D&D, Arcade, Escape Rooms, Mini Golf are tags in Entertainment & Ni
 (declared interest / related hobby via `interestMatch`), not a business category. Adding Games or Hobbies groups, or re-grouping tags
 under "Activities", would MOVE tags (one group per tag changes routing for group-only businesses; V1 spec "placement" question, default
 leave in place) and break the V1 freeze. Rail order/labels unchanged; whether More hides anything people look for = device evidence only.
+Owner decision (2026-10-19): close as met; no Games or Hobbies groups (they would move existing categories and could change matching
+for group-only businesses: too broad without evidence); hobbies stay within the existing structure. Keep the phone check open: are
+important categories too hard to find under More? A genuine discoverability problem found there is fixed specifically (e.g. the rail),
+never by automatically restructuring the taxonomy.
 
 # "Nearby handles the taxonomy" (owner idea "294", 2026-10-19; NOT item 294): CLOSED (owner, 2026-10-19): MET AS BUILT; deep hierarchy DECLINED; specialty gap ACCEPTED for V1; localization + device validation OPEN; nothing built
 
