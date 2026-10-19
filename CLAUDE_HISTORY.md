@@ -1,3 +1,15 @@
+# "Nearby handles the taxonomy" (owner idea "294", 2026-10-19; NOT item 294): MET AS BUILT, ASSESSED, recommended close, owner decision pending; "deep backend" wording NOT adopted (locked: flat axes, never a deep tree); nothing built; CLAUDE.md not changed
+
+Checked 2026-10-19. The person just types: "coffee tonight" resolves through the one resolver (`resolveAsk` / `classifyCreateRequest`,
+deterministic fallback when AI is down): Coffee from `constants/categorySynonyms.js` (cafe, café, coffee shop, espresso, latte, ...),
+Tonight only from the words (time never invented); item 45's chips show what was understood. The example list is already the V1 Food &
+Drink set (item 168/169, migration 20270294 LIVE): Coffee, Bars & Lounges (bars/cocktails/lounges synonyms), Brunch, Dessert & Ice Cream,
+Bakeries, Tea (added by item 169), Happy Hour; "Restaurants" is NOT a tag by decision (item 169: no Restaurants / Coffee & Cafés storage
+level) and is covered by declared cuisines + Fast Casual / Fine Dining. Backend is deliberately flat, not deep: group -> tag -> declared
+cuisine, attributes/format/etc. as separate facts, synonyms map phrases to tags (taxonomy convention, LOCKED); taxonomy frozen for V1
+except the taxonomy-miss process. Known gap kept by decision: Pizza / Burgers / Steakhouse have no structure (item 77 specialty axis
+declined for V1). Native review of item 168's labels + device check still open (item 168 line).
+
 # "Show the few things worth acting on" (owner idea "293", 2026-10-19; NOT item 293): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule; no Home redesign started; nothing built; CLAUDE.md not changed
 
 Checked in code 2026-10-19. The philosophy is already Home's rule set: at most 3 per section (`MAX_HOME_ATTENTION` / `MAX_HOME_PLANS` /
