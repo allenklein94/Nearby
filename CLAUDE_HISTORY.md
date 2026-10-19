@@ -1,3 +1,16 @@
+# Categories discoverable, not mandatory (owner idea "296", 2026-10-19; NOT item 296): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no intermediate levels (Ball Sports / Racquet Sports) to add; nothing built; CLAUDE.md not changed
+
+Checked in code 2026-10-19. Search bypasses the structure: a typed ask ("pickleball tonight") goes through the one resolver; Pickleball
+is its own tag (`gatheringCategories.js`, Sports & Fitness) and `categorySynonyms.js` maps "pickle ball", "pickleball court", "paddle"
+to it (a canonical name maps only to itself: "padel" never becomes Pickleball). The example path cannot exist: the taxonomy is flat,
+group -> tag (-> declared cuisine for food), never a deep tree (LOCKED), so browsing is at most two taps (Sports & Fitness chip ->
+Pickleball). Nobody is ever required to pick a category to find something; Create/AskBusiness infer it from the words (items 82/84,
+"infer first"), Category is asked only when missing. The five uses already exist: browsing (Discover rail + More, item 34/91);
+filtering (Discover category filter, in place, item 45); business onboarding (one primary + up to 5 secondary, DB trigger; customer-only
+tags never declared, item 185); recommendation (declared interests, ranking ladder's interest tier, typed-ask category match); analytics
+(item 128 demand by the business's own categories, floor of 5; never-learned categories never stored or counted). Pickleball phrase
+resolution read in code, not run live here.
+
 # Activities: backend complexity, frontend simplicity (owner idea "295", 2026-10-19; NOT item 295): CLOSED (owner, 2026-10-19): MET AS BUILT; new Games and Hobbies groups DECLINED; V1 taxonomy freeze preserved; phone check (findability under More) OPEN; nothing built
 
 Checked in code 2026-10-19. Same pattern as idea "294": people type the activity ("tennis tomorrow", "board games tonight") and the one
