@@ -1,3 +1,14 @@
+# "Taxonomy lives underneath the experience" (owner idea "297", 2026-10-19; NOT item 297): MET AS BUILT, ASSESSED, recommended close, owner decision pending; a separate new product rule NOT added (would duplicate existing locked rules); nothing built; CLAUDE.md not changed
+
+Checked 2026-10-19. Already the combined locked rules: the one resolver + synonyms read the person's words, so nobody navigates
+categories (ideas "294"/"296"); Discover's rail is short with the long tail under More, its file stating "the UI must not read as a
+directory" (`discoverCategoryRail.js`, item 34/91, idea "295"); Create/AskBusiness infer the category, asking only when missing (items
+82/84, "infer first"); flat axes, never a deep tree (taxonomy convention); doctrine: not Yelp, never a directory (product doctrine, "One
+concept"). "Thousands of business types": supported the existing way, not by thousands of categories: V1 frozen except the taxonomy-miss
+process (synonym, attribute combination or existing mapping first; a new category only when truly needed, never because a business asked,
+never mined from raw search text), new leaf tags one row through the canonical path; business onboarding = one primary + up to 5 secondary
+picked once. Growth beyond V1 = its own owner decision with evidence. Known V1 gaps kept by decision: Pizza / Burgers / Steakhouse (item 77).
+
 # Categories discoverable, not mandatory (owner idea "296", 2026-10-19; NOT item 296): CLOSED (owner, 2026-10-19): MET AS DESIGNED; no taxonomy restructuring; phrase check ADDED (Jest, words-only path PASSES); live search-flow verification PENDING
 
 Checked in code 2026-10-19. Search bypasses the structure: a typed ask ("pickleball tonight") goes through the one resolver; Pickleball
