@@ -1,4 +1,4 @@
-# "Navigate the intention, not the architecture" (owner idea "300", 2026-10-19; NOT item 300): MET AS DESIGNED (it is the existing north star), ASSESSED, recommended close, owner decision pending; the example ask probed in code (words only); nothing built; CLAUDE.md not changed; NOT VERIFIED end to end (device + live market + AI)
+# "Navigate the intention, not the architecture" (owner idea "300", 2026-10-19; NOT item 300): CLOSED (owner, 2026-10-19): MET AS DESIGNED; no new features or code changes; the example ask probed in code (words only); "day_out" label checked (expected, item 64); NOT VERIFIED end to end (device + live market + AI)
 
 Checked 2026-10-19. Already the north star: "One concept: What do you want to do nearby?", "The system brings the next thing; the person
 never jumps through it", idea "171"'s chain (ask -> response -> join -> reply -> accept -> booking -> arrive -> redeem -> complete),
@@ -16,6 +16,15 @@ business has a good offer"; no offer feed (no deals feed doctrine).
 Not verified: the AI classifier path (no Anthropic credit), the whole flow on a phone (first-session checklist C18 covers search -> Create
 and search -> AskBusiness -> booked plan), real offers (no seeded businesses: live-market blocker). Next step stays idea "252"'s: the
 first real-device session, not more features.
+Owner decision (2026-10-19; the reply said "Idea 252", meaning this idea; 252 itself was already closed): close as met as designed,
+verification pending the first real-phone session; check the unexplained internal label separately, never change behaviour on it alone.
+Label checked the same day (code reading, not run through the full search): the probe's `combination: "day_out"` is item 64's plan
+combination, recognised by the existing context rule "friends + a planning window (tonight) = day out" (`recognizeCombination` ->
+`experienceContextKey` -> recipe `friends_out`). It is expected. Its only effects: (a) it is written to the typed-ask audit's
+interpretation (internal); (b) `assembleExperience` may add a suggested "✨ Make it a day out" grouping, but only when the results already
+cover 2+ of its parts (Something to Do / Food / Drinks); Coffee is in none of those lists, so for this ask it should add nothing. It never
+filters or reorders the results and never invents a time. Not run end to end: confirm on the phone (C18) that a coffee-with-friends ask
+shows no "day out" grouping. Remaining: AI path (credit), C18 on a phone, real offers (seeded businesses).
 
 # "Sophisticated underneath, simple on the surface" (owner idea "299", 2026-10-19; NOT item 299): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new doctrine line (already stated); nothing built; CLAUDE.md not changed
 
