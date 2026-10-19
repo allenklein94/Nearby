@@ -1,4 +1,4 @@
-# "Taxonomy lives underneath the experience" (owner idea "297", 2026-10-19; NOT item 297): MET AS BUILT, ASSESSED, recommended close, owner decision pending; a separate new product rule NOT added (would duplicate existing locked rules); nothing built; CLAUDE.md not changed
+# "Taxonomy lives underneath the experience" (owner idea "297", 2026-10-19; NOT item 297): CLOSED (owner, 2026-10-19): MET AS BUILT; no duplicate doctrine; no taxonomy expansion; nothing built
 
 Checked 2026-10-19. Already the combined locked rules: the one resolver + synonyms read the person's words, so nobody navigates
 categories (ideas "294"/"296"); Discover's rail is short with the long tail under More, its file stating "the UI must not read as a
@@ -8,6 +8,9 @@ concept"). "Thousands of business types": supported the existing way, not by tho
 process (synonym, attribute combination or existing mapping first; a new category only when truly needed, never because a business asked,
 never mined from raw search text), new leaf tags one row through the canonical path; business onboarding = one primary + up to 5 secondary
 picked once. Growth beyond V1 = its own owner decision with evidence. Known V1 gaps kept by decision: Pizza / Burgers / Steakhouse (item 77).
+Owner decision (2026-10-19): the existing rules stay the single source; no other category or directory rule. More business types do
+not automatically need more categories: vocabulary + combinations of existing features come first. Idea "296"'s AI-over-words risk and
+its AI-on test stay SEPARATE (a possible behaviour defect, not a category-structure question).
 
 # Categories discoverable, not mandatory (owner idea "296", 2026-10-19; NOT item 296): CLOSED (owner, 2026-10-19): MET AS DESIGNED; no taxonomy restructuring; phrase check ADDED (Jest, words-only path PASSES); live search-flow verification PENDING
 

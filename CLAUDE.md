@@ -251,6 +251,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Categories discoverable, not mandatory (owner idea "296", 2026-10-19; NOT item 296) MET AS DESIGNED, CLOSED, LOCKED, no taxonomy restructuring:** words bypass categories (flat, max two taps to browse; Create/Ask infer it). Phrase-mapping unit test VERIFIED (`askResolver.test.js` "idea 296": 4 Pickleball phrases + "padel" stays Padel, AI off). PENDING: (1) full search flow end to end, (2) AI-assisted resolution once credit exists (an AI tag overrides the words' tag in `resolveAsk`: risk documented, behaviour unchanged; test padel -> Pickleball + the 4 phrases), (3) real-phone results + Discover. If (2) fails, APPROVED narrow fix: only an exact category name ("pickleball", "padel") or an explicitly approved unambiguous phrase ("pickleball court", "pickle ball") beats a conflicting AI guess; ambiguous words ("paddle") never override (a synonym mapping alone never makes a phrase protected; "paddle tonight" = deliberate ambiguity case in the AI-on test); dating exception kept; no ranking/taxonomy/other intent change.
 
+**"Taxonomy lives underneath the experience" (owner idea "297", 2026-10-19; NOT item 297) MET AS BUILT, CLOSED, LOCKED, nothing built:** existing rules are the one source (ideas "294"-"296", taxonomy conventions, not-a-directory doctrine); no duplicate rule, no taxonomy expansion; more business types = vocabulary + existing features first, never automatically more categories. Idea "296"'s AI-on test stays separate.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
