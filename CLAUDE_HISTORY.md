@@ -1,3 +1,17 @@
+# Activities: backend complexity, frontend simplicity (owner idea "295", 2026-10-19; NOT item 295): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new consumer "Activities" grouping, no group moves, no Games / Hobbies groups; nothing built; CLAUDE.md not changed
+
+Checked in code 2026-10-19. Same pattern as idea "294": people type the activity ("tennis tomorrow", "board games tonight") and the one
+resolver + `categorySynonyms.js` map it; Discover's browse rail is the short consumer structure (`DISCOVER_RAIL_PRIMARY`, item 34/91:
+Food & Drink, Activities, Sports & Fitness, Entertainment, Outdoors, Shopping, Wellness, Family; every other group under "More", in place).
+The example list against the live V1 groups (`gatheringCategories.js`, flat, one group per tag, item 168 LOCKED):
+Sports + Fitness = the ONE Sports & Fitness group (item 168 split, D5: one rail chip, not two); Outdoor = Outdoors & Nature (rail
+"Outdoors"); Arts = Arts, Culture & Events (under More); Entertainment = Entertainment & Nightlife (rail); Wellness = Wellness & Beauty
+(rail); Classes = Education & Classes (under More) + gathering `format` class/workshop (item 66); Games = NOT a group: Gaming, Trivia,
+Board Games, D&D, Arcade, Escape Rooms, Mini Golf are tags in Entertainment & Nightlife; Hobbies = NOT a group: hobbies are interests
+(declared interest / related hobby via `interestMatch`), not a business category. Adding Games or Hobbies groups, or re-grouping tags
+under "Activities", would MOVE tags (one group per tag changes routing for group-only businesses; V1 spec "placement" question, default
+leave in place) and break the V1 freeze. Rail order/labels unchanged; whether More hides anything people look for = device evidence only.
+
 # "Nearby handles the taxonomy" (owner idea "294", 2026-10-19; NOT item 294): CLOSED (owner, 2026-10-19): MET AS BUILT; deep hierarchy DECLINED; specialty gap ACCEPTED for V1; localization + device validation OPEN; nothing built
 
 Checked 2026-10-19. The person just types: "coffee tonight" resolves through the one resolver (`resolveAsk` / `classifyCreateRequest`,
