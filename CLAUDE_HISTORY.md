@@ -1,3 +1,18 @@
+# No recommendation without supporting signals (owner idea "290", 2026-10-19; NOT item 290): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule (already "No invented numbers, signals or states" + "A Home claim needs a visible, substantiated trigger" + "Weather reranks silently and speaks only when it materially changes the picks"); nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (checks C11 + item 36's weather checklist)
+
+Checked in code 2026-10-19. Every statement that could be "manufactured" returns null unless its own real conditions hold:
+- Home weather card (`constants/weatherRelevance.js` `homeWeatherCard`, one rule): null without a forecast, while a typed ask/Surprise
+  result is on screen, or unless a REAL upcoming classified gathering's own start time falls in a materially relevant window
+  (`gatheringWeatherWindow`: storm/snow/rain >= 60%/> 95F/< 45F = indoor; good weather only when `exceptional` (comfortable + clearly
+  dry), and then at most once per local day, item 62). Ordinary weather only nudges ranking silently.
+- Typed asks (`utils/askWeather.js`): weather judged only over the window the person's words anchor, by CONSENSUS (every hour covered and
+  agreeing); a gap/disagreement/no date word = neutral = says nothing; today's weather never used for another day.
+- "Tonight looks great" (`utils/meetTonight.js`, item 109 / idea "289"): all three triggers or nothing.
+- Best Pick (fit-score threshold, item 112), strong match (all pieces really met, item 37), card reasons (only real ones, max 2),
+  Home sections omitted when empty (`homeQuiet.js`, item 79).
+"Weather inconsistency": no open weather defect is recorded; if a phone shows a weather line that its forecast doesn't support, fix
+it in `weatherRelevance.js` / `weatherWindow.js` (the one source), never per screen.
+
 # "Tonight looks great" explains itself (owner idea "289", 2026-10-19; NOT item 289): MET AS BUILT by item 109 (= item 34 + items 76/78/137); the three proposed ticks DECLINED (item 109 LOCKED); CLOSED (owner, 2026-10-19): MET AS BUILT, checklist declined; nothing built; CLAUDE.md not changed; MET, VERIFICATION PENDING (C11)
 
 Owner (2026-10-19): close as met. Keep the grey line with the real count and "Meet People" opening People mode directly (counted
