@@ -1,4 +1,4 @@
-# No recommendation without supporting signals (owner idea "290", 2026-10-19; NOT item 290): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule (already "No invented numbers, signals or states" + "A Home claim needs a visible, substantiated trigger" + "Weather reranks silently and speaks only when it materially changes the picks"); nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (checks C11 + item 36's weather checklist)
+# No recommendation without supporting signals (owner idea "290", 2026-10-19; NOT item 290): CLOSED (owner, 2026-10-19): MET AS SPECIFIED; no new rule (already "No invented numbers, signals or states" + "A Home claim needs a visible, substantiated trigger" + "Weather reranks silently and speaks only when it materially changes the picks"); nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (checks C11 + item 36's weather checklist)
 
 Checked in code 2026-10-19. Every statement that could be "manufactured" returns null unless its own real conditions hold:
 - Home weather card (`constants/weatherRelevance.js` `homeWeatherCard`, one rule): null without a forecast, while a typed ask/Surprise
@@ -10,6 +10,9 @@ Checked in code 2026-10-19. Every statement that could be "manufactured" returns
 - "Tonight looks great" (`utils/meetTonight.js`, item 109 / idea "289"): all three triggers or nothing.
 - Best Pick (fit-score threshold, item 112), strong match (all pieces really met, item 37), card reasons (only real ones, max 2),
   Home sections omitted when empty (`homeQuiet.js`, item 79).
+Owner (2026-10-19): close as met as specified, no code changes; phone validation pending C11 + item 36's weather checklist. The rules
+are not verified on a phone; a real weather inconsistency = investigate that case and fix the shared rule, never a screen-specific
+exception. Idea "288" stays a separate decision (not closed by this one).
 "Weather inconsistency": no open weather defect is recorded; if a phone shows a weather line that its forecast doesn't support, fix
 it in `weatherRelevance.js` / `weatherWindow.js` (the one source), never per screen.
 
