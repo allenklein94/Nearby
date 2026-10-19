@@ -1,4 +1,4 @@
-# "Nearby handles the taxonomy" (owner idea "294", 2026-10-19; NOT item 294): MET AS BUILT, ASSESSED, recommended close, owner decision pending; "deep backend" wording NOT adopted (locked: flat axes, never a deep tree); nothing built; CLAUDE.md not changed
+# "Nearby handles the taxonomy" (owner idea "294", 2026-10-19; NOT item 294): CLOSED (owner, 2026-10-19): MET AS BUILT; deep hierarchy DECLINED; specialty gap ACCEPTED for V1; localization + device validation OPEN; nothing built
 
 Checked 2026-10-19. The person just types: "coffee tonight" resolves through the one resolver (`resolveAsk` / `classifyCreateRequest`,
 deterministic fallback when AI is down): Coffee from `constants/categorySynonyms.js` (cafe, café, coffee shop, espresso, latte, ...),
@@ -9,6 +9,9 @@ level) and is covered by declared cuisines + Fast Casual / Fine Dining. Backend 
 cuisine, attributes/format/etc. as separate facts, synonyms map phrases to tags (taxonomy convention, LOCKED); taxonomy frozen for V1
 except the taxonomy-miss process. Known gap kept by decision: Pizza / Burgers / Steakhouse have no structure (item 77 specialty axis
 declined for V1). Native review of item 168's labels + device check still open (item 168 line).
+Owner decision (2026-10-19): close as met; no deep category tree. Flat taxonomy kept (one group per category, cuisine a separate fact);
+Restaurants stays not a category (item 169); Pizza / Burgers / Steakhouse stay a known V1 limitation (item 77): never quietly add
+categories to solve it. The structure is settled; its quality checks are not: item 168's native review (11 languages) + phone check stay open.
 
 # "Show the few things worth acting on" (owner idea "293", 2026-10-19; NOT item 293): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule; no Home redesign started; nothing built; CLAUDE.md not changed
 
