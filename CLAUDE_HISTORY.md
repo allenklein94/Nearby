@@ -1,3 +1,22 @@
+# "Navigate the intention, not the architecture" (owner idea "300", 2026-10-19; NOT item 300): MET AS DESIGNED (it is the existing north star), ASSESSED, recommended close, owner decision pending; the example ask probed in code (words only); nothing built; CLAUDE.md not changed; NOT VERIFIED end to end (device + live market + AI)
+
+Checked 2026-10-19. Already the north star: "One concept: What do you want to do nearby?", "The system brings the next thing; the person
+never jumps through it", idea "171"'s chain (ask -> response -> join -> reply -> accept -> booking -> arrive -> redeem -> complete),
+idea "173" (the request as the living intent object), master principle 1.
+Probe (Jest, AI off, `resolveAsk`, not committed): "I want to get coffee with two friends tonight, somewhere nearby, preferably outdoors,
+and if a business has a good offer I'm interested." -> Coffee (Food & Drink), friends, party 3 (two friends + you, item 87), tonight,
+outdoor as a PREFERENCE (`environmentRequired: false`: orders, never filters), "nearby" = the default radius; every fact from the words.
+What Nearby then does, as built: item 45's chips show what it understood; results ranked by the ladder (outdoor seating moves up); next
+actions on the same screen: "Create it" carrying coffee / tonight / 3 into Create (items 82/85) where the person invites the friends;
+"Ask nearby businesses" carrying the same facts into AskBusiness (item 84) -> "We asked N" -> replies as offers -> "I'll take this one" ->
+"You're booked" merging into Your Plan (items 158/25/12/32).
+Deliberate limits, kept (not gaps): Nearby never picks WHICH friends (item 92: no pairing; the person chooses in Who's invited);
+businesses are asked only when the person taps (secondary link, Nearby useful without a business), never automatically from "if a
+business has a good offer"; no offer feed (no deals feed doctrine).
+Not verified: the AI classifier path (no Anthropic credit), the whole flow on a phone (first-session checklist C18 covers search -> Create
+and search -> AskBusiness -> booked plan), real offers (no seeded businesses: live-market blocker). Next step stays idea "252"'s: the
+first real-device session, not more features.
+
 # "Sophisticated underneath, simple on the surface" (owner idea "299", 2026-10-19; NOT item 299): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new doctrine line (already stated); nothing built; CLAUDE.md not changed
 
 Checked 2026-10-19. Already stated in locked doctrine: "Businesses don't manage Nearby; Nearby manages the complexity" (four business
