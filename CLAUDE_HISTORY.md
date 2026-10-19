@@ -1,3 +1,15 @@
+# "Sophisticated underneath, simple on the surface" (owner idea "299", 2026-10-19; NOT item 299): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new doctrine line (already stated); nothing built; CLAUDE.md not changed
+
+Checked 2026-10-19. Already stated in locked doctrine: "Businesses don't manage Nearby; Nearby manages the complexity" (four business
+nouns, no CRM/pipeline words), "The consumer never feels a marketplace", "The system brings the next thing; the person never jumps
+through it", "Infer first; never re-ask", master principles 1-2 (journey over screen; one source per object). Per area, as built:
+screens = item 45 + Rule 14 (same job, same screen; ideas "221"-"249"); categories = flat taxonomy under the words (ideas "294"-"298");
+recommendations = 10-tier ladder underneath, max 2 reasons + one line on the card, Home max 3 (ideas "291"-"293"); animations = many
+documented rules, one signature, cards static, Reduce Motion settled (items 57/58/164, idea "207"); notifications = outbox/dedupe/tiers
+underneath, one push per request that opens the exact object (item 62, idea "242"); gatherings = one viewer relation, states not folders,
+one end/check-in rule; offers = `presentOffer` decides presentation, "I'll take this one" -> "You're booked"; businesses = qualified
+local demand behind four nouns. A further sentence would restate these; the existing lines stay the one source.
+
 # New business types map into the existing structure first (owner idea "298", 2026-10-19; NOT item 298): CLOSED (owner, 2026-10-19): MET AS BUILT; no new group added; main Browse row protected; new-group demand threshold DEFERRED until a real candidate + evidence exist; nothing built; CLAUDE.md not changed (owner: not required)
 
 Checked 2026-10-19. Already the locked taxonomy-miss process: a reported real miss -> test case -> smallest existing fix (synonym,
