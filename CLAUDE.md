@@ -243,6 +243,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Picked For You + Best Pick personal gate (owner idea "291" + item 112 reopened, 2026-10-19) is BUILT, NOT DEVICE-VERIFIED until** check C21 of the first-session checklist (new-account + sparse-data Home) is recorded on a real phone (no migration, no new strings; Jest 478/6535, journeys 559/559).
 
+**"Don't invent a Best Pick" (owner idea "292", 2026-10-19; NOT item 292) MET AS BUILT, CLOSED, LOCKED, nothing built:** item 112's gate (fit >= 5 + personal reason) = no Best Pick when nothing qualifies, no stand-in; "Explore what's happening tonight" card DECLINED (filler; already Home's doors: quick picks, Nearby Right Now heading, search box). Verification = C21.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 

@@ -1,4 +1,4 @@
-# "Don't invent a Best Pick" (owner idea "292", 2026-10-19; NOT item 292): threshold MET AS BUILT (item 112 + its 2026-10-19 reopening); the "Explore what's happening tonight" stand-in DECLINED as a card (already Home's existing doors); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (C21)
+# "Don't invent a Best Pick" (owner idea "292", 2026-10-19; NOT item 292): threshold MET AS BUILT (item 112 + its 2026-10-19 reopening); the "Explore what's happening tonight" stand-in DECLINED as a card (already Home's existing doors); CLOSED (owner, 2026-10-19): MET AS BUILT, additional card DECLINED, no code changes; NOT DEVICE-VERIFIED (C21)
 
 Checked in code 2026-10-19. Minimum threshold: `pickBestGathering` (`services/gatherings.js`) = fit score >= `BEST_PICK_MIN_SCORE` (5)
 AND a personal reason (declared interest, friends attending, friend hosting; built earlier today). Nothing qualifies = `bestPick` null =
@@ -8,6 +8,9 @@ the subtitle "What sounds good tonight?" + time-period quick picks opening Disco
 and Nearby Right Now's heading opening Discover's Happening Now view (item 27, `RIGHT_NOW_VIEW`), plus the search box. DECLINED: a
 stand-in card in Best Pick's slot (a filler row; Home may say nothing, `homeQuiet.js`, item 79, idea "237": no placeholders, empty
 sections hidden). Phone: C21 (a sparse account shows no Best Pick and Home still offers those doors).
+Owner decision (2026-10-19): close as met; decline the "Explore what's happening tonight" card. Another card would duplicate existing
+entry points and blur the line between a genuinely personal recommendation and a generic discovery link; a missing recommendation needs
+no substitute. C21 stays the validation check for sparse accounts (no unqualified Best Pick; the existing discovery doors remain).
 
 # Best Pick needs a personal reason too (item 112 reopened narrowly by the owner, 2026-10-19, with idea "291"): BUILT, NOT DEVICE-VERIFIED (check C21)
 
