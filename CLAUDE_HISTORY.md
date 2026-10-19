@@ -1,3 +1,14 @@
+# "Don't invent a Best Pick" (owner idea "292", 2026-10-19; NOT item 292): threshold MET AS BUILT (item 112 + its 2026-10-19 reopening); the "Explore what's happening tonight" stand-in DECLINED as a card (already Home's existing doors); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (C21)
+
+Checked in code 2026-10-19. Minimum threshold: `pickBestGathering` (`services/gatherings.js`) = fit score >= `BEST_PICK_MIN_SCORE` (5)
+AND a personal reason (declared interest, friends attending, friend hosting; built earlier today). Nothing qualifies = `bestPick` null =
+no hero at all (no fallback pick, no weaker substitute); Picked For You then shows only its own personal cards, or the section is
+absent (`attention.shown > 0`, `HomeScreen.js`). "Explore what's happening tonight" already exists as Home's doors, not as a card:
+the subtitle "What sounds good tonight?" + time-period quick picks opening Discover's matching time filter (idea "202", item 137b),
+and Nearby Right Now's heading opening Discover's Happening Now view (item 27, `RIGHT_NOW_VIEW`), plus the search box. DECLINED: a
+stand-in card in Best Pick's slot (a filler row; Home may say nothing, `homeQuiet.js`, item 79, idea "237": no placeholders, empty
+sections hidden). Phone: C21 (a sparse account shows no Best Pick and Home still offers those doors).
+
 # Best Pick needs a personal reason too (item 112 reopened narrowly by the owner, 2026-10-19, with idea "291"): BUILT, NOT DEVICE-VERIFIED (check C21)
 
 Owner (2026-10-19): a high score establishes fit, not personal relevance. Keep item 112's fit score >= 5 AND require a personal reason;
