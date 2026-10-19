@@ -1,4 +1,9 @@
-# "Tonight looks great" explains itself (owner idea "289", 2026-10-19; NOT item 289): MET AS BUILT by item 109 (= item 34 + items 76/78/137); the three proposed ticks DECLINED (item 109 LOCKED); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C11)
+# "Tonight looks great" explains itself (owner idea "289", 2026-10-19; NOT item 289): MET AS BUILT by item 109 (= item 34 + items 76/78/137); the three proposed ticks DECLINED (item 109 LOCKED); CLOSED (owner, 2026-10-19): MET AS BUILT, checklist declined; nothing built; CLAUDE.md not changed; MET, VERIFICATION PENDING (C11)
+
+Owner (2026-10-19): close as met. Keep the grey line with the real count and "Meet People" opening People mode directly (counted
+people first, honest empty state). Decline the weather, activity-tonight and recommendations-available ticks; items 37/38 (ticks reserved
+for a typed ask's strong match) and item 121 (no implied crowds or unmeasured activity) preserved. C11 stays open (line colour,
+readability, landing). No code changes.
 
 Same proposal as item 109 (2026-10-15, LOCKED). Checked in code 2026-10-19 (`utils/meetTonight.js`): the claim shows only when ALL three
 real triggers hold (evening 5-11 PM local; the person's own meet-people / make-friends goal; >= 3 real people from the SAME pool People
