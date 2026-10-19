@@ -1,3 +1,14 @@
+# "Show the few things worth acting on" (owner idea "293", 2026-10-19; NOT item 293): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule; no Home redesign started; nothing built; CLAUDE.md not changed
+
+Checked in code 2026-10-19. The philosophy is already Home's rule set: at most 3 per section (`MAX_HOME_ATTENTION` / `MAX_HOME_PLANS` /
+`MAX_HOME_RIGHT_NOW` in `utils/homeAttention.js`; Best Pick counts toward its section's 3); every Home claim needs a real, visible trigger
+and a CTA naming where it goes, and Home may say nothing (`homeQuiet.js`: no filler rows or zero stats, item 79); empty sections hidden,
+never placeholders (ideas "220"/"237"); Home = doors to the owning destination, never a feed or stats tiles (items 50/110, idea "238");
+Picked For You and Best Pick need a personal reason (idea "291", item 112 reopened, idea "292"); one object once per surface
+(`HOME_SECTION_PRIORITY`); one arrival animation per visit (idea "207"); no engagement nudges (item 53, idea "186"). There is no Home
+redesign in progress: idea "252" makes the first real-device session the next priority, with no fresh compression audit before device
+evidence. A separate "philosophy" rule would duplicate these. Phone: C12 (Home as doors) + C21 (sparse Home).
+
 # "Don't invent a Best Pick" (owner idea "292", 2026-10-19; NOT item 292): threshold MET AS BUILT (item 112 + its 2026-10-19 reopening); the "Explore what's happening tonight" stand-in DECLINED as a card (already Home's existing doors); CLOSED (owner, 2026-10-19): MET AS BUILT, additional card DECLINED, no code changes; NOT DEVICE-VERIFIED (C21)
 
 Checked in code 2026-10-19. Minimum threshold: `pickBestGathering` (`services/gatherings.js`) = fit score >= `BEST_PICK_MIN_SCORE` (5)
