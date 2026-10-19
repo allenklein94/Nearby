@@ -280,3 +280,27 @@ describe('broad interest group', () => {
     expect(without.length).toBe(0);
   });
 });
+
+// Owner idea "291" (2026-10-19): the pool marks which candidates have a reason about the person (Picked For You needs one).
+describe('personal flag (idea "291")', () => {
+  it('close by and happening today alone are not personal; the candidate stays in the pool', () => {
+    const [r] = buildHomeRecommendations({ gatherings: [gathering({ distanceMiles: 0.5 })] });
+    expect(r.reasons.length).toBeGreaterThan(0);
+    expect(r.personal).toBe(false);
+  });
+  it('a declared interest, a loved host or a social-comfort fit is personal', () => {
+    expect(buildHomeRecommendations({ gatherings: [gathering({ matchesYourInterests: true })] })[0].personal).toBe(true);
+    const loved = buildHomeRecommendations({ gatherings: [gathering({ host_id: 'h' })], feedback: fbk({ loved_host_ids: ['h'] }) });
+    expect(loved[0].personal).toBe(true);
+    const comfort = buildHomeRecommendations({ gatherings: [gathering({ group_size_feel: 1 })], socialComfortLevel: 'one_on_one' });
+    expect(comfort[0]?.personal).toBe(true);
+  });
+  it('a Not for me word never makes a candidate personal', () => {
+    const [r] = buildHomeRecommendations({ gatherings: [gathering({ host_id: 'h', distanceMiles: 0.5 })], feedback: fbk({ not_for_me_host_ids: ['h'] }) });
+    expect(r.personal).toBe(false);
+  });
+  it('an untargeted perk is not personal; a targeted one is', () => {
+    expect(buildHomeRecommendations({ offers: [offer()] })[0].personal).toBe(false);
+    expect(buildHomeRecommendations({ offers: [offer({ target_interest_tag: 'Coffee' })] })[0].personal).toBe(true);
+  });
+});

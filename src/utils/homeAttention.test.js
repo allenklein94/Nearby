@@ -5,7 +5,7 @@ const at = (mins) => new Date(now.getTime() + mins * 60000).toISOString();
 const card = (id, mins, signals = [{ kind: 'interest', text: 'Because you like Coffee' }], extra = {}) => ({
   gathering: { id, title: id, scheduled_at: at(mins) }, signals, reasons: signals.map((s) => s.text), hasFriend: false, trendingOnly: false, ...extra,
 });
-const rec = (id, mins) => ({ type: 'gathering', id, title: id, reasons: ['Because you like Coffee'], data: { id, title: id, scheduled_at: at(mins) } });
+const rec = (id, mins) => ({ type: 'gathering', id, title: id, reasons: ['Because you like Coffee'], personal: true, data: { id, title: id, scheduled_at: at(mins) } });
 
 describe('selectHomeAttention', () => {
   it('never shows more than the cap, lead included', () => {
@@ -40,19 +40,62 @@ describe('selectHomeAttention', () => {
   it('one object appears once across engines, keeping the merged card', () => {
     const out = selectHomeAttention({ hero: { id: 'h' }, cards: [card('a', 300)], recommended: [rec('a', 300), rec('h', 300), rec('b', 300)], soon: [{ id: 'a' }, { id: 'b' }, { id: 'c', scheduled_at: at(20) }], now, max: 5 });
     const ids = out.items.map((i) => i.gathering?.id ?? `perk-${i.item.id}`);
-    expect(ids.sort()).toEqual(['a', 'b', 'c']);
+    expect(ids.sort()).toEqual(['a', 'b']); // 'c' is only starting soon: Nearby Right Now's, not a personal pick (idea "291")
   });
-  it('a ranked-list gathering carries only its real reason; starting soon says so', () => {
+  it('a ranked-list gathering carries only its real reason; starting soon alone is not a pick', () => {
     const out = selectHomeAttention({ recommended: [rec('r', 900)], soon: [{ id: 's', scheduled_at: at(20) }], now });
-    expect(out.items.find((i) => i.gathering.id === 's').reasons).toEqual(['Starting soon']);
+    expect(out.items.find((i) => i.gathering.id === 's')).toBeUndefined();
     expect(out.items.find((i) => i.gathering.id === 'r').reasons).toEqual(['Because you like Coffee']);
   });
   it('perks are kept as their own kind and rank behind time-sensitive gatherings', () => {
-    const out = selectHomeAttention({ cards: [card('soon', 30)], recommended: [{ type: 'perk', id: 'p', title: 'Free coffee', reasons: [], data: {} }], now });
+    const out = selectHomeAttention({ cards: [card('soon', 30)], recommended: [{ type: 'perk', id: 'p', title: 'Free coffee', reasons: [], personal: true, data: {} }], now });
     expect(out.items.map((i) => i.kind)).toEqual(['gathering', 'perk']);
   });
   it('nothing in, nothing shown (no invented content)', () => {
     expect(selectHomeAttention({ now })).toMatchObject({ items: [], shown: 0, total: 0 });
+  });
+});
+
+describe('Picked For You needs a personal reason (owner idea "291")', () => {
+  const near = (id) => ({ type: 'gathering', id, title: id, reasons: ['Close by', 'Happening today'], personal: false, data: { id, title: id, scheduled_at: at(300) } });
+  it('close by / happening today alone never qualify, from any engine', () => {
+    const out = selectHomeAttention({ recommended: [near('n')], soon: [{ id: 's', scheduled_at: at(20) }], now });
+    expect(out.items).toEqual([]);
+    expect(out.shown).toBe(0);
+  });
+  it('trending, weather or a friend\'s own interest alone never qualify', () => {
+    const cards = [
+      card('t', 300, [{ kind: 'trending', text: '7 attending' }]),
+      card('w', 300, [{ kind: 'weather', text: 'w' }]),
+      card('fi', 300, [{ kind: 'friendInterest', text: 'Sam is into Coffee' }]),
+    ];
+    expect(selectHomeAttention({ cards, now }).items).toEqual([]);
+  });
+  it('a declared interest, a friend hosting or going, qualify', () => {
+    const cards = [
+      card('i', 300),
+      card('h', 300, [{ kind: 'friend', text: 'Sam is hosting' }]),
+      card('g', 300, [{ kind: 'going', text: 'Sam is going' }, { kind: 'trending', text: '7 attending' }]),
+    ];
+    expect(selectHomeAttention({ cards, now }).items.map((i) => i.gathering.id).sort()).toEqual(['g', 'h', 'i']);
+  });
+  it('a personal reason the pool found (group, comfort, loved) qualifies the same gathering from another engine', () => {
+    const cards = [card('t', 300, [{ kind: 'trending', text: '7 attending' }])];
+    const out = selectHomeAttention({ cards, recommended: [{ ...near('t'), personal: true }], now });
+    expect(out.items.map((i) => i.gathering.id)).toEqual(['t']);
+  });
+  it('a perk needs a personal reason too (targeted interest or loved business)', () => {
+    const perk = (id, personal) => ({ type: 'perk', id, title: id, reasons: ['At Cafe'], personal, data: {} });
+    expect(selectHomeAttention({ recommended: [perk('a', false), perk('b', true)], now }).items.map((i) => i.item.id)).toEqual(['b']);
+  });
+  it('a non-personal gathering still hands its reasons to a higher placement that shows it', () => {
+    const out = selectHomeAttention({ recommended: [near('n')], soon: [{ id: 's', scheduled_at: at(20) }], exclude: new Set(['n', 's']), now });
+    expect(out.absorbed.get('s')).toEqual(['Starting soon']);
+    expect(out.absorbed.has('n')).toBe(true);
+  });
+  it('the Best Pick lead keeps its own rule (item 112)', () => {
+    const out = selectHomeAttention({ hero: { id: 'h', reasons: ['Close by', 'Happening today'] }, now });
+    expect(out.hero?.id).toBe('h');
   });
 });
 

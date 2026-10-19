@@ -23,6 +23,17 @@ export const MAX_HOME_ATTENTION = 3;
 export const MAX_HOME_PLANS = 3;
 export const MAX_HOME_RIGHT_NOW = 3;
 
+// Owner idea "291" (2026-10-19): "Picked For You" is a personal promise, so every card in it (not the Best Pick lead, item
+// 112's own rule) needs at least one PERSONAL reason: a declared interest (or the person's own activity / a related hobby, all
+// read by interestMatch), a friend hosting or going, a loved "How was it?" word, or their social comfort. Being close by,
+// happening today, starting soon, trending, weather or a business alone never qualify; those gatherings stay in Nearby Right
+// Now and Discover. A friend's own interest ("Sam is into Coffee") is a reason on a card already earned, never the qualifier.
+export const PERSONAL_SIGNAL_KINDS = Object.freeze(['interest', 'friend', 'going']);
+const PERSONAL_TIERS = new Set([SIGNAL_TIERS.interest, SIGNAL_TIERS.planFriend]);
+function hasPersonalSignal(signals) {
+  return (signals ?? []).some((sig) => PERSONAL_SIGNAL_KINDS.includes(sig?.kind) || (!sig?.kind || sig.kind === 'bestPick' ? PERSONAL_TIERS.has(signalTier({ text: sig?.text })) : false));
+}
+
 function isUrgent(g, now) {
   return !!g?.scheduled_at && isWithinRightNowWindow(g.scheduled_at, now);
 }
@@ -62,12 +73,24 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
     else visibleCards.push(c);
   }
   cards = visibleCards;
+  // Personal reasons the candidate pool found (buildHomeRecommendations' `personal`: declared group, loved word, comfort) count
+  // for the same gathering when it arrives through another engine first.
+  const personalIds = new Set((recommended ?? []).filter((r) => r?.personal && r.type !== 'perk').map((r) => r.id));
+  const lovedIt = (g) => fbOf(g).direction > 0;
+  // `intentTags`: the interest categories of the active Ask-Nearby search (lower-cased), or null when none is active. A match is
+  // the person's own explicit current intent, so it is personal too.
+  const matchesIntent = (g) => !!intentTags && intentTags.size > 0 && typeof g?.interest_tag === 'string' && intentTags.has(g.interest_tag.toLowerCase());
+  const personalGathering = (g) => personalIds.has(g?.id) || lovedIt(g) || matchesIntent(g);
+  cards = cards.filter((c) => hasPersonalSignal(c.signals) || personalGathering(c.gathering));
   const seen = new Set([hero?.id, ...cards.map((c) => c.gathering?.id)].filter(Boolean));
   const candidates = cards.map((c, i) => ({ kind: 'gathering', ...c, order: i }));
   let order = cards.length;
   for (const item of recommended ?? []) {
     if (!item?.id) continue;
     if (item.type === 'perk') {
+      const offer = item.data;
+      const lovedPerk = feedbackFor({ partnerId: offer?.partner_id, category: offer?.target_interest_tag ?? offer?.brand_partners?.category ?? null }, feedback).direction > 0;
+      if (!item.personal && !lovedPerk) continue;
       candidates.push({ kind: 'perk', item, signals: [], order: order++ });
       continue;
     }
@@ -75,6 +98,7 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
     seen.add(item.id);
     const why = recommendationRow(item).why;
     if (isAbove(item.id)) { absorb(item.id, why ? [why] : []); continue; }
+    if (!item.personal && !personalGathering(item.data ?? item)) continue; // close by / today / weather alone: not a personal pick
     const signals = why ? [{ kind: 'recommended', text: why }] : [];
     candidates.push({ kind: 'gathering', gathering: item.data ?? { id: item.id, title: item.title }, signals, reasons: signals.map((s) => s.text), hasFriend: false, trendingOnly: false, order: order++ });
   }
@@ -82,11 +106,10 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
     if (!g?.id || seen.has(g.id)) continue;
     seen.add(g.id);
     if (isAbove(g.id)) { absorb(g.id, ['Starting soon']); continue; }
+    if (!personalGathering(g)) continue; // starting soon alone belongs to Nearby Right Now
     const signals = [{ kind: 'soon', text: 'Starting soon' }];
     candidates.push({ kind: 'gathering', gathering: g, signals, reasons: ['Starting soon'], hasFriend: false, trendingOnly: false, order: order++ });
   }
-  // `intentTags`: the interest categories of the active Ask-Nearby search (lower-cased), or null when none is active.
-  const matchesIntent = (g) => !!intentTags && intentTags.size > 0 && typeof g?.interest_tag === 'string' && intentTags.has(g.interest_tag.toLowerCase());
   const vectorOf = (c) => {
     if (c.kind === 'perk') {
       const offer = c.item?.data;

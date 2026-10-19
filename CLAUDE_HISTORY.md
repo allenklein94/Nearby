@@ -1,4 +1,24 @@
-# Explicit thresholds for recommendations (owner idea "291", 2026-10-19; NOT item 291): MET AS BUILT per surface (each has its own explicit, deterministic, tested gate); a single combined threshold across weather/time/availability/user/social DECLINED as written (would be a second, additive representation beside the lexicographic ladder); ONE OBSERVATION for the owner (Picked For You's gate); ASSESSED, owner decision pending; nothing built; CLAUDE.md not changed
+# Explicit thresholds for recommendations (owner idea "291", 2026-10-19; NOT item 291): MET AS BUILT per surface (each has its own explicit, deterministic, tested gate); a single combined threshold across weather/time/availability/user/social DECLINED (would be a second, additive representation beside the lexicographic ladder); CLOSED (owner, 2026-10-19): MET AS BUILT, combined threshold declined; Picked For You option (b) BUILT (needs a personal reason); NOT DEVICE-VERIFIED (check C21)
+
+Owner (2026-10-19): keep the individual cutoffs (different claims, different evidence; a weighted sum would let weak signals beat a
+strong one, against `constants/signalPriority.js`). Picked For You = option (b): "Picked For You" makes a personal promise; proximity and
+timing establish relevance, not personal fit. Trade-off accepted: new accounts may see fewer picks, provided Home stays useful.
+Scope: only the existing eligibility rule + its tests; no new scoring system or screen.
+BUILT 2026-10-19:
+- `services/homeRecommendations.js`: `scoreGathering` / `scoreOffer` return `personal` (declared interest, broad group, loved
+  feedback (direction > 0, never Not for me), social comfort; perks: targeted interest or loved business); each pool row carries it.
+  The pool itself is unchanged (the first-run card still reads its top two).
+- `utils/homeAttention.js` `selectHomeAttention`: a non-lead candidate needs a personal reason: signal kind interest / friend / going
+  (`PERSONAL_SIGNAL_KINDS`; text-only signals by interest/planFriend tier), or the same gathering personal in the pool, or a loved word,
+  or the active ask's category (`matchesIntent`); perks need `personal` or a loved business. Close by, today, starting soon, trending,
+  weather, business alone and a friend's own interest ("Sam is into Coffee") never qualify. Excluded gatherings still hand their
+  reasons to a higher placement that shows them (`absorbed`, checked before the gate). Ranking unchanged. Best Pick lead untouched
+  (item 112's fit score >= 5 stays; a lead of only "Close by" + "Happening today" can still reach 5: observation, not changed).
+- Tests: `homeAttention.test.js` (+7 gate cases, fixtures marked personal), `homeRecommendations.test.js` (+4 flag cases),
+  `signalPriority.test.js` + `experienceFeedback.test.js` fixtures marked personal (the ladder tests are unchanged in substance),
+  journey `notInterested` fixture gives each card its declared interest. Jest 478 suites / 6533 passed; journeys 48 / 559 passed.
+- Device: check C21 added to `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md` (brand-new + sparse account: no generic card
+  labelled as a pick; record what Home shows instead and whether it still feels useful).
 
 Checked in code 2026-10-19. Gates (below = not surfaced), all named constants or pure rules with Jest guards:
 - Best Pick: fit score >= `BEST_PICK_MIN_SCORE` (5) (`pickBestGathering`, `services/gatherings.js`), then `compareRanked`.

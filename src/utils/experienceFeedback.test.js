@@ -151,7 +151,7 @@ describe('Home Picked For You (selectHomeAttention)', () => {
   });
 
   it('a perk from a business the person called Not for me ranks below another perk', () => {
-    const perk = (id, partner) => ({ type: 'perk', id, title: id, reasons: ['At X'], data: { id, partner_id: partner } });
+    const perk = (id, partner) => ({ type: 'perk', id, title: id, reasons: ['At X'], personal: true, data: { id, partner_id: partner } });
     const out = selectHomeAttention({ recommended: [perk('p1', 'bad'), perk('p2', 'ok')], now, feedback: fb({ not_for_me_partner_ids: ['bad'] }) });
     expect(out.items.map((i) => i.item.id)).toEqual(['p2', 'p1']);
   });

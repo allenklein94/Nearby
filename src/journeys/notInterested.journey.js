@@ -194,7 +194,8 @@ d('journey: Not interested hides one gathering for one person and lowers its kin
     expect(feedbackDelta(coffee, 0)).toBe(-FEEDBACK_POINTS);
     expect(feedbackFor({ category: 'Hiking' }, f).direction).toBe(0);
     const g = (id, tag) => ({ id, title: id, interest_tag: tag, scheduled_at: new Date(Date.now() + 864e5).toISOString() });
-    const cards = [g('coffee-b', 'Coffee'), g('hike', 'Hiking')].map((x) => ({ gathering: x, signals: [], reasons: [] }));
+    // Idea "291": Picked For You cards carry a personal reason (here a declared interest in each).
+    const cards = [g('coffee-b', 'Coffee'), g('hike', 'Hiking')].map((x) => ({ gathering: x, signals: [{ kind: 'interest', text: `Because you like ${x.interest_tag}` }], reasons: [] }));
     const order = (feedback) => selectHomeAttention({ cards, feedback, maturity: 0 }).items.map((e) => e.gathering.id);
     expect(order(EMPTY_EXPERIENCE_FEEDBACK)).toEqual(['coffee-b', 'hike']);
     expect(order(f)).toEqual(['hike', 'coffee-b']);

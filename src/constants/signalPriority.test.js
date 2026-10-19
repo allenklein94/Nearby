@@ -61,14 +61,17 @@ describe('Home ranking follows the priority', () => {
       card('friend', [sig('going', 'Sam is going')]),
       card('intent', [sig('trending')], { interest_tag: 'Wine' }),
     ];
-    const recommended = [{ type: 'perk', id: 'p', title: 'Perk', reasons: [], data: {} }];
+    // Idea "291": Picked For You needs a personal reason; the pool's `personal` flag qualifies the time/weather/popular/discovery
+    // cards here without adding a signal, so the ladder itself is what is tested.
+    const qualified = ['discovery', 'weather', 'popular', 'timed'].map((id) => ({ type: 'gathering', id, title: id, reasons: [], personal: true, data: { id } }));
+    const recommended = [{ type: 'perk', id: 'p', title: 'Perk', reasons: [], personal: true, data: {} }, ...qualified];
     const ids = order(cards, { recommended, intentTags: new Set(['wine']), max: 10 });
     expect(ids).toEqual(['intent', 'friend', 'timed', 'interest', 'perk-p', 'weather', 'popular', 'discovery']);
   });
   it('many weak signals cannot add up to beat one strong one', () => {
     const many = card('many', [sig('trending'), sig('recommended', 'Close by'), sig('recommended', 'Great weather for this'), sig('recommended', '5 people attending')]);
     const one = card('one', [sig('going', 'Sam is going')]);
-    expect(order([many, one])).toEqual(['one', 'many']);
+    expect(order([many, one], { recommended: [{ type: 'gathering', id: 'many', title: 'many', reasons: [], personal: true, data: { id: 'many' } }] })).toEqual(['one', 'many']);
   });
   it('within a tier, more real reasons then the engines order break ties', () => {
     const a = card('a', [sig('interest')]);

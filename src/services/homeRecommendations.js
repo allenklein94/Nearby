@@ -96,18 +96,24 @@ function socialComfortBonus(groupSizeFeel, socialComfortLevel) {
     : null;
 }
 
+// Owner idea "291" (2026-10-19): `personal` = a reason about the person themselves (a declared interest or group, a loved
+// "How was it?" word, their social comfort). Picked For You (utils/homeAttention.js) needs one; "Close by", "Happening today"
+// and weather alone are facts about the thing, so they never make a pick personal. The pool itself is unchanged.
 function scoreGathering(gathering, weather, feedback, socialComfortLevel, maturity, interestGroups = []) {
   let score = 0;
+  let personal = false;
   const reasons = [];
 
   if (gathering.matchesYourInterests) {
     // EXPLICIT: profiles.interests is a direct self-report -- always full
     // weight, weightSignal() never dampens this class.
     score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.EXPLICIT, maturity);
+    personal = true;
     if (gathering.interest_tag) reasons.push(becauseYouLikeReason(gathering.interest_tag));
   } else if (interestGroups.length > 0 && interestGroups.includes(groupKeyForTag(gathering.interest_tag))) {
     // EXPLICIT but broad: a group picked without specific tags -- a weaker match than a declared tag, never a stand-in for one.
     score += weightSignal(BROAD_GROUP_POINTS, SIGNAL_SOURCES.EXPLICIT, maturity);
+    personal = true;
     reasons.push(reasonText('inCategoryYouLike'));
   }
   if (gathering.distanceMiles !== null && gathering.distanceMiles !== undefined && gathering.distanceMiles < 2) {
@@ -138,6 +144,7 @@ function scoreGathering(gathering, weather, feedback, socialComfortLevel, maturi
   const fb = feedbackFor({ hostId: gathering.host_id, partnerId: gathering.hosting_partner_id, category: gathering.interest_tag }, feedback);
   if (fb.direction !== 0) {
     score += feedbackDelta(fb, maturity, fb.scope === 'kind' ? SCORE_INTEREST_MATCH : SCORE_OWN_NETWORK);
+    if (fb.direction > 0) personal = true;
     if (fb.reason) reasons.push(fb.reason);
   }
   const comfortBonus = socialComfortBonus(gathering.group_size_feel, socialComfortLevel);
@@ -145,14 +152,16 @@ function scoreGathering(gathering, weather, feedback, socialComfortLevel, maturi
     // EXPLICIT: social_comfort_level is a direct onboarding self-report --
     // always full weight.
     score += weightSignal(comfortBonus.points, SIGNAL_SOURCES.EXPLICIT, maturity);
+    personal = true;
     reasons.push(comfortBonus.reason);
   }
 
-  return { score, reasons };
+  return { score, reasons, personal };
 }
 
 function scoreOffer(offer, feedback, maturity, weather = null) {
   let score = 0;
+  let personal = false;
   const reasons = [];
 
   // getActiveOffers() already only ever returns an untargeted offer, or a
@@ -163,6 +172,7 @@ function scoreOffer(offer, feedback, maturity, weather = null) {
   // interests -- always full weight.
   if (offer.target_interest_tag) {
     score += weightSignal(SCORE_INTEREST_MATCH, SIGNAL_SOURCES.EXPLICIT, maturity);
+    personal = true;
     reasons.push(becauseYouLikeReason(offer.target_interest_tag));
   }
   if (offer.brand_partners?.name) {
@@ -172,6 +182,7 @@ function scoreOffer(offer, feedback, maturity, weather = null) {
   const fb = feedbackFor({ partnerId: offer.partner_id, category: offer.target_interest_tag ?? offer.brand_partners?.category ?? null }, feedback);
   if (fb.direction !== 0) {
     score += feedbackDelta(fb, maturity, fb.scope === 'kind' ? SCORE_INTEREST_MATCH : SCORE_OWN_NETWORK);
+    if (fb.direction > 0) personal = true;
     if (fb.reason) reasons.push(fb.reason);
   }
 
@@ -180,7 +191,7 @@ function scoreOffer(offer, feedback, maturity, weather = null) {
   const weatherPoints = businessWeatherAdjustment(offer.brand_partners?.weather_setting, weather, SCORE_HAPPENING_NOW);
   if (weatherPoints !== 0) score += weightSignal(weatherPoints, SIGNAL_SOURCES.CONTEXTUAL, maturity);
 
-  return { score, reasons };
+  return { score, reasons, personal };
 }
 
 // context: { gatherings=[], offers=[], weather=null, excludeIds=Set(),
@@ -211,16 +222,16 @@ export function buildHomeRecommendations({
 
   for (const gathering of gatherings) {
     if (excludeIds.has(gathering.id)) continue;
-    const { score, reasons } = scoreGathering(gathering, weather, feedback, socialComfortLevel, maturity, interestGroups);
+    const { score, reasons, personal } = scoreGathering(gathering, weather, feedback, socialComfortLevel, maturity, interestGroups);
     if (reasons.length === 0) continue;
-    candidates.push({ type: 'gathering', id: gathering.id, title: gathering.title, reasons, score, data: gathering });
+    candidates.push({ type: 'gathering', id: gathering.id, title: gathering.title, reasons, score, personal, data: gathering });
   }
 
   for (const offer of offers) {
     if (excludeIds.has(offer.id)) continue;
-    const { score, reasons } = scoreOffer(offer, feedback, maturity, weather);
+    const { score, reasons, personal } = scoreOffer(offer, feedback, maturity, weather);
     if (reasons.length === 0) continue;
-    candidates.push({ type: 'perk', id: offer.id, title: offer.title, reasons, score, data: offer });
+    candidates.push({ type: 'perk', id: offer.id, title: offer.title, reasons, score, personal, data: offer });
   }
 
   return candidates.sort((a, b) => b.score - a.score).slice(0, MAX_HOME_RECOMMENDATIONS);
