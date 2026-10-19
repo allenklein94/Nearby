@@ -1,3 +1,16 @@
+# "Tonight looks great" explains itself (owner idea "289", 2026-10-19; NOT item 289): MET AS BUILT by item 109 (= item 34 + items 76/78/137); the three proposed ticks DECLINED (item 109 LOCKED); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED (check C11)
+
+Same proposal as item 109 (2026-10-15, LOCKED). Checked in code 2026-10-19 (`utils/meetTonight.js`): the claim shows only when ALL three
+real triggers hold (evening 5-11 PM local; the person's own meet-people / make-friends goal; >= 3 real people from the SAME pool People
+mode opens on: Dating = explicitly opted in + seen in the last 24 h, Friends = 'Nearby' bucket). The grey line under it already says
+why, with the real count: "You're here to meet people, and {count} were near you in the last day." / "You're here to make friends, and
+{count} people within a few miles could be new friends." "Meet People" opens People mode directly (Dating/Friends per goals), the tonight
+banner + the counted people first, an honest zero state. Proposed ticks: "Great weather" DECLINED (weather doesn't change whether meeting
+someone is plausible; item 36 keeps weather on the Home weather card only); "Lots of People activity tonight" DECLINED (unmeasured; the
+real count is more informative; item 121: never implied people density); "You have People recommendations available" = already the
+count in the line. A ✓ checklist would also borrow item 37's strong-match ticks, reserved for a typed ask's top pick (item 38). Device:
+C11 (claim not red, reason line visible, Meet People lands in People with the banner).
+
 # "Why this?" as the escape valve (owner idea "288", 2026-10-18; NOT item 288): MET AS BUILT per surface (reasons shown where the decision is); a universal "Why am I seeing this?" control/sheet DECLINED (item 106 + idea "226", LOCKED); ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed; NOT DEVICE-VERIFIED
 
 Each listed decision already shows its real reasoning in place (item 104 "Who is this for?", `recommendationContext.js`):
