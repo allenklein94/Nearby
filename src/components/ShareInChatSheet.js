@@ -11,7 +11,9 @@ import { getMyOneToOneChats, shareGatheringInChat } from '../services/chatShare'
 // "Share in a chat" (owner decision 2026-10-20, idea "244" follow-up): one question, which chat. Each row's Send is the
 // person's explicit send of a compact card into that one-to-one chat; nothing is sent until they tap it. Rows stay
 // "✓ Sent" while the sheet is open. Same shape as InviteFriendsModal (idea "225": one quick action, no mini-app).
-export default function ShareInChatSheet({ visible, onClose, gatheringId, gatheringTitle }) {
+// `restricted` (not public, or women-only): one fixed note that only people who can already see it can open it. It is
+// about the gathering, never about a recipient: nothing here checks or reveals who can see it.
+export default function ShareInChatSheet({ visible, onClose, gatheringId, gatheringTitle, restricted = false }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -58,6 +60,7 @@ export default function ShareInChatSheet({ visible, onClose, gatheringId, gather
         <View style={styles.sheet}>
           <Text style={styles.title}>{t('ui.shareInChat.title')}</Text>
           <Text style={styles.subtitle}>{t('ui.shareInChat.subtitle', { title: gatheringTitle })}</Text>
+          {restricted ? <Text style={styles.note}>{t('ui.shareInChat.restrictedNote')}</Text> : null}
 
           {loading ? (
             <NLoader fullScreen={false} size="compact" caption={t('ui.shareInChat.loading')} />
@@ -109,6 +112,7 @@ const getStyles = (colors) => StyleSheet.create({
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   title: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   subtitle: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg },
+  note: { ...typography.caption, color: colors.textSecondary, marginTop: -spacing.sm, marginBottom: spacing.lg },
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.sm },
   name: { flex: 1, color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   sendButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: 8, minWidth: 70, alignItems: 'center' },

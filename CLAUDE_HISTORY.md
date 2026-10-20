@@ -1,3 +1,17 @@
+# Share in a chat follow-up (2026-10-20): sender note + from-scratch replay
+
+- Sender note (owner-pasted recommendation: warn the sender without revealing the recipient's access): the sheet shows one
+  fixed line when the gathering is not public or is women-only (`restricted` = visibility != 'everyone' || women_only, from
+  GatheringDetail): "This gathering isn't public: only people who can already see it will be able to open it." It is about
+  the gathering only; no per-recipient check exists, so nothing about any recipient's access is computed or shown. New key
+  `ui.shareInChat.restrictedNote` (11 languages; 10 machine-authored, need native review); guard test 6 in
+  `components/shareInChat.test.js`. Business web export regenerated.
+- From-scratch replay (`scripts/replay/from-scratch-replay.sh`, isolated network): 455/455 migrations incl. 20270331;
+  journeys 574/574 on the rebuilt DB (pg client installed in the session scratchpad via NEARBY_PG_MODULE, not the project);
+  share_gathering_in_chat grants (anon no, authenticated yes), guard not client-executable, trigger present, no gathering FK:
+  identical to prod. Container removed. Concurrency scripts not re-run.
+- Jest 480 suites / 6589. Still open: phone check C22, native review of the 19 strings, the signed-in API test run.
+
 # Deferred-list follow-up (2026-10-20): share a gathering in a chat built; Google row dropped; evidence gates checked
 
 - Evidence gates checked read-only on production: 8 accounts, 4 profiles; `intent_submissions` 0 rows ever (item 128 trigger:

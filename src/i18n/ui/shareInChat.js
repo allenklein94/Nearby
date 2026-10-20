@@ -20,6 +20,7 @@ export default {
     cardA11yNoWhen: "{sender} shared {title}. Opens the gathering.",
     unavailable: "This gathering isn't available",
     unavailableA11y: "{sender} shared a gathering that isn't available",
+    restrictedNote: "This gathering isn't public: only people who can already see it will be able to open it.",
   },
   es: {
     link: "💬 Compartir en un chat",
@@ -40,6 +41,7 @@ export default {
     cardA11yNoWhen: "{sender} compartió {title}. Abre el encuentro.",
     unavailable: "Este encuentro no está disponible",
     unavailableA11y: "{sender} compartió un encuentro que no está disponible",
+    restrictedNote: "Este encuentro no es público: solo podrán abrirlo quienes ya puedan verlo.",
   },
   de: {
     link: "💬 In einem Chat teilen",
@@ -60,6 +62,7 @@ export default {
     cardA11yNoWhen: "{sender} hat {title} geteilt. Öffnet das Treffen.",
     unavailable: "Dieses Treffen ist nicht verfügbar",
     unavailableA11y: "{sender} hat ein Treffen geteilt, das nicht verfügbar ist",
+    restrictedNote: "Dieses Treffen ist nicht öffentlich: Nur wer es bereits sehen kann, kann es öffnen.",
   },
   fr: {
     link: "💬 Partager dans un chat",
@@ -80,6 +83,7 @@ export default {
     cardA11yNoWhen: "{sender} a partagé {title}. Ouvre la rencontre.",
     unavailable: "Cette rencontre n'est pas disponible",
     unavailableA11y: "{sender} a partagé une rencontre qui n'est pas disponible",
+    restrictedNote: "Cette rencontre n'est pas publique : seules les personnes qui peuvent déjà la voir pourront l'ouvrir.",
   },
   pt: {
     link: "💬 Compartilhar em um chat",
@@ -100,6 +104,7 @@ export default {
     cardA11yNoWhen: "{sender} compartilhou {title}. Abre o encontro.",
     unavailable: "Este encontro não está disponível",
     unavailableA11y: "{sender} compartilhou um encontro que não está disponível",
+    restrictedNote: "Este encontro não é público: só quem já pode vê-lo conseguirá abri-lo.",
   },
   ht: {
     link: "💬 Pataje nan yon chat",
@@ -120,6 +125,7 @@ export default {
     cardA11yNoWhen: "{sender} pataje {title}. Ouvri rasanbleman an.",
     unavailable: "Rasanbleman sa a pa disponib",
     unavailableA11y: "{sender} pataje yon rasanbleman ki pa disponib",
+    restrictedNote: "Rasanbleman sa a pa piblik: se sèlman moun ki ka deja wè l ki ka louvri l.",
   },
   zh: {
     link: "💬 分享到聊天",
@@ -140,6 +146,7 @@ export default {
     cardA11yNoWhen: "{sender}分享了{title}。打开该聚会。",
     unavailable: "此聚会不可用",
     unavailableA11y: "{sender}分享了一个不可用的聚会",
+    restrictedNote: "此聚会不公开：只有已经能看到它的人才能打开。",
   },
   vi: {
     link: "💬 Chia sẻ vào cuộc trò chuyện",
@@ -160,6 +167,7 @@ export default {
     cardA11yNoWhen: "{sender} đã chia sẻ {title}. Mở buổi gặp.",
     unavailable: "Buổi gặp này không khả dụng",
     unavailableA11y: "{sender} đã chia sẻ một buổi gặp không khả dụng",
+    restrictedNote: "Buổi gặp này không công khai: chỉ những người đã có thể xem mới mở được.",
   },
   tl: {
     link: "💬 Ibahagi sa isang chat",
@@ -180,6 +188,7 @@ export default {
     cardA11yNoWhen: "Ibinahagi ni {sender} ang {title}. Binubuksan ang pagtitipon.",
     unavailable: "Hindi available ang pagtitipong ito",
     unavailableA11y: "Nagbahagi si {sender} ng pagtitipong hindi available",
+    restrictedNote: "Hindi pampubliko ang pagtitipong ito: ang mga taong nakakakita na nito lang ang makakapagbukas nito.",
   },
   ru: {
     link: "💬 Поделиться в чате",
@@ -200,6 +209,7 @@ export default {
     cardA11yNoWhen: "{sender} поделился(-ась) «{title}». Открывает встречу.",
     unavailable: "Эта встреча недоступна",
     unavailableA11y: "{sender} поделился(-ась) недоступной встречей",
+    restrictedNote: "Эта встреча не публичная: открыть её смогут только те, кто уже может её видеть.",
   },
   ko: {
     link: "💬 채팅으로 공유",
@@ -220,5 +230,6 @@ export default {
     cardA11yNoWhen: "{sender}님이 {title}을(를) 공유했어요. 모임을 엽니다.",
     unavailable: "이 모임은 볼 수 없어요",
     unavailableA11y: "{sender}님이 볼 수 없는 모임을 공유했어요",
+    restrictedNote: "이 모임은 공개되지 않았어요. 이미 볼 수 있는 사람만 열 수 있어요.",
   },
 };

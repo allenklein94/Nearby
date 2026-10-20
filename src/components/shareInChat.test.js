@@ -47,4 +47,12 @@ describe('share a gathering in a chat', () => {
     const d = src('screens/GatheringDetailScreen.js');
     expect(d).toMatch(/viewer\.time !== 'past' && \(\s*<TouchableOpacity\s*onPress=\{\(\) => setShareInChatVisible\(true\)\}/);
   });
+
+  test('a non-public or women-only gathering gets one fixed note about the gathering, never a per-recipient check', () => {
+    const d = src('screens/GatheringDetailScreen.js');
+    expect(d).toMatch(/restricted=\{gathering\.visibility !== 'everyone' \|\| !!gathering\.women_only\}/);
+    const s = src('components/ShareInChatSheet.js');
+    expect(s).toMatch(/restricted \? <Text style=\{styles\.note\}>\{t\('ui\.shareInChat\.restrictedNote'\)\}/);
+    expect(s).not.toMatch(/_gathering_row_visible|from\('gatherings'\)/);
+  });
 });

@@ -1492,6 +1492,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
         onClose={() => setShareInChatVisible(false)}
         gatheringId={gatheringId}
         gatheringTitle={gathering.title}
+        restricted={gathering.visibility !== 'everyone' || !!gathering.women_only}
       />
       <CancellationReasonSheet ask={reasonAsk} onClose={() => { setReasonAsk(null); navigation.goBack(); }} />
     </View>
