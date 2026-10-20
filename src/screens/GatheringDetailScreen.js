@@ -68,6 +68,7 @@ import GatheringAttendingSection from '../components/GatheringAttendingSection';
 import CancellationReasonSheet from '../components/CancellationReasonSheet';
 import GatheringIntentModal from '../components/GatheringIntentModal';
 import InviteFriendsModal from '../components/InviteFriendsModal';
+import ShareInChatSheet from '../components/ShareInChatSheet';
 import GatheringStatusBadge, { relationBadgeStatus } from '../components/GatheringStatusBadge';
 import ReasonList from '../components/ReasonList';
 import LoadErrorState from '../components/LoadErrorState';
@@ -132,6 +133,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [waitlistMoment, setWaitlistMoment] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
+  const [shareInChatVisible, setShareInChatVisible] = useState(false);
   // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
   const canInvite = !!gathering && (gathering.isHost || gathering.allow_attendee_invites !== false);
   const [countdownStats, setCountdownStats] = useState(null);
@@ -1447,6 +1449,19 @@ export default function GatheringDetailScreen({ route, navigation }) {
             </>
           )}
 
+          {/* Share in a chat (owner decision 2026-10-20): the person's own explicit send of this gathering into one of
+              their one-to-one chats; the recipient sees it only if they may already see the gathering (item 147). */}
+          {viewer.time !== 'past' && (
+            <TouchableOpacity
+              onPress={() => setShareInChatVisible(true)}
+              style={{ marginTop: spacing.sm, alignItems: 'center' }}
+              accessibilityLabel={t('ui.shareInChat.linkA11y', { title: gathering.title })}
+              accessibilityRole="button"
+            >
+              <Text style={styles.sayHelloLink}>{t('ui.shareInChat.link')}</Text>
+            </TouchableOpacity>
+          )}
+
           {/* The host's and an approved attendee's day-of block (was the Gathering Hub screen). */}
           <GatheringAttendingSection
             gathering={gathering}
@@ -1469,6 +1484,12 @@ export default function GatheringDetailScreen({ route, navigation }) {
       <InviteFriendsModal
         visible={inviteModalVisible}
         onClose={() => setInviteModalVisible(false)}
+        gatheringId={gatheringId}
+        gatheringTitle={gathering.title}
+      />
+      <ShareInChatSheet
+        visible={shareInChatVisible}
+        onClose={() => setShareInChatVisible(false)}
         gatheringId={gatheringId}
         gatheringTitle={gathering.title}
       />

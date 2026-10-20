@@ -1,3 +1,39 @@
+# Deferred-list follow-up (2026-10-20): share a gathering in a chat built; Google row dropped; evidence gates checked
+
+- Evidence gates checked read-only on production: 8 accounts, 4 profiles; `intent_submissions` 0 rows ever (item 128 trigger:
+  0 eligible asks both weeks, not met); relationship-tool tables (constitution_entries, shared_decisions, stress_test_notes,
+  timeline_notes, trip_ideas) 0 rows each; Momentum events live only in PostHog (`posthog.capture`), no read access. So the
+  Momentum fold, B9 removals, distance chip / expanding radius / similar results, and Activity filters cannot be decided
+  before real users; full-screen first reply and automatic "You're here" need a phone. Nothing built for them.
+- "Also nearby (not a Nearby partner)" (owner question 2): owner 2026-10-20 DROPPED Google Places (terms restrict
+  listing/directory use and require attribution + no storage; Nearby Search Pro ~$32 per 1,000 requests); the row stays
+  deferred until a data source whose terms permit showing non-partner places. Nothing built.
+- Gathering card in one-to-one chats (idea "244"'s deferred part): owner chose option 1, "Share button only", with exact
+  requirements (explicit send, existing 1:1 chat, tap opens the gathering + Back to chat, never automatic or inferred,
+  item 147 enforced for the recipient, chat + privacy rules unchanged). BUILT:
+  - Migration `20270331_share_gathering_in_chat.sql` (LIVE): `messages.gathering_id uuid` (plain id, deliberately no FK so
+    a deleted gathering's message stays a share that reads "isn't available"; a first apply with `on delete set null` +
+    an index was corrected on prod the same hour: FK + index dropped, guard re-created, state = the file);
+    `_messages_gathering_id_guard` trigger (insert with gathering_id only inside the RPC via `app.gathering_share`; any
+    change on update refused; read receipts unaffected); `share_gathering_in_chat(match_id_param, gathering_id_param)`
+    (security definer: signed in, participant of that match, not blocked either way, sender passes `_gathering_row_visible`;
+    revoked from public/anon, granted to authenticated); `notify_new_message` adds "Shared a gathering" (never the title).
+  - Client: `services/chatShare.js` (one-to-one chats from `matches`, the RPC, the card's RLS-scoped gatherings read),
+    `components/ShareInChatSheet.js` (one question: which chat; each row's own Send; "✓ Sent"; toast; error via
+    `presentRecoverableError`), `components/SharedGatheringCard.js` (kicker, title, `displayGatheringWhen`; unavailable =
+    plain line, not tappable; long-press = reactions; static), ChatScreen renders it before any other kind and opens
+    GatheringDetail on top, GatheringDetail's "💬 Share in a chat" only when `viewer.time !== 'past'`.
+  - Strings: new namespace `shareInChat` (18 keys, 11 languages; 10 machine-authored, need native review).
+  - Tests: journey `shareGatheringInChat` 7/7 (with the migration as a rolled-back prelude, then on prod; fails on the old
+    schema: "column gathering_id does not exist"); prod journeys 574/574; Jest 480 suites / 6588; guard
+    `components/shareInChat.test.js` (one write path, sheet-only caller, no direct `gathering_id` writes, RLS-scoped card
+    read, chat ordering, upcoming-only link). Business web export regenerated.
+  - Not covered: anything on a device (check C22 added to the first-session checklist); a from-scratch replay including
+    20270331 (not run); the sender is not told when the recipient can't see a non-public gathering.
+- Signed-in real-API test (owner approved 2026-10-20): script `scripts/live-verify/signed-in-api-privacy.js` read and
+  preflighted (columns + RPC signatures match prod), but the run was blocked by Claude Code's auto-mode safety check (it writes
+  to production); waiting for the owner to run it or allow it. NOT run.
+
 # Verification follow-up (2026-10-20): replay + backend audit (read-only)
 
 - From-scratch replay 454/454 (incl. 20270330), journeys 567/567 on the rebuilt DB; grants of complete_business_reservation /

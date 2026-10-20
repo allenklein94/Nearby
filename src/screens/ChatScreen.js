@@ -26,6 +26,7 @@ import usePaginatedMessages from '../hooks/usePaginatedMessages';
 import GifPickerModal from '../components/GifPickerModal';
 import DateCheckInModal from '../components/DateCheckInModal';
 import AnimatedMessageBubble from '../components/AnimatedMessageBubble';
+import SharedGatheringCard from '../components/SharedGatheringCard';
 import * as ScreenCapture from 'expo-screen-capture';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -1261,7 +1262,15 @@ export default function ChatScreen({ route, navigation }) {
             return (
               <AnimatedMessageBubble isNew={isNewMessage}>
               <View style={[styles.bubbleRow, isMe ? styles.rowRight : styles.rowLeft]}>
-                {item.audio_url ? (
+                {item.gathering_id ? (
+                  <SharedGatheringCard
+                    gatheringId={item.gathering_id}
+                    isMe={isMe}
+                    senderLabel={senderLabel}
+                    onOpen={(id) => navigation.navigate('GatheringDetail', { gatheringId: id })}
+                    onLongPress={() => showReactionPicker(item.id)}
+                  />
+                ) : item.audio_url ? (
                   <TouchableOpacity onLongPress={() => showReactionPicker(item.id)} activeOpacity={1}>
                     <VoiceBubble audioPath={item.audio_url} isMe={isMe} colors={colors} />
                   </TouchableOpacity>
