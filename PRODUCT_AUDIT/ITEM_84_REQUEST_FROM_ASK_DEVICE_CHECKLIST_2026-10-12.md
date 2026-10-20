@@ -31,3 +31,5 @@ Setup: Home or Discover, a typed ask, then "Ask Nearby Businesses" (shown only w
     the Time field already reads "🕐 7:00 PM" (selected, still editable / "Any time" clears it), only "What day?" is marked. Pick
     Tomorrow and Send: the business's Opportunity card shows 7 PM (`businessOpportunityCard.js`); a hand-written reply that is "✨ Our pick" (item 63: 2+ open replies, established record) shows "Fits 7:00 PM".
     "dinner at 9": Time stays "Any time" (never guessed). The name "Coastal Coffee" is NOT expected to be recognised (deferred).
+    Correcting it (owner idea "306"): before Send, tap "🕐 7:00 PM": the picker opens on 7 PM; change it to 7 AM, the chip reads
+    "🕐 7:00 AM", and the Opportunity card shows 7 AM (never the carried 7 PM).
