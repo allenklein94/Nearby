@@ -1,3 +1,18 @@
+# Journey isolation: six journeys create their own actors (owner, 2026-10-20, option 2 approved); prod journeys 562/562
+
+Owner decision: never restore a production friendship to satisfy tests; the journeys create their own people + accepted friendships
+inside the rolled-back transaction. Built: `actorDeclares` + `actorsSql` in `src/journeys/journeyHarness.js` (people like real signed-up
+ones: verified, visible, terms, timezone, push token; accepted friendship pairs; optional active business managed by an owner), used by
+groupBookingLifecycle, groupPlanJourney, inviteJourney, recommendationJourney, gatheringFormation, intentVisibility (all 6 no longer read
+production rows). groupPlanJourney's business is placed far from its requests (-0.8, -0.8): its offers are inserted directly, and a
+nearby one was reached by routing first (duplicate offer row). Results (prod, rolled back): the 6 = 44/44; full journeys 49/49 suites,
+562/562 tests (incl. `statedTimeHandoff` 3/3). Production data untouched (still 0 friendships).
+Still dependent on production rows (pass today, not changed, owner to decide): 25 journeys pick existing `profiles` from prod (prod has 4):
+bookingCapacity, datingConsent, friendsPlanning, gatheringDirections, gatheringMemory, interestedToAttending, noShowJourney,
+noticedActivity, notificationEvents, peopleMatchJourney, planComplete, requestFunnel, strongMatch, coreLoop, friendNearby,
+gatheringCheckIn, intentFunnel, notificationAction, offerJourney, outdoorMatchJourney, perkRedemption, plansThisMonth,
+requestExpiryWarning, waitlistPromotion (+ businessHoursParity reads live rows by design). Same fix available via `actorsSql`.
+
 # Owner idea "305" decision + build (2026-10-20): stated clock time carried into the business request; BUILT, NOT DEVICE-VERIFIED; business-name recognition DEFERRED
 
 Owner decisions: keep Dinner -> Restaurants, "for four" -> 4, keep asking "What day?" (never invent one); FIX the "at 7" handoff;

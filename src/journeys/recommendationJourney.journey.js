@@ -3,8 +3,7 @@
 // it Interested (private) -> joins (Interested clears, attendance is the one state) -> the event passes and the same
 // object reads "View Past Event", never Join. Rolled back. The real UI is not driven: the client helpers the screens
 // call (`mergeHomeGatheringSignals`, `gatheringPrimaryAction`, `gatheringViewerState`) run on the rows the DB produced.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql } = require('./journeyHarness');
 import { gatheringPrimaryAction } from '../utils/primaryAction';
 import { mergeHomeGatheringSignals } from '../utils/homeSignalMerge';
 import { gatheringViewerState } from '../utils/objectState';
@@ -14,10 +13,11 @@ const d = hasToken ? describe : describe.skip;
 d('journey: friend hosts -> recommendation -> interested -> join -> event passes', () => {
   let s; let host; let viewer;
   beforeAll(async () => {
-    const [f] = await runSql(`select user_a, user_b from friendships where status = 'accepted' limit 1;`);
-    host = f.user_a; viewer = f.user_b;
+    // created inside the rolled-back journey (actorsSql); the ids are made here so the client rules can use them
+    host = require('crypto').randomUUID(); viewer = require('crypto').randomUUID();
     const log = await runJourney(`
       v_h uuid := '${host}'; v_v uuid := '${viewer}'; v_g uuid; v_n int; v_res jsonb; v_row record; v_cnt int;`, `
+  ${actorsSql({ people: ['v_h', 'v_v'], friends: [['v_h', 'v_v']] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_h, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_h, 'Journey rec coffee', now() + interval '2 days', 40.0, -75.0, 'Coffee', 'journey', 6, 'everyone') returning id into v_g;

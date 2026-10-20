@@ -2,8 +2,7 @@
 // plan -> the other sees the invitation and accepts -> the organizer sets a budget and confirms -> once confirmed,
 // nobody can re-decide or change the budget (a participant MAY still leave, which drops only their own confirmations) -> a third person is refused throughout.
 // Rolled back; the client `canDo` table is asserted against the states the DB produced. Disclosed: no business offer step.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 import { canDo } from '../utils/objectLifecycle';
 
 const d = hasToken ? describe : describe.skip;
@@ -11,11 +10,10 @@ const d = hasToken ? describe : describe.skip;
 d('journey: propose -> invite -> accept -> budget re-asks -> confirm -> locked', () => {
   let s;
   beforeAll(async () => {
-    const [f] = await runSql(`select user_a, user_b from friendships where status = 'accepted' limit 1;`);
-    const [c, dd] = await runSql(`select id from profiles where id not in ('${f.user_a}','${f.user_b}') order by created_at limit 2;`);
     const log = await runJourney(`
-      v_a uuid := '${f.user_a}'; v_b uuid := '${f.user_b}'; v_c uuid := '${c.id}'; v_d uuid := '${dd.id}'; v_rd uuid; v_offer uuid; v_partner uuid; v_n int;
+      ${actorDeclares(['v_a', 'v_b', 'v_c', 'v_d', 'v_owner', 'v_partner'])} v_rd uuid; v_offer uuid; v_n int;
       v_ra uuid; v_rb uuid; v_p uuid; v_res jsonb; v_msg text; v_st text; v_pst text;`, `
+  ${actorsSql({ people: ['v_a', 'v_b', 'v_c', 'v_d', 'v_owner'], friends: [['v_a', 'v_b']], business: { owner: 'v_owner', partner: 'v_partner', lat: -0.8, lng: -0.8 } })} -- far from the requests: offers below are inserted directly, never routed
   update profiles set intent_visibility = 'friends' where id in (v_a, v_b, v_d);
   insert into friendships (user_a, user_b, status, requested_by) values (v_a, v_d, 'accepted', v_a) on conflict do nothing;
   perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
@@ -66,7 +64,6 @@ d('journey: propose -> invite -> accept -> budget re-asks -> confirm -> locked',
   -- 6. once confirmed: leaving is allowed (owner decision) and re-deciding / budget changes are refused
   perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
   -- offers and confirmations fixture: b and d have each confirmed one offer on the group's real request
-  select id into v_partner from brand_partners limit 1;
   insert into business_request_offers (request_id, partner_id, status)
     select resulting_request_id, v_partner, 'offered' from group_plan_proposals where id = v_p returning id into v_offer;
   insert into group_plan_offer_confirmations (proposal_id, offer_id, user_id) values (v_p, v_offer, v_b), (v_p, v_offer, v_d);

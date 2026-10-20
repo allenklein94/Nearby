@@ -3,21 +3,17 @@
 // new profiles are OFF; an opted-out friend is invisible; an opted-in friend shows structured facts only (no raw text, no
 // match id); a dating match never shows, never counts toward the group-intent signal and cannot be proposed into a group plan;
 // opting out removes eligibility; proposing still only INVITES (consent kept).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
 d('journey: intent visibility = opt-in, accepted friends only, structured facts only', () => {
   let s;
   beforeAll(async () => {
-    const [f] = await runSql(`select user_a, user_b from friendships where status = 'accepted' limit 1;`);
-    const [m] = await runSql(`select id from profiles p where id not in ('${f.user_a}','${f.user_b}')
-      and not exists (select 1 from friendships x where (x.user_a = p.id and x.user_b = '${f.user_a}') or (x.user_b = p.id and x.user_a = '${f.user_a}'))
-      order by created_at limit 1;`);
     const log = await runJourney(`
-      v_a uuid := '${f.user_a}'; v_b uuid := '${f.user_b}'; v_m uuid := '${m.id}';
+      ${actorDeclares(['v_a', 'v_b', 'v_m'])}
       v_ra uuid; v_rb uuid; v_rm uuid; v_res jsonb; v_rows jsonb; v_n int; v_p uuid; v_msg text; v_st text;`, `
+  ${actorsSql({ people: ['v_a', 'v_b', 'v_m'], friends: [['v_a', 'v_b']] })}
   -- 0. the column default is OFF
   log := log || jsonb_build_array(jsonb_build_object('step','default_off','ok',
      (select column_default from information_schema.columns where table_name = 'profiles' and column_name = 'intent_visibility') = '''nobody''::text'));

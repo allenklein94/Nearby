@@ -3,8 +3,7 @@
 // formation's pieces (utils/gatheringFormation.js) from exactly what the database returned -- never from the form.
 // One rolled-back transaction. Not covered (device only): the look of the motion, Reduce Motion, the haptic.
 jest.mock('../services/supabase', () => ({ supabase: {} }));
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 const { formationPieces } = require('../utils/gatheringFormation');
 const { displayGatheringWhen } = require('../i18n/display');
 const { tr } = require('../i18n/translate');
@@ -15,8 +14,8 @@ const t = (k, p) => tr(k, p);
 d('journey: create a gathering -> the published formation shows what was really stored', () => {
   let s;
   beforeAll(async () => {
-    const [f] = await runSql(`select user_a, user_b from friendships where status = 'accepted' limit 1;`);
-    const log = await runJourney(`v_a uuid := '${f.user_a}'; v_b uuid := '${f.user_b}'; v_g uuid; v_inv uuid;`, `
+    const log = await runJourney(`${actorDeclares(['v_a', 'v_b'])} v_g uuid; v_inv uuid;`, `
+  ${actorsSql({ people: ['v_a', 'v_b'], friends: [['v_a', 'v_b']] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
   set local role authenticated;
   -- 1. the host publishes (the app's own insert, under RLS)

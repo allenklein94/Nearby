@@ -38,4 +38,32 @@ function stepMap(log) {
   return Object.fromEntries(log.map((s) => [s.step, s]));
 }
 
-module.exports = { runJourney, stepMap, hasToken };
+// Synthetic actors (owner, 2026-10-20): a journey creates its own people, accepted friendships and business INSIDE its
+// rolled-back transaction, never picking rows that production happens to hold (so it runs the same on any database).
+// `people` are uuid variables the journey declares with actorDeclares; each is like a real signed-up person (verified,
+// visible, terms accepted, a timezone and a push token). `friends` = pairs of those variables (accepted).
+// `business` = { owner, partner, lat, lng, subcategory } (variables + placement): an active business that owner manages.
+function actorDeclares(names) {
+  return names.map((n) => `${n} uuid := gen_random_uuid();`).join(' ');
+}
+
+function actorsSql({ people, friends = [], business = null }) {
+  const lines = [`perform set_config('app.trusted_update', 'on', true);`];
+  people.forEach((v, i) => {
+    lines.push(`insert into auth.users (id, aud, role, email, created_at) values (${v}, 'authenticated', 'authenticated', ${v} || '@journey.invalid', now() - interval '${people.length - i} days');`);
+    lines.push(`insert into profiles (id, display_name, birthdate, created_at, terms_accepted_at, timezone, photo_verified, profile_hidden, expo_push_token)
+    values (${v}, 'Journey ' || left(${v}::text, 4), date '1994-05-01', now() - interval '${people.length - i} days', now(), 'America/New_York', true, false, 'ExponentPushToken[journey-' || left(${v}::text, 8) || ']');`);
+  });
+  friends.forEach(([a, b]) => {
+    lines.push(`insert into friendships (user_a, user_b, status, requested_by) values (${a}, ${b}, 'accepted', ${a});`);
+  });
+  if (business) {
+    const { owner, partner, lat = 40.0, lng = -75.0, subcategory = 'Coffee' } = business;
+    lines.push(`insert into brand_partners (id, name, active, latitude, longitude, address, category, subcategory, categories, max_group_size)
+    values (${partner}, 'Journey Cafe ' || left(${partner}::text, 4), true, ${lat}, ${lng}, '1 Journey St', 'food_drink', '${subcategory}', '{}', 40);`);
+    lines.push(`update profiles set managed_partner_id = ${partner} where id = ${owner};`);
+  }
+  return lines.join('\n  ');
+}
+
+module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql };

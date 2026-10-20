@@ -5,8 +5,7 @@
 // reservation -> cancel (requester or business) and no-show work through the shared lifecycle -> only the requester or
 // the business may complete; completion is idempotent. Then a DIRECT booking still creates its reservation + payment
 // exactly as before. Rolled back; the client's booked/accepted wording is asserted on the rows the database produced.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 import { acceptedBookingState } from '../utils/acceptedBooking';
 
 const d = hasToken ? describe : describe.skip;
@@ -14,14 +13,11 @@ const d = hasToken ? describe : describe.skip;
 d('journey: group confirms -> one reservation -> shared cancel / no-show / complete; direct booking unchanged', () => {
   let s;
   beforeAll(async () => {
-    const [f] = await runSql(`select user_a, user_b from friendships where status = 'accepted' limit 1;`);
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const others = await runSql(`select id from profiles where id not in ('${f.user_a}','${f.user_b}','${owner.id}') order by created_at limit 2;`);
     const log = await runJourney(`
-      v_a uuid := '${f.user_a}'; v_b uuid := '${f.user_b}'; v_d uuid := '${others[0].id}'; v_c uuid := '${others[1].id}';
-      v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}';
+      ${actorDeclares(['v_a', 'v_b', 'v_d', 'v_c', 'v_owner', 'v_partner'])}
       v_ra uuid; v_rb uuid; v_rd uuid; v_p uuid; v_req uuid; v_offer uuid; v_res jsonb; v_msg text; v_n int; v_m int;
       v_st text; v_rst text; v_ok boolean; v_t1 timestamptz; v_t2 timestamptz; v_events int; v_direct_req uuid; v_direct uuid;`, `
+  ${actorsSql({ people: ['v_a', 'v_b', 'v_d', 'v_c', 'v_owner'], friends: [['v_a', 'v_b']], business: { owner: 'v_owner', partner: 'v_partner' } })}
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
   update profiles set intent_visibility = 'friends' where id in (v_a, v_b, v_d);
   insert into friendships (user_a, user_b, status, requested_by) values (v_a, v_d, 'accepted', v_a) on conflict do nothing;

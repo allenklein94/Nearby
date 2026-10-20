@@ -2,8 +2,7 @@
 // passes -> the invitee opens it -> sees the expired state -> cannot accept -> can still see the historical invitation.
 // Rolled back. The date "passing" is simulated by moving the gathering into the past inside the transaction (the
 // server compares against now()); the real UI is not driven, the client rules are asserted on the rows the DB produced.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 import { inviteLifecycleState, canDo, lifecycleClass } from '../utils/objectLifecycle';
 import { isInviteExpired, expiredInviteLabel } from '../utils/inviteExpiry';
 
@@ -12,9 +11,9 @@ const d = hasToken ? describe : describe.skip;
 d('journey: invitation is sent, the event passes, the invitation reads as expired and stays viewable', () => {
   let s;
   beforeAll(async () => {
-    const [f] = await runSql(`select user_a, user_b from friendships where status = 'accepted' limit 1;`);
     const log = await runJourney(`
-      v_a uuid := '${f.user_a}'; v_b uuid := '${f.user_b}'; v_g uuid; v_inv uuid; v_msg text; v_n int; v_st text; v_row record;`, `
+      ${actorDeclares(['v_a', 'v_b'])} v_g uuid; v_inv uuid; v_msg text; v_n int; v_st text; v_row record;`, `
+  ${actorsSql({ people: ['v_a', 'v_b'], friends: [['v_a', 'v_b']] })}
   -- 1. the inviter hosts an upcoming gathering
   perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
