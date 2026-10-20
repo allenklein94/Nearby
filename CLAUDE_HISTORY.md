@@ -1,3 +1,22 @@
+# "Don't interrogate the user" (owner idea "305", 2026-10-20; NOT item 305): RULE MET (locked "Infer first; never re-ask" + item 106), PROBE FOUND ONE LOST FACT (stated clock time); owner decision pending; nothing built; CLAUDE.md not changed
+
+Checked 2026-10-20. Rule already locked: "Infer first; never re-ask what Nearby knows ... ask only what blocks the next step (a search never
+asks; sending to a business asks what day)" + item 106 (`utils/askMissing.js`: only text, category, day, party, each only when missing).
+Probe (Jest, AI off, `resolveAsk` -> `askBusinessParamsFromAsk` -> `askMissingFields`, not committed):
+"Dinner at Coastal Coffee at 7 for four" -> Restaurants (Food & Drink, "dinner"), 4 people (stated, item 87), no day, no clock window,
+businessName null. Search: asks nothing. AskBusiness: Restaurants + 4 carried ("From what you said"); missing = "What day?" only (a real
+gap: "at 7" names no day and Nearby never invents WHEN). With "tonight" added: missing = none.
+Findings:
+1. LOST FACT: "at 7" is dropped. `clockWindowFromText` reads only before/after/between; `pointClockFromText` ("at 7" -> 19:00 by the
+   existing bare 1-7 = evening rule) is read only for needs (item 163); `askBusinessParamsFromAsk` has no time param and AskBusiness's
+   "Time (optional)" (`startTime`) starts empty. Not an interrogation (Time is optional, never asked) but the person retypes it, and
+   item 63's "Fits 7 PM" can't apply without it. Proposed narrow fix (NOT built, owner to approve): carry `pointClockFromText` into
+   AskBusiness's Time field only when the words state it (ambiguous "at 9" stays empty, same parseClock rule), via the one handoff
+   `askBusinessParamsFromAsk`; no new strings, chips or search filtering; extend journey `outdoorMatch`.
+2. Named business: "Coastal Coffee" is not recognised from the words (`businessName` comes only from the AI). Not proposed now: needs
+   the AI path (credit) and seeded businesses to test; a request addressed to ONE business already exists from its profile/sheet.
+Not verified: AI path, AskBusiness on a phone (item 84 checklist).
+
 # "Progressive intent refinement" (owner idea "304", 2026-10-20; NOT item 304): MET BY ITEMS 107 + 46 (+ 45/87), ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed
 
 Checked 2026-10-20. Same proposal as item 46's own spec (2026-10-11: "Dinner" -> Tonight? -> With friends? -> Under $30?), already decided
