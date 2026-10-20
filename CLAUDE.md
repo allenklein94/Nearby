@@ -425,7 +425,7 @@ NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE
 `PRODUCT_AUDIT/ITEM_86_SEARCH_TO_PEOPLE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `peopleMatch`; no new strings, no migration).
 
 **Understood chips: People count + remove (owner, 2026-10-15) + change WHEN / People (owner idea "307", 2026-10-20, decision 3 reopened narrowly) is BUILT, NOT DEVICE-VERIFIED until** every check in
-`PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md` (incl. check 16) is recorded on a real phone AND native review of `ui.discover.understoodTapChange` (10 languages) is done (migration 20270306, no new one; journeys `outdoorMatch` + `understoodChipChange` 2/2; guard `services/understoodChipChange.test.js`).
+`PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md` (incl. check 16) is recorded on a real phone AND native review of `ui.discover.understoodTapChange` (10 languages) is done (migration 20270306, no new one; journeys `outdoorMatch` + `understoodChipChange` 4/4 through the real search + session code; guard `services/understoodChipChange.test.js` 23; prod journeys 566/566, Jest 479/6578). Owner ACCEPTED as built + LOCKED (2026-10-20): a changed day drops the words' clock time, People alone keeps it; fixed People list (no typed number); no distance chip, Dinner category, or Create presets for Today / This Weekend.
 Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the setting when an activity is named; locked count rule), check 15 of that checklist.
 
 **Item 143 (moved off the waitlist -> "~~On waitlist~~ → ✓ Attending", item 31's moment once per gathering; owner approved 2026-10-16) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in

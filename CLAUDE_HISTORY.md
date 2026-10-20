@@ -1,3 +1,25 @@
+# Owner idea "307" ACCEPTED + verification extended (2026-10-20); NOT DEVICE-VERIFIED
+
+Owner accepted the build and LOCKED it: the five existing WHEN choices, People 2-8/10/12 + the current count (no typed number),
+remove still works after a change, other chips remove-only, Create presets only for Right Now / Tonight / Tomorrow (Today and
+This Weekend ask in Create), a changed day drops the words' clock time ("tonight at 7" -> Tomorrow = any time), a People change
+alone keeps it. Declined: distance chip, Dinner category, free-text People, Create shortcuts for Today / This Weekend.
+Owner's three pre-close checks, run:
+(1) persistence through the real search: journey `understoodChipChange` rewritten to drive the real `runIntentSearch` +
+`refineTypedAsk` (network edges mocked), send the captured snapshots and the real Discover session to the live DB
+(`record_typed_ask_snapshot`, `save_discover_session` / `get_discover_session`, rolled back, actor created in-run), then restore it
+with the real `restoreDiscoverAsk`: 4/4. Unit: device + account copies restore the same corrected ask/results, later changes
+still link to the ORIGINAL snapshot.
+(2) every WHEN choice (now/today/tonight/tomorrow/weekend) -> AskBusiness params + no missing fields + Create preset (tonight/
+tomorrow/now; today/weekend none), and the real resolver re-runs to each window.
+(3) no regression: refinement chips (with friends, Under $25) survive a change and vice versa; an earlier removal survives a
+change; a Discover category narrow survives; plain removal writes no `changedUnderstood`.
+Results: `understoodChipChange.test.js` 23/23, prod journeys 566/566 (50 suites), Jest 479/6578. Not covered: the chips on a
+phone (tap, choices row, screen reader) and the live search's own network reads (fixtures): checklist check 16 + native review.
+
+Also 2026-10-20: crash fix (Sentry, build 86, "Cannot read property 'going' of null" in HostCommandCenter after creating a
+gathering): `hostStats` now tolerates null stats (countdownStats loads after first render); commit 15c9fca7; not device-verified.
+
 # Owner idea "307" BUILT (2026-10-20): WHEN and People understood chips can be changed in place (decision 3 reopened narrowly); NOT DEVICE-VERIFIED
 
 Owner: build the smallest version now, verify on a phone after: tap a chip to change its value (Tonight -> Tomorrow, 4 -> 6),
