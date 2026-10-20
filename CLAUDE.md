@@ -442,7 +442,7 @@ real roles; replay 444/444 + journeys 431/431; grants replay = prod 1556/1556; s
 `PRODUCT_AUDIT/ITEM_147_NON_PUBLIC_GATHERING_ROWS_DEVICE_CHECKLIST_2026-10-17.md` is recorded on real phones (migration 20270322 LIVE; journey
 `gatheringRowPrivacy` 28/28 under real roles; journeys 473/473 on prod; replay 446/446 + journeys 473/473; parity 12451/12451). Signed-in real-API test still open.
 **Signed-in real-API test for items 147 + 148 DEFERRED (owner, 2026-10-17), OPEN until it actually passes:** database-level journeys are NOT proof the real API
-blocks a signed-in user. Before running: an authorized operator checks `auth.users` for an account left by the interrupted 2026-10-17 run and deletes
+blocks a signed-in user. Before running: an authorized operator checks `auth.users` for an account left by the interrupted 2026-10-17 run (CHECKED read-only 2026-10-20: no auth user created on/after 2026-10-17, newest 2026-08-11; nothing to delete) and deletes
 one only after verifying it belongs to that run (never by creation time or a test-looking email alone). Then a dedicated test account created only at
 run time, cleanup guaranteed even on failure, deletion verified, results recorded. Never bypass production safeguards to finish it.
 
@@ -452,10 +452,9 @@ replay 445/445 + journeys 445/445; grants = prod). Story/business-moment media G
 Also OPEN: a signed-in test through the real API (DEFERRED, see item 147's line), backup/WAL retention for the old sighting value
 (Free plan, 0 restorable backups, WAL archiving on: ask Supabase support, record expiry; never assume gone). Presence retention FIXED
 2026-10-17: `purge_stale_presence_reports` every 10 min (migration 20270323 LIVE; deletes reports > 1 h, every reader uses <= 1 h). Expired
-sightings are NOT purged yet: Crossed Paths ignores `expires_at`, so purging would drop people 48 h after last crossing (owner to decide).
+sightings are NOT purged yet: Crossed Paths ignores `expires_at`, so purging would drop people 48 h after last crossing (owner to decide; 2026-10-20: `purge_expired_sightings` exists but has no cron job; prod has 1 sighting, 0 expired).
 `delete-account` / `moderate-photo` repo sources recovered verbatim from their live bundles (not redeployed; guard `edgeFunctionSourcesGuard.test.js`);
-13 live functions have NO repo source (export-data, revenuecat-webhook, review-login, setup-review-account, moderate-text, moderate-chat-image,
-translate-message, get-online-status, rehearsal-chat, generate-courage-message/-icebreaker/-introduction/-strengths): not recovered, owner to decide. Do not call location privacy complete.
+13 live functions have NO repo source (export-data, revenuecat-webhook, review-login, setup-review-account, moderate-text, moderate-chat-image, translate-message, get-online-status, rehearsal-chat, generate-courage-message, generate-icebreaker, generate-introduction, generate-strengths; re-listed 2026-10-20: 10 called by the app, revenuecat-webhook by RevenueCat (no JWT), moderate-chat-image + setup-review-account have no caller; invocation counts not readable via the new logs API): not recovered (bundles may hold review credentials; review before committing), owner to decide. Do not call location privacy complete.
 
 **Item 146 pin averaging, Option A (owner approved 2026-10-17, LOCKED; B/C rejected) is BUILT, LIVE, NOT DEVICE-VERIFIED until** checks 1-3 + 12
 of item 146's device checklist pass (migration 20270324: pin keyed by host + ~780 m cell via item 148's `private.location_pin`, per-gathering
@@ -510,7 +509,7 @@ demand-backed acquisition (needs >= 25 distinct people per category in the marke
 label (needs real comparison data); Discover first-viewport fit (needs a phone).
 
 **Owner decisions on the former open questions (2026-10-11; recorded, NOT built -- each needs its own build ask):**
-(1) "Mark as Completed" is never allowed before the scheduled visit date (BUILT, LIVE 2026-10-20: migration 20270330, server refuses before the visit day in the requester's zone, button only via `canCompleteVisit` in `utils/dashboardGlance.js`; journey `offer` refusal step; NOT DEVICE-VERIFIED, no from-scratch replay); (2) an "Also nearby (not a Nearby partner)" Places row is
+(1) "Mark as Completed" is never allowed before the scheduled visit date (BUILT, LIVE 2026-10-20: migration 20270330, server refuses before the visit day in the requester's zone, button only via `canCompleteVisit` in `utils/dashboardGlance.js`; journey `offer` refusal step; from-scratch replay 454/454 + journeys 567/567 on it (2026-10-20); NOT DEVICE-VERIFIED); (2) an "Also nearby (not a Nearby partner)" Places row is
 allowed (NOT BUILT: blocked on the owner's Google display-terms + per-query cost decision, per its proposal), clearly labelled, kept distinct from partners, never implying they take part in Nearby offers; (3) gathering age limits:
 use the existing age/safety rules; inspect current rules and applicable requirements before proposing any change, no new restriction
 without approval (INSPECTED 2026-10-20: every account is 18+ by DB check `must_be_18_plus` + onboarding; gatherings carry only a descriptive `suited_age_min/max` 0-18 that never restricts joining; nothing proposed); (4) offer value only from saved offer + redemption data: shown only with a real price/discount AND a confirmed

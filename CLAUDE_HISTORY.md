@@ -1,3 +1,17 @@
+# Verification follow-up (2026-10-20): replay + backend audit (read-only)
+
+- From-scratch replay 454/454 (incl. 20270330), journeys 567/567 on the rebuilt DB; grants of complete_business_reservation /
+  _visit_local_day_reached = prod (authenticated yes/no, anon no/no). Container removed. Concurrency scripts not re-run.
+- 13 sourceless edge functions re-listed (34 live, 22 repo dirs incl. _shared): names corrected (generate-icebreaker,
+  generate-introduction); 10 have app callers, revenuecat-webhook is external (verify_jwt off), moderate-chat-image and
+  setup-review-account have none. Invocation counts: the Management logs.all endpoint is removed and the new endpoint did not
+  expose edge log tables; check the dashboard. Nothing recovered or removed (bundles may contain review-account credentials).
+- Sightings: 1 row, 0 expired; `purge_expired_sightings` exists (deletes expired sightings + presence > 1 h) with no cron job.
+  Purge still an owner decision (Crossed Paths ignores expires_at).
+- item168_backup = a schema with 9 relations, kept (owner: until item 168's four follow-ups are done).
+- Signed-in API test precondition: no auth user created on/after 2026-10-17 (newest 2026-08-11): the interrupted run left none.
+  Test not run (owner-deferred; creates a production account).
+
 # Deferred-work audit + owner open question (1) BUILT (2026-10-20)
 
 Owner asked to build every deferred-but-approved item now. Audit against code (not records):
