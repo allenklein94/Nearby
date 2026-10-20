@@ -1,3 +1,13 @@
+# Owner idea "306" (correct the interpretation, e.g. 7 PM meant 7 AM) assessed 2026-10-20: MET where a clock time is shown; history only
+
+The only place Nearby turns words into a clock time is idea "305"'s handoff into AskBusiness: "at 7" fills the optional Time field
+with 7 PM, shown as the selected "🕐 7:00 PM" chip; tapping it opens the time picker on 7 PM (change to 7 AM there), "Any time"
+clears it; Send stores whatever is shown (`AskBusinessScreen.js`). Search never shows or uses a clock time: item 45's When chip is a
+window only (`UNDERSTOOD_WINDOWS`: now/today/tonight/tomorrow/weekend), with ✕ = remove (owner 2026-10-15); in-place change/pickers on
+the understood chips stay DEFERRED (decision 3) until a phone shows remove-only isn't enough (also idea "179"). Ambiguous times are
+never guessed ("at 9" = empty). Nothing built. Verification: item 84 checklist check 15 (the carried 7 PM, now also: tap it, change to
+7 AM, Send stores 7 AM) on a real phone.
+
 # Journey isolation finished: the other 24 journeys create their own actors (owner, 2026-10-20); prod journeys 562/562
 
 Owner: convert the remaining 24 now rather than on next touch. Harness gains `journeyPeople(n)` ([{ id }]) and `journeyOwner()`
