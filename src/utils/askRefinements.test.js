@@ -65,7 +65,7 @@ describe('one implementation on both surfaces', () => {
   it('both render the same chip component and refine through the same service; neither builds its own chips', () => {
     for (const [screen, surface] of [[home, 'home'], [discover, 'discover']]) {
       expect(screen).toMatch(/<AskRefinementChips\n\s+classifyResult=\{intent\w+\.classifyResult\}\n\s+onRefine=\{handleIntentRefine\}/);
-      expect(screen).toMatch(new RegExp(`refineTypedAsk\\('${surface}', prev, key\\)`));
+      expect(screen).toMatch(new RegExp(`refineTypedAsk\\('${surface}', prev, key, value\\)`));
       expect(screen).not.toMatch(/refinementChips\(|applyRefinement\(|resolveIntent\(\{/);
     }
   });

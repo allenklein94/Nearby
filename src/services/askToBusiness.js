@@ -5,7 +5,7 @@
 // clock time the words state ("at 7" = 7 PM, `pointClockFromText`) fills the optional Time field; an ambiguous one ("at 9") stays empty.
 import { recordIntentSelection } from './intentOutcomes';
 import { pointClockFromText } from '../constants/clockWindow';
-import { statedPartySize } from '../utils/askResolver';
+import { understoodPartySize } from '../utils/askUnderstood';
 import { requestCarriedRows } from '../utils/fromWhatYouSaid';
 
 export function askBusinessParamsFromAsk({ classifyResult, typedText, submissionId }) {
@@ -13,8 +13,10 @@ export function askBusinessParamsFromAsk({ classifyResult, typedText, submission
   // "no rush" / "whenever" (item 163) is the person's own answer to When?: "I'm flexible". Nothing else is filled from it.
   // A When the person removed from the ask's understood chips (owner, 2026-10-15) stays removed here too.
   const whenRemoved = Array.isArray(c.removedUnderstood) && c.removedUnderstood.includes('when');
+  // Idea "307": a WHEN changed on the results replaces the words' time too (the clock they stated belonged to the old day).
+  const whenChanged = Array.isArray(c.changedUnderstood) && c.changedUnderstood.includes('when');
   const dateWindow = c.dateWindow ?? (!whenRemoved && c.structured?.spontaneity === 'no_rush' ? 'flexible' : null);
-  const startMinutes = whenRemoved ? null : pointClockFromText(typedText);
+  const startMinutes = whenRemoved || whenChanged ? null : pointClockFromText(typedText);
   return {
     prefillText: typedText,
     prefillCategory: c.category ?? null,
@@ -29,7 +31,7 @@ export function askBusinessParamsFromAsk({ classifyResult, typedText, submission
     carriedSummary: requestCarriedRows({
       category: c.category ?? null,
       dateWindow,
-      statedPartySize: statedPartySize({ group: { partySize: c.partySize }, sources: c.structured?.sources }, typedText),
+      statedPartySize: understoodPartySize(c, typedText),
     }),
   };
 }

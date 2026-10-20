@@ -27,6 +27,20 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
     "coffee outdoors tonight with 4 friends" each show Coffee · Tonight · Outdoor · People; the count is 4, 4 and 5 (LOCKED rule:
     total including you; "4 friends" = four companions + you). "coffee outdoors" never shows an "Outdoors" activity chip.
 
+16. Changing a chip (owner idea "307", added 2026-10-20). Home AND Discover, ask "live music tonight at 7 for 4 people":
+    a. The Tonight and 4 people chips each show their label + a separate ✕; Live Music has only the ✕ (WHAT/WHERE/WHO stay remove-only).
+    b. Tap "Tonight": one row of choices appears under the chips (Right Now, Today, Tonight ✓, Tomorrow, This Weekend), instantly,
+       no animation, no coral. Tap "Tonight" again: the row closes. Opening People closes the When row (one row at a time).
+    c. Pick Tomorrow: the row closes, the chip reads Tomorrow, results re-run in place (no navigation, no retyping, no loader screen),
+       showing tomorrow's things. Pick 6 on People: the chip reads 6 people.
+    d. Tap ✕ on the changed chip: it goes, the results update, it does not come back.
+    e. After Tomorrow + 6: "Ask Nearby Businesses" shows Tomorrow and 6 people (never Tonight / 4) and the Time field is "Any time"
+       (the words' 7 PM belonged to Tonight); People alone changed keeps 7 PM. "Create it" opens with Tomorrow + 6 people;
+       This Weekend leaves When for Create to ask.
+    f. Changing while results are updating is disabled (no double re-run). VoiceOver/TalkBack: the label reads "{label}. Tap to change"
+       (expanded/collapsed announced), the ✕ "{label}, selected. Tap to clear", each choice its label + selected state.
+    g. Layout: a small phone in light and dark mode: the choices row wraps cleanly under the chips, nothing is clipped.
+
 Known limits (disclosed): the cap of 4 understood chips is unchanged, so an ask with activity + time + place + party + count
 drops the count chip; removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,
 the learned-affinity "constrained" check), which only order results and never add a chip, filter or caption back.

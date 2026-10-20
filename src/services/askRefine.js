@@ -7,7 +7,7 @@ import { resolveClassifiedAsk } from './intentResolver';
 import { recordTypedAsk } from './typedAskAudit';
 import { applyRefinement, refinementChips } from '../utils/askRefinements';
 import { toggleCategoryNarrow } from '../utils/categoryNarrow';
-import { removeUnderstoodPiece } from '../utils/askUnderstood';
+import { removeUnderstoodPiece, changeUnderstoodPiece } from '../utils/askUnderstood';
 
 // Re-runs the ask with `refined` and records it against the original ask. Returns the next surface state; an empty result keeps
 // the refined classification (so the chip / category stays selected and can be tapped off).
@@ -25,7 +25,11 @@ async function rerunAsk(surface, prev, refined, key, action) {
 
 // `prev` = the surface's current typed-ask state ({ classifyResult, typedText, submissionId, shown, rootSnapshotId? ... }).
 // Owner (2026-10-15): `understood_<piece>` = the X on an understood chip (utils/askUnderstood.js): remove only, never re-add.
-export async function refineTypedAsk(surface, prev, key) {
+// Idea "307": with a `value`, the same key CHANGES that piece (WHEN / People) to the value, recorded as 'applied'.
+export async function refineTypedAsk(surface, prev, key, value = undefined) {
+  if (typeof key === 'string' && key.startsWith('understood_') && value !== undefined) {
+    return rerunAsk(surface, prev, changeUnderstoodPiece(prev.classifyResult, key.slice('understood_'.length), value), key, 'applied');
+  }
   if (typeof key === 'string' && key.startsWith('understood_')) {
     // A WHAT chip showing only a Browse group (item 108) is the rail's selection: removing it is the rail's own clear.
     const c = prev.classifyResult ?? {};

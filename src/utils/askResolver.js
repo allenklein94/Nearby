@@ -244,9 +244,15 @@ export function createParamsFromAsk(r, typedText, current = null) {
   // Owner (2026-10-15): an understood chip the person removed on the results (current.removedUnderstood) is not carried either.
   const removed = new Set(Array.isArray(current?.removedUnderstood) ? current.removedUnderstood : []);
   // Item 187: Create's People (and its capacity suggestion) only from a number the person stated, never a date's assumed 2.
-  const statedSize = removed.has('people') ? null : statedPartySize(r, typedText);
+  // Idea "307": a WHEN or People the person changed on the results is carried as chosen (a window Create has no preset for,
+  // today / this weekend, is left for Create to ask; never the words' old reading).
+  const changed = new Set(Array.isArray(current?.changedUnderstood) ? current.changedUnderstood : []);
+  const chosenSize = Number.isInteger(current?.partySize) && current.partySize > 0 ? current.partySize : null;
+  const statedSize = removed.has('people') ? null : changed.has('people') ? chosenSize : statedPartySize(r, typedText);
   const tag = removed.has('what') ? null : r.subcategory;
-  const whenPreset = removed.has('when') ? null : r.time.whenPreset;
+  const whenPreset = removed.has('when') ? null
+    : changed.has('when') ? (['now', 'tonight', 'tomorrow'].includes(current.dateWindow) ? current.dateWindow : null)
+    : r.time.whenPreset;
   const inf = {
     tag,
     categoryLabel: removed.has('what') ? null : (r.category?.label ?? null),

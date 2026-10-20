@@ -1183,7 +1183,9 @@ export async function runIntentSearch(typedText, { onPhase } = {}) {
 export async function resolveClassifiedAsk(classifyResult, typedText) {
   const { items: resolved, experience, openEndedNote, openNowOnly, audit } = await resolveIntent({
     category: classifyResult.category, dateWindow: classifyResult.dateWindow, rawText: typedText,
-    removed: [...(Array.isArray(classifyResult.removedUnderstood) ? classifyResult.removedUnderstood : []), ...(classifyResult.partnerWordsOff ? ['who'] : [])],
+    // Idea "307": a WHEN the person changed is no longer read from the words either (the chosen window replaces them).
+    removed: [...(Array.isArray(classifyResult.removedUnderstood) ? classifyResult.removedUnderstood : []), ...(classifyResult.partnerWordsOff ? ['who'] : []),
+      ...(Array.isArray(classifyResult.changedUnderstood) && classifyResult.changedUnderstood.includes('when') ? ['when'] : [])],
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
     cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null, narrowGroup: classifyResult.narrowGroup ?? null,

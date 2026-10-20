@@ -1307,14 +1307,14 @@ export default function HomeScreen({ navigation }) {
 
   // Refine without restarting (item 107): same words, one value changed, results replaced in place. No AI call, no new
   // search-log row (the refinement belongs to the same ask: the audit snapshot keeps its submission id).
-  async function handleIntentRefine(key) {
+  async function handleIntentRefine(key, value) {
     const prev = intentResults;
     if (!prev || intentRefining) return;
     setIntentRefining(true);
     try {
-      setIntentResults(await refineTypedAsk('home', prev, key));
+      setIntentResults(await refineTypedAsk('home', prev, key, value));
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'update these ideas', error: e, onRetry: () => handleIntentRefine(key) });
+      presentRecoverableError(Alert, { what: 'update these ideas', error: e, onRetry: () => handleIntentRefine(key, value) });
     }
     setIntentRefining(false);
   }
@@ -1948,11 +1948,12 @@ export default function HomeScreen({ navigation }) {
 
           {intentResults && (
             <View style={styles.intentResults}>
-              {/* Owner (2026-10-15): on the results each understood chip can be removed (✕), re-running the ask in place (refine path). */}
+              {/* Owner (2026-10-15): on the results each understood chip can be removed (✕), re-running the ask in place (refine path); idea "307": WHEN / People can also be changed. */}
               <AskUnderstoodChips
                 classifyResult={intentResults.classifyResult}
                 typedText={intentResults.typedText}
                 onRemove={canRefine(intentResults.classifyResult) ? (piece) => handleIntentRefine(`understood_${piece}`) : null}
+                onChange={canRefine(intentResults.classifyResult) ? (piece, value) => handleIntentRefine(`understood_${piece}`, value) : null}
                 disabled={intentRefining}
               />
               {intentResults.items?.length > 0 && <FoundLine text={t('ui.home.foundIdeas')} />}

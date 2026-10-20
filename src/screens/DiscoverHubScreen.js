@@ -1686,17 +1686,17 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Surprise Me from the search box: the one shared flow (submitSurprise / shuffleSurprise / navigateToSurprisePick), shown inline.
   // Discover's own explicit choices only narrow it: the type tab and the Open-now chip. Nothing here is written to the search log.
   // Refine the typed ask in place (item 107, shared with Home): same words, one chip changed, results replaced inline.
-  async function handleIntentRefine(key) {
+  async function handleIntentRefine(key, value) {
     const prev = intentSearch;
     if (!prev || intentRefining) return;
     const thisRequestId = intentSearchRequestId.current;
     ++localEdit.current;
     setIntentRefining(true);
     try {
-      const next = await refineTypedAsk('discover', prev, key);
+      const next = await refineTypedAsk('discover', prev, key, value);
       if (thisRequestId === intentSearchRequestId.current) setIntentSearch(next);
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'update these ideas', error: e, onRetry: () => handleIntentRefine(key) });
+      presentRecoverableError(Alert, { what: 'update these ideas', error: e, onRetry: () => handleIntentRefine(key, value) });
     }
     setIntentRefining(false);
   }
@@ -3087,11 +3087,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
           {isSearching && onTopOrNotTabbed && !intentSearching && (intentSearch?.outcome === 'results' || intentSearch?.refined) && (
             <View style={styles.intentSearchBlock}>
-              {/* Owner (2026-10-15): on the results each understood chip can be removed (✕), re-running the ask in place (refine path). */}
+              {/* Owner (2026-10-15): on the results each understood chip can be removed (✕), re-running the ask in place (refine path); idea "307": WHEN / People can also be changed. */}
               <AskUnderstoodChips
                 classifyResult={intentSearch.classifyResult}
                 typedText={intentSearch.typedText}
                 onRemove={canRefine(intentSearch.classifyResult) ? (piece) => handleIntentRefine(`understood_${piece}`) : null}
+                onChange={canRefine(intentSearch.classifyResult) ? (piece, value) => handleIntentRefine(`understood_${piece}`, value) : null}
                 disabled={intentRefining}
               />
               {intentSearch.items?.length > 0 && <FoundLine text={t('ui.common.foundResults')} />}

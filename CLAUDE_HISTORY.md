@@ -1,3 +1,28 @@
+# Owner idea "307" BUILT (2026-10-20): WHEN and People understood chips can be changed in place (decision 3 reopened narrowly); NOT DEVICE-VERIFIED
+
+Owner: build the smallest version now, verify on a phone after: tap a chip to change its value (Tonight -> Tomorrow, 4 -> 6),
+existing choices only, results update through the existing refine path, removal and the Create / AskBusiness handoffs kept; no
+distance chip (15/30/50 stay), no Dinner category (Restaurants chip stays).
+Built: `utils/askUnderstood.js` = the one rule: `UNDERSTOOD_CHANGEABLE` (when, people), `understoodChoices` (WHEN = the existing
+`UNDERSTOOD_WINDOWS` with their existing date-filter labels; People = 2-8, 10, 12 + the current count, "{count} people"),
+`changeUnderstoodPiece` (sets `dateWindow` / `partySize`, records `changedUnderstood`; invalid or same value = no change),
+`understoodPartySize` (the ONE carried People count: stated or chosen); removing a changed chip forgets the change.
+`services/askRefine.js`: `refineTypedAsk(surface, prev, 'understood_<piece>', value)` re-runs the same ask in place, recorded as
+'applied' (20270306 already accepts it: no migration). `intentResolver.resolveClassifiedAsk`: a changed WHEN stops the words' time
+being read (clock, spontaneity, open now, weather window), like a removed one. Create (`createParamsFromAsk`): chosen People; chosen
+WHEN -> preset only for now/tonight/tomorrow (today / this weekend left for Create to ask, never the old reading). AskBusiness
+(`askBusinessParamsFromAsk`): chosen day + People in the fields and the "From what you said" rows; a changed WHEN drops the words'
+clock time (it belonged to the old day; People alone keeps it). `AskUnderstoodChips`: with `onChange` (Home + Discover results
+only), a WHEN / People chip = label button (opens ONE choices row under the chips, current marked ✓, no motion, no coral; a second
+tap closes) + its own ✕; WHAT/WHERE/WHO unchanged. One new string `ui.discover.understoodTapChange` ("{label}. Tap to change",
+11 languages, 10 machine-authored). Disclosed choice: People choices are a fixed list (no free entry); the cap of 4 chips unchanged.
+Verified: `services/understoodChipChange.test.js` 11/11 against the real resolver (Tonight -> Tomorrow re-runs to tomorrow's
+results, no AI call, recorded applied + date_window tomorrow; 4 -> 6 recorded party_size 6; remove after change; AskBusiness +
+Create carry the chosen values; rule + wiring + string guards); `askRefinements.test.js` wiring regex updated; full Jest 479/6566.
+New journey `understoodChipChange` 2/2 on prod (rolled back, own actor): both changes stored as their own 'applied' snapshots linked
+to the original ask with the chosen values; the corrected handoff stored by the real `create_business_request` as party 6,
+tomorrow, no time. Full journeys 50/50 suites, 564/564. NOT DEVICE-VERIFIED: check 16 of the understood-chip checklist.
+
 # Owner idea "307" (chips as editable "intent atoms": Dinner / Tonight / 4 people / 0-2 mi) assessed 2026-10-20: PARTLY MET; editing = decision 3, DEFERRED; history only
 
 Met: item 45's understood chips already ARE the atoms (WHAT / WHEN / WHERE / WHO + People only for a stated number), shown on

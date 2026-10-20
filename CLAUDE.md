@@ -99,7 +99,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Visual distance expansion (owner idea "178", 2026-10-18) COVERED by idea "177"'s deferral, LOCKED, nothing built:** radii only from `SEARCH_RADIUS_OPTIONS` (15/30/50; no other ladder, no "Nothing within 2 miles" state); expanding-radius animation DECLINED (items 55/58/101; any later one needs its own motion spec + approval, never before the server returns).
 
-**Time expansion (owner idea "179", 2026-10-18) MET by item 45 (✕ on the When chip, in place) + time from the person's words, LOCKED, nothing built:** Tonight -> Tomorrow -> This weekend ladder DECLINED (items 107/46, idea "177"); time editing stays behind the understood-chips change/pickers deferral (2026-10-15).
+**Time expansion (owner idea "179", 2026-10-18) MET by item 45 (✕ on the When chip, in place) + time from the person's words, LOCKED, nothing built:** Tonight -> Tomorrow -> This weekend ladder DECLINED (items 107/46, idea "177"); time editing: a WHEN chip can now be changed to another window (idea "307"); no time ladder.
 
 **Category expansion (owner idea "180", 2026-10-18) COVERED by item 81's Gap 2 hold, LOCKED, nothing built:** empty state unchanged; any future "try similar" = existing taxonomy relations only (no curated similarity without a V1 taxonomy decision), never a synonym of the ask ("Cafés" = Coffee), only with a real result behind it, labelled + static, never AI-guessed.
 
@@ -424,8 +424,8 @@ NOT DEVICE-VERIFIED until** every check in `PRODUCT_AUDIT/PERK_REDEMPTION_DEVICE
 **Item 86 (search -> People) is BUILT, NOT DEVICE-VERIFIED until** every check in
 `PRODUCT_AUDIT/ITEM_86_SEARCH_TO_PEOPLE_DEVICE_CHECKLIST_2026-10-12.md` is recorded on a real phone (journey `peopleMatch`; no new strings, no migration).
 
-**Understood chips: People count + remove only (owner, 2026-10-15) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
-`PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md` is recorded on a real phone (migration 20270306; journey `outdoorMatch`; no new strings). Decision 3 (change/pickers) DEFERRED until a phone shows remove-only isn't enough.
+**Understood chips: People count + remove (owner, 2026-10-15) + change WHEN / People (owner idea "307", 2026-10-20, decision 3 reopened narrowly) is BUILT, NOT DEVICE-VERIFIED until** every check in
+`PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md` (incl. check 16) is recorded on a real phone AND native review of `ui.discover.understoodTapChange` (10 languages) is done (migration 20270306, no new one; journeys `outdoorMatch` + `understoodChipChange` 2/2; guard `services/understoodChipChange.test.js`).
 Item 87 (2026-10-15) is met by these chips + its resolver fix (`outdoors` is the setting when an activity is named; locked count rule), check 15 of that checklist.
 
 **Item 143 (moved off the waitlist -> "~~On waitlist~~ → ✓ Attending", item 31's moment once per gathering; owner approved 2026-10-16) is BUILT, LIVE, NOT DEVICE-VERIFIED until** every check in
@@ -868,9 +868,12 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - **Ask understood (owner item 45):** a typed ask shows quiet chips of what its words gave (WHAT/WHEN/WHERE/WHO; unknown = none; never
   a refinement chip's piece) under the loader and above the results, Home + Discover, from `utils/askUnderstood.js` only
   (`components/AskUnderstoodChips.js`); settles once per ask (small tier), then static. Owner 2026-10-15: + a People chip only for a
-  stated number (`statedPartySize`); on RESULTS each chip has ✕ = remove only (no pickers), via `refineTypedAsk('understood_<piece>')`,
+  stated number (`statedPartySize`); on RESULTS each chip has ✕ = remove, via `refineTypedAsk('understood_<piece>')`,
   recorded as a refinement; `removedUnderstood` on the classification stops the resolver re-reading that piece from the same words
-  and is honoured by Create/AskBusiness params. Loader and People-mode chips stay non-tappable.
+  and is honoured by Create/AskBusiness params. Idea "307" (LOCKED scope): WHEN and People can also be CHANGED (tap the label -> one
+  row of existing choices: `UNDERSTOOD_WINDOWS`, `UNDERSTOOD_PEOPLE_CHOICES`; no motion, no coral) via `refineTypedAsk(key, value)`
+  ('applied'); `changedUnderstood` = the chosen value replaces the words everywhere (a changed WHEN also drops the words' clock time);
+  WHAT/WHERE/WHO stay remove-only; no distance chip, no new category. Loader and People-mode chips stay non-tappable.
 - **Refine next step (owner item 46):** item 107's row unchanged (no time step, no new chips, Under $25); only the next unanswered
   step's chips (Who, then Budget; `nextRefinementStep`) carry a soft wash, fading in after the person's tap; none while refining/empty.
 - **Offer countdown (owner item 47):** only an open offer's real last 30 min (`presentOffer().countdown` <- `offerCountdown`): the existing
