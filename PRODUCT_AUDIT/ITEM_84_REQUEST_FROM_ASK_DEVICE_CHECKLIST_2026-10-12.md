@@ -27,3 +27,7 @@ Setup: Home or Discover, a typed ask, then "Ask Nearby Businesses" (shown only w
     People 4; no field is marked for anything the words said.
 14. (Added 2026-10-18, item 190.) A public-place ask (e.g. "a park to walk my dog"): no "Ask Nearby Businesses" link anywhere in
     the results or the empty state.
+15. (Added 2026-10-20, owner idea "305".) "Dinner at Coastal Coffee at 7 for four" -> "Ask Nearby Businesses": People 4 carried,
+    the Time field already reads "🕐 7:00 PM" (selected, still editable / "Any time" clears it), only "What day?" is marked. Pick
+    Tomorrow and Send: the business's Opportunity card shows 7 PM (`businessOpportunityCard.js`); a hand-written reply that is "✨ Our pick" (item 63: 2+ open replies, established record) shows "Fits 7:00 PM".
+    "dinner at 9": Time stays "Any time" (never guessed). The name "Coastal Coffee" is NOT expected to be recognised (deferred).

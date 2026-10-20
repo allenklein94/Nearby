@@ -255,6 +255,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **"Navigate the intention, not the architecture" (owner idea "300", 2026-10-19; NOT item 300) MET AS DESIGNED, CLOSED, LOCKED, nothing built, NOT VERIFIED:** the existing north star (one concept, idea "171"'s chain, idea "173"); a complex ask resolves from the words (probe, AI off) and offers Create it / Ask nearby businesses in place; Nearby never picks friends (item 92) or contacts businesses unasked. Its "day_out" label = item 64's expected friends+tonight combination (no effect on a coffee ask, code reading). Pending: AI path, C18 on a phone (incl. no "day out" grouping for coffee), real offers.
 
+**Stated time carried into a business request (owner idea "305", 2026-10-20, approved narrow fix) is BUILT, NOT DEVICE-VERIFIED until** check 15 of the item 84 checklist passes on a real phone: a clock time the words state ("at 7" = 7 PM via `pointClockFromText`) fills AskBusiness's optional Time field (`askBusinessParamsFromAsk` -> `prefillStartMinutes` -> `startTimeFromMinutes`), ambiguous ("at 9") stays empty, the missing day is still asked, nothing changes in search; journey `statedTimeHandoff` 3/3, Jest 478/6555 (no migration, no new strings). Business-name recognition ("Coastal Coffee") DEFERRED until AI-enabled testing with seeded businesses.
+
 **Item 31 (Interested -> Attending) is OPEN until** native-speaker review of its 11 strings and a device check are
 recorded in `PRODUCT_AUDIT/ITEM_31_INTERESTED_TO_ATTENDING_REVIEW_2026-10-11.md` (built, tests and journey pass).
 
@@ -491,6 +493,7 @@ recorded on a real device (built; tests, the `planComplete` journey and parse ch
   set by the owner, counsel review of the sponsored terms (`v1-draft-1`), a named finance approver row
   (owner SQL), and an approval audit table before the first live checkpoint. Sponsored allow-list stays
   empty (serves nothing). Run `bash scripts/deploy-sponsored-functions.sh` before any sponsored test.
+- **Prod journey actors (found 2026-10-20):** prod has 0 friendships, so 6 journeys that pick an existing accepted friendship fail before running (518/562; they passed 2026-10-18). Owner to decide: restore a test friendship or make those journeys create their own actors.
 - **Native-speaker review** of all machine-authored non-English strings (most items since 2026-09-28).
 
 **Item 168 (V1 category set) is LIVE (2026-10-11):** migration 20270294 applied, 3 edge functions deployed, merged; journeys

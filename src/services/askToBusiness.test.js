@@ -136,3 +136,44 @@ describe('item 84: request from an ask -- what was carried, and what is still mi
     expect(svc).not.toMatch(/await|setTimeout|SharedElement|Animated/);
   });
 });
+
+// Owner idea "305" (2026-10-20): a clock time the words state fills the optional Time field; nothing is asked or invented.
+describe('idea 305: a stated time carries into the request', () => {
+  const { askMissingFields } = require('../utils/askMissing');
+  const { startTimeFromMinutes, toTimeParam } = require('../utils/requestTime');
+  const { replyMeetsRequest } = require('../utils/replyFit');
+  const formOf = (p) => ({ text: p.prefillText, category: p.prefillCategory, partySize: p.prefillPartySize ? String(p.prefillPartySize) : '', dateWindow: p.prefillDateWindow });
+
+  it('"Dinner at Coastal Coffee at 7 for four" -> 7 PM + 4 people carried; the missing day is still asked', () => {
+    const p = askBusinessParamsFromAsk(ask('Dinner at Coastal Coffee at 7 for four'));
+    expect(p).toMatchObject({ prefillCategory: 'Restaurants', prefillPartySize: 4, prefillStartMinutes: 19 * 60, prefillDateWindow: null });
+    expect(askMissingFields(formOf(p)).map((m) => m.key)).toEqual(['day']);
+    expect(toTimeParam(startTimeFromMinutes(p.prefillStartMinutes))).toBe('19:00'); // what Send stores in time_window_start
+  });
+
+  it.each([['at 7pm', 19 * 60], ['at 7:30', 19 * 60 + 30], ['at 7am', 7 * 60], ['at noon', 12 * 60], ['at 9 pm', 21 * 60]])('"dinner %s" -> %i', (w, min) => {
+    expect(askBusinessParamsFromAsk(ask(`dinner ${w}`)).prefillStartMinutes).toBe(min);
+  });
+
+  it.each(['dinner at 9', 'dinner at 10 tonight', 'dinner tonight', 'dinner for 7', 'dinner after 7', 'dinner at Seven Seas'])('no time invented: "%s"', (t) => {
+    expect(askBusinessParamsFromAsk(ask(t)).prefillStartMinutes).toBeNull();
+  });
+
+  it('a When the person removed from the understood chips takes the time with it', () => {
+    const a = ask('dinner tonight at 7');
+    expect(askBusinessParamsFromAsk({ ...a, classifyResult: { ...a.classifyResult, removedUnderstood: ['when'] } }).prefillStartMinutes).toBeNull();
+  });
+
+  it('the stored time is what a reply is checked against: "Fits" 7 PM', () => {
+    const request = { date: '2026-10-21', time_window_start: '19:00' };
+    const fit = replyMeetsRequest(request, { offer_type: 'standard' });
+    expect(fit.qualifies).toBe(true);
+    expect(fit.reasons).toEqual([{ kind: 'time', date: '2026-10-21', startMin: 19 * 60 }]);
+  });
+
+  it('the screen starts its Time field from the carried minutes', () => {
+    expect(read('../screens/AskBusinessScreen.js')).toMatch(/useState\(\(\) => startTimeFromMinutes\(route\.params\?\.prefillStartMinutes \?\? null\)\)/);
+    expect(startTimeFromMinutes(null)).toBeNull();
+    expect(startTimeFromMinutes(24 * 60)).toBeNull();
+  });
+});

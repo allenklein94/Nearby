@@ -1,3 +1,27 @@
+# Owner idea "305" decision + build (2026-10-20): stated clock time carried into the business request; BUILT, NOT DEVICE-VERIFIED; business-name recognition DEFERRED
+
+Owner decisions: keep Dinner -> Restaurants, "for four" -> 4, keep asking "What day?" (never invent one); FIX the "at 7" handoff;
+DEFER "Coastal Coffee" recognition until AI-enabled testing with seeded businesses. No new screen, question, string or search change.
+Built: `askBusinessParamsFromAsk` (the one handoff, `services/askToBusiness.js`) adds `prefillStartMinutes` = `pointClockFromText`
+(existing rule: "at 7" = 19:00 by the bare 1-7 = evening rule, "at 7am"/"at 7:30"/"at noon"/"at 9 pm" exact, a bare 8-11 such as
+"at 9" = null, never guessed; dropped when the person removed the When chip); `startTimeFromMinutes` (`utils/requestTime.js`) builds
+the screen's start value; AskBusiness's `startTime` starts from it (the optional Time chip shows it selected, "Any time" clears it);
+Send stores it as `time_window_start` exactly as a picked time (no migration). Only the Time field; the "From what you said" card and
+the search are unchanged.
+Verified (code + live DB, rolled back): Jest `askToBusiness.test.js` idea 305 block (carry 19:00 + 4, day still the only missing
+field, 5 stated forms, 6 no-invent cases incl. "at 9", "for 7", "after 7", "at Seven Seas", removed When, item 63 reason
+`{kind:'time', startMin:1140}` from the stored row, screen wiring); full Jest 478 suites / 6555 passed. New journey
+`statedTimeHandoff` 3/3 on prod (rolled back): real handoff -> real `create_business_request` stores 19:00 + party 4 + Restaurants,
+reached 1 -> real hand-written `submit_business_offer` -> `replyMeetsRequest` on the stored rows qualifies with the 7 PM time reason.
+The on-screen words ("Fits 7:00 PM" via `displayClock`, shown only on "✨ Our pick") were not rendered. Device check = item 84
+checklist check 15 (added).
+Full journeys on prod: 43/49 suites, 518/562 tests. The 6 failing suites (groupBookingLifecycle, groupPlanJourney, inviteJourney,
+recommendationJourney, gatheringFormation, intentVisibility; 44 tests) fail BEFORE running: each picks an existing accepted
+friendship from prod (`select user_a, user_b from friendships where status = 'accepted' limit 1`) and prod now has 0 friendships
+(read-only check 2026-10-20: 8 auth users, 4 profiles, 0 friendships, 25 gatherings). They passed in the 559/559 run of 2026-10-18,
+so that row was removed since; not caused by this change, not re-seeded (production data: owner to decide; the from-scratch replay's
+`journey-fixtures.sql` seeds one locally).
+
 # "Don't interrogate the user" (owner idea "305", 2026-10-20; NOT item 305): RULE MET (locked "Infer first; never re-ask" + item 106), PROBE FOUND ONE LOST FACT (stated clock time); owner decision pending; nothing built; CLAUDE.md not changed
 
 Checked 2026-10-20. Rule already locked: "Infer first; never re-ask what Nearby knows ... ask only what blocks the next step (a search never

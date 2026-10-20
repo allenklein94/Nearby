@@ -22,7 +22,7 @@ import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { requestBusinessPartnership } from '../services/businessPartnerships';
 import { checkTextModeration } from '../services/textModeration';
 import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
-import { toTimeParam, timeLabel } from '../utils/requestTime';
+import { toTimeParam, timeLabel, startTimeFromMinutes } from '../utils/requestTime';
 import DietaryPicker from '../components/DietaryPicker';
 import RequestedItemsPicker from '../components/RequestedItemsPicker';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
@@ -190,8 +190,8 @@ export default function AskBusinessScreen({ navigation, route }) {
   const choosingBusiness = pickBusiness && !targetPartner;
   // Item 72: opened from a business's Reserve / Book / Request CTA. Same request, worded for what the person tapped.
   const [noteToBusiness, setNoteToBusiness] = useState('');
-  // Optional preferred start time (deterministic picker, never inferred). null = any time.
-  const [startTime, setStartTime] = useState(null);
+  // Optional preferred start time (deterministic picker, or a time the person's words stated: idea "305"). null = any time.
+  const [startTime, setStartTime] = useState(() => startTimeFromMinutes(route.params?.prefillStartMinutes ?? null));
   const [showTimePicker, setShowTimePicker] = useState(false);
   const gatheringId = route.params?.gatheringId ?? null;
   const gatheringTitle = route.params?.gatheringTitle ?? null;
