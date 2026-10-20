@@ -7,7 +7,7 @@ groupBookingLifecycle, groupPlanJourney, inviteJourney, recommendationJourney, g
 production rows). groupPlanJourney's business is placed far from its requests (-0.8, -0.8): its offers are inserted directly, and a
 nearby one was reached by routing first (duplicate offer row). Results (prod, rolled back): the 6 = 44/44; full journeys 49/49 suites,
 562/562 tests (incl. `statedTimeHandoff` 3/3). Production data untouched (still 0 friendships).
-Still dependent on production rows (pass today, not changed, owner to decide): 25 journeys pick existing `profiles` from prod (prod has 4):
+Still dependent on production rows (pass today, not changed, owner to decide): 24 journeys pick existing `profiles` from prod (prod has 4):
 bookingCapacity, datingConsent, friendsPlanning, gatheringDirections, gatheringMemory, interestedToAttending, noShowJourney,
 noticedActivity, notificationEvents, peopleMatchJourney, planComplete, requestFunnel, strongMatch, coreLoop, friendNearby,
 gatheringCheckIn, intentFunnel, notificationAction, offerJourney, outdoorMatchJourney, perkRedemption, plansThisMonth,
