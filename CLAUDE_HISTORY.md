@@ -1,3 +1,16 @@
+# "The Home intent box is the command center" (owner idea "303", 2026-10-20; NOT item 303): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, layout or code; CLAUDE.md not changed
+
+Checked 2026-10-20 (code reading). Already the locked Home order: "intent box -> Picked For You (max 3) -> Your Plans (max 3) -> social
+line -> Nearby Right Now (max 3)" (Recommendations), Home = doors (items 110/238), "One concept: What do you want to do nearby?".
+As built (`HomeScreen.js`): the box is the first card under the greeting + period subtitle (only a load-failure notice can sit between),
+headed "What do you want to do?" with rotating example asks as placeholder ("Dinner tonight…", "Something fun Saturday…", "Plan
+something for {title}…"); it is not a plain search: it runs the ONE resolver (`resolveAsk`, same as Discover), shows item 45's
+understood chips, answers in place with idea "302"'s labelled doors, routes a people ask to People (item 86), and carries the facts into
+Create (items 82/85) or AskBusiness (item 84). The rest of Home supports it without competing: max 3 per section, sections only when real
+(`utils/homeAttention.js`), idea "202"'s period quick picks, one animation per visit (idea "207"), never in-place expansion (item 110).
+Not proposed and not built: free-form commands beyond an ask (e.g. "invite Sam", "cancel my plan"): those stay on their objects
+(one CTA table, `primaryAction.js`). Not verified: how prominent the box feels on a real phone (C21 sparse Home, C18 flows).
+
 # "One intent can have multiple doors" (owner idea "302", 2026-10-20; NOT item 302): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new sections, strings or code; CLAUDE.md not changed
 
 Checked 2026-10-20 (code reading + a words-only probe). Probe (Jest, AI off, `resolveAsk`, not committed): "Dinner tonight." -> Food & Drink,
