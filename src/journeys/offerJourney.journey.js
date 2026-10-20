@@ -24,7 +24,7 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     const [host] = journeyPeople(1);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}';
-      v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_opps jsonb; v_row jsonb; v_o record; v_perf_before bigint; v_perf_after bigint;
+      v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_early text; v_tz text; v_rev uuid; v_opps jsonb; v_row jsonb; v_o record; v_perf_before bigint; v_perf_after bigint;
       v_comp_before bigint; v_comp_after bigint; v_seen int; v_first_before uuid; v_redeem_before uuid; v_redeem_after uuid; v_val_before numeric; v_val_after numeric; v_red_before bigint; v_val record; v_f0 record; v_f1 record;`, `
   ${actorsSql({ people: ['v_owner', 'v_host'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
@@ -110,6 +110,14 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
   select o.id into v_redeem_before from business_request_offers o join business_requests r on r.id = o.request_id
     where r.requester_id = v_host and o.status = 'completed' and o.completed_at is not null order by o.completed_at, o.id limit 1;
   reset role;
+  -- owner decision 2026-10-11 (1): before the visit day, completing is refused and nothing changes
+  begin perform complete_business_reservation(v_offer); v_early := 'NO ERROR'; exception when others then v_early := sqlerrm; end;
+  log := log || jsonb_build_array(jsonb_build_object('step','complete_too_early','ok', true, 'data', jsonb_build_object('msg', v_early,
+     'status', (select status from business_request_offers where id = v_offer))));
+  -- the visit day arrives (fixture: the booked time moves to 23:59 later TODAY in the host's zone, the server's own fallback
+  -- included): completing on the visit day is allowed before the visit hour
+  v_tz := coalesce(nullif(nullif((select timezone from profiles where id = v_host), ''), 'UTC'), 'Etc/GMT+12');
+  update business_request_offers set proposed_time = ((now() at time zone v_tz)::date + time '23:59') at time zone v_tz where id = v_offer;
   v_res := complete_business_reservation(v_offer);
   set local role authenticated;
   select o.id into v_redeem_after from business_request_offers o join business_requests r on r.id = o.request_id
@@ -158,6 +166,9 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     expect(s.offer_reaches_host.data.offer_status).toBe('offered');
     expect(s.host_accepts.data).toEqual({ offer: 'accepted', request: 'fulfilled', reservation: 'confirmed' });
     expect(s.visit_completed.data.offer).toBe('completed');
+  });
+  test('owner decision 2026-10-11 (1): before the visit day, Mark as Completed is refused and changes nothing', () => {
+    expect(s.complete_too_early.data).toEqual({ msg: 'You can mark this as completed on the day of the visit.', status: 'accepted' });
   });
   test('the client renders each state the way the database has it (no wrong action)', () => {
     const offered = { status: 'offered', valid_until: s.offer_reaches_host.data.valid_until };

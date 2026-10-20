@@ -510,11 +510,11 @@ demand-backed acquisition (needs >= 25 distinct people per category in the marke
 label (needs real comparison data); Discover first-viewport fit (needs a phone).
 
 **Owner decisions on the former open questions (2026-10-11; recorded, NOT built -- each needs its own build ask):**
-(1) "Mark as Completed" is never allowed before the scheduled visit date; (2) an "Also nearby (not a Nearby partner)" Places row is
-allowed, clearly labelled, kept distinct from partners, never implying they take part in Nearby offers; (3) gathering age limits:
+(1) "Mark as Completed" is never allowed before the scheduled visit date (BUILT, LIVE 2026-10-20: migration 20270330, server refuses before the visit day in the requester's zone, button only via `canCompleteVisit` in `utils/dashboardGlance.js`; journey `offer` refusal step; NOT DEVICE-VERIFIED, no from-scratch replay); (2) an "Also nearby (not a Nearby partner)" Places row is
+allowed (NOT BUILT: blocked on the owner's Google display-terms + per-query cost decision, per its proposal), clearly labelled, kept distinct from partners, never implying they take part in Nearby offers; (3) gathering age limits:
 use the existing age/safety rules; inspect current rules and applicable requirements before proposing any change, no new restriction
-without approval; (4) offer value only from saved offer + redemption data: shown only with a real price/discount AND a confirmed
-redemption; never estimated revenue or invented value.
+without approval (INSPECTED 2026-10-20: every account is 18+ by DB check `must_be_18_plus` + onboarding; gatherings carry only a descriptive `suited_age_min/max` 0-18 that never restricts joining; nothing proposed); (4) offer value only from saved offer + redemption data: shown only with a real price/discount AND a confirmed
+redemption; never estimated revenue or invented value (MET as built: `get_partner_offer_value` = completed offers x owner price only; `offerValueLines`).
 
 **Owner scope of 2026-10-11 finished** (records in CLAUDE_HISTORY.md): plan-chat push live; item 41 "See gatherings" dedupe; item 35
 closed; `docs/business.html` headless 56/56. Left open from it: native review of the reworded Messages hint (10 languages); the owner's own

@@ -243,6 +243,7 @@ d('journey: domain events -> one notification layer (item 125)', () => {
 
   -- 8. OFFER_REDEEMED: recorded only
   perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  update business_request_offers set proposed_time = now() where id = v_offer; -- the visit day arrives (never completed before it)
   select count(*) into v_q from jq;
   v_res := complete_business_reservation(v_offer);
   log := log || jsonb_build_array(jsonb_build_object('step','offer_redeemed','ok',

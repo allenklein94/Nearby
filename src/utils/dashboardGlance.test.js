@@ -67,3 +67,34 @@ describe('visitHasPassed (when to offer "Didn\'t show up")', () => {
     expect(visitHasPassed(null, now)).toBe(false);
   });
 });
+
+// Owner decision (2026-10-11, open question 1): "Mark as Completed" never before the visit day.
+describe('canCompleteVisit', () => {
+  const { canCompleteVisit } = require('./dashboardGlance');
+  const fs = require('fs');
+  const path = require('path');
+  const at = (d, h) => new Date(2026, 8, d, h, 0, 0).toISOString();
+  it('before the visit day: no button; on the day (any hour, even before the visit time) and after: the button', () => {
+    expect(canCompleteVisit({ status: 'accepted', proposed_time: at(21, 19) }, now)).toBe(false);
+    expect(canCompleteVisit({ status: 'accepted', proposed_time: at(20, 19) }, now)).toBe(true);
+    expect(canCompleteVisit({ status: 'accepted', proposed_time: at(19, 19) }, now)).toBe(true);
+  });
+  it('same precedence as visitDayKey: booked time, else the gathering start, else the request date', () => {
+    expect(canCompleteVisit({ status: 'accepted', proposed_time: at(20, 9), business_requests: { date: '2026-09-25' } }, now)).toBe(true);
+    expect(canCompleteVisit({ status: 'accepted', business_requests: { gatherings: { scheduled_at: at(22, 18) }, date: '2026-09-19' } }, now)).toBe(false);
+    expect(canCompleteVisit({ status: 'accepted', business_requests: { date: '2026-09-21' } }, now)).toBe(false);
+    expect(canCompleteVisit({ status: 'accepted', business_requests: { date: '2026-09-20' } }, now)).toBe(true);
+  });
+  it('no day on record: allowed (nothing to wait for); only an accepted offer ever offers it', () => {
+    expect(canCompleteVisit({ status: 'accepted', business_requests: {} }, now)).toBe(true);
+    for (const status of ['offered', 'completed', 'cancelled', 'declined']) {
+      expect(canCompleteVisit({ status, proposed_time: at(19, 19) }, now)).toBe(false);
+    }
+  });
+  it('the request screen offers Mark as Completed only through this rule; the server re-checks', () => {
+    const screen = fs.readFileSync(path.join(__dirname, '../screens/BusinessRequestDetailScreen.js'), 'utf8');
+    expect(screen).toMatch(/canCompleteVisit\(\{ \.\.\.o, business_requests: o\.business_requests \?\? request \}\) && \(\s*<TouchableOpacity\s+style=\{styles\.completeButton\}/);
+    const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270330_complete_reservation_not_before_visit_day.sql'), 'utf8');
+    expect(sql).toMatch(/if not public\._visit_local_day_reached\(offer_id_param\) then/);
+  });
+});

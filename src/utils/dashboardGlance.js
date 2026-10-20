@@ -1,3 +1,4 @@
+import { canDo } from './objectLifecycle';
 import { isPipelineNew, isPipelineOffered, reviewingRequestIds } from './businessPipeline';
 import { countLabel } from './plural';
 import { offerPriceLabel } from './outcomeDisplay';
@@ -26,6 +27,15 @@ export function localDayKey(value) {
 
 export function visitDayKey(o) {
   return localDayKey(o?.proposed_time) ?? localDayKey(o?.business_requests?.gatherings?.scheduled_at) ?? localDayKey(o?.business_requests?.date);
+}
+
+// Owner decision (2026-10-11, open question 1): "Mark as Completed" only from the visit's DAY on (any hour of it), never before.
+// Same visit day as visitDayKey; no day on record = nothing to wait for (allowed). Decides only whether to OFFER the button;
+// complete_business_reservation re-checks in the requester's zone (unknown zone = the latest day boundary) and may still refuse.
+export function canCompleteVisit(o, now = new Date()) {
+  if (!canDo('offer', o?.status, 'redeem')) return false;
+  const day = visitDayKey(o);
+  return day == null || day <= localDayKey(now);
 }
 
 // Whether a confirmed visit's time has passed, to OFFER "Didn't show up" (the server re-checks with its own rule and may still

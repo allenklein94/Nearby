@@ -1,3 +1,25 @@
+# Deferred-work audit + owner open question (1) BUILT (2026-10-20)
+
+Owner asked to build every deferred-but-approved item now. Audit against code (not records):
+- Already built and present in code: B3 Gatherings feed folded into Discover (no GatheringsScreen; guard `gatheringsFeedFolded`), B1
+  GatheringHub folded into GatheringDetail (no screen; `gatheringHubFolded`), B2 PlanDetail multi-object only
+  (`planDetailMultiObjectOnly`), B9 relationship entry screens folded (`relationshipToolsEntriesFolded`), B11 GroupPlan vs
+  GroupOccasionPlan investigated = different jobs, both kept; offer arrival signal Layer 1 (`OfferArrivalSignal`); idea "307"'s chip
+  change pickers (built 2026-10-20). Nothing rebuilt.
+- Still gated (not built, their gates unchanged): Momentum fold + B9 removals (usage data), distance chip / expanding radius / similar
+  results (item 128 + phone), 1:1 plan card (own decision), Activity filters (usage), #15 full-screen first reply (phone), "You're
+  here" option B (phone), expired-sightings purge + 13 sourceless edge functions + item168_backup + signed-in API test (owner).
+- Owner open question (1) BUILT: migration 20270330 (LIVE): `_visit_local_day_reached` (no client grant) + `complete_business_reservation`
+  refuses "You can mark this as completed on the day of the visit." before the visit DAY (proposed_time > gathering start > request
+  date, read in the requester's zone, unknown = Etc/GMT+12); on the day any hour is fine; no day on record = allowed; auth + idempotent
+  answer still first; same signature (one overload). Client: `canCompleteVisit` (`utils/dashboardGlance.js`, visitDayKey precedence)
+  hides the customer's Mark as Completed before the day. Journeys: `offer` adds the refusal (3-day-out visit, status unchanged) then
+  completes at 23:59 the same day; `notificationEvents` moves the visit to now before completing. Tests: dashboardGlance +4, journeys
+  567/567 on prod (live), Jest 479/6582. Not done: from-scratch replay, device check.
+- (2) "Also nearby" Places row NOT built: its proposal requires the owner's Google display-terms + per-query cost decision (real money).
+- (3) age limits inspected: all accounts 18+ (`must_be_18_plus` + onboarding); gathering ages descriptive only. Nothing proposed.
+- (4) offer value MET as built (`get_partner_offer_value`: completed x owner price; unpriced counted, no dollars; nothing before 1).
+
 # Owner idea "307" ACCEPTED + verification extended (2026-10-20); NOT DEVICE-VERIFIED
 
 Owner accepted the build and LOCKED it: the five existing WHEN choices, People 2-8/10/12 + the current count (no typed number),

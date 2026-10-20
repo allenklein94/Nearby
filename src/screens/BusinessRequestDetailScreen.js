@@ -47,6 +47,7 @@ import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustom
 import { presentOffer } from '../utils/offerPresentationEngine';
 import { validityLabel, isOfferExpired, availableWindowLabel, nextValidityRefreshMs } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
+import { canCompleteVisit } from '../utils/dashboardGlance';
 import { consumerOfferAction } from '../utils/primaryAction';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -1834,6 +1835,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       </>
                     );
                   })()}
+                  {canCompleteVisit({ ...o, business_requests: o.business_requests ?? request }) && (
                   <TouchableOpacity
                     style={styles.completeButton}
                     onPress={() => handleComplete(o.id)}
@@ -1843,6 +1845,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                   >
                     {actingOfferId === o.id ? <ActivityIndicator color={colors.primary} size="small" /> : <Text style={styles.completeButtonText}>{t('ui.requestDetail.markAsCompleted')}</Text>}
                   </TouchableOpacity>
+                  )}
                   <TouchableOpacity
                     style={styles.cancelReservationButton}
                     onPress={() => handleCancelReservation(o.id)}
