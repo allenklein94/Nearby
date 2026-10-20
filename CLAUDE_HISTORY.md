@@ -1,3 +1,22 @@
+# "One intent can have multiple doors" (owner idea "302", 2026-10-20; NOT item 302): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new sections, strings or code; CLAUDE.md not changed
+
+Checked 2026-10-20 (code reading + a words-only probe). Probe (Jest, AI off, `resolveAsk`, not committed): "Dinner tonight." -> Food & Drink,
+the Restaurants tag (synonym "dinner"; item 169 = no Restaurants storage LEVEL, the leaf tag exists), tonight; no party, no plan
+combination (one part only, item 63's `planAsk` needs 2+). Home's typed-ask results are ALREADY grouped into labelled doors, each from a
+real result (`INTENT_RESULT_TYPE_LABELS` in `HomeScreen.js`, `ui.home.resultType`, 11 languages), headed "I found N ways to make this happen":
+- Existing options = "🎉 Already happening" (gatherings/events), "🏘️ A community for this", item 189's Places to go, "🎁 A perk that fits".
+- With people = "👥 Someone you know wants this too" (item 93: accepted friends who turned sharing ON, facts line only) + card reasons
+  for a friend going/hosting; for a pure people ask "💗 Meet new people" (item 86). DECLINED as proposed ("friends who might want to go"):
+  Nearby never guesses which friends would want something (items 92/131; a typed ask is never shown to anyone; Interested is private).
+  The person picks friends in Create's Who's invited.
+- Business offers = "🟢 A business has this ready" (real posted availability) / "🟡 A business may be able to help" (standing policy match,
+  never called "Available"), then "Ask Nearby Businesses" (item 84; absent for public-place asks, idea "158"/"159" after Send). Offers that
+  RESPOND exist only after the person asks: no pre-built offer door or deals feed (doctrine; item 114).
+- Create a plan = "None of these? Create it yourself →" (item 190: leads, before the business link); empty = "Or create" (item 81).
+Groups appear only when real (empty groups omitted, never placeholders). Discover's typed ask uses the same resolver; its layout was
+not re-read for this assessment. Not verified: AI path (credit), the grouped results on a phone (C18), real business groups (prod has
+no seeded businesses/perks, so 🟢/🟡/🎁 have never rendered with real rows).
+
 # "Don't make me decide which feature" + a single UX operating system (owner idea "301", 2026-10-20; NOT item 301): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, document or code; CLAUDE.md not changed
 
 Checked 2026-10-20. The rule is already the core of the product: "One concept: What do you want to do nearby?" (doctrine), "The system
