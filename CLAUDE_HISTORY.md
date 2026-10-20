@@ -1,3 +1,14 @@
+# Owner idea "307" (chips as editable "intent atoms": Dinner / Tonight / 4 people / 0-2 mi) assessed 2026-10-20: PARTLY MET; editing = decision 3, DEFERRED; history only
+
+Met: item 45's understood chips already ARE the atoms (WHAT / WHEN / WHERE / WHO + People only for a stated number), shown on
+results on Home and Discover; ✕ removes one and the results update in place via `refineTypedAsk('understood_<piece>')`, never a
+restarted search, and the removal carries into Create / AskBusiness (`removedUnderstood`). Item 107's refinement row also narrows in place.
+Not met, by decision: changing an atom (tap -> picker) is the understood-chips decision 3, DEFERRED 2026-10-15 until a phone shows
+remove-only isn't enough (re-held by ideas "179", "305", "306"; idea "252": no new feature work before the first device session).
+Example conflicts: "0-2 mi" (no distance chip; radii only `SEARCH_RADIUS_OPTIONS` 15/30/50, idea "178", item 81's radius stays a hard
+filter); "Dinner" reads as the Restaurants category chip (idea "305"). Nothing built. If reopened: one picker per atom from that
+atom's existing options (category list, `UNDERSTOOD_WINDOWS`, `partySizeFromText`'s count), applied through the same refine path.
+
 # Owner idea "306" (correct the interpretation, e.g. 7 PM meant 7 AM) assessed 2026-10-20: MET where a clock time is shown; history only
 
 The only place Nearby turns words into a clock time is idea "305"'s handoff into AskBusiness: "at 7" fills the optional Time field
