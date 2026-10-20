@@ -1,3 +1,17 @@
+# Journey isolation finished: the other 24 journeys create their own actors (owner, 2026-10-20); prod journeys 562/562
+
+Owner: convert the remaining 24 now rather than on next touch. Harness gains `journeyPeople(n)` ([{ id }]) and `journeyOwner()`
+({ id, managed_partner_id }): ids made in Jest so the client-side assertions keep them, the rows created by `actorsSql` inside the
+rolled-back run (people oldest-first, like the old `order by created_at`; owner + an active business at 40, -75, Coffee, which the
+journeys then move/configure as before). Converted: bookingCapacity, coreLoop, datingConsent, friendNearby, friendsPlanning,
+gatheringCheckIn (2 blocks), gatheringDirections, gatheringMemory, intentFunnel, interestedToAttending, noShowJourney,
+noticedActivity, notificationAction, notificationEvents, offerJourney, outdoorMatchJourney, peopleMatchJourney (2 blocks),
+perkRedemption, planComplete, plansThisMonth, requestExpiryWarning, requestFunnel, strongMatch, waitlistPromotion. Also removed
+requestExpiryWarning's borrowed second production business (the customer-also-owns-a-business step now creates an inactive one).
+No assertion changed. Results (prod, rolled back): the 24 = 313/313 first run; full journeys 49/49 suites, 562/562; Jest 478/6555.
+Production afterwards: 4 profiles, 0 friendships, 0 leftover journey users or businesses. No journey reads production rows now
+except `businessHoursParity` (reads the live hours function by design) and the permission probes (`perform 1 from <view>`).
+
 # Journey isolation: six journeys create their own actors (owner, 2026-10-20, option 2 approved); prod journeys 562/562
 
 Owner decision: never restore a production friendship to satisfy tests; the journeys create their own people + accepted friendships

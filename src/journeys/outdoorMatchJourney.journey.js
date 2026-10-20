@@ -67,8 +67,7 @@ jest.mock('../services/businessFulfillment', () => ({
 
 const fs = require('fs');
 const path = require('path');
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 const { runIntentSearch } = require('../services/intentResolver');
 const { getNearbyBusinesses } = require('../services/brandOffers');
 const { filterByEnvironment } = require('../constants/environmentMatch');
@@ -85,9 +84,10 @@ const INDOOR = 'Journey Indoor Cafe';
 d('journey: a business declares outdoor seating -> "something outside" -> it appears, by its declaration', () => {
   let s;
   beforeAll(async () => {
-    const [{ id: consumer }] = await runSql(`select id from profiles order by created_at limit 1;`);
+    const [{ id: consumer }] = journeyPeople(1);
     const log = await runJourney(`
       v_u uuid := '${consumer}'; v_patio uuid; v_plain uuid; v_indoor uuid; v_rows jsonb; v_near jsonb; v_ops jsonb;`, `
+  ${actorsSql({ people: ['v_u'] })}
   -- three ordinary Food & Drink / Coffee businesses at one place, none sponsored; only the declarations differ
   insert into brand_partners (name, active, latitude, longitude, category, subcategory, attributes)
     values ('${PATIO}', true, 10.0, -150.0, 'food_drink', 'Coffee', array['outdoor_seating']) returning id into v_patio;

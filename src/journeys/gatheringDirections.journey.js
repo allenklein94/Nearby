@@ -9,8 +9,7 @@
 //   anon cannot call the lookup at all.
 // Rolled back. No migration: the lookup is the existing host/attendee-only RPC. Direct reads of the point and the RPC paths
 // (item 146, migration 20270320) are covered per real database role by journey `preciseLocation`.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { buildDirectionsUrl, isValidCoordinate } from '../utils/planLogisticsActions';
 
 const d = hasToken ? describe : describe.skip;
@@ -28,11 +27,12 @@ function linkFor(rows) {
 d('journey: Get directions only for the host and approved attendees', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 4;`);
+    const people = journeyPeople(4);
     const log = await runJourney(`
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}'; v_req uuid := '${people[2].id}';
       v_wait uuid := '${people[3].id}';
       v_open uuid; v_appr uuid; v_full uuid;`, `
+  ${actorsSql({ people: ['v_host', 'v_fan', 'v_req', 'v_wait'] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J145 open', now() + interval '1 hour', 26.4615, -80.0728, 'Coffee', 'journey', 10, 'everyone') returning id into v_open;

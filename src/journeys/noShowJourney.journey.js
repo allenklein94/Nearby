@@ -2,19 +2,19 @@
 // up" once the visit time has passed; it is analysis only (no status, push or penalty for the customer), it rules out a later
 // "completed", and the one internal chain view (request_journey) answers "what happened to this request?" with no_show and the
 // request's ~10-mile area bucket (never its coordinates). Rolled back. Not covered: the dashboard button itself (no device).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
 d('journey: booked visit -> time passes -> business marks no-show -> the chain says no_show', () => {
   let s;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const [host] = await runSql(`select id from profiles where id <> '${owner.id}' and managed_partner_id is null limit 1;`);
+    const owner = journeyOwner();
+    const [host] = journeyPeople(1);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}';
       v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_err text; v_j record; v_n int; v_visit timestamptz; v_q0 bigint;`, `
+  ${actorsSql({ people: ['v_owner', 'v_host'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)

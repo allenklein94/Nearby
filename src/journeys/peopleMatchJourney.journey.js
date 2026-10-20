@@ -29,8 +29,7 @@ jest.mock('../services/supabase', () => ({
     rpc: (n) => { throw new Error(`a people ask must not call ${n}`); },
   },
 }));
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { matchDistanceLabel, MUTUAL_FREE_TONIGHT_LINE } from '../utils/freeTonight';
 import { peopleModeParams, peopleAskUnderstood } from '../utils/peopleAsk';
 import { understoodPieces } from '../utils/askUnderstood';
@@ -41,9 +40,10 @@ const d = hasToken ? describe : describe.skip;
 d('journey: free tonight (mutual) -> match -> distance only for the pair -> block ends it', () => {
   let s;
   beforeAll(async () => {
-    const p = await runSql(`select id from profiles order by created_at limit 3;`);
+    const p = journeyPeople(3);
     const log = await runJourney(`
       v_a uuid := '${p[0].id}'; v_b uuid := '${p[1].id}'; v_c uuid := '${p[2].id}'; v_m uuid; v_n int; v_d int; v_ids uuid[];`, `
+  ${actorsSql({ people: ['v_a', 'v_b', 'v_c'] })}
   -- 1. only b opts in: a (not opted in) sees nobody, so nothing can leak a one-sided flag
   perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
   perform set_free_tonight(now() + interval '5 hours');
@@ -109,9 +109,10 @@ d('journey: free tonight (mutual) -> match -> distance only for the pair -> bloc
 d('journey (owner item 86): a typed people ask -> People mode, the right Dating/Friends, tonight-first', () => {
   let s;
   beforeAll(async () => {
-    const p = await runSql(`select id from profiles order by created_at limit 3;`);
+    const p = journeyPeople(3);
     const log = await runJourney(`
       v_a uuid := '${p[0].id}'; v_far uuid := '${p[1].id}'; v_near uuid := '${p[2].id}'; v_rows jsonb;`, `
+  ${actorsSql({ people: ['v_a', 'v_far', 'v_near'] })}
   -- three people opted into friend discovery, no prior relation between them (all rolled back). The far one shares an interest,
   -- so the server ranks it FIRST; the near one (under 3 mi) is the one "tonight" must lead with.
   perform set_config('app.trusted_update', 'on', true);

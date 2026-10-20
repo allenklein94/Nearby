@@ -8,8 +8,7 @@
 //   D. open gathering, NOT Interested            -> approved                                       -> no moment (plain join)
 //   reload: the stored state alone (no in-memory join of this visit) never shows it.
 // Rolled back. The animation itself (timing, Reduce Motion) is checked in motion/interestedToAttending.test.js.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { interestedToAttendingMoment } from '../utils/interestedMoment';
 import { gatheringViewerState } from '../utils/objectState';
 
@@ -18,10 +17,11 @@ const d = hasToken ? describe : describe.skip;
 d('journey: Interested -> Attending only on confirmed attendance', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 3;`);
+    const people = journeyPeople(3);
     const log = await runJourney(`
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}'; v_other uuid := '${people[2].id}';
       v_a uuid; v_b uuid; v_c uuid; v_d uuid; v_res jsonb; v_was boolean; v_now boolean; v_st text;`, `
+  ${actorsSql({ people: ['v_host', 'v_fan', 'v_other'] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J31 open', now() + interval '3 days', 40.3, -75.2, 'Coffee', 'journey', 10, 'everyone') returning id into v_a;

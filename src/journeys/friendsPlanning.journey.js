@@ -14,8 +14,7 @@ jest.mock('expo-file-system/legacy', () => ({}));
 jest.mock('../services/friends', () => ({ getMyFriends: jest.fn() }));
 jest.mock('../services/communities', () => ({ getMyCommunities: jest.fn() }));
 jest.mock('../services/userLocation', () => ({ getUserLocation: jest.fn(), requireUserLocation: jest.fn() }));
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 const { selectFriendsActivity, splitFriendsActivity, getHomeInsight, friendsActivitySince } = require('../services/homeDashboard');
 
 const d = hasToken ? describe : describe.skip;
@@ -27,9 +26,10 @@ const g = (host, title, created, extra = '') => `insert into gatherings (host_id
 d('journey: friends are making plans - the 3-day window, visibility, one per friend, names and photos readable', () => {
   let s; let ids;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 3;`);
+    const people = journeyPeople(3);
     ids = { a: people[0].id, b: people[1].id, c: people[2].id };
     const log = await runJourney(`v_a uuid := '${ids.a}'; v_b uuid := '${ids.b}'; v_c uuid := '${ids.c}';`, `
+  ${actorsSql({ people: ['v_a', 'v_b', 'v_c'] })}
   delete from friendships where (user_a, user_b) in ((v_a, v_b), (v_b, v_a), (v_a, v_c), (v_c, v_a));
   delete from blocks where blocker_id in (v_a, v_b, v_c) and blocked_id in (v_a, v_b, v_c);
   insert into friendships (user_a, user_b, status, requested_by) values (v_a, v_b, 'accepted', v_a), (v_a, v_c, 'accepted', v_a);

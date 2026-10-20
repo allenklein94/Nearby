@@ -15,8 +15,7 @@
 //      F (not there) nothing, so F's card could never say "📸 N memories"
 // Then Jest runs the client rule the screens use (gatheringMemoryState) on the gathering the database returned.
 // Not covered (device only): the Memories section, the photo picker, the viewer, Plans -> Past on a phone.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 const { gatheringMemoryState, memoryCountFor } = require('../utils/gatheringCompletion');
 
 const d = hasToken ? describe : describe.skip;
@@ -31,11 +30,12 @@ d('journey: a completed gathering keeps memories only the people who were there 
   let s;
   let ids;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 4;`);
+    const people = journeyPeople(4);
     ids = { h: people[0].id, a: people[1].id, k: people[2].id, f: people[3].id };
     const log = await runJourney(`
       v_h uuid := '${ids.h}'; v_a uuid := '${ids.a}'; v_k uuid := '${ids.k}'; v_f uuid := '${ids.f}';
       g uuid; mem uuid; pub uuid; ord uuid; v_ok boolean; v_n int;`, `
+  ${actorsSql({ people: ['v_h', 'v_a', 'v_k', 'v_f'] })}
   -- setup: only the relations this journey names
   delete from friendships where user_a in (v_h, v_a, v_k, v_f) and user_b in (v_h, v_a, v_k, v_f);
   delete from matches where user_a in (v_h, v_a, v_k, v_f) and user_b in (v_h, v_a, v_k, v_f);

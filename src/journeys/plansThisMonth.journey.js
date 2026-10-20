@@ -12,8 +12,7 @@
 //   I. attended + checked in 40 days ago                 -> not this month
 // Then the count, show-at-1, and the once-only roll for the newly completed plan. Rolled back.
 // Not covered: rendering on a device, the device's own month boundary (localMonthBounds, unit-tested).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { plansThisMonthCount, showPlansThisMonth, takePlansThisMonthMoment } from '../utils/plansThisMonth';
 
 const d = hasToken ? describe : describe.skip;
@@ -26,13 +25,14 @@ d('journey: things happen -> only what really happened counts -> "N plans this m
   let s;
   let ids;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 2;`);
+    const people = journeyPeople(2);
     const log = await runJourney(`
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}';
       v_a uuid; v_b uuid; v_c uuid; v_d uuid; v_e uuid; v_f uuid; v_i uuid;
       v_p uuid := gen_random_uuid(); v_rf uuid := gen_random_uuid(); v_rg uuid := gen_random_uuid(); v_rg2 uuid := gen_random_uuid();
       v_rh uuid := gen_random_uuid(); v_of uuid := gen_random_uuid(); v_og uuid := gen_random_uuid(); v_og2 uuid := gen_random_uuid();
       v_oh uuid := gen_random_uuid();`, `
+  ${actorsSql({ people: ['v_host', 'v_fan'] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J53 A', now() + interval '3 days', 40.3, -75.2, 'Coffee', 'journey', 10, 'everyone') returning id into v_a;

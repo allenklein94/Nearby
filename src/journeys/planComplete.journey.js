@@ -9,8 +9,7 @@
 // comes back or duplicates. Item 35: the answer then feeds the next recommendations (get_my_experience_feedback, read through
 // utils/experienceFeedback.js): Loved it lifts that host and kind, a later Not for me lowers. Rolled back. The move (once per gathering, Reduce Motion) and the Home wiring are checked in
 // utils/gatheringCompletion.test.js. Not covered: rendering on a device.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { completedPlanFor } from '../utils/gatheringCompletion';
 import { SATISFACTION_SCALE } from '../constants/satisfactionScale';
 import { experienceFeedbackFromRow, feedbackFor } from '../utils/experienceFeedback';
@@ -28,10 +27,11 @@ const CANDIDATES = `(select coalesce(jsonb_agg(jsonb_build_object('id', g.id, 't
 d('journey: an attended gathering ends -> Completed on Your Plans -> How was it? -> answered once', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 2;`);
+    const people = journeyPeople(2);
     const log = await runJourney(`
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}';
       v_a uuid; v_b uuid; v_c uuid; v_d uuid; v_e uuid; v_res jsonb;`, `
+  ${actorsSql({ people: ['v_host', 'v_fan'] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J34 over', now() + interval '3 days', 40.3, -75.2, 'Coffee', 'journey', 10, 'everyone') returning id into v_a;

@@ -6,8 +6,7 @@
 // the database actually holds, plus the card action (recommendationContext) and the code box wording. Rolled back.
 // Not covered: rendering on a device (PerkCodeBox, the alerts), the realtime of a confirmation while the perk is open
 // (there is none: the state is read when the perk opens), RLS itself (scripts/live-verify/confirmed-visit-counts.sql).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { perkRedemptionState, perkCodeMessage } from '../utils/perkRedemptionState';
 import { recommendationContext, contextItem } from '../utils/recommendationContext';
 
@@ -23,10 +22,11 @@ const SNAP = `jsonb_build_object(
 d('journey: perk available -> claimed (code) -> reopened (same code) -> business confirms -> Redeemed', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 2;`);
+    const people = journeyPeople(2);
     const log = await runJourney(`
       v_owner uuid := '${people[0].id}'; v_cust uuid := '${people[1].id}';
       v_p uuid := gen_random_uuid(); v_o uuid := gen_random_uuid(); v_code text; v_res jsonb; v_res2 jsonb;`, `
+  ${actorsSql({ people: ['v_owner', 'v_cust'] })}
   insert into brand_partners (id, name, active) values (v_p, 'Coastal Coffee (journey)', true);
   insert into brand_offers (id, partner_id, title, reward_type, active, redemption_instructions)
     values (v_o, v_p, 'Free pastry', 'freebie', true, 'Ask at the counter.');

@@ -5,16 +5,15 @@
 // retried original and repeated taps; the view must give each ask exactly one row with only the milestones that really
 // happened, and the summary must count and divide by the right population. Fixture asks are moved into a week of their
 // own (2020-01-06) so the summary's week row is the fixture alone. Rolled back. Not covered: the app (no new client code).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
 d('journey: typed asks -> each milestone -> one funnel row per ask -> summary rates', () => {
   let s;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const users = await runSql(`select id from profiles where id <> '${owner.id}' and managed_partner_id is null order by created_at limit 2;`);
+    const owner = journeyOwner();
+    const users = journeyPeople(2);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_u uuid := '${users[0].id}'; v_host uuid := '${users[1].id}';
       v_g1 uuid; v_g2 uuid; v_g3 uuid; v_g4 uuid; v_g5 uuid; v_g6 uuid; v_g7 uuid; v_ind1 uuid; v_ind2 uuid; v_sub uuid; v_req uuid; v_offer uuid; v_n int; v_err text;
@@ -24,6 +23,7 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
       a_removed uuid := gen_random_uuid(); a_direct uuid := gen_random_uuid(); a_still uuid := gen_random_uuid();
       s_redeem uuid; s_decline uuid; s_expire uuid; s_cancel uuid; s_gather uuid; s_untapped uuid;
       f record; w record;`, `
+  ${actorsSql({ people: ['v_owner', 'v_u', 'v_host'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
 
   -- three upcoming public gatherings by another person

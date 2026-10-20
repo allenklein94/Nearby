@@ -13,8 +13,7 @@
 // Then Jest runs the client helpers the screens use (merge -> isDatingOptedIn -> countTonightSupply / countNewDatingPeople /
 // Home's crossed-paths row / orderForTonight) on the very rows the database returned.
 // Not covered (device only): how the Dating deck, Home row and Activity rows look on a phone.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 const { mergeCrossedPathsSignals } = require('../services/crossedPathsSignals');
 const { isDatingOptedIn, countNewDatingPeople } = require('../utils/datingCountConsent');
 const { countTonightSupply, orderForTonight } = require('../utils/meetTonight');
@@ -33,10 +32,11 @@ d('journey: Dating discovery shows and counts only people who chose Dating', () 
   let s;
   let ids;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 4;`);
+    const people = journeyPeople(4);
     ids = { a: people[0].id, b: people[1].id, c: people[2].id, d: people[3].id };
     const log = await runJourney(`
       v_a uuid := '${ids.a}'; v_b uuid := '${ids.b}'; v_c uuid := '${ids.c}'; v_d uuid := '${ids.d}'; g uuid; v_ok boolean;`, `
+  ${actorsSql({ people: ['v_a', 'v_b', 'v_c', 'v_d'] })}
   -- setup: no friendships, matches or blocks among them; B Dating, C Friends only, D nothing; A Dating too
   delete from friendships where user_a in (v_a, v_b, v_c, v_d) and user_b in (v_a, v_b, v_c, v_d);
   delete from matches where user_a in (v_a, v_b, v_c, v_d) and user_b in (v_a, v_b, v_c, v_d);

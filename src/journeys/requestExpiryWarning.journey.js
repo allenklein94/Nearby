@@ -4,8 +4,7 @@
 // tap: the owner's dashboard list is read as the owner, after the request changed state, and the real client helper says
 // what is true now; a non-owner is refused the list. Not covered: the push actually arriving on a device, send-push's
 // per-group mute (Jest covers the table), the dashboard rendering (parse-checked only).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 const { focusedOpportunityView } = require('../utils/focusedOpportunity');
 
 const d = hasToken ? describe : describe.skip;
@@ -26,11 +25,12 @@ const warned = (v) => `(select count(*) from push_outbox where data->>'type' = '
 d('journey: a request about to expire warns its business once, and the tap shows the current state', () => {
   let s;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const [host, host2] = await runSql(`select id from profiles where id <> '${owner.id}' and managed_partner_id is null order by created_at limit 2;`);
+    const owner = journeyOwner();
+    const [host, host2] = journeyPeople(2);
     const log = await runJourney(`
-      v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}'; v_host2 uuid := '${host2.id}'; v_other uuid;
+      v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}'; v_host2 uuid := '${host2.id}'; v_other uuid; v_partner2 uuid := gen_random_uuid();
       v_g uuid; a uuid; b uuid; c uuid; dd uuid; e uuid; f uuid; g uuid; h uuid; i uuid; j uuid; v_n int; v_o record; v_err text; v_list jsonb;`, `
+  ${actorsSql({ people: ['v_owner', 'v_host', 'v_host2'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
   update profiles set notification_mutes = '{}' where id = v_owner;
   ${mk('a', '1 day', '110 minutes')}
@@ -102,7 +102,8 @@ d('journey: a request about to expire warns its business once, and the tap shows
   -- vice versa (item 143): the customer also owns a business and turned ALL owner alerts off; the business's reply to
   -- their own request (a real customer Businesses push) still reaches them
   perform set_config('app.trusted_update', 'true', true);
-  update profiles set managed_partner_id = (select id from brand_partners where id <> v_partner order by id limit 1),
+  insert into brand_partners (id, name, active) values (v_partner2, 'Journey second business', false);  -- the customer's own, never routed to
+  update profiles set managed_partner_id = v_partner2,
          notification_mutes = '{owner_requests,owner_offers,owner_reservations,owner_demand}' where id = v_host;
 
   -- the tap, after the state changed: the owner answers a, b expires, then the owner's own list is read

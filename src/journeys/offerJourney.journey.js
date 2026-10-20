@@ -3,8 +3,7 @@
 // Rolled back. NOT covered (disclosed): the screen-business-content edge function (AI screening) needs a real user JWT
 // and, today, Anthropic credit; this journey calls submit_business_offer directly, which is what that function does
 // after screening passes. The consumer/business UI is not driven either; the client rules are asserted on the rows.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { offerPrimaryAction } from '../utils/primaryAction';
 import { buildPlanSummary } from '../utils/planAddonReadiness';
@@ -21,12 +20,13 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
   let s;
   let offerRow;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const [host] = await runSql(`select id from profiles where id <> '${owner.id}' limit 1;`);
+    const owner = journeyOwner();
+    const [host] = journeyPeople(1);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}';
       v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_opps jsonb; v_row jsonb; v_o record; v_perf_before bigint; v_perf_after bigint;
       v_comp_before bigint; v_comp_after bigint; v_seen int; v_first_before uuid; v_redeem_before uuid; v_redeem_after uuid; v_val_before numeric; v_val_after numeric; v_red_before bigint; v_val record; v_f0 record; v_f1 record;`, `
+  ${actorsSql({ people: ['v_owner', 'v_host'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
   select coalesce(sum(accepted_count),0), coalesce(sum(completed_count),0) into v_perf_before, v_comp_before from (
     select * from (select set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true)) x, lateral get_partner_offer_performance(v_partner)) p;

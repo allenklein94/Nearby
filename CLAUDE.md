@@ -1015,7 +1015,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
 - `CREATE OR REPLACE` with a changed parameter list creates a second overload: check
   `pg_get_function_identity_arguments`, drop the old signature in the migration. New functions:
   `revoke ... from public, anon`. Trusted writes to guarded profile columns set `app.trusted_update`.
-- Journeys create their own actors in the rolled-back transaction (`actorsSql` in `journeyHarness.js`), never production rows; 24 older journeys still pick prod `profiles` (listed in CLAUDE_HISTORY.md 2026-10-20), migrate when touched.
+- Journeys create their own actors in the rolled-back transaction (`actorsSql` + `journeyPeople`/`journeyOwner` in `journeyHarness.js`), never production rows (all 49; only `businessHoursParity` reads live rows, by design).
 - Every name a source file reads is declared or imported (`screens/undefinedNames.test.js`; no device has ever run the app,
   so this guard stands in for a runtime check).
 - Tests that depend on "now" freeze it; local-day fixtures use local wall-clock, never a UTC `Z` string.

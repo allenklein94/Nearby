@@ -47,6 +47,12 @@ function actorDeclares(names) {
   return names.map((n) => `${n} uuid := gen_random_uuid();`).join(' ');
 }
 
+// Ids for those actors made in Jest (so the client rules can use them), shaped like the rows the old prod reads returned:
+// journeyPeople(n) = [{ id }], journeyOwner() = { id, managed_partner_id } (pass both to actorsSql's business).
+const { randomUUID } = require('crypto');
+const journeyPeople = (n) => Array.from({ length: n }, () => ({ id: randomUUID() }));
+const journeyOwner = () => ({ id: randomUUID(), managed_partner_id: randomUUID() });
+
 function actorsSql({ people, friends = [], business = null }) {
   const lines = [`perform set_config('app.trusted_update', 'on', true);`];
   people.forEach((v, i) => {
@@ -66,4 +72,4 @@ function actorsSql({ people, friends = [], business = null }) {
   return lines.join('\n  ');
 }
 
-module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql };
+module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner };

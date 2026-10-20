@@ -15,8 +15,7 @@
 // Plus: report throttle (30 s gap, 5 min unless moved >= 0.25 mi, impossible speed, 20 per hour), read limit (20 per 10 min),
 // 3-decimal storage, and the purge. Not covered (device only): the permission prompt, foreground-only reporting on a phone,
 // the Home line's look. Client rules (Home line priority, one friend, reminder) are in friendNearby.test.js.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -32,9 +31,10 @@ const fixOf = (who, step) => `log := log || jsonb_build_array(jsonb_build_object
 d('journey: a friend is nearby - mutual consent, friends only, fresh and close, and every way it ends', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 3;`);
+    const people = journeyPeople(3);
     const log = await runJourney(`
       v_a uuid := '${people[0].id}'; v_b uuid := '${people[1].id}'; v_c uuid := '${people[2].id}'; v_ok boolean;`, `
+  ${actorsSql({ people: ['v_a', 'v_b', 'v_c'] })}
   -- setup: A-B accepted friends, A-C a dating match only; nothing else between them
   delete from friendships where (user_a, user_b) in ((v_a, v_b), (v_b, v_a), (v_a, v_c), (v_c, v_a), (v_b, v_c), (v_c, v_b));
   delete from blocks where blocker_id in (v_a, v_b, v_c) and blocked_id in (v_a, v_b, v_c);

@@ -13,8 +13,7 @@
 // Labels are navigation only (item 140, LOCKED): "a spot opened" does not say Join, because the waitlisted person is
 // already in when it is sent (auto-approved) and a button cannot know the current state; Join stays on the screen.
 // NOT covered: the OS rendering the button, send-push delivery, a device (none exists).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 import { NOTIFICATION_ACTION_BY_TYPE, categoryIdFor } from '../constants/notificationActions';
 import { notificationPriority } from '../constants/notificationTier';
 import { notificationDestination } from '../navigation/notificationDestinations';
@@ -27,12 +26,13 @@ d('journey: every notification leads to one direct next action (items 140 + 141)
   let s;
   let pushes;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const [h, g, w] = (await runSql(`select id from profiles where managed_partner_id is null order by id limit 3;`)).map((p) => p.id);
+    const owner = journeyOwner();
+    const [h, g, w] = journeyPeople(3).map((p) => p.id);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}';
       v_h uuid := '${h}'; v_g uuid := '${g}'; v_w uuid := '${w}';
       v_start bigint; v_g1 uuid; v_g2 uuid; v_g3 uuid; v_g4 uuid; v_g5 uuid; v_int uuid; v_req uuid; v_req2 uuid; v_offer uuid;`, `
+  ${actorsSql({ people: ['v_owner', 'v_h', 'v_g', 'v_w'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   perform set_config('app.push_handoff_test_failure', 'true', true);  -- queued exactly as sent, never handed to send-push
   select coalesce(max(id), 0) into v_start from push_outbox;
 

@@ -9,8 +9,7 @@
 //   D. someone else cannot read or mark fan's promotion
 //   E. fan leaves after being promoted -> the record goes with the attendance
 // Rolled back. The animation itself (Reduce Motion, taps) is checked in motion/interestedToAttending.test.js.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { waitlistPromotionMoment } from '../utils/waitlistPromotion';
 
 const d = hasToken ? describe : describe.skip;
@@ -18,10 +17,11 @@ const d = hasToken ? describe : describe.skip;
 d('journey: waitlist promotion -> the moment once, only for a real promotion', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 4;`);
+    const people = journeyPeople(4);
     const log = await runJourney(`
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}'; v_guest uuid := '${people[2].id}'; v_other uuid := '${people[3].id}';
       v_a uuid; v_b uuid; v_c uuid; v_res jsonb; v_st text; v_p jsonb; v_seen boolean;`, `
+  ${actorsSql({ people: ['v_host', 'v_fan', 'v_guest', 'v_other'] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J143 open full', now() + interval '3 days', 40.3, -75.2, 'Coffee', 'journey', 2, 'everyone') returning id into v_a;

@@ -6,19 +6,19 @@
 // inside one transaction; it was checked once live against _take_availability_capacity with two parallel sessions
 // (recorded in CLAUDE_HISTORY.md, item 116). The offers are inserted directly (screening needs Anthropic credit); the
 // accept and cancel calls are the real ones the app makes, as the requester.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
 d('journey: availability capacity counts people (book, refuse, cancel)', () => {
   let s;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const [host] = await runSql(`select id from profiles where id <> '${owner.id}' and managed_partner_id is null limit 1;`);
+    const owner = journeyOwner();
+    const [host] = journeyPeople(1);
     const log = await runJourney(`
-      v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}';
+      v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${host.id}';
       v_av uuid; v_offers uuid[] := '{}'; v_o uuid; v_req uuid; v_party int; v_err text; v_res jsonb;`, `
+  ${actorsSql({ people: ['v_owner', 'v_host'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   -- the business posts 20 spots (inserted as the posting function stores it: remaining = capacity)
   insert into business_availability (partner_id, title, starts_at, ends_at, capacity, remaining_capacity, status)
     values (v_partner, 'Journey 20 spots', now() + interval '2 hours', now() + interval '6 hours', 20, 20, 'active') returning id into v_av;

@@ -5,8 +5,7 @@
 // PRODUCT RULE checked on purpose (item 37, LOCKED): Interested is private. It never creates a business request, never
 // shows the interested person any business offer, and reaches a business only as an anonymous aggregate (count + category).
 // Disclosed: demand_min_people() (5) is lowered to 1 INSIDE the transaction (prod has 4 profiles); AI screening not included.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 import { canDo, offerLifecycleState, gatheringLifecycleState } from '../utils/objectLifecycle';
 import { gatheringViewerState } from '../utils/objectState';
 
@@ -15,11 +14,12 @@ const d = hasToken ? describe : describe.skip;
 d('journey: gathering -> interested -> anonymous demand -> ask business -> offer -> accept -> transaction', () => {
   let s;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const others = await runSql(`select id from profiles where id <> '${owner.id}' order by created_at limit 2;`);
+    const owner = journeyOwner();
+    const others = journeyPeople(2);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_host uuid := '${others[0].id}'; v_fan uuid := '${others[1].id}';
       v_g uuid; v_res jsonb; v_req uuid; v_offer uuid; v_rev uuid; v_n int; v_demand jsonb; v_row jsonb; v_seen_req int; v_seen_off int; v_att int;`, `
+  ${actorsSql({ people: ['v_owner', 'v_host', 'v_fan'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   -- declare Coffee as its primary: demand reaches a business only for categories it declares (20270317, no group fallback)
   update brand_partners set active = true, latitude = 40.3, longitude = -75.2, subcategory = 'Coffee' where id = v_partner;
   -- lower the floor of 5 to 1 for THIS transaction only (prod has 4 profiles)

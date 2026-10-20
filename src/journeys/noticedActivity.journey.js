@@ -12,8 +12,7 @@
 //   Dental      2 accepts on a business-only tag           -> never (not a consumer category)
 // Then: at most 2 named, strongest first; Forget removes one; adding one to interests removes it; a category Settings would
 // not list (5 heavier ones) is never named; no caller = nothing. Not covered: rendering on a device.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { noticedCategories, takeNoticedMoment } from '../utils/noticedActivity';
 import { learnedAffinities } from '../utils/learnedAffinity';
 
@@ -25,10 +24,11 @@ const LEARNED = `(select coalesce(jsonb_agg(to_jsonb(l)), '[]'::jsonb) from publ
 d('journey: things the person did -> "You\'ve been into X lately" -> Settings', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 2;`);
+    const people = journeyPeople(2);
     const log = await runJourney(`
       v_fan uuid := '${people[1].id}';
       v_t text;`, `
+  ${actorsSql({ people: ['v_fan'] })}
   delete from behavior_events where user_id = v_fan;
   perform set_config('app.trusted_update', 'true', true);
   update profiles set interests = array['Coffee'], monthly_interests = null where id = v_fan;

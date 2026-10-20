@@ -9,8 +9,7 @@
 // An ask with no stated time makes no claim even for A. Rolled back. The moment itself (tier, Reduce Motion, readable from
 // the first frame, Home + Discover top pick only) is checked in motion/strongMatch.test.js. Not covered: rendering on a device,
 // and which result the resolver ranks first (the moment only ever decorates the existing top pick).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { strongMatchPieces } from '../utils/strongMatch';
 
 const d = hasToken ? describe : describe.skip;
@@ -22,9 +21,10 @@ d('journey: a typed ask -> its top result really matches activity, time and plac
   let s;
   const me = { lat: 40.3, lng: -75.2 };
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 2;`);
+    const people = journeyPeople(2);
     const log = await runJourney(`
       v_host uuid := '${people[0].id}'; v_viewer uuid := '${people[1].id}'; v_a uuid; v_b uuid; v_c uuid; v_d uuid;`, `
+  ${actorsSql({ people: ['v_host', 'v_viewer'] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J37 near', '${tomorrowNoon()}', 40.304, -75.2, 'Coffee', 'journey', 6, 'everyone') returning id into v_a;

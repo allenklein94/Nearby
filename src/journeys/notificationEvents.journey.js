@@ -4,8 +4,7 @@
 // offer accepted -> offer redeemed, and checks for each: the event exists exactly once, who was notified, the exact
 // push wording and deep link (from the pg_net queue), mutes, blocks, idempotency, and that reading state (what every
 // screen does) never creates an event or a push. NOT covered: delivery by send-push itself (edge function), devices.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 import { DOMAIN_EVENTS } from '../constants/domainEvents';
 
 const d = hasToken ? describe : describe.skip;
@@ -13,8 +12,8 @@ const d = hasToken ? describe : describe.skip;
 d('journey: domain events -> one notification layer (item 125)', () => {
   let s;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const people = await runSql(`select id from profiles where id <> '${owner.id}' order by id limit 3;`);
+    const owner = journeyOwner();
+    const people = journeyPeople(3);
     const [a, b, c] = people.map((p) => p.id);
     const log = await runJourney(`
       v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}';
@@ -23,6 +22,7 @@ d('journey: domain events -> one notification layer (item 125)', () => {
       v_offer uuid; v_ev bigint; v_n int; v_n2 int; v_q int; v_before int; v_title text; v_body text; v_x record;
       v_start bigint; v_g5 uuid; v_inv5 uuid; v_req4 uuid; v_prop uuid; v_part uuid; v_plan uuid; v_tok uuid; v_ob text; v_ob2 text;
       v_retry_before int;`, `
+  ${actorsSql({ people: ['v_owner', 'v_a', 'v_b', 'v_c'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   -- queue helper view: what send-push would receive, as jsonb
   create temp view jq as
     select id, convert_from(body, 'utf8')::jsonb as b from net.http_request_queue where url like '%/send-push';

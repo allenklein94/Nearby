@@ -4,22 +4,22 @@
 // one from a typed ask (attributed by the ask's own id), and two that sit on a calendar-week boundary. Every fixture
 // request is created in its own 2020 week so the week rows are the fixture alone. Rolled back.
 // Not covered: the app (no client code reads these views).
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
 d('journey: business requests -> each stage and break point -> request funnel summary', () => {
   let s;
   beforeAll(async () => {
-    const [owner] = await runSql(`select id, managed_partner_id from profiles where managed_partner_id is not null limit 1;`);
-    const [u] = await runSql(`select id from profiles where id <> '${owner.id}' and managed_partner_id is null order by created_at limit 1;`);
+    const owner = journeyOwner();
+    const [u] = journeyPeople(1);
     const log = await runJourney(`
-      v_partner uuid := '${owner.managed_partner_id}'; v_u uuid := '${u.id}'; v_wk timestamptz := timestamptz '2020-01-07 12:00+00';
+      v_owner uuid := '${owner.id}'; v_partner uuid := '${owner.managed_partner_id}'; v_u uuid := '${u.id}'; v_wk timestamptz := timestamptz '2020-01-07 12:00+00';
       r_none uuid; r_decl uuid; r_exp uuid; r_canc uuid; r_merged uuid; r_wait uuid;
       r_expoff uuid; r_withdrawn uuid; r_cancoff uuid; r_mergoff uuid;
       r_noshow uuid; r_rescancel uuid; r_booked uuid; r_redeemed uuid; r_cross uuid; r_next uuid;
       o uuid; v_sub uuid; v_ask uuid := gen_random_uuid(); v_n int; w record; x record; j record;`, `
+  ${actorsSql({ people: ['v_owner', 'v_u'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   -- one helper shape for every request: solo, Coffee, open, created in the fixture week
   create temp table fx(k text primary key, id uuid) on commit drop;
   insert into fx select k, gen_random_uuid() from unnest(array['none','decl','exp','canc','merged','wait','expoff','withdrawn',

@@ -14,8 +14,7 @@
 // After the refusals: the "checked in" count and "plans this month" hold only the real check-ins, and no business offer or perk
 // redemption changed (a check-in is never a redemption). The client helpers are applied to the same rows. Rolled back.
 // Not covered: rendering on a phone (the attending section's button and countdown), a real signed-in API call.
-const { runSql } = require('../../scripts/live-verify/lib/db');
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
 import { checkInWindowState, isGatheringOver } from '../utils/gatheringCompletion';
 import { getCountdownLabel } from '../utils/gatheringAttending';
 
@@ -36,7 +35,7 @@ const CASES = [
 d('journey: check in only inside the window, enforced by the server', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 3;`);
+    const people = journeyPeople(3);
     const make = CASES.map(([k]) => `
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'JCI ${k}', now() + interval '3 days', 40.3, -75.2, 'Coffee', 'journey', 10, 'everyone') returning id into v_id;
@@ -55,6 +54,7 @@ d('journey: check in only inside the window, enforced by the server', () => {
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}'; v_third uuid := '${people[2].id}';
       v_id uuid; v_ids jsonb := '{}'::jsonb; v_res jsonb := '{}'::jsonb; v_p uuid; v_first timestamptz; v_err text;
       v_offers_before jsonb; v_perks_before jsonb;`, `
+  ${actorsSql({ people: ['v_host', 'v_fan', 'v_third'] })}
   v_offers_before := (select coalesce(jsonb_agg(jsonb_build_array(id, status, completed_at) order by id), '[]') from business_request_offers);
   v_perks_before := (select coalesce(jsonb_agg(jsonb_build_array(id, confirmed_at) order by id), '[]') from offer_redemptions);
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
@@ -202,7 +202,7 @@ const EXACT = [
 d('journey: the exact check-in boundaries, server clock only', () => {
   let s;
   beforeAll(async () => {
-    const people = await runSql(`select id from profiles order by created_at limit 3;`);
+    const people = journeyPeople(3);
     const keys = EXACT.map(([k]) => k);
     // a host may create 10 gatherings a day: any beyond 9 come from a second host
     const make = keys.map((k, i) => `
@@ -230,6 +230,7 @@ d('journey: the exact check-in boundaries, server clock only', () => {
     const log = await runJourney(`
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}'; v_host2 uuid := '${people[2].id}';
       v_id uuid; v_ids jsonb := '{}'::jsonb; v_res jsonb := '{}'::jsonb; v_before jsonb;`, `
+  ${actorsSql({ people: ['v_host', 'v_fan', 'v_host2'] })}
   ${make}
   perform set_config('request.jwt.claims', '{}', true);
   update gatherings set wide_area = '40.3,-75.2', is_public = true where title like 'JCX %';
