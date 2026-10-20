@@ -1,3 +1,14 @@
+# "Progressive intent refinement" (owner idea "304", 2026-10-20; NOT item 304): MET BY ITEMS 107 + 46 (+ 45/87), ASSESSED, recommended close, owner decision pending; nothing built; CLAUDE.md not changed
+
+Checked 2026-10-20. Same proposal as item 46's own spec (2026-10-11: "Dinner" -> Tonight? -> With friends? -> Under $30?), already decided
+by the owner then: NO time step / "Tonight?" chip (item 107 LOCKED: a search never asks), no questionnaire, no new chips or screens;
+results come FIRST and refinement is optional after them. As built: item 107's chips under the results (With friends / Date night /
+Solo / Under $25; a tap re-runs the same ask in place, no retyping, no AI call, `utils/askRefinements.js`), item 46's soft wash on the
+next unanswered step only (Who, then Budget, `nextRefinementStep`), item 45's understood chips showing what the words already gave
+(✕ = remove), party size only from the words (item 87, `statedPartySize`). Differences from the example, kept as decided: time and
+party count are never asked in a search (a time picker/ladder DECLINED again in ideas "177"/"179"; party asked only when sending to a
+business, item 84); results never wait behind a question chain. Not verified: item 46 + item 107 on a phone (item 46 checklist).
+
 # "The Home intent box is the command center" (owner idea "303", 2026-10-20; NOT item 303): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, layout or code; CLAUDE.md not changed
 
 Checked 2026-10-20 (code reading). Already the locked Home order: "intent box -> Picked For You (max 3) -> Your Plans (max 3) -> social
