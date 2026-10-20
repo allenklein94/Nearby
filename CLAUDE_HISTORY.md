@@ -1,3 +1,23 @@
+# "Don't make me decide which feature" + a single UX operating system (owner idea "301", 2026-10-20; NOT item 301): MET AS BUILT, ASSESSED, recommended close, owner decision pending; no new rule, document or code; CLAUDE.md not changed
+
+Checked 2026-10-20. The rule is already the core of the product: "One concept: What do you want to do nearby?" (doctrine), "The system
+brings the next thing; the person never jumps through it", idea "300" (navigate the intention, not the architecture), master principle 1.
+The person types the goal into ONE box (Home + Discover, same resolver `resolveAsk`); Nearby picks the path, never a feature menu.
+Probe (Jest, AI off, `resolveAsk` + `openEndedAskGroups`, not committed): "I want something fun tonight." -> no category (none named),
+tonight (from the words), no party, open-ended: the 12 social category groups (services/errands/stays excluded, item 161), evening tilt to
+Nightlife + Food & Drink (`timeTiltGroups`). This exact example was the owner's 2026-09-21 open-ended-ask request (`utils/openEndedAsk.js`).
+Paths offered, as built, on the same screen and chosen by the person: gatherings/events and places ranked together by the ladder; item
+90's labelled rows for an undecided ask; a pure people ask opens People (item 86, `utils/peopleAsk.js`); "Create it" (items 82/85);
+"Ask nearby businesses" as the secondary link (item 84; absent for public-place asks); empty = item 81's state + idea "181"'s escapes.
+No "which feature?" chooser exists and none is added (ideas "181", "221"-"223").
+"A single operating system for Nearby's UX": already exists, one source each, and a new document would be a second representation:
+the master principles + Standing conventions in CLAUDE.md (where things belong: surface jobs, item 45's screen-reduction ladder,
+Rule 14's registry `constants/screenRegistry.js`, states-not-folders, one CTA table `primaryAction.js`, motion levels/triggers) and
+`constants/nearbyOntology.js` (`NEARBY_PIPELINE`, `SURFACE_PIPELINE`, `STAGE_CALLERS`: which surface calls which stage). A new idea is
+placed by asking those in order; when one doesn't answer it, the fix is that bullet/registry, never a parallel "UX OS" doc.
+Not verified: AI path (credit), the open-ended ask on a phone (C18 + item 90's rows), real offers (seeded businesses). Next step stays
+idea "252"'s: the first real-device session.
+
 # "Navigate the intention, not the architecture" (owner idea "300", 2026-10-19; NOT item 300): CLOSED (owner, 2026-10-19): MET AS DESIGNED; no new features or code changes; the example ask probed in code (words only); "day_out" label checked (expected, item 64); NOT VERIFIED end to end (device + live market + AI)
 
 Checked 2026-10-19. Already the north star: "One concept: What do you want to do nearby?", "The system brings the next thing; the person
