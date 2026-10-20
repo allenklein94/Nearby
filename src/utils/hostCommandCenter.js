@@ -9,7 +9,9 @@
 import { businessReplyTitle } from './offerCopy';
 
 // What the stats row shows, in this order. Going is always shown when known; the rest only when there is something.
-export function hostStats({ going, requests, waitlisted, interested } = {}) {
+// Stats not loaded yet (null, e.g. the host's first render right after publishing) = nothing shown, never a crash.
+export function hostStats(stats) {
+  const { going, requests, waitlisted, interested } = stats ?? {};
   const out = [];
   if (Number.isFinite(going)) out.push({ key: 'going', value: going });
   if (Number.isFinite(requests) && requests > 0) out.push({ key: 'requests', value: requests });

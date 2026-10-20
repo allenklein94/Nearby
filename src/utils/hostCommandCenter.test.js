@@ -21,6 +21,9 @@ describe('stats: real figures only', () => {
   });
   test('an unknown figure (failed lookup) is left out, never shown as 0', () => {
     expect(hostStats({ going: null, requests: null, interested: undefined })).toEqual([]);
+    // Crash fix (Sentry, 2026-10-20): stats are null until loaded, right after creating a gathering.
+    expect(hostStats(null)).toEqual([]);
+    expect(hostStats(undefined)).toEqual([]);
   });
   test('English wording', () => {
     expect(translate('en', 'ui.hostCenter.stat.going', { count: 4 })).toBe('4 attending');
@@ -181,6 +184,7 @@ describe('item 144: join requests have their own Review row', () => {
   });
 
   test('the stats line no longer repeats the request count (the Review row carries it)', () => {
+    expect(hostSummaryStats(null)).toEqual([]);
     expect(hostSummaryStats({ going: 4, requests: 3, waitlisted: 1, interested: 2 }).map((s) => s.key))
       .toEqual(['going', 'waitlisted', 'interested']);
     expect(center).toMatch(/hostSummaryStats\(stats\)/);
