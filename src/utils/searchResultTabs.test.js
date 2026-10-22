@@ -49,7 +49,7 @@ describe('search result tabs (item 93)', () => {
   it('Discover wiring: tabs replace the type chips only during an All-view search; search still covers everything', () => {
     const d = read('screens/DiscoverHubScreen.js');
     expect(d).toMatch(/const resultTabsActive = isAll && isSearching;/);
-    expect(d).toMatch(/\(resultTabsActive \? resultTabs : TYPE_FILTERS\)\.map/);
+    expect(d).toMatch(/\(resultTabsActive \? resultTabs : discoverTypeFilters\(TYPE_FILTERS, googleDiscovery\)\)\.map/);
     expect(d).toMatch(/const showGatherings = typeShowsGatherings && kindView\('plans'\)\.show;/);
     expect(d).toMatch(/const showPerks = typeShowsPerks && kindView\('offers'\)\.show;/);
     expect(d).toMatch(/businessesToShow = kindView\('places'\)\.show/);

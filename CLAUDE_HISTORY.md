@@ -1,3 +1,40 @@
+# Google compliance follow-up (owner decisions 2026-10-22): discovery held behind one switch, logo attribution, Privacy Policy, directory question; legacy points NOT cleared (blocked)
+
+Owner-pasted decisions (after the compliance audit): written clarification from Google Maps Platform / counsel covering all
+discovery surfaces; keep them implemented but not public meanwhile; clear unverified coordinates on the 26 legacy gatherings
+(backup first, keep the gatherings); official Google logo where required; keep Google results off non-Google maps and ask
+about the Apple-map arrangement; Privacy Policy disclosure; follow the Terms notice procedure; never claim Google approval.
+- Hold: migration 20270337 (LIVE) adds `places_search_budget.discovery_enabled` (default false) + `places_discovery_enabled()`
+  (authenticated only); `places_also_nearby_enabled()` now needs both switches. Client: `utils/googleDiscovery.js`
+  (`GOOGLE_DISCOVERY_SURFACES`, `discoverTypeFilters`, `discoverTypeFilter`), `hooks/usePlacesDiscovery.js`,
+  `placesDiscoveryEnabled()` in `services/places.js` (5-min cache, any failure = off). Discover: Places tab removed while off
+  (a requested Places tab shows All; state renamed `typeFilterRequested`, the shown tab derived), both Google fetches gated,
+  `placesFresh` true while off (else a search would wait on Places forever), Places section + topic Places list hidden.
+  Places to go + Also nearby hooks ask the switch before any call; Create "Popular nearby" heading/list hidden and
+  `loadPopularPlaces` returns early. Not held: sign-up lookup, pin-screen address search. Guard `utils/googleDiscovery.test.js`
+  (10; fails on any new caller of a Google discovery search); journey `placesSearchBudget` 12/12 on prod (failed before the
+  migration as expected). Guards updated for the new wiring: pushNavigationContract, approximateGatheringLocation,
+  placesToGo, searchResultTabs.
+- Attribution: `GoogleMapsAttribution` shows Google's official non-outlined logo (gray light / white dark; files from
+  Google's "Google Maps attribution assets" zip, unmodified, in `assets/google/`, @3x = Google's 4x file), 98 x 18 dp, clear
+  space 10/10/10/5, label "Google Maps"; text form only on image error. Audit gaps A + B fixed; C unchanged.
+- Privacy Policy (`docs/privacy.html` section 4, Last updated October 22, 2026): what goes to Google (device location +
+  search words for a place search, typed address, Google map/directions), not name/email/profile/account id/messages;
+  Google's policy + Maps terms linked; place results not stored. Observed, NOT changed: the "hosting a Gathering" location
+  paragraph is out of date (says the device's precise location at creation; now the host's own pin or device location).
+- Terms notice: drafted in the audit; NOT SENT (Terms 12 / Privacy 9 = in-app or email; no in-app mechanism exists; email is
+  outward and is the owner's to send).
+- Question: `PRODUCT_AUDIT/GOOGLE_DIRECTORY_USE_QUESTION_2026-10-22.md` (10 questions: the five surfaces, partner separation
+  + the inert sponsored slot above the Places list, partner-removal comparison vs 3.2.3(c), Apple map same screen vs 3.2.3(e),
+  sign-up lookup + geocoding). NOT SENT. Checklist C23 + Cloud setup gate updated.
+- Legacy points: NOT DONE. Writing migration 20270338 was refused by the session's permission rules (production data change).
+  Read-only findings + proposal in the audit section 4: point stored 3 ways (`precise_lat/lng`, `area`, `wide_area`), copies on
+  26 plans + one expired business request (NOT NULL) + its plan; provenance trigger relabels a nulled point 'host_pin' (needs a
+  fix first); `notify_gathering_updated` would push "was updated" to 5 approved attendees on an `area` change (pause it);
+  live functions are null-safe. Proposed backup in `private` auto-dropped after 14 days.
+- Verification: Jest 484 suites / 6658 passed; journeys 611/611 on prod (53 suites, rolled back). Not device-verified. No
+  from-scratch replay for 20270337 (additive; not run).
+
 # Google storage FINAL (owner decisions 2026-10-22): Option B pins for gatherings + businesses, sign-up "Google as reference only", clock chip kept + 4-chip cap fix
 
 Owner-pasted decisions: (1) gathering coordinates Option B (independently placed pin; Google may help search, its point never

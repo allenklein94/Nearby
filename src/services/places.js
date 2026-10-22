@@ -71,7 +71,28 @@ export async function claimPlacesCall(kind) {
   }
 }
 
-// The owner's switch for the "Also nearby (not a Nearby partner)" row (default off). Any failure = off.
+// The owner's hold on every Google-backed DISCOVERY surface (owner 2026-10-22, pending Google's / counsel's answer on ToS
+// 3.2.3(d)(iii) "listings or directory service"): Discover's Places tab + Places sections, Discover's topic places,
+// Places to go and Create's "Popular nearby" (utils/googleDiscovery.js). Default off; any failure = off. Not held: address
+// search on the pin screens and the business sign-up lookup (not discovery). Cached briefly so one screen asks once.
+const DISCOVERY_SWITCH_MS = 5 * 60 * 1000;
+let discoverySwitch = null; // { at, promise }
+export function placesDiscoveryEnabled() {
+  if (discoverySwitch && Date.now() - discoverySwitch.at < DISCOVERY_SWITCH_MS) return discoverySwitch.promise;
+  const promise = (async () => {
+    try {
+      const { data, error } = await supabase.rpc('places_discovery_enabled');
+      return !error && data === true;
+    } catch {
+      return false;
+    }
+  })();
+  discoverySwitch = { at: Date.now(), promise };
+  return promise;
+}
+
+// The owner's switch for the "Also nearby (not a Nearby partner)" row (default off; the server also requires the discovery
+// switch above). Any failure = off.
 export async function alsoNearbyEnabled() {
   try {
     const { data, error } = await supabase.rpc('places_also_nearby_enabled');

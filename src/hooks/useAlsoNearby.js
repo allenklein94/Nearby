@@ -1,10 +1,11 @@
 // Owner decision 2026-10-22: loads the "Also nearby (not a Nearby partner)" row for a SUBMITTED typed ask, only when
 // utils/alsoNearby.js says it fits (too few partner results, a business-type category) and the owner's switch is on
-// (places_also_nearby_enabled, default off). Searches Google for the category name only (never the typed words), within the
+// (places_also_nearby_enabled, default off) AND the Google discovery hold is lifted (utils/googleDiscovery.js; the server
+// function requires both). Searches Google for the category name only (never the typed words), within the
 // daily budget (services/places.js). Results live in memory only (same 10-minute session cache as Places to go).
 import { useEffect, useState } from 'react';
 import { getUserLocation } from '../services/userLocation';
-import { searchNearbyPlacesResult, alsoNearbyEnabled } from '../services/places';
+import { searchNearbyPlacesResult, alsoNearbyEnabled, placesDiscoveryEnabled } from '../services/places';
 import { getNearbyBusinesses } from '../services/brandOffers';
 import { alsoNearbyCategory, partnerResultCount, pickAlsoNearby } from '../utils/alsoNearby';
 
@@ -22,7 +23,7 @@ export default function useAlsoNearby(intent, language) {
     setState({ places: [], loading: true });
     (async () => {
       try {
-        if (!(await alsoNearbyEnabled())) { if (live) setState({ places: [], loading: false }); return; }
+        if (!(await placesDiscoveryEnabled()) || !(await alsoNearbyEnabled())) { if (live) setState({ places: [], loading: false }); return; }
         const pos = await getUserLocation();
         const c = pos?.coords;
         if (!c) { if (live) setState({ places: [], loading: false }); return; }

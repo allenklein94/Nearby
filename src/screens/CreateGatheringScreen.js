@@ -18,7 +18,8 @@ import { FORMAT_OPTIONS, formatIcon } from '../constants/activityFormat';
 import { skillContext, skillOptionsFor, cleanSkillLevel } from '../constants/skillLevel';
 import { EFFORT_OPTIONS } from '../constants/intensityEffort';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
-import { searchNearbyPlacesResult } from '../services/places';
+import { searchNearbyPlacesResult, placesDiscoveryEnabled } from '../services/places';
+import usePlacesDiscovery from '../hooks/usePlacesDiscovery';
 import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { checkTextModeration } from '../services/textModeration';
 import { getOfferById, getBusinessProfile } from '../services/brandOffers';
@@ -180,6 +181,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [googlePlaceId, setGooglePlaceId] = useState(null);
   const [myLocation, setMyLocation] = useState(null);
   const [popularPlaces, setPopularPlaces] = useState(null);
+  // Google compliance hold (owner 2026-10-22, utils/googleDiscovery.js): no "Popular nearby" list or Google call while off;
+  // the host places the spot on the map (Option B) exactly as before.
+  const googleDiscovery = usePlacesDiscovery();
   const [loadingPlaces, setLoadingPlaces] = useState(false);
   const [placesUnavailable, setPlacesUnavailable] = useState(false); // Google budget used up / refused: not "no places"
 
@@ -408,6 +412,11 @@ export default function CreateGatheringScreen({ navigation, route }) {
     if (popularPlaces !== null || loadingPlaces) return;
     setLoadingPlaces(true);
     try {
+      if (!(await placesDiscoveryEnabled())) {
+        setPopularPlaces([]);
+        setLoadingPlaces(false);
+        return;
+      }
       let loc = myLocation;
       if (!loc) {
         const position = await getUserLocation();
@@ -858,6 +867,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     </TouchableOpacity>
                   );
                 })()}
+                {googleDiscovery && (<>
                 <Text style={styles.subLabel}>{t('ui.gatheringForm.popularNearby')}</Text>
                 {loadingPlaces ? (
                   <View style={{ marginTop: spacing.sm }}>
@@ -892,6 +902,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   })
                 )}
                 {(popularPlaces ?? []).length > 0 && !loadingPlaces && <GoogleMapsAttribution />}
+                </>)}
                 <TouchableOpacity
                   onPress={() => navigation.navigate('SelectGatheringLocation', {
                     initialLat: customLocation?.latitude,

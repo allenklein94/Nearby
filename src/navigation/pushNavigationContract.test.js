@@ -380,7 +380,9 @@ describe('8. returning to Discover keeps everything the person chose', () => {
   });
   test('Discover keeps its choices in component state and nothing resets them on refocus (item 138 guards)', () => {
     const d = fs.readFileSync(path.join(__dirname, '..', 'screens', 'DiscoverHubScreen.js'), 'utf8');
-    for (const s of ['typeFilter', 'openNowOnly', 'environmentFilter', 'cuisineFilter', 'viewStyle', 'intentSearch']) expect(d).toMatch(new RegExp(`const \\[${s}, set`));
+    // typeFilter: the requested tab is state; the shown tab is derived from it (Google discovery hold, utils/googleDiscovery.js).
+    expect(d).toMatch(/const \[typeFilterRequested, setTypeFilter\]/);
+    for (const s of ['openNowOnly', 'environmentFilter', 'cuisineFilter', 'viewStyle', 'intentSearch']) expect(d).toMatch(new RegExp(`const \\[${s}, set`));
     expect(d).toMatch(/if \(!p \|\| p === appliedParamsRef\.current\) return;/);
   });
 });

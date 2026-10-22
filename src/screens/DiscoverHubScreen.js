@@ -47,6 +47,8 @@ import { perkRedemptionState, redemptionsByOffer } from '../utils/perkRedemption
 import { searchNearbyPlacesResult } from '../services/places';
 import useAlsoNearby from '../hooks/useAlsoNearby';
 import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
+import usePlacesDiscovery from '../hooks/usePlacesDiscovery';
+import { discoverTypeFilters, discoverTypeFilter } from '../utils/googleDiscovery';
 import { withoutPartnerPlaces } from '../utils/alsoNearby';
 import { resultRowView, recommendationContext, contextItem } from '../utils/recommendationContext';
 import useMinuteClock from '../hooks/useMinuteClock';
@@ -489,7 +491,11 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const discoverSurpriseShown = surpriseView(discoverSurprise, language); // the same decisions, worded in the person's language
   const [surpriseLoading, setSurpriseLoading] = useState(false);
   const surpriseRequestId = useRef(0);
-  const [typeFilter, setTypeFilter] = useState(() => route.params?.initialTypeTab ?? 'all');
+  const [typeFilterRequested, setTypeFilter] = useState(() => route.params?.initialTypeTab ?? 'all');
+  // Owner 2026-10-22 (Google compliance hold, utils/googleDiscovery.js): while Google discovery is off there is no Places tab,
+  // no Places section and no Google call; a requested Places tab shows All.
+  const googleDiscovery = usePlacesDiscovery();
+  const typeFilter = discoverTypeFilter(typeFilterRequested, googleDiscovery);
   function setTypeTab(key) {
     setTypeFilter(key);
   }
@@ -1021,7 +1027,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   useEffect(() => {
     const { literalTerm } = discoverQuery(searchQuery); // null for Surprise Me / undecided asks (never a keyword search)
     const wantsPlaces = typeFilter === 'places' || (typeFilter === 'all' && !!literalTerm);
-    if (!wantsPlaces || !userLocation) return;
+    if (!googleDiscovery || !wantsPlaces || !userLocation) return;
     const category = typeFilter === 'places' ? placesCategory : null;
     const keyword = literalTerm;
     const base = `${category}|${keyword}|${userLocation.latitude}|${userLocation.longitude}`;
@@ -1042,7 +1048,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       if (thisRequestId === placesRequestId.current) setLoadingPlaces(false);
     }, 350);
     return () => clearTimeout(timer);
-  }, [typeFilter, placesCategory, searchQuery, userLocation, openNowOnly]);
+  }, [googleDiscovery, typeFilter, placesCategory, searchQuery, userLocation, openNowOnly]);
 
   // Real gathering/community search, server-side and indexed (trigram GIN
   // indexes, 20260809_indexed_text_search.sql) rather than downloading every
@@ -1121,7 +1127,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Results are fresh only when they were fetched for exactly this term; otherwise they are loading, never shown.
   const searchResultsFresh = !isSearching || searchedTerm === query.literalTerm;
   const loadingSearch = loadingSearchRaw || !searchResultsFresh;
-  const placesFresh = !(isAll && isSearching) || !userLocation || placesTerm === query.literalTerm;
+  const placesFresh = !googleDiscovery || !(isAll && isSearching) || !userLocation || placesTerm === query.literalTerm;
   const placesPending = loadingPlaces || !placesFresh;
 
   // Gatherings/communities: real server-side, indexed search results
@@ -1424,7 +1430,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // them would be an invented association. Searching the real word is the
   // honest version.
   useEffect(() => {
-    if (!expandedContext || !userLocation) return;
+    if (!googleDiscovery || !expandedContext || !userLocation) return;
     const base = `${contextTopicLabel}|${userLocation.latitude}|${userLocation.longitude}`;
     if (!placesNeedFetch(contextPlacesFetched.current, base, openNowOnly)) return;
     const thisRequestId = ++contextPlacesRequestId.current;
@@ -1443,7 +1449,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       .finally(() => {
         if (thisRequestId === contextPlacesRequestId.current) setLoadingContextPlaces(false);
       });
-  }, [expandedContext, userLocation, openNowOnly]);
+  }, [googleDiscovery, expandedContext, userLocation, openNowOnly]);
 
   // Section G -- "People You Know". The candidate IDs are people who
   // genuinely RSVP'd (approved) to one of the gatherings already listed in
@@ -1553,7 +1559,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const mapAreas = mapAreasShown ? happeningNowAreas(filteredGatherings) : [];
   const showFlatGatheringsSection = showGatherings && !(isAll && !isSearching);
   const showCommunities = typeShowsCommunities && kindView('activities').show;
-  const showPlaces = typeShowsPlaces && kindView('places').show;
+  const showPlaces = googleDiscovery && typeShowsPlaces && kindView('places').show;
   const showPerks = typeShowsPerks && kindView('offers').show;
   const showSearchTopic = resultTabsActive && !!searchedTopic && (resultTab === 'top' || resultTab === 'activities');
   // Item 134: on Top Results, whatever the found block already shows is left out of the Plans / Offers / Places
@@ -2564,7 +2570,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
             <View style={styles.filterRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
-                {(resultTabsActive ? resultTabs : TYPE_FILTERS).map((f) => {
+                {(resultTabsActive ? resultTabs : discoverTypeFilters(TYPE_FILTERS, googleDiscovery)).map((f) => {
                   const active = resultTabsActive ? resultTab === f.key : typeFilter === f.key;
                   return (
                     <TouchableOpacity
@@ -2769,6 +2775,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </>
           )}
 
+          {/* Google discovery hold (utils/googleDiscovery.js): no topic Places list while it is off. */}
+          {googleDiscovery && (<>
           <Text style={styles.sectionHeader}>{t('ui.discover.typeFilter.places')}</Text>
           {!userLocation ? (
             <>
@@ -2808,6 +2816,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               <GoogleMapsAttribution label={t('ui.placesToGo.notPartners')} />
             </View>
           )}
+          </>)}
 
           </>)}
 

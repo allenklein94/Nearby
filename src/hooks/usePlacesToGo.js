@@ -1,10 +1,11 @@
 // Owner item 189: loads "Places to go" for a submitted typed ask whose words name an allowlisted public-place activity
 // (utils/placesToGo.js). `text` is the SUBMITTED ask (null when there is none), so the metered Places search never runs while
 // typing, on Home's feed or for an unlisted activity. Results live in memory only (a short per-session cache so a re-shown ask
-// does not search again); nothing is stored, logged or learned.
+// does not search again); nothing is stored, logged or learned. Held (renders nothing, no Google call) while the owner's
+// Google discovery switch is off (utils/googleDiscovery.js).
 import { useEffect, useState } from 'react';
 import { getUserLocation } from '../services/userLocation';
-import { searchNearbyPlacesResult } from '../services/places';
+import { searchNearbyPlacesResult, placesDiscoveryEnabled } from '../services/places';
 import { placesToGoActivity, pickPlacesToGo } from '../utils/placesToGo';
 
 const CACHE_MS = 10 * 60 * 1000;
@@ -20,6 +21,7 @@ export default function usePlacesToGo(text, language) {
     setState({ activity, places: [], loading: true });
     (async () => {
       try {
+        if (!(await placesDiscoveryEnabled())) { if (live) setState({ activity, places: [], loading: false }); return; }
         const pos = await getUserLocation();
         const c = pos?.coords;
         if (!c) { if (live) setState({ activity, places: [], loading: false }); return; }

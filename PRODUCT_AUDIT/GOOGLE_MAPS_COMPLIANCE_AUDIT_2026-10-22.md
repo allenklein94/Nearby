@@ -7,6 +7,31 @@ final permitted-use review. No architecture change unless this review finds a sp
 This is an engineering reading of Google's published terms, not legal clearance. Google's own FAQ says the customer's counsel
 decides compliance.
 
+## Follow-up, same day (owner decisions 2026-10-22)
+
+| Decision | Status |
+|---|---|
+| Directory restriction: ask Google / counsel in writing, all discovery surfaces | Question written, NOT SENT: `GOOGLE_DIRECTORY_USE_QUESTION_2026-10-22.md` (owner sends it) |
+| Keep Google discovery built but not public until answered | DONE: one switch `discovery_enabled` (default off, migration 20270337 LIVE); Places tab, Places sections, topic places, Places to go, Create "Popular nearby" hidden with no Google call; Also nearby needs both switches. Guard `googleDiscovery.test.js`, journey `placesSearchBudget` 12/12 on prod |
+| Official Google Maps logo instead of text | DONE in code (gaps A + B below): Google's own files, unmodified; text = fallback if the image fails. NOT DEVICE-VERIFIED (check C23) |
+| Clear unverified coordinates on the 26 legacy gatherings (backup first) | NOT DONE: writing the migration was refused by the session's permission rules (a production data change). Proposal + read-only impact in section 4 |
+| Keep Google results off non-Google maps; document the Apple Maps question | Documented (question 8 of the question file); moot while held |
+| Privacy Policy: location + search words sent to Google | DONE (`docs/privacy.html` section 4, Last updated October 22, 2026) |
+| Terms/Privacy change notice per Terms section 12 | Notice text drafted (below); NOT SENT (outward; the app has no in-app notice mechanism) |
+
+**Change notice (draft, for the owner to send by email to each account holder; Terms 12 / Privacy 9 say "through the App or by email"):**
+
+> Subject: Updates to Nearby's Terms of Service and Privacy Policy
+>
+> We've updated Nearby's Terms of Service and Privacy Policy (October 22, 2026). The Terms now say that Nearby includes
+> Google Maps features and content, and that using them is subject to Google's terms and privacy policy. The Privacy
+> Policy now explains what Nearby sends to Google when you use those features: your device's location for a place search
+> and the words of that search, and any address you type on a map. Read them at
+> https://allenklein94.github.io/Nearby/terms.html and https://allenklein94.github.io/Nearby/privacy.html .
+
+Production has 8 accounts, all test accounts (per the earlier read); whether each belongs to the owner is the owner's call.
+Record here when and how the notice went out.
+
 ## Sources read (fetched 2026-10-22)
 
 | Document | URL | Version seen |
@@ -63,7 +88,10 @@ every screen that lists Google results renders...").
 | Pin screen (native) | `SelectGatheringLocationScreen.js` | Google map's own logo (`PROVIDER_GOOGLE`) | n/a |
 | Directions from a Google place | `buildDirectionsUrl` | Opens Google Maps (`google.com/maps/dir`) | n/a |
 
-**Gaps against the policy page (not fixed, need an owner decision):**
+**Gaps against the policy page (A + B FIXED 2026-10-22, owner decision; C unchanged):** the component now shows Google's
+official logo (`assets/google/`, from Google's "Google Maps attribution assets" zip linked on the policies page, unmodified:
+non-outlined gray on light, white on dark, 98 x 18 dp, clear space 10/10/10/5 dp, label "Google Maps"), with the text form
+only if the image fails to load. Not device-verified (check C23).
 - A. **Logo vs text.** Policy: "Attribution should take the form of the Google Maps logo whenever possible. In cases where space is
   limited, the text Google Maps is acceptable." Nearby uses the text everywhere. Most of these surfaces have room for the logo.
   Recommended: use Google's official logo asset (from Google's brand resources, unmodified, light/dark variants) in the same component,
@@ -97,6 +125,25 @@ Not changed: `docs/privacy.html` does not say that a search's location and categ
 - The only Google columns in the database: `google_place_id` on gatherings, sign-ups, partners (permitted).
 
 **Production (read-only, 2026-10-22):** 26 gatherings, 1 sign-up, 1 partner, all `location_source` NULL, 0 place IDs.
+
+**Legacy follow-up (2026-10-22, read-only, production):** the owner decided to clear the coordinates without deleting the
+gatherings. Not done: writing that migration was refused by the session's permission rules. What it found and proposes:
+- All 26 gatherings: `location_source` NULL, all with a point, 0 place IDs, 0 upcoming. The point is stored in THREE forms:
+  `precise_lat/lng`, `area` (2-decimal "lat,lng", NOT NULL) and `wide_area` (1-decimal "lat,lng"). The pins are computed from
+  the point, never stored.
+- Copies elsewhere: `plans.location_lat/lng` on the 26 plans made from them (trigger `create_plan_from_gathering`); one
+  business request made for gathering 9d19cb11 (expired) holds the point in `business_requests.latitude/longitude` (NOT NULL,
+  so only deleting that request clears it) and its plan b7a1a5b3 holds another copy.
+- Two traps: (1) the trigger `_gathering_location_provenance_on_move` (20270334) treats nulling the point as a move and labels
+  it 'host_pin'; it needs "a cleared point has no source and no place ID" first. (2) `notify_gathering_updated` pushes
+  "was updated" to approved attendees (5 rows) when `area` changes, with no date check, so it must be paused for that update.
+- Null-safety checked in the live functions: a request for a gathering with no point is refused ("This gathering has no
+  location set."), routing / reminders / threshold pushes / meet-up point / distances skip a null point; no client reads
+  `area` or the plan location label.
+- Proposed migration (20270338): fix the trigger; back up the three forms + the plan copies to a `private` table (no client
+  access) dropped automatically after 14 days by a one-time cron job (so the uncertain points are not kept indefinitely);
+  clear point -> null, area -> '', wide_area -> null on gatherings with no provenance created before 2026-10-22; clear the plan
+  copies; leave the business request row (owner: delete that expired test request or keep it as a recorded risk).
 
 **One legacy exposure:** before 2026-10-22, tapping a Google venue in Create stored Google's coordinates directly as the gathering
 point (old `CreateGatheringScreen.js`: `setCustomLocation({ latitude: place.latitude, longitude: place.longitude })`). Which of
@@ -137,5 +184,7 @@ test accounts only). Under 14.3 any such point should not be kept past 30 days. 
 - [x] Findings recorded with links (section 1)
 - [x] Attribution verified in code on every surface (section 2); gaps A-C await an owner decision; phone check = C23
 - [x] Terms of Service disclosure added (section 3)
-- [x] Storage confirmed in code + production (section 4); legacy gatherings decision open
+- [x] Storage confirmed in code + production (section 4); legacy clearing decided (owner) but NOT applied (blocked, see section 4)
 - [x] "Also nearby" documented for review (section 5); counsel/Google answer open, also covers the live Places surfaces
+- [x] Discovery surfaces held behind one switch (off); question written (not sent); logo attribution; Privacy Policy updated;
+      change notice drafted (not sent)

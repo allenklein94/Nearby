@@ -48,7 +48,7 @@ describe('the place gathering count is gone', () => {
   test('Places search makes no gathering database call (only the Google budget claim + switch, owner 2026-10-22)', () => {
     const src = read('src/services/places.js');
     const rpcs = [...src.matchAll(/supabase\.rpc\('([a-z_]+)'/g)].map((m) => m[1]);
-    expect(rpcs.sort()).toEqual(['claim_places_search', 'places_also_nearby_enabled']);
+    expect(rpcs.sort()).toEqual(['claim_places_search', 'places_also_nearby_enabled', 'places_discovery_enabled']);
     expect(src).not.toMatch(/count_gatherings|\.from\(/);
   });
 
