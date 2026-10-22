@@ -30,7 +30,10 @@ stays OFF.
   motion); the non-interactive loader label names every piece.
 - Verification: Jest 483 suites / 6647 tests pass (1 stale assertion updated: `businessLocationNotice.test.js`); journey
   `locationProvenance` 21/21; prod journeys 608/608 (rolled back); from-scratch replay 460/460 + journeys 608/608 on the rebuilt
-  DB (grants parity not re-run); business web export regenerated. NOT DEVICE-VERIFIED: check C24 (reworded), native review of
+  DB; business web export regenerated. Follow-up review (same day): grants replay = prod 3125/3125 (functions + tables + columns,
+  public + private, new `scripts/replay/grants-snapshot.sql`); sign-up category guard added (Google types map only to Nearby
+  taxonomy keys = the DB check, chip only for a listed key, category set only on the business's tap); C24 (f) added (pin
+  accuracy + whether the review step makes the final spot obvious; report only). Jest 483/6648. NOT DEVICE-VERIFIED: check C24 (reworded), native review of
   the new/reworded strings.
 
 # Owner idea "306" REOPENED + BUILT (2026-10-22): the clock time is an understood chip, AM/PM correction + remove; Google storage ruling (conservative) recorded

@@ -134,6 +134,26 @@ describe('source guards', () => {
     expect(src).toMatch(/google_place_id: googleReference\?\.placeId/);
     expect(read('src/services/places.js')).not.toMatch(/export async function getPlaceDetails/);
   });
+  test('sign-up category: Google only SUGGESTS a key of Nearby\'s own taxonomy, set only by the business\'s tap (review 2026-10-22)', () => {
+    const places = read('src/services/places.js');
+    const map = places.slice(places.indexOf('const GOOGLE_TYPE_TO_BUSINESS_CATEGORY = {'), places.indexOf('function guessCategoryFromTypes'));
+    const targets = [...new Set([...map.matchAll(/:\s*'([a-z_]+)'/g)].map((m) => m[1]))];
+    expect(targets.length).toBeGreaterThan(10);
+    // Nearby's sign-up list (CATEGORY_GROUPS + 'other') and the live database check (migration 20270294).
+    const { CATEGORY_GROUPS } = require('../constants/gatheringCategories');
+    const appKeys = new Set([...CATEGORY_GROUPS.map((g) => g.key), 'other']);
+    const mig = read('supabase/migrations/20270294_v1_category_pass.sql');
+    const lastCheck = mig.slice(mig.lastIndexOf('add constraint business_partner_requests_category_check'));
+    const dbKeys = new Set([...lastCheck.slice(0, lastCheck.indexOf(';')).matchAll(/'([a-z_]+)'/g)].map((m) => m[1]));
+    targets.forEach((k) => expect({ k, app: appKeys.has(k), db: dbKeys.has(k) }).toEqual({ k, app: true, db: true }));
+    // An unmapped Google type suggests nothing; the chip shows only for a listed key and sets the category only on press.
+    expect(places).toMatch(/return null;\n\}/);
+    const src = read('src/screens/BusinessPartnerApplyScreen.js');
+    expect(src).toMatch(/googleReference\?\.category && BUSINESS_CATEGORIES\.some\(\(c\) => c\.key === googleReference\.category\)/);
+    const chip = src.slice(src.indexOf('googleReference?.category && BUSINESS_CATEGORIES'), src.indexOf('{categorySuggestion ?'));
+    expect(chip).toMatch(/onPress=\{\(\) => \{ setCategory\(googleReference\.category\)/);
+    expect((src.match(/setCategory\(googleReference\.category\)/g) || []).length).toBe(1);
+  });
   test('business profile: an address edit never geocodes; the point is the business\'s own pin (set_business_location)', () => {
     const svc = read('src/services/brandOffers.js');
     expect(svc).not.toMatch(/geocodeAddress|geocodePlace|from '\.\/places'/);
