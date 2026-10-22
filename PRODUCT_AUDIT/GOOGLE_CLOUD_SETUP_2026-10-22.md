@@ -46,6 +46,11 @@ Until **Places API (New)** is enabled, every Places list is empty and shows "Goo
   Geocoding is its own (Essentials) SKU. Map loads on iOS/Android SDKs are separate and currently free per Google's mobile
   dynamic-maps terms (verify).
 
+**Status (owner, 2026-10-22):** all four APIs enabled; key restricted to iOS bundle `com.allenklein.nearby` + the four APIs;
+"Pay as you go" plan kept (no subscription); budget = Alerts only (spend-cap enforcement does not cover Maps APIs). Per-API
+quotas could NOT be lowered on the free trial (console refuses edits): set them right after upgrading to a paid account.
+Until then the free trial itself cannot charge, and Nearby's 100/day budget caps calls.
+
 ## 4. Nearby's own limit (database, service role)
 
 - One app-wide budget for ALL Google web calls (Places + Geocoding), `places_search_budget.daily_limit` (default **100**),
@@ -70,7 +75,7 @@ Rows written before 2026-10-22 have `location_source = NULL` (not recorded): 26 
 
 - [ ] Section 1: Places API (New), Geocoding API, Maps SDK for iOS, Maps SDK for Android enabled.
 - [ ] Section 2: key restricted to those four APIs; Android key decision made.
-- [ ] Section 3: budget alert + per-API daily quotas set.
+- [ ] Section 3: budget alert set (done 2026-10-22); per-API daily quotas set (blocked on the free trial; do after upgrading).
 - [ ] Terms review (counsel / Google), recorded with the date and the terms version read:
   - [ ] Showing live Places results with the "Google Maps" text attribution (no logo image) beside each list is acceptable.
   - [ ] Whether a pin the person confirmed WITHOUT moving it (`location_source = 'google_confirmed'`) may be kept beyond
