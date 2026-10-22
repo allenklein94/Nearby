@@ -1,71 +1,67 @@
-// Owner decision 2026-10-22 (Google storage fix): where a stored location came from. ONE rule for Create's gathering point,
-// the business sign-up and the pin screen. Pure: no network, no storage.
-//   Google's terms: a place ID may be kept indefinitely; Google coordinates only 30 days; nothing else may be kept.
-//   So a Google result only MOVES THE MAP: the person confirms the spot on a Google map (the pin screen), and what is
-//   stored is that confirmed pin, labelled with how it was reached, plus Google's place ID as a reference.
-//   - 'device'           the phone's own location (Create's "Near me")
-//   - 'host_pin'         the person placed the pin themselves (no Google result behind it)
-//   - 'google_adjusted'  a Google result centred the map and the person moved the pin
-//   - 'google_confirmed' the person confirmed the pin exactly where Google put it (still Google-derived: owner + counsel
-//                        decide whether that may be kept permanently; this label is what makes those rows findable)
-//   - 'business_profile' the business's own saved location (Create from a business, the web picker's business spot)
-// Confirmation is provenance, never a claim that Google-derived data became the person's own.
+// Where a stored location came from. ONE rule for Create's gathering point, the business sign-up, the business profile's
+// pin and the pin screens. Pure: no network, no storage.
+// Owner decisions 2026-10-22 (final, Option B, LOCKED): Google's terms allow keeping a place ID indefinitely, Google
+// coordinates only 30 days, nothing else. So Nearby NEVER stores a Google coordinate, and accepting or nudging a pin Google
+// placed is not independent data. A Google result (a venue in Create's list, the sign-up's business search, an address search
+// on the pin screen) only MOVES THE MAP and is remembered as a reference (its place ID); the map then shows NO pin until the
+// person taps the spot themselves. Only that tap (and any drag after it) becomes the stored point.
+//   - 'device'           the phone's own location ("Use my current location"), unmoved
+//   - 'host_pin'         the person placed the pin themselves on the map (host, or the business for its own location);
+//                        may carry the Google place ID they searched for, as a reference only
+//   - 'business_profile' the business's own saved location (Create from a business, the web picker's business spot), unmoved
+// Earlier labels 'google_confirmed' / 'google_adjusted' / 'address_geocoded' are no longer produced and are refused by the
+// database (migration 20270336).
 
-export const LOCATION_SOURCES = Object.freeze(['device', 'host_pin', 'google_adjusted', 'google_confirmed', 'business_profile']);
-export const GOOGLE_LOCATION_SOURCES = Object.freeze(['google_adjusted', 'google_confirmed']);
+export const LOCATION_SOURCES = Object.freeze(['device', 'host_pin', 'business_profile']);
 
-// ~1 m: anything closer than this is the same point Google gave (float noise from the map).
+// ~1 m: anything closer than this is the same point (float noise from the map).
 const SAME_POINT_DEG = 0.00001;
 
 function isNum(v) {
   return typeof v === 'number' && Number.isFinite(v);
 }
 
+export function isPoint(p) {
+  return !!p && isNum(p.latitude) && isNum(p.longitude);
+}
+
 function samePoint(a, b) {
   return Math.abs(a.latitude - b.latitude) <= SAME_POINT_DEG && Math.abs(a.longitude - b.longitude) <= SAME_POINT_DEG;
 }
 
-// The pin the person confirmed, compared with what last placed it (`origin`):
-//   { kind: 'google', placeId, point }  a Google venue or address search centred the map
-//   { kind: 'device', point }           "Use my current location"
-//   { kind: 'business_profile', point } the business's own saved location (web picker)
-//   null                                nothing: the person placed it
-// A pin moved away from its origin is the person's own ('host_pin'), except a moved Google pin, which stays traceable.
-export function pinProvenance({ origin = null, confirmed }) {
-  if (!confirmed || !isNum(confirmed.latitude) || !isNum(confirmed.longitude)) return null;
-  const p = origin?.point;
-  const hasPoint = !!p && isNum(p.latitude) && isNum(p.longitude);
-  if (!origin || !hasPoint) return { source: 'host_pin', googlePlaceId: null };
-  const moved = !samePoint(confirmed, p);
-  if (origin.kind === 'google') {
-    return { source: moved ? 'google_adjusted' : 'google_confirmed', googlePlaceId: origin.placeId || null };
+// The pin a pin screen starts with. A Google result is never a pin: only the map's centre (`center`) and a reference.
+//   params: { initialLat, initialLng, googlePlaceId?, googlePlaceName? } as the calling screen passed them.
+// -> { center, pin, origin, reference }: `pin` null = nothing placed yet (Confirm stays off until the person taps the map).
+export function initialPin(params = {}) {
+  const point = isNum(params.initialLat) && isNum(params.initialLng) ? { latitude: params.initialLat, longitude: params.initialLng } : null;
+  if (params.googlePlaceId) {
+    return { center: point, pin: null, origin: null, reference: { placeId: params.googlePlaceId, name: params.googlePlaceName ?? null } };
   }
-  if (!moved && (origin.kind === 'device' || origin.kind === 'business_profile')) return { source: origin.kind, googlePlaceId: null };
-  return { source: 'host_pin', googlePlaceId: null };
+  // A point the calling screen already holds (the person's own earlier pin or location): shown as the pin.
+  return { center: point, pin: point, origin: null, reference: null };
 }
 
-// What a gathering stores beside its point. A custom location without a known source is a pin the host set.
+// The pin the person confirmed, compared with what last placed it (`origin`):
+//   { kind: 'device', point }           "Use my current location"
+//   { kind: 'business_profile', point } the business's own saved location (web picker)
+//   null                                the person placed it (a tap / drag on the map, or a point the caller already held)
+// `reference` = the Google venue/address the person searched for, if any: kept as a place ID beside 'host_pin' only.
+export function pinProvenance({ origin = null, confirmed, reference = null }) {
+  if (!isPoint(confirmed)) return null;
+  if (origin && isPoint(origin.point) && samePoint(confirmed, origin.point) && (origin.kind === 'device' || origin.kind === 'business_profile')) {
+    return { source: origin.kind, googlePlaceId: null };
+  }
+  return { source: 'host_pin', googlePlaceId: reference?.placeId || null };
+}
+
+// What a gathering stores beside its point. A custom location without a known source is a pin the host set; Google's place ID
+// is kept only beside the host's own pin (a reference to the venue they searched, never its coordinates).
 export function gatheringLocationProvenance({ customLocation = null, locationSource = null, googlePlaceId = null } = {}) {
   if (!customLocation) return { location_source: 'device', google_place_id: null };
   const source = LOCATION_SOURCES.includes(locationSource) ? locationSource : 'host_pin';
-  return {
-    location_source: source,
-    google_place_id: GOOGLE_LOCATION_SOURCES.includes(source) ? (googlePlaceId || null) : null,
-  };
+  return { location_source: source, google_place_id: source === 'host_pin' ? (googlePlaceId || null) : null };
 }
 
-// Business sign-up: name and address are the business's own when it typed them, or when it confirmed values Google filled.
-// `googleFilled` = { name, address } as Google gave them (null = no Google result was picked).
-export function signupDetailsSource({ googleFilled = null, name, address, confirmed = false }) {
-  if (!googleFilled) return 'business_entered';
-  const same = (a, b) => String(a ?? '').trim() === String(b ?? '').trim() && String(a ?? '').trim() !== '';
-  const usesGoogle = same(name, googleFilled.name) || same(address, googleFilled.address);
-  if (!usesGoogle) return 'business_entered';
-  return confirmed ? 'business_confirmed_google' : null; // null = may not be sent until the business confirms
-}
-
-// Whether a field still shows exactly what Google filled ("From Google Maps — please verify" stays under it).
-export function stillGoogleValue(value, googleValue) {
-  const v = String(value ?? '').trim();
-  return v !== '' && v === String(googleValue ?? '').trim();
-}
+// Business sign-up (owner 2026-10-22, "Google as reference only"): Google's result is shown for reference; the business types
+// every stored field itself, so its details are always its own.
+export const SIGNUP_DETAILS_SOURCE = 'business_entered';

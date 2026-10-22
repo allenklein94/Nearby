@@ -176,3 +176,24 @@ describe('wiring', () => {
     expect(r).not.toMatch(/clockWindowCaption\(/);
   });
 });
+
+describe('the 4-chip cap never hides a correction (owner 2026-10-22)', () => {
+  const FULL = 'outdoor live music tonight after 7 with friends for 4 people';
+  const c = { category: 'Live Music', dateWindow: 'tonight', partySize: 4, partyType: 'friends' };
+  test('a full ask has more pieces than the cap, People included and still changeable', () => {
+    const all = understoodPieces({ ...c, structured: { sources: { partySize: 'words' } } }, FULL);
+    expect(all.length).toBeGreaterThan(4);
+    expect(all.map((p) => p.key)).toEqual(expect.arrayContaining(['clock', 'people']));
+    expect(understoodChoices(all.find((p) => p.key === 'people')).length).toBeGreaterThan(0);
+  });
+  test('the component shows the first 4 and a "+N" (screen reader "Show more") that reveals the rest in place', () => {
+    const comp = read('components/AskUnderstoodChips.js');
+    expect(comp).toMatch(/const pieces = showAll \? all : all\.slice\(0, T\.maxPieces\);/);
+    expect(comp).toMatch(/onPress=\{\(\) => setShowAll\(true\)\}/);
+    expect(comp).toMatch(/accessibilityLabel=\{t\('ui\.common\.showMore'\)\}/);
+    expect(comp).toMatch(/\{`\+\$\{hidden\}`\}/);
+    expect(comp).toMatch(/accessibilityLabel: allLabels\.join\(', '\)/); // the loader's label names every piece
+    expect(comp).toMatch(/steps\[i\] \?\? settled/); // pieces past the cap appear settled (no new motion)
+  });
+});
+

@@ -5,8 +5,9 @@ test('no coordinates and no address asks for an address and says requests cannot
   expect(n.needsAction).toBe(true);
   expect(n.text).toMatch(/requests can’t reach/);
 });
-test('an address that never geocoded is flagged too', () => {
-  expect(businessLocationNotice({ address: '1 Main St', latitude: null, longitude: null }).text).toMatch(/couldn’t place/);
+// Option B (owner 2026-10-22): an address is never geocoded into a point; the business places its own pin.
+test('an address with no pin asks the business to place itself on the map', () => {
+  expect(businessLocationNotice({ address: '1 Main St', latitude: null, longitude: null }).text).toMatch(/Place your business on the map/);
 });
 test('a located business shows no notice; no partner shows none', () => {
   expect(businessLocationNotice({ address: '1 Main St', latitude: 33, longitude: -117 })).toBeNull();

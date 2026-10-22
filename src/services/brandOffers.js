@@ -2,7 +2,6 @@ import { supabase, functionUrl } from './supabase';
 import { expandSearchTerms } from '../constants/categorySynonyms';
 import { searchScope } from '../constants/categoryTree';
 import { serviceError } from '../utils/recoverableError';
-import { geocodeAddress as geocodePlace } from './places';
 import { getUserLocation } from './userLocation';
 import { isGatheringUpcoming } from '../utils/objectState';
 import { isNotFound } from '../utils/notFound';
@@ -618,14 +617,18 @@ export async function replyAsBusinessOwner(partnerId, conversationWithId, body) 
   if (error) throw error;
 }
 
-// The business's typed address -> a point, through the ONE shared Google address search (services/places.js, inside the
-// daily Google budget). The stored point is labelled 'address_geocoded' by the database (migration 20270333).
-async function geocodeAddress(address) {
-  const found = await geocodePlace(address);
-  if (found.status === 'ok') return found.point;
-  if (found.status === 'none') throw new Error("Couldn't find that address. Try being more specific.");
-  // Budget used up or Google refused: never the misleading "try being more specific".
-  throw new Error(`Address search isn't available right now${found.reason ? ` (${found.reason})` : ''}. Try again later.`);
+// Owner decisions 2026-10-22 (final, Option B): a business's point is never geocoded from its address (Google's coordinates
+// may not be stored). Saving the address saves the words only; the point is the pin the business places itself on the map
+// (SelectGatheringLocation -> setBusinessLocation, migration 20270336), with Google's place ID kept only as a reference.
+export async function setBusinessLocation(partnerId, { latitude, longitude, locationSource, googlePlaceId = null }) {
+  const { error } = await supabase.rpc('set_business_location', {
+    partner_id_param: partnerId,
+    latitude_param: latitude,
+    longitude_param: longitude,
+    location_source_param: locationSource,
+    google_place_id_param: locationSource === 'host_pin' ? googlePlaceId : null,
+  });
+  if (error) throw error;
 }
 
 // brand_partners has no UPDATE RLS policy at all (confirmed live) -- both of
@@ -633,9 +636,11 @@ async function geocodeAddress(address) {
 // (20260809_business_profile_self_edit.sql), which checks the caller's own
 // managed_partner_id, rather than a raw client .update() that would silently
 // no-op under RLS's default deny.
+// The address words only; the point stays the business's own pin (unchanged here).
 export async function updateBusinessAddress(partnerId, address) {
-  const { latitude, longitude } = await geocodeAddress(address);
   const current = await getBusinessProfile(partnerId);
+  const latitude = current?.latitude ?? null;
+  const longitude = current?.longitude ?? null;
   const { error } = await supabase.rpc('update_business_profile', {
     partner_id_param: partnerId,
     name_param: current?.name,
@@ -662,17 +667,9 @@ export async function updateBusinessAddress(partnerId, address) {
 
 export async function updateBusinessProfile(partnerId, { name, description, address, logoUrl, category, attributes, cuisine, differentiator, subcategory, categories }) {
   const current = await getBusinessProfile(partnerId);
-  let latitude = current?.latitude ?? null;
-  let longitude = current?.longitude ?? null;
-  const addressChanged = (address ?? '') !== (current?.address ?? '');
-  if (addressChanged) {
-    if (address && address.trim()) {
-      ({ latitude, longitude } = await geocodeAddress(address));
-    } else {
-      latitude = null;
-      longitude = null;
-    }
-  }
+  // The point is the business's own pin (setBusinessLocation); an address edit never moves or geocodes it.
+  const latitude = current?.latitude ?? null;
+  const longitude = current?.longitude ?? null;
 
   const { error } = await supabase.rpc('update_business_profile', {
     partner_id_param: partnerId,

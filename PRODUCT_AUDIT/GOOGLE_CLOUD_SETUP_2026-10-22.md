@@ -63,17 +63,22 @@ Until then the free trial itself cannot charge, and Nearby's 100/day budget caps
 - Watch it: `select * from places_search_usage order by day desc limit 14;` Many `refused` = the limit is too tight for real use.
 - Not a billing cap: Google bills what it serves; section 3's quotas are the cap.
 
-## 5. What Nearby stores from Google (after 2026-10-22)
+## 5. What Nearby stores from Google (final, owner decisions 2026-10-22: Option B + "Google as reference only", migration 20270336)
+
+Nothing but Google's `place_id`, as a reference. No Google coordinate and no Google-supplied business detail is stored.
 
 | Where | What is stored | Provenance column |
 |---|---|---|
-| `gatherings` | the host-confirmed pin (`precise_lat/lng`, private) + Google `place_id` (private) | `location_source`: device / host_pin / google_adjusted / google_confirmed / business_profile |
-| `business_partner_requests` | name + address the business typed or confirmed; phone/website typed only; the confirmed pin; `place_id` | `details_source` + `details_confirmed_at`, `location_source` |
-| `brand_partners` | copied on approval; a later address edit relabels the point | `location_source` (+ `address_geocoded`), `google_place_id` |
-| device draft (Create) | coordinates (draft expires in 14 days); never a Google venue name | n/a |
-| nothing else | search results live in memory only (10-minute session cache), never in the database | n/a |
+| `gatherings` | the pin the HOST placed by tapping the map (`precise_lat/lng`, private); the Google `place_id` of the venue they searched, private | `location_source`: device / host_pin / business_profile (the database refuses the retired google_confirmed / google_adjusted) |
+| `business_partner_requests` | name + address the business TYPED (Google's result is shown as a reference card only); its own pin; `place_id` | `details_source` = business_entered only; `location_source`: host_pin / device |
+| `brand_partners` | copied on approval; later only the business's own pin via `set_business_location` (an address edit never geocodes) | `location_source`: host_pin / device (an unlabelled coordinate change = host_pin; `address_geocoded` retired), `google_place_id` only beside host_pin |
+| device draft (Create) | the host's own pin (draft expires in 14 days); never a Google venue name | n/a |
+| nothing else | search results and the pin screen's address-search point live in memory only (they only move the map) | n/a |
 
-Rows written before 2026-10-22 have `location_source = NULL` (not recorded): 26 gatherings, 1 sign-up (no coordinates), 1 partner (no coordinates).
+A Google result never places a pin: the map opens on it with no pin, and only the person's tap (and any drag after it) is
+handed back (`initialPin` / `pinProvenance` in `utils/locationProvenance.js`). Accepting or nudging a Google pin is therefore
+impossible, not merely relabelled. The website picker has no map, so it has no Google search at all.
+Rows written before 2026-10-22 have `location_source = NULL` (not recorded): 26 gatherings, 1 sign-up (no coordinates), 1 partner (no coordinates); none hold Google provenance.
 
 ## 6. Before turning "Also nearby" on (owner checklist)
 
@@ -82,24 +87,12 @@ Rows written before 2026-10-22 have `location_source = NULL` (not recorded): 26 
 - [ ] Section 3: budget alert set (done 2026-10-22); per-API daily quotas set (blocked on the free trial; do after upgrading).
 - [ ] Terms review (counsel / Google), recorded with the date and the terms version read:
   - [ ] Showing live Places results with the "Google Maps" text attribution (no logo image) beside each list is acceptable.
-- **Owner ruling (2026-10-22, conservative, LOCKED until the terms say otherwise):** confirmation never changes provenance.
-  Until a recorded terms review explicitly permits it, everything below counts as Google content (place ID only may be kept;
-  coordinates at most 30 days; nothing else), and its permanent storage is a BLOCKER, not an open question:
-  - [ ] **Gathering pins `google_confirmed`** (a Google venue's point, confirmed without moving): Google-derived. Not stored
-        in production yet (2026-10-22: all 26 gatherings have `location_source` null = created before provenance). Needs an
-        owner decision on the replacement before launch: (a) keep the place ID, cache the point <= 30 days and refresh it from
-        the place ID (server job, Google cost per refresh), or (b) the host places the pin themselves, Google's point never
-        stored. `google_adjusted` (moved > ~1 m from Google's point) is NOT assumed independent either until the review says so.
-  - [ ] **Sign-up name/address `details_source = 'business_confirmed_google'`**: Google-derived; the tick is not proof of
-        independent provenance. Pre-approved replacement (owner 2026-10-22 fallback): "Google as reference only", the business
-        types every field (`details_source = 'business_entered'`). Not built. Prod: 1 sign-up, `details_source` null.
-  - [x] **Which geocoder the business profile editor uses (checked in code 2026-10-22):** Google Geocoding API
-        (`geocodeAddress` in `src/services/places.js`, called by `brandOffers.js` on every profile address edit and by both
-        pin screens' address search). Its point is stored permanently in `brand_partners.latitude/longitude`, labelled
-        `address_geocoded`. So the 30-day limit applies.
-  - [ ] **Business address edits `address_geocoded`**: Google-derived; permanent storage blocked. Replacement not decided
-        (a pin the business places itself, a licensed geocoder with storage rights, or the 30-day refresh). Prod: 1 partner,
-        no point stored.
+- [x] **Storage (owner decisions 2026-10-22, final; BUILT, LIVE 2026-10-22, migration 20270336, journey `locationProvenance` 21/21):**
+  gathering pins = Option B (the host taps the spot; Google only centres the map); business sign-up + profile pins = Option B
+  (`set_business_location`; an address edit never geocodes); sign-up = "Google as reference only" (business types its
+  details). Geocoder used by the profile editor and the pin screens' search: Google Geocoding (`geocodeAddress`), now only to
+  move the map. The terms review below no longer needs to rule on stored coordinates or details (none are stored); it still
+  needs to confirm the attribution and that keeping `place_id` + showing results on a Google map is acceptable.
 - [ ] Check C23 + C24 of `FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md` passed on a real phone.
 - [ ] Native-speaker review of the `ui.placesToGo.*` and `ui.selectLocation.confirmPlaceHint` strings.
 

@@ -1,3 +1,38 @@
+# Google storage FINAL (owner decisions 2026-10-22): Option B pins for gatherings + businesses, sign-up "Google as reference only", clock chip kept + 4-chip cap fix
+
+Owner-pasted decisions: (1) gathering coordinates Option B (independently placed pin; Google may help search, its point never
+stored, accepting or slightly moving it is not independent); (2) business address coordinates Option B, sign-up + profile edits;
+(3) sign-up "Google as reference only"; (4) keep Google place IDs as references, track provenance; (5) keep the clock-time chip,
+fix the 4-chip cap so it never hides People's correction, compact, reuse existing controls; (6) regression tests; "Also nearby"
+stays OFF.
+- Pins (`utils/locationProvenance.js`, ONE rule): `initialPin` = a Google venue gives the map's centre + a reference (place ID,
+  name) and NO pin; `pinProvenance` = only the person's tap/drag ('host_pin', + the searched place ID as reference), the phone's
+  unmoved location ('device') or the business's unmoved saved spot ('business_profile'). `SelectGatheringLocationScreen`: map
+  `onPress` places the pin, Confirm disabled until then, hint "Tap the map where {name} is to place your pin." / "Tap the map to
+  place your pin." (new `ui.selectLocation.tapToPlacePin`, 11 languages, 10 machine-authored); an address search only re-centres
+  (old pin cleared); `searchText` param looks a business's typed address up once on open. Web picker: Google address search
+  removed (no map to place a pin on); business spot + browser location only.
+- Create: a Google venue opens the pin screen (unchanged entry); place ID kept only beside host_pin; Google venue name never in
+  the draft or publish panel.
+- Business sign-up (`BusinessPartnerApplyScreen`): the picked Google result is a reference card (name, address, "Google Maps")
+  above the form; no field filled, no tick; category = a one-tap "Suggested: X · tap to use" chip; "Place your business on the
+  map" opens the pin screen on the Google result (no pin) or on the typed address; `details_source` always 'business_entered'.
+- Business profile (`BusinessDashboardScreen` + `brandOffers.js`): `updateBusinessAddress` saves the words only (never
+  geocodes); a changed or unplaced address opens the pin screen (`returnTo: 'BusinessDashboard'`); the returned pin is saved by
+  new RPC `set_business_location` (own manager only; 'host_pin' | 'device'; place ID only beside host_pin). The
+  "couldn't place" notice reworded: "📍 Place your business on the map — tap so nearby requests can reach you" (11 languages).
+- Migration 20270336 (LIVE 2026-10-22): checks refuse the retired labels (gatherings: device/host_pin/business_profile; sign-ups
+  + partners: host_pin/device; details_source business_entered only; place ID only beside host_pin); trigger
+  `_brand_partner_location_provenance` labels any unlabelled coordinate change 'host_pin' and drops the stale place ID. Prod held
+  0 rows with a retired label (checked before applying).
+- Chips (`AskUnderstoodChips`): the first 4 pieces show as before; past the cap a quiet "+N" chip (screen reader
+  `ui.common.showMore`, existing) reveals the rest in place, each with its own ✕ / change row; extra pieces appear settled (no new
+  motion); the non-interactive loader label names every piece.
+- Verification: Jest 483 suites / 6647 tests pass (1 stale assertion updated: `businessLocationNotice.test.js`); journey
+  `locationProvenance` 21/21; prod journeys 608/608 (rolled back); from-scratch replay 460/460 + journeys 608/608 on the rebuilt
+  DB (grants parity not re-run); business web export regenerated. NOT DEVICE-VERIFIED: check C24 (reworded), native review of
+  the new/reworded strings.
+
 # Owner idea "306" REOPENED + BUILT (2026-10-22): the clock time is an understood chip, AM/PM correction + remove; Google storage ruling (conservative) recorded
 
 Owner-pasted review: approve the narrow clock-time chip fix; take the conservative approach to Google storage; report exact blockers.

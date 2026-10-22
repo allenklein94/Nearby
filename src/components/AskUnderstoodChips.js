@@ -22,15 +22,21 @@ import { localClock } from '../i18n/format';
 // piece's existing choices under the chips (no motion, no coral; the current one marked ✓), a choice re-runs the ask in place with it
 // (`onChange(piece, value)`), a second tap on the label closes the row; its ✕ still removes. WHAT, WHERE and WHO stay remove-only.
 // Owner idea "306" (2026-10-22): the clock chip ("After 7 PM") works the same way; its row offers only the same time AM / PM.
+// Owner (2026-10-22): the 4-chip cap stays the visual default, but no understood piece may become impossible to correct: past
+// the cap, a quiet "+N" chip (screen reader: "Show more") shows the rest in place, each with its own ✕ / change row.
 const T = SEQUENCES.askUnderstood;
 
 export default function AskUnderstoodChips({ classifyResult, typedText, onRemove = null, onChange = null, disabled = false }) {
   const { colors } = useTheme();
   const { t, language } = useLanguage();
   const reduceMotion = useReduceMotion();
-  const pieces = understoodPieces(classifyResult, typedText).slice(0, T.maxPieces);
-  const [play] = useState(() => pieces.length > 0 && takeUnderstoodPlay(understoodKey(pieces, typedText)) && !reduceMotion);
+  const all = understoodPieces(classifyResult, typedText);
+  const [showAll, setShowAll] = useState(false);
+  const pieces = showAll ? all : all.slice(0, T.maxPieces);
+  const hidden = all.length - pieces.length;
+  const [play] = useState(() => all.length > 0 && takeUnderstoodPlay(understoodKey(all.slice(0, T.maxPieces), typedText)) && !reduceMotion);
   const steps = useRef(Array.from({ length: T.maxPieces }, () => new Animated.Value(play ? 0 : 1))).current;
+  const settled = useRef(new Animated.Value(1)).current; // pieces past the cap appear as they are (no settle)
   const [openKey, setOpenKey] = useState(null);
 
   useEffect(() => {
@@ -42,7 +48,7 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  if (pieces.length === 0) return null;
+  if (all.length === 0) return null;
   const clockText = (c) => {
     const at = (m) => localClock(m, language, { words: true });
     if (c.at != null) return t('ui.discover.understoodClockAt', { time: at(c.at) });
@@ -59,6 +65,7 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
   };
   const choiceLabel = (key, value) => (key === 'clock' ? clockText(value) : key === 'when' ? t(`ui.gatherings.dateFilter.${value}`) : t('ui.common.count.people', { count: value }));
   const labels = pieces.map(label);
+  const allLabels = all.map(label);
   const removable = typeof onRemove === 'function';
   const changeable = (p) => removable && typeof onChange === 'function' && UNDERSTOOD_CHANGEABLE.includes(p.key);
   const open = pieces.find((p) => p.key === openKey && changeable(p)) ?? null;
@@ -68,7 +75,7 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
     <View
       style={styles.row}
       pointerEvents={removable ? 'box-none' : 'none'}
-      {...(removable ? {} : { accessible: true, accessibilityLabel: labels.join(', ') })}
+      {...(removable ? {} : { accessible: true, accessibilityLabel: allLabels.join(', ') })}
     >
       {pieces.map((p, i) => {
         const text = <Text style={[styles.text, { color: colors.textSecondary }]} numberOfLines={1}>{removable ? `${labels[i]} ✕` : labels[i]}</Text>;
@@ -88,8 +95,8 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
           <Animated.View
             key={p.key}
             style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surface }, {
-              opacity: infoOpacity(steps[i]),
-              transform: [{ translateY: steps[i].interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }],
+              opacity: infoOpacity(steps[i] ?? settled),
+              transform: [{ translateY: (steps[i] ?? settled).interpolate({ inputRange: [0, 1], outputRange: [T.risePx, 0] }) }],
             }]}
           >
             {changeable(p) ? (
@@ -110,6 +117,23 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
           </Animated.View>
         );
       })}
+      {hidden > 0 && (removable ? (
+        <TouchableOpacity
+          onPress={() => setShowAll(true)}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityState={{ disabled }}
+          accessibilityLabel={t('ui.common.showMore')}
+          hitSlop={{ top: 8, bottom: 8, left: 4, right: 4 }}
+          style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surface }]}
+        >
+          <Text style={[styles.text, { color: colors.textSecondary }]}>{`+${hidden}`}</Text>
+        </TouchableOpacity>
+      ) : (
+        <View style={[styles.chip, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+          <Text style={[styles.text, { color: colors.textSecondary }]}>{`+${hidden}`}</Text>
+        </View>
+      ))}
       {open && (
         <View style={styles.choices}>
           {understoodChoices(open).map((v) => {

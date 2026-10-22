@@ -70,7 +70,7 @@ describe('motion and presentation', () => {
     expect(tierOf(settleMs('askUnderstood'))).toBe('small');
   });
   test('readable from frame one, native driver, Reduce Motion = already there, takes no touches', () => {
-    expect(comp).toMatch(/opacity: infoOpacity\(steps\[i\]\)/);
+    expect(comp).toMatch(/opacity: infoOpacity\(steps\[i\] \?\? settled\)/);
     expect(comp).toMatch(/useNativeDriver: true/);
     expect(comp).not.toMatch(/useNativeDriver: false/);
     expect(comp).toMatch(/&& !reduceMotion\)/);

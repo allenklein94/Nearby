@@ -41,7 +41,7 @@ import OpportunityArrival, { ArrivalSignal } from '../motion/OpportunityArrival'
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore, setBusinessDietaryOptions } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, setBusinessLocation, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore, setBusinessDietaryOptions } from '../services/brandOffers';
 import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
 import { BUSINESS_PRICE_LEVELS, typicalSpendProblem } from '../constants/businessPrice';
 import { getBusinessCommunities } from '../services/communities';
@@ -1076,19 +1076,51 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     ]);
   }
 
+  // Owner decisions 2026-10-22 (final, Option B): saving the address saves the words only; the map then opens on that
+  // address (Google only centres it) and the business taps its own door. Only that pin is stored (setBusinessLocation).
+  function openBusinessPin(address) {
+    const p = selectedPartner;
+    const own = p?.latitude != null && p?.longitude != null && (address ?? p.address) === p.address;
+    navigation.navigate('SelectGatheringLocation', {
+      returnTo: 'BusinessDashboard',
+      ...(own ? { initialLat: p.latitude, initialLng: p.longitude } : { searchText: address ?? p?.address ?? '' }),
+    });
+  }
+
   async function handleUpdateAddress() {
     if (!addressInput.trim()) return;
+    const address = addressInput.trim();
+    const moved = address !== (selectedPartner.address ?? '');
     setSavingAddress(true);
     try {
-      const coords = await updateBusinessAddress(selectedPartner.id, addressInput.trim());
-      setSelectedPartner((prev) => ({ ...prev, address: addressInput.trim(), latitude: coords?.latitude ?? prev.latitude, longitude: coords?.longitude ?? prev.longitude }));
+      await updateBusinessAddress(selectedPartner.id, address);
+      setSelectedPartner((prev) => ({ ...prev, address }));
       setAddressModalVisible(false);
-      showSuccessToast(t('ui.bizDash1.saved'), t('ui.bizDash1.yourBusinessAddressIsNow'));
+      if (moved || selectedPartner.latitude == null) openBusinessPin(address);
+      else showSuccessToast(t('ui.bizDash1.saved'));
     } catch (e) {
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleUpdateAddress() });
     }
     setSavingAddress(false);
   }
+
+  // The pin the business placed comes back here with its provenance (utils/locationProvenance.js).
+  useEffect(() => {
+    const p = route?.params;
+    if (!selectedPartner?.id || typeof p?.selectedLat !== 'number' || typeof p?.selectedLng !== 'number') return;
+    const pin = { latitude: p.selectedLat, longitude: p.selectedLng, locationSource: p.selectedLocationSource === 'device' ? 'device' : 'host_pin', googlePlaceId: p.selectedPlaceId ?? null };
+    navigation.setParams({ selectedLat: undefined, selectedLng: undefined, selectedLocationSource: undefined, selectedPlaceId: undefined, selectedPlaceName: undefined });
+    (async () => {
+      try {
+        await setBusinessLocation(selectedPartner.id, pin);
+        setSelectedPartner((prev) => ({ ...prev, latitude: pin.latitude, longitude: pin.longitude }));
+        showSuccessToast(t('ui.bizDash1.saved'), t('ui.bizDash1.yourBusinessAddressIsNow'));
+      } catch (e) {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => setBusinessLocation(selectedPartner.id, pin) });
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [route?.params?.selectedLat, route?.params?.selectedLng, selectedPartner?.id]);
 
   // Decision 6, Phase 1 (CLAUDE.md's Aug 27 2026 plan) -- this is the one
   // confirmed gap the whole content-screening layer was built to close:
@@ -3668,6 +3700,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableOpacity
           style={[styles.addressBanner, businessLocationNotice(selectedPartner) && { borderColor: colors.primary }]}
           onPress={() => {
+            // An address with no pin yet goes straight to the map; otherwise the address editor.
+            if (selectedPartner.address && businessLocationNotice(selectedPartner)) { openBusinessPin(selectedPartner.address); return; }
             setAddressInput(selectedPartner.address ?? '');
             setAddressModalVisible(true);
           }}

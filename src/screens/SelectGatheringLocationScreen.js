@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
@@ -6,40 +6,44 @@ import * as Location from 'expo-location';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { geocodeAddress } from '../services/places';
-import { pinProvenance } from '../utils/locationProvenance';
+import { initialPin, pinProvenance } from '../utils/locationProvenance';
 
 // Lets a host either search for an address or fine-tune by dragging
 // the pin directly, rather than being locked to wherever their
 // phone's GPS happens to be at the moment of creating the gathering.
-// Owner 2026-10-22 (Google storage fix): also the ONE place a Google venue becomes a stored point. A Google result (Create's
-// venue list, the business sign-up, or the address search here) only centres the pin; the person confirms or moves it,
-// and the confirmed pin goes back with its provenance (utils/locationProvenance.js) + Google's place ID. Google results are
-// shown only on a Google map (Google's terms), so this map is always PROVIDER_GOOGLE.
-// `returnTo` = the screen to hand the pin back to (default CreateGathering; BusinessPartnerApply for the sign-up).
+// Owner decisions 2026-10-22 (final, Option B): the ONE place a location the person chooses becomes a point. A Google result
+// (Create's venue list, the business sign-up / profile, or the address search here) only MOVES THE MAP and is kept as a
+// reference (its place ID); no pin appears until the person taps the spot themselves, and only that tap (and any drag after
+// it) goes back, with its provenance (utils/locationProvenance.js). Google's coordinates are never handed back or stored.
+// Google results are shown only on a Google map (Google's terms), so this map is always PROVIDER_GOOGLE.
+// `returnTo` = the screen to hand the pin back to (default CreateGathering; BusinessPartnerApply / BusinessDashboard for a
+// business); `searchText` = an address to look up once on open (the business's own typed address), so nobody starts from scratch.
 export default function SelectGatheringLocationScreen({ navigation, route }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
-  const [searchText, setSearchText] = useState('');
+  const [start] = useState(() => initialPin(route.params ?? {}));
+  const [searchText, setSearchText] = useState(route.params?.searchText ?? '');
   const [searching, setSearching] = useState(false);
-  const [region, setRegion] = useState({
-    latitude: route.params?.initialLat ?? 26.4615,
-    longitude: route.params?.initialLng ?? -80.0728,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
+  const [region] = useState({
+    latitude: start.center?.latitude ?? 26.4615,
+    longitude: start.center?.longitude ?? -80.0728,
+    latitudeDelta: start.center ? 0.005 : 0.05,
+    longitudeDelta: start.center ? 0.005 : 0.05,
   });
-  const [pinCoords, setPinCoords] = useState({
-    latitude: route.params?.initialLat ?? 26.4615,
-    longitude: route.params?.initialLng ?? -80.0728,
-  });
+  // null = nothing placed yet (Confirm is off): a Google result never places the pin.
+  const [pinCoords, setPinCoords] = useState(start.pin);
   const mapRef = useRef(null);
-  // What last placed the pin (pinProvenance's origin): a Google venue passed in, else nothing (the host's own pin).
-  const [origin, setOrigin] = useState(() => (
-    route.params?.googlePlaceId && route.params?.initialLat != null && route.params?.initialLng != null
-      ? { kind: 'google', placeId: route.params.googlePlaceId, point: { latitude: route.params.initialLat, longitude: route.params.initialLng } }
-      : null
-  ));
-  const placeName = origin?.kind === 'google' && origin.placeId === route.params?.googlePlaceId ? route.params?.googlePlaceName ?? null : null;
+  // What last placed the pin (pinProvenance's origin): 'device' for "my location", else null (the person's own tap).
+  const [origin, setOrigin] = useState(start.origin);
+  // The Google venue / address the person searched for: a reference (place ID, its name shown here only), never a point.
+  const [reference, setReference] = useState(start.reference);
+  const placeName = reference?.name ?? null;
+
+  function placePin(coordinate) {
+    setPinCoords(coordinate);
+    setOrigin(null);
+  }
 
   async function useMyCurrentLocation() {
     const { status } = await Location.requestForegroundPermissionsAsync();
@@ -51,18 +55,21 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
     const coords = { latitude: location.coords.latitude, longitude: location.coords.longitude };
     setPinCoords(coords);
     setOrigin({ kind: 'device', point: coords });
+    setReference(null);
     mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.02, longitudeDelta: 0.02 }, 500);
   }
 
-  async function handleSearch() {
-    if (!searchText.trim()) return;
+  async function handleSearch(text = searchText) {
+    if (!String(text ?? '').trim()) return;
     setSearching(true);
     try {
-      const found = await geocodeAddress(searchText);
+      const found = await geocodeAddress(text);
       if (found.status === 'ok') {
-        setPinCoords(found.point);
-        setOrigin({ kind: 'google', placeId: found.placeId, point: found.point });
-        mapRef.current?.animateToRegion({ ...found.point, latitudeDelta: 0.02, longitudeDelta: 0.02 }, 500);
+        // Google's point only centres the map; the person taps the exact spot (the old pin, if any, is cleared).
+        setPinCoords(null);
+        setOrigin(null);
+        setReference(found.placeId ? { placeId: found.placeId, name: found.label ?? null } : null);
+        mapRef.current?.animateToRegion({ ...found.point, latitudeDelta: 0.005, longitudeDelta: 0.005 }, 500);
       } else if (found.status === 'none') {
         Alert.alert(t('ui.selectLocation.notFound'), t('ui.selectLocation.couldntFindThatAddressTry'));
       } else {
@@ -75,17 +82,24 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
     setSearching(false);
   }
 
+  // A business's typed address is looked up once on open (centres the map only), unless the map already has a place.
+  useEffect(() => {
+    if (route.params?.searchText && !start.center) handleSearch(route.params.searchText);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function handleConfirm() {
-    const prov = pinProvenance({ origin, confirmed: pinCoords });
+    const prov = pinProvenance({ origin, confirmed: pinCoords, reference });
+    if (!prov) return;
     navigation.navigate({
       name: route.params?.returnTo ?? 'CreateGathering',
       params: {
         selectedLat: pinCoords.latitude,
         selectedLng: pinCoords.longitude,
-        selectedLocationSource: prov?.source ?? 'host_pin',
-        selectedPlaceId: prov?.googlePlaceId ?? null,
-        // Shown on the returning screen only (never stored): Google's venue name while the pin is still that venue's.
-        selectedPlaceName: prov?.googlePlaceId && prov.googlePlaceId === route.params?.googlePlaceId ? placeName : null,
+        selectedLocationSource: prov.source,
+        selectedPlaceId: prov.googlePlaceId,
+        // Shown on the returning screen only (never stored): the name of the Google venue the person searched for.
+        selectedPlaceName: prov.googlePlaceId ? placeName : null,
       },
       merge: true,
     });
@@ -100,35 +114,42 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
           placeholderTextColor={colors.textTertiary}
           value={searchText}
           onChangeText={setSearchText}
-          onSubmitEditing={handleSearch}
+          onSubmitEditing={() => handleSearch()}
           returnKeyType="search"
           accessibilityLabel={t('ui.selectLocation.searchForALocationA11y')}
         />
-        <TouchableOpacity style={styles.searchButton} onPress={handleSearch} disabled={searching} accessibilityLabel={t('ui.selectLocation.searchA11y')} accessibilityRole="button">
+        <TouchableOpacity style={styles.searchButton} onPress={() => handleSearch()} disabled={searching} accessibilityLabel={t('ui.selectLocation.searchA11y')} accessibilityRole="button">
           {searching ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>{t('ui.selectLocation.go')}</Text>}
         </TouchableOpacity>
       </View>
 
-      {placeName ? <Text style={styles.placeHint} numberOfLines={2}>{t('ui.selectLocation.confirmPlaceHint', { name: placeName })}</Text> : null}
+      {!pinCoords ? (
+        <Text style={styles.placeHint} numberOfLines={2} accessibilityLiveRegion="polite">
+          {placeName ? t('ui.selectLocation.confirmPlaceHint', { name: placeName }) : t('ui.selectLocation.tapToPlacePin')}
+        </Text>
+      ) : null}
       <MapView
         ref={mapRef}
         provider={PROVIDER_GOOGLE}
         style={{ flex: 1 }}
         initialRegion={region}
+        onPress={(e) => placePin(e.nativeEvent.coordinate)}
       >
-        <Marker
-          coordinate={pinCoords}
-          draggable
-          onDragEnd={(e) => setPinCoords(e.nativeEvent.coordinate)}
-          accessibilityLabel={t('ui.selectLocation.gatheringLocationPinDragToA11y')}
-        />
+        {pinCoords ? (
+          <Marker
+            coordinate={pinCoords}
+            draggable
+            onDragEnd={(e) => placePin(e.nativeEvent.coordinate)}
+            accessibilityLabel={t('ui.selectLocation.gatheringLocationPinDragToA11y')}
+          />
+        ) : null}
       </MapView>
 
       <View style={styles.bottomBar}>
         <TouchableOpacity style={styles.currentLocationButton} onPress={useMyCurrentLocation} accessibilityLabel={t('ui.selectLocation.useMyCurrentLocationA11y')} accessibilityRole="button">
           <Text style={styles.currentLocationText}>{t('ui.selectLocation.useMyCurrentLocation')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} accessibilityLabel={t('ui.selectLocation.confirmThisLocationA11y')} accessibilityRole="button">
+        <TouchableOpacity style={[styles.confirmButton, !pinCoords && { opacity: 0.5 }]} onPress={handleConfirm} disabled={!pinCoords} accessibilityLabel={t('ui.selectLocation.confirmThisLocationA11y')} accessibilityRole="button" accessibilityState={{ disabled: !pinCoords }}>
           <Text style={styles.confirmButtonText}>{t('ui.selectLocation.confirmLocation')}</Text>
         </TouchableOpacity>
       </View>

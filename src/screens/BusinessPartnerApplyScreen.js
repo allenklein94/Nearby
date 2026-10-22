@@ -8,7 +8,7 @@ import { randomUUID } from 'expo-crypto';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import { searchPlacesByTextResult } from '../services/places';
-import { signupDetailsSource, stillGoogleValue } from '../utils/locationProvenance';
+import { SIGNUP_DETAILS_SOURCE } from '../utils/locationProvenance';
 import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
@@ -74,12 +74,12 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
   const [searchResults, setSearchResults] = useState([]);
   const [searchedOnce, setSearchedOnce] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState(null);
-  // Owner 2026-10-22 (Google storage fix, "fill, business confirms"): Google may fill ONLY the name and address, each
-  // marked "From Google Maps — please verify" while unchanged; the business must tick "These details are correct for my
-  // business" before sending them; phone and website are typed by the business. The location is the pin the business
-  // confirms on a Google map (SelectGatheringLocation, returnTo here). Saved with provenance + Google's place ID.
-  const [googleFilled, setGoogleFilled] = useState(null); // { placeId, name, address, point } as Google gave them
-  const [detailsConfirmed, setDetailsConfirmed] = useState(false);
+  // Owner decisions 2026-10-22 (final, "Google as reference only" + Option B): the Google result the business picked is shown
+  // as a reference card above the form (with "Google Maps"); NOTHING from it is copied into a stored field. The business
+  // types its own name and address (the category is a one-tap suggestion it may take), and places its own pin on the map
+  // (SelectGatheringLocation, returnTo here: the map opens on the Google result, no pin until the business taps). Only
+  // Google's place ID is kept, as a reference.
+  const [googleReference, setGoogleReference] = useState(null); // { placeId, name, address, point, category } as Google gave them
   const [locationSource, setLocationSource] = useState(null);
   const [searchUnavailable, setSearchUnavailable] = useState(false);
 
@@ -219,20 +219,12 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
   function confirmPlace(place) {
     setSelectedPlace(place);
     logBusinessAcquisitionEvent(sessionId, 'business_found');
-    // Name and address only, for the business to verify; never phone/website, never a stored point until the business
-    // confirms its pin on the map.
-    setBusinessName(place.name ?? '');
-    setAddress(place.address ?? '');
+    // A reference only: no field is filled from it (the business types its own), no point is stored from it.
     setLatitude(null);
     setLongitude(null);
     setLocationSource(null);
-    setDetailsConfirmed(false);
     const point = typeof place.latitude === 'number' && typeof place.longitude === 'number' ? { latitude: place.latitude, longitude: place.longitude } : null;
-    setGoogleFilled({ placeId: place.placeId ?? null, name: place.name ?? null, address: place.address ?? null, point });
-    if (place.category) {
-      setCategory(place.category);
-      setSubcategory(null);
-    }
+    setGoogleReference({ placeId: place.placeId ?? null, name: place.name ?? null, address: place.address ?? null, point, category: place.category ?? null });
     setStep('form');
   }
 
@@ -246,21 +238,22 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
     }
   }, [route?.params?.selectedLat, route?.params?.selectedLng, route?.params?.selectedLocationSource]);
 
+  // Its own pin if it placed one; else the map opens on the Google result (centre only, no pin), else looks up its typed address.
   function openLocationPin() {
-    const start = latitude != null && longitude != null ? { latitude, longitude } : googleFilled?.point ?? null;
-    const fromGoogle = !!googleFilled?.point && (latitude == null || locationSource === 'google_confirmed');
+    const own = latitude != null && longitude != null ? { latitude, longitude } : null;
+    const ref = !own && googleReference?.point ? googleReference : null;
     navigation.navigate('SelectGatheringLocation', {
       returnTo: 'BusinessPartnerApply',
-      initialLat: start?.latitude,
-      initialLng: start?.longitude,
-      ...(fromGoogle ? { googlePlaceId: googleFilled.placeId, googlePlaceName: googleFilled.name } : {}),
+      initialLat: own?.latitude ?? ref?.point.latitude,
+      initialLng: own?.longitude ?? ref?.point.longitude,
+      ...(ref ? { googlePlaceId: ref.placeId, googlePlaceName: ref.name } : {}),
+      ...(!own && !ref && address.trim() ? { searchText: address.trim() } : {}),
     });
   }
 
   function startManualEntry() {
     setSelectedPlace(null);
-    setGoogleFilled(null);
-    setDetailsConfirmed(false);
+    setGoogleReference(null);
     setStep('form');
   }
 
@@ -293,11 +286,6 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
       }
     }
 
-    const detailsSource = signupDetailsSource({ googleFilled, name: businessName, address, confirmed: detailsConfirmed });
-    if (!detailsSource) {
-      return Alert.alert('Please check your details', 'Tick "These details are correct for my business" once you have checked the name and address from Google Maps.');
-    }
-
     setSubmitting(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -318,9 +306,8 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
         latitude,
         longitude,
         location_source: latitude != null && longitude != null ? locationSource ?? 'host_pin' : null,
-        google_place_id: googleFilled?.placeId ?? null,
-        details_source: detailsSource,
-        details_confirmed_at: detailsSource === 'business_confirmed_google' ? new Date().toISOString() : null,
+        google_place_id: googleReference?.placeId ?? null,
+        details_source: SIGNUP_DETAILS_SOURCE,
         requested_features: requestedFeatures.length ? requestedFeatures : null,
         attributes,
         cuisine,
@@ -419,10 +406,12 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             <Text style={styles.backLink}>← Back to search</Text>
           </TouchableOpacity>
 
-          {selectedPlace ? (
-            <View style={styles.confirmBanner}>
-              <Text style={styles.confirmTitle}>Confirm your business</Text>
-              <Text style={styles.confirmSubtitle}>We found "{selectedPlace.name}" on Google Maps and filled in its name and address. Please check them, correct anything that's wrong, and add the rest yourself.</Text>
+          {googleReference ? (
+            <View style={styles.confirmBanner} accessible accessibilityLabel={`From Google Maps, for reference: ${googleReference.name ?? ''}${googleReference.address ? `, ${googleReference.address}` : ''}`}>
+              <Text style={styles.confirmTitle}>{googleReference.name}</Text>
+              {googleReference.address ? <Text style={styles.confirmSubtitle}>{googleReference.address}</Text> : null}
+              <GoogleMapsAttribution />
+              <Text style={styles.confirmSubtitle}>For reference. Enter your business's details below as you want customers to see them.</Text>
             </View>
           ) : (
             <Text style={styles.header}>Complete your profile</Text>
@@ -437,7 +426,6 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             onChangeText={setBusinessName}
             accessibilityLabel="Business name"
           />
-          {stillGoogleValue(businessName, googleFilled?.name) ? <Text style={styles.fromGoogle}>From Google Maps — please verify</Text> : null}
 
           <Text style={styles.label}>Tell us about your business</Text>
           <TextInput
@@ -552,6 +540,18 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
               ) : null}
               {typeQuery.trim().length >= 3 && searchBusinessTypes(typeQuery).length === 0 ? (
                 <Text style={styles.chipText}>No match in our list. That's fine: we'll keep what you typed and the team will place it.</Text>
+              ) : null}
+              {googleReference?.category && BUSINESS_CATEGORIES.some((c) => c.key === googleReference.category) ? (
+                <TouchableOpacity
+                  style={[styles.chip, { alignSelf: 'flex-start', marginBottom: 6 }]}
+                  onPress={() => { setCategory(googleReference.category); setSubcategory(null); setUnlistedText(''); setTypeQuery(''); }}
+                  accessibilityRole="button"
+                  accessibilityLabel="Use the suggested category"
+                >
+                  <Text style={styles.chipText}>
+                    Suggested: {BUSINESS_CATEGORIES.find((c) => c.key === googleReference.category)?.label} · tap to use
+                  </Text>
+                </TouchableOpacity>
               ) : null}
               {categorySuggestion ? (
                 <TouchableOpacity
@@ -767,30 +767,14 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             }}
             accessibilityLabel="Address, optional"
           />
-          {stillGoogleValue(address, googleFilled?.address) ? <Text style={styles.fromGoogle}>From Google Maps — please verify</Text> : null}
 
           <Text style={styles.label}>Location on the map</Text>
           <TouchableOpacity style={styles.locationRow} onPress={openLocationPin} accessibilityRole="button"
-            accessibilityLabel={latitude != null ? 'Location confirmed. Change it on the map' : 'Confirm your location on the map, optional'}>
+            accessibilityLabel={latitude != null ? 'Location placed. Change it on the map' : 'Place your business on the map, optional'}>
             <Text style={styles.locationRowText}>
-              {latitude != null ? '✓ Location confirmed · Change' : googleFilled?.point ? 'Confirm your location on the map →' : 'Set your location on the map (optional) →'}
+              {latitude != null ? '✓ Location placed · Change' : 'Place your business on the map (optional) →'}
             </Text>
           </TouchableOpacity>
-
-          {googleFilled && (stillGoogleValue(businessName, googleFilled.name) || stillGoogleValue(address, googleFilled.address)) ? (
-            <TouchableOpacity
-              style={styles.checkboxRow}
-              onPress={() => setDetailsConfirmed((v) => !v)}
-              accessibilityRole="checkbox"
-              accessibilityLabel="These details are correct for my business"
-              accessibilityState={{ checked: detailsConfirmed }}
-            >
-              <View style={[styles.checkbox, detailsConfirmed && styles.checkboxChecked]}>
-                {detailsConfirmed && <Text style={styles.checkboxMark}>✓</Text>}
-              </View>
-              <Text style={styles.checkboxLabel}>These details are correct for my business</Text>
-            </TouchableOpacity>
-          ) : null}
 
           <Text style={styles.label}>What would you like to offer?</Text>
           {FEATURE_OPTIONS.map((f) => {
@@ -854,7 +838,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   resultRow: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginTop: spacing.sm },
   resultName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
   resultAddress: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
-  fromGoogle: { ...typography.caption, color: colors.textSecondary, marginTop: -spacing.xs, marginBottom: spacing.sm },
   locationRow: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   locationRowText: { ...typography.body, color: colors.primary, fontWeight: '600' },
   emptyText: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.md, textAlign: 'center' },

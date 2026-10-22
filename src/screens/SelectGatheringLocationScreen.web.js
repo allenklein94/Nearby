@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
-import { geocodeAddress } from '../services/places';
 import { pinProvenance } from '../utils/locationProvenance';
-import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -11,23 +9,19 @@ import { spacing, radius, typography } from '../theme';
 // screen -- it hands selectedLat/selectedLng back to CreateGathering -- with the choices a host can actually use on
 // a desktop: their own business address (the usual place a business hosts), an address search, or the browser's
 // location. There is no draggable pin; the chosen coordinates are shown so the host can see what will be used.
-// Owner 2026-10-22: same provenance hand-back as the native screen (utils/locationProvenance.js); an address search
-// claims the shared daily Google budget, and a Google address shown here (no map) carries "Google Maps" beside it.
+// Owner decisions 2026-10-22 (final, Option B): a stored point is never Google's, and there is no map here to place a pin on,
+// so this screen has NO Google address search and never starts from a Google venue: the choices are the business's own
+// location and the browser's location (same provenance hand-back as the native screen, utils/locationProvenance.js). A
+// Google venue passed in is named only, with the way to place it (the Nearby app's map).
 
 export default function SelectGatheringLocationScreen({ navigation, route }) {
   const { colors } = useTheme();
   const styles = getStyles(colors);
-  const [searchText, setSearchText] = useState('');
-  const [searching, setSearching] = useState(false);
+  const googleVenue = route.params?.googlePlaceId ? route.params?.googlePlaceName ?? null : null;
+  // A point the calling screen already holds (the person's own earlier pin) is kept; a Google venue's point never is.
   const [pin, setPin] = useState(
-    route.params?.initialLat != null && route.params?.initialLng != null
-      ? {
-        latitude: route.params.initialLat, longitude: route.params.initialLng,
-        label: route.params?.googlePlaceName ?? 'Current location',
-        origin: route.params?.googlePlaceId
-          ? { kind: 'google', placeId: route.params.googlePlaceId, point: { latitude: route.params.initialLat, longitude: route.params.initialLng } }
-          : null,
-      }
+    !route.params?.googlePlaceId && route.params?.initialLat != null && route.params?.initialLng != null
+      ? { latitude: route.params.initialLat, longitude: route.params.initialLng, label: 'Pinned spot', origin: null }
       : null
   );
   const [businessSpot, setBusinessSpot] = useState(null);
@@ -49,27 +43,9 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
     })();
   }, []);
 
-  async function handleSearch() {
-    if (!searchText.trim()) return;
-    setSearching(true);
-    try {
-      const found = await geocodeAddress(searchText);
-      if (found.status === 'ok') {
-        setPin({ ...found.point, label: found.label, origin: { kind: 'google', placeId: found.placeId, point: found.point } });
-      } else if (found.status === 'none') {
-        Alert.alert('Not found', "Couldn't find that address. Try being more specific.");
-      } else {
-        Alert.alert('Address search unavailable', "Address search isn't available right now. You can still use your business location or your current location.");
-      }
-    } catch (e) {
-      Alert.alert('Error', 'Something went wrong searching for that address.');
-    }
-    setSearching(false);
-  }
-
   function useBrowserLocation() {
     if (!navigator.geolocation) {
-      Alert.alert('Location unavailable', 'Your browser cannot share its location. Search for an address instead.');
+      Alert.alert('Location unavailable', 'Your browser cannot share its location. Use your business location, or place the pin in the Nearby app.');
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -77,7 +53,7 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
         const point = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
         setPin({ ...point, label: 'Your current location', origin: { kind: 'device', point } });
       },
-      () => Alert.alert('Location needed', 'Allow location in your browser, or search for an address instead.')
+      () => Alert.alert('Location needed', 'Allow location in your browser, or use your business location.')
     );
   }
 
@@ -89,8 +65,8 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
       params: {
         selectedLat: pin.latitude, selectedLng: pin.longitude,
         selectedLocationSource: prov?.source ?? 'host_pin',
-        selectedPlaceId: prov?.googlePlaceId ?? null,
-        selectedPlaceName: prov?.googlePlaceId && prov.googlePlaceId === route.params?.googlePlaceId ? route.params?.googlePlaceName ?? null : null,
+        selectedPlaceId: null,
+        selectedPlaceName: null,
       },
       merge: true,
     });
@@ -105,25 +81,13 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
             <Text style={styles.subtle}>{businessSpot.label}</Text>
           </TouchableOpacity>
         )}
-        <View style={styles.searchRow}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search for an address or venue..."
-            placeholderTextColor={colors.textTertiary}
-            value={searchText}
-            onChangeText={setSearchText}
-            onSubmitEditing={handleSearch}
-            accessibilityLabel="Search for a location"
-          />
-          <TouchableOpacity style={styles.searchButton} onPress={handleSearch} disabled={searching} accessibilityRole="button" accessibilityLabel="Search">
-            {searching ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>Go</Text>}
-          </TouchableOpacity>
-        </View>
+        {googleVenue ? (
+          <Text style={styles.subtle}>To meet at {googleVenue}, place the pin on the map in the Nearby app, or choose a location below.</Text>
+        ) : null}
         <TouchableOpacity style={styles.optionButton} onPress={useBrowserLocation} accessibilityRole="button" accessibilityLabel="Use my current location">
           <Text style={styles.optionText}>📍 Use my current location</Text>
         </TouchableOpacity>
         <Text style={styles.subtle}>{pin ? `Selected: ${pin.label ?? 'Pinned spot'}` : 'Pick a location above.'}</Text>
-        {pin?.origin?.kind === 'google' ? <GoogleMapsAttribution /> : null}
         <TouchableOpacity style={[styles.confirmButton, !pin && { opacity: 0.5 }]} onPress={handleConfirm} disabled={!pin} accessibilityRole="button" accessibilityLabel="Confirm this location">
           <Text style={styles.confirmButtonText}>Confirm Location</Text>
         </TouchableOpacity>
@@ -135,10 +99,6 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
 const getStyles = (colors) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   body: { padding: spacing.lg, gap: spacing.md, maxWidth: 560, width: '100%', alignSelf: 'center' },
-  searchRow: { flexDirection: 'row', gap: spacing.sm },
-  searchInput: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderWidth: 1, borderColor: colors.border },
-  searchButton: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.lg, justifyContent: 'center' },
-  searchButtonText: { color: '#fff', fontWeight: '700' },
   optionButton: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md },
   optionText: { ...typography.bodyBold, color: colors.textPrimary },
   subtle: { color: colors.textSecondary, fontSize: 13 },

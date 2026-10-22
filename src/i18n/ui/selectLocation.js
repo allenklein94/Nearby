@@ -18,7 +18,8 @@ export default {
     useMyCurrentLocation: "📍 Use My Current Location",
     confirmThisLocationA11y: "Confirm this location",
     confirmLocation: "Confirm Location",
-    confirmPlaceHint: "Check the pin is on {name}. Move it if it isn't, then confirm.",
+    confirmPlaceHint: "Tap the map where {name} is to place your pin.",
+    tapToPlacePin: "Tap the map to place your pin.",
   },
   es: {
     locationNeeded: "Se necesita ubicación",
@@ -37,7 +38,8 @@ export default {
     useMyCurrentLocation: "📍 Usar mi ubicación actual",
     confirmThisLocationA11y: "Confirmar esta ubicación",
     confirmLocation: "Confirmar ubicación",
-    confirmPlaceHint: "Comprueba que el marcador esté en {name}. Muévelo si no lo está y luego confirma.",
+    confirmPlaceHint: "Toca el mapa donde está {name} para colocar tu marcador.",
+    tapToPlacePin: "Toca el mapa para colocar tu marcador.",
   },
   de: {
     locationNeeded: "Standort benötigt",
@@ -56,7 +58,8 @@ export default {
     useMyCurrentLocation: "📍 Meinen aktuellen Standort verwenden",
     confirmThisLocationA11y: "Diesen Ort bestätigen",
     confirmLocation: "Ort bestätigen",
-    confirmPlaceHint: "Prüfe, ob die Markierung auf {name} liegt. Verschiebe sie sonst und bestätige dann.",
+    confirmPlaceHint: "Tippe auf die Karte, wo {name} ist, um deine Markierung zu setzen.",
+    tapToPlacePin: "Tippe auf die Karte, um deine Markierung zu setzen.",
   },
   fr: {
     locationNeeded: "Localisation requise",
@@ -75,7 +78,8 @@ export default {
     useMyCurrentLocation: "📍 Utiliser ma position actuelle",
     confirmThisLocationA11y: "Confirmer ce lieu",
     confirmLocation: "Confirmer le lieu",
-    confirmPlaceHint: "Vérifiez que le repère est sur {name}. Déplacez-le si besoin, puis confirmez.",
+    confirmPlaceHint: "Touchez la carte à l'endroit où se trouve {name} pour placer votre repère.",
+    tapToPlacePin: "Touchez la carte pour placer votre repère.",
   },
   pt: {
     locationNeeded: "Localização necessária",
@@ -94,7 +98,8 @@ export default {
     useMyCurrentLocation: "📍 Usar minha localização atual",
     confirmThisLocationA11y: "Confirmar este local",
     confirmLocation: "Confirmar local",
-    confirmPlaceHint: "Confira se o marcador está em {name}. Mova-o se não estiver e depois confirme.",
+    confirmPlaceHint: "Toque no mapa onde fica {name} para colocar seu marcador.",
+    tapToPlacePin: "Toque no mapa para colocar seu marcador.",
   },
   ht: {
     locationNeeded: "Nou bezwen lokalizasyon",
@@ -113,7 +118,8 @@ export default {
     useMyCurrentLocation: "📍 Itilize kote m ye kounye a",
     confirmThisLocationA11y: "Konfime kote sa a",
     confirmLocation: "Konfime kote a",
-    confirmPlaceHint: "Verifye pwen an sou {name}. Deplase l si li pa la, apre sa konfime.",
+    confirmPlaceHint: "Tape sou kat la kote {name} ye pou mete pwen ou.",
+    tapToPlacePin: "Tape sou kat la pou mete pwen ou.",
   },
   zh: {
     locationNeeded: "需要位置权限",
@@ -132,7 +138,8 @@ export default {
     useMyCurrentLocation: "📍 使用我当前的位置",
     confirmThisLocationA11y: "确认此位置",
     confirmLocation: "确认位置",
-    confirmPlaceHint: "请确认标记在{name}上。如果不在，请移动它，然后确认。",
+    confirmPlaceHint: "在地图上点按{name}所在的位置来放置图钉。",
+    tapToPlacePin: "点按地图来放置图钉。",
   },
   vi: {
     locationNeeded: "Cần vị trí",
@@ -151,7 +158,8 @@ export default {
     useMyCurrentLocation: "📍 Dùng vị trí hiện tại của tôi",
     confirmThisLocationA11y: "Xác nhận vị trí này",
     confirmLocation: "Xác nhận vị trí",
-    confirmPlaceHint: "Kiểm tra ghim đã ở {name} chưa. Nếu chưa, hãy di chuyển rồi xác nhận.",
+    confirmPlaceHint: "Chạm vào bản đồ tại vị trí của {name} để đặt ghim.",
+    tapToPlacePin: "Chạm vào bản đồ để đặt ghim.",
   },
   tl: {
     locationNeeded: "Kailangan ang lokasyon",
@@ -170,7 +178,8 @@ export default {
     useMyCurrentLocation: "📍 Gamitin ang kasalukuyan kong lokasyon",
     confirmThisLocationA11y: "Kumpirmahin ang lokasyong ito",
     confirmLocation: "Kumpirmahin ang lokasyon",
-    confirmPlaceHint: "Tingnan kung nasa {name} ang pin. Ilipat ito kung hindi, saka kumpirmahin.",
+    confirmPlaceHint: "I-tap ang mapa kung nasaan ang {name} para ilagay ang iyong pin.",
+    tapToPlacePin: "I-tap ang mapa para ilagay ang iyong pin.",
   },
   ru: {
     locationNeeded: "Нужна геолокация",
@@ -189,7 +198,8 @@ export default {
     useMyCurrentLocation: "📍 Использовать моё местоположение",
     confirmThisLocationA11y: "Подтвердить это место",
     confirmLocation: "Подтвердить место",
-    confirmPlaceHint: "Проверьте, что метка стоит на {name}. Если нет, передвиньте её и подтвердите.",
+    confirmPlaceHint: "Нажмите на карту там, где находится {name}, чтобы поставить метку.",
+    tapToPlacePin: "Нажмите на карту, чтобы поставить метку.",
   },
   ko: {
     locationNeeded: "위치가 필요해요",
@@ -208,6 +218,7 @@ export default {
     useMyCurrentLocation: "📍 현재 위치 사용",
     confirmThisLocationA11y: "이 위치 확인",
     confirmLocation: "위치 확인",
-    confirmPlaceHint: "핀이 {name}에 있는지 확인하세요. 아니면 옮긴 뒤 확인을 누르세요.",
+    confirmPlaceHint: "{name}이(가) 있는 곳을 지도에서 탭해 핀을 놓으세요.",
+    tapToPlacePin: "지도를 탭해 핀을 놓으세요.",
   },
 };

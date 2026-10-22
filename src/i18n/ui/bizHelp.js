@@ -38,7 +38,7 @@ export default {
     },
     location: {
       addAddress: "📍 Add your address — until you do, nearby requests can’t reach your business",
-      cantPlace: "📍 We couldn’t place your address on the map — tap to re-enter it so nearby requests can reach you",
+      cantPlace: "📍 Place your business on the map — tap so nearby requests can reach you",
     },
     discount: {
       range: "Discount percent must be between 0 and 100.",
@@ -419,7 +419,7 @@ export default {
     },
     location: {
       addAddress: "📍 Agrega tu dirección: hasta que lo hagas, las solicitudes cercanas no pueden llegar a tu negocio",
-      cantPlace: "📍 No pudimos ubicar tu dirección en el mapa: tócala para escribirla de nuevo y que las solicitudes cercanas te lleguen",
+      cantPlace: "📍 Ubica tu negocio en el mapa: toca para que las solicitudes cercanas te lleguen",
     },
     discount: {
       range: "El porcentaje de descuento debe estar entre 0 y 100.",
@@ -800,7 +800,7 @@ export default {
     },
     location: {
       addAddress: "📍 Füge deine Adresse hinzu – bis dahin können Anfragen aus der Nähe dein Geschäft nicht erreichen",
-      cantPlace: "📍 Wir konnten deine Adresse nicht auf der Karte finden – tippe, um sie neu einzugeben, damit Anfragen aus der Nähe dich erreichen",
+      cantPlace: "📍 Setze dein Geschäft auf die Karte – tippe, damit Anfragen aus der Nähe dich erreichen",
     },
     discount: {
       range: "Der Rabatt in Prozent muss zwischen 0 und 100 liegen.",
@@ -1181,7 +1181,7 @@ export default {
     },
     location: {
       addAddress: "📍 Ajoutez votre adresse : sans elle, les demandes à proximité ne peuvent pas atteindre votre établissement",
-      cantPlace: "📍 Nous n'avons pas pu placer votre adresse sur la carte : touchez pour la saisir à nouveau afin que les demandes à proximité vous atteignent",
+      cantPlace: "📍 Placez votre commerce sur la carte — touchez pour que les demandes à proximité vous parviennent",
     },
     discount: {
       range: "Le pourcentage de réduction doit être compris entre 0 et 100.",
@@ -1562,7 +1562,7 @@ export default {
     },
     location: {
       addAddress: "📍 Adicione seu endereço — até lá, pedidos por perto não conseguem chegar ao seu negócio",
-      cantPlace: "📍 Não conseguimos localizar seu endereço no mapa — toque para digitá-lo de novo e receber pedidos por perto",
+      cantPlace: "📍 Coloque seu negócio no mapa — toque para que pedidos próximos cheguem até você",
     },
     discount: {
       range: "O percentual de desconto deve estar entre 0 e 100.",
@@ -1943,7 +1943,7 @@ export default {
     },
     location: {
       addAddress: "📍 Ajoute adrès ou — jiskaske ou fè sa, demann ki toupre pa ka rive jwenn biznis ou",
-      cantPlace: "📍 Nou pa t ka mete adrès ou sou kat la — tape pou antre l ankò pou demann ki toupre ka rive jwenn ou",
+      cantPlace: "📍 Mete biznis ou sou kat la — tape pou demann ki toupre yo ka rive jwenn ou",
     },
     discount: {
       range: "Pousantaj rabè a dwe ant 0 ak 100.",
@@ -2324,7 +2324,7 @@ export default {
     },
     location: {
       addAddress: "📍 添加你的地址——在添加之前，附近的请求无法到达你的商家",
-      cantPlace: "📍 我们无法在地图上找到你的地址——点按重新输入，让附近的请求能找到你",
+      cantPlace: "📍 在地图上标出你的商家——点按，附近的请求才能找到你",
     },
     discount: {
       range: "折扣百分比必须在 0 到 100 之间。",
@@ -2705,7 +2705,7 @@ export default {
     },
     location: {
       addAddress: "📍 Thêm địa chỉ của bạn — khi chưa có, các yêu cầu gần đây không thể đến doanh nghiệp của bạn",
-      cantPlace: "📍 Chúng tôi không định vị được địa chỉ của bạn trên bản đồ — chạm để nhập lại để các yêu cầu gần đây tìm thấy bạn",
+      cantPlace: "📍 Đặt doanh nghiệp của bạn trên bản đồ — chạm để các yêu cầu gần đó đến được với bạn",
     },
     discount: {
       range: "Phần trăm giảm giá phải từ 0 đến 100.",
@@ -3086,7 +3086,7 @@ export default {
     },
     location: {
       addAddress: "📍 Idagdag ang iyong address — hangga't wala ito, hindi maaabot ng mga request sa malapit ang negosyo mo",
-      cantPlace: "📍 Hindi namin mailagay ang address mo sa mapa — i-tap para ilagay ulit para maabot ka ng mga request sa malapit",
+      cantPlace: "📍 Ilagay ang iyong negosyo sa mapa — i-tap para maabot ka ng mga kahilingan sa malapit",
     },
     discount: {
       range: "Dapat nasa pagitan ng 0 at 100 ang porsiyento ng diskwento.",
@@ -3467,7 +3467,7 @@ export default {
     },
     location: {
       addAddress: "📍 Добавьте адрес — пока его нет, запросы поблизости не смогут дойти до вашего бизнеса",
-      cantPlace: "📍 Не удалось найти ваш адрес на карте — нажмите, чтобы ввести его заново, и запросы поблизости смогут до вас дойти",
+      cantPlace: "📍 Отметьте свой бизнес на карте — нажмите, чтобы запросы поблизости доходили до вас",
     },
     discount: {
       range: "Процент скидки должен быть от 0 до 100.",
@@ -3848,7 +3848,7 @@ export default {
     },
     location: {
       addAddress: "📍 주소를 추가하세요 — 추가하기 전까지는 근처 요청이 비즈니스에 도달할 수 없습니다",
-      cantPlace: "📍 지도에서 주소를 찾을 수 없습니다 — 눌러서 다시 입력하면 근처 요청이 도달할 수 있습니다",
+      cantPlace: "📍 지도에 내 비즈니스를 표시하세요 — 탭하면 근처 요청이 도달할 수 있어요",
     },
     discount: {
       range: "할인율은 0에서 100 사이여야 합니다.",

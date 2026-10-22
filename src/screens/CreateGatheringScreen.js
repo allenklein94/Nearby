@@ -19,7 +19,6 @@ import { skillContext, skillOptionsFor, cleanSkillLevel } from '../constants/ski
 import { EFFORT_OPTIONS } from '../constants/intensityEffort';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import { searchNearbyPlacesResult } from '../services/places';
-import { GOOGLE_LOCATION_SOURCES } from '../utils/locationProvenance';
 import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { checkTextModeration } from '../services/textModeration';
 import { getOfferById, getBusinessProfile } from '../services/brandOffers';
@@ -228,8 +227,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const gatheringSnapshot = {
     step, stepKey: STEP_DEFS[step]?.key ?? null, title, description, interestTag, visibility, discoverable, communityId,
     scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset,
-    // A Google venue name is never kept in the device draft (Google's terms); the source and place ID are.
-    locationMode, customLocation, placeName: GOOGLE_LOCATION_SOURCES.includes(locationSource) ? null : placeName,
+    // A Google venue name is never kept in the device draft (Google's terms); the host's own pin and the place ID are.
+    locationMode, customLocation, placeName: googlePlaceId ? null : placeName,
     locationSource, googlePlaceId, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
     askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, inviteIds, equipmentProvided, ticketRequired, durationMinutes, genre, format, skillLevel, effortLevel, features, ageMin, ageMax,
   };
@@ -294,11 +293,13 @@ export default function CreateGatheringScreen({ navigation, route }) {
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
       setCustomLocation({ latitude: route.params.selectedLat, longitude: route.params.selectedLng });
-      // The confirmed pin's own provenance (the pin screen decides it); a Google venue keeps its name for this screen only.
+      // The pin the host placed and its provenance (the pin screen decides it); the Google venue they searched for is kept as a
+      // reference (place ID) and its name for this screen only.
       const source = route.params.selectedLocationSource ?? 'host_pin';
+      const placeId = source === 'host_pin' ? route.params.selectedPlaceId ?? null : null;
       setLocationSource(source);
-      setGooglePlaceId(GOOGLE_LOCATION_SOURCES.includes(source) ? route.params.selectedPlaceId ?? null : null);
-      setPlaceName(GOOGLE_LOCATION_SOURCES.includes(source) ? route.params.selectedPlaceName ?? null : null);
+      setGooglePlaceId(placeId);
+      setPlaceName(placeId ? route.params.selectedPlaceName ?? null : null);
       setLocationMode('choose_place');
     }
   }, [route.params?.selectedLat, route.params?.selectedLng, route.params?.selectedLocationSource, route.params?.selectedPlaceId]);
@@ -466,7 +467,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setGooglePlaceId(null);
   }
 
-  // A Google venue only centres the map: the host confirms (or moves) the pin there, and that pin is what is stored.
+  // A Google venue only centres the map (Option B, owner 2026-10-22): the host taps the spot, and only that pin is stored.
   function confirmGooglePlace(place) {
     Haptics.selectionAsync();
     navigation.navigate('SelectGatheringLocation', {
@@ -618,7 +619,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
       // headline is final before its formation plays (it used to be looked up after the panel appeared and could switch).
       const firstHosted = await isFirstGatheringHosted().catch(() => false);
 
-      const panelPlaceName = GOOGLE_LOCATION_SOURCES.includes(locationSource) ? null : placeName;
+      const panelPlaceName = googlePlaceId ? null : placeName;
       // Lands on the gathering itself, with a one-time "Your gathering is live" panel (screen-reduction audit B5).
       navigation.replace('GatheringDetail', {
         gatheringId: created.id,
@@ -1426,7 +1427,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <Text style={styles.previewRowIcon}>📍</Text>
               <Text style={styles.previewRowText}>{placeName ? placeName : customLocation ? t('ui.gatheringForm.preview.customLocation') : t('ui.gatheringForm.currentLocation')}</Text>
             </View>
-            {placeName && GOOGLE_LOCATION_SOURCES.includes(locationSource) ? <GoogleMapsAttribution /> : null}
+            {placeName && googlePlaceId ? <GoogleMapsAttribution /> : null}
             <View style={styles.previewRow}>
               <Text style={styles.previewRowIcon}>{selectedVisibility?.icon}</Text>
               <Text style={styles.previewRowText}>
