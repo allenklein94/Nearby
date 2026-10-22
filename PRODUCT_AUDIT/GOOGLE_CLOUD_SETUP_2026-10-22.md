@@ -50,6 +50,10 @@ Until **Places API (New)** is enabled, every Places list is empty and shows "Goo
 "Pay as you go" plan kept (no subscription); budget = Alerts only (spend-cap enforcement does not cover Maps APIs). Per-API
 quotas could NOT be lowered on the free trial (console refuses edits): set them right after upgrading to a paid account.
 Until then the free trial itself cannot charge, and Nearby's 100/day budget caps calls.
+**Key checked from the codespace (2026-10-22, 4 direct calls, outside the app budget):** the EAS `production` key (ends
+`…YOdc`) returns real Places (New) Text Search results with the app's bundle header; a wrong bundle is refused
+(`API_KEY_IOS_APP_BLOCKED`); Geocoding = OK; Time Zone API (not allowed) = REQUEST_DENIED. The key exists ONLY in the EAS
+`production` environment: development/preview builds have no key (every Google list = "unavailable").
 
 ## 4. Nearby's own limit (database, service role)
 
@@ -74,7 +78,7 @@ Rows written before 2026-10-22 have `location_source = NULL` (not recorded): 26 
 ## 6. Before turning "Also nearby" on (owner checklist)
 
 - [ ] Section 1: Places API (New), Geocoding API, Maps SDK for iOS, Maps SDK for Android enabled.
-- [ ] Section 2: key restricted to those four APIs; Android key decision made.
+- [ ] Section 2: key restricted to those four APIs (DONE + checked 2026-10-22); Android key decision made.
 - [ ] Section 3: budget alert set (done 2026-10-22); per-API daily quotas set (blocked on the free trial; do after upgrading).
 - [ ] Terms review (counsel / Google), recorded with the date and the terms version read:
   - [ ] Showing live Places results with the "Google Maps" text attribution (no logo image) beside each list is acceptable.
