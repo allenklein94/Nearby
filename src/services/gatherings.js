@@ -4,6 +4,7 @@ import { TRAVEL_SEARCH_MILES, boundedSearchMiles } from '../constants/searchRadi
 import { searchScope } from '../constants/categoryTree';
 import { groupForTag } from '../constants/gatheringCategories';
 import { formatApproxDistanceAway } from '../utils/formatDistance';
+import { gatheringLocationProvenance } from '../utils/locationProvenance';
 import { supabase } from './supabase';
 import { tr } from '../i18n/translate';
 import { randomUUID } from 'expo-crypto';
@@ -77,7 +78,7 @@ const SAFE_GATHERING_FIELDS = 'id, host_id, title, description, interest_tag, sc
 // exists, from GatheringDetailScreen's own "Ready to see what's
 // available?" banner (or the existing manual "Ask Local Businesses" link)
 // -- see submitBusinessRequestForGathering() in businessFulfillment.js.
-export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, ticketRequired = false, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null, submissionId = null }) {
+export async function createGathering({ title, description, interestTag, scheduledAt, isPublic = true, customLocation = null, showOnMap = true, womenOnly = false, recurrenceRule = null, visibility = 'everyone', communityId = null, capacity = null, askLocalBusinesses = false, priceLevel = null, partyType = null, showGroupInsights = true, requiresApproval = false, allowAttendeeInvites = true, hostNotifications = true, discoverable = true, equipmentProvided = null, ticketRequired = false, durationMinutes = null, genre = null, format = null, skillLevel = null, effortLevel = null, features = [], suitedAgeMin = null, suitedAgeMax = null, submissionId = null, locationSource = null, googlePlaceId = null }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const hostId = sessionData?.session?.user?.id;
 
@@ -103,6 +104,8 @@ export async function createGathering({ title, description, interestTag, schedul
       wide_area: wideArea(lat, lng),
       precise_lat: lat,
       precise_lng: lng,
+      // Owner 2026-10-22: how the point was reached + Google's place ID (both private, insert-only; utils/locationProvenance.js).
+      ...gatheringLocationProvenance({ customLocation, locationSource, googlePlaceId }),
       scheduled_at: scheduledAt,
       is_public: isPublic,
       requires_approval: requiresApproval,

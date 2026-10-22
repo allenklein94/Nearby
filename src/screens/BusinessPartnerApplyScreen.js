@@ -7,7 +7,8 @@ import * as Location from 'expo-location';
 import { randomUUID } from 'expo-crypto';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
-import { searchPlacesByText, getPlaceDetails } from '../services/places';
+import { searchPlacesByTextResult } from '../services/places';
+import { signupDetailsSource, stillGoogleValue } from '../utils/locationProvenance';
 import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
@@ -53,7 +54,7 @@ async function getOptionalLocationBias() {
   }
 }
 
-export default function BusinessPartnerApplyScreen({ navigation }) {
+export default function BusinessPartnerApplyScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
 
@@ -73,6 +74,14 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
   const [searchResults, setSearchResults] = useState([]);
   const [searchedOnce, setSearchedOnce] = useState(false);
   const [selectedPlace, setSelectedPlace] = useState(null);
+  // Owner 2026-10-22 (Google storage fix, "fill, business confirms"): Google may fill ONLY the name and address, each
+  // marked "From Google Maps — please verify" while unchanged; the business must tick "These details are correct for my
+  // business" before sending them; phone and website are typed by the business. The location is the pin the business
+  // confirms on a Google map (SelectGatheringLocation, returnTo here). Saved with provenance + Google's place ID.
+  const [googleFilled, setGoogleFilled] = useState(null); // { placeId, name, address, point } as Google gave them
+  const [detailsConfirmed, setDetailsConfirmed] = useState(false);
+  const [locationSource, setLocationSource] = useState(null);
+  const [searchUnavailable, setSearchUnavailable] = useState(false);
 
   const [businessName, setBusinessName] = useState('');
   const [description, setDescription] = useState('');
@@ -196,43 +205,62 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
     setSearchedOnce(true);
     try {
       const bias = await getOptionalLocationBias();
-      const results = await searchPlacesByText(searchQuery, bias?.latitude, bias?.longitude);
+      const { places: results, unavailable } = await searchPlacesByTextResult(searchQuery, bias?.latitude, bias?.longitude);
       setSearchResults(results);
+      setSearchUnavailable(unavailable);
     } catch (e) {
       console.log('runSearch failed', e.message);
       setSearchResults([]);
+      setSearchUnavailable(true);
     }
     setSearching(false);
   }
 
-  async function confirmPlace(place) {
+  function confirmPlace(place) {
     setSelectedPlace(place);
     logBusinessAcquisitionEvent(sessionId, 'business_found');
-    // Pre-fill what search already returned; enrich with phone/website/category
-    // via a real Place Details call, which Text Search results don't include.
+    // Name and address only, for the business to verify; never phone/website, never a stored point until the business
+    // confirms its pin on the map.
     setBusinessName(place.name ?? '');
     setAddress(place.address ?? '');
-    setLatitude(place.latitude ?? null);
-    setLongitude(place.longitude ?? null);
-    try {
-      const details = await getPlaceDetails(place.placeId);
-      if (details) {
-        setPhone(details.phone ?? '');
-        setWebsite(details.website ?? '');
-        if (details.category) {
-          setCategory(details.category);
-          setSubcategory(null);
-        }
-        if (details.address) setAddress(details.address);
-      }
-    } catch (e) {
-      console.log('getPlaceDetails failed (non-fatal, form still usable)', e.message);
+    setLatitude(null);
+    setLongitude(null);
+    setLocationSource(null);
+    setDetailsConfirmed(false);
+    const point = typeof place.latitude === 'number' && typeof place.longitude === 'number' ? { latitude: place.latitude, longitude: place.longitude } : null;
+    setGoogleFilled({ placeId: place.placeId ?? null, name: place.name ?? null, address: place.address ?? null, point });
+    if (place.category) {
+      setCategory(place.category);
+      setSubcategory(null);
     }
     setStep('form');
   }
 
+  // The pin the business confirmed on the map comes back here with its provenance (utils/locationProvenance.js).
+  useEffect(() => {
+    const p = route?.params;
+    if (typeof p?.selectedLat === 'number' && typeof p?.selectedLng === 'number') {
+      setLatitude(p.selectedLat);
+      setLongitude(p.selectedLng);
+      setLocationSource(p.selectedLocationSource ?? 'host_pin');
+    }
+  }, [route?.params?.selectedLat, route?.params?.selectedLng, route?.params?.selectedLocationSource]);
+
+  function openLocationPin() {
+    const start = latitude != null && longitude != null ? { latitude, longitude } : googleFilled?.point ?? null;
+    const fromGoogle = !!googleFilled?.point && (latitude == null || locationSource === 'google_confirmed');
+    navigation.navigate('SelectGatheringLocation', {
+      returnTo: 'BusinessPartnerApply',
+      initialLat: start?.latitude,
+      initialLng: start?.longitude,
+      ...(fromGoogle ? { googlePlaceId: googleFilled.placeId, googlePlaceName: googleFilled.name } : {}),
+    });
+  }
+
   function startManualEntry() {
     setSelectedPlace(null);
+    setGoogleFilled(null);
+    setDetailsConfirmed(false);
     setStep('form');
   }
 
@@ -265,6 +293,11 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
       }
     }
 
+    const detailsSource = signupDetailsSource({ googleFilled, name: businessName, address, confirmed: detailsConfirmed });
+    if (!detailsSource) {
+      return Alert.alert('Please check your details', 'Tick "These details are correct for my business" once you have checked the name and address from Google Maps.');
+    }
+
     setSubmitting(true);
     try {
       const { data: sessionData } = await supabase.auth.getSession();
@@ -284,6 +317,10 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
         address: address.trim() || null,
         latitude,
         longitude,
+        location_source: latitude != null && longitude != null ? locationSource ?? 'host_pin' : null,
+        google_place_id: googleFilled?.placeId ?? null,
+        details_source: detailsSource,
+        details_confirmed_at: detailsSource === 'business_confirmed_google' ? new Date().toISOString() : null,
         requested_features: requestedFeatures.length ? requestedFeatures : null,
         attributes,
         cuisine,
@@ -359,7 +396,10 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             {searchResults.length > 0 && <GoogleMapsAttribution />}
 
             {searchedOnce && !searching && searchResults.length === 0 ? (
-              <EmptyCopy id="business_apply_search" />
+              // Budget used up / Google refusing is not "no matches".
+              searchUnavailable
+                ? <Text style={styles.resultAddress}>Business search isn't available right now. You can enter your details yourself below.</Text>
+                : <EmptyCopy id="business_apply_search" />
             ) : null}
 
             <TouchableOpacity onPress={startManualEntry} style={styles.manualLink} accessibilityRole="button">
@@ -382,7 +422,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
           {selectedPlace ? (
             <View style={styles.confirmBanner}>
               <Text style={styles.confirmTitle}>Confirm your business</Text>
-              <Text style={styles.confirmSubtitle}>We found "{selectedPlace.name}" — we've filled in what we can below.</Text>
+              <Text style={styles.confirmSubtitle}>We found "{selectedPlace.name}" on Google Maps and filled in its name and address. Please check them, correct anything that's wrong, and add the rest yourself.</Text>
             </View>
           ) : (
             <Text style={styles.header}>Complete your profile</Text>
@@ -397,6 +437,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
             onChangeText={setBusinessName}
             accessibilityLabel="Business name"
           />
+          {stillGoogleValue(businessName, googleFilled?.name) ? <Text style={styles.fromGoogle}>From Google Maps — please verify</Text> : null}
 
           <Text style={styles.label}>Tell us about your business</Text>
           <TextInput
@@ -721,10 +762,35 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
               if (latitude !== null || longitude !== null) {
                 setLatitude(null);
                 setLongitude(null);
+                setLocationSource(null);
               }
             }}
             accessibilityLabel="Address, optional"
           />
+          {stillGoogleValue(address, googleFilled?.address) ? <Text style={styles.fromGoogle}>From Google Maps — please verify</Text> : null}
+
+          <Text style={styles.label}>Location on the map</Text>
+          <TouchableOpacity style={styles.locationRow} onPress={openLocationPin} accessibilityRole="button"
+            accessibilityLabel={latitude != null ? 'Location confirmed. Change it on the map' : 'Confirm your location on the map, optional'}>
+            <Text style={styles.locationRowText}>
+              {latitude != null ? '✓ Location confirmed · Change' : googleFilled?.point ? 'Confirm your location on the map →' : 'Set your location on the map (optional) →'}
+            </Text>
+          </TouchableOpacity>
+
+          {googleFilled && (stillGoogleValue(businessName, googleFilled.name) || stillGoogleValue(address, googleFilled.address)) ? (
+            <TouchableOpacity
+              style={styles.checkboxRow}
+              onPress={() => setDetailsConfirmed((v) => !v)}
+              accessibilityRole="checkbox"
+              accessibilityLabel="These details are correct for my business"
+              accessibilityState={{ checked: detailsConfirmed }}
+            >
+              <View style={[styles.checkbox, detailsConfirmed && styles.checkboxChecked]}>
+                {detailsConfirmed && <Text style={styles.checkboxMark}>✓</Text>}
+              </View>
+              <Text style={styles.checkboxLabel}>These details are correct for my business</Text>
+            </TouchableOpacity>
+          ) : null}
 
           <Text style={styles.label}>What would you like to offer?</Text>
           {FEATURE_OPTIONS.map((f) => {
@@ -788,6 +854,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   resultRow: { backgroundColor: colors.surface, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border, marginTop: spacing.sm },
   resultName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
   resultAddress: { ...typography.caption, color: colors.textTertiary, marginTop: 2 },
+  fromGoogle: { ...typography.caption, color: colors.textSecondary, marginTop: -spacing.xs, marginBottom: spacing.sm },
+  locationRow: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
+  locationRowText: { ...typography.body, color: colors.primary, fontWeight: '600' },
   emptyText: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.md, textAlign: 'center' },
   manualLink: { marginTop: spacing.lg, alignItems: 'center' },
   manualLinkText: { ...typography.body, color: colors.primary, fontWeight: '600' },

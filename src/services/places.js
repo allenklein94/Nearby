@@ -38,7 +38,9 @@ export function placeDistanceLabel(miles) {
 // Owner decision 2026-10-22: Places API (New), only the fields Nearby shows, on Google's Pro tier (name, address, location,
 // types, Maps link). Rating, review count, price level, open-now and photos are NOT requested: they sit on the Enterprise /
 // photo SKUs (a smaller free allowance and more cost per call; photos also need per-photo author credits), and Nearby has
-// no public star ratings. A place therefore never claims open/closed (unknown, utils/operatingStatus.js).
+// no public star ratings. Open-now is requested ONLY on a search made with Discover's Open now filter on
+// (searchNearbyPlacesResult's `openNow`), so that one call is billed at Google's higher hours tier and no other is; a
+// place without Google's answer stays unknown (utils/operatingStatus.js), never "open".
 const PLACES_BASE = 'https://places.googleapis.com/v1';
 export const PLACE_SEARCH_FIELDS = Object.freeze([
   'places.id', 'places.displayName', 'places.shortFormattedAddress', 'places.formattedAddress', 'places.location',
@@ -103,7 +105,8 @@ export function placeFromNewApi(p, latitude = null, longitude = null) {
     address: p?.shortFormattedAddress ?? p?.formattedAddress ?? null,
     rating: null,
     reviewCount: null,
-    openNow: null,
+    // Only present when the Open now search asked for it (PLACE_OPEN_NOW_FIELD); otherwise unknown, never "open".
+    openNow: typeof p?.currentOpeningHours?.openNow === 'boolean' ? p.currentOpeningHours.openNow : null,
     fetchedAt: new Date().toISOString(),
     priceLevel: null,
     latitude: typeof lat === 'number' ? lat : undefined,
@@ -133,14 +136,51 @@ export function placesSearchRequest(latitude, longitude, category, keyword = nul
   };
 }
 
-export async function searchNearbyPlaces(latitude, longitude, category, keyword = null) {
+// Owner 2026-10-22: a search that could not run (daily budget used up, signed out, Google refusing) is NOT "no places":
+// callers get `unavailable: true` and say Google results are temporarily unavailable, never "nothing nearby".
+// `openNow: true` (Discover's Open now filter only) also asks Google for current open-now, on that one call only.
+export const PLACE_OPEN_NOW_FIELD = 'places.currentOpeningHours.openNow';
+export async function searchNearbyPlacesResult(latitude, longitude, category, keyword = null, { openNow = false } = {}) {
   const req = placesSearchRequest(latitude, longitude, category, keyword);
-  if (!(await claimPlacesCall(req.kind))) return [];
-  const data = await placesPost(req.path, req.body, PLACE_SEARCH_FIELDS.join(','));
-  if (!data) return [];
+  if (!(await claimPlacesCall(req.kind))) return { places: [], unavailable: true };
+  const mask = (openNow ? [...PLACE_SEARCH_FIELDS, PLACE_OPEN_NOW_FIELD] : PLACE_SEARCH_FIELDS).join(',');
+  const data = await placesPost(req.path, req.body, mask);
+  if (!data) return { places: [], unavailable: true };
   // No "N gatherings here" count (owner, 2026-10-17, Option A): a venue-level count of future gatherings located them to
   // ~110 m from caller-chosen points, so its database function is gone (migration 20270325). Places are Google's facts only.
-  return (data.places ?? []).slice(0, MAX_RESULTS).map((p) => placeFromNewApi(p, latitude, longitude));
+  return { places: (data.places ?? []).slice(0, MAX_RESULTS).map((p) => placeFromNewApi(p, latitude, longitude)), unavailable: false };
+}
+
+export async function searchNearbyPlaces(latitude, longitude, category, keyword = null, options) {
+  return (await searchNearbyPlacesResult(latitude, longitude, category, keyword, options)).places;
+}
+
+// One address search (Google Geocoding) for the pin screens and the business address editor, inside the same daily
+// budget (kind 'geocode', migration 20270333). status: 'ok' (point + Google's place ID), 'none' (Google found nothing),
+// 'unavailable' (budget used up, signed out, or Google refused: the person can still place the pin by hand).
+export async function geocodeAddress(text) {
+  const q = String(text ?? '').trim();
+  if (!q) return { status: 'none' };
+  if (!(await claimPlacesCall('geocode'))) return { status: 'unavailable' };
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&key=${GOOGLE_MAPS_API_KEY}`,
+      { headers: getGoogleMapsRequestHeaders() }
+    );
+    const result = await response.json().catch(() => ({}));
+    if (result.status === 'ZERO_RESULTS') return { status: 'none' };
+    const first = result.results?.[0];
+    const lat = first?.geometry?.location?.lat;
+    const lng = first?.geometry?.location?.lng;
+    if (result.status !== 'OK' || typeof lat !== 'number' || typeof lng !== 'number') {
+      console.error('Geocoding error', result.status, result.error_message);
+      return { status: 'unavailable', reason: result.status ?? null };
+    }
+    return { status: 'ok', point: { latitude: lat, longitude: lng }, placeId: first.place_id ?? null, label: first.formatted_address ?? null };
+  } catch (e) {
+    console.error('Geocoding failed', e?.message);
+    return { status: 'unavailable' };
+  }
 }
 
 // Google's own 0-4 integer scale (0 = Free, 4 = Very Expensive), rendered as the
@@ -159,20 +199,26 @@ export function priceLevelLabel(priceLevel) {
 // never filters results out), so this still works for a business owner who hasn't
 // granted location permission.
 export async function searchPlacesByText(query, latitude = null, longitude = null) {
-  if (!query || !query.trim()) return [];
-  if (!(await claimPlacesCall('text'))) return [];
+  return (await searchPlacesByTextResult(query, latitude, longitude)).places;
+}
+
+export async function searchPlacesByTextResult(query, latitude = null, longitude = null) {
+  if (!query || !query.trim()) return { places: [], unavailable: false };
+  if (!(await claimPlacesCall('text'))) return { places: [], unavailable: true };
   const body = { textQuery: query.trim(), pageSize: 10 };
   if (latitude && longitude) body.locationBias = { circle: { center: { latitude, longitude }, radius: 50000 } };
   const data = await placesPost('places:searchText', body, 'places.id,places.displayName,places.formattedAddress,places.location,places.types');
-  if (!data) return [];
-  return (data.places ?? []).slice(0, 10).map((p) => ({
+  if (!data) return { places: [], unavailable: true };
+  return { unavailable: false, places: (data.places ?? []).slice(0, 10).map((p) => ({
     placeId: p.id,
     name: p.displayName?.text ?? null,
     address: p.formattedAddress ?? null,
     latitude: p.location?.latitude ?? null,
     longitude: p.location?.longitude ?? null,
     types: p.types ?? [],
-  }));
+    // Google's own category guess for the sign-up form (no Place Details call: phone and website are typed by the business).
+    category: guessCategoryFromTypes(p.types ?? []),
+  })) };
 }
 
 // A small, honest heuristic — never a forced guess. Google's own `types` array maps
@@ -219,25 +265,5 @@ function guessCategoryFromTypes(types = []) {
   return null;
 }
 
-// Text Search results don't include phone/website — a real, separate Place Details
-// call is needed for those, same API key, same real Google data. Returns whatever
-// fields Google actually has; never fabricates a missing one.
-export async function getPlaceDetails(placeId) {
-  if (!placeId) return null;
-  if (!(await claimPlacesCall('details'))) return null;
-  const response = await fetch(`${PLACES_BASE}/places/${encodeURIComponent(placeId)}`, {
-    headers: googleHeaders('displayName,formattedAddress,types,nationalPhoneNumber,websiteUri'),
-  });
-  const r = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    console.error('getPlaceDetails error', response.status, r?.error?.status, r?.error?.message);
-    return null;
-  }
-  return {
-    name: r.displayName?.text ?? null,
-    address: r.formattedAddress ?? null,
-    phone: r.nationalPhoneNumber ?? null,
-    website: r.websiteUri ?? null,
-    category: guessCategoryFromTypes(r.types),
-  };
-}
+// No Place Details call any more (owner 2026-10-22): the sign-up used it to pre-fill phone and website from Google; those
+// are now typed by the business itself, so Nearby never stores Google's phone/website as the business's own.

@@ -12,7 +12,8 @@ test('the GatheringConfirmation route and screen are gone from both navigators',
 
 test('Create replaces itself with the gathering and hands over what the panel says', () => {
   const src = read('screens/CreateGatheringScreen.js');
-  expect(src).toMatch(/navigation\.replace\('GatheringDetail', \{\s*gatheringId: created\.id,\s*justPublished: \{\s*placeName, businessesAsked: askLocalBusinesses, preInviteResult,/);
+  // Owner 2026-10-22: a Google venue's name is not handed to the panel (panelPlaceName, utils/locationProvenance.test.js).
+  expect(src).toMatch(/navigation\.replace\('GatheringDetail', \{\s*gatheringId: created\.id,\s*justPublished: \{[\s\S]*?placeName: panelPlaceName,\s*businessesAsked: askLocalBusinesses, preInviteResult,/);
 });
 
 test('GatheringDetail shows the panel only to the host, once, and Done just closes it', () => {

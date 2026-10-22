@@ -68,7 +68,8 @@ describe('boundaries', () => {
   const ALSO_NEARBY = ['src/utils/alsoNearby.js', 'src/hooks/useAlsoNearby.js'];
 
   it('3. Places never enter Nearby ranking or results: only Home/Discover render the section, nothing else imports it', () => {
-    const users = appFiles.filter((f) => !NEW.includes(f) && !ALSO_NEARBY.includes(f) && !f.startsWith('src/i18n/ui/') && /placesToGo|PlacesToGo/.test(read(f)));
+    // A screen only SAYING one of this namespace's words (e.g. 'ui.placesToGo.googleUnavailable', owner 2026-10-22) is not a user.
+    const users = appFiles.filter((f) => !NEW.includes(f) && !ALSO_NEARBY.includes(f) && !f.startsWith('src/i18n/ui/') && /placesToGo|PlacesToGo/.test(read(f).replace(/'ui\.placesToGo\.\w+'/g, '')));
     expect(users.sort()).toEqual(['src/screens/DiscoverHubScreen.js', 'src/screens/HomeScreen.js']);
     for (const f of ['src/services/intentResolver.js', 'src/utils/askResolver.js', 'src/constants/signalPriority.js', 'src/utils/askEligibility.js']) {
       expect(read(f)).not.toMatch(/placesToGo|searchNearbyPlaces/);
@@ -107,7 +108,7 @@ describe('boundaries', () => {
     const hook = read('src/hooks/usePlacesToGo.js');
     expect(hook).toMatch(/if \(!activity\) \{ setState/);
     expect(read('src/screens/HomeScreen.js')).toContain('usePlacesToGo(intentResults?.typedText ?? intentEmptyFallback?.typedText ?? null, language)');
-    const callers = appFiles.filter((f) => /searchNearbyPlaces\(/.test(read(f)) && f !== 'src/services/places.js');
+    const callers = appFiles.filter((f) => /searchNearbyPlaces(Result)?\(/.test(read(f)) && f !== 'src/services/places.js');
     expect(callers.sort()).toEqual(['src/hooks/useAlsoNearby.js', 'src/hooks/usePlacesToGo.js', 'src/screens/CreateGatheringScreen.js', 'src/screens/DiscoverHubScreen.js']);
   });
 });

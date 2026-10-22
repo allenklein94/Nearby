@@ -4,7 +4,7 @@
 // daily budget (services/places.js). Results live in memory only (same 10-minute session cache as Places to go).
 import { useEffect, useState } from 'react';
 import { getUserLocation } from '../services/userLocation';
-import { searchNearbyPlaces, alsoNearbyEnabled } from '../services/places';
+import { searchNearbyPlacesResult, alsoNearbyEnabled } from '../services/places';
 import { getNearbyBusinesses } from '../services/brandOffers';
 import { alsoNearbyCategory, partnerResultCount, pickAlsoNearby } from '../utils/alsoNearby';
 
@@ -29,12 +29,13 @@ export default function useAlsoNearby(intent, language) {
         const k = `${category}|${c.latitude.toFixed(2)}|${c.longitude.toFixed(2)}`;
         let hit = cache.get(k);
         if (!hit || Date.now() - hit.at >= CACHE_MS) {
-          const [raw, nearby] = await Promise.all([
-            searchNearbyPlaces(c.latitude, c.longitude, null, category),
+          const [res, nearby] = await Promise.all([
+            searchNearbyPlacesResult(c.latitude, c.longitude, null, category),
             getNearbyBusinesses(c.latitude, c.longitude, 10).catch(() => []),
           ]);
-          hit = { at: Date.now(), places: raw, partners: nearby };
-          cache.set(k, hit);
+          hit = { at: Date.now(), places: res.places, partners: nearby };
+          // Unavailable (daily Google budget used up) = the row stays hidden and is never cached as "nothing nearby".
+          if (!res.unavailable) cache.set(k, hit);
         }
         if (live) setState({ places: pickAlsoNearby(hit.places, hit.partners, language), loading: false });
       } catch (e) {

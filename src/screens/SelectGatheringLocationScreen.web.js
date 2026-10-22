@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert } from 'react-native';
-import Constants from 'expo-constants';
 import { supabase } from '../services/supabase';
+import { geocodeAddress } from '../services/places';
+import { pinProvenance } from '../utils/locationProvenance';
+import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -9,7 +11,8 @@ import { spacing, radius, typography } from '../theme';
 // screen -- it hands selectedLat/selectedLng back to CreateGathering -- with the choices a host can actually use on
 // a desktop: their own business address (the usual place a business hosts), an address search, or the browser's
 // location. There is no draggable pin; the chosen coordinates are shown so the host can see what will be used.
-const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
+// Owner 2026-10-22: same provenance hand-back as the native screen (utils/locationProvenance.js); an address search
+// claims the shared daily Google budget, and a Google address shown here (no map) carries "Google Maps" beside it.
 
 export default function SelectGatheringLocationScreen({ navigation, route }) {
   const { colors } = useTheme();
@@ -18,7 +21,13 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
   const [searching, setSearching] = useState(false);
   const [pin, setPin] = useState(
     route.params?.initialLat != null && route.params?.initialLng != null
-      ? { latitude: route.params.initialLat, longitude: route.params.initialLng, label: 'Current location' }
+      ? {
+        latitude: route.params.initialLat, longitude: route.params.initialLng,
+        label: route.params?.googlePlaceName ?? 'Current location',
+        origin: route.params?.googlePlaceId
+          ? { kind: 'google', placeId: route.params.googlePlaceId, point: { latitude: route.params.initialLat, longitude: route.params.initialLng } }
+          : null,
+      }
       : null
   );
   const [businessSpot, setBusinessSpot] = useState(null);
@@ -32,7 +41,8 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
       if (!profile?.managed_partner_id) return;
       const { data: partner } = await supabase.from('brand_partners').select('name, address, latitude, longitude').eq('id', profile.managed_partner_id).single();
       if (partner?.latitude != null && partner?.longitude != null) {
-        const spot = { latitude: partner.latitude, longitude: partner.longitude, label: partner.address || partner.name };
+        const point = { latitude: partner.latitude, longitude: partner.longitude };
+        const spot = { ...point, label: partner.address || partner.name, origin: { kind: 'business_profile', point } };
         setBusinessSpot(spot);
         setPin((p) => p ?? spot);
       }
@@ -43,15 +53,13 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
     if (!searchText.trim()) return;
     setSearching(true);
     try {
-      const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(searchText)}&key=${GOOGLE_MAPS_API_KEY}`);
-      const result = await response.json();
-      if (result.status === 'OK' && result.results?.[0]) {
-        const { lat, lng } = result.results[0].geometry.location;
-        setPin({ latitude: lat, longitude: lng, label: result.results[0].formatted_address });
-      } else if (result.status === 'ZERO_RESULTS') {
+      const found = await geocodeAddress(searchText);
+      if (found.status === 'ok') {
+        setPin({ ...found.point, label: found.label, origin: { kind: 'google', placeId: found.placeId, point: found.point } });
+      } else if (found.status === 'none') {
         Alert.alert('Not found', "Couldn't find that address. Try being more specific.");
       } else {
-        Alert.alert('Address lookup failed', `${result.status}${result.error_message ? `: ${result.error_message}` : ''}. You can still use your business location.`);
+        Alert.alert('Address search unavailable', "Address search isn't available right now. You can still use your business location or your current location.");
       }
     } catch (e) {
       Alert.alert('Error', 'Something went wrong searching for that address.');
@@ -65,14 +73,27 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => setPin({ latitude: pos.coords.latitude, longitude: pos.coords.longitude, label: 'Your current location' }),
+      (pos) => {
+        const point = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+        setPin({ ...point, label: 'Your current location', origin: { kind: 'device', point } });
+      },
       () => Alert.alert('Location needed', 'Allow location in your browser, or search for an address instead.')
     );
   }
 
   function handleConfirm() {
     if (!pin) return;
-    navigation.navigate({ name: 'CreateGathering', params: { selectedLat: pin.latitude, selectedLng: pin.longitude }, merge: true });
+    const prov = pinProvenance({ origin: pin.origin, confirmed: pin });
+    navigation.navigate({
+      name: route.params?.returnTo ?? 'CreateGathering',
+      params: {
+        selectedLat: pin.latitude, selectedLng: pin.longitude,
+        selectedLocationSource: prov?.source ?? 'host_pin',
+        selectedPlaceId: prov?.googlePlaceId ?? null,
+        selectedPlaceName: prov?.googlePlaceId && prov.googlePlaceId === route.params?.googlePlaceId ? route.params?.googlePlaceName ?? null : null,
+      },
+      merge: true,
+    });
   }
 
   return (
@@ -102,6 +123,7 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
           <Text style={styles.optionText}>📍 Use my current location</Text>
         </TouchableOpacity>
         <Text style={styles.subtle}>{pin ? `Selected: ${pin.label ?? 'Pinned spot'}` : 'Pick a location above.'}</Text>
+        {pin?.origin?.kind === 'google' ? <GoogleMapsAttribution /> : null}
         <TouchableOpacity style={[styles.confirmButton, !pin && { opacity: 0.5 }]} onPress={handleConfirm} disabled={!pin} accessibilityRole="button" accessibilityLabel="Confirm this location">
           <Text style={styles.confirmButtonText}>Confirm Location</Text>
         </TouchableOpacity>

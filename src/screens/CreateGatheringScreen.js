@@ -18,7 +18,8 @@ import { FORMAT_OPTIONS, formatIcon } from '../constants/activityFormat';
 import { skillContext, skillOptionsFor, cleanSkillLevel } from '../constants/skillLevel';
 import { EFFORT_OPTIONS } from '../constants/intensityEffort';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
-import { searchNearbyPlaces } from '../services/places';
+import { searchNearbyPlacesResult } from '../services/places';
+import { GOOGLE_LOCATION_SOURCES } from '../utils/locationProvenance';
 import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { checkTextModeration } from '../services/textModeration';
 import { getOfferById, getBusinessProfile } from '../services/brandOffers';
@@ -173,9 +174,15 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [locationMode, setLocationMode] = useState('near_me');
   const [customLocation, setCustomLocation] = useState(null);
   const [placeName, setPlaceName] = useState(null);
+  // Owner 2026-10-22 (Google storage fix): how customLocation was reached + Google's place ID (utils/locationProvenance.js).
+  // A Google venue never becomes the point directly: tapping it opens the pin screen on a Google map, and only the pin the
+  // host confirms there is stored.
+  const [locationSource, setLocationSource] = useState(null);
+  const [googlePlaceId, setGooglePlaceId] = useState(null);
   const [myLocation, setMyLocation] = useState(null);
   const [popularPlaces, setPopularPlaces] = useState(null);
   const [loadingPlaces, setLoadingPlaces] = useState(false);
+  const [placesUnavailable, setPlacesUnavailable] = useState(false); // Google budget used up / refused: not "no places"
 
   // "Start a Weekly Meetup" (CreateHubScreen's own "build something bigger"
   // section) deep-links here with quickStartRecurring instead of the usual
@@ -221,7 +228,9 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const gatheringSnapshot = {
     step, stepKey: STEP_DEFS[step]?.key ?? null, title, description, interestTag, visibility, discoverable, communityId,
     scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset,
-    locationMode, customLocation, placeName, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
+    // A Google venue name is never kept in the device draft (Google's terms); the source and place ID are.
+    locationMode, customLocation, placeName: GOOGLE_LOCATION_SOURCES.includes(locationSource) ? null : placeName,
+    locationSource, googlePlaceId, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
     askLocalBusinesses, priceLevel, partyType, showGroupInsights, allowAttendeeInvites, hostNotifications, requiresApproval, inviteIds, equipmentProvided, ticketRequired, durationMinutes, genre, format, skillLevel, effortLevel, features, ageMin, ageMax,
   };
   const gatheringDraft = useFormDraft('gathering', gatheringSnapshot, {
@@ -237,6 +246,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     const when = d.scheduledAt ? new Date(d.scheduledAt) : null;
     if (when && when.getTime() > Date.now()) { setScheduledAt(when); setWhenPreset(d.whenPreset ?? null); }
     setLocationMode(d.locationMode ?? 'near_me'); setCustomLocation(d.customLocation ?? null); setPlaceName(d.placeName ?? null);
+    setLocationSource(d.locationSource ?? null); setGooglePlaceId(d.googlePlaceId ?? null);
     setShowOnMap(d.showOnMap !== false); setWomenOnly(!!d.womenOnly); setRecurrenceRule(d.recurrenceRule ?? null);
     setCapacityOption(d.capacityOption ?? 'no_limit'); setCapacityCustom(d.capacityCustom ?? 15);
     setAskLocalBusinesses(!!d.askLocalBusinesses); setPriceLevel(d.priceLevel ?? null); setEquipmentProvided(d.equipmentProvided ?? null); setTicketRequired(d.ticketRequired === true); setDurationMinutes(d.durationMinutes ?? null); setGenre(d.genre ?? null); setFormat(d.format ?? null); setSkillLevel(d.skillLevel ?? null); setEffortLevel(d.effortLevel ?? null); setFeatures(cleanFeatures(d.features)); setAgeMin(cleanAgeRange(d.ageMin, d.ageMax).min); setAgeMax(cleanAgeRange(d.ageMin, d.ageMax).max); setPartyType(d.partyType ?? null);
@@ -270,6 +280,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
           setBusinessPlace(prefill.place);
           setCustomLocation((cur) => cur ?? { latitude: prefill.place.latitude, longitude: prefill.place.longitude });
           setPlaceName((cur) => cur ?? prefill.place.name);
+          setLocationSource((cur) => cur ?? 'business_profile');
           setLocationMode((cur) => (cur === 'near_me' ? 'choose_place' : cur));
         }
       } catch (e) {
@@ -283,10 +294,14 @@ export default function CreateGatheringScreen({ navigation, route }) {
   useEffect(() => {
     if (route.params?.selectedLat && route.params?.selectedLng) {
       setCustomLocation({ latitude: route.params.selectedLat, longitude: route.params.selectedLng });
-      setPlaceName(null);
+      // The confirmed pin's own provenance (the pin screen decides it); a Google venue keeps its name for this screen only.
+      const source = route.params.selectedLocationSource ?? 'host_pin';
+      setLocationSource(source);
+      setGooglePlaceId(GOOGLE_LOCATION_SOURCES.includes(source) ? route.params.selectedPlaceId ?? null : null);
+      setPlaceName(GOOGLE_LOCATION_SOURCES.includes(source) ? route.params.selectedPlaceName ?? null : null);
       setLocationMode('choose_place');
     }
-  }, [route.params?.selectedLat, route.params?.selectedLng]);
+  }, [route.params?.selectedLat, route.params?.selectedLng, route.params?.selectedLocationSource, route.params?.selectedPlaceId]);
 
   useEffect(() => {
     if (route.params?.quickStartTitle) {
@@ -403,10 +418,12 @@ export default function CreateGatheringScreen({ navigation, route }) {
         loc = { latitude: position.coords.latitude, longitude: position.coords.longitude };
         setMyLocation(loc);
       }
-      const places = await searchNearbyPlaces(loc.latitude, loc.longitude, googlePlaceCategoryFor(interestTag));
+      const { places, unavailable } = await searchNearbyPlacesResult(loc.latitude, loc.longitude, googlePlaceCategoryFor(interestTag));
       setPopularPlaces(places.slice(0, 8));
+      setPlacesUnavailable(unavailable);
     } catch (e) {
       setPopularPlaces([]);
+      setPlacesUnavailable(true);
     }
     setLoadingPlaces(false);
   }
@@ -435,13 +452,29 @@ export default function CreateGatheringScreen({ navigation, route }) {
     else {
       setCustomLocation(null);
       setPlaceName(null);
+      setLocationSource(null);
+      setGooglePlaceId(null);
     }
   }
 
-  function pickPlace(place) {
+  // The business's own saved location: its own data, picked directly.
+  function pickBusinessPlace(place) {
     Haptics.selectionAsync();
     setCustomLocation({ latitude: place.latitude, longitude: place.longitude });
     setPlaceName(place.name);
+    setLocationSource('business_profile');
+    setGooglePlaceId(null);
+  }
+
+  // A Google venue only centres the map: the host confirms (or moves) the pin there, and that pin is what is stored.
+  function confirmGooglePlace(place) {
+    Haptics.selectionAsync();
+    navigation.navigate('SelectGatheringLocation', {
+      initialLat: place.latitude,
+      initialLng: place.longitude,
+      googlePlaceId: place.placeId ?? null,
+      googlePlaceName: place.name ?? null,
+    });
   }
 
   const stepKey = STEP_DEFS[step].key;
@@ -526,6 +559,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
         scheduledAt: scheduledAt.toISOString(),
         isPublic,
         customLocation,
+        locationSource,
+        googlePlaceId,
         showOnMap: isPublic ? true : showOnMap,
         womenOnly,
         recurrenceRule: recurrenceRule || null,
@@ -583,13 +618,17 @@ export default function CreateGatheringScreen({ navigation, route }) {
       // headline is final before its formation plays (it used to be looked up after the panel appeared and could switch).
       const firstHosted = await isFirstGatheringHosted().catch(() => false);
 
+      const panelPlaceName = GOOGLE_LOCATION_SOURCES.includes(locationSource) ? null : placeName;
       // Lands on the gathering itself, with a one-time "Your gathering is live" panel (screen-reduction audit B5).
       navigation.replace('GatheringDetail', {
         gatheringId: created.id,
         justPublished: {
-          placeName, businessesAsked: askLocalBusinesses, preInviteResult,
+          // A Google venue's name stays on this screen (with "Google Maps" beside it): never carried into the panel or its
+          // share message, which then say "custom location" (owner 2026-10-22, Google's terms).
+          placeName: panelPlaceName,
+          businessesAsked: askLocalBusinesses, preInviteResult,
           // item 43's Where piece follows the review step's own rule; Who names the community the host picked
-          customLocation: !placeName && !!customLocation,
+          customLocation: !panelPlaceName && !!customLocation,
           communityName: visibility === 'community' ? selectedCommunity?.name ?? null : null,
           firstHosted,
         },
@@ -805,7 +844,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                   return (
                     <TouchableOpacity
                       style={[styles.placeRow, selected && styles.optionCardActive]}
-                      onPress={() => pickPlace(businessPlace)}
+                      onPress={() => pickBusinessPlace(businessPlace)}
                       activeOpacity={0.85}
                       accessibilityLabel={label}
                       accessibilityRole="button"
@@ -824,16 +863,16 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     <NLoader fullScreen={false} size="inline" kind="places" />
                   </View>
                 ) : (popularPlaces ?? []).length === 0 ? (
-                  <Text style={styles.helperText}>{t('ui.gatheringForm.noPlaces')}</Text>
+                  <Text style={styles.helperText}>{t(placesUnavailable ? 'ui.placesToGo.googleUnavailable' : 'ui.gatheringForm.noPlaces')}</Text>
                 ) : (
                   popularPlaces.map((place) => {
-                    const selected = placeName === place.name && customLocation?.latitude === place.latitude;
+                    const selected = !!place.placeId && googlePlaceId === place.placeId && !!customLocation;
                     const miles = myLocation ? approxMiles(myLocation.latitude, myLocation.longitude, place.latitude, place.longitude) : null;
                     return (
                       <TouchableOpacity
                         key={place.placeId}
                         style={[styles.placeRow, selected && styles.optionCardActive]}
-                        onPress={() => pickPlace(place)}
+                        onPress={() => confirmGooglePlace(place)}
                         activeOpacity={0.85}
                         accessibilityLabel={place.name}
                         accessibilityRole="button"
@@ -1387,6 +1426,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <Text style={styles.previewRowIcon}>📍</Text>
               <Text style={styles.previewRowText}>{placeName ? placeName : customLocation ? t('ui.gatheringForm.preview.customLocation') : t('ui.gatheringForm.currentLocation')}</Text>
             </View>
+            {placeName && GOOGLE_LOCATION_SOURCES.includes(locationSource) ? <GoogleMapsAttribution /> : null}
             <View style={styles.previewRow}>
               <Text style={styles.previewRowIcon}>{selectedVisibility?.icon}</Text>
               <Text style={styles.previewRowText}>

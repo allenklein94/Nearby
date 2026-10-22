@@ -18,6 +18,7 @@ export default {
     useMyCurrentLocation: "📍 Use My Current Location",
     confirmThisLocationA11y: "Confirm this location",
     confirmLocation: "Confirm Location",
+    confirmPlaceHint: "Check the pin is on {name}. Move it if it isn't, then confirm.",
   },
   es: {
     locationNeeded: "Se necesita ubicación",
@@ -36,6 +37,7 @@ export default {
     useMyCurrentLocation: "📍 Usar mi ubicación actual",
     confirmThisLocationA11y: "Confirmar esta ubicación",
     confirmLocation: "Confirmar ubicación",
+    confirmPlaceHint: "Comprueba que el marcador esté en {name}. Muévelo si no lo está y luego confirma.",
   },
   de: {
     locationNeeded: "Standort benötigt",
@@ -54,6 +56,7 @@ export default {
     useMyCurrentLocation: "📍 Meinen aktuellen Standort verwenden",
     confirmThisLocationA11y: "Diesen Ort bestätigen",
     confirmLocation: "Ort bestätigen",
+    confirmPlaceHint: "Prüfe, ob die Markierung auf {name} liegt. Verschiebe sie sonst und bestätige dann.",
   },
   fr: {
     locationNeeded: "Localisation requise",
@@ -72,6 +75,7 @@ export default {
     useMyCurrentLocation: "📍 Utiliser ma position actuelle",
     confirmThisLocationA11y: "Confirmer ce lieu",
     confirmLocation: "Confirmer le lieu",
+    confirmPlaceHint: "Vérifiez que le repère est sur {name}. Déplacez-le si besoin, puis confirmez.",
   },
   pt: {
     locationNeeded: "Localização necessária",
@@ -90,6 +94,7 @@ export default {
     useMyCurrentLocation: "📍 Usar minha localização atual",
     confirmThisLocationA11y: "Confirmar este local",
     confirmLocation: "Confirmar local",
+    confirmPlaceHint: "Confira se o marcador está em {name}. Mova-o se não estiver e depois confirme.",
   },
   ht: {
     locationNeeded: "Nou bezwen lokalizasyon",
@@ -108,6 +113,7 @@ export default {
     useMyCurrentLocation: "📍 Itilize kote m ye kounye a",
     confirmThisLocationA11y: "Konfime kote sa a",
     confirmLocation: "Konfime kote a",
+    confirmPlaceHint: "Verifye pwen an sou {name}. Deplase l si li pa la, apre sa konfime.",
   },
   zh: {
     locationNeeded: "需要位置权限",
@@ -126,6 +132,7 @@ export default {
     useMyCurrentLocation: "📍 使用我当前的位置",
     confirmThisLocationA11y: "确认此位置",
     confirmLocation: "确认位置",
+    confirmPlaceHint: "请确认标记在{name}上。如果不在，请移动它，然后确认。",
   },
   vi: {
     locationNeeded: "Cần vị trí",
@@ -144,6 +151,7 @@ export default {
     useMyCurrentLocation: "📍 Dùng vị trí hiện tại của tôi",
     confirmThisLocationA11y: "Xác nhận vị trí này",
     confirmLocation: "Xác nhận vị trí",
+    confirmPlaceHint: "Kiểm tra ghim đã ở {name} chưa. Nếu chưa, hãy di chuyển rồi xác nhận.",
   },
   tl: {
     locationNeeded: "Kailangan ang lokasyon",
@@ -162,6 +170,7 @@ export default {
     useMyCurrentLocation: "📍 Gamitin ang kasalukuyan kong lokasyon",
     confirmThisLocationA11y: "Kumpirmahin ang lokasyong ito",
     confirmLocation: "Kumpirmahin ang lokasyon",
+    confirmPlaceHint: "Tingnan kung nasa {name} ang pin. Ilipat ito kung hindi, saka kumpirmahin.",
   },
   ru: {
     locationNeeded: "Нужна геолокация",
@@ -180,6 +189,7 @@ export default {
     useMyCurrentLocation: "📍 Использовать моё местоположение",
     confirmThisLocationA11y: "Подтвердить это место",
     confirmLocation: "Подтвердить место",
+    confirmPlaceHint: "Проверьте, что метка стоит на {name}. Если нет, передвиньте её и подтвердите.",
   },
   ko: {
     locationNeeded: "위치가 필요해요",
@@ -198,5 +208,6 @@ export default {
     useMyCurrentLocation: "📍 현재 위치 사용",
     confirmThisLocationA11y: "이 위치 확인",
     confirmLocation: "위치 확인",
+    confirmPlaceHint: "핀이 {name}에 있는지 확인하세요. 아니면 옮긴 뒤 확인을 누르세요.",
   },
 };

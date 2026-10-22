@@ -44,7 +44,7 @@ import { withoutHidden } from '../utils/notInterested';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows } from '../services/brandOffers';
 import { perkRedemptionState, redemptionsByOffer } from '../utils/perkRedemptionState';
-import { searchNearbyPlaces } from '../services/places';
+import { searchNearbyPlacesResult } from '../services/places';
 import useAlsoNearby from '../hooks/useAlsoNearby';
 import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { withoutPartnerPlaces } from '../utils/alsoNearby';
@@ -130,6 +130,7 @@ import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
 import { businessSignalLine } from '../constants/businessDisplaySignals';
 import { getUserLocation } from '../services/userLocation';
 import { filterOpenNow, gatheringEntity, placeEntity, perkEntity, businessEntity } from '../utils/operatingStatus';
+import { placesNeedFetch } from '../utils/placesFetchPlan';
 
 // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real, disclosed
 // thresholds against getGatheringFitReasons()'s real 0-22 score range
@@ -588,6 +589,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [offers, setOffers] = useState([]);
   const [businesses, setBusinesses] = useState([]);
   const [places, setPlaces] = useState([]);
+  // Owner 2026-10-22: the last Places search could not run (daily Google budget used up / Google refusing). Shown as
+  // "temporarily unavailable", never as "no places"; partner results are untouched.
+  const [placesUnavailable, setPlacesUnavailable] = useState(false);
+  // Which search the current `places` came from, and whether it carried Google's open-now (Open now filter on): turning
+  // the filter OFF keeps those results (no second Google call); turning it ON asks once with open-now.
+  const placesFetched = useRef({ base: null, openNow: false });
   const [coverPhotoUrls, setCoverPhotoUrls] = useState({});
   // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real per-offer redemption state: the viewer's own rows (offer id ->
   // code + confirmed_at), read through utils/perkRedemptionState.js, so a Perks row shows "Redeemed ✓" only once the
@@ -644,6 +651,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const mainScrollY = useRef(0);
   const restoreScrollY = useRef(null);
   const [contextPlaces, setContextPlaces] = useState([]);
+  const [contextPlacesUnavailable, setContextPlacesUnavailable] = useState(false);
+  const contextPlacesFetched = useRef({ base: null, openNow: false });
   const [loadingContextPlaces, setLoadingContextPlaces] = useState(false);
   // Section G -- real connections only (accepted friends + real matches),
   // and only ones independently relevant to this context (they actually
@@ -1013,22 +1022,27 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const { literalTerm } = discoverQuery(searchQuery); // null for Surprise Me / undecided asks (never a keyword search)
     const wantsPlaces = typeFilter === 'places' || (typeFilter === 'all' && !!literalTerm);
     if (!wantsPlaces || !userLocation) return;
+    const category = typeFilter === 'places' ? placesCategory : null;
+    const keyword = literalTerm;
+    const base = `${category}|${keyword}|${userLocation.latitude}|${userLocation.longitude}`;
+    if (!placesNeedFetch(placesFetched.current, base, openNowOnly)) return;
     const thisRequestId = ++placesRequestId.current;
     const timer = setTimeout(async () => {
       setLoadingPlaces(true);
       try {
-        const category = typeFilter === 'places' ? placesCategory : null;
-        const keyword = literalTerm;
-        const results = await searchNearbyPlaces(userLocation.latitude, userLocation.longitude, category, keyword);
-        if (thisRequestId === placesRequestId.current) { setPlaces(results); setPlacesTerm(keyword ?? null); }
+        const { places: results, unavailable } = await searchNearbyPlacesResult(userLocation.latitude, userLocation.longitude, category, keyword, { openNow: openNowOnly });
+        if (thisRequestId === placesRequestId.current) {
+          setPlaces(results); setPlacesTerm(keyword ?? null); setPlacesUnavailable(unavailable);
+          placesFetched.current = unavailable ? { base: null, openNow: false } : { base, openNow: openNowOnly, at: Date.now() };
+        }
       } catch (e) {
         console.error('Discover places search failed', e);
-        if (thisRequestId === placesRequestId.current) { setPlaces([]); setPlacesTerm(literalTerm ?? null); }
+        if (thisRequestId === placesRequestId.current) { setPlaces([]); setPlacesTerm(literalTerm ?? null); setPlacesUnavailable(true); placesFetched.current = { base: null, openNow: false }; }
       }
       if (thisRequestId === placesRequestId.current) setLoadingPlaces(false);
     }, 350);
     return () => clearTimeout(timer);
-  }, [typeFilter, placesCategory, searchQuery, userLocation]);
+  }, [typeFilter, placesCategory, searchQuery, userLocation, openNowOnly]);
 
   // Real gathering/community search, server-side and indexed (trigram GIN
   // indexes, 20260809_indexed_text_search.sql) rather than downloading every
@@ -1411,17 +1425,25 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // honest version.
   useEffect(() => {
     if (!expandedContext || !userLocation) return;
+    const base = `${contextTopicLabel}|${userLocation.latitude}|${userLocation.longitude}`;
+    if (!placesNeedFetch(contextPlacesFetched.current, base, openNowOnly)) return;
     const thisRequestId = ++contextPlacesRequestId.current;
     setLoadingContextPlaces(true);
-    searchNearbyPlaces(userLocation.latitude, userLocation.longitude, null, contextTopicLabel)
-      .then((results) => {
-        if (thisRequestId === contextPlacesRequestId.current) setContextPlaces(results);
+    searchNearbyPlacesResult(userLocation.latitude, userLocation.longitude, null, contextTopicLabel, { openNow: openNowOnly })
+      .then(({ places: results, unavailable }) => {
+        if (thisRequestId === contextPlacesRequestId.current) {
+          setContextPlaces(results); setContextPlacesUnavailable(unavailable);
+          contextPlacesFetched.current = unavailable ? { base: null, openNow: false } : { base, openNow: openNowOnly, at: Date.now() };
+        }
       })
-      .catch((e) => console.error('Discover context places failed', e))
+      .catch((e) => {
+        console.error('Discover context places failed', e);
+        if (thisRequestId === contextPlacesRequestId.current) setContextPlacesUnavailable(true);
+      })
       .finally(() => {
         if (thisRequestId === contextPlacesRequestId.current) setLoadingContextPlaces(false);
       });
-  }, [expandedContext, userLocation]);
+  }, [expandedContext, userLocation, openNowOnly]);
 
   // Section G -- "People You Know". The candidate IDs are people who
   // genuinely RSVP'd (approved) to one of the gatherings already listed in
@@ -2759,6 +2781,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <View style={{ marginVertical: spacing.md }}>
               <NLoader fullScreen={false} size="compact" kind="places" />
             </View>
+          ) : contextPlacesUnavailable && contextPlaces.length === 0 ? (
+            <Text style={styles.emptyTextTight}>{t('ui.placesToGo.googleUnavailable')}</Text>
           ) : openNowActive && contextPlaces.length > 0 && contextPlacesShown.length === 0 ? (
             renderOpenNowEmpty()
           ) : contextPlacesShown.length === 0 ? (
@@ -3401,6 +3425,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 <View style={{ marginVertical: spacing.md }}>
                   <NLoader fullScreen={false} size="compact" kind="places" />
                 </View>
+              ) : placesUnavailable && places.length === 0 ? (
+                <Text style={styles.emptyTextTight}>{t('ui.placesToGo.googleUnavailable')}</Text>
               ) : openNowActive && places.length > 0 && placesToShow.length === 0 ? (
                 renderOpenNowEmpty()
               ) : placesToShow.length === 0 ? (

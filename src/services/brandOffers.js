@@ -2,8 +2,7 @@ import { supabase, functionUrl } from './supabase';
 import { expandSearchTerms } from '../constants/categorySynonyms';
 import { searchScope } from '../constants/categoryTree';
 import { serviceError } from '../utils/recoverableError';
-import Constants from 'expo-constants';
-import { getGoogleMapsRequestHeaders } from './places';
+import { geocodeAddress as geocodePlace } from './places';
 import { getUserLocation } from './userLocation';
 import { isGatheringUpcoming } from '../utils/objectState';
 import { isNotFound } from '../utils/notFound';
@@ -619,25 +618,14 @@ export async function replyAsBusinessOwner(partnerId, conversationWithId, body) 
   if (error) throw error;
 }
 
+// The business's typed address -> a point, through the ONE shared Google address search (services/places.js, inside the
+// daily Google budget). The stored point is labelled 'address_geocoded' by the database (migration 20270333).
 async function geocodeAddress(address) {
-  const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
-  const response = await fetch(
-    `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GOOGLE_MAPS_API_KEY}`,
-    { headers: getGoogleMapsRequestHeaders() }
-  );
-  const result = await response.json();
-  if (result.status !== 'OK' || !result.results?.[0]) {
-    if (result.status === 'ZERO_RESULTS') {
-      throw new Error("Couldn't find that address. Try being more specific.");
-    }
-    // A non-ZERO_RESULTS status means Google rejected the request itself
-    // (bad/restricted API key, Geocoding API not enabled, billing, quota) --
-    // surface the real reason instead of the misleading "try being more
-    // specific" copy, which only applies to a genuinely bad address.
-    throw new Error(`Address lookup failed (${result.status}${result.error_message ? `: ${result.error_message}` : ''}).`);
-  }
-  const { lat, lng } = result.results[0].geometry.location;
-  return { latitude: lat, longitude: lng };
+  const found = await geocodePlace(address);
+  if (found.status === 'ok') return found.point;
+  if (found.status === 'none') throw new Error("Couldn't find that address. Try being more specific.");
+  // Budget used up or Google refused: never the misleading "try being more specific".
+  throw new Error(`Address search isn't available right now${found.reason ? ` (${found.reason})` : ''}. Try again later.`);
 }
 
 // brand_partners has no UPDATE RLS policy at all (confirmed live) -- both of

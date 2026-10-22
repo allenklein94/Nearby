@@ -7,6 +7,8 @@ export default {
     directionsA11y: "Get directions to {name}",
     alsoNearbyHeading: "Also nearby (not a Nearby partner)",
     notPartners: "Not Nearby partners",
+    googleUnavailable: "Google Maps results aren't available right now. Try again later.",
+    googleUnavailablePin: "Address search isn't available right now. You can still move the pin yourself.",
   },
   es: {
     heading: "Lugares para ir",
@@ -14,6 +16,8 @@ export default {
     directionsA11y: "Cómo llegar a {name}",
     alsoNearbyHeading: "También cerca (no es socio de Nearby)",
     notPartners: "No son socios de Nearby",
+    googleUnavailable: "Los resultados de Google Maps no están disponibles en este momento. Inténtalo más tarde.",
+    googleUnavailablePin: "La búsqueda de direcciones no está disponible en este momento. Aún puedes mover el marcador tú mismo.",
   },
   de: {
     heading: "Orte zum Hingehen",
@@ -21,6 +25,8 @@ export default {
     directionsA11y: "Route zu {name}",
     alsoNearbyHeading: "Auch in der Nähe (kein Nearby-Partner)",
     notPartners: "Keine Nearby-Partner",
+    googleUnavailable: "Ergebnisse von Google Maps sind gerade nicht verfügbar. Versuche es später noch einmal.",
+    googleUnavailablePin: "Die Adresssuche ist gerade nicht verfügbar. Du kannst die Markierung trotzdem selbst verschieben.",
   },
   fr: {
     heading: "Où aller",
@@ -28,6 +34,8 @@ export default {
     directionsA11y: "Itinéraire vers {name}",
     alsoNearbyHeading: "Aussi à proximité (pas un partenaire Nearby)",
     notPartners: "Pas des partenaires Nearby",
+    googleUnavailable: "Les résultats Google Maps ne sont pas disponibles pour le moment. Réessayez plus tard.",
+    googleUnavailablePin: "La recherche d'adresse n'est pas disponible pour le moment. Vous pouvez toujours déplacer le repère vous-même.",
   },
   pt: {
     heading: "Lugares para ir",
@@ -35,6 +43,8 @@ export default {
     directionsA11y: "Como chegar a {name}",
     alsoNearbyHeading: "Também por perto (não é parceiro do Nearby)",
     notPartners: "Não são parceiros do Nearby",
+    googleUnavailable: "Os resultados do Google Maps não estão disponíveis agora. Tente novamente mais tarde.",
+    googleUnavailablePin: "A busca de endereço não está disponível agora. Você ainda pode mover o marcador.",
   },
   ht: {
     heading: "Kote pou ale",
@@ -42,6 +52,8 @@ export default {
     directionsA11y: "Jwenn direksyon pou {name}",
     alsoNearbyHeading: "Tou pre la tou (pa yon patnè Nearby)",
     notPartners: "Se pa patnè Nearby",
+    googleUnavailable: "Rezilta Google Maps pa disponib kounye a. Eseye ankò pita.",
+    googleUnavailablePin: "Rechèch adrès pa disponib kounye a. Ou ka toujou deplase pwen an tèt ou.",
   },
   zh: {
     heading: "可以去的地方",
@@ -49,6 +61,8 @@ export default {
     directionsA11y: "获取前往{name}的路线",
     alsoNearbyHeading: "附近还有（非 Nearby 合作商家）",
     notPartners: "非 Nearby 合作商家",
+    googleUnavailable: "Google 地图结果暂时不可用，请稍后再试。",
+    googleUnavailablePin: "地址搜索暂时不可用。你仍然可以自己移动定位标记。",
   },
   vi: {
     heading: "Nơi có thể đến",
@@ -56,6 +70,8 @@ export default {
     directionsA11y: "Chỉ đường đến {name}",
     alsoNearbyHeading: "Cũng ở gần (không phải đối tác của Nearby)",
     notPartners: "Không phải đối tác của Nearby",
+    googleUnavailable: "Hiện không có kết quả từ Google Maps. Vui lòng thử lại sau.",
+    googleUnavailablePin: "Hiện không thể tìm địa chỉ. Bạn vẫn có thể tự di chuyển ghim.",
   },
   tl: {
     heading: "Mga lugar na mapupuntahan",
@@ -63,6 +79,8 @@ export default {
     directionsA11y: "Kunin ang direksyon papunta sa {name}",
     alsoNearbyHeading: "Malapit din (hindi partner ng Nearby)",
     notPartners: "Hindi mga partner ng Nearby",
+    googleUnavailable: "Hindi available ngayon ang mga resulta mula sa Google Maps. Subukang muli mamaya.",
+    googleUnavailablePin: "Hindi available ngayon ang paghahanap ng address. Maaari mo pa ring ilipat ang pin.",
   },
   ru: {
     heading: "Куда можно пойти",
@@ -70,6 +88,8 @@ export default {
     directionsA11y: "Маршрут до {name}",
     alsoNearbyHeading: "Также рядом (не партнёр Nearby)",
     notPartners: "Не партнёры Nearby",
+    googleUnavailable: "Результаты Google Maps сейчас недоступны. Попробуйте позже.",
+    googleUnavailablePin: "Поиск адреса сейчас недоступен. Вы можете сами передвинуть метку.",
   },
   ko: {
     heading: "가 볼 만한 곳",
@@ -77,5 +97,7 @@ export default {
     directionsA11y: "{name} 길찾기",
     alsoNearbyHeading: "근처의 다른 곳 (Nearby 파트너 아님)",
     notPartners: "Nearby 파트너가 아님",
+    googleUnavailable: "지금은 Google 지도 결과를 사용할 수 없어요. 나중에 다시 시도해 주세요.",
+    googleUnavailablePin: "지금은 주소 검색을 사용할 수 없어요. 핀은 직접 옮길 수 있어요.",
   },
 };

@@ -330,7 +330,9 @@ d('journey: precise gathering location only for the host and approved attendees,
   test('grants: column allowlist (all but the point), host still writes it, secret + pin function unreachable, single count gone', () => {
     expect(data('grants')).toEqual({
       anon_table_select: false, auth_table_select: false,
-      unreadable_for_anon: ['precise_lat', 'precise_lng'], unreadable_for_authenticated: ['precise_lat', 'precise_lng'],
+      // + Google's place ID and the location's provenance (owner 2026-10-22, migration 20270333): private like the point.
+      unreadable_for_anon: ['google_place_id', 'location_source', 'precise_lat', 'precise_lng'],
+      unreadable_for_authenticated: ['google_place_id', 'location_source', 'precise_lat', 'precise_lng'],
       host_can_still_write_point: true, private_schema_usage: false, secret_readable: false, pin_fn_callable: false,
       old_per_gathering_pin_exists: false,
       count_single_exists: false, anon_distances: false, anon_meetup: false,

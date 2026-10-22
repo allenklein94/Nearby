@@ -1,3 +1,54 @@
+# Google storage fix, Open now, budget-exhausted state, attribution check, Cloud setup doc (owner review 2026-10-22)
+
+Owner-pasted review: keep Places (New) + 100/day; keep "Also nearby" OFF until compliance, Cloud setup and a phone test;
+(1) fix Google data storage in Create + business sign-up, (2) cost-controlled Open now, (3) budget exhausted != zero results,
+(4) verify attribution everywhere, (5) tests, (6) exact Cloud setup doc. Owner decisions (asked): coordinates = person
+confirms a pin (Option 1; confirmation is provenance, not proof it may be stored; terms review needed); sign-up = "fill,
+business confirms" (name + address only, phone/website typed; fallback "Google as reference only" if terms forbid).
+- Audit found: Create stored Google venue coordinates as the gathering point with no provenance (name was NOT stored, only
+  kept in the device draft + panel/share text); sign-up pre-filled name/address/phone/website/coordinates from Google and
+  approval copied the coordinates into `brand_partners`; NOT in the review: the pin screens and the business address editor
+  used the Google Geocoding API outside the daily budget and stored its coordinates permanently; the iOS pin map was Apple's
+  (Google results may not be shown on a non-Google map). Prod: 26 gatherings (source unknowable), 1 sign-up, 1 partner, none
+  with coordinates on the business side.
+- Terms (read 2026-10-22, archived Service Specific Terms + Places policies): place ID storable indefinitely; Places/Geocoding
+  lat/lng up to 30 consecutive days; nothing else; Google logo or "Google Maps" text when shown without a Google map.
+- `utils/locationProvenance.js` (ONE rule): `pinProvenance` (origin google/device/business_profile/none -> google_confirmed /
+  google_adjusted / device / business_profile / host_pin, ~1 m tolerance), `gatheringLocationProvenance`,
+  `signupDetailsSource` (Google-filled values need the tick), `stillGoogleValue`.
+- Migration 20270333 (LIVE): `gatherings.location_source` + `google_place_id` (checks; insert grant; NO client select, private
+  like the point: item 146's guard + journey lists updated); `business_partner_requests.google_place_id`, `details_source`,
+  `details_confirmed_at`, `location_source` (checks: confirmed details need a time; coordinates need a source, NOT VALID for
+  old rows); `brand_partners.location_source` + `google_place_id`, trigger relabels a coordinate change 'address_geocoded' and
+  drops the place ID; `approve_business_partner_request` copies both; `claim_places_search` accepts 'geocode'.
+  Migration 20270334 (LIVE): a gathering point moved by a direct write is relabelled 'host_pin' (table-level UPDATE exists).
+- Create: a Google venue opens `SelectGatheringLocation` (now `PROVIDER_GOOGLE`, `returnTo`, venue hint string) and only the
+  confirmed pin is stored, with source + place ID; business place = 'business_profile'; Google venue names never go into the
+  device draft or the published panel / share message (review row keeps it with "Google Maps" under it). Web picker: same
+  provenance, attribution beside a Google address. Sign-up: name + address only ("From Google Maps — please verify"), no Place
+  Details call (`getPlaceDetails` removed; category from Text Search types), "Location on the map" via the pin screen, the
+  tick required before Submit, provenance + place ID saved.
+- Open now: `PLACE_OPEN_NOW_FIELD` (`currentOpeningHours.openNow`) only on a Discover search made with the filter on;
+  `placesNeedFetch` (`utils/placesFetchPlan.js`): filter off never re-fetches, on asks once, stale (>= 30 min) asks again;
+  only Google's `true` counts as open (unknown stays unknown).
+- Unavailable: `searchNearbyPlacesResult` / `searchPlacesByTextResult` / `geocodeAddress` return unavailable on a refused
+  claim or a Google error; Discover's two Places lists + Create's venues say `ui.placesToGo.googleUnavailable`, sign-up says
+  so in English, pin screens say `googleUnavailablePin`; Places to go / Also nearby stay hidden and never cache it.
+  `brandOffers.geocodeAddress` goes through the shared helper (budgeted). Only `services/places.js` calls Google (guard).
+- Attribution verified (code level): Discover x2, Create venues + review row, sign-up results, web picker, PlacesToGoSection.
+- Strings: `ui.placesToGo.googleUnavailable`, `googleUnavailablePin`, `ui.selectLocation.confirmPlaceHint` (11 languages; 10
+  machine-authored, need native review); sign-up copy English-only like the rest of that screen.
+- Tests: new `utils/locationProvenance.test.js` (rules + source guards + attribution + unavailable), `alsoNearby.test.js`
+  (+ open-now mask, unavailable, geocode), journey `locationProvenance` 12/12 (11/11 failed on the old DB); Jest 482/6642;
+  prod journeys 595/595; from-scratch replay 458/458 + journeys 595/595 on it; new column/function grants replay = prod (32/32);
+  iOS + web exports build; business web export regenerated.
+- Docs: `PRODUCT_AUDIT/GOOGLE_CLOUD_SETUP_2026-10-22.md` (APIs incl. NEW Maps SDK for iOS, key restrictions, alerts/quotas,
+  tiers, the app budget, what is stored, the owner's pre-switch checklist); C23 (c) rewritten + (d) Open now; new C24.
+- NOT done / blockers: nothing ran on a device or against real Google (key not testable here); terms review of
+  `google_confirmed` pins / business-confirmed details / `address_geocoded` points (owner + counsel); Android key + headers;
+  business address editor still geocodes without a confirm-pin step; web business site has no usable Google key; 26 older
+  gatherings have no recorded source.
+
 # Google Places (New), attribution, daily budget, "Also nearby" row (owner decision 2026-10-22)
 
 Owner: "make Nearby useful first"; approve Google Places for non-partner discovery; fix attribution now; migrate to Places

@@ -4,7 +4,7 @@
 // does not search again); nothing is stored, logged or learned.
 import { useEffect, useState } from 'react';
 import { getUserLocation } from '../services/userLocation';
-import { searchNearbyPlaces } from '../services/places';
+import { searchNearbyPlacesResult } from '../services/places';
 import { placesToGoActivity, pickPlacesToGo } from '../utils/placesToGo';
 
 const CACHE_MS = 10 * 60 * 1000;
@@ -25,8 +25,14 @@ export default function usePlacesToGo(text, language) {
         if (!c) { if (live) setState({ activity, places: [], loading: false }); return; }
         const k = `${activity}|${c.latitude.toFixed(2)}|${c.longitude.toFixed(2)}`;
         const hit = cache.get(k);
-        const raw = hit && Date.now() - hit.at < CACHE_MS ? hit.places : await searchNearbyPlaces(c.latitude, c.longitude, null, activity);
-        if (!hit || hit.places !== raw) cache.set(k, { at: Date.now(), places: raw });
+        let raw;
+        if (hit && Date.now() - hit.at < CACHE_MS) raw = hit.places;
+        else {
+          const res = await searchNearbyPlacesResult(c.latitude, c.longitude, null, activity);
+          raw = res.places;
+          // An unavailable search (daily Google budget used up) is never cached as "no places"; the row just stays hidden.
+          if (!res.unavailable) cache.set(k, { at: Date.now(), places: raw });
+        }
         if (live) setState({ activity, places: pickPlacesToGo(raw, language), loading: false });
       } catch (e) {
         console.error('Places to go failed', e);

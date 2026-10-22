@@ -65,7 +65,9 @@ describe('Places API (New), Pro fields only, inside the daily budget', () => {
     supabase.rpc.mockResolvedValue({ data: false, error: null });
     expect(await places.searchNearbyPlaces(1, 2, 'food_drink')).toEqual([]);
     expect(await places.searchPlacesByText('cafe')).toEqual([]);
-    expect(await places.getPlaceDetails('pid')).toBeNull();
+    expect(await places.geocodeAddress('1 Main St')).toEqual({ status: 'unavailable' });
+    expect(await places.searchNearbyPlacesResult(1, 2, 'food_drink')).toEqual({ places: [], unavailable: true });
+    expect(places.getPlaceDetails).toBeUndefined(); // phone/website are typed by the business, never fetched from Google
     expect(global.fetch).not.toHaveBeenCalled();
   });
   test('a failed claim also makes no Google call', async () => {
@@ -84,6 +86,35 @@ describe('Places API (New), Pro fields only, inside the daily budget', () => {
     expect(init.headers['X-Goog-FieldMask']).toBe(places.PLACE_SEARCH_FIELDS.join(','));
     expect(init.headers['X-Ios-Bundle-Identifier']).toBe('com.x');
     expect(p).toMatchObject({ placeId: 'pid', name: 'Cafe', address: '1 Main', rating: null, openNow: null, priceLevel: null, photoRef: null, distanceMiles: 0 });
+  });
+  test('Open now (owner 2026-10-22): only that search asks Google for open-now; only Google\'s answer counts', async () => {
+    supabase.rpc.mockResolvedValue({ data: true, error: null });
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ places: [
+      { id: 'a', displayName: { text: 'Open' }, location: { latitude: 1, longitude: 2 }, currentOpeningHours: { openNow: true } },
+      { id: 'b', displayName: { text: 'Closed' }, location: { latitude: 1, longitude: 2 }, currentOpeningHours: { openNow: false } },
+      { id: 'c', displayName: { text: 'No answer' }, location: { latitude: 1, longitude: 2 } },
+    ] }) });
+    const res = await places.searchNearbyPlacesResult(1, 2, 'food_drink', null, { openNow: true });
+    expect(global.fetch.mock.calls[0][1].headers['X-Goog-FieldMask']).toBe([...places.PLACE_SEARCH_FIELDS, places.PLACE_OPEN_NOW_FIELD].join(','));
+    expect(res.unavailable).toBe(false);
+    expect(res.places.map((p) => p.openNow)).toEqual([true, false, null]); // unknown never becomes open
+    await places.searchNearbyPlacesResult(1, 2, 'food_drink');
+    expect(global.fetch.mock.calls[1][1].headers['X-Goog-FieldMask']).toBe(places.PLACE_SEARCH_FIELDS.join(','));
+  });
+  test('Google refusing = unavailable, never "no places"', async () => {
+    supabase.rpc.mockResolvedValue({ data: true, error: null });
+    jest.spyOn(console, 'error').mockImplementation(() => {});
+    global.fetch.mockResolvedValue({ ok: false, status: 403, json: async () => ({ error: { status: 'PERMISSION_DENIED' } }) });
+    expect(await places.searchNearbyPlacesResult(1, 2, null, 'Coffee')).toEqual({ places: [], unavailable: true });
+    expect(await places.searchPlacesByTextResult('cafe')).toEqual({ places: [], unavailable: true });
+  });
+  test('address search claims the budget as geocode and returns Google\'s place ID with the point', async () => {
+    supabase.rpc.mockResolvedValue({ data: true, error: null });
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ status: 'OK', results: [{ place_id: 'g1', formatted_address: '1 Main St', geometry: { location: { lat: 26.4, lng: -80.1 } } }] }) });
+    expect(await places.geocodeAddress('1 Main St')).toEqual({ status: 'ok', point: { latitude: 26.4, longitude: -80.1 }, placeId: 'g1', label: '1 Main St' });
+    expect(supabase.rpc).toHaveBeenCalledWith('claim_places_search', { kind_param: 'geocode' });
+    global.fetch.mockResolvedValue({ ok: true, json: async () => ({ status: 'ZERO_RESULTS', results: [] }) });
+    expect(await places.geocodeAddress('nowhere')).toEqual({ status: 'none' });
   });
 });
 

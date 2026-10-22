@@ -12,7 +12,9 @@ const path = require('path');
 const ROOT = path.join(__dirname, '..');
 const MIGRATIONS = path.join(__dirname, '..', '..', 'supabase', 'migrations');
 const GRANT_MIGRATION = '20270320_gathering_precise_location_security.sql';
-const PRIVATE_COLUMNS = ['precise_lat', 'precise_lng'];
+// Owner 2026-10-22 (migration 20270333): Google's place ID locates the meet-up point exactly, so it is private like the
+// point; its provenance label is internal (the owner's terms review), insert-only.
+const PRIVATE_COLUMNS = ['precise_lat', 'precise_lng', 'google_place_id', 'location_source'];
 
 function walk(d, out = []) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
