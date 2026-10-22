@@ -85,6 +85,7 @@ Rows written before 2026-10-22 have `location_source = NULL` (not recorded): 26 
 - [ ] Section 1: Places API (New), Geocoding API, Maps SDK for iOS, Maps SDK for Android enabled.
 - [ ] Section 2: key restricted to those four APIs (DONE + checked 2026-10-22); Android key decision made.
 - [ ] Section 3: budget alert set (done 2026-10-22); per-API daily quotas set (blocked on the free trial). Owner 2026-10-22: do NOT upgrade billing solely to set them; upgrade only once costs and usage safeguards are confirmed. Until then Nearby's app-side 100/day budget is the control (not a guaranteed billing cap).
+- Compliance audit 2026-10-22: `GOOGLE_MAPS_COMPLIANCE_AUDIT_2026-10-22.md` (place IDs + mapless display CONFIRMED from Google's published terms; ToS disclosure ADDED; attribution gaps A-C, legacy gathering points and the directory question 3.2.3(d)(iii) OPEN).
 - [ ] Terms review (counsel / Google), recorded with the date and the terms version read:
   - [ ] Showing live Places results with the "Google Maps" text attribution (no logo image) beside each list is acceptable.
 - [x] **Storage (owner decisions 2026-10-22, final; BUILT, LIVE 2026-10-22, migration 20270336, journey `locationProvenance` 21/21):**
