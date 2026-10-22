@@ -44,7 +44,10 @@ import { withoutHidden } from '../utils/notInterested';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
 import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows } from '../services/brandOffers';
 import { perkRedemptionState, redemptionsByOffer } from '../utils/perkRedemptionState';
-import { searchNearbyPlaces, getPlacePhotoUrl, priceLevelLabel, getGoogleMapsRequestHeaders } from '../services/places';
+import { searchNearbyPlaces } from '../services/places';
+import useAlsoNearby from '../hooks/useAlsoNearby';
+import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
+import { withoutPartnerPlaces } from '../utils/alsoNearby';
 import { resultRowView, recommendationContext, contextItem } from '../utils/recommendationContext';
 import useMinuteClock from '../hooks/useMinuteClock';
 import { relativeWindows } from '../utils/minuteClock';
@@ -412,6 +415,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [intentSearch, setIntentSearch] = useState(null);
   // Item 189: only a submitted typed ask (never Surprise Me / pick-for-me, never typing) can trigger the Places search.
   const placesToGo = usePlacesToGo(intentSearch && intentSearch.outcome !== 'pick_for_me' ? (intentSearch.typedText ?? null) : null, language);
+  // Owner 2026-10-22: "Also nearby (not a Nearby partner)" under a typed ask with too few partner results (utils/alsoNearby.js).
+  const alsoNearby = useAlsoNearby(intentSearch && intentSearch.outcome !== 'pick_for_me' ? intentSearch : null, language);
   const [intentRefining, setIntentRefining] = useState(false); // item 107 refinement chips
   const [intentSearching, setIntentSearching] = useState(false);
   const [intentPhase, setIntentPhase] = useState(null); // Item 135: real pipeline phase
@@ -1391,7 +1396,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
     const tag = contextTags.find((t) => friendsInterestReason(t, contextFriendMap?.[t]));
     return tag ? friendsInterestReason(tag, contextFriendMap[tag]) : null;
   })();
-  const contextPlacesShown = applyEnv(applyOpenNow(contextPlaces, placeEntity), 'place');
+  // A Google place that is a Nearby partner is left out: these lists are labelled "Not Nearby partners" (owner 2026-10-22).
+  const contextPlacesShown = applyEnv(applyOpenNow(withoutPartnerPlaces(contextPlaces, businesses), placeEntity), 'place');
   const contextCommunities = expandedContext && !openNowActive ? applyEnv(communities.filter((c) => contextTags.includes(c.interest_tag)), 'community') : [];
 
   // Real Google Places keyword search on the context's own interest tag
@@ -1482,7 +1488,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // every other Discover gathering list (it used to keep load order); a literal search keeps its own order.
   const dedupedGatheringsRaw = filteredGatherings.filter((g) => !notableGatheringIds.has(g.id));
   const dedupedGatherings = gatheringTabActive && !isSearching ? byLadder(dedupedGatheringsRaw) : dedupedGatheringsRaw;
-  const visiblePlaces = applyEnv(applyOpenNow(placesFresh ? places : [], placeEntity), 'place');
+  const visiblePlaces = applyEnv(applyOpenNow(withoutPartnerPlaces(placesFresh ? places : [], businesses), placeEntity), 'place');
 
   // Decision 5 (CLAUDE.md, Aug 27 2026): a real "nothing anywhere matched"
   // state, checked against all three real searchable sections regardless of
@@ -2130,24 +2136,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
         : [names.tag(expandedContext.interestTag), titleCaseBadge(expandedContext.timeBucket), 'Nearby'].filter(Boolean).join(' · '))
     : null;
 
-  // The one real "why this place, right now" line, shared verbatim by the
-  // main Places section and the expanded context's own Places list rather
-  // than written out twice. Every part of it is a real Google Places
-  // Basic-Data field (no gathering count: removed 2026-10-17, it located
-  // gatherings) -- falls back to the address when none of them came back.
-  // Shared context layer: a Google place gets its distance and directions destination from the one context object; it has no
-  // recommendation reason and no booking mode (neither is invented). Rating / price / open now are the provider's own facts.
+  // The one real "where is this place" line, shared verbatim by the main Places section and the expanded context's own Places
+  // list. Shared context layer: a Google place gets its distance and directions destination from the one context object; it
+  // has no recommendation reason and no booking mode. Owner 2026-10-22: no Google star ratings, price level or open-now
+  // (not requested from Places API (New), see services/places.js); falls back to the address.
   function placeContext(p) {
     return recommendationContext(contextItem('place', p), { language });
   }
 
   function placeReasonLine(p) {
-    return [
-      p.rating !== null ? `⭐ ${p.rating}${p.reviewCount !== null ? ` (${p.reviewCount})` : ''}` : null,
-      p.priceLevel === 0 ? t('ui.places.free') : priceLevelLabel(p.priceLevel),
-      p.openNow !== null ? t(p.openNow ? 'ui.places.openNowPlain' : 'ui.places.closedPlain') : null,
-      placeContext(p).context,
-    ].filter(Boolean).join('  ·  ') || p.address;
+    return placeContext(p).context || p.address;
   }
 
   function openPlaceInMaps(p) {
@@ -2771,19 +2769,20 @@ export default function DiscoverHubScreen({ navigation, route }) {
               </TouchableOpacity>
             </>
           ) : (
-            contextPlacesShown.slice(0, PREVIEW_COUNT).map((p, i) => (
-              <View key={p.placeId}>
-                <PlaceCard
-                  photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
-                  photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
-                  icon="📍"
-                  title={p.name}
-                  reason={placeReasonLine(p)}
-                  onPress={() => openPlaceInMaps(p)}
-                  accessibilityLabel={p.name}
-                />
-              </View>
-            ))
+            <View>
+              {contextPlacesShown.slice(0, PREVIEW_COUNT).map((p) => (
+                <View key={p.placeId}>
+                  <PlaceCard
+                    icon="📍"
+                    title={p.name}
+                    reason={placeReasonLine(p)}
+                    onPress={() => openPlaceInMaps(p)}
+                    accessibilityLabel={p.name}
+                  />
+                </View>
+              ))}
+              <GoogleMapsAttribution label={t('ui.placesToGo.notPartners')} />
+            </View>
           )}
 
           </>)}
@@ -3156,6 +3155,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
               )}
               {/* Item 189: public places for an allowlisted activity, below Nearby's own results, never ranked with them. */}
               <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
+              {/* Owner 2026-10-22: non-partner places when Nearby's own partners are too few; below everything Nearby found. */}
+              <PlacesToGoSection places={alsoNearby.places} navigation={navigation} heading={t('ui.placesToGo.alsoNearbyHeading')} />
               {/* Item 109: nothing here fits -> Create starts from this ask as it stands (what, when, who incl. a chip). */}
               <TouchableOpacity onPress={createFromAsk} accessibilityLabel={t('ui.discover.createYourselfA11y')} accessibilityRole="button">
                 <Text style={styles.emptyActionText}>{t('ui.home.noneCreate')}</Text>
@@ -3445,8 +3446,6 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {placesToShow.map((p) => (
                   <PlaceCard
                     key={p.placeId}
-                    photoUrl={p.photoRef ? getPlacePhotoUrl(p.photoRef) : null}
-                    photoHeaders={p.photoRef ? getGoogleMapsRequestHeaders() : undefined}
                     icon="📍"
                     title={p.name}
                     reason={placeReasonLine(p)}
@@ -3454,6 +3453,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     accessibilityLabel={p.name}
                   />
                 ))}
+                <GoogleMapsAttribution label={t('ui.placesToGo.notPartners')} />
                 </View>
                 </View>
               )}

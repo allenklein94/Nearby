@@ -2,6 +2,7 @@ import { formatDistanceAway } from '../utils/formatDistance';
 import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { PLACE_TYPES } from '../constants/placeCategories';
+import { supabase } from './supabase';
 
 const GOOGLE_MAPS_API_KEY = Constants.expoConfig?.extra?.googleMapsApiKey;
 
@@ -34,54 +35,112 @@ export function placeDistanceLabel(miles) {
   return formatDistanceAway(miles);
 }
 
-export async function searchNearbyPlaces(latitude, longitude, category, keyword = null) {
-  const placeType = PLACE_TYPES[category] ?? 'point_of_interest';
-  const keywordParam = keyword ? `&keyword=${encodeURIComponent(keyword)}` : '';
-  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=8000&type=${placeType}${keywordParam}&key=${GOOGLE_MAPS_API_KEY}`;
+// Owner decision 2026-10-22: Places API (New), only the fields Nearby shows, on Google's Pro tier (name, address, location,
+// types, Maps link). Rating, review count, price level, open-now and photos are NOT requested: they sit on the Enterprise /
+// photo SKUs (a smaller free allowance and more cost per call; photos also need per-photo author credits), and Nearby has
+// no public star ratings. A place therefore never claims open/closed (unknown, utils/operatingStatus.js).
+const PLACES_BASE = 'https://places.googleapis.com/v1';
+export const PLACE_SEARCH_FIELDS = Object.freeze([
+  'places.id', 'places.displayName', 'places.shortFormattedAddress', 'places.formattedAddress', 'places.location',
+  'places.types', 'places.googleMapsUri',
+]);
+const SEARCH_RADIUS_M = 8000;
+const MAX_RESULTS = 20;
 
-  const response = await fetch(url, { headers: getGoogleMapsRequestHeaders() });
-  const data = await response.json();
-
-  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-    console.error('searchNearbyPlaces error', data.status, data.error_message);
-    return [];
-  }
-
-  // rating/reviewCount/openNow/priceLevel are all part of Google's free "Basic Data"
-  // tier for Nearby/Text Search — no extra fields param or per-place Details call
-  // needed, unlike weekly opening hours (only in Place Details, deliberately not
-  // fetched here to avoid N extra network calls per list of 20 places).
-  // When Google answered: its open_now is a snapshot, read as "unknown" once stale (utils/operatingStatus.js).
-  const fetchedAt = new Date().toISOString();
-  const places = (data.results ?? []).slice(0, 20).map((p) => ({
-    placeId: p.place_id,
-    name: p.name,
-    address: p.vicinity,
-    rating: p.rating ?? null,
-    reviewCount: p.user_ratings_total ?? null,
-    openNow: p.opening_hours?.open_now ?? null,
-    fetchedAt,
-    priceLevel: typeof p.price_level === 'number' ? p.price_level : null,
-    latitude: p.geometry?.location?.lat,
-    longitude: p.geometry?.location?.lng,
-    distanceMiles: straightLineMiles(latitude, longitude, p.geometry?.location?.lat, p.geometry?.location?.lng),
-    photoRef: p.photos?.[0]?.photo_reference ?? null,
-    // Kept (previously discarded here even though Google returns it, and
-    // it's already read elsewhere in this file — see
-    // GOOGLE_TYPE_TO_BUSINESS_CATEGORY below) so a future subcategory-level
-    // refinement within one major category can reuse Google's own real
-    // per-place types client-side instead of another network round trip.
-    types: p.types ?? [],
-  }));
-
-  // No "N gatherings here" count (owner, 2026-10-17, Option A): a venue-level count of future gatherings located them to
-  // ~110 m from caller-chosen points, so its database function is gone (migration 20270325). Places are Google's facts only.
-  return places;
+// Legacy-only / Table B types (not accepted as includedTypes by the New API) -> the New API's own types, or null = no type
+// filter (the old broad `point_of_interest` search).
+const NEW_API_TYPES = { point_of_interest: null, health: ['doctor', 'dentist', 'pharmacy', 'physiotherapist', 'hospital'] };
+export function newApiTypesFor(placeType) {
+  if (!placeType) return null;
+  if (Object.prototype.hasOwnProperty.call(NEW_API_TYPES, placeType)) return NEW_API_TYPES[placeType];
+  return [placeType];
 }
 
-export function getPlacePhotoUrl(photoRef, maxWidth = 400) {
-  if (!photoRef) return null;
-  return `https://maps.googleapis.com/maps/api/place/photo?maxwidth=${maxWidth}&photo_reference=${photoRef}&key=${GOOGLE_MAPS_API_KEY}`;
+// Every Google Places call first claims one slot of the ONE app-wide daily budget (migration 20270332; owner limit 100/day).
+// Refused, signed out or the claim failing = no Google call and no places (never a guess).
+export async function claimPlacesCall(kind) {
+  try {
+    const { data, error } = await supabase.rpc('claim_places_search', { kind_param: kind });
+    if (error) { console.error('claim_places_search failed', error.message); return false; }
+    return data === true;
+  } catch (e) {
+    console.error('claim_places_search failed', e?.message);
+    return false;
+  }
+}
+
+// The owner's switch for the "Also nearby (not a Nearby partner)" row (default off). Any failure = off.
+export async function alsoNearbyEnabled() {
+  try {
+    const { data, error } = await supabase.rpc('places_also_nearby_enabled');
+    return !error && data === true;
+  } catch {
+    return false;
+  }
+}
+
+function googleHeaders(fieldMask) {
+  return { 'Content-Type': 'application/json', 'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY ?? '', 'X-Goog-FieldMask': fieldMask, ...(getGoogleMapsRequestHeaders() ?? {}) };
+}
+
+async function placesPost(path, body, fieldMask) {
+  const response = await fetch(`${PLACES_BASE}/${path}`, { method: 'POST', headers: googleHeaders(fieldMask), body: JSON.stringify(body) });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error(`Places ${path} error`, response.status, data?.error?.status, data?.error?.message);
+    return null;
+  }
+  return data;
+}
+
+// One New-API place -> the shape every caller already reads. The fields Nearby no longer requests stay null (unknown).
+export function placeFromNewApi(p, latitude = null, longitude = null) {
+  const lat = p?.location?.latitude;
+  const lng = p?.location?.longitude;
+  return {
+    placeId: p?.id ?? null,
+    name: p?.displayName?.text ?? null,
+    address: p?.shortFormattedAddress ?? p?.formattedAddress ?? null,
+    rating: null,
+    reviewCount: null,
+    openNow: null,
+    fetchedAt: new Date().toISOString(),
+    priceLevel: null,
+    latitude: typeof lat === 'number' ? lat : undefined,
+    longitude: typeof lng === 'number' ? lng : undefined,
+    distanceMiles: straightLineMiles(latitude, longitude, lat, lng),
+    photoRef: null,
+    googleMapsUri: p?.googleMapsUri ?? null,
+    // Google's own per-place types (see GOOGLE_TYPE_TO_BUSINESS_CATEGORY below).
+    types: p?.types ?? [],
+  };
+}
+
+// The request body for one search: a keyword = Text Search (biased to the person, at most one type); no keyword = Nearby
+// Search restricted to the radius by type. Pure, exported for tests.
+export function placesSearchRequest(latitude, longitude, category, keyword = null) {
+  const types = newApiTypesFor(category ? (PLACE_TYPES[category] ?? 'point_of_interest') : (keyword ? null : 'point_of_interest'));
+  const circle = { center: { latitude, longitude }, radius: SEARCH_RADIUS_M };
+  if (keyword) {
+    return {
+      kind: 'text', path: 'places:searchText',
+      body: { textQuery: keyword, locationBias: { circle }, pageSize: MAX_RESULTS, ...(types && types.length === 1 ? { includedType: types[0] } : {}) },
+    };
+  }
+  return {
+    kind: 'nearby', path: 'places:searchNearby',
+    body: { locationRestriction: { circle }, maxResultCount: MAX_RESULTS, ...(types ? { includedTypes: types } : {}) },
+  };
+}
+
+export async function searchNearbyPlaces(latitude, longitude, category, keyword = null) {
+  const req = placesSearchRequest(latitude, longitude, category, keyword);
+  if (!(await claimPlacesCall(req.kind))) return [];
+  const data = await placesPost(req.path, req.body, PLACE_SEARCH_FIELDS.join(','));
+  if (!data) return [];
+  // No "N gatherings here" count (owner, 2026-10-17, Option A): a venue-level count of future gatherings located them to
+  // ~110 m from caller-chosen points, so its database function is gone (migration 20270325). Places are Google's facts only.
+  return (data.places ?? []).slice(0, MAX_RESULTS).map((p) => placeFromNewApi(p, latitude, longitude));
 }
 
 // Google's own 0-4 integer scale (0 = Free, 4 = Very Expensive), rendered as the
@@ -101,23 +160,17 @@ export function priceLevelLabel(priceLevel) {
 // granted location permission.
 export async function searchPlacesByText(query, latitude = null, longitude = null) {
   if (!query || !query.trim()) return [];
-  const locationBias = latitude && longitude ? `&location=${latitude},${longitude}&radius=50000` : '';
-  const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query.trim())}${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
-
-  const response = await fetch(url, { headers: getGoogleMapsRequestHeaders() });
-  const data = await response.json();
-
-  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-    console.error('searchPlacesByText error', data.status, data.error_message);
-    return [];
-  }
-
-  return (data.results ?? []).slice(0, 10).map((p) => ({
-    placeId: p.place_id,
-    name: p.name,
-    address: p.formatted_address ?? p.vicinity ?? null,
-    latitude: p.geometry?.location?.lat ?? null,
-    longitude: p.geometry?.location?.lng ?? null,
+  if (!(await claimPlacesCall('text'))) return [];
+  const body = { textQuery: query.trim(), pageSize: 10 };
+  if (latitude && longitude) body.locationBias = { circle: { center: { latitude, longitude }, radius: 50000 } };
+  const data = await placesPost('places:searchText', body, 'places.id,places.displayName,places.formattedAddress,places.location,places.types');
+  if (!data) return [];
+  return (data.places ?? []).slice(0, 10).map((p) => ({
+    placeId: p.id,
+    name: p.displayName?.text ?? null,
+    address: p.formattedAddress ?? null,
+    latitude: p.location?.latitude ?? null,
+    longitude: p.location?.longitude ?? null,
     types: p.types ?? [],
   }));
 }
@@ -170,23 +223,21 @@ function guessCategoryFromTypes(types = []) {
 // call is needed for those, same API key, same real Google data. Returns whatever
 // fields Google actually has; never fabricates a missing one.
 export async function getPlaceDetails(placeId) {
-  const fields = 'formatted_phone_number,website,formatted_address,name,types';
-  const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${GOOGLE_MAPS_API_KEY}`;
-
-  const response = await fetch(url, { headers: getGoogleMapsRequestHeaders() });
-  const data = await response.json();
-
-  if (data.status !== 'OK') {
-    console.error('getPlaceDetails error', data.status, data.error_message);
+  if (!placeId) return null;
+  if (!(await claimPlacesCall('details'))) return null;
+  const response = await fetch(`${PLACES_BASE}/places/${encodeURIComponent(placeId)}`, {
+    headers: googleHeaders('displayName,formattedAddress,types,nationalPhoneNumber,websiteUri'),
+  });
+  const r = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error('getPlaceDetails error', response.status, r?.error?.status, r?.error?.message);
     return null;
   }
-
-  const r = data.result ?? {};
   return {
-    name: r.name ?? null,
-    address: r.formatted_address ?? null,
-    phone: r.formatted_phone_number ?? null,
-    website: r.website ?? null,
+    name: r.displayName?.text ?? null,
+    address: r.formattedAddress ?? null,
+    phone: r.nationalPhoneNumber ?? null,
+    website: r.websiteUri ?? null,
     category: guessCategoryFromTypes(r.types),
   };
 }

@@ -63,16 +63,21 @@ describe('what a place shows', () => {
 
 describe('boundaries', () => {
   const NEW = ['src/utils/placesToGo.js', 'src/hooks/usePlacesToGo.js', 'src/components/PlacesToGoSection.js'];
+  // Owner 2026-10-22: the "Also nearby (not a Nearby partner)" row reuses this section and its place shaping (utils/alsoNearby.js,
+  // guarded in alsoNearby.test.js); it sits in the same place below the results and never reaches the result pipeline.
+  const ALSO_NEARBY = ['src/utils/alsoNearby.js', 'src/hooks/useAlsoNearby.js'];
 
   it('3. Places never enter Nearby ranking or results: only Home/Discover render the section, nothing else imports it', () => {
-    const users = appFiles.filter((f) => !NEW.includes(f) && !f.startsWith('src/i18n/ui/') && /placesToGo|PlacesToGo/.test(read(f)));
+    const users = appFiles.filter((f) => !NEW.includes(f) && !ALSO_NEARBY.includes(f) && !f.startsWith('src/i18n/ui/') && /placesToGo|PlacesToGo/.test(read(f)));
     expect(users.sort()).toEqual(['src/screens/DiscoverHubScreen.js', 'src/screens/HomeScreen.js']);
     for (const f of ['src/services/intentResolver.js', 'src/utils/askResolver.js', 'src/constants/signalPriority.js', 'src/utils/askEligibility.js']) {
       expect(read(f)).not.toMatch(/placesToGo|searchNearbyPlaces/);
     }
     // The section gets only `places`, never the ask's items, and sits below the results.
     for (const f of ['src/screens/HomeScreen.js', 'src/screens/DiscoverHubScreen.js']) {
-      for (const m of read(f).matchAll(/<PlacesToGoSection ([^/]*)\/>/g)) expect(m[1].trim()).toBe('places={placesToGo.places} navigation={navigation}');
+      for (const m of read(f).matchAll(/<PlacesToGoSection ([^/]*)\/>/g)) {
+        expect(["places={placesToGo.places} navigation={navigation}", "places={alsoNearby.places} navigation={navigation} heading={t('ui.placesToGo.alsoNearbyHeading')}"]).toContain(m[1].trim());
+      }
     }
   });
 
@@ -93,7 +98,7 @@ describe('boundaries', () => {
   it('6. existing Nearby business/gathering results are unchanged: no ranking, eligibility or result file reads places', () => {
     // The fixed typed-ask ordering fixture (services/askEligibility.regression.test.js) pins the results themselves; here we pin
     // that nothing in the result pipeline can see the places, and that the screens render the ask's own items untouched.
-    const pipeline = appFiles.filter((f) => /^src\/(services|utils|constants)\//.test(f) && !NEW.includes(f));
+    const pipeline = appFiles.filter((f) => /^src\/(services|utils|constants)\//.test(f) && !NEW.includes(f) && !ALSO_NEARBY.includes(f));
     for (const f of pipeline) expect(read(f)).not.toMatch(/placesToGo|PlacesToGo/);
     expect(read('src/screens/DiscoverHubScreen.js')).toContain('intentSearch.items.map(renderIntentSearchResultRow)');
   });
@@ -103,6 +108,6 @@ describe('boundaries', () => {
     expect(hook).toMatch(/if \(!activity\) \{ setState/);
     expect(read('src/screens/HomeScreen.js')).toContain('usePlacesToGo(intentResults?.typedText ?? intentEmptyFallback?.typedText ?? null, language)');
     const callers = appFiles.filter((f) => /searchNearbyPlaces\(/.test(read(f)) && f !== 'src/services/places.js');
-    expect(callers.sort()).toEqual(['src/hooks/usePlacesToGo.js', 'src/screens/CreateGatheringScreen.js', 'src/screens/DiscoverHubScreen.js']);
+    expect(callers.sort()).toEqual(['src/hooks/useAlsoNearby.js', 'src/hooks/usePlacesToGo.js', 'src/screens/CreateGatheringScreen.js', 'src/screens/DiscoverHubScreen.js']);
   });
 });

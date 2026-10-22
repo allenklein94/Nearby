@@ -8,6 +8,7 @@ import { randomUUID } from 'expo-crypto';
 import { supabase } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
 import { searchPlacesByText, getPlaceDetails } from '../services/places';
+import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { logBusinessAcquisitionEvent } from '../services/businessAcquisitionEvents';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
 import { suggestBusinessCategory } from '../services/businessCategorySuggestion';
@@ -355,6 +356,7 @@ export default function BusinessPartnerApplyScreen({ navigation }) {
                 {place.address ? <Text style={styles.resultAddress}>{place.address}</Text> : null}
               </TouchableOpacity>
             ))}
+            {searchResults.length > 0 && <GoogleMapsAttribution />}
 
             {searchedOnce && !searching && searchResults.length === 0 ? (
               <EmptyCopy id="business_apply_search" />

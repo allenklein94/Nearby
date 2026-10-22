@@ -1,3 +1,38 @@
+# Google Places (New), attribution, daily budget, "Also nearby" row (owner decision 2026-10-22)
+
+Owner: "make Nearby useful first"; approve Google Places for non-partner discovery; fix attribution now; migrate to Places
+API (New) requesting only shown fields; build "Also nearby (not a Nearby partner)" (only when partners are insufficient,
+below partners, clearly labelled, directions only); app-side limit 100 searches/day + monitoring; confirm terms/billing
+before production traffic; Overture kept as a possible future alternative, not a fallback.
+- Found: Google Places was already live (legacy API) on Discover Places, topic places, item 189's Places to go, Create's
+  venue suggestions and the business sign-up lookup, with Google ratings/photos and NO Google attribution anywhere.
+- Migration `20270332_places_search_budget.sql` (LIVE): `places_search_budget` (singleton: daily_limit 100,
+  also_nearby_enabled false) + `places_search_usage` (day in America/Los_Angeles = Google's billing day, calls, refused);
+  no client grants. `claim_places_search(kind)` (authenticated only; nearby/text/details) atomically takes one slot or
+  refuses (and counts the refusal); `places_also_nearby_enabled()`. Journey `placesSearchBudget` 9/9, fails on the old DB.
+- `services/places.js`: every call claims first (refused/failed claim = no Google call, no places); Nearby/Text Search (New)
+  with `PLACE_SEARCH_FIELDS` (id, displayName, short/formatted address, location, types, googleMapsUri: Pro tier); legacy
+  Table-B types mapped (`point_of_interest` = no type filter, `health` = doctor/dentist/pharmacy/physiotherapist/hospital);
+  Text Search + Place Details (New) for the sign-up lookup; `getPlacePhotoUrl` removed. Rating, review count, price level,
+  open-now and photos are no longer requested or shown (Enterprise/photo SKUs; photos need per-photo author credits).
+  Consequence: with Open now on, Google places no longer show (unknown hours never count as open).
+- `components/GoogleMapsAttribution.js` ("Google Maps" text form, never localized, 12sp, #5E5E5E / white) on every Google
+  list (PlacesToGoSection, Discover's two Places lists with "Not Nearby partners", Create venues, sign-up lookup).
+- `utils/alsoNearby.js` (+ `hooks/useAlsoNearby.js`): row only for a resolved category, not a public-place, people or
+  never-learned ask, with < 3 distinct partner results; searches the category NAME (never the typed words); Google places
+  that are partners (within 0.1 mi + name match) removed here AND from Discover's Places lists; max 3, nearest first,
+  directions only, drawn by PlacesToGoSection below Nearby's results on Home (results + empty fallback) and Discover.
+- Strings `ui.placesToGo.alsoNearbyHeading`, `notPartners` (11 languages; 10 machine-authored, need native review).
+- Tests: Jest 481/6607 (new `utils/alsoNearby.test.js`; item 189 / approximate-location / search-tabs / outdoor journey
+  source guards updated for the approved caller); prod journeys 583/583; from-scratch replay 456/456 + journeys 583/583 on
+  it; new grants local = prod; iOS bundle exports; business web export regenerated; taxonomy code inventory rebuilt + synced.
+- NOT done / blockers (owner): enable "Places API (New)" on the key's Google Cloud project (the key is an EAS secret, not
+  testable here; until then every places list is empty); Google Cloud billing alerts/quotas; confirming Google's current
+  terms before turning the row on; device check C23; native review. Open compliance questions (not changed): Create stores a
+  picked Google venue's name/address/coordinates on the gathering, and the sign-up lookup pre-fills the business's own
+  record from Google: both are stored Places content beyond place_id; the business website (web) can't use the
+  iOS-restricted key (unchanged from before).
+
 # Share in a chat follow-up (2026-10-20): sender note + from-scratch replay
 
 - Sender note (owner-pasted recommendation: warn the sender without revealing the recipient's access): the sheet shows one

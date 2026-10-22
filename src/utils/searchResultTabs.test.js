@@ -79,7 +79,7 @@ describe('search result tabs (item 93)', () => {
     expect(d).toMatch(/isSearching \? \(searchResultsFresh \? searchedGatherings : \[\]\)/);
     expect(d).toMatch(/isSearching \? \(searchResultsFresh \? searchedCommunities : \[\]\)/);
     expect(d).toMatch(/isSearching \? \(searchResultsFresh \? searchedOffers : \[\]\)/);
-    expect(d).toMatch(/applyOpenNow\(placesFresh \? places : \[\], placeEntity\)/);
+    expect(d).toMatch(/applyOpenNow\(withoutPartnerPlaces\(placesFresh \? places : \[\], businesses\), placeEntity\)/);
     expect(d).toMatch(/setSearchedTerm\(term\);/);
     expect(d).toMatch(/setPlacesTerm\(keyword \?\? null\)/);
     expect(d).toMatch(/const resultsSettled = !loadingSearch && !\(userLocation && placesPending\);/);

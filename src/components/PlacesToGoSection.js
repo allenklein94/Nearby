@@ -1,20 +1,23 @@
 // Owner item 189: the separate "Places to go" section under a typed ask's own results. Name, distance and "Get directions"
 // only: never a reason, "our pick", availability, booking or business treatment. Renders nothing when there are no places.
+// Also draws the owner's "Also nearby" row (2026-10-22, utils/alsoNearby.js) via `heading`; both carry Google's attribution.
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, typography } from '../theme';
 import { useLanguage } from '../context/LanguageContext';
 import { openDestination } from '../services/openDestination';
+import GoogleMapsAttribution from './GoogleMapsAttribution';
 
-export default function PlacesToGoSection({ places, navigation }) {
+export default function PlacesToGoSection({ places, navigation, heading = null }) {
   const { colors } = useTheme();
   const { t } = useLanguage();
   if (!Array.isArray(places) || places.length === 0) return null;
   const s = styles(colors, spacing, typography);
+  const title = heading ?? t('ui.placesToGo.heading');
   return (
-    <View style={s.wrap} accessibilityLabel={t('ui.placesToGo.heading')}>
-      <Text style={s.heading}>{t('ui.placesToGo.heading')}</Text>
+    <View style={s.wrap} accessibilityLabel={title}>
+      <Text style={s.heading}>{title}</Text>
       {places.map((p) => (
         <TouchableOpacity
           key={p.id}
@@ -30,6 +33,7 @@ export default function PlacesToGoSection({ places, navigation }) {
           <Text style={s.action}>{t('ui.placesToGo.directions')}</Text>
         </TouchableOpacity>
       ))}
+      <GoogleMapsAttribution />
     </View>
   );
 }

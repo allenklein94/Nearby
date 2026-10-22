@@ -18,7 +18,8 @@ import { FORMAT_OPTIONS, formatIcon } from '../constants/activityFormat';
 import { skillContext, skillOptionsFor, cleanSkillLevel } from '../constants/skillLevel';
 import { EFFORT_OPTIONS } from '../constants/intensityEffort';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
-import { searchNearbyPlaces, priceLevelLabel } from '../services/places';
+import { searchNearbyPlaces } from '../services/places';
+import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
 import { checkTextModeration } from '../services/textModeration';
 import { getOfferById, getBusinessProfile } from '../services/brandOffers';
 import { businessPlanPrefill } from '../utils/businessPlanPrefill';
@@ -841,12 +842,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
                         <View style={{ flex: 1 }}>
                           <Text style={[styles.placeRowTitle, selected && styles.optionCardTitleActive]}>{place.name}</Text>
                           <Text style={styles.placeRowSub}>
-                            {[
-                              miles !== null ? walkTimeLabel(miles, t) : place.address,
-                              place.rating !== null ? `⭐ ${place.rating}` : null,
-                              priceLevelLabel(place.priceLevel),
-                              place.openNow !== null ? (place.openNow ? t('ui.gatheringForm.openNow') : t('ui.gatheringForm.closed')) : null,
-                            ].filter(Boolean).join('  ·  ')}
+                            {/* Owner 2026-10-22: Google's name + address/walk time only (no ratings, price or open-now). */}
+                            {miles !== null ? walkTimeLabel(miles, t) : place.address}
                           </Text>
                         </View>
                         {selected && <Text style={styles.checkmark}>✓</Text>}
@@ -854,6 +851,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
                     );
                   })
                 )}
+                {(popularPlaces ?? []).length > 0 && !loadingPlaces && <GoogleMapsAttribution />}
                 <TouchableOpacity
                   onPress={() => navigation.navigate('SelectGatheringLocation', {
                     initialLat: customLocation?.latitude,

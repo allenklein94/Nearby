@@ -81,6 +81,7 @@ import { shouldOfferDiningPrompt, personalizeQuickOptions } from '../constants/i
 import useMyGoals from '../hooks/useMyGoals';
 import usePlacesToGo from '../hooks/usePlacesToGo';
 import PlacesToGoSection from '../components/PlacesToGoSection';
+import useAlsoNearby from '../hooks/useAlsoNearby';
 import { askBusinessesFits } from '../utils/placesToGo';
 import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
 import { iconNameForCategory } from '../constants/quickPickIcons';
@@ -305,6 +306,8 @@ export default function HomeScreen({ navigation }) {
   const [intentEmptyFallback, setIntentEmptyFallback] = useState(null);
   // Item 189: only the SUBMITTED typed ask (results or the empty fallback) can trigger the Places search.
   const placesToGo = usePlacesToGo(intentResults?.typedText ?? intentEmptyFallback?.typedText ?? null, language);
+  // Owner 2026-10-22: "Also nearby (not a Nearby partner)" when the ask's partner results are too few (utils/alsoNearby.js).
+  const alsoNearby = useAlsoNearby(intentResults ?? (intentEmptyFallback ? { ...intentEmptyFallback, items: [] } : null), language);
   const [intentPlaceholder, setIntentPlaceholder] = useState(() => INTENT_PLACEHOLDER_EXAMPLES[Math.floor(Math.random() * INTENT_PLACEHOLDER_EXAMPLES.length)]);
   // "Surprise Me" (critique item 28) -- entirely separate state from the
   // typed-ask intentResults above (no classifyResult/typedText exists for
@@ -2057,6 +2060,7 @@ export default function HomeScreen({ navigation }) {
               })()}
               {/* Item 189: public places for an allowlisted activity, below Nearby's own results, never ranked with them. */}
               <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
+              <PlacesToGoSection places={alsoNearby.places} navigation={navigation} heading={t('ui.placesToGo.alsoNearbyHeading')} />
               {/* Item 190: Create it yourself leads; businesses are a secondary link, and absent for a public-place ask. */}
               <TouchableOpacity style={styles.primaryCreateButton} onPress={() => proceedToCreation(intentResults.classifyResult, intentResults.typedText, intentResults.submissionId, { explicitCreate: true })} accessibilityRole="button">
                 <Text style={styles.primaryCreateButtonText}>{t('ui.home.noneCreate')}</Text>
@@ -2081,6 +2085,7 @@ export default function HomeScreen({ navigation }) {
               )}
               <Text style={styles.intentResultsHeading}>{t('ui.home.nothingHappening')}</Text>
               <PlacesToGoSection places={placesToGo.places} navigation={navigation} />
+              <PlacesToGoSection places={alsoNearby.places} navigation={navigation} heading={t('ui.placesToGo.alsoNearbyHeading')} />
               {/* Item 190: Create it yourself leads; businesses are a secondary link, and absent for a public-place ask. */}
               <TouchableOpacity style={styles.primaryCreateButton} onPress={() => proceedToCreation(intentEmptyFallback.classifyResult, intentEmptyFallback.typedText, intentEmptyFallback.submissionId, { explicitCreate: true })} accessibilityRole="button">
                 <Text style={styles.primaryCreateButtonText}>{t('ui.home.orCreate')}</Text>

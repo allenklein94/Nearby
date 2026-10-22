@@ -375,7 +375,7 @@ d('journey: a business declares outdoor seating -> "something outside" -> it app
     const src = fs.readFileSync(path.join(__dirname, '..', 'screens', 'DiscoverHubScreen.js'), 'utf8');
     expect(src).toMatch(/const applyEnv = \(list, kind\) => filterByEnvironment\(list, kind, environmentFilter\);/);
     expect(src).toMatch(/applyEnv\(applyOpenNow\(matchBusinesses\(businesses[^\n]*'business'\)/);
-    expect(src).toMatch(/applyEnv\(applyOpenNow\(placesFresh \? places : \[\], placeEntity\), 'place'\)/);
+    expect(src).toMatch(/applyEnv\(applyOpenNow\(withoutPartnerPlaces\(placesFresh \? places : \[\], businesses\), placeEntity\), 'place'\)/);
     expect(src).toMatch(/ui\.discover\.envNoteOutdoor/);
   });
 });

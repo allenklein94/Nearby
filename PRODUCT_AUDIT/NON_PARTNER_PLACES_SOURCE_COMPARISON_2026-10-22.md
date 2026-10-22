@@ -1,8 +1,9 @@
 # Non-partner places: source and cost comparison (2026-10-22)
 
-Owner direction (2026-10-22): **make Nearby useful first**, even with few partner businesses. This reverses the 2026-10-20
-"drop Google, keep deferred" decision as a priority, not as a build: nothing below is built. Building needs the owner's
-choice of source and a direct build ask (real money: a billed API key).
+Owner direction (2026-10-22): **make Nearby useful first**, even with few partner businesses. **Owner then approved Google
+(same day): steps 1-3 are BUILT** (see CLAUDE_HISTORY.md, "Google Places (New), attribution, daily budget"); ratings,
+price, open-now and photos removed; app-wide limit 100 calls/day; the "Also nearby" row switched OFF until the owner
+confirms terms + billing. Overture stays a possible future alternative, not a fallback.
 
 ## What already exists (found in code, 2026-10-22)
 

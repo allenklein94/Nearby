@@ -2,56 +2,78 @@
  "en": {
   "heading": "Places to go",
   "directions": "Get directions",
-  "directionsA11y": "Get directions to {name}"
+  "directionsA11y": "Get directions to {name}",
+  "alsoNearbyHeading": "Also nearby (not a Nearby partner)",
+  "notPartners": "Not Nearby partners"
  },
  "es": {
   "heading": "Lugares para ir",
   "directions": "Cómo llegar",
-  "directionsA11y": "Cómo llegar a {name}"
+  "directionsA11y": "Cómo llegar a {name}",
+  "alsoNearbyHeading": "También cerca (no es socio de Nearby)",
+  "notPartners": "No son socios de Nearby"
  },
  "de": {
   "heading": "Orte zum Hingehen",
   "directions": "Route",
-  "directionsA11y": "Route zu {name}"
+  "directionsA11y": "Route zu {name}",
+  "alsoNearbyHeading": "Auch in der Nähe (kein Nearby-Partner)",
+  "notPartners": "Keine Nearby-Partner"
  },
  "fr": {
   "heading": "Où aller",
   "directions": "Itinéraire",
-  "directionsA11y": "Itinéraire vers {name}"
+  "directionsA11y": "Itinéraire vers {name}",
+  "alsoNearbyHeading": "Aussi à proximité (pas un partenaire Nearby)",
+  "notPartners": "Pas des partenaires Nearby"
  },
  "pt": {
   "heading": "Lugares para ir",
   "directions": "Como chegar",
-  "directionsA11y": "Como chegar a {name}"
+  "directionsA11y": "Como chegar a {name}",
+  "alsoNearbyHeading": "Também por perto (não é parceiro do Nearby)",
+  "notPartners": "Não são parceiros do Nearby"
  },
  "ht": {
   "heading": "Kote pou ale",
   "directions": "Jwenn direksyon",
-  "directionsA11y": "Jwenn direksyon pou {name}"
+  "directionsA11y": "Jwenn direksyon pou {name}",
+  "alsoNearbyHeading": "Tou pre la tou (pa yon patnè Nearby)",
+  "notPartners": "Se pa patnè Nearby"
  },
  "zh": {
   "heading": "可以去的地方",
   "directions": "获取路线",
-  "directionsA11y": "获取前往{name}的路线"
+  "directionsA11y": "获取前往{name}的路线",
+  "alsoNearbyHeading": "附近还有（非 Nearby 合作商家）",
+  "notPartners": "非 Nearby 合作商家"
  },
  "vi": {
   "heading": "Nơi có thể đến",
   "directions": "Chỉ đường",
-  "directionsA11y": "Chỉ đường đến {name}"
+  "directionsA11y": "Chỉ đường đến {name}",
+  "alsoNearbyHeading": "Cũng ở gần (không phải đối tác của Nearby)",
+  "notPartners": "Không phải đối tác của Nearby"
  },
  "tl": {
   "heading": "Mga lugar na mapupuntahan",
   "directions": "Kunin ang direksyon",
-  "directionsA11y": "Kunin ang direksyon papunta sa {name}"
+  "directionsA11y": "Kunin ang direksyon papunta sa {name}",
+  "alsoNearbyHeading": "Malapit din (hindi partner ng Nearby)",
+  "notPartners": "Hindi mga partner ng Nearby"
  },
  "ru": {
   "heading": "Куда можно пойти",
   "directions": "Маршрут",
-  "directionsA11y": "Маршрут до {name}"
+  "directionsA11y": "Маршрут до {name}",
+  "alsoNearbyHeading": "Также рядом (не партнёр Nearby)",
+  "notPartners": "Не партнёры Nearby"
  },
  "ko": {
   "heading": "가 볼 만한 곳",
   "directions": "길찾기",
-  "directionsA11y": "{name} 길찾기"
+  "directionsA11y": "{name} 길찾기",
+  "alsoNearbyHeading": "근처의 다른 곳 (Nearby 파트너 아님)",
+  "notPartners": "Nearby 파트너가 아님"
  }
 }
