@@ -41,6 +41,19 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
        (expanded/collapsed announced), the ✕ "{label}, selected. Tap to clear", each choice its label + selected state.
     g. Layout: a small phone in light and dark mode: the choices row wraps cleanly under the chips, nothing is clipped.
 
+17. Clock chip (owner idea "306", 2026-10-22; migration 20270335):
+    a. Type "live music tonight after 7": a chip "After 7 PM" shows with the others; the old grey "Keeping it after 7 PM" line is
+       gone. "music after 7" (no day) and "live music tonight at 7" show NO clock chip (the search doesn't use those times);
+       "live music tonight after 9" shows none either (9 is never guessed).
+    b. Tap "After 7 PM": one row "After 7 AM" / "✓ After 7 PM" (same look as the When row, no motion, no coral). Pick 7 AM: the
+       results reorder in place (afternoon plans rise), the chip reads "After 7 AM", the typed words stay.
+    c. ✕ on the clock chip: it goes, results update, the evening order no longer applies; noon/midnight chips offer no row.
+    d. "I need a car wash today at 7": chip "At 7 PM"; switch to 7 AM; "Ask Nearby Businesses" shows Time 7:00 AM; after ✕ the
+       Time is "Any time". Create opens as before (it never carried a clock time; its When step asks).
+    e. Restart the app on Discover: the corrected chip and results come back the same (session restore).
+    f. VoiceOver/TalkBack: "After 7 PM. Tap to change"; with the cap of 4 chips an ask with WHAT + WHEN + clock + WHERE drops People.
+       Non-English: chip words come from 4 new `ui.discover.understoodClock*` strings (10 languages machine-authored, need review).
+
 Known limits (disclosed): the cap of 4 understood chips is unchanged, so an ask with activity + time + place + party + count
 drops the count chip; removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,
 the learned-affinity "constrained" check), which only order results and never add a chip, filter or caption back.

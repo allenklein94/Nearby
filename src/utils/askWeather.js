@@ -35,7 +35,8 @@ const at = (day, minutes) => { const d = new Date(day); d.setHours(0, 0, 0, 0); 
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
 // -> { startMs, endMs, when } | null. `when` is the person's own word for the caption.
-export function askWeatherWindow(text, now = new Date()) {
+// `clockOverride` (idea "306"): undefined = the words' clock window, null = none (removed), else the person's corrected one.
+export function askWeatherWindow(text, now = new Date(), clockOverride = undefined) {
   if (typeof text !== 'string' || !text.trim()) return null;
   const anchor = dateAnchorFromText(text, now);
   if (!anchor || anchor.kind !== 'day' || anchor.dates?.length !== 1) return null; // a weekend period is never narrowed to a day
@@ -43,7 +44,7 @@ export function askWeatherWindow(text, now = new Date()) {
   const t = text.toLowerCase();
   const isToday = sameDay(day, now);
   const nowMs = now.getTime();
-  const clock = clockWindowFromText(text);
+  const clock = clockOverride === undefined ? clockWindowFromText(text) : clockOverride && clockOverride.at == null ? clockOverride : null;
 
   if (isToday && /\bright\s+now\b|\bnow\b/.test(t) && !/\btonight\b/.test(t) && !clock) {
     return { startMs: nowMs, endMs: nowMs + 2 * HOUR, when: 'right now' };
@@ -106,9 +107,9 @@ export function weatherDelta(env, judgement, explicitEnvironment = null) {
 
 // Re-scores only; never removes. Gatherings are judged at their own start; everything else at the ask's window (none = 0).
 // settingByPartnerId: Map partnerId -> declared weather_setting (optional). Returns { items, caption }.
-export function applyAskWeather(candidates, weather, { text = '', now = new Date(), explicitEnvironment = null, settingByPartnerId = null } = {}) {
+export function applyAskWeather(candidates, weather, { text = '', now = new Date(), explicitEnvironment = null, settingByPartnerId = null, clock = undefined } = {}) {
   if (!Array.isArray(candidates)) return { items: candidates, caption: null };
-  const win = askWeatherWindow(text, now);
+  const win = askWeatherWindow(text, now, clock);
   const askJudgement = judgeWeatherWindow(weather, win);
   let moved = false;
   const items = candidates.map((c) => {

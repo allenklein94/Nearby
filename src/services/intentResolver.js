@@ -22,6 +22,7 @@ import { occasionLabel } from '../constants/businessAttributes';
 import { sharedRequestFactsLine } from '../utils/sharedRequestFacts';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals, getPartnerReputations } from './businessFulfillment';
 import { askKind, needAvailabilityWindow, needCaption, orderNeedResults } from '../utils/needAsk';
+import { clockOverride } from '../utils/askUnderstood';
 import { getWhoForPreferenceSignals } from './preferencePolls';
 import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionPackages';
 import { getSocialForecast } from './homeDashboard';
@@ -88,7 +89,7 @@ import { wordsBackedAttributes, applyCapabilitiesToCandidates, applyLikelyGroupT
 import { restrictionAsk } from '../constants/businessRestrictions';
 import { genresFromText, applyGenreToCandidates } from '../constants/genreMatch';
 import { timeBudgetFromText, applyTimeBudgetToCandidates, timeBudgetCaption } from '../constants/timeBudget';
-import { clockWindowFromText, dateAnchorFromText, pointClockFromText, applyClockWindowToCandidates, clockWindowCaption, windowSpan, clockLabel } from '../constants/clockWindow';
+import { clockWindowFromText, dateAnchorFromText, pointClockFromText, applyClockWindowToCandidates, windowSpan, clockLabel } from '../constants/clockWindow';
 import { fitExperienceToTime } from '../utils/planTiming';
 import { intensityFromText, effortFromText, applyIntensityToCandidates, applyEffortToCandidates, energiesWithoutIntensity } from '../constants/intensityEffort';
 import { socialSignalsFromText, applySocialToCandidates } from '../constants/socialContext';
@@ -622,7 +623,7 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false, narrowGroup = null, removed = [] }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false, narrowGroup = null, removed = [], clock = undefined }) {
   // Owner (2026-10-15): understood chips the person removed (utils/askUnderstood.js removeUnderstoodPiece). The same words are
   // never read again for a removed piece: WHO (the party and its date-friendly quality from partner words; also after the Date chip
   // was turned off, `partnerWordsOff`), WHEN (time words: clock, anchor, spontaneity,
@@ -840,7 +841,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   try {
     const weather = await weatherPromise;
     const settings = weather ? await getPartnerWeatherSettings(deduped.map((c) => c.partnerId).filter(Boolean)) : null;
-    const applied = applyAskWeather(deduped, weather, { text: whenText, explicitEnvironment: parsedFacets.environment ?? null, settingByPartnerId: settings });
+    const applied = applyAskWeather(deduped, weather, { text: whenText, explicitEnvironment: parsedFacets.environment ?? null, settingByPartnerId: settings, clock });
     deduped = applied.items;
     weatherCaption = applied.caption;
   } catch (e) {
@@ -906,7 +907,10 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   step('time_budget');
   // "today before 3 PM" / "Saturday until 5": used only when the person's words anchor it to a date ("before 3 PM" alone
   // constrains nothing). A gathering whose real start (and usual length) fits lifts, a clear miss sinks; never hides.
-  const clockWindow = clockWindowFromText(whenText);
+  // Idea "306": `clock` = the person's own reading from the understood clock chip (utils/askUnderstood.js clockOverride):
+  // undefined = read the words, null = removed, else the chosen window / moment in place of the words' one.
+  const clockWindow = clock === undefined ? clockWindowFromText(whenText) : clock && clock.at == null ? { after: clock.after ?? null, before: clock.before ?? null } : null;
+  const pointClock = clock === undefined ? pointClockFromText(whenText) : clock?.at ?? null;
   const dateAnchor = clockWindow ? dateAnchorFromText(whenText) : null;
   deduped = applyClockWindowToCandidates(deduped, clockWindow, dateAnchor);
   step('clock_window');
@@ -1012,7 +1016,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 162: a NEED (the asked category is a need/service group) is ordered availability > proximity > reliability >
   // personalization, each a tie-breaker for the one before (utils/needAsk.js). A want keeps the order above, unchanged.
   const kind = askKind({ category, rawText });
-  const needWindow = kind === 'need' ? needAvailabilityWindow({ dateWindow, clockWindow, dateAnchor: dateAnchor ?? dateAnchorFromText(whenText), pointClock: pointClockFromText(whenText), spontaneity }) : null;
+  const needWindow = kind === 'need' ? needAvailabilityWindow({ dateWindow, clockWindow, dateAnchor: dateAnchor ?? dateAnchorFromText(whenText), pointClock, spontaneity }) : null;
   if (kind === 'need') {
     let reputations = new Map();
     try {
@@ -1024,7 +1028,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   }
   // The caption names only the groups the SHOWN results really come from.
   // (One caption line on both screens: the open-ended groups, then the spontaneity line when the ask named one.)
-  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, kind === 'need' ? needCaption(needWindow) : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), kind === 'need' ? null : spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), clockWindowCaption(clockWindow, dateAnchor), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite, eligibility.removedUnknown), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
+  // Idea "306": the clock window is no longer a caption here; it is the understood clock chip (utils/askUnderstood.js askClock).
+  const openEndedNote = [openNowOnly ? OPEN_NOW_CAPTION : null, kind === 'need' ? needCaption(needWindow) : null, planCaption(rawText, { occasion, dateWindow }), openEndedCaption(deduped.slice(0, RESULT_CAP), openEndedGroups), kind === 'need' ? null : spontaneityCaption(spontaneity), timeBudgetCaption(timeBudget), distanceWillingnessCaption(distanceWillingness), transportModeCaption(transportMode, { statedDistance: distanceWillingness }), weatherCaption, askFacetsCaption(parsedFacets, eligibility.removedOpposite, eligibility.removedUnknown), eligibility.compatibilityCaption].filter(Boolean).join(' · ') || null;
 
   // Intent engine vision -- cross-category "Experiences" assembly, first
   // increment (2026-09-10): a pure regrouping of this same already-scored,
@@ -1188,6 +1193,7 @@ export async function resolveClassifiedAsk(classifyResult, typedText) {
       ...(Array.isArray(classifyResult.changedUnderstood) && classifyResult.changedUnderstood.includes('when') ? ['when'] : [])],
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
+    clock: clockOverride(classifyResult),
     cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null, narrowGroup: classifyResult.narrowGroup ?? null,
   });
   // The meet-people row is not in any category, so it is not added while a category narrows the ask (item 108).

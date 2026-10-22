@@ -82,14 +82,24 @@ Rows written before 2026-10-22 have `location_source = NULL` (not recorded): 26 
 - [ ] Section 3: budget alert set (done 2026-10-22); per-API daily quotas set (blocked on the free trial; do after upgrading).
 - [ ] Terms review (counsel / Google), recorded with the date and the terms version read:
   - [ ] Showing live Places results with the "Google Maps" text attribution (no logo image) beside each list is acceptable.
-  - [ ] Whether a pin the person confirmed WITHOUT moving it (`location_source = 'google_confirmed'`) may be kept beyond
-        Google's 30-day limit on coordinates. Confirmation records provenance; it does not by itself make the value
-        independent data. If not: decide what happens to those rows (find them with
-        `select id from gatherings where location_source = 'google_confirmed'`).
-  - [ ] Whether a name/address the business confirmed (`details_source = 'business_confirmed_google'`) may be kept. If not:
-        switch the sign-up to "Google as reference only" (the business types every field).
-  - [ ] Business address edits geocoded by Google (`brand_partners.location_source = 'address_geocoded'`): the same 30-day
-        question applies; the fix would be the same confirm-a-pin step in the business profile editor (not built).
+- **Owner ruling (2026-10-22, conservative, LOCKED until the terms say otherwise):** confirmation never changes provenance.
+  Until a recorded terms review explicitly permits it, everything below counts as Google content (place ID only may be kept;
+  coordinates at most 30 days; nothing else), and its permanent storage is a BLOCKER, not an open question:
+  - [ ] **Gathering pins `google_confirmed`** (a Google venue's point, confirmed without moving): Google-derived. Not stored
+        in production yet (2026-10-22: all 26 gatherings have `location_source` null = created before provenance). Needs an
+        owner decision on the replacement before launch: (a) keep the place ID, cache the point <= 30 days and refresh it from
+        the place ID (server job, Google cost per refresh), or (b) the host places the pin themselves, Google's point never
+        stored. `google_adjusted` (moved > ~1 m from Google's point) is NOT assumed independent either until the review says so.
+  - [ ] **Sign-up name/address `details_source = 'business_confirmed_google'`**: Google-derived; the tick is not proof of
+        independent provenance. Pre-approved replacement (owner 2026-10-22 fallback): "Google as reference only", the business
+        types every field (`details_source = 'business_entered'`). Not built. Prod: 1 sign-up, `details_source` null.
+  - [x] **Which geocoder the business profile editor uses (checked in code 2026-10-22):** Google Geocoding API
+        (`geocodeAddress` in `src/services/places.js`, called by `brandOffers.js` on every profile address edit and by both
+        pin screens' address search). Its point is stored permanently in `brand_partners.latitude/longitude`, labelled
+        `address_geocoded`. So the 30-day limit applies.
+  - [ ] **Business address edits `address_geocoded`**: Google-derived; permanent storage blocked. Replacement not decided
+        (a pin the business places itself, a licensed geocoder with storage rights, or the 30-day refresh). Prod: 1 partner,
+        no point stored.
 - [ ] Check C23 + C24 of `FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md` passed on a real phone.
 - [ ] Native-speaker review of the `ui.placesToGo.*` and `ui.selectLocation.confirmPlaceHint` strings.
 

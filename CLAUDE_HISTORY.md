@@ -1,3 +1,33 @@
+# Owner idea "306" REOPENED + BUILT (2026-10-22): the clock time is an understood chip, AM/PM correction + remove; Google storage ruling (conservative) recorded
+
+Owner-pasted review: approve the narrow clock-time chip fix; take the conservative approach to Google storage; report exact blockers.
+CORRECTION of the 2026-10-20 idea "306" entry below: it said "Search never shows or uses a clock time". Wrong: the resolver
+already USED an anchored clock window to rank ("tonight after 7": fits lift, misses sink, item 68) and a need's "at 7" as its
+availability moment (item 163), shown only as a grey caption ("Keeping it after 7 PM") with no way to correct it.
+- Built (`utils/askUnderstood.js`, ONE rule): `askClock` = the clock reading the search really uses (a window only with a stated
+  day; a single time only for a need on one day or no day; ambiguous 8-11 never guessed, `parseClock` unchanged); it is the
+  'clock' understood chip ("At / After / Before {time}", "{from}–{to}"). `UNDERSTOOD_CHANGEABLE` += clock: the chip's row
+  offers only the reading and its AM/PM twin (`flipClock`; noon/midnight and a range that would run backwards = remove-only);
+  `changeUnderstoodPiece` accepts only that twin (`clockChoice`, `changedUnderstood`); ✕ = `removeUnderstoodPiece('clock')`.
+  `clockOverride` (undefined = words, null = none, else the choice; a removed/changed WHEN drops it too) is read by the
+  resolver (window ranking, need moment, weather window) and AskBusiness's Time prefill. The grey clock caption is retired
+  (the chip replaces it). Create never carried a clock time from an ask; unchanged (its When step asks), tested.
+- Same component and row as idea "307" (no new picker, no motion, no coral); 4 new strings `ui.discover.understoodClock*`
+  (11 languages; 10 machine-authored, need native review).
+- Migration 20270335 (LIVE 2026-10-22): `understood_clock` added to the typed-ask refinement key CHECK + the function's list;
+  body = 20270306's (live md5 verified identical before applying), single overload, grants unchanged.
+- Tests: `services/understoodClockChip.test.js` 16; journey `understoodChipChange` extended (need's 7 PM -> 7 AM recorded as
+  understood_clock applied, session round trip, request stores 07:00) 8/8 on prod (rolled back). Full Jest 483/6647; prod journeys 599/599.
+  NOT DEVICE-VERIFIED: check 17 of the understood-chip checklist. From-scratch replay NOT run for 20270335.
+- Known limit: the 4-chip cap is unchanged, so a clock chip can push the People chip out on a very full ask (disclosed).
+- Google storage (owner ruling, conservative): confirmation never changes provenance; `google_confirmed` pins, Google-filled
+  sign-up details (`business_confirmed_google`) and `address_geocoded` business points are Google content (place ID only
+  storable; coordinates <= 30 days) until a recorded terms review says otherwise. Q3 answered in code: the business profile
+  editor and both pin screens' address search use the Google Geocoding API (`geocodeAddress`), stored permanently in
+  `brand_partners` today. Prod (read-only): 0 rows with any Google provenance (26 gatherings, 1 sign-up, 1 partner, all
+  source null); `also_nearby_enabled` = false. Nothing changed in the Google code; the three replacements need owner
+  decisions (setup doc §6). "Also nearby" stays OFF.
+
 # Google storage fix, Open now, budget-exhausted state, attribution check, Cloud setup doc (owner review 2026-10-22)
 
 Owner-pasted review: keep Places (New) + 100/day; keep "Also nearby" OFF until compliance, Cloud setup and a phone test;
@@ -228,7 +258,7 @@ Example conflicts: "0-2 mi" (no distance chip; radii only `SEARCH_RADIUS_OPTIONS
 filter); "Dinner" reads as the Restaurants category chip (idea "305"). Nothing built. If reopened: one picker per atom from that
 atom's existing options (category list, `UNDERSTOOD_WINDOWS`, `partySizeFromText`'s count), applied through the same refine path.
 
-# Owner idea "306" (correct the interpretation, e.g. 7 PM meant 7 AM) assessed 2026-10-20: MET where a clock time is shown; history only
+# Owner idea "306" (correct the interpretation, e.g. 7 PM meant 7 AM) assessed 2026-10-20: MET where a clock time is shown; history only [CORRECTED 2026-10-22: search DID use clock times; see the idea "306" build entry at the top]
 
 The only place Nearby turns words into a clock time is idea "305"'s handoff into AskBusiness: "at 7" fills the optional Time field
 with 7 PM, shown as the selected "🕐 7:00 PM" chip; tapping it opens the time picker on 7 PM (change to 7 AM there), "Any time"

@@ -25,10 +25,10 @@ async function rerunAsk(surface, prev, refined, key, action) {
 
 // `prev` = the surface's current typed-ask state ({ classifyResult, typedText, submissionId, shown, rootSnapshotId? ... }).
 // Owner (2026-10-15): `understood_<piece>` = the X on an understood chip (utils/askUnderstood.js): remove only, never re-add.
-// Idea "307": with a `value`, the same key CHANGES that piece (WHEN / People) to the value, recorded as 'applied'.
+// Idea "307": with a `value`, the same key CHANGES that piece (WHEN / People; idea "306": the clock's AM/PM) to the value, recorded as 'applied'.
 export async function refineTypedAsk(surface, prev, key, value = undefined) {
   if (typeof key === 'string' && key.startsWith('understood_') && value !== undefined) {
-    return rerunAsk(surface, prev, changeUnderstoodPiece(prev.classifyResult, key.slice('understood_'.length), value), key, 'applied');
+    return rerunAsk(surface, prev, changeUnderstoodPiece(prev.classifyResult, key.slice('understood_'.length), value, prev.typedText), key, 'applied');
   }
   if (typeof key === 'string' && key.startsWith('understood_')) {
     // A WHAT chip showing only a Browse group (item 108) is the rail's selection: removing it is the rail's own clear.

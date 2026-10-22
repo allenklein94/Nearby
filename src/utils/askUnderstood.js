@@ -13,16 +13,21 @@
 // 4 -> 6) to one of their existing choices; the ask re-runs through the same refine path. The classification remembers what
 // was changed (`changedUnderstood`): the chosen value replaces the words' reading everywhere (the resolver stops reading the
 // words' time for a changed WHEN; Create and AskBusiness carry the chosen value). WHAT, WHERE and WHO stay remove-only.
+// Owner idea "306" (2026-10-22): the clock time the words gave is a chip too ("After 7 PM"), only when the search really used it
+// (`askClock`: a window anchored to a stated day, or a need's "at 7"); it can be removed or switched to the same time AM/PM
+// (7 PM <-> 7 AM), never to another hour; noon / midnight are remove-only. The resolver and AskBusiness read the same reading.
 import { parseAskFacets } from '../constants/askFacets';
 import { statedPartySize } from './askResolver';
+import { clockWindowFromText, dateAnchorFromText, pointClockFromText } from '../constants/clockWindow';
+import { askKind } from './needAsk';
 
 export const UNDERSTOOD_WINDOWS = ['now', 'today', 'tonight', 'tomorrow', 'weekend'];
 // Party types the refinement chips do not cover (theirs: friends, date, solo).
 export const UNDERSTOOD_PARTIES = ['groups', 'family', 'coworkers', 'new_people'];
 
-export const UNDERSTOOD_KEYS = ['what', 'when', 'where', 'who', 'people'];
+export const UNDERSTOOD_KEYS = ['what', 'when', 'clock', 'where', 'who', 'people'];
 // Idea "307": the pieces that can be changed, and their choices (WHEN = the windows above; People = a headcount incl. the person).
-export const UNDERSTOOD_CHANGEABLE = ['when', 'people'];
+export const UNDERSTOOD_CHANGEABLE = ['when', 'clock', 'people'];
 export const UNDERSTOOD_PEOPLE_CHOICES = [2, 3, 4, 5, 6, 7, 8, 10, 12];
 
 // The pieces removed from this ask by the person (a Set of UNDERSTOOD_KEYS); the resolver reads the same list.
@@ -44,8 +49,65 @@ function statedCount(c, typedText) {
   return statedPartySize({ group: { partySize: c.partySize }, sources: c.structured?.sources }, typedText);
 }
 
+// ---- idea "306": the clock time ----
+// A reading = { after, before } (a window, either side may be null) or { at } (one moment), minutes after midnight.
+const isMinute = (m) => Number.isInteger(m) && m >= 0 && m <= 24 * 60;
+function validClock(r) {
+  if (!r || typeof r !== 'object') return null;
+  if (r.at != null) return isMinute(r.at) ? { at: r.at } : null;
+  const after = r.after ?? null;
+  const before = r.before ?? null;
+  if ((after != null && !isMinute(after)) || (before != null && !isMinute(before))) return null;
+  if (after == null && before == null) return null;
+  if (after != null && before != null && before <= after) return null;
+  return { after, before };
+}
+
+// The clock reading the search uses for this ask: undefined = read the words (nothing removed or chosen), null = none, else the
+// person's choice. A removed or changed WHEN drops the words' clock too (idea "307": the time belonged to the old day).
+export function clockOverride(classifyResult) {
+  const c = classifyResult ?? {};
+  const removed = removedUnderstood(c);
+  if (removed.has('when') || removed.has('clock') || changedUnderstood(c).has('when')) return null;
+  if (changedUnderstood(c).has('clock')) return validClock(c.clockChoice);
+  return undefined;
+}
+
+// The clock reading the search really USES, or null: a window only once the words anchor it to a day (constants/clockWindow.js),
+// a single time only for a need (utils/needAsk.js 1b: on one named day, or no day said). The same rules the resolver applies.
+export function askClock(classifyResult, typedText) {
+  const c = classifyResult ?? {};
+  const text = String(typedText ?? '');
+  const o = clockOverride(c);
+  if (o === null) return null;
+  const reading = o ?? validClock(clockWindowFromText(text)) ?? (pointClockFromText(text) != null ? { at: pointClockFromText(text) } : null);
+  if (!reading) return null;
+  const anchor = dateAnchorFromText(text);
+  if (reading.at == null) return anchor ? reading : null;
+  const oneDay = anchor?.kind === 'day' && anchor.dates?.length === 1;
+  return askKind({ category: c.category ?? null, rawText: text }) === 'need' && (oneDay || !anchor) ? reading : null;
+}
+
+// The same time on the other half of the day (7 PM -> 7 AM), or null: noon and midnight have no other half, and a range that
+// would no longer run forward ("11 AM to 2 PM") is not flipped.
+const flipMinute = (m) => (m == null ? null : m === 0 || m === 12 * 60 || m === 24 * 60 ? undefined : m < 12 * 60 ? m + 12 * 60 : m - 12 * 60);
+export function flipClock(r) {
+  const v = validClock(r);
+  if (!v) return null;
+  if (v.at != null) { const at = flipMinute(v.at); return at === undefined ? null : { at }; }
+  const after = flipMinute(v.after);
+  const before = flipMinute(v.before);
+  if (after === undefined || before === undefined) return null;
+  return validClock({ after, before });
+}
+
+const clockMinutes = (r) => (r.at ?? r.after ?? r.before);
+export function sameClock(a, b) {
+  return !!a && !!b && (a.at ?? null) === (b.at ?? null) && (a.after ?? null) === (b.after ?? null) && (a.before ?? null) === (b.before ?? null);
+}
+
 // -> [{ key: 'what', category } | { key: 'what', group } | { key: 'when', window } | { key: 'where', environment } | { key: 'who', party }
-//     | { key: 'people', count }]
+//     | { key: 'clock', clock } | { key: 'people', count }]
 // The ONE People count an ask carries (the chip, Create's People, the request's carried row): stated or chosen, else null.
 export function understoodPartySize(classifyResult, typedText) {
   return statedCount(classifyResult ?? {}, typedText);
@@ -61,6 +123,8 @@ export function understoodPieces(classifyResult, typedText) {
   if (typeof c.category === 'string' && c.category) out.push({ key: 'what', category: c.category });
   else if (typeof c.narrowGroup === 'string' && c.narrowGroup) out.push({ key: 'what', group: c.narrowGroup });
   if (UNDERSTOOD_WINDOWS.includes(c.dateWindow)) out.push({ key: 'when', window: c.dateWindow });
+  const clock = askClock(c, typedText);
+  if (clock) out.push({ key: 'clock', clock });
   // The resolver's own facets when it reports them, else the same parser on the same words.
   const env = c.structured?.facets?.environment !== undefined ? c.structured.facets.environment : parseAskFacets(typedText).environment;
   if (!removed.has('where') && (env === 'outdoor' || env === 'indoor')) out.push({ key: 'where', environment: env });
@@ -79,6 +143,7 @@ export function removeUnderstoodPiece(classifyResult, key) {
   if (key === 'when') c.dateWindow = null;
   if (key === 'who') c.partyType = null;
   if (key === 'people') c.partySize = null;
+  if (key === 'clock') delete c.clockChoice;
   c.removedUnderstood = [...new Set([...removedUnderstood(c), key])];
   if (Array.isArray(c.changedUnderstood)) c.changedUnderstood = c.changedUnderstood.filter((k) => k !== key);
   return c;
@@ -87,17 +152,26 @@ export function removeUnderstoodPiece(classifyResult, key) {
 // The choices a changeable piece offers (the current one included), [] for a remove-only piece.
 export function understoodChoices(piece) {
   if (piece?.key === 'when') return UNDERSTOOD_WINDOWS;
+  if (piece?.key === 'clock') {
+    const other = flipClock(piece.clock);
+    return other ? [piece.clock, other].sort((a, b) => clockMinutes(a) - clockMinutes(b)) : [];
+  }
   if (piece?.key === 'people') return [...new Set([...UNDERSTOOD_PEOPLE_CHOICES, piece.count])].sort((a, b) => a - b);
   return [];
 }
 
 // Change one understood piece to one of its choices: the classification with the new value, plus the key in
 // `changedUnderstood`. Anything else (or the same value) leaves the classification as it is.
-export function changeUnderstoodPiece(classifyResult, key, value) {
+export function changeUnderstoodPiece(classifyResult, key, value, typedText = '') {
   const c = { ...(classifyResult ?? {}) };
   if (key === 'when' && UNDERSTOOD_WINDOWS.includes(value) && value !== c.dateWindow) c.dateWindow = value;
   else if (key === 'people' && Number.isInteger(value) && value > 0 && value !== c.partySize) c.partySize = value;
-  else return c;
+  else if (key === 'clock') {
+    // Only the current reading's own AM/PM twin: never another hour, never a clock the search would not use.
+    const current = askClock(c, typedText);
+    if (!current || !sameClock(flipClock(current), value)) return c;
+    c.clockChoice = validClock(value);
+  } else return c;
   c.changedUnderstood = [...new Set([...changedUnderstood(c), key])];
   return c;
 }
@@ -106,7 +180,8 @@ export function changeUnderstoodPiece(classifyResult, key, value) {
 // to the results). Session memory only.
 const played = new Set();
 export function understoodKey(pieces, typedText) {
-  return `${String(typedText ?? '').trim().toLowerCase()}|${pieces.map((p) => `${p.key}:${p.category ?? p.group ?? p.window ?? p.environment ?? p.party ?? p.count}`).join(',')}`;
+  const val = (p) => (p.clock ? `${p.clock.at ?? ''}/${p.clock.after ?? ''}/${p.clock.before ?? ''}` : p.category ?? p.group ?? p.window ?? p.environment ?? p.party ?? p.count);
+  return `${String(typedText ?? '').trim().toLowerCase()}|${pieces.map((p) => `${p.key}:${val(p)}`).join(',')}`;
 }
 export function takeUnderstoodPlay(key) {
   if (!key || played.has(key)) return false;

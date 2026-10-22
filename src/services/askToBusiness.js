@@ -5,7 +5,7 @@
 // clock time the words state ("at 7" = 7 PM, `pointClockFromText`) fills the optional Time field; an ambiguous one ("at 9") stays empty.
 import { recordIntentSelection } from './intentOutcomes';
 import { pointClockFromText } from '../constants/clockWindow';
-import { understoodPartySize } from '../utils/askUnderstood';
+import { understoodPartySize, clockOverride } from '../utils/askUnderstood';
 import { requestCarriedRows } from '../utils/fromWhatYouSaid';
 
 export function askBusinessParamsFromAsk({ classifyResult, typedText, submissionId }) {
@@ -16,7 +16,9 @@ export function askBusinessParamsFromAsk({ classifyResult, typedText, submission
   // Idea "307": a WHEN changed on the results replaces the words' time too (the clock they stated belonged to the old day).
   const whenChanged = Array.isArray(c.changedUnderstood) && c.changedUnderstood.includes('when');
   const dateWindow = c.dateWindow ?? (!whenRemoved && c.structured?.spontaneity === 'no_rush' ? 'flexible' : null);
-  const startMinutes = whenRemoved || whenChanged ? null : pointClockFromText(typedText);
+  // Idea "306": a clock chip the person removed carries no time; one switched to AM/PM carries the chosen moment.
+  const clock = clockOverride(c);
+  const startMinutes = whenRemoved || whenChanged || clock === null ? null : clock?.at ?? pointClockFromText(typedText);
   return {
     prefillText: typedText,
     prefillCategory: c.category ?? null,

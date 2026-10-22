@@ -7,7 +7,8 @@ import useReduceMotion from '../hooks/useReduceMotion';
 import { SEQUENCES, infoOpacity } from '../motion/motionBudget';
 import { categoryName, groupName } from '../i18n/categoryNames';
 import { PARTY_TYPE_LABELS } from '../constants/gatheringDisplaySignals';
-import { understoodPieces, understoodKey, takeUnderstoodPlay, understoodChoices, UNDERSTOOD_CHANGEABLE } from '../utils/askUnderstood';
+import { understoodPieces, understoodKey, takeUnderstoodPlay, understoodChoices, sameClock, UNDERSTOOD_CHANGEABLE } from '../utils/askUnderstood';
+import { localClock } from '../i18n/format';
 
 // Owner item 45 (2026-10-11): "Nearby understood me". The quiet chips of what a typed ask was read as ("Tonight · 🌳 Outdoor"),
 // shown the moment the ask is understood (under the "Finding…" loader) and kept above its results. Which pieces: only
@@ -20,6 +21,7 @@ import { understoodPieces, understoodKey, takeUnderstoodPlay, understoodChoices,
 // Owner idea "307" (2026-10-20): with `onChange` too, a WHEN or People chip's label is a button: a tap opens ONE row of that
 // piece's existing choices under the chips (no motion, no coral; the current one marked ✓), a choice re-runs the ask in place with it
 // (`onChange(piece, value)`), a second tap on the label closes the row; its ✕ still removes. WHAT, WHERE and WHO stay remove-only.
+// Owner idea "306" (2026-10-22): the clock chip ("After 7 PM") works the same way; its row offers only the same time AM / PM.
 const T = SEQUENCES.askUnderstood;
 
 export default function AskUnderstoodChips({ classifyResult, typedText, onRemove = null, onChange = null, disabled = false }) {
@@ -41,19 +43,27 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
   }, []);
 
   if (pieces.length === 0) return null;
+  const clockText = (c) => {
+    const at = (m) => localClock(m, language, { words: true });
+    if (c.at != null) return t('ui.discover.understoodClockAt', { time: at(c.at) });
+    if (c.after != null && c.before != null) return t('ui.discover.understoodClockBetween', { from: at(c.after), to: at(c.before) });
+    return c.after != null ? t('ui.discover.understoodClockAfter', { time: at(c.after) }) : t('ui.discover.understoodClockBefore', { time: at(c.before) });
+  };
   const label = (p) => {
+    if (p.key === 'clock') return clockText(p.clock);
     if (p.key === 'what') return p.category ? categoryName(p.category, language) : groupName(p.group, language);
     if (p.key === 'when') return t(`ui.gatherings.dateFilter.${p.window}`);
     if (p.key === 'where') return t(p.environment === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip');
     if (p.key === 'people') return t('ui.common.count.people', { count: p.count });
     return p.party === 'groups' ? t('ui.discover.tagBigGroup') : PARTY_TYPE_LABELS[p.party];
   };
-  const choiceLabel = (key, value) => (key === 'when' ? t(`ui.gatherings.dateFilter.${value}`) : t('ui.common.count.people', { count: value }));
+  const choiceLabel = (key, value) => (key === 'clock' ? clockText(value) : key === 'when' ? t(`ui.gatherings.dateFilter.${value}`) : t('ui.common.count.people', { count: value }));
   const labels = pieces.map(label);
   const removable = typeof onRemove === 'function';
   const changeable = (p) => removable && typeof onChange === 'function' && UNDERSTOOD_CHANGEABLE.includes(p.key);
   const open = pieces.find((p) => p.key === openKey && changeable(p)) ?? null;
-  const current = (p) => (p.key === 'when' ? p.window : p.count);
+  const current = (p) => (p.key === 'clock' ? p.clock : p.key === 'when' ? p.window : p.count);
+  const isCurrent = (p, v) => (p.key === 'clock' ? sameClock(v, p.clock) : v === current(p));
   return (
     <View
       style={styles.row}
@@ -103,10 +113,10 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
       {open && (
         <View style={styles.choices}>
           {understoodChoices(open).map((v) => {
-            const selected = v === current(open);
+            const selected = isCurrent(open, v);
             return (
               <TouchableOpacity
-                key={String(v)}
+                key={open.key === 'clock' ? `${v.at ?? ''}/${v.after ?? ''}/${v.before ?? ''}` : String(v)}
                 onPress={() => { setOpenKey(null); if (!selected) onChange(open.key, v); }}
                 disabled={disabled}
                 accessibilityRole="button"
