@@ -1,4 +1,4 @@
-# Idea 346: map-pin glyphs BUILT (owner approved, 2026-10-23), NOT DEVICE-VERIFIED
+# Idea 346: map-pin glyphs BUILT, ACCEPTED AS BUILT (owner, 2026-10-23), NOT DEVICE-VERIFIED
 
 **Idea "346" (states distinguished by label, icon, position, motion and colour together, never colour alone) MOSTLY MET AS BUILT,
 ASSESSED; ONE DEFECT REPORTED, not fixed.** Met (code reading): the gathering relation badge (`components/GatheringStatusBadge.js`,
@@ -26,7 +26,10 @@ bottom-centre), screen-reader labels, area pill, story pins. No new strings, mot
 `utils/mapPinGlyph.test.js` (15); `pinToSheet.test.js` colour check moved to the glyph pin; full Jest 490/6767. Risks for the phone:
 Android custom-marker bitmaps (blank/clipped emoji), redraw cost with many pins (`tracksViewChanges` left default, like story pins),
 legibility at 26 px. Phone check C25 of `FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md` + a line in the run order; the visual
-accessibility issue is NOT verified until C25 passes on a physical phone.
+accessibility issue is NOT verified until C25 passes on a physical phone. **Owner ACCEPTED AS BUILT (2026-10-23): implementation complete, device
+verification pending; no further visual changes and no map work before phone testing.** C25 gains owner focus (g)-(i): live badge
+recognizable in Grayscale by shape/position, category symbols legible at 26 px (size NOT increased before evidence), overlapping pins
+easy to select; any issue = the exact problem + the smallest targeted fix proposed before changing anything.
 
 # Idea 345 closed (owner, 2026-10-23), nothing built
 

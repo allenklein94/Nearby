@@ -105,7 +105,8 @@ A missed or lost update = Sev 1: report it; the fix is to keep the banner for th
 
 Map pin glyphs (owner, idea "346", 2026-10-23): during any visit to Discover's map, run check C25 of the first-session checklist
 (four pin types told apart without tapping, also in Grayscale; legible at phone size; stacks, callouts, business sheet, labels
-unchanged). Report readability/intuitiveness only; a fix stays on the pin glyph, never a map redesign.
+unchanged). Watch especially: the live badge in Grayscale, category symbols at 26 px, selecting overlapping pins (C25 (g)-(i)).
+Report readability/intuitiveness only; a fix stays on the pin glyph, never a map redesign. No map work before this check.
 
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
