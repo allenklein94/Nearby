@@ -466,6 +466,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
 
   const [togglingInterested, setTogglingInterested] = useState(false);
   const [showDemandDisclosure, setShowDemandDisclosure] = useState(false);
+  const [demandSharingOn, setDemandSharingOn] = useState(false);
   // Item 30: the button answers the tap at once (optimistic state; "✓ Saved" once the save returns) while the save runs; a second
   // tap is ignored until it returns (no duplicate save); a failure puts it back. The stored state stays the truth on reload.
   const [interestedPending, setInterestedPending] = useState(null);
@@ -485,9 +486,13 @@ export default function GatheringDetailScreen({ route, navigation }) {
       // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
       showSuccessToast(...interestedConfirmation(next), { undo: () => undoInterested(!next) });
       if (next) {
-        // One-time, inline (no screen): interest may feed anonymous local demand trends. Never repeats once acknowledged.
+        // One-time, inline (no screen) explanation of the OPTIONAL anonymous sharing (idea 356): shown whether or not the
+        // person opted in, worded by their current choice; acknowledging never turns sharing on. Never repeats once acknowledged.
         const prefs = await getInterestedDemandPrefs().catch(() => null);
-        if (prefs && prefs.share && !prefs.acknowledged) setShowDemandDisclosure(true);
+        if (prefs && !prefs.acknowledged) {
+          setDemandSharingOn(prefs.share === true);
+          setShowDemandDisclosure(true);
+        }
       }
       await load();
     } catch (e) {
@@ -1415,7 +1420,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 </TouchableOpacity>
               {gathering.myInterested && showDemandDisclosure && (
                 <View style={styles.pendingPanel}>
-                  <Text style={styles.pendingText}>{t('ui.gatheringDetail.demandDisclosure')}</Text>
+                  <Text style={styles.pendingText}>{t(demandSharingOn ? 'ui.gatheringDetail.demandDisclosure' : 'ui.gatheringDetail.demandDisclosureOptional')}</Text>
                   <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.lg, marginTop: spacing.sm }}>
                     <TouchableOpacity
                       onPress={() => { setShowDemandDisclosure(false); acknowledgeInterestedDisclosure(); }}

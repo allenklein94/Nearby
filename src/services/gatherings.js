@@ -470,13 +470,14 @@ export async function isGatheringInterested(gatheringId) {
   return !!data;
 }
 
-// Anonymous-demand disclosure + opt-out (profiles.share_interest_in_demand / interested_demand_disclosure_ack_at).
+// Anonymous-demand disclosure + opt-in (profiles.share_interest_in_demand / interested_demand_disclosure_ack_at). Idea 356:
+// sharing is OFF unless the person turned it on; a missing value is OFF.
 export async function getInterestedDemandPrefs() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
-  if (!userId) return { share: true, acknowledged: true };
+  if (!userId) return { share: false, acknowledged: true };
   const { data } = await supabase.from('profiles').select('share_interest_in_demand, interested_demand_disclosure_ack_at').eq('id', userId).single();
-  return { share: data?.share_interest_in_demand ?? true, acknowledged: !!data?.interested_demand_disclosure_ack_at };
+  return { share: data?.share_interest_in_demand === true, acknowledged: !!data?.interested_demand_disclosure_ack_at };
 }
 
 export async function acknowledgeInterestedDisclosure() {

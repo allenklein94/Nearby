@@ -24,7 +24,7 @@ const SENSITIVE = ['birthdate', 'gender', 'gender_hidden', 'gender_identity', 'p
 // Reviewed exceptions: each reads a profile column for a stated, aggregate or first-party reason.
 const REVIEWED = {
   get_business_insights: 'interests: top 5 interests over the business\'s own FOLLOWERS, each shared by >= demand_min_people() distinct followers (item 131 decision)',
-  get_partner_demand_signals: 'share_interest_in_demand: consent opt-out filter only, nothing returned',
+  get_partner_demand_signals: 'share_interest_in_demand: consent opt-IN filter only (missing = out, idea 356), nothing returned',
   get_business_top_members: 'display_name: members of the business\'s OWN community (first-party)',
   get_business_conversations_summary: 'display_name: a customer who messaged this business',
 };

@@ -3,7 +3,8 @@
 // qualified demand -> the host asks that business -> the business sees the request -> offers -> the host accepts -> the
 // gathering is now an actual business transaction.  Rolled back.
 // PRODUCT RULE checked on purpose (item 37, LOCKED): Interested is private. It never creates a business request, never
-// shows the interested person any business offer, and reaches a business only as an anonymous aggregate (count + category).
+// shows the interested person any business offer, and reaches a business only as an anonymous aggregate (count + category),
+// and only for someone who opted in (idea 356).
 // Disclosed: demand_min_people() (5) is lowered to 1 INSIDE the transaction (prod has 4 profiles); AI screening not included.
 const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
 import { canDo, offerLifecycleState, gatheringLifecycleState } from '../utils/objectLifecycle';
@@ -32,8 +33,10 @@ d('journey: gathering -> interested -> anonymous demand -> ask business -> offer
   update gatherings set wide_area = '40.3,-75.2', is_public = true where id = v_g;  -- the fields the app's own create flow fills from the location
   log := log || jsonb_build_array(jsonb_build_object('step','gathering_created','ok', v_g is not null));
 
-  -- 2. DISCOVERY/STATE: another person marks it Interested (private; not an attendee)
+  -- 2. DISCOVERY/STATE: another person marks it Interested (private; not an attendee). Idea 356: they turned on
+  -- anonymous local trends in Settings themselves (off by default), so the mark may reach the aggregate.
   perform set_config('request.jwt.claims', json_build_object('sub', v_fan, 'role', 'authenticated')::text, true);
+  update profiles set share_interest_in_demand = true where id = v_fan;
   perform set_gathering_interested(v_g, true);
   select count(*) into v_att from gathering_interest where gathering_id = v_g and user_id = v_fan;
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);

@@ -111,7 +111,7 @@ export default function SettingsScreen({ navigation, route }) {
   // Item 39: "Let friends know when I'm nearby" -- OFF by default; this toggle is the ONLY way to turn it on.
   const [friendNearbyOn, setFriendNearbyOn] = useState(false);
   const [friendNearbyNoLocation, setFriendNearbyNoLocation] = useState(false);
-  const [shareInterestInDemand, setShareInterestInDemand] = useState(true);
+  const [shareInterestInDemand, setShareInterestInDemand] = useState(false);
   const [showSponsoredPlaces, setShowSponsoredPlaces] = useState(true);
   const [womenMessageFirst, setWomenMessageFirst] = useState(false);
   const [intentVisibility, setIntentVisibility] = useState('nobody');
@@ -274,7 +274,7 @@ export default function SettingsScreen({ navigation, route }) {
       setDiscoveryViewStyle(data.discovery_view_style ?? 'list');
       setFriendDiscoveryViewStyle(friendViewStyle(data.friend_discovery_view_style));
       setReadReceiptsEnabled(data.read_receipts_enabled ?? true);
-      setShareInterestInDemand(data.share_interest_in_demand ?? true);
+      setShareInterestInDemand(data.share_interest_in_demand === true);
       setShowSponsoredPlaces(data.show_sponsored_places ?? true);
       setWomenMessageFirst(data.women_message_first ?? false);
       setIntentVisibility(data.intent_visibility ?? 'nobody');
