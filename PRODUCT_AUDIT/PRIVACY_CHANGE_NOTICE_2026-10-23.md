@@ -1,4 +1,4 @@
-# Terms + Privacy Policy change notice (draft, 2026-10-23) — NOT SENT
+# Terms + Privacy Policy change notice (draft, 2026-10-23) — NOT NEEDED (owner, 2026-10-23)
 
 Replaces the 2026-10-22 draft in `GOOGLE_MAPS_COMPLIANCE_AUDIT_2026-10-22.md` (never sent): one notice covering every change
 made since, so users get one email instead of three. Terms §12 / Privacy §9: notice "through the App or by email"; the app has
@@ -46,4 +46,6 @@ The Nearby team
 
 ## Sent
 
-(not sent)
+NOT NEEDED (owner, 2026-10-23): all 8 production accounts belong to the owner, so there is no other user to notify. Not sent.
+The changes are already live on the published pages; any account created later signs up under the current Terms and Privacy Policy.
+If the Terms or Privacy Policy change again after real users exist, a new notice is required.
