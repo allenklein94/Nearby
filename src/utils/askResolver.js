@@ -32,18 +32,26 @@ import { socialSignalsFromText } from '../constants/socialContext';
 import { distanceWillingnessFromText } from '../constants/distanceWillingness';
 import { transportModeFromText } from '../constants/transportMode';
 import { timeBudgetFromText } from '../constants/timeBudget';
-import { clockWindowFromText, dateAnchorFromText } from '../constants/clockWindow';
+import { clockWindowFromText, dateAnchorFromText, namedDayFromText, isThisWeekend } from '../constants/clockWindow';
 import { cuisineFromText } from '../constants/categoryTree';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
-export function dateWindowFromText(text) {
+export function dateWindowFromText(text, at = new Date()) {
   const t = String(text ?? '');
+  const now = at instanceof Date ? at : new Date();
   if (/\b(right\s+now|right\s+away|immediately|asap|as\s+soon\s+as\s+possible|now)\b/i.test(t)) return 'now';
   if (/\b(tonight|tonite|this\s+evening)\b/i.test(t)) return 'tonight';
   if (/\btomorrow\b/i.test(t)) return 'tomorrow';
   // "next weekend" has no defined meaning in this product, so it is not read as this weekend.
   if (/\bnext\s+weekend\b/i.test(t)) return null;
-  if (/\b(this\s+weekend|weekend|saturday|sunday)\b/i.test(t)) return 'weekend';
+  if (/\b(this\s+weekend|weekend)\b/i.test(t)) return 'weekend';
+  // A named Saturday/Sunday is "this weekend" only when the shared weekday rule puts it there ("next Saturday", or "Saturday"
+  // said on a Sunday, is a later week: no window). "Saturday or Sunday" (no single day) stays this weekend.
+  if (/\b(saturday|sunday)\b/i.test(t)) {
+    const day = namedDayFromText(t, now);
+    if (day) return isThisWeekend(day, now) ? 'weekend' : null;
+    return /\bnext\s+(saturday|sunday)\b/i.test(t) ? null : 'weekend';
+  }
   if (/\btoday\b/i.test(t)) return 'today';
   return null;
 }

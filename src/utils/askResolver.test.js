@@ -66,8 +66,14 @@ describe('the AI enhances, the words decide the facts', () => {
 
 describe('word rules', () => {
   it('time buckets', () => {
-    expect(['right now', 'tonight', 'tomorrow', 'this weekend', 'saturday', 'today', 'friday', 'later'].map(dateWindowFromText))
+    const WED = new Date(2026, 9, 21, 10, 0);
+    expect(['right now', 'tonight', 'tomorrow', 'this weekend', 'saturday', 'today', 'friday', 'later'].map((t) => dateWindowFromText(t, WED)))
       .toEqual(['now', 'tonight', 'tomorrow', 'weekend', 'weekend', 'today', null, null]);
+    // Owner 2026-10-23: a named Saturday/Sunday is this weekend only when the shared weekday rule puts it there.
+    const SUN = new Date(2026, 9, 25, 10, 0);
+    expect(['saturday', 'sunday', 'next saturday', 'saturday or sunday'].map((t) => dateWindowFromText(t, SUN)))
+      .toEqual([null, 'weekend', null, 'weekend']);
+    expect(dateWindowFromText('next saturday', WED)).toBeNull();
   });
   it('budget', () => {
     expect(['free', 'cheap', 'reasonably priced', 'fancy', 'nice'].map(priceLevelFromText)).toEqual(['free', '$', '$$', '$$$', null]);

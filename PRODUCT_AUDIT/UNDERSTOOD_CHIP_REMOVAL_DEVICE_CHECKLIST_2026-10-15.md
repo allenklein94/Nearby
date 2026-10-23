@@ -70,11 +70,23 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
     f. "pickleball at 7 PM" (no day): Create's When step asks (nothing selected).
     g. Typed straight into Create's own box ("tennis tomorrow at 6 pm"): Tomorrow 6:00 PM.
     h. Tap Adjust: the picker opens on the carried time; Back to What and forward again keeps it.
-    i. Named day (owner 2026-10-23, report only): "pickleball saturday at 2 pm" and "coffee friday at 9 am". Expected as built:
-       Create's When step asks for day AND time (nothing selected); the stated 2 PM / 9 AM is NOT carried, because the ask
-       carries no Create day ("saturday" reads as the weekend window, which Create has no preset for; "friday" reads as no day).
-       Record whether re-entering the day and time feels like being re-asked something Nearby knew: report only, no code change
-       unless the owner decides one.
+    i. Named weekdays (owner 2026-10-23, BUILT; rule: "Friday" = the next Friday within 7 days, today included; "this Friday" =
+       this Monday-Sunday week's, already past = nothing; "next Friday" = the following Monday-Sunday week's). Note the date the
+       phone shows against the real calendar:
+       - "pickleball saturday at 2 pm": Create's When step shows "Pick a Date" selected and the row reads that Saturday, 2:00 PM.
+         "coffee friday at 9 am" and "volleyball next wednesday at 6 pm" likewise (next Wednesday = the following week's).
+       - "pickleball saturday": the row shows that Saturday's date and "Pick a time"; Next is refused with the pick-a-time
+         message until a time is picked; the time picker opens on that day (time only) and the chosen time keeps the day.
+       - "tennis saturday at 9": the same row plus two choices, 9:00 AM and 9:00 PM; neither is selected until tapped.
+       - "coffee friday after 7": Friday's date + "Pick a time" (no 7 PM filled in). On the results, an "After 7 PM" clock chip
+         now shows (Friday anchors it) and Friday results after 7 rank first.
+       - Said on the day itself after the time has passed (e.g. "coffee <today's weekday> at 9 am" in the afternoon): Create asks
+         for day and time (nothing selected); never next week's date.
+       - "pickleball this <a weekday already past this week>": nothing carried. "saturday or sunday", "friday november 6": nothing carried.
+       - Tap Tonight / Tomorrow after a carried day: the date-only row and the 9 AM / 9 PM choices go away; Tonight/Tomorrow behave as before.
+       - Ask Nearby Businesses from "pickleball saturday at 2 pm": the day field shows the picked date (📅 that Saturday) and
+         Time 2:00 PM; the "From what you said" card shows no "This weekend" row.
+       - Screen reader on the date-only row: reads the date and "Pick a time".
 
 Known limits (disclosed): pieces past the 4-chip cap sit behind "+N" until tapped (never dropped, since the 2026-10-22 cap fix); removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,
 the learned-affinity "constrained" check), which only order results and never add a chip, filter or caption back.

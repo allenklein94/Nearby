@@ -36,7 +36,7 @@ describe('time only from explicit words', () => {
     expect(screen).toMatch(/onPress=\{\(\) => pickPreset\(p\.key\)\}/); // and the host can change it
     // The When step must be confirmed before moving on: a preset/picked time in the future (createGatheringValidation).
     const validation = require('fs').readFileSync(require('path').join(__dirname, '../utils/createGatheringValidation.js'), 'utf8');
-    expect(validation).toMatch(/if \(!f\.whenPreset \|\| !Number\.isFinite\(at\) \|\| at <= f\.now\)/);
+    expect(validation).toMatch(/if \(!f\.whenPreset \|\| f\.timeNeeded \|\| !Number\.isFinite\(at\) \|\| at <= f\.now\)/);
     expect(screen).toMatch(/stepProblems\(stepKey, validationForm\)/);
   });
 });

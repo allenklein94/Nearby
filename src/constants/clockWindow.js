@@ -106,6 +106,50 @@ export function windowPhrase(w) {
 const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
 
+// Named weekdays (owner, 2026-10-23, LOCKED rule): deterministic, from the person's own words and the device's local date only.
+//   "Friday"          -> the next Friday within 7 days, today included (said on a Friday = today).
+//   "this Friday"     -> the Friday of the current Monday-Sunday week; already past = none (never rolled forward).
+//   "next Friday"     -> the Friday of the following Monday-Sunday week.
+// None (null) when two different weekdays are named ("Saturday or Sunday"), the same day is named two ways, the words also say
+// tonight/today/tomorrow and that is a different day, or an explicit calendar date is in the words ("November 4", "11/4"):
+// a stated date is never overridden or second-guessed by the weekday. Full day names only ("sat" is also a verb).
+const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+const WEEKDAY_RE = /\b(?:(this|next)\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/g;
+const ANY_WEEKDAY_RE = /\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/;
+const MONTHS = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
+const EXPLICIT_DATE_RE = new RegExp(String.raw`\b(?:(?:${MONTHS})\.?\s+\d{1,2}(?:st|nd|rd|th)?\b|\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:${MONTHS})\b|\d{1,2}/\d{1,2}\b)`);
+
+export function namedDayFromText(text, now = new Date()) {
+  if (typeof text !== 'string' || !text) return null;
+  const t = text.toLowerCase();
+  const mentions = [...t.matchAll(WEEKDAY_RE)].map((m) => ({ mod: m[1] ?? null, day: WEEKDAYS.indexOf(m[2]) }));
+  if (!mentions.length) return null;
+  if (EXPLICIT_DATE_RE.test(t)) return null;
+  const { mod, day } = mentions[0];
+  if (mentions.some((m) => m.day !== day || m.mod !== mod)) return null;
+  const today = startOfDay(now);
+  const dow = today.getDay();
+  let date;
+  if (mod === null) date = addDays(today, (day - dow + 7) % 7);
+  else {
+    const monday = addDays(today, -((dow + 6) % 7));
+    date = addDays(monday, (day + 6) % 7 + (mod === 'next' ? 7 : 0));
+    if (date < today) return null;
+  }
+  if (/\btomorrow\b/.test(t) && date.getTime() !== addDays(today, 1).getTime()) return null;
+  if (/\b(tonight|tonite|this\s+evening|today)\b/.test(t) && date.getTime() !== today.getTime()) return null;
+  return date;
+}
+
+// True when a date is this weekend's Saturday or Sunday (on a Sunday, only today).
+export function isThisWeekend(date, now = new Date()) {
+  const today = startOfDay(now);
+  const dow = today.getDay();
+  const sat = dow === 0 ? addDays(today, -1) : addDays(today, 6 - dow);
+  const d = startOfDay(date).getTime();
+  return d >= today.getTime() && (d === sat.getTime() || d === addDays(sat, 1).getTime());
+}
+
 // { kind: 'day' | 'period', dates: [Date...] } or null. `now` only locates "today" on the calendar; it is never a start time.
 export function dateAnchorFromText(text, now = new Date()) {
   if (typeof text !== 'string' || !text) return null;
@@ -114,16 +158,13 @@ export function dateAnchorFromText(text, now = new Date()) {
   const dow = today.getDay();
   if (/\bnext\s+weekend\b/.test(t)) return null; // not defined in this product; never guessed
   const weekendWords = /\b(this\s+weekend|weekend)\b/.test(t);
-  const sat = /\bsaturday\b/.test(t);
-  const sun = /\bsunday\b/.test(t);
   const tonightOrToday = /\b(tonight|tonite|this\s+evening|today|right\s+now|now)\b/.test(t);
   // This weekend's Saturday/Sunday (on a Sunday, Saturday is already past).
   const thisSat = dow === 0 ? addDays(today, -1) : addDays(today, 6 - dow);
   const thisSun = addDays(thisSat, 1);
-  if (sat || sun) {
-    if (sat && sun) return null;
-    const day = sat ? thisSat : thisSun;
-    return day >= today ? { kind: 'day', dates: [day] } : null;
+  if (ANY_WEEKDAY_RE.test(t)) {
+    const day = namedDayFromText(t, now);
+    return day ? { kind: 'day', dates: [day] } : null;
   }
   if (weekendWords && tonightOrToday) {
     // "this weekend tonight": only a real date relationship (today IS a weekend day), else nothing is chosen.
@@ -133,6 +174,22 @@ export function dateAnchorFromText(text, now = new Date()) {
   if (/\btomorrow\b/.test(t)) return { kind: 'day', dates: [addDays(today, 1)] };
   if (tonightOrToday) return { kind: 'day', dates: [today] };
   return null;
+}
+
+// Two readings of an hour said without AM/PM that parseClock will not guess ("at 9" -> [9 AM, 9 PM]), or null. Never picks
+// one: the person chooses (Create's When step offers both). Only an "at"-style single time; a window is never a start.
+export function pointClockChoicesFromText(text) {
+  if (typeof text !== 'string' || !text) return null;
+  const m = text.toLowerCase().match(new RegExp(String.raw`\bat\s+${TIME}(?![\w:])`));
+  if (!m) return null;
+  const raw = m[1].trim();
+  if (parseClock(raw) != null) return null;
+  const hm = raw.match(/^(\d{1,2})(?::(\d{2}))?$/);
+  if (!hm) return null;
+  const h = Number(hm[1]);
+  const min = hm[2] ? Number(hm[2]) : 0;
+  if (h < 8 || h > 11 || min > 59) return null;
+  return [h * 60 + min, (h + 12) * 60 + min];
 }
 
 const sameDay = (a, b) => a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();

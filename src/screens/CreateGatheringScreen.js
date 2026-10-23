@@ -35,9 +35,10 @@ import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
 import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
+import { localDateFromKey, atMinutes } from '../utils/createStartTime';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { displayDateTime } from '../i18n/display';
+import { displayDateTime, displayWeekdayDate, displayClock } from '../i18n/display';
 import { typography, spacing, radius } from '../theme';
 
 import { NLoader } from '../motion';
@@ -170,6 +171,10 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [scheduledAt, setScheduledAt] = useState(new Date(Date.now() + 60 * 60 * 1000));
   const [whenPreset, setWhenPreset] = useState(null);
   const [showPicker, setShowPicker] = useState(false);
+  // Owner 2026-10-23: a named weekday carried from an ask with no exact time ("pickleball Saturday", "Saturday at 9"): the day
+  // is set, the time is not. `timeChoices` = both readings of an hour said without AM/PM; nothing is picked for the person.
+  const [timeNeeded, setTimeNeeded] = useState(false);
+  const [timeChoices, setTimeChoices] = useState(null);
 
   const [locationMode, setLocationMode] = useState('near_me');
   const [customLocation, setCustomLocation] = useState(null);
@@ -230,7 +235,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   // Item 82: an unfinished gathering survives a failed publish, leaving the screen and an app restart.
   const gatheringSnapshot = {
     step, stepKey: STEP_DEFS[step]?.key ?? null, title, description, interestTag, visibility, discoverable, communityId,
-    scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset,
+    scheduledAt: scheduledAt instanceof Date ? scheduledAt.toISOString() : null, whenPreset, timeNeeded,
     // A Google venue name is never kept in the device draft (Google's terms); the host's own pin and the place ID are.
     locationMode, customLocation, placeName: googlePlaceId ? null : placeName,
     locationSource, googlePlaceId, showOnMap, womenOnly, recurrenceRule, capacityOption, capacityCustom,
@@ -247,7 +252,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setTitle(d.title ?? ''); setDescription(d.description ?? ''); setInterestTag(d.interestTag ?? null);
     setVisibility(d.visibility ?? 'everyone'); setDiscoverable(d.discoverable !== false); setCommunityId(d.communityId ?? null);
     const when = d.scheduledAt ? new Date(d.scheduledAt) : null;
-    if (when && when.getTime() > Date.now()) { setScheduledAt(when); setWhenPreset(d.whenPreset ?? null); }
+    if (when && when.getTime() > Date.now() && !d.timeNeeded) { setScheduledAt(when); setWhenPreset(d.whenPreset ?? null); }
     setLocationMode(d.locationMode ?? 'near_me'); setCustomLocation(d.customLocation ?? null); setPlaceName(d.placeName ?? null);
     setLocationSource(d.locationSource ?? null); setGooglePlaceId(d.googlePlaceId ?? null);
     setShowOnMap(d.showOnMap !== false); setWomenOnly(!!d.womenOnly); setRecurrenceRule(d.recurrenceRule ?? null);
@@ -344,7 +349,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         rows={inferredRows}
         labelFor={(r) => t(`ui.gatheringForm.summary.${r.layer}`)}
         valueFor={summaryValue}
-        guidance={fromWhatYouSaidGuidance(stepKey) ? `${whenPreset ? t('ui.gatheringForm.checkTimeThenPlace') : t('ui.gatheringForm.pickTimeThenPlace')} ${t('ui.gatheringForm.changeOnStepActivity')}` : null}
+        guidance={fromWhatYouSaidGuidance(stepKey) ? `${whenPreset && !timeNeeded ? t('ui.gatheringForm.checkTimeThenPlace') : t('ui.gatheringForm.pickTimeThenPlace')} ${t('ui.gatheringForm.changeOnStepActivity')}` : null}
         onHide={() => setInferredDismissed(true)}
         settle={!fromWhatYouSaidSettled && fromWhatYouSaidSettles(stepKey, openedOnStepKey)}
         onSettled={() => setFromWhatYouSaidSettled(true)}
@@ -374,14 +379,28 @@ export default function CreateGatheringScreen({ navigation, route }) {
     if (route.params?.quickStartWhenPreset) {
       const preset = route.params.quickStartWhenPreset;
       setWhenPreset(preset);
-      // Owner 2026-10-23: an ask's exact start time comes as quickStartWhenISO beside its Tonight/Tomorrow (utils/createStartTime.js).
+      // Owner 2026-10-23: an ask's exact start time comes as quickStartWhenISO beside its preset; a named weekday with no exact
+      // time comes as quickStartDateISO alone (utils/createStartTime.js): the day is set and only the time is asked.
+      const day = localDateFromKey(route.params?.quickStartDateISO);
       if (route.params?.quickStartWhenISO) {
         setScheduledAt(new Date(route.params.quickStartWhenISO));
+      } else if (day) {
+        setScheduledAt(atMinutes(day, 12 * 60)); // the picker's starting position only; timeNeeded keeps it unpicked
+        setTimeNeeded(true);
+        setTimeChoices(Array.isArray(route.params?.quickStartTimeChoices) ? route.params.quickStartTimeChoices : null);
       } else {
         setScheduledAt(dateForPreset(preset));
       }
     }
-  }, [route.params?.quickStartWhenPreset, route.params?.quickStartWhenISO]);
+  }, [route.params?.quickStartWhenPreset, route.params?.quickStartWhenISO, route.params?.quickStartDateISO]);
+
+  function pickTimeOnDay(minutes) {
+    Haptics.selectionAsync();
+    setScheduledAt(atMinutes(scheduledAt, minutes));
+    setTimeNeeded(false);
+    setTimeChoices(null);
+    setWhenPreset('custom');
+  }
 
   // Reached from a specific CommunityDetailScreen's "Host a Gathering" entry
   // point — carries that community's context into the same one Create flow
@@ -442,6 +461,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
   function pickPreset(preset) {
     Haptics.selectionAsync();
     setWhenPreset(preset);
+    if (preset !== 'custom') { setTimeNeeded(false); setTimeChoices(null); }
     if (preset === 'custom') {
       setShowPicker(true);
       return;
@@ -498,7 +518,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
 
   // One form object for both checks: step validation (only what is needed to leave this step) and the full Publish check.
   const validationForm = {
-    title, interestTag, scheduledAt, whenPreset, locationMode, customLocation, recurrenceRule, priceLevel, durationMinutes,
+    title, interestTag, scheduledAt, whenPreset, timeNeeded, locationMode, customLocation, recurrenceRule, priceLevel, durationMinutes,
     format, effortLevel, genre, partyType, features, ageMin, ageMax, visibility, communityId, capacity: capacityValue,
     hasCommunities: loadingCommunities ? null : myCommunities.length > 0,
   };
@@ -775,7 +795,25 @@ export default function CreateGatheringScreen({ navigation, route }) {
               })}
             </View>
 
-            {whenPreset && (
+            {whenPreset && timeNeeded && (
+              <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.whenResultRow} accessibilityLabel={`${displayWeekdayDate(scheduledAt, language)}, ${t('ui.gatheringForm.alert.pickTime')}`} accessibilityRole="button">
+                <Text style={styles.whenResultText}>{displayWeekdayDate(scheduledAt, language)}</Text>
+                <Text style={styles.whenAdjustLink}>{t('ui.gatheringForm.alert.pickTime')}</Text>
+              </TouchableOpacity>
+            )}
+            {whenPreset && timeNeeded && timeChoices && (
+              <View style={styles.chipsWrap}>
+                {timeChoices.map((m) => {
+                  const label = displayClock(atMinutes(scheduledAt, m), language);
+                  return (
+                    <TouchableOpacity key={m} style={styles.presetButton} onPress={() => pickTimeOnDay(m)} activeOpacity={0.85} accessibilityLabel={label} accessibilityRole="button">
+                      <Text style={styles.presetLabel}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
+            {whenPreset && !timeNeeded && (
               <TouchableOpacity onPress={() => setShowPicker(true)} style={styles.whenResultRow} accessibilityLabel={t('ui.gatheringForm.adjustA11y')} accessibilityRole="button">
                 <Text style={styles.whenResultText}>
                   {displayDateTime(scheduledAt, language)}
@@ -786,13 +824,15 @@ export default function CreateGatheringScreen({ navigation, route }) {
             {showPicker && (
               <DateTimePicker
                 value={scheduledAt}
-                mode="datetime"
+                mode={timeNeeded ? 'time' : 'datetime'}
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 themeVariant={isDark ? 'dark' : 'light'}
-                minimumDate={new Date()}
+                minimumDate={timeNeeded ? undefined : new Date()}
                 onChange={(event, selectedDate) => {
                   setShowPicker(Platform.OS === 'ios');
                   if (selectedDate) {
+                    // A time picked for a carried day keeps that day (the picker in time mode returns hours and minutes).
+                    if (timeNeeded) { pickTimeOnDay(selectedDate.getHours() * 60 + selectedDate.getMinutes()); return; }
                     setScheduledAt(selectedDate);
                     setWhenPreset('custom');
                   }

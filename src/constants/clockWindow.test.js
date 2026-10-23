@@ -54,9 +54,11 @@ describe('date anchors: only the date the person gave, never chosen for them', (
     expect(dateAnchorFromText('Sunday this weekend', WED)).toEqual({ kind: 'day', dates: [new Date(2026, 8, 27)] });
     expect(day(dateAnchorFromText('saturday night', WED).dates[0])).toBe('9/26');
   });
-  it('on a Sunday the weekend period is what is left of it; a past Saturday is not chosen', () => {
+  it('on a Sunday the weekend period is what is left of it; "Saturday" is the coming one, "this Saturday" (past) none', () => {
     expect(dateAnchorFromText('this weekend', SUN).dates.map(day)).toEqual(['9/27']);
-    expect(dateAnchorFromText('saturday', SUN)).toBeNull();
+    // Owner 2026-10-23: a bare weekday = the next one, today included (was: none on a Sunday).
+    expect(dateAnchorFromText('saturday', SUN).dates.map(day)).toEqual(['10/3']);
+    expect(dateAnchorFromText('this saturday', SUN)).toBeNull();
   });
   it('"this weekend tonight" resolves only when today is a weekend day', () => {
     expect(dateAnchorFromText('this weekend tonight', WED)).toBeNull();

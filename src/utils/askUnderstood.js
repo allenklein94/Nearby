@@ -18,7 +18,7 @@
 // (7 PM <-> 7 AM), never to another hour; noon / midnight are remove-only. The resolver and AskBusiness read the same reading.
 import { parseAskFacets } from '../constants/askFacets';
 import { statedPartySize } from './askResolver';
-import { clockWindowFromText, dateAnchorFromText, pointClockFromText } from '../constants/clockWindow';
+import { clockWindowFromText, dateAnchorFromText, pointClockFromText, pointClockChoicesFromText, namedDayFromText } from '../constants/clockWindow';
 import { askKind } from './needAsk';
 
 export const UNDERSTOOD_WINDOWS = ['now', 'today', 'tonight', 'tomorrow', 'weekend'];
@@ -83,6 +83,28 @@ export function statedStartMinutes(classifyResult, typedText) {
   if (clock === null) return null;
   if (clock !== undefined) return clock.at ?? null;
   return pointClockFromText(typedText);
+}
+
+// The named weekday an ask establishes, for a form that holds a day (Create's When step, AskBusiness's day; owner 2026-10-23),
+// or null. The day is the shared weekday rule's (constants/clockWindow.js namedDayFromText: "Friday" = the next one, today
+// included; "this Friday" = this Monday-Sunday week's; "next Friday" = the following week's); a removed or changed WHEN carries
+// none. With it: `minutes` = the exact start (statedStartMinutes), or null; `choices` = both readings of an hour said without
+// AM/PM ("at 9" -> [9 AM, 9 PM], never one picked), only when no clock chip was removed or switched. An exact time already past
+// on that day carries NOTHING (never rolled to the next week; the form asks). Tonight / Tomorrow keep their own path.
+export function statedNamedDay(classifyResult, typedText, now = new Date()) {
+  const c = classifyResult ?? {};
+  const removed = removedUnderstood(c);
+  if (removed.has('when') || changedUnderstood(c).has('when')) return null;
+  const date = namedDayFromText(String(typedText ?? ''), now);
+  if (!date) return null;
+  const minutes = statedStartMinutes(c, typedText);
+  if (Number.isInteger(minutes)) {
+    const at = new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(minutes / 60), minutes % 60);
+    return at.getTime() > now.getTime() ? { date, minutes, choices: null } : null;
+  }
+  const raw = clockOverride(c) === undefined ? pointClockChoicesFromText(String(typedText ?? '')) : null;
+  const choices = raw ? raw.filter((m) => new Date(date.getFullYear(), date.getMonth(), date.getDate(), Math.floor(m / 60), m % 60).getTime() > now.getTime()) : [];
+  return { date, minutes: null, choices: choices.length ? choices : null };
 }
 
 // The clock reading the search really USES, or null: a window only once the words anchor it to a day (constants/clockWindow.js),

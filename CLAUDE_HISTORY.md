@@ -1,3 +1,42 @@
+# Named weekdays + exact time carried into Create, AskBusiness and search (owner, 2026-10-23; reopens the "Saturday at 2 PM" gap)
+
+Owner reopened check 18i's gap ("Saturday at 2 PM" lost its time) and ordered a narrow fix through the shared Ask reading. Owner
+decisions (same day, asked before building): (1) a bare weekday = the next occurrence within 7 days, today included; an exact
+time already past is never rolled to next week; (2) "this X" = the current Monday-Sunday week's (past = none); "next X" = the
+following Monday-Sunday week's; (3) scope = Create, AskBusiness AND search; (4) a weekday with no exact time carries the day,
+Create asks only the time (ambiguous "at 9" asks AM or PM), never a default time.
+
+Built:
+- `constants/clockWindow.js`: `namedDayFromText(text, now)` = the ONE weekday rule (above). None for two different days, the same
+  day named two ways, an explicit calendar date in the words ("November 4", "oct 3", "10/2": a stated date is never second-guessed),
+  or tonight/today/tomorrow naming a different day. Full day names only ("sat" is a verb; "fridays" = recurring). `dateAnchorFromText`
+  uses it for every weekday (was: Saturday/Sunday only, and "Saturday" on a Sunday = none; now the coming Saturday per decision 1).
+  `isThisWeekend`; `pointClockChoicesFromText` ("at 9" -> [9 AM, 9 PM], never one).
+- `utils/askResolver.js` `dateWindowFromText(text, now)`: a named Saturday/Sunday is 'weekend' only when it falls this weekend
+  ("next Saturday", "Saturday" said on a Sunday = no window; before, both were read as this weekend). "Saturday or Sunday" unchanged.
+- `utils/askUnderstood.js` `statedNamedDay(c, text, now)`: the handoff rule ({date, minutes, choices}); removed/changed WHEN = none;
+  exact time past on that day = none; choices only with no clock override, past choices dropped.
+- `utils/createStartTime.js`: a weekday = 'custom' + `quickStartWhenISO` (exact) or `quickStartDateISO` (+ `quickStartTimeChoices`).
+- `CreateGatheringScreen`: `timeNeeded` / `timeChoices`; the row shows the date + "Pick a time" (existing string), the two choices
+  as chips (formatted times), the picker opens in time mode and keeps the day; validation's existing pick-a-time rule also refuses
+  `timeNeeded`. Tonight/Tomorrow/Now clear it. Draft keeps `timeNeeded` and never restores a date-only time as picked.
+- `services/askToBusiness.js`: a weekday = `pick_date` + `prefillPickedDateISO` (local noon UTC, nightDate.js convention); no
+  "This weekend" carried row then; an exact time past on that weekday carries neither day nor time.
+- Search: inherits the anchor (clock-window fit ranking, need availability window, weather window, the clock chip's day rule):
+  "coffee friday after 7" now ranks for Friday after 7 and shows its "After 7 PM" chip.
+
+Not built (disclosed): explicit calendar dates ("Wednesday, November 4": no month/day reading exists; the weekday is then not
+used at all); a day filter for a bare "coffee friday" in search (weekdays have no dateWindow bucket; only clock windows/needs/
+weather use the day); Today in Create ("coffee today at 3 pm" still carries nothing); no WHEN chip for Monday-Friday on the
+results (so the day can't be removed there; Create's When step changes it). Tomorrow's noon / Tonight's 7 PM defaults unchanged.
+Picker starting position for a date-only day = noon (a position, not a selection; iOS needs a scroll to confirm it).
+
+Tests: new `utils/namedWeekdayStart.test.js` 28 (7 weekdays, this/next, owner's Oct 26 / Sunday examples, ambiguous/none cases,
+AM/PM choices, after/before, past times, chip AM/PM correction + removal + day change + WHEN removal, AskBusiness parity, wiring);
+updated `clockWindow.test.js` (Saturday on a Sunday), `askResolver.test.js` (fixed now; Sat/Sun window cases), validation-text
+guards in `createAssistantInference.test.js` + `gatheringInference.test.js`. Jest 486/6703 (11 todo); prod journeys 642/642 (rolled
+back). No migration, no new strings. Device check 18i rewritten.
+
 # Clock time into Create ACCEPTED + CLOSED (owner, 2026-10-23)
 
 Owner accepted the build (ee23cff1) as complete, physical-device verification pending; no further feature work unless the phone test

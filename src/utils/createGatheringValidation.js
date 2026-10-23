@@ -26,7 +26,8 @@ const CHECKS = {
   },
   when(f) {
     const at = f.scheduledAt instanceof Date ? f.scheduledAt.getTime() : new Date(f.scheduledAt).getTime();
-    if (!f.whenPreset || !Number.isFinite(at) || at <= f.now) return [{ field: 'time', code: 'pickTime' }];
+    // A named day carried with no time yet (owner 2026-10-23) is not a time: the same "pick a time" rule.
+    if (!f.whenPreset || f.timeNeeded || !Number.isFinite(at) || at <= f.now) return [{ field: 'time', code: 'pickTime' }];
     return [];
   },
   invite() { return []; }, // optional: nobody has to be invited
