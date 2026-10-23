@@ -22,10 +22,10 @@ already in place. On Discover they replace the old static tag row (Nearby / grou
 | 6 | An ask with nothing recognisable ("anything"): no chip row at all (no empty gap) | |
 | 7 | Chips text is readable from the first frame; the settle is quick and calm (no bounce, no glow, no haptic) | |
 | 8 | Run the same ask again, or tap a refinement chip: chips are already there, no replay | |
-| 9 | Chips are not tappable and never block the refinement chips or results below | |
+| 9 | (Updated 2026-10-23 to the app as built.) Under the loader the chips are not tappable. On the results each chip has ✕ (and WHEN / People / clock a tappable label): run those in the chip checklist, checks 3-16. Either way the chips never block the refinement chips or results below | |
 | 10 | Reduce Motion on: the chips appear finished at once | |
 | 11 | Light and dark mode: chips are quiet (secondary text, border), never coral | |
-| 12 | Screen reader reads the row once as a list of the labels | |
+| 12 | (Updated 2026-10-23.) Under the loader, the screen reader reads the row once as a list of the labels; on the results each chip is its own button (chip checklist check 13) | |
 | 13 | A non-English language: labels show in that language (they reuse existing translated strings) | |
 
 Coverage: `src/utils/askUnderstood.test.js` (rules, order, unknown, negation, one-play, motion budget, both surfaces wired);

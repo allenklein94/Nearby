@@ -1,12 +1,13 @@
-# Understood chips: People count + remove only (owner, 2026-10-15) device checklist
+# Understood chips: People count, remove, change (owner, 2026-10-15; change added 2026-10-20) device checklist
 
 Status: BUILT, LIVE (migration 20270306), NOT DEVICE-VERIFIED. Record device, OS, light/dark, Reduce Motion and pass/fail per check.
-Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. Remove only; no new strings; motion unchanged.
+Scope (owner): decisions 1 and 2 approved 2026-10-15; decision 3 (change) reopened narrowly 2026-10-20 (idea "307", check 16),
+the clock chip 2026-10-22 (check 17), dates 2026-10-23 (check 18j). Updated 2026-10-23 to the app as built; motion unchanged.
 
 1. Home ask "live music for 4 people tonight": the understood chips include "4 people" (existing `ui.common.count.people`).
 2. Home ask "coffee date tonight": NO people chip (a date's assumed 2 never shows). "dinner for two" shows "2 people".
-3. Each understood chip on the results carries "✕" (like the Discover category rail's selected chip). The chips under the
-   "Finding…" loader do NOT (nothing to re-run yet).
+3. Each understood chip on the results carries "✕" (like the Discover category rail's selected chip); WHEN, People and the clock
+   chip also have a separate tappable label (check 16/17). The chips under the "Finding…" loader have neither (nothing to re-run yet).
 4. Tap ✕ on "Tonight" (Home): results replace in place under the same words (box text unchanged, no keyboard, no new screen, no
    navigation animation); the Tonight chip is gone; later-dated results appear; the other chips and the refinement row are as before.
 5. Tap ✕ on "Outdoor" for "something outside right now": indoor places come back; the "Outdoor" chip is gone and does not
@@ -20,9 +21,10 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
     the request's prefilled fields).
 11. People mode opened by a people ask ("meet someone tonight"): the chips above People have NO ✕ and do nothing on tap.
 12. Motion: the chips' first settle is unchanged and does not replay after a removal; Reduce Motion = chips there at once.
-13. VoiceOver/TalkBack: each removable chip reads "{label}, selected. Tap to clear" as a button; the loader/People chips read as
-    one static label.
-14. Layout: with 4 chips + ✕ on a small phone, the row wraps cleanly (no clipping); at most 4 chips show (the existing cap).
+13. VoiceOver/TalkBack: each chip's ✕ reads "{label}, selected. Tap to clear" as a button; a changeable chip's label reads
+    "{label}. Tap to change" (check 16f); the loader/People chips read as one static label.
+14. Layout: with 4 chips + ✕ on a small phone, the row wraps cleanly (no clipping); at most 4 chips show, and a 5th or later
+    piece sits behind a quiet "+N" chip that shows the rest in place (check 17f), never dropped.
 15. Item 87 (added 2026-10-15): Home asks "coffee outside tonight for 4 people", "grab coffee outside tonight, 4 of us" and
     "coffee outdoors tonight with 4 friends" each show Coffee · Tonight · Outdoor · People; the count is 4, 4 and 5 (LOCKED rule:
     total including you; "4 friends" = four companions + you). "coffee outdoors" never shows an "Outdoors" activity chip.

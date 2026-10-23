@@ -1,3 +1,20 @@
+# First phone session plan approved + adjusted (owner, 2026-10-23)
+
+Owner approved the run order and its user-impact order with three adjustments: (1) update outdated checklist lines to the app as
+built instead of marking them skip (no app change); (2) separate setup blockers, product failures, usability concerns and
+untested flows (missing credit/keys/seed data are never failures and never pass); (3) prioritize whether a first-time person
+understands it (day/time corrections, missing or cleared info, pin accuracy, confident publish/send). Keep it focused; severity
+order; no speculative UX changes before results. Also recommended: a second run by someone unfamiliar with Nearby.
+
+Checklists updated to current behaviour (wording only): item 45 checks 9 and 12 (chips have ✕ / change labels on results, static
+under the loader); chip checklist title + scope (change reopened 2026-10-20, clock 10-22, dates 10-23), checks 3, 13, 14 (+N chip);
+item 84 check 13 and first-session C18 (a)/(b) (a named weekday is a picked date in the day field / When step, not a card row; the
+Create card labels "dinner" Restaurants: C18 now says to record the label seen rather than expect "Dinner").
+Run order rewritten: result codes PASS / FAIL / USABILITY / SETUP-BLOCKED / NOT TESTED, Sev 1-3, stop only for a blocking Sev 1;
+setup S1-S7 each mapped to the steps it blocks; session A (journey order, unchanged) + session B (new person, five plain-word
+tasks, think aloud, no help); focus questions F1-F4 answered on every run; other known risks noted only if seen (was W1-W16);
+record sheet ends with three separate lists (failures, usability, unverified). Nothing in the app changed.
+
 # Date fixes accepted; first real-phone session run order (owner, 2026-10-23)
 
 Owner accepted and closed the weekday-to-weekday correction and the year on the chip (cecb4199), device verification pending, and

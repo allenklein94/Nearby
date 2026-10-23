@@ -38,8 +38,10 @@ Locked items say "do not reopen": respect that unless the owner reopens them.
 ## Open work
 
 **Next priority (owner, 2026-10-23):** the first real-phone session, journey first, no new features:
-`PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md` (setup S1-S7, then get in -> search -> chip corrections -> Create +
-location -> Ask Nearby Businesses -> the correction story; watch list W1-W16; points at existing checks only, adds none). Not yet run.
+`PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md` (APPROVED: setup S1-S7; session A = your own run: get in -> search ->
+Create + pin -> Ask Nearby Businesses -> the correction story; session B = someone new, plain-word tasks; result codes PASS / FAIL /
+USABILITY / SETUP-BLOCKED (never a failure, stays unverified) / NOT TESTED, Sev 1-3; focus F1-F4: day/time change noticed, why a
+time is re-asked, wrong pin caught before publish, confident publish/send). Not yet run.
 Then the offer experience (`PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md`, needs Anthropic credit).
 
 **"Save for later" (owner idea "152", 2026-10-17) MET BY ITEMS 30 + 31 + Plans' "☆ Interested" row, LOCKED, nothing built:** no separate Save/bookmark state, no "You saved this" or other saved-state strings, no saved businesses/places/favourites list. Host count DECIDED (owner, 2026-10-17, LOCKED): item 139's anonymous count stays, host-only, aggregate-only (privacy bullet "Interested is private"); journey `interestedPrivacy` 12/12 under real roles, guard `interestedHostCountGuard.test.js`. NOT DEVICE-VERIFIED: items 30/31 phone checks + item 31 native review; record results and defects before closing.

@@ -23,8 +23,9 @@ Setup: Home or Discover, a typed ask, then "Ask Nearby Businesses" (shown only w
 11. Light and dark: the amber marks are readable and not mistaken for errors; longest language (de / tl) wraps cleanly.
 12. Judge on the phone whether three marks at once (check 5) feels heavy: report, don't change.
 13. (Added 2026-10-18 for owner idea "183"; item 190 placement.) "Dinner for 4 Saturday": "Ask Nearby Businesses" shows as a
-    secondary link AFTER the results, even when there are good results. Tapping it: the card shows Activity Dinner, Time Saturday,
-    People 4; no field is marked for anything the words said.
+    secondary link AFTER the results, even when there are good results. Tapping it: the card shows Activity Dinner and People 4;
+    the day field already shows 📅 that Saturday's date (updated 2026-10-23: a named weekday is a picked date, so the card has no
+    separate Time row); no field is marked for anything the words said.
 14. (Added 2026-10-18, item 190.) A public-place ask (e.g. "a park to walk my dog"): no "Ask Nearby Businesses" link anywhere in
     the results or the empty state.
 15. (Added 2026-10-20, owner idea "305".) "Dinner at Coastal Coffee at 7 for four" -> "Ask Nearby Businesses": People 4 carried,
