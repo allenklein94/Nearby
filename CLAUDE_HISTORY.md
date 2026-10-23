@@ -1,3 +1,19 @@
+# Idea 340 closed (owner, 2026-10-23), nothing built
+
+**Idea "340" ("10/10 UX: the product understands what the user is currently doing; it doesn't behave the same everywhere") MET AS
+BUILT, CLOSED, LOCKED, IMPLEMENTED BUT NOT FULLY DEVICE-VERIFIED.** Preserved: notifications quiet when the screen in front already
+shows the change (idea "338", `navigation/foregroundPresentation.js`); business replies = travel into the card on their request
+screen (item 23), the arrival pill elsewhere (items 165/166), one replaced push per request when closed (item 62); one Home animation
+per visit, none while loading (idea "207"); minute/period clocks only while focused + foregrounded, catching up on resume (items
+108/202); a touch stops item 32's scroll and taps never wait on an animation (item 20); pushes/links open on top and Back restores the
+exact prior state (`openOnTop`, idea "283"); explicit asks outrank learned history (ranking ladder). Safeguards (owner, LOCKED):
+context means the open screen, the person's explicit words and deliberate actions; never infer arrival, mood, availability or intent
+from location or behaviour (manual check-in only; item 131; item 92; idea "172"); never plans or social connections from inferred
+intent; motion only for real state changes; explicit requests outrank history; `REPLY_PILL_REPLACES_BANNER` stays false until
+device-verified on iPhone + Android. Verification: the existing checklists (incl. the run order's "Quiet-when-shown" checks 1-6), no
+duplicate tests. Owner: no further context-awareness rules unless real users demonstrate a specific problem; the first real-phone
+session stays the priority. No application code changed.
+
 # Idea 338 approved as built (owner, 2026-10-23), nothing changed in code
 
 Owner approved the foreground implementation as built; `REPLY_PILL_REPLACES_BANNER` stays false until real-device verification on
