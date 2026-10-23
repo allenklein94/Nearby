@@ -1,3 +1,23 @@
+# Idea 348 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "348" (a formal "Nearby State Dictionary" for development, with the UI generated around it) MET IN CODE, ASSESSED; a separate
+hand-written dictionary NOT recommended (master principle 2: a second representation drifts).** The dictionary already exists as the
+code's one source: `LIFECYCLE` in `utils/objectLifecycle.js` (each object's real states, CHECK-constrained or derived, and the actions
+each allows; "a state nobody stores (e.g. 'seen', 'viewed') is not invented here") + the derived-state table atop `utils/objectState.js`
+(past / upcoming / expired with the server rule each mirrors); the UI is already generated from it (`canDo`, `primaryActionFor` in
+`primaryAction.js`, `presentOffer`, `GatheringStatusBadge`, `offerProgress`, `requestTimeline.js`). Mapping of the proposed lists to the
+real states: Gathering: Draft = an on-device form draft only (`services/formDrafts.js`, never an object state); Published = upcoming;
+Interested/Attending = the VIEWER's relation, not the gathering's (`gatheringViewerState`: none / interested / requested / waitlisted /
+attending / hosting); Happening = the `timeWindowParts` phase; Completed = attended + over (item 34); Past = derived; plus cancelled.
+Request: open (= Sent; replies are a derived tally, item 160) -> fulfilled | expired | cancelled | merged; Draft none; "Searching"
+DECLINED (ideas "159"/"161"/"209": no searching state or animation). Offer: pending -> offered ("Offer sent", never "Live"/"Published",
+idea "150") -> accepted (= the booking; acceptance IS the reservation, no separate Reserved) -> completed (Redeemed) | declined | expired
+| cancelled | withdrawn; Draft DECLINED (idea "150"), Viewed DECLINED (item 89 + idea "188": viewing never makes a status). Invitation:
+pending | accepted | declined | expired, as proposed. Business opportunity: the item 48 arrival is device-local "new to this device",
+not a state; Viewed and Responding DECLINED (idea "188": no Considering/Interested business state); then item 13's Offer sent ->
+Accepted -> Redeemed. Option if a readable dictionary is wanted later: a document GENERATED from `LIFECYCLE` (+ a test that fails when
+they differ), never maintained by hand. Docs only.
+
 # Idea 347 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "347" (every object has a lifecycle, so a person can always answer "where is this thing in its lifecycle?") MET AS BUILT,
