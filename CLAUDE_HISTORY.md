@@ -1,3 +1,19 @@
+# Idea 371 assessed (owner, 2026-10-23), nothing built
+
+**Idea "371" ("weather shouldn't be its own big Home section; attach it to recommendations: Best Pick Tonight / 🌤️ Outdoor movie /
+7:30 PM · 1.2 mi / 72° · clear") MET AS BUILT, ASSESSED, recommended close, owner decision pending.** Already true (code reading):
+Home has no standalone weather/temperature section. The weather card (`homeWeatherCard`, `constants/weatherRelevance.js`) appears only
+when the forecast AT a real upcoming gathering's own start time (`utils/weatherWindow.js`) materially changes what to do: bad weather
+-> indoor options, or an exceptional outdoor window (capped once per day, item 62); never while a typed ask is on screen; its headline
+names when + why ("Rain expected tonight" / "Perfect evening for outdoor plans", item 192) and its rows are those gatherings, so the
+weather is already tied to an action; objects shown above it are removed from it (`cardWithoutIds`), Home priority `weather` before
+`bestPick`. On recommendation cards weather is a reason only when it matters (`homeRecommendations.js`: "Great weather for this" only
+when exceptional, "A good indoor option with weather coming in"; ranking ladder weather tier, below friends/time/interests); ordinary
+weather reranks silently (Recommendations convention). DECLINED: a temperature/condition line ("72° · clear") on Best Pick or cards
+(item 112 already declined filler weather; it would be a third line beside max 2 reasons + the one distance/time line, and on an
+ordinary fine evening it explains nothing about why this pick); a weather glyph replacing the category icon; retiring the card (items
+36/192 LOCKED: card-only wash, wording kept). No code, strings, motion or test. Verification stays item 36's checklist.
+
 # Idea 370 closed (owner, 2026-10-23), nothing built; live departure update stays open
 
 **Owner decision on idea "370": APPROVED as met by the existing departure behaviour, CLOSED, LOCKED, gentle fade-out DECLINED.**
