@@ -1,3 +1,13 @@
+# Idea 356 opt-in fix ACCEPTED (owner, 2026-10-23)
+
+Owner accepted the implementation (migration 20270340, consent log, opt-in defaults, aggregation safeguards, privacy policy, test
+results) as meeting the approved requirements. Idea 356 = implemented + closed; no further code unless verification finds an actual
+defect; no expansion. Pending: run order "Interested sharing" checks 1-4 on a real phone (sharing starts OFF in Settings; the
+first-Interested explanation is understandable and appears regardless of consent; Got it never enables sharing; host tells
+Interested from Attending without identities) and native review of `demandDisclosureOptional` in 10 languages (must say sharing is
+optional and off unless turned on). Known limitation kept on record: the new journey does not reproduce the old default-counts bug
+(it fails on the old DB only because the consent table is missing). Next priority: the first real-phone session.
+
 # Idea 356 opt-in fix built + live (owner-approved 2026-10-23); idea 356 CLOSED, LOCKED
 
 **Problem (found 2026-10-23):** a missing choice counted as consent: `profiles.share_interest_in_demand` defaulted TRUE and the one

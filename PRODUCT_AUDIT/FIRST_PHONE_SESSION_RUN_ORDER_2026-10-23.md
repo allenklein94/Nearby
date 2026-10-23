@@ -127,6 +127,16 @@ Host watch (owner, idea "356", 2026-10-23; observation only): as host, open a ga
 joined. Can the host immediately tell people who are interested from people who have committed to attend (the "☆ N people are
 interested but haven't joined yet" line vs the attending count)? Record any moment they read Interested as confirmed attendance.
 
+Interested sharing checks (owner, idea "356", 2026-10-23; migration 20270340; result codes as above):
+1. On a fresh account, Settings > "Include my "Interested" in anonymous local trends" is OFF.
+2. Tap Interested on a public gathering for the first time: the explanation appears (with sharing off: "…It's off unless you turn
+   it on in Settings."), and the person can say in their own words that sharing is optional and off. Repeat on an account that
+   turned sharing on first: the explanation appears with the opted-in wording.
+3. Tap Got it, then open Settings: the switch is still OFF (Got it never enables sharing). "Change in Settings" opens Settings
+   without changing the switch.
+4. As host (= the host watch line above): Interested and Attending read as different numbers; no interested person's name, photo
+   or list is visible anywhere.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google
