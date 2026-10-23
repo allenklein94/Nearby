@@ -1,3 +1,15 @@
+# Idea 355 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "355" (Interested as a real mechanic: "I'm considering this, not committing yet"; host sees "3 interested / 4 attending";
+one-tap Interested -> Attending) MET AS BUILT, ASSESSED, recommended close, no new rule.** Interested already means the private maybe
+(items 30/31/139, idea "345") and is the ONE saved state, never a second like (idea "152"). Host view (`HostCommandCenter` on
+GatheringDetail) shows "☆ N people are interested but haven't joined yet." (`ui.gatheringDetail.interestedCount`, via host-checked
+`get_gathering_interested_count`, item 139) alongside the attending figure (host included, `attendingFigure`). Conversion: the person's
+own one tap Join from Interested -> "★ ~~Interested~~ → ✓ Attending" (item 31, `interestedToAttendingMoment`; Request to Join when the
+gathering needs approval, item 140); nudges come from the person's own side (starts-soon reminder, friend-joined push). Kept (LOCKED):
+the count is anonymous and host-only (never names, never on public cards or detail, item 138's Going/Interested split DECLINED); no
+"Invite interested people?" (acting on it would reveal who, item 139). Verification = items 30/31 phone checks + item 31 native review. Docs only.
+
 # Idea 354 closed (owner, 2026-10-23), nothing built, phone verification pending
 
 **Idea "354" (one gathering = one living object) MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no new rule, no application code.**
