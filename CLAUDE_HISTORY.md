@@ -1,4 +1,4 @@
-# Idea 346 assessed (2026-10-23), nothing built, owner decision pending (one defect reported)
+# Idea 346: map-pin glyphs BUILT (owner approved, 2026-10-23), NOT DEVICE-VERIFIED
 
 **Idea "346" (states distinguished by label, icon, position, motion and colour together, never colour alone) MOSTLY MET AS BUILT,
 ASSESSED; ONE DEFECT REPORTED, not fixed.** Met (code reading): the gathering relation badge (`components/GatheringStatusBadge.js`,
@@ -16,7 +16,17 @@ tap; screen readers get distinct labels (`gatheringLiveA11y`, `dealAtA11y`), sig
 red-green confusion; amber perk vs orange `#E8A87C` category pin is close for anyone). Not fixed: item 120 keeps the red pins "their
 own rule", so a fix needs the owner. Narrowest fix to propose: a custom marker carrying the existing glyph (Live now = the existing
 "Live now" mark, perk 🎁, gathering its category icon, business its own) with colour kept; no new strings, no motion; item 120's pill and
-`isMapLiveNow` unchanged. Not phone-verified (a phone check of the map was already in item 120's checklist). Docs only.
+`isMapLiveNow` unchanged. **Owner APPROVED the fix (2026-10-23) and it is BUILT, NOT DEVICE-VERIFIED:** `utils/mapPinGlyph.js` (one rule:
+gathering = category icon, live = same icon + 🔴 badge from "🔴 LIVE NOW", perk = 🎁, business = 🏪; all glyphs Nearby already uses)
++ `components/MapGlyphPin.js` (round head in the pin's colour with a white rim, glyph inside, short tail whose point is the coordinate;
+static, glyphs not font-scaled, hidden from screen readers) drawn as the Marker child for gathering, perk and business pins in
+`GatheringsMapView.js`. Kept: colours (live `#e63946`, category colours, perk `#f59e0b`, `BUSINESS_PIN_COLOR`), `isMapLiveNow`,
+`stackGatheringPins` placement, callouts and taps, item 44's `pinSpot` (head centre = tail 5 + head 26/2 = `PIN_HEAD_LIFT` 18, anchor
+bottom-centre), screen-reader labels, area pill, story pins. No new strings, motion, screens or map features. Guard
+`utils/mapPinGlyph.test.js` (15); `pinToSheet.test.js` colour check moved to the glyph pin; full Jest 490/6767. Risks for the phone:
+Android custom-marker bitmaps (blank/clipped emoji), redraw cost with many pins (`tracksViewChanges` left default, like story pins),
+legibility at 26 px. Phone check C25 of `FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md` + a line in the run order; the visual
+accessibility issue is NOT verified until C25 passes on a physical phone.
 
 # Idea 345 closed (owner, 2026-10-23), nothing built
 

@@ -84,7 +84,7 @@ describe('scope', () => {
     expect(sheet).toMatch(/\{fromPin && pin && sheetRect \? <PinToSheetFrame/);
   });
   test('the pin colour has one source shared by the map and the frame', () => {
-    expect(map).toMatch(/pinColor=\{BUSINESS_PIN_COLOR\}/);
+    expect(map).toMatch(/<MapGlyphPin kind="business" color=\{BUSINESS_PIN_COLOR\} \/>/);
     expect(map).not.toMatch(/#5B9AA0/);
   });
 });

@@ -9,6 +9,14 @@ import { BUSINESS_PIN_COLOR } from '../motion/PinToSheetFrame';
 import { PIN_HEAD_LIFT } from '../motion/pinToSheet';
 import { isMapLiveNow } from '../utils/rightNowWindow';
 import { stackGatheringPins } from '../utils/mapPinStacks';
+import MapGlyphPin from './MapGlyphPin';
+
+// Pin colours (unchanged by idea "346"; each pin now also carries its type's glyph, components/MapGlyphPin.js).
+const LIVE_PIN_COLOR = '#e63946';
+const PERK_PIN_COLOR = '#f59e0b';
+// A glyph pin's point is the coordinate (bottom-centre), like the standard pin it replaced.
+const PIN_ANCHOR = { x: 0.5, y: 1 };
+const CALLOUT_ANCHOR = { x: 0.5, y: 0 };
 
 // Shows gatherings, brand deals, businesses, and public stories together
 // on one map. Gatherings use fuzzed_lat/fuzzed_lng (server-computed from
@@ -95,9 +103,11 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
           <Marker
             key={`gathering-${g.id}`}
             coordinate={{ latitude, longitude }}
-            pinColor={live ? '#e63946' : categoryStyle.color}
+            anchor={PIN_ANCHOR}
+            calloutAnchor={CALLOUT_ANCHOR}
             accessibilityLabel={t(live ? 'ui.mapView.gatheringLiveA11y' : 'ui.mapView.gatheringA11y', { title: g.title, name: g.host?.display_name ?? '' })}
           >
+            <MapGlyphPin kind="gathering" live={live} categoryIcon={categoryStyle.icon} color={live ? LIVE_PIN_COLOR : categoryStyle.color} />
             <Callout onPress={() => onSelectGathering(g)} tooltip={false}>
               <View style={styles.calloutCard}>
                 {live && <Text style={styles.liveBadge}>{t('ui.mapView.liveNow')}</Text>}
@@ -116,9 +126,11 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
         <Marker
           key={`deal-${d.id}`}
           coordinate={{ latitude: d.latitude, longitude: d.longitude }}
-          pinColor="#f59e0b"
+          anchor={PIN_ANCHOR}
+          calloutAnchor={CALLOUT_ANCHOR}
           accessibilityLabel={t('ui.mapView.dealAtA11y', { name: d.brand_partners?.name, title: d.title })}
         >
+          <MapGlyphPin kind="perk" color={PERK_PIN_COLOR} />
           <Callout onPress={() => onSelectDeal(d)} tooltip={false}>
             <View style={styles.calloutCard}>
               <Text style={styles.calloutTitle} numberOfLines={1}>🎁 {d.title}</Text>
@@ -135,13 +147,15 @@ export default function GatheringsMapView({ gatherings, deals = [], businesses =
         <Marker
           key={`business-${b.id}`}
           coordinate={{ latitude: b.latitude, longitude: b.longitude }}
-          pinColor={BUSINESS_PIN_COLOR}
+          anchor={PIN_ANCHOR}
           accessibilityLabel={t('ui.mapView.businessA11y', { name: b.name })}
           accessibilityRole="button"
           // Items 17-19: a business pin opens the business sheet in one tap (the sheet is its quick look; no label step first).
           // Item 44: the sheet opens at once and grows out of this pin once its spot is known.
           onPress={() => onSelectBusiness(b, pinSpot({ latitude: b.latitude, longitude: b.longitude }))}
-        />
+        >
+          <MapGlyphPin kind="business" color={BUSINESS_PIN_COLOR} />
+        </Marker>
       ))}
       {pinnableStories.map((s) => (
         <Marker
