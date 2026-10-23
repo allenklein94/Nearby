@@ -1,3 +1,15 @@
+# Idea 362 closed (owner, 2026-10-23), nothing built
+
+**Idea "362" ("three friends accept, their avatars assemble around the gathering card: the plan is becoming real") MET AS BUILT
+by items 28 + 73, CLOSED, LOCKED.** Kept: on the host's GatheringDetail several joins assemble into Who's going's cluster (same
+update = faces flow in together, `CountRoll` once, named line; "{Name} accepted your invite" only for the host's own accepted
+invite); joins within 10 s = first full, rest small in place (item 73, `JOIN_QUIET_MS`); idea "207" + `motionBudget.js` limits.
+DECLINED: faces assembling around Home or Discover cards (cards and lists stay static, items 15/111, idea "357"; other viewers see
+counts on refresh, never live social proof, item 116); an accepted invite that is not a join shows no face (idea "361"). Preserved:
+joining a gathering != a fully confirmed plan; item 25's "plan comes together" plays only on `isPlanFullyConfirmed`, never from an
+attendee-count change. No code, animations, events or screens. Verification: item 28's existing checks 15-17 (no new tests).
+Owner direction: the motion system is frozen until phone testing reveals an actual usability issue. Next: the first real-phone session.
+
 # Idea 361 closed (owner, 2026-10-23), nothing built
 
 **Idea "361" ("the animation says this person was added to this plan, not just button clicked") MET AS BUILT, CLOSED, LOCKED.**
