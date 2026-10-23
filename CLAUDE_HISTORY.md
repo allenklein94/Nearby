@@ -1,3 +1,18 @@
+# Idea 350 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "350" (Nearby as four layers: Intent -> Resolution -> State -> Outcome, the UI making them understandable) MET AS BUILT,
+ASSESSED, recommended close; no new architecture, layer registry or rule (it would be a second representation of the ones below).**
+Intent = "What do you want to do nearby?" (doctrine), the ONE resolver `resolveAsk` / `classifyCreateRequest`, `temporary_intent` in
+`NEARBY_PIPELINE` (`constants/nearbyOntology.js`), item 45's understood chips showing what was read; facts only from the words.
+Resolution = the same pipeline's eligibility -> ranking stages (`signalPriority.js` ladder, `compareRanked`), Discover / Home results,
+Create it / Ask Nearby Businesses (business routing kept separate), People only for people asks (item 86), never pairing strangers
+(item 92). State = `LIFECYCLE` + `objectState.js` (idea "348"), `primaryActionFor`, each object's stage on its own card (idea "347"),
+motion only on its transitions (idea "349"). Outcome = only what really happened: business-confirmed visit (item 52, "✓ Visit
+confirmed"), confirmed perk redemption, gathering check-in in its window (manual, never inferred), attended + over -> Completed (item
+34), "How was it?" (item 35), "N plans this month" counting only happened plans (item 53), value only from redeemed offers (idea
+"343"); never location-inferred arrival (Option B deferred), never estimated revenue. North star kept: idea "171"'s chain. Verification
+= the first real-phone session (session B's closing question tests State/Outcome readability). Docs only.
+
 # Idea 349 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "349" (animations assigned to state transitions, never to screens, to prevent animation bloat) MET AS BUILT, ASSESSED,
