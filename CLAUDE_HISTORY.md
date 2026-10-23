@@ -1,3 +1,21 @@
+# Idea 360 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "360" ("Bring friends into the plan": Invite -> compact sheet, closest relevant friends first, tap Claude, avatar settles
+into the attendee preview, invite sent) ASSESSED.** Met: Invite on GatheringDetail opens `InviteFriendsModal`, a bottom sheet over
+the gathering (idea "224"; no People screen), listing accepted friends (`getMyFriends`), one Invite per row; on the server's success
+the row reads "Sent", one success haptic, toast "Invitation sent to {name}" (item 135, `inviteSentConfirmation`); the RPC
+`invite_friend_to_gathering` enforces friendship, blocks both ways, women-only and the host's allow-attendee-invites switch; a
+share link covers non-users (item 72). Recommend declining the avatar flying into the attendee preview: an invited friend is not
+going, so moving their face into Who's going would show a state the data doesn't have (motion amplifies correct data, never
+claims a server fact early); item 135 already declined avatar travel Friends -> Invited; the real moment is item 28's flow-in when
+they accept ("{Name} accepted your invite", host's own invite only). Not built: "closest relevant friends first": the list is in
+the friendships query's database order (no ranking at all); choosing a ranking (recent contact, shared declared interest, mutual
+attendance) is a new decision, recommend deciding from the phone session (watch: is the right friend easy to find?). Gap found by
+code reading (not fixed): the sheet resets every row to Invite on open and never reads attendance or existing invites, so it can
+offer Invite for a friend already going or already invited (a primary-action truth gap, master principle 1); friends ineligible
+for a women-only gathering are listed and refused only after the tap. A fix would read existing state (attendees + this
+gathering's social_invites) into the rows; not built without the owner's go. Docs only.
+
 # Idea 359 closed (owner, 2026-10-23), nothing built
 
 **Idea "359" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), request-level Interested DECLINED, no application code.** Preserve:
