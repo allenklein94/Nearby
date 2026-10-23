@@ -1,3 +1,19 @@
+# Idea 339 closed (owner, 2026-10-23), met by idea 338, nothing built
+
+**Idea "339" ("same with offers: if the user is sitting on the request, 'New offer from Coastal Coffee' appears directly; no redundant
+push") MET BY IDEA "338", CLOSED, LOCKED.** Coverage checked against the code: (1) the offer appears directly: the arrival controller
+(`services/offerArrivals.js`) sees a new reply on the request in front (`isViewingRequest`), reloads that screen
+(`emitViewedArrival` -> `BusinessRequestDetailScreen` `load()`) and the reply travels into its card (item 23); (2) no pill for the
+request on screen (item 165); (3) no banner and no sound: idea "338" rule 1 (`navigation/foregroundPresentation.js`) for
+`business_offer_received` on `BusinessRequestDetail` with the same requestId, ONLY when the controller's `claim` returns 'viewed'.
+Safeguards/fallbacks kept: not started / no baseline (just back from background) / failed look / > 1.5 s / error / another request
+= the normal banner; `REPLY_PILL_REPLACES_BANNER` stays false. Not gaps, by design: the push is still SENT (the server cannot know
+the screen; it stays in the phone's list, counts in the badge, and is what reaches a closed app); a business revising
+(`business_offer_revised`) or withdrawing (`business_offer_withdrawn`) an offer keeps its banner on that screen (live update not
+confirmed; widening needs phone evidence, owner: no more notification features). No duplicate logic, animation or UI. Verification
+= `PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md` "Quiet-when-shown" checks 1(c), 4 and 5. The first real-phone session
+stays the priority.
+
 # Idea 341 closed (owner, 2026-10-23) + best-opportunity wording fixed
 
 **Idea "341" (business Home = "People are looking for these things right now: Coffee 8 / Dinner 5 / Live music 3 ... you can respond")
