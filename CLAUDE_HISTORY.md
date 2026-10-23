@@ -15,7 +15,7 @@ and approved the single call; no broad permission rule added). Production result
 - cron job 119 `purge-expired-sightings` `*/10 * * * *`, active; first run 05:20:00 UTC status succeeded, "1 row";
 - sightings 1 (expired) -> 0; `crossed_paths_sighting` pushes 0 -> 0; push_outbox total 1 -> 1 (no unintended notifications).
 
-Privacy Policy (`docs/privacy.html`) corrected to the implementation: §3 removes "accurate to roughly 11 meters" (that figure was the
+Privacy Policy (`docs/privacy.html`) corrected to the implementation: §2 removes "accurate to roughly 11 meters" (that figure was the
 client's 4-decimal presence rounding, `coarseAreaLabel`, held one row per person in `presence_reports` and purged after 1 h by job 53);
 the crossing record keeps only `private.location_pin`'s point inside a fixed 0.007 deg cell (described as "several hundred meters
 across", never as an accuracy promise); expires 48 h after the last crossing, hidden then deleted (checked every 10 min); a later

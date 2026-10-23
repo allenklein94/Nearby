@@ -19,7 +19,7 @@ decides compliance.
 | Privacy Policy: location + search words sent to Google | DONE (`docs/privacy.html` section 4, Last updated October 22, 2026) |
 | Terms/Privacy change notice per Terms section 12 | Notice text drafted (below); NOT SENT (outward; the app has no in-app notice mechanism) |
 
-**Change notice (draft, for the owner to send by email to each account holder; Terms 12 / Privacy 9 say "through the App or by email"):**
+**SUPERSEDED by `PRIVACY_CHANGE_NOTICE_2026-10-23.md` (one combined notice).** **Change notice (draft, for the owner to send by email to each account holder; Terms 12 / Privacy 9 say "through the App or by email"):**
 
 > Subject: Updates to Nearby's Terms of Service and Privacy Policy
 >
