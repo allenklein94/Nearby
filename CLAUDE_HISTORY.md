@@ -24,9 +24,10 @@ per visit (idea "207"), 900 ms cap below the signature (`motionBudget.js`), moti
 no screen-wide motion on offer screens. Not verified that it feels calm on a phone: the run order's moments watch (idea "352") +
 offer checklist section 4 "Signature length" cover it; no new check. No code, rule, animation or test; motion system FROZEN.
 
-# Invites never grow the gathering (owner, 2026-10-23), nothing built
+# Idea 369 "pull together" declined (owner, 2026-10-23), nothing built
 
-**Proposal (owner, 2026-10-23; no idea number given): after the host invites friends, the gathering card expands / grows as if the
+**Idea "369" ("pull together": "Dinner tonight" + invites to three friends -> the card grows into "4 people", the plan becoming
+real; the owner's decision was recorded before the number arrived): after the host invites friends, the gathering card expands / grows as if the
 plan were filling up. DECLINED; the rest MET AS BUILT, CLOSED, LOCKED.** Owner principle: invited does not mean attending; Nearby
 never suggests a gathering has four confirmed participants because three friends received invitations. Only confirmed attendees
 count toward attendance, host included (`attendingFigure`). Kept as built: invitation sent = the invite sheet's "✓ Sent" row after

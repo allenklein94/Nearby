@@ -127,7 +127,7 @@ Host watch (owner, idea "356", 2026-10-23; observation only): as host, open a ga
 joined. Can the host immediately tell people who are interested from people who have committed to attend (the "☆ N people are
 interested but haven't joined yet" line vs the attending count)? Record any moment they read Interested as confirmed attendance.
 
-Invite watch (owner, 2026-10-23; observation only, alongside C26): as host, invite three friends from the gathering's invite
+Invite watch (owner, idea "369", 2026-10-23; observation only, alongside C26): as host, invite three friends from the gathering's invite
 sheet. Does the host clearly understand the invitations were SENT but attendance has NOT increased yet (rows "Sent", attending count
 unchanged until someone really joins)? Record any moment they read an invite as a confirmed attendee. Unclear = report the exact
 wording or spot; never propose card growth or invite-driven motion.
