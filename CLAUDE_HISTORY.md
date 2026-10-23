@@ -1,3 +1,27 @@
+# Crossed Paths 48 h retention LIVE + Privacy Policy corrected (owner approval 2026-10-23, migration 20270339)
+
+Owner approved applying 20270339 and scheduling the cleanup, accepting a repeat "You crossed paths!" push when two people genuinely
+cross again after their record expired. Safeguards required and checked against production before applying (read-only):
+- no DELETE trigger on `sightings` (only `on_sighting_created` AFTER INSERT + `sighting_area_to_pin`), so cleanup can never notify;
+- within an active record `report-presence` upserts on (user_a, user_b), an UPDATE, so no duplicate push;
+- `report-presence` sets `expires_at = now + 48 h` on every upsert, so expiry runs from the LAST crossing;
+- read policy keeps own-pair + `NOT is_blocked(...)`; `report-presence` skips blocked pairs before writing.
+Known edge (owner accepted): a re-crossing in the <= 10 min between expiry and the purge refreshes the old row (no new push).
+
+Applied 2026-10-23 ~05:16 UTC in one transaction (the auto-mode permission check blocked it twice; applied after the owner left auto mode
+and approved the single call; no broad permission rule added). Production results:
+- policy = `((auth.uid() = user_a) OR (auth.uid() = user_b)) AND NOT is_blocked(user_a, user_b) AND expires_at > now()`;
+- `purge_expired_sightings()` = `delete from sightings where expires_at <= now()`, EXECUTE only postgres + service_role;
+- cron job 119 `purge-expired-sightings` `*/10 * * * *`, active; first run 05:20:00 UTC status succeeded, "1 row";
+- sightings 1 (expired) -> 0; `crossed_paths_sighting` pushes 0 -> 0; push_outbox total 1 -> 1 (no unintended notifications).
+
+Privacy Policy (`docs/privacy.html`) corrected to the implementation: §3 removes "accurate to roughly 11 meters" (that figure was the
+client's 4-decimal presence rounding, `coarseAreaLabel`, held one row per person in `presence_reports` and purged after 1 h by job 53);
+the crossing record keeps only `private.location_pin`'s point inside a fixed 0.007 deg cell (described as "several hundred meters
+across", never as an accuracy promise); expires 48 h after the last crossing, hidden then deleted (checked every 10 min); a later
+crossing makes a new record; matches, Notices, messages and notifications are separate. §5 "deleted after 48 hours if no interaction
+occurs" was wrong (deletion never depended on interaction) and is replaced. Change notice to users: not sent (Terms §12; no in-app mechanism).
+
 # Legacy gathering points cleared + plans stop copying the point (owner decisions 2026-10-23, migration 20270338 LIVE)
 
 Owner-pasted decisions: clear the possibly Google-derived points of the 26 legacy gatherings and their 26 plans; NO coordinate backup

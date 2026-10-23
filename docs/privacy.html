@@ -31,7 +31,7 @@ Identity verification (optional): if you choose to verify your identity, we coll
 <p><strong>Optional profile details:</strong> if you choose to provide them, we collect your pronouns, gender identity, sexual orientation, and interests to help you express yourself and find more relevant connections. These fields are entirely optional — you are never required to fill them in, and you may leave them blank or remove them at any time.</p>
 Location information: Nearby uses your device's location for two different features, which handle location differently:
 
-For "Crossed Paths" matching: we only ever store a coarse, rounded approximation of your location (accurate to roughly 11 meters) — never your exact coordinates, and never a history or trail of your movements. This coarse location data is automatically deleted after one hour. Records of a "crossed paths" event between two users are automatically deleted after 48 hours.
+For "Crossed Paths" matching: to detect when two users are near each other, the App sends a rounded version of your current location. We keep only your most recent one, never a history or trail of your movements, and it is deleted automatically after one hour. When two users cross paths, the record of it does not contain either person's actual location: it keeps only an approximate area, a point our servers place somewhere inside a fixed grid area several hundred meters across, so it does not show where either of you actually was. A crossed-paths record expires 48 hours after the last time the two users were near each other: from then it is no longer shown to either of you, and it is deleted automatically (checked every 10 minutes). If you cross paths again later, a new record is created. Matches, Notices, messages and notifications you already received are separate and are not deleted with it.
 
 For hosting a Gathering: when you create a Gathering, we store the meeting point you choose: a spot you place on the map yourself, or your device's location at that moment if you choose to use it. People browsing nearby see only an approximate distance (e.g., "About 2 mi away") and, if you show the Gathering on the map, an approximate pin, never the exact point. The exact meeting point is shown only to you and to the people you approve to attend, so they can find it and get directions. This location is retained for as long as the Gathering exists, and is deleted if you delete the Gathering or your account. If you ask local businesses to help with a Gathering, that request keeps the meeting point so nearby businesses can be matched; it is deleted with your account.
 <p><strong>Usage information:</strong> we keep records of notices sent, matches made, and messages exchanged, for as long as your account is active, so the App can function.</p>
@@ -62,8 +62,8 @@ For hosting a Gathering: when you create a Gathering, we store the meeting point
 
 <h2>5. Data Retention</h2>
 <ul>
-  <li>Coarse location data used for matching is deleted automatically after 1 hour.</li>
-  <li>Records of a crossed-paths event are deleted automatically after 48 hours if no interaction occurs.</li>
+  <li>The rounded location used to detect crossed paths is deleted automatically after 1 hour.</li>
+  <li>A crossed-paths record expires 48 hours after the two users were last near each other; it is then hidden and deleted automatically within about 10 minutes. Matches, Notices, messages and notifications are separate records and are not affected.</li>
   <li>Messages and match history are retained while your account is active.</li>
   <li>If you delete your account, we delete your profile information, photo(s), and associated data, except where retention is required for legal or safety reasons.</li>
 </ul>
