@@ -1,3 +1,14 @@
+# Idea 359 closed (owner, 2026-10-23), nothing built
+
+**Idea "359" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), request-level Interested DECLINED, no application code.** Preserve:
+request cards with the actual activity, party size, date, time and (from a gathering) capacity; business demand counts from distinct
+people with real open requests (>= 5); the separate anonymous gathering-interest count from explicitly opted-in people only (>= 5,
+idea "356"); the host's own anonymous Interested count on their gathering (item 139). Decline: Interested counts on individual
+business requests; gathering-specific Interested counts to businesses; combining social interest with active request demand;
+Interested marks inflating party size, attendance, popularity or request counts. Both demand signals stay separate, truthful and
+privacy-protected. Owner: ideas "356"-"359" form one consistent rule set on interest, commitment, attendance and business demand; not
+reopened unless real testing uncovers a problem. Docs only.
+
 # Idea 359 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "359" (business sees "Coffee request · 4 people · Tonight", then "5 people interested": demand is real, people are forming
