@@ -1,3 +1,15 @@
+# Idea 360 backend verified by from-scratch replay (2026-10-23)
+
+Owner approved the Invite sheet implementation (Idea 360 stays CLOSED, LOCKED; no further sheet changes) and asked for the replay.
+Isolated replay (`scripts/replay/from-scratch-replay.sh`, internal Docker network, no route out, never production): **465/465
+migrations apply** incl. 20270341; journey fixtures loaded; **journeys 656/656 on the rebuilt DB** (incl. `inviteSheetStates` 6/6
+and the updated `notificationEvents`); `booking-capacity-concurrency` and `offer-revision-concurrency` pass; an ad-hoc real-concurrency
+check (3 simultaneous connections inviting the same friend, 10 rounds) = always exactly one invite and two refusals
+`invite_state:invited`; **grants replay = prod 3130/3130** (`grants-snapshot.sql`; `private._gathering_invitee_state` has no client
+grant on either); `pg_get_functiondef` of the 3 invite functions identical (md5) on prod and replay. Container removed.
+Empty-state wording ("No friends to invite yet" when every friend is ineligible) DEFERRED by the owner to the phone session (C26), no
+new string. App NOT DEVICE-VERIFIED (C26). Next: the first real-phone session.
+
 # Idea 360 closed with a narrow Invite sheet fix (owner, 2026-10-23, option b)
 
 **Owner approved option (b):** keep `InviteFriendsModal` and its presentation; fix the wrong Invite actions found in the assessment.
