@@ -290,6 +290,8 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Four layers: Intent -> Resolution -> State -> Outcome (owner idea "350", 2026-10-23) MET AS BUILT, ASSESSED, recommended close, owner decision pending, nothing built, no new architecture:** Intent = one resolver + item 45 chips; Resolution = `NEARBY_PIPELINE` eligibility -> ranking (`signalPriority.js`); State = `LIFECYCLE`/`objectState.js` (ideas "347"-"349"); Outcome = only real confirmations (items 52/34/35/53, check-in, idea "343"), never inferred arrival or estimated revenue.
 
+**"Less unnecessary navigation", not "less screens" (owner idea "351", 2026-10-23) MET AS BUILT, ASSESSED, recommended close, owner decision pending, nothing built, no new rule:** item 45's ladder + Rule 14 + Back restores state (idea "283") + ideas "221"-"223"/"232"/"249"; counterweights items 31/110, idea "225", See-all management exception kept.
+
 **Stated time carried into a business request (owner idea "305", 2026-10-20, approved narrow fix) is BUILT, NOT DEVICE-VERIFIED until** check 15 of the item 84 checklist passes on a real phone: a clock time the words state ("at 7" = 7 PM via `pointClockFromText`) fills AskBusiness's optional Time field (`askBusinessParamsFromAsk` -> `prefillStartMinutes` -> `startTimeFromMinutes`), ambiguous ("at 9") stays empty, the missing day is still asked, nothing changes in search; journey `statedTimeHandoff` 3/3, prod journeys 562/562, Jest 478/6555 (no migration, no new strings). Business-name recognition ("Coastal Coffee") DEFERRED until AI-enabled testing with seeded businesses.
 
 **Clock-time chip (owner idea "306", 2026-10-22, reopened narrowly) is BUILT, LIVE, NOT DEVICE-VERIFIED until** check 17 of

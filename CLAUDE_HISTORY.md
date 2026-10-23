@@ -1,3 +1,15 @@
+# Idea 351 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "351" ("less unnecessary navigation", not "less screens": default = stay where you are, expand what you need, preserve
+context; sometimes a dedicated screen is best) MET AS BUILT, ASSESSED, recommended close, no new rule or rewording:** exactly item 45's
+screen-reduction ladder (same job = same screen; change content > expand inline > sheet > dedicated screen for an entity, distinct
+workflow, management, communication or transaction) + Rule 14 (a dedicated screen needs its registered job A-F, `screenRegistry.js`,
+guard `screenRegistry.test.js`) + "Back restores the exact prior content state" (idea "283", `openOnTop`) + ideas "221"-"223" (don't
+navigate for more of the same; new screen when the job changes), "232" (every navigation has a cognitive cost), "249" ("less
+screens" = "less work"; tap-count metric declined). Counterweights kept: item 31 (one inline expansion per surface), item 110 + "Home
+never expands sections in place" (Home = doors), idea "225" (sheets never mini-apps), the See-all management exception (Home -> Plans).
+Verification = the first real-phone session (where navigation feels like a burden, e.g. ideas "314"/"315"'s watch line). Docs only.
+
 # Idea 350 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "350" (Nearby as four layers: Intent -> Resolution -> State -> Outcome, the UI making them understandable) MET AS BUILT,
