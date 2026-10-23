@@ -374,7 +374,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
     if (route.params?.quickStartWhenPreset) {
       const preset = route.params.quickStartWhenPreset;
       setWhenPreset(preset);
-      if (preset === 'custom' && route.params?.quickStartWhenISO) {
+      // Owner 2026-10-23: an ask's exact start time comes as quickStartWhenISO beside its Tonight/Tomorrow (utils/createStartTime.js).
+      if (route.params?.quickStartWhenISO) {
         setScheduledAt(new Date(route.params.quickStartWhenISO));
       } else {
         setScheduledAt(dateForPreset(preset));

@@ -1,3 +1,34 @@
+# Clock time carried into Create (owner decision 2026-10-23, follows ideas "306"/"307"/"308")
+
+Gap found while answering idea "308" (chips power Create): AskBusiness carried a stated clock time (idea "305") but Create's When
+step re-asked it, against "never re-ask what Nearby knows". Owner approved building it now, before the phone test, with: one reading
+(the chips' + AskBusiness's, never a second read of the words); exact start only when the words or an AM/PM correction establish it;
+"after 7" / "before 9" never become a start; removed clock chip = none; changed day = drop the clock (idea "307"); ambiguous = none;
+all other carryover unchanged; regression tests + records + device checklist.
+
+Built:
+- `statedStartMinutes(classifyResult, typedText)` in `utils/askUnderstood.js`: the ONE exact-start rule (clockOverride: removed clock /
+  changed or removed WHEN = null; switched chip = its `at`; else `pointClockFromText`). `services/askToBusiness.js` now reads it
+  (same behaviour as before except a corrected WINDOW no longer falls back to an "at" time in the words: a window is never a start).
+- `utils/createStartTime.js` `createStartFromAsk`: only onto a carried Tonight/Tomorrow (Create has one date-and-time; no day = its
+  When step asks); a time already past or "Now" carries nothing; a morning time on Tonight is shown as a picked date ('custom'), never
+  under the Tonight chip. Returns `quickStartWhenISO` beside the preset.
+- `createFromAsk` in `services/createAssistant.js` = `createParamsFromAsk` + `createStartFromAsk`; used by all three Create navigations
+  there (Home, Discover, Celebrate reach Create only through `routeClassifiedIntentToCreation`) and by CreateHub's own box.
+- `CreateGatheringScreen`: `quickStartWhenISO` is honoured beside any preset (before: only 'custom'; Celebrate still sends it only for
+  custom, so its behaviour is unchanged).
+
+Disclosed: the shared rule reads a bare "at 7" as 7 PM (idea "305", unchanged; the owner's "don't invent AM/PM" is met for "at 9"-style
+times; for a NEED ask the chip shows "At 7 PM" and can be flipped, for other asks the search does not use a point time so no chip
+shows, as before). Pre-existing, NOT changed: Tonight's default time is 7 PM and Tomorrow's noon (`dateForPreset`), so "tonight after
+9 PM" opens Create on Tonight at 7 PM; recorded as device check 18c (report only). The "From what you said" card still shows the day
+only (the When step's row right under it shows the carried time).
+
+Tests: `utils/createStartTime.test.js` 17/17 (exact, bare-7, AM, ambiguous, after/before, no day, past/Now, AM correction incl.
+AskBusiness parity, morning-on-Tonight, removed clock, changed day, removed WHEN, unchanged carryover, wiring); guards in
+`askResolver.test.js` / `closedLoop.test.js` updated to `createFromAsk`; full Jest 485/6675. Device check 18 added to
+`PRODUCT_AUDIT/UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md` (check 17d now points to it). No migration, no new strings.
+
 # Crossed Paths 48 h retention LIVE + Privacy Policy corrected (owner approval 2026-10-23, migration 20270339)
 
 Owner approved applying 20270339 and scheduling the cleanup, accepting a repeat "You crossed paths!" push when two people genuinely

@@ -1,6 +1,7 @@
 import { supabase, functionUrl } from './supabase';
 import { detectIntentRoute, navigateIntentRoute } from '../constants/intentRoutes';
 import { resolveAsk, toClassification, createParamsFromAsk } from '../utils/askResolver';
+import { createStartFromAsk } from '../utils/createStartTime';
 
 const deterministicClassification = (text) => toClassification(resolveAsk(text));
 
@@ -81,6 +82,12 @@ export async function classifyCreateRequest(text) {
 // Flywheel gap 1 (owner, 2026-10-03, LOCKED): `submissionId` is passed ONLY by a "Create it yourself" button on a typed
 // ask's results, and only a CreateGathering destination carries it (as quickStartSubmissionId), so the new gathering can
 // record the ask it was explicitly created from. Recording only; it changes no route, prefill or step.
+// Create's params from an ask + the exact start time the ask established (the same reading AskBusiness carries).
+export function createFromAsk(r, typedText, result = null) {
+  const params = createParamsFromAsk(r, typedText, result);
+  return { ...params, ...createStartFromAsk(result, typedText, params.quickStartWhenPreset) };
+}
+
 function withAsk(params, submissionId) {
   return typeof submissionId === 'string' && submissionId ? { ...params, quickStartSubmissionId: submissionId } : params;
 }
@@ -91,12 +98,12 @@ export function routeClassifiedIntentToCreation(navigation, result, typedText, {
   if (!explicitCreate && result.intent !== 'community' && result.intent !== 'business_partner' && navigateIntentRoute(navigation, detectIntentRoute(typedText), typedText, { onTop })) return;
   if (explicitCreate && result.intent !== 'community' && result.intent !== 'business_partner') {
     const r = result.structured ?? resolveAsk(typedText, result);
-    navigation.navigate('CreateGathering', withAsk({ ...createParamsFromAsk(r, typedText, result), quickStartTitle: r.title || typedText }, submissionId));
+    navigation.navigate('CreateGathering', withAsk({ ...createFromAsk(r, typedText, result), quickStartTitle: r.title || typedText }, submissionId));
     return;
   }
   if (result.intent === 'gathering') {
     // Item 61: infer what the words say (category, what, who, when, activity) and only ask for the rest.
-    navigation.navigate('CreateGathering', withAsk(createParamsFromAsk(result.structured ?? resolveAsk(typedText, result), typedText, result), submissionId));
+    navigation.navigate('CreateGathering', withAsk(createFromAsk(result.structured ?? resolveAsk(typedText, result), typedText, result), submissionId));
   } else if (result.intent === 'community') {
     navigation.navigate('CreateCommunity', { quickStartTitle: result.title, quickStartCategory: result.category });
   } else if (result.intent === 'business_partner') {
@@ -104,6 +111,6 @@ export function routeClassifiedIntentToCreation(navigation, result, typedText, {
   } else {
     // Still the person's own words as the title; the rules add whatever else they can read (never a category they did not say).
     const r = result.structured ?? resolveAsk(typedText, result);
-    navigation.navigate('CreateGathering', withAsk({ ...createParamsFromAsk(r, typedText, result), quickStartTitle: r.title || typedText }, submissionId));
+    navigation.navigate('CreateGathering', withAsk({ ...createFromAsk(r, typedText, result), quickStartTitle: r.title || typedText }, submissionId));
   }
 }

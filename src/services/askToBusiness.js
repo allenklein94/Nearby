@@ -4,8 +4,7 @@
 // Time stays a day: "tonight" is today's date shown as "Tonight", never an invented clock time. Owner idea "305" (2026-10-20): a
 // clock time the words state ("at 7" = 7 PM, `pointClockFromText`) fills the optional Time field; an ambiguous one ("at 9") stays empty.
 import { recordIntentSelection } from './intentOutcomes';
-import { pointClockFromText } from '../constants/clockWindow';
-import { understoodPartySize, clockOverride } from '../utils/askUnderstood';
+import { understoodPartySize, statedStartMinutes } from '../utils/askUnderstood';
 import { requestCarriedRows } from '../utils/fromWhatYouSaid';
 
 export function askBusinessParamsFromAsk({ classifyResult, typedText, submissionId }) {
@@ -13,12 +12,9 @@ export function askBusinessParamsFromAsk({ classifyResult, typedText, submission
   // "no rush" / "whenever" (item 163) is the person's own answer to When?: "I'm flexible". Nothing else is filled from it.
   // A When the person removed from the ask's understood chips (owner, 2026-10-15) stays removed here too.
   const whenRemoved = Array.isArray(c.removedUnderstood) && c.removedUnderstood.includes('when');
-  // Idea "307": a WHEN changed on the results replaces the words' time too (the clock they stated belonged to the old day).
-  const whenChanged = Array.isArray(c.changedUnderstood) && c.changedUnderstood.includes('when');
   const dateWindow = c.dateWindow ?? (!whenRemoved && c.structured?.spontaneity === 'no_rush' ? 'flexible' : null);
-  // Idea "306": a clock chip the person removed carries no time; one switched to AM/PM carries the chosen moment.
-  const clock = clockOverride(c);
-  const startMinutes = whenRemoved || whenChanged || clock === null ? null : clock?.at ?? pointClockFromText(typedText);
+  // Idea "306"/"307": a removed clock chip or a changed/removed WHEN carries no time; one switched to AM/PM carries the chosen moment.
+  const startMinutes = statedStartMinutes(c, typedText);
   return {
     prefillText: typedText,
     prefillCategory: c.category ?? null,

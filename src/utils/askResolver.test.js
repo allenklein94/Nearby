@@ -82,7 +82,8 @@ describe('every entry point uses the one resolver', () => {
   it('the classifier returns the resolved result, the routes prefill from it', () => {
     const ca = read('services/createAssistant.js');
     expect(ca).toMatch(/return toClassification\(resolveAsk\(text, result\)\);/);
-    expect(read('screens/CreateHubScreen.js')).toMatch(/createParamsFromAsk\(result\.structured \?\? resolveAsk\(typedText, result\)/);
+    expect(read('screens/CreateHubScreen.js')).toMatch(/createFromAsk\(result\.structured \?\? resolveAsk\(typedText, result\)/);
+    expect(ca).toMatch(/const params = createParamsFromAsk\(r, typedText, result\);/);
   });
   it('no screen builds its own Create prefill from a raw classifier reply', () => {
     for (const f of ['screens/HomeScreen.js', 'screens/DiscoverHubScreen.js', 'screens/CelebrateSomethingScreen.js', 'screens/CreateHubScreen.js', 'services/createAssistant.js']) {

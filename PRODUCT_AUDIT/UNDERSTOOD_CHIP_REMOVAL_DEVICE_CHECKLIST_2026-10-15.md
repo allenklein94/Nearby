@@ -49,13 +49,27 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
        results reorder in place (afternoon plans rise), the chip reads "After 7 AM", the typed words stay.
     c. ✕ on the clock chip: it goes, results update, the evening order no longer applies; noon/midnight chips offer no row.
     d. "I need a car wash today at 7": chip "At 7 PM"; switch to 7 AM; "Ask Nearby Businesses" shows Time 7:00 AM; after ✕ the
-       Time is "Any time". Create opens as before (it never carried a clock time; its When step asks).
+       Time is "Any time". "Create it" (owner 2026-10-23): see check 18.
     e. Restart the app on Discover: the corrected chip and results come back the same (session restore).
     f. VoiceOver/TalkBack: "After 7 PM. Tap to change". Cap fix (owner 2026-10-22): an ask with more than 4 understood pieces
        (e.g. "live music tonight after 7 near me for 4 people") shows 4 chips + a quiet "+N" (screen reader "Show more"); tapping it
        shows the rest in place, settled (no motion), each with its own ✕ / change row, so People stays changeable and the clock
        chip still flips AM/PM.
        Non-English: chip words come from 4 new `ui.discover.understoodClock*` strings (10 languages machine-authored, need review).
+
+18. Clock time into Create (owner 2026-10-23; no migration, no new strings; guard `utils/createStartTime.test.js`). "Create it"
+    from Home AND Discover results, then look at Create's When step (Tonight/Tomorrow chip + the date-time row under it):
+    a. "Pickleball tomorrow at 7 PM": Tomorrow selected, row shows tomorrow 7:00 PM. "dinner tonight at 8 pm": Tonight, 8:00 PM.
+    b. "pickleball tomorrow at 9" (ambiguous): Tomorrow selected at its usual default (noon), never 9 AM or 9 PM.
+    c. "coffee tonight after 7 PM" and "drinks tonight before 9 PM": Tonight at its usual default time; never presented as a
+       stated start. Note whether the default (7 PM) looks like a carried start to you: report only.
+    d. "I need a car wash tomorrow at 7": switch the clock chip to 7 AM, then Create: tomorrow 7:00 AM. Ask Nearby Businesses
+       from the same results: Time 7:00 AM (the same reading).
+    e. Same ask, ✕ on the clock chip, then Create: Tomorrow at its default; change When to Tonight instead: Tonight at its
+       default (the old 7 is dropped).
+    f. "pickleball at 7 PM" (no day): Create's When step asks (nothing selected).
+    g. Typed straight into Create's own box ("tennis tomorrow at 6 pm"): Tomorrow 6:00 PM.
+    h. Tap Adjust: the picker opens on the carried time; Back to What and forward again keeps it.
 
 Known limits (disclosed): pieces past the 4-chip cap sit behind "+N" until tapped (never dropped, since the 2026-10-22 cap fix); removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,
 the learned-affinity "constrained" check), which only order results and never add a chip, filter or caption back.

@@ -73,6 +73,18 @@ export function clockOverride(classifyResult) {
   return undefined;
 }
 
+// The exact start time an ask establishes, in minutes after midnight, or null: the ONE rule for every form that carries a clock
+// time (AskBusiness's optional Time, idea "305"; Create's start, owner 2026-10-23). A removed or changed WHEN, or a removed clock
+// chip, carries none; a chip switched to AM/PM carries the chosen moment; otherwise only an "at 7"-style time from the words
+// (`pointClockFromText`: bare 1-7 = PM, "at 9" ambiguous = none). A window ("after 7", "before 9") is a constraint, never a start.
+export function statedStartMinutes(classifyResult, typedText) {
+  const c = classifyResult ?? {};
+  const clock = clockOverride(c);
+  if (clock === null) return null;
+  if (clock !== undefined) return clock.at ?? null;
+  return pointClockFromText(typedText);
+}
+
 // The clock reading the search really USES, or null: a window only once the words anchor it to a day (constants/clockWindow.js),
 // a single time only for a need (utils/needAsk.js 1b: on one named day, or no day said). The same rules the resolver applies.
 export function askClock(classifyResult, typedText) {
