@@ -1,3 +1,13 @@
+# Idea 357 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "357" ("Coffee tonight · Interested 2 · Attending 3", Claude joins -> "4 attending" live, the gathering feels alive) MET AS
+BUILT where allowed, recommended close, no new rule.** Met: the host's own GatheringDetail subscribes to `gathering_interest`
+(`utils/hostLiveJoins.js`) and on a join rolls the attending figure 3 -> 4 (host included, `attendingFigure`), flows the face into
+Who's going and names it (item 28, `motion/JoinArrival.js`; item 73: first full, rest small within 10 s). Kept as locked: other
+viewers (cards, public detail) read the count on load/focus, never a live-ticking number (item 142's decision, item 116: no scarcity
+styling; cards and lists static, items 15/200); the Interested number stays host-only (Interested is private, ideas "355"/"356"),
+so the public view never shows "Interested: 2" next to Attending. Verification = item 28's two-phone checklist. Docs only.
+
 # Idea 356 opt-in fix ACCEPTED (owner, 2026-10-23)
 
 Owner accepted the implementation (migration 20270340, consent log, opt-in defaults, aggregation safeguards, privacy policy, test
