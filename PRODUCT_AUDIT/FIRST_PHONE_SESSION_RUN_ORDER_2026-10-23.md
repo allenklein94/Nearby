@@ -77,6 +77,11 @@ Business hours watch (owner, idea "331", 2026-10-23): "Does the person understan
 requested, without having to open its preview or check its hours manually?" (e.g. "coffee tonight at 8"). Record separately whether
 they mean OPEN NOW or OPEN AT THE REQUESTED TIME (different facts; note if the person or the screen confuses them). Report only.
 
+Join clarity watch (owner, idea "337", 2026-10-23; first TWO-phone session, alongside item 28's checklist): when someone joins
+the host's gathering, does the host understand what happened from the existing join push ("{Name} joined", opens that gathering)
+and the Who's going section (face flows in, count rolls, named line) alone, without wanting another surface (Home, Activity)?
+Report the specific confusion only; any fix prefers existing wording (`joinedNote`), never a new screen, row or notification.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google

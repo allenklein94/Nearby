@@ -1,3 +1,25 @@
+# Idea 337 closed (owner, 2026-10-23), nothing built
+
+**Idea "337" ("contextual event rendering": one backend event `gathering_member_joined` shown as "Claude joined." on Home, "Claude
+accepted your invitation." in Activity, Claude under Going on the gathering, "Claude joined your gathering." as a push) MET AS BUILT,
+CLOSED, LOCKED.** The principle (one real action, one source of truth, presented per place) is already items 163 (one state, several
+presentations), 164 (motion from state, not screens) and 129 (each side its own voice). A join is ONE saved record: an approved
+`gathering_interest` row.
+Preserved: GatheringDetail's Who's going section with item 28's joined-person flow-in, count roll and named line (item 73's
+full/small rule; "{name} accepted your invite" only via `acceptedInviteeIds`, `utils/hostLiveJoins.js`); the host's join push
+(`gathering_interest`, "{Name} joined") opening that gathering (item 133, `navigation/notificationDestinations.js`).
+DECLINED: (1) a separate Activity row for a join or an accepted invitation (duplicates the join; would imply an invitation where
+none was accepted; `INVITATION_ACCEPTED` stays record-only per item 125's decision 4); (2) a Home row announcing a join (Home stays a
+short set of doors, ideas "220"/"237"; idea "207"); (3) a `gathering_member_joined` domain event (`constants/domainEvents.js` holds
+9 events; item 125: no event platform; the join row already is the event; a second copy breaks master principle 2). Heading stays
+"Who's going" (a Going/Interested split stays declined, item 138). Owner: Nearby never celebrates the same action across Home,
+Activity, notifications and the gathering; the gathering's join animation + the host push are sufficient unless a real phone shows
+otherwise.
+Verification added: "Join clarity watch" in `PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md` (first two-phone session,
+with item 28's checklist): does the host understand the join from the push + Who's going alone? Unclear = report the specific issue
+before proposing any change; prefer existing wording (`joinedNote`) over another screen, row or notification. No application code
+changed; the first real-phone session stays the top priority.
+
 # Idea 331 closed (owner, 2026-10-23), nothing built
 
 **Idea "331" ("Why Coastal Coffee?": matches coffee / open at the requested time / distance / accepting requests) MET AS BUILT,
