@@ -1,3 +1,23 @@
+# Ideas 363 + 364 closed (owner, 2026-10-23), nothing built
+
+**Idea "363" (restraint: "three avatars smoothly appear", never confetti + fireworks + bouncing cards) MET AS BUILT, CLOSED, LOCKED.**
+Preserved: no confetti/fireworks/particles (business transactions calm, no confetti; the occasion tile celebrations = item 58's one
+documented particle exception, nothing added); no bounce/spring/micro-scale (ideas "192"/"193"; `CountRoll` = 8 px, 260 ms, no
+scale/glow/bounce, idea "358"); joins flow in smoothly, bursts first-full-rest-small (items 28/73); cards and lists static (items
+15/111); 900 ms cap below the signature, one Home animation per visit (idea "207"), one full-screen moment (item 167); motion only for
+real changes (item 58) and the shared primitives (`MOTION_PRIMITIVES`, item 100).
+
+**Idea "364" (three motion levels; signature reserved for major milestones) MET AS BUILT, CLOSED, LOCKED, signature list DECLINED.**
+Preserved: item 57's `MOTION_LEVELS` + idea "168"'s two axes and `motion/motionBudget.js`'s budgets (Micro = tiny 50-150 + small
+150-300 ms; Contextual = medium 300-500 + special 500-900 ms; Signature = 900-1500 ms), exactly ONE signature: a business responds to
+a customer's request (item 25). Declined: promoting reservation confirmed (items 12/32), gathering created (item 43) or redemption
+(item 52) to signature; a bigger first-reply moment stays the deferred #15; card motion (cards change only with their own recorded
+state). No new animations, levels, timing values, screens or events.
+
+Owner caution recorded as a test, not a reopening: whether the up-to-1.5 s signature delays interaction or feels repetitive across
+several replies; added to `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` section 4 ("Signature length", report
+only). Motion system FROZEN until real-phone testing identifies a specific usability problem. Next: the first real-phone session.
+
 # Idea 362 closed (owner, 2026-10-23), nothing built
 
 **Idea "362" ("three friends accept, their avatars assemble around the gathering card: the plan is becoming real") MET AS BUILT

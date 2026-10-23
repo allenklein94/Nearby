@@ -83,6 +83,10 @@ Anthropic credit is a prerequisite (Setup), not an owner.
   "I'll take this one" with one coral glow. The button is tappable throughout. ★
 - [ ] Reply arriving while the request is already open: the card builds in place (fixed in item 16).
 - [ ] Reopening the request later: the card is already finished, nothing replays.
+- [ ] Signature length (owner, idea "364", 2026-10-23; report only, never a reason to reopen the design): the signature (up to
+  1.5 s) never delays interaction (tap "I'll take this one" mid-build: it acts at once); with 2-3 replies from different
+  businesses, does the repeated signature feel repetitive or slow? Record the impression; a concrete problem gets a timing fix
+  at its shared source (`motionBudget.js` / `offerAssembly`), proposed to the owner first.
 - [ ] First-ever reply: pill reads "A local business just responded to your request"; the card says "Your first reply
   from a local business". Never again after that.
 - [ ] Item 166 (pill never takes over): while the pill is up, keep scrolling and tap things under/around it: everything works,
