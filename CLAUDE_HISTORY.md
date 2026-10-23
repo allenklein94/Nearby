@@ -1,3 +1,23 @@
+# Idea 346 assessed (2026-10-23), nothing built, owner decision pending (one defect reported)
+
+**Idea "346" (states distinguished by label, icon, position, motion and colour together, never colour alone) MOSTLY MET AS BUILT,
+ASSESSED; ONE DEFECT REPORTED, not fixed.** Met (code reading): the gathering relation badge (`components/GatheringStatusBadge.js`,
+`GATHERING_STATUS_META`) always renders icon + word ("🎤 Hosting", "✓ Going", "☆ Interested", "🕒 Requested", "⏳ Waitlisted", "✓
+Attended", "— Didn't attend"); tone colour only backs it; item 31's "★ ~~Interested~~ → ✓ Attending" is words + strike-through.
+Item 13's steps (`motion/OfferProgressSteps.js`): ✓ before each reached step, the current one bold, arrows give order, one screen-reader
+label naming the state; other offer states are their own sentence ("No longer open", "They cancelled"). Item 32's plan line: broken
+before booking, solid after (shape, not only green). Item 47's countdown: the amber is beside the words "Ends in N min". Item 37: ✓ ticks
++ "A strong match for you". Perks: Redeem / code box / "Redeemed" words. Visit: "✓ Visit confirmed"; plan complete: "~~Confirmed~~ → ✓
+Completed".
+DEFECT (Discover map pins, `components/GatheringsMapView.js`): on the map itself the pin types differ ONLY by `pinColor`: a gathering
+"Live now" = red `#e63946`, other gatherings = their category colour (`gatheringCategoryStyles.js` PALETTE incl. `#E8A87C` orange and
+`#C38D9E` pink), a perk = amber `#f59e0b`, a business = `#5B9AA0`. The words ("Live now", 🎁, title) appear only in the callout after a
+tap; screen readers get distinct labels (`gatheringLiveA11y`, `dealAtA11y`), sighted colour-blind people do not (red vs orange/pink is a
+red-green confusion; amber perk vs orange `#E8A87C` category pin is close for anyone). Not fixed: item 120 keeps the red pins "their
+own rule", so a fix needs the owner. Narrowest fix to propose: a custom marker carrying the existing glyph (Live now = the existing
+"Live now" mark, perk 🎁, gathering its category icon, business its own) with colour kept; no new strings, no motion; item 120's pill and
+`isMapLiveNow` unchanged. Not phone-verified (a phone check of the map was already in item 120's checklist). Docs only.
+
 # Idea 345 closed (owner, 2026-10-23), nothing built
 
 **Idea "345" ("Interested" is a meaningful intermediate state; the same principle should permeate the product) MET AS BUILT, CLOSED,
