@@ -1,3 +1,18 @@
+# Idea 342 closed (owner, 2026-10-23), nothing built
+
+**Idea "342" (business dashboard demand-first: "Where is demand? -> How can I respond? -> What happened?" instead of Analytics /
+Marketing / Settings / Ads) MET AS BUILT, CLOSED, LOCKED.** Business tabs = Home, Opportunities, Bookings, Offers (Availability),
+Profile (`SECTIONS` in `BusinessDashboardScreen.js`; the four-nouns rule + Home), no analytics/marketing/ads tab; sponsored stays inert.
+Demand: business Home's "Today at {name}" brief opens with item 128's floored own-category line and "🎯 Your best opportunity" (idea
+"341" wording) -> Opportunities. Respond: Opportunities' Accept / Alternative / Decline per routed request (items 48/187); availability
+reaches only matching open requests (item 114). What happened: item 13's Offer sent -> Accepted -> Redeemed, the pipeline (item 147),
+item 150's Performance / Offer Performance, value only from real redemptions (`get_partner_offer_value`). Preserved as is: navigation,
+the demand-first Home, Opportunities workflow, Performance reporting. Observation (owner, not changed): the Community Health stats grid
+sits above "Needs attention", possibly between seeing demand and acting on it; no rearranging or removal before device evidence.
+Added section 13 to `PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (item 128 demand line, idea "341" wording, and the
+stats-vs-Needs-attention observation; targeted fix only if owners consistently overlook requests). No application code changed; the
+first real-phone session stays the priority.
+
 # Idea 339 closed (owner, 2026-10-23), met by idea 338, nothing built
 
 **Idea "339" ("same with offers: if the user is sitting on the request, 'New offer from Coastal Coffee' appears directly; no redundant

@@ -217,6 +217,19 @@ only: report results, never redesign checkout.
   "didn't go through" + Try payment again.
 - [ ] A business without Stripe set up: accept books, "Payment not yet available / You're still booked..." shows, no Pay button.
 
+## 13. Business Home: demand first (item 128, owner ideas "341"/"342", added 2026-10-23)
+
+Signed in as the seeded test business, phone AND business website. Verification only: report results, never rearrange the dashboard.
+
+- [ ] "Today at {name}" shows "{N} people are looking for something nearby that you offer" only when the records hold >= 5 distinct
+  people in the business's own categories; fewer = no line (never 0 or a guess).
+- [ ] "🎯 Your best opportunity: {N} people are looking for {category}" (idea "341" fix): people, not requests; the category in the
+  app's language (switch language once); tap opens Opportunities.
+- [ ] Observation (idea "342"): does the Community Health statistics grid distract from or delay finding "Needs attention" and
+  responding to real customer requests? Record what the owner does first and any hesitation. If owners consistently overlook
+  Opportunities or struggle to find requests, the targeted fix to propose is moving "Needs attention" above the statistics; no
+  other change, nothing removed.
+
 ## Record
 
 | Step | iPhone | Android | Chrome | Safari | Phone browser | Notes |
