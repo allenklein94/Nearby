@@ -51,9 +51,11 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
     d. "I need a car wash today at 7": chip "At 7 PM"; switch to 7 AM; "Ask Nearby Businesses" shows Time 7:00 AM; after ✕ the
        Time is "Any time". Create opens as before (it never carried a clock time; its When step asks).
     e. Restart the app on Discover: the corrected chip and results come back the same (session restore).
-    f. VoiceOver/TalkBack: "After 7 PM. Tap to change"; with the cap of 4 chips an ask with WHAT + WHEN + clock + WHERE drops People.
+    f. VoiceOver/TalkBack: "After 7 PM. Tap to change". Cap fix (owner 2026-10-22): an ask with more than 4 understood pieces
+       (e.g. "live music tonight after 7 near me for 4 people") shows 4 chips + a quiet "+N" (screen reader "Show more"); tapping it
+       shows the rest in place, settled (no motion), each with its own ✕ / change row, so People stays changeable and the clock
+       chip still flips AM/PM.
        Non-English: chip words come from 4 new `ui.discover.understoodClock*` strings (10 languages machine-authored, need review).
 
-Known limits (disclosed): the cap of 4 understood chips is unchanged, so an ask with activity + time + place + party + count
-drops the count chip; removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,
+Known limits (disclosed): pieces past the 4-chip cap sit behind "+N" until tapped (never dropped, since the 2026-10-22 cap fix); removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,
 the learned-affinity "constrained" check), which only order results and never add a chip, filter or caption back.
