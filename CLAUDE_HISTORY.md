@@ -1,3 +1,21 @@
+# Idea 373 assessed (owner, 2026-10-23), nothing built
+
+**Idea "373" ("this dramatically reduces Home length: instead of 12 sections, 4-6 meaningful modules with richer information inside
+them") PARTLY MET, ASSESSED, owner decision pending.** Met (code reading): each Home section caps at 3 objects (`utils/homeAttention.js`,
+Best Pick counts toward its section), a section/row exists only when it has something real to act on (item 79, `utils/homeQuiet.js`),
+an object appears once (`HOME_SECTION_PRIORITY`), and richer explanation lives one tap away (GatheringDetail "Why this fits you", idea
+"372"); Home is doors (items 110/237/238). NOT met: nothing caps how many sections show at once. `HomeScreen.js` holds about 20 blocks
+that can each render when their own trigger holds (search box + quick picks, Your Plans, plans this month, Picked For You + noticed
+line, Best Pick, weather card, friend nearby / friends planning / collision, Nearby Right Now, find together, dining nudge, set
+tastes, occasions due today/tomorrow, want to plan, "remembers", try something new, upcoming, poll, "how did it go", since you were
+away, location prompt, your communities, quick stats, continue browsing / start). How many appear together for a real person is
+unmeasured: prod has 4 profiles and no device has ever rendered Home (a new account shows few; an active one could show many).
+Recommendation: build nothing now (idea "252": no fresh compression audit before the phone); add a Home length watch to the run order
+(count the blocks visible on a new and on an active account, note which felt skippable); if more than about six show, bring a
+specific per-block fold/removal proposal for owner approval (no automatic section cap, no restructuring). Declined: "richer
+information inside" each module as more lines on cards (max 2 reasons + one distance/time line, item 112 / idea "372"). No code,
+strings, motion or test.
+
 # Idea 372 closed (owner, 2026-10-23), nothing built
 
 **Owner decision on idea "372": CLOSED and LOCKED as met by the existing implementation; no code or UI changes.** Preserved: one

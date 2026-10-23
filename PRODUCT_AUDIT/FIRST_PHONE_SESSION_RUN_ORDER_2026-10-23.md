@@ -143,6 +143,10 @@ Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's c
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
 scroll past? Report the reaction only; no weather UI change before this.
 
+Home length watch (owner, idea "373", 2026-10-23; observation only): on a NEW account and on an ACTIVE one (plans, friends,
+interests), count the Home blocks visible from top to bottom and note which the person skipped or found pointless. More than about
+six = report the list; any change is a per-block proposal for owner approval, never an automatic cap or a Home restructure.
+
 Interested sharing checks (owner, idea "356", 2026-10-23; migration 20270340; result codes as above):
 1. On a fresh account, Settings > "Include my "Interested" in anonymous local trends" is OFF.
 2. Tap Interested on a public gathering for the first time: the explanation appears (with sharing off: "…It's off unless you turn
