@@ -1,3 +1,18 @@
+# Idea 372 assessed (owner, 2026-10-23), nothing built
+
+**Idea "372" (signal compression: instead of Weather / Distance / Friends / Interests / Popularity as separate modules, combine them
+into "Why this is a good fit", then expose the underlying signals) MET AS BUILT, ASSESSED, recommended close, owner decision pending.**
+Already true (code reading): signals are combined by ONE lexicographic ranking ladder (intent > hard constraints > friends >
+availability > time > strong interests > business > weather > popularity > discovery; `constants/signalPriority.js`, `compareRanked`)
+used by all five consumer surfaces; every card compresses them into max 2 strongest genuine reasons (section reason first when real)
++ one "distance · when" line + accepted-friend social proof (`recommendationContext.js`, `gatheringCardModel`; item 112 for Best
+Pick); the full set is exposed on GatheringDetail's "Why this fits you" card (`ReasonList`, `ui.gatheringDetail.whyFits`; suppressed
+for the host, nothing invented). DECLINED: a separate why-sheet (item 106 LOCKED, idea "226"), listing every signal on the card
+(information budget, item 112), generic weather/popularity lines on ordinary cards (idea "371"), a visible combined fit score
+(a number nobody can act on; strong-match wording stays item 37's rule). Home's weather card and friends lines are not signal
+modules: each is an actionable section with its own substantiated trigger and objects (Home claim rule). No code, strings, motion or
+test. Wording clarity = first-session check C9.
+
 # Idea 371 closed (owner, 2026-10-23), nothing built
 
 **Owner decision on idea "371": CLOSED and LOCKED as met by the existing implementation; no code or UI changes.** Rules preserved:
