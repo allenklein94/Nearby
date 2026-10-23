@@ -1,3 +1,16 @@
+# Idea 356 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "356" (8 interested / 2 attending = "demand, low commitment"; let it affect recommendations and reminders without spam)
+ASSESSED: met where allowed, the rest recommended DECLINED.** Met: the host already sees the anonymous Interested count beside the
+attending figure on their own gathering (item 139, idea "355") and can act as host; each person's own Interested already drives their
+own starts-soon reminder and the one-tap Interested -> Attending (item 31). Recommend declining: (1) Interested feeding anyone else's
+ranking, Trending or a momentum signal: idea "199" LOCKED "Interested never a signal for others" (popularity = approved attendance,
+`TRENDING_ATTENDANCE_MIN`), and using the count to boost a gathering would make private marks observable; (2) reminders triggered by
+a low-commitment ratio: idea "355" (owner, today) declined additional reminders, idea "186" retired engagement nudges, a push only for
+something that happened to the person's own things; (3) a "low commitment" / "demand" label: not a real recorded state (idea "345"),
+and on the business side demand stays the floored stated-request aggregate (item 128), never Interested marks. Revisit only with real
+usage evidence plus its own privacy decision. Docs only.
+
 # Idea 355 closed (owner, 2026-10-23), nothing built, phone verification pending
 
 **Idea "355" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no application code.** Owner's final rules: Interested stays the
