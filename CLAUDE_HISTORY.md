@@ -1,3 +1,16 @@
+# Idea 367 assessed (owner, 2026-10-23), nothing built
+
+**Idea "367" ("otherwise the app becomes exhausting": cinematic notifications get disabled, bouncing cards feel cheap, dramatic
+transitions make nothing feel important) MET AS BUILT, ASSESSED, recommended close, owner decision pending.** Notifications: a push is
+drawn by the phone's system (no in-notification motion possible, item 132); with the app open the one signal is the arrival pill
+(item 165: never navigates, blocks or vibrates; 6 s, first-ever 9 s; Reduce Motion = none) or nothing when the screen already shows
+it (idea "338"); haptics never on an arrival (idea "170"); sound cues off by default (idea "169"). Cards: static everywhere (items
+15/111), no bounce/spring/micro-scale (ideas "192"/"193"/"358"/"363"), no live-ticking counts (idea "357"). Transitions: tab/mode/
+filter changes instant (item 57 Level 1), exactly one signature (item 25), one full-screen moment (item 167), one Home arrival moment
+per visit (idea "207"), 900 ms cap below the signature (`motionBudget.js`), motion only for real state changes (items 58/162/164),
+no screen-wide motion on offer screens. Not verified that it feels calm on a phone: the run order's moments watch (idea "352") +
+offer checklist section 4 "Signature length" cover it; no new check. No code, rule, animation or test; motion system FROZEN.
+
 # Invites never grow the gathering (owner, 2026-10-23), nothing built
 
 **Proposal (owner, 2026-10-23; no idea number given): after the host invites friends, the gathering card expands / grows as if the
