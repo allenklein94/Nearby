@@ -1,3 +1,14 @@
+# Idea 374 closed (owner, 2026-10-23), nothing built
+
+**Owner decision on idea "374": CLOSED and LOCKED as met by the existing implementation; no code changes.** Preserved: the headline
+"Tonight looks like a great night to meet someone new"; normal text colour without extra emphasis or animation; the evening-only and
+declared-intent conditions; the minimum of 3 real eligible people; the supporting explanation with a truthful count; the "Meet People"
+CTA opening the corresponding People mode with the counted people first. No invented recommendations, popularity claims or
+weather-based assumptions; no new card, motion, colour treatment or UI. Owner watch: "great night" could read as a broader judgment
+about social activity or the weather; the reason line's real count should prevent that, so no change without phone evidence. Check C11
+verifies the headline + reason are immediately understandable; if testing shows confusion, propose a wording-only adjustment (e.g.
+"People nearby are open to meeting") for approval before changing any translations. Next: the first real-phone session.
+
 # Idea 374 assessed (owner, 2026-10-23), nothing built
 
 **Idea "374" (replace the "mysterious red sentence" "Tonight looks like a great night to meet someone new" with a real recommendation:
