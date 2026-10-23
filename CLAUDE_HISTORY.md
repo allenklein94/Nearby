@@ -1,3 +1,16 @@
+# Idea 375 assessed (owner, 2026-10-23), nothing built
+
+**Idea "375" ("tapping it should actually go to People mode; the CTA should match the destination") MET AS BUILT, ASSESSED,
+recommended close, owner decision pending.** Code reading: the meet-tonight CTA "Meet People" (`ui.actions.meetPeople`) carries
+`{ screen: 'Discover', params: { initialMode: 'people', initialPeopleSubMode: <dating|friends from goals>, context: 'meet_tonight' } }`
+(`utils/meetTonight.js`); `DiscoverHubScreen.js` starts in that mode/sub-mode (and switches to it when Discover is already mounted,
+the params effect), passes the tonight context to the Dating (`DiscoveryScreen`) or Friends (`FriendDiscoveryScreen`) deck, which puts
+the counted people first (`orderForTonight`, same rule as the count) under the "People worth meeting tonight" banner (item 76's
+destination half; zero = says so and offers the other pool). Guarded by `utils/destinationContext.test.js`. Home's quick-stat "N
+people nearby to meet" row also opens `initialMode: 'people'` (`homeQuiet.js`). Never a generic Discover state; the CTA names its
+destination (Home claim rule). No code or test added. Verification on a phone = check C11 ("Meet People" opens People mode at once,
+counted people first, Back restores Home).
+
 # Idea 374 closed (owner, 2026-10-23), nothing built
 
 **Owner decision on idea "374": CLOSED and LOCKED as met by the existing implementation; no code changes.** Preserved: the headline
