@@ -1,3 +1,13 @@
+# Idea 358 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "358" (a count changing 3 -> 4 should be a subtle number transition, never an arcade explosion) MET AS BUILT, recommended
+close, no new rule.** The only count motion is `CountRoll` (`motion/JoinArrival.js`, tokens `SEQUENCES.friendJoin`: rollMs 260,
+risePx 8, ease-out cubic, native driver): the new figure rises 8 px into place while the previous one lifts away and fades; no
+scale, colour change, glow, bounce, particles, haptic or sound; plays once per real event (a join seen by the host, item 28; a new
+plan in Home's "N plans this month", item 53); the new figure is readable from the first frame (`infoOpacity`, >= 0.6), Reduce Motion
+= the new figure at once. Locks that keep it so: cards and lists static (idea "357"), no confetti, 900 ms cap, motion only for real
+events (item 58). Verification = item 28's two-phone checklist + item 53's checklist (does the roll read as subtle on a phone?). Docs only.
+
 # Idea 357 closed (owner, 2026-10-23), nothing built, two-phone verification pending
 
 **Idea "357" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no application code.** Owner's final rules: preserve the host's live
