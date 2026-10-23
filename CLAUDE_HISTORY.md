@@ -1,3 +1,19 @@
+# Idea 374 assessed (owner, 2026-10-23), nothing built
+
+**Idea "374" (replace the "mysterious red sentence" "Tonight looks like a great night to meet someone new" with a real recommendation:
+"Meet someone new tonight? / 3 People recommendations nearby / Meet People ->") MET AS BUILT, ASSESSED, recommended close, owner
+decision pending.** As built (code reading): Home's insight line (`services/homeDashboard.js` -> `meetSomeoneTonight` in
+`utils/meetTonight.js`) renders in the primary text colour (`styles.insightLine`), never red, and only when ALL hold: local evening
+(5-11 PM), the person told Nearby they are here to meet people (onboarding goals), and >= 3 real people in the pool People will open on
+(Dating = opted-in people seen within 24 h, item 121; Friends = discovery candidates under ~3 mi; items 76/78). Under it a grey reason
+line states the trigger with the real count (`ui.homeParts.meet.basisDating`: "You're here to meet people, and {count} were near you in
+the last day." / `basisFriends`), and the CTA "Meet People" opens People mode with exactly those people first (item 137,
+`orderForTonight`, same rule as the count) under "People worth meeting tonight". So the reason for the CTA is already stated. DECLINED:
+"N People recommendations nearby" (says Nearby recommended these people; the number is who was nearby in the opted-in pool, and
+People ranking is not a recommendation claim); rewording the headline to a question without phone evidence (11 languages; item 109
+kept the wording). If the line reads as mysterious on a phone (check C11), the fix is its wording, never colour, a new card or motion.
+No code, strings or test.
+
 # Idea 373 deferred (owner, 2026-10-23), nothing built
 
 **Owner decision on idea "373": PARTIALLY MET, DEFERRED until the first real-phone session; NOT closed until the Home length review is
