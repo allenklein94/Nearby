@@ -143,9 +143,13 @@ Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's c
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
 scroll past? Report the reaction only; no weather UI change before this.
 
-Home length watch (owner, idea "373", 2026-10-23; observation only): on a NEW account and on an ACTIVE one (plans, friends,
-interests), count the Home blocks visible from top to bottom and note which the person skipped or found pointless. More than about
-six = report the list; any change is a per-block proposal for owner approval, never an automatic cap or a Home restructure.
+Home length review (owner, idea "373", 2026-10-23; REQUIRED before idea "373" closes): on a NEW account and on a realistically
+ACTIVE one (plans, friends, invitations, offers, activity), scroll Home top to bottom and record: (a) the blocks visible at once
+(list them, in order); (b) whether Best Pick, Your Plans, Picked For You and Nearby Right Now are easy to find; (c) any block that
+duplicates another's action or information; (d) whether the person can say what each block is for; (e) for each skipped block:
+skipped as irrelevant, or because Home felt too long. About six visible blocks = review trigger, not a cap. Look first at polls,
+quick stats, "try something new", "since you were away". Clutter = a specific removal/consolidation proposal for owner approval,
+duplicates and rarely actionable blocks first; never an automatic cap or hiding of useful content.
 
 Interested sharing checks (owner, idea "356", 2026-10-23; migration 20270340; result codes as above):
 1. On a fresh account, Settings > "Include my "Interested" in anonymous local trends" is OFF.

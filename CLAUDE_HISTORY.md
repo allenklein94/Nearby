@@ -1,3 +1,18 @@
+# Idea 373 deferred (owner, 2026-10-23), nothing built
+
+**Owner decision on idea "373": PARTIALLY MET, DEFERRED until the first real-phone session; NOT closed until the Home length review is
+completed.** Do not build anything or restructure Home now, and never remove sections from code inspection alone. Test a new account
+and a realistically active one (plans, friends, invitations, offers, activity) and evaluate: how many conditional blocks actually
+appear simultaneously; whether the primary sections (Best Pick, Your Plans, Picked For You, Nearby Right Now) stay easy to find;
+whether lower sections duplicate existing actions or information; whether people understand what each section is for; whether they
+skip sections because they are irrelevant or because Home feels too long. About six visible blocks = a review trigger, not an
+automatic cap (six useful sections can beat four irrelevant ones). If testing reveals clutter: propose specific removals or
+consolidations, prioritizing duplicate, low-value and rarely actionable sections (combine sections that encourage the same action
+rather than adding a rule); never automatically hide useful content. First places to investigate (owner): polls, quick stats, "try
+something new", "since you were away"; not Your Plans or genuinely actionable requests. Preserved: the two-reason card limit, the
+personal recommendation gates, the existing Home navigation rules. Owner: Nearby should feel like the fastest way to find something
+worth doing, not a feed to scroll through. Run order's Home length watch updated with these evaluation points.
+
 # Idea 373 assessed (owner, 2026-10-23), nothing built
 
 **Idea "373" ("this dramatically reduces Home length: instead of 12 sections, 4-6 meaningful modules with richer information inside
