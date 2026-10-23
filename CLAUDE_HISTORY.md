@@ -1,3 +1,32 @@
+# Idea 360 closed with a narrow Invite sheet fix (owner, 2026-10-23, option b)
+
+**Owner approved option (b):** keep `InviteFriendsModal` and its presentation; fix the wrong Invite actions found in the assessment.
+Built:
+- **Migration `20270341_invite_sheet_states.sql` (LIVE 2026-10-23, rolled-back check first):** ONE rule
+  `private._gathering_invitee_state(gathering, inviter, invitee)` -> not_friend | blocked | going (host or approved attendee) |
+  women_only | host_blocked | invited (the inviter's OWN invite pending/accepted; never reveals another person's invite) | invite.
+  `get_gathering_invite_states(gathering)` (authenticated only; no rows unless the caller passes item 147's `_gathering_row_visible`)
+  returns the caller's accepted friends collapsed to going / invited / ineligible / invite. `invite_friend_to_gathering` (same
+  signature, void, grants unchanged) now reads the same rule at send time: existing refusal messages kept, plus `hint =
+  'invite_state:ineligible'`; new refusals 'Already going' (`invite_state:going`) and 'Already invited' (`invite_state:invited`),
+  the latter also when a concurrent send wins the pending unique index (previously a silent no-op the client showed as success).
+  The private rule has no client grant.
+- **Client:** `utils/inviteSheetRows.js` (`inviteSheetRows`, `inviteStateMap`, `inviteRefusalState`, `inviteRowCanInvite`,
+  `INVITE_ROW_LABEL_KEYS`); the sheet loads states with the friends (gathering invites only; community invites unchanged; a failed
+  read = every row Invite, the server still decides). Going/Invited = a neutral pill (word, not colour alone), screen reader
+  "{name}, Going"; a refused send sets the row's real state (ineligible = row removed), no toast, haptic or retry dialog. Labels
+  reuse `ui.hostCenter.invite.going` / `invited` (11 languages, already machine-authored; no new strings). Order unchanged.
+- **Tests:** guard `utils/inviteSheetRows.test.js` 17 (attending, invited, ineligible, eligible, stale refusal, unknown state,
+  labels in 11 languages, wiring, no motion); journey `inviteSheetStates` 6/6 under real roles (states incl. someone else's invite
+  staying private, women-only, send-time refusals writing no invite/event, eligible once + second send refused, friend who joined
+  after the sheet loaded refused as going, invisible gathering = no rows, anon + private rule refused); `notificationEvents` updated
+  (its repeat invite is now a refusal; still one invite, one push). Prod journeys 656/656, Jest 492 suites / 6791. From-scratch
+  replay NOT run for this migration.
+- **Declined (LOCKED):** avatar travel on invite (invite != attending; a face enters Who's going only on a real join, item 28),
+  friend ranking, new screens, new motion.
+- **Verification:** check C26 added to `PRODUCT_AUDIT/FIRST_DEVICE_SESSION_CHECKLIST_2026-09-19.md`; NOT DEVICE-VERIFIED. Known
+  limitation: if every friend is ineligible the existing empty state reads "No friends to invite yet" (report from the phone first).
+
 # Idea 360 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "360" ("Bring friends into the plan": Invite -> compact sheet, closest relevant friends first, tap Claude, avatar settles

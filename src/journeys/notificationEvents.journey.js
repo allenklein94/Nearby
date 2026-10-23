@@ -76,8 +76,12 @@ d('journey: domain events -> one notification layer (item 125)', () => {
     and (select count(*) from jq where b->'data'->>'gathering_id' = v_g3::text) = 0));
 
   -- 2. INVITATION_SENT via invite_friend_to_gathering: B gets the exact invite push; inviting again sends nothing new
+  --    (idea "360": the second send is refused as 'Already invited')
   perform invite_friend_to_gathering(v_g1, v_b);
-  perform invite_friend_to_gathering(v_g1, v_b);
+  begin
+    perform invite_friend_to_gathering(v_g1, v_b);
+  exception when others then null;
+  end;
   select id into v_inv1 from social_invites where inviter_id = v_a and invitee_id = v_b and target_id = v_g1 and status = 'pending';
   select b->>'title', b->>'body' into v_title, v_body from jq where b->>'recipient_id' = v_b::text and b->'data'->>'type' = 'gathering_invite' and b->'data'->>'gathering_id' = v_g1::text limit 1;
   log := log || jsonb_build_array(jsonb_build_object('step','invitation_sent','ok',
