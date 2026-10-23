@@ -1,3 +1,24 @@
+# Idea 356 closed (owner, 2026-10-23) with one open conflict, nothing built
+
+**Idea "356" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no application code.** Owner's final rules: keep the anonymous
+Interested count beside confirmed Attending on the host's gathering page; Interested stays private and serves only the person's own
+reminders and transition to Attending; DECLINED: Interested influencing recommendations, Trending, popularity or other people's
+experience; reminders from low-commitment ratios; demand labels; new engagement nudges. Safeguard: Interested never counts as
+confirmed attendance or consumes capacity (true as built: attendance/capacity read approved `gathering_interest` joins only, never
+`gathering_interested`). Phone observation added to the run order: can a host immediately tell interested people from committed ones?
+
+**Open conflict found while recording (not changed, owner decision needed):** the owner's safeguard "Interested must never contribute
+to business demand" contradicts what is LIVE. `get_partner_demand_signals` (added 20270117, current body 20270317) includes an
+`interest_signals` row kind: distinct people who marked Interested in the last 14 days on upcoming public, "everyone", discoverable,
+non-women-only, non-community gatherings in the business's own categories and 3x3 area buckets, excluding the business's own
+gatherings and anyone with `profiles.share_interest_in_demand = false` (default true; Settings switch); floor 5, max 2 rows, category
++ count only, never merged with request counts. Business Home shows it as "N people nearby are interested in {category} gatherings"
+with a Post availability action (`utils/demandSignals.js`). CLAUDE.md's Interested-privacy bullet ("Business use = only the anonymous
+floored category aggregate (consent switch, no ids)") allows it. Prod: 0 Interested marks, so the row has never shown. Options for
+the owner: (a) keep it (amend the safeguard to "never identifies anyone; only the opted-in floored aggregate"); (b) remove it
+(migration dropping `interest_signals` from the function, client row + strings, Settings switch + disclosure; journeys
+`interestedPrivacy` / `offeredDemand` updated). Docs only.
+
 # Idea 356 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "356" (8 interested / 2 attending = "demand, low commitment"; let it affect recommendations and reminders without spam)

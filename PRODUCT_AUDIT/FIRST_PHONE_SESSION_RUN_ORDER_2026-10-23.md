@@ -123,6 +123,10 @@ a spot?" Record whether they understand nothing is reserved (especially on a gat
 vs Attending reads as two different things, and whether Join / Request to Join feels like the obvious next step. Unclear = report
 the exact wording or spot; never propose a new state, reminder or invitation feature.
 
+Host watch (owner, idea "356", 2026-10-23; observation only): as host, open a gathering with some people Interested and some
+joined. Can the host immediately tell people who are interested from people who have committed to attend (the "☆ N people are
+interested but haven't joined yet" line vs the attending count)? Record any moment they read Interested as confirmed attendance.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google
