@@ -1,7 +1,11 @@
-# Idea 343 assessed (2026-10-23), nothing built, owner decision pending
+# Idea 343 closed (owner, 2026-10-23), nothing built
 
 **Idea "343" (business money figures: never one number for two states; pending/projected vs redeemed vs actual) MET AS BUILT,
-ASSESSED, recommended close.** The #21 case ("$20" beside 0 redemptions) was fixed 2026-09-20 (global rule 7) and stays fixed: the
+CLOSED, LOCKED (owner, 2026-10-23: no additional dashboard metrics).** Owner's final rules: Redemptions = confirmed only; value of
+offers redeemed = only values backed by real redeemed offers, and never presented as the business's actual revenue or customer
+spending (a redeemed offer's stated price is not revenue; the note "Based on the prices you set on your offers. Not a measure of what
+customers spent." keeps that, `ui.bizHelp.value.note`); potential stays separate and labelled potential, never realized; no "Actual
+revenue", "Earnings", separate "Redeemed $0" line or dashboard-wide projected total; Performance + Offer Performance kept as is. The #21 case ("$20" beside 0 redemptions) was fixed 2026-09-20 (global rule 7) and stays fixed: the
 dashboard's billing banner is titled "Your Nearby fee this month (estimate)" (`ui.bizDash2.estimatedThisMonth`), its first line is the
 redemption fact ("0 redemptions this month"), and `utils/billingBreakdown.js` itemizes the fee ("Flat monthly rate $20, not based on
 redemptions" / hybrid / per-redemption), amounts the server's own, missing = "—". The three states already never mix (Truthfulness
@@ -13,7 +17,10 @@ said so); 0 redemptions = the funnel's real "Redemptions 0" stage and no dollar 
 banner above. DECLINED: an "Actual revenue" figure (Nearby records no customer spend; "revenue"/"earnings" banned in business copy,
 item 149) and a separate "Redeemed $0" dollar line (the 0 count already says it; owner rule "no invented zero-dollar claim"); a
 dashboard-wide "pending / projected" total (potential is per request, never aggregated). Docs only; no code, strings or migration.
-Verification = item 150 / item 13 business browser + phone checks (existing).
+Verification = item 150 / item 13 business browser + phone checks (existing) + new section 14 of
+`PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` (can an owner tell sent / accepted / redeemed apart without reading any
+as money earned; value note visible; no $0 or revenue line). A wording or calculation defect found there is reported specifically
+before any fix is proposed; if the distinction is clear, the area stays as is. First real-phone session stays the top priority.
 
 # Idea 342 closed (owner, 2026-10-23), nothing built
 

@@ -230,6 +230,19 @@ Signed in as the seeded test business, phone AND business website. Verification 
   Opportunities or struggle to find requests, the targeted fix to propose is moving "Needs attention" above the statistics; no
   other change, nothing removed.
 
+## 14. Activity vs money on Performance (owner idea "343", added 2026-10-23)
+
+Signed in as the seeded test business, phone AND business website, after at least one offer was sent, one accepted and one redeemed.
+Verification only: report the specific defect (screen, exact wording, figure vs the saved records) before proposing any fix.
+
+- [ ] Can the owner immediately tell Offers sent, Offers accepted and Redemptions apart, without reading any of them as money earned?
+  Ask them in plain words what each figure means; record any hesitation.
+- [ ] "Value of offers redeemed" appears only with a real priced redemption, equals the owner's prices x party on redeemed offers,
+  and its note "Not a measure of what customers spent." is visible beside it.
+- [ ] 0 redemptions = "Redemptions 0" and no dollar figure; no "revenue", "earnings" or "$0" line anywhere.
+- [ ] An opportunity's "Potential value: up to $X" reads as potential ("not money earned") and never appears in Performance or a total.
+- [ ] The fee banner ("Your Nearby fee this month (estimate)") is not read as money earned.
+
 ## Record
 
 | Step | iPhone | Android | Chrome | Safari | Phone browser | Notes |
