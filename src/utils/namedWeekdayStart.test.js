@@ -1,5 +1,5 @@
 // Owner (2026-10-23): a named weekday and an exact time carry from an ask into Create (and the day into Ask Nearby
-// Businesses), from the ONE shared reading (constants/clockWindow.js namedDayFromText -> utils/askUnderstood.js statedNamedDay),
+// Businesses), from the ONE shared reading (constants/clockWindow.js namedDayFromText -> utils/askUnderstood.js statedCalendarDay),
 // never a parser in Create. Rule: "Friday" = the next Friday within 7 days, today included; "this Friday" = this Monday-Sunday
 // week's (past = none); "next Friday" = the following Monday-Sunday week's. No time / a window / "at 9" = the day only, the time
 // asked ("at 9" offers 9 AM and 9 PM, never picks one); an exact time already past = nothing carried (never rolled a week).
@@ -210,8 +210,8 @@ describe('wiring', () => {
     expect(s).toMatch(/title, interestTag, scheduledAt, whenPreset, timeNeeded,/);
     expect(s).not.toMatch(/namedDayFromText|WEEKDAYS/); // no date parser in Create
   });
-  test('one reading: Create and Ask Nearby Businesses both read statedNamedDay', () => {
-    expect(read('utils/createStartTime.js')).toMatch(/statedNamedDay\(classifyResult, typedText, now\)/);
-    expect(read('services/askToBusiness.js')).toMatch(/statedNamedDay\(c, typedText\)/);
+  test('one reading: Create and Ask Nearby Businesses both read statedCalendarDay', () => {
+    expect(read('utils/createStartTime.js')).toMatch(/statedCalendarDay\(classifyResult, typedText, now\)/);
+    expect(read('services/askToBusiness.js')).toMatch(/statedCalendarDay\(c, typedText\)/);
   });
 });

@@ -18,7 +18,7 @@
 // (7 PM <-> 7 AM), never to another hour; noon / midnight are remove-only. The resolver and AskBusiness read the same reading.
 import { parseAskFacets } from '../constants/askFacets';
 import { statedPartySize } from './askResolver';
-import { clockWindowFromText, dateAnchorFromText, pointClockFromText, pointClockChoicesFromText, namedDayFromText } from '../constants/clockWindow';
+import { clockWindowFromText, dateAnchorFromText, pointClockFromText, pointClockChoicesFromText, statedDateFromText, mentionsStatedDate } from '../constants/clockWindow';
 import { askKind } from './needAsk';
 
 export const UNDERSTOOD_WINDOWS = ['now', 'today', 'tonight', 'tomorrow', 'weekend'];
@@ -85,17 +85,20 @@ export function statedStartMinutes(classifyResult, typedText) {
   return pointClockFromText(typedText);
 }
 
-// The named weekday an ask establishes, for a form that holds a day (Create's When step, AskBusiness's day; owner 2026-10-23),
-// or null. The day is the shared weekday rule's (constants/clockWindow.js namedDayFromText: "Friday" = the next one, today
-// included; "this Friday" = this Monday-Sunday week's; "next Friday" = the following week's); a removed or changed WHEN carries
-// none. With it: `minutes` = the exact start (statedStartMinutes), or null; `choices` = both readings of an hour said without
-// AM/PM ("at 9" -> [9 AM, 9 PM], never one picked), only when no clock chip was removed or switched. An exact time already past
-// on that day carries NOTHING (never rolled to the next week; the form asks). Tonight / Tomorrow keep their own path.
-export function statedNamedDay(classifyResult, typedText, now = new Date()) {
+// The calendar day an ask establishes, for a form that holds a day (Create's When step, AskBusiness's day; owner 2026-10-23),
+// or null: a named weekday or an explicit date (constants/clockWindow.js statedDateFromText: "Friday" = the next one, today
+// included; "this Friday" = this Monday-Sunday week's; "next Friday" = the following week's; "November 4" = this year's, or next
+// year's only within 6 months), or an explicit "today". A removed or changed WHEN carries none. With it: `minutes` = the exact
+// start (statedStartMinutes), or null; `choices` = both readings of an hour said without AM/PM ("at 9" -> [9 AM, 9 PM], never one
+// picked), only when no clock chip was removed or switched. An exact time already past on that day carries NOTHING (never rolled
+// forward; the form asks). Tonight / Tomorrow keep their own path.
+export function statedCalendarDay(classifyResult, typedText, now = new Date()) {
   const c = classifyResult ?? {};
   const removed = removedUnderstood(c);
   if (removed.has('when') || changedUnderstood(c).has('when')) return null;
-  const date = namedDayFromText(String(typedText ?? ''), now);
+  const text = String(typedText ?? '');
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const date = mentionsStatedDate(text) ? statedDateFromText(text, now) : /\btoday\b/i.test(text) ? today : null;
   if (!date) return null;
   const minutes = statedStartMinutes(c, typedText);
   if (Number.isInteger(minutes)) {
@@ -147,6 +150,19 @@ export function understoodPartySize(classifyResult, typedText) {
   return statedCount(classifyResult ?? {}, typedText);
 }
 
+// The stated date ("YYYY-MM-DD") the WHEN chip and the search use for this ask, or null: a named weekday or an explicit date
+// (constants/clockWindow.js statedDateFromText), never when WHEN was removed or changed, and never in place of a day the words
+// already give as Now / Today / Tonight / Tomorrow (those keep their own chip).
+export function statedWhenDay(classifyResult, typedText, now = new Date()) {
+  const c = classifyResult ?? {};
+  if (removedUnderstood(c).has('when') || changedUnderstood(c).has('when')) return null;
+  if (['now', 'today', 'tonight', 'tomorrow'].includes(c.dateWindow)) return null;
+  const text = String(typedText ?? '');
+  const d = mentionsStatedDate(text) ? statedDateFromText(text, now) : null;
+  return d ? localDayKey(d) : null;
+}
+export const localDayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export function understoodPieces(classifyResult, typedText) {
   const c = classifyResult ?? {};
   const removed = removedUnderstood(c);
@@ -156,7 +172,11 @@ export function understoodPieces(classifyResult, typedText) {
   const out = [];
   if (typeof c.category === 'string' && c.category) out.push({ key: 'what', category: c.category });
   else if (typeof c.narrowGroup === 'string' && c.narrowGroup) out.push({ key: 'what', group: c.narrowGroup });
-  if (UNDERSTOOD_WINDOWS.includes(c.dateWindow)) out.push({ key: 'when', window: c.dateWindow });
+  // Owner 2026-10-23: a named weekday or an explicit date is its own WHEN piece (its date, e.g. "Sat, Oct 3"), in place of the
+  // "This weekend" a named Saturday/Sunday also gives; changed or removed like any WHEN.
+  const day = statedWhenDay(c, typedText);
+  if (day) out.push({ key: 'when', date: day });
+  else if (UNDERSTOOD_WINDOWS.includes(c.dateWindow)) out.push({ key: 'when', window: c.dateWindow });
   const clock = askClock(c, typedText);
   if (clock) out.push({ key: 'clock', clock });
   // The resolver's own facets when it reports them, else the same parser on the same words.
@@ -198,7 +218,7 @@ export function understoodChoices(piece) {
 // `changedUnderstood`. Anything else (or the same value) leaves the classification as it is.
 export function changeUnderstoodPiece(classifyResult, key, value, typedText = '') {
   const c = { ...(classifyResult ?? {}) };
-  if (key === 'when' && UNDERSTOOD_WINDOWS.includes(value) && value !== c.dateWindow) c.dateWindow = value;
+  if (key === 'when' && UNDERSTOOD_WINDOWS.includes(value) && (value !== c.dateWindow || statedWhenDay(c, typedText))) c.dateWindow = value;
   else if (key === 'people' && Number.isInteger(value) && value > 0 && value !== c.partySize) c.partySize = value;
   else if (key === 'clock') {
     // Only the current reading's own AM/PM twin: never another hour, never a clock the search would not use.
@@ -214,7 +234,7 @@ export function changeUnderstoodPiece(classifyResult, key, value, typedText = ''
 // to the results). Session memory only.
 const played = new Set();
 export function understoodKey(pieces, typedText) {
-  const val = (p) => (p.clock ? `${p.clock.at ?? ''}/${p.clock.after ?? ''}/${p.clock.before ?? ''}` : p.category ?? p.group ?? p.window ?? p.environment ?? p.party ?? p.count);
+  const val = (p) => (p.clock ? `${p.clock.at ?? ''}/${p.clock.after ?? ''}/${p.clock.before ?? ''}` : p.category ?? p.group ?? p.window ?? p.date ?? p.environment ?? p.party ?? p.count);
   return `${String(typedText ?? '').trim().toLowerCase()}|${pieces.map((p) => `${p.key}:${val(p)}`).join(',')}`;
 }
 export function takeUnderstoodPlay(key) {

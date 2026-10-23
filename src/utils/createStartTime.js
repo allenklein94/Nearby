@@ -4,18 +4,18 @@
 // step to ask, like any window ("after 7" is a constraint, never a start). A time already past, or "Now" (it means right away),
 // carries nothing. "Tonight" stays selected only for an afternoon/evening time; a morning one (a chip switched to 7 AM) shows as
 // a picked date.
-// Named weekdays (owner, 2026-10-23): the day comes from `statedNamedDay` (the shared weekday rule) and is shown as a picked
+// Named weekdays (owner, 2026-10-23): the day comes from `statedCalendarDay` (the shared weekday rule) and is shown as a picked
 // date. With an exact time: that date and time. Without one (no time, a window, or an ambiguous "at 9"): the date alone
 // (`quickStartDateISO`), Create asks only for the time and offers both readings of an ambiguous hour (`quickStartTimeChoices`);
 // no time is ever filled in for the person. An exact time already past on that day carries nothing.
-import { statedStartMinutes, statedNamedDay } from './askUnderstood';
+import { statedStartMinutes, statedCalendarDay } from './askUnderstood';
 
 const localDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export function createStartFromAsk(classifyResult, typedText, whenPreset, now = new Date()) {
   if (whenPreset === 'tonight' || whenPreset === 'tomorrow') return presetStart(classifyResult, typedText, whenPreset, now);
   if (whenPreset === 'now') return {};
-  const named = statedNamedDay(classifyResult, typedText, now);
+  const named = statedCalendarDay(classifyResult, typedText, now);
   if (!named) return {};
   const { date, minutes, choices } = named;
   if (Number.isInteger(minutes)) {

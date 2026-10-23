@@ -4,11 +4,11 @@
 // Time stays a day: "tonight" is today's date shown as "Tonight", never an invented clock time. Owner idea "305" (2026-10-20): a
 // clock time the words state ("at 7" = 7 PM, `pointClockFromText`) fills the optional Time field; an ambiguous one ("at 9") stays empty.
 import { recordIntentSelection } from './intentOutcomes';
-import { understoodPartySize, statedStartMinutes, statedNamedDay } from '../utils/askUnderstood';
+import { understoodPartySize, statedStartMinutes, statedCalendarDay } from '../utils/askUnderstood';
 
 const localDateKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 import { requestCarriedRows } from '../utils/fromWhatYouSaid';
-import { namedDayFromText } from '../constants/clockWindow';
+import { statedDateFromText } from '../constants/clockWindow';
 
 export function askBusinessParamsFromAsk({ classifyResult, typedText, submissionId }) {
   const c = classifyResult ?? {};
@@ -17,11 +17,11 @@ export function askBusinessParamsFromAsk({ classifyResult, typedText, submission
   const whenRemoved = Array.isArray(c.removedUnderstood) && c.removedUnderstood.includes('when');
   const dateWindow = c.dateWindow ?? (!whenRemoved && c.structured?.spontaneity === 'no_rush' ? 'flexible' : null);
   // Idea "306"/"307": a removed clock chip or a changed/removed WHEN carries no time; one switched to AM/PM carries the chosen moment.
-  // Owner 2026-10-23: a named weekday ("Saturday", "next Wednesday") is that date, picked (the shared rule, `statedNamedDay`);
+  // Owner 2026-10-23: a named weekday ("Saturday", "next Wednesday") is that date, picked (the shared rule, `statedCalendarDay`);
   // an exact time already past on it carries neither (the form asks). Tonight / Tomorrow / this weekend keep their own day.
   const ownDay = ['tonight', 'tomorrow', 'today', 'now'].includes(dateWindow);
-  const named = ownDay ? null : statedNamedDay(c, typedText);
-  const pastOnNamedDay = !ownDay && !named && !whenRemoved && !!namedDayFromText(String(typedText ?? ''));
+  const named = ownDay ? null : statedCalendarDay(c, typedText);
+  const pastOnNamedDay = !ownDay && !named && !whenRemoved && !!statedDateFromText(String(typedText ?? ''));
   const startMinutes = pastOnNamedDay ? null : statedStartMinutes(c, typedText);
   return {
     prefillText: typedText,

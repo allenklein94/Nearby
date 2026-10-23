@@ -448,6 +448,13 @@ export function startOfDay(d) {
 // instead of the same broad match a plain "today"/"tonight" ask gets.
 // `now` (optional, default the real clock) lets a caller that already holds a clock judge every window against it (strong-match
 // clock fix, 2026-10-18: strongMatchPieces passed its `now` to its "over" check but this read the real clock).
+// A gathering on one stated local calendar day ("YYYY-MM-DD", utils/askUnderstood.js statedWhenDay), owner 2026-10-23.
+export function matchesStatedDay(scheduledAt, dayKey) {
+  const d = new Date(scheduledAt);
+  if (Number.isNaN(d.getTime())) return false;
+  return localDateParam(startOfDay(d)) === dayKey;
+}
+
 export function matchesDateWindow(scheduledAt, dateWindow, now = new Date()) {
   if (!dateWindow || dateWindow === 'flexible') return true;
   if (dateWindow === 'now') return isWithinRightNowWindow(scheduledAt, now);

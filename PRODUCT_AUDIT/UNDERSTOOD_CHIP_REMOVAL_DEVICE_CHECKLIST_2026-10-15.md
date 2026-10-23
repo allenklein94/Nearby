@@ -87,6 +87,25 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
        - Ask Nearby Businesses from "pickleball saturday at 2 pm": the day field shows the picked date (📅 that Saturday) and
          Time 2:00 PM; the "From what you said" card shows no "This weekend" row.
        - Screen reader on the date-only row: reads the date and "Pick a time".
+    j. Explicit dates, Today, the date chip (owner 2026-10-23 follow-up, BUILT, NOT DEVICE-VERIFIED; no new strings; guards
+       `utils/statedDateStart.test.js`, `services/statedDaySearch.test.js`). Note the date the phone shows against the real calendar:
+       - "coffee November 4 at 2 PM": results show a WHEN chip with the date ("Wed, Nov 4"); Create = Pick a Date, Nov 4, 2:00 PM;
+         Ask Nearby Businesses = 📅 Nov 4 + Time 2:00 PM. "4 November", "Nov 4th", "the 4th of November" read the same.
+       - A month already past this year (e.g. said in October, "coffee October 3"): nothing carried, no WHEN chip. Within the next
+         6 months of next year (e.g. "January 5" said in late autumn): next year's date. Note whether the chip makes the year
+         clear enough (English shows weekday + month + day, no year): report only.
+       - "coffee 11/4", "coffee tonight November 4", "coffee Thursday November 4" (a weekday that isn't Nov 4's): no WHEN chip,
+         nothing carried to Create or Ask Nearby Businesses; never one of the two days picked.
+       - "coffee today at 3 PM" before 3 PM: Create shows today, 3:00 PM. After 3 PM: Create asks (nothing carried).
+       - "pickleball friday" (bare weekday): results only show gatherings on that Friday; its WHEN chip shows Friday's date.
+         "pickleball saturday": Saturday's results only (not the whole weekend); "saturday or sunday" still both days.
+       - Tap the date chip: the existing row (Now / Today / Tonight / Tomorrow / This weekend) opens, none highlighted; pick
+         Tomorrow: results switch to tomorrow, the words' clock time is dropped, Create gets Tomorrow. ✕ removes the day.
+       - iOS time picker (owner item 7, CHECK BEFORE CHANGING ANYTHING): on a date-only row ("pickleball saturday"), open the
+         picker. It may rest on noon: confirm Next stays refused and the row still says "Pick a time" until you actively pick or
+         confirm a time; an untouched noon position must never count as a chosen time. Record the result; a failure is a defect.
+         Code reading (not verification): the iOS spinner reports a time only when scrolled, so an untouched noon is never
+         picked; but someone who WANTS noon must scroll off it and back. Report whether that is confusing; no change before this check.
 
 Known limits (disclosed): pieces past the 4-chip cap sit behind "+N" until tapped (never dropped, since the 2026-10-22 cap fix); removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,
 the learned-affinity "constrained" check), which only order results and never add a chip, filter or caption back.

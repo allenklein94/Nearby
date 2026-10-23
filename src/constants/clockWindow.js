@@ -110,35 +110,103 @@ const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + 
 //   "Friday"          -> the next Friday within 7 days, today included (said on a Friday = today).
 //   "this Friday"     -> the Friday of the current Monday-Sunday week; already past = none (never rolled forward).
 //   "next Friday"     -> the Friday of the following Monday-Sunday week.
-// None (null) when two different weekdays are named ("Saturday or Sunday"), the same day is named two ways, the words also say
-// tonight/today/tomorrow and that is a different day, or an explicit calendar date is in the words ("November 4", "11/4"):
-// a stated date is never overridden or second-guessed by the weekday. Full day names only ("sat" is also a verb).
+// None (null) when two different weekdays are named ("Saturday or Sunday"), the same day is named two ways, or the words also say
+// tonight/today/tomorrow and that is a different day. Full day names only ("sat" is also a verb; "fridays" = recurring, deferred).
 const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const WEEKDAY_RE = /\b(?:(this|next)\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/g;
 const ANY_WEEKDAY_RE = /\b(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/;
-const MONTHS = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
-const EXPLICIT_DATE_RE = new RegExp(String.raw`\b(?:(?:${MONTHS})\.?\s+\d{1,2}(?:st|nd|rd|th)?\b|\d{1,2}(?:st|nd|rd|th)?\s+(?:of\s+)?(?:${MONTHS})\b|\d{1,2}/\d{1,2}\b)`);
 
-export function namedDayFromText(text, now = new Date()) {
-  if (typeof text !== 'string' || !text) return null;
-  const t = text.toLowerCase();
-  const mentions = [...t.matchAll(WEEKDAY_RE)].map((m) => ({ mod: m[1] ?? null, day: WEEKDAYS.indexOf(m[2]) }));
-  if (!mentions.length) return null;
-  if (EXPLICIT_DATE_RE.test(t)) return null;
+function weekdayMentions(t) {
+  return [...t.matchAll(WEEKDAY_RE)].map((m) => ({ mod: m[1] ?? null, day: WEEKDAYS.indexOf(m[2]) }));
+}
+
+function weekdayDate(mentions, today) {
   const { mod, day } = mentions[0];
   if (mentions.some((m) => m.day !== day || m.mod !== mod)) return null;
-  const today = startOfDay(now);
   const dow = today.getDay();
+  if (mod === null) return addDays(today, (day - dow + 7) % 7);
+  const monday = addDays(today, -((dow + 6) % 7));
+  const date = addDays(monday, (day + 6) % 7 + (mod === 'next' ? 7 : 0));
+  return date < today ? null : date;
+}
+
+// Explicit calendar dates (owner, 2026-10-23, LOCKED rule): month NAMES only ("November 4", "Nov 4th", "4 November", "the 4th of
+// November", optionally ", 2027"); a number-only date ("11/4") means different days in different languages, so its presence
+// makes the whole ask carry no date. With a year: that date (past = none). Without: this year's if not past, else next year's
+// only if it falls within the next 6 months ("January 5" said in December), else none (never nearly a year ahead). An invalid
+// day ("February 30"), two different dates, or a named weekday that is not that date's weekday = none: never resolved silently.
+const MONTH_WORD = String.raw`(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept|sep|oct|nov|dec)\.?`;
+const MONTH_INDEX = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+const DAY_NUM = String.raw`(\d{1,2})(?:st|nd|rd|th)?`;
+// A number after a month word that is a count, a clock or a distance is not a day ("may 4 people", "march 5 miles", "nov 4:30").
+const NOT_A_DAY = String.raw`(?!\d|\s*(?:[:.]\d|a\.?m\b|p\.?m\b|o'?clock|people|persons|of\s+us|friends|guests|adults|kids|children|hours?|hrs?|minutes?|mins?|miles?|mi\b|km\b|%))`;
+const YEAR = String.raw`(?:,?\s+(20\d{2})\b)?`;
+const MONTH_FIRST_RE = new RegExp(String.raw`\b${MONTH_WORD}\s+${DAY_NUM}\b${NOT_A_DAY}${YEAR}`, 'g');
+const DAY_FIRST_RE = new RegExp(String.raw`\b(?:the\s+)?${DAY_NUM}(?:\s+of)?\s+${MONTH_WORD}(?![a-z])${YEAR}`, 'g');
+const NUMERIC_DATE_RE = /\b\d{1,2}\/\d{1,2}(?:\/\d{2,4})?\b/;
+
+function explicitDates(t) {
+  const out = [];
+  for (const m of t.matchAll(MONTH_FIRST_RE)) out.push({ month: MONTH_INDEX[m[1].slice(0, 3)], day: Number(m[2]), year: m[3] ? Number(m[3]) : null });
+  for (const m of t.matchAll(DAY_FIRST_RE)) out.push({ month: MONTH_INDEX[m[2].slice(0, 3)], day: Number(m[1]), year: m[3] ? Number(m[3]) : null });
+  return out;
+}
+
+const validDate = (y, m, d) => { const x = new Date(y, m, d); return x.getMonth() === m && x.getDate() === d ? x : null; };
+
+function explicitDate(found, today) {
+  const { month, day, year } = found[0];
+  if (found.some((f) => f.month !== month || f.day !== day || (f.year != null && year != null && f.year !== year))) return null;
+  const y = found.find((f) => f.year != null)?.year ?? null;
+  if (y != null) { const d = validDate(y, month, day); return d && d >= today ? d : null; }
+  const thisYear = validDate(today.getFullYear(), month, day);
+  if (thisYear && thisYear >= today) return thisYear;
+  const nextYear = validDate(today.getFullYear() + 1, month, day);
+  const sixMonths = new Date(today.getFullYear(), today.getMonth() + 6, today.getDate());
+  return nextYear && nextYear <= sixMonths ? nextYear : null;
+}
+
+// True when the words name a month-name calendar date ("November 4"), readable or not.
+export function namesCalendarDate(text) {
+  return typeof text === 'string' && explicitDates(text.toLowerCase()).length > 0;
+}
+
+// True when the words name a calendar day this file reads (a weekday, a month-name date, or an unreadable number-only date).
+export function mentionsStatedDate(text) {
+  if (typeof text !== 'string' || !text) return false;
+  const t = text.toLowerCase();
+  return ANY_WEEKDAY_RE.test(t) || NUMERIC_DATE_RE.test(t) || explicitDates(t).length > 0;
+}
+
+// The ONE stated-date rule (owner, 2026-10-23): the calendar day a named weekday or an explicit date in the words gives, or null.
+// Every consumer reads it (search's date anchor, the WHEN chip, Create, Ask Nearby Businesses). Also none when the words name
+// tonight/today/tomorrow or this weekend and the stated date is a different day.
+export function statedDateFromText(text, now = new Date()) {
+  if (typeof text !== 'string' || !text) return null;
+  const t = text.toLowerCase();
+  if (NUMERIC_DATE_RE.test(t)) return null;
+  const today = startOfDay(now);
+  const found = explicitDates(t);
+  const mentions = weekdayMentions(t);
   let date;
-  if (mod === null) date = addDays(today, (day - dow + 7) % 7);
-  else {
-    const monday = addDays(today, -((dow + 6) % 7));
-    date = addDays(monday, (day + 6) % 7 + (mod === 'next' ? 7 : 0));
-    if (date < today) return null;
-  }
+  if (found.length) {
+    date = explicitDate(found, today);
+    if (!date) return null;
+    if (mentions.some((m) => m.day !== date.getDay())) return null;
+    if (mentions.some((m) => m.mod) && weekdayDate(mentions, today)?.getTime() !== date.getTime()) return null;
+  } else if (mentions.length) {
+    date = weekdayDate(mentions, today);
+    if (!date) return null;
+  } else return null;
   if (/\btomorrow\b/.test(t) && date.getTime() !== addDays(today, 1).getTime()) return null;
   if (/\b(tonight|tonite|this\s+evening|today)\b/.test(t) && date.getTime() !== today.getTime()) return null;
+  if (/\bweekend\b/.test(t) && !isThisWeekend(date, now)) return null;
   return date;
+}
+
+// The weekday rule alone (a stated date read only from a named weekday), for callers and tests that ask about weekdays.
+export function namedDayFromText(text, now = new Date()) {
+  return typeof text === 'string' && ANY_WEEKDAY_RE.test(text.toLowerCase()) && !explicitDates(text.toLowerCase()).length ? statedDateFromText(text, now) : null;
 }
 
 // True when a date is this weekend's Saturday or Sunday (on a Sunday, only today).
@@ -162,8 +230,8 @@ export function dateAnchorFromText(text, now = new Date()) {
   // This weekend's Saturday/Sunday (on a Sunday, Saturday is already past).
   const thisSat = dow === 0 ? addDays(today, -1) : addDays(today, 6 - dow);
   const thisSun = addDays(thisSat, 1);
-  if (ANY_WEEKDAY_RE.test(t)) {
-    const day = namedDayFromText(t, now);
+  if (mentionsStatedDate(t)) {
+    const day = statedDateFromText(t, now);
     return day ? { kind: 'day', dates: [day] } : null;
   }
   if (weekendWords && tonightOrToday) {

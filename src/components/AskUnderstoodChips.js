@@ -9,6 +9,8 @@ import { categoryName, groupName } from '../i18n/categoryNames';
 import { PARTY_TYPE_LABELS } from '../constants/gatheringDisplaySignals';
 import { understoodPieces, understoodKey, takeUnderstoodPlay, understoodChoices, sameClock, UNDERSTOOD_CHANGEABLE } from '../utils/askUnderstood';
 import { localClock } from '../i18n/format';
+import { displayWeekdayDate } from '../i18n/display';
+import { localDateFromKey as dayFromKey } from '../utils/createStartTime';
 
 // Owner item 45 (2026-10-11): "Nearby understood me". The quiet chips of what a typed ask was read as ("Tonight · 🌳 Outdoor"),
 // shown the moment the ask is understood (under the "Finding…" loader) and kept above its results. Which pieces: only
@@ -24,6 +26,8 @@ import { localClock } from '../i18n/format';
 // Owner idea "306" (2026-10-22): the clock chip ("After 7 PM") works the same way; its row offers only the same time AM / PM.
 // Owner (2026-10-22): the 4-chip cap stays the visual default, but no understood piece may become impossible to correct: past
 // the cap, a quiet "+N" chip (screen reader: "Show more") shows the rest in place, each with its own ✕ / change row.
+// Owner (2026-10-23): a named weekday or explicit date shows as its date ("Sat, Oct 3", the shared date format, no new string);
+// its row offers the existing WHEN choices, none marked, so the day can be corrected without retyping.
 const T = SEQUENCES.askUnderstood;
 
 export default function AskUnderstoodChips({ classifyResult, typedText, onRemove = null, onChange = null, disabled = false }) {
@@ -58,7 +62,7 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
   const label = (p) => {
     if (p.key === 'clock') return clockText(p.clock);
     if (p.key === 'what') return p.category ? categoryName(p.category, language) : groupName(p.group, language);
-    if (p.key === 'when') return t(`ui.gatherings.dateFilter.${p.window}`);
+    if (p.key === 'when') return p.date ? displayWeekdayDate(dayFromKey(p.date), language) : t(`ui.gatherings.dateFilter.${p.window}`);
     if (p.key === 'where') return t(p.environment === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip');
     if (p.key === 'people') return t('ui.common.count.people', { count: p.count });
     return p.party === 'groups' ? t('ui.discover.tagBigGroup') : PARTY_TYPE_LABELS[p.party];

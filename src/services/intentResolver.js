@@ -22,7 +22,7 @@ import { occasionLabel } from '../constants/businessAttributes';
 import { sharedRequestFactsLine } from '../utils/sharedRequestFacts';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals, getPartnerReputations } from './businessFulfillment';
 import { askKind, needAvailabilityWindow, needCaption, orderNeedResults } from '../utils/needAsk';
-import { clockOverride } from '../utils/askUnderstood';
+import { clockOverride, statedWhenDay } from '../utils/askUnderstood';
 import { getWhoForPreferenceSignals } from './preferencePolls';
 import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionPackages';
 import { getSocialForecast } from './homeDashboard';
@@ -49,6 +49,7 @@ import {
   extractMeaningfulWords,
   titleMentionBonus,
   matchesDateWindow,
+  matchesStatedDay,
   dateWindowToDateRange,
   scoreGatheringForResolver,
   gatheringResolverScoreParts,
@@ -119,11 +120,12 @@ function scored(parts) {
   return { score: baseSignals.reduce((n, p) => n + p.delta, 0), baseSignals };
 }
 
-async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false, askedActivities = activitiesFromText(rawText)) {
+async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false, askedActivities = activitiesFromText(rawText), statedDay = null) {
   const nearby = await getNearbyGatherings(travel ? 'travel' : 'wide');
   const relevant = nearby.filter((g) => {
     if (category && g.interest_tag !== category) return false;
-    return matchesDateWindow(g.scheduled_at, dateWindow);
+    // Owner 2026-10-23: a stated weekday / date ("pickleball Friday", "November 4") is that day, as Tomorrow is tomorrow.
+    return statedDay ? matchesStatedDay(g.scheduled_at, statedDay) : matchesDateWindow(g.scheduled_at, dateWindow);
   });
   const meaningfulWords = extractMeaningfulWords(rawText);
   return relevant.map((gathering) => {
@@ -317,8 +319,8 @@ export async function resolveCommunityIntent({ category, rawText }) {
   return [...joined, ...discoverable].sort(compareRanked).slice(0, RESULT_CAP);
 }
 
-async function resolveConnectedRequests(category, dateWindow) {
-  const { start, end } = dateWindowToDateRange(dateWindow);
+async function resolveConnectedRequests(category, dateWindow, statedDay = null) {
+  const { start, end } = statedDay ? { start: statedDay, end: statedDay } : dateWindowToDateRange(dateWindow);
   const connected = await getConnectedOpenBusinessRequests({
     category: category ?? null,
     dateStart: start,
@@ -631,6 +633,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // needs nothing here: a size is never re-read from the words. Ranking rules themselves are unchanged.
   const removedSet = new Set(Array.isArray(removed) ? removed : []);
   const whenText = removedSet.has('when') ? '' : rawText;
+  // Owner 2026-10-23: the day a named weekday or explicit date gives (the WHEN chip's own rule), else the window's days.
+  const statedDay = statedWhenDay({ dateWindow }, whenText);
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
   partyType = partyType ?? (removedSet.has('who') ? null : partnerPartyType(rawText));
   // Item 63: an ask naming two or more parts of an outing ("dinner and something to do after") is ONE plan. A single
@@ -741,9 +745,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const askedActivities = removedSet.has('what') ? [] : activitiesFromText(rawText);
 
   const branches = await Promise.allSettled([
-    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities),
+    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities, statedDay),
     resolveCommunities(category, location, myCity),
-    resolveConnectedRequests(category, dateWindow),
+    resolveConnectedRequests(category, dateWindow, statedDay),
     resolvePerks(category, location),
     resolveBusinessAvailability(category, location, attributes, cuisine, partySize, partyType, occasion, affinitySignalsPromise, whoForSignalsPromise, whoForName, askedActivities, travelMiles),
     resolvePolicyOnlyBusinesses(location, partySize, travelMiles),

@@ -32,13 +32,16 @@ import { socialSignalsFromText } from '../constants/socialContext';
 import { distanceWillingnessFromText } from '../constants/distanceWillingness';
 import { transportModeFromText } from '../constants/transportMode';
 import { timeBudgetFromText } from '../constants/timeBudget';
-import { clockWindowFromText, dateAnchorFromText, namedDayFromText, isThisWeekend } from '../constants/clockWindow';
+import { clockWindowFromText, dateAnchorFromText, statedDateFromText, namesCalendarDate, isThisWeekend } from '../constants/clockWindow';
 import { cuisineFromText } from '../constants/categoryTree';
 
 // ---- time: explicit words only (the classifier's own buckets) ----
 export function dateWindowFromText(text, at = new Date()) {
   const t = String(text ?? '');
   const now = at instanceof Date ? at : new Date();
+  // A month-name date the shared rule can't settle ("tonight November 4", "Friday November 5" when that is a Thursday, a date
+  // past or too far ahead) leaves no day at all: never resolved silently to the other word's day (owner, 2026-10-23).
+  if (namesCalendarDate(t) && !statedDateFromText(t, now)) return null;
   if (/\b(right\s+now|right\s+away|immediately|asap|as\s+soon\s+as\s+possible|now)\b/i.test(t)) return 'now';
   if (/\b(tonight|tonite|this\s+evening)\b/i.test(t)) return 'tonight';
   if (/\btomorrow\b/i.test(t)) return 'tomorrow';
@@ -48,7 +51,7 @@ export function dateWindowFromText(text, at = new Date()) {
   // A named Saturday/Sunday is "this weekend" only when the shared weekday rule puts it there ("next Saturday", or "Saturday"
   // said on a Sunday, is a later week: no window). "Saturday or Sunday" (no single day) stays this weekend.
   if (/\b(saturday|sunday)\b/i.test(t)) {
-    const day = namedDayFromText(t, now);
+    const day = statedDateFromText(t, now);
     if (day) return isThisWeekend(day, now) ? 'weekend' : null;
     return /\bnext\s+(saturday|sunday)\b/i.test(t) ? null : 'weekend';
   }
@@ -142,7 +145,8 @@ export function resolveAsk(text, ai = null) {
 
   // WHEN: explicit words only. The AI's dateWindow is never used on its own.
   const dateWindow = set('dateWindow', dateWindowFromText(t), 'words');
-  const whenPreset = whenPresetFromText(t);
+  // Same rule as the window: a month-name date that contradicts tonight/tomorrow carries neither day.
+  const whenPreset = namesCalendarDate(t) && !statedDateFromText(t) ? null : whenPresetFromText(t);
 
   // WHY: explicit words / the couple-evening rule first; an AI occasion only when the words support it.
   const wordOccasion = occasionFromAsk(t, { partyType, dateWindow });

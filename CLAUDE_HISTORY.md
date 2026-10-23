@@ -1,3 +1,42 @@
+# Explicit dates, Today into Create, a day filter for stated days, the date chip (owner, 2026-10-23; follow-up to named weekdays)
+
+Owner accepted + closed the named-weekday build (phone pending) and approved a narrow follow-up: (1) month-name calendar dates
+carried into Search, Create and Ask Nearby Businesses, validated (date + any weekday), contradictions never resolved silently;
+(2) "Today at 3 PM" into Create when not past; (3) bare weekday searches respect the day; (4) correct the day through the existing
+chip-change row (no screens, no motion); (5) existing safeguards kept (ambiguous AM/PM, before/after, changing the day); (6)
+abbreviated + recurring weekdays deferred; (7) iOS picker checked on a phone before any change. Decisions asked first: year =
+"next year if soon, else ask" (Option 1: only within the next 6 months; stated year respected); numeric dates = NO, month names
+only (11 languages read "11/4" differently; ISO later, not now).
+
+Built:
+- `constants/clockWindow.js`: `statedDateFromText(text, now)` = the ONE stated-date rule (weekday rule unchanged + month-name dates:
+  "November 4", "Nov. 4th", "4 November", "the 4th of November", optional ", 2027"). None: any number-only date in the words, an
+  invalid day (Feb 30), two different dates, a weekday that isn't that date's (or this/next that doesn't land on it), a past date,
+  next year beyond 6 months, tonight/today/tomorrow/this weekend naming another day. A number after a month word that is a count,
+  clock or distance is not a day ("may 4 people", "march 5 miles", "nov 4:30"). `namedDayFromText` kept as the weekday-only view;
+  `mentionsStatedDate`, `namesCalendarDate`; `dateAnchorFromText` reads the shared rule.
+- `utils/askResolver.js`: a month-name date the rule can't settle drops the day window AND Create's Tonight/Tomorrow preset
+  ("coffee tonight November 4" = no day; before, Tonight won silently). Weekday-only conflicts unchanged (completed behaviour).
+- `utils/askUnderstood.js`: `statedCalendarDay` (was `statedNamedDay`; + explicit dates + an explicit "today") feeds Create
+  (`createStartTime.js`) and AskBusiness (`askToBusiness.js`); `statedWhenDay` (YYYY-MM-DD) feeds the WHEN chip and search; a WHEN
+  piece with `date` replaces the window piece (a named Saturday = its date, not "This weekend"); `changeUnderstoodPiece` lets the
+  date chip change to any existing window (even the window already underneath).
+- `components/AskUnderstoodChips.js`: the date chip label = `displayWeekdayDate` (shared format, no new string); its row = the
+  existing WHEN windows, none marked; ✕ removes.
+- Search: `services/intentResolver.js` keeps only gatherings on the stated day (`matchesStatedDay` in `intentResolverScoring.js`)
+  and narrows friends' open requests to it; removed/changed WHEN = back to the window.
+
+Not built (disclosed): abbreviated / recurring weekdays; numeric and ISO dates; the date chip offers only the existing windows
+(no "another weekday" choice: correcting Friday -> Saturday = This weekend or ✕ + retype); English chip shows no year for a
+next-year date; iOS picker unchanged (code reading: the spinner reports a time only when scrolled, so untouched noon is never
+picked, but choosing exactly noon needs a scroll off and back: device check 18j).
+
+Tests: new `utils/statedDateStart.test.js` 13 (owner year table, forms, none cases, count/clock guards, weekday rule kept,
+Create/AskBusiness carry, Today at 3 PM + past, contradictions carry nothing, chip show/change/remove), new
+`services/statedDaySearch.test.js` 7 (real resolver: bare weekday + date filter, friends' requests, windows unchanged, unreadable
+dates filter nothing, chip removal/change). Jest 488/6723 (11 todo); prod journeys 642/642 (rolled back). No migration, no new
+strings. Device check 18j added.
+
 # Named weekdays + exact time carried into Create, AskBusiness and search (owner, 2026-10-23; reopens the "Saturday at 2 PM" gap)
 
 Owner reopened check 18i's gap ("Saturday at 2 PM" lost its time) and ordered a narrow fix through the shared Ask reading. Owner
