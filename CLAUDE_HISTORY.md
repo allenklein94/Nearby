@@ -1,3 +1,20 @@
+# Idea 356 corrected (owner, 2026-10-23): Option A, opt-in reviewed, not implemented
+
+**Owner chose Option A:** keep the anonymous gathering-interest demand row on business Home (not removed: row, category aggregates,
+Post availability stay), with one privacy adjustment: sharing becomes opt-in (new users off; existing users without an affirmative
+opt-in excluded). Rules kept: >= 5 distinct opted-in people; public gatherings in the business's own categories and area, 14 days;
+never identities, individual marks or availability; never targeting/messaging people from Interested; kept separate from explicit
+requests, confirmed attendance, popularity and Trending; business wording says people are interested in gatherings (already true:
+"{count} people nearby are interested in {category} gatherings"), never that they are looking for a business. Safeguard reworded
+(CLAUDE.md Privacy, Interested bullet): "Interested is private to the person and visible to hosts only as an anonymous count.
+Businesses may see category-level aggregated gathering interest only from people who explicitly opted in, subject to the minimum-five
+privacy threshold. Interested never identifies an individual or constitutes a direct business request or confirmed attendance."
+Review (`PRODUCT_AUDIT/IDEA_356_INTEREST_DEMAND_OPT_IN_REVIEW_2026-10-23.md`): only reader is `get_partner_demand_signals`; prod 4
+profiles all true by default, disclosure never acknowledged, 0 Interested marks; no affirmative opt-in exists, so all rows go false;
+tightening only, no change notice needed; `docs/privacy.html` never disclosed this use (gap). Plan: migration 20270340 (default false,
+rows false, opt-in timestamp, filter `coalesce(.., false)`), client defaults, one privacy-policy sentence, journeys + guard, replay.
+NOT implemented pending owner go. Supersedes the "open conflict" note below.
+
 # Idea 356 closed (owner, 2026-10-23) with one open conflict, nothing built
 
 **Idea "356" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no application code.** Owner's final rules: keep the anonymous
