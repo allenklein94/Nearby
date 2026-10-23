@@ -69,6 +69,10 @@ These four are the session's main questions. Each gets an answer even when every
 | F3 | **Could they tell if the pin was in the wrong place before publishing?** | C24 (a)/(f): place a pin, review step (it names the venue, shows no map), publish; then item 146's "About x mi" | Did they check it; where they thought people would meet; publish a wrong spot without noticing = Sev 1 |
 | F4 | **Did they publish or send confidently**, knowing what, when, where and for how many? | Create's Publish; Ask Nearby Businesses' Send, then the request screen | Ask "what did you just send/publish?": a wrong or unsure answer = USABILITY (Sev 1 if a wrong fact went out) |
 
+Navigation watch (owner, ideas "314"/"315", 2026-10-23): when going from Discover (a business's preview) into Ask Nearby Businesses
+and, after Send, onto the request screen, record whether the move felt natural or like a detour (hesitation, Back pressed, "where am
+I?"), A and B. Report only: the flow stays as built unless this shows a real problem.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google

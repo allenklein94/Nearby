@@ -1,3 +1,22 @@
+# Ideas 314 + 315 closed (owner, 2026-10-23), nothing built
+
+**Idea "314" ("the tab is the context, the object is the thing, the action is the task; no new screen just because one changes")
+MET AS BUILT, CLOSED, LOCKED:** item 45 (same job = same screen; change content > expand inline > sheet > screen) + Rule 14
+(`constants/screenRegistry.js`, a route needs a job A-F) + ideas "221"-"223". No new rule.
+
+**Idea "315" (Discover card expands -> "Ask Coastal Coffee" request sheet -> Send closes it, still on Discover -> offer -> plan)
+MET EXCEPT two steps, CLOSED, LOCKED:** met = cards open in place / business preview sheet over Discover with Back restoring its exact
+state (item 17, idea "283"); offer push / Activity row opens that request on the exact offer (items 62/165, ideas "241"/"242"); accept ->
+"You're booked" -> merged into Your Plan (items 12/32, idea "173"). DECLINED (existing locks, not reopened): an expanding card (items
+95-97, ideas "230"/"231"); a multi-step request SHEET (idea "225"; AskBusiness stays its dedicated screen, idea "233"); Send returning
+to Discover (idea "157": Send replaces the form with the request screen). Preserved flow: Discover -> business preview -> Ask Nearby
+Businesses -> Send -> request screen -> offer received -> You're booked -> Your Plan. The request screen stays the destination after
+Send: confirmation, status line + "Next:", verified reach ("We asked N", item 158), and where replies arrive (items 23/25). Owner: fewer
+screens is not automatically better; an important action needs clear confirmation and a place to follow what happens next.
+Reconsider only if the first phone session shows Discover -> Ask Nearby Businesses feels unnecessarily complicated (watch line added to
+`PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md`). Typed business-name recognition ("Ask Coastal Coffee") stays DEFERRED
+(idea "305"). No code changed.
+
 # First phone session plan approved + adjusted (owner, 2026-10-23)
 
 Owner approved the run order and its user-impact order with three adjustments: (1) update outdated checklist lines to the app as
