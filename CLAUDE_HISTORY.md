@@ -1,3 +1,18 @@
+# Date fixes accepted; first real-phone session run order (owner, 2026-10-23)
+
+Owner accepted and closed the weekday-to-weekday correction and the year on the chip (cecb4199), device verification pending, and
+asked for the first real-phone session checklist from the EXISTING checks, prioritized by user impact, focused on the whole
+journey (search interpretation, chip corrections, Create handoff, Ask Nearby Businesses, location selection), flagging anything
+that could confuse people or stop completion; no new features, no locked behaviour changed, no duplicated checks.
+
+Written: `PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md`: setup S1-S7 (native build, Maps SDK, location permission,
+seeded test gatherings + one test business, two accounts, record sheet); parts 1-5 point at existing checks (C1/C2/C21; item 45;
+chip checklist 1-18j; item 86; item 82; C18; C24 + item 146; item 84; offer checklist section 1; C19) and end with the owner's
+correction story (Friday -> Saturday: does the empty time read as "choose a new time" without feeling lost?); part 6 lower impact;
+part 7 later sessions (offer experience, the 2026-10-12 motion order, two-phone and Android). Watch list W1-W16 (4 completion
+risks, 12 confusion risks). Found while writing: item 45 check 9 ("chips are not tappable") is superseded by the chip
+removal/change checks; marked skip in the run order (the item 45 checklist itself left unchanged). Nothing in the app changed.
+
 # Date work closed + weekday-to-weekday chip correction + year on the chip (owner, 2026-10-23)
 
 Owner accepted the explicit-date build (d5165145) and closed date parsing, phone verification pending, with two narrow fixes and
