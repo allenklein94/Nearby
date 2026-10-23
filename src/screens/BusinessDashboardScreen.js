@@ -3939,7 +3939,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           {bestDemand && bestDemand.request_count > 0 && (
                             <TouchableOpacity onPress={() => setSection('requests')} accessibilityLabel={t('ui.bizDash1.viewYourBestOpportunityA11y')} accessibilityRole="button">
                               <Text style={styles.briefBestOpportunity}>
-                                {t('ui.bizDash1.yourBestOpportunity')}{' '}{bestDemand.category} ({bestDemand.request_count} {Number(bestDemand.request_count) === 1 ? 'request' : 'requests'})
+                                {/* Idea "341": request_count is DISTINCT PEOPLE (server, floored at demand_min_people()); the existing localized
+                                    wording + category name, never "requests" or a raw category key. */}
+                                {t('ui.bizDash1.yourBestOpportunity')}{' '}{t('ui.bizDash2.peopleLookingForCategory', { count: Number(bestDemand.request_count), category: categoryName(bestDemand.category, language) })}
                               </Text>
                             </TouchableOpacity>
                           )}

@@ -1,3 +1,26 @@
+# Idea 341 closed (owner, 2026-10-23) + best-opportunity wording fixed
+
+**Idea "341" (business Home = "People are looking for these things right now: Coffee 8 / Dinner 5 / Live music 3 ... you can respond")
+MET AS BUILT, CLOSED, LOCKED.** Already: "{N} people are looking for something nearby that you offer" (item 128, own categories, distinct
+people, >= 5), Match Radar's per-category rows "{N} people are looking for {category}" (real open requests within reach), "🎯 Your
+best opportunity" opening Opportunities, and Opportunities itself (each routed request, Accept / Alternative / Decline; item 48
+arrival; idea "187" exact push). DECLINED (locks kept): counts below 5 distinct people (floor of 5, `demand_min_people()`); categories
+the business doesn't declare (`business_offered_tags()`); a Dinner category (idea "307"; Restaurants not a category); responding to an
+aggregate (a broadcast, item 114; responses stay per request in Opportunities). Dashboard stats (Community Health grid, item 150's
+Performance) kept pending real business-owner testing (item 126).
+Defect FIXED (owner-approved): `BusinessDashboardScreen.js` best-opportunity line rendered "{raw category} ({N} request/requests)":
+"requests" mislabelled the server's DISTINCT-PEOPLE count and was English-only, and the category bypassed `categoryName`. Now
+`yourBestOpportunity` + existing `ui.bizDash2.peopleLookingForCategory` (plural forms, 11 languages) with `categoryName(category,
+language)`, e.g. "🎯 Your best opportunity: 7 people are looking for Coffee". No new keys or wording. Navigation unchanged (tap ->
+Opportunities via the legacy `requests` section map). Floor verified: the server returns request_count 0 for any category under 5
+(migration 20270317, per category, so several small offered categories never surface one), `splitAggregatedDemand` picks only
+offered rows with request_count > 0; journey `offeredDemand` 11/11 on prod (rolled back) incl. Coffee + Pastries each under 5 = no
+best. Guard added in `utils/offeredDemand.test.js`. Jest 489/489 suites, 6753 passed (11 todo). Business web export regenerated.
+Owner point recorded: "best" = the category with the most distinct people holding open, unexpired requests within their own reach
+in the business's declared categories; it does NOT apply routing eligibility (hours at the requested time, largest group), so the
+count can exceed what Opportunities shows. Not changed (no redesign); revisit only if business testing shows that mismatch confuses.
+NOT VERIFIED: business Home in a real browser / on a phone (item 128's check).
+
 # Idea 340 closed (owner, 2026-10-23), nothing built
 
 **Idea "340" ("10/10 UX: the product understands what the user is currently doing; it doesn't behave the same everywhere") MET AS

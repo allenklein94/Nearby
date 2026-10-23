@@ -38,6 +38,11 @@ describe('the dashboard reads only this split', () => {
     expect(dash).not.toMatch(/aggregatedDemand\.reduce\(/);
     expect(dash).toMatch(/splitAggregatedDemand\(await getAggregatedDemandForPartner\(partnerId\)\)/);
   });
+  test('idea 341: best opportunity says distinct people in the existing localized wording, category via categoryName', () => {
+    expect(dash).toMatch(/\{t\('ui\.bizDash1\.yourBestOpportunity'\)\}\{' '\}\{t\('ui\.bizDash2\.peopleLookingForCategory', \{ count: Number\(bestDemand\.request_count\), category: categoryName\(bestDemand\.category, language\) \}\)\}/);
+    expect(dash).not.toMatch(/'request' : 'requests'/);
+    expect(dash).not.toMatch(/yourBestOpportunity'\)\}\{' '\}\{bestDemand\.category\}/);
+  });
   test('the migration: own primary + secondary only, distinct people, floored summary, occasion floored, no group fallback', () => {
     const m = read('supabase/migrations/20270316_offered_demand_line.sql');
     expect(m).toMatch(/array\[bp\.subcategory\] \|\| coalesce\(bp\.categories, array\[\]::text\[\]\)/);
