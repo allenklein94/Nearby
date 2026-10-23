@@ -1,3 +1,15 @@
+# Idea 372 closed (owner, 2026-10-23), nothing built
+
+**Owner decision on idea "372": CLOSED and LOCKED as met by the existing implementation; no code or UI changes.** Preserved: one
+combined ranking system using real signals (`constants/signalPriority.js`), never separate recommendation modules; at most two
+meaningful reasons on recommendation cards; the existing distance/time line and accepted-friends information; GatheringDetail's
+"Why this fits you"; no visible combined fit score and no separate "Why" sheet; no generic weather or popularity filler. Personalization
+gates reaffirmed (unchanged, idea "291" + item 112): Best Pick requires fit score >= 5 AND a genuine personal reason; Picked For You
+requires a genuine personal reason; weather, distance, popularity or business promotion alone never qualify an activity as personally
+recommended; never invent or imply a personal connection unsupported by real data. Verification: first-session check C9 (reasons
+clear, credible, useful). Owner: stop refining the recommendation architecture for now; the open question is whether people understand
+why something was recommended on a real phone. Next: the first real-phone session.
+
 # Idea 372 assessed (owner, 2026-10-23), nothing built
 
 **Idea "372" (signal compression: instead of Weather / Distance / Friends / Interests / Popularity as separate modules, combine them
