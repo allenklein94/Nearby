@@ -1,7 +1,13 @@
-# Idea 353 assessed (2026-10-23), nothing built, owner decision pending
+# Idea 353 closed (owner, 2026-10-23), nothing built, phone verification pending
 
 **Idea "353" ("single canvas": the tabs are lenses over one world; objects move between lenses without feeling duplicated) MET AS
-BUILT, ASSESSED, recommended close, no new rule.** Lenses = the surface-jobs doctrine (Home = what should I do now; Discover = what
+BUILT, CLOSED, LOCKED (owner, 2026-10-23), no new rule, navigation, animation or feature.** Owner's final rules: five tabs Home (what
+should I do now) / Discover (what's happening around me) / Create (make something happen) / Activity (what needs my attention) /
+Profile (identity + settings); People stays inside Discover as Friends and Dating modes, never a sixth tab; one object, one state,
+many views: each tab may present an object differently but reads its shared state; Home stays preview-only; navigation returns to
+the previous screen and scroll position; no duplicate objects, separate state systems, cross-screen morphs or extra navigation layers.
+Phone check added to session B (task 5: find a gathering, mark Interested, find it again later unguided; plus "one connected app or
+five?"). Lenses = the surface-jobs doctrine (Home = what should I do now; Discover = what
 exists around me; Create = make it happen; People = who with; idea "238": Activity = what needs my answer, Plans = committed plans,
 Profile = you, Settings = your controls). One world = master principle 2 (one source per object: the same gathering/request/offer
 row and its one state, `objectState.js` / `LIFECYCLE`, read by every surface), states-not-folders (one viewer relation, never a screen

@@ -126,7 +126,12 @@ it", "Ask Nearby Businesses", "pin"). Don't explain or help; ask them to think a
 2. "Actually, you meant Saturday. Fix that." (watch: do they find the day chip, or retype?)
 3. "Set up a pickleball game Saturday at a court you'd pick, and invite people." (Create + pin + publish)
 4. "Ask local coffee places if they can host 4 of you tomorrow at 7." (Ask Nearby Businesses + Send)
-5. Afterwards: "What did you just publish? What did you send? When and where is it?"
+5. "Find a gathering you'd like to go to and show you're interested." Then, after the other tasks, without any hint: "Find that
+   gathering again." (owner, idea "353": watch where they look first, Home / Discover / Plans' ☆ Interested row / Profile, and whether
+   it reads as the same thing with the same state everywhere they meet it; finding it naturally = evidence the shared state is understood.)
+6. Afterwards: "What did you just publish? What did you send? When and where is it?"
+Throughout: does moving between Home, Discover, Create, Activity and Profile feel like one connected app or five separate ones?
+Record the moment it felt disconnected, if any (idea "353").
 Record their words verbatim where they hesitate. Their results go in the same lists, marked "B".
 
 ## Record sheet
