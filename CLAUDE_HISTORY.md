@@ -1,3 +1,18 @@
+# Idea 359 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "359" (business sees "Coffee request · 4 people · Tonight", then "5 people interested": demand is real, people are forming
+around it) ASSESSED: met at category level; the per-request version recommended DECLINED.** Met: the Opportunity card carries the
+request's stated facts (`get_business_opportunities` -> `utils/businessOpportunityCard.js`: category, party size, day + start; idea
+"246"); a request from a gathering sends the larger of people going (incl. host) and capacity (`_gathering_party_size`, idea "248"),
+never Interested marks. Business Home separately shows category-level aggregates: item 128's "N people are looking for {category}"
+(distinct people with real open requests, >= 5) and idea "356"'s opted-in "N people nearby are interested in {category} gatherings"
+(>= 5). Recommend declining: putting an Interested count or a "people forming" line on a specific request/gathering Opportunity.
+Reasons: (1) it links private marks to one identifiable gathering (one object, no floor per object, small groups re-identifiable;
+Interested-privacy bullet: aggregates are category-level only); (2) it blurs the two intent levels the owner just separated (idea
+"356": interested in gatherings != asking a business); (3) business payloads carry no attendees or social context (Privacy,
+`businessPayloadPrivacyGuard.test.js`), and items 89/94 declined aggregate claims on a request ("4 people are looking", "4 people
+-> 1 group offer"). The two aggregate lines stay separate, never summed. Docs only.
+
 # Idea 358 closed (owner, 2026-10-23), nothing built, phone verification pending
 
 **Idea "358" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no application code.** Owner's final rules: preserve `CountRoll` as is
