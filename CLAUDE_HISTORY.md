@@ -3,7 +3,7 @@
 **Idea "344" (the same state clarity everywhere: Interested != Attending, Sent != Accepted, Reserved != Redeemed, Potential !=
 Realized, Suggested != Selected) MET AS BUILT, ASSESSED, recommended close; no new rule (master principle 2 + "No invented numbers,
 signals or states" + the met-vs-verified and idea "343" rules already state it).** Each pair is already two named states from one source:
-(1) Gathering: one viewer relation `gatheringRelation` in `utils/objectState.js` (hosting > attending > requested/waitlisted >
+(1) Gathering: one viewer relation `gatheringViewerState` in `utils/objectState.js` (hosting > attending > requested/waitlisted >
 interested > none); Interested = the private "maybe" (`gathering_interested`), Attending = an approved `gathering_interest` row; the
 change is shown only when real (item 31 "~~Interested~~ -> ✓ Attending", item 143 from the waitlist); "Request to Join" / "Requested"
 never read as attending (item 140). (2) Offer: item 13's Offer sent -> Accepted -> Redeemed (`utils/offerProgress.js`, `isOfferOpen` in
