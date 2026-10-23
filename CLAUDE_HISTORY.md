@@ -1,7 +1,11 @@
-# Idea 345 assessed (2026-10-23), nothing built, owner decision pending
+# Idea 345 closed (owner, 2026-10-23), nothing built
 
-**Idea "345" ("Interested" is a meaningful intermediate state; the same principle should permeate the product) MET AS BUILT, ASSESSED,
-recommended close, no new rule.** Interested = the private "maybe" between none and Attending (`gathering_interested`, one viewer
+**Idea "345" ("Interested" is a meaningful intermediate state; the same principle should permeate the product) MET AS BUILT, CLOSED,
+LOCKED (owner, 2026-10-23, together with idea "344"; no new features).** Owner's final rules: preserve the existing in-between states
+across gatherings, offers, bookings, visits, perks, requests and financial reporting; every state = a real recorded fact with a clear
+purpose and an appropriate next action; no additional Draft, Considering, Save, Bookmark or other intermediate state unless a real user
+or business action requires one; Interested stays private (only the host's anonymous aggregate count); meaningful state is not visible
+complexity: Nearby may track several states internally and shows the person only what matters at that moment. Interested = the private "maybe" between none and Attending (`gathering_interested`, one viewer
 relation `gatheringViewerState`; items 30/31/139, idea "152": the ONE saved state). Every object already has its real in-between
 states, each named and from one source: gathering join Requested / Waitlisted (items 140/141/143); offer Offer sent (open until
 `isOfferOpen` closes it) -> Accepted (item 13); a booking "confirming" then "You're booked" only after the server (items 12/193), a
@@ -12,10 +16,10 @@ person or the business with its own next step; already DECLINED for that reason:
 "Interested" business state (idea "188"), a second Save/bookmark (idea "152"), a Going / Interested split visible to others (item
 138; Interested stays private). Docs only.
 
-# Idea 344 assessed (2026-10-23), nothing built, owner decision pending
+# Idea 344 closed (owner, 2026-10-23), nothing built
 
 **Idea "344" (the same state clarity everywhere: Interested != Attending, Sent != Accepted, Reserved != Redeemed, Potential !=
-Realized, Suggested != Selected) MET AS BUILT, ASSESSED, recommended close; no new rule (master principle 2 + "No invented numbers,
+Realized, Suggested != Selected) MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23, with idea "345"); no new rule (master principle 2 + "No invented numbers,
 signals or states" + the met-vs-verified and idea "343" rules already state it).** Each pair is already two named states from one source:
 (1) Gathering: one viewer relation `gatheringViewerState` in `utils/objectState.js` (hosting > attending > requested/waitlisted >
 interested > none); Interested = the private "maybe" (`gathering_interested`), Attending = an approved `gathering_interest` row; the
