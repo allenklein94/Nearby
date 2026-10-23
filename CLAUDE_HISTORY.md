@@ -1,3 +1,11 @@
+# Idea 358 closed (owner, 2026-10-23), nothing built, phone verification pending
+
+**Idea "358" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no application code.** Owner's final rules: preserve `CountRoll` as is
+(8 px vertical movement over 260 ms; only for real recorded events; no bounce, glow, particles, vibration or sound; the new number
+readable at once; Reduce Motion = the new value without animation; no count animation on static cards or lists); no additional
+animation types, visual effects or count-animation placements. Ideas "357" and "358" stay closed unless real phone testing shows a
+usability problem. Verification = items 28 + 53 checklists on a real device (subtle, readable, Reduce Motion respected). Docs only.
+
 # Idea 358 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "358" (a count changing 3 -> 4 should be a subtle number transition, never an arcade explosion) MET AS BUILT, recommended
