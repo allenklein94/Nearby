@@ -1,7 +1,7 @@
-# Idea 352 assessed (2026-10-23), nothing built, owner decision pending
+# Idea 352 closed (owner, 2026-10-23), nothing built, phone verification pending
 
 **Idea "352" (the felt difference: accomplishment not features, the next thing right here, "something changed in your world", a
-business responding to what you wanted, a plan forming around you) MET AS DOCTRINE + BUILT, ASSESSED, recommended close, no new rule
+business responding to what you wanted, a plan forming around you) MET AS DOCTRINE + BUILT, CLOSED, LOCKED (owner, 2026-10-23), real-device experience verification pending, no new rule
 (north star = "What do you want to do nearby?" + idea "171"'s chain + "the system brings the next thing" doctrine).** Pairs as built:
 accomplish = typed ask + understood chips + Create it / Ask Nearby Businesses (items 45/82/84); next thing here = item 45 ladder,
 idea "351", item 23 travel; something changed = pushes name the change and open that object (idea "242"), arrival pill (item 165),
@@ -9,7 +9,11 @@ quiet when already shown (idea "338"), no engagement nudges (idea "186"); a busi
 request the person sent, never a business directory (Not-a-Yelp doctrine); a plan forming = Who's going faces (item 28), Your Plan
 assembling once booked (item 32), friends planning (item 41), formation on publish (item 43). Safeguard kept: "around you" only from
 what the person stated or joined, never an unprompted plan composed from inference (item 131 LOCKED) and never pairing people (item
-92). Whether it FEELS different = the first real-phone session only. Docs only.
+92). Owner's final rules: Nearby feels alive because real things happen, never because the interface keeps moving; preserve the
+signature, participation animations, plan assembly and real-event motion rules; no new animations, recommendation systems, inferred
+plans, automatic friend pairing or screens; items 92 + 131 unchanged (every connection and plan comes from a real user action or
+explicitly shared information); no further animation work before the phone session. Code establishes the moments exist, not that they
+feel special or intuitive: run-order watch line added (meaningful, connected, easy to understand, not overwhelming). Docs only.
 
 # Idea 351 assessed (2026-10-23), nothing built, owner decision pending
 

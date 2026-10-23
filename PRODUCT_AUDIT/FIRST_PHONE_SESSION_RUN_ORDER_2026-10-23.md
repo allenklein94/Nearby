@@ -108,6 +108,11 @@ Map pin glyphs (owner, idea "346", 2026-10-23): during any visit to Discover's m
 unchanged). Watch especially: the live badge in Grayscale, category symbols at 26 px, selecting overlapping pins (C25 (g)-(i)).
 Report readability/intuitiveness only; a fix stays on the pin glyph, never a map redesign. No map work before this check.
 
+Moments watch (owner, idea "352", 2026-10-23; observation only, no setup): when a business reply arrives (signature + travel), a
+friend joins (Who's going faces), a booking assembles Your Plan, or a gathering goes live, record whether the moment felt meaningful,
+connected to what the person did, and easy to understand, and whether anything felt like too much. Code shows these moments exist,
+not how they feel; report the specific moment and reaction, never propose new motion.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google
