@@ -1,3 +1,16 @@
+# Idea 368 assessed (owner, 2026-10-23), nothing built
+
+**Idea "368" ("motion should communicate hierarchy: quiet -> noticeable -> memorable, based on importance") MET AS BUILT, ASSESSED,
+recommended close, owner decision pending.** It is the existing hierarchy (item 57 `MOTION_LEVELS`, idea "168"'s two axes, idea
+"364"'s budgets in `motion/motionBudget.js`): quiet = Level 0 Ambient (only `responding` + `weatherShift`) and Level 1 Micro
+(tiny 50-150 / small 150-300 ms; functional, cards/lists static, tab/mode/filter changes instant); noticeable = Level 2 Contextual
+(medium 300-500 / special 500-900 ms: item 28 joins, item 32 offer -> plan merge, item 34 Completed, item 43 gathering live, item 52
+Visit confirmed); memorable = Level 3 Signature, exactly ONE: a business responds (item 25, <= 1.5 s). Full-screen is a presentation
+flag, not a higher level (`MOTION_PRESENTATIONS.fullScreen` = the mutual match only, item 167, stays medium). Importance decides the
+level (idea "208"); guard `motion/motionLevels.test.js`. Renaming the levels quiet/noticeable/memorable DECLINED (a second
+representation of `MOTION_LEVELS`). Whether the three levels FEEL distinct on a phone is unverified: covered by the run order's moments
+watch (idea "352") + offer checklist section 4 "Signature length"; no new check. No code, rule, level, animation or test; motion FROZEN.
+
 # Idea 367 assessed (owner, 2026-10-23), nothing built
 
 **Idea "367" ("otherwise the app becomes exhausting": cinematic notifications get disabled, bouncing cards feel cheap, dramatic
