@@ -1,3 +1,12 @@
+# Clock time into Create ACCEPTED + CLOSED (owner, 2026-10-23)
+
+Owner accepted the build (ee23cff1) as complete, physical-device verification pending; no further feature work unless the phone test
+shows a problem. Owner asked to confirm a named-day time is not silently discarded. Checked (deterministic resolver, AI off):
+"pickleball saturday at 2 pm" -> dateWindow 'weekend', no Create preset, statedStartMinutes 840, nothing carried; "coffee friday at 9 am"
+-> no day window at all, 540, nothing carried. So Create's When step asks day and time and the stated time is dropped; not a regression
+(no time reached Create before this build, and named weekdays never carried a Create day). Not changed (owner: device checklist, not code);
+added as device check 18i (report only).
+
 # Clock time carried into Create (owner decision 2026-10-23, follows ideas "306"/"307"/"308")
 
 Gap found while answering idea "308" (chips power Create): AskBusiness carried a stated clock time (idea "305") but Create's When

@@ -70,6 +70,11 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
     f. "pickleball at 7 PM" (no day): Create's When step asks (nothing selected).
     g. Typed straight into Create's own box ("tennis tomorrow at 6 pm"): Tomorrow 6:00 PM.
     h. Tap Adjust: the picker opens on the carried time; Back to What and forward again keeps it.
+    i. Named day (owner 2026-10-23, report only): "pickleball saturday at 2 pm" and "coffee friday at 9 am". Expected as built:
+       Create's When step asks for day AND time (nothing selected); the stated 2 PM / 9 AM is NOT carried, because the ask
+       carries no Create day ("saturday" reads as the weekend window, which Create has no preset for; "friday" reads as no day).
+       Record whether re-entering the day and time feels like being re-asked something Nearby knew: report only, no code change
+       unless the owner decides one.
 
 Known limits (disclosed): pieces past the 4-chip cap sit behind "+N" until tapped (never dropped, since the 2026-10-22 cap fix); removing WHO/WHAT does not mute softer ranking reads of the same words (social context, title mentions,
 the learned-affinity "constrained" check), which only order results and never add a chip, filter or caption back.
