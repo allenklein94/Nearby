@@ -1,3 +1,19 @@
+# Idea 354 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "354" (one gathering as one living object: idea -> created -> invited -> interested -> attending -> business offer -> accepted
+-> happening -> completed, never nine separate features) MET AS BUILT, ASSESSED, recommended close, no new rule (item 98 "one object
+evolving", master principle 2, idea "173", idea "251").** The walk as built, all on the same gathering row and its GatheringDetail:
+"coffee tonight" typed = the ask (temporary, never a saved object, idea "173") -> Create it carries the words (items 82/85) -> "Your
+gathering is live!" (item 43) -> invite sent "Invitation sent to {name}" (item 135) -> join flows into Who's going, "{Name} accepted
+your invite" (item 28) -> Find a business from the gathering (idea "248", `create_business_request_for_gathering`) -> reply on that
+gathering's request (item 25 signature) -> "You're booked", booked card stays on the gathering page (items 12/32, idea "234") -> in
+the check-in window: Check in / Message group / Directions (manual, item 145) -> over: "~~Confirmed~~ → ✓ Completed" + "How was it?"
+(item 34) -> memories (item 122). ONE correction (privacy, LOCKED): the host never sees "Claude interested"; Interested is private
+(the person's own mark; the host sees only the anonymous aggregate count, item 139), so the host's view goes invited -> joined /
+accepted your invite; Claude's own view goes ☆ Interested -> "~~Interested~~ → ✓ Attending" (item 31). No timeline/stepper view of
+the stages, no cross-screen morph (items 95-97). Verification = the phone session (does it read as one thing evolving?) + items
+28/31/32/34/43 checklists. Docs only.
+
 # Idea 353 closed (owner, 2026-10-23), nothing built, phone verification pending
 
 **Idea "353" ("single canvas": the tabs are lenses over one world; objects move between lenses without feeling duplicated) MET AS
