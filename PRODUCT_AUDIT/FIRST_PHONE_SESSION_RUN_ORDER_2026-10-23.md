@@ -82,15 +82,26 @@ the host's gathering, does the host understand what happened from the existing j
 and the Who's going section (face flows in, count rolls, named line) alone, without wanting another surface (Home, Activity)?
 Report the specific confusion only; any fix prefers existing wording (`joinedNote`), never a new screen, row or notification.
 
-Quiet-when-shown checks (owner, idea "338", 2026-10-23; two phones, app OPEN on the receiving phone; record PASS/FAIL per line):
-(a) host on that gathering's page, someone joins: no banner, no sound, the face flows into Who's going, and the push is still in the
-phone's notification list (iOS Notification Center; Android tray: note whether it appears there at all); (b) host on a DIFFERENT
-gathering's page: the normal banner; (c) both in the same chat / plan chat, a message: no banner, the message appears; another chat
-open: banner; (d) customer on that request's screen, a business replies: no banner or sound, the reply travels into its card;
-(e) customer on another screen, a business replies: banner AND the arrival pill (the pill does not replace the banner yet); (f) open a
-sheet (e.g. a business preview) and have a business reply: is the pill visible above the sheet and tappable? (decides whether the pill
-may later replace the banner: `REPLY_PILL_REPLACES_BANNER`, only after (e)+(f) pass on iPhone AND Android, owner decision); (g) app in
-the background: normal pushes for all of the above. A missed update = Sev 1: report it, the fix is to keep the banner for that case.
+Quiet-when-shown checks (owner, idea "338", 2026-10-23; implementation APPROVED as built, UX pending these checks; two phones, app
+OPEN on the receiving phone unless stated; run on iPhone AND Android; record PASS/FAIL per line; `REPLY_PILL_REPLACES_BANNER` stays
+false throughout):
+1. Same screen, same object: the screen updates with no banner and no sound. (a) host on that gathering's page, someone joins: the
+   face flows into Who's going; (b) both in the same chat / plan chat, a message appears; (c) customer on that request's screen, a
+   business replies: the reply travels into its card.
+2. Different object: the normal banner + sound. (a) host on a DIFFERENT gathering's page, someone joins the first; (b) another chat
+   open, a message in the first; (c) customer on another request's screen or any other screen, a business replies.
+3. Business reply arrival pill: visible and tappable (opens that request on that offer) (a) on normal screens (Home, Discover,
+   Activity, Profile) and (b) while a native sheet is open (e.g. a business preview, the invite panel). Today the banner shows too;
+   record whether the pill alone would have been noticed. Only (a)+(b) passing on BOTH platforms lets the owner decide on the switch.
+4. History and badge, each platform: every quiet push from check 1 is still in the notification list (iOS Notification Center;
+   Android tray: note whether it appears at all) and counts in the app badge, the same as a bannered push.
+5. Sound, with Settings' sound cues ON (iPhone; Android has no cue) and OFF: a reply on another screen = the system sound once, never
+   also the cue; a reply on its own request screen (quiet) = the cue plays once if ON, silence if OFF, never two sounds, never
+   silence while the cue is ON; ringer/silent switch both ways.
+6. Returning from background: put the app in the background, send a reply / join / message, bring the app back: each push is in the
+   list, the screen shows the change, nothing is lost; then send another within a few seconds of returning: it gets its banner
+   (or is quiet only under check 1's conditions).
+A missed or lost update = Sev 1: report it; the fix is to keep the banner for that case, never another notification feature.
 
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);

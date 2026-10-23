@@ -1,3 +1,13 @@
+# Idea 338 approved as built (owner, 2026-10-23), nothing changed in code
+
+Owner approved the foreground implementation as built; `REPLY_PILL_REPLACES_BANNER` stays false until real-device verification on
+iPhone AND Android; no further notification features or complexity; fallback = banner whenever delivery or visibility is uncertain.
+Owner-noted risk: "still listed + badge" for a quiet push is a code claim (`shouldShowList: true`, `shouldSetBadge: true`), unverified;
+platforms differ. Run order's "Quiet-when-shown" block rewritten as checks 1-6 (same object quiet; different object banner; pill
+visible + tappable on normal screens and over native sheets; history + badge per platform; sound cue never doubles the system sound
+nor leaves unintended silence; nothing lost returning from background). Implementation complete; UX pending device verification. The
+first real-phone session stays the priority over development.
+
 # Idea 338 built (owner, 2026-10-23): quiet when already shown
 
 **Idea "338" ("you don't need a notification for every state change; if the user is already looking at it, just update it")
