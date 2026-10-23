@@ -118,6 +118,11 @@ offer arrives, the booking confirms and the gathering completes, record whether 
 does the person recognize that an accepted business offer belongs to their original gathering? Unclear = report the exact spot;
 the fix is a small clarity improvement on the existing gathering page, never a new screen, stepper or system.
 
+Interested watch (owner, idea "355", 2026-10-23; observation only, items 30/31 checks): after tapping Interested, ask "Do you have
+a spot?" Record whether they understand nothing is reserved (especially on a gathering with limited capacity), whether Interested
+vs Attending reads as two different things, and whether Join / Request to Join feels like the obvious next step. Unclear = report
+the exact wording or spot; never propose a new state, reminder or invitation feature.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google

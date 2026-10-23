@@ -1,3 +1,13 @@
+# Idea 355 closed (owner, 2026-10-23), nothing built, phone verification pending
+
+**Idea "355" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no application code.** Owner's final rules: Interested stays the
+private, noncommittal state and Attending confirmed participation; the host may see an anonymous Interested count beside the
+Attending count (potential attendance never presented as confirmed), never the identities of interested people; keep the existing
+Interested -> Attending and Request to Join flows; no other Like/Save state, no targeted invitations to interested people, no
+additional reminders, no new screens. Verification in the first real-phone session (still the top priority): do people understand
+Interested vs Attending, does joining feel like the obvious next step, and, after tapping Interested, do they understand they have
+NOT reserved a spot (esp. on capacity-limited gatherings)? Recorded as a run-order watch line. Docs only.
+
 # Idea 355 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "355" (Interested as a real mechanic: "I'm considering this, not committing yet"; host sees "3 interested / 4 attending";
