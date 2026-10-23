@@ -1,3 +1,20 @@
+# Idea 343 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "343" (business money figures: never one number for two states; pending/projected vs redeemed vs actual) MET AS BUILT,
+ASSESSED, recommended close.** The #21 case ("$20" beside 0 redemptions) was fixed 2026-09-20 (global rule 7) and stays fixed: the
+dashboard's billing banner is titled "Your Nearby fee this month (estimate)" (`ui.bizDash2.estimatedThisMonth`), its first line is the
+redemption fact ("0 redemptions this month"), and `utils/billingBreakdown.js` itemizes the fee ("Flat monthly rate $20, not based on
+redemptions" / hybrid / per-redemption), amounts the server's own, missing = "—". The three states already never mix (Truthfulness
+"Money figures never mix"): (1) potential = "Potential value: up to $X" + basis + "What this could be worth, not money earned." on an
+opportunity card only (`potentialValue` in `utils/businessOpportunityCard.js`, item 149, guard `potentialValue.test.js`: request data
+only, never summed); (2) redeemed = "Value of offers redeemed" (`offerFunnelView` in `utils/offerFunnel.js`, `offerValueLines` in
+`utils/offerValue.js`, from `get_partner_offer_value`: owner prices x real party on completed offers, unpriced redemptions counted and
+said so); 0 redemptions = the funnel's real "Redemptions 0" stage and no dollar row (no invented $0 figure); (3) fee owed = the billing
+banner above. DECLINED: an "Actual revenue" figure (Nearby records no customer spend; "revenue"/"earnings" banned in business copy,
+item 149) and a separate "Redeemed $0" dollar line (the 0 count already says it; owner rule "no invented zero-dollar claim"); a
+dashboard-wide "pending / projected" total (potential is per request, never aggregated). Docs only; no code, strings or migration.
+Verification = item 150 / item 13 business browser + phone checks (existing).
+
 # Idea 342 closed (owner, 2026-10-23), nothing built
 
 **Idea "342" (business dashboard demand-first: "Where is demand? -> How can I respond? -> What happened?" instead of Analytics /
