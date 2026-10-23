@@ -1,3 +1,17 @@
+# Idea 347 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "347" (every object has a lifecycle, so a person can always answer "where is this thing in its lifecycle?") MET AS BUILT,
+ASSESSED, recommended close, no new rule (master principle 2 + "State and actions" + ideas "344"/"345" already state it), NOT
+DEVICE-VERIFIED that people can actually answer it.** Each object's named, finite states live in `utils/objectState.js` (derived) +
+`utils/objectLifecycle.js` (`canDo`, `isOfferOpen`), its one action in `primaryAction.js`; and each shows where it stands on its own
+card: gathering = the viewer relation badge (icon + word, `GatheringStatusBadge`) + "Completed" once over (item 34); request =
+`requestTimeline.js` status line with real events + times and a "Next:" line (idea "184"); offer = customer card waiting / open /
+closed / booked / visited (`presentOffer`), business card Offer sent -> Accepted -> Redeemed (item 13); plan = broken -> solid line
+(item 32) -> "~~Confirmed~~ -> ✓ Completed" (item 34); perk = Redeem / code / Redeemed; visit = "✓ Visit confirmed" (item 52); join
+request = Requested / Waitlisted / expired (derived). Verification = the session-B question "What did you just publish? What did you
+send? When and where is it?" in the first-phone run order + the existing checklists; an object whose stage a person can't tell is fixed
+in its shared source, never with a new screen or stepper. Docs only.
+
 # Idea 346: map-pin glyphs BUILT, ACCEPTED AS BUILT (owner, 2026-10-23), NOT DEVICE-VERIFIED
 
 **Idea "346" (states distinguished by label, icon, position, motion and colour together, never colour alone) MOSTLY MET AS BUILT,
