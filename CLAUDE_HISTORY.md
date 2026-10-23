@@ -1,3 +1,17 @@
+# Idea 361 closed (owner, 2026-10-23), nothing built
+
+**Idea "361" ("the animation says this person was added to this plan, not just button clicked") MET AS BUILT, CLOSED, LOCKED.**
+Preserved rule: animation represents a real, confirmed change in someone's relationship to a gathering or plan, never merely an
+invitation or a button tap. Met by: item 28 (on the host's GatheringDetail the joining face flows into Who's going, `CountRoll` rolls
+the attending figure, "{Name} joined" / "{Name} accepted your invite" only for the host's own accepted invite), item 73 (first join
+full, rest within 10 s small), items 31/143 (~~Interested~~ / ~~On waitlist~~ -> ✓ Attending on your own confirmed join), item 32
+(accepted offer merges into Your Plan), items 58/251 (motion only for real state changes). Invitation = "✓ Sent" + "Invitation sent
+to {name}", no face into Who's going (idea "360"). Kept: join animations, count roll, accepted-invite wording, item 73 + idea "207" +
+`motionBudget.js` safeguards. No new animations, events, screens or code. Verification: check 17 added to
+`PRODUCT_AUDIT/ITEM_28_FRIEND_JOINS_DEVICE_CHECKLIST_2026-10-12.md` (does a join clearly read as "someone was added", without feeling
+excessive; an invite moves no face). Owner direction: the motion system is complete; new motion ideas are revisited only when real
+phone testing reveals a specific usability problem. Next: the first real-phone session.
+
 # Idea 360 backend verified by from-scratch replay (2026-10-23)
 
 Owner approved the Invite sheet implementation (Idea 360 stays CLOSED, LOCKED; no further sheet changes) and asked for the replay.
