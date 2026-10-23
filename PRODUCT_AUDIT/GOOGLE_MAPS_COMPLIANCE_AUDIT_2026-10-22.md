@@ -14,7 +14,7 @@ decides compliance.
 | Directory restriction: ask Google / counsel in writing, all discovery surfaces | Question written, NOT SENT: `GOOGLE_DIRECTORY_USE_QUESTION_2026-10-22.md` (owner sends it) |
 | Keep Google discovery built but not public until answered | DONE: one switch `discovery_enabled` (default off, migration 20270337 LIVE); Places tab, Places sections, topic places, Places to go, Create "Popular nearby" hidden with no Google call; Also nearby needs both switches. Guard `googleDiscovery.test.js`, journey `placesSearchBudget` 12/12 on prod |
 | Official Google Maps logo instead of text | DONE in code (gaps A + B below): Google's own files, unmodified; text = fallback if the image fails. NOT DEVICE-VERIFIED (check C23) |
-| Clear unverified coordinates on the 26 legacy gatherings (backup first) | NOT DONE: writing the migration was refused by the session's permission rules (a production data change). Proposal + read-only impact in section 4 |
+| Clear unverified coordinates on the 26 legacy gatherings | DONE 2026-10-23 (owner revised: NO coordinate backup): migration 20270338 LIVE, see section 4 |
 | Keep Google results off non-Google maps; document the Apple Maps question | Documented (question 8 of the question file); moot while held |
 | Privacy Policy: location + search words sent to Google | DONE (`docs/privacy.html` section 4, Last updated October 22, 2026) |
 | Terms/Privacy change notice per Terms section 12 | Notice text drafted (below); NOT SENT (outward; the app has no in-app notice mechanism) |
@@ -145,6 +145,15 @@ gatherings. Not done: writing that migration was refused by the session's permis
   clear point -> null, area -> '', wide_area -> null on gatherings with no provenance created before 2026-10-22; clear the plan
   copies; leave the business request row (owner: delete that expired test request or keep it as a recorded risk).
 
+**Applied 2026-10-23 (migration 20270338, owner decisions 2026-10-23):** verified first (read-only): all 26 hosted by the owner's phone
+account (20) or the Apple-review test account (6), all past, none recurring, 5 approved attendees = the same two accounts, 0 Interested.
+Production dry run (rolled back) then live, identical: 26 gatherings cleared (point, area, wide_area; source + place ID null), 26 plan copies
+cleared, request 1dc27934 + plan b7a1a5b3 (+ 1 lifecycle row) deleted, 0 pushes, 0 relabelled; after: 0 gatherings with any point form, 0 plans
+with a point, attendees 5 = 5. No coordinate backup: `private.legacy_location_cleanup` (54 rows, no app grant) holds non-location metadata only
+(a request plan's title is the typed text, so it is left out too). Old values may persist in Supabase's WAL/infrastructure for a while (not
+controllable from the database). Also permanent: a gathering's plan no longer copies its point. The Privacy Policy gathering paragraph was
+corrected the same day (Last updated October 23, 2026).
+
 **One legacy exposure:** before 2026-10-22, tapping a Google venue in Create stored Google's coordinates directly as the gathering
 point (old `CreateGatheringScreen.js`: `setCustomLocation({ latitude: place.latitude, longitude: place.longitude })`). Which of
 the 26 older gatherings came from that path was never recorded. All 26 are past (none upcoming; created 2026-07-26 to 2026-10-20,
@@ -184,7 +193,7 @@ test accounts only). Under 14.3 any such point should not be kept past 30 days. 
 - [x] Findings recorded with links (section 1)
 - [x] Attribution verified in code on every surface (section 2); gaps A-C await an owner decision; phone check = C23
 - [x] Terms of Service disclosure added (section 3)
-- [x] Storage confirmed in code + production (section 4); legacy clearing decided (owner) but NOT applied (blocked, see section 4)
+- [x] Storage confirmed in code + production (section 4); legacy points cleared 2026-10-23 (migration 20270338 LIVE)
 - [x] "Also nearby" documented for review (section 5); counsel/Google answer open, also covers the live Places surfaces
 - [x] Discovery surfaces held behind one switch (off); question written (not sent); logo attribution; Privacy Policy updated;
       change notice drafted (not sent)

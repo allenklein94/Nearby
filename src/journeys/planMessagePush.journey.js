@@ -35,9 +35,10 @@ d('journey: a plan chat message -> a push to the other participants -> the tap o
   update profiles set notification_mutes = '{}' where id in (v_a, v_b, v_c, v_x);
   update profiles set notification_mutes = '{messages}' where id = v_m;
   insert into blocks (blocker_id, blocked_id) values (v_c, v_a);
-  select id into v_req from business_requests limit 1;
-  insert into plans (plan_type, created_by, title, status, resulting_business_request_id)
-    values ('business_request', v_a, 'J-PM Saturday dinner', 'draft', v_req) returning id into v_plan;
+  -- A's own request (never a production row); its trigger makes the plan
+  insert into business_requests (requester_id, raw_text, category, latitude, longitude, expires_at)
+    values (v_a, 'J-PM Saturday dinner', 'Coffee', 40.0, -75.0, now() + interval '1 day') returning id into v_req;
+  select id into v_plan from plans where resulting_business_request_id = v_req;
   insert into plan_organizers (plan_id, user_id, added_by) values (v_plan, v_b, v_a), (v_plan, v_c, v_a), (v_plan, v_m, v_a);
 
   -- 1. the roster the chat header shows (one source with the push recipients)

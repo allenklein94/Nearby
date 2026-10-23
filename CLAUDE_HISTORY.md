@@ -1,3 +1,27 @@
+# Legacy gathering points cleared + plans stop copying the point (owner decisions 2026-10-23, migration 20270338 LIVE)
+
+Owner-pasted decisions: clear the possibly Google-derived points of the 26 legacy gatherings and their 26 plans; NO coordinate backup
+(only non-location audit metadata); delete the expired test business request; suppress gathering-update pushes; never relabel a cleared
+point; exclude point-less gatherings from location discovery; stop copying gathering points into plans (permanent); correct the Privacy
+Policy; dry run first; Crossed Paths 48-hour deletion = separate follow-up.
+- Verified (read-only): hosts = owner's phone account (20) + Apple-review test account (6); all past, 0 recurring; 5 approved attendees
+  (same two accounts); copies = gatherings precise_lat/lng + area + wide_area, plans.location_lat/lng (26), request 1dc27934
+  (latitude/longitude NOT NULL + area_key) + its plan b7a1a5b3; none in domain_events / push_outbox.
+- Migration: `private.legacy_location_cleanup` (no app grant); `gatherings.area` nullable + checks `gatherings_point_needs_area`,
+  `gatherings_location_source_needs_point`; `_gathering_location_provenance_on_move` (cleared point = no source/place ID);
+  `notify_gathering_updated` (a cleared area is not an update); `create_plan_from_gathering` (no point copy; nothing read it);
+  `private.clear_unverified_gathering_points(ids, reason)` (refuses upcoming / sourced / unknown; logs, deletes requests for those
+  gatherings, clears plan copies, clears the gathering). Data step: past, no source, created before 2026-10-22, aborts above 26.
+- The journey caught a leak in the first draft: a business-request plan's title = the request's typed text; left out of the log.
+- `planMessagePush` journey borrowed a production business request (`limit 1`); fixed to create its own (the cleanup deleted the only one).
+- Gates: journey `legacyLocationCleanup` 20/20 (prod, migration as prelude); production dry run = live result (26/26/1/1, 0 pushes,
+  0 relabelled); prod journeys 631/631 with prelude; from-scratch replay 462/462 + journeys 631/631 on it; Jest 484/6658;
+  grants replay = prod 3127/3127 after apply. Live check after apply: 0 point forms on gatherings, 0 plan points, 0 requests,
+  attendees 5, 0 gathering_updated pushes, log = no coordinate/text.
+- Privacy Policy gathering paragraph corrected (chosen pin or device location; approximate distance/pin to browsers; exact point to host +
+  approved attendees; a gathering's business request keeps the point). Crossed Paths paragraph NOT changed (separate follow-up).
+- Not controllable: old values in Supabase WAL / infrastructure.
+
 # Google compliance follow-up (owner decisions 2026-10-22): discovery held behind one switch, logo attribution, Privacy Policy, directory question; legacy points NOT cleared (blocked)
 
 Owner-pasted decisions (after the compliance audit): written clarification from Google Maps Platform / counsel covering all
