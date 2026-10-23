@@ -1,3 +1,14 @@
+# Idea 371 closed (owner, 2026-10-23), nothing built
+
+**Owner decision on idea "371": CLOSED and LOCKED as met by the existing implementation; no code or UI changes.** Rules preserved:
+no standalone weather section or generic temperature display on Home; the weather card shows only when real upcoming activities are
+meaningfully affected by the forecast (`homeWeatherCard`); weather messaging explains an actionable reason (item 192 headlines, card
+reasons); weather may quietly influence ordering (ranking ladder weather tier); weather alone never qualifies an activity as Best Pick
+or Picked For You (idea "291" personal gate + item 112's fit >= 5 + personal reason stay mandatory; `homeAttention.js` already skips
+"weather alone"); no additional weather lines on ordinary recommendation cards; item 36's once-per-day weather fade kept
+(`utils/weatherShiftSeen.js`). Phone observation added to the run order (weather watch), alongside item 36's checklist: when the card
+appears, does it feel genuinely useful rather than another Home section to scroll past? Next: the first real-phone session.
+
 # Idea 371 assessed (owner, 2026-10-23), nothing built
 
 **Idea "371" ("weather shouldn't be its own big Home section; attach it to recommendations: Best Pick Tonight / 🌤️ Outdoor movie /

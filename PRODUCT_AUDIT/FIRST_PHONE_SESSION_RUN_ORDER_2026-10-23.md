@@ -139,6 +139,10 @@ identity full); FAIL = a functional bug (Sev 1-2): propose the smallest reliable
 identity full or motion change before that. (b) nothing animates, glows, announces or notifies the host about the leave. (c) it
 reads as neutral.
 
+Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's checklist; only when the forecast really brings
+the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
+scroll past? Report the reaction only; no weather UI change before this.
+
 Interested sharing checks (owner, idea "356", 2026-10-23; migration 20270340; result codes as above):
 1. On a fresh account, Settings > "Include my "Interested" in anonymous local trends" is OFF.
 2. Tap Interested on a public gathering for the first time: the explanation appears (with sharing off: "…It's off unless you turn
