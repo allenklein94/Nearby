@@ -1,3 +1,17 @@
+# Idea 366 deferred (owner, 2026-10-23), nothing built
+
+**Idea "366" ("the second offer shouldn't be as dramatic: novelty should decay") DEFERRED until the first real-phone session; not
+closed, not met, nothing built.** Partly met today: the first-ever reply alone gets "A local business just responded to your
+request" / "Your first reply from a local business" + the ~9 s pill (2026-10-10 lock); several replies close together = one count
+pill (item 165) + one replaced push per request (item 62); reopening never replays (item 164); joins already decay (item 73). Not
+built: a quieter signature from the second reply on: every reply keeps the same signature, same for every business (item 25; item
+102 had already deferred "signature only on first reply" pending phone evidence). Owner note: fairness between businesses would not
+forbid a consistent user-level rule, but that depends on real testing. Added (no new test) to
+`PRODUCT_AUDIT/OFFER_EXPERIENCE_DEVICE_CHECKLIST_2026-10-10.md` section 4 "Signature length": "When two or three businesses respond
+to the same request, does the second or third signature animation feel repetitive or unnecessarily long?" A genuine problem = the
+smallest adjustment in `presentOffer()`, applied the same across businesses, with owner approval before changing locked motion rules.
+Motion system FROZEN; no further motion variations evaluated before the phone session.
+
 # Ideas 363 + 364 closed (owner, 2026-10-23), nothing built
 
 **Idea "363" (restraint: "three avatars smoothly appear", never confetti + fireworks + bouncing cards) MET AS BUILT, CLOSED, LOCKED.**
