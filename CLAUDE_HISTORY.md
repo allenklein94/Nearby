@@ -1,3 +1,18 @@
+# Idea 353 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "353" ("single canvas": the tabs are lenses over one world; objects move between lenses without feeling duplicated) MET AS
+BUILT, ASSESSED, recommended close, no new rule.** Lenses = the surface-jobs doctrine (Home = what should I do now; Discover = what
+exists around me; Create = make it happen; People = who with; idea "238": Activity = what needs my answer, Plans = committed plans,
+Profile = you, Settings = your controls). One world = master principle 2 (one source per object: the same gathering/request/offer
+row and its one state, `objectState.js` / `LIFECYCLE`, read by every surface), states-not-folders (one viewer relation, never a screen
+per state), one object once per surface (`HOME_SECTION_PRIORITY`, Discover's one dedupe chain), Home previews never duplicate Plans
+(idea "220"), pushes/links open over the current context with Back restoring it (`openOnTop`, idea "283"). Two corrections kept:
+(1) People is NOT a tab: five tabs stay Home, Discover, Create, Activity, Profile, People = Discover's Friends/Dating modes (idea
+"238" safeguard: no sixth tab); (2) Activity's lens is "what needs my answer / what happened to my things", never the heading "Things
+happening because of you" (DECLINED, idea "240"). "Move between lenses" = the same object appearing in each lens with the same state,
+never an animated cross-screen morph (items 95-97/103, ideas "230"/"231" DECLINED). Verification = the phone session (does the same
+object read as the same thing on Home, Discover, Plans, Activity?). Docs only.
+
 # Idea 352 closed (owner, 2026-10-23), nothing built, phone verification pending
 
 **Idea "352" (the felt difference: accomplishment not features, the next thing right here, "something changed in your world", a
