@@ -1,3 +1,17 @@
+# Idea 345 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "345" ("Interested" is a meaningful intermediate state; the same principle should permeate the product) MET AS BUILT, ASSESSED,
+recommended close, no new rule.** Interested = the private "maybe" between none and Attending (`gathering_interested`, one viewer
+relation `gatheringViewerState`; items 30/31/139, idea "152": the ONE saved state). Every object already has its real in-between
+states, each named and from one source: gathering join Requested / Waitlisted (items 140/141/143); offer Offer sent (open until
+`isOfferOpen` closes it) -> Accepted (item 13); a booking "confirming" then "You're booked" only after the server (items 12/193), a
+group plan waiting on every participant's confirmation (item 119); booked -> "✓ Visit confirmed" (item 52); perk claimed (code shown)
+-> Redeemed (perk redemption rule); request "We asked N" -> replies -> booked (items 158/173/184); potential -> realized value
+(idea "343"). Guard against reading it as "add intermediate states": a state exists only when it is a real recorded action of the
+person or the business with its own next step; already DECLINED for that reason: business offer Draft (idea "150"), "Considering" /
+"Interested" business state (idea "188"), a second Save/bookmark (idea "152"), a Going / Interested split visible to others (item
+138; Interested stays private). Docs only.
+
 # Idea 344 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "344" (the same state clarity everywhere: Interested != Attending, Sent != Accepted, Reserved != Redeemed, Potential !=
