@@ -1,3 +1,15 @@
+# Idea 370 closed (owner, 2026-10-23), nothing built; live departure update stays open
+
+**Owner decision on idea "370": APPROVED as met by the existing departure behaviour, CLOSED, LOCKED, gentle fade-out DECLINED.**
+Departures stay neutral: no departure animation or glow, no "{Name} left" announcement or push; the departing person's face leaves
+Who's going and the attending count decreases accurately. Owner distinction: motion = keep exactly as built; accuracy = a
+requirement: when the host has the gathering page open, a confirmed departure must update the count and Who's going without the host
+navigating away and back (needing a reopen would be a genuine functionality problem). The live departure update is an explicit,
+UNRESOLVED verification item until the run order's two-phone "Leave watch" passes. The Supabase concern (DELETE events not
+filterable without replica identity full) is unconfirmed: no database configuration change until testing establishes the problem;
+if the test shows stale data, treat it as a functional bug and propose the smallest reliable fix, evaluating implications before any
+replica identity full or motion change. No features or animation work now; next priority = the first real-phone session.
+
 # Idea 370 assessed (owner, 2026-10-23), nothing built
 
 **Idea "370" ("someone leaves: no dramatic fly-away; the count decreases and their avatar gently disappears; emotional neutrality")
