@@ -1,3 +1,21 @@
+# Idea 376 assessed (owner, 2026-10-23), one gap found, nothing built
+
+**Idea "376" ("eliminate orphan CTAs: a label must describe the actual next state; never View when the person needs Join /
+Interested / Request / Invite / Ask a business") MOSTLY MET, ASSESSED, owner decision pending.** Met (code reading): every card CTA comes
+from ONE table, `primaryActionFor` in `utils/primaryAction.js` (State and actions convention; tests `utils/stateDrivenCta.test.js`):
+gathering = Join / Request to Join (`needsApproval`) / Join Waitlist (full) / I'm Going (from Interested) / ★ Interested, or a status
+(Hosting, Going, Requested, On waitlist, Past) with View plan; offers = I'll take this one / Confirm with group, else View with its
+status; invites = Accept + Decline / Dismiss; business results by declared booking mode = Go now / Get directions / Reserve / Book /
+Request; meet tonight = Meet People. "View" appears only when nothing actionable is left (completed gathering, closed offer, unknown
+state); Discover's fallback is the same rule (`gatheringActionInfo`). GAP: Home's Join button opens GatheringDetail with the join step
+already open (`HomeScreen.js` `openDetail({ openJoin: true })`; GatheringDetail opens its join sheet only when `canDo('join')` and
+the viewer has no status). Discover's gathering tiles render the same Join / Request to Join / Join Waitlist label (`cardActionLabel`)
+but the whole tile's tap is `openDestination(navigation, card.destination)` with no `openJoin`, so the person lands on the detail
+page and must find Join again: the label promises a step the tap doesn't take, and the two surfaces behave differently for the same
+label (principle 2). Proposed smallest fix (NOT built, needs owner approval): when a Discover tile's action kind is `join`, open the
+destination with `openJoin: true`, reusing Home's path and GatheringDetail's existing guard; no new label, string, screen or motion;
+a guard test pinning both surfaces to the same param. Alternative: leave as is and observe on the phone.
+
 # Idea 375 assessed (owner, 2026-10-23), nothing built
 
 **Idea "375" ("tapping it should actually go to People mode; the CTA should match the destination") MET AS BUILT, ASSESSED,
