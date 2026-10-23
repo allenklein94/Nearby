@@ -1,3 +1,12 @@
+# Idea 357 closed (owner, 2026-10-23), nothing built, two-phone verification pending
+
+**Idea "357" MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no application code.** Owner's final rules: preserve the host's live
+attendance update, count roll and joining face flowing into Who's going (item 28); keep item 73's 10-second rule (first join full,
+later joins within 10 s arrive quietly); no live-ticking counts or animations on Discover cards or public gathering lists (they
+update on refresh/reload; static-card rule); Interested stays private (only the host sees the anonymous count, no identities). Status
+kept separate (owner): closing means the design requirement is met by existing code, NOT that real-device behaviour is verified;
+stays NOT DEVICE-VERIFIED until item 28's two-phone checklist passes in the first phone session. Docs only.
+
 # Idea 357 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "357" ("Coffee tonight · Interested 2 · Attending 3", Claude joins -> "4 attending" live, the gathering feels alive) MET AS
