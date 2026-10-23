@@ -132,6 +132,12 @@ sheet. Does the host clearly understand the invitations were SENT but attendance
 unchanged until someone really joins)? Record any moment they read an invite as a confirmed attendee. Unclear = report the exact
 wording or spot; never propose card growth or invite-driven motion.
 
+Leave watch (owner, idea "370", 2026-10-23; two phones, observation only): the host keeps the gathering's page open while an
+attendee taps Leave. Record (a) whether the attending count and Who's going update without the host leaving the page (code reading
+suggests a leave may only show after refocus: DELETE realtime events aren't filterable without replica identity full), (b) that
+nothing animates, announces or notifies the host about the leave, (c) whether it reads as neutral. Stale count = report; the fix is
+the reload only, never motion or a "left" notice.
+
 Interested sharing checks (owner, idea "356", 2026-10-23; migration 20270340; result codes as above):
 1. On a fresh account, Settings > "Include my "Interested" in anonymous local trends" is OFF.
 2. Tap Interested on a public gathering for the first time: the explanation appears (with sharing off: "…It's off unless you turn

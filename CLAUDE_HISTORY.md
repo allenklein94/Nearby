@@ -1,3 +1,17 @@
+# Idea 370 assessed (owner, 2026-10-23), nothing built
+
+**Idea "370" ("someone leaves: no dramatic fly-away; the count decreases and their avatar gently disappears; emotional neutrality")
+MET AS BUILT for neutrality, ASSESSED, recommended close, owner decision pending.** As built (code reading): `leave_gathering` deletes
+the person's `gathering_interest` row (20270120); the host's GatheringDetail re-reads on its realtime subscription
+(`services/gatherings.js`, `event: '*'` on `gathering_interest` for that gathering) or on focus, and the attending figure simply
+shows the lower number while the face is no longer in Who's going. No motion: `CountRoll` + the glow are keyed to join events only
+(`HostCommandCenter.js`, `joinKey`), and `newJoinsToAnimate` returns nothing unless the going count went UP; no "{Name} left" line,
+no push to the host. DECLINED: the proposed gentle fade-out (a new animation; motion system FROZEN; an instant, unannounced removal
+is already the more neutral outcome). Observation, NOT verified (realtime never run on a device): Supabase realtime cannot apply a
+column filter to DELETE events unless the table has replica identity full, and no migration sets it on `gathering_interest`, so a
+leave may not reach a host who has the page open until they refocus/reload (a waitlist promotion is an UPDATE and does arrive).
+Added to the run order (leave watch). A stale count there = report it; the fix is the reload path only, never motion or a notice.
+
 # Idea 368 assessed (owner, 2026-10-23), nothing built
 
 **Idea "368" ("motion should communicate hierarchy: quiet -> noticeable -> memorable, based on importance") MET AS BUILT, ASSESSED,
