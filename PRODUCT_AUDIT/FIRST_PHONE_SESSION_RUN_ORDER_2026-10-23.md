@@ -113,6 +113,11 @@ friend joins (Who's going faces), a booking assembles Your Plan, or a gathering 
 connected to what the person did, and easy to understand, and whether anything felt like too much. Code shows these moments exist,
 not how they feel; report the specific moment and reaction, never propose new motion.
 
+One-gathering watch (owner, idea "354", 2026-10-23; observation only, existing item 28/31/32/34/43 checks): as friends join, an
+offer arrives, the booking confirms and the gathering completes, record whether it reads as the SAME gathering evolving. Specifically:
+does the person recognize that an accepted business offer belongs to their original gathering? Unclear = report the exact spot;
+the fix is a small clarity improvement on the existing gathering page, never a new screen, stepper or system.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google

@@ -1,3 +1,16 @@
+# Idea 354 closed (owner, 2026-10-23), nothing built, phone verification pending
+
+**Idea "354" (one gathering = one living object) MET AS BUILT, CLOSED, LOCKED (owner, 2026-10-23), no new rule, no application code.**
+Owner's final rules: preserve one gathering evolving as one object across creation, invitations, attendance, business offers,
+booking, check-in, completion and memories; no separate timeline, stepper, duplicate gathering objects or cross-screen morph
+animations; Interested stays private (the host never sees which individual friends marked Interested, only the anonymous aggregate
+count, item 139, until a friend takes an explicitly visible action such as joining). Verification: during the first real-phone
+session, observe whether people understand the same gathering evolves as friends join, offers arrive, bookings confirm and it
+completes, using the existing item 28/31/32/34/43 checks; no additional UI before testing. Owner concern recorded as a run-order
+watch line: people may not recognize that an accepted business offer belongs to their original gathering; if the connection reads
+naturally, idea "354" is validated; if not, the fix is a small clarity improvement within the existing GatheringDetail, never another
+screen or system. Docs only.
+
 # Idea 354 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "354" (one gathering as one living object: idea -> created -> invited -> interested -> attending -> business offer -> accepted
