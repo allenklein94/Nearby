@@ -1,3 +1,48 @@
+# Idea 356 opt-in fix built + live (owner-approved 2026-10-23); idea 356 CLOSED, LOCKED
+
+**Problem (found 2026-10-23):** a missing choice counted as consent: `profiles.share_interest_in_demand` defaulted TRUE and the one
+reader, `get_partner_demand_signals`, read a missing value as TRUE, so Interested marks could reach a business's anonymous demand row
+without anyone choosing it. Prod impact: none observed (4 profiles all on by default, disclosure never acknowledged, 0 Interested
+marks ever, so no business ever saw the row).
+
+**Built (code in commit 9fd45ab5):**
+1. Migration `20270340_interest_demand_opt_in.sql` (LIVE): column default false; every existing row set false (the boolean can't
+   tell a default from a choice); `get_partner_demand_signals` re-created from its LIVE body with only `coalesce(.., true)` ->
+   `coalesce(.., false)` (same signature, one overload, grants unchanged); same floor (k = 5), 14-day window, public/everyone/
+   discoverable non-women-only non-community gatherings, own categories + 3x3 area buckets, category + count only.
+2. Consent record: `private.interest_demand_consent (user_id, opted_in, at)`, written only by the AFTER INSERT/UPDATE OF trigger
+   `z_record_interest_demand_consent` (`_record_interest_demand_consent`, security definer, no anon/authenticated EXECUTE); every
+   change (opt-in and opt-out) logged with its time; no client grant (profiles has table-level SELECT for anon/authenticated, so the
+   timestamps could not live there); FK cascade on account delete. Withdrawal = the next read excludes the person (no cache).
+3. Client: `getInterestedDemandPrefs` reads `share_interest_in_demand === true` (signed out = false); Settings starts the switch off
+   and reads `=== true`.
+4. First-Interested explanation (owner safeguard): GatheringDetail now shows the one-time inline explanation to everyone who hasn't
+   acknowledged it, worded by the current choice: opted in = existing `demandDisclosure`; not opted in = new
+   `ui.gatheringDetail.demandDisclosureOptional` ("Your Interested stays private. If you choose, you can add it to anonymous local
+   trends that businesses see, counted only when at least 5 people are interested. It's off unless you turn it on in Settings.";
+   11 languages, 10 machine-authored, need native review). Buttons unchanged (Got it / Change in Settings); acknowledging only stamps
+   `interested_demand_disclosure_ack_at`, never the switch. The Settings row and its explanation stay always visible.
+5. `docs/privacy.html` §4 (new paragraph: private mark, host-only count, optional opt-in aggregate, last 14 days, >= 5 people,
+   category + count only, no contact/targeting, withdraw any time, change record kept until account deletion) + §6 (choice bullet).
+   Tightening only: no change notice (all accounts are the owner's).
+6. Tests: new journey `interestDemandConsent` 8/8 under real roles and the REAL floor (new account off + no record + default false;
+   5 Interested, nobody opted in = no row; 4 opted in = no row; 5th = {Coffee, 5}, no ids; opt-in without a mark adds nobody; 6
+   timestamped opt-ins; one opt-out = gone on the next read + logged; client can't read or write the record). On the pre-migration DB
+   it fails (consent table missing; the old "default counts" behaviour is not separately demonstrated). `coreLoop` journey's fan now
+   opts in explicitly. Guard `utils/interestDemandOptIn.test.js` (7: last default false, the one reader's missing = out, readers of
+   the switch = exactly the reader + trigger fn, consent table + revoke, client reads, explanation shown regardless + ack never
+   writes the switch, string in every language). `businessPrivacyBoundary.test.js` note updated.
+7. Results: prod journeys 650/650 with prelude and again after apply (rolled back); live check after apply: default false, 0/4 on,
+   0 consent rows, one overload, function grants authenticated/postgres/service_role as before, consent table postgres-only, trigger
+   present; from-scratch replay 464/464 + journeys 650/650 + booking + offer-revision concurrency pass on it; grants replay = prod
+   3128/3128 (new line: `_record_interest_demand_consent` service_role EXECUTE, Supabase default); Jest 491 suites / 6774 tests.
+   Issues met: none in the migration or permissions; the replay's journeys first failed only because the `pg` client module isn't in
+   this codespace (installed in the scratchpad and passed via `NEARBY_PG_MODULE`, as the script documents). Business web export not
+   regenerated (no business-facing screen changed).
+
+Idea 356 CLOSED, LOCKED. NOT DEVICE-VERIFIED: the Settings switch showing off, the explanation on first Interested (both wordings),
+and the run order's host watch line, on a phone; native review of `demandDisclosureOptional`.
+
 # Idea 356 corrected (owner, 2026-10-23): Option A, opt-in reviewed, not implemented
 
 **Owner chose Option A:** keep the anonymous gathering-interest demand row on business Home (not removed: row, category aggregates,
