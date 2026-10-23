@@ -1,3 +1,18 @@
+# Idea 331 closed (owner, 2026-10-23), nothing built
+
+**Idea "331" ("Why Coastal Coffee?": matches coffee / open at the requested time / distance / accepting requests) MET AS BUILT,
+CLOSED, LOCKED:** the Coffee chip from the person's words (item 45); a business closed at a dated time is removed by the eligibility
+hard filter (`utils/askEligibility.js` + `_business_declines`/hours, item 117) and its hours show in the preview sheet (item 17);
+business distance is exact via `formatDistance` (only gatherings are approximate, item 146); replies show only the constraints they
+meet (item 63). "Accepting requests" carries no information (every listed partner takes requests). The "Why Coastal Coffee?" sheet
+stays DECLINED (idea "226"); every locked navigation decision kept.
+Owner-noted possible usability gap: Nearby may check hours without SAYING so (a person shouldn't need the preview to know why a
+business appeared). Nothing built: observation added to `PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md`. If the phone shows
+confusion, propose ONLY the smallest fix: one contextual availability line on the business result, from the existing eligibility
+logic; no new card, screen or navigation step. Wording rules for any such line (owner, LOCKED): published hours are not confirmed
+availability; never claim a business is available, has room or accepts a booking unless verified; "open now" and "expected to be open
+at the requested time" are different facts and are never confused.
+
 # Ideas 314 + 315 closed (owner, 2026-10-23), nothing built
 
 **Idea "314" ("the tab is the context, the object is the thing, the action is the task; no new screen just because one changes")

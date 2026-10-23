@@ -73,6 +73,10 @@ Navigation watch (owner, ideas "314"/"315", 2026-10-23): when going from Discove
 and, after Send, onto the request screen, record whether the move felt natural or like a detour (hesitation, Back pressed, "where am
 I?"), A and B. Report only: the flow stays as built unless this shows a real problem.
 
+Business hours watch (owner, idea "331", 2026-10-23): "Does the person understand whether a business is open at the time they
+requested, without having to open its preview or check its hours manually?" (e.g. "coffee tonight at 8"). Record separately whether
+they mean OPEN NOW or OPEN AT THE REQUESTED TIME (different facts; note if the person or the screen confuses them). Report only.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google
