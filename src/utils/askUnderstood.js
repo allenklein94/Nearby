@@ -18,7 +18,7 @@
 // (7 PM <-> 7 AM), never to another hour; noon / midnight are remove-only. The resolver and AskBusiness read the same reading.
 import { parseAskFacets } from '../constants/askFacets';
 import { statedPartySize } from './askResolver';
-import { clockWindowFromText, dateAnchorFromText, pointClockFromText, pointClockChoicesFromText, statedDateFromText, mentionsStatedDate } from '../constants/clockWindow';
+import { clockWindowFromText, dateAnchorFromText, pointClockFromText, pointClockChoicesFromText, statedDateFromText, mentionsStatedDate, isThisWeekend } from '../constants/clockWindow';
 import { askKind } from './needAsk';
 
 export const UNDERSTOOD_WINDOWS = ['now', 'today', 'tonight', 'tomorrow', 'weekend'];
@@ -95,7 +95,9 @@ export function statedStartMinutes(classifyResult, typedText) {
 export function statedCalendarDay(classifyResult, typedText, now = new Date()) {
   const c = classifyResult ?? {};
   const removed = removedUnderstood(c);
-  if (removed.has('when') || changedUnderstood(c).has('when')) return null;
+  if (removed.has('when')) return null;
+  // A day picked on the chip (owner 2026-10-23): that date alone; the words' clock was dropped with the change (idea "307").
+  if (changedUnderstood(c).has('when')) { const d = chosenWhenDate(c); return d ? { date: dayFromKey(d), minutes: null, choices: null } : null; }
   const text = String(typedText ?? '');
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const date = mentionsStatedDate(text) ? statedDateFromText(text, now) : /\btoday\b/i.test(text) ? today : null;
@@ -155,11 +157,25 @@ export function understoodPartySize(classifyResult, typedText) {
 // already give as Now / Today / Tonight / Tomorrow (those keep their own chip).
 export function statedWhenDay(classifyResult, typedText, now = new Date()) {
   const c = classifyResult ?? {};
-  if (removedUnderstood(c).has('when') || changedUnderstood(c).has('when')) return null;
+  if (removedUnderstood(c).has('when')) return null;
+  if (changedUnderstood(c).has('when')) return chosenWhenDate(c);
   if (['now', 'today', 'tonight', 'tomorrow'].includes(c.dateWindow)) return null;
   const text = String(typedText ?? '');
   const d = mentionsStatedDate(text) ? statedDateFromText(text, now) : null;
   return d ? localDayKey(d) : null;
+}
+// A day picked on the WHEN chip ("YYYY-MM-DD", `whenDate`), or null.
+export function chosenWhenDate(classifyResult) {
+  const k = classifyResult?.whenDate;
+  return typeof k === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(k) ? k : null;
+}
+const dayFromKey = (k) => { const [y, m, d] = k.split('-').map(Number); return new Date(y, m - 1, d); };
+
+// The days a date chip also offers (owner 2026-10-23): Monday-Sunday, each its upcoming date by the shared bare-weekday rule
+// (constants/clockWindow.js: the next one within 7 days, today included), in date order.
+export function upcomingWeekdayKeys(now = new Date()) {
+  const names = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return names.map((n) => statedDateFromText(n, now)).filter(Boolean).sort((a, b) => a - b).map(localDayKey);
 }
 export const localDayKey = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -194,7 +210,7 @@ export function removeUnderstoodPiece(classifyResult, key) {
   const c = { ...(classifyResult ?? {}) };
   if (!UNDERSTOOD_KEYS.includes(key)) return c;
   if (key === 'what') c.category = null; // a Browse group (item 108) is the rail's own choice: services/askRefine.js clears it there
-  if (key === 'when') c.dateWindow = null;
+  if (key === 'when') { c.dateWindow = null; delete c.whenDate; }
   if (key === 'who') c.partyType = null;
   if (key === 'people') c.partySize = null;
   if (key === 'clock') delete c.clockChoice;
@@ -204,8 +220,10 @@ export function removeUnderstoodPiece(classifyResult, key) {
 }
 
 // The choices a changeable piece offers (the current one included), [] for a remove-only piece.
-export function understoodChoices(piece) {
-  if (piece?.key === 'when') return UNDERSTOOD_WINDOWS;
+// A date chip (a weekday or a date) also offers Monday-Sunday as their upcoming dates (owner 2026-10-23); a window chip keeps
+// its fixed list (idea "307").
+export function understoodChoices(piece, now = new Date()) {
+  if (piece?.key === 'when') return piece.date ? [...UNDERSTOOD_WINDOWS, ...upcomingWeekdayKeys(now)] : UNDERSTOOD_WINDOWS;
   if (piece?.key === 'clock') {
     const other = flipClock(piece.clock);
     return other ? [piece.clock, other].sort((a, b) => clockMinutes(a) - clockMinutes(b)) : [];
@@ -218,7 +236,12 @@ export function understoodChoices(piece) {
 // `changedUnderstood`. Anything else (or the same value) leaves the classification as it is.
 export function changeUnderstoodPiece(classifyResult, key, value, typedText = '') {
   const c = { ...(classifyResult ?? {}) };
-  if (key === 'when' && UNDERSTOOD_WINDOWS.includes(value) && (value !== c.dateWindow || statedWhenDay(c, typedText))) c.dateWindow = value;
+  if (key === 'when' && UNDERSTOOD_WINDOWS.includes(value) && (value !== c.dateWindow || statedWhenDay(c, typedText))) { c.dateWindow = value; delete c.whenDate; }
+  else if (key === 'when' && upcomingWeekdayKeys().includes(value) && value !== statedWhenDay(c, typedText)) {
+    // A picked weekday: that date replaces the words (and their clock); a Saturday/Sunday this weekend keeps the weekend window.
+    c.whenDate = value;
+    c.dateWindow = isThisWeekend(dayFromKey(value)) ? 'weekend' : null;
+  }
   else if (key === 'people' && Number.isInteger(value) && value > 0 && value !== c.partySize) c.partySize = value;
   else if (key === 'clock') {
     // Only the current reading's own AM/PM twin: never another hour, never a clock the search would not use.

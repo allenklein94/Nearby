@@ -6,7 +6,10 @@
 // Against the real resolver (AI off), the way Discover/Home hand an ask to Create and Ask Nearby Businesses.
 jest.mock('../services/intentOutcomes', () => ({ recordIntentSelection: jest.fn() }));
 import { resolveAsk, toClassification, createParamsFromAsk } from './askResolver';
-import { understoodPieces, understoodChoices, changeUnderstoodPiece, removeUnderstoodPiece } from './askUnderstood';
+import { understoodPieces, understoodChoices, changeUnderstoodPiece, removeUnderstoodPiece, upcomingWeekdayKeys } from './askUnderstood';
+import { displayWeekdayDate } from '../i18n/display';
+import fs from 'fs';
+import path from 'path';
 import { createStartFromAsk } from './createStartTime';
 import { askBusinessParamsFromAsk } from '../services/askToBusiness';
 import { statedDateFromText, namedDayFromText, dateAnchorFromText } from '../constants/clockWindow';
@@ -121,7 +124,7 @@ describe('the WHEN chip shows the date and corrects it in place', () => {
     const nov = ask('coffee november 4');
     const piece = understoodPieces(nov.c, nov.text).find((p) => p.key === 'when');
     expect(piece).toEqual({ key: 'when', date: '2026-11-04' });
-    expect(understoodChoices(piece)).toEqual(['now', 'today', 'tonight', 'tomorrow', 'weekend']);
+    expect(understoodChoices(piece)).toEqual(['now', 'today', 'tonight', 'tomorrow', 'weekend', ...upcomingWeekdayKeys()]);
   });
   test('changing it replaces the date everywhere and drops the clock; removing it carries no day', () => {
     const a = ask('pickleball saturday at 2 pm');
@@ -135,5 +138,77 @@ describe('the WHEN chip shows the date and corrects it in place', () => {
     const removed = removeUnderstoodPiece(a.c, 'when');
     expect(understoodPieces(removed, a.text).some((x) => x.key === 'when')).toBe(false);
     expect(create(a, removed).quickStartWhenISO ?? null).toBeNull();
+  });
+});
+
+describe('weekday-to-weekday correction on the date chip (owner 2026-10-23)', () => {
+  test('the date chip offers Monday-Sunday as their upcoming dates (today included), a window chip keeps its fixed list', () => {
+    expect(upcomingWeekdayKeys()).toEqual(['2026-10-23', '2026-10-24', '2026-10-25', '2026-10-26', '2026-10-27', '2026-10-28', '2026-10-29']);
+    const tonight = ask('coffee tonight');
+    expect(understoodChoices(understoodPieces(tonight.c, tonight.text).find((p) => p.key === 'when'))).toEqual(['now', 'today', 'tonight', 'tomorrow', 'weekend']);
+  });
+  test('Friday at 2 PM -> Saturday: the chip, Create and Ask Nearby Businesses all get Saturday, and the 2 PM is cleared', () => {
+    const a = ask('pickleball friday at 2 pm');
+    const c = changeUnderstoodPiece(a.c, 'when', '2026-10-24', a.text);
+    expect(c.changedUnderstood).toContain('when');
+    expect(c.dateWindow).toBe('weekend'); // this weekend's Saturday, like a typed "Saturday"
+    expect(understoodPieces(c, a.text).find((p) => p.key === 'when')).toEqual({ key: 'when', date: '2026-10-24' });
+    expect(understoodPieces(c, a.text).some((p) => p.key === 'clock')).toBe(false);
+    const p = create(a, c);
+    expect(p.quickStartWhenPreset).toBe('custom');
+    expect(p.quickStartDateISO).toBe('2026-10-24');
+    expect(p.quickStartWhenISO).toBeUndefined(); // the time is asked, never the old 2 PM
+    expect(p.quickStartTimeChoices).toBeUndefined();
+    const b = biz(a, c);
+    expect(ymd(new Date(b.prefillPickedDateISO))).toBe('2026-10-24');
+    expect(b.prefillStartMinutes ?? null).toBeNull();
+  });
+  test('a weekday that is not this weekend has no window; "at 9" choices are dropped with the change', () => {
+    const a = ask('tennis saturday at 9');
+    const c = changeUnderstoodPiece(a.c, 'when', '2026-10-27', a.text);
+    expect(c.dateWindow).toBeNull();
+    const p = create(a, c);
+    expect(p.quickStartDateISO).toBe('2026-10-27');
+    expect(p.quickStartTimeChoices).toBeUndefined();
+  });
+  test('only an offered date is accepted; the same day is no change; a window or ✕ afterwards clears the picked date', () => {
+    const a = ask('pickleball friday');
+    expect(changeUnderstoodPiece(a.c, 'when', '2026-11-20', a.text)).toEqual(a.c); // not one of the 7 upcoming days
+    expect(changeUnderstoodPiece(a.c, 'when', '2026-10-23', a.text)).toEqual(a.c); // already Friday
+    const sat = changeUnderstoodPiece(a.c, 'when', '2026-10-24', a.text);
+    const tomorrow = changeUnderstoodPiece(sat, 'when', 'tomorrow', a.text);
+    expect(tomorrow.whenDate).toBeUndefined();
+    expect(understoodPieces(tomorrow, a.text).find((p) => p.key === 'when')).toEqual({ key: 'when', window: 'tomorrow' });
+    const removed = removeUnderstoodPiece(sat, 'when');
+    expect(removed.whenDate).toBeUndefined();
+    expect(understoodPieces(removed, a.text).some((p) => p.key === 'when')).toBe(false);
+    expect(create(a, removed).quickStartDateISO).toBeUndefined();
+  });
+  test('an explicit date chip can be moved to a weekday the same way', () => {
+    const a = ask('coffee november 4 at 2 pm');
+    const c = changeUnderstoodPiece(a.c, 'when', '2026-10-28', a.text);
+    expect(create(a, c).quickStartDateISO).toBe('2026-10-28');
+    expect(create(a, c).quickStartWhenISO).toBeUndefined();
+  });
+});
+
+describe('the year shows only for another calendar year', () => {
+  test('shared format: "Tue, Jan 5, 2027" with the year, "Wed, Nov 4" without', () => {
+    expect(displayWeekdayDate(new Date(2027, 0, 5), 'en', { withYear: true })).toMatch(/Jan.*5.*2027/);
+    expect(displayWeekdayDate(new Date(2026, 10, 4), 'en')).not.toMatch(/2026/);
+    expect(displayWeekdayDate(new Date(2027, 0, 5), 'es', { withYear: true })).toMatch(/2027$/);
+  });
+  test('the chip asks for the year exactly when the date is not in the current year', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../components/AskUnderstoodChips.js'), 'utf8');
+    expect(src).toMatch(/withYear: d\.getFullYear\(\) !== new Date\(\)\.getFullYear\(\)/);
+    expect(src).toMatch(/p\.date \? dayText\(p\.date\)/);
+  });
+});
+
+describe('a time kept while the date is asked', () => {
+  test('"coffee 11/4 at 2 PM": no day guessed, Ask Nearby Businesses keeps 2 PM in its Time field', () => {
+    const b = biz(ask('coffee 11/4 at 2 pm'));
+    expect(b.prefillPickedDateISO).toBeUndefined();
+    expect(b.prefillStartMinutes).toBe(14 * 60);
   });
 });

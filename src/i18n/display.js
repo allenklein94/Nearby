@@ -50,12 +50,12 @@ export function displayDay(iso, language, { withYear = false } = {}) {
   const month = vocabValue(language, 'date.months')[d.getMonth()];
   return c(language, withYear ? 'monthDayYear' : 'monthDay', { month, day: d.getDate(), year: d.getFullYear() });
 }
-// "Fri, Aug 14" (weekday + date)
-export function displayWeekdayDate(iso, language) {
+// "Fri, Aug 14" (weekday + date); `withYear` = "Fri, Aug 14, 2027".
+export function displayWeekdayDate(iso, language, { withYear = false } = {}) {
   const d = parseDate(iso);
   if (!d) return null;
-  if (isEnglish(language)) return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-  return localDate(d, language);
+  if (isEnglish(language)) return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric', ...(withYear ? { year: 'numeric' } : {}) });
+  return withYear ? `${localDate(d, language)} ${d.getFullYear()}` : localDate(d, language);
 }
 // "Fri, Aug 14, 7:15 PM"
 export function displayDateTime(iso, language) {

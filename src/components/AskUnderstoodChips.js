@@ -26,8 +26,8 @@ import { localDateFromKey as dayFromKey } from '../utils/createStartTime';
 // Owner idea "306" (2026-10-22): the clock chip ("After 7 PM") works the same way; its row offers only the same time AM / PM.
 // Owner (2026-10-22): the 4-chip cap stays the visual default, but no understood piece may become impossible to correct: past
 // the cap, a quiet "+N" chip (screen reader: "Show more") shows the rest in place, each with its own ✕ / change row.
-// Owner (2026-10-23): a named weekday or explicit date shows as its date ("Sat, Oct 3", the shared date format, no new string);
-// its row offers the existing WHEN choices, none marked, so the day can be corrected without retyping.
+// Owner (2026-10-23): a named weekday or explicit date shows as its date ("Sat, Oct 3"; "Mon, Jan 5, 2027" in another year; the
+// shared date format, no new string); its row offers the existing WHEN choices plus Monday-Sunday as their upcoming dates.
 const T = SEQUENCES.askUnderstood;
 
 export default function AskUnderstoodChips({ classifyResult, typedText, onRemove = null, onChange = null, disabled = false }) {
@@ -59,21 +59,23 @@ export default function AskUnderstoodChips({ classifyResult, typedText, onRemove
     if (c.after != null && c.before != null) return t('ui.discover.understoodClockBetween', { from: at(c.after), to: at(c.before) });
     return c.after != null ? t('ui.discover.understoodClockAfter', { time: at(c.after) }) : t('ui.discover.understoodClockBefore', { time: at(c.before) });
   };
+  // The year only when the date is in another calendar year than today's (owner 2026-10-23: "Mon, Jan 5, 2027").
+  const dayText = (key) => { const d = dayFromKey(key); return displayWeekdayDate(d, language, { withYear: d.getFullYear() !== new Date().getFullYear() }); };
   const label = (p) => {
     if (p.key === 'clock') return clockText(p.clock);
     if (p.key === 'what') return p.category ? categoryName(p.category, language) : groupName(p.group, language);
-    if (p.key === 'when') return p.date ? displayWeekdayDate(dayFromKey(p.date), language) : t(`ui.gatherings.dateFilter.${p.window}`);
+    if (p.key === 'when') return p.date ? dayText(p.date) : t(`ui.gatherings.dateFilter.${p.window}`);
     if (p.key === 'where') return t(p.environment === 'outdoor' ? 'ui.gatherings.envOutdoorChip' : 'ui.gatherings.envIndoorChip');
     if (p.key === 'people') return t('ui.common.count.people', { count: p.count });
     return p.party === 'groups' ? t('ui.discover.tagBigGroup') : PARTY_TYPE_LABELS[p.party];
   };
-  const choiceLabel = (key, value) => (key === 'clock' ? clockText(value) : key === 'when' ? t(`ui.gatherings.dateFilter.${value}`) : t('ui.common.count.people', { count: value }));
+  const choiceLabel = (key, value) => (key === 'clock' ? clockText(value) : key === 'when' ? (/^\d{4}-/.test(value) ? dayText(value) : t(`ui.gatherings.dateFilter.${value}`)) : t('ui.common.count.people', { count: value }));
   const labels = pieces.map(label);
   const allLabels = all.map(label);
   const removable = typeof onRemove === 'function';
   const changeable = (p) => removable && typeof onChange === 'function' && UNDERSTOOD_CHANGEABLE.includes(p.key);
   const open = pieces.find((p) => p.key === openKey && changeable(p)) ?? null;
-  const current = (p) => (p.key === 'clock' ? p.clock : p.key === 'when' ? p.window : p.count);
+  const current = (p) => (p.key === 'clock' ? p.clock : p.key === 'when' ? (p.date ?? p.window) : p.count);
   const isCurrent = (p, v) => (p.key === 'clock' ? sameClock(v, p.clock) : v === current(p));
   return (
     <View

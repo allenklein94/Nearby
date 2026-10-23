@@ -99,8 +99,15 @@ Scope (owner): decisions 1 and 2 approved, decision 3 (change/picker) DEFERRED. 
        - "coffee today at 3 PM" before 3 PM: Create shows today, 3:00 PM. After 3 PM: Create asks (nothing carried).
        - "pickleball friday" (bare weekday): results only show gatherings on that Friday; its WHEN chip shows Friday's date.
          "pickleball saturday": Saturday's results only (not the whole weekend); "saturday or sunday" still both days.
-       - Tap the date chip: the existing row (Now / Today / Tonight / Tomorrow / This weekend) opens, none highlighted; pick
-         Tomorrow: results switch to tomorrow, the words' clock time is dropped, Create gets Tomorrow. ✕ removes the day.
+       - Tap the date chip: the row shows Now / Today / Tonight / Tomorrow / This weekend, then the next seven days as dates
+         (today first; the chip's own day ✓ when it is one of them). Pick Tomorrow: results switch to tomorrow, the words' clock
+         time is dropped, Create gets Tomorrow. ✕ removes the day.
+       - Weekday to weekday (owner 2026-10-23): "pickleball friday at 2 PM", tap the chip, pick Saturday's date: results show only
+         Saturday, the "2 PM" is gone, Create shows Saturday + "Pick a time" (never 2 PM), Ask Nearby Businesses shows 📅 Saturday
+         with an empty Time. Note whether 12 choices in the row read clearly on a phone: report only.
+       - Year (owner 2026-10-23): a date in another calendar year shows its year on the chip ("Tue, Jan 5, 2027", e.g. "coffee
+         January 5" said in late autumn); this year's dates stay short ("Wed, Nov 4").
+       - "coffee 11/4 at 2 PM", then Ask Nearby Businesses: the day is asked, Time already shows 2:00 PM (not re-entered).
        - iOS time picker (owner item 7, CHECK BEFORE CHANGING ANYTHING): on a date-only row ("pickleball saturday"), open the
          picker. It may rest on noon: confirm Next stays refused and the row still says "Pick a time" until you actively pick or
          confirm a time; an untouched noon position must never count as a chosen time. Record the result; a failure is a defect.

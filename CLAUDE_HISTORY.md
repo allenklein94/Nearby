@@ -1,3 +1,29 @@
+# Date work closed + weekday-to-weekday chip correction + year on the chip (owner, 2026-10-23)
+
+Owner accepted the explicit-date build (d5165145) and closed date parsing, phone verification pending, with two narrow fixes and
+a stop: NO further date-interpretation changes until the first real-phone session.
+
+Built:
+- `utils/askUnderstood.js`: `upcomingWeekdayKeys(now)` = Monday-Sunday as their upcoming dates via the shared bare-weekday rule
+  (`statedDateFromText`, today included), date order. `understoodChoices` gives a DATE chip (weekday / explicit date) the windows
+  + those seven dates; a window chip keeps idea "307"'s fixed list. `changeUnderstoodPiece('when', 'YYYY-MM-DD')` accepts only an
+  offered, different day: sets `whenDate` (+ 'weekend' window for this weekend's Sat/Sun, else none) and marks WHEN changed, so the
+  words' clock and "at 9" choices drop (idea "307"). A later window pick or ✕ clears `whenDate`. `chosenWhenDate`;
+  `statedWhenDay` / `statedCalendarDay` return the picked day when WHEN was changed (Create = date + "Pick a time"; AskBusiness =
+  picked date, empty Time).
+- `services/intentResolver.js`: `resolveClassifiedAsk` passes `whenDate`; `resolveIntent` filters gatherings + friends' requests
+  to it and anchors the need window on it.
+- `i18n/display.js` `displayWeekdayDate(.., { withYear })`; `components/AskUnderstoodChips.js` shows the year only when the date's
+  year differs from the current local year (chip + choices); the chip's own date is ✓ in its row.
+- iOS noon picker unchanged (code reading only: the spinner reports a time only when scrolled; `timeNeeded` stays until a pick;
+  an untouched position never becomes a chosen time). "coffee 11/4 at 2 PM" -> AskBusiness keeps Time 2 PM, asks the day (tested).
+
+Not built: weekday choices on a window chip (Tonight etc.; idea "307"'s fixed list kept). Non-English year = the language's date
+pattern + " 2027" (no new string; native review with the other date strings).
+
+Tests: `utils/statedDateStart.test.js` 22 (+9), `services/statedDaySearch.test.js` 8 (+1); `planCombinations.test.js` signature
+pattern extended (`whenDate`). Jest 488/6732 (11 todo); prod journeys 642/642 (rolled back). No migration, no new strings. Check 18j extended.
+
 # Explicit dates, Today into Create, a day filter for stated days, the date chip (owner, 2026-10-23; follow-up to named weekdays)
 
 Owner accepted + closed the named-weekday build (phone pending) and approved a narrow follow-up: (1) month-name calendar dates

@@ -84,6 +84,14 @@ describe('correcting the day on the chip', () => {
     expect((await ids(removeUnderstoodPiece(ask(t), 'when'), t)).length).toBeGreaterThan(2); // several days kept (results are capped at 4)
     expect(await ids(changeUnderstoodPiece(ask(t), 'when', 'tomorrow', t), t)).toEqual(['g-thu']);
   });
+  test('"coffee friday" changed straight to Saturday keeps only Saturday (owner 2026-10-23)', async () => {
+    const t = 'coffee friday';
+    expect(await ids(changeUnderstoodPiece(ask(t), 'when', '2026-10-03', t), t)).toEqual(['g-sat']);
+    expect(await ids(changeUnderstoodPiece(ask(t), 'when', '2026-10-01', t), t)).toEqual(['g-thu']);
+    getConnectedOpenBusinessRequests.mockClear();
+    await resolveClassifiedAsk(changeUnderstoodPiece(ask(t), 'when', '2026-10-03', t), t);
+    expect(getConnectedOpenBusinessRequests).toHaveBeenCalledWith(expect.objectContaining({ dateStart: '2026-10-03', dateEnd: '2026-10-03' }));
+  });
   test('"coffee saturday" changed to This weekend widens to both days', async () => {
     const t = 'coffee saturday';
     expect(await ids(changeUnderstoodPiece(ask(t), 'when', 'weekend', t), t)).toEqual(['g-sat', 'g-sun']);

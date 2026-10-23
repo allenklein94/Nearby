@@ -22,7 +22,8 @@ import { occasionLabel } from '../constants/businessAttributes';
 import { sharedRequestFactsLine } from '../utils/sharedRequestFacts';
 import { getConnectedOpenBusinessRequests, searchActiveBusinessAvailability, searchPolicyOnlyBusinesses, searchOccasionOfferingBusinesses, getMyBusinessAffinitySignals, getPartnerReputations } from './businessFulfillment';
 import { askKind, needAvailabilityWindow, needCaption, orderNeedResults } from '../utils/needAsk';
-import { clockOverride, statedWhenDay } from '../utils/askUnderstood';
+import { clockOverride, statedWhenDay, chosenWhenDate } from '../utils/askUnderstood';
+import { localDateFromKey } from '../utils/createStartTime';
 import { getWhoForPreferenceSignals } from './preferencePolls';
 import { searchOccasionPackages, formatOccasionPackageDetail } from './occasionPackages';
 import { getSocialForecast } from './homeDashboard';
@@ -625,7 +626,7 @@ async function resolveOccasionPackages(location, occasion, partySize, searchMile
 // 2026-09-06) -- only ever a ranking bonus against a business's own real,
 // declared priority_occasions (resolveBusinessAvailability), never a
 // filter and never written anywhere.
-export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false, narrowGroup = null, removed = [], clock = undefined }) {
+export async function resolveIntent({ category, dateWindow, rawText, partySize = null, priceLevel = null, budgetMax = null, partyType = null, attributes = [], cuisine = null, occasion = null, whoForFriendId = null, whoForName = null, energies = [], openNowChip = false, openEnded = false, narrowGroup = null, removed = [], clock = undefined, whenDate = null }) {
   // Owner (2026-10-15): understood chips the person removed (utils/askUnderstood.js removeUnderstoodPiece). The same words are
   // never read again for a removed piece: WHO (the party and its date-friendly quality from partner words; also after the Date chip
   // was turned off, `partnerWordsOff`), WHEN (time words: clock, anchor, spontaneity,
@@ -634,7 +635,8 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const removedSet = new Set(Array.isArray(removed) ? removed : []);
   const whenText = removedSet.has('when') ? '' : rawText;
   // Owner 2026-10-23: the day a named weekday or explicit date gives (the WHEN chip's own rule), else the window's days.
-  const statedDay = statedWhenDay({ dateWindow }, whenText);
+  // A day picked on the WHEN chip (`whenDate`, utils/askUnderstood.js) replaces the words' day.
+  const statedDay = whenDate ?? statedWhenDay({ dateWindow }, whenText);
   // "my girlfriend" = a date party when the extractor named none (constants/askFacets.js, deterministic).
   partyType = partyType ?? (removedSet.has('who') ? null : partnerPartyType(rawText));
   // Item 63: an ask naming two or more parts of an outing ("dinner and something to do after") is ONE plan. A single
@@ -1020,7 +1022,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 162: a NEED (the asked category is a need/service group) is ordered availability > proximity > reliability >
   // personalization, each a tie-breaker for the one before (utils/needAsk.js). A want keeps the order above, unchanged.
   const kind = askKind({ category, rawText });
-  const needWindow = kind === 'need' ? needAvailabilityWindow({ dateWindow, clockWindow, dateAnchor: dateAnchor ?? dateAnchorFromText(whenText), pointClock, spontaneity }) : null;
+  const needWindow = kind === 'need' ? needAvailabilityWindow({ dateWindow, clockWindow, dateAnchor: dateAnchor ?? (whenDate ? { kind: 'day', dates: [localDateFromKey(whenDate)] } : dateAnchorFromText(whenText)), pointClock, spontaneity }) : null;
   if (kind === 'need') {
     let reputations = new Map();
     try {
@@ -1198,6 +1200,7 @@ export async function resolveClassifiedAsk(classifyResult, typedText) {
     partySize: classifyResult.partySize ?? null, priceLevel: classifyResult.priceLevel ?? null, budgetMax: classifyResult.budgetMax ?? null,
     partyType: classifyResult.partyType ?? null, attributes: classifyResult.attributes ?? [],
     clock: clockOverride(classifyResult),
+    whenDate: chosenWhenDate(classifyResult),
     cuisine: classifyResult.cuisine ?? null, occasion: classifyResult.occasion ?? null, narrowGroup: classifyResult.narrowGroup ?? null,
   });
   // The meet-people row is not in any category, so it is not added while a category narrows the ask (item 108).
