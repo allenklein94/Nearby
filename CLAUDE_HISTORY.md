@@ -1,3 +1,17 @@
+# Idea 349 assessed (2026-10-23), nothing built, owner decision pending
+
+**Idea "349" (animations assigned to state transitions, never to screens, to prevent animation bloat) MET AS BUILT, ASSESSED,
+recommended close, no new rule:** already items 164 (state, not screens), 162 (`MOTION_TRIGGERS`: every `SEQUENCES` entry names its
+stored-state trigger + server source; guard `motionTriggers.test.js`), 58 (every animation explains a real change), 101 (motion spec
+first), idea "251" (animate state changes, nothing else), 167 (one full-screen moment), 207 (one Home animation per visit). The
+examples as built, with ONE correction: Interested -> Attending = item 31's "★ ~~Interested~~ → ✓ Attending" (+ item 143 from the
+waitlist); Offer -> Accepted is NOT the signature: it is item 12's "You're booked" + item 32's merge into Your Plan (contextual,
+calm tone, no confetti; the business side item 13's step glow); Request -> Offer received IS the ONE signature (item 25, <= 1.5 s,
+same for every business) + item 23's travel into its card, item 165's pill elsewhere, item 62's push when closed (the "signal
+arrival" form = item 55's Pulse is the request-sent / business signal-received side); Reservation -> Redeemed = item 52's "✓ Visit
+confirmed" settle (customer) / item 13's Redeemed (business); gathering over = item 34's "~~Confirmed~~ → ✓ Completed". Locked: item 25
+(signature = a business responds) not reopened. Docs only.
+
 # Idea 348 assessed (2026-10-23), nothing built, owner decision pending
 
 **Idea "348" (a formal "Nearby State Dictionary" for development, with the UI generated around it) MET IN CODE, ASSESSED; a separate
