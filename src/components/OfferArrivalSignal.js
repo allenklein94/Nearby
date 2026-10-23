@@ -10,8 +10,9 @@ import useReduceMotion from '../hooks/useReduceMotion';
 import { MOTION_BUDGET } from '../motion/motionBudget';
 import { navigationRef } from '../navigation/RootNavigator';
 import { openOnTop } from '../navigation/openOnTop';
-import { createOfferArrivals, arrivalDestination, emitViewedArrival } from '../services/offerArrivals';
+import { createOfferArrivals, arrivalDestination, emitViewedArrival, registerArrivalClaimer } from '../services/offerArrivals';
 import { playSoundCue, noteOsOfferSound, SOUND_CUES } from '../services/soundCues';
+import { systemPlayedSound } from '../navigation/foregroundPresentation';
 import { fetchMyLiveReplies, fetchFirstReplyState, subscribeToOfferChanges } from '../services/offerArrivalSource';
 import { fetchReplyGlyphs } from '../services/replyGlyphs';
 import { arrivalSignalTitle, arrivalSignalA11y, pillGlyph } from '../utils/offerCopy';
@@ -54,6 +55,7 @@ export default function OfferArrivalHost() {
       onArrival: () => playSoundCue(SOUND_CUES.offerArrived),
     });
     controllerRef.current = controller;
+    const unregisterClaimer = registerArrivalClaimer((requestId) => controller.claim(requestId));
     let unsubscribe = null;
     const begin = () => {
       if (!unsubscribe) unsubscribe = subscribeToOfferChanges(userId, () => controller.check());
@@ -69,9 +71,14 @@ export default function OfferArrivalHost() {
       else if (state === 'background') end();
     });
     const pushSub = Notifications.addNotificationReceivedListener((n) => {
-      if (OFFER_PUSH_TYPES.has(n?.request?.content?.data?.type)) { noteOsOfferSound(); controller.check(); }
+      // Idea "338": the system's own sound is noted only when it really played (a quiet push leaves the cue free).
+      if (OFFER_PUSH_TYPES.has(n?.request?.content?.data?.type)) {
+        if (systemPlayedSound(n?.request?.identifier)) noteOsOfferSound();
+        controller.check();
+      }
     });
     return () => {
+      unregisterClaimer();
       appSub.remove();
       pushSub.remove();
       end();

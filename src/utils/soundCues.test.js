@@ -220,7 +220,9 @@ describe('source guards', () => {
     expect(svc).toMatch(/playsInSilentModeIOS: false/);
     expect(svc).toMatch(/InterruptionModeIOS\.MixWithOthers/);
     expect(svc).toMatch(/staysActiveInBackground: false/);
-    expect(code('services/notifications.js')).toMatch(/shouldPlaySound: true/);
+    // Idea "338": the handler's normal presentation keeps the push's own sound; only a push the screen already shows is quiet.
+    expect(code('navigation/foregroundPresentation.js')).toMatch(/NORMAL = Object\.freeze\(\{[^}]*shouldPlaySound: true/);
+    expect(code('services/notifications.js')).toMatch(/foregroundPresentation\(/);
   });
   test('the Settings switch shows only where cues can play, is labelled, and starts off', () => {
     const settings = code('screens/SettingsScreen.js');

@@ -11,6 +11,8 @@ import { canOpenFromOutside, keepEntry, takeEntry, whenOpenable, firstTimeSeen }
 import { ANDROID_NOTIFICATION_CHANNELS } from '../constants/notificationTier';
 import { NOTIFICATION_ACTION_KEYS, CATEGORY_PREFIX, OPEN_ACTION_ID } from '../constants/notificationActions';
 import { translate, getCurrentLanguage } from '../i18n/translate';
+import { foregroundPresentation, noteForegroundPresentation } from '../navigation/foregroundPresentation';
+import { claimArrival } from './offerArrivals';
 
 // A push tap can arrive (via getLastNotificationResponseAsync, below) before
 // the authenticated stack is mounted — e.g. the app was fully closed and the
@@ -21,12 +23,17 @@ import { translate, getCurrentLanguage } from '../i18n/translate';
 // before sign-in.
 const PENDING_NOTIFICATION_TAP_KEY = 'pending_notification_tap';
 
+// A push arriving while the app is OPEN: idea "338"'s one rule (navigation/foregroundPresentation.js) decides banner + sound.
+// Already shown on the screen in front (same object) = quiet, still in the notification list and the badge; anything else =
+// the normal banner. Pushes with the app closed or in the background never come here.
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
+  handleNotification: async (notification) => {
+    const data = notification?.request?.content?.data ?? null;
+    const currentRoute = navigationRef.isReady() ? navigationRef.getCurrentRoute() : null;
+    const { behavior } = await foregroundPresentation(data, { currentRoute, claimArrival });
+    noteForegroundPresentation(notification?.request?.identifier, behavior);
+    return behavior;
+  },
 });
 
 export async function registerForPushNotifications(userId) {

@@ -82,6 +82,16 @@ the host's gathering, does the host understand what happened from the existing j
 and the Who's going section (face flows in, count rolls, named line) alone, without wanting another surface (Home, Activity)?
 Report the specific confusion only; any fix prefers existing wording (`joinedNote`), never a new screen, row or notification.
 
+Quiet-when-shown checks (owner, idea "338", 2026-10-23; two phones, app OPEN on the receiving phone; record PASS/FAIL per line):
+(a) host on that gathering's page, someone joins: no banner, no sound, the face flows into Who's going, and the push is still in the
+phone's notification list (iOS Notification Center; Android tray: note whether it appears there at all); (b) host on a DIFFERENT
+gathering's page: the normal banner; (c) both in the same chat / plan chat, a message: no banner, the message appears; another chat
+open: banner; (d) customer on that request's screen, a business replies: no banner or sound, the reply travels into its card;
+(e) customer on another screen, a business replies: banner AND the arrival pill (the pill does not replace the banner yet); (f) open a
+sheet (e.g. a business preview) and have a business reply: is the pill visible above the sheet and tappable? (decides whether the pill
+may later replace the banner: `REPLY_PILL_REPLACES_BANNER`, only after (e)+(f) pass on iPhone AND Android, owner decision); (g) app in
+the background: normal pushes for all of the above. A missed update = Sev 1: report it, the fix is to keep the banner for that case.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google

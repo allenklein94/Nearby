@@ -1,3 +1,36 @@
+# Idea 338 built (owner, 2026-10-23): quiet when already shown
+
+**Idea "338" ("you don't need a notification for every state change; if the user is already looking at it, just update it")
+APPROVED with two safeguards, BUILT, NOT DEVICE-VERIFIED.** Gap found: the one foreground handler (`services/notifications.js`) showed
+every push with banner + sound while the app was open, including over the exact screen already showing the change (host watching a
+join flow into Who's going, a reply travelling into its card, a message in an open chat), and the reply banner ran alongside item
+165's arrival pill.
+Built: ONE rule `src/navigation/foregroundPresentation.js`, called only by that handler. Rule 1 (same screen, same object): the push's
+destination from `notificationDestination` (the one table) must equal the focused route (`navigationRef.getCurrentRoute()`) by
+screen AND object id (two gathering pages are different objects), and only for types whose screen updates live (`LIVE_ON_SCREEN`:
+`gathering_interest` -> the host's GatheringDetail via item 15/28's join subscription; `message` -> Chat; `plan_message` -> PlanChat;
+`business_offer_received` -> its BusinessRequestDetail only when the arrival controller confirms it just reloaded that request
+(`offerArrivals` `claim` -> 'viewed', recent 15 s)). Quiet = `shouldShowBanner: false, shouldPlaySound: false` with
+`shouldShowList: true` + badge (still in the phone's list). Every other type keeps its banner even on its own object (its screen
+would not update until reloaded). Rule 2 (reply while open elsewhere -> pill instead of banner): built behind
+`REPLY_PILL_REPLACES_BANNER = false` per the owner's safeguard, because the pill is drawn at the app root and the app's 31 files with
+native Modals/sheets draw above it, so "visible and actionable on every foreground screen" cannot be guaranteed in code and the pill
+has never been seen on a phone. When on, quiet only if `claim` -> 'pill' (signal up naming that request). Any doubt = banner: no
+controller registered (signed out / incomplete profile), no baseline yet (app just returned from background), failed look, dismissed
+or expired pill, an error, or no answer within 1.5 s (expo-notifications discards a notification whose handler takes > 3 s).
+Idea "169": the reply push's own sound blocked the in-app cue for 10 s; now noted only when the system really played it
+(`noteForegroundPresentation` / `systemPlayedSound`, unknown = assume played). Deprecated `shouldShowAlert` replaced by banner + list
+(same behaviour). Unchanged: background/closed pushes, badges, notification history, server, payloads, destinations, the
+reply-arrival animation (item 23) and the pill itself. No new screen, string, animation or notification state.
+Tests: `navigation/foregroundPresentation.test.js` 20 (same screen + same object; same screen + different object; non-live type on
+its object; reply on its request screen confirmed/unconfirmed; reply on another screen with the pill unverified / verified / not
+shown / throwing; slow claim -> banner; controller: pill, viewed + expiry, app returning from background (not started / baseline in
+flight / baseline never claimed), several replies close together = one pill both claimed, dismissed pill, no controller; wiring and
+sound guards); `utils/soundCues.test.js` guard updated to the new normal behaviour. Full Jest 489/489 suites, 6752 passed (11 todo).
+No journey: client-only (journeys exercise the database). NOT VERIFIED: anything on a phone. Checks (a)-(g) added to
+`PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md` ("Quiet-when-shown"), incl. whether Android keeps a quiet push in the
+tray and whether the pill shows above an open sheet. The first real-phone session stays the top priority.
+
 # Idea 337 closed (owner, 2026-10-23), nothing built
 
 **Idea "337" ("contextual event rendering": one backend event `gathering_member_joined` shown as "Claude joined." on Home, "Claude

@@ -21,6 +21,7 @@ export const OFFER_ARRIVAL_HOLD_MS = 6000;
 // little longer. Same motion, same everything else. Only for a signal of exactly ONE reply (utils/offerCopy.isFirstEverReply).
 export const OFFER_ARRIVAL_FIRST_HOLD_MS = 9000;
 export const OFFER_ARRIVAL_DEBOUNCE_MS = 700;
+export const ARRIVAL_CLAIM_RECENT_MS = 15000;
 
 export function isAnnounceableReply(row) {
   return !!row && row.status === 'offered' && !row.viewed_at && (row.request_status == null || row.request_status === 'open');
@@ -50,8 +51,12 @@ export function createOfferArrivals({
   holdMs = OFFER_ARRIVAL_HOLD_MS,
   firstHoldMs = OFFER_ARRIVAL_FIRST_HOLD_MS,
   debounceMs = OFFER_ARRIVAL_DEBOUNCE_MS,
+  now = Date.now,
 } = {}) {
   const known = new Set();
+  // Idea "338": requests the screen in front was just reloaded for (the "viewed" path), so a foreground push for that same
+  // reply can stay quiet. Only recent ones count (ARRIVAL_CLAIM_RECENT_MS).
+  const recentlyViewed = new Map();
   let active = false;
   let baselined = false;
   let generation = 0;
@@ -85,7 +90,7 @@ export function createOfferArrivals({
       if (r.viewed_at) { known.add(r.id); continue; }
       if (!isAnnounceableReply(r)) continue;
       known.add(r.id);
-      if (isViewingRequest(r.request_id)) { onViewedArrival(r.request_id); viewed += 1; continue; }
+      if (isViewingRequest(r.request_id)) { onViewedArrival(r.request_id); recentlyViewed.set(r.request_id, now()); viewed += 1; continue; }
       fresh.push({ offerId: r.id, requestId: r.request_id, partnerId: r.partner_id ?? null, partnerName: r.partner_name ?? null, offer: r });
     }
     return { fresh, viewed };
@@ -162,6 +167,18 @@ export function createOfferArrivals({
       checkTimer = setTimer(() => { checkTimer = null; runCheck(); }, debounceMs);
     },
     checkNow: runCheck,
+    // Idea "338": a reply push arrived while the app is open. Look now and say whether this request's reply is already shown:
+    // 'pill' (the signal is up naming it), 'viewed' (the request on screen was just reloaded for it) or null (not shown: not
+    // started, no baseline yet, a failed look, a dismissed or expired pill). null keeps the system banner.
+    async claim(requestId) {
+      if (!active || !baselined || !requestId) return null;
+      if (checkTimer) { clearTimer(checkTimer); checkTimer = null; }
+      await runCheck();
+      if (!active) return null;
+      if (signal?.items?.some((i) => i.requestId === requestId)) return 'pill';
+      const at = recentlyViewed.get(requestId);
+      return at != null && now() - at <= ARRIVAL_CLAIM_RECENT_MS ? 'viewed' : null;
+    },
     // App went to the background: stop, drop what is showing; ids already seen stay seen.
     pause,
     // Signed out / another account: forget everything.
@@ -184,4 +201,16 @@ export function subscribeViewedArrivals(listener) {
 }
 export function emitViewedArrival(requestId) {
   for (const l of [...viewedListeners]) { try { l(requestId); } catch { /* a screen's reload failing never stops the others */ } }
+}
+
+// Idea "338": the one live controller answers the foreground push handler (navigation/foregroundPresentation.js). No
+// controller (signed out, profile incomplete, host not mounted) = null = the push keeps its banner.
+let claimer = null;
+export function registerArrivalClaimer(fn) {
+  claimer = fn;
+  return () => { if (claimer === fn) claimer = null; };
+}
+export async function claimArrival(requestId) {
+  if (!claimer) return null;
+  try { return (await claimer(requestId)) ?? null; } catch { return null; }
 }
