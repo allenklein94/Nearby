@@ -1,3 +1,17 @@
+# Invites never grow the gathering (owner, 2026-10-23), nothing built
+
+**Proposal (owner, 2026-10-23; no idea number given): after the host invites friends, the gathering card expands / grows as if the
+plan were filling up. DECLINED; the rest MET AS BUILT, CLOSED, LOCKED.** Owner principle: invited does not mean attending; Nearby
+never suggests a gathering has four confirmed participants because three friends received invitations. Only confirmed attendees
+count toward attendance, host included (`attendingFigure`). Kept as built: invitation sent = the invite sheet's "✓ Sent" row after
+the server returns, attendance unchanged (`InviteFriendsModal`, idea "360"); a friend joins = their face flows into Who's going and
+the confirmed count rolls on the host's GatheringDetail (items 28/73, `CountRoll`); Home and Discover cards stay static and show real
+attendance counts on refresh (ideas "357"/"362", items 15/111); gathering published = item 43's formation panel. Declined: the
+growing/expanding gathering card, any attendance animation or count triggered by sending invitations. No code, animations, screens
+or tests; ideas "357", "360", "361", "362" not reopened; motion system FROZEN. Phone observation added to
+`PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md` (invite watch): after inviting three friends, does the host clearly
+understand the invitations were sent but attendance has not increased yet? Next: the first real-phone session.
+
 # Idea 366 deferred (owner, 2026-10-23), nothing built
 
 **Idea "366" ("the second offer shouldn't be as dramatic: novelty should decay") DEFERRED until the first real-phone session; not
