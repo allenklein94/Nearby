@@ -1,3 +1,31 @@
+# Idea "397": past plans become history (owner approved narrow fix + clarification, 2026-10-24)
+
+- Gap (found 2026-10-24, code reading): business-booking, date, night-out and shared-night plans rendered on Upcoming only, whatever
+  their state, so a past visit or an expired request sat on Upcoming forever and never reached Past.
+- Owner clarification: time governs, a visit confirmation alone never moves a future booking to Past; a passed time never claims a
+  visit; no invented dates or end times; same cards, no new screens/animations/migrations/Home changes.
+- ONE rule `src/utils/planHistory.js`: `businessPlanPlacement` (booking = `visitHasPassed` from `dashboardGlance.js`: accepted
+  time, else gathering start, else request day + start, else end of that day; no time = Upcoming; badge = stored plan status;
+  no booking = `requestLifecycleState`: open = Upcoming/Pending, expired (incl. past `expires_at` before the sweep) = Past +
+  "Request expired" (`ui.actions.requestExpired`, existing), cancelled by the person = hidden; the plan row is stored 'cancelled'
+  on expiry and stays so after Reopen, so the request decides), `experiencePlanTab` (night date = the UTC day of
+  `set_experience_night_date`'s 12:00 UTC value; Past once that local day ended; no date = Past only when completed),
+  `untimedPlanTab` (date/hangout plans, shared nights: no time stored, Past only when completed), `orderPlanRows` (Past most
+  recent first, untimed last, stable).
+- `services/plans.js`: the business-request plan read now embeds the request's status/date/start/expires_at, its gathering's start
+  and its replies' status/proposed_time, keeps 'cancelled' plan rows (expired requests), and uses the column hint
+  `parent:plans!parent_plan_id`: the old `plans!plans_parent_plan_id_fkey` is refused by PostgREST (PGRST200, verified against the
+  live API 2026-10-24), which failed this read and so Plans' whole load (Promise.all -> load error). New select verified to parse
+  live (reaches the permission check as anon). `getMyExperiencePlans` reads `scheduled_at`.
+- `PlansScreen.js`: these rows show on Upcoming or Past per the rule; item 160's tally guard updated (expired = "Request expired",
+  else the same `placeStatusLine`).
+- Tests: Jest `utils/planHistory.test.js` (future confirmed booking, past unconfirmed visit, visit confirmed after its time,
+  boundary at the exact time, date-only day end, no time, expired / swept-late / reopened / cancelled requests, night out incl.
+  midnight boundary, date + shared plans, order, wiring guards); journey `planHistory` 5/5 on prod (real writers under real roles,
+  rolled back); full Jest 502/6901.
+- NOT covered: the screen on a device (run order "Upcoming/Past watch" (a)-(i)); PostgREST embed with a signed-in user (journey
+  mirrors it in SQL); shared nights' date (not returned by `get_shared_experience_plans`; a migration would be needed, not done).
+
 # Idea "395": expired request's Reopen only while its time is ahead, else "Ask again for tomorrow" (owner approved narrow fix, 2026-10-24)
 
 - Defect: an expired request always showed "Reopen Request", which `reopen_business_request` always refuses once the request's

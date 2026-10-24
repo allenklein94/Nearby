@@ -33,12 +33,14 @@ export async function getMyStandaloneBusinessRequestPlans() {
     .from('plans')
     .select(
       'id, title, scheduled_at, party_size, budget_max, status, resulting_business_request_id, ' +
-        'business_requests!plans_resulting_business_request_id_fkey(category, group_plan_id), ' +
-        'parent:plans!plans_parent_plan_id_fkey(plan_type)'
+        'business_requests!plans_resulting_business_request_id_fkey(category, group_plan_id, status, date, time_window_start, expires_at, ' +
+        'gatherings!business_requests_gathering_id_fkey(scheduled_at), business_request_offers!business_request_offers_request_id_fkey(status, proposed_time)), ' +
+        // a table embedding itself takes the COLUMN hint: PostgREST rejects the constraint name here (PGRST200, checked
+        // against the live API 2026-10-24), which failed this whole read and with it Plans' load
+        'parent:plans!parent_plan_id(plan_type)'
     )
     .eq('plan_type', 'business_request')
     .not('resulting_business_request_id', 'is', null)
-    .neq('status', 'cancelled')
     .order('scheduled_at', { ascending: true, nullsFirst: false });
   if (error) throw new Error(error.message);
 
@@ -49,6 +51,8 @@ export async function getMyStandaloneBusinessRequestPlans() {
   // own header comment), so this has to be checked directly rather than
   // inferred from status.
   // A request that is a stop of an experience Plan is shown under that Plan, not again here.
+  // Idea "397": 'cancelled' plan rows are read too (an expired request's plan is stored 'cancelled' and stays so after
+  // Reopen); utils/planHistory.js businessPlanPlacement decides from the request's own state which are listed, and where.
   return (data ?? []).filter((row) => !row.business_requests?.group_plan_id && row.parent?.plan_type !== 'experience');
 }
 
@@ -248,7 +252,7 @@ export function experienceStopStateLabel(state) {
 export async function getMyExperiencePlans() {
   const { data, error } = await supabase
     .from('plans')
-    .select('id, title, status')
+    .select('id, title, status, scheduled_at')
     .eq('plan_type', 'experience')
     .neq('status', 'cancelled')
     .order('created_at', { ascending: false });

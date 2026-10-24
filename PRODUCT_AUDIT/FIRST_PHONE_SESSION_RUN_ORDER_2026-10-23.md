@@ -197,6 +197,17 @@ and a new request screen; the old request stays expired; no push about the old r
 gathering started: no Reopen and no Ask again button (rescheduling the gathering is the path); a match / community / group-plan /
 add-on request whose time passed: no Ask again. `ui.requestDetail.askAgainTomorrow`: 10 machine-authored languages, native review
 pending (separate).
+Upcoming/Past watch (owner idea "397", 2026-10-24; PASS/FAIL; seeded test business; uses the requests above): open Plans after
+each step. (a) Plans loads at all on a customer with a business request (the old read was refused by the API: a load error here = FAIL,
+Sev 1). (b) a booked request whose visit time is still ahead sits on Upcoming with "Confirmed", also after the business confirms the
+visit early if it can (never moved to Past by a confirmation alone). (c) once the booked time has passed (use a booking ~15 min out),
+pull to refresh: it moves to Past, still "Confirmed": nothing says they went. (d) after the business taps Mark as Completed on the visit
+day: Past, "Completed". (e) the expired request from the deadline watch: on Past, reading "Request expired", no "Cancelled" badge,
+not on Upcoming; reopen one whose time is ahead: back on Upcoming, Pending. (f) a request cancelled by the person: on neither tab.
+(g) Past order: most recent first. (h) a night out (Experience plan) moves to Past the day after its night; a date / hangout plan
+and a shared night stay on Upcoming until completed (they carry no time: record whether that feels wrong, USABILITY only).
+(i) Back from a Past row returns to Plans on the Past tab. Known limit: Plans doesn't re-sort live at the boundary; it re-reads on
+focus / pull to refresh.
 
 Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's checklist; only when the forecast really brings
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to

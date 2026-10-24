@@ -93,7 +93,8 @@ describe('one source on every surface', () => {
   test('Home and Plans show the same line from the same tally', () => {
     expect(read('screens/HomeScreen.js')).toMatch(/return placeStatusLine\(planPlaceStatus\[gatheringId\]\)/);
     const plans = read('screens/PlansScreen.js');
-    expect(plans).toMatch(/venueName=\{placeStatusLine\(requestReplyStatus\[plan\.resulting_business_request_id\]\)\}/);
+    // idea "397": an expired request (on Past) says "Request expired" instead; every other row reads the same tally
+    expect(plans).toMatch(/venueName=\{item\.place\.closed \? t\('ui\.actions\.requestExpired'\) : placeStatusLine\(requestReplyStatus\[plan\.resulting_business_request_id\]\)\}/);
     expect(plans).toMatch(/getRequestReplyStatuses\(ids\)/);
     // read when the rows load (each focus), never a subscription or a ticking count
     expect(plans).not.toMatch(/requestReplyStatus[\s\S]{0,200}(subscribe|channel\(|setInterval)/);

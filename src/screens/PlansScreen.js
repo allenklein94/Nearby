@@ -22,6 +22,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { mergePlanRows } from '../utils/planRows';
+import { businessPlanPlacement, experiencePlanTab, untimedPlanTab, orderPlanRows } from '../utils/planHistory';
 import { attendingFigure } from '../utils/gatheringFullness';
 // Tab labels are ui.plans.tab<Key> (display only; the key is the state).
 const TABS = [{ key: 'upcoming', labelKey: 'tabUpcoming' }, { key: 'hosting', labelKey: 'tabHosting' }, { key: 'past', labelKey: 'tabPast' }];
@@ -239,20 +240,25 @@ export default function PlansScreen({ navigation, route }) {
     for (const plan of groupPlans) {
       listData.push({ type: 'groupPlanRow', key: `group-plan-${plan.id}`, plan });
     }
-    // Real `plans`-table rows (Item 52) -- same "its own unsorted block on
-    // Upcoming only, regardless of real status" treatment group plans
-    // already got above (getMyGroupPlans() itself only ever returns
-    // open/fulfilled, never split into a Past tab) -- not a new pattern.
-    for (const plan of businessRequestPlans) {
-      listData.push({ type: 'businessRequestPlanRow', key: `biz-request-plan-${plan.id}`, plan });
+  }
+  // Real `plans`-table rows (Item 52), each its own block after the gatherings. Idea "397": ONE rule
+  // (utils/planHistory.js) puts each on Upcoming or Past from its real time / request state; Past = most recent first.
+  if (tab === 'upcoming' || tab === 'past') {
+    const now = new Date();
+    const onTab = (rows, timeOf) => (tab === 'past' ? orderPlanRows(rows, tab, timeOf) : rows);
+    const placedRequests = businessRequestPlans
+      .map((plan) => ({ plan, place: businessPlanPlacement(plan, now) }))
+      .filter((x) => x.place?.tab === tab);
+    for (const { plan, place } of onTab(placedRequests, (x) => x.plan.scheduled_at)) {
+      listData.push({ type: 'businessRequestPlanRow', key: `biz-request-plan-${plan.id}`, plan, place });
     }
-    for (const plan of datePlans) {
+    for (const plan of datePlans.filter((x) => untimedPlanTab(x) === tab)) {
       listData.push({ type: 'datePlanRow', key: `date-plan-${plan.id}`, plan });
     }
-    for (const plan of experiencePlans) {
+    for (const plan of onTab(experiencePlans.filter((x) => experiencePlanTab(x, now) === tab), (x) => x.scheduled_at)) {
       listData.push({ type: 'experiencePlanRow', key: `experience-plan-${plan.id}`, plan });
     }
-    for (const plan of sharedNights) {
+    for (const plan of sharedNights.filter((x) => untimedPlanTab(x) === tab)) {
       listData.push({ type: 'sharedNightRow', key: `shared-night-${plan.id}`, plan });
     }
   }
@@ -338,8 +344,8 @@ export default function PlansScreen({ navigation, route }) {
                   roleLabel={p('businessRequest')}
                   dateTimeText={plan.scheduled_at ? displayHeroWhen(plan.scheduled_at, language) : null}
                   peopleCount={plan.party_size}
-                  venueName={placeStatusLine(requestReplyStatus[plan.resulting_business_request_id])}
-                  status={resolvePlanTableStatus(plan.status)}
+                  venueName={item.place.closed ? t('ui.actions.requestExpired') : placeStatusLine(requestReplyStatus[plan.resulting_business_request_id])}
+                  status={item.place.status}
                   onPress={() => openBusinessRequest(plan.resulting_business_request_id)}
                   style={styles.planCardSpacing}
                 />
