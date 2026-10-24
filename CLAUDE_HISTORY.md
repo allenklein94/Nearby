@@ -1,3 +1,11 @@
+# Idea 380 closed (owner, 2026-10-24), nothing built
+
+**Owner decision: idea "380" CLOSED and LOCKED as met.** Principle kept: one meaningful state per user intention. Interested stays the
+only low-commitment gathering state; no Saved, Favorite, Maybe, Watch, Bookmark or any duplicate state, list, button or tab. Requested,
+On waitlist, Going and Hosting keep their distinct meanings. Internal status identifiers (`GatheringStatusBadge` legacy keys) unchanged
+unless an actual bug requires it. The "✓ Saved" expectation watch was already in the run order (session B task 5, added for idea "379");
+no wording change without phone evidence.
+
 # Idea 380 assessed (owner, 2026-10-24), nothing built
 
 **Idea "380" ("same with Favorite: aggressively eliminate redundant concepts; no Interested + Saved + Favorite + Maybe + Watch + Bookmark
