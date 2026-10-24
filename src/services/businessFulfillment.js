@@ -1,4 +1,5 @@
 import { translate } from '../i18n/translate';
+import { requestRefusal } from '../utils/requestRefusal';
 import { displayMoney } from '../i18n/display';
 import { localWhenParts } from '../utils/gatheringStructure';
 import { serviceError } from '../utils/recoverableError';
@@ -370,7 +371,7 @@ export async function submitBusinessRequest({
     note_param: targetPartnerId ? note : null,
     items_param: items && items.length > 0 ? items : null,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw requestRefusal(error);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, duplicate: !!data.duplicate };
 }
 

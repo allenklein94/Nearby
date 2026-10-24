@@ -190,6 +190,7 @@ describe('one action everywhere (profile, Discover, typed ask, Home, Surprise Me
     const r = intentResultBusinessRoute(posted, { at: MON_10AM });
     expect(r.params.matchedAvailability.availabilityId).toBe('a1');
     expect(r.params.bookingMode).toBe('reservation_required');
+    expect(r.params.targetPartner).toEqual(expect.objectContaining({ name: expect.any(String) })); // idea 384: asked of that business only
   });
   test('no declared mode keeps the general request form (unchanged)', () => {
     const r = intentResultBusinessRoute(item(null), { typedText: 'coffee', at: MON_10AM });

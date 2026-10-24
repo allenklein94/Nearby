@@ -21,11 +21,15 @@ describe('askSubmitLabel (idea 384)', () => {
     expect(askSubmitLabel({})).toBe('Ask Nearby Businesses');
   });
 
-  test('a bound posting / plan stop (matchedAvailability) fans out on the server = "Ask Nearby Businesses"', () => {
-    const route = businessActionRoute({ kind: 'book' }, { partner: { id: 'p1', name: 'Coastal Coffee' }, matchedAvailability: { availabilityId: 'a1', partnerName: 'Coastal Coffee' } });
-    expect(route.params.targetPartner).toBeUndefined();
-    expect(askSubmitLabel(route.params)).toBe('Ask Nearby Businesses');
+  test('a posting without a target (plan stop, posting push, no booking mode) fans out on the server = "Ask Nearby Businesses"', () => {
     expect(askSubmitLabel({ matchedAvailability: { availabilityId: 'a1', partnerName: 'Coastal Coffee' } })).toBe('Ask Nearby Businesses');
+  });
+
+  test('the deliberate Reserve / Book / Request on a business\'s own posting is asked of that business only = "Ask {name}"', () => {
+    const route = businessActionRoute({ kind: 'book' }, { partner: { id: 'p1', name: 'Coastal Coffee' }, matchedAvailability: { availabilityId: 'a1', partnerName: 'Coastal Coffee' } });
+    expect(route.params.targetPartner).toEqual({ id: 'p1', name: 'Coastal Coffee' });
+    expect(route.params.matchedAvailability.availabilityId).toBe('a1');
+    expect(askSubmitLabel(route.params)).toBe('Ask Coastal Coffee');
   });
 
   test('match and community paths take no target: never name one business', () => {

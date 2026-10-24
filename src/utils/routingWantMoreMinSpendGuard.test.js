@@ -39,7 +39,9 @@ describe('check 7: a request budget below the declared minimum spend is not rout
     expect(f).toMatch(/'below_minimum_spend'/);
   });
   test.each([
-    ['_match_request_to_availability_core', 3],
+    // idea "384" (20270342): the chosen-posting branch moved verbatim into _bind_preferred_posting (core 2 + helper 1 = 3 as before)
+    ['_match_request_to_availability_core', 2],
+    ['_bind_preferred_posting', 1],
     ['_match_request_to_package_core', 2],
     ['_match_request_to_policy_core', 2],
   ])('%s applies it wherever it applies _business_declines_request', (fn, n) => {

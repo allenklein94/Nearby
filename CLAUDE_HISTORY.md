@@ -1,3 +1,31 @@
+# Idea 384 posting follow-up (owner approved 2026-10-24): exclusive posting request BUILT, LIVE, CLOSED, LOCKED, NOT DEVICE-VERIFIED
+
+Owner approved the proposed narrow server fix with seven requirements; each, as built and checked:
+1. Ineligible posting = refused, never broadcast, never stripped: `create_business_request`'s targeted branch binds the posting through
+   `_bind_preferred_posting` after `_route_request_to_partner`; a -1 (ended, inactive, capacity < party incl. full, out of radius,
+   business declines / below min spend, row no longer pending) raises `posting_unavailable` and the whole request rolls back (journey:
+   ended, too small, filled = 0 requests, 0 rows). Client maps both hints to the existing "No longer available", no Try Again
+   (`utils/requestRefusal.js`, test `requestRefusal.test.js`).
+2. Ownership checked on the server before any write: a posting not of the target = `posting_mismatch` (journey: 0 requests, 0 rows).
+3. No overbooking: capacity is taken only at acceptance (`_take_availability_capacity`, row-locked, 20270308); journey: two people
+   holding offers on the last 2 spots, first books, second refused, 4 of 4 booked, posting `filled`; then a new exclusive ask is refused.
+   Duplicate: the same exclusive ask within 10 min returns the first request (`duplicate`, notifiedCount 0, nothing new).
+4. "I'll take this one" unchanged (`accept_business_offer`; journey: accepted, capacity_held 2, remaining 4 -> 2, one reservation).
+5. Non-exclusive flows unchanged: `_match_request_to_availability_core`'s preferred branch moved VERBATIM into the helper (diff against the
+   live definition shows only that move); journey: a posting without a target still reaches all 3 nearby businesses with the posting
+   bound; plan stops / posting push / no-mode results send no target (`businessAction.js`).
+6. Agreement: `businessActionRoute` now sends `targetPartner` + `matchedAvailability` for the deliberate Reserve / Book / Request, so the
+   heading ("Book with {name}"), subtitle ("only {name} will see this"), button + screen-reader label ("Ask {name}", `askSubmitLabel`)
+   and the server (notifiedCount 1, `targeted`, `postingBound`) agree; journey's client step ties them.
+7. Journey `exclusivePostingRequest` 13/13 in one rolled-back transaction under real roles (fails 10/10 on the pre-migration DB).
+Results: migration 20270342 applied to production (same signatures, no new overloads; helper has no anon/authenticated grant);
+prod journeys 667/667 (also 667/667 with it as prelude before applying); from-scratch replay 466/466 + journeys 667/667 + both
+concurrency scripts on it; grants replay = prod 3131/3131; Jest 496/6825. No new strings, screens, motion. Production data: none
+changed outside the migration (journeys rolled back).
+Limitations: two identical exclusive asks submitted at the same instant can both be created (the 10-minute duplicate check is not
+locked); each still books only through the capacity check. Device: heading/button/screen reader on a phone (run order Button watch).
+Pre-existing, unchanged: `create_business_request` keeps its existing anon EXECUTE grant (= prod snapshot).
+
 # Idea 384 follow-up (owner option (a), 2026-10-24): STOPPED on a posting-linkage conflict, nothing changed
 
 Owner chose (a): a deliberately selected business posting ("Book with {name}") goes ONLY to that business, posting kept, verified first.

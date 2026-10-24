@@ -21,11 +21,11 @@ export function businessActionForItem(item, at = new Date()) {
   return businessPrimaryAction(item.businessPartner, { posting: postingOf(item), at });
 }
 
-// action -> { kind: 'url', url } | { kind: 'navigate', screen, params }. Reserve / Book / Request open the EXISTING request form:
-// addressed to this one business (targetPartner), or, when the result is that business's own live posting, bound to the posting
-// (matchedAvailability). NOTE (idea "384", verified 2026-10-24 on the live server + journey requestSentCount): a bound posting does
-// NOT narrow the recipients -- create_business_request still fans out to every eligible nearby business; only targetPartner
-// (target_partner_id) reaches one business alone. `prefill` = the AskBusiness prefill params of the surface.
+// action -> { kind: 'url', url } | { kind: 'navigate', screen, params }. Reserve / Book / Request open the EXISTING request form,
+// addressed to this one business (targetPartner); when the result is that business's own live posting it also carries the posting
+// (matchedAvailability). Idea "384" (2026-10-24, migration 20270342): this deliberate action is the ONLY route that sends a target
+// together with a posting, so the server asks that business alone and binds the posting's terms (or refuses, never broadcasts).
+// A posting without a target (no booking mode, plan stops, the posting push) still fans out. `prefill` = the AskBusiness params.
 export function businessActionRoute(action, { partner, partnerId, prefill = {}, matchedAvailability = null } = {}) {
   if (!action || !partner) return null;
   if (action.kind === 'go_now' || action.kind === 'directions') {
@@ -34,8 +34,7 @@ export function businessActionRoute(action, { partner, partnerId, prefill = {}, 
   if (!['reserve', 'book', 'request'].includes(action.kind)) return null;
   const id = partnerId ?? partner.id;
   const params = { ...prefill, bookingMode: bookingModeOf(partner) };
-  if (matchedAvailability) return { kind: 'navigate', screen: 'AskBusiness', params: { ...params, matchedAvailability } };
-  return { kind: 'navigate', screen: 'AskBusiness', params: { ...params, targetPartner: { id, name: partner.name }, matchedAvailability: null } };
+  return { kind: 'navigate', screen: 'AskBusiness', params: { ...params, targetPartner: { id, name: partner.name }, matchedAvailability: matchedAvailability ?? null } };
 }
 
 // The route for a typed-ask business result: the booking-mode route when the business declared one, else the pre-item-72 default
