@@ -1,3 +1,19 @@
+# Idea 377 assessed (owner, 2026-10-24), nothing built
+
+**Idea "377" ("every CTA should answer: what happens if I tap this? If the answer isn't obvious, rename it") MET AS BUILT, ASSESSED,
+recommended close, owner decision pending.** Same rule as item 73 (CTA from the object's state, wording LOCKED), item 136's destination
+contract (what a recommendation says decides where it goes), the Home claim rule (its CTA names where it goes) and idea "376" (the
+label's step is the tap's step, fixed 2026-10-24). Code reading of the shared vocabulary (`i18n/ui/actions.js`, owned by
+`primaryActionFor`): every action label is a verb naming its result (Join, Request to Join, Join Waitlist, I'm Going, I'm Interested,
+View Plan, Meet People, View Offer, I'll take this one, Confirm With the Group, Accept / Decline / Dismiss, Go now, Get Directions);
+statuses (Going, Hosting, Requested, On waitlist, Invite only, Past) are badges, never buttons. Two labels checked closely: (1) bare
+"View" appears only when nothing actionable is left and sits beside the object's own status (past, closed offer, unknown viewer state);
+(2) a business's Reserve / Book / Request (item 72, LOCKED, from the business's declared booking mode) opens AskBusiness addressed to that
+one business under the heading "Book with {name}", whose accepted offer IS the booking ("You're booked"); no outside reservation system is
+claimed. No rename proposed without evidence: a rename would reopen item 73/72's locked wording and cost 11 languages. Phone watch
+(session B, plain-word tasks): before a tap, ask "what do you think happens?"; a label people guess wrong = a wording fix in the shared
+table (`primaryAction.js` / `actions.js`), never per screen. No code or test added.
+
 # Idea 376 fix built + closed (owner, 2026-10-24), LOCKED
 
 **Owner approved the narrow idea "376" fix (2026-10-24): a gathering card's join action behaves the same on Home and Discover.** ONE
