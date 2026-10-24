@@ -1,3 +1,11 @@
+# Ideas 378 + 271 closed (owner, 2026-10-24), nothing built
+
+**Owner decision: ideas "378" and "271" CLOSED and LOCKED together as met by the existing implementation; Interested as a second
+button and an Invite overflow on Best Pick DECLINED.** Kept: card body opens gathering details; Join / Request to Join / Join Waitlist
+opens its step (idea "376"), never joins by itself; Interested stays on GatheringDetail and as the primary action on low-commitment rows
+(owner: Interested is a legitimate private lower-commitment state, not a weaker Join); Invite stays on GatheringDetail; one primary
+action per card (item 200); no new buttons, menus, animations or navigation. Verification = check C9 on a phone.
+
 # Idea 378 assessed (owner, 2026-10-24), nothing built
 
 **Idea "378" (Best Pick Tonight: primary Join, secondary Interested, overflow Invite, card tap = View details) PARTLY MET, the rest
