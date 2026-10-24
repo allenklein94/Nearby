@@ -211,6 +211,10 @@ Next step watch (owner, idea "387", 2026-10-24; observation only): right after (
 (3) a plan is over, ask nothing and wait 10 seconds: do they find the next step unaided (take the offer / View Plan or Message group /
 "How was it?")? Then ask "What would you do next?" Write it verbatim. Stuck or a wrong guess = USABILITY with the screen; the fix is the
 shared source of that step (`primaryActionFor`, `requestTimeline.js`, Your Plans row), never a "next best action" module or "best" wording.
+Booked card watch (owner, idea "388", 2026-10-24; observation only): on the request screen right after "You're booked", screenshot the
+card and ask "What did you just book, and when?" before they touch anything. Note whether Add to Calendar / Get Directions / ride /
+Share / Invite read as secondary links under the confirmation or compete with it (eye goes to the links first, confirmation scrolled
+off on a small phone). Competing = USABILITY with the screenshot; propose the smallest change for owner approval; no redesign without it.
 Connect vs Add Friend (owner, idea "382", 2026-10-24; same watch): when they meet Connect (friend discovery) and Add Friend (a
 profile), ask "What's the difference between those two?" Connect = friends only if both connect; Add Friend = a request they accept.
 Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.
