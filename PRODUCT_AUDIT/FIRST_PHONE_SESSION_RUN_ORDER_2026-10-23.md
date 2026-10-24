@@ -191,6 +191,8 @@ wording proposal in the shared table (`primaryAction.js` / `i18n/ui/actions.js`)
 Plan stop links (owner, idea "383", 2026-10-24; same watch): on an Experience plan, each stop's link names where it goes: a
 gathering or an already-requested/booked stop = "View →"; a stop not requested yet = Reserve / Book / Request (the business's
 booking mode; "Request" when none). Ask what each will do before tapping. Also note whether Home's "Continue Browsing →" reads as Discover.
+Walk-in stop (owner, 2026-10-24): a walk-in business's stop reads "Request" (it opens a request form, so it is truthful); note whether the
+person expected to just walk in. Confusion = USABILITY, reported; no label change without this evidence.
 Connect vs Add Friend (owner, idea "382", 2026-10-24; same watch): when they meet Connect (friend discovery) and Add Friend (a
 profile), ask "What's the difference between those two?" Connect = friends only if both connect; Add Friend = a request they accept.
 Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.
