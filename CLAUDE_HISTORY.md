@@ -1,3 +1,13 @@
+# Idea 377 closed (owner, 2026-10-24), nothing built
+
+**Owner decision: idea "377" CLOSED and LOCKED as met by the existing implementation; no code changes.** Phone check added to the run
+order's session B as "Button watch" (the earlier assessment said it was added; it was only recorded in CLAUDE.md until now): before
+first taps, the person says what they expect, recorded verbatim beside what happened; focus on a business's Reserve / Book / Request
+("a reservation now, or asking them?" and, on "Book with {name}", "have you booked anything yet?"); needs a seeded business with a
+declared booking mode, else SETUP-BLOCKED. Evidence = a wrong prediction that changes what they do (leaving expecting an instant
+booking, or believing they're booked before a reply); a hesitation the next screen clears is not. Evidence = USABILITY + a wording
+proposal in the shared table (`primaryAction.js` / `i18n/ui/actions.js`) for owner approval; items 72/73 wording not reopened without it.
+
 # Idea 377 assessed (owner, 2026-10-24), nothing built
 
 **Idea "377" ("every CTA should answer: what happens if I tap this? If the answer isn't obvious, rename it") MET AS BUILT, ASSESSED,

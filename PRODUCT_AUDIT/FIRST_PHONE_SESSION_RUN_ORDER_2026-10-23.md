@@ -180,6 +180,14 @@ it", "Ask Nearby Businesses", "pin"). Don't explain or help; ask them to think a
 6. Afterwards: "What did you just publish? What did you send? When and where is it?"
 Throughout: does moving between Home, Discover, Create, Activity and Profile feel like one connected app or five separate ones?
 Record the moment it felt disconnected, if any (idea "353").
+Button watch (owner, idea "377", 2026-10-24; observation only): before each of their first taps on a button (Join, Request to
+Join, I'm Interested, View Plan, Meet People, I'll take this one, Get Directions, Reserve / Book / Request), ask "What do you think
+happens if you tap that?" and write the answer verbatim, then what actually happened. Focus: Reserve / Book / Request on a business
+result or profile: ask "Is that a reservation now, or are you asking them?"; then, on the form it opens ("Book with {name}"), "Have
+you booked anything yet?" Needs a seeded business with a declared booking mode; none in the market = SETUP-BLOCKED. Evidence = a
+wrong prediction that changes what they do (expecting an instant booking and leaving, or thinking they're booked before a reply);
+one hesitation that the next screen clears is not. Evidence = USABILITY with the label, both answers and the screen; the fix is a
+wording proposal in the shared table (`primaryAction.js` / `i18n/ui/actions.js`) for owner approval, never a change without it.
 Record their words verbatim where they hesitate. Their results go in the same lists, marked "B".
 
 ## Record sheet
