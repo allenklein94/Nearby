@@ -1,3 +1,17 @@
+# Idea 380 assessed (owner, 2026-10-24), nothing built
+
+**Idea "380" ("same with Favorite: aggressively eliminate redundant concepts; no Interested + Saved + Favorite + Maybe + Watch + Bookmark
+unless each means something meaningfully different") MET AS BUILT, ASSESSED, recommended close, owner decision pending.** Code reading
+of the strings and screens: the person meets exactly ONE "keep this for later" concept, Interested (idea "152", ideas "344"/"345",
+idea "379"); none of Saved (as a state), Favorite, Maybe, Watch or Bookmark exists as a state, button, list or tab. The other relations
+on a gathering each mean something different and come from the one viewer relation (`objectState.js`): Requested (pending host
+approval), On waitlist (full), Going/Attending (confirmed), Hosting. What the words match elsewhere is not a state: "Saved" = form-save
+confirmations + item 30's momentary "✓ Saved"; "favorite" = a dating profile's chosen music (`favorite_tracks`, profile content) and
+Profile/Momentum's "Favorite vibe" (a description of the person's own activity; Momentum stays under its fold decision); "watch" = the
+"watch a movie" phrase in the ask resolver; "maybe" = test phrases. Internal-only note: `GatheringStatusBadge` keeps legacy keys
+(`interested` reads "Requested", `maybe` reads "Interested"), already documented in that file; the person never sees the keys, so no
+rename (it would touch the 11-language table for no visible change). No code or test added.
+
 # Idea 379 closed (owner, 2026-10-24), nothing built
 
 **Owner decision: idea "379" CLOSED and LOCKED as met.** Interested stays the only Save-for-later equivalent for gatherings: no separate
