@@ -176,7 +176,7 @@ it", "Ask Nearby Businesses", "pin"). Don't explain or help; ask them to think a
 4. "Ask local coffee places if they can host 4 of you tomorrow at 7." (Ask Nearby Businesses + Send)
 5. "Find a gathering you'd like to go to and show you're interested." Then, after the other tasks, without any hint: "Find that
    gathering again." (owner, idea "353": watch where they look first, Home / Discover / Plans' ☆ Interested row / Profile, and whether
-   it reads as the same thing with the same state everywhere they meet it; finding it naturally = evidence the shared state is understood.)
+   it reads as the same thing with the same state everywhere they meet it; finding it naturally = evidence the shared state is understood. Idea "379" watch: if they look for a "Saved" tab or list (after the momentary "✓ Saved"), record it verbatim as USABILITY: evidence for rewording that confirmation, never for a Saved feature.)
 6. Afterwards: "What did you just publish? What did you send? When and where is it?"
 Throughout: does moving between Home, Discover, Create, Activity and Profile feel like one connected app or five separate ones?
 Record the moment it felt disconnected, if any (idea "353").

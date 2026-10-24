@@ -1,3 +1,10 @@
+# Idea 379 closed (owner, 2026-10-24), nothing built
+
+**Owner decision: idea "379" CLOSED and LOCKED as met.** Interested stays the only Save-for-later equivalent for gatherings: no separate
+Save button, bookmarks, saved places, saved businesses or favourites list. Its behaviour is kept: private, shown in Plans, relevant
+reminders, one tap to Attending. Owner watch added to session B task 5 in the run order: if a person looks for a "Saved" tab or list
+after item 30's momentary "✓ Saved", record it as USABILITY; that is evidence for rewording the confirmation, never for a Saved feature.
+
 # Idea 379 assessed (owner, 2026-10-24), nothing built
 
 **Idea "379" ("Save needs a purpose: no Save unless the saved state does something; if saved items appear somewhere, Saved is fine;
