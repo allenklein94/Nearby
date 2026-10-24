@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { searchBusinessTypes } from '../utils/businessTypeSearch';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
@@ -6,6 +6,10 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Scro
 import * as Location from 'expo-location';
 import { randomUUID } from 'expo-crypto';
 import { supabase } from '../services/supabase';
+import { getMyBusinessPartnerRequest, resubmitBusinessPartnerRequest } from '../services/businessPartnerApply';
+import { APPLICATION_STATUS_COPY, applicationView, showsReviewerNote, resendFormFrom } from '../utils/businessApplicationState';
+import { NLoader, showSuccessToast } from '../motion';
+import LoadErrorState from '../components/LoadErrorState';
 import { checkTextModeration } from '../services/textModeration';
 import { searchPlacesByTextResult } from '../services/places';
 import { SIGNUP_DETAILS_SOURCE } from '../utils/locationProvenance';
@@ -133,10 +137,91 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
   const [classifying, setClassifying] = useState(false);
   const [aiSummary, setAiSummary] = useState(null);
 
-  useEffect(() => {
-    logBusinessAcquisitionEvent(sessionId, 'apply_started');
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // One application, one screen (screen-reduction audit 2026-10-24): the latest application decides what this screen shows
+  // (utils/businessApplicationState.js). No application = the Apply flow below; a declined one offers a new application in place;
+  // "needs info" = this same form, prefilled, resent onto the same row.
+  const [request, setRequest] = useState(null);
+  const [applicationLoading, setApplicationLoading] = useState(true);
+  const [applicationLoadError, setApplicationLoadError] = useState(false);
+  const [startingNew, setStartingNew] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
+  const view = applicationView(request, { startingNew });
+  const resending = view === 'needs_info';
+
+  const loadApplication = useCallback(async () => {
+    setApplicationLoading(true);
+    try {
+      const data = await getMyBusinessPartnerRequest();
+      setRequest(data);
+      setApplicationLoadError(false);
+      if (data?.status === 'needs_info') {
+        const f = resendFormFrom(data);
+        setBusinessName(f.businessName);
+        setDescription(f.description);
+        setContactInfo(f.contactInfo);
+        setCategory(f.category);
+        setWebsite(f.website);
+        setPhone(f.phone);
+        setAddress(f.address);
+        setRequestedFeatures(f.requestedFeatures);
+        setStep('form');
+      }
+    } catch (e) {
+      setApplicationLoadError(true);
+    } finally {
+      setApplicationLoading(false);
+    }
   }, []);
+
+  // Loaded once (and after a resend), never on focus: coming back from the map pin must not reset the form.
+  useEffect(() => { loadApplication(); }, [loadApplication]);
+
+  const applyStartedLogged = useRef(false);
+  useEffect(() => {
+    if (applicationLoading || view !== 'apply' || applyStartedLogged.current) return;
+    applyStartedLogged.current = true;
+    logBusinessAcquisitionEvent(sessionId, 'apply_started');
+  }, [applicationLoading, view, sessionId]);
+
+  // The header names what the screen is showing: the application itself, or the way to make one.
+  useEffect(() => {
+    if (applicationLoading) return;
+    navigation.setOptions?.({ title: view === 'apply' ? 'Get Your Business on Nearby' : 'My Application' });
+  }, [applicationLoading, view, navigation]);
+
+  function startNewApplication() {
+    setStartingNew(true);
+    setStep('search');
+  }
+
+  async function handleResubmit() {
+    if (!businessName.trim()) {
+      return Alert.alert('Business name required', "Tell us your business's name.");
+    }
+    const nameCheck = await checkTextModeration(businessName);
+    if (!nameCheck.safe) {
+      return Alert.alert('Name not allowed', 'Please revise and try again.');
+    }
+    setResubmitting(true);
+    try {
+      await resubmitBusinessPartnerRequest(request.id, {
+        businessName: businessName.trim(),
+        businessDescription: description.trim(),
+        contactInfo: contactInfo.trim(),
+        category,
+        website: website.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        requestedFeatures,
+      });
+      showSuccessToast('Sent', "We'll take another look and let you know.");
+      await loadApplication();
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleResubmit() });
+    } finally {
+      setResubmitting(false);
+    }
+  }
 
   function toggleFeature(key) {
     setRequestedFeatures((prev) =>
@@ -333,7 +418,107 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
     setSubmitting(false);
   }
 
-  if (step === 'search') {
+  if (applicationLoading && !request && !applicationLoadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centered}>
+          <NLoader fullScreen={false} />
+          <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>Loading your application...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (applicationLoadError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadErrorState message="Couldn't load your application status." onRetry={loadApplication} />
+      </SafeAreaView>
+    );
+  }
+
+  const statusCopy = view === 'apply' ? null : APPLICATION_STATUS_COPY[view];
+  const statusHeader = statusCopy ? (
+    <>
+      <View style={styles.statusCard} accessible accessibilityLabel={`${statusCopy.title}. ${statusCopy.body}`}>
+        <Text style={styles.statusIcon}>{statusCopy.icon}</Text>
+        <Text style={styles.statusTitle} accessibilityRole="header">{statusCopy.title}</Text>
+        <Text style={styles.statusBody}>{statusCopy.body}</Text>
+      </View>
+      {showsReviewerNote(view, request) ? (
+        <View style={styles.notesCard}>
+          <Text style={styles.notesLabel}>Note from our team</Text>
+          <Text style={styles.notesText}>{request.admin_notes}</Text>
+        </View>
+      ) : null}
+    </>
+  ) : null;
+
+  if (view === 'pending' || view === 'approved' || view === 'denied') {
+    const categoryLabel = BUSINESS_CATEGORIES.find((c) => c.key === request.category)?.label;
+    const featureLabels = (request.requested_features || [])
+      .map((key) => FEATURE_OPTIONS.find((f) => f.key === key)?.label)
+      .filter(Boolean);
+    return (
+      <SafeAreaView style={styles.container}>
+        <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+          {statusHeader}
+          <View style={styles.detailsCard}>
+            <Text style={styles.detailsHeader} accessibilityRole="header">Your Application</Text>
+            <DetailRow label="Business Name" value={request.business_name} styles={styles} />
+            {categoryLabel ? <DetailRow label="Category" value={categoryLabel} styles={styles} /> : null}
+            {request.subcategory ? <DetailRow label="Subcategory" value={request.subcategory} styles={styles} /> : null}
+            {request.business_description ? <DetailRow label="Description" value={request.business_description} styles={styles} /> : null}
+            {request.website ? <DetailRow label="Website" value={request.website} styles={styles} /> : null}
+            {request.phone ? <DetailRow label="Phone" value={request.phone} styles={styles} /> : null}
+            {request.address ? <DetailRow label="Address" value={request.address} styles={styles} /> : null}
+            {request.attributes?.length ? (
+              <DetailRow label="Great For" value={request.attributes.map((a) => businessAttributeLabel(a)).join(', ')} styles={styles} />
+            ) : null}
+            {request.cuisine ? <DetailRow label="Cuisine" value={cuisineLabel(request.cuisine)} styles={styles} /> : null}
+            {request.priority_occasions?.length ? (
+              <DetailRow label="Occasions You Want More Of" value={request.priority_occasions.map((o) => occasionLabel(o)).join(', ')} styles={styles} />
+            ) : null}
+            {featureLabels.length ? <DetailRow label="Interested In" value={featureLabels.join(', ')} styles={styles} /> : null}
+          </View>
+          {view === 'denied' && (
+            <TouchableOpacity style={styles.button} onPress={startNewApplication} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Submit a new application">
+              <Text style={styles.buttonText}>Submit a New Application</Text>
+            </TouchableOpacity>
+          )}
+          {view === 'approved' && (
+            <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BusinessDashboard')} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel="Go to your business dashboard">
+              <Text style={styles.buttonText}>Go to Business Dashboard</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // The Browse-all category list; a resend shows it directly (resubmit saves the category alone, never a subcategory).
+  const categoryChips = (
+    <View style={styles.chipRow}>
+      {BUSINESS_CATEGORIES.map((c) => (
+        <TouchableOpacity
+          key={c.key}
+          style={[styles.chip, category === c.key && styles.chipActive]}
+          onPress={() => {
+            setCategory(c.key);
+            setSubcategory(null);
+            setUnlistedText('');
+          }}
+          accessibilityRole="button"
+          accessibilityLabel={c.label}
+          accessibilityState={{ selected: category === c.key }}
+        >
+          <Text style={[styles.chipText, category === c.key && styles.chipTextActive]}>{c.label}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  if (step === 'search' && !resending) {
     return (
       <SafeAreaView style={styles.container}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
@@ -402,11 +587,13 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
     <SafeAreaView style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
-          <TouchableOpacity onPress={() => setStep('search')} accessibilityRole="button">
-            <Text style={styles.backLink}>← Back to search</Text>
-          </TouchableOpacity>
+          {resending ? statusHeader : (
+            <TouchableOpacity onPress={() => setStep('search')} accessibilityRole="button">
+              <Text style={styles.backLink}>← Back to search</Text>
+            </TouchableOpacity>
+          )}
 
-          {googleReference ? (
+          {resending ? null : googleReference ? (
             <View style={styles.confirmBanner} accessible accessibilityLabel={`From Google Maps, for reference: ${googleReference.name ?? ''}${googleReference.address ? `, ${googleReference.address}` : ''}`}>
               <Text style={styles.confirmTitle}>{googleReference.name}</Text>
               {googleReference.address ? <Text style={styles.confirmSubtitle}>{googleReference.address}</Text> : null}
@@ -438,6 +625,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             accessibilityLabel="Business description, optional"
           />
 
+          {!resending && (<>
           <TouchableOpacity
             style={[styles.aiButton, (classifying || !description.trim()) && { opacity: 0.5 }]}
             onPress={runBusinessOnboardingAssistant}
@@ -467,6 +655,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
               <Text style={styles.confirmSubtitle}>Edit anything below before submitting.</Text>
             </View>
           ) : null}
+          </>)}
 
           <Text style={styles.label}>Contact Info</Text>
           <TextInput
@@ -479,7 +668,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
           />
 
           <Text style={styles.label}>What type of business are you?</Text>
-          {category ? (
+          {resending ? categoryChips : category ? (
             <View style={styles.chipRow}>
               <TouchableOpacity
                 style={[styles.chip, styles.chipActive]}
@@ -517,27 +706,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
               <TouchableOpacity onPress={() => setShowAllCategories(!showAllCategories)} accessibilityRole="button" accessibilityLabel="Browse all categories">
                 <Text style={styles.chipText}>{showAllCategories ? 'Hide categories' : 'Browse all categories'}</Text>
               </TouchableOpacity>
-              {showAllCategories ? (
-          <View style={styles.chipRow}>
-            {BUSINESS_CATEGORIES.map((c) => (
-              <TouchableOpacity
-                key={c.key}
-                style={[styles.chip, category === c.key && styles.chipActive]}
-                onPress={() => {
-                  setCategory(c.key);
-                  setSubcategory(null);
-                  setUnlistedText('');
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={c.label}
-                accessibilityState={{ selected: category === c.key }}
-              >
-                <Text style={[styles.chipText, category === c.key && styles.chipTextActive]}>{c.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-              ) : null}
+              {showAllCategories ? categoryChips : null}
               {typeQuery.trim().length >= 3 && searchBusinessTypes(typeQuery).length === 0 ? (
                 <Text style={styles.chipText}>No match in our list. That's fine: we'll keep what you typed and the team will place it.</Text>
               ) : null}
@@ -572,6 +741,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             </>
           )}
 
+          {!resending && (<>
           {subcategoryOptionsFor(category).length > 0 && !subcategory ? (
             <>
               <Text style={styles.label}>More specifically? (optional)</Text>
@@ -724,6 +894,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
 
             </>
           ) : null}
+          </>)}
 
           <Text style={styles.label}>Website</Text>
           <TextInput
@@ -768,6 +939,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             accessibilityLabel="Address, optional"
           />
 
+          {!resending && (<>
           <Text style={styles.label}>Location on the map</Text>
           <TouchableOpacity style={styles.locationRow} onPress={openLocationPin} accessibilityRole="button"
             accessibilityLabel={latitude != null ? 'Location placed. Change it on the map' : 'Place your business on the map, optional'}>
@@ -775,6 +947,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
               {latitude != null ? '✓ Location placed · Change' : 'Place your business on the map (optional) →'}
             </Text>
           </TouchableOpacity>
+          </>)}
 
           <Text style={styles.label}>What would you like to offer?</Text>
           {FEATURE_OPTIONS.map((f) => {
@@ -796,25 +969,62 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             );
           })}
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={submit}
-            disabled={submitting}
-            activeOpacity={0.85}
-            accessibilityLabel={submitting ? 'Submitting' : 'Submit application'}
-            accessibilityRole="button"
-          >
-            <Text style={styles.buttonText}>{submitting ? 'Submitting...' : 'Submit Application'}</Text>
-          </TouchableOpacity>
-          <Text style={styles.reviewNote}>Once submitted, your business is reviewed before going live.</Text>
+          {resending ? (
+            <TouchableOpacity
+              style={[styles.button, resubmitting && { opacity: 0.6 }]}
+              onPress={handleResubmit}
+              disabled={resubmitting}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Resend application"
+            >
+              {resubmitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Resend Application</Text>}
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={submit}
+                disabled={submitting}
+                activeOpacity={0.85}
+                accessibilityLabel={submitting ? 'Submitting' : 'Submit application'}
+                accessibilityRole="button"
+              >
+                <Text style={styles.buttonText}>{submitting ? 'Submitting...' : 'Submit Application'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.reviewNote}>Once submitted, your business is reviewed before going live.</Text>
+            </>
+          )}
         </ScrollView>
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );
 }
 
+function DetailRow({ label, value, styles }) {
+  return (
+    <View style={styles.detailRow}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue}>{value}</Text>
+    </View>
+  );
+}
+
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg },
+  statusCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, alignItems: 'center', marginBottom: spacing.lg, ...shadow.card },
+  statusIcon: { fontSize: 40, marginBottom: spacing.sm },
+  statusTitle: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs, textAlign: 'center' },
+  statusBody: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  notesCard: { backgroundColor: colors.surfaceElevated, borderRadius: radius.md, padding: spacing.md, marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border },
+  notesLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, fontWeight: '700' },
+  notesText: { ...typography.body, color: colors.textPrimary },
+  detailsCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.lg, marginBottom: spacing.lg, ...shadow.card },
+  detailsHeader: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md, fontWeight: '700' },
+  detailRow: { marginBottom: spacing.sm },
+  detailLabel: { ...typography.caption, color: colors.textTertiary },
+  detailValue: { ...typography.body, color: colors.textPrimary },
   header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.xs },
   subheader: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.lg, lineHeight: 18 },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },

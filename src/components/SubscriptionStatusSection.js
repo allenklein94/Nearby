@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { getSubscriptionDetails, restorePurchases, openSubscriptionManagement } from '../services/purchases';
@@ -20,7 +20,10 @@ function formatDate(iso, language) {
   return displayDay(iso, language, { withYear: true });
 }
 
-export default function BillingScreen({ navigation }) {
+// Your subscription, shown in place under Settings' "Manage Subscription" row (screen-reduction audit 2026-10-24, owner
+// approved: this was its own screen, Billing). Read when opened and again when Settings regains focus (e.g. back from the
+// Paywall). The purchase itself stays on the Paywall screen.
+export default function SubscriptionStatusSection({ navigation }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -68,10 +71,10 @@ export default function BillingScreen({ navigation }) {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.billing.loadingYourSubscription')}</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -80,8 +83,7 @@ export default function BillingScreen({ navigation }) {
   const storeLabel = details?.store ? (KNOWN_STORES.includes(details.store) ? t(`ui.billing.store.${details.store}`) : details.store) : null;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+    <View style={styles.container}>
         {details?.unavailable ? (
           <View style={styles.planCard}>
             <Text style={styles.planEmoji}>💳</Text>
@@ -155,13 +157,12 @@ export default function BillingScreen({ navigation }) {
             {t('ui.billing.receiptsAndChargeHistoryFor')}
           </Text>
         </View>
-      </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const getStyles = (colors, shadow) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
+  container: { marginBottom: spacing.md },
   planCard: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.lg, alignItems: 'center', marginBottom: spacing.md,

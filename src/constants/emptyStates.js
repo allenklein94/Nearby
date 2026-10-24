@@ -49,7 +49,6 @@ export const EMPTY_STATES = {
   trip_ideas: { title: "No ideas yet", body: "Add an idea to get planning." },
   playlist: { title: "No songs yet", body: "Search above to add the first one." },
   occasions: { title: "No occasions saved yet", body: "Save a birthday or anniversary and Nearby will remind you." },
-  business_application: { title: "No application yet", body: "Apply to bring your business to Nearby." },
   gathering_questions: { title: "No questions yet", body: "Questions about this gathering will appear here." },
   gif_search: { title: "No GIFs match", body: "Try another search." },
   gatherings_search: { title: "No gatherings match \"{query}\"", body: "Try a different word, or clear the search." },

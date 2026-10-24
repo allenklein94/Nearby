@@ -40,12 +40,10 @@ export const SCREEN_REGISTRY = {
   EditProfile: { jobs: ['C'], reason: 'Editing your profile (photos, prompts, about you, basics, interests) is its own task (item 35); Save returns to where you came from.' },
   Settings: { jobs: ['C'], reason: 'Preferences, privacy, notifications and account controls.' },
   DatingPreferences: { jobs: ['C'], reason: 'Edit your dating profile and who you want to see.' },
-  EmergencyContacts: { jobs: ['C'], reason: 'Add and remove your emergency contacts.' },
   Occasions: { jobs: ['C'], reason: 'Add, edit and remove the occasions Nearby remembers for you.' },
   MusicMode: { jobs: ['C'], reason: 'Connect Spotify and pick the tracks shown on your profile.' },
   IdVerification: { jobs: ['C'], reason: 'Submit your ID for verification.' },
   InviteFriends: { jobs: ['C'], reason: 'Invite people to Nearby and track the bonus.' },
-  Billing: { jobs: ['E'], reason: 'Your subscription and payments.' },
   Paywall: { jobs: ['E'], reason: 'Upgrade to premium.' },
   Legal: { jobs: ['F'], reason: 'Terms and privacy policy.' },
 
@@ -100,8 +98,7 @@ export const SCREEN_REGISTRY = {
   BusinessDashboard: { jobs: ['C', 'E'], reason: 'Opportunities, bookings, availability and profile for an owner.' },
   BusinessWebHome: { jobs: ['C'], reason: 'The business website\'s landing and sign-in entry.' },
   BusinessAIAssistant: { jobs: ['D'], reason: 'An owner\'s conversation with the AI assistant.' },
-  BusinessPartnerApply: { jobs: ['C'], reason: 'Apply to list a business.' },
-  MyBusinessApplication: { jobs: ['C', 'F'], reason: 'Your application\'s status and the resubmit form.' },
+  BusinessPartnerApply: { jobs: ['C'], reason: 'Your business application in whatever state it is in: apply, pending, approved, declined (apply again in place) or needs info (the same form, resent).' },
 
   // ---- admin ----
   AdminReports: { jobs: ['C'], reason: 'Admin: review user reports.' },
@@ -153,6 +150,9 @@ export const RULE14_DECISIONS = {
     Gatherings: 'Discover -> Gatherings with the feed\'s useful filters on that tab, ranked by Discover\'s one ladder (screen-reduction audit B3, 2026-10-09)',
     ChemistryDiaryEntry: 'the add-an-entry composer IN PLACE on ChemistryDiaryList (chat / profile open it with the name; screen-reduction audit B9, 2026-10-09)',
     GoodbyeArchiveEntry: 'the add-a-reflection composer IN PLACE on GoodbyeArchiveList (chat opens it with the name; audit B9)',
+    EmergencyContacts: 'a section that opens in place under Settings > Safety, one Safety section open at a time; the date check-in link opens Settings with it open (screen-reduction audit 2026-10-24, owner approved)',
+    Billing: 'your subscription, opened in place under Settings > Manage Subscription (status, manage, restore; the purchase stays on Paywall; screen-reduction audit 2026-10-24, owner approved)',
+    MyBusinessApplication: 'BusinessPartnerApply, which shows the application\'s own state (pending / approved / declined / needs info with the same form prefilled to resend; screen-reduction audit 2026-10-24, owner approved)',
     Momentum: 'Your Progress, expanded in place on Profile (streak, weekly chart, month changes, lifetime stats, achievements; owner 2026-10-24, was "Your Activity")',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },

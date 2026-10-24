@@ -92,7 +92,7 @@ export const LOCALIZED_FILES = [
   'src/utils/dateProposalVibes.js',
   'src/screens/DatingPreferencesScreen.js',
   'src/screens/CreateHubScreen.js',
-  'src/screens/BillingScreen.js',
+  'src/components/SubscriptionStatusSection.js',
   'src/components/YourProgressDetails.js',
   'src/screens/ChemistryDiaryListScreen.js',
   'src/components/PerkRedemptionPanel.js',
@@ -101,7 +101,7 @@ export const LOCALIZED_FILES = [
   'src/screens/PaywallScreen.js',
   'src/components/CompatibilityReportModal.js',
   'src/components/ReportBlockModal.js',
-  'src/screens/EmergencyContactsScreen.js',
+  'src/components/EmergencyContactsSection.js',
   'src/screens/SelectGatheringLocationScreen.js',
   'src/components/PhotoLightbox.js',
   'src/components/StoryViewerModal.js',
@@ -275,7 +275,7 @@ export const INTENTIONAL_ENGLISH = {
 
 // Deliberately not localized in this pass (owner decisions, 2026-09-29).
 export const NOT_LOCALIZED = {
-  business: 'The business experience is a separate decision: BusinessDashboard, BusinessAIAutomation, BusinessAIAssistant, BusinessPartnerApply, MyBusinessApplication, BusinessConversation, BusinessWebHome, and the business-only components (BusinessHoursEditor, SponsoredPromotionsPanel, TellNearbyBusinessCard, BusinessEmailNotifications, BusinessNotificationPreferences, DemandNearYouCard, SettingConflictNotice), and SelectGatheringLocationScreen.web.js (the business website\'s location picker; the native picker is localized).',
+  business: 'The business experience is a separate decision: BusinessDashboard, BusinessAIAutomation, BusinessAIAssistant, BusinessPartnerApply (incl. the application status, folded from MyBusinessApplication 2026-10-24), BusinessConversation, BusinessWebHome, and the business-only components (BusinessHoursEditor, SponsoredPromotionsPanel, TellNearbyBusinessCard, BusinessEmailNotifications, BusinessNotificationPreferences, DemandNearYouCard, SettingConflictNotice), and SelectGatheringLocationScreen.web.js (the business website\'s location picker; the native picker is localized).',
   admin: 'Staff tooling: Admin* screens, MarketValidation.',
   legal: 'Legal text needs counsel, not machine translation: LegalScreen, sponsored terms.',
   data: 'Business titles, people\'s names, user-generated text, stored canonical values, server-composed push bodies.',

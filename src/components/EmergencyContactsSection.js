@@ -1,17 +1,18 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader } from '../motion';
-import { useFocusEffect } from '@react-navigation/native';
 import { getMyEmergencyContacts, addEmergencyContact, deleteEmergencyContact } from '../services/emergencyContacts';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
-export default function EmergencyContactsScreen() {
+// Emergency contacts, shown in place under Settings > Safety (screen-reduction audit 2026-10-24, owner approved: this was its
+// own screen, EmergencyContacts, same pattern as BlockedUsersSection). Loads when the section opens; add/remove re-read the list.
+export default function EmergencyContactsSection() {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -36,11 +37,7 @@ export default function EmergencyContactsScreen() {
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      load();
-    }, [load])
-  );
+  useEffect(() => { load(); }, [load]);
 
   async function handleAdd() {
     if (!name.trim() || !phone.trim()) {
@@ -86,26 +83,23 @@ export default function EmergencyContactsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <NLoader fullScreen={false} />
         <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.emergencyContacts.loadingYourEmergencyContacts')}</Text>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (loadError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={styles.container}>
         <LoadErrorState message={t('ui.emergencyContacts.couldntLoadYourEmergencyContacts')} onRetry={load} />
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
-          <Text style={styles.headerTitle} accessibilityRole="header">{t('ui.emergencyContacts.emergencyContacts')}</Text>
+    <View style={styles.container}>
           <Text style={styles.headerSubtitle}>
             {t('ui.emergencyContacts.saveSomeoneYouTrustSo')}
           </Text>
@@ -163,20 +157,17 @@ export default function EmergencyContactsScreen() {
               onChangeText={setRelationship}
               accessibilityLabel={t('ui.emergencyContacts.relationshipOptionalA11y')}
             />
-            <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
+            <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={submitting} activeOpacity={0.85} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
               <Text style={styles.addButtonText}>{submitting ? t('ui.emergencyContacts.adding') : t('ui.emergencyContacts.addContact')}</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const getStyles = (colors) => StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.background },
-  headerTitle: { ...typography.title, color: colors.textPrimary },
-  headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 18 },
+  container: { marginBottom: spacing.md },
+  headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.md, lineHeight: 18 },
   emptyState: { alignItems: 'center', paddingVertical: spacing.lg },
   emptyEmoji: { fontSize: 36, marginBottom: spacing.md },
   emptyText: { color: colors.textTertiary, textAlign: 'center' },

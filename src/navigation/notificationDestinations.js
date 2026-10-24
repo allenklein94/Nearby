@@ -292,14 +292,13 @@ export async function notificationDestination(data, { lookupAvailability = async
     case 'business_partner_approved':
       return to('BusinessDashboard');
       break;
+    // One application, one screen (screen-reduction audit 2026-10-24): BusinessPartnerApply shows the application's state
+    // (declined, or "needs info" with the same form prefilled to resend).
     case 'business_partner_denied':
-      return to('MyBusinessApplication');
+      return to('BusinessPartnerApply');
       break;
-    // "Request More Information" reviewer state (see CLAUDE.md's own entry)
-    // -- lands on the same status screen, which now renders a real
-    // resubmit form for a 'needs_info' row.
     case 'business_partner_needs_info':
-      return to('MyBusinessApplication');
+      return to('BusinessPartnerApply');
       break;
     // Item 55 fast-follow #2 (CLAUDE.md): CommunityDetail, the other
     // candidate the original Item 55 paragraph flagged and BusinessRequest

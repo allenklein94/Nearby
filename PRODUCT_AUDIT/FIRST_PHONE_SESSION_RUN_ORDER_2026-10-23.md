@@ -240,6 +240,25 @@ Your Progress on Profile checks (owner, 2026-10-24: accepted as built, closed; r
 3. "🔥 Keep the streak going" opens Discover on Gatherings; Back returns to Profile.
 4. An old streak push (if one exists) opens Profile with Your Progress already open.
 
+Screen-reduction checks (owner approved items 1-3, 2026-10-24; rebuilt phone only; result codes as above):
+1. Business application, one screen. Profile > List Your Business: with no application, Find your business -> form ->
+   Submit Application (same as before). Open it again: the header reads "My Application" and the screen shows "Application
+   Pending" with your details; there is no form to send a second one.
+2. As admin, ask for more information (AdminBusinessRequests). The applicant's push opens the same screen: "One More Thing
+   Needed", the team's note, then the form already filled in (name, description, contact, type, website, phone, address,
+   what you'd like to offer). No search step, no map pin, no AI button. Resend Application -> "Sent" toast -> the screen
+   changes to Application Pending by itself.
+3. As admin, decline. The push opens the same screen: "Application Not Approved" (+ note if any). Submit a New Application
+   starts the search in place (no new screen); Back from the search leaves the application screen.
+4. Emergency contacts in place. Settings > Safety > Emergency contacts opens below the row (screen reader says "expanded");
+   tapping it again closes it; opening it closes Blocked users and the other way round. Add a contact (name + phone needed;
+   the keyboard must not cover the fields), remove one (confirm), Try Again on a failed load.
+5. From a date check-in with no contact saved, "No emergency contact saved yet" opens Settings scrolled to Emergency contacts,
+   already open; tap it a second time from another check-in: it opens again. Back returns to the chat.
+6. Subscription in place. Settings > Manage Subscription opens below the row: free plan = Upgrade to Premium opens the Paywall
+   (its own screen); after a purchase or Back, the section shows the current plan without leaving Settings. Premium =
+   plan details + Manage Subscription (opens the store) + Restore Purchases.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google

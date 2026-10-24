@@ -4,7 +4,6 @@ export default {
   en: {
     title: {
       messages: "Messages",
-      billing: "Billing",
       datingPreferences: "Dating Profile",
       viewProfile: "Profile",
       settings: "Settings",
@@ -24,7 +23,6 @@ export default {
       memoryVault: "Memory Vault",
       memoryVaultIndex: "Memory Vaults",
       plans: "Your Plans",
-      emergencyContacts: "Emergency Contacts",
       occasions: "Occasions & Reminders",
       musicMode: "Music Mode",
       chemistryDiaryList: "Chemistry Diary",
@@ -73,7 +71,6 @@ export default {
   es: {
     title: {
       messages: "Mensajes",
-      billing: "Facturación",
       datingPreferences: "Perfil de citas",
       viewProfile: "Perfil",
       settings: "Ajustes",
@@ -93,7 +90,6 @@ export default {
       memoryVault: "Baúl de recuerdos",
       memoryVaultIndex: "Baúles de recuerdos",
       plans: "Tus planes",
-      emergencyContacts: "Contactos de emergencia",
       occasions: "Ocasiones y recordatorios",
       musicMode: "Modo música",
       chemistryDiaryList: "Diario de química",
@@ -142,7 +138,6 @@ export default {
   de: {
     title: {
       messages: "Nachrichten",
-      billing: "Abrechnung",
       datingPreferences: "Dating-Profil",
       viewProfile: "Profil",
       settings: "Einstellungen",
@@ -162,7 +157,6 @@ export default {
       memoryVault: "Erinnerungstresor",
       memoryVaultIndex: "Erinnerungstresore",
       plans: "Deine Pläne",
-      emergencyContacts: "Notfallkontakte",
       occasions: "Anlässe & Erinnerungen",
       musicMode: "Musikmodus",
       chemistryDiaryList: "Chemie-Tagebuch",
@@ -211,7 +205,6 @@ export default {
   fr: {
     title: {
       messages: "Messages",
-      billing: "Facturation",
       datingPreferences: "Profil de rencontre",
       viewProfile: "Profil",
       settings: "Réglages",
@@ -231,7 +224,6 @@ export default {
       memoryVault: "Coffre à souvenirs",
       memoryVaultIndex: "Coffres à souvenirs",
       plans: "Vos plans",
-      emergencyContacts: "Contacts d'urgence",
       occasions: "Occasions et rappels",
       musicMode: "Mode musique",
       chemistryDiaryList: "Journal de l'alchimie",
@@ -280,7 +272,6 @@ export default {
   pt: {
     title: {
       messages: "Mensagens",
-      billing: "Cobrança",
       datingPreferences: "Perfil de encontros",
       viewProfile: "Perfil",
       settings: "Configurações",
@@ -300,7 +291,6 @@ export default {
       memoryVault: "Cofre de memórias",
       memoryVaultIndex: "Cofres de memórias",
       plans: "Seus planos",
-      emergencyContacts: "Contatos de emergência",
       occasions: "Ocasiões e lembretes",
       musicMode: "Modo música",
       chemistryDiaryList: "Diário de química",
@@ -349,7 +339,6 @@ export default {
   ht: {
     title: {
       messages: "Mesaj",
-      billing: "Faktirasyon",
       datingPreferences: "Pwofil randevou",
       viewProfile: "Pwofil",
       settings: "Paramèt",
@@ -369,7 +358,6 @@ export default {
       memoryVault: "Kòf souvni",
       memoryVaultIndex: "Kòf souvni yo",
       plans: "Plan ou yo",
-      emergencyContacts: "Kontak ijans",
       occasions: "Okazyon ak rapèl",
       musicMode: "Mòd mizik",
       chemistryDiaryList: "Jounal chimi",
@@ -418,7 +406,6 @@ export default {
   zh: {
     title: {
       messages: "消息",
-      billing: "账单",
       datingPreferences: "约会资料",
       viewProfile: "个人资料",
       settings: "设置",
@@ -438,7 +425,6 @@ export default {
       memoryVault: "回忆保险箱",
       memoryVaultIndex: "回忆保险箱",
       plans: "你的计划",
-      emergencyContacts: "紧急联系人",
       occasions: "纪念日和提醒",
       musicMode: "音乐模式",
       chemistryDiaryList: "默契日记",
@@ -487,7 +473,6 @@ export default {
   vi: {
     title: {
       messages: "Tin nhắn",
-      billing: "Thanh toán",
       datingPreferences: "Hồ sơ hẹn hò",
       viewProfile: "Hồ sơ",
       settings: "Cài đặt",
@@ -507,7 +492,6 @@ export default {
       memoryVault: "Kho kỷ niệm",
       memoryVaultIndex: "Các kho kỷ niệm",
       plans: "Kế hoạch của bạn",
-      emergencyContacts: "Liên hệ khẩn cấp",
       occasions: "Dịp đặc biệt & lời nhắc",
       musicMode: "Chế độ âm nhạc",
       chemistryDiaryList: "Nhật ký hòa hợp",
@@ -556,7 +540,6 @@ export default {
   tl: {
     title: {
       messages: "Mga mensahe",
-      billing: "Billing",
       datingPreferences: "Dating profile",
       viewProfile: "Profile",
       settings: "Settings",
@@ -576,7 +559,6 @@ export default {
       memoryVault: "Memory vault",
       memoryVaultIndex: "Mga memory vault",
       plans: "Ang mga plano mo",
-      emergencyContacts: "Mga emergency contact",
       occasions: "Mga okasyon at paalala",
       musicMode: "Music mode",
       chemistryDiaryList: "Chemistry diary",
@@ -625,7 +607,6 @@ export default {
   ru: {
     title: {
       messages: "Сообщения",
-      billing: "Оплата",
       datingPreferences: "Профиль для знакомств",
       viewProfile: "Профиль",
       settings: "Настройки",
@@ -645,7 +626,6 @@ export default {
       memoryVault: "Хранилище воспоминаний",
       memoryVaultIndex: "Хранилища воспоминаний",
       plans: "Ваши планы",
-      emergencyContacts: "Экстренные контакты",
       occasions: "События и напоминания",
       musicMode: "Режим музыки",
       chemistryDiaryList: "Дневник химии",
@@ -694,7 +674,6 @@ export default {
   ko: {
     title: {
       messages: "메시지",
-      billing: "결제",
       datingPreferences: "데이트 프로필",
       viewProfile: "프로필",
       settings: "설정",
@@ -714,7 +693,6 @@ export default {
       memoryVault: "추억 보관함",
       memoryVaultIndex: "추억 보관함 목록",
       plans: "내 계획",
-      emergencyContacts: "비상 연락처",
       occasions: "기념일 및 알림",
       musicMode: "음악 모드",
       chemistryDiaryList: "케미 다이어리",

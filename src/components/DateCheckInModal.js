@@ -141,7 +141,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
             <Text style={styles.contactHint}>{t('ui.dateCheckIn.sharingWillText', { name: emergencyContact.name })}</Text>
           ) : (
             navigation && (
-              <TouchableOpacity onPress={() => { onClose(); navigation.navigate('EmergencyContacts'); }} accessibilityRole="button">
+              <TouchableOpacity onPress={() => { onClose(); navigation.navigate('Settings', { openEmergencyContacts: Date.now() }); }} accessibilityRole="button">
                 <Text style={styles.contactHintLink}>{t('ui.dateCheckIn.noEmergencyContactSavedYet')}</Text>
               </TouchableOpacity>
             )

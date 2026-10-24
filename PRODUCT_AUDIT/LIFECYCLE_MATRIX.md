@@ -212,8 +212,8 @@ The business's view of the same offer row: Allowed actions and Animation are tha
 | anniversary_upcoming | CelebrateSomething / Occasions | medium | friends_occasions |
 | birthday | ViewProfile | medium | friends_occasions |
 | birthday_upcoming | CelebrateSomething / Occasions | medium | friends_occasions |
-| business_partner_denied | MyBusinessApplication | medium | (none) |
-| business_partner_needs_info | MyBusinessApplication | medium | (none) |
+| business_partner_denied | BusinessPartnerApply | medium | (none) |
+| business_partner_needs_info | BusinessPartnerApply | medium | (none) |
 | business_recall_outreach | CreateGathering | low | business_offers |
 | business_update | BusinessProfile | low | business_offers |
 | community_area_demand_growing | CommunityDetail | low | communities |

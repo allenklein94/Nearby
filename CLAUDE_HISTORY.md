@@ -1,3 +1,44 @@
+# Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
+
+- Audit (same day, nothing built until approval): of the owner's candidates, Interested gatherings (Plans' ☆ Interested row),
+  offer details (one card + Make an Offer form), gathering management (GatheringDetail + EditGathering, idea "234") and business
+  performance (Business Home, idea "342") had no separate screen left; Friends kept (long managed list; friend-request push
+  destination locked by idea "242"). Approved: 1-3. Item 4 (Legacy Library + Relationship Emergency Kit in place) DEFERRED, B9 hold
+  unchanged. Item 5 = Invite Friends as a sheet (the owner's message called it "the redemption flow"; no redemption change was
+  proposed): KEPT AS BUILT. Owner: no further consolidation without approval; stop proactive screen elimination until the phone
+  session.
+- (1) One business application, one screen. `utils/businessApplicationState.js` (`applicationView`, `showsReviewerNote`,
+  `resendFormFrom`, `APPLICATION_STATUS_COPY` moved verbatim) decides BusinessPartnerApply's view from the latest
+  `business_partner_requests` row (`getMyBusinessPartnerRequest`, loaded once on mount and after a resend, never on focus so the
+  map-pin return keeps the form): none = the Apply flow unchanged; pending / approved = status card + "Your Application" details
+  (+ Go to Business Dashboard); denied = status + note + "Submit a New Application", which restarts the search in place
+  (`startingNew`); needs_info = status + note + the Apply form itself, prefilled with the 8 fields `resubmit_business_partner_request`
+  saves (name, description, contact info, category as the Browse-all chips, website, phone, address, requested features), the
+  sections it can't save hidden (search step, Google reference, AI assist, subcategory/secondary/activities/attributes/more details,
+  map pin), "Resend Application" -> same validation (name required + moderation) -> "Sent" toast -> pending. Unknown status = pending
+  (never a blank form). Header "My Application" except in the apply view. `apply_started` logged only when the apply view shows.
+  Contact info is now editable on a resend (the old form carried it silently). Profile's List Your Business always opens
+  BusinessPartnerApply (its status fetch removed); `business_partner_denied` / `_needs_info` push -> BusinessPartnerApply.
+  Removed: `MyBusinessApplicationScreen.js` + route + registry entry (`RULE14_DECISIONS.folded.MyBusinessApplication`), empty state
+  `business_application` (unused). Business strings stay English-only (business experience is outside i18n coverage).
+- (2) Emergency contacts in place: `components/EmergencyContactsSection.js` = the screen's body (same service, list/add/remove,
+  validation, confirm, Try Again), loads when opened, minus its own heading (the row names it). Settings > Safety row toggles it
+  (`accessibilityState.expanded`, chevron); Blocked users and Emergency contacts close each other. DateCheckInModal's link ->
+  `navigate('Settings', { openEmergencyContacts: Date.now() })` (a nonce so a second tap reopens it) -> opens + scrolls there.
+  Settings' ScrollView now `keyboardShouldPersistTaps="handled"` + `automaticallyAdjustKeyboardInsets` for the inline form.
+- (3) Subscription in place: `components/SubscriptionStatusSection.js` = the Billing body (status / unavailable, Manage
+  Subscription, Upgrade -> Paywall, Restore Purchases, payment + history notes), `useFocusEffect(load)` so it refreshes back from
+  the Paywall. Settings' Manage Subscription row toggles it.
+- Removed strings (11 languages): `ui.nav.title.billing`, `ui.nav.title.emergencyContacts`, `ui.emergencyContacts.emergencyContacts`
+  (nav.js/nav.json/emergencyContacts.js/.json). i18n coverage list points at the two components.
+- Tests: new `screens/screenReductionOct24.test.js` (screens/routes/registry gone, nothing navigates to them, 69 registered, pushes,
+  Profile, one form, resend, in-place toggles + a11y, check-in deep link, every action kept), `utils/businessApplicationState.test.js`;
+  updated `notificationActions.test.js`, `inlineSettingsFolded.test.js`; LIFECYCLE_MATRIX regenerated. Journeys (prod, rolled back,
+  real roles): `businessApplication` 6/6 (apply -> pending, second pending refused -> needs info with note -> stranger resend
+  refused -> resend same row -> declined -> new application; both review pushes open the one screen), `emergencyContacts` 3/3.
+  Full Jest 507/507 suites (6941 tests); journeys 64/64 suites, 702/702. No migration, no server change, no device run.
+  Phone checks: run order "Screen-reduction checks" 1-6.
+
 # Your Progress folded into Profile; Momentum screen removed (owner, 2026-10-24)
 
 - Owner changed the decision the same day as the rename: consolidate now, not after usage evidence. The Momentum fold entry is

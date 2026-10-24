@@ -41,7 +41,6 @@ import CommunityDetailScreen from '../screens/CommunityDetailScreen';
 import CommunityChatScreen from '../screens/CommunityChatScreen';
 import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
 import BusinessPartnerApplyScreen from '../screens/BusinessPartnerApplyScreen';
-import MyBusinessApplicationScreen from '../screens/MyBusinessApplicationScreen';
 import RequestBusinessPartnerScreen from '../screens/RequestBusinessPartnerScreen';
 import AskBusinessScreen from '../screens/AskBusinessScreen';
 import BusinessRequestDetailScreen from '../screens/BusinessRequestDetailScreen';
@@ -61,7 +60,6 @@ import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import PaywallScreen from '../screens/PaywallScreen';
-import BillingScreen from '../screens/BillingScreen';
 import DatingPreferencesScreen from '../screens/DatingPreferencesScreen';
 import AdminReportsScreen from '../screens/AdminReportsScreen';
 import ViewProfileScreen from '../screens/ViewProfileScreen';
@@ -77,7 +75,6 @@ import MemoryVaultScreen from '../screens/MemoryVaultScreen';
 import PlansScreen from '../screens/PlansScreen';
 import MarketValidationScreen from '../screens/MarketValidationScreen';
 import BusinessAIAssistantScreen from '../screens/BusinessAIAssistantScreen';
-import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
 import OccasionsScreen from '../screens/OccasionsScreen';
 import PlanDetailScreen from '../screens/PlanDetailScreen';
 import SharedNightScreen from '../screens/SharedNightScreen';
@@ -406,7 +403,6 @@ export default function RootNavigator() {
                 the header off. */}
             <Stack.Screen name="Chat" component={ChatScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Paywall" component={PaywallScreen} options={{ presentation: 'modal' }} />
-            <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: true, title: t('ui.nav.title.billing'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="DatingPreferences" component={DatingPreferencesScreen} options={{ headerShown: true, title: t('ui.nav.title.datingPreferences'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AdminReports" component={AdminReportsScreen} />
             <Stack.Screen name="ViewProfile" component={ViewProfileScreen} options={{ headerShown: true, title: t('ui.nav.title.viewProfile'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
@@ -434,7 +430,6 @@ export default function RootNavigator() {
             <Stack.Screen name="Plans" component={PlansScreen} options={{ headerShown: true, title: t('ui.nav.title.plans'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MarketValidation" component={MarketValidationScreen} options={{ headerShown: true, title: 'Market Validation', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessAIAssistant" component={BusinessAIAssistantScreen} options={{ headerShown: true, title: 'AI Assistant', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="EmergencyContacts" component={EmergencyContactsScreen} options={{ headerShown: true, title: t('ui.nav.title.emergencyContacts'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Occasions" component={OccasionsScreen} options={{ headerShown: true, title: t('ui.nav.title.occasions'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="MusicMode" component={MusicModeScreen} options={{ headerShown: true, title: t('ui.nav.title.musicMode'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="ChemistryDiaryList" component={ChemistryDiaryListScreen} options={{ headerShown: true, title: t('ui.nav.title.chemistryDiaryList'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
@@ -514,7 +509,6 @@ export default function RootNavigator() {
             />
             <Stack.Screen name="BusinessDashboard" component={BusinessDashboardScreen} options={{ headerShown: true, title: 'Business Dashboard', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="BusinessPartnerApply" component={BusinessPartnerApplyScreen} options={{ headerShown: true, title: 'Get Your Business on Nearby', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
-            <Stack.Screen name="MyBusinessApplication" component={MyBusinessApplicationScreen} options={{ headerShown: true, title: 'My Application', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="RequestBusinessPartner" component={RequestBusinessPartnerScreen} options={{ headerShown: true, title: t('ui.nav.title.requestBusinessPartner'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="AskBusiness" component={AskBusinessScreen} options={{ headerShown: true, title: t('ui.nav.title.askBusiness'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, presentation: 'modal' }} />
             <Stack.Screen name="BusinessRequestDetail" component={BusinessRequestDetailScreen} options={{ headerShown: true, title: t('ui.nav.title.businessRequestDetail'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />

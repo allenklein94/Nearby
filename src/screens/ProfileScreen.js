@@ -15,7 +15,6 @@ import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../serv
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
 import { checkTextModeration } from '../services/textModeration';
 import { getProfileQuickStats, getAchievements, getEarnedProfileStats } from '../services/homeDashboard';
-import { getMyBusinessPartnerRequest } from '../services/businessPartnerApply';
 import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl, deleteVoiceIntro } from '../services/voiceNotes';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { basicsLabel, basicsPlaceholder, basicsOption } from '../i18n/basicsVocab';
@@ -183,7 +182,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
   const [achievements, setAchievements] = useState([]);
   const [managesBusiness, setManagesBusiness] = useState(false);
-  const [myBusinessRequestStatus, setMyBusinessRequestStatus] = useState(null);
   const [earnedStats, setEarnedStats] = useState({ favoriteVibe: null, usuallyActive: null });
   const [connectionGoal, setConnectionGoal] = useState('');
   const [voiceIntroPath, setVoiceIntroPath] = useState(null);
@@ -355,11 +353,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       getExtraPhotos(id).then(setExtraPhotos),
       getProfileQuickStats().then(setQuickStats),
       getAchievements().then(setAchievements),
-      data?.managed_partner_id
-        ? Promise.resolve()
-        : getMyBusinessPartnerRequest()
-            .then((myRequest) => setMyBusinessRequestStatus(myRequest?.status ?? null))
-            .catch(() => {}), // no-op: don't block the rest of Profile loading over this
       getEarnedProfileStats()
         .catch(() => ({ favoriteVibe: null, usuallyActive: null }))
         .then(setEarnedStats),
@@ -979,11 +972,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         ) : (
           <TouchableOpacity
             style={styles.businessModeButton}
-            onPress={() => navigation.navigate(
-              (myBusinessRequestStatus === 'pending' || myBusinessRequestStatus === 'denied')
-                ? 'MyBusinessApplication'
-                : 'BusinessPartnerApply'
-            )}
+            onPress={() => navigation.navigate('BusinessPartnerApply')}
             activeOpacity={0.85}
             accessibilityLabel={t('ui.profile.listYourBusinessOnNearbyA11y')}
             accessibilityRole="button"

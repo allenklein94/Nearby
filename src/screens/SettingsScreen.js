@@ -1,4 +1,6 @@
 import BlockedUsersSection from '../components/BlockedUsersSection';
+import EmergencyContactsSection from '../components/EmergencyContactsSection';
+import SubscriptionStatusSection from '../components/SubscriptionStatusSection';
 import React, { useEffect, useRef, useState } from 'react';
 import { PERKS_TAB } from '../utils/recommendationContext';
 import { navigateKeepingTrail } from '../services/openDestination';
@@ -97,6 +99,10 @@ export default function SettingsScreen({ navigation, route }) {
   const styles = getStyles(colors, shadow);
   const [userId, setUserId] = useState(null);
   const [showBlocked, setShowBlocked] = useState(false); // Blocked users open in place (audit B10)
+  // Emergency contacts open in place too (screen-reduction audit 2026-10-24); one Safety section open at a time.
+  const [showEmergency, setShowEmergency] = useState(false);
+  // Your subscription opens in place under "Manage Subscription" (screen-reduction audit 2026-10-24; was the Billing screen).
+  const [showSubscription, setShowSubscription] = useState(false);
   // Idea "169": optional sound cues, off by default, a choice kept on this phone (iOS only: see utils/soundCues.js).
   const [soundCuesOn, setSoundCuesOn] = useState(false);
   useEffect(() => {
@@ -205,6 +211,18 @@ export default function SettingsScreen({ navigation, route }) {
       return () => clearTimeout(timer);
     }
   }, [route?.params?.scrollToPreferences]);
+
+  // The date check-in's "No emergency contact saved yet" lands here with Emergency contacts open, same wait-then-scroll.
+  const emergencyYRef = useRef(0);
+  useEffect(() => {
+    if (!route?.params?.openEmergencyContacts) return undefined;
+    setShowBlocked(false);
+    setShowEmergency(true);
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: emergencyYRef.current, animated: true });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [route?.params?.openEmergencyContacts]);
 
   // Owner item 54: Home's "You've been into X lately" lands on "What Nearby has noticed" (Privacy), same wait-then-scroll.
   const privacyYRef = useRef(0);
@@ -436,7 +454,7 @@ export default function SettingsScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
         <Text style={styles.header} accessibilityRole="header">{t('settings.title')}</Text>
 
         {osNotifPermission !== 'granted' && (
@@ -527,14 +545,16 @@ export default function SettingsScreen({ navigation, route }) {
 
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('Billing')}
+          onPress={() => setShowSubscription((v) => !v)}
           activeOpacity={0.85}
           accessibilityLabel={t('settings.manageSubscription')}
           accessibilityRole="button"
+          accessibilityState={{ expanded: showSubscription }}
         >
           <Text style={styles.rowButtonText}>💳 {t('settings.manageSubscription')}</Text>
-          <Text style={styles.chevron}>›</Text>
+          <Text style={styles.chevron}>{showSubscription ? '▾' : '›'}</Text>
         </TouchableOpacity>
+        {showSubscription && <SubscriptionStatusSection navigation={navigation} />}
 
         <TouchableOpacity
           style={styles.signOutButton}
@@ -1103,7 +1123,7 @@ export default function SettingsScreen({ navigation, route }) {
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.settings.safety')}</Text>
         <TouchableOpacity
           style={styles.rowButtonCard}
-          onPress={() => setShowBlocked((v) => !v)}
+          onPress={() => { setShowEmergency(false); setShowBlocked((v) => !v); }}
           activeOpacity={0.85}
           accessibilityLabel={t('ui.settings.blockedUsersA11y')}
           accessibilityRole="button"
@@ -1125,16 +1145,20 @@ export default function SettingsScreen({ navigation, route }) {
           <Text style={styles.chevron}>›</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.rowButtonCard}
-          onPress={() => navigation.navigate('EmergencyContacts')}
-          activeOpacity={0.85}
-          accessibilityLabel={t('ui.settings.emergencyContactsA11y')}
-          accessibilityRole="button"
-        >
-          <Text style={styles.rowButtonText}>{t('ui.settings.emergencyContacts')}</Text>
-          <Text style={styles.chevron}>›</Text>
-        </TouchableOpacity>
+        <View onLayout={(e) => { emergencyYRef.current = e.nativeEvent.layout.y; }}>
+          <TouchableOpacity
+            style={styles.rowButtonCard}
+            onPress={() => { setShowBlocked(false); setShowEmergency((v) => !v); }}
+            activeOpacity={0.85}
+            accessibilityLabel={t('ui.settings.emergencyContactsA11y')}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: showEmergency }}
+          >
+            <Text style={styles.rowButtonText}>{t('ui.settings.emergencyContacts')}</Text>
+            <Text style={styles.chevron}>{showEmergency ? '▾' : '›'}</Text>
+          </TouchableOpacity>
+          {showEmergency && <EmergencyContactsSection />}
+        </View>
 
         {isAdmin && (
           <TouchableOpacity

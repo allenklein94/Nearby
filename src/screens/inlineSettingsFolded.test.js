@@ -17,7 +17,8 @@ test('the three routes and screen files are gone from both navigators', () => {
 
 test('Settings > Safety opens Blocked users in place', () => {
   const s = read('screens/SettingsScreen.js');
-  expect(s).toMatch(/onPress=\{\(\) => setShowBlocked\(\(v\) => !v\)\}/);
+  // one Safety section open at a time (Emergency contacts folded in too, screen-reduction audit 2026-10-24)
+  expect(s).toMatch(/onPress=\{\(\) => \{ setShowEmergency\(false\); setShowBlocked\(\(v\) => !v\); \}\}/);
   expect(s).toMatch(/\{showBlocked && <BlockedUsersSection \/>\}/);
 });
 
