@@ -858,11 +858,11 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
           style={styles.timelineLink}
           onPress={() => navigation.navigate('Momentum', { source: 'profile' })}
           activeOpacity={0.85}
-          accessibilityLabel={t('ui.profile.viewYourActivityStatsAndA11y')}
+          accessibilityLabel={t('ui.profile.viewYourProgressA11y')}
           accessibilityRole="button"
         >
           <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>{t('ui.profile.yourActivity')}</Text>
+            <Text style={styles.timelineLinkText}>{t('ui.profile.yourProgress')}</Text>
             <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.yourWeeklyStreakAndSocial')}</Text>
           </View>
           <Text style={styles.timelineLinkChevron}>›</Text>

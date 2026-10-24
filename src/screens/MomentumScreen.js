@@ -33,7 +33,7 @@ import { gatheringsTabParams } from '../utils/gatheringFilters';
 // numbers. The route name stays `Momentum` (so the one real momentum-nudge
 // push notification and Home's Weekly Recap link both keep working
 // unchanged -- neither needed to know this screen got bigger), but the
-// on-screen title/header now reads "Your Activity," matching the merged
+// on-screen title/header now reads "Your Progress" (renamed from "Your Activity" 2026-10-24 so it is never mistaken for the Activity tab), matching the merged
 // scope honestly. `services/insights.js`'s `getInsightsStats()` is
 // unchanged and still real -- this screen just also calls it now, in
 // parallel with `getMomentumStats()`, rather than a second screen owning a
@@ -97,7 +97,7 @@ export default function MomentumScreen({ navigation, route }) {
     return (
       <SafeAreaView style={styles.container}>
         <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.momentum.loadingYourActivity')}</Text>
+        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.momentum.loadingYourProgress')}</Text>
       </SafeAreaView>
     );
   }
@@ -105,7 +105,7 @@ export default function MomentumScreen({ navigation, route }) {
   if (loadError) {
     return (
       <SafeAreaView style={styles.container}>
-        <LoadErrorState message={t('ui.momentum.couldntLoadYourActivity')} onRetry={load} />
+        <LoadErrorState message={t('ui.momentum.couldntLoadYourProgress')} onRetry={load} />
       </SafeAreaView>
     );
   }
@@ -113,7 +113,7 @@ export default function MomentumScreen({ navigation, route }) {
   if (!momentum && !insights) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.emptyText}>{t('ui.momentum.signInToSeeYour')}</Text>
+        <Text style={styles.emptyText}>{t('ui.momentum.signInToSeeYourProgress')}</Text>
       </SafeAreaView>
     );
   }

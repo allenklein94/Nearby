@@ -1,5 +1,5 @@
 // Owner item 53 (2026-10-12): "N plans this month" on Home. Nearby celebrates what people really did; it never asks them to
-// keep a streak going (the streak push was retired by migration 20270300; the streak on Your Activity stays as it is until
+// keep a streak going (the streak push was retired by migration 20270300; the streak on Your Progress stays as it is until
 // the Momentum evidence is in).
 //
 // The rules, in one place:

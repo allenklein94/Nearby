@@ -1,3 +1,19 @@
+# "Your Activity" renamed "Your Progress" (owner, 2026-10-24)
+
+- Assessed: Notifications is not a separate concept (no screen; push entry "Notices" = Activity tab on top); the overlap was the
+  Momentum stats screen's NAME "Your Activity" colliding with the Activity tab. Recommended "Your Stats"; owner chose "Your Progress".
+- Built (wording only): `ui.nav.title.momentum` = "Your Progress"; `ui.profile.yourActivity` -> `yourProgress` ("🔥 Your Progress");
+  `viewYourActivityStatsAndA11y` -> `viewYourProgressA11y` ("View your progress, stats, and streak"); `ui.momentum.loadingYourActivity`
+  / `couldntLoadYourActivity` / `signInToSeeYour` -> `loadingYourProgress` / `couldntLoadYourProgress` / `signInToSeeYourProgress`.
+  11 languages each, keeping each file's register (fr momentum = tu); JSON sources in `scripts/i18n/strings/` edited in place
+  (profile + momentum rebuild byte-identical to the shipped files; nav.json edited by line only, because a rebuild of nav would
+  re-add stale keys the shipped nav.js no longer carries). The screen's subtitle "Your activity streak, lifetime stats, and
+  achievements" kept (describes the streak, not the screen's name). Comments updated (MomentumScreen, plansThisMonth.js, streak guard).
+- Unchanged: route `Momentum`, Profile entry, push destination, contents, navigation. Fold into Profile deferred to evidence.
+- Tests: new `src/i18n/yourProgressRename.test.js` (English values; every language has every key and none equals its Activity
+  tab label; old keys gone; screens read the new keys; route + header wiring). Full Jest 503/504 suites; the one failure is the
+  pre-existing clock-dependent `services/bestPickRanking.test.js` (see the item 53 entry below). No migration.
+
 # Item 53 card destination: Plans > Past, "See past plans" (owner, 2026-10-24)
 
 - Owner approved the 2026-10-24 assessment: Home's "N plans this month" recap card opens Plans on the Past tab

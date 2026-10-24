@@ -1,5 +1,5 @@
 // Owner item 53 (2026-10-12): the "Keep your streak going" push (momentum_streak_nudge) is retired; Nearby never nudges a
-// person to protect a streak. The streak DISPLAY on Your Activity stays (Momentum decision pending usage evidence).
+// person to protect a streak. The streak DISPLAY on Your Progress (was "Your Activity") stays (Momentum decision pending usage evidence).
 // Live proof: scripts/live-verify/streak-nudge-retired.sql. This guard keeps any sending path from coming back.
 const fs = require('fs');
 const path = require('path');
@@ -57,7 +57,7 @@ describe('the streak push is retired (item 53)', () => {
     expect(hits.filter((h) => !allowed.has(h))).toEqual([]);
   });
 
-  it('the streak display on Your Activity is kept as it was', () => {
+  it('the streak display on Your Progress is kept as it was', () => {
     const screen = fs.readFileSync(path.join(root, 'src/screens/MomentumScreen.js'), 'utf8');
     expect(screen).toMatch(/momentum\.currentStreak/);
   });
