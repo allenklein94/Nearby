@@ -204,6 +204,8 @@ export default {
       "saving": "Saving...",
       "save": "Save Changes",
       "pickFutureTime": "Pick a future time",
+      "timeBooked": "This time is booked",
+      "timeBookedBody": "A business has a confirmed booking for this gathering, so its time can't change. Your other changes can still be saved with the original time. To change the time, cancel the reservation first.",
       "updated": "Updated",
       "updatedBody": "Your changes are saved."
     }
@@ -410,6 +412,8 @@ export default {
       "saving": "Guardando...",
       "save": "Guardar cambios",
       "pickFutureTime": "Elige una hora futura",
+      "timeBooked": "Esta hora está reservada",
+      "timeBookedBody": "Un negocio tiene una reserva confirmada para esta reunión, así que su hora no puede cambiar. Puedes guardar tus otros cambios con la hora original. Para cambiar la hora, primero cancela la reserva.",
       "updated": "Actualizada",
       "updatedBody": "Tus cambios se guardaron."
     }
@@ -616,6 +620,8 @@ export default {
       "saving": "Wird gespeichert...",
       "save": "Änderungen speichern",
       "pickFutureTime": "Wähle eine spätere Zeit",
+      "timeBooked": "Diese Zeit ist gebucht",
+      "timeBookedBody": "Ein Unternehmen hat eine bestätigte Buchung für dieses Treffen, daher kann die Zeit nicht geändert werden. Deine anderen Änderungen kannst du mit der ursprünglichen Zeit speichern. Um die Zeit zu ändern, storniere zuerst die Reservierung.",
       "updated": "Aktualisiert",
       "updatedBody": "Deine Änderungen sind gespeichert."
     }
@@ -822,6 +828,8 @@ export default {
       "saving": "Enregistrement...",
       "save": "Enregistrer",
       "pickFutureTime": "Choisissez une heure future",
+      "timeBooked": "Cet horaire est réservé",
+      "timeBookedBody": "Une entreprise a une réservation confirmée pour ce rassemblement, son horaire ne peut donc pas changer. Vous pouvez enregistrer vos autres modifications avec l'horaire d'origine. Pour changer l'horaire, annulez d'abord la réservation.",
       "updated": "Mise à jour",
       "updatedBody": "Vos modifications sont enregistrées."
     }
@@ -1028,6 +1036,8 @@ export default {
       "saving": "Salvando...",
       "save": "Salvar alterações",
       "pickFutureTime": "Escolha um horário futuro",
+      "timeBooked": "Este horário está reservado",
+      "timeBookedBody": "Uma empresa tem uma reserva confirmada para este encontro, então o horário não pode mudar. Você ainda pode salvar suas outras alterações com o horário original. Para mudar o horário, cancele a reserva primeiro.",
       "updated": "Atualizado",
       "updatedBody": "Suas alterações foram salvas."
     }
@@ -1234,6 +1244,8 @@ export default {
       "saving": "N ap anrejistre...",
       "save": "Anrejistre chanjman yo",
       "pickFutureTime": "Chwazi yon lè nan lavni",
+      "timeBooked": "Lè sa a rezève",
+      "timeBookedBody": "Yon biznis gen yon rezèvasyon konfime pou rasanbleman sa a, kidonk lè a pa ka chanje. Ou ka toujou anrejistre lòt chanjman ou yo ak lè orijinal la. Pou chanje lè a, anile rezèvasyon an anvan.",
       "updated": "Mete ajou",
       "updatedBody": "Chanjman ou yo anrejistre."
     }
@@ -1440,6 +1452,8 @@ export default {
       "saving": "正在保存...",
       "save": "保存更改",
       "pickFutureTime": "选择一个未来的时间",
+      "timeBooked": "这个时间已预订",
+      "timeBookedBody": "有商家已确认此聚会的预订，因此时间无法更改。你仍可以用原来的时间保存其他更改。如需更改时间，请先取消预订。",
       "updated": "已更新",
       "updatedBody": "你的更改已保存。"
     }
@@ -1646,6 +1660,8 @@ export default {
       "saving": "Đang lưu...",
       "save": "Lưu thay đổi",
       "pickFutureTime": "Chọn thời gian trong tương lai",
+      "timeBooked": "Thời gian này đã được đặt",
+      "timeBookedBody": "Một doanh nghiệp đã xác nhận đặt chỗ cho buổi gặp này nên không thể đổi thời gian. Bạn vẫn có thể lưu các thay đổi khác với thời gian ban đầu. Để đổi thời gian, hãy hủy đặt chỗ trước.",
       "updated": "Đã cập nhật",
       "updatedBody": "Đã lưu thay đổi của bạn."
     }
@@ -1852,6 +1868,8 @@ export default {
       "saving": "Sine-save...",
       "save": "I-save ang Pagbabago",
       "pickFutureTime": "Pumili ng oras sa hinaharap",
+      "timeBooked": "Naka-book na ang oras na ito",
+      "timeBookedBody": "May kumpirmadong booking ang isang negosyo para sa pagtitipong ito, kaya hindi mababago ang oras. Puwede mo pa ring i-save ang iba mong pagbabago sa orihinal na oras. Para baguhin ang oras, kanselahin muna ang reservation.",
       "updated": "Na-update",
       "updatedBody": "Na-save ang mga pagbabago mo."
     }
@@ -2058,6 +2076,8 @@ export default {
       "saving": "Сохранение...",
       "save": "Сохранить изменения",
       "pickFutureTime": "Выберите время в будущем",
+      "timeBooked": "Это время забронировано",
+      "timeBookedBody": "У заведения есть подтверждённое бронирование на эту встречу, поэтому время изменить нельзя. Остальные изменения можно сохранить с прежним временем. Чтобы изменить время, сначала отмените бронь.",
       "updated": "Обновлено",
       "updatedBody": "Изменения сохранены."
     }
@@ -2264,6 +2284,8 @@ export default {
       "saving": "저장 중...",
       "save": "변경 사항 저장",
       "pickFutureTime": "미래 시간을 선택하세요",
+      "timeBooked": "이 시간은 예약되어 있어요",
+      "timeBookedBody": "업체가 이 모임의 예약을 확정해서 시간을 바꿀 수 없어요. 다른 변경 사항은 원래 시간으로 저장할 수 있어요. 시간을 바꾸려면 먼저 예약을 취소하세요.",
       "updated": "수정됨",
       "updatedBody": "변경 사항을 저장했어요."
     }

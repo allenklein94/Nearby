@@ -1,3 +1,22 @@
+# Lifecycle enforcement fixes (owner, 2026-10-24): all five audit findings, migration 20270343
+
+Owner approved fixing D1-D3 + R1-R2 before the first phone session; qualification: the late-join rule must match the intended product
+rule, not a UI limit. Found: the client's one rule (`LIFECYCLE.gathering`, `isGatheringUpcoming`: start >= now) is the only join rule;
+no late-arrival flow exists (Happening Now's under-way rows show View; check-in = approved attendees only), so the server now matches it.
+- Server (not yet applied to prod): new `_offer_gathering_id`, `_gathering_has_active_booking` (host-only answer), invoker trigger
+  `gathering_client_update_guard` (checks only `current_user in (authenticated, anon)`; time compared at ms, Edit always resends the
+  unchanged time); `join_gathering`, the pending-insert policy, `accept_business_offer`, `_accept_business_offer_internal`,
+  `invite_friend_to_gathering`, `send_social_invite` changed only by their new check (diffed against the live definitions). Lock order
+  gathering -> offer -> request on accept (group-plan requests carry no gathering, so the group path takes no new lock).
+- Client: EditGathering shows "This time is booked" + body (`gatheringEditRefusal`), no Try Again; 2 new strings (10 machine-authored).
+- Policy points reported: unrelated edits of a started gathering still save (only its time is frozen); `send_social_invite` now refuses
+  women-only / host-blocked invitees like `invite_friend_to_gathering` (journey `notificationEvents` 2e updated: refused, no event).
+- Tests: journey `lifecycleEnforcement` 8/8 (fails 8/8 without the migration); `locationProvenance` (client move refused, server move
+  relabels) + `notificationEvents` updated; prod journeys with the migration as prelude 676/676 (rolled back); from-scratch replay
+  467/467 + journeys 676/676 + `reschedule-accept-concurrency.js` 40/40 (5 rounds x 4 races, no deadlock; setup now resets the
+  host's daily-create counter on the throwaway DB) + booking-capacity + offer-revision concurrency; Jest 498/6834; lifecycle matrix
+  gains one info flag. Grants replay vs prod not compared (the new functions exist only after the prod apply).
+
 # Lifecycle action enforcement audit (owner, 2026-10-24, read-only, after idea 391)
 
 Owner approved idea 391 as built and ordered one read-only audit of the 13 actions not asked through `canDo` + the 5 missing mappings.

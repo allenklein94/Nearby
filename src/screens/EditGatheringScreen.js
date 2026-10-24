@@ -7,6 +7,7 @@ import { peopleGoing } from '../utils/gatheringFullness';
 import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_OPTIONS, cleanFeatures, toggleFeature, isMusicTag } from '../utils/gatheringPractical';
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { gatheringEditRefusal } from '../utils/gatheringEditRefusal';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
@@ -177,7 +178,9 @@ export default function EditGatheringScreen({ route, navigation }) {
       showSuccessToast(t('ui.gatheringForm.edit.updated'), t('ui.gatheringForm.edit.updatedBody'));
       navigation.goBack();
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'save your changes', error: e, draftKept: true, onRetry: () => submit() });
+      const refusal = gatheringEditRefusal(e);
+      if (refusal) Alert.alert(t(refusal.titleKey), t(refusal.bodyKey));
+      else presentRecoverableError(Alert, { what: 'save your changes', error: e, draftKept: true, onRetry: () => submit() });
     }
     setSubmitting(false);
   }

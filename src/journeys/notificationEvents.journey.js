@@ -124,8 +124,8 @@ d('journey: domain events -> one notification layer (item 125)', () => {
   log := log || jsonb_build_array(jsonb_build_object('step','invitation_needs_published_gathering','ok',
     (select count(*) from jq) = v_before));
 
-  -- 2e. B invites C to A's gathering; C blocked the host -> the invitation stands (eligibility unchanged) but no push.
-  --     Women-only gathering + an invitee who cannot join -> no push either.
+  -- 2e. B invites C to A's gathering; C blocked the host -> refused (20270343: a pending invite grants visibility, so it would
+  --     bypass the block), nothing written, no push. Women-only gathering + an invitee who cannot join -> refused the same way.
   if not exists (select 1 from friendships where (user_a = v_b and user_b = v_c) or (user_a = v_c and user_b = v_b)) then
     insert into friendships (user_a, user_b, status, requested_by) values (v_b, v_c, 'accepted', v_b);
   else
@@ -133,17 +133,17 @@ d('journey: domain events -> one notification layer (item 125)', () => {
   end if;
   insert into blocks (blocker_id, blocked_id) values (v_c, v_a);
   perform set_config('request.jwt.claims', json_build_object('sub', v_b, 'role', 'authenticated')::text, true);
-  perform send_social_invite('gathering', v_g1, v_c);
+  begin perform send_social_invite('gathering', v_g1, v_c); exception when others then null; end;
   delete from blocks where blocker_id = v_c and blocked_id = v_a;
   update profiles set gender = 'Man' where id = v_c;
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility, is_public, women_only)
     values (v_b, 'Journey women only', now() + interval '6 days', 40.0, -75.0, 'Coffee', 'journey', 8, 'everyone', true, true) returning id into v_g5;
-  perform send_social_invite('gathering', v_g5, v_c);
+  begin perform send_social_invite('gathering', v_g5, v_c); exception when others then null; end;
   log := log || jsonb_build_array(jsonb_build_object('step','invitation_host_block_and_women_only','ok',
-    exists (select 1 from social_invites where invitee_id = v_c and target_id = v_g1)
+    not exists (select 1 from social_invites where invitee_id = v_c and target_id = v_g1)
     and (select count(*) from jq where b->>'recipient_id' = v_c::text and b->'data'->>'type' = 'gathering_invite'
            and b->'data'->>'gathering_id' in (v_g1::text, v_g5::text)) = 0
-    and exists (select 1 from social_invites where invitee_id = v_c and target_id = v_g5),
+    and not exists (select 1 from social_invites where invitee_id = v_c and target_id = v_g5),
     'data', jsonb_build_object('host_block_outcome', (select n.outcome from domain_event_notifications n join domain_events e on e.id = n.event_id
       join social_invites i on i.id = e.object_id where i.target_id = v_g1 and i.invitee_id = v_c))));
   perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
@@ -383,7 +383,7 @@ d('journey: domain events -> one notification layer (item 125)', () => {
     expect(c.data.type).toBe('gathering_invite');
     expect(s.invitation_needs_published_gathering.ok).toBe(true);
     expect(s.invitation_host_block_and_women_only.ok).toBe(true);
-    expect(s.invitation_host_block_and_women_only.data.host_block_outcome).toBe('blocked');
+    expect(s.invitation_host_block_and_women_only.data.host_block_outcome).toBeNull(); // refused: no invitation, no event (20270343)
   });
   it('acceptance and expiry are recorded, never pushed', () => {
     expect(s.invitation_accepted_expired.ok).toBe(true);

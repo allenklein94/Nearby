@@ -54,9 +54,14 @@ d('journey: stored locations are the person\'s own, with their provenance', () =
   log := log || jsonb_build_array(jsonb_build_object('step','gathering_stored','ok',
      (select location_source = 'host_pin' and google_place_id = 'ChIJjourney' from gatherings where id = v_g)));
   log := log || jsonb_build_array(jsonb_build_object('step','geocode_claims_budget','ok', v_ok = true));
+  -- 20270343: a gathering's point is fixed after creation for the app's own writes (the host's direct move is refused) ...
   set local role authenticated;
-  update gatherings set precise_lat = 26.47 where id = v_g;
+  begin update gatherings set precise_lat = 26.47 where id = v_g; v_msg := 'MOVED'; exception when others then v_msg := sqlerrm; end;
   reset role;
+  log := log || jsonb_build_array(jsonb_build_object('step','client_move_refused','ok',
+     v_msg <> 'MOVED' and (select precise_lat from gatherings where id = v_g) <> 26.47, 'data', v_msg));
+  -- ... and a server-side move still relabels the provenance (the trigger is unchanged)
+  update gatherings set precise_lat = 26.47 where id = v_g;
   log := log || jsonb_build_array(jsonb_build_object('step','moved_point_relabelled','ok',
      (select location_source = 'host_pin' and google_place_id is null from gatherings where id = v_g)));
 
@@ -115,7 +120,7 @@ d('journey: stored locations are the person\'s own, with their provenance', () =
 
   test.each([
     'place_id_not_client_readable', 'source_not_client_readable', 'google_confirmed_refused', 'google_adjusted_refused',
-    'place_id_needs_own_pin', 'unknown_source_refused', 'gathering_stored', 'geocode_claims_budget', 'moved_point_relabelled',
+    'place_id_needs_own_pin', 'unknown_source_refused', 'gathering_stored', 'geocode_claims_budget', 'client_move_refused', 'moved_point_relabelled',
     'google_details_refused', 'coordinates_need_source', 'signup_google_pin_refused', 'own_signup_saved', 'approval_carries_provenance',
     'business_pin_saved', 'device_pin_has_no_place_id', 'business_pin_retired_source_refused', 'business_pin_needs_point',
     'business_pin_other_business_refused', 'unlabelled_change_is_own_pin', 'partner_retired_label_refused',

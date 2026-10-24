@@ -334,6 +334,7 @@ export async function buildMatrix({ destinationSource, appSources }) {
   }
   flags.push(['missing', 'push sent per state: decided server-side (_dispatch_domain_event, triggers, RPCs); app code only knows where a push opens. Covered by journeys notificationEvents / notificationAction, not by this matrix', 'supabase (server)']);
   flags.push(['missing', 'transition target states: LIFECYCLE names the allowed actions; the state each one leads to is enforced by its server RPC and is not declared in app code', 'supabase (server)']);
+  flags.push(['info', 'server enforcement of the time/lock rules behind these actions (join / invite only before the start, accept only before the request deadline, a booked gathering keeps its time, fixed settings only via their function): migration 20270343, journey lifecycleEnforcement; audit PRODUCT_AUDIT/LIFECYCLE_ACTION_ENFORCEMENT_AUDIT_2026-10-24.md', 'supabase (server)']);
 
   return { kinds, expiry: expiry(), push, anim, flags };
 }

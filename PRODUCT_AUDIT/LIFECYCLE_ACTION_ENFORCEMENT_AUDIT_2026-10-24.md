@@ -77,3 +77,23 @@ Exceptions: `gathering_interest` allows a direct INSERT of a `pending` row (see 
 - Everything on screens (labels, hidden buttons, stale screens) stays NOT DEVICE-VERIFIED until the phone session.
 
 Kept as observations (owner): the 2 ambiguous labels, the 2 display-only offer states, the 3 retired push destinations.
+
+## Fixes (owner approved all five, 2026-10-24): migration 20270343
+
+| Finding | Fix (server) | Client |
+|---|---|---|
+| D1 reschedule with a booking | BEFORE UPDATE trigger `gathering_client_update_guard`: a direct client change of `scheduled_at` is refused (hint `gathering_time_booked`) while an accepted offer exists on the gathering's request or an add-on of it (`_gathering_has_active_booking`, answers only the host). Unrelated edits save; the booking is never cancelled or changed. `accept_business_offer` / `_accept_business_offer_internal` lock the gathering first (`_offer_gathering_id`, FOR SHARE), so accept and reschedule never interleave | EditGathering: "This time is booked" + why and what to do (cancel the reservation first), no Try Again (`utils/gatheringEditRefusal.js`; 2 new strings, 10 machine-authored) |
+| D2 late join | `join_gathering` refuses once `scheduled_at < now()`; the direct pending-insert policy gains the same rule (women-only rule kept). Approve / waitlist promotion / removal already refused after the start | none (Join already hidden after the start by `canDo`) |
+| D3 accept past the request deadline | both accept paths refuse when `expires_at <= now()` ("This request has closed."), even before the sweep | none |
+| R1 locked fields | the same trigger refuses a direct client change of capacity (only `set_gathering_capacity`), women_only, visibility, is_public, the location columns, recurrence_rule, a started gathering's time, or a time already passed (hint `gathering_locked`). Only the app's own roles (`authenticated` / `anon`) are checked; server functions, cron and scripts are unchanged | none (Edit never sends these) |
+| R2 late invite | `invite_friend_to_gathering` and `send_social_invite`'s gathering branch refuse once started; `send_social_invite` also refuses women-only / host-blocked invitees, as the other path already did | none |
+
+Policy check (owner's qualification): no legitimate late-join flow exists. The app's one rule (`LIFECYCLE.gathering`) allows Join only
+while upcoming (start >= now); Happening Now shows under-way gatherings with View. The server now matches that rule; check-in
+(approved attendees only) is unchanged.
+
+Results (2026-10-24): journey `lifecycleEnforcement` 8/8 (fails 8/8 on the old DB); prod journeys with the migration as prelude
+676/676 (rolled back); from-scratch replay 467/467 + journeys 676/676 + `reschedule-accept-concurrency.js` 40/40 (accept vs
+reschedule and accept vs cancel_gathering, both orders, 5 rounds: one consistent outcome, no deadlock) + the booking-capacity and
+offer-revision concurrency scripts; Jest 498/6834. NOT YET APPLIED TO PRODUCTION. Remaining: native review of the 2 new strings,
+the Edit refusal on a phone.
