@@ -1,3 +1,13 @@
+# Idea 381 assessed (owner, 2026-10-24), nothing built
+
+**Idea "381" ("fewer concepts = fewer screens: a hidden benefit of simplifying the product model") MET AS DOCTRINE + BUILT, ASSESSED,
+recommended close, owner decision pending; an observation, not a build request.** Already how the app is shaped: states, not folders
+(one viewer relation per gathering, never a screen per state: no Saved/Interested/Requested screens, Plans' rows instead); Rule 14
+(a screen exists only for a registered job A-F, `constants/screenRegistry.js`; 87 -> 73 screens since the 2026-10-08 audit); item 45's
+ladder (change content > expand inline > sheet > screen); ideas "152"/"379"/"380" (no second saved state, so no saved list or tab);
+ideas "249"/"351" (less work, not just fewer screens) with their counterweights (items 31/110, idea "225"). The reverse also holds and is
+guarded: a new concept would need its own registry entry before it could get a screen. No new rule (would duplicate the above), no code.
+
 # Idea 380 closed (owner, 2026-10-24), nothing built
 
 **Owner decision: idea "380" CLOSED and LOCKED as met.** Principle kept: one meaningful state per user intention. Interested stays the
