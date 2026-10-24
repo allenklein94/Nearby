@@ -47,6 +47,7 @@ describe('the engagement nudges are retired (idea 186)', () => {
     const allowed = new Set([
       'src/constants/notificationTier.js', 'src/constants/notificationActions.js', 'src/constants/notificationPreferences.js',
       'src/navigation/notificationDestinations.js', 'supabase/functions/send-push/index.ts',
+      'src/qa/lifecycleMatrix.js', // idea 391's generated reference only labels it retired; it sends nothing
     ]);
     const hits = [...walk(path.join(root, 'src')), ...walk(path.join(root, 'supabase/functions'))]
       .filter((p) => /first_mission_reminder|reward_tier_nudge/.test(fs.readFileSync(p, 'utf8')))

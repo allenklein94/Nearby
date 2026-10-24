@@ -79,7 +79,7 @@ test('no trigger claims delivery or that someone saw a notification (item 159)',
 test('documentation only: no component reads the table, and it names no domain event (item 125)', () => {
   const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
     const p = path.join(dir, e.name);
-    if (e.isDirectory()) return walk(p);
+    if (e.isDirectory()) return e.name === 'qa' ? [] : walk(p); // src/qa = idea 391's generated reference, never app code
     return /\.js$/.test(e.name) && !/\.test\.js$/.test(e.name) ? [p] : [];
   });
   const readers = walk(SRC).filter((f) => !f.endsWith(path.join('constants', 'motionLanguage.js')) && /MOTION_TRIGGERS/.test(fs.readFileSync(f, 'utf8')));

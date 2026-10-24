@@ -220,6 +220,10 @@ profile), ask "What's the difference between those two?" Connect = friends only 
 Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.
 Record their words verbatim where they hesitate. Their results go in the same lists, marked "B".
 
+Reference (idea "391"): `PRODUCT_AUDIT/LIFECYCLE_MATRIX.md` lists every object state with what should show (status word, CTA,
+allowed actions, expiry, which push opens it, which animation may play). A screen that disagrees with its row = FAIL; the row is generated
+from code, so it says what the app SHOULD do, never whether people understand it.
+
 ## Record sheet
 
 Per run: A or B, device, OS version, build, account, light/dark, language, Reduce Motion. Per check: code (PASS / FAIL /
