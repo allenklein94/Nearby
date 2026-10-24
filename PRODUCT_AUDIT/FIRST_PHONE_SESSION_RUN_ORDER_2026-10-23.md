@@ -207,6 +207,10 @@ Card scan watch (owner, idea "386", 2026-10-24; observation only): on a gatherin
 available), give 3 seconds, cover it, ask "What is it, when is it, and what happens if you tap the button?" Write the answers verbatim.
 A wrong or missing answer, or text truncated/overlapping = USABILITY with a screenshot; the fix is that card's shared model
 (`gatheringCardModel`), proposed for owner approval; nothing removed and no layout change without this evidence.
+Next step watch (owner, idea "387", 2026-10-24; observation only): right after (1) a business reply arrives, (2) they join a gathering,
+(3) a plan is over, ask nothing and wait 10 seconds: do they find the next step unaided (take the offer / View Plan or Message group /
+"How was it?")? Then ask "What would you do next?" Write it verbatim. Stuck or a wrong guess = USABILITY with the screen; the fix is the
+shared source of that step (`primaryActionFor`, `requestTimeline.js`, Your Plans row), never a "next best action" module or "best" wording.
 Connect vs Add Friend (owner, idea "382", 2026-10-24; same watch): when they meet Connect (friend discovery) and Add Friend (a
 profile), ask "What's the difference between those two?" Connect = friends only if both connect; Add Friend = a request they accept.
 Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.
