@@ -3,10 +3,14 @@
 //   node scripts/phone-session/simulate.js            seed as production is now: the push guard refuses if a real account would be notified
 //   SIM_MODE=B node scripts/phone-session/simulate.js also simulates "no account recently active" + session activity by the friend account
 //                                                     (join, Interested, a chat message, a reminder push), then cleanup.
+//   SIM_MUTE_RECOMMENDATIONS=<uuid,...> node ... simulates Option A instead: those accounts have Settings > Notifications >
+//                                                     "Recommendations" off (the discover_recommendations mute) + the same session activity.
 // Simulation: seed -> capture pushes/events -> cleanup -> compare applereview + every table's row count. Ends in an
 // exception, so the whole transaction aborts and nothing commits.
 const L=require('./lib');
 const c=L.config();
+const MUTE=(process.env.SIM_MUTE_RECOMMENDATIONS||'').split(',').filter((x) => /^[0-9a-f-]{36}$/.test(x));
+const SESSION=process.env.SIM_MODE==='B'||MUTE.length>0;
 const acct=(em)=>`(select id from auth.users where lower(email)=lower(${L_q(em)}))`;
 function L_q(s){return `'${String(s).replace(/'/g,"''")}'`;}
 const AR=acct(c.friendEmail), OW=acct(c.ownerEmail);
@@ -29,11 +33,12 @@ create temp table _ps_before (cnt bigint, tbl text);
 create temp table _ps_report (report jsonb);
 ${fp('before')}
 ${process.env.SIM_MODE==='B'?'delete from presence_reports; delete from notification_areas; -- inside the aborted transaction only: simulates no account recently active':''}
+${MUTE.length?`update profiles set notification_mutes = array_append(coalesce(notification_mutes, '{}'), 'discover_recommendations') where id = any(array[${MUTE.map((x) => `'${x}'`).join(',')}]::uuid[]) and not (coalesce(notification_mutes, '{}') @> array['discover_recommendations']); -- aborted transaction only: Option A's Settings switch`:''}
 ${L.seedSql(c).replace(/select jsonb_build_object\('created'[\s\S]*$/, '')}
 create temp table _sim_push as select recipient_id, title, body, data->>'type' as type, status from push_outbox where created_at >= now();
 create temp table _sim_events as select type, count(*) n from domain_events where created_at >= now() group by 1;
 ${fp('seeded')}
-${process.env.SIM_MODE==='B'?`
+${SESSION?`
 -- simulated session activity by applereview on the test objects
 select set_config('request.jwt.claims', json_build_object('sub', ${AR}, 'role', 'authenticated')::text, true);
 set local role authenticated;

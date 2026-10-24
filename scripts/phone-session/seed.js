@@ -19,7 +19,10 @@ async function main() {
 
   const c = L.config();
   const plan = (await L.run(L.planSql(c)))[0].plan;
-  const code = L.hash({ c, plan });
+  // the code covers what would be written (settings + every row, incl. which gatherings are already too soon), never the clock
+  // reading itself: otherwise it changed every minute and no approved code could ever match at apply time
+  const { now_local: _clock, ...planRows } = plan;
+  const code = L.hash({ c, plan: planRows });
   if (mode === 'plan') {
     console.log(JSON.stringify(plan, null, 2));
     const blockers = [];
