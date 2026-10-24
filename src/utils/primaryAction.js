@@ -117,6 +117,13 @@ export function gatheringJoinAction(gathering, { isFull = false, interested = fa
 
 export { needsApproval };
 
+// Owner idea "376" (2026-10-23): a card's join action (Join / Request to Join / Join Waitlist / I'm Going) opens Gathering Detail
+// with its existing join step ready (`openJoin`; the detail re-checks the current state, and nothing is sent until the person
+// confirms). Any other action, and a tap on the card body, opens the gathering plainly. Home and Discover both read this.
+export function gatheringActionOpenParams(action) {
+  return action?.kind === 'join' ? { openJoin: true } : null;
+}
+
 // People nearby (dating/friends recommendation surface): "Meet People" only when there is real supply to meet.
 // Which sub-mode opens (Dating vs Friends) is Discover's own personalization, so callers pass no sub-mode.
 export function peoplePrimaryAction(nearbyPeopleCount) {

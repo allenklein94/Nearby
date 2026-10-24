@@ -133,6 +133,7 @@ import { businessSignalLine } from '../constants/businessDisplaySignals';
 import { getUserLocation } from '../services/userLocation';
 import { filterOpenNow, gatheringEntity, placeEntity, perkEntity, businessEntity } from '../utils/operatingStatus';
 import { placesNeedFetch } from '../utils/placesFetchPlan';
+import { gatheringActionOpenParams } from '../utils/primaryAction';
 
 // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real, disclosed
 // thresholds against getGatheringFitReasons()'s real 0-22 score range
@@ -2144,9 +2145,13 @@ export default function DiscoverHubScreen({ navigation, route }) {
     // the same source Home and the Gatherings feed use: a join shows as the CTA; going / hosting / requested / waitlisted / past /
     // expired show as a status badge; anything unknown is a plain View. Tapping either opens the context's destination.
     const a = card.action ?? { kind: 'view', label: t('ui.actions.view') };
-    if (a.kind === 'join') return { kind: 'cta', label: a.label };
+    // Idea "376": the action itself opens with Home's join step ready (`openParams`); the card body opens the gathering plainly.
+    if (a.kind === 'join') return { kind: 'cta', label: a.label, openParams: gatheringActionOpenParams(a) };
     if (a.status) return { kind: 'state', label: a.status };
-    return { kind: 'cta', label: a.label };
+    return { kind: 'cta', label: a.label, openParams: null };
+  }
+  function openGatheringAction(card, action) {
+    openDestination(navigation, card.destination, action.openParams ?? null);
   }
 
 
@@ -2220,7 +2225,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
           )}
         </View>
         {action.kind === 'cta' ? (
-          <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
+          <TouchableOpacity
+            onPress={() => openGatheringAction(card, action)}
+            accessibilityLabel={`${action.label}: ${g.title}`}
+            accessibilityRole="button"
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Text style={styles.cardActionLabel} numberOfLines={1}>{action.label}</Text>
+          </TouchableOpacity>
         ) : (
           <Text style={styles.cardStateLabel} numberOfLines={1}>{action.label}</Text>
         )}
@@ -2267,7 +2279,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             action={{
               label: action.label,
               isState: action.kind !== 'cta',
-              onPress: () => openDestination(navigation, card.destination),
+              onPress: () => openGatheringAction(card, action),
               accessibilityLabel: `${action.label}: ${g.title}`,
             }}
             trailing={more()}
@@ -2337,7 +2349,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             {action.kind === 'cta' ? (
               <TouchableOpacity
                 style={styles.heroCta}
-                onPress={() => openDestination(navigation, card.destination)}
+                onPress={() => openGatheringAction(card, action)}
                 accessibilityLabel={`${action.label}: ${g.title}`}
                 accessibilityRole="button"
               >
@@ -2392,7 +2404,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         </View>
         {action.kind === 'cta' ? (
           <TouchableOpacity
-            onPress={() => openDestination(navigation, card.destination)}
+            onPress={() => openGatheringAction(card, action)}
             accessibilityLabel={`${action.label}: ${g.title}`}
             accessibilityRole="button"
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}

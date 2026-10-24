@@ -1,3 +1,24 @@
+# Idea 376 fix built + closed (owner, 2026-10-24), LOCKED
+
+**Owner approved the narrow idea "376" fix (2026-10-24): a gathering card's join action behaves the same on Home and Discover.** ONE
+rule `gatheringActionOpenParams(action)` in `utils/primaryAction.js`: an action of kind `join` (Join / Request to Join / Join Waitlist /
+I'm Going, all from `gatheringJoinAction` / `primaryActionFor`) opens GatheringDetail with `{ openJoin: true }`; anything else = null
+(plain open). Home's join button now reads it (was the inline `openDetail({ openJoin: true })`). Discover: `gatheringActionInfo` attaches
+`openParams` to the CTA and `openGatheringAction(card, action)` opens `card.destination` with them, on all four gathering action targets
+(standard tile, hero tile, compact row, expanded-context row). Card body vs action (owner caveat, checked first): the standard tile, hero
+and compact row already had the action as its own touchable inside the tile; the expanded-context row had the label as plain text inside
+the one whole-row touchable, so it now gets its own small touchable (same pattern + hitSlop as the standard tile). The card body, title
+and image keep their existing presses (in-place context on browse tiles, plain GatheringDetail on context rows), never the join step;
+the keyword-search list has no action label (chevron only) and is unchanged. Never submits on open: GatheringDetail's existing `openJoin`
+effect only shows the join confirm sheet when `canDo('join')`, the viewer has no status and invite-only access holds; its confirm label
+is recomputed from the current state (full -> Join Waitlist, approval -> Request to Join), so a state change before the tap shows the
+current valid action; every server check unchanged. No new screens, strings, animations or features. Tests: new
+`utils/gatheringActionOpen.test.js` (7: every join wording + a shared `primaryActionFor` join -> join step, non-join -> plain, Home and
+Discover source-pinned to the shared rule, card body never opens the join step, GatheringDetail never submits on open);
+`discoverTileVariant.test.js` guard updated to the shared opener. Full Jest 493/6798 (11 todo). Journey: none (client navigation only, no
+server change); NOT DEVICE-VERIFIED: on a phone, tap Join / Request to Join / Join Waitlist on a Discover tile and on Home (join sheet
+open, nothing sent until confirm) and the tile body (plain detail / in-place context).
+
 # Idea 376 assessed (owner, 2026-10-23), one gap found, nothing built
 
 **Idea "376" ("eliminate orphan CTAs: a label must describe the actual next state; never View when the person needs Join /

@@ -133,7 +133,8 @@ describe('Discover screen wiring (source guards)', () => {
   it('every tile keeps the real reason line and the shared state-aware action (no Explore)', () => {
     expect(tile).toMatch(/const action = gatheringActionInfo\(g, card\)/);
     expect(tile).toMatch(/card\.reasons\[0\]/);
-    expect(tile).toMatch(/openDestination\(navigation, card\.destination\)/);
+    // idea "376": the action opens through the shared opener (join step ready for a join action)
+    expect(tile).toMatch(/openGatheringAction\(card, action\)/);
     expect(tile).not.toMatch(/Explore/);
   });
 

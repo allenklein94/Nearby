@@ -112,6 +112,7 @@ import { placeDistanceLabel } from '../services/places';
 import { homeQuickStatRows } from '../utils/homeQuiet';
 import { interestedConfirmation } from '../utils/actionConfirmations';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
+import { gatheringActionOpenParams } from '../utils/primaryAction';
 
 // Item 137: a destination keeps the time it was offered under (the evening header reads "Tonight", so its chips open Tonight).
 const PERIOD_DATE_FILTER = { morning: 'morning', afternoon: 'afternoon', evening: 'tonight', weekend: 'weekend' };
@@ -690,7 +691,7 @@ export default function HomeScreen({ navigation }) {
             <InterestedSaved flashKey={interestedFlash[g.id]} style={action.on ? styles.rowCtaGhostText : primaryText} label={action.label} savedLabel={t('ui.actions.interestedSaved')} />
           </TouchableOpacity>
         ) : action.kind === 'join' ? (
-          <TouchableOpacity style={primaryStyle} onPress={() => openDetail({ openJoin: true })} accessibilityRole="button" accessibilityLabel={`${action.label}: ${g.title}`}>
+          <TouchableOpacity style={primaryStyle} onPress={() => openDetail(gatheringActionOpenParams(action) ?? {})} accessibilityRole="button" accessibilityLabel={`${action.label}: ${g.title}`}>
             <Text style={primaryText}>{action.label}</Text>
           </TouchableOpacity>
         ) : (
