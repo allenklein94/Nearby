@@ -49,6 +49,8 @@ import { validityLabel, isOfferExpired, availableWindowLabel, nextValidityRefres
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { canCompleteVisit } from '../utils/dashboardGlance';
 import { consumerOfferAction } from '../utils/primaryAction';
+import { offerCloseRefusal } from '../utils/offerCloseClock';
+import useOfferCloseClock from '../hooks/useOfferCloseClock';
 import { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
 import { sharedRequestFactsLine } from '../utils/sharedRequestFacts';
@@ -761,6 +763,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
+  // Idea "393": at the instant a shown offer stops being acceptable (its valid_until or this request's deadline, whichever is
+  // first) and on return to the foreground, re-render so "I'll take this one" goes and the closed card says why. Same
+  // context consumerOfferAction gets below; re-armed whenever the offers or the request change.
+  useOfferCloseClock(
+    offers,
+    { request, hasWinner: offers.some((o) => o.status === 'accepted' || o.status === 'completed'), isGroupPlanRequest: !!request?.group_plan_id },
+    `${request?.status}|${request?.expires_at}|${offers.map((o) => `${o.id}:${o.status}:${o.valid_until}`).join(',')}`,
+  );
+
   // Marketplace moment 6: the business confirming the visit reaches this card live while the screen is in front.
   // Realtime only says "one of this request's offer rows changed" (requester RLS; the payload is never read) and the
   // screen re-reads the stored state, which stays the truth; the focus reload above covers anything missed. Removed on
@@ -853,6 +864,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       load().catch(() => {});
       // Item 118: the business changed this offer after it was shown: the re-read shows the current terms to decide on.
       if (isOfferChangedError(e)) Alert.alert(t('ui.requestDetail.offerUpdated'), t('ui.requestDetail.offerJustChanged'));
+      // Idea "393": the deadline passed between render and tap: the existing words, no Try Again.
+      else if (offerCloseRefusal(e)) Alert.alert(offerCloseRefusal(e));
       else presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAccept(offerId) });
     } finally {
       acceptingRef.current = false;
@@ -1741,7 +1754,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         </AssemblyStep>
                       );
                     }
-                    if (action.kind !== 'accept_offer') return null;
+                    // Idea "393": a card that still reads open but can't be taken (the request's own deadline passed before
+                    // the sweep) says so with the table's existing status word; a closed card already carries its reason.
+                    if (action.kind !== 'accept_offer') return shown.card === 'open' && action.status ? <Text style={styles.offerStatus}>{action.status}</Text> : null;
                     // Item 119: a two-time reply books only once a time is picked (the button waits, never guesses).
                     const bookable = canBookWith(o, pickedTimes[o.id] ?? null);
                     // Idea "193": while any offer is booking, the others are visibly unavailable too.

@@ -1,3 +1,16 @@
+# Idea "393" expired offers (owner, 2026-10-24): narrow fix BUILT, CLOSED, LOCKED
+
+Gap: the request screen decided "I'll take this one" at render, so left open across an offer's valid_until or the request's own
+deadline it kept the button until a reload; a tap got the server's refusal as "Didn't go through" + its English sentence (correction
+of the assessment: no Try Again was offered, the refusal is an input problem). Built: `utils/offerCloseClock.js` (`nextOfferCloseAt`
+= earliest future valid_until / expires_at among offers `consumerOfferAction` calls acceptable; `startOfferCloseClock`, same shape as
+item 108's minute clock: one capped timer, AppState pause + one render on active; `offerCloseRefusal` maps "This offer has expired." /
+"This request has closed." to `ui.requestDetail.thisOfferHasExpired` / `ui.actions.requestClosed`), `hooks/useOfferCloseClock.js`,
+wired in BusinessRequestDetailScreen before the early return; an open card with no accept now shows the table's status word
+(request deadline case). Tests 15 (open-screen expiry, request deadline, competing deadlines both orders, several offers, exact
+boundary, capped far deadline, background/foreground, cleanup, refusal wording + wiring, server instants); Jest 499/6849. No server,
+string, screen or motion change. GroupPlan's own confirm screen not covered (server refuses; out of scope).
+
 # Idea "392" expired invitations (owner, 2026-10-24): MET AS BUILT
 
 Inspected: inviteLifecycleState/inviteAction (state-driven, no Accept when expired), ActivityScreen row (expired title + "date • Past" + Dismiss only), services/invites.js supplies scheduledAt, server refusal (20270125) + no new invites after start (20270343). Jest 22/22, prod journeys 676/676 incl. inviteJourney. Nothing built.

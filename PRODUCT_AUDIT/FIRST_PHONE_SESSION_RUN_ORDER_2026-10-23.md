@@ -148,6 +148,11 @@ Expired invite watch (owner idea "392", 2026-10-24; PASS/FAIL; needs an invitati
 "Invitation expired" / "{title} · {date} • Past" with only Dismiss (no Accept / Decline); Dismiss clears the row only (the gathering and
 the inviter see no decline); the Activity badge does not count it.
 
+Offer expiry watch (owner idea "393", 2026-10-24; PASS/FAIL; a reply with an end a few minutes away, seeded test business): keep the
+request screen open across the end: "I'll take this one" disappears at that minute without touching anything and the card reads "This
+offer has expired"; repeat with the app in the background across the end, then reopen: already updated. If a tap lands right at the
+end: the message says the offer expired, no Try Again.
+
 Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's checklist; only when the forecast really brings
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
 scroll past? Report the reaction only; no weather UI change before this.
