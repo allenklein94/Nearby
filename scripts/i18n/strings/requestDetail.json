@@ -144,6 +144,7 @@
   "reopenThisRequestA11y": "Reopen this request",
   "reopening": "Reopening…",
   "reopenRequest": "Reopen Request",
+  "askAgainTomorrow": "Ask again for tomorrow",
   "cancelThisRequestA11y": "Cancel this request",
   "cancelling": "Cancelling…",
   "nearbyFoundOptions": {
@@ -432,6 +433,7 @@
   "reopenThisRequestA11y": "Reabrir esta solicitud",
   "reopening": "Reabriendo…",
   "reopenRequest": "Reabrir solicitud",
+  "askAgainTomorrow": "Preguntar de nuevo para mañana",
   "cancelThisRequestA11y": "Cancelar esta solicitud",
   "cancelling": "Cancelando…",
   "nearbyFoundOptions": {
@@ -720,6 +722,7 @@
   "reopenThisRequestA11y": "Diese Anfrage wieder öffnen",
   "reopening": "Wird wieder geöffnet…",
   "reopenRequest": "Anfrage wieder öffnen",
+  "askAgainTomorrow": "Für morgen erneut anfragen",
   "cancelThisRequestA11y": "Diese Anfrage abbrechen",
   "cancelling": "Wird abgebrochen…",
   "nearbyFoundOptions": {
@@ -1008,6 +1011,7 @@
   "reopenThisRequestA11y": "Rouvrir cette demande",
   "reopening": "Réouverture…",
   "reopenRequest": "Rouvrir la demande",
+  "askAgainTomorrow": "Redemander pour demain",
   "cancelThisRequestA11y": "Annuler cette demande",
   "cancelling": "Annulation…",
   "nearbyFoundOptions": {
@@ -1296,6 +1300,7 @@
   "reopenThisRequestA11y": "Reabrir este pedido",
   "reopening": "Reabrindo…",
   "reopenRequest": "Reabrir pedido",
+  "askAgainTomorrow": "Perguntar de novo para amanhã",
   "cancelThisRequestA11y": "Cancelar este pedido",
   "cancelling": "Cancelando…",
   "nearbyFoundOptions": {
@@ -1584,6 +1589,7 @@
   "reopenThisRequestA11y": "Relouvri demann sa a",
   "reopening": "N ap relouvri…",
   "reopenRequest": "Relouvri demann",
+  "askAgainTomorrow": "Mande ankò pou demen",
   "cancelThisRequestA11y": "Anile demann sa a",
   "cancelling": "N ap anile…",
   "nearbyFoundOptions": {
@@ -1872,6 +1878,7 @@
   "reopenThisRequestA11y": "重新开启这个请求",
   "reopening": "正在重新开启…",
   "reopenRequest": "重新开启请求",
+  "askAgainTomorrow": "为明天重新询问",
   "cancelThisRequestA11y": "取消这个请求",
   "cancelling": "正在取消…",
   "nearbyFoundOptions": {
@@ -2157,6 +2164,7 @@
   "reopenThisRequestA11y": "Mở lại yêu cầu này",
   "reopening": "Đang mở lại…",
   "reopenRequest": "Mở lại yêu cầu",
+  "askAgainTomorrow": "Hỏi lại cho ngày mai",
   "cancelThisRequestA11y": "Hủy yêu cầu này",
   "cancelling": "Đang hủy…",
   "nearbyFoundOptions": {
@@ -2442,6 +2450,7 @@
   "reopenThisRequestA11y": "Buksan ulit ang request na ito",
   "reopening": "Binubuksan ulit…",
   "reopenRequest": "Buksan ulit ang request",
+  "askAgainTomorrow": "Magtanong ulit para bukas",
   "cancelThisRequestA11y": "Kanselahin ang request na ito",
   "cancelling": "Kinakansela…",
   "nearbyFoundOptions": {
@@ -2730,6 +2739,7 @@
   "reopenThisRequestA11y": "Открыть этот запрос снова",
   "reopening": "Открываем снова…",
   "reopenRequest": "Открыть запрос снова",
+  "askAgainTomorrow": "Спросить снова на завтра",
   "cancelThisRequestA11y": "Отменить этот запрос",
   "cancelling": "Отменяем…",
   "nearbyFoundOptions": {
@@ -3024,6 +3034,7 @@
   "reopenThisRequestA11y": "이 요청 다시 열기",
   "reopening": "다시 여는 중…",
   "reopenRequest": "요청 다시 열기",
+  "askAgainTomorrow": "내일로 다시 요청하기",
   "cancelThisRequestA11y": "이 요청 취소",
   "cancelling": "취소하는 중…",
   "nearbyFoundOptions": {

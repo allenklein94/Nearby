@@ -47,6 +47,8 @@ import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustom
 import { presentOffer } from '../utils/offerPresentationEngine';
 import { validityLabel, isOfferExpired, availableWindowLabel, nextValidityRefreshMs } from '../utils/offerMedia';
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
+import { expiredRequestAction, askAgainTomorrowParams, isReopenTimePassedError } from '../utils/requestAskAgain';
+import { getGatheringById } from '../services/gatherings';
 import { canCompleteVisit } from '../utils/dashboardGlance';
 import { consumerOfferAction } from '../utils/primaryAction';
 import { offerCloseRefusal } from '../utils/offerCloseClock';
@@ -163,6 +165,10 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // they navigate away and back to this same screen.
   const suggestionAppliedRef = useRef(false);
   const [request, setRequest] = useState(null);
+  // Idea "395": an expired gathering request reopens only while its gathering is ahead (its start time, read when expired);
+  // a refusal the server still gives ("time has passed") switches a plain request to "Ask again for tomorrow".
+  const [linkedGatheringStartsAt, setLinkedGatheringStartsAt] = useState(null);
+  const [reopenRefused, setReopenRefused] = useState(false);
   // Finding 4: the original ask's own fields, carried forward so "Try a
   // Wider Radius" can push a fresh, pre-filled AskBusiness instead of
   // sending the user back to a blank form. Item 56 ("no dead ends"): a
@@ -429,6 +435,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         if (rectInWindow(from, Dimensions.get('window').height)) startOfferTravel({ offerId: travelOfferId, from, origin: 'request' });
       }
       setRequest(result.request);
+      if (result.request.gathering_id && result.request.status === 'expired') {
+        getGatheringById(result.request.gathering_id).then((g) => setLinkedGatheringStartsAt(g?.scheduled_at ?? null)).catch(() => setLinkedGatheringStartsAt(null));
+      }
       setOffers(result.offers);
       noteVisitConfirmations(uid, result.offers);
       setLoadError(false);
@@ -951,9 +960,16 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       await reopenBusinessRequest(requestId);
       await load();
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleReopen() });
+      // the server is the final authority on "still ahead": its refusal never leaves a dead button behind
+      if (isReopenTimePassedError(e)) setReopenRefused(true);
+      else presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleReopen() });
     }
     setCancelling(false);
+  }
+
+  // Idea "395": the existing form, prefilled; Tomorrow comes from this tap; Send runs normal matching (a new request).
+  function handleAskAgainTomorrow() {
+    navigation.push('AskBusiness', askAgainTomorrowParams(request));
   }
 
   async function handleCancel() {
@@ -1102,6 +1118,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   }
 
   if (!request) return null;
+  // Idea "395": ONE rule decides the expired request's action (utils/requestAskAgain.js); null = the line alone, no dead button.
+  const expiredLine = canDo('request', request.status, 'reopen') && request.requester_id === myId;
+  const expiredAction = expiredLine
+    ? expiredRequestAction(request, { viewerId: myId, gatheringStartsAt: linkedGatheringStartsAt, serverRefusedReopen: reopenRefused })
+    : null;
 
   const winningOffer = offers.find((o) => o.status === 'accepted' || o.status === 'completed');
   const hasWinner = !!winningOffer;
@@ -2205,12 +2226,18 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
           </View>
         )}
 
-        {canDo('request', request.status, 'reopen') && request.requester_id === myId && (
+        {expiredLine && (
           <View style={{ alignItems: 'center', marginBottom: 12 }}>
             <Text style={styles.cancelLink}>{t('ui.requestDetail.thisRequestExpiredBeforeA')}</Text>
-            <TouchableOpacity onPress={handleReopen} disabled={cancelling} accessibilityLabel={t('ui.requestDetail.reopenThisRequestA11y')} accessibilityRole="button">
-              <Text style={[styles.cancelLink, { color: colors.primary, fontWeight: '700' }]}>{cancelling ? t('ui.requestDetail.reopening') : t('ui.requestDetail.reopenRequest')}</Text>
-            </TouchableOpacity>
+            {expiredAction === 'reopen' ? (
+              <TouchableOpacity onPress={handleReopen} disabled={cancelling} accessibilityLabel={t('ui.requestDetail.reopenThisRequestA11y')} accessibilityRole="button">
+                <Text style={[styles.cancelLink, { color: colors.primary, fontWeight: '700' }]}>{cancelling ? t('ui.requestDetail.reopening') : t('ui.requestDetail.reopenRequest')}</Text>
+              </TouchableOpacity>
+            ) : expiredAction === 'ask_again_tomorrow' ? (
+              <TouchableOpacity onPress={handleAskAgainTomorrow} accessibilityLabel={t('ui.requestDetail.askAgainTomorrow')} accessibilityRole="button">
+                <Text style={[styles.cancelLink, { color: colors.primary, fontWeight: '700' }]}>{t('ui.requestDetail.askAgainTomorrow')}</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         )}
 

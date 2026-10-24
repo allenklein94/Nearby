@@ -1,3 +1,26 @@
+# Idea "395": expired request's Reopen only while its time is ahead, else "Ask again for tomorrow" (owner approved narrow fix, 2026-10-24)
+
+- Defect: an expired request always showed "Reopen Request", which `reopen_business_request` always refuses once the request's
+  own day/time has passed ("The time for this request has passed…") or a gathering's start has passed: a dead button.
+- ONE rule `utils/requestAskAgain.js` `expiredRequestAction` (mirrors the server: no day = reopen; day + start / end / 23:59:59
+  local; gathering = until its start, read from the gathering when expired): 'reopen' (existing button) / 'ask_again_tomorrow'
+  (plain requests only) / null (gathering request whose gathering started: the gathering's rescheduling is the path; match /
+  community / group-plan / add-on requests keep their flows). A server "time has passed" refusal is final (device vs profile
+  time zone): the screen switches to Ask again, never a Try Again loop.
+- "Ask again for tomorrow" (the person's tap = the explicit Tomorrow) pushes the EXISTING AskBusiness form via
+  `askAgainTomorrowParams`: words (dropped when they name a day: tonight/today/tomorrow/now/weekend/a weekday/date, so the form asks
+  again rather than contradict Tomorrow), category, party size, budget, radius, occasion, experience level, cuisine, dietary,
+  requested items (3 new prefill reads in AskBusiness), Tomorrow, and the stated start time only (checked ahead for tomorrow;
+  never a window end, never invented). Never the original business, posting or the one-business note. Person reviews + Sends ->
+  normal `create_business_request` (new request, new "We asked N"); the old request + its business rows untouched; no push added.
+- Strings: `ui.requestDetail.askAgainTomorrow` (11 languages, source JSON + generated; 10 machine-authored, need native review).
+  No migration, no screen, no motion.
+- Verified: Jest `utils/requestAskAgain.test.js` 16 (expired/valid reopen, boundaries incl. closed AT the time, window end,
+  server refusal, gathering-linked, who/which state, prefill, day-word text, time handling, wiring guard); full Jest 501/6882;
+  journey `requestAskAgain` 4/4 on prod (rolled back: refusal sentence = the client's matcher, nothing changed; ahead/no-day reopen;
+  started gathering refused; ask again = new untargeted request, own count, deadline tomorrow 19:00 NY, old left expired);
+  prod journeys 688/688. NOT DEVICE-VERIFIED: the button swap and the prefilled form on a phone.
+
 # Migration 20270345 (ledger) DEPLOYED to production through deploy.js (owner approved version 20270345 + sha256 b6962ed4…, commit 8d0278c6, 2026-10-24)
 
 - Before: whole-schema + row fingerprints taken; rows and the 20270344 function set identical to the start of the session.

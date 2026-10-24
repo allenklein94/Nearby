@@ -276,9 +276,10 @@ export default function AskBusinessScreen({ navigation, route }) {
   // A match's plan arrives with the vibes its proposer picked (utils/dateProposalVibes.js): shown selected, still editable.
   const [attributesInput, setAttributesInput] = useState(() => (route.params?.matchId ? cleanDateVibes(route.params?.prefillAttributes) : []));
   // Opt-in interest sharing (design 2026-09-18): OFF by default, per request only, never remembered.
-  const [cuisineInput, setCuisineInput] = useState(null);
-  const [dietaryInput, setDietaryInput] = useState([]);
-  const [itemsInput, setItemsInput] = useState([]);
+  // Idea "395": "Ask again for tomorrow" carries the expired request's own stated choices (utils/requestAskAgain.js).
+  const [cuisineInput, setCuisineInput] = useState(route.params?.prefillCuisine ?? null);
+  const [dietaryInput, setDietaryInput] = useState(Array.isArray(route.params?.prefillDietary) ? route.params.prefillDietary : []);
+  const [itemsInput, setItemsInput] = useState(Array.isArray(route.params?.prefillRequestedItems) ? route.params.prefillRequestedItems : []);
   // "Intelligent demand inbox" Phase 1 (CLAUDE.md, Sep 3 2026): a real
   // WHY signal, genuinely optional in every mode -- unlike attributes/
   // cuisine (solo-only, since party size/budget are already solo-only
