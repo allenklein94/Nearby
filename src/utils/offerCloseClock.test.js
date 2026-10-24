@@ -94,6 +94,27 @@ describe('idea 393: one timer for the screen', () => {
     expect(ticks).toEqual([T0 + 2 * MIN, T0 + 8 * MIN]);
     expect(h.timers.size).toBe(0);
   });
+  test('several offers with different ends: the timer advances offer to offer, each closing at its own minute', () => {
+    const h = harness();
+    const ticks = [];
+    const offers = [offer({ id: 'c', valid_until: iso(T0 + 9 * MIN) }), offer({ id: 'a', valid_until: iso(T0 + 2 * MIN) }),
+      offer({ id: 'b', valid_until: iso(T0 + 5 * MIN) })];
+    const ctx = { request: request() };
+    const acceptable = (t) => offers.filter((o) => consumerOfferAction(o, { ...ctx, now: t }).kind === 'accept_offer').map((o) => o.id).sort();
+    startOfferCloseClock(offers, ctx, (t) => ticks.push(t), h);
+    const armedAt = () => [...h.timers.values()].map((t) => t.at);
+    expect(armedAt()).toEqual([T0 + 2 * MIN]);
+    h.advanceTo(T0 + 2 * MIN);
+    expect(acceptable(ticks[0])).toEqual(['b', 'c']);
+    expect(armedAt()).toEqual([T0 + 5 * MIN]);
+    h.advanceTo(T0 + 5 * MIN);
+    expect(acceptable(ticks[1])).toEqual(['c']);
+    expect(armedAt()).toEqual([T0 + 9 * MIN]);
+    h.advanceTo(T0 + 9 * MIN);
+    expect(acceptable(ticks[2])).toEqual([]);
+    expect(ticks).toEqual([T0 + 2 * MIN, T0 + 5 * MIN, T0 + 9 * MIN]);
+    expect(h.timers.size).toBe(0); // one timer at a time, none after the last
+  });
   test('a far deadline sleeps in capped steps and still fires exactly once at the instant', () => {
     const h = harness();
     const ticks = [];
