@@ -273,6 +273,10 @@ export function askedActions(sources) {
   const asked = new Set();
   for (const text of sources) {
     for (const m of text.matchAll(/canDo\(\s*'(\w+)'\s*,[\s\S]*?,\s*'(\w+)'\s*\)/g)) asked.add(`${m[1]}.${m[2]}`);
+    // A local one-kind wrapper, e.g. GatheringDetail's `const can = (action) => … canDo('gathering', …, action)`, then can('edit').
+    for (const w of text.matchAll(/const (\w+) = \(\w+\) => [^;\n]*canDo\(\s*'(\w+)'/g)) {
+      for (const m of text.matchAll(new RegExp(`\\b${w[1]}\\(\\s*'(\\w+)'\\s*\\)`, 'g'))) asked.add(`${w[2]}.${m[1]}`);
+    }
   }
   return asked;
 }

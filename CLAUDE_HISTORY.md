@@ -1,3 +1,17 @@
+# Lifecycle action enforcement audit (owner, 2026-10-24, read-only, after idea 391)
+
+Owner approved idea 391 as built and ordered one read-only audit of the 13 actions not asked through `canDo` + the 5 missing mappings.
+Result `PRODUCT_AUDIT/LIFECYCLE_ACTION_ENFORCEMENT_AUDIT_2026-10-24.md` (live prod definitions read 2026-10-24; code reading only).
+- Matrix false positives: edit/dismiss/interested are asked via GatheringDetail's local `can()` wrapper; generator now recognises
+  one-kind wrappers (flags 25 -> 22, unchecked actions 13 -> 10). Matrix test 6/6.
+- Enforced server-side: cancel, dismiss, interested, invite (except time), leave/withdraw, manage attendees, group decline, invite
+  decline, reservation cancel, business decline, request cancel; state tables have RLS with no UPDATE/DELETE policy.
+- Confirmed defects (not fixed, owner approval needed): D1 gathering reschedule with an accepted offer: business + booking keep the old
+  time, no push, no Edit warning; D2 join_gathering / direct pending insert lack a start-time check; D3 accept_business_offer does not
+  check business_requests.expires_at (only status/valid_until) before the sweep.
+- Risks: R1 host's direct UPDATE of gatherings (column grants + host-only policy) can change capacity/women_only/visibility/point/past
+  time outside the RPCs; R2 invite_friend_to_gathering has no start-time check. No journey covers D1-D3, R1-R2.
+
 # Idea 391 (owner approved 2026-10-24, "build it now"): generated lifecycle matrix BUILT, CLOSED, LOCKED (developer reference only)
 
 Owner reversed the deferral: build the matrix now as a code-derived developer reference + validation tool, never app logic.
