@@ -160,7 +160,7 @@ d('journey: switch a need\'s clock chip 7 PM -> 7 AM -> recorded, saved, restore
     'action', refinement_action, 'parent', parent_snapshot_id, 'id', id)) from typed_ask_snapshots where user_id = v_u)));
   perform set_config('request.jwt.claims', json_build_object('sub', v_u, 'role', 'authenticated')::text, true);
   v_res := create_business_request(raw_text_param := ${dq(NEED)} #>> '{}', latitude_param := 40.0, longitude_param := -75.0,
-    category_param := '${params.prefillCategory}', date_param := current_date,
+    category_param := '${params.prefillCategory}', date_param := current_date + 1,  -- tomorrow: a passed time is refused (idea "394")
     time_window_start_param := ${params.prefillStartMinutes == null ? 'null' : `'${Math.floor(params.prefillStartMinutes / 60)}:${String(params.prefillStartMinutes % 60).padStart(2, '0')}'::time`}, radius_miles_param := 10);
   v_req := (v_res->>'requestId')::uuid;
   log := log || jsonb_build_array(jsonb_build_object('step', 'request', 'ok', v_req is not null, 'data',

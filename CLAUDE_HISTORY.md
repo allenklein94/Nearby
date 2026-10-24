@@ -1,3 +1,34 @@
+# Idea "394" request deadlines (owner approved all three fixes, 2026-10-24): BUILT + TESTED, NOT APPLIED (awaiting owner approval)
+
+Migration `20270344_request_deadlines_follow_gathering.sql` (7 live functions replaced from their production bodies by counted exact
+edits, same signatures + grants; 3 new functions, 2 new triggers; rollback `scripts/rollback/20270344_...rollback.sql`).
+F1 gathering requests: `create_business_request_for_gathering` + `_route_gathering_to_partner_core` close exactly at the start (one-hour
+floor removed) and refuse once started (`<= now()`, hint `request_time_passed`, nothing written); both read the gathering FOR SHARE.
+F2 reschedule: AFTER UPDATE OF scheduled_at trigger `gathering_request_follows_time` locks the gathering's open, still-answerable
+request + its business rows FOR UPDATE; any business response (`_request_has_business_reply`: responded_at, offered/accepted/
+completed/declined/withdrawn, or an offer_response held for review) = refused (hint `gathering_request_has_replies`), else day +
+host-local time (`_gathering_local_when`, host timezone; none known = no time, never guessed) + deadline follow; the request's plan
+date follows via `on_business_request_date_sync_plan`. A request already past its deadline is left closed; `reopen_business_request`
+now takes the gathering's current day/time. Booked gatherings keep 20270343's refusal (BEFORE trigger, checked first). Reply writers
+read under a share lock: `submit_business_offer` (request), `post_business_availability` (matched requests), held-reply publishing.
+F3 `create_business_request`: day + stated start (or end) = the deadline exactly; already passed (incl. exactly now) refused (hint
+`request_time_passed`), nothing written; no stated time keeps the floor/48 h rule. Also: publishing a held reply now refuses past the
+deadline before the sweep (was status-only).
+Client: `gatheringEditRefusal` maps the new hint to 2 NEW strings `ui.gatheringForm.edit.requestReplied` / `requestRepliedBody`
+(11 languages, 10 machine-authored, need native review); `requestRefusal` maps `request_time_passed` to the existing
+`ui.bizHelp.availability.passed` ("That time window has already passed."), now also on the gathering request path; no Try Again.
+Tests: journey `requestDeadlines` 8/8 with the migration as prelude (8/8 FAIL on the current DB); prod journeys 684/684 (prelude,
+rolled back); from-scratch replay 468/468 + journeys 684/684 + all four concurrency scripts on it; new
+`scripts/replay/reschedule-reply-concurrency.js` 50/50 (offer / decline / automatic reply vs reschedule, both orders; negative
+control with the locks removed: 30 failures, the reschedule moved the time despite the reply); `reschedule-accept-concurrency.js`
+case 2 now expects the refusal (its setup has a reply); rollback proven on prod in a rolled-back transaction (7/7 bodies restored
+byte-identical, nothing left); Jest 499/6852. Fixture fix: `understoodChipChange` journey sent a request for 7 AM TODAY (passed most
+of the day; it only passed thanks to the floor) -> tomorrow (the journey checks the stored time, not the day).
+Found, NOT changed (report): match (`create_business_request_for_match`) and group-plan (`confirm_group_plan`) requests compute the
+deadline as a UTC wall clock (`::timestamptz`) with the same 1 h floor masking it; community requests are date-only. Residuals: a
+business whose Opportunity screen was loaded before a reschedule and who sends after it answers the request as it now reads (no
+"seen version" check on submit); no push tells routed businesses the time moved (their card reads it live).
+
 # Idea "393" expired offers (owner, 2026-10-24): narrow fix BUILT, CLOSED, LOCKED
 
 Gap: the request screen decided "I'll take this one" at render, so left open across an offer's valid_until or the request's own

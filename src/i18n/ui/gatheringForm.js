@@ -206,6 +206,8 @@ export default {
       "pickFutureTime": "Pick a future time",
       "timeBooked": "This time is booked",
       "timeBookedBody": "A business has a confirmed booking for this gathering, so its time can't change. Your other changes can still be saved with the original time. To change the time, cancel the reservation first.",
+      "requestReplied": "Businesses have replied",
+      "requestRepliedBody": "Businesses have already replied to this gathering's request at its current time, so its time can't change. Your other changes can still be saved with the original time. To change the time, cancel the request first.",
       "updated": "Updated",
       "updatedBody": "Your changes are saved."
     }
@@ -414,6 +416,8 @@ export default {
       "pickFutureTime": "Elige una hora futura",
       "timeBooked": "Esta hora está reservada",
       "timeBookedBody": "Un negocio tiene una reserva confirmada para esta reunión, así que su hora no puede cambiar. Puedes guardar tus otros cambios con la hora original. Para cambiar la hora, primero cancela la reserva.",
+      "requestReplied": "Los negocios ya respondieron",
+      "requestRepliedBody": "Los negocios ya respondieron a la solicitud de esta reunión para su hora actual, así que su hora no puede cambiar. Puedes guardar tus otros cambios con la hora original. Para cambiar la hora, primero cancela la solicitud.",
       "updated": "Actualizada",
       "updatedBody": "Tus cambios se guardaron."
     }
@@ -622,6 +626,8 @@ export default {
       "pickFutureTime": "Wähle eine spätere Zeit",
       "timeBooked": "Diese Zeit ist gebucht",
       "timeBookedBody": "Ein Unternehmen hat eine bestätigte Buchung für dieses Treffen, daher kann die Zeit nicht geändert werden. Deine anderen Änderungen kannst du mit der ursprünglichen Zeit speichern. Um die Zeit zu ändern, storniere zuerst die Reservierung.",
+      "requestReplied": "Unternehmen haben geantwortet",
+      "requestRepliedBody": "Unternehmen haben auf die Anfrage dieses Treffens zur aktuellen Zeit bereits geantwortet, deshalb kann die Zeit nicht geändert werden. Deine anderen Änderungen kannst du mit der ursprünglichen Zeit speichern. Um die Zeit zu ändern, storniere zuerst die Anfrage.",
       "updated": "Aktualisiert",
       "updatedBody": "Deine Änderungen sind gespeichert."
     }
@@ -830,6 +836,8 @@ export default {
       "pickFutureTime": "Choisissez une heure future",
       "timeBooked": "Cet horaire est réservé",
       "timeBookedBody": "Une entreprise a une réservation confirmée pour ce rassemblement, son horaire ne peut donc pas changer. Vous pouvez enregistrer vos autres modifications avec l'horaire d'origine. Pour changer l'horaire, annulez d'abord la réservation.",
+      "requestReplied": "Des entreprises ont répondu",
+      "requestRepliedBody": "Des entreprises ont déjà répondu à la demande de ce rassemblement pour son heure actuelle, donc son heure ne peut pas changer. Tu peux enregistrer tes autres modifications avec l'heure d'origine. Pour changer l'heure, annule d'abord la demande.",
       "updated": "Mise à jour",
       "updatedBody": "Vos modifications sont enregistrées."
     }
@@ -1038,6 +1046,8 @@ export default {
       "pickFutureTime": "Escolha um horário futuro",
       "timeBooked": "Este horário está reservado",
       "timeBookedBody": "Uma empresa tem uma reserva confirmada para este encontro, então o horário não pode mudar. Você ainda pode salvar suas outras alterações com o horário original. Para mudar o horário, cancele a reserva primeiro.",
+      "requestReplied": "Empresas já responderam",
+      "requestRepliedBody": "Empresas já responderam ao pedido deste encontro para o horário atual, então o horário não pode mudar. Você pode salvar suas outras alterações com o horário original. Para mudar o horário, cancele o pedido primeiro.",
       "updated": "Atualizado",
       "updatedBody": "Suas alterações foram salvas."
     }
@@ -1246,6 +1256,8 @@ export default {
       "pickFutureTime": "Chwazi yon lè nan lavni",
       "timeBooked": "Lè sa a rezève",
       "timeBookedBody": "Yon biznis gen yon rezèvasyon konfime pou rasanbleman sa a, kidonk lè a pa ka chanje. Ou ka toujou anrejistre lòt chanjman ou yo ak lè orijinal la. Pou chanje lè a, anile rezèvasyon an anvan.",
+      "requestReplied": "Biznis yo deja reponn",
+      "requestRepliedBody": "Biznis yo deja reponn demann rasanbleman sa a pou lè li ye kounye a, kidonk lè a pa ka chanje. Ou ka toujou sove lòt chanjman ou yo ak lè orijinal la. Pou chanje lè a, anile demann nan anvan.",
       "updated": "Mete ajou",
       "updatedBody": "Chanjman ou yo anrejistre."
     }
@@ -1454,6 +1466,8 @@ export default {
       "pickFutureTime": "选择一个未来的时间",
       "timeBooked": "这个时间已预订",
       "timeBookedBody": "有商家已确认此聚会的预订，因此时间无法更改。你仍可以用原来的时间保存其他更改。如需更改时间，请先取消预订。",
+      "requestReplied": "商家已回复",
+      "requestRepliedBody": "商家已按当前时间回复了此聚会的请求，因此时间无法更改。你的其他更改仍可按原时间保存。如需更改时间，请先取消该请求。",
       "updated": "已更新",
       "updatedBody": "你的更改已保存。"
     }
@@ -1662,6 +1676,8 @@ export default {
       "pickFutureTime": "Chọn thời gian trong tương lai",
       "timeBooked": "Thời gian này đã được đặt",
       "timeBookedBody": "Một doanh nghiệp đã xác nhận đặt chỗ cho buổi gặp này nên không thể đổi thời gian. Bạn vẫn có thể lưu các thay đổi khác với thời gian ban đầu. Để đổi thời gian, hãy hủy đặt chỗ trước.",
+      "requestReplied": "Doanh nghiệp đã phản hồi",
+      "requestRepliedBody": "Các doanh nghiệp đã phản hồi yêu cầu của buổi gặp mặt này theo giờ hiện tại, nên không thể đổi giờ. Bạn vẫn có thể lưu các thay đổi khác với giờ ban đầu. Để đổi giờ, hãy hủy yêu cầu trước.",
       "updated": "Đã cập nhật",
       "updatedBody": "Đã lưu thay đổi của bạn."
     }
@@ -1870,6 +1886,8 @@ export default {
       "pickFutureTime": "Pumili ng oras sa hinaharap",
       "timeBooked": "Naka-book na ang oras na ito",
       "timeBookedBody": "May kumpirmadong booking ang isang negosyo para sa pagtitipong ito, kaya hindi mababago ang oras. Puwede mo pa ring i-save ang iba mong pagbabago sa orihinal na oras. Para baguhin ang oras, kanselahin muna ang reservation.",
+      "requestReplied": "May mga negosyong sumagot na",
+      "requestRepliedBody": "May mga negosyong sumagot na sa request ng pagtitipong ito para sa kasalukuyang oras nito, kaya hindi na mababago ang oras. Mase-save mo pa rin ang iba mong pagbabago gamit ang orihinal na oras. Para baguhin ang oras, kanselahin muna ang request.",
       "updated": "Na-update",
       "updatedBody": "Na-save ang mga pagbabago mo."
     }
@@ -2078,6 +2096,8 @@ export default {
       "pickFutureTime": "Выберите время в будущем",
       "timeBooked": "Это время забронировано",
       "timeBookedBody": "У заведения есть подтверждённое бронирование на эту встречу, поэтому время изменить нельзя. Остальные изменения можно сохранить с прежним временем. Чтобы изменить время, сначала отмените бронь.",
+      "requestReplied": "Заведения уже ответили",
+      "requestRepliedBody": "Заведения уже ответили на заявку этой встречи на текущее время, поэтому время изменить нельзя. Остальные изменения можно сохранить с исходным временем. Чтобы изменить время, сначала отмените заявку.",
       "updated": "Обновлено",
       "updatedBody": "Изменения сохранены."
     }
@@ -2286,6 +2306,8 @@ export default {
       "pickFutureTime": "미래 시간을 선택하세요",
       "timeBooked": "이 시간은 예약되어 있어요",
       "timeBookedBody": "업체가 이 모임의 예약을 확정해서 시간을 바꿀 수 없어요. 다른 변경 사항은 원래 시간으로 저장할 수 있어요. 시간을 바꾸려면 먼저 예약을 취소하세요.",
+      "requestReplied": "업체들이 이미 답했어요",
+      "requestRepliedBody": "업체들이 이 모임의 현재 시간 요청에 이미 답해서 시간을 바꿀 수 없어요. 다른 변경 사항은 원래 시간으로 저장할 수 있어요. 시간을 바꾸려면 먼저 요청을 취소하세요.",
       "updated": "수정됨",
       "updatedBody": "변경 사항을 저장했어요."
     }

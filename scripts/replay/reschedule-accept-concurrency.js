@@ -4,8 +4,8 @@
 // open so the other waits on the lock:
 //   1. accept first, reschedule second: the host's direct time change waits for the accept, then is refused
 //      (gathering_time_booked); the booking stands, the time is unchanged.
-//   2. reschedule first, accept second: the accept waits for the time change, then books (there was no booking when the time
-//      moved); one consistent outcome, no deadlock.
+//   2. reschedule first, accept second: since 20270344 (idea "394") the time change is refused at once because the business has
+//      already replied to the gathering's request (gathering_request_has_replies); the accept then books at the unchanged time.
 //   3. accept first, cancel_gathering second: the cancel waits, then cancels the fresh booking with the gathering; no deadlock.
 //   4. cancel_gathering first, accept second: the accept waits, then is refused (the request was cancelled); nothing booked.
 // Each case runs ROUNDS times; every row is deleted afterwards.
@@ -98,8 +98,9 @@ const cancelG = (g) => ({ sql: 'select cancel_gathering($1)', args: [g] });
     o = await setup(admin, host, partner);
     r = await race(host, moveTime(o.g), accept(o.offer));
     s = await state(o);
-    check(!r.firstErr && r.second.ok && r.waited >= HOLD_MS - 50, `2 reschedule then accept: accept waited ${r.waited} ms, then booked (${r.second.error ?? 'ok'})`);
-    check(s.offer === 'accepted' && s.booked === 1 && +s.t === +o.t + 3600e3, '2 time moved before any booking existed; booking made after');
+    check(r.firstErr?.hint === 'gathering_request_has_replies' && r.second.ok,
+      `2 reschedule then accept: reschedule refused (${r.firstErr?.hint ?? 'saved!'}), then booked (${r.second.error ?? 'ok'})`);
+    check(s.offer === 'accepted' && s.booked === 1 && +s.t === +o.t, '2 a replied request keeps the time; booking made at it');
     await cleanup(admin, o);
 
     o = await setup(admin, host, partner);

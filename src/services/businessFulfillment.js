@@ -402,7 +402,7 @@ export async function submitBusinessRequestForGathering({ gatheringId, text, cat
     note_param: targetPartnerId ? note : null,
     items_param: items && items.length > 0 ? items : null,
   });
-  if (error) throw new Error(error.message);
+  if (error) throw requestRefusal(error);
   return { requestId: data.requestId, notifiedCount: data.notifiedCount, partySize: data.partySize, duplicate: !!data.duplicate };
 }
 
