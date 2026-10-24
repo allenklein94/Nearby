@@ -188,6 +188,9 @@ you booked anything yet?" Needs a seeded business with a declared booking mode; 
 wrong prediction that changes what they do (expecting an instant booking and leaving, or thinking they're booked before a reply);
 one hesitation that the next screen clears is not. Evidence = USABILITY with the label, both answers and the screen; the fix is a
 wording proposal in the shared table (`primaryAction.js` / `i18n/ui/actions.js`) for owner approval, never a change without it.
+Plan stop links (owner, idea "383", 2026-10-24; same watch): on an Experience plan, each stop's link names where it goes: a
+gathering or an already-requested/booked stop = "View →"; a stop not requested yet = Reserve / Book / Request (the business's
+booking mode; "Request" when none). Ask what each will do before tapping. Also note whether Home's "Continue Browsing →" reads as Discover.
 Connect vs Add Friend (owner, idea "382", 2026-10-24; same watch): when they meet Connect (friend discovery) and Add Friend (a
 profile), ask "What's the difference between those two?" Connect = friends only if both connect; Add Friend = a request they accept.
 Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.

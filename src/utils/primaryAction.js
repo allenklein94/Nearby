@@ -160,12 +160,33 @@ export function businessPrimaryAction(partner, { posting = null, at = new Date()
     case 'reservation_recommended':
       return { kind: 'reserve', label: A('reserve'), secondary: usableNow && hasPlace ? goNow : null };
     case 'reservation_required':
-      return { kind: 'book', label: A('book') };
     case 'request_required':
-      return { kind: 'request', label: A('request') };
+      return { kind: BOOKING_REQUEST_KIND[mode], label: A(BOOKING_REQUEST_KIND[mode]) };
     default:
       return null;
   }
+}
+
+// The targeted-request kind each declared mode names (item 72); walk-in / undeclared have none.
+const BOOKING_REQUEST_KIND = { reservation_recommended: 'reserve', reservation_required: 'book', request_required: 'request' };
+
+// Where an Experience plan stop leads (owner idea "383"): its gathering, the request already made for it (requested, a reply,
+// booked, done), or a new request to that one business (not requested yet, or its request was cancelled). ONE rule for the link's
+// label (experienceStopAction) and its navigation (services/plans.js navigateToExperienceStop).
+export function experienceStopDestination(stop) {
+  if (stop?.stopType === 'gathering') return 'gathering';
+  if (stop?.requestId && stop.state && stop.state !== 'chosen' && stop.state !== 'cancelled') return 'request';
+  return 'ask';
+}
+
+// The stop link's label names its destination (idea "383", never "Continue"): a gathering or an existing request = "View →";
+// a new request = the business's declared booking mode (Reserve / Book / Request, item 72), "Request" when walk-in or undeclared
+// (the destination is still a request to that business). A booked or done stop opens its request, never a new booking.
+export function experienceStopAction(stop) {
+  const destination = experienceStopDestination(stop);
+  if (destination !== 'ask') return { kind: destination === 'gathering' ? 'view_gathering' : 'view_request', label: tr('ui.planDetail.view') };
+  const kind = BOOKING_REQUEST_KIND[bookingModeOf({ booking_mode: stop?.bookingMode ?? null, attributes: stop?.partnerAttributes ?? null })] ?? 'request';
+  return { kind, label: A(kind) };
 }
 
 // Business side: one opportunity row (a pending offer on a customer's request). ctx.inFlight = an offer for it is being reviewed

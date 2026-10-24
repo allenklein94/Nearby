@@ -1,3 +1,18 @@
+# Idea 383 closed (owner, 2026-10-24): plan stop link fix BUILT, NOT DEVICE-VERIFIED
+
+**Owner approved the narrow fix; idea "383" CLOSED and LOCKED.** Continue / Next stay where they advance a clearly defined sequence.
+PlanDetail's per-stop "Continue →" replaced by an action-specific label from ONE rule in `utils/primaryAction.js`:
+`experienceStopDestination(stop)` = gathering | request (requestId + state requested / offer_received / booked / done) | ask (chosen,
+cancelled); `experienceStopAction(stop)` = "View →" (`ui.planDetail.view`) for gathering + request, else item 72's `ui.actions`
+reserve / book / request by `bookingModeOf` (declared `booking_mode`, legacy attribute), "Request" when walk-in or undeclared (the
+destination is still a request to that business). `navigateToExperienceStop` (`services/plans.js`) reads the same destination rule,
+so label and navigation cannot drift; an already-booked or done stop shows View and opens its request, never a new booking.
+`getPlanStops` adds `bookingMode` + `partnerAttributes` from a best-effort `brand_partners` read (failure = "Request"). Screen-reader
+label = action + stop title. Removed now-unused `ui.planDetail.continue` + `continueWithA11y` (11 languages). No new strings,
+screens, motion, migration or journey (client-only; destinations unchanged). Guard `utils/experienceStopAction.test.js` (16: each
+state and mode, label kind = navigated screen, no Continue in the screen); full Jest 494/6812. Run order Button watch gains the plan
+stop links + Home's "Continue Browsing →". NOT DEVICE-VERIFIED.
+
 # Idea 383 assessed (owner, 2026-10-24), nothing built
 
 **Idea "383": "Don't call everything Continue"; use specific verbs (Create gathering, Send request, Accept offer, Join, Invite, Reserve).**

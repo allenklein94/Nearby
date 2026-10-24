@@ -9,6 +9,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { getPlanOverview, getPlanStops, navigateToExperienceStop, reorderExperienceStops, removeExperienceStop, setExperienceNightDate, experienceStopStateLabel } from '../services/plans';
+import { experienceStopAction } from '../utils/primaryAction';
 import { supabase } from '../services/supabase';
 import ExperienceSharePanel from '../components/ExperienceSharePanel';
 import { canEditNight, canRemoveStop, moveStopIds, removeStopCopy } from '../utils/experienceStopEdit';
@@ -212,9 +213,9 @@ export default function PlanDetailScreen({ navigation, route }) {
                   <TouchableOpacity
                     onPress={() => navigateToExperienceStop(navigation, s, { partySize: plan.party_size, nightDate })}
                     accessibilityRole="button"
-                    accessibilityLabel={t('ui.planDetail.continueWithA11y', { title: s.title })}
+                    accessibilityLabel={`${experienceStopAction(s).label.replace(' →', '')}: ${s.title}`}
                   >
-                    <Text style={styles.stopLink}>{s.requestId && s.state !== 'chosen' && s.state !== 'cancelled' ? t('ui.planDetail.view') : t('ui.planDetail.continue')}</Text>
+                    <Text style={styles.stopLink}>{experienceStopAction(s).label}</Text>
                   </TouchableOpacity>
                   )}
                 </View>

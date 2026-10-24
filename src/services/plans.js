@@ -2,6 +2,7 @@ import { supabase } from './supabase';
 import { multiObjectParent } from '../utils/planDestination';
 import { stopDatePrefill } from '../utils/nightDate';
 import { tr } from '../i18n/translate';
+import { experienceStopDestination } from '../utils/primaryAction';
 
 // Item 52 ("Build a universal Plan object", CLAUDE.md) -- the first real
 // client consumer of the `plans` table (Phase G,
@@ -192,9 +193,20 @@ export async function createExperiencePlan({ title, stops, partySize = null }) {
   return data;
 }
 
+// partnerId -> { booking_mode, attributes } (brand_partners is publicly readable for active partners). Failure = empty map.
+async function getPartnerBookingModes(partnerIds) {
+  const ids = [...new Set((partnerIds ?? []).filter(Boolean))];
+  if (ids.length === 0) return new Map();
+  const { data, error } = await supabase.from('brand_partners').select('id, booking_mode, attributes').in('id', ids);
+  if (error) return new Map();
+  return new Map((data ?? []).map((r) => [r.id, r]));
+}
+
 export async function getPlanStops(planId) {
   const { data, error } = await supabase.rpc('get_plan_stops', { plan_id_param: planId });
   if (error) throw new Error(error.message);
+  // The business's declared booking mode names a not-yet-requested stop's link (idea "383"); best-effort: none = "Request".
+  const partners = await getPartnerBookingModes((data ?? []).map((s) => s.partner_id));
   return (data ?? []).map((s) => ({
     id: s.id,
     order: s.sort_order,
@@ -208,6 +220,8 @@ export async function getPlanStops(planId) {
     category: s.category,
     requestId: s.request_id,
     state: s.stop_state,
+    bookingMode: partners.get(s.partner_id)?.booking_mode ?? null,
+    partnerAttributes: partners.get(s.partner_id)?.attributes ?? null,
   }));
 }
 
@@ -251,12 +265,13 @@ export function experienceStopFromItem(component, item) {
 
 // Where a stop continues: the same existing flow tapping that supply anywhere else already opens.
 export function navigateToExperienceStop(navigation, stop, { partySize = null, nightDate = null } = {}) {
-  if (stop.stopType === 'gathering') {
+  const destination = experienceStopDestination(stop);
+  if (destination === 'gathering') {
     navigation.navigate('GatheringDetail', { gatheringId: stop.refId });
     return;
   }
   // Already requested: go see where it stands rather than asking twice.
-  if (stop.requestId && stop.state && stop.state !== 'chosen' && stop.state !== 'cancelled') {
+  if (destination === 'request') {
     navigation.navigate('BusinessRequestDetail', { requestId: stop.requestId });
     return;
   }
