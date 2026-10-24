@@ -144,6 +144,10 @@ as host, open Edit, change ONLY the time, Save: "This time is booked" explains w
 the booked card still shows the original time. Then change only the description, Save: it saves. Record the wording on screen (the
 string is machine-authored outside English; native review is separate). No late-arrival flow exists or is to be tested (LOCKED).
 
+Expired invite watch (owner idea "392", 2026-10-24; PASS/FAIL; needs an invitation to a gathering whose start has passed): Activity shows
+"Invitation expired" / "{title} · {date} • Past" with only Dismiss (no Accept / Decline); Dismiss clears the row only (the gathering and
+the inviter see no decline); the Activity badge does not count it.
+
 Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's checklist; only when the forecast really brings
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
 scroll past? Report the reaction only; no weather UI change before this.
