@@ -186,6 +186,18 @@ business replies (or declines): change the time again: "Businesses have replied"
 other edits still save with the original time. (d) a standalone ask with a day + time ~10 min away: after that time the request reads
 closed. Record the wording on screen (the 2 new strings are machine-authored outside English; native review is separate).
 
+Ask again watch (owner idea "395", 2026-10-24; PASS/FAIL; seeded test business; follows the request deadline watch's (d)): (a) the
+expired request from (d) (its stated day + time passed): the expired line shows "Ask again for tomorrow", NOT "Reopen Request". (b) an
+expired request whose day/time is still ahead (or no day): "Reopen Request" is still there and works. (c) tap "Ask again for tomorrow":
+the existing request form opens (no new screen) with the original activity, party size and preferences filled in, Tomorrow selected,
+and the original clock time shown in the Time field and correct for tomorrow; words that named a day ("tonight") are NOT carried
+(the box is empty and asks again). (d) nothing is sent until they tap Send ("Ask Nearby Businesses"); Send shows a NEW "We asked N"
+and a new request screen; the old request stays expired; no push about the old request. (e) form clarity (USABILITY, ask the person):
+"Are you sending a new request or reopening the old one?" Record the answer verbatim. (f) a gathering's expired request whose
+gathering started: no Reopen and no Ask again button (rescheduling the gathering is the path); a match / community / group-plan /
+add-on request whose time passed: no Ask again. `ui.requestDetail.askAgainTomorrow`: 10 machine-authored languages, native review
+pending (separate).
+
 Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's checklist; only when the forecast really brings
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
 scroll past? Report the reaction only; no weather UI change before this.

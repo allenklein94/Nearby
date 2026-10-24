@@ -20,6 +20,9 @@
   journey `requestAskAgain` 4/4 on prod (rolled back: refusal sentence = the client's matcher, nothing changed; ahead/no-day reopen;
   started gathering refused; ask again = new untargeted request, own count, deadline tomorrow 19:00 NY, old left expired);
   prod journeys 688/688. NOT DEVICE-VERIFIED: the button swap and the prefilled form on a phone.
+- ACCEPTED AS BUILT, CLOSED, LOCKED (owner, 2026-10-24): no further changes unless phone testing finds a defect; added to the
+  first-phone run order as "Ask again watch" (a)-(f): button swap, Reopen kept when ahead, prefilled form + Tomorrow + clock time,
+  Send = new "We asked N", new-vs-reopen clarity question, exclusions. Native review of the 10 machine-authored strings pending.
 
 # Migration 20270345 (ledger) DEPLOYED to production through deploy.js (owner approved version 20270345 + sha256 b6962ed4…, commit 8d0278c6, 2026-10-24)
 
