@@ -1,3 +1,21 @@
+# Item 53 card destination: Plans > Past, "See past plans" (owner, 2026-10-24)
+
+- Owner approved the 2026-10-24 assessment: Home's "N plans this month" recap card opens Plans on the Past tab
+  (`navigation.navigate('Plans', { initialTab: 'past' })` in `HomeScreen.js`; PlansScreen already reads `initialTab`). Link
+  `ui.home.viewActivity` "View your activity →" replaced by `ui.home.seePastPlans` "See past plans →"; `plansThisMonthA11y` reworded
+  to "... See past plans" (11 languages; 10 machine-authored, native review pending). Old key removed (no other reader).
+- Kept: the count (only plans that happened, `get_my_plans_this_month`), CountRoll, Home moment budget. Past may show earlier
+  months too (most recent first): accepted, no monthly filter. DECLINED: This Week screen, new Activity section, duplicate history.
+  Activity's jobs and navigation unchanged; Momentum still reachable from Profile.
+- Tests: new `src/navigation/plansThisMonthNav.test.js` (reads the card's real navigate call; drives the real StackRouter + TabRouter:
+  Plans on top with `initialTab: 'past'`, Home route object identical underneath, Back pops to the same Home with its params and tab);
+  `plansThisMonth.test.js` wiring updated; `undefinedNames.test.js` now also skips `*.live.js` (Jest-global live checks).
+  Full Jest: 502/503 suites pass; the one failure, `services/bestPickRanking.test.js` (2 tests), is PRE-EXISTING and unrelated:
+  it builds a gathering at `Date.now() + 1 h` without freezing the clock, so after ~23:00 UTC the gathering falls on tomorrow
+  and loses its today score (fails identically on the clean tree). Not fixed (owner: no other changes); fix = freeze the clock.
+- Recorded: the owner's phone runs a build older than 2026-10-12 (showed the retired weekly recap); it must be rebuilt before
+  the first real-phone session. No migration, no device run.
+
 # Idea "397" follow-up: approved as built; signed-in real-API Plans read built, not yet run (owner, 2026-10-24)
 
 - Owner: approved as built; two requirements before Plans counts as production-verified: (1) the corrected Plans query through the

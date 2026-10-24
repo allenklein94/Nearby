@@ -2978,7 +2978,7 @@ export default function HomeScreen({ navigation }) {
         {showPlansThisMonth(plansMonth?.count) && (
           <TouchableOpacity
             style={styles.recapCard}
-            onPress={() => navigation.navigate('Momentum', { source: 'home_plans_this_month' })}
+            onPress={() => navigation.navigate('Plans', { initialTab: 'past' })}
             accessibilityLabel={t('ui.home.plansThisMonthA11y', { count: plansMonth.count })}
             accessibilityRole="button"
           >
@@ -2991,7 +2991,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.recapSummary}>{t('ui.home.plansThisMonth', { count: plansMonth.count })}</Text>
               </CountRoll>
             </View>
-            <Text style={styles.recapLink}>{t('ui.home.viewActivity')}</Text>
+            <Text style={styles.recapLink}>{t('ui.home.seePastPlans')}</Text>
           </TouchableOpacity>
         )}
 

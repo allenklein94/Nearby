@@ -23,7 +23,7 @@ const GLOBALS = new Set([
 const walk = (d, out = []) => {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {
     const p = path.join(d, e.name);
-    if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p, out); } else if (/\.js$/.test(e.name) && !/\.(test|journey)\.js$/.test(e.name)) out.push(p); // tests and journeys run under Jest's globals
+    if (e.isDirectory()) { if (e.name !== 'node_modules') walk(p, out); } else if (/\.js$/.test(e.name) && !/\.(test|journey|live)\.js$/.test(e.name)) out.push(p); // tests, journeys and live checks run under Jest's globals
   }
   return out;
 };

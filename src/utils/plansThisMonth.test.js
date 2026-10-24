@@ -78,10 +78,11 @@ describe('takePlansThisMonthMoment: the figure rolls up once, for a newly comple
 
 describe('Home wiring', () => {
   const home = fs.readFileSync(path.join(__dirname, '../screens/HomeScreen.js'), 'utf8');
-  it('the line replaces the weekly recap, shows only at 1+, opens Your Activity, and rolls with the shared CountRoll', () => {
+  it('the line replaces the weekly recap, shows only at 1+, opens Plans on Past (owner 2026-10-24; was Your Activity), and rolls with the shared CountRoll', () => {
     expect(home).not.toMatch(/weeklyRecap|formatWeeklyRecap|weekRecapA11y/);
     expect(home).toMatch(/showPlansThisMonth\(plansMonth\?\.count\) &&/);
-    expect(home).toMatch(/navigation\.navigate\('Momentum', \{ source: 'home_plans_this_month' \}\)/);
+    expect(home).toMatch(/navigation\.navigate\('Plans', \{ initialTab: 'past' \}\)/);
+    expect(home).not.toMatch(/home_plans_this_month/);
     expect(home).toMatch(/<CountRoll\s+key=\{`plansMonth:\$\{plansMonth\.rollKey\}`\}\s+play=\{homeMoments\.plansThisMonth\}/);
     expect(home).toMatch(/takePlansThisMonthMoment\(\{ userId: myId, keys \}, AsyncStorage\)/);
   });
