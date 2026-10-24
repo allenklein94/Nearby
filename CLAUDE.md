@@ -1051,7 +1051,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   decided by `get_my_plans_this_month` (attended + over + checked in or answered "How was it?", or an offer visit completed; one plan once;
   hosting/RSVP/Interested never) over the device's local month; shown at >= 1 only; rolls once via `CountRoll` for a new plan key
   (`utils/plansThisMonth.js`). The streak push is RETIRED (never nudge a streak; guard `streakNudgeRetired.test.js`); the streak on
-  Your Activity stays until the Momentum fold decision.
+  Your Progress (was "Your Activity") stays until the Momentum fold decision.
 - **Noticed activity (owner item 54, LOCKED wording):** under Picked For You, "N You've been into {X and Y} lately. See what Nearby
   noticed →" (Settings > What Nearby has noticed). Behavior wording only (item 60 stands: never "you like"/"seem to enjoy"); only
   specific canonical categories, never groups or made-up combinations; max 2. ONE rule `get_my_noticed_categories`: 2+ separate
