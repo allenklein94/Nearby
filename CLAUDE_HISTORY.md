@@ -1,3 +1,17 @@
+# Idea 378 assessed (owner, 2026-10-24), nothing built
+
+**Idea "378" (Best Pick Tonight: primary Join, secondary Interested, overflow Invite, card tap = View details) PARTLY MET, the rest
+DECLINED under existing locks, ASSESSED, owner decision pending; same proposal as idea "271" (2026-10-18, assessed, never formally
+decided), so one decision closes both.** Met (code reading, `HomeScreen.js` hero): the card tap already opens GatheringDetail plainly
+(`openDestination(heroCard.destination)`, no join step); the one button is the state-aware action from `primaryActionFor` (Join /
+Request to Join / Join Waitlist / I'm Going, or the status + View Plan), and since idea "376" its tap opens the join step ready. Recommend
+DECLINE: (1) Interested beside Join: item 200 (LOCKED) removed exactly this (one explicit action per card; Interested is the primary only
+on low-commitment rows, item 37) and Interested stays on GatheringDetail, one tap away; (2) Invite in an overflow: the one ⋯ exception
+(idea "153", "Not interested") is LOCKED as never on Best Pick, and Best Pick is static (items 111/112); invites live on GatheringDetail
+(`InviteFriendsModal`, idea "360") and item 39's "{Name} is nearby · Invite" stays the only Home invite. Adding either would reopen item
+200 + idea "153" and add a second/third decision to Home's single hero. No code or test added. Phone watch = check C9 (hero action
+readable; tap reaches the join step; body opens details).
+
 # Idea 377 closed (owner, 2026-10-24), nothing built
 
 **Owner decision: idea "377" CLOSED and LOCKED as met by the existing implementation; no code changes.** Phone check added to the run
