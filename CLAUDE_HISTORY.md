@@ -1,3 +1,11 @@
+# Idea 381 closed (owner, 2026-10-24), nothing built
+
+**Owner decision: idea "381" CLOSED and LOCKED as met by the existing architecture; no code or new rules.** Kept: states belong to
+objects, never separate screens or folders; Plans stays the unified destination for gathering states (no Saved, Interested, Requested
+or Going screens); the screen registry (Rule 14) and progressive-disclosure rules (item 45) stand: a new screen only for a genuinely
+distinct purpose an existing screen can't handle clearly. No further screen reduction solely to lower the count (87 -> 73 is not the
+measure; task completion is): clarity, usability and task completion in the first real-phone session come first.
+
 # Idea 381 assessed (owner, 2026-10-24), nothing built
 
 **Idea "381" ("fewer concepts = fewer screens: a hidden benefit of simplifying the product model") MET AS DOCTRINE + BUILT, ASSESSED,
