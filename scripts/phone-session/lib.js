@@ -212,13 +212,20 @@ begin
     -- written as already accepted, so the real account gets no "wants to be friends" push for a request it never saw;
     -- then the chat row exactly as the accept trigger (create_match_on_friendship_accepted) makes it
     insert into friendships (id, user_a, user_b, status, requested_by) values (${idSql('friendship/sam')}, ${idSql('person/sam')}, v_friend, 'accepted', ${idSql('person/sam')});
-    insert into matches (user_a, user_b, source_friendship_id)
-      values (least(${idSql('person/sam')}, v_friend), greatest(${idSql('person/sam')}, v_friend), ${idSql('friendship/sam')})
+    -- reminder_sent_at set: send_match_reminders (hourly) would otherwise push "Say hi to Sam (test)!" to the real account after 24 h
+    insert into matches (user_a, user_b, source_friendship_id, reminder_sent_at)
+      values (least(${idSql('person/sam')}, v_friend), greatest(${idSql('person/sam')}, v_friend), ${idSql('friendship/sam')}, now())
       on conflict (user_a, user_b) do update set source_friendship_id = excluded.source_friendship_id where matches.source_friendship_id is null;
     created := created || jsonb_build_array('friendship/sam');
   elsif v_fs <> ${idSql('friendship/sam')} then
     raise exception 'that account already has a friendship row with Sam (test) that the seed did not make; refusing';
   end if;` : ''}
+  -- Hard guard (owner, 2026-10-24): the seed may notify only test people. Any push it queued for a real account (e.g. the
+  -- "This matches you" push to an account whose location was reported < 1 h ago) aborts the whole seed: nothing is written.
+  if exists (select 1 from push_outbox where created_at >= now() and recipient_id not in (${PEOPLE.map((p) => idSql(p.key)).join(',')})) then
+    raise exception 'PHONE_SESSION_PUSH_GUARD the seed would notify a real account (%): nothing written; retry when no real account is a nearby-push target (presence < 1 h or app opened < 48 h, push_target_areas), or turn off its discovery notifications',
+      (select string_agg(distinct recipient_id::text || ': ' || title, '; ') from push_outbox where created_at >= now() and recipient_id not in (${PEOPLE.map((p) => idSql(p.key)).join(',')}));
+  end if;
   perform set_config('phone_session.created', created::text, false);
   perform set_config('phone_session.skipped', skipped::text, false);
 end $seed$;
@@ -285,6 +292,11 @@ begin
     get diagnostics k = row_count;
     if k > 0 then swept := swept || jsonb_build_object(r.table_schema || '.' || r.table_name || '.' || r.column_name, k); end if;
   end loop;
+  -- notifications to REAL accounts about test objects (the id sits inside the push's data, not a uuid column), so the real
+  -- accounts' notification history returns to its pre-seed state too
+  delete from push_outbox where jsonb_typeof(data) = 'object' and exists (select 1 from jsonb_each_text(coalesce(data, '{}'::jsonb)) e where e.value = any(ids::text[]));
+  get diagnostics k = row_count;
+  if k > 0 then swept := swept || jsonb_build_object('public.push_outbox.data', k); end if;
 
   for r in select cnt, tbl from _ps_before loop
     execute format('select count(*) from %s', r.tbl) into k;
