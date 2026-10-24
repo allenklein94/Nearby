@@ -188,6 +188,9 @@ you booked anything yet?" Needs a seeded business with a declared booking mode; 
 wrong prediction that changes what they do (expecting an instant booking and leaving, or thinking they're booked before a reply);
 one hesitation that the next screen clears is not. Evidence = USABILITY with the label, both answers and the screen; the fix is a
 wording proposal in the shared table (`primaryAction.js` / `i18n/ui/actions.js`) for owner approval, never a change without it.
+Connect vs Add Friend (owner, idea "382", 2026-10-24; same watch): when they meet Connect (friend discovery) and Add Friend (a
+profile), ask "What's the difference between those two?" Connect = friends only if both connect; Add Friend = a request they accept.
+Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.
 Record their words verbatim where they hesitate. Their results go in the same lists, marked "B".
 
 ## Record sheet

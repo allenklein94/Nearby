@@ -1,3 +1,12 @@
+# Idea 382 closed (owner, 2026-10-24), nothing built
+
+**Owner decision: idea "382" CLOSED and LOCKED as met; Attend and Accept renames DECLINED.** Principle: consistent actions, not
+identical verbs for different actions. Vocabulary kept: Join (+ state forms) for gathering participation; I'll take this one for a
+customer choosing a business offer; Connect for mutual friend discovery; Add Friend for a direct friend request; Invite for gathering
+invitations; Ask for asking businesses; Create for creating a gathering. Wording stays centralized in `primaryActionFor` where it
+applies; no competing verbs for one action, no locked wording renamed. Run order: idea "377"'s Button watch gains a Connect vs Add
+Friend question; confusion = USABILITY, fixed with contextual explanation before any rename is considered.
+
 # Idea 382 assessed (owner, 2026-10-24), nothing built
 
 **Idea "382" ("one universal action language: Discover = Join, Gathering = Attend, Business offer = Accept, Person = Connect / Invite,
