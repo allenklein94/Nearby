@@ -24,7 +24,7 @@ describe('the Gatherings feed is folded into Discover', () => {
   test('every former entry opens Discover -> Gatherings through the one params builder', () => {
     expect(read('screens/HomeScreen.js')).toMatch(/navigateKeepingTrail\(navigation, 'Discover', gatheringsTabParams\(\{/);
     expect(read('utils/homeQuiet.js')).toMatch(/screen: 'Discover', params: gatheringsTabParams\(\{ when: 'today' \}\)/);
-    expect(read('screens/MomentumScreen.js')).toMatch(/navigateKeepingTrail\(navigation, 'Discover', gatheringsTabParams\(\)\)/);
+    expect(read('components/YourProgressDetails.js')).toMatch(/navigateKeepingTrail\(navigation, 'Discover', gatheringsTabParams\(\)\)/);
     expect(read('components/GatheringFeedbackInline.js')).toMatch(/navigateKeepingTrail\(navigation, 'Discover', gatheringsTabParams\(\)\)/);
   });
   test.each(['gathering_cancelled', 'first_mission_reminder', 'gathering_interest', 'gathering_reminder'])(

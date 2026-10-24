@@ -58,7 +58,7 @@ describe('the streak push is retired (item 53)', () => {
   });
 
   it('the streak display on Your Progress is kept as it was', () => {
-    const screen = fs.readFileSync(path.join(root, 'src/screens/MomentumScreen.js'), 'utf8');
+    const screen = fs.readFileSync(path.join(root, 'src/components/YourProgressDetails.js'), 'utf8'); // Profile's Your Progress (was the Momentum screen)
     expect(screen).toMatch(/momentum\.currentStreak/);
   });
 });

@@ -61,7 +61,7 @@ describe('rule 14: every navigable screen has a reason to exist', () => {
     for (const r of [...Object.keys(RULE14_DECISIONS.trimmed), ...RULE14_DECISIONS.borderlineKeep]) {
       expect(registered.has(r)).toBe(true);
     }
-    expect(SCREEN_REGISTRY.Momentum.borderline).toBe(true);
+    expect(SCREEN_REGISTRY.Momentum).toBeUndefined(); // folded into Profile's Your Progress (owner 2026-10-24)
     expect(SCREEN_REGISTRY.MarketValidation).toBeTruthy(); // admin screens are covered too
   });
 

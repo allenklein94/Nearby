@@ -45,10 +45,6 @@ export const SCREEN_REGISTRY = {
   MusicMode: { jobs: ['C'], reason: 'Connect Spotify and pick the tracks shown on your profile.' },
   IdVerification: { jobs: ['C'], reason: 'Submit your ID for verification.' },
   InviteFriends: { jobs: ['C'], reason: 'Invite people to Nearby and track the bonus.' },
-  Momentum: {
-    jobs: ['F'], borderline: true,
-    reason: 'Your streak, weekly chart and month-over-month changes. Borderline KEEP (owner, 2026-10-04): revisit with real usage data; it may belong in Profile.',
-  },
   Billing: { jobs: ['E'], reason: 'Your subscription and payments.' },
   Paywall: { jobs: ['E'], reason: 'Upgrade to premium.' },
   Legal: { jobs: ['F'], reason: 'Terms and privacy policy.' },
@@ -157,10 +153,11 @@ export const RULE14_DECISIONS = {
     Gatherings: 'Discover -> Gatherings with the feed\'s useful filters on that tab, ranked by Discover\'s one ladder (screen-reduction audit B3, 2026-10-09)',
     ChemistryDiaryEntry: 'the add-an-entry composer IN PLACE on ChemistryDiaryList (chat / profile open it with the name; screen-reduction audit B9, 2026-10-09)',
     GoodbyeArchiveEntry: 'the add-a-reflection composer IN PLACE on GoodbyeArchiveList (chat opens it with the name; audit B9)',
+    Momentum: 'Your Progress, expanded in place on Profile (streak, weekly chart, month changes, lifetime stats, achievements; owner 2026-10-24, was "Your Activity")',
     MakeAPlan: 'CreateGathering opened fromBusiness (the business fills place, title, activity; screen-reduction audit B4, 2026-10-08)',
   },
   // Notices was registered as its own surface; it is Activity presented on top for push entry (PRESENTATION_ROUTES).
   presentations: { Notices: 'Activity', FriendDiscovery: 'Discover -> People -> Friends' },
   trimmed: {},
-  borderlineKeep: ['Momentum'],
+  borderlineKeep: [],
 };

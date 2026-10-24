@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const routers = require('@react-navigation/routers');
 
-const ROOT = ['MainTabs', 'Plans', 'Momentum', 'GatheringDetail'];
+const ROOT = ['MainTabs', 'Plans', 'GatheringDetail'];
 const TABS = ['Home', 'Discover', 'Create', 'Activity', 'Profile'];
 const opts = (names) => ({ routeNames: names, routeParamList: {}, routeGetIdList: {} });
 

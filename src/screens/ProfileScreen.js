@@ -1,4 +1,9 @@
 import MyCommunitiesSection from '../components/MyCommunitiesSection';
+import YourProgressDetails from '../components/YourProgressDetails';
+import LoadErrorState from '../components/LoadErrorState';
+import { usePostHog } from 'posthog-react-native';
+import { getMomentumStats } from '../services/momentum';
+import { getInsightsStats } from '../services/insights';
 import React, { useEffect, useRef, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
@@ -24,7 +29,7 @@ import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/business
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
 
-import { modalAnimation, showSuccessToast, animateLayout } from '../motion';
+import { modalAnimation, showSuccessToast, animateLayout, NLoader } from '../motion';
 import { countLabel } from '../utils/plural';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { profileFormSnapshot, isProfileFormDirty, guardProfileLeave } from '../utils/profileEditDirty';
@@ -167,6 +172,14 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const [expandedField, setExpandedField] = useState(null);
   // Your communities open in place under Your connections (screen-reduction audit B8).
   const [showCommunities, setShowCommunities] = useState(false);
+  // Your Progress (owner 2026-10-24) expands in place here; it replaced the separate Momentum / "Your Activity" screen. One inline
+  // expansion at a time (item 31): opening it closes Your communities and vice versa. Its data loads only when it is open.
+  const [progressOpen, setProgressOpen] = useState(false);
+  const [progress, setProgress] = useState({ loading: false, error: false, momentum: null, insights: null });
+  const progressOpenRef = useRef(false);
+  const progressYRef = useRef(0);
+  const scrollYRef = useRef(0);
+  const posthog = usePostHog();
   const [quickStats, setQuickStats] = useState({ communities: 0, friends: 0, upcomingPlans: 0, pastGatherings: 0 });
   const [achievements, setAchievements] = useState([]);
   const [managesBusiness, setManagesBusiness] = useState(false);
@@ -190,8 +203,8 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   useEffect(() => {
     if (editing) load();
     // The summary loads on every focus (first focus included), so changes saved on Edit Profile show the moment the person
-    // comes back so changes saved on Edit Profile show the moment the person comes back.
-    const unsubscribe = editing ? null : navigation.addListener?.('focus', load);
+    // comes back so changes saved on Edit Profile show the moment the person comes back. An open Your Progress refreshes too.
+    const unsubscribe = editing ? null : navigation.addListener?.('focus', () => { load(); if (progressOpenRef.current) loadProgress(); });
     return () => {
       if (unsubscribe) unsubscribe();
       if (recordingIntroTimerRef.current) clearInterval(recordingIntroTimerRef.current);
@@ -244,6 +257,39 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       return () => clearTimeout(timer);
     }
   }, [route?.params?.scrollToInterestsSection]);
+
+  // Same two reads, same calculations as the retired Momentum screen.
+  async function loadProgress() {
+    setProgress((prev) => ({ ...prev, loading: !prev.momentum && !prev.insights, error: false }));
+    try {
+      const [momentum, insights] = await Promise.all([getMomentumStats(), getInsightsStats()]);
+      setProgress({ loading: false, error: false, momentum, insights });
+    } catch (e) {
+      setProgress((prev) => ({ ...prev, loading: false, error: true }));
+    }
+  }
+
+  function setProgressExpanded(open) {
+    progressOpenRef.current = open;
+    setProgressOpen(open);
+    if (open) {
+      setShowCommunities(false);
+      // Audit B11's usage signal kept (owner, 2026-10-09): no personal detail, only that it was opened and from where.
+      posthog?.capture('momentum_viewed', { source: route?.params?.expandProgress ? 'push' : 'profile' });
+      loadProgress();
+    } else if (scrollYRef.current > progressYRef.current) {
+      // Collapsing from inside the details keeps the person at the section, not wherever the shorter page would leave them.
+      scrollRef.current?.scrollTo({ y: progressYRef.current, animated: false });
+    }
+  }
+
+  // A push that used to open the Momentum screen opens Profile with Your Progress expanded and in view.
+  useEffect(() => {
+    if (!route?.params?.expandProgress) return undefined;
+    setProgressExpanded(true);
+    const timer = setTimeout(() => scrollRef.current?.scrollTo({ y: progressYRef.current, animated: true }), 300);
+    return () => clearTimeout(timer);
+  }, [route?.params?.expandProgress]);
 
   async function load() {
     const { data: sessionData } = await supabase.auth.getSession();
@@ -680,7 +726,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }}>
+      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }} onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={64}>
         {!editing && (
           <>
         <View style={styles.header}>
@@ -775,7 +821,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourConnections')}</Text>
         <View style={styles.quickStatsRow}>
-          <TouchableOpacity style={[styles.quickStat, showCommunities && { borderColor: colors.primary }]} onPress={() => setShowCommunities((v) => !v)} accessibilityLabel={countLabel(quickStats.communities, 'community', 'communities')} accessibilityRole="button" accessibilityState={{ expanded: showCommunities }}>
+          <TouchableOpacity style={[styles.quickStat, showCommunities && { borderColor: colors.primary }]} onPress={() => { if (!showCommunities && progressOpenRef.current) setProgressExpanded(false); setShowCommunities((v) => !v); }} accessibilityLabel={countLabel(quickStats.communities, 'community', 'communities')} accessibilityRole="button" accessibilityState={{ expanded: showCommunities }}>
             <Text style={styles.quickStatNumber}>{quickStats.communities}</Text>
             <Text style={styles.quickStatLabel}>{t('ui.profile.communities')}</Text>
           </TouchableOpacity>
@@ -847,26 +893,28 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.yourStory')}</Text>
         {/* One-line subtitle per row. "Your Rewards" was folded into Discover -> Perks as a tier line (rule 14,
             2026-10-04); the perk tier is context for Perks, not a destination of its own. */}
-        {/* Rule 14 (2026-10-04): the read-only Timeline screen is removed (past gatherings live in Plans -> Past, activity
-            in Momentum). Its one fact worth keeping is this quiet, non-interactive line, from profiles.created_at. */}
+        {/* Rule 14 (2026-10-04): the read-only Timeline screen is removed (past gatherings live in Plans -> Past, progress
+            in Your Progress below). Its one fact worth keeping is this quiet, non-interactive line, from profiles.created_at. */}
         {joinedLabel && <Text style={styles.joinedLine}>{t('ui.profile.joinedNearbyOn', { date: joinedLabel })}</Text>}
-        {/* Convergence pass P2 (CLAUDE.md): "Your Insights" and "Your
-            Momentum" were two separate rows both answering "how am I
-            doing?" -- merged into one destination (still the Momentum
-            route/screen underneath, now covering both). */}
-        <TouchableOpacity
-          style={styles.timelineLink}
-          onPress={() => navigation.navigate('Momentum', { source: 'profile' })}
-          activeOpacity={0.85}
-          accessibilityLabel={t('ui.profile.viewYourProgressA11y')}
-          accessibilityRole="button"
-        >
-          <View style={styles.timelineLinkTextCol}>
-            <Text style={styles.timelineLinkText}>{t('ui.profile.yourProgress')}</Text>
-            <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.yourWeeklyStreakAndSocial')}</Text>
-          </View>
-          <Text style={styles.timelineLinkChevron}>›</Text>
-        </TouchableOpacity>
+        {/* Your Progress (owner 2026-10-24): expands in place instead of opening the retired Momentum / "Your Activity" screen.
+            Collapsed = the vibe/usually-active row + earned badges; expanded = the same row + every detail that screen had, whose
+            full achievements grid (earned and not yet) replaces the earned-only one (replaces, never stacks: item 31). */}
+        <View onLayout={(e) => { progressYRef.current = e.nativeEvent.layout.y; }}>
+          <TouchableOpacity
+            style={styles.timelineLink}
+            onPress={() => setProgressExpanded(!progressOpen)}
+            activeOpacity={0.85}
+            accessibilityLabel={t('ui.profile.viewYourProgressA11y')}
+            accessibilityRole="button"
+            accessibilityState={{ expanded: progressOpen }}
+          >
+            <View style={styles.timelineLinkTextCol}>
+              <Text style={styles.timelineLinkText}>{t('ui.profile.yourProgress')}</Text>
+              <Text style={styles.timelineLinkSubtitle}>{t('ui.profile.yourWeeklyStreakAndSocial')}</Text>
+            </View>
+            <Text style={styles.timelineLinkChevron}>{progressOpen ? '⌃' : '⌄'}</Text>
+          </TouchableOpacity>
+        </View>
         {(earnedStats.favoriteVibe || earnedStats.usuallyActive) && (
           <View style={styles.earnedStatsRow}>
             {earnedStats.favoriteVibe && (
@@ -883,7 +931,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
             )}
           </View>
         )}
-        {achievements.some((a) => a.earned) && (
+        {!progressOpen && achievements.some((a) => a.earned) && (
           <>
             <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.achievements')}</Text>
             <View style={styles.achievementsGrid}>
@@ -895,6 +943,26 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
               ))}
             </View>
           </>
+        )}
+
+        {progressOpen && (
+          progress.loading ? (
+            <View style={{ paddingVertical: spacing.lg }}>
+              <NLoader fullScreen={false} />
+              <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.momentum.loadingYourProgress')}</Text>
+            </View>
+          ) : progress.error ? (
+            <LoadErrorState message={t('ui.momentum.couldntLoadYourProgress')} onRetry={loadProgress} />
+          ) : !progress.momentum && !progress.insights ? (
+            <Text style={{ color: colors.textTertiary, fontSize: 13, textAlign: 'center', lineHeight: 19 }}>{t('ui.momentum.signInToSeeYourProgress')}</Text>
+          ) : (
+            <YourProgressDetails
+              momentum={progress.momentum}
+              insights={progress.insights}
+              navigation={navigation}
+              onCtaPress={() => posthog?.capture('momentum_cta_tapped', { source: 'profile' })}
+            />
+          )
         )}
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.profile.business')}</Text>

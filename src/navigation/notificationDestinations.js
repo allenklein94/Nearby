@@ -282,7 +282,8 @@ export async function notificationDestination(data, { lookupAvailability = async
       }
       break;
     case 'momentum_streak_nudge':
-      return to('Momentum', { source: 'push' });
+      // Retired push (item 53); an old one still opens Your Progress, now expanded in place on Profile (owner 2026-10-24).
+      return to('MainTabs', { screen: 'Profile', params: { expandProgress: true } });
       break;
     case 'reward_tier_nudge':
       // Rule 14: the perk tier is a line at the top of Discover -> Perks (the Rewards screen was folded in there).

@@ -56,7 +56,7 @@ function monthDayText(d, { short = false } = {}) {
 
 // Real, honest display text -- never more precise than what's actually
 // known. `short` matches the compact "month day" convention already used
-// for date chips elsewhere in this app (MomentumScreen.js/
+// for date chips elsewhere in this app (YourProgressDetails.js/
 // MakeAPlanScreen.js/ViewProfileScreen.js's own formatOccasionShortDate).
 // `language` other than English: the same decision, worded by ui.occasions.date.* with the language's month names.
 export function formatOccasionDateForPrecision(precision, occasionDateStr, { short = false, language = DEFAULT_LANGUAGE } = {}) {

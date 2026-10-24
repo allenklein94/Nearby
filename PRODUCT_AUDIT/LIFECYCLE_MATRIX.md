@@ -233,7 +233,7 @@ The business's view of the same offer row: Allowed actions and Animation are tha
 | match_reminder | Chat | low | dating |
 | memory_addition | Chat | low | dating |
 | message | Chat | high | messages |
-| momentum_streak_nudge (retired: never sent) | Momentum | low | discover_recommendations |
+| momentum_streak_nudge (retired: never sent) | Profile tab | low | discover_recommendations |
 | new_match | Chat | medium | dating |
 | new_story | ViewProfile | low | friends_activity |
 | occasion_group_plan_cancelled | GroupOccasionPlan | high | plans_changes |

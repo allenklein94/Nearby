@@ -405,7 +405,7 @@ describe('the audit: every push type has one registered destination', () => {
       const d = await notificationDestination({ type, ...full });
       if (d) { expect(registered.has(d.name)).toBe(true); seen.add(d.name); }
     }
-    expect(seen.size).toBeGreaterThanOrEqual(20);
+    expect(seen.size).toBeGreaterThanOrEqual(19); // 20 until the Momentum screen folded into Profile (owner 2026-10-24)
   });
   test('tab-switching pushes each open their one home; nothing falls back to a generic Discover', () => {
     expect((dest.match(/to\('MainTabs', \{ screen: 'Home' \}\)/g) ?? []).length).toBe(2);

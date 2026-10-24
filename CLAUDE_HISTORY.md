@@ -1,3 +1,28 @@
+# Your Progress folded into Profile; Momentum screen removed (owner, 2026-10-24)
+
+- Owner changed the decision the same day as the rename: consolidate now, not after usage evidence. The Momentum fold entry is
+  removed from "Waiting on evidence".
+- Built: `src/components/YourProgressDetails.js` = MomentumScreen's body moved verbatim (helpers, JSX, styles), minus the
+  vibe/usually-active row and the member-since subtitle (Profile already shows both: no duplicates). ProfileScreen: the "Your
+  Progress" link row became an in-place toggle (chevron ⌄/⌃, `accessibilityState.expanded`; no new strings, the "expand and edit"
+  hint was not reused because it says edit); details load lazily on open via the same `getMomentumStats` + `getInsightsStats`,
+  re-read on focus while open; loading (NLoader + `loadingYourProgress`), error (`LoadErrorState` + Try Again), signed out.
+  Earned-only badges hidden while open (the details' full grid replaces them, item 31). One expansion: opening it closes Your
+  communities and opening communities closes it. Scroll: Profile tracks its offset (`onScroll`, throttle 64) and the section's y
+  (`onLayout`); collapsing while scrolled past the section jumps (no animation) back to it, otherwise nothing moves.
+  `expandProgress` route param opens it and scrolls to it (used by the retired `momentum_streak_nudge`, now
+  `to('MainTabs', { screen: 'Profile', params: { expandProgress: true } })`). PostHog `momentum_viewed` (source profile / push) on
+  open and `momentum_cta_tapped` (source profile) kept.
+- Removed: `src/screens/MomentumScreen.js`, its RootNavigator route, its registry entry (now `RULE14_DECISIONS.folded.Momentum`,
+  `borderlineKeep` empty), `ui.nav.title.momentum` (nav.js + nav.json, 11 languages). i18n coverage list points at the component.
+- Tests: new `src/screens/yourProgressInProfile.test.js` (14: screen/route/registry gone, nothing navigates to it, push lands on
+  Profile expanded through the real TabRouter, toggle in place + a11y state, same reads, every detail present, no duplicates, one
+  expansion, scroll kept on collapse, no animation, analytics); updated screenRegistry, notificationActions, returnTrail (tab
+  pushes 7 -> 8), pushNavigationContract (distinct destinations >= 19), profileTab (focus listener), gatheringsFeedFolded,
+  streakNudgeRetired, plansThisMonthNav, yourProgressRename; LIFECYCLE_MATRIX regenerated (streak push -> Profile tab).
+  Full Jest 504/505 suites (only the pre-existing clock-dependent `services/bestPickRanking.test.js`); journeys 62/62 suites,
+  693/693 on prod (rolled back; no server change). No migration, no device run.
+
 # "Your Activity" renamed "Your Progress" (owner, 2026-10-24)
 
 - Assessed: Notifications is not a separate concept (no screen; push entry "Notices" = Activity tab on top); the overlap was the

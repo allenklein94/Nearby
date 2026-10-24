@@ -187,7 +187,9 @@ describe('never traps, never duplicates', () => {
     expect(top).toMatch(/if \(name === TAB_HOST\) beginTrail/);
     const n = fs.readFileSync(path.join(__dirname, 'notificationDestinations.js'), 'utf8');
     // The availability fallback to Discover was removed (item 139 audit): a gone posting opens its business instead.
-    expect((n.match(/to\('MainTabs'/g) ?? []).length).toBe(7);
+    // + the retired streak push, which opens the Profile tab with Your Progress expanded (owner 2026-10-24; was the Momentum screen).
+    expect((n.match(/to\('MainTabs'/g) ?? []).length).toBe(8);
+    expect(n.match(/screen: 'Profile', params: \{ expandProgress: true \}/g)).toHaveLength(1);
     // Two Discover pushes, each to its one home, never a generic fallback: the perk-tier nudge (rule 14: the tier lives on
     // Perks) and a cancelled community's "Find something else" (Discover -> Communities, screen-reduction audit B8).
     // Plus the three gathering-browse pushes, which open Discover -> Gatherings (screen-reduction audit B3).
