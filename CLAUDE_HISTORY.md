@@ -1,3 +1,15 @@
+# Idea 384 assessed (owner, 2026-10-24), nothing built
+
+**Idea "384": buttons that describe their action help screen readers ("Send request to Coastal Coffee", not "Continue").** Met for the
+shared CTAs (`primaryActionFor` labels are read as shown) and item 383's plan stop links (action + stop title); sequence Continue/Next
+kept (idea "383"). DEFECT found by code reading in `AskBusinessScreen.js`'s submit button: visible text = "Ask {name}" only when
+`gatheringId && targetPartner`, otherwise "Ask Nearby Businesses", so a Reserve / Book / Request to ONE business (heading "Book with
+{name}", subtitle "Only {name} will see this") ends on "Ask Nearby Businesses"; its `accessibilityLabel` is fixed at
+`ui.askBusiness.askNearbyBusinessesA11y`, so VoiceOver/TalkBack say "Ask nearby businesses" even over a visible "Ask {name}". Proposed
+narrow fix, NOT built: one helper for the submit label (one business = existing `ui.askBusiness.ask`, else `askNearbyBusinesses`),
+screen-reader label = the visible text, guard test; no new strings, screens or motion. `matchedAvailability` (plan stop) kept as is
+until server routing of `preferredAvailabilityId` is confirmed to reach only that business.
+
 # Idea 383 closed (owner, 2026-10-24): plan stop link fix BUILT, NOT DEVICE-VERIFIED
 
 **Owner approved the narrow fix; idea "383" CLOSED and LOCKED.** Continue / Next stay where they advance a clearly defined sequence.
