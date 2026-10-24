@@ -1,4 +1,34 @@
-# Idea "394" request deadlines (owner approved all three fixes, 2026-10-24): BUILT + TESTED, NOT APPLIED (awaiting owner approval)
+# Migration 20270344 found already live; deployment record gap (2026-10-24)
+
+Owner approved applying 20270344. The pre-apply check in a new session found production NOT in the pre-migration state: the 3 new
+functions + 2 new triggers present, the 7 replaced functions differing from the rollback's captured baseline. Comparison (migration
+applied in a rolled-back transaction vs live): all 11 functions (bodies + grants) and both triggers IDENTICAL to the migration's result.
+Owner chose: accept as live, no rollback / re-apply.
+Cause (established afterwards from the earlier session's local transcript `dc024208…`, not guessed): that session received the SAME
+owner approval at 12:55:41 UTC, passed its own pre-apply check (baseline bodies, nothing from 20270344 present, rows snapshotted),
+applied the file to production as one query at 12:56:09 UTC, verified the 7 bodies byte-equal at 12:56:42, and was cut off at
+12:56:46 while starting the journeys (its last record is a tool call with no result; the codespace is restart-prone). It never wrote
+the "applied" record, so the history said NOT APPLIED and the approval reached this session again. The apply was therefore under
+explicit approval; the gap is the missing deployment record, not an unapproved change. The production logs API could not confirm the
+time from the server side (endpoint returns "Table postgres_logs does not exist"; `log_statement = ddl` is on, so the Dashboard Logs
+Explorer should show it).
+Investigation + proposed safeguards (ledger + approval gate): `PRODUCT_AUDIT/MIGRATION_DEPLOYMENT_RECORD_GAP_2026-10-24.md`,
+awaiting owner approval, nothing built.
+
+# Idea "394" request deadlines (owner approved all three fixes, 2026-10-24): LIVE (applied 2026-10-24 12:56:09 UTC), VERIFIED, CLOSED, LOCKED, NOT DEVICE-VERIFIED
+
+Post-deployment verification (this session, 2026-10-24): live = migration result (11 functions incl. grants, 2 triggers); prod
+journeys 684/684 with NO prelude (rolled back), incl. `requestDeadlines` 8/8 (F1 exact start at 1 ms + nothing once started on both
+paths; F2 unanswered request follows the new day/local time/deadline/plan, offer / decline / held reply refuse, cancel then move, Reopen
+takes the current time; F3 stated time = deadline, passed or exactly now refused, no stated time = old rule; past-deadline replies
+refused before the sweep); 10 tables fingerprinted before and after verification (gatherings 26, gathering_interest 5, plans 27,
+push_outbox 1, domain_events 1, social_invites 1, business_requests / offers / reservations / availability 0): byte-identical, and the
+same counts + hashes as the earlier session's pre-apply snapshot (no existing booking, offer or capacity record was or could be moved:
+none exist). Function set + grants identical before/after verification. Lifecycle matrix regenerated: no change from the migration
+(client-derived); its transition-target flag now names journeys `lifecycleEnforcement` + `requestDeadlines` (`src/qa/lifecycleMatrix.js`,
+guard 6/6). Phone check: run order "Request deadline watch". Native review: `ui.gatheringForm.edit.requestReplied` / `requestRepliedBody`.
+
+Build record (as written before the apply):
 
 Migration `20270344_request_deadlines_follow_gathering.sql` (7 live functions replaced from their production bodies by counted exact
 edits, same signatures + grants; 3 new functions, 2 new triggers; rollback `scripts/rollback/20270344_...rollback.sql`).

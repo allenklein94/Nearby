@@ -153,6 +153,14 @@ request screen open across the end: "I'll take this one" disappears at that minu
 offer has expired"; repeat with the app in the background across the end, then reopen: already updated. If a tap lands right at the
 end: the message says the offer expired, no Try Again.
 
+Request deadline watch (owner idea "394", 2026-10-24, migration 20270344; PASS/FAIL; seeded test business): (a) host a gathering
+starting in ~20 min, ask nearby businesses from it: the request is sent (no "already passed"); after the start, the request reads closed
+and "Ask" from the gathering refuses with "That time window has already passed.", no Try Again. (b) a gathering with a request no
+business has answered: Edit, change ONLY the time, Save: it saves and the request screen shows the new day/time. (c) after the test
+business replies (or declines): change the time again: "Businesses have replied" + body (cancel the request first), no Try Again, the
+other edits still save with the original time. (d) a standalone ask with a day + time ~10 min away: after that time the request reads
+closed. Record the wording on screen (the 2 new strings are machine-authored outside English; native review is separate).
+
 Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's checklist; only when the forecast really brings
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
 scroll past? Report the reaction only; no weather UI change before this.
