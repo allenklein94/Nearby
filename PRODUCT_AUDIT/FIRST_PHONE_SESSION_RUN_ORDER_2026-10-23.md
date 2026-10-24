@@ -232,6 +232,14 @@ Interested sharing checks (owner, idea "356", 2026-10-23; migration 20270340; re
 4. As host (= the host watch line above): Interested and Attending read as different numbers; no interested person's name, photo
    or list is visible anywhere.
 
+Your Progress on Profile checks (owner, 2026-10-24: accepted as built, closed; rebuilt phone only; result codes as above):
+1. Profile > "🔥 Your Progress" opens in place (screen reader says "expanded"); tapping it again closes it. Opening it closes
+   Your communities and the other way round (one open at a time).
+2. Collapsing from inside the open section brings you back to the Your Progress row: the rest of Profile does not jump away
+   and the page does not move unexpectedly.
+3. "🔥 Keep the streak going" opens Discover on Gatherings; Back returns to Profile.
+4. An old streak push (if one exists) opens Profile with Your Progress already open.
+
 Other known risks: note them only if seen, don't set them up. Tomorrow without a time opens at a noon default while Saturday
 asks "Pick a time" (18b vs 18i); "tonight after 7" opens at 7 PM, which looks carried (18c); the iOS wheel resting on noon (18j);
 the date chip's 12 choices (18j); chips with ✕ on results but none above People (chip checklist check 11); Android's Google

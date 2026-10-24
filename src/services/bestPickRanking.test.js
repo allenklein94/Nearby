@@ -20,6 +20,10 @@ const g = (id, extra = {}) => ({ id, interest_tag: 'Coffee', scheduled_at: inDay
 const attendees = (n, ids = []) => Array.from({ length: n }, (_, i) => ({ user_id: ids[i] ?? `u${i}` }));
 
 describe('Best Pick follows the one ranking ladder', () => {
+  // "Today" and "in an hour" must land on the same local day: freeze the clock at a local midday (the suite failed after ~23:00).
+  beforeAll(() => { jest.useFakeTimers({ now: new Date(2026, 9, 14, 12, 0) }); });
+  afterAll(() => { jest.useRealTimers(); });
+
   it('a declared interest (6) beats a crowd (9), though the crowd has the higher score', () => {
     const crowd = g('crowd', { approvedCount: 10, approvedAttendees: attendees(10) });
     const mine = g('mine', { matchesYourInterests: true });
