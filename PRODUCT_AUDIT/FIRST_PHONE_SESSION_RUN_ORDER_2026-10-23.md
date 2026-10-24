@@ -195,8 +195,14 @@ Walk-in stop (owner, 2026-10-24): a walk-in business's stop reads "Request" (it 
 person expected to just walk in. Confusion = USABILITY, reported; no label change without this evidence.
 Send button (owner, idea "384", 2026-10-24; same watch + screen reader on): asking ONE business (its Reserve / Book / Request, or a
 picked business) the Send button reads and is spoken "Ask {name}"; a general ask = "Ask Nearby Businesses". With VoiceOver / TalkBack on,
-confirm the spoken label equals the visible one. Also note: a business's own posting opened from search shows "Book with {name}" as
-the heading while Send says "Ask Nearby Businesses" (the request really reaches every eligible nearby business); report whether that reads as a contradiction.
+confirm the spoken label equals the visible one.
+Exclusive posting (owner, idea "384" follow-up, 2026-10-24, LOCKED; observation only): open a seeded business's OWN posting from search
+(declared booking mode) and tap its Reserve / Book / Request. Expected as built: heading "Book with {name}" (or Reserve at / Request from),
+the posting's banner (title, price), Send reads and is spoken "Ask {name}"; after Send the request screen names that one business, and its
+reply arrives with the posting's price and description. Ask before Send: "Will this confirm a booking right away, or does {name} still
+have to respond?"; after Send: "Are you booked yet?" Expecting an instant confirmed booking = USABILITY (with their words), never a wording
+change without that evidence. Also, if possible, a posting that has filled or ended before Send: expect "No longer available", the draft
+kept, nothing sent. Needs a seeded business with a live posting; none = SETUP-BLOCKED.
 Connect vs Add Friend (owner, idea "382", 2026-10-24; same watch): when they meet Connect (friend discovery) and Add Friend (a
 profile), ask "What's the difference between those two?" Connect = friends only if both connect; Add Friend = a request they accept.
 Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.
