@@ -1,3 +1,24 @@
+# Idea 384 closed (owner, 2026-10-24): AskBusiness Send names its real recipients, BUILT, NOT DEVICE-VERIFIED
+
+**Owner approved the narrow fix with server routing verified first.** Routing traced on the LIVE definitions (read-only):
+`create_business_request` / `create_business_request_for_gathering` with `target_partner_id_param` call `_route_request_to_partner` and
+return `notifiedCount 1, targeted true` (no fan-out); without it they run `_business_request_fanout` + the availability / policy /
+package / AI matchers. `preferred_availability_id_param` only feeds `_match_request_to_availability`; it never narrows the fan-out.
+`createBusinessRequestForMatch` / `submitBusinessRequestForCommunity` take no target. Journey `requestSentCount` (prod, rolled back)
+already proves both: a posting-bound ask reached 3 businesses; a targeted ask exactly 1 directed row; a new step ties the labels to it (7/7).
+Built: `utils/askSubmitLabel.js` (`askRecipient`, `askSubmitLabel`): "Ask {name}" (`ui.askBusiness.ask`) only when `targetPartner` is
+sent and the path accepts it, else "Ask Nearby Businesses"; AskBusiness uses it for the button text AND `accessibilityLabel` (before:
+the text was "Ask {name}" only from a gathering, so a one-business Reserve / Book / Request ended on "Ask Nearby Businesses", and
+screen readers always heard "Ask nearby businesses"). Removed unused `ui.askBusiness.askNearbyBusinessesA11y` (11 languages); both
+labels exist in all 11. `requestTime.test.js`'s source assertion moved to the helper. Guard `utils/askSubmitLabel.test.js` (8:
+single business, gathering target, general, posting / plan stop, match / community, nameless, 11 languages, screen = speech); full
+Jest 495/6820. No server, permission, routing, motion or screen change.
+Discrepancy REPORTED, not changed: a typed-ask posting result with a declared booking mode opens AskBusiness with `matchedAvailability`
++ `bookingMode`, so the heading reads "Book with {name}" (etc.) while the request fans out to all eligible nearby businesses;
+`businessAction.js`'s comment ("already reaches only that business") was wrong and is corrected. Owner to choose: (a) send those as
+targeted (+ posting), after checking a targeted request still binds the posting, or (b) a neutral heading. Run order Button watch gains
+the Send label check with a screen reader on + this heading.
+
 # Idea 384 assessed (owner, 2026-10-24), nothing built
 
 **Idea "384": buttons that describe their action help screen readers ("Send request to Coastal Coffee", not "Continue").** Met for the

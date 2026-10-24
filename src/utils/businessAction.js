@@ -23,7 +23,9 @@ export function businessActionForItem(item, at = new Date()) {
 
 // action -> { kind: 'url', url } | { kind: 'navigate', screen, params }. Reserve / Book / Request open the EXISTING request form:
 // addressed to this one business (targetPartner), or, when the result is that business's own live posting, bound to the posting
-// (matchedAvailability), which already reaches only that business. `prefill` = the AskBusiness prefill params of the surface.
+// (matchedAvailability). NOTE (idea "384", verified 2026-10-24 on the live server + journey requestSentCount): a bound posting does
+// NOT narrow the recipients -- create_business_request still fans out to every eligible nearby business; only targetPartner
+// (target_partner_id) reaches one business alone. `prefill` = the AskBusiness prefill params of the surface.
 export function businessActionRoute(action, { partner, partnerId, prefill = {}, matchedAvailability = null } = {}) {
   if (!action || !partner) return null;
   if (action.kind === 'go_now' || action.kind === 'directions') {

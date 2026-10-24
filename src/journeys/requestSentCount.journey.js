@@ -8,6 +8,7 @@
 jest.mock('../services/supabase', () => ({ supabase: {} }));
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
 import { justSentLine } from '../utils/requestTimeline';
+import { askSubmitLabel } from '../utils/askSubmitLabel';
 
 const d = hasToken ? describe : describe.skip;
 
@@ -112,5 +113,13 @@ d('journey: "We asked N nearby businesses" = the businesses really reached (idea
     expect(justSentLine(s.one_business.data.notified, 'J158 Cafe Two')).toBe("Request sent to J158 Cafe Two. You'll be notified when they respond.");
     expect(justSentLine(s.nobody_reached.data.notified)).toBeNull();
     expect(justSentLine(s.duplicate.data.notified)).toBeNull();
+  });
+
+  test('idea 384: the Send button names who really received it (bound posting fans out; a target reaches only that business)', () => {
+    // broadcast was sent with preferred_availability_id (a bound posting, as a plan stop / posting result sends it) yet reached 3
+    expect(s.broadcast.data.notified).toBeGreaterThan(1);
+    expect(askSubmitLabel({ matchedAvailability: { availabilityId: 'a', partnerName: 'J158 Cafe Three' } })).toBe('Ask Nearby Businesses');
+    expect(s.one_business.data.rows).toBe(1);
+    expect(askSubmitLabel({ targetPartner: { id: 'p2', name: 'J158 Cafe Two' } })).toBe('Ask J158 Cafe Two');
   });
 });

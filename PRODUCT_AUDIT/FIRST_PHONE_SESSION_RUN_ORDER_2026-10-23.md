@@ -193,6 +193,10 @@ gathering or an already-requested/booked stop = "View →"; a stop not requested
 booking mode; "Request" when none). Ask what each will do before tapping. Also note whether Home's "Continue Browsing →" reads as Discover.
 Walk-in stop (owner, 2026-10-24): a walk-in business's stop reads "Request" (it opens a request form, so it is truthful); note whether the
 person expected to just walk in. Confusion = USABILITY, reported; no label change without this evidence.
+Send button (owner, idea "384", 2026-10-24; same watch + screen reader on): asking ONE business (its Reserve / Book / Request, or a
+picked business) the Send button reads and is spoken "Ask {name}"; a general ask = "Ask Nearby Businesses". With VoiceOver / TalkBack on,
+confirm the spoken label equals the visible one. Also note: a business's own posting opened from search shows "Book with {name}" as
+the heading while Send says "Ask Nearby Businesses" (the request really reaches every eligible nearby business); report whether that reads as a contradiction.
 Connect vs Add Friend (owner, idea "382", 2026-10-24; same watch): when they meet Connect (friend discovery) and Add Friend (a
 profile), ask "What's the difference between those two?" Connect = friends only if both connect; Add Friend = a request they accept.
 Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.

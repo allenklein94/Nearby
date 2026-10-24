@@ -17,6 +17,7 @@ import { formatDistance } from '../utils/formatDistance';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
+import { askSubmitLabel } from '../utils/askSubmitLabel';
 import { linkExperienceStop } from '../services/plans';
 import { createBusinessRequestForMatch } from '../services/dateProposals';
 import { requestBusinessPartnership } from '../services/businessPartnerships';
@@ -1162,10 +1163,10 @@ export default function AskBusinessScreen({ navigation, route }) {
             style={[styles.submitButton, (submitting || !askText.trim() || (gatheringId && !gathering)) && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={submitting || !askText.trim() || (!!gatheringId && !gathering)}
-            accessibilityLabel={t('ui.askBusiness.askNearbyBusinessesA11y')}
+            accessibilityLabel={askSubmitLabel({ targetPartner, matchId, communityId })}
             accessibilityRole="button"
           >
-            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{gatheringId && targetPartner ? t('ui.askBusiness.ask', { name: targetPartner.name }) : t('ui.askBusiness.askNearbyBusinesses')}</Text>}
+            {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{askSubmitLabel({ targetPartner, matchId, communityId })}</Text>}
           </TouchableOpacity>
           </>)}
         </ScrollView>

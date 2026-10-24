@@ -32,5 +32,7 @@ test('the free-text note exists only on a targeted request and reaches only that
 test('the specific-business flow reuses AskBusiness instead of a thinner form', () => {
   expect(read('src/screens/RequestBusinessPartnerScreen.js')).toMatch(/navigation\.replace\('AskBusiness'/);
   expect(read('src/screens/BusinessProfileScreen.js')).toMatch(/targetPartner: \{ id: partnerId/);
-  expect(read('src/screens/AskBusinessScreen.js')).toMatch(/t\('ui\.askBusiness\.ask', \{ name: targetPartner\.name \}\)/); // "Ask {name}" (askBusiness ui namespace)
+  // "Ask {name}" (askBusiness ui namespace), chosen by the shared Send label (idea "384", utils/askSubmitLabel.js)
+  expect(read('src/screens/AskBusinessScreen.js')).toMatch(/askSubmitLabel\(\{ targetPartner, matchId, communityId \}\)/);
+  expect(read('src/utils/askSubmitLabel.js')).toMatch(/tr\('ui\.askBusiness\.ask', \{ name: r\.name \}\)/);
 });
