@@ -1,3 +1,16 @@
+# Idea 379 assessed (owner, 2026-10-24), nothing built
+
+**Idea "379" ("Save needs a purpose: no Save unless the saved state does something; if saved items appear somewhere, Saved is fine;
+never another state because other apps have one") MET AS BUILT, ASSESSED, recommended close, owner decision pending.** Already the
+locked rules of idea "152" (Save for later = Interested, no separate Save/bookmark, no "You saved this", no saved businesses/places/
+favourites list) and ideas "344"/"345" (a state exists only for a real recorded action with its own next step; a second Save DECLINED),
+and the Privacy bullet "Interested is the ONE saved state". Interested has a purpose and a place: it appears in Plans' "☆ Interested" row,
+the person is told if the time or place changes ("Saved to Interested" + "We'll let you know if the time or place changes."), it gets the
+starts-soon reminder, and it turns into Attending in one tap (items 30/31/139). Code reading of every "Save"/"Saved" string: the rest are
+form saves (profile, settings, business profile, tastes, music, drafts: confirmations that a write happened), never a bookmark state;
+item 30's "✓ Saved" is the momentary feedback of marking Interested and returns to "★ Interested". No code or test added. Verification =
+items 30/31 phone checks + session B task 5 (find the Interested gathering again).
+
 # Ideas 378 + 271 closed (owner, 2026-10-24), nothing built
 
 **Owner decision: ideas "378" and "271" CLOSED and LOCKED together as met by the existing implementation; Interested as a second
