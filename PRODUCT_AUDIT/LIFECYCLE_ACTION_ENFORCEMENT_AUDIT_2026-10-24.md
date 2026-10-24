@@ -97,3 +97,8 @@ Results (2026-10-24): journey `lifecycleEnforcement` 8/8 (fails 8/8 on the old D
 reschedule and accept vs cancel_gathering, both orders, 5 rounds: one consistent outcome, no deadlock) + the booking-capacity and
 offer-revision concurrency scripts; Jest 498/6834. NOT YET APPLIED TO PRODUCTION. Remaining: native review of the 2 new strings,
 the Edit refusal on a phone.
+
+**RESOLVED (2026-10-24): migration 20270343 APPLIED TO PRODUCTION** (owner approved). Verified live: the protections are active
+(journey `lifecycleEnforcement` 8/8 without prelude), prod journeys 676/676, existing rows unchanged (md5 before/after), grants as
+intended. Rollback: `scripts/rollback/20270343_lifecycle_enforcement_fixes.rollback.sql`. Open: native review of the 2 Edit strings;
+the Edit refusal on a phone (first phone session).

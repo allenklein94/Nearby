@@ -1,5 +1,13 @@
 # Lifecycle enforcement fixes (owner, 2026-10-24): all five audit findings, migration 20270343
 
+APPLIED TO PRODUCTION 2026-10-24 (owner approved). Before: live definitions of the 5 functions + the insert policy md5-identical
+to the tested baseline, 20270342 present, new objects absent, file sha256 f70f09eb… = commit 4cf74cd3; recovery script built from
+the saved live definitions and proven (apply + revert in one aborted transaction on prod: every fingerprint back to baseline).
+After: fingerprints = the tested after-apply set; execute grants as intended (only `_gathering_has_active_booking` to
+authenticated; `_accept_business_offer_internal` server-only); gatherings 26 / gathering_interest 5 / social_invites 1 /
+requests, offers, reservations 0 / push_outbox 1 / domain_events 1 byte-identical (md5) before, after the apply and after the
+journeys; prod journeys 676/676 with NO prelude (incl. `lifecycleEnforcement`). No real record created or changed. Resolved.
+
 Owner approved fixing D1-D3 + R1-R2 before the first phone session; qualification: the late-join rule must match the intended product
 rule, not a UI limit. Found: the client's one rule (`LIFECYCLE.gathering`, `isGatheringUpcoming`: start >= now) is the only join rule;
 no late-arrival flow exists (Happening Now's under-way rows show View; check-in = approved attendees only), so the server now matches it.

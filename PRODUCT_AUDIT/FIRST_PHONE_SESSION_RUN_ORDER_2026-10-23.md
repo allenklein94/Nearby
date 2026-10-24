@@ -139,6 +139,11 @@ identity full); FAIL = a functional bug (Sev 1-2): propose the smallest reliable
 identity full or motion change before that. (b) nothing animates, glows, announces or notifies the host about the leave. (c) it
 reads as neutral.
 
+Booked-time watch (owner, 2026-10-24, migration 20270343; PASS/FAIL; needs a gathering with a business booking accepted from it):
+as host, open Edit, change ONLY the time, Save: "This time is booked" explains why and to cancel the reservation first, no Try Again,
+the booked card still shows the original time. Then change only the description, Save: it saves. Record the wording on screen (the
+string is machine-authored outside English; native review is separate). No late-arrival flow exists or is to be tested (LOCKED).
+
 Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's checklist; only when the forecast really brings
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
 scroll past? Report the reaction only; no weather UI change before this.
