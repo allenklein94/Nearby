@@ -1,3 +1,22 @@
+# Idea 383 assessed (owner, 2026-10-24), nothing built
+
+**Idea "383": "Don't call everything Continue"; use specific verbs (Create gathering, Send request, Accept offer, Join, Invite, Reserve).**
+Assessment (code reading, every English "Continue"/"Next" button label in `src/screens` + `src/components`):
+- MET for every action that commits something: Create's final step = "Start Gathering" (`gatherings.postButton`); AskBusiness = Send;
+  business offer = "I'll take this one" (LOCKED; "Accept offer" DECLINED under idea "382" + item 73); gathering = Join / Request to Join /
+  Join Waitlist / I'm Going (`primaryActionFor`); Invite; Reserve / Book / Request (item 72); payment = "Continue to payment · {price}"
+  (names the destination and the amount).
+- KEEP (step or gate moves; the next screen is the result): Create steps 1-4 "Next" (step titles visible), onboarding questions +
+  notifications "Continue", Complete Profile "Continue", Occasions' calendar pre-permission alert "Continue" (leads to the OS prompt),
+  Settings delete-account "Continue" (first of two confirms; the second is the real Delete), Tell Nearby's "Yes, continue" (answers
+  "Looks right?"), GroupPlan "Continue without" (screen reader names the person). Renaming these = 11-language cost, no evidence.
+- GAP: PlanDetail's per-stop link "Continue →" (`ui.planDetail.continue`, `navigateToExperienceStop`) opens a gathering stop's
+  GatheringDetail or AskBusiness pre-matched to ONE business's availability; the label names neither. Proposed narrow fix, NOT built:
+  gathering stop = existing `ui.planDetail.view` ("View →"); business stop not yet requested = item 72's existing Reserve / Book /
+  Request label (`ui.actions.*`); no new strings, no motion; label chosen in one helper, not inline.
+- WATCH: Home's "Continue Browsing →" opens Discover (Home claim rule: a CTA names where it goes); session B's Button watch, wording
+  proposal only on evidence.
+
 # Idea 382 closed (owner, 2026-10-24), nothing built
 
 **Owner decision: idea "382" CLOSED and LOCKED as met; Attend and Accept renames DECLINED.** Principle: consistent actions, not
