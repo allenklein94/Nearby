@@ -1,3 +1,23 @@
+# Idea 382 assessed (owner, 2026-10-24), nothing built
+
+**Idea "382" ("one universal action language: Discover = Join, Gathering = Attend, Business offer = Accept, Person = Connect / Invite,
+Business request = Ask, Create = Create; it should feel deliberate") MOSTLY MET, two renames DECLINED under locks, ASSESSED, owner
+decision pending, nothing built.** One source already: `primaryActionFor` (`utils/primaryAction.js`) + `i18n/ui/actions.js`; screens
+never write their own CTA labels (item 73, guard in `stateDrivenCta.test.js`). As built, one verb per object:
+- Gathering: **Join** (Request to Join / Join Waitlist / I'm Going are its state-true forms), result = "Going" / "✓ Attending". Item 73
+  made "Join" the one verb everywhere ("Join Gathering" retired). DECLINE "Attend" as the button: it would give one action two verbs
+  (Join on Discover, Attend elsewhere); Attending stays the resulting state, which is what the proposal's pair describes.
+- Business offer: **I'll take this one** (LOCKED wording, the consumer-never-feels-a-marketplace rule; "Accept Offer" was explicitly
+  declined in item 73's review). DECLINE "Accept": it is reserved for answering a person (invitations, friend requests) and the
+  business's "Accept & Offer"; using it for offers would blur choosing an offer with answering an invite.
+- Person: **Connect** in friend discovery (a mutual choice, friends only if both connect, idea "156"), **Add Friend** on a profile (a
+  direct request the other accepts), **Invite** = bringing a friend into a gathering (idea "360"). Three verbs, three different
+  mechanisms, each used for one thing only.
+- Business request: **Ask** ("Ask Nearby Businesses", Ask a business); on one business, its declared booking mode's Reserve / Book /
+  Request (item 72, LOCKED; idea "377" watch).
+- Create: **Create** (the tab, "Create it" from an ask, "Create {topic}" in an empty category).
+Verification = idea "377"'s session B Button watch (predict before tap). No code or test added.
+
 # Idea 381 closed (owner, 2026-10-24), nothing built
 
 **Owner decision: idea "381" CLOSED and LOCKED as met by the existing architecture; no code or new rules.** Kept: states belong to
