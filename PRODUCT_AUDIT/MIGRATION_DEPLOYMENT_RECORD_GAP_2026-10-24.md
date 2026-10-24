@@ -1,7 +1,7 @@
 # Migration deployment record gap (2026-10-24): findings + proposed safeguards
 
-Status: owner APPROVED S1-S4 (2026-10-24); BUILT + TESTED on a disposable database (Jest 14, disposable-db-test 29/29); the production
-ledger (20270345) is NOT created yet: awaiting the owner's approval of its version + hash. Record: CLAUDE_HISTORY.md top.
+Status: COMPLETE (2026-10-24). S1-S4 built and tested (Jest 14, disposable-db-test 29/29); production ledger deployed through
+deploy.js at 18:42:39 UTC (20270345, sha b6962ed4…, commit 8d0278c6) and verified; 20270344 recorded as historical. Record: CLAUDE_HISTORY.md top.
 
 ## What happened (evidence, not inference)
 

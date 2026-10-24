@@ -1,4 +1,25 @@
-# Migration deployment safeguards (owner approved S1-S4, 2026-10-24): BUILT + TESTED, PRODUCTION LEDGER NOT CREATED (awaiting approval)
+# Migration 20270345 (ledger) DEPLOYED to production through deploy.js (owner approved version 20270345 + sha256 b6962ed4…, commit 8d0278c6, 2026-10-24)
+
+- Before: whole-schema + row fingerprints taken; rows and the 20270344 function set identical to the start of the session.
+- `--check` on production with the approved token: CHECK OK (rolled back); schema fingerprint unchanged after it.
+- Deploy: DEPLOYED + RECORDED, row read back: deployed, sha b6962ed40cd20b57a81b1092d5a1dfff777351d897fcb436c165b592be069f01,
+  commit 8d0278c6095b1a5e1b1f6214c8038195d2e1dee9, applied_at 2026-10-24 18:42:39.547828 UTC, approval ref = the owner's message,
+  session 618db8ac-2c5f-49af-abc4-2d38f66bff1c. Transaction id 1248217.
+- Ledger: 'pre-ledger' baseline (covers <= 20270343), 20270344 'historical' (sha 5bb1fa44…, commit bf0cbb3e, 12:56:09.501 UTC,
+  session dc024208, notes "HISTORICAL RECORD, not applied by deploy.js"), 20270345 'deployed'.
+- Permissions: table ACL owner-only (postgres); anon / authenticated / service_role: no select, no write, no usage on `private`;
+  trigger function not executable by anon / authenticated; append-only triggers present.
+- `migration:status --target=prod`: 20270344 recorded (historical), 20270345 recorded (deployed), no mismatch (exit 0).
+- Nothing else changed: every catalog row written by xid 1248217 is a ledger object (1 function, table + pkey + toast, 2
+  triggers, its constraints; no policy, no schema); the only other schema transaction in the last ~8,000 is 1242751 = 20270344's
+  apply (its 10 functions + 2 triggers in one transaction, corroborating the historical record). Policies + all non-ledger relations
+  and triggers fingerprint-identical; 10 data tables (gatherings, gathering_interest, plans, business_requests / offers /
+  reservations / availability, push_outbox, domain_events, social_invites) byte-identical. Note: my ad-hoc functions fingerprint
+  (`string_agg … order by 1`, which orders by a constant) shifted with the inserted row, so the function check rests on the xmin
+  listing, not that hash.
+Safeguards COMPLETE. Next: the first real-phone session.
+
+# Migration deployment safeguards (owner approved S1-S4, 2026-10-24): BUILT + TESTED (production ledger deployed later the same day, entry above)
 
 Owner approved the four safeguards with requirements: approval tied to version + exact file hash; migration + record atomic;
 refuse uncommitted / changed / already recorded; 20270344 backfilled as HISTORICAL; status/verification never modify production;
