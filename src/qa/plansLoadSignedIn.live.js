@@ -1,5 +1,5 @@
 // Idea "397" follow-up (owner, 2026-10-24): the Plans load path through the REAL PostgREST API with a real signed-in JWT, not SQL.
-// READ-ONLY: signs in to an EXISTING account (credentials from the environment, never in the repo or chat), runs exactly the reads
+// READ-ONLY: signs in to a DEDICATED test account (owner: never the owner's primary account; credentials never in Git, logs or chat), runs exactly the reads
 // PlansScreen runs (its first load + focus reload: the same service functions, unmodified), then signs out. No app table is written;
 // the only writes are Supabase Auth's own sign-in/sign-out bookkeeping (a session + refresh token, revoked at sign-out; last_sign_in_at).
 // Run: npx jest -c jest.live.config.js src/qa/plansLoadSignedIn.live.js   (skips when no account is given)
@@ -8,7 +8,7 @@ const { createClient } = require('@supabase/supabase-js');
 
 const URL = 'https://enmosvippabmuqslzrox.supabase.co';
 const KEY = 'sb_publishable_NU_9KSD7wft-FDSHclDHuw_6vsUDrZW'; // the app's own publishable key (src/services/supabase.js)
-// Credentials: the environment, else the gitignored .claude/live-test-account.json ({"email": "...", "password": "..."}), which the
+// Credentials: a temporary environment variable (preferred), else the gitignored .claude/live-test-account.json ({"email": "...", "password": "..."}), which the
 // owner writes in an editor so the password never appears in a command line, the chat or the repo.
 const fileAccount = (() => {
   try { return JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', '..', '.claude', 'live-test-account.json'), 'utf8')); } catch { return {}; }
