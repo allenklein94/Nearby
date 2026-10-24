@@ -1,3 +1,21 @@
+# Idea 384 follow-up (owner option (a), 2026-10-24): STOPPED on a posting-linkage conflict, nothing changed
+
+Owner chose (a): a deliberately selected business posting ("Book with {name}") goes ONLY to that business, posting kept, verified first.
+Trace (live definitions, read-only): the posting is bound only inside `_match_request_to_availability_core`'s preferred branch, which
+upserts the business's row as 'offered' with `availability_id`, `offer_description` (posting description/title), `offer_price`, emits
+BUSINESS_OFFER_SENT (checks: business active, not declining, min spend, posting active + not ended, capacity >= party, within radius);
+accepting that offer takes the posting's capacity (`_take_availability_capacity`, 20270308). `create_business_request` with a target
+calls `_route_request_to_partner` (`_route_request_to_partner_core` inserts a plain pending `is_directed` row) and RETURNS before any
+matcher, so a client-only switch to `targetPartner` would lose the posting's terms, price and capacity link and turn an instant
+posting reply into a request the owner must answer by hand. Per the owner's instruction: stopped, reported, no code or production change.
+Proposed narrow server fix (needs approval): targeted branch + preferred posting of THAT business = bind only that posting (same
+checks and upsert as the preferred branch, which already updates a pending row to offered; never the loop over other businesses'
+postings, never fan-out); notifiedCount stays 1. Client: only the deliberate booking-mode action (`businessActionRoute` with
+`matchedAvailability`, the "Book with {name}" heading) sends `targetPartner` + the posting; plan stops (no booking promise), the
+`recommended_business_availability` push and the no-mode default keep broadcast. Tests: journey (1 recipient, `availability_id`/price/
+description on the row, accept takes capacity, posting of another business never bound exclusively) + client route/label guards.
+Booking stays a request until accepted: the posting reply is an offer the customer takes ("I'll take this one"), never instant confirmation.
+
 # Idea 384 closed (owner, 2026-10-24): AskBusiness Send names its real recipients, BUILT, NOT DEVICE-VERIFIED
 
 **Owner approved the narrow fix with server routing verified first.** Routing traced on the LIVE definitions (read-only):
