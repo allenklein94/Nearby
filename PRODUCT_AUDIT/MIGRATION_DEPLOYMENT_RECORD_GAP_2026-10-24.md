@@ -1,6 +1,7 @@
 # Migration deployment record gap (2026-10-24): findings + proposed safeguards
 
-Status: INVESTIGATED (read-only), PROPOSAL AWAITING OWNER APPROVAL, nothing built, no production change.
+Status: owner APPROVED S1-S4 (2026-10-24); BUILT + TESTED on a disposable database (Jest 14, disposable-db-test 29/29); the production
+ledger (20270345) is NOT created yet: awaiting the owner's approval of its version + hash. Record: CLAUDE_HISTORY.md top.
 
 ## What happened (evidence, not inference)
 

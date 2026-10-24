@@ -9,7 +9,9 @@
     "web": "expo start --web",
     "test": "jest",
     "journeys": "jest --testMatch \"**/*.journey.js\" --runInBand",
-    "lifecycle-matrix": "LIFECYCLE_MATRIX_WRITE=1 jest src/qa/lifecycleMatrix.test.js"
+    "lifecycle-matrix": "LIFECYCLE_MATRIX_WRITE=1 jest src/qa/lifecycleMatrix.test.js",
+    "migration:status": "node scripts/migrations/status.js",
+    "migration:deploy": "node scripts/migrations/deploy.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

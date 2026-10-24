@@ -1,3 +1,35 @@
+# Migration deployment safeguards (owner approved S1-S4, 2026-10-24): BUILT + TESTED, PRODUCTION LEDGER NOT CREATED (awaiting approval)
+
+Owner approved the four safeguards with requirements: approval tied to version + exact file hash; migration + record atomic;
+refuse uncommitted / changed / already recorded; 20270344 backfilled as HISTORICAL; status/verification never modify production;
+tested on a disposable database; approval needed before creating the production ledger or changing production permissions.
+- S1 `supabase/migrations/20270345_migration_ledger.sql`: `private.migration_ledger` (version PK, record_kind deployed / historical /
+  baseline, file_sha256, git_commit, applied_at, approval_ref, session_id, recorded_at, notes; checks tie baseline to 'pre-ledger' and
+  require hash + commit + time otherwise); revoke all from public, anon, authenticated, no grant; append-only (update / delete /
+  truncate refused by trigger). Backfill: 'pre-ledger' baseline (everything <= 20270343, status per these docs, not verified per
+  file) + 20270344 'historical' (sha 5bb1fa44…, commit bf0cbb3e, applied_at 12:56:09.501 UTC = request sent, returned 12:56:13.606;
+  approval ref + session dc024208; marked "HISTORICAL RECORD, not applied by deploy.js"). Its own row is written by deploy.js.
+- S2 `scripts/migrations/deploy.js` (`npm run migration:deploy -- <file> --target=prod|local [--check]`, logic in
+  `scripts/migrations/ledger.js`): preflight refuses (nothing sent) a file outside supabase/migrations, untracked, with uncommitted
+  changes or a hash differing from HEAD; own BEGIN/COMMIT/ROLLBACK, CONCURRENTLY, VACUUM, ALTER SYSTEM; approval missing or not
+  exactly `<version>:<sha256>`; no NEARBY_APPROVAL_REF / NEARBY_SESSION_ID; already recorded (any kind); covered by the baseline;
+  out of order; no ledger yet (except 20270345). Apply = `begin; <file>; insert ledger row; commit;` in one request, row read back.
+  `--check` = the same statements ending in a raise (never committed). Targets explicit: prod refuses if NEARBY_LOCAL_DB_URL is set;
+  local refuses a hosted Supabase URL.
+- S3 `scripts/migrations/status.js` (`npm run migration:status -- --target=…`): two single SELECTs only; repo files vs ledger
+  (recorded / HASH MISMATCH / pre-ledger / NOT RECORDED).
+- S4 CLAUDE.md Engineering discipline bullet.
+Tests: Jest `scripts/migrations/ledger.test.js` 14 (every refusal on a throwaway git repo; SQL shape; status read-only; backfill =
+the committed 20270344 hash + commit); `scripts/migrations/disposable-db-test.js` 29/29 on a fresh supabase/postgres:15.1.0.147 on
+an internal docker network (missing / generic approval, nothing created; ledger-first rule; --check leaves the DB unchanged; bootstrap
+20270345 records itself with all fields + backfill; no anon/authenticated privilege; append-only x3; duplicate refused; uncommitted
+edit + stale-hash approval refused; a migration failing halfway leaves no table and no record; a deploy whose connection is killed
+mid-transaction after its DDL leaves no table and no record; two concurrent deploys of one file: one commits, the other fails on
+the ledger key and its effect rolls back (counter = 1); success commits table + row together; out of order refused; status on a
+read-only connection, correct report, nothing changed). Full Jest 500/6866. Production: status only (read-only): ledger NOT PRESENT.
+Not done: a from-scratch replay with 20270345 (it is self-contained; deploy.js, not the replay, is its production path); a prod
+`--check` (needs the owner's approval token for 20270345). Known limit: a token holder can still bypass deploy.js (procedural gate).
+
 # Migration 20270344 found already live; deployment record gap (2026-10-24)
 
 Owner approved applying 20270344. The pre-apply check in a new session found production NOT in the pre-migration state: the 3 new

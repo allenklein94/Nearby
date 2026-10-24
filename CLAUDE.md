@@ -376,7 +376,7 @@ Dating's deck buttons now show a word under each symbol (Skip / Wave / Notice / 
 
 **Requests end with their gathering (owner idea "394", 2026-10-24) LIVE (migration 20270344, applied 12:56:09 UTC under the owner's approval; record gap below), VERIFIED, CLOSED, LOCKED, NOT DEVICE-VERIFIED until** the run order's "Request deadline watch" passes AND native review of `ui.gatheringForm.edit.requestReplied` / `requestRepliedBody` is done: F1 gathering requests close exactly at the start, none once started; F2 a reschedule moves an unanswered open request, any business response refuses it; F3 a stated day + time is the deadline. Live = migration result (11 functions + grants, 2 triggers); prod journeys 684/684 without prelude (incl. `requestDeadlines` 8/8); rows byte-identical before/after. Details: CLAUDE_HISTORY.md top.
 
-**Migration deployment record gap (2026-10-24) OPEN, owner decision pending, nothing built:** 20270344 was applied by a session cut off before it recorded the apply (no ledger on prod, so the next session saw "NOT APPLIED"). Proposal (ledger table + `scripts/deploy-migration.sh` gate): `PRODUCT_AUDIT/MIGRATION_DEPLOYMENT_RECORD_GAP_2026-10-24.md`. Until decided: before any production apply, fingerprint-check that the migration is not already live.
+**Migration deployment safeguards (owner approved 2026-10-24) BUILT + TESTED on a disposable database, PRODUCTION LEDGER NOT CREATED (awaiting owner approval to deploy 20270345):** `private.migration_ledger` (append-only, no client grant; backfills the pre-ledger baseline + 20270344 as HISTORICAL) + `scripts/migrations/deploy.js` (migration + ledger row in one transaction; approval = `<version>:<sha256>`) + read-only `status.js`; Jest 14 + `disposable-db-test.js` 29/29. Production status: ledger NOT PRESENT. Details: CLAUDE_HISTORY.md top.
 
 **Stated time carried into a business request (owner idea "305", 2026-10-20, approved narrow fix) is BUILT, NOT DEVICE-VERIFIED until** check 15 of the item 84 checklist passes on a real phone: a clock time the words state ("at 7" = 7 PM via `pointClockFromText`) fills AskBusiness's optional Time field (`askBusinessParamsFromAsk` -> `prefillStartMinutes` -> `startTimeFromMinutes`), ambiguous ("at 9") stays empty, the missing day is still asked, nothing changes in search; journey `statedTimeHandoff` 3/3, prod journeys 562/562, Jest 478/6555 (no migration, no new strings). Business-name recognition ("Coastal Coffee") DEFERRED until AI-enabled testing with seeded businesses.
 
@@ -1149,6 +1149,11 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   (`notificationActions.js`) and one mute group (`notificationPreferences.js`, one store `profiles.notification_mutes`).
 
 ### Engineering discipline
+- **Production migrations only via `npm run migration:deploy -- <file> --target=prod` (owner, 2026-10-24):** the migration and its
+  `private.migration_ledger` row commit in ONE transaction; approval = `NEARBY_PROD_APPROVAL=<version>:<sha256>` of the committed
+  file (+ `NEARBY_APPROVAL_REF`, `NEARBY_SESSION_ID`), per migration, never generic; `--check` = rolled-back verification. Refused:
+  uncommitted/changed file, hash mismatch, already recorded, out of order, own BEGIN/COMMIT. Before claiming a migration's state, run
+  `npm run migration:status -- --target=prod` (read-only). Never send a migration file to production any other way.
 - One migration per schema change; verify live with disposable data in a rolled-back transaction; disclose
   whether a from-scratch replay was done (`scripts/replay/from-scratch-replay.sh`: isolated network, never production; 20270294
   needs its code-inventory sync step, done by the script). Filename order must follow dependencies.
