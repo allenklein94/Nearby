@@ -1,3 +1,19 @@
+# Idea "397" follow-up: approved as built; signed-in real-API Plans read built, not yet run (owner, 2026-10-24)
+
+- Owner: approved as built; two requirements before Plans counts as production-verified: (1) the corrected Plans query through the
+  real authenticated API, read-only, an existing authorized account, no production records modified; (2) document that a booking
+  with no known time may stay on Upcoming indefinitely (kept; no invented dates, no migration). Date/hangout + shared nights stay
+  completion-only. Production seed NOT approved (development continues first).
+- Built: `src/qa/plansLoadSignedIn.live.js` + `jest.live.config.js` (+ `src/qa/live/nativeStub.js`: native modules = a stub that
+  throws if called, so nothing on the read path is faked). Signs in with the app's publishable key through the real password grant,
+  runs PlansScreen's exact service reads (attending, hosting, group plans, business-request plans, date plans, experience plans,
+  interested, shared nights) unmodified, asserts each returns rows without error, places business-request rows with the rule, and
+  asserts the old self-embed is refused (PGRST200) by the same signed-in API; then signs out. Writes: none to app tables; Supabase
+  Auth's own session/refresh-token rows + last_sign_in_at only. Credentials from env or the gitignored `.claude/live-test-account.json`.
+- NOT RUN: no account credentials available to the session (none in the repo; minting a session for a real account via the admin
+  API was not done: that would act as the person without them and writes auth records). Prod has 0 business requests, so even when
+  run it proves the query is accepted and RLS-scoped, not placement on real booking rows.
+
 # Idea "397": past plans become history (owner approved narrow fix + clarification, 2026-10-24)
 
 - Gap (found 2026-10-24, code reading): business-booking, date, night-out and shared-night plans rendered on Upcoming only, whatever

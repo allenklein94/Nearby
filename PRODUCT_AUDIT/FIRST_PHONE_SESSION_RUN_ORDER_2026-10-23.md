@@ -206,8 +206,9 @@ day: Past, "Completed". (e) the expired request from the deadline watch: on Past
 not on Upcoming; reopen one whose time is ahead: back on Upcoming, Pending. (f) a request cancelled by the person: on neither tab.
 (g) Past order: most recent first. (h) a night out (Experience plan) moves to Past the day after its night; a date / hangout plan
 and a shared night stay on Upcoming until completed (they carry no time: record whether that feels wrong, USABILITY only).
-(i) Back from a Past row returns to Plans on the Past tab. Known limit: Plans doesn't re-sort live at the boundary; it re-reads on
-focus / pull to refresh.
+(i) Back from a Past row returns to Plans on the Past tab. Known limits (accepted, not failures): Plans doesn't re-sort live at the
+boundary (it re-reads on focus / pull to refresh); a booking with no known time stays on Upcoming indefinitely (no date is invented):
+note any such row seen, as an observation.
 
 Weather watch (owner, idea "371", 2026-10-23; observation only, with item 36's checklist; only when the forecast really brings
 the card up): does the weather card feel genuinely useful (it changed what the person would do) or like another Home section to
