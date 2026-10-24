@@ -203,6 +203,10 @@ reply arrives with the posting's price and description. Ask before Send: "Will t
 have to respond?"; after Send: "Are you booked yet?" Expecting an instant confirmed booking = USABILITY (with their words), never a wording
 change without that evidence. Also, if possible, a posting that has filled or ended before Send: expect "No longer available", the draft
 kept, nothing sent. Needs a seeded business with a live posting; none = SETUP-BLOCKED.
+Card scan watch (owner, idea "386", 2026-10-24; observation only): on a gathering card showing two reasons AND friend faces (smallest phone
+available), give 3 seconds, cover it, ask "What is it, when is it, and what happens if you tap the button?" Write the answers verbatim.
+A wrong or missing answer, or text truncated/overlapping = USABILITY with a screenshot; the fix is that card's shared model
+(`gatheringCardModel`), proposed for owner approval; nothing removed and no layout change without this evidence.
 Connect vs Add Friend (owner, idea "382", 2026-10-24; same watch): when they meet Connect (friend discovery) and Add Friend (a
 profile), ask "What's the difference between those two?" Connect = friends only if both connect; Add Friend = a request they accept.
 Confusion = USABILITY; the fix is contextual explanation first (existing hint/empty-state lines), a rename only after that fails.
