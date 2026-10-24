@@ -1,3 +1,7 @@
+# Idea "392" expired invitations (owner, 2026-10-24): MET AS BUILT
+
+Inspected: inviteLifecycleState/inviteAction (state-driven, no Accept when expired), ActivityScreen row (expired title + "date • Past" + Dismiss only), services/invites.js supplies scheduledAt, server refusal (20270125) + no new invites after start (20270343). Jest 22/22, prod journeys 676/676 incl. inviteJourney. Nothing built.
+
 # Lifecycle enforcement fixes (owner, 2026-10-24): all five audit findings, migration 20270343
 
 APPLIED TO PRODUCTION 2026-10-24 (owner approved). Before: live definitions of the 5 functions + the insert policy md5-identical
