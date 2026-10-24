@@ -54,6 +54,31 @@ expected (C23 (0)), not a defect.
 5. **The correction story** (one continuous run, written as what you saw): "pickleball friday at 2 PM" -> date chip -> Saturday ->
    results -> Create it -> Back -> Ask Nearby Businesses.
 
+6. **Request deadlines** (run order "Request deadline watch"): create the ~20-minute gathering and send its request FIRST, then
+   do parts 2-5 and 7 while it runs; come back for the after-start checks. Never wait idle for it.
+7. **Offer to booking, end to end** (owner, 2026-10-24; TWO phones/accounts: consumer phone + business owner on a second phone or
+   the business website, signed in as the seeded business's owner): Request -> business reply -> "I'll take this one" -> "You're
+   booked" -> "✓ Visit confirmed". Ask for TODAY (the business can mark a visit completed only on or after its day).
+   - (a) Automatic reply, runs WITHOUT Anthropic credit: on the business side set "Auto-accept party size up to" (fulfillment
+     settings) to 10 before the consumer sends; the reply is created by the database (`auto_reply` 'policy', no AI). Expected: the
+     consumer's request screen gets the reply in place (item 23 travel + item 25 signature; with the app closed, one push that opens
+     that reply, item 62); an automatic reply never claims to fit a stated time and never shows "✨ Our pick" (item 63).
+   - (b) Hand-written reply (Make an Offer) = SETUP-BLOCKED until Anthropic credit (screening fails closed), never a FAIL.
+   - Then on the consumer phone: "I'll take this one" (other replies' buttons disabled while it books, idea "193") -> "You're booked"
+     on the SAME card + Add to Calendar / Get Directions / Share / Invite (item 121), merged into Your Plan "{what} at {business}"
+     (item 32). Business side: the Opportunity reads Offer sent -> Accepted (item 13); the business taps Mark as Completed ->
+     consumer card "✓ Visit confirmed" (first time: the first-visit line, item 52); business card -> Redeemed.
+   - Compare the two phones: what the consumer sent (category, day, time, party) = what the Opportunity shows (idea "246").
+   - Source checks: offer checklist sections 1, 4, 6, 11 + item 13 / item 32 / item 52 checklists; expected rows in `LIFECYCLE_MATRIX.md`.
+
+## Recording every scenario (owner, 2026-10-24)
+
+Per scenario, beside the codes above: **Functional** PASS / FAIL / BLOCKED (= SETUP-BLOCKED); **Usability** Clear / Confusing
+(what was unclear, in the person's words); **Visual** issues (layout, fit, contrast, cut-off text); **Device + OS** (model, iOS/
+Android version, light/dark, text size); **Evidence**: a screenshot or screen recording for every FAIL and Confusing. Only what
+was performed on a physical phone is recorded; a skipped step is NOT TESTED. No app changes during the session unless a Sev 1
+defect stops further progress. Afterwards findings are sorted into launch blockers / important improvements / post-launch.
+
 If time remains: C9, C12, C10, item 46, C20. Later sessions (not this one): offer experience sections 2-12 (credit), the
 motion order of 2026-10-12 (item 55, then 28 and 32 on two phones; C13-C16), two-phone checks (C17, C22, items 39/40, item 146
 checks 7-8), and parts 1-5 again on Android (incl. C24 (c)).

@@ -37,7 +37,7 @@ Locked items say "do not reopen": respect that unless the owner reopens them.
 
 ## Open work
 
-**Next priority (owner, 2026-10-23):** the first real-phone session, journey first, no new features:
+**Next priority (owner, 2026-10-23; + 2026-10-24: part 7 offer-to-booking end to end on two accounts, the deadline test runs alongside, per-scenario Functional/Usability/Visual/Device/Evidence record):** the first real-phone session, journey first, no new features:
 `PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md` (APPROVED: setup S1-S7; session A = your own run: get in -> search ->
 Create + pin -> Ask Nearby Businesses -> the correction story; session B = someone new, plain-word tasks; result codes PASS / FAIL /
 USABILITY / SETUP-BLOCKED (never a failure, stays unverified) / NOT TESTED, Sev 1-3; focus F1-F4: day/time change noticed, why a
