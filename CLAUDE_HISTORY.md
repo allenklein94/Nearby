@@ -17,7 +17,7 @@ Owner approved the proposed narrow server fix with seven requirements; each, as 
 6. Agreement: `businessActionRoute` now sends `targetPartner` + `matchedAvailability` for the deliberate Reserve / Book / Request, so the
    heading ("Book with {name}"), subtitle ("only {name} will see this"), button + screen-reader label ("Ask {name}", `askSubmitLabel`)
    and the server (notifiedCount 1, `targeted`, `postingBound`) agree; journey's client step ties them.
-7. Journey `exclusivePostingRequest` 13/13 in one rolled-back transaction under real roles (fails 10/10 on the pre-migration DB).
+7. Journey `exclusivePostingRequest` 10/10 in one rolled-back transaction under real roles (fails 10/10 on the pre-migration DB).
 Results: migration 20270342 applied to production (same signatures, no new overloads; helper has no anon/authenticated grant);
 prod journeys 667/667 (also 667/667 with it as prelude before applying); from-scratch replay 466/466 + journeys 667/667 + both
 concurrency scripts on it; grants replay = prod 3131/3131; Jest 496/6825. No new strings, screens, motion. Production data: none
