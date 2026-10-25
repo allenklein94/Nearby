@@ -119,6 +119,9 @@
   rows open the same GatheringDetail; no Activity row for an accepted join or anything the gathering's page + push already say
   (idea "337"). No code, screens or navigation changes. New observation in the run order ("Activity watch"): action-needed vs
   informational rows distinguishable?
+- Profile -> gathering (owner, same day): MET AS BUILT, CLOSED, LOCKED. Your Story = Memory Vault + Your Progress; Plans > Past =
+  the one list of completed gatherings, each opening GatheringDetail; no gathering list or activity feed inside Your Story. No
+  code or screens. Session B gains task 7 (session A account): find a past gathering + does Profile read as a personal record.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
