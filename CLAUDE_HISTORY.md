@@ -29,6 +29,11 @@
   Plans > Past (Profile's Past count opens it; never duplicated in Your Story), "Places visited" DEFERRED with "Businesses
   visited" (confirmed visits only, never a saved-places list). CLOSED + LOCKED, nothing built. Phone watch inside session B task 5:
   finding completed experiences via Profile -> Plans > Past; trouble = wording/navigation first, never a new screen.
+- Follow-up 5 (owner, same day): "Your Stats above the noise" (attended, hosted, friends joined, offers received, offers
+  redeemed). Met by Your Progress's lifetime stats (attended, hosted, communities joined, friends made), kept inside it (no new
+  section). "Offers received" DECLINED (item 125: a business-side total, not a personal achievement). "Offers redeemed" and
+  "Businesses visited" DEFERRED, defined separately if revisited (one business can have several redemptions; no redundant
+  figures), only from business-confirmed visits. CLOSED + LOCKED; no Profile changes before the phone session.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
