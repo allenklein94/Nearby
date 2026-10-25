@@ -1,3 +1,15 @@
+# Home preview vs inline answer: met as built, closed (owner, 2026-10-25)
+
+- Owner proposal: "inline answer first -> expand if useful -> navigate only for deeper exploration", plus remove the standalone
+  "Your Activity" screen. Assessment: the hierarchy is item 45's ladder (+ Rule 14) on every surface except Home, where item 110
+  forbids in-place expansion (ideas "216"/"218"/"399" and the "This week" recap declined). Home already answers inline where it
+  can (Your Plans rows: what, when, party) and otherwise opens the owning destination (Home-claim rule, 2026-10-25). "Your
+  Activity" was already gone: renamed Your Progress and folded into Profile 2026-10-24 (`RULE14_DECISIONS.folded.Momentum`;
+  no source reference left, checked).
+- Owner decision (same day): keep Home as built; no change to item 110, no second version of item 45; Your Progress stays in
+  Profile; no navigation or screen-consolidation changes until the real-phone session shows a problem. That session evaluates
+  whether people find what they need quickly, not whether another screen can be eliminated. Nothing built.
+
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
 - Audit (same day, nothing built until approval): of the owner's candidates, Interested gatherings (Plans' ☆ Interested row),
