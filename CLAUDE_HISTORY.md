@@ -18,6 +18,11 @@
   Connections (Friends, Communities), Your Plans Upcoming/Past -> Plans. CLOSED + LOCKED: no new sections, no rename ("Your
   Connections" stays; an 11-language rename for tagline consistency declined), no duplicate stats. "Businesses visited" DEFERRED:
   only from business-confirmed visits (offer `completed`), revisited once real ones exist and the figure is meaningful.
+- Follow-up 3 (owner, same day): six questions -> six destinations (Home doing now, Discover around me, People connect, Create,
+  Activity "because of me", Profile who I am). Met by the locked surface jobs except three wordings, kept as locked: Home = what
+  should I do now (Plans = what you're doing), Activity = what needs my attention incl. others' invitations/requests (idea "240"
+  declined "because of you"), People = a Discover mode (idea "238", no sixth tab). CLOSED + LOCKED; no framework, screens or
+  duplicates. Understanding is unverified until session B task 5 ("one app or five?") runs on a phone.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
