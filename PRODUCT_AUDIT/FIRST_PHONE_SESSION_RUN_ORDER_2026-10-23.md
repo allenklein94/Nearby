@@ -359,8 +359,8 @@ Card scan watch (owner, idea "386", 2026-10-24; observation only): on a gatherin
 available), give 3 seconds, cover it, ask "What is it, when is it, and what happens if you tap the button?" Write the answers verbatim.
 A wrong or missing answer, or text truncated/overlapping = USABILITY with a screenshot; the fix is that card's shared model
 (`gatheringCardModel`), proposed for owner approval; nothing removed and no layout change without this evidence.
-Compact-row attendance check (owner, 2026-10-25; observation only, after Card scan watch): on the smallest phone available, Discover
-in English AND one longer-text language (German or Spanish), with the phone's text size at default AND one step larger: look at (a) a
+Compact-row attendance check (owner, 2026-10-25; observation only, after Card scan watch): on the smallest phone available AND the phone
+most users are expected to have (if different), Discover in English AND one longer-text language (German or Spanish), with the phone's text size at default AND one step larger: look at (a) a
 compact row (Tonight / This Weekend section), (b) a hero tile, (c) a standard tile's second line, (d) a Happening Now tile, each for a
 gathering with confirmed attendees. PASS = time, distance and spots left (when shown) fully readable; "N attending" either fully shown
 or absent, never cut ("3 atten…"). A cut count, or time/distance/spots hidden = USABILITY with a screenshot; the fix is the budgets in
