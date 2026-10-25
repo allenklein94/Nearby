@@ -90,6 +90,15 @@
   TESTED with one business). G1 = APPROVED PRODUCT DIRECTION, DEFERRED until business data exists AND the phone session is done:
   Nearby-owned businesses browsable in Discover's existing category view without typing or opening the map; no new tab, screen,
   Google dependency or duplicate business directory. Next steps unchanged: the iOS build, then the phone session.
+- Seed expanded (owner, same day; test coverage, no product change): `scripts/phone-session/lib.js` `BUSINESSES` = 7 test
+  businesses (Harbor Coffee 0.6 mi owner-linked; Tidewater Pickleball 2.5; Driftwood Coffee 4; Lantern Room Live Music 7, 5-11 PM;
+  Seagrass Yoga 11; Far Shore Coffee 22; Inland Lanes Bowling 60), names "(test)", "Not a real business.", six with no owner.
+  Cleanup now removes all seven + every request row to them. Plan on prod (read-only; South Palm Beach 26.5890,-80.0387, Mon
+  2026-10-26 10:00 ET, owner = outlook account, friend = applereview): code 7530ef9b5bb4 (replaces d2893d6fd08b). Simulation on
+  prod (aborted): as-is = guard refuses (phone-login account ee74f1a9 would get "This matches you"); Option A = pushes only to
+  test people, applereview + outlook rows identical, every row count restored, 7 brand_partners created and removed. Run order's
+  Business discovery watch rewritten with per-business expected results (typed-ask and "We asked N" values = code reading).
+  NOT SEEDED.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
