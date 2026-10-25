@@ -163,6 +163,12 @@ Discover rather than a new place? (b) after switching lens and back, the previou
 state = FAIL, functional, shared navigation). Places is absent (Google discovery held): expected, never a FAIL. Confusion =
 USABILITY with the exact lens, wording fix proposed first; no new screens, tabs or filters.
 
+Quick pick watch (owner, 2026-10-25; PASS/FAIL, seeded gatherings, phone on its real local time): tap two Home quick picks:
+(a) Discover opens on Gatherings with that pick's category and the CURRENT period's time filter (evening = Tonight), cards at once,
+never another screen; (b) the results fit the pick (category + time; an unrelated gathering shown = FAIL, shared filter); (c) Back
+returns to Home as it was; (d) a pick with nothing in its window shows Discover's real empty state, never filler or invented
+recommendations, and Home itself shows no made-up pick (FAIL). Period-boundary behaviour = first-session checklist check 14.
+
 Activity watch (owner, 2026-10-25; observation only): on Activity, can the person tell what needs their answer (Needs Your
 Attention: invitations, join requests) from what is only informational (Today, Earlier)? Ask "Which of these do you need to do
 something about?" Clear = no change; confused = USABILITY with the exact rows, wording first.
