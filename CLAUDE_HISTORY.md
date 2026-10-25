@@ -47,6 +47,10 @@
   social recommendations (item 92, strangers = counts), friends' interests beyond mutual declared ones (item 40; Interested
   private) and a friend activity feed (Home item 41 + Activity) DECLINED. CLOSED + LOCKED. Phone watch: the word "Friends"
   for both discover and manage; confusion = wording/entry points (e.g. "Meet Friends") proposed for approval, never a merge.
+- Follow-up 9 (owner, same day): Profile > "Your Circle" as friend management (list, status, remove/block, groups) and People >
+  Friends as "what are my friends doing". DECLINED, CLOSED: reverses follow-up 8 (management stays on the Friends screen, Your
+  Connections stays counts, "Your Circle" rename declined, friend feed declined; circles already serve Invite a Circle, item
+  136). Owner: no screen-structure changes until the phone session; "Meet Friends" only if testing shows confusion.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
