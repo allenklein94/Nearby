@@ -2446,6 +2446,8 @@ export default function HomeScreen({ navigation }) {
                 <RightNowMark color={colors.info} />
               </HappeningRipple>
               <Text style={[styles.sectionHeaderText, styles.rightNowHeading]}>{t('ui.home.nearbyRightNow')}</Text>
+              {/* Owner 2026-10-25: a quiet chevron says the heading opens the full list (static, no new action). */}
+              <Ionicons name="chevron-forward" size={14} color={colors.textTertiary} style={{ marginLeft: spacing.xs }} />
             </TouchableOpacity>
             {rightNow.map((g) => renderAttentionEntry({ kind: 'gathering', gathering: g, signals: [], hasFriend: false, trendingOnly: false }))}
           </>

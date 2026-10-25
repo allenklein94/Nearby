@@ -405,8 +405,8 @@ wording proposal in the shared table (`primaryAction.js` / `i18n/ui/actions.js`)
 Plan stop links (owner, idea "383", 2026-10-24; same watch): on an Experience plan, each stop's link names where it goes: a
 gathering or an already-requested/booked stop = "View →"; a stop not requested yet = Reserve / Book / Request (the business's
 booking mode; "Request" when none). Ask what each will do before tapping. Also: Home's "Explore nearby →" (renamed from "Continue Browsing", owner 2026-10-25) opens Discover as it was; PASS/FAIL. And: without being told, does the person see that Home's "Nearby Right Now" heading
-(no chevron today) opens the full Happening Now list? Not noticed = USABILITY; fix = a subtle chevron beside the heading only
-(owner, 2026-10-25), never a separate "See what's happening" button or a count line.
+(subtle chevron added, owner 2026-10-25) opens the full Happening Now list, and does Back return to Home? Not noticed =
+USABILITY, reported; never a separate "See what's happening" button or a count line.
 Walk-in stop (owner, 2026-10-24): a walk-in business's stop reads "Request" (it opens a request form, so it is truthful); note whether the
 person expected to just walk in. Confusion = USABILITY, reported; no label change without this evidence.
 Send button (owner, idea "384", 2026-10-24; same watch + screen reader on): asking ONE business (its Reserve / Book / Request, or a
