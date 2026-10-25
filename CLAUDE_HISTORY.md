@@ -111,6 +111,10 @@
 - Gatherings tab (owner, same day): DECLINED, CLOSED, LOCKED. Five tabs stay Home / Discover / Create / Activity / Profile (People =
   Discover mode, Plans via Home + Profile); every gathering opens the same GatheringDetail. No new tab, screens or navigation
   changes; revisit only on a real phone-session usability problem.
+- Plans as the collection (owner, same day): MET AS BUILT, CLOSED, LOCKED. Home keeps up to 3 plan previews (what, when, who /
+  party), "See all plans" -> the one Plans screen (Upcoming / Hosting / Past), a plan -> its GatheringDetail, Back restores. No
+  summary count in place of the previews unless the phone shows Home is too long (idea "399"); no code or screens, 69 kept.
+  Owner: no further structural proposals until the phone session.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
