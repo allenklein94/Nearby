@@ -49,7 +49,23 @@ const JOINS = [
   ['person/maya', 'gathering/saturday-music'],
   ['person/sam', 'gathering/friday-pickleball'],
 ];
-const BUSINESS_KEY = 'business/coffee';
+const BUSINESS_KEY = 'business/coffee'; // the one test business linked to BUSINESS_OWNER_EMAIL (run order part 7)
+// Test businesses (owner, 2026-10-25: a representative set, so discovery is tested beyond one pin). north/east = miles from the
+// seed point (west/north/south of a coastal seed, so pins stay on land); distance = their hypotenuse. Only business/coffee has
+// an owner; the rest have none, so nobody is notified of a request they receive and nobody can reply. Expected results by radius:
+// Discover's word search + map read every active business within 50 mi (getNearbyBusinesses); typed asks and Ask Nearby
+// Businesses reach 15 mi by default (DEFAULT_SEARCH_MILES), 30 with travel words, never past 50.
+const ALL_DAY = [['07:00', '21:00']];
+const BUSINESSES = [
+  { key: BUSINESS_KEY, name: 'Harbor Coffee (test)', category: 'food_drink', tag: 'Coffee', north: 0.45, east: -0.4, hours: ALL_DAY, maxGroup: 10 },
+  { key: 'business/coffee-2', name: 'Driftwood Coffee Bar (test)', category: 'food_drink', tag: 'Coffee', north: -3.2, east: -2.4, hours: ALL_DAY, maxGroup: 8 },
+  { key: 'business/pickleball', name: 'Tidewater Pickleball Courts (test)', category: 'sports_fitness', tag: 'Pickleball', north: 2.0, east: -1.5, hours: [['08:00', '20:00']], maxGroup: 16, weather: 'outdoor' },
+  { key: 'business/live-music', name: 'Lantern Room Live Music (test)', category: 'entertainment_nightlife', tag: 'Live Music', north: 5.6, east: -4.2, hours: [['17:00', '23:00']], maxGroup: 40, weather: 'indoor' },
+  { key: 'business/yoga', name: 'Seagrass Yoga Studio (test)', category: 'sports_fitness', tag: 'Yoga', north: -8.8, east: -6.6, hours: [['06:00', '20:00']], maxGroup: 20, weather: 'indoor' },
+  { key: 'business/coffee-far', name: 'Far Shore Coffee (test)', category: 'food_drink', tag: 'Coffee', north: 17.6, east: -13.2, hours: ALL_DAY, maxGroup: 8 },
+  { key: 'business/bowling-beyond', name: 'Inland Lanes Bowling (test)', category: 'activities_recreation', tag: 'Bowling', north: 45, east: -40, hours: [['10:00', '23:00']], maxGroup: 30, weather: 'indoor' },
+];
+const businessIds = () => BUSINESSES.map((b) => idSql(b.key)).join(',');
 
 function config() {
   const e = process.env;
@@ -62,7 +78,7 @@ function config() {
     sessionStart: e.SESSION_START || null, // HH:MM, local; default = now
     friendEmail: e.FRIEND_ACCOUNT_EMAIL || null, // the owner's S6 (b) account: becomes Sam's accepted friend
     ownerEmail: e.BUSINESS_OWNER_EMAIL || null, // the account that will run the test business (signed in on the web)
-    businessName: e.BUSINESS_NAME || 'Harbor Coffee (test)',
+    businessName: e.BUSINESS_NAME || BUSINESSES[0].name,
     businessAddress: e.BUSINESS_ADDRESS || 'Test business, not a real address',
     businessLat: num(e.BUSINESS_LAT),
     businessLng: num(e.BUSINESS_LNG),
@@ -78,12 +94,13 @@ function config() {
     console.error(`Missing or invalid settings:\n- ${problems.join('\n- ')}`);
     process.exit(2);
   }
-  // business pin: given, else 0.6 mi north-east of the seed point
-  if (!Number.isFinite(c.businessLat) || !Number.isFinite(c.businessLng)) {
-    const o = offset(c, 0.45, 0.4);
-    c.businessLat = o.lat;
-    c.businessLng = o.lng;
-  }
+  // every test business's pin; BUSINESS_NAME / BUSINESS_LAT / BUSINESS_LNG override only the owner-linked one
+  c.businesses = BUSINESSES.map((b) => {
+    const o = offset(c, b.north, b.east);
+    const own = b.key === BUSINESS_KEY;
+    const pinGiven = own && Number.isFinite(c.businessLat) && Number.isFinite(c.businessLng);
+    return { ...b, name: own ? c.businessName : b.name, lat: pinGiven ? c.businessLat : o.lat, lng: pinGiven ? c.businessLng : o.lng };
+  });
   return c;
 }
 
@@ -124,8 +141,10 @@ function planSql(c) {
   'now_local', to_char(now() at time zone ${q(c.tz)}, 'Dy YYYY-MM-DD HH24:MI'),
   'people', (select jsonb_agg(x) from (${PEOPLE.map((p) => `select ${q(p.key)} as key, ${idSql(p.key)} as id, ${q(p.name)} as name, ${q(`${p.key.split('/')[1]}@${EMAIL_DOMAIN}`)} as email, exists (select 1 from auth.users where id = ${idSql(p.key)}) as exists_already`).join(' union all ')}) x),
   'gatherings', (select jsonb_agg(x order by starts_local) from (${gRows}) x),
-  'business', jsonb_build_object('id', ${idSql(BUSINESS_KEY)}, 'name', ${q(c.businessName)}, 'address', ${q(c.businessAddress)}, 'lat', ${c.businessLat}, 'lng', ${c.businessLng},
-     'exists_already', exists (select 1 from brand_partners where id = ${idSql(BUSINESS_KEY)})),
+  'businesses', (select jsonb_agg(x order by miles) from (${c.businesses.map((b) => `select ${q(b.key)} as key, ${idSql(b.key)} as id, ${q(b.name)} as name,
+      ${q(b.category)} as category, ${q(b.tag)} as tag, ${Math.round(Math.hypot(b.north, b.east) * 10) / 10} as miles, ${b.lat} as lat, ${b.lng} as lng,
+      ${q(b.hours.map((h) => h.join('-')).join(', '))} as hours_daily, ${b.maxGroup} as max_group, ${q(b.weather ?? null)} as weather_setting,
+      ${b.key === BUSINESS_KEY ? 'true' : 'false'} as linked_to_owner, exists (select 1 from brand_partners where id = ${idSql(b.key)}) as exists_already`).join('\n union all ')}) x),
   'friend_account', ${c.friendEmail ? `(select jsonb_build_object('email', ${q(c.friendEmail)}, 'found', count(*) = 1, 'id', min(id::text)) from auth.users where lower(email) = lower(${q(c.friendEmail)}))` : 'null'},
   'business_owner_account', ${c.ownerEmail ? `(select jsonb_build_object('email', ${q(c.ownerEmail)}, 'found', count(*) = 1, 'has_profile', bool_and(p.id is not null),
        'manages_other_business', bool_or(p.managed_partner_id is not null and p.managed_partner_id <> ${idSql(BUSINESS_KEY)}))
@@ -172,7 +191,14 @@ function seedSql(c) {
     reset role;
     created := created || jsonb_build_array(${q(`join/${who}->${g}`)});
   end if;`).join('');
-  const hours = JSON.stringify({ timezone: c.tz, week: Object.fromEntries(['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((d) => [d, [['07:00', '21:00']]])) });
+  const hoursOf = (b) => JSON.stringify({ timezone: c.tz, week: Object.fromEntries(['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'].map((d) => [d, b.hours])) });
+  const businesses = c.businesses.map((b) => `
+  if not exists (select 1 from brand_partners where id = ${idSql(b.key)}) then
+    insert into brand_partners (id, name, description, active, latitude, longitude, location_source, address, category, subcategory, max_group_size, operating_hours, weather_setting)
+    values (${idSql(b.key)}, ${q(b.name)}, 'Test business for the first phone session. Not a real business.', true,
+            ${b.lat}, ${b.lng}, 'host_pin', ${q(c.businessAddress)}, ${q(b.category)}, ${q(b.tag)}, ${b.maxGroup}, ${q(hoursOf(b))}::jsonb, ${q(b.weather ?? null)});
+    created := created || jsonb_build_array(${q(b.key)});
+  end if;`).join('');
   return `do $seed$
 declare created jsonb := '[]'; skipped jsonb := '[]'; v_owner uuid; v_friend uuid; v_fs uuid;
 begin
@@ -180,13 +206,8 @@ begin
   ${people}
   ${gatherings}
   ${joins}
-  -- the test Coffee business (as the admin approval path would create it), open 7 AM - 9 PM every day, groups up to 10
-  if not exists (select 1 from brand_partners where id = ${idSql(BUSINESS_KEY)}) then
-    insert into brand_partners (id, name, description, active, latitude, longitude, location_source, address, category, subcategory, max_group_size, operating_hours)
-    values (${idSql(BUSINESS_KEY)}, ${q(c.businessName)}, 'Test business for the first phone session. Not a real business.', true,
-            ${c.businessLat}, ${c.businessLng}, 'host_pin', ${q(c.businessAddress)}, 'food_drink', 'Coffee', 10, ${q(hours)}::jsonb);
-    created := created || jsonb_build_array(${q(BUSINESS_KEY)});
-  end if;
+  -- the test businesses (as the admin approval path would create them); only business/coffee gets an owner below
+  ${businesses}
   ${c.ownerEmail ? `
   select id into v_owner from auth.users where lower(email) = lower(${q(c.ownerEmail)});
   if v_owner is null or not exists (select 1 from profiles where id = v_owner) then
@@ -242,26 +263,26 @@ function statusSql() {
   'gatherings', (select count(*) from gatherings where id in (${gIds})),
   'gathering_titles', (select coalesce(jsonb_agg(title || ' @ ' || to_char(scheduled_at, 'YYYY-MM-DD HH24:MI TZ') order by scheduled_at), '[]') from gatherings where id in (${gIds})),
   'gatherings_by_test_hosts', (select count(*) from gatherings where host_id in (${pIds})),
-  'business', (select count(*) from brand_partners where id = ${idSql(BUSINESS_KEY)}),
+  'businesses', (select count(*) from brand_partners where id in (${businessIds()})),
   'business_owner_links', (select count(*) from profiles where managed_partner_id = ${idSql(BUSINESS_KEY)}),
   'friendships_with_test_people', (select count(*) from friendships where user_a in (${pIds}) or user_b in (${pIds}))
 ) as status`;
 }
 
-// Cleanup. Deletes only: the seeded gatherings, the seeded business, the three seeded people (their profiles and every row
+// Cleanup. Deletes only: the seeded gatherings, the seeded businesses, the three seeded people (their profiles and every row
 // that cascades from them), after un-linking the business owner. Measured, not guessed: every table's row count is taken
 // before and after inside one REPEATABLE READ transaction, so the diff is exactly what the deletes (and their cascades /
 // triggers) change. dryRun = always rolled back; otherwise it commits ONLY if the diff hashes to `expect`.
 function cleanupSql({ dryRun, expect = null }) {
   const gIds = GATHERINGS.map((g) => idSql(g.key)).join(',');
   const pIds = PEOPLE.map((p) => idSql(p.key)).join(',');
-  const B = idSql(BUSINESS_KEY);
+  const Bs = businessIds();
   return `begin isolation level repeatable read;
 create temp table _ps_before (cnt bigint, tbl text) on commit drop;
 create temp table _ps_report (report jsonb) on commit drop;
 do $clean$
 declare r record; k bigint; diff jsonb := '{}'; swept jsonb := '{}'; real_activity jsonb; d text;
-  ids uuid[] := array[${gIds}, ${pIds}, ${B}, ${idSql('friendship/sam')}];
+  ids uuid[] := array[${gIds}, ${pIds}, ${Bs}, ${idSql('friendship/sam')}];
 begin
   for r in select c.oid::regclass::text as t from pg_class c join pg_namespace s on s.oid = c.relnamespace
            where c.relkind in ('r', 'p') and not c.relispartition and s.nspname in ('public', 'private', 'auth', 'storage') loop
@@ -273,16 +294,16 @@ begin
   real_activity := jsonb_build_object(
     'joins_or_requests_on_test_gatherings', (select count(*) from gathering_interest where gathering_id in (${gIds}) and user_id not in (${pIds})),
     'interested_marks_on_test_gatherings', (select count(*) from gathering_interested where gathering_id in (${gIds}) and user_id not in (${pIds})),
-    'requests_that_reached_the_test_business', (select count(distinct o.request_id) from business_request_offers o where o.partner_id = ${B}),
-    'request_rows_to_the_test_business', (select count(*) from business_request_offers where partner_id = ${B}));
+    'requests_that_reached_the_test_businesses', (select count(distinct o.request_id) from business_request_offers o where o.partner_id in (${Bs})),
+    'request_rows_to_the_test_businesses', (select count(*) from business_request_offers where partner_id in (${Bs})));
 
-  update profiles set managed_partner_id = null where managed_partner_id = ${B};
+  update profiles set managed_partner_id = null where managed_partner_id in (${Bs});
   -- attendance first, so deleting the gatherings sends no "A gathering was cancelled" push to anyone who joined during the session
   delete from gathering_interest where gathering_id in (${gIds});
   delete from gathering_interested where gathering_id in (${gIds});
   delete from gatherings where id in (${gIds});
   delete from gatherings where host_id in (${pIds});  -- anything a test person hosts (none beyond the seed's own)
-  delete from brand_partners where id = ${B};
+  delete from brand_partners where id in (${Bs});
   delete from auth.users where id in (${pIds});      -- cascades to their profiles and everything that cascades from those
   -- rows still naming a seeded id in a column with no foreign key (queued pushes to test people, logs about test objects)
   for r in select c.table_schema, c.table_name, c.column_name from information_schema.columns c
@@ -305,7 +326,7 @@ begin
   d := encode(sha256(convert_to(diff::text, 'utf8')), 'hex');
   insert into _ps_report values (jsonb_build_object('row_changes_by_table', diff, 'of_which_unlinked_rows_swept', swept, 'real_account_activity_removed_with_test_objects', real_activity,
     'remaining_seeded', jsonb_build_object('people', (select count(*) from auth.users where id in (${pIds})), 'gatherings', (select count(*) from gatherings where id in (${gIds})),
-      'business', (select count(*) from brand_partners where id = ${B})),
+      'businesses', (select count(*) from brand_partners where id in (${Bs}))),
     'confirm', left(d, 12), 'dry_run', ${dryRun ? 'true' : 'false'}));
   ${dryRun ? "raise exception 'PHONE_SESSION_DRY_RUN %', (select report::text from _ps_report);" : `if left(d, 12) <> ${q(expect)} then
     raise exception 'PHONE_SESSION_MISMATCH the deletion now differs from the approved dry run (expected %, got %): nothing was deleted. Diff: %', ${q(expect)}, left(d, 12), diff::text;
@@ -319,4 +340,4 @@ async function run(sql) {
   return runSql(sql);
 }
 
-module.exports = { NAMESPACE, EMAIL_DOMAIN, PEOPLE, GATHERINGS, JOINS, BUSINESS_KEY, isLocal, target, config, planSql, seedSql, statusSql, cleanupSql, run, hash, idOf };
+module.exports = { NAMESPACE, EMAIL_DOMAIN, PEOPLE, GATHERINGS, JOINS, BUSINESS_KEY, BUSINESSES, isLocal, target, config, planSql, seedSql, statusSql, cleanupSql, run, hash, idOf };

@@ -9,7 +9,19 @@ Setup S4-S6 of `PRODUCT_AUDIT/FIRST_PHONE_SESSION_RUN_ORDER_2026-10-23.md`. Adds
   the next Friday incl. today 2 PM (Pickleball), Saturday 10 AM (Pickleball, **approval needed**), Saturday 8 PM (Live Music, Sam hosts),
   next week's Wednesday 8:30 AM (Coffee). Any start already past is skipped and reported.
 - 3 joins between test people (so some "N attending" figures are real).
-- 1 test business "Harbor Coffee (test)" (Coffee, open 7 AM-9 PM daily, groups up to 10, its own pin), linked to `BUSINESS_OWNER_EMAIL`.
+- 7 test businesses (owner, 2026-10-25), names ending "(test)", description "Not a real business.", each with its own pin
+  (west/north/south of the seed point), hours and largest group. Only "Harbor Coffee (test)" is linked to `BUSINESS_OWNER_EMAIL`;
+  the other six have no owner (no business push, nobody can reply):
+
+  | Business | Category | Distance | Hours (daily) | Expected |
+  |---|---|---|---|---|
+  | Harbor Coffee (test) | Coffee | 0.6 mi | 7 AM-9 PM | everywhere; nearest coffee |
+  | Tidewater Pickleball Courts (test) | Pickleball, outdoor | 2.5 mi | 8 AM-8 PM | pickleball only |
+  | Driftwood Coffee Bar (test) | Coffee | 4 mi | 7 AM-9 PM | coffee, after Harbor |
+  | Lantern Room Live Music (test) | Live Music, indoor | 7 mi | 5-11 PM | live music only; closed for "coffee at 10 AM"-type times |
+  | Seagrass Yoga Studio (test) | Yoga, indoor | 11 mi | 6 AM-8 PM | yoga only; inside 15 mi |
+  | Far Shore Coffee (test) | Coffee | 22 mi | 7 AM-9 PM | Discover word search + map (50 mi); NOT a typed ask / Ask Nearby Businesses at 15 mi; yes at 30 |
+  | Inland Lanes Bowling (test) | Bowling, indoor | 60 mi | 10 AM-11 PM | nowhere (beyond the 50 mi maximum) |
 - 1 accepted friendship: Sam (test) and `FRIEND_ACCOUNT_EMAIL` (written already accepted, with its chat row, so no friend-request push).
 
 ## Use
@@ -24,10 +36,10 @@ Production (no `NEARBY_LOCAL_DB_URL`, `SUPABASE_ACCESS_TOKEN` set) additionally 
 `apply --production --confirm=<code>` with the code from a plan the owner approved. Without them the scripts refuse before writing.
 
 ## What cleanup removes
-The seeded gatherings, business, people (and what cascades from them), the business-owner link, then any row in `public`/`private`
+The seeded gatherings, businesses, people (and what cascades from them), the business-owner link, then any row in `public`/`private`
 whose uuid column still names a seeded id (queued pushes to test people, events about test objects). Attendance is deleted first, so
 nobody who joined during the session gets a "gathering was cancelled" push. Kept: the real accounts, their own gatherings and their
-business requests (minus the request rows to the test business; the dry run counts them).
+business requests (minus the request rows to the test businesses; the dry run counts them).
 
 ## Verified (2026-10-23, local from-scratch replay 463/463, never production)
 Seed, rerun (0 created), simulated session (join, approval request, Interested, broadcast + directed request reaching the test

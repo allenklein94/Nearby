@@ -41,7 +41,7 @@ Pre-flight (before any check; a failure here = stop and rebuild, never record pr
 - P1 Build: TestFlight shows the installed build is the one made from ec0b06f0 or later (build number 87+). Quick proof in the
   app: Profile has a "🔥 Your Progress" row that opens in place; Settings > Manage Subscription opens in place; Home has no
   "This week: ..." recap. Any of these missing = old build = everything SETUP-BLOCKED.
-- P2 Setup S2-S7 above. S4/S5 (seed) need the owner's explicit approval of seed code d2893d6fd08b (or a re-plan) and Option A
+- P2 Setup S2-S7 above. S4/S5 (seed) need the owner's explicit approval of seed code 7530ef9b5bb4 (7 test businesses, 2026-10-25; replaces d2893d6fd08b) (or a re-plan) and Option A
   (Settings > Notifications > "Recommendations" off on the phone-login account) right before apply; not seeded = parts 2-4 and
   every "seeded test business" block SETUP-BLOCKED.
 - P3 Production writes: everything done on the phone writes real rows on production (the only database). Self-cleaning: emergency
@@ -131,13 +131,17 @@ Business hours watch (owner, idea "331", 2026-10-23): "Does the person understan
 requested, without having to open its preview or check its hours manually?" (e.g. "coffee tonight at 8"). Record separately whether
 they mean OPEN NOW or OPEN AT THE REQUESTED TIME (different facts; note if the person or the screen confuses them). Report only.
 
-Business discovery watch (owner, 2026-10-25; PASS/FAIL; seeded test business "Harbor Coffee (test)", Coffee, ~0.6 mi): G2 may be
-masking discovery bugs, so check more than the pin: (a) typing "coffee" in Discover's All shows it under Businesses with a real
-distance; (b) its pin shows on the All map and opens the preview sheet; (c) a typed ask ("coffee tonight") reaches it (results or Ask
-Nearby Businesses); (d) it does NOT appear for an unrelated word (e.g. "pickleball") or in an unrelated category; (e) it still appears
-at the 15 mi radius and the distance shown matches the map. Not testable with ONE business (record NOT TESTED): ordering between
-businesses, a business beyond the radius being excluded, other categories. G1 (browsing businesses in Discover's category view without
-typing) is NOT built: its absence is expected, never a FAIL.
+Business discovery watch (owner, 2026-10-25; PASS/FAIL; the seed's 7 test businesses, table in `scripts/phone-session/README.md`):
+G2 may be masking discovery bugs, so check more than the pins. Standing at the seed point: (a) Discover All, type "coffee":
+Businesses lists Harbor (0.6 mi), Driftwood (4 mi), Far Shore (22 mi) in that order, with distances; no pickleball, live music,
+yoga or bowling business; (b) type "pickleball" / "yoga" / "live music": only that business; "bowling": none (60 mi); (c) the All map
+shows six business pins (not Inland Lanes), each opening its preview sheet with its own hours; (d) a typed ask ("coffee
+tonight") lists a test business as a result only if it has a posting or reply policy (none does, except Harbor once its auto-accept
+is set for part 7): record which appear; (e) from that ask, Ask Nearby Businesses at the default 15 mi: expected (code reading, not
+yet run) "We asked 2" (Harbor + Driftwood; Far Shore is 22 mi); at 30 mi: 3. The unowned businesses count (they really receive
+the request); only Harbor's Opportunities can be seen; (f) a live-music ask for a time outside Lantern Room's 5-11 PM leaves it out.
+Any mismatch = FAIL with the exact screen + expected row. G1 (browsing businesses in the category view without typing) is NOT
+built: its absence is expected, never a FAIL.
 
 Join clarity watch (owner, idea "337", 2026-10-23; first TWO-phone session, alongside item 28's checklist): when someone joins
 the host's gathering, does the host understand what happened from the existing join push ("{Name} joined", opens that gathering)
