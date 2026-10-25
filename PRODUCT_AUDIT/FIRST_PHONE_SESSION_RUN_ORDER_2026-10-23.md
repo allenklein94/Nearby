@@ -143,6 +143,12 @@ the request); only Harbor's Opportunities can be seen; (f) a live-music ask for 
 Any mismatch = FAIL with the exact screen + expected row. G1 (browsing businesses in the category view without typing) is NOT
 built: its absence is expected, never a FAIL.
 
+Gathering detail watch (owner, 2026-10-25; PASS/FAIL; seeded gatherings): open the SAME gathering from Home (a card, and an
+item 41 chip if one shows), Discover (a card, with a time chip or category selected and scrolled down first), Activity (an invitation
+or join request) and Plans (Upcoming / Hosting / Past): (a) every entry opens the same GatheringDetail (same title, state, action);
+(b) Back returns to the exact previous screen with its scroll position, filters/chips, selected mode/tab and any open view, never a
+reset Discover. A reset = FAIL (functional, idea "283"); a pass closes the item with no further development.
+
 Join clarity watch (owner, idea "337", 2026-10-23; first TWO-phone session, alongside item 28's checklist): when someone joins
 the host's gathering, does the host understand what happened from the existing join push ("{Name} joined", opens that gathering)
 and the Who's going section (face flows in, count rolls, named line) alone, without wanting another surface (Home, Activity)?

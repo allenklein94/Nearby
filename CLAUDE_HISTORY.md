@@ -99,6 +99,12 @@
   test people, applereview + outlook rows identical, every row count restored, 7 brand_partners created and removed. Run order's
   Business discovery watch rewritten with per-business expected results (typed-ask and "We asked N" values = code reading).
   NOT SEEDED.
+- Gathering detail screen (owner, same day): keep `GatheringDetail` as the ONE canonical detail screen (Rule 14 entity: join,
+  attendees, meet-up point, chat, invitations, business request + booking, host management); MET AS BUILT, every entry (Home cards
+  + item 41 chips, Discover, Activity invitations / join requests, Plans) opens it over the current context. No additional screens,
+  duplicate detail views or expanding Home/Discover cards (ideas "230"/"231"); 69-screen baseline unchanged. Verification = the
+  run order's new "Gathering detail watch" (same detail from every entry; Back restores scroll, filters, mode, open view); a pass
+  closes it with no further development.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
