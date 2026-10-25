@@ -23,6 +23,12 @@
   should I do now (Plans = what you're doing), Activity = what needs my attention incl. others' invitations/requests (idea "240"
   declined "because of you"), People = a Discover mode (idea "238", no sixth tab). CLOSED + LOCKED; no framework, screens or
   duplicates. Understanding is unverified until session B task 5 ("one app or five?") runs on a phone.
+- Follow-up 4 (owner, same day): Activity = present tense, Profile > Your Story = past + identity. Met: no shared items; Activity's
+  Needs Your Attention / Today / Earlier already carry "sent an offer" / "responded" rows opening the exact offer. Kept as locked:
+  no "{Name} joined/accepted" Activity row (idea "337": the host's page + the joined push already say it), past experiences stay in
+  Plans > Past (Profile's Past count opens it; never duplicated in Your Story), "Places visited" DEFERRED with "Businesses
+  visited" (confirmed visits only, never a saved-places list). CLOSED + LOCKED, nothing built. Phone watch inside session B task 5:
+  finding completed experiences via Profile -> Plans > Past; trouble = wording/navigation first, never a new screen.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
