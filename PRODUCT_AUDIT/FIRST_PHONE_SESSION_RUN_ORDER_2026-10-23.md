@@ -163,7 +163,13 @@ Discover rather than a new place? (b) after switching lens and back, the previou
 state = FAIL, functional, shared navigation). Places is absent (Google discovery held): expected, never a FAIL. Confusion =
 USABILITY with the exact lens, wording fix proposed first; no new screens, tabs or filters. (c) Does Discover feel crowded (too
 many chips/controls competing)? Record which controls they ignore or hesitate over; crowding = simplify the visible controls or
-wording first, never add or remove screens. (d) On Gatherings, turn on Local (~1 mi): can they say what changed versus the
+wording first, never add or remove screens. Gatherings tab (owner, 2026-10-25): note especially whether the second chip row
+(For you, Trending, Local, Outdoor, Indoor, Free/$/$$/$$$, plan kinds: 15+ chips) makes people hunt, esp. on a small phone.
+CONDITIONAL FIX, NOT APPROVED TO BUILD (only if (c) confirms Gatherings crowding; layout unchanged until then): keep the
+day/time row + a FIXED visible set For you, Local, Outdoor, Indoor; Trending, Price and Plan kind move under ONE "More filters"
+chip that expands in place on Discover; an active hidden filter stays visible + removable (✕) until removed; "More filters" shows
+how many filters inside it are active ("More filters (2)"). No new screens, sheets or navigation, no chips rearranged by
+inferred interests or context, no filtering-logic change. Needs owner approval of the build + its new strings (11 languages). (d) On Gatherings, turn on Local (~1 mi): can they say what changed versus the
 normal list (15 mi)? Confusion = wording / discoverability of the existing Local filter first, never more distance options.
 
 Quick pick watch (owner, 2026-10-25; PASS/FAIL, seeded gatherings, phone on its real local time): tap two Home quick picks:
