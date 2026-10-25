@@ -123,7 +123,9 @@ describe('one rule, no duplicates, no new screen or preference', () => {
     expect(read('services/homeRecommendations.js')).toMatch(/gatheringEnvironment\(gathering\)/);
     expect(read('services/intentResolver.js')).toMatch(/businessEnvironment\(partnerInfo\.get/);
     expect(read('screens/DiscoverHubScreen.js')).toMatch(/filterByEnvironment\(list, kind, environmentFilter\)/);
-    for (const kind of ['perk', 'place', 'business', 'community']) expect(read('screens/DiscoverHubScreen.js')).toMatch(new RegExp(`'${kind}'\\)`));
+    for (const kind of ['perk', 'place', 'community']) expect(read('screens/DiscoverHubScreen.js')).toMatch(new RegExp(`'${kind}'\\)`));
+    // Businesses (rows + map pins): the one Discover business rule (owner, 2026-10-25).
+    expect(read('utils/discoverBusinesses.js')).toMatch(/filterByEnvironment\(open, 'business', environment\)/);
   });
   test('no other file keeps its own category -> side table', () => {
     const src = path.join(__dirname, '..');

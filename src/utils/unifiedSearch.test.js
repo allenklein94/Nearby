@@ -44,9 +44,9 @@ describe('one search across everything (item 92)', () => {
   it('Discover wires it without stranger discovery or a new screen', () => {
     const d = read('screens/DiscoverHubScreen.js');
     expect(d).toMatch(/searchTopic\(query\.literalTerm\)/);
-    expect(d).toMatch(/matchBusinesses\(businesses, query\.literalTerm/);
+    expect(d).toMatch(/discoverBusinesses\(businesses, \{\s*searchTerm: isSearching \? query\.literalTerm : null/);
     expect(d).toMatch(/getFriendsInterestedIn\(searchTopicTagKey/);
-    expect(d).toMatch(/applyOpenNow\(matchBusinesses\(/); // Open now still applies
+    expect(d).toMatch(/openNowAt: openNowActive \? openNowAt : null/); // Open now still applies (utils/discoverBusinesses.js)
     expect(d).toMatch(/&& searchedBusinesses\.length === 0;/); // a business hit is not "nothing matched"
     const u = read('utils/unifiedSearch.js');
     expect(u).not.toMatch(/supabase|getNearbyMatches|getFriendDiscoveryCandidates|profiles/);

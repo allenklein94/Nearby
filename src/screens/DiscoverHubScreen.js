@@ -101,7 +101,9 @@ import { buildDiscoverSections, buildDiscoverDateView, compareDiscover, sectionL
 import { happeningNowAreas } from '../utils/mapAreaActivity';
 import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
-import { searchTopic, matchBusinesses, friendsLineForTopic } from '../utils/unifiedSearch';
+import { searchTopic, friendsLineForTopic } from '../utils/unifiedSearch';
+import { discoverBusinesses } from '../utils/discoverBusinesses';
+import { mapSearchContext, rememberMapRegion, mapRegionToRestore } from '../utils/mapRegionMemory';
 import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
 import { foundBlockShownIds, withoutFoundBlock } from '../utils/searchTopDedupe';
 import { matchesDateFilter, DATE_OPTIONS } from '../utils/gatheringDateFilter';
@@ -131,7 +133,7 @@ import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
 // the business/perk half of the same fix.
 import { businessSignalLine } from '../constants/businessDisplaySignals';
 import { getUserLocation } from '../services/userLocation';
-import { filterOpenNow, gatheringEntity, placeEntity, perkEntity, businessEntity } from '../utils/operatingStatus';
+import { filterOpenNow, gatheringEntity, placeEntity, perkEntity } from '../utils/operatingStatus';
 import { placesNeedFetch } from '../utils/placesFetchPlan';
 import { gatheringActionOpenParams } from '../utils/primaryAction';
 
@@ -766,7 +768,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   // Item 120: tap on a map area's label.
   function openMapArea(area) {
-    areaReturnRef.current = { region: mapRegionRef.current };
+    areaReturnRef.current = { region: mapRegionRef.current?.region ?? null };
     setDateViewArea(area.ids);
     setViewStyle('list');
     openDateView('now');
@@ -1127,6 +1129,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const isSearching = query.kind === 'search';
   // Results are fresh only when they were fetched for exactly this term; otherwise they are loading, never shown.
   const searchResultsFresh = !isSearching || searchedTerm === query.literalTerm;
+  // The map's remembered region belongs to this search context (utils/mapRegionMemory.js).
+  const mapContext = mapSearchContext(isSearching, query.literalTerm);
   const loadingSearch = loadingSearchRaw || !searchResultsFresh;
   const placesFresh = !googleDiscovery || !(isAll && isSearching) || !userLocation || placesTerm === query.literalTerm;
   const placesPending = loadingPlaces || !placesFresh;
@@ -1528,9 +1532,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Item 92: one search across everything. The topic (activity/category), matching Nearby businesses and friends into
   // it join the gatherings / communities / perks / places the search already returned (utils/unifiedSearch.js).
   const searchedTopic = isSearching ? searchTopic(query.literalTerm) : null;
-  const searchedBusinesses = isSearching && (isAll || typeFilter === 'places')
-    ? applyEnv(applyOpenNow(matchBusinesses(businesses, query.literalTerm, searchedTopic), (b) => businessEntity(b)), 'business')
-    : [];
+  // One business rule for the list's rows and the map's pins (utils/discoverBusinesses.js): the search's words, Open now,
+  // Outdoor / Indoor; never the gathering-only filters.
+  const shownBusinesses = discoverBusinesses(businesses, {
+    searchTerm: isSearching ? query.literalTerm : null,
+    topic: searchedTopic,
+    openNowAt: openNowActive ? openNowAt : null,
+    environment: environmentFilter,
+  });
+  const searchedBusinesses = isSearching && (isAll || typeFilter === 'places') ? shownBusinesses : [];
   const searchFriendsLine = isAll ? friendsLineForTopic(searchedTopic, searchTopicFriendMap) : null;
   // Item 93: the search covers everything, the UI shows it in tabs. Only tabs with results (or still loading) exist;
   // Top Results previews at most three kinds, two items each (utils/searchResultTabs.js).
@@ -1991,7 +2001,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }
 
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
-  const mapBusinesses = showPerks ? applyOpenNow(businesses, (b) => businessEntity(b)) : [];
+  const mapBusinesses = showPerks ? shownBusinesses : [];
 
   const activeModeInfo = DISCOVER_MODES.find((m) => m.key === mode);
 
@@ -2609,7 +2619,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               {showViewToggle && (
                 <TouchableOpacity
                   style={styles.viewToggleButton}
-                  onPress={() => { setRestoreMapRegion(null); setViewStyle(viewStyle === 'list' ? 'map' : 'list'); }}
+                  onPress={() => { setRestoreMapRegion(mapRegionToRestore(mapRegionRef.current, mapContext)); setViewStyle(viewStyle === 'list' ? 'map' : 'list'); }}
                   accessibilityLabel={t(viewStyle === 'list' ? 'ui.discover.toMap' : 'ui.discover.toList')}
                   accessibilityRole="button"
                 >
@@ -2949,7 +2959,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             areas={mapAreas}
             onSelectArea={mapAreasShown ? openMapArea : undefined}
             restoreRegion={restoreMapRegion}
-            onRegionChangeComplete={(r) => { mapRegionRef.current = r; }}
+            onRegionChangeComplete={(r) => { mapRegionRef.current = rememberMapRegion(r, mapContext); }}
           />
         </View>
       ) : (

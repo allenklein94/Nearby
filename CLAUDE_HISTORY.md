@@ -1,3 +1,16 @@
+# Discover List | Map consistency: two fixes (owner, 2026-10-25)
+
+- Owner idea: List | Map as two presentations of the same results. Assessment: already in place on one screen (`viewStyle`
+  toggle, map reads `filteredGatherings`; toggle on All / Gatherings / Perks). Two gaps found by code reading: (1) business pins
+  used `applyOpenNow(businesses)` only, so a search or Outdoor / Indoor didn't narrow them; (2) the toggle cleared the region
+  (`setRestoreMapRegion(null)`), so List -> Map re-centred on the person.
+- Owner approved both fixes the same day. Built: `utils/discoverBusinesses.js` = ONE rule for business rows AND pins (search
+  words via `matchBusinesses`, Open now via `filterOpenNow`, environment via `filterByEnvironment`; gathering-only filters never
+  apply); `utils/mapRegionMemory.js` (region remembered with its search context; same context = restored on toggle, a new term =
+  default; item 120's area return reads `.region`). No screens, navigation, strings, motion or server change.
+- Tests: `utils/discoverMapConsistency.test.js` (behaviour + wiring); `unifiedSearch.test.js` wiring guard updated to the shared
+  rule. Phone: run order "Map consistency watch" added. NOT DEVICE-VERIFIED.
+
 # Discover as one world with lenses: met as built, closed (owner, 2026-10-25)
 
 - Owner idea: Discover as the "world", buttons as lenses: Things to Do | Gatherings | Places | People, then Now | Today | Tonight | This Week.

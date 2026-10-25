@@ -169,6 +169,12 @@ never another screen; (b) the results fit the pick (category + time; an unrelate
 returns to Home as it was; (d) a pick with nothing in its window shows Discover's real empty state, never filler or invented
 recommendations, and Home itself shows no made-up pick (FAIL). Period-boundary behaviour = first-session checklist check 14.
 
+Map consistency watch (owner, 2026-10-25; PASS/FAIL, seeded businesses, new build only): (a) on Discover All, type "kayak" (or pick
+Outdoor), switch to Map: business pins = only the businesses the list would show for that search / setting (Driftwood yes, Harbor
+Coffee no); with Open now on, only confirmed-open ones. (b) On Map, pan somewhere else, switch to List, back to Map: the same area,
+not re-centred on you; type a NEW search, then Map: it starts fresh (default region). An unrelated business pin or a reset with the
+same search = FAIL (functional; fix in `utils/discoverBusinesses.js` / `utils/mapRegionMemory.js`).
+
 Activity watch (owner, 2026-10-25; observation only): on Activity, can the person tell what needs their answer (Needs Your
 Attention: invitations, join requests) from what is only informational (Today, Earlier)? Ask "Which of these do you need to do
 something about?" Clear = no change; confused = USABILITY with the exact rows, wording first.
