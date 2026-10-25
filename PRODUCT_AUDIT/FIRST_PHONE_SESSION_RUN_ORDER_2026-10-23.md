@@ -388,6 +388,8 @@ it", "Ask Nearby Businesses", "pin"). Don't explain or help; ask them to think a
    gathering again." (owner, idea "353": watch where they look first, Home / Discover / Plans' ☆ Interested row / Profile, and whether
    it reads as the same thing with the same state everywhere they meet it; finding it naturally = evidence the shared state is understood. Idea "379" watch: if they look for a "Saved" tab or list (after the momentary "✓ Saved"), record it verbatim as USABILITY: evidence for rewording that confirmation, never for a Saved feature.)
 6. Afterwards: "What did you just publish? What did you send? When and where is it?"
+   Then: "Show me where you'd find your upcoming plans tomorrow." Record the path (Home Your Plans / "See all plans", Profile, a
+   tab they expected); Plans is a screen, not a tab: hunting for a Plans tab = USABILITY, entry point/label first, never a sixth tab (owner, 2026-10-25).
 7. Session A only (an account with completed plans): "Find a gathering you went to before." Record the path (Profile -> plan
    counts -> Plans > Past, or Home "See past plans") and whether Profile reads as a personal record, not a settings page (owner,
    2026-10-25; observation only).
