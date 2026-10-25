@@ -25,7 +25,7 @@ export const SURFACES = {
   },
   happeningNearby: {
     label: 'Happening Nearby',
-    means: 'Time-sensitive local activity that expires: live 24-hour moments from gatherings and local businesses near you.',
+    means: 'Time-sensitive local activity that expires: live 24-hour moments from local businesses near you (business moments only; gathering memories never join it, item 122).',
     where: 'Discover (All view).',
   },
   trendingNearYou: {
