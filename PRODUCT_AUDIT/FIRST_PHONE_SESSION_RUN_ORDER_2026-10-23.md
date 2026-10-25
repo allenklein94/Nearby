@@ -383,7 +383,8 @@ it", "Ask Nearby Businesses", "pin"). Don't explain or help; ask them to think a
    counts -> Plans > Past, or Home "See past plans") and whether Profile reads as a personal record, not a settings page (owner,
    2026-10-25; observation only).
 Throughout: does moving between Home, Discover, Create, Activity and Profile feel like one connected app or five separate ones?
-Record the moment it felt disconnected, if any (idea "353").
+Record the moment it felt disconnected, if any (idea "353"). For each task also record the FIRST tab or entry they tap (owner,
+2026-10-25): the same wrong first tap twice or more = USABILITY, fixed by labelling or the entry point first, never a new screen.
 Button watch (owner, idea "377", 2026-10-24; observation only): before each of their first taps on a button (Join, Request to
 Join, I'm Interested, View Plan, Meet People, I'll take this one, Get Directions, Reserve / Book / Request), ask "What do you think
 happens if you tap that?" and write the answer verbatim, then what actually happened. Focus: Reserve / Book / Request on a business
