@@ -37,6 +37,10 @@
 - Follow-up 6 (owner, same day): rename Home's "View your activity" to "See activity →". Already gone (2026-10-24): the "N plans
   this month" card's link is "See past plans →" -> Plans > Past (checked: no "View your activity" left in src; the phone's old
   build 86 still shows it). CLOSED + LOCKED; never restored, no Activity destination from that card. Next: the new iOS build.
+- Follow-up 7 (owner, same day): "don't create a destination because a section has a title; audit and fold". Met by Rule 14
+  (registry job A-F, `screenRegistry.test.js`), idea "400" and the Home-claim clause; "Your Activity" was folded exactly so.
+  CLOSED + LOCKED: no new rule/framework, screen-reduction audit stays paused (69 baseline), five tabs as locked. Owner: stop
+  architecture discussion until the phone; build the latest iOS app and submit to TestFlight.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
