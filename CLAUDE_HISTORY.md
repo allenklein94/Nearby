@@ -9,6 +9,10 @@
 - Owner decision (same day): keep Home as built; no change to item 110, no second version of item 45; Your Progress stays in
   Profile; no navigation or screen-consolidation changes until the real-phone session shows a problem. That session evaluates
   whether people find what they need quickly, not whether another screen can be eliminated. Nothing built.
+- Follow-up (owner, same day): should Your Progress sit on Activity instead? No: Profile ("Your story, your stats, your circle")
+  = who you've been (Your Progress: streak, chart, lifetime stats, achievements); Activity = what's happening with you (Needs Your
+  Attention / Today / Earlier); Plans > Past = what you've done. Split CONFIRMED + LOCKED; no merge, screen, navigation or
+  duplicate section; existing phone-session checks kept. Nothing built.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
