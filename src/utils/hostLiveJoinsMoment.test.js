@@ -274,7 +274,9 @@ describe('item 28 follow-up: the cluster and the count', () => {
     const read = (f) => fs.readFileSync(path.join(__dirname, f), 'utf8');
     expect(read('../screens/GatheringDetailScreen.js')).toMatch(/going: attendingFigure\(g, going \?\? attendeeTotal\(g\)\)/);
     expect(read('../screens/GatheringDetailScreen.js')).toMatch(/joinPreviousGoing=\{attendingFigure\(gathering, liveJoin\.previousGoing\)\}/);
-    expect(read('../screens/HomeScreen.js')).toMatch(/'reasons\.attendingCount', \{ count: attendingFigure\(g\) \}/);
+    // Home + Discover cards: the one facts-line rule (owner, 2026-10-25), itself on attendingFigure
+    expect(read('../screens/HomeScreen.js')).toMatch(/gatheringFactsLine\(\[card\.meta\], g/);
+    expect(read('./gatheringFullness.js')).toMatch(/const figure = attendingFigure\(gathering\);/);
     expect(read('../screens/DiscoverHubScreen.js')).toMatch(/'attendingCount', \{ count: attendingFigure\(g, attendeeCount\) \}/);
     expect(read('./discoverSections.js')).toMatch(/'attendingCount', \{ count: attendingFigure\(g, n\) \}/);
     expect(read('./homeSignalMerge.js')).toMatch(/'trendingGoing', \{ count: attendingFigure\(g, n\) \}/);

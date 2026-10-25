@@ -103,7 +103,7 @@ import { homeWeatherCard, goodWeatherCardAllowed, localDayKey } from '../constan
 import { weatherAtmosphere } from '../constants/weatherAtmosphere';
 import WeatherShift from '../motion/WeatherShift';
 import { loadWeatherShiftSeen } from '../utils/weatherShiftSeen';
-import { attendingFigure, gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { gatheringFactsLine, gatheringFullnessLabel } from '../utils/gatheringFullness';
 import { gatheringTimeBadge } from '../utils/gatheringTimeLabel';
 import { lightenHex } from '../utils/colorUtils';
 import { OCCASION_OPTIONS } from '../constants/businessAttributes';
@@ -647,7 +647,7 @@ export default function HomeScreen({ navigation }) {
           : confidenceHeadline(signals, { language }) ? <Text style={styles.trendingMeta}>{confidenceHeadline(signals, { language })}</Text> : null}
         {card.why ? <Text style={styles.trendingMeta}>{card.why}</Text> : null}
         <Text style={styles.trendingMeta}>
-          {[card.meta, g.approvedAttendees ? translate(language, 'reasons.attendingCount', { count: attendingFigure(g) }) : null].filter(Boolean).join(' · ')}
+          {gatheringFactsLine([card.meta], g, { language, reasons: card.reasons })}
         </Text>
         {card.social ? <Text style={styles.trendingMeta}>{card.social}</Text> : null}
         {gatheringFullnessLabel(g) && (

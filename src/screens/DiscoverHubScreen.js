@@ -125,7 +125,7 @@ const withoutLeadGlyph = (title) => String(title ?? '').replace(/^⚡\s*/u, '');
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { attendeeTotal, attendingFigure, gatheringFullnessLabel } from '../utils/gatheringFullness';
+import { attendeeTotal, attendingFigure, COMPACT_FACTS_MAX_CHARS, gatheringFactsLine, gatheringFullnessLabel, NOW_TILE_FACTS_MAX_CHARS } from '../utils/gatheringFullness';
 import { gatheringSignalLine } from '../constants/gatheringDisplaySignals';
 // P2 remediation item 8 (CLAUDE.md, "Discover information parity") --
 // the business/perk half of the same fix.
@@ -2025,6 +2025,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
     return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId, language, leadReason });
   }
 
+  // A tile's second facts line: price/party type, spots left, then "N attending" (dropped first when the line runs long).
+  // shownReason: the reason the tile itself prints, so the count is never said twice on one card.
+  function tileFactsLine(g, shownReason = null) {
+    return gatheringFactsLine([gatheringSignalLine(g), gatheringFullnessLabel(g)], g, { language, reasons: [shownReason], maxChars: COMPACT_FACTS_MAX_CHARS });
+  }
+
   function communityContext(c) {
     return recommendationContext(contextItem('community', c, { reasons: [communityReason(c, personalization.declared)] }), { language });
   }
@@ -2215,12 +2221,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
               {card.meta}
             </Text>
           )}
-          {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+          {tileFactsLine(g) && (
             <Text
               style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
               numberOfLines={1}
             >
-              {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+              {tileFactsLine(g)}
             </Text>
           )}
         </View>
@@ -2272,7 +2278,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             icon={categoryStyleFor(g.interest_tag).icon}
             tintColor={g.interest_tag ? categoryStyleFor(g.interest_tag).color : null}
             title={g.title}
-            meta={[reasonLine, card.meta, fullness].filter(Boolean).join(' · ') || null}
+            meta={gatheringFactsLine([reasonLine, card.meta, fullness], g, { language, reasons: [reasonLine], maxChars: COMPACT_FACTS_MAX_CHARS })}
             metaIsWarning={!!fullness?.startsWith('🔒')}
             onPress={() => openContextFor(g)}
             accessibilityLabel={t('ui.discover.showsMoreA11y', { text: `${g.title}${reasonLine ? `, ${reasonLine}` : ''}` })}
@@ -2343,7 +2349,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             <View style={{ flex: 1, marginRight: spacing.sm }}>
               <Text style={styles.heroTitle} numberOfLines={1}>{g.title}</Text>
               <Text style={styles.heroMeta} numberOfLines={1}>
-                {[reasonLine, card.meta].filter(Boolean).join(' · ')}
+                {gatheringFactsLine([reasonLine, card.meta], g, { language, reasons: [reasonLine], maxChars: COMPACT_FACTS_MAX_CHARS })}
               </Text>
             </View>
             {action.kind === 'cta' ? (
@@ -2393,12 +2399,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
               {[reasonLine, card.meta].filter(Boolean).join(' · ')}
             </Text>
           )}
-          {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+          {tileFactsLine(g, reasonLine) && (
             <Text
               style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
               numberOfLines={1}
             >
-              {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+              {tileFactsLine(g, reasonLine)}
             </Text>
           )}
         </View>
@@ -2448,7 +2454,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
         <Text style={styles.nowCardTitle} numberOfLines={1}>{g.title}</Text>
         {card.meta && (
           <Text style={styles.nowCardSubtitle} numberOfLines={1}>
-            {card.meta}
+            {gatheringFactsLine([card.meta], g, { language, maxChars: NOW_TILE_FACTS_MAX_CHARS })}
           </Text>
         )}
       </TouchableOpacity>
@@ -3359,12 +3365,12 @@ export default function DiscoverHubScreen({ navigation, route }) {
                     <Text style={styles.cardTitle}>{g.title}</Text>
                     {/* a literal keyword match: when/where from the context object, no recommendation reason claimed */}
                     {card.meta ? <Text style={styles.cardSubtitle}>{card.meta}</Text> : null}
-                    {(gatheringSignalLine(g) || gatheringFullnessLabel(g)) && (
+                    {tileFactsLine(g) && (
                       <Text
                         style={[styles.cardSubtitle, gatheringFullnessLabel(g)?.startsWith('🔒') && { color: colors.danger }]}
                         numberOfLines={1}
                       >
-                        {[gatheringSignalLine(g), gatheringFullnessLabel(g)].filter(Boolean).join(' · ')}
+                        {tileFactsLine(g)}
                       </Text>
                     )}
                   </View>

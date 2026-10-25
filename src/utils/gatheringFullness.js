@@ -1,4 +1,4 @@
-import { tr } from '../i18n/translate';
+import { tr, translate } from '../i18n/translate';
 // P1 remediation (CLAUDE.md, Aug 28 2026 Full Coherence Audit, item "🟠
 // Fullness needs to be universal"): a real, shared gathering-card
 // fullness contract, reused by every surface that recommends/ranks/
@@ -42,6 +42,31 @@ export function peopleGoing(gathering, guests = attendeeTotal(gathering)) {
 export function attendingFigure(gathering, guests = attendeeTotal(gathering)) {
   return Number.isFinite(guests) ? peopleGoing(gathering, guests) : null;
 }
+// Discover attendee count (owner, 2026-10-25): "N attending" is a FACT, shown on Home and Discover gathering cards alike from
+// this ONE rule, never a reason slot and never gated by Trending (TRENDING_ATTENDANCE_MIN stays a reason/badge threshold only).
+// Shown only when the guest count was really fetched (server count or the attendee rows); unknown = nothing, never a guess.
+export function attendingCountLabel(gathering, language = 'en') {
+  const known = typeof gathering?.approvedCount === 'number' || Array.isArray(gathering?.approvedAttendees);
+  if (!known) return null;
+  const figure = attendingFigure(gathering);
+  return figure == null ? null : translate(language, 'reasons.attendingCount', { count: figure });
+}
+// One facts line for a gathering card: the caller's parts (in priority order) + the attending count LAST. The count is the
+// first thing dropped: never when a shown reason already says it (Trending's "N attending" reason), and never when the line
+// would exceed `maxChars` (single-line compact rows: time, distance and spots left win; the count is left out, not truncated).
+export function gatheringFactsLine(parts, gathering, { language = 'en', reasons = [], maxChars = null } = {}) {
+  const base = (parts ?? []).filter(Boolean);
+  const count = attendingCountLabel(gathering, language);
+  const alreadySaid = count != null && (reasons ?? []).some((r) => r === count || r === attendingCountLabel(gathering, 'en'));
+  const withCount = count != null && !alreadySaid ? [...base, count] : base;
+  const line = withCount.join(' · ');
+  if (maxChars != null && withCount.length > base.length && line.length > maxChars) return base.join(' · ') || null;
+  return line || null;
+}
+// Character budgets for single-line Discover tiles (a phone check confirms them; a line over budget drops only the count).
+export const COMPACT_FACTS_MAX_CHARS = 44;
+export const NOW_TILE_FACTS_MAX_CHARS = 26;
+
 export function guestLimit(capacity) {
   return capacity == null ? null : Math.max(capacity - 1, 0);
 }
