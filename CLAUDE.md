@@ -755,7 +755,7 @@ cuisine on gatherings / multi-cuisine businesses; a business "Specialty" axis (d
   outcome or concrete option (offer, genuine alternative, explicit decline where the workflow tells them, another substantive reply;
   automatic replies are real offers). Viewing, opening, leaving open, considering, delivery or receipt never make a customer status,
   push, timeline step or implied commitment; a recorded action not shown today needs its own decision before it notifies.
-- A Home claim needs a visible, substantiated trigger of its own kind, and its CTA names where it goes.
+- A Home claim needs a visible, substantiated trigger of its own kind, and its CTA names where it goes. Home content that summarizes a destination links to THAT destination (Plans, Activity, Discover/People, Settings) or the exact object (gathering, request + offer), never a parallel screen (owner, 2026-10-25; all Home links checked: already true).
   Home may say nothing; no filler rows or zero stats (`homeQuiet.js`).
 
 ### Privacy
