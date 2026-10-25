@@ -34,6 +34,9 @@
   section). "Offers received" DECLINED (item 125: a business-side total, not a personal achievement). "Offers redeemed" and
   "Businesses visited" DEFERRED, defined separately if revisited (one business can have several redemptions; no redundant
   figures), only from business-confirmed visits. CLOSED + LOCKED; no Profile changes before the phone session.
+- Follow-up 6 (owner, same day): rename Home's "View your activity" to "See activity →". Already gone (2026-10-24): the "N plans
+  this month" card's link is "See past plans →" -> Plans > Past (checked: no "View your activity" left in src; the phone's old
+  build 86 still shows it). CLOSED + LOCKED; never restored, no Activity destination from that card. Next: the new iOS build.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
