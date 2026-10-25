@@ -143,8 +143,8 @@ the request); only Harbor's Opportunities can be seen; (f) a live-music ask for 
 Any mismatch = FAIL with the exact screen + expected row. G1 (browsing businesses in the category view without typing) is NOT
 built: its absence is expected, never a FAIL.
 
-Gathering detail watch (owner, 2026-10-25; PASS/FAIL; seeded gatherings): open the SAME gathering from Home (a card, and an
-item 41 chip if one shows), Discover (a card, with a time chip or category selected and scrolled down first), Activity (an invitation
+Gathering detail watch (owner, 2026-10-25; PASS/FAIL; seeded gatherings): open the SAME gathering from Home (a card, a Your Plans row
+(owner, 2026-10-25: Back = Home at the same scroll, no reload or visual jump), and an item 41 chip if one shows), Discover (a card, with a time chip or category selected and scrolled down first), Activity (an invitation
 or join request) and Plans (Upcoming / Hosting / Past): (a) every entry opens the same GatheringDetail (same title, state, action);
 (b) Back returns to the exact previous screen with its scroll position, filters/chips, selected mode/tab and any open view, never a
 reset Discover; (c) also from Discover with a typed search showing (scroll far down its results first): Back keeps the query, its
