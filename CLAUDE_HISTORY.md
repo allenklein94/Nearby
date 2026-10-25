@@ -64,6 +64,23 @@
   intermediate screen), Back returns to Home; "See gatherings" lists only the plans beyond the chips. KEPT AS BUILT, CLOSED +
   LOCKED: no People > Friends routing, no separate friend-activity view or feed, no code or screens. Verification stays item 41's
   phone checklist. Navigation decisions frozen until the phone session.
+- Follow-up 13 (owner, same day): proposed six-area map (Home / Discover / People "For You | Friends | Discover" / Create /
+  Activity "because of me" / Profile "Your Story, Your Stats, Your Circle"). SATISFIED where applicable; differences kept as
+  locked (People = Discover mode, five tabs; Activity = needs attention; Your Progress + Your Connections). No tabs, screens,
+  duplicates or renames. CLOSED + LOCKED.
+- Business discovery with Google discovery OFF (owner asked, read-only, 2026-10-25; nothing built, no navigation reopened).
+  Nearby's own businesses (`getNearbyBusinesses`: active + pinned, <= 50 mi) reach Discover through: (1) a typed word in All
+  -> "Businesses" results (`matchBusinesses`: name or declared type, max cap), (2) map pins in the All / Perks map
+  (`mapBusinesses`), (3) the Perks tab (their active perks), (4) "Happening Nearby" business moments, (5) typed asks
+  (availability postings, policy/occasion businesses, perks via `intentResolver`), (6) "Ask Nearby Businesses". Each opens
+  item 17's preview sheet / profile. GAPS (not fixed, owner decision needed): (G1) no browse list of Nearby businesses without
+  typing: the Places tab and topic "Places" lists were Google-only and are hidden, so a person who doesn't search or open the
+  map sees no partner business in list form; the category view (expandedContext) shows partner perks + Google places, not
+  partner businesses. (G2) Data: production has 1 business (Coastal Coffee), active but no pin, no hours, 0 perks, 0
+  postings, so `getNearbyBusinesses` returns nothing: today every route above shows zero businesses. G2 is the live-market
+  seeding item already on the owner's list (and the phone-session seed); G1 only matters once real businesses exist. Any G1
+  fix would be the smallest option inside Discover's existing structure (e.g. partner businesses in the category view /
+  an existing tab), proposed for approval, never a re-enabled Google surface.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
