@@ -163,7 +163,8 @@ Discover rather than a new place? (b) after switching lens and back, the previou
 state = FAIL, functional, shared navigation). Places is absent (Google discovery held): expected, never a FAIL. Confusion =
 USABILITY with the exact lens, wording fix proposed first; no new screens, tabs or filters. (c) Does Discover feel crowded (too
 many chips/controls competing)? Record which controls they ignore or hesitate over; crowding = simplify the visible controls or
-wording first, never add or remove screens.
+wording first, never add or remove screens. (d) On Gatherings, turn on Local (~1 mi): can they say what changed versus the
+normal list (15 mi)? Confusion = wording / discoverability of the existing Local filter first, never more distance options.
 
 Quick pick watch (owner, 2026-10-25; PASS/FAIL, seeded gatherings, phone on its real local time): tap two Home quick picks:
 (a) Discover opens on Gatherings with that pick's category and the CURRENT period's time filter (evening = Tonight), cards at once,
