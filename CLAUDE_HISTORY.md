@@ -13,6 +13,11 @@
   = who you've been (Your Progress: streak, chart, lifetime stats, achievements); Activity = what's happening with you (Needs Your
   Attention / Today / Earlier); Plans > Past = what you've done. Split CONFIRMED + LOCKED; no merge, screen, navigation or
   duplicate section; existing phone-session checks kept. Nothing built.
+- Follow-up 2 (owner, same day): Profile as "Your Story / Your Stats / Your Circle". Already met: Your Story section (Memory
+  Vault, Your Progress), lifetime stats inside Your Progress (attended, hosted, communities joined, friends made), Your
+  Connections (Friends, Communities), Your Plans Upcoming/Past -> Plans. CLOSED + LOCKED: no new sections, no rename ("Your
+  Connections" stays; an 11-language rename for tagline consistency declined), no duplicate stats. "Businesses visited" DEFERRED:
+  only from business-confirmed visits (offer `completed`), revisited once real ones exist and the figure is meaningful.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
