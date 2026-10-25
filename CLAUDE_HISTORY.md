@@ -41,6 +41,12 @@
   (registry job A-F, `screenRegistry.test.js`), idea "400" and the Home-claim clause; "Your Activity" was folded exactly so.
   CLOSED + LOCKED: no new rule/framework, screen-reduction audit stays paused (69 baseline), five tabs as locked. Owner: stop
   architecture discussion until the phone; build the latest iOS app and submit to TestFlight.
+- Follow-up 8 (owner, same day): fold the Friends screen into People (For You / Friends / Discover). DECLINED: three different
+  jobs (People > Friends = discover new opted-in people; Friends screen = manage existing friends + requests, kept in the
+  2026-10-24 audit, friend-request push destination per idea "242"; Your Connections = Profile counts). Friends-of-friends /
+  social recommendations (item 92, strangers = counts), friends' interests beyond mutual declared ones (item 40; Interested
+  private) and a friend activity feed (Home item 41 + Activity) DECLINED. CLOSED + LOCKED. Phone watch: the word "Friends"
+  for both discover and manage; confusion = wording/entry points (e.g. "Meet Friends") proposed for approval, never a merge.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
