@@ -108,6 +108,9 @@
 - Gathering transition (owner, same day): card -> "feels like it expanded" immersive detail DECLINED again (items 95-97/103, ideas
   "230"/"231"); one tap -> GatheringDetail over the current context, no intermediate screen, Back restores state: MET AS BUILT,
   CLOSED, LOCKED, no code, motion decisions not reopened. A jarring transition on the phone = USABILITY, never an automatic change.
+- Gatherings tab (owner, same day): DECLINED, CLOSED, LOCKED. Five tabs stay Home / Discover / Create / Activity / Profile (People =
+  Discover mode, Plans via Home + Profile); every gathering opens the same GatheringDetail. No new tab, screens or navigation
+  changes; revisit only on a real phone-session usability problem.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
