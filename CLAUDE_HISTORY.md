@@ -59,6 +59,11 @@
   Dating | Friends sub-modes already switch in place, item 45); new segments DECLINED: For You = stranger / friends-of-friends
   recommendations (item 92), Friends keeps "meet new friends" (never existing-friend management), Discover redundant inside
   Discover > People. CLOSED + LOCKED, no code. Same phone watch ("Meet Friends" only on confusion).
+- Follow-up 12 (owner, same day): route friends' gatherings through People > Friends or a friend-activity view. ALREADY MET by
+  item 41: Home's friends-planning line shows up to 3 real gathering chips, each opening that exact GatheringDetail directly (no
+  intermediate screen), Back returns to Home; "See gatherings" lists only the plans beyond the chips. KEPT AS BUILT, CLOSED +
+  LOCKED: no People > Friends routing, no separate friend-activity view or feed, no code or screens. Verification stays item 41's
+  phone checklist. Navigation decisions frozen until the phone session.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
