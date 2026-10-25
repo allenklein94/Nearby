@@ -281,7 +281,7 @@ function cleanupSql({ dryRun, expect = null }) {
 create temp table _ps_before (cnt bigint, tbl text) on commit drop;
 create temp table _ps_report (report jsonb) on commit drop;
 do $clean$
-declare r record; k bigint; diff jsonb := '{}'; swept jsonb := '{}'; real_activity jsonb; d text;
+declare r record; k bigint; diff jsonb := '{}'; swept jsonb := '{}'; real_activity jsonb; d text; real_reqs uuid[]; real_reqs_gone jsonb;
   ids uuid[] := array[${gIds}, ${pIds}, ${Bs}, ${idSql('friendship/sam')}];
 begin
   for r in select c.oid::regclass::text as t from pg_class c join pg_namespace s on s.oid = c.relnamespace
@@ -296,6 +296,13 @@ begin
     'interested_marks_on_test_gatherings', (select count(*) from gathering_interested where gathering_id in (${gIds}) and user_id not in (${pIds})),
     'requests_that_reached_the_test_businesses', (select count(distinct o.request_id) from business_request_offers o where o.partner_id in (${Bs})),
     'request_rows_to_the_test_businesses', (select count(*) from business_request_offers where partner_id in (${Bs})));
+
+  -- every business request a REAL account sent that touches a seeded id (a row to a test business, or a seeded id anywhere in
+  -- the request row, e.g. its target business or gathering): listed by id, so the owner approves each one before deletion
+  select coalesce(array_agg(br.id order by br.created_at), '{}') into real_reqs from business_requests br
+   where br.requester_id not in (${pIds})
+     and (exists (select 1 from business_request_offers o where o.request_id = br.id and o.partner_id in (${Bs}))
+          or exists (select 1 from jsonb_each_text(to_jsonb(br)) e where e.value = any(ids::text[])));
 
   update profiles set managed_partner_id = null where managed_partner_id in (${Bs});
   -- attendance first, so deleting the gatherings sends no "A gathering was cancelled" push to anyone who joined during the session
@@ -319,12 +326,16 @@ begin
   get diagnostics k = row_count;
   if k > 0 then swept := swept || jsonb_build_object('public.push_outbox.data', k); end if;
 
+  select coalesce(jsonb_agg(jsonb_build_object('request_id', x, 'fate', case when exists (select 1 from business_requests where id = x)
+           then 'kept, loses its rows to test businesses' else 'DELETED' end)), '[]') into real_reqs_gone from unnest(real_reqs) x;
+
   for r in select cnt, tbl from _ps_before loop
     execute format('select count(*) from %s', r.tbl) into k;
     if k <> r.cnt then diff := diff || jsonb_build_object(r.tbl, k - r.cnt); end if;
   end loop;
-  d := encode(sha256(convert_to(diff::text, 'utf8')), 'hex');
-  insert into _ps_report values (jsonb_build_object('row_changes_by_table', diff, 'of_which_unlinked_rows_swept', swept, 'real_account_activity_removed_with_test_objects', real_activity,
+  -- the approval code covers the row changes AND the exact real-account request ids, so a different set can never be deleted
+  d := encode(sha256(convert_to(diff::text || '|' || real_reqs_gone::text, 'utf8')), 'hex');
+  insert into _ps_report values (jsonb_build_object('row_changes_by_table', diff, 'of_which_unlinked_rows_swept', swept, 'real_account_activity_removed_with_test_objects', real_activity, 'real_account_requests', real_reqs_gone,
     'remaining_seeded', jsonb_build_object('people', (select count(*) from auth.users where id in (${pIds})), 'gatherings', (select count(*) from gatherings where id in (${gIds})),
       'businesses', (select count(*) from brand_partners where id in (${Bs}))),
     'confirm', left(d, 12), 'dry_run', ${dryRun ? 'true' : 'false'}));

@@ -39,7 +39,9 @@ Production (no `NEARBY_LOCAL_DB_URL`, `SUPABASE_ACCESS_TOKEN` set) additionally 
 The seeded gatherings, businesses, people (and what cascades from them), the business-owner link, then any row in `public`/`private`
 whose uuid column still names a seeded id (queued pushes to test people, events about test objects). Attendance is deleted first, so
 nobody who joined during the session gets a "gathering was cancelled" push. Kept: the real accounts, their own gatherings and their
-business requests (minus the request rows to the test businesses; the dry run counts them).
+business requests (minus the request rows to the test businesses). The dry run lists, by id, every request a REAL account sent
+that touches a seeded id (`real_account_requests`, each marked DELETED or kept), and its approval code covers that exact list:
+the owner approves each one before deletion; a different set at apply time = nothing deleted.
 
 ## Verified (2026-10-23, local from-scratch replay 463/463, never production)
 Seed, rerun (0 created), simulated session (join, approval request, Interested, broadcast + directed request reaching the test
