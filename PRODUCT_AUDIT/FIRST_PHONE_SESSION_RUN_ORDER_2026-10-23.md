@@ -149,6 +149,10 @@ or join request) and Plans (Upcoming / Hosting / Past): (a) every entry opens th
 (b) Back returns to the exact previous screen with its scroll position, filters/chips, selected mode/tab and any open view, never a
 reset Discover. A reset = FAIL (functional, idea "283"); a pass closes the item with no further development.
 
+Activity watch (owner, 2026-10-25; observation only): on Activity, can the person tell what needs their answer (Needs Your
+Attention: invitations, join requests) from what is only informational (Today, Earlier)? Ask "Which of these do you need to do
+something about?" Clear = no change; confused = USABILITY with the exact rows, wording first.
+
 Join clarity watch (owner, idea "337", 2026-10-23; first TWO-phone session, alongside item 28's checklist): when someone joins
 the host's gathering, does the host understand what happened from the existing join push ("{Name} joined", opens that gathering)
 and the Who's going section (face flows in, count rolls, named line) alone, without wanting another surface (Home, Activity)?

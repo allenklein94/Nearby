@@ -115,6 +115,10 @@
   party), "See all plans" -> the one Plans screen (Upcoming / Hosting / Past), a plan -> its GatheringDetail, Back restores. No
   summary count in place of the previews unless the phone shows Home is too long (idea "399"); no code or screens, 69 kept.
   Owner: no further structural proposals until the phone session.
+- Activity -> gathering (owner, same day): MET AS BUILT, CLOSED, LOCKED. Invitations, join requests and Today's "starting soon"
+  rows open the same GatheringDetail; no Activity row for an accepted join or anything the gathering's page + push already say
+  (idea "337"). No code, screens or navigation changes. New observation in the run order ("Activity watch"): action-needed vs
+  informational rows distinguishable?
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
