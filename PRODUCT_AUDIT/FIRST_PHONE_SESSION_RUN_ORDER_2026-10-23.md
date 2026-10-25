@@ -150,7 +150,11 @@ or join request) and Plans (Upcoming / Hosting / Past): (a) every entry opens th
 reset Discover; (c) also from Discover with a typed search showing (scroll far down its results first): Back keeps the query, its
 chips and the scroll; (d) from a notification tap (e.g. a join push on the host phone) while on another screen: the gathering opens over
 it and Back returns to that screen. A lost state = FAIL (functional, fixed in the shared navigation, idea "283"/"232", never per screen);
-a pass closes the item with no further development.
+a pass closes the item with no further development. (e) Happening Now (owner, 2026-10-25): on Discover, pick a filter/view and scroll
+down; go to Home, tap the "Nearby Right Now" heading: Discover opens IN PLACE on its Happening Now list (time-filtered, not all
+gatherings); close it: Discover's previous filter, view and scroll are back. The weather card's link opens Discover on Gatherings;
+"🔴 Happening Nearby" is a business-moments row inside Discover. A separate Happening Nearby/gatherings SCREEN on the new build = FAIL
+(functional); results from build 86 or older don't count (SETUP-BLOCKED).
 
 Activity watch (owner, 2026-10-25; observation only): on Activity, can the person tell what needs their answer (Needs Your
 Attention: invitations, join requests) from what is only informational (Today, Earlier)? Ask "Which of these do you need to do
