@@ -55,6 +55,10 @@
   (five tabs), it is reached from Profile > Your Connections (or the friend-request push) and stays its own screen (long list +
   actions; folding it into Profile would lengthen Profile). DECLINED as a change, CLOSED + LOCKED. Goal = fewer unnecessary
   screens, not the lowest count.
+- Follow-up 11 (owner, same day): People as a "For You | Friends | Discover" segmented control. MET where applicable (People's
+  Dating | Friends sub-modes already switch in place, item 45); new segments DECLINED: For You = stranger / friends-of-friends
+  recommendations (item 92), Friends keeps "meet new friends" (never existing-friend management), Discover redundant inside
+  Discover > People. CLOSED + LOCKED, no code. Same phone watch ("Meet Friends" only on confusion).
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
