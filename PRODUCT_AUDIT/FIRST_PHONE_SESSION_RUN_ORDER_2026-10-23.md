@@ -161,7 +161,9 @@ Discover lens watch (owner, 2026-10-25; USABILITY observation + PASS/FAIL for st
 Communities / Perks) and a time chip (Now / Today / This Weekend) without help, understanding each as a different view of the same
 Discover rather than a new place? (b) after switching lens and back, the previous filter, chip and scroll position are kept (lost
 state = FAIL, functional, shared navigation). Places is absent (Google discovery held): expected, never a FAIL. Confusion =
-USABILITY with the exact lens, wording fix proposed first; no new screens, tabs or filters.
+USABILITY with the exact lens, wording fix proposed first; no new screens, tabs or filters. (c) Does Discover feel crowded (too
+many chips/controls competing)? Record which controls they ignore or hesitate over; crowding = simplify the visible controls or
+wording first, never add or remove screens.
 
 Quick pick watch (owner, 2026-10-25; PASS/FAIL, seeded gatherings, phone on its real local time): tap two Home quick picks:
 (a) Discover opens on Gatherings with that pick's category and the CURRENT period's time filter (evening = Tonight), cards at once,
