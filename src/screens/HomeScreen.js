@@ -1797,7 +1797,7 @@ export default function HomeScreen({ navigation }) {
       <ScrollView
         // paddingBottom must clear the fixed "+ Start Something" FAB below
         // (position: absolute, pinned bottom-right) -- at xxl*2 the FAB
-        // overlapped the tail end of the "Continue Browsing" button once
+        // overlapped the tail end of the "Explore nearby" button once
         // scrolled all the way down; xxl*3 leaves real breathing room.
         contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.xxl * 3 }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
@@ -2995,8 +2995,8 @@ export default function HomeScreen({ navigation }) {
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.home.continueBrowsingA11y')} accessibilityRole="button">
-          <Text style={styles.browseButtonText}>{t('ui.home.continueBrowsing')}</Text>
+        <TouchableOpacity style={styles.browseButton} onPress={() => navigation.navigate('Discover')} accessibilityLabel={t('ui.home.exploreNearbyA11y')} accessibilityRole="button">
+          <Text style={styles.browseButtonText}>{t('ui.home.exploreNearby')}</Text>
         </TouchableOpacity>
       </ScrollView>
 

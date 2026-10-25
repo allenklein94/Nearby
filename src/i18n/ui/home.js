@@ -57,7 +57,7 @@ export default {
     makePlanA11y: 'Make a plan around {title}', makePlan: '📅 Make a plan →',
     plansThisMonth: { one: '{count} plan this month', other: '{count} plans this month' }, plansThisMonthA11y: { one: '{count} plan this month. See past plans', other: '{count} plans this month. See past plans' }, seePastPlans: 'See past plans →',
     noticedLately: "You've been into {categories} lately.", noticedLatelyA11y: "You've been into {categories} lately. See what Nearby noticed", noticedLink: "See what Nearby noticed →",
-    continueBrowsingA11y: 'Continue browsing', continueBrowsing: 'Continue Browsing →', startA11y: 'Start something spontaneous', start: '+ Start Something',
+    exploreNearbyA11y: 'Explore nearby', exploreNearby: 'Explore nearby →', startA11y: 'Start something spontaneous', start: '+ Start Something',
     saved: 'Saved', tastesSet: 'Your tastes are set.',
   },
   es: {
@@ -116,7 +116,7 @@ export default {
     makePlanA11y: 'Hacer un plan con {title}', makePlan: '📅 Hacer un plan →',
     plansThisMonth: { one: '{count} plan este mes', other: '{count} planes este mes' }, plansThisMonthA11y: { one: '{count} plan este mes. Ver planes pasados', other: '{count} planes este mes. Ver planes pasados' }, seePastPlans: 'Ver planes pasados →',
     noticedLately: "Últimamente has participado mucho en {categories}.", noticedLatelyA11y: "Últimamente has participado mucho en {categories}. Ver lo que Nearby ha notado", noticedLink: "Ver lo que Nearby ha notado →",
-    continueBrowsingA11y: 'Seguir explorando', continueBrowsing: 'Seguir explorando →', startA11y: 'Empezar algo espontáneo', start: '+ Empezar algo',
+    exploreNearbyA11y: 'Explorar cerca', exploreNearby: 'Explorar cerca →', startA11y: 'Empezar algo espontáneo', start: '+ Empezar algo',
     saved: 'Guardado', tastesSet: 'Tus gustos están guardados.',
   },
   de: {
@@ -175,7 +175,7 @@ export default {
     makePlanA11y: 'Einen Plan rund um {title} machen', makePlan: '📅 Einen Plan machen →',
     plansThisMonth: { one: '{count} Plan diesen Monat', other: '{count} Pläne diesen Monat' }, plansThisMonthA11y: { one: '{count} Plan diesen Monat. Vergangene Pläne ansehen', other: '{count} Pläne diesen Monat. Vergangene Pläne ansehen' }, seePastPlans: 'Vergangene Pläne ansehen →',
     noticedLately: "Du warst in letzter Zeit oft bei {categories} dabei.", noticedLatelyA11y: "Du warst in letzter Zeit oft bei {categories} dabei. Sieh, was Nearby bemerkt hat", noticedLink: "Sieh, was Nearby bemerkt hat →",
-    continueBrowsingA11y: 'Weiter stöbern', continueBrowsing: 'Weiter stöbern →', startA11y: 'Spontan etwas starten', start: '+ Etwas starten',
+    exploreNearbyA11y: 'In der Nähe entdecken', exploreNearby: 'In der Nähe entdecken →', startA11y: 'Spontan etwas starten', start: '+ Etwas starten',
     saved: 'Gespeichert', tastesSet: 'Dein Geschmack ist gespeichert.',
   },
   fr: {
@@ -234,7 +234,7 @@ export default {
     makePlanA11y: 'Faire un projet autour de {title}', makePlan: '📅 Faire un projet →',
     plansThisMonth: { one: '{count} sortie ce mois-ci', other: '{count} sorties ce mois-ci' }, plansThisMonthA11y: { one: '{count} sortie ce mois-ci. Voir les sorties passées', other: '{count} sorties ce mois-ci. Voir les sorties passées' }, seePastPlans: 'Voir les sorties passées →',
     noticedLately: "Ces derniers temps, vous faites souvent : {categories}.", noticedLatelyA11y: "Ces derniers temps, vous faites souvent : {categories}. Voir ce que Nearby a remarqué", noticedLink: "Voir ce que Nearby a remarqué →",
-    continueBrowsingA11y: 'Continuer à explorer', continueBrowsing: 'Continuer à explorer →', startA11y: 'Lancer quelque chose spontanément', start: '+ Lancer quelque chose',
+    exploreNearbyA11y: 'Explorer à proximité', exploreNearby: 'Explorer à proximité →', startA11y: 'Lancer quelque chose spontanément', start: '+ Lancer quelque chose',
     saved: 'Enregistré', tastesSet: 'Vos goûts sont enregistrés.',
   },
   pt: {
@@ -293,7 +293,7 @@ export default {
     makePlanA11y: 'Fazer um plano com {title}', makePlan: '📅 Fazer um plano →',
     plansThisMonth: { one: '{count} plano este mês', other: '{count} planos este mês' }, plansThisMonthA11y: { one: '{count} plano este mês. Ver planos anteriores', other: '{count} planos este mês. Ver planos anteriores' }, seePastPlans: 'Ver planos anteriores →',
     noticedLately: "Ultimamente você tem participado de {categories}.", noticedLatelyA11y: "Ultimamente você tem participado de {categories}. Ver o que o Nearby notou", noticedLink: "Ver o que o Nearby notou →",
-    continueBrowsingA11y: 'Continuar explorando', continueBrowsing: 'Continuar explorando →', startA11y: 'Começar algo espontâneo', start: '+ Começar algo',
+    exploreNearbyA11y: 'Explorar por perto', exploreNearby: 'Explorar por perto →', startA11y: 'Começar algo espontâneo', start: '+ Começar algo',
     saved: 'Salvo', tastesSet: 'Seus gostos foram salvos.',
   },
   ht: {
@@ -352,7 +352,7 @@ export default {
     makePlanA11y: 'Fè yon plan avèk {title}', makePlan: '📅 Fè yon plan →',
     plansThisMonth: { one: '{count} plan mwa sa a', other: '{count} plan mwa sa a' }, plansThisMonthA11y: { one: '{count} plan mwa sa a. Gade plan ki pase yo', other: '{count} plan mwa sa a. Gade plan ki pase yo' }, seePastPlans: 'Gade plan ki pase yo →',
     noticedLately: "Dènye tan sa a ou te fè {categories} souvan.", noticedLatelyA11y: "Dènye tan sa a ou te fè {categories} souvan. Gade sa Nearby remake", noticedLink: "Gade sa Nearby remake →",
-    continueBrowsingA11y: 'Kontinye gade', continueBrowsing: 'Kontinye gade →', startA11y: 'Kòmanse yon bagay san plan', start: '+ Kòmanse yon bagay',
+    exploreNearbyA11y: 'Eksplore toupre', exploreNearby: 'Eksplore toupre →', startA11y: 'Kòmanse yon bagay san plan', start: '+ Kòmanse yon bagay',
     saved: 'Anrejistre', tastesSet: 'Gou ou yo anrejistre.',
   },
   zh: {
@@ -411,7 +411,7 @@ export default {
     makePlanA11y: '围绕 {title} 制定计划', makePlan: '📅 制定计划 →',
     plansThisMonth: { other: '本月 {count} 个计划' }, plansThisMonthA11y: { other: '本月 {count} 个计划。查看过去的计划' }, seePastPlans: '查看过去的计划 →',
     noticedLately: "你最近常参加{categories}。", noticedLatelyA11y: "你最近常参加{categories}。查看 Nearby 注意到的内容", noticedLink: "查看 Nearby 注意到的内容 →",
-    continueBrowsingA11y: '继续浏览', continueBrowsing: '继续浏览 →', startA11y: '即兴发起点什么', start: '+ 发起活动',
+    exploreNearbyA11y: '探索附近', exploreNearby: '探索附近 →', startA11y: '即兴发起点什么', start: '+ 发起活动',
     saved: '已保存', tastesSet: '你的口味已设置。',
   },
   vi: {
@@ -470,7 +470,7 @@ export default {
     makePlanA11y: 'Lên kế hoạch quanh {title}', makePlan: '📅 Lên kế hoạch →',
     plansThisMonth: { other: '{count} kế hoạch tháng này' }, plansThisMonthA11y: { other: '{count} kế hoạch tháng này. Xem kế hoạch đã qua' }, seePastPlans: 'Xem kế hoạch đã qua →',
     noticedLately: "Gần đây bạn hay tham gia {categories}.", noticedLatelyA11y: "Gần đây bạn hay tham gia {categories}. Xem những gì Nearby nhận thấy", noticedLink: "Xem những gì Nearby nhận thấy →",
-    continueBrowsingA11y: 'Tiếp tục khám phá', continueBrowsing: 'Tiếp tục khám phá →', startA11y: 'Bắt đầu điều gì đó ngẫu hứng', start: '+ Bắt đầu',
+    exploreNearbyA11y: 'Khám phá gần đây', exploreNearby: 'Khám phá gần đây →', startA11y: 'Bắt đầu điều gì đó ngẫu hứng', start: '+ Bắt đầu',
     saved: 'Đã lưu', tastesSet: 'Đã lưu khẩu vị của bạn.',
   },
   tl: {
@@ -529,7 +529,7 @@ export default {
     makePlanA11y: 'Gumawa ng plano kasama ang {title}', makePlan: '📅 Gumawa ng plano →',
     plansThisMonth: { one: '{count} plano ngayong buwan', other: '{count} plano ngayong buwan' }, plansThisMonthA11y: { one: '{count} plano ngayong buwan. Tingnan ang mga nakaraang plano', other: '{count} plano ngayong buwan. Tingnan ang mga nakaraang plano' }, seePastPlans: 'Tingnan ang mga nakaraang plano →',
     noticedLately: "Madalas kang sumasali sa {categories} nitong mga nakaraang araw.", noticedLatelyA11y: "Madalas kang sumasali sa {categories} nitong mga nakaraang araw. Tingnan ang napansin ng Nearby", noticedLink: "Tingnan ang napansin ng Nearby →",
-    continueBrowsingA11y: 'Magpatuloy sa pag-browse', continueBrowsing: 'Magpatuloy sa Pag-browse →', startA11y: 'Magsimula ng biglaang plano', start: '+ Magsimula',
+    exploreNearbyA11y: 'Mag-explore sa malapit', exploreNearby: 'Mag-explore sa malapit →', startA11y: 'Magsimula ng biglaang plano', start: '+ Magsimula',
     saved: 'Na-save', tastesSet: 'Naitakda na ang panlasa mo.',
   },
   ru: {
@@ -588,7 +588,7 @@ export default {
     makePlanA11y: 'Составить план вокруг {title}', makePlan: '📅 Составить план →',
     plansThisMonth: { one: '{count} план в этом месяце', few: '{count} плана в этом месяце', many: '{count} планов в этом месяце', other: '{count} плана в этом месяце' }, plansThisMonthA11y: { one: '{count} план в этом месяце. Открыть прошедшие планы', few: '{count} плана в этом месяце. Открыть прошедшие планы', many: '{count} планов в этом месяце. Открыть прошедшие планы', other: '{count} плана в этом месяце. Открыть прошедшие планы' }, seePastPlans: 'Открыть прошедшие планы →',
     noticedLately: "В последнее время вы часто выбираете: {categories}.", noticedLatelyA11y: "В последнее время вы часто выбираете: {categories}. Посмотреть, что заметил Nearby", noticedLink: "Посмотреть, что заметил Nearby →",
-    continueBrowsingA11y: 'Продолжить просмотр', continueBrowsing: 'Продолжить просмотр →', startA11y: 'Начать что-нибудь спонтанно', start: '+ Начать что-нибудь',
+    exploreNearbyA11y: 'Посмотреть, что рядом', exploreNearby: 'Посмотреть, что рядом →', startA11y: 'Начать что-нибудь спонтанно', start: '+ Начать что-нибудь',
     saved: 'Сохранено', tastesSet: 'Ваши вкусы сохранены.',
   },
   ko: {
@@ -647,7 +647,7 @@ export default {
     makePlanA11y: '{title} 중심으로 계획 세우기', makePlan: '📅 계획 세우기 →',
     plansThisMonth: { other: '이번 달 계획 {count}개' }, plansThisMonthA11y: { other: '이번 달 계획 {count}개. 지난 계획 보기' }, seePastPlans: '지난 계획 보기 →',
     noticedLately: "요즘 {categories}에 자주 참여하고 있어요.", noticedLatelyA11y: "요즘 {categories}에 자주 참여하고 있어요. Nearby가 알아챈 것 보기", noticedLink: "Nearby가 알아챈 것 보기 →",
-    continueBrowsingA11y: '계속 둘러보기', continueBrowsing: '계속 둘러보기 →', startA11y: '즉흥적으로 뭔가 시작하기', start: '+ 시작하기',
+    exploreNearbyA11y: '근처 둘러보기', exploreNearby: '근처 둘러보기 →', startA11y: '즉흥적으로 뭔가 시작하기', start: '+ 시작하기',
     saved: '저장됨', tastesSet: '취향이 설정되었어요.',
   },
 };

@@ -1,6 +1,6 @@
 // Item 79: Home is allowed to say nothing. A row exists only when there is something real to act on -- never a zero, an
 // unknown count or a filler sentence ("Quiet night nearby") standing in for content. The person's own tools (Quick Picks,
-// Start Something, Continue Browsing) are not signals and stay; this decides only the Quick Stats rows.
+// Start Something, Explore nearby) are not signals and stay; this decides only the Quick Stats rows.
 import { nearbyToMeetRow } from './meetTonight';
 import { tr } from '../i18n/translate';
 import { gatheringsTabParams } from './gatheringFilters';
