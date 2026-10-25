@@ -105,6 +105,9 @@
   duplicate detail views or expanding Home/Discover cards (ideas "230"/"231"); 69-screen baseline unchanged. Verification = the
   run order's new "Gathering detail watch" (same detail from every entry; Back restores scroll, filters, mode, open view); a pass
   closes it with no further development.
+- Gathering transition (owner, same day): card -> "feels like it expanded" immersive detail DECLINED again (items 95-97/103, ideas
+  "230"/"231"); one tap -> GatheringDetail over the current context, no intermediate screen, Back restores state: MET AS BUILT,
+  CLOSED, LOCKED, no code, motion decisions not reopened. A jarring transition on the phone = USABILITY, never an automatic change.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
