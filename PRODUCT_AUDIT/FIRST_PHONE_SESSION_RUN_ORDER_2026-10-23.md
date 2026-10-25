@@ -203,6 +203,17 @@ Host watch (owner, idea "356", 2026-10-23; observation only): as host, open a ga
 joined. Can the host immediately tell people who are interested from people who have committed to attend (the "☆ N people are
 interested but haven't joined yet" line vs the attending count)? Record any moment they read Interested as confirmed attendance.
 
+Host workflow check (owner, 2026-10-25, four-level model; PASS / USABILITY / SETUP-BLOCKED; two phones): the phone account hosts the
+gathering it published in session A with "Who can join?" = Require approval (or one created now the same way); the friend account
+(FRIEND_ACCOUNT_EMAIL) on the second phone taps Request to Join. The seed cannot provide this: every seeded gathering is hosted by a test
+person and the phone account is created on the phone. On the host phone: (1) GatheringDetail -> Edit, change only the title or
+description, Save -> lands back on the same GatheringDetail with the change shown; (2) the pending request is visible there ("N requests
+to join · Review") without hunting (Activity's Needs Your Attention "wants to join" row may be the route in: record which the host used);
+(3) approve it -> the person enters Who's going, the attending count rises, the requester's phone gets the approval; (4) Back from detail
+returns to where the host came from (Plans / Activity / Home), never into Edit again. PASS = all four done unaided and Back is where
+they expect; hesitation or a wrong guess = USABILITY with the screen and their words; one phone only = steps 2-3 SETUP-BLOCKED. Attendee
+management, invitations and join requests stay on GatheringDetail (idea "234", LOCKED); no new screen, motion or payment change.
+
 Invite watch (owner, idea "369", 2026-10-23; observation only, alongside C26): as host, invite three friends from the gathering's invite
 sheet. Does the host clearly understand the invitations were SENT but attendance has NOT increased yet (rows "Sent", attending count
 unchanged until someone really joins)? Record any moment they read an invite as a confirmed attendee. Unclear = report the exact
