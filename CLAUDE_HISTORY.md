@@ -1,3 +1,16 @@
+# Discover as one world with lenses: met as built, closed (owner, 2026-10-25)
+
+- Owner idea: Discover as the "world", buttons as lenses: Things to Do | Gatherings | Places | People, then Now | Today | Tonight | This Week.
+- Assessment (code reading, `DiscoverHubScreen.js` `DISCOVER_MODES` / `TYPE_FILTERS` / `PEOPLE_SUBMODES`, `discoverSections.js`
+  `TIME_CHIPS`, `googleDiscovery.js`): already one surface; modes Things to Do | People, type filters All / Gatherings /
+  Communities / Places / Perks, chips Now / Today / This Weekend, all in place (item 45, ideas "203"/"219"/"353").
+- Owner decision (same day): MET, CLOSED, LOCKED. Keep People as a primary mode apart from the type row (Dating/Friends privacy +
+  opt-in pools; no people name search); keep Now / Today / This Weekend (no Tonight chip: the resolver reads "tonight", the Today
+  section relabels itself 🌙 Tonight); keep Places hidden pending the Google directory-use answer; G1 (browsing Nearby's own
+  businesses in the existing category view) stays approved + deferred, unaffected. No screens, tabs, filters, navigation or code.
+- Closing = the navigation structure is complete, not that it is usable: run order "Discover lens watch" added (lenses understood
+  unaided, natural switching, filters + scroll kept). Reopen only on a phone usability problem. Next priority: new iOS build + device session.
+
 # Discover attendee count (owner, 2026-10-25)
 
 Context: owner's "four levels of gathering presentation" (Level 1 = preview on Home/Discover) accepted as built except one question: why Discover's attendee count was tied to the 5-guest Trending threshold. Finding: Discover had no attendee faces (a friend going is a text reason) and its count existed only as a candidate REASON gated at `TRENDING_ATTENDANCE_MIN`, so a 3-person gathering said nothing about attendance on Discover while Home showed "3 attending" on its meta line. Owner approved the fix.

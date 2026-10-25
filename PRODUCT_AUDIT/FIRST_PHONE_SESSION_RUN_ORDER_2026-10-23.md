@@ -156,6 +156,13 @@ gatherings); close it: Discover's previous filter, view and scroll are back. The
 "🔴 Happening Nearby" is a business-moments row inside Discover. A separate Happening Nearby/gatherings SCREEN on the new build = FAIL
 (functional); results from build 86 or older don't count (SETUP-BLOCKED).
 
+Discover lens watch (owner, 2026-10-25; USABILITY observation + PASS/FAIL for state): unprompted, ask the person to find
+"something to do this weekend", then "people to meet": (a) do they switch Things to Do <-> People, a type filter (Gatherings /
+Communities / Perks) and a time chip (Now / Today / This Weekend) without help, understanding each as a different view of the same
+Discover rather than a new place? (b) after switching lens and back, the previous filter, chip and scroll position are kept (lost
+state = FAIL, functional, shared navigation). Places is absent (Google discovery held): expected, never a FAIL. Confusion =
+USABILITY with the exact lens, wording fix proposed first; no new screens, tabs or filters.
+
 Activity watch (owner, 2026-10-25; observation only): on Activity, can the person tell what needs their answer (Needs Your
 Attention: invitations, join requests) from what is only informational (Today, Earlier)? Ask "Which of these do you need to do
 something about?" Clear = no change; confused = USABILITY with the exact rows, wording first.
