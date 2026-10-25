@@ -27,13 +27,42 @@ shared source. A SETUP-BLOCKED flow is reported in its own list, never mixed wit
 
 | # | Setup | Needed by |
 |---|---|---|
-| S1 | A native build of current main on ONE phone (iOS first; Android stays PENDING) | everything |
+| S1 | A native build of current main on ONE phone (iOS first; Android stays PENDING: no Android build has ever been made). Build 86 (2026-10-18, commit 7d72d615) is STALE; the session needs a TestFlight build made from ec0b06f0 or later (see Pre-flight P1) | everything |
 | S2 | Maps SDK for iOS (Android) + Places API (New) enabled on the key's project | 3.5 pin placement, address search |
 | S3 | Location permission granted, phone in the seeded area | every search, distance, "near me" |
 | S4 | Seeded TEST gatherings near the phone: this evening, tomorrow, the coming Friday + Saturday, one next week; Coffee, Pickleball, Live Music; one public, one requiring approval | parts 2-3 (else every result is an empty state) |
 | S5 | One seeded TEST Coffee business (real address, its own pin), its owner signed in on the business website or a second phone | 4.4-4.5 |
 | S6 | Two accounts: brand-new (no interests/friends) + one with a declared interest and one friend | 1.3 |
 | S7 | Record sheet (below) | every result |
+
+## Next session: priority order (consolidated 2026-10-25; adds no checks, only orders the blocks below)
+
+Pre-flight (before any check; a failure here = stop and rebuild, never record product results):
+- P1 Build: TestFlight shows the installed build is the one made from ec0b06f0 or later (build number 87+). Quick proof in the
+  app: Profile has a "🔥 Your Progress" row that opens in place; Settings > Manage Subscription opens in place; Home has no
+  "This week: ..." recap. Any of these missing = old build = everything SETUP-BLOCKED.
+- P2 Setup S2-S7 above. S4/S5 (seed) need the owner's explicit approval of seed code d2893d6fd08b (or a re-plan) and Option A
+  (Settings > Notifications > "Recommendations" off on the phone-login account) right before apply; not seeded = parts 2-4 and
+  every "seeded test business" block SETUP-BLOCKED.
+- P3 Production writes: everything done on the phone writes real rows on production (the only database). Self-cleaning: emergency
+  contacts (remove them in the section), Interested/joins (undo). Leaves a row: a business application (Screen-reduction checks
+  1-3: use an account that should own a business, never approve a test application unless the owner wants that business live),
+  requests, gatherings. The seed's cleanup covers only seeded rows; anything else is cleaned only with separate approval.
+
+Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one phone, no seed needed unless noted):
+1. Your Progress on Profile checks 1-4.
+2. Screen-reduction checks 4-6 (Emergency contacts incl. the keyboard, the date check-in link, Subscription).
+3. Screen-reduction checks 1-3 (business application; 2-3 need the admin account; see P3).
+4. Item 53 checklist check 13 (Home "N plans this month" -> Plans on Past) + Upcoming/Past watch (a) (Plans loads at all; a load
+   error = Sev 1).
+5. Interested sharing checks 1-3.
+
+Tier 2, the journey (session A parts 1-7, in order; seed required for 2-4, credit for hand-written replies):
+part 6's ~20-min gathering FIRST, then parts 1-5, part 7 (automatic reply), coming back for the Request deadline watch, Ask again
+watch (expired-request Reopen vs Ask again), Upcoming/Past watch, Offer expiry watch, Booked-time watch.
+
+Tier 3, two-phone and observation blocks (only once tiers 1-2 are recorded): Quiet-when-shown 1-6, Leave watch (a = requirement),
+Join clarity, Invite, Host, Expired invite, map pin glyphs (C25), then session B with its watches. Android: everything again later.
 
 Not needed for parts 1-5: Anthropic credit (search and Create read words deterministically without it). Needs it (SETUP-BLOCKED
 until topped up): business replies, offers, screening, AI-only phrases. Google discovery is OFF on purpose: no Places tab is
