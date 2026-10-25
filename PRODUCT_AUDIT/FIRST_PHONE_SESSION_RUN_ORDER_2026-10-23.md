@@ -147,7 +147,10 @@ Gathering detail watch (owner, 2026-10-25; PASS/FAIL; seeded gatherings): open t
 item 41 chip if one shows), Discover (a card, with a time chip or category selected and scrolled down first), Activity (an invitation
 or join request) and Plans (Upcoming / Hosting / Past): (a) every entry opens the same GatheringDetail (same title, state, action);
 (b) Back returns to the exact previous screen with its scroll position, filters/chips, selected mode/tab and any open view, never a
-reset Discover. A reset = FAIL (functional, idea "283"); a pass closes the item with no further development.
+reset Discover; (c) also from Discover with a typed search showing (scroll far down its results first): Back keeps the query, its
+chips and the scroll; (d) from a notification tap (e.g. a join push on the host phone) while on another screen: the gathering opens over
+it and Back returns to that screen. A lost state = FAIL (functional, fixed in the shared navigation, idea "283"/"232", never per screen);
+a pass closes the item with no further development.
 
 Activity watch (owner, 2026-10-25; observation only): on Activity, can the person tell what needs their answer (Needs Your
 Attention: invitations, join requests) from what is only informational (Today, Earlier)? Ask "Which of these do you need to do
