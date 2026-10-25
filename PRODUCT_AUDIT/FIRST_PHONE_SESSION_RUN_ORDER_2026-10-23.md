@@ -219,6 +219,14 @@ seed's cleanup does NOT remove it; the host cancels it in the app right after th
 moves out of Upcoming); anything left is listed in the post-session cleanup re-plan by id for owner approval, never deleted silently. Attendee
 management, invitations and join requests stay on GatheringDetail (idea "234", LOCKED); no new screen, motion or payment change.
 
+GatheringDetail stage watch (owner, 2026-10-25; observation only, folded into session A/B and the host check, no extra seeding): open
+the same gathering's GatheringDetail at four stages: (1) before joining, (2) after joining, (3) after a business offer is booked from it
+(SETUP-BLOCKED until a reply exists: automatic replies only, part 7), (4) inside the check-in window (start - 30 min). At each, give
+3 seconds and ask "What would you do here next?" Write it verbatim. PASS = they name the stage's primary action (Join / Request to Join;
+Message or Invite; the booked card's details; Check in). A wrong or slow answer, or sections competing for attention (attendees,
+invitations, booking, chat, directions, check-in) = USABILITY with a screenshot of the full scroll; the fix is the state-based order on
+the existing screen, proposed for owner approval; never a new screen, animation or layout change without that evidence.
+
 Invite watch (owner, idea "369", 2026-10-23; observation only, alongside C26): as host, invite three friends from the gathering's invite
 sheet. Does the host clearly understand the invitations were SENT but attendance has NOT increased yet (rows "Sent", attending count
 unchanged until someone really joins)? Record any moment they read an invite as a confirmed attendee. Unclear = report the exact
