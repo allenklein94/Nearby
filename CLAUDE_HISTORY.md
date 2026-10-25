@@ -51,6 +51,10 @@
   Friends as "what are my friends doing". DECLINED, CLOSED: reverses follow-up 8 (management stays on the Friends screen, Your
   Connections stays counts, "Your Circle" rename declined, friend feed declined; circles already serve Invite a Circle, item
   136). Owner: no screen-structure changes until the phone session; "Meet Friends" only if testing shows confusion.
+- Follow-up 10 (owner, same day): "Friends gets no top-level screen; manage under Profile". Already true: Friends is not a tab
+  (five tabs), it is reached from Profile > Your Connections (or the friend-request push) and stays its own screen (long list +
+  actions; folding it into Profile would lengthen Profile). DECLINED as a change, CLOSED + LOCKED. Goal = fewer unnecessary
+  screens, not the lowest count.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 
