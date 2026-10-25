@@ -626,7 +626,7 @@ boundaries; prod journeys 499/499; replay 450/450 + concurrency; no new strings)
 **Item 34 (Plan complete) is OPEN until** every check in `PRODUCT_AUDIT/ITEM_34_PLAN_COMPLETE_DEVICE_CHECKLIST_2026-10-11.md` is
 recorded on a real device (built; tests, the `planComplete` journey and parse checks pass; no new strings).
 
-**Business discovery with Google discovery OFF (owner, 2026-10-25, read-only assessment) GAPS FOUND, owner decision pending, nothing built:** G1 no browse list of Nearby's own businesses without typing (Places tab + topic Places were Google-only; partners appear only via search, map pins, perks, moments, typed asks); G2 production has 0 pinned businesses, so every route shows none (live-market seeding). Details: CLAUDE_HISTORY.md top.
+**Business discovery with Google discovery OFF (owner, 2026-10-25):** G2 (0 pinned businesses in production) = immediate priority via clearly identified test data (the phone-session seed's one test business covers it minimally; a broader set changes the seed's approval code, owner's call; no production business record without approval), checked by the run order's "Business discovery watch". G1 = APPROVED DIRECTION, DEFERRED until business data exists and the phone session is done: Nearby-owned businesses browsable in Discover's existing category view without typing or the map; no new tab, screen, Google dependency or duplicate directory. Details: CLAUDE_HISTORY.md top.
 
 **Blocked on the owner:**
 - **Anthropic credit:** every AI edge function returns 500 ("credit balance is too low"). Never run live:

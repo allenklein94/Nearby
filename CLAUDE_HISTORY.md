@@ -81,6 +81,15 @@
   seeding item already on the owner's list (and the phone-session seed); G1 only matters once real businesses exist. Any G1
   fix would be the smallest option inside Discover's existing structure (e.g. partner businesses in the category view /
   an existing tab), proposed for approval, never a re-enabled Google surface.
+- Owner decision on G1/G2 (same day): G2 = immediate priority, via clearly identified test data; no production business record
+  created or changed without the owner's approval. The approved-pending phone-session seed already covers G2 minimally (ONE test
+  business "Harbor Coffee (test)": pin ~0.6 mi from the seed point, Coffee / food_drink, hours 7 AM - 9 PM, groups up to 10; no
+  perks, no postings); a broader representative set (several categories and distances) would change the seed and its approval
+  code, so it is the owner's call. Owner concern: G2 may mask other discovery bugs, so the run order gains a "Business discovery
+  watch" (search, map, typed ask, unrelated word excluded, radius + distance agree; multi-business ordering / out-of-radius = NOT
+  TESTED with one business). G1 = APPROVED PRODUCT DIRECTION, DEFERRED until business data exists AND the phone session is done:
+  Nearby-owned businesses browsable in Discover's existing category view without typing or opening the map; no new tab, screen,
+  Google dependency or duplicate business directory. Next steps unchanged: the iOS build, then the phone session.
 
 # Screen-reduction audit items 1-3 built: 72 -> 69 registered screens (owner approved, 2026-10-24)
 

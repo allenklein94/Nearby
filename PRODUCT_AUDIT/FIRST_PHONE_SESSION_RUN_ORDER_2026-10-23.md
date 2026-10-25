@@ -131,6 +131,14 @@ Business hours watch (owner, idea "331", 2026-10-23): "Does the person understan
 requested, without having to open its preview or check its hours manually?" (e.g. "coffee tonight at 8"). Record separately whether
 they mean OPEN NOW or OPEN AT THE REQUESTED TIME (different facts; note if the person or the screen confuses them). Report only.
 
+Business discovery watch (owner, 2026-10-25; PASS/FAIL; seeded test business "Harbor Coffee (test)", Coffee, ~0.6 mi): G2 may be
+masking discovery bugs, so check more than the pin: (a) typing "coffee" in Discover's All shows it under Businesses with a real
+distance; (b) its pin shows on the All map and opens the preview sheet; (c) a typed ask ("coffee tonight") reaches it (results or Ask
+Nearby Businesses); (d) it does NOT appear for an unrelated word (e.g. "pickleball") or in an unrelated category; (e) it still appears
+at the 15 mi radius and the distance shown matches the map. Not testable with ONE business (record NOT TESTED): ordering between
+businesses, a business beyond the radius being excluded, other categories. G1 (browsing businesses in Discover's category view without
+typing) is NOT built: its absence is expected, never a FAIL.
+
 Join clarity watch (owner, idea "337", 2026-10-23; first TWO-phone session, alongside item 28's checklist): when someone joins
 the host's gathering, does the host understand what happened from the existing join push ("{Name} joined", opens that gathering)
 and the Who's going section (face flows in, count rolls, named line) alone, without wanting another surface (Home, Activity)?
