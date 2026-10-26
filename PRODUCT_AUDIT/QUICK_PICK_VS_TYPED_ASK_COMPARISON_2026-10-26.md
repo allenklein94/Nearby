@@ -56,7 +56,16 @@ Unexplained differences for investigation: only finding 3's before-6 PM case (ty
 Words do NOT beat an AI category today: `resolveAsk` (`utils/askResolver.js:132-136`) takes a real AI tag over the words' tag; the only
 guard is item 185 (an AI dating tag never replaces a concrete category the words name). The approved narrow fix (exact category names /
 approved phrases beat a conflicting AI guess) is NOT built: its approval is conditional on the AI-on test failing, which needs Anthropic
-credit. Nothing changed.
+credit. Nothing changed. Owner (2026-10-26): keep it conditional: run the AI-on comparison (Pickleball / Coffee / Padel / Comedy
+named in the words) once credit exists; build the safeguard only if it confirms the override; dating exception kept.
+
+## Caption check after the fix (owner asked, 2026-10-26)
+
+"something outside tonight" (fixture, 3 PM) is NOT empty: it returns one result, a restaurant posting with declared outdoor seating.
+"Looking across {groups}" comes only from `openEndedCaption` (`utils/openEndedAsk.js`), which names a group only when a SHOWN result
+belongs to it (none shown = no caption). The 5:30 PM hike was the only Outdoors & Nature result, so the line correctly disappears; the
+remaining caption, "Weather data unavailable · Leaving out places that haven't said", is true for that run (no weather in the fixture;
+2 places left out for not declaring an outdoor side). An empty result never gets "Looking across …". Accurate, nothing changed.
 
 ## Phone (run order Quick pick check, step 11)
 
