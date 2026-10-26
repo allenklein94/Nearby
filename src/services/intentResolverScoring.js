@@ -14,6 +14,7 @@ import { formatDistanceAway } from '../utils/formatDistance';
 // intentResolver.js imports every export here instead of defining its own
 // copies -- same values, same logic, just factored out.
 import { isWithinRightNowWindow } from '../utils/rightNowWindow';
+import { TONIGHT_START_HOUR } from '../utils/gatheringDateFilter';
 import { CUISINE_OPTIONS, BUSINESS_ATTRIBUTE_OPTIONS, OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { askedForReason, occasionOfferedReason, reasonText } from '../constants/recommendationReasonVocabulary';
 import { hobbyAttributeMatch, relatedInterestReason } from '../constants/hobbyRelations';
@@ -455,7 +456,10 @@ export function matchesStatedDay(scheduledAt, dayKey) {
   return localDateParam(startOfDay(d)) === dayKey;
 }
 
-export function matchesDateWindow(scheduledAt, dateWindow, now = new Date()) {
+// "tonight" (owner, 2026-10-26) = today from TONIGHT_START_HOUR (6 PM) to the end of the local day, the same window as Home's
+// Tonight quick picks (utils/gatheringDateFilter.js). `clockStated` = the person's words (or clock chip) state a clock time
+// ("tonight after 5", "tonight at 5:30"): that time governs the hours (it ranks, constants/clockWindow.js), so "tonight" then pins only the day.
+export function matchesDateWindow(scheduledAt, dateWindow, now = new Date(), { clockStated = false } = {}) {
   if (!dateWindow || dateWindow === 'flexible') return true;
   if (dateWindow === 'now') return isWithinRightNowWindow(scheduledAt, now);
   const date = new Date(scheduledAt);
@@ -463,8 +467,11 @@ export function matchesDateWindow(scheduledAt, dateWindow, now = new Date()) {
   const tomorrowStart = new Date(todayStart);
   tomorrowStart.setDate(tomorrowStart.getDate() + 1);
 
-  if (dateWindow === 'today' || dateWindow === 'tonight') {
+  if (dateWindow === 'today') {
     return date >= todayStart && date < tomorrowStart;
+  }
+  if (dateWindow === 'tonight') {
+    return date >= todayStart && date < tomorrowStart && (clockStated || date.getHours() >= TONIGHT_START_HOUR);
   }
   if (dateWindow === 'tomorrow') {
     const dayAfterStart = new Date(tomorrowStart);

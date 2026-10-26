@@ -1,3 +1,15 @@
+# Typed "tonight" = 6 PM to the end of the local day (owner, 2026-10-26)
+
+From the read-only tile-vs-typed comparison (`PRODUCT_AUDIT/QUICK_PICK_VS_TYPED_ASK_COMPARISON_2026-10-26.md`): Home's Tonight quick
+picks meant today from 6 PM (item 137), a typed "tonight" meant all of today (Aug 2026), so "coffee tonight" typed at 3 PM could show a
+4 PM gathering. Owner approved a narrow fix: `matchesDateWindow` 'tonight' = today and hour >= `TONIGHT_START_HOUR` (imported from
+`utils/gatheringDateFilter.js`, the tile's rule); a stated clock time ("tonight after 5", "at 5:30", "at 7") keeps day-only so that time
+governs (`clockStated` in `resolveIntent`; the clock readings were hoisted above the fetch unchanged). Today, now, tomorrow, weekend, stated
+days, businesses, friends' requests, ranking, cap, Not interested, privacy unchanged. Locked typed-ask fixture regenerated: only pre-6 PM
+gatherings leave "tonight" asks, relative order + top picks kept. Stale outdoorMatch journey check (left by 5aee07c5) updated to the shared
+`discoverBusinesses` rule. Tests `services/tonightWindow.test.js` (7); Jest 512/6994; journeys 702/702. Idea "296" inspected, report only:
+an AI category still beats the words (only item 185's dating guard); its conditional fix not built. NOT DEVICE-VERIFIED (Quick pick check 11).
+
 # Quick pick keeps the person's word on Discover (owner, 2026-10-26)
 
 Owner: tapping "Dinner" on Home showed "Foodie ✕" + "“dinner” ✕" on Discover, so the person had to work out why Nearby changed

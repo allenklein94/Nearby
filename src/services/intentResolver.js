@@ -121,12 +121,12 @@ function scored(parts) {
   return { score: baseSignals.reduce((n, p) => n + p.delta, 0), baseSignals };
 }
 
-async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false, askedActivities = activitiesFromText(rawText), statedDay = null) {
+async function resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise = null, travel = false, askedActivities = activitiesFromText(rawText), statedDay = null, clockStated = false) {
   const nearby = await getNearbyGatherings(travel ? 'travel' : 'wide');
   const relevant = nearby.filter((g) => {
     if (category && g.interest_tag !== category) return false;
     // Owner 2026-10-23: a stated weekday / date ("pickleball Friday", "November 4") is that day, as Tomorrow is tomorrow.
-    return statedDay ? matchesStatedDay(g.scheduled_at, statedDay) : matchesDateWindow(g.scheduled_at, dateWindow);
+    return statedDay ? matchesStatedDay(g.scheduled_at, statedDay) : matchesDateWindow(g.scheduled_at, dateWindow, new Date(), { clockStated });
   });
   const meaningfulWords = extractMeaningfulWords(rawText);
   return relevant.map((gathering) => {
@@ -745,9 +745,16 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   const distanceWillingness = distanceWillingnessFromText(rawText);
   const travelMiles = travelSearchMiles(distanceWillingness);
   const askedActivities = removedSet.has('what') ? [] : activitiesFromText(rawText);
+  // Idea "306": `clock` = the person's own reading from the understood clock chip (utils/askUnderstood.js clockOverride):
+  // undefined = read the words, null = removed, else the chosen window / moment in place of the words' one.
+  const clockWindow = clock === undefined ? clockWindowFromText(whenText) : clock && clock.at == null ? { after: clock.after ?? null, before: clock.before ?? null } : null;
+  const pointClock = clock === undefined ? pointClockFromText(whenText) : clock?.at ?? null;
+  const dateAnchor = clockWindow ? dateAnchorFromText(whenText) : null;
+  // A stated clock time decides the hours; "tonight" alone = from 6 PM (matchesDateWindow).
+  const clockStated = !!(clockWindow && (clockWindow.after != null || clockWindow.before != null)) || pointClock != null;
 
   const branches = await Promise.allSettled([
-    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities, statedDay),
+    resolveGatherings(category, dateWindow, rawText, priceLevel, partyType, weatherPromise, !!travelMiles, askedActivities, statedDay, clockStated),
     resolveCommunities(category, location, myCity),
     resolveConnectedRequests(category, dateWindow, statedDay),
     resolvePerks(category, location),
@@ -913,11 +920,6 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   step('time_budget');
   // "today before 3 PM" / "Saturday until 5": used only when the person's words anchor it to a date ("before 3 PM" alone
   // constrains nothing). A gathering whose real start (and usual length) fits lifts, a clear miss sinks; never hides.
-  // Idea "306": `clock` = the person's own reading from the understood clock chip (utils/askUnderstood.js clockOverride):
-  // undefined = read the words, null = removed, else the chosen window / moment in place of the words' one.
-  const clockWindow = clock === undefined ? clockWindowFromText(whenText) : clock && clock.at == null ? { after: clock.after ?? null, before: clock.before ?? null } : null;
-  const pointClock = clock === undefined ? pointClockFromText(whenText) : clock?.at ?? null;
-  const dateAnchor = clockWindow ? dateAnchorFromText(whenText) : null;
   deduped = applyClockWindowToCandidates(deduped, clockWindow, dateAnchor);
   step('clock_window');
   const askedEnergies = energiesWithoutIntensity([...new Set([...(Array.isArray(energies) ? energies : []), ...energiesFromText(rawText)])], askedIntensity);

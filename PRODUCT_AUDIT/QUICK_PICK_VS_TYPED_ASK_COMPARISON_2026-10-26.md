@@ -32,6 +32,32 @@ Not required: identical results (browse and explicit search behave differently b
 
 Unexplained differences for investigation: only finding 3's before-6 PM case (typed route only). Proposed nothing; any change needs an owner decision.
 
+## Fix (owner approved, 2026-10-26): typed "tonight" = 6 PM to the end of the local day
+
+- ONE rule: `matchesDateWindow` (`services/intentResolverScoring.js`) 'tonight' = today AND hour >= `TONIGHT_START_HOUR`, the constant
+  imported from the tile's own `utils/gatheringDateFilter.js` (same answer for every hour: test). 'today' unchanged (whole day); 'now',
+  'tomorrow', 'weekend', 'flexible', stated weekday/date unchanged.
+- Explicit clock time kept: when the words (or the clock chip) state one ("tonight after 5" = 5 PM+, "at 5:30", "at 7"), "tonight" pins
+  only the day and that time ranks as before (`clockStated` in `resolveIntent`, from the same clock readings, hoisted unchanged above
+  the fetch). "before 9" and the ambiguous "at 9" are not read as clock times by the existing readers, so they keep 6 PM+.
+- Never inferred: dateWindow comes only from the words (`resolveAsk`: "WHEN: explicit words only"; probe sources = words).
+- Scope: typed-ask gatherings, every category. Business postings in a typed ask are not filtered by dateWindow (unchanged);
+  friends' requests compare calendar dates only (`dateWindowToDateRange`, unchanged); strong match already ticked tonight from 6 PM (unchanged).
+- Effect on the locked typed-ask ordering fixture (`__fixtures__/typedAskOrdering.expected.json`, regenerated): in every "tonight" ask
+  only the two pre-6 PM gatherings (3:20 PM museum, 5:30 PM hike) leave; the rest keep their relative order and top picks; "something
+  outside tonight" loses its "Looking across Outdoors & Nature" caption because its only outdoor result was the 5:30 PM hike.
+- Tests: `services/tonightWindow.test.js` (7: before / after 6 PM, 11:59 PM vs local midnight, just after midnight, clock stated, other
+  windows unchanged, parity with the tile for every hour, wiring); Jest 512 suites / 6994 tests; journeys 702/702 (rolled back).
+  Also fixed a stale journey check left by 5aee07c5 (outdoorMatch looked for the pre-`discoverBusinesses` inline line; behaviour unchanged).
+- Not changed: category, distance, visibility, privacy, ranking, Not interested, the cap of 4, the two pipelines.
+
+## Idea "296" check (owner asked, 2026-10-26; report only)
+
+Words do NOT beat an AI category today: `resolveAsk` (`utils/askResolver.js:132-136`) takes a real AI tag over the words' tag; the only
+guard is item 185 (an AI dating tag never replaces a concrete category the words name). The approved narrow fix (exact category names /
+approved phrases beat a conflicting AI guess) is NOT built: its approval is conditional on the AI-on test failing, which needs Anthropic
+credit. Nothing changed.
+
 ## Phone (run order Quick pick check, step 11)
 
 On a weekday evening, same place: tap Coffee Tonight, note the gatherings; then type "coffee tonight" on Discover. Every gathering in the
