@@ -435,7 +435,9 @@ approval. "1 attending" on a host-only gathering is expected (host counts). Type
 Quick pick check (owner, 2026-10-26; first confirm the installed build number in TestFlight is the new one, never judge from looks):
 Home -> a Tonight tile (Coffee). PASS = (1) Discover opens directly on Gatherings with Tonight + Coffee selected (no "Coffee Near You"
 screen, no Nearby / Attending / Hosting tabs); (2) Coffee ✕ widens the results in place; (3) ☆ Interested works without leaving
-Discover; (4) a gathering opens GatheringDetail directly; (5) Back returns to Home. The old screen on a verified current build = a
+Discover; (4) a gathering opens GatheringDetail directly; (5) Back returns to Home. On landing, before they touch anything, ask "What are you looking at?":
+coffee gatherings tonight = PASS; "everything" / unsure = USABILITY (if it recurs, the fix to propose is one contextual heading, e.g.
+"Coffee tonight near you"; nothing built before that evidence). The old screen on a verified current build = a
 NAVIGATION BUG (record the build number + screenshot), never "old install". Builds <= 84 (2026-09-05) still contain the old screen;
 build 86 (7d72d615) and later do not (no Gatherings route).
 Discover ☆ Interested check (owner, 2026-10-26; the feature is finished if this passes, no changes before it): on the smallest phone
