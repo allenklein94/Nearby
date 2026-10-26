@@ -18,7 +18,7 @@ const read = (rel) => fs.readFileSync(path.join(SRC, rel), 'utf8');
 
 // Every place allowed to offer Undo, and why it is low-risk: private to the person, notifies nobody, loses nothing.
 const UNDO_ALLOWED = {
-  'screens/HomeScreen.js': 'Interested toggle (private)',
+  'hooks/useCardInterested.js': 'Interested toggle from a card, Home + Discover (private)',
   'screens/GatheringDetailScreen.js': 'Interested toggle (private)',
   'screens/SettingsScreen.js': 'Add a noticed activity to my own interests',
 };
@@ -45,8 +45,8 @@ describe('Undo toast', () => {
     expect(offenders).toEqual([]);
   });
 
-  test('Interested offers Undo on Home and the gathering page', () => {
-    expect(read('screens/HomeScreen.js')).toMatch(/showSuccessToast\(\.\.\.interestedConfirmation\(!on\), \{ undo: \(\) => undoCardInterested\(g, on\) \}\)/);
+  test('Interested offers Undo on Home + Discover cards (one hook) and the gathering page', () => {
+    expect(read('hooks/useCardInterested.js')).toMatch(/showSuccessToast\(\.\.\.interestedConfirmation\(!on\), \{ undo: \(\) => undo\(g, on\) \}\)/);
     expect(read('screens/GatheringDetailScreen.js')).toMatch(/showSuccessToast\(\.\.\.interestedConfirmation\(next\), \{ undo: \(\) => undoInterested\(!next\) \}\)/);
   });
 

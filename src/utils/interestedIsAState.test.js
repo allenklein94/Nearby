@@ -13,7 +13,7 @@ test('no Interested screen or route exists', () => {
 
 test('the state changes in place, through the one writer', () => {
   expect(read('screens/GatheringDetailScreen.js')).toMatch(/setGatheringInterested/);
-  expect(read('screens/HomeScreen.js')).toMatch(/setGatheringInterested/);
+  expect(read('hooks/useCardInterested.js')).toMatch(/setGatheringInterested/); // Home + Discover cards (one hook)
 });
 
 test('the collection is Plans > Upcoming; Profile shows a count that opens it, only when there is one', () => {

@@ -11,6 +11,7 @@ import { resultRowView, contextItem } from '../utils/recommendationContext';
 import useMinuteClock from '../hooks/useMinuteClock';
 import usePeriodClock from '../hooks/usePeriodClock';
 import useNotInterested from '../hooks/useNotInterested';
+import useCardInterested from '../hooks/useCardInterested';
 import { NotInterestedMore, NotInterestedRow, NotInterestedLine } from '../components/NotInterested';
 import { relativeWindows } from '../utils/minuteClock';
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
@@ -29,7 +30,7 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { getMyFriendNearbySharing, getNearbyFriend, setFriendNearbySharing } from '../services/friendNearby';
 import { getSignedPhotoUrl } from '../services/photos';
 import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnlockedPerksCount, getHomeInsight, getPendingInvitesCount } from '../services/homeDashboard';
-import { setGatheringInterested, getInterestedDemandPrefs, getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getSignedGatheringPhotoUrl } from '../services/gatherings';
+import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { getMyExperienceFeedback } from '../services/experienceFeedback';
 import { EMPTY_EXPERIENCE_FEEDBACK } from '../utils/experienceFeedback';
 import { computeAccountMaturity } from '../constants/signalSourceMaturity';
@@ -110,7 +111,6 @@ import { OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { getUserLocation } from '../services/userLocation';
 import { placeDistanceLabel } from '../services/places';
 import { homeQuickStatRows } from '../utils/homeQuiet';
-import { interestedConfirmation } from '../utils/actionConfirmations';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 import { gatheringActionOpenParams } from '../utils/primaryAction';
 
@@ -411,61 +411,13 @@ export default function HomeScreen({ navigation }) {
 
   // Contextual primary CTA (utils/primaryAction.js): "Join | View", never a wall of buttons. Join opens the normal
   // confirmation on the detail screen (limits, approval, women-only all live there), so nothing is bypassed.
-  // Private "I might go" toggled straight from the card. Optimistic; the first-ever Interested goes through the
-  // detail screen instead so the one-time anonymous-demand disclosure is shown there (never skipped).
-  const [interestedOverride, setInterestedOverride] = useState({});
-  const interestedSet = useMemo(() => {
-    const set = new Set(dashboard?.interestedIds ?? []);
-    Object.entries(interestedOverride).forEach(([id, on]) => (on ? set.add(id) : set.delete(id)));
-    return set;
-  }, [dashboard?.interestedIds, interestedOverride]);
+  // Private "I might go" toggled straight from the card (hooks/useCardInterested.js, shared with Discover's ☆): optimistic,
+  // "✓ Saved" after the save, Undo on the toast; the first-ever Interested explains the optional sharing in place (idea "356").
+  const cardInterested = useCardInterested({ interestedIds: Array.isArray(dashboard?.interestedIds) ? dashboard.interestedIds : null, navigation });
+  const interestedSet = cardInterested.interestedSet;
   // Owner idea "153": "Not interested" on Picked For You / Nearby Right Now cards (utils/notInterested.js). Interested unknown
   // (dashboard not loaded) = no menu. `hidden` leaves the dismissed gatherings out of every recommendation placement below.
-  const notInterested = useNotInterested({ myUserId, interestedIds: Array.isArray(dashboard?.interestedIds) ? interestedSet : null, feedback: experienceFeedback });
-  // Item 30: one save per card at a time (a second tap while it runs is ignored), and the brief "✓ Saved" moment per card.
-  const interestedBusyRef = useRef(new Set());
-  const [interestedFlash, setInterestedFlash] = useState({});
-  async function toggleCardInterested(g, on) {
-    if (interestedBusyRef.current.has(g.id)) return;
-    interestedBusyRef.current.add(g.id);
-    try {
-      if (!on) {
-        const prefs = await getInterestedDemandPrefs().catch(() => null);
-        if (prefs && prefs.share && !prefs.acknowledged) {
-          navigation.navigate('GatheringDetail', { gatheringId: g.id });
-          showSuccessToast(t('ui.home.oneQuickStep'), t('ui.home.oneQuickStepBody'));
-          return;
-        }
-      }
-      setInterestedOverride((o) => ({ ...o, [g.id]: !on }));
-      if (on) setInterestedFlash((f) => ({ ...f, [g.id]: 0 }));
-      try {
-        await setGatheringInterested(g.id, !on);
-        // "✓ Saved" is a claim about the server, so it plays only once the save returned (motion amplifies correct data);
-        // the button itself still flips at the tap.
-        if (!on) setInterestedFlash((f) => ({ ...f, [g.id]: (f[g.id] ?? 0) + 1 }));
-        // Item 124: low-risk and private, so Undo sits on the toast and puts it back exactly as it was.
-        showSuccessToast(...interestedConfirmation(!on), { undo: () => undoCardInterested(g, on) });
-      } catch (e) {
-        setInterestedOverride((o) => ({ ...o, [g.id]: on }));
-        setInterestedFlash((f) => ({ ...f, [g.id]: 0 }));
-        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => toggleCardInterested(g, on) });
-      }
-    } finally {
-      interestedBusyRef.current.delete(g.id);
-    }
-  }
-
-  async function undoCardInterested(g, previous) {
-    setInterestedOverride((o) => ({ ...o, [g.id]: previous }));
-    if (!previous) setInterestedFlash((f) => ({ ...f, [g.id]: 0 }));
-    try {
-      await setGatheringInterested(g.id, previous);
-    } catch (e) {
-      setInterestedOverride((o) => ({ ...o, [g.id]: !previous }));
-      presentRecoverableError(Alert, { what: 'undo that', error: e, onRetry: () => undoCardInterested(g, previous) });
-    }
-  }
+  const notInterested = useNotInterested({ myUserId, interestedIds: interestedSet, feedback: experienceFeedback });
 
   // One object, multiple signals: a gathering that is a Best Pick, matches your interests, is trending and/or is hosted
   // by a friend renders ONCE with all its reasons (see utils/homeSignalMerge.js).
@@ -686,9 +638,9 @@ export default function HomeScreen({ navigation }) {
     return (
       <View style={styles.ctaRow}>
         {action.kind === 'interested' ? (
-          <TouchableOpacity style={action.on ? styles.rowCtaGhost : primaryStyle} onPress={() => toggleCardInterested(g, action.on)} accessibilityRole="button" accessibilityState={{ selected: action.on }} accessibilityLabel={t(action.on ? 'ui.home.removeInterestedA11y' : 'ui.home.markInterestedA11y', { title: g.title })}>
+          <TouchableOpacity style={action.on ? styles.rowCtaGhost : primaryStyle} onPress={() => cardInterested.toggle(g, action.on)} accessibilityRole="button" accessibilityState={{ selected: action.on }} accessibilityLabel={t(action.on ? 'ui.home.removeInterestedA11y' : 'ui.home.markInterestedA11y', { title: g.title })}>
             {/* Item 30: "✓ Saved" with one small pulse, then back to "★ Interested". */}
-            <InterestedSaved flashKey={interestedFlash[g.id]} style={action.on ? styles.rowCtaGhostText : primaryText} label={action.label} savedLabel={t('ui.actions.interestedSaved')} />
+            <InterestedSaved flashKey={cardInterested.flashKey(g.id)} style={action.on ? styles.rowCtaGhostText : primaryText} label={action.label} savedLabel={t('ui.actions.interestedSaved')} />
           </TouchableOpacity>
         ) : action.kind === 'join' ? (
           <TouchableOpacity style={primaryStyle} onPress={() => openDetail(gatheringActionOpenParams(action) ?? {})} accessibilityRole="button" accessibilityLabel={`${action.label}: ${g.title}`}>

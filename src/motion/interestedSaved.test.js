@@ -67,19 +67,21 @@ describe('gathering detail', () => {
   });
 });
 
-describe('Home card (the only other Interested button; Discover has none)', () => {
+describe('Card toggle, Home + Discover (one hook, hooks/useCardInterested.js)', () => {
+  const hook = read('hooks/useCardInterested.js');
   test('one save per card at a time; flash on marking only, after the save returned; failure and Undo end it; toast kept', () => {
-    const i = home.indexOf('async function toggleCardInterested');
-    const fn = home.slice(i, home.indexOf('async function undoCardInterested', i));
-    expect(fn).toMatch(/if \(interestedBusyRef\.current\.has\(g\.id\)\) return;/);
-    expect(fn).toMatch(/finally \{\s*interestedBusyRef\.current\.delete\(g\.id\);/);
-    expect(fn.indexOf('setInterestedOverride((o) => ({ ...o, [g.id]: !on }))')).toBeLessThan(fn.indexOf('await setGatheringInterested'));
-    expect(fn.indexOf('if (!on) setInterestedFlash((f) => ({ ...f, [g.id]: (f[g.id] ?? 0) + 1 }))')).toBeGreaterThan(fn.indexOf('await setGatheringInterested'));
+    const i = hook.indexOf('async function toggle');
+    const fn = hook.slice(i, hook.indexOf('async function undo', i));
+    expect(fn).toMatch(/if \(busyRef\.current\.has\(g\.id\)\) return;/);
+    expect(fn).toMatch(/finally \{\s*busyRef\.current\.delete\(g\.id\);/);
+    expect(fn.indexOf('setOverride((o) => ({ ...o, [g.id]: !on }))')).toBeLessThan(fn.indexOf('await setGatheringInterested'));
+    expect(fn.indexOf('if (!on) setFlash((f) => ({ ...f, [g.id]: (f[g.id] ?? 0) + 1 }))')).toBeGreaterThan(fn.indexOf('await setGatheringInterested'));
     expect(fn).toMatch(/showSuccessToast\(\.\.\.interestedConfirmation\(!on\)/);
-    expect(home).toMatch(/<InterestedSaved flashKey=\{interestedFlash\[g\.id\]\}/);
-    expect(home).toMatch(/if \(!previous\) setInterestedFlash\(\(f\) => \(\{ \.\.\.f, \[g\.id\]: 0 \}\)\);/);
+    expect(home).toMatch(/<InterestedSaved flashKey=\{cardInterested\.flashKey\(g\.id\)\}/);
+    expect(read('components/CardInterestedStar.js')).toMatch(/<InterestedSaved\s+flashKey=\{flashKey\}/);
+    expect(hook).toMatch(/if \(!previous\) setFlash\(\(f\) => \(\{ \.\.\.f, \[g\.id\]: 0 \}\)\);/);
   });
-  test('Discover has no Interested button to keep consistent', () => {
-    expect(read('screens/DiscoverHubScreen.js')).not.toMatch(/setGatheringInterested|kind === 'interested'/);
+  test('Discover marks Interested only through the shared hook (owner 2026-10-25 ☆), never its own write', () => {
+    expect(read('screens/DiscoverHubScreen.js')).not.toMatch(/setGatheringInterested/);
   });
 });

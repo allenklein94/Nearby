@@ -58,7 +58,7 @@ describe('meaningful confirmations', () => {
     expect(src).toMatch(/from '.\/offerCopy'/);
     expect(src).not.toMatch(/offer_type ===/);
     for (const f of ['components/GatheringPublishedPanel.js', 'components/InviteFriendsModal.js']) expect(read(f)).toMatch(/inviteSentConfirmation\(/);
-    for (const f of ['screens/GatheringDetailScreen.js', 'screens/HomeScreen.js']) expect(read(f)).toMatch(/interestedConfirmation\(/);
+    for (const f of ['screens/GatheringDetailScreen.js', 'hooks/useCardInterested.js']) expect(read(f)).toMatch(/interestedConfirmation\(/);
     expect(read('screens/AskBusinessScreen.js')).toMatch(/targetPartnerName: targetPartner\?\.name/);
     expect(read('screens/BusinessRequestDetailScreen.js')).toMatch(/justSentLine\(notifiedCount, targetPartnerName\)/);
     // the two moments that already said what happened stay

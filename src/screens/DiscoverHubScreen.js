@@ -39,6 +39,9 @@ import { getSignedStoryUrl, getBusinessMomentsGrouped, captureStoryMedia, upload
 import { getSignedPhotoUrl } from '../services/photos';
 import { getNearbyGatherings, searchGatherings, getSignedGatheringPhotoUrl, getGatheringFitReasons, getMyInterestedGatheringIds } from '../services/gatherings';
 import useNotInterested from '../hooks/useNotInterested';
+import useCardInterested from '../hooks/useCardInterested';
+import CardInterestedStar from '../components/CardInterestedStar';
+import { cardInterestedEligible } from '../utils/cardInterested';
 import { NotInterestedMore, NotInterestedRow, NotInterestedLine } from '../components/NotInterested';
 import { withoutHidden } from '../utils/notInterested';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
@@ -293,7 +296,10 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Owner idea "153": "Not interested" on Discover's browse gathering tiles (never on search / typed-ask results). The person's
   // Interested ids are read on focus; unknown (null) = no menu (utils/notInterested.js).
   const [myInterestedIds, setMyInterestedIds] = useState(null);
-  const notInterested = useNotInterested({ myUserId, interestedIds: myInterestedIds, feedback: personalization.feedback });
+  // Owner 2026-10-25 (narrow exception to item 200): a small ☆ beside a gathering tile's join action marks Interested without
+  // leaving Discover (hooks/useCardInterested.js, shared with Home); the same set words Join as "I'm Going" once it is marked.
+  const cardInterested = useCardInterested({ interestedIds: myInterestedIds, navigation });
+  const notInterested = useNotInterested({ myUserId, interestedIds: cardInterested.interestedSet, feedback: personalization.feedback });
   const [mode, setMode] = useState(() => route.params?.initialMode ?? 'things');
   const [peopleSubMode, setPeopleSubMode] = useState(() => route.params?.initialPeopleSubMode ?? 'dating');
 
@@ -2032,7 +2038,16 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // sectionKey: the Discover section the card sits in; its own reason leads the two shown (sectionLeadReason).
   function discoverCard(g, sectionKey = null) {
     const leadReason = sectionKey ? sectionLeadReason(sectionKey, g, { friendInterestByTag }) : null;
-    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId, language, leadReason });
+    const actionOpts = cardInterested.interestedSet ? { interestedIds: cardInterested.interestedSet } : {};
+    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId, language, leadReason, actionOpts });
+  }
+
+  // The ☆ beside a join action (utils/cardInterested.js decides when); nothing beside a status, a View or an unknown set.
+  function interestedStar(g, card, color) {
+    const set = cardInterested.interestedSet;
+    if (!cardInterestedEligible(card.action, set)) return null;
+    const on = set.has(g.id);
+    return <CardInterestedStar title={g.title} on={on} flashKey={cardInterested.flashKey(g.id)} onPress={() => cardInterested.toggle(g, on)} color={color} />;
   }
 
   // A tile's second facts line: price/party type, spots left, then "N attending" (dropped first when the line runs long).
@@ -2240,6 +2255,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </Text>
           )}
         </View>
+        {interestedStar(g, card)}
         {action.kind === 'cta' ? (
           <TouchableOpacity
             onPress={() => openGatheringAction(card, action)}
@@ -2298,7 +2314,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
               onPress: () => openGatheringAction(card, action),
               accessibilityLabel: `${action.label}: ${g.title}`,
             }}
-            trailing={more()}
+            trailing={<>{interestedStar(g, card)}{more()}</>}
           />
           {menuRow}
         </View>
@@ -2362,6 +2378,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 {gatheringFactsLine([reasonLine, card.meta], g, { language, reasons: [reasonLine], maxChars: COMPACT_FACTS_MAX_CHARS })}
               </Text>
             </View>
+            {interestedStar(g, card, '#FFFFFF')}
             {action.kind === 'cta' ? (
               <TouchableOpacity
                 style={styles.heroCta}
@@ -2418,6 +2435,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
             </Text>
           )}
         </View>
+        {interestedStar(g, card)}
         {action.kind === 'cta' ? (
           <TouchableOpacity
             onPress={() => openGatheringAction(card, action)}
