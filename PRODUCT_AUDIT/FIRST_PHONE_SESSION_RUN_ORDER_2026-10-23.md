@@ -448,6 +448,10 @@ filter (a Coffee gathering without "dinner" in its title shows); (9) with no din
 with a screenshot; no code change before it is recorded.
 (10) Concert (owner, 2026-10-26; category maps directly, no extra word): Home -> Concert Tonight. PASS = Discover shows exactly
 "Concert ✕" + Tonight selected, no second chip, results = Concerts gatherings tonight only (no hidden filter). Same FAIL rule as (6)-(9).
+(11) Tile vs typed (owner, 2026-10-26; weekday evening, same place): note Coffee Tonight's gatherings, then type "coffee tonight" on Discover.
+Every typed gathering result should also be on the tile list (except ones marked Not interested). Identical results NOT required: the typed
+ask shows its top 4 across kinds, ranked differently. Unexplained gap = both lists + screenshots, possible drift, no code change first.
+Read-only comparison + expected differences: `PRODUCT_AUDIT/QUICK_PICK_VS_TYPED_ASK_COMPARISON_2026-10-26.md`.
 Discover ☆ Interested check (owner, 2026-10-26; the feature is finished if this passes, no changes before it): on the smallest phone
 available, Discover > a gathering tile with Join. (a) Tap the small ☆ (not Join): ★ + "✓" + toast, still on Discover; the first-ever
 Interested shows the sharing explanation in place (says sharing is off unless turned on). (b) Ask "Have you joined this?" PASS = they
