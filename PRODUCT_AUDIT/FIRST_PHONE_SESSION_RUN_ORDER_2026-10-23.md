@@ -432,6 +432,13 @@ gathering with confirmed attendees. PASS = time, distance and spots left (when s
 or absent, never cut ("3 atten…"). A cut count, or time/distance/spots hidden = USABILITY with a screenshot; the fix is the budgets in
 `utils/gatheringFullness.js` (`COMPACT_FACTS_MAX_CHARS` 44 / `NOW_TILE_FACTS_MAX_CHARS` 26, estimates, never measured), proposed for owner
 approval. "1 attending" on a host-only gathering is expected (host counts). Typed-ask result rows are out of scope.
+Discover ☆ Interested check (owner, 2026-10-26; the feature is finished if this passes, no changes before it): on the smallest phone
+available, Discover > a gathering tile with Join. (a) Tap the small ☆ (not Join): ★ + "✓" + toast, still on Discover; the first-ever
+Interested shows the sharing explanation in place (says sharing is off unless turned on). (b) Ask "Have you joined this?" PASS = they
+say no / not yet. (c) Tap ★ again: removed. (d) Mark it again, then tap Join: the join confirmation opens; confirm; Going + View Plan
+appear only after the join is confirmed (approval gathering: Requested until the host approves). (e) Five quick ☆ taps: none triggers
+Join or opens the card. (f) The ☆ visible and tappable on the hero image tile. Return to Home and open the gathering: Interested agrees
+on all three. A mis-tap, unreadable ☆, or "yes, I joined" = USABILITY with a screenshot; smallest fix proposed for owner approval.
 Next step watch (owner, idea "387", 2026-10-24; observation only): right after (1) a business reply arrives, (2) they join a gathering,
 (3) a plan is over, ask nothing and wait 10 seconds: do they find the next step unaided (take the offer / View Plan or Message group /
 "How was it?")? Then ask "What would you do next?" Write it verbatim. Stuck or a wrong guess = USABILITY with the screen; the fix is the
