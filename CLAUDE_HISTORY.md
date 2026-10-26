@@ -1,3 +1,22 @@
+# Discover ☆ Interested (owner, 2026-10-25 decision; built 2026-10-26; narrow exception to item 200)
+
+Owner instruction: build a small secondary ☆ Interested on Discover gathering cards reusing Home's implementation; Join stays primary;
+reuse state/backend/strings/✓ Saved; keep the first-time explanation + privacy defaults (sharing off unless enabled) reachable without
+GatheringDetail; tap toggles, never navigates; card tap still opens GatheringDetail; state in sync Discover/Home/GatheringDetail; tests.
+
+Built: `hooks/useCardInterested.js` (Home's card toggle extracted verbatim: busy guard, optimistic override, flash after the save,
+`interestedConfirmation` toast + Undo, Try Again), `utils/cardInterested.js` (eligibility = join action + known set; override merge;
+fresh read drops settled overrides; first-Interested disclosure key by current share choice), `components/CardInterestedStar.js`
+(☆/★ glyph, existing `ui.home.markInterestedA11y` / `removeInterestedA11y`, `accessibilityState.selected`). Discover: star on the
+hero, standard, compact and context-row tiles; the same set feeds `gatheringCardModel` actionOpts so Join reads "I'm Going" once
+marked, and `useNotInterested`. Sync: Home re-reads the dashboard, Discover re-reads `getMyInterestedGatheringIds` on focus; a fresh
+read wins over every settled tap. Safeguard: the first-ever Interested shows the idea "356" explanation in an Alert in place (Got it /
+Change in Settings, both acknowledge; never enables sharing); Home's previous detour to GatheringDetail (only when sharing was on) and
+its strings `ui.home.oneQuickStep` / `oneQuickStepBody` removed (11 languages). Not on Happening Now tiles (26-char facts budget).
+Tests: `utils/cardInterested.test.js` 12 (rules, toggle on/off, refresh sync, disclosure keys, card body destination unchanged + no
+join step, wiring); interestedSaved / undoToast / actionConfirmations / interestedIsAState guards repointed to the hook. Jest 510/6976.
+No migration, journey (client-only, `set_gathering_interested` unchanged) or device check: NOT DEVICE-VERIFIED.
+
 # Discover List | Map consistency: two fixes (owner, 2026-10-25)
 
 - Owner idea: List | Map as two presentations of the same results. Assessment: already in place on one screen (`viewStyle`
@@ -9128,24 +9147,6 @@ Choices are stashed in the existing `pending_onboarding_answers` blob and Comple
 columns, one store). Not surfaced at onboarding: Community. No migration. Jest 685/685. Device-unverified. Business export re-run: byte-identical (not in the bundle), nothing to commit.
 (verified by rebuilding).
 
-## 2026-10-26: Discover ☆ Interested (owner, 2026-10-25 decision; narrow exception to item 200)
-
-Owner instruction: build a small secondary ☆ Interested on Discover gathering cards reusing Home's implementation; Join stays primary;
-reuse state/backend/strings/✓ Saved; keep the first-time explanation + privacy defaults (sharing off unless enabled) reachable without
-GatheringDetail; tap toggles, never navigates; card tap still opens GatheringDetail; state in sync Discover/Home/GatheringDetail; tests.
-
-Built: `hooks/useCardInterested.js` (Home's card toggle extracted verbatim: busy guard, optimistic override, flash after the save,
-`interestedConfirmation` toast + Undo, Try Again), `utils/cardInterested.js` (eligibility = join action + known set; override merge;
-fresh read drops settled overrides; first-Interested disclosure key by current share choice), `components/CardInterestedStar.js`
-(☆/★ glyph, existing `ui.home.markInterestedA11y` / `removeInterestedA11y`, `accessibilityState.selected`). Discover: star on the
-hero, standard, compact and context-row tiles; the same set feeds `gatheringCardModel` actionOpts so Join reads "I'm Going" once
-marked, and `useNotInterested`. Sync: Home re-reads the dashboard, Discover re-reads `getMyInterestedGatheringIds` on focus; a fresh
-read wins over every settled tap. Safeguard: the first-ever Interested shows the idea "356" explanation in an Alert in place (Got it /
-Change in Settings, both acknowledge; never enables sharing); Home's previous detour to GatheringDetail (only when sharing was on) and
-its strings `ui.home.oneQuickStep` / `oneQuickStepBody` removed (11 languages). Not on Happening Now tiles (26-char facts budget).
-Tests: `utils/cardInterested.test.js` 12 (rules, toggle on/off, refresh sync, disclosure keys, card body destination unchanged + no
-join step, wiring); interestedSaved / undoToast / actionConfirmations / interestedIsAState guards repointed to the hook. Jest 510/6976.
-No migration, journey (client-only, `set_gathering_interested` unchanged) or device check: NOT DEVICE-VERIFIED.
 
 ## Sep 18 2026 — Location powers the whole system ("the user should never repeatedly tell Nearby where they are") — DONE
 
