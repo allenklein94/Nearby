@@ -1,3 +1,15 @@
+# Quick pick keeps the person's word on Discover (owner, 2026-10-26)
+
+Owner: tapping "Dinner" on Home showed "Foodie ✕" + "“dinner” ✕" on Discover, so the person had to work out why Nearby changed
+what they picked. Fix: Home's `handleQuickAction` also passes `pick: item.label`; `utils/gatheringFilters.js` keeps `pick` beside
+category + term (only when one of them is set). `pickedActivity(f)` = the pick while it still stands for the selection; Discover then
+shows ONE chip in the pick's own words (`quickOptionLabel`, translated), else category and word as before. `clearPick` removes pick +
+category + term together (time and other chips stay); `selectCategory` / `toggleForYou` drop the pick and its word. Matching is
+unchanged (same gatherings with or without `pick`; ranking, privacy untouched). The empty result's button uses the pick's word
+("+ Start a Dinner Gathering", existing `ui.gatherings.startTopic`) and `createParamsFromGatheringFilters` carries it into Create
+as `quickStartTitle` (the What field) + the category. Applies to every quick pick. No new strings, categories, screens, navigation or
+motion. Guard `utils/gatheringFilterPick.test.js` (10); full Jest 511 suites / 6987 tests. NOT DEVICE-VERIFIED: the run order's Quick pick check.
+
 # "I'm Going" retired (owner, 2026-10-26)
 
 Owner: "I'm Going" on the join button for someone only Interested read as already attending. States were already separate (Attending
