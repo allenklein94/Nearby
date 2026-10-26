@@ -446,6 +446,8 @@ no Dinner chip left; (8) from Dinner Tonight again, pick another category (e.g. 
 filter (a Coffee gathering without "dinner" in its title shows); (9) with no dinner gatherings tonight, the empty result reads
 "+ Start a Dinner Gathering" and Create opens with "Dinner" in What (not "Foodie"). A Foodie or "dinner" chip on a verified build = FAIL
 with a screenshot; no code change before it is recorded.
+(10) Concert (owner, 2026-10-26; category maps directly, no extra word): Home -> Concert Tonight. PASS = Discover shows exactly
+"Concert ✕" + Tonight selected, no second chip, results = Concerts gatherings tonight only (no hidden filter). Same FAIL rule as (6)-(9).
 Discover ☆ Interested check (owner, 2026-10-26; the feature is finished if this passes, no changes before it): on the smallest phone
 available, Discover > a gathering tile with Join. (a) Tap the small ☆ (not Join): ★ + "✓" + toast, still on Discover; the first-ever
 Interested shows the sharing explanation in place (says sharing is off unless turned on). (b) Ask "Have you joined this?" PASS = they
