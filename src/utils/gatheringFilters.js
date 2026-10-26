@@ -10,6 +10,8 @@
 //   planKind  = the host's declared party_type; undeclared is left out while a kind is chosen
 //   term      = a word an entry carried (a Home Quick Pick's "volleyball" inside Sports): the title or description contains it
 //   local     = within LOCAL_FILTER_MILES (the feed's "Local" tier); off = everything Discover loaded (its wide tier)
+//   pick      = the Home Quick Pick the person tapped ("Dinner"), owner 2026-10-26: shown as ONE chip in its own words while
+//               category + term stay the internal matching (Foodie + "dinner"); removing it clears all three together
 // Outdoor / Indoor stays Discover's own environment filter (one rule, constants/environmentMatch.js), not a copy here.
 import { EXPERIENCE_PARTY_TYPE_OPTIONS } from '../constants/businessAttributes';
 import { matchesDateFilter, DATE_OPTIONS } from './gatheringDateFilter';
@@ -21,7 +23,7 @@ export const PRICE_FILTER_OPTIONS = [null, 'free', '$', '$$', '$$$'];
 export const PLAN_KIND_FILTER_OPTIONS = [null, ...EXPERIENCE_PARTY_TYPE_OPTIONS.filter((o) => o.key).map((o) => o.key)];
 
 export const GATHERING_FILTER_DEFAULTS = Object.freeze({
-  when: 'anytime', category: null, term: null, forYou: false, trending: false, price: null, planKind: null, local: false,
+  when: 'anytime', category: null, term: null, pick: null, forYou: false, trending: false, price: null, planKind: null, local: false,
 });
 
 export function hasActiveGatheringFilters(f) {
@@ -37,6 +39,25 @@ export function gatheringFiltersFromParams(p = {}) {
     ...(p && DATE_OPTIONS.some((o) => o.key === p.when) ? { when: p.when } : {}),
     ...(p && typeof p.category === 'string' && p.category ? { category: p.category } : {}),
     ...(p && typeof p.term === 'string' && p.term.trim() ? { term: p.term.trim() } : {}),
+    ...(p && typeof p.pick === 'string' && p.pick && ((typeof p.category === 'string' && p.category) || (typeof p.term === 'string' && p.term.trim())) ? { pick: p.pick } : {}),
+  };
+}
+
+// The Quick Pick the selection still stands for (null = none: show category and term as they are).
+export function pickedActivity(f) {
+  return f?.pick && (f.category || f.term) ? f.pick : null;
+}
+
+// Removing the pick removes everything it put there (its category and its word), nothing else (time, other chips stay).
+export function clearPick(f) {
+  return { ...f, pick: null, category: null, term: null };
+}
+
+// Create from an empty Gatherings result: the category, and the person's own words for the activity when a pick set it.
+export function createParamsFromGatheringFilters(f, pickLabel = null) {
+  return {
+    quickStartCategory: f?.category || undefined,
+    quickStartTitle: pickedActivity(f) && pickLabel ? pickLabel : undefined,
   };
 }
 
@@ -63,9 +84,12 @@ export function applyGatheringFilters(list, f, { forYouCategories = [] } = {}) {
 }
 
 // For You and a single category replace each other (as on the old feed).
+// A pick's word belongs to its category: changing the category drops the pick and its word with it.
 export function toggleForYou(f) {
-  return f.forYou ? { ...f, forYou: false } : { ...f, forYou: true, category: null };
+  const base = f.pick ? { ...f, pick: null, term: null } : f;
+  return f.forYou ? { ...base, forYou: false } : { ...base, forYou: true, category: null };
 }
 export function selectCategory(f, tag) {
-  return { ...f, category: f.category === tag ? null : tag, forYou: false };
+  const base = f.pick ? { ...f, pick: null, term: null } : f;
+  return { ...base, category: f.category === tag ? null : tag, forYou: false };
 }

@@ -1114,6 +1114,7 @@ export default function HomeScreen({ navigation }) {
       category: item.category,
       when: PERIOD_DATE_FILTER[period],
       term: item.searchTerm,
+      pick: item.label, // shown as the person's own word ("Dinner"), category + term stay the matching (utils/gatheringFilters.js)
     }));
   }
 

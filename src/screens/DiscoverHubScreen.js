@@ -110,7 +110,8 @@ import { mapSearchContext, rememberMapRegion, mapRegionToRestore } from '../util
 import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
 import { foundBlockShownIds, withoutFoundBlock } from '../utils/searchTopDedupe';
 import { matchesDateFilter, DATE_OPTIONS } from '../utils/gatheringDateFilter';
-import { applyGatheringFilters, gatheringFiltersFromParams, GATHERING_FILTER_DEFAULTS, hasActiveGatheringFilters, toggleForYou, selectCategory, PRICE_FILTER_OPTIONS, PLAN_KIND_FILTER_OPTIONS } from '../utils/gatheringFilters';
+import { quickOptionLabel } from '../i18n/optionLabels';
+import { applyGatheringFilters, gatheringFiltersFromParams, GATHERING_FILTER_DEFAULTS, hasActiveGatheringFilters, toggleForYou, selectCategory, pickedActivity, clearPick, createParamsFromGatheringFilters, PRICE_FILTER_OPTIONS, PLAN_KIND_FILTER_OPTIONS } from '../utils/gatheringFilters';
 import useMyInterests from '../hooks/useMyInterests';
 import { canonicalizeInterests } from '../constants/interestGraph';
 import { lightenHex } from '../utils/colorUtils';
@@ -1648,8 +1649,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
         </View>
         <View style={[styles.filterRow, { flexDirection: 'row' }]}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }} style={{ flex: 1 }}>
-            {f.category ? gatheringChip('category', `${names.tag(f.category)} ✕`, true, () => setGatheringFilters((cur) => selectCategory(cur, cur.category))) : null}
-            {f.term ? gatheringChip('term', `“${f.term}” ✕`, true, () => set({ term: null })) : null}
+            {pickedActivity(f)
+              ? gatheringChip('pick', `${quickOptionLabel({ label: f.pick }, language)} ✕`, true, () => setGatheringFilters((cur) => clearPick(cur)))
+              : (
+                <>
+                  {f.category ? gatheringChip('category', `${names.tag(f.category)} ✕`, true, () => setGatheringFilters((cur) => selectCategory(cur, cur.category))) : null}
+                  {f.term ? gatheringChip('term', `“${f.term}” ✕`, true, () => set({ term: null })) : null}
+                </>
+              )}
             {forYouCategories.length > 0 ? gatheringChip('forYou', t('ui.gatherings.forYouChip'), f.forYou, () => setGatheringFilters((cur) => toggleForYou(cur))) : null}
             {gatheringChip('trending', t('ui.gatherings.trendingChip'), f.trending, () => set({ trending: !f.trending }))}
             {gatheringChip('local', t('ui.gatherings.localChip'), f.local, () => set({ local: !f.local }))}
@@ -3310,7 +3317,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           {gatheringTabActive && !isSearching && coreLoadedOnce && !showCoreLoader && filteredGatherings.length === 0 && (() => {
             const f = gatheringFilters;
             const filtered = gatheringFiltersOn || !!environmentFilter || openNowActive;
-            const label = f.category ? names.tag(f.category) : '';
+            const label = pickedActivity(f) ? quickOptionLabel({ label: f.pick }, language) : (f.category ? names.tag(f.category) : '');
             return (
               <View style={{ paddingVertical: spacing.md }}>
                 {filtered
@@ -3327,7 +3334,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 )}
                 {!f.forYou && (
                   <TouchableOpacity
-                    onPress={() => navigation.navigate('CreateGathering', { quickStartCategory: f.category || undefined })}
+                    onPress={() => navigation.navigate('CreateGathering', createParamsFromGatheringFilters(f, label))}
                     accessibilityLabel={label ? t('ui.gatherings.startTopicA11y', { topic: label }) : t('ui.gatherings.startA11y')}
                     accessibilityRole="button"
                   >
