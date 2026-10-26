@@ -456,7 +456,7 @@ Read-only comparison + expected differences: `PRODUCT_AUDIT/QUICK_PICK_VS_TYPED_
 "dinner", "brunch", "coffee", "a comedy show" and "a concert", one at a time, any way they like (quick pick, typing, Browse). Record per task:
 the path taken, taps, hesitation/backtracking, and whether they had to guess an internal name (e.g. looked for "Foodie", opened More).
 PASS = found without knowing Nearby's category names; the screen names their activity (Dinner, never Foodie). Struggle = USABILITY with the
-exact step; fix = synonym / quick pick / wording at its shared source, never a new category, hierarchy or screen (ideas "294"-"297", V1 freeze).
+exact step; fix = the smallest one at its shared source (synonym, clearer wording or better placement first; a struggle never by itself means another quick pick), never a new category, hierarchy or screen (ideas "294"-"297", V1 freeze).
 Discover ☆ Interested check (owner, 2026-10-26; the feature is finished if this passes, no changes before it): on the smallest phone
 available, Discover > a gathering tile with Join. (a) Tap the small ☆ (not Join): ★ + "✓" + toast, still on Discover; the first-ever
 Interested shows the sharing explanation in place (says sharing is off unless turned on). (b) Ask "Have you joined this?" PASS = they
