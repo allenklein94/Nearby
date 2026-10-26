@@ -440,6 +440,12 @@ coffee gatherings tonight = PASS; "everything" / unsure = USABILITY (if it recur
 "Coffee tonight near you"; nothing built before that evidence). The old screen on a verified current build = a
 NAVIGATION BUG (record the build number + screenshot), never "old install". Builds <= 84 (2026-09-05) still contain the old screen;
 build 86 (7d72d615) and later do not (no Gatherings route).
+Same check, Dinner (owner, 2026-10-26; build with commit 9b1c09c7 or later): Home -> Dinner Tonight. PASS = (6) Discover shows exactly
+"Dinner ✕" + Tonight selected, no "Foodie ✕" and no "“dinner” ✕" chip; (7) Dinner ✕ widens the results in place, Tonight stays selected,
+no Dinner chip left; (8) from Dinner Tonight again, pick another category (e.g. Coffee): only Coffee gatherings tonight, no hidden dinner
+filter (a Coffee gathering without "dinner" in its title shows); (9) with no dinner gatherings tonight, the empty result reads
+"+ Start a Dinner Gathering" and Create opens with "Dinner" in What (not "Foodie"). A Foodie or "dinner" chip on a verified build = FAIL
+with a screenshot; no code change before it is recorded.
 Discover ☆ Interested check (owner, 2026-10-26; the feature is finished if this passes, no changes before it): on the smallest phone
 available, Discover > a gathering tile with Join. (a) Tap the small ☆ (not Join): ★ + "✓" + toast, still on Discover; the first-ever
 Interested shows the sharing explanation in place (says sharing is off unless turned on). (b) Ask "Have you joined this?" PASS = they
