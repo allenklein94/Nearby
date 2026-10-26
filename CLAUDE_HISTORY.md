@@ -1,3 +1,14 @@
+# "I'm Going" retired (owner, 2026-10-26)
+
+Owner: "I'm Going" on the join button for someone only Interested read as already attending. States were already separate (Attending
+only from an approved join -> Going badge + View Plan; the button opened the normal join confirmation), so this is a wording fix only.
+`gatheringJoinAction` drops its `interested` option: Join / Request to Join / Join Waitlist for everyone not yet related; callers
+updated (`gatheringPrimaryAction`, GatheringDetail's join button + a11y label; Discover no longer passes its Interested set as
+actionOpts, which only fed that label). `ui.actions.imGoing` removed in 11 languages (existing `join` reused). Tests: stateDrivenCta
+(marked vs unmarked identical for open / approval / full, never "Going"; approved join = view_plan + Going; no screen words the join
+by Interested; string gone), cardInterested (marked = Join), gatheringActionOpen updated; `npm run lifecycle-matrix` (2 rows "I'm
+Going" -> "Join"); item 31 review checklist step 1 reworded. Jest 510/6977. Business web export not regenerated (consumer-only).
+
 # Discover ☆ Interested (owner, 2026-10-25 decision; built 2026-10-26; narrow exception to item 200)
 
 Owner instruction: build a small secondary ☆ Interested on Discover gathering cards reusing Home's implementation; Join stays primary;

@@ -1388,11 +1388,11 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 onPress={() => setIntentModalVisible(true)}
                 disabled={joining}
                 activeOpacity={0.85}
-                accessibilityLabel={gatheringJoinAction(gathering, { isFull: gathering.isFull, interested: gathering.myInterested === true }).label}
+                accessibilityLabel={gatheringJoinAction(gathering, { isFull: gathering.isFull }).label}
                 accessibilityRole="button"
               >
                 <Text style={styles.joinButtonText}>
-                  {joining ? t('ui.gatheringDetail.joining') : gatheringJoinAction(gathering, { isFull: gathering.isFull, interested: gathering.myInterested === true }).label.toUpperCase()}
+                  {joining ? t('ui.gatheringDetail.joining') : gatheringJoinAction(gathering, { isFull: gathering.isFull }).label.toUpperCase()}
                 </Text>
               </TouchableOpacity>
               {can('interested') && (

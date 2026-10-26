@@ -37,13 +37,14 @@ describe('card Interested rules', () => {
     expect(firstInterestedDisclosureKey(null)).toBeNull();
   });
 
-  it('once marked, the join action itself reads "I\'m Going" (same table as Home and GatheringDetail)', () => {
+  it('marking Interested never changes the join action: still Join (owner 2026-10-26, never "I\'m Going")', () => {
     const g = { id: 'g1', host_id: 'h', visibility: 'public', scheduled_at: new Date(Date.now() + 86400000).toISOString(), attendees: [], capacity: null };
     const marked = gatheringPrimaryAction(g, 'me', Date.now(), { interestedIds: new Set(['g1']) });
     const plain = gatheringPrimaryAction(g, 'me', Date.now(), { interestedIds: new Set() });
     expect(marked.kind).toBe('join');
     expect(plain.kind).toBe('join');
-    expect(marked.label).not.toBe(plain.label);
+    expect(marked.label).toBe(plain.label);
+    expect(marked.label).toBe('Join');
   });
 });
 

@@ -297,7 +297,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Interested ids are read on focus; unknown (null) = no menu (utils/notInterested.js).
   const [myInterestedIds, setMyInterestedIds] = useState(null);
   // Owner 2026-10-25 (narrow exception to item 200): a small ☆ beside a gathering tile's join action marks Interested without
-  // leaving Discover (hooks/useCardInterested.js, shared with Home); the same set words Join as "I'm Going" once it is marked.
+  // leaving Discover (hooks/useCardInterested.js, shared with Home); the join action's words never change with it.
   const cardInterested = useCardInterested({ interestedIds: myInterestedIds, navigation });
   const notInterested = useNotInterested({ myUserId, interestedIds: cardInterested.interestedSet, feedback: personalization.feedback });
   const [mode, setMode] = useState(() => route.params?.initialMode ?? 'things');
@@ -2038,8 +2038,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // sectionKey: the Discover section the card sits in; its own reason leads the two shown (sectionLeadReason).
   function discoverCard(g, sectionKey = null) {
     const leadReason = sectionKey ? sectionLeadReason(sectionKey, g, { friendInterestByTag }) : null;
-    const actionOpts = cardInterested.interestedSet ? { interestedIds: cardInterested.interestedSet } : {};
-    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId, language, leadReason, actionOpts });
+    return gatheringCardModel(g, { signals: discoverReasons(g).map((text) => ({ kind: 'reason', text })), myUserId, language, leadReason });
   }
 
   // The ☆ beside a join action (utils/cardInterested.js decides when); nothing beside a status, a View or an unknown set.

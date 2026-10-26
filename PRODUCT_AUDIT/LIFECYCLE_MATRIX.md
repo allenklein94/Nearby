@@ -15,14 +15,14 @@ allowed transitions; the state each leads to is enforced server-side) · Animati
 | upcoming_none | public, room | actionable | label: View | join: "Join" |  | view, join, request, interested, invite |  | utils/primaryAction.js gatheringPrimaryAction |
 | upcoming_none | approval required | actionable | label: View | join: "Request to Join" |  | view, join, request, interested, invite |  | utils/primaryAction.js gatheringPrimaryAction |
 | upcoming_none | full | actionable | label: View | join: "Join Waitlist" |  | view, join, request, interested, invite |  | utils/primaryAction.js gatheringPrimaryAction |
-| upcoming_none | viewer marked Interested | actionable | label: View | join: "I'm Going" |  | view, join, request, interested, invite |  | utils/primaryAction.js gatheringPrimaryAction |
+| upcoming_none | viewer marked Interested | actionable | label: View | join: "Join" |  | view, join, request, interested, invite |  | utils/primaryAction.js gatheringPrimaryAction |
 | upcoming_none | low-commitment row (Trending) | actionable | label: View | interested: "I'm Interested" |  | view, join, request, interested, invite |  | utils/primaryAction.js gatheringPrimaryAction |
 | upcoming_none | invite-only | actionable | Invite only | view: "View" |  | view, join, request, interested, invite |  | utils/primaryAction.js gatheringPrimaryAction |
 | upcoming_requested |  | actionable | Requested | requested: "Requested" |  | view, withdraw |  | utils/primaryAction.js gatheringPrimaryAction |
 | upcoming_waitlisted |  | actionable | On waitlist | requested: "On waitlist" |  | view, withdraw |  | utils/primaryAction.js gatheringPrimaryAction |
 | upcoming_attending |  | actionable | Going | view_plan: "View Plan" |  | view, leave, invite | friendJoin, hostJoin, interestedToAttending | utils/primaryAction.js gatheringPrimaryAction |
 | upcoming_hosting |  | actionable | Hosting | view_plan: "View Plan" |  | view, edit, cancel, invite, manage_attendees |  | utils/primaryAction.js gatheringPrimaryAction |
-| upcoming_interested (upcoming_none) |  | actionable | label: View | join: "I'm Going" |  | view, join, request, interested, invite | interestedSaved | utils/primaryAction.js gatheringPrimaryAction |
+| upcoming_interested (upcoming_none) |  | actionable | label: View | join: "Join" |  | view, join, request, interested, invite | interestedSaved | utils/primaryAction.js gatheringPrimaryAction |
 | past_none |  | completed | Past | view: "View Past Event" |  | view |  | utils/primaryAction.js gatheringPrimaryAction |
 | past_requested |  | expired | Request expired | view: "View" |  | view, dismiss |  | utils/primaryAction.js gatheringPrimaryAction |
 | past_waitlisted |  | expired | Request expired | view: "View" |  | view, dismiss |  | utils/primaryAction.js gatheringPrimaryAction |

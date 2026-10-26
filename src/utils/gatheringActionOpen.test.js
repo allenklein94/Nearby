@@ -1,5 +1,5 @@
 // Owner idea "376" (2026-10-23): no orphan CTAs. A gathering card's join action (Join / Request to Join / Join Waitlist /
-// I'm Going) opens Gathering Detail with its existing join step ready, the same on Home and Discover; a tap on the card body
+// the same words when Interested) opens Gathering Detail with its existing join step ready, the same on Home and Discover; a tap on the card body
 // opens the gathering plainly; nothing is ever submitted just because the page opened.
 import fs from 'fs';
 import path from 'path';
@@ -11,7 +11,7 @@ const g = (over = {}) => ({ id: 'g1', host_id: 'host', scheduled_at: '2026-09-27
 
 describe('gatheringActionOpenParams', () => {
   test('every join wording opens the join step', () => {
-    for (const opts of [{}, { isFull: true }, { interested: true }]) {
+    for (const opts of [{}, { isFull: true }]) {
       expect(gatheringActionOpenParams(gatheringJoinAction(g(), opts))).toEqual({ openJoin: true });
     }
     expect(gatheringActionOpenParams(gatheringJoinAction(g({ requires_approval: true })))).toEqual({ openJoin: true });

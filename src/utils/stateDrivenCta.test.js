@@ -88,9 +88,25 @@ describe('the same object reads the same everywhere', () => {
       expect(detail.label).toBe(card.label);
     }
   });
-  test('Interested viewer: I\'m Going, unless approval is needed', () => {
-    expect(gatheringJoinAction(g(), { interested: true }).label).toBe("I'm Going");
-    expect(gatheringJoinAction(g({ requires_approval: true }), { interested: true }).label).toBe('Request to Join');
+  test('Interested viewer: the same Join / Request to Join / Join Waitlist, never "I\'m Going" (owner 2026-10-26)', () => {
+    const ids = new Set(['g1']);
+    for (const over of [{}, { requires_approval: true }, { capacity: 2, attendees: [{ user_id: 'x', status: 'approved' }] }]) {
+      const marked = gatheringPrimaryAction(g(over), 'me', NOW, { interestedIds: ids });
+      const plain = gatheringPrimaryAction(g(over), 'me', NOW, { interestedIds: new Set() });
+      expect(marked.kind).toBe(plain.kind);
+      expect(marked.label).toBe(plain.label);
+      expect(marked.label).not.toMatch(/Going/);
+    }
+    expect(gatheringPrimaryAction(g(), 'me', NOW, { interestedIds: ids }).label).toBe('Join');
+    // Going + View Plan only after a real approved join
+    const joined = gatheringPrimaryAction(g({ attendees: [{ user_id: 'me', status: 'approved' }] }), 'me', NOW, { interestedIds: ids });
+    expect(joined.kind).toBe('view_plan');
+    expect(joined.status).toBe('Going');
+  });
+  test('no screen words the join by Interested; the "I\'m Going" string is gone', () => {
+    expect(read('src/screens/GatheringDetailScreen.js')).not.toMatch(/gatheringJoinAction\([^)]*interested/);
+    expect(read('src/utils/primaryAction.js')).not.toMatch(/imGoing/);
+    expect(read('src/i18n/ui/actions.js')).not.toMatch(/imGoing/);
   });
 });
 

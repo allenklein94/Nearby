@@ -75,7 +75,7 @@ minimums. Attending used to start at 0.6 opacity (`infoOpacity`). It now enters 
 ## 4. Device verification (NOT DONE: needs a phone)
 
 Run on iOS and Android, light and dark:
-1. Open gathering, mark Interested, tap I'm Going and confirm. The row plays once (about 0.75 s): Interested struck
+1. Open gathering, mark Interested, tap Join and confirm (the join button reads Join whether or not Interested is marked; owner 2026-10-26). The row plays once (about 0.75 s): Interested struck
    through and faded, Attending slides in, grows, glows once. Exactly one success vibration (the join's own). Timing feels calm.
 2. Pull to refresh, background and foreground, and leave and reopen the gathering. The row never replays. After
    reopening, it is gone and only "You're in!" shows.

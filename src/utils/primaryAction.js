@@ -4,7 +4,7 @@
 //   gathering  public, open capacity           -> Join
 //   gathering  approval required / non-public  -> Request to Join
 //   gathering  full                            -> Join Waitlist
-//   gathering  viewer is Interested            -> I'm Going (same join)
+//   gathering  viewer is Interested            -> the same Join / Request to Join / Join Waitlist (Interested never changes the words; owner 2026-10-26)
 //   gathering  attending / hosting (upcoming)  -> View Plan        status Going / Hosting
 //   gathering  requested / waitlisted          -> status Requested / On waitlist (+ View)
 //   gathering  past                            -> View Past Event  (an expired request: View, status Request expired)
@@ -103,21 +103,22 @@ function gatheringActionFromState(gathering, myUserId, now, opts) {
   // Server count first: a non-member only receives friends' rows (item 75), so the visible rows are not the total.
   const visibleApproved = gathering.attendees.filter((a) => a.status === 'approved').length;
   const isFull = isGatheringFull(gathering, Math.max(attendeeTotal(gathering), visibleApproved));
-  return { ...gatheringJoinAction(gathering, { isFull, interested: opts.interestedIds?.has?.(gathering.id) === true }) };
+  return { ...gatheringJoinAction(gathering, { isFull }) };
 }
 
-// The join button's words, from the gathering's state: full -> Join Waitlist, approval/non-public -> Request to Join, else Join
-// (I'm Going when the viewer already marked it Interested). Used by gatheringPrimaryAction and by Gathering Detail's own join
+// The join button's words, from the gathering's state: full -> Join Waitlist, approval/non-public -> Request to Join, else Join.
+// Marking Interested never changes them (owner, 2026-10-26: "I'm Going" read as already attending; only a real approved join shows
+// the Going badge + View Plan). Used by gatheringPrimaryAction and by Gathering Detail's own join
 // button and confirmation, so the feed card, Discover and Detail can never word the same join differently.
-export function gatheringJoinAction(gathering, { isFull = false, interested = false } = {}) {
+export function gatheringJoinAction(gathering, { isFull = false } = {}) {
   if (isFull) return { kind: 'join', label: A('joinWaitlist'), waitlist: true };
   if (needsApproval(gathering)) return { kind: 'join', label: A('requestToJoin'), approval: true };
-  return { kind: 'join', label: interested ? A('imGoing') : A('join') };
+  return { kind: 'join', label: A('join') };
 }
 
 export { needsApproval };
 
-// Owner idea "376" (2026-10-23): a card's join action (Join / Request to Join / Join Waitlist / I'm Going) opens Gathering Detail
+// Owner idea "376" (2026-10-23): a card's join action (Join / Request to Join / Join Waitlist) opens Gathering Detail
 // with its existing join step ready (`openJoin`; the detail re-checks the current state, and nothing is sent until the person
 // confirms). Any other action, and a tap on the card body, opens the gathering plainly. Home and Discover both read this.
 export function gatheringActionOpenParams(action) {

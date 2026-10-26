@@ -2,7 +2,7 @@
 // The rules only; the state lives in hooks/useCardInterested.js. Interested itself is unchanged: the private "maybe"
 // (set_gathering_interested), never a commitment, never shown to anyone but the person (the host's anonymous count aside).
 
-// The ☆ shows only beside a JOIN action (Join / Request to Join / Join Waitlist / I'm Going: the viewer has no relation yet and
+// The ☆ shows only beside a JOIN action (Join / Request to Join / Join Waitlist: the viewer has no relation yet and
 // may still join), and only once the person's Interested set is known (unknown = no star, never a guessed "off").
 export function cardInterestedEligible(action, interestedSet) {
   return action?.kind === 'join' && interestedSet instanceof Set;
