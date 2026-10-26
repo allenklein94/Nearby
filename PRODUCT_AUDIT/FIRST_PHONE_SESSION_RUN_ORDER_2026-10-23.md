@@ -432,6 +432,12 @@ gathering with confirmed attendees. PASS = time, distance and spots left (when s
 or absent, never cut ("3 atten…"). A cut count, or time/distance/spots hidden = USABILITY with a screenshot; the fix is the budgets in
 `utils/gatheringFullness.js` (`COMPACT_FACTS_MAX_CHARS` 44 / `NOW_TILE_FACTS_MAX_CHARS` 26, estimates, never measured), proposed for owner
 approval. "1 attending" on a host-only gathering is expected (host counts). Typed-ask result rows are out of scope.
+Quick pick check (owner, 2026-10-26; first confirm the installed build number in TestFlight is the new one, never judge from looks):
+Home -> a Tonight tile (Coffee). PASS = (1) Discover opens directly on Gatherings with Tonight + Coffee selected (no "Coffee Near You"
+screen, no Nearby / Attending / Hosting tabs); (2) Coffee ✕ widens the results in place; (3) ☆ Interested works without leaving
+Discover; (4) a gathering opens GatheringDetail directly; (5) Back returns to Home. The old screen on a verified current build = a
+NAVIGATION BUG (record the build number + screenshot), never "old install". Builds <= 84 (2026-09-05) still contain the old screen;
+build 86 (7d72d615) and later do not (no Gatherings route).
 Discover ☆ Interested check (owner, 2026-10-26; the feature is finished if this passes, no changes before it): on the smallest phone
 available, Discover > a gathering tile with Join. (a) Tap the small ☆ (not Join): ★ + "✓" + toast, still on Discover; the first-ever
 Interested shows the sharing explanation in place (says sharing is off unless turned on). (b) Ask "Have you joined this?" PASS = they
