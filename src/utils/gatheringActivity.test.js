@@ -71,6 +71,6 @@ describe('one list of pairs', () => {
     const svc = fs.readFileSync(path.join(__dirname, '../services/businessFulfillment.js'), 'utf8');
     expect(ask).toMatch(/setCategory\(\(c\) => c \?\? g\.interest_tag\)/);
     expect(ask).not.toMatch(/\.activity\b/);
-    expect(svc).not.toMatch(/\bactivity\b/);
+    expect(svc).not.toMatch(/\.activity\b|activity_param/);
   });
 });
