@@ -83,7 +83,9 @@ describe('every Dating card source reads the server opt-in view (cards, not only
     const fn = body(name);
     expect(fn).toMatch(/\.from\('dating_candidates_visible_to_me'\)/);
     expect(fn).not.toMatch(/\.from\('people_visible_to_me'\)|\.from\('profiles'\)\s*\n\s*\.select\('id, display_name/);
-    expect(fn).toMatch(/dating_opted_in'\)/);
+    // Both reads share ONE column list (it carries the server's verdict, dating_opted_in).
+    expect(fn).toMatch(/DATING_CANDIDATE_COLUMNS\)/);
+    expect(prox).toMatch(/const DATING_CANDIDATE_COLUMNS = '[^']*, dating_opted_in';/);
     expect(fn).toMatch(/isDatingOptedIn\(/);
   });
   test('Crossed Paths (sightings + shared gatherings) keeps only people the server returned', () => {

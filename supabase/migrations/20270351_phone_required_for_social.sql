@@ -11,7 +11,7 @@
 -- phone sign-in, so every account made in the app already has one (production 2026-10-27: 3 of the 4 profiles; the one
 -- without is an email account used as the business-owner test account).
 -- Service-role writes (seed scripts, edge functions) and rows written by someone else never count as the person acting.
--- Requires 20270349 (suspension) and 20270348 (id_verified in the views).
+-- Requires 20270350 (suspension) and 20270349 (id_verified in the views).
 
 create or replace function private.has_verified_phone(uid uuid)
 returns boolean
@@ -283,7 +283,7 @@ begin
     where p.id <> v_me
     and p.open_to_friend_discovery = true
     -- only profiles others may see at all (the profiles read policy's rule), never a suspended account, and only a
-    -- person with a verified phone (20270350)
+    -- person with a verified phone (20270351)
     and coalesce(p.photo_verified, false) and not coalesce(p.profile_hidden, false) and p.suspended_at is null
     and public.person_discoverable(p.id)
     and not is_blocked(v_me, p.id)

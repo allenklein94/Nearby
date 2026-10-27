@@ -53,7 +53,7 @@ export function recoverableErrorCopy({ what, error, draftKept = false }) {
     parts.push(tr(draftKept ? 'ui.shared.errors.draftSaved' : 'ui.shared.errors.nothingLost'));
     return { title: whatLine(what, 'service') ?? `We couldn't ${what} right now.`, message: parts.join(' '), canRetry: true };
   }
-  // An account rule the server enforces (20270349 / 20270350): say the rule in the person's language; retrying can't help.
+  // An account rule the server enforces (20270350 / 20270351): say the rule in the person's language; retrying can't help.
   const rule = ACCOUNT_RULE_HINTS[error?.hint];
   if (rule) return { title: tr('ui.shared.errors.didntGoThrough'), message: tr(rule), canRetry: false };
   const detail = String(error?.message ?? '').trim();

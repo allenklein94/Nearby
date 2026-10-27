@@ -37,7 +37,7 @@ d('journey: Friends discovery opens as a list, the deck is optional, Pass and Co
   foreach u in array array[v_a, v_b, v_c, v_x] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@jfd.test');
     update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
-    -- signed up with a screened photo (Friends Browse only offers profiles others may see, 20270349)
+    -- signed up with a screened photo (Friends Browse only offers profiles others may see, 20270350)
     insert into profiles (id, display_name, birthdate, wide_area, photo_verified) values (u, 'JFD-' || left(u::text, 4), date '1990-01-01', '13.30,-44.60', true);
   end loop;
   update profiles set open_to_friend_discovery = true where id in (v_a, v_b, v_c);

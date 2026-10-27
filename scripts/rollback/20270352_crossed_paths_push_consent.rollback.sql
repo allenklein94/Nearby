@@ -1,5 +1,5 @@
--- Rollback for migration 20270351 (crossed-paths push consent): restores the production definitions read 2026-10-27 before it was applied.
--- Run the rollbacks newest first (20270352 -> 20270347); each assumes the later ones were already rolled back.
+-- Rollback for migration 20270352 (crossed-paths push consent): restores the production definitions read 2026-10-27 before it was applied.
+-- Run the rollbacks newest first (20270353 -> 20270347); each assumes the later ones were already rolled back.
 CREATE OR REPLACE FUNCTION public.notify_sighting_crossed_paths()
  RETURNS trigger
  LANGUAGE plpgsql

@@ -1,4 +1,4 @@
-// Trust & safety launch blockers (owner, 2026-10-27; migrations 20270347-20270352). Every attempt runs as an ORDINARY
+// Trust & safety launch blockers (owner, 2026-10-27; migrations 20270348-20270353). Every attempt runs as an ORDINARY
 // signed-in user (or the admin) under the real `authenticated` role + JWT claims: grants, RLS, guard triggers.
 //   Fix 1 (self-grant): a person can't mark their own photo screened, can't create their profile as admin / premium /
 //     screened, can't keep a screened flag on a new photo or point it at someone else's file, can't file an ID submission

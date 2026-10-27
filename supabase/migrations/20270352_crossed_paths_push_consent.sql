@@ -5,13 +5,13 @@
 -- sighting is written by the report-presence service).
 -- Now one rule, _crossed_paths_may_tell(recipient, other), decides each direction of the push; anything else = no push
 -- at all (never a nameless "someone nearby" push: the push's data carries the other person's id).
---   both people discoverable (person_discoverable: not suspended, verified phone; 20270350)
+--   both people discoverable (person_discoverable: not suspended, verified phone; 20270351)
 --   the other's profile is visible to others (screened photo, not hidden: the profiles read policy's rule)
 --   no block either way (read here directly, in this server-only function)
 --   both opted into the SAME pool: both Dating ('Go on dates') or both open to friend discovery
 --   the recipient's own proximity notifications on (unchanged)
 -- Sightings themselves, their 48 h expiry, the app's Crossed Paths lists and the push wording are unchanged.
--- Requires 20270350 (person_discoverable).
+-- Requires 20270351 (person_discoverable).
 
 create or replace function public._crossed_paths_may_tell(recipient uuid, other uuid)
 returns boolean

@@ -14,6 +14,7 @@
  */
 
 import { supabase } from './supabase';
+import { selectWithIdVerified } from './idVerifiedColumn';
 import { mergeCrossedPathsSignals, filterFriendCrossedPathsCandidates } from './crossedPathsSignals';
 
 export async function isOpenToFriendDiscovery() {
@@ -105,7 +106,8 @@ export async function getFriendCrossedPaths() {
     supabase.from('friendships').select('user_a, user_b').or(`user_a.eq.${myId},user_b.eq.${myId}`),
     supabase.from('matches').select('user_a, user_b').or(`user_a.eq.${myId},user_b.eq.${myId}`),
     supabase.from('friend_discovery_swipes').select('to_user').eq('from_user', myId),
-    supabase.from('people_visible_to_me').select('id, display_name, photo_url, bio, interests, photo_verified, id_verified, open_to_friend_discovery').in('id', candidateIds),
+    selectWithIdVerified((columns) => supabase.from('people_visible_to_me').select(columns).in('id', candidateIds),
+      'id, display_name, photo_url, bio, interests, photo_verified, id_verified, open_to_friend_discovery'),
   ]);
 
   const excludedUserIds = new Set([

@@ -31,6 +31,7 @@ import { typography, spacing, radius } from '../theme';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import useCategoryNames from '../hooks/useCategoryNames';
+import { selectWithIdVerified } from '../services/idVerifiedColumn';
 const { width } = Dimensions.get('window');
 // Stored connection-goal value -> its label key (same map as ProfileScreen).
 const GOAL_KEYS = { 'Meet friends': 'meetFriends', Date: 'date', Network: 'network', 'Explore my city': 'exploreCity', 'Find community': 'findCommunity', 'Get out more': 'getOutMore' };
@@ -180,11 +181,11 @@ export default function ViewProfileScreen({ route, navigation }) {
         }
       }
 
-      const { data } = await supabase
+      const { data } = await selectWithIdVerified((columns) => supabase
         .from('profiles')
-        .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, id_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders')
+        .select(columns)
         .eq('id', userId)
-        .single();
+        .single(), 'id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, id_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders');
 
       let mainPhotoUrl = null;
       if (data?.photo_url) {

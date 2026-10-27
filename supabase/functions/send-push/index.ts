@@ -239,9 +239,18 @@ serve(async (req)=>{
       });
     }
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    const { data: profile } = await admin.from('profiles').select('expo_push_token').eq('id', recipient_id).maybeSingle();
+    // N1 (20270347): the token lives in private.push_tokens, read only through push_token_for_delivery (service role).
+    // Fallback to the old profiles column only while that migration is not live (the function is missing).
+    let pushToken = null;
+    const { data: storedToken, error: tokenError } = await admin.rpc('push_token_for_delivery', { recipient_param: recipient_id });
+    if (!tokenError) {
+      pushToken = storedToken ?? null;
+    } else {
+      const { data: profile } = await admin.from('profiles').select('expo_push_token').eq('id', recipient_id).maybeSingle();
+      pushToken = profile?.expo_push_token ?? null;
+    }
     const notifPriority = notificationPriority(data?.type);
-    if (!profile?.expo_push_token) {
+    if (!pushToken) {
       // Business Web parity: an owner who only uses the website has no push token. If they have a verified, enabled
       // email address (business_email_settings) send the same alert there -- high and medium priority plus new requests, so a
       // web-only owner isn't flooded with low-priority discovery. No-op (and never an error) until the email provider is configured.
@@ -272,10 +281,12 @@ serve(async (req)=>{
       method: 'POST',
       headers: {
         Accept: 'application/json',
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        // Expo enhanced push security: once the owner turns it on and sets EXPO_ACCESS_TOKEN, Expo accepts only signed sends.
+        ...(Deno.env.get('EXPO_ACCESS_TOKEN') ? { Authorization: `Bearer ${Deno.env.get('EXPO_ACCESS_TOKEN')}` } : {})
       },
       body: JSON.stringify({
-        to: profile.expo_push_token,
+        to: pushToken,
         title,
         body,
         data: data ?? {},

@@ -159,7 +159,7 @@ export async function deleteExtraPhoto(photoId, photoUrl) {
   if (error) throw error;
 }
 
-// The server swaps the two photos (20270347): each keeps its own screening result, which only the screening service
+// The server swaps the two photos (20270348): each keeps its own screening result, which only the screening service
 // sets. The old client version copied the flags itself; profile_photos never allowed that update, so it failed halfway.
 export async function setAsMainPhoto(userId, extraPhotoId) {
   const { error } = await supabase.rpc('swap_main_photo', { extra_photo_id_param: extraPhotoId });

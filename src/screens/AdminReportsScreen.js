@@ -48,7 +48,7 @@ export default function AdminReportsScreen({ navigation }) {
     load();
   }
 
-  // Suspension is decided by the server (admin_suspend_user / admin_reinstate_user, 20270349): admin only, recorded with
+  // Suspension is decided by the server (admin_suspend_user / admin_reinstate_user, 20270350): admin only, recorded with
   // this report, the profile hidden, sessions ended and sign-in refused; every social action refused while suspended.
   // The alert says what the server actually did, never what was intended.
   function suspendReportedUser(item) {

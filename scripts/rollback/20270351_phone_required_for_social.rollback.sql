@@ -1,5 +1,5 @@
--- Rollback for migration 20270350 (verified phone before social participation): restores the production definitions read 2026-10-27 before it was applied.
--- Run the rollbacks newest first (20270352 -> 20270347); each assumes the later ones were already rolled back.
+-- Rollback for migration 20270351 (verified phone before social participation): restores the production definitions read 2026-10-27 before it was applied.
+-- Run the rollbacks newest first (20270353 -> 20270347); each assumes the later ones were already rolled back.
 drop trigger if exists zz_require_verified_phone on public.messages;
 drop trigger if exists zz_require_verified_phone on public.gathering_messages;
 drop trigger if exists zz_require_verified_phone on public.community_messages;

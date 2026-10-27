@@ -1,10 +1,14 @@
+# 2026-10-27: N1 push tokens fixed (built, not deployed) + migrations renumbered + app/DB compatibility
+
+Owner decisions on the trust & safety fixes: N1 fixed now as `20270347_push_tokens_server_only` (the six fixes moved to 20270348-20270353 so N1 can deploy first; nothing had been deployed); 20270351 deferred until after Session B; ID retention periods approved as target (not built); suspended-account privacy process drafted (not published). Proven before the fix: a signed-in user read 2 other accounts' Expo push tokens (rolled back). `send-push` now reads tokens via `push_token_for_delivery()` (repo only; must deploy before 0347). Found + fixed: the new build named `id_verified` in 3 reads that production answers with 42703, which would have emptied Friends Browse, Dating and ViewProfile in Session B; now `services/idVerifiedColumn.js`. Journeys 727/727 with all seven as prelude; `appVersionCompatibility` (build 86 requests replayed) passes in all three DB states; Jest 517/7044. New open finding N6 (other profile columns readable). Full account: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`.
+
 # Trust & safety launch-blocker fixes (owner, 2026-10-27)
 
 Owner approved fixes 1-6 of `PRODUCT_AUDIT/TRUST_SAFETY_AUDIT_2026-10-27.md`, implemented and tested in isolation, no
 production deploy, no identity document deleted, no live permission changed. Full account, impact table, owner decisions
 and new findings (N1 push tokens readable by any signed-in user; N2 self-admin on profile INSERT, fixed; N3 "Set as main
 photo" failed halfway, fixed; N4 moderate-photo path race; N5 1-hour token after suspension):
-`PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`. Migrations 20270347-20270352 + rollbacks in `scripts/rollback/`;
+`PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`. Migrations 20270348-20270353 + rollbacks in `scripts/rollback/`;
 journey `trustSafety`; client: badge -> `id_verified`, `swap_main_photo`, admin Suspend/Reinstate, refusal messages
 (`ui.shared.errors.phoneRequired` / `accountSuspended`), `delete-account` folder cleanup (not deployed).
 

@@ -19,7 +19,8 @@ function load() {
   // eslint-disable-next-line no-new-func
   new Function('serve', 'createClient', 'sendEmail', 'Deno', 'Response', 'fetch', SRC)(
     (h) => { handler = h; },
-    () => ({ from: chain }),
+    // Pre-20270347 path: the function is missing, so the token comes from the profiles column.
+    () => ({ from: chain, rpc: async () => ({ data: null, error: { message: 'function not found' } }) }),
     async () => ({ sent: false }),
     { env: { get: (k) => env[k] } },
     Res,

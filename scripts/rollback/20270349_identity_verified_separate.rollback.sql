@@ -1,5 +1,5 @@
--- Rollback for migration 20270348 (identity verification as its own state): restores the production definitions read 2026-10-27 before it was applied.
--- Run the rollbacks newest first (20270352 -> 20270347); each assumes the later ones were already rolled back.
+-- Rollback for migration 20270349 (identity verification as its own state): restores the production definitions read 2026-10-27 before it was applied.
+-- Run the rollbacks newest first (20270353 -> 20270347); each assumes the later ones were already rolled back.
 -- The Verified badge then reads photo_verified again in the app only if the app is rolled back too.
 -- a view can't lose a column with CREATE OR REPLACE: drop the dependent view first, then recreate both
 drop view public.dating_candidates_visible_to_me;

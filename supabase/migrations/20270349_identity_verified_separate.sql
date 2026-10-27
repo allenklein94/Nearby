@@ -11,7 +11,7 @@
 -- Approving an ID no longer marks the photo screened (it never checked the photo for content).
 -- Backfill: approved submissions -> id_verified (0 in production on 2026-10-27, so every existing badge disappears until a
 -- real ID approval: today's 3 badges came from photo screening, not ID checks).
--- Requires 20270347 (its insert guard is extended here).
+-- Requires 20270348 (its insert guard is extended here).
 
 alter table public.profiles add column if not exists id_verified boolean not null default false;
 alter table public.profiles add column if not exists id_verified_at timestamptz;

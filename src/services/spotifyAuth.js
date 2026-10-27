@@ -40,14 +40,16 @@ export async function exchangeCodeForToken(code, codeVerifier) {
 
 export async function saveSpotifyTokens(userId, accessToken, refreshToken, expiresIn) {
   const expiresAt = new Date(Date.now() + expiresIn * 1000).toISOString();
+  // N1 (20270347): Spotify tokens live in spotify_connections (owner-only), never on the readable profile.
   const { error } = await supabase
-    .from('profiles')
-    .update({
-      spotify_access_token: accessToken,
-      spotify_refresh_token: refreshToken,
-      spotify_token_expires_at: expiresAt,
-    })
-    .eq('id', userId);
+    .from('spotify_connections')
+    .upsert({
+      user_id: userId,
+      access_token: accessToken,
+      refresh_token: refreshToken,
+      expires_at: expiresAt,
+      updated_at: new Date().toISOString(),
+    });
   if (error) throw error;
 }
 
@@ -56,11 +58,16 @@ export async function saveSpotifyTokens(userId, accessToken, refreshToken, expir
 // don't require a client secret either, keeping this consistent
 // with the rest of the auth setup.
 export async function getValidAccessToken(userId) {
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('spotify_access_token, spotify_refresh_token, spotify_token_expires_at')
-    .eq('id', userId)
-    .single();
+  const { data: connection } = await supabase
+    .from('spotify_connections')
+    .select('access_token, refresh_token, expires_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+  const profile = connection && {
+    spotify_access_token: connection.access_token,
+    spotify_refresh_token: connection.refresh_token,
+    spotify_token_expires_at: connection.expires_at,
+  };
 
   if (!profile?.spotify_access_token) {
     throw new Error('Spotify isn\'t connected. Connect it in Music Mode first.');

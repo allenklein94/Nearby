@@ -27,7 +27,8 @@ function load({ token = null, emailSettings = null, webUrl = null } = {}) {
   // eslint-disable-next-line no-new-func
   new Function('serve', 'createClient', 'sendEmail', 'Deno', 'Response', 'fetch', SRC)(
     (h) => { handler = h; },
-    () => ({ from: chain }),
+    // 20270347: the token comes from push_token_for_delivery (service role).
+    () => ({ from: chain, rpc: async () => ({ data: token, error: null }) }),
     async (to, subject, text) => { emails.push({ to, subject, text }); return { sent: true }; },
     { env: { get: (k) => env[k] } },
     Res,

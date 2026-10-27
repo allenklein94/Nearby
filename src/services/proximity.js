@@ -18,6 +18,7 @@
 
 import * as Location from 'expo-location';
 import { getUserLocation } from './userLocation';
+import { selectWithIdVerified } from './idVerifiedColumn';
 import * as TaskManager from 'expo-task-manager';
 import { supabase, functionUrl } from './supabase';
 import { calculateCompatibility } from './compatibility';
@@ -44,6 +45,9 @@ async function getSharedGatheringPartners() {
 }
 
 const BACKGROUND_LOCATION_TASK = 'nearby-background-location-task';
+
+// The one Dating candidate read's columns (both Dating reads below).
+const DATING_CANDIDATE_COLUMNS = 'id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, id_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in';
 
 export async function requestLocationPermission() {
   const { status } = await Location.requestForegroundPermissionsAsync();
@@ -299,12 +303,12 @@ export async function getNearbyMatches() {
 
   const otherUserIds = eligible.map((m) => m.otherUserId);
 
-  const { data: profiles, error: profilesError } = await supabase
-    // Item 121 follow-up: Dating consent is decided by the server (dating_candidates_visible_to_me, 20270314): a sighting or
-    // a shared gathering whose person never chose Dating returns no profile, so it never becomes a card or a count.
+  // Item 121 follow-up: Dating consent is decided by the server (dating_candidates_visible_to_me, 20270314): a sighting or
+  // a shared gathering whose person never chose Dating returns no profile, so it never becomes a card or a count.
+  const { data: profiles, error: profilesError } = await selectWithIdVerified((columns) => supabase
     .from('dating_candidates_visible_to_me')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, id_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in')
-    .in('id', otherUserIds);
+    .select(columns)
+    .in('id', otherUserIds), DATING_CANDIDATE_COLUMNS);
 
   if (profilesError) {
     console.error('getNearbyMatches profiles error', profilesError);
@@ -443,15 +447,15 @@ export async function getBrowseMatches(offset = 0) {
     }
   }
 
-  const { data: profiles, error } = await supabase
-    // Item 121 follow-up: only people who chose Dating (server-side, dating_candidates_visible_to_me, 20270314).
+  // Item 121 follow-up: only people who chose Dating (server-side, dating_candidates_visible_to_me, 20270314).
+  const { data: profiles, error } = await selectWithIdVerified((columns) => supabase
     .from('dating_candidates_visible_to_me')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, id_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in')
+    .select(columns)
     .in('wide_area', neighborBuckets)
     // A stable order is required for paging: without one, Postgres may return rows in any order per request, so
     // consecutive pages could repeat or skip people (item 131 audit). The batch is then ordered by compatibility below.
     .order('id', { ascending: true })
-    .range(offset, offset + BROWSE_BATCH_SIZE - 1);
+    .range(offset, offset + BROWSE_BATCH_SIZE - 1), DATING_CANDIDATE_COLUMNS);
 
   if (error) {
     console.error('getBrowseMatches error', error);
