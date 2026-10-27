@@ -25,6 +25,7 @@ d('journey: several replies to one request -> one notification, replaced in plac
   perform set_config('app.trusted_update', 'on', true);
   foreach u in array array[v_c, v_o1, v_o2, v_o3] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@replypush.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'RP-' || left(u::text, 4), date '1990-01-01');
   end loop;
   -- three businesses far from anyone real (0.5 N, 0.5 E), each with its owner

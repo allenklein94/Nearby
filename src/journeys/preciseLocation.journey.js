@@ -69,6 +69,7 @@ d('journey: precise gathering location only for the host and approved attendees,
       v_d double precision; i int;`, `
   foreach u in array array[v_host, v_fan, v_req, v_wait, v_inv, v_str] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@j146.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'J146-' || left(u::text, 4), date '1990-01-01');
   end loop;
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);

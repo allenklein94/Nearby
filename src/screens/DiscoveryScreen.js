@@ -525,7 +525,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   const activeQuickCount = [verifiedOnly, highCompatOnly, onlineOnly, sharedInterestsOnly].filter(Boolean).length;
 
   const filteredNearby = nearby.filter((item) => {
-    if (verifiedOnly && !item.profiles?.photo_verified) return false;
+    if (verifiedOnly && !item.profiles?.id_verified) return false;
     if (highCompatOnly && (item.compatibilityScore === null || item.compatibilityScore < matchThreshold)) return false;
     if (onlineOnly && !onlineStatuses[item.otherUserId]) return false;
     if (sharedInterestsOnly && !(item.sharedInterests?.length > 0)) return false;
@@ -749,7 +749,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
             >
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{item.profiles?.display_name}</Text>
-                {item.profiles?.photo_verified && (
+                {item.profiles?.id_verified && (
                   <Text style={styles.verifiedBadge}>✓</Text>
                 )}
                 {item.compatibilityScore !== null && (

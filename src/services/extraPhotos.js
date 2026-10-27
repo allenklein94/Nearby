@@ -159,38 +159,9 @@ export async function deleteExtraPhoto(photoId, photoUrl) {
   if (error) throw error;
 }
 
+// The server swaps the two photos (20270347): each keeps its own screening result, which only the screening service
+// sets. The old client version copied the flags itself; profile_photos never allowed that update, so it failed halfway.
 export async function setAsMainPhoto(userId, extraPhotoId) {
-  const { data: extraPhoto, error: extraError } = await supabase
-    .from('profile_photos')
-    .select('*')
-    .eq('id', extraPhotoId)
-    .single();
-
-  if (extraError || !extraPhoto) throw new Error('Could not find that photo.');
-
-  const { data: profile, error: profileError } = await supabase
-    .from('profiles')
-    .select('photo_url, photo_verified')
-    .eq('id', userId)
-    .single();
-
-  if (profileError) throw profileError;
-
-  const { error: updateProfileError } = await supabase
-    .from('profiles')
-    .update({ photo_url: extraPhoto.photo_url, photo_verified: extraPhoto.photo_verified })
-    .eq('id', userId);
-
-  if (updateProfileError) throw updateProfileError;
-
-  if (profile?.photo_url) {
-    const { error: updateExtraError } = await supabase
-      .from('profile_photos')
-      .update({ photo_url: profile.photo_url, photo_verified: profile.photo_verified })
-      .eq('id', extraPhotoId);
-
-    if (updateExtraError) throw updateExtraError;
-  } else {
-    await supabase.from('profile_photos').delete().eq('id', extraPhotoId);
-  }
+  const { error } = await supabase.rpc('swap_main_photo', { extra_photo_id_param: extraPhotoId });
+  if (error) throw error;
 }

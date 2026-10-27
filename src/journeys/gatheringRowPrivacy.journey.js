@@ -78,6 +78,7 @@ d('journey: a gathering row reaches only the people who may see it, on every dat
   perform set_config('app.push_handoff_test_failure', 'on', true);
   foreach u in array array[v_host, v_str, v_wom, v_fr, v_mem, v_inv, v_pend, v_wait, v_fill, v_blk, v_po] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@j147.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'J147-' || left(u::text, 4), date '1990-01-01');
   end loop;
   update profiles set gender = 'female' where id in (v_wom, v_host, v_fill);

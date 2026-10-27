@@ -166,7 +166,7 @@ export default function SwipeableDiscoveryCards({
         >
           <View style={styles.nameRow}>
             <Text style={styles.name}>{item.profiles?.display_name}</Text>
-            {item.profiles?.photo_verified && <Text style={styles.verifiedBadge}>✓</Text>}
+            {item.profiles?.id_verified && <Text style={styles.verifiedBadge}>✓</Text>}
             {item.compatibilityScore !== null && (
               onShowCompatibility ? (
                 <TouchableOpacity

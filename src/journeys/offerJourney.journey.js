@@ -296,6 +296,7 @@ d('journey: several replies -> the reply that meets the request ranks first, "Ou
   perform set_config('app.trusted_update', 'on', true);
   foreach u in array array[v_c, v_o1, v_o2, v_o3, v_o4] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@replyfit.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'RF-' || left(u::text, 4), date '1990-01-01');
   end loop;
   insert into brand_partners (id, name, active, latitude, longitude) values
@@ -432,6 +433,7 @@ d('journey: automatic policy / AI replies never qualify on a stated time they di
   perform set_config('app.trusted_update', 'on', true);
   foreach p in array array[v_c, v_o] loop
     insert into auth.users (id, aud, role, email) values (p, 'authenticated', 'authenticated', p || '@autoreply.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (p);
     insert into profiles (id, display_name, birthdate) values (p, 'AR-' || left(p::text, 4), date '1990-01-01');
   end loop;
   insert into brand_partners (id, name, active, latitude, longitude) values
@@ -525,6 +527,7 @@ d('journey: a reply with two times -> the customer picks one -> that time is boo
   v_t3 := (v_day + time '21:00')::timestamp at time zone 'UTC';
   foreach u in array array[v_c, v_o1, v_o2, v_g1, v_g2, v_g3] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@twotimes.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'TT-' || left(u::text, 4), date '1990-01-01');
   end loop;
   insert into brand_partners (id, name, active, latitude, longitude) values
@@ -781,6 +784,7 @@ d('journey: a business changes its offer once (price down, time moved) -> the cu
   v_t2 := (v_day + time '20:30')::timestamp at time zone 'UTC';
   foreach u in array array[v_c, v_o1, v_o2, v_oa, v_g1, v_g2, v_g3] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@revise.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'RV-' || left(u::text, 4), date '1990-01-01');
   end loop;
   insert into brand_partners (id, name, active, latitude, longitude) values
@@ -1074,6 +1078,7 @@ d('journey: a second time for fewer people -> the person may pick it -> books th
   v_t2 := (v_day + time '20:30')::timestamp at time zone 'UTC';
   foreach u in array array[v_c, v_o1, v_g1, v_g2, v_g3] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@fewer.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'FP-' || left(u::text, 4), date '1990-01-01');
   end loop;
   insert into brand_partners (id, name, active, latitude, longitude) values (v_a, 'J119b Small Tables', true, 0.5, 0.5);
@@ -1291,6 +1296,7 @@ d('journey: an expired offer stays, and every side agrees at the exact expiry', 
   foreach v_label in array array['c', 'o'] loop
     insert into auth.users (id, aud, role, email) values (case v_label when 'c' then v_c else v_o end, 'authenticated', 'authenticated',
       (case v_label when 'c' then v_c else v_o end) || '@expiry.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (case v_label when 'c' then v_c else v_o end);
     insert into profiles (id, display_name, birthdate) values (case v_label when 'c' then v_c else v_o end, 'EX-' || v_label, date '1990-01-01');
   end loop;
   insert into brand_partners (id, name, active, latitude, longitude) values (v_p, 'J151 Expiry Cafe', true, 0.5, 0.5);

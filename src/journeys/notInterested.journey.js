@@ -66,6 +66,7 @@ d('journey: Not interested hides one gathering for one person and lowers its kin
   perform set_config('app.push_handoff_test_failure', 'on', true);
   foreach u in array array[v_me, v_host, v_att, v_po, v_str] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@jni.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'JNI-' || left(u::text, 4), date '1990-01-01');
   end loop;
   insert into brand_partners (id, name, active, latitude, longitude, subcategory) values (v_p, 'JNI Cafe', true, ${LAT}, ${LNG}, 'Coffee');

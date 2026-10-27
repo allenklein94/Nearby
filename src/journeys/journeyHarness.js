@@ -40,8 +40,9 @@ function stepMap(log) {
 
 // Synthetic actors (owner, 2026-10-20): a journey creates its own people, accepted friendships and business INSIDE its
 // rolled-back transaction, never picking rows that production happens to hold (so it runs the same on any database).
-// `people` are uuid variables the journey declares with actorDeclares; each is like a real signed-up person (verified,
-// visible, terms accepted, a timezone and a push token). `friends` = pairs of those variables (accepted).
+// `people` are uuid variables the journey declares with actorDeclares; each is like a real signed-up person (signed up in
+// the app with a verified phone, photo screened, visible, terms accepted, a timezone and a push token; 20270350 refuses
+// social actions without a verified phone). `friends` = pairs of those variables (accepted).
 // `business` = { owner, partner, lat, lng, subcategory } (variables + placement): an active business that owner manages.
 function actorDeclares(names) {
   return names.map((n) => `${n} uuid := gen_random_uuid();`).join(' ');
@@ -53,10 +54,15 @@ const { randomUUID } = require('crypto');
 const journeyPeople = (n) => Array.from({ length: n }, () => ({ id: randomUUID() }));
 const journeyOwner = () => ({ id: randomUUID(), managed_partner_id: randomUUID() });
 
+// A verified phone like an SMS-confirmed app sign-up: a fictional 1555 number derived from the user's id (unique within a
+// journey; never a real person's number).
+const JOURNEY_PHONE_SET = `phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now()`;
+
 function actorsSql({ people, friends = [], business = null }) {
   const lines = [`perform set_config('app.trusted_update', 'on', true);`];
   people.forEach((v, i) => {
     lines.push(`insert into auth.users (id, aud, role, email, created_at) values (${v}, 'authenticated', 'authenticated', ${v} || '@journey.invalid', now() - interval '${people.length - i} days');`);
+    lines.push(`update auth.users set ${JOURNEY_PHONE_SET} where id = ${v};`);
     lines.push(`insert into profiles (id, display_name, birthdate, created_at, terms_accepted_at, timezone, photo_verified, profile_hidden, expo_push_token)
     values (${v}, 'Journey ' || left(${v}::text, 4), date '1994-05-01', now() - interval '${people.length - i} days', now(), 'America/New_York', true, false, 'ExponentPushToken[journey-' || left(${v}::text, 8) || ']');`);
   });
@@ -72,4 +78,4 @@ function actorsSql({ people, friends = [], business = null }) {
   return lines.join('\n  ');
 }
 
-module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner };
+module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET };

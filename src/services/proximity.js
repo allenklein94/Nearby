@@ -303,7 +303,7 @@ export async function getNearbyMatches() {
     // Item 121 follow-up: Dating consent is decided by the server (dating_candidates_visible_to_me, 20270314): a sighting or
     // a shared gathering whose person never chose Dating returns no profile, so it never becomes a card or a count.
     .from('dating_candidates_visible_to_me')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, id_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in')
     .in('id', otherUserIds);
 
   if (profilesError) {
@@ -446,7 +446,7 @@ export async function getBrowseMatches(offset = 0) {
   const { data: profiles, error } = await supabase
     // Item 121 follow-up: only people who chose Dating (server-side, dating_candidates_visible_to_me, 20270314).
     .from('dating_candidates_visible_to_me')
-    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in')
+    .select('id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, id_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in')
     .in('wide_area', neighborBuckets)
     // A stable order is required for paging: without one, Postgres may return rows in any order per request, so
     // consecutive pages could repeat or skip people (item 131 audit). The batch is then ordered by compatibility below.

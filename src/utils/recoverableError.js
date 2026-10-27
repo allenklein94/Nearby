@@ -25,6 +25,11 @@ export function serviceError(response, result, fallback) {
   return e;
 }
 
+export const ACCOUNT_RULE_HINTS = {
+  phone_required: 'ui.shared.errors.phoneRequired',
+  account_suspended: 'ui.shared.errors.accountSuspended',
+};
+
 const NETWORK = /network request failed|failed to fetch|network error|timed? ?out|offline|internet|connection/i;
 
 export function isServiceFailure(e) {
@@ -48,6 +53,9 @@ export function recoverableErrorCopy({ what, error, draftKept = false }) {
     parts.push(tr(draftKept ? 'ui.shared.errors.draftSaved' : 'ui.shared.errors.nothingLost'));
     return { title: whatLine(what, 'service') ?? `We couldn't ${what} right now.`, message: parts.join(' '), canRetry: true };
   }
+  // An account rule the server enforces (20270349 / 20270350): say the rule in the person's language; retrying can't help.
+  const rule = ACCOUNT_RULE_HINTS[error?.hint];
+  if (rule) return { title: tr('ui.shared.errors.didntGoThrough'), message: tr(rule), canRetry: false };
   const detail = String(error?.message ?? '').trim();
   return { title: tr('ui.shared.errors.didntGoThrough'), message: detail || (whatLine(what, 'input') ?? `We couldn't ${what}. Please check it and try again.`), canRetry: false };
 }

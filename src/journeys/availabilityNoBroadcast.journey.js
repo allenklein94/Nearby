@@ -19,6 +19,7 @@ d('journey: availability never broadcasts by interest; a matching open request s
   perform set_config('app.trusted_update', 'on', true);
   foreach u in array array[v_c, v_b, v_o] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@nobroadcast.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'NB-' || left(u::text, 4), date '1990-01-01');
   end loop;
   -- a business far from anyone real (0.5 N, 0.5 E) and its owner

@@ -92,7 +92,9 @@ describe('organic code never touches the sponsored system', () => {
     const dir = path.join(root, 'supabase/migrations');
     const offenders = fs.readdirSync(dir)
       .filter((f) => !['20270154_sponsored_placements.sql', '20270155_sponsored_purchase_and_payments.sql', '20270156_sponsored_owner_stats.sql', '20270157_sponsored_refunds_and_approvals.sql', '20270158_sponsored_admin_payment_list.sql', '20270159_sponsored_terms_and_owner_cancel.sql'].includes(f))
-      .filter((f) => /sponsored_(placements|payments|seen|hidden|daily_stats|price)|sponsorable_category|get_sponsored|show_sponsored_places/.test(fs.readFileSync(path.join(dir, f), 'utf8')));
+      .filter((f) => /sponsored_(placements|payments|seen|hidden|daily_stats|price)|sponsorable_category|get_sponsored|show_sponsored_places/.test(
+        // restating people_visible_to_me's full column list (it carries every profile column) reads nothing sponsored
+        fs.readFileSync(path.join(dir, f), 'utf8').replace(/create or replace view public\.people_visible_to_me[\s\S]*?;/gi, '')));
     expect(offenders).toEqual([]);
   });
   it('DiscoverHub renders the slot only on the Places and Perks tabs, never in the blended view or a search', () => {

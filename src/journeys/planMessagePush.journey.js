@@ -24,6 +24,7 @@ d('journey: a plan chat message -> a push to the other participants -> the tap o
   -- five throwaway people (rolled back with everything else)
   foreach u in array array[v_a, v_b, v_c, v_m, v_x] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@planmsg.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'PM-' || left(u::text, 4), date '1990-01-01');
   end loop;
   perform set_config('app.push_handoff_test_failure', 'on', true);  -- kept in the outbox as 'retry', never handed to send-push

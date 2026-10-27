@@ -118,7 +118,8 @@ d('journey: Dating discovery shows and counts only people who chose Dating', () 
     expect(s.anonRefused.ok).toBe(true);
     expect(Number(s.writeGrants.data)).toBe(0);
     expect(s.columns.data).toEqual(['id', 'display_name', 'photo_url', 'bio', 'discovery_gender', 'birthdate', 'ethnicity', 'interests', 'basics',
-      'height_inches', 'photo_verified', 'relationship_intention', 'gender_identity', 'interested_in_genders', 'show_me', 'wide_area', 'dating_opted_in']);
+      'height_inches', 'photo_verified', 'relationship_intention', 'gender_identity', 'interested_in_genders', 'show_me', 'wide_area', 'dating_opted_in',
+      'id_verified']);
   });
 
   test('client: cards and both counts built from these rows contain only the opted-in person', () => {

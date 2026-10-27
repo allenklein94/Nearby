@@ -20,6 +20,7 @@ d('journey: gatherings -> friends joined, invitations converted, friendships for
       c record; w record; x record; e record;`, `
   foreach u in array array[h, f, n, l, i1, j, q, p, r] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@social.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'S-' || left(u::text, 4), date '1990-01-01');
   end loop;
 

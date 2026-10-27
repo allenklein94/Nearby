@@ -105,7 +105,7 @@ export async function getFriendCrossedPaths() {
     supabase.from('friendships').select('user_a, user_b').or(`user_a.eq.${myId},user_b.eq.${myId}`),
     supabase.from('matches').select('user_a, user_b').or(`user_a.eq.${myId},user_b.eq.${myId}`),
     supabase.from('friend_discovery_swipes').select('to_user').eq('from_user', myId),
-    supabase.from('people_visible_to_me').select('id, display_name, photo_url, bio, interests, photo_verified, open_to_friend_discovery').in('id', candidateIds),
+    supabase.from('people_visible_to_me').select('id, display_name, photo_url, bio, interests, photo_verified, id_verified, open_to_friend_discovery').in('id', candidateIds),
   ]);
 
   const excludedUserIds = new Set([
@@ -164,6 +164,7 @@ export async function getFriendCrossedPaths() {
         bio: profile.bio,
         interests: profile.interests ?? [],
         photo_verified: profile.photo_verified,
+        id_verified: profile.id_verified,
         shared_interest_count: sharedInterestCount,
         shared_community_count: sharedCommunityCountByUser[m.otherUserId] ?? 0,
         mutual_friend_count: mutualFriendCountByUser[m.otherUserId] ?? 0,

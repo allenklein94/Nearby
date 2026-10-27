@@ -28,7 +28,7 @@ export default function AdminReportsScreen({ navigation }) {
     try {
       const { data, error } = await supabase
         .from('reports')
-        .select('id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name)')
+        .select('id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name, suspended_at)')
         .order('resolved', { ascending: true })
         .order('created_at', { ascending: false });
 
@@ -48,22 +48,49 @@ export default function AdminReportsScreen({ navigation }) {
     load();
   }
 
-  async function suspendReportedUser(reportedId) {
+  // Suspension is decided by the server (admin_suspend_user / admin_reinstate_user, 20270349): admin only, recorded with
+  // this report, the profile hidden, sessions ended and sign-in refused; every social action refused while suspended.
+  // The alert says what the server actually did, never what was intended.
+  function suspendReportedUser(item) {
     Alert.alert(
       'Suspend this user?',
-      'This hides their profile from everyone (sets photo_verified to false). You can restore it manually later.',
+      'Hides their profile, signs them out, blocks sign-in and refuses messages, invitations, hosting and every other social action until reinstated. Recorded with this report.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Suspend',
           style: 'destructive',
           onPress: async () => {
-            await supabase.from('profiles').update({ photo_verified: false }).eq('id', reportedId);
-            Alert.alert('Suspended', 'Profile hidden from discovery.');
+            const { data, error } = await supabase.rpc('admin_suspend_user', {
+              user_id_param: item.reported_id,
+              reason_param: `Report: ${item.reason}`,
+              report_id_param: item.id,
+            });
+            if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => suspendReportedUser(item) });
+            Alert.alert(data?.already ? 'Already suspended' : 'Suspended', data?.already ? 'This account was already suspended.' : 'Profile hidden, signed out and blocked from social actions.');
+            load();
           },
         },
       ]
     );
+  }
+
+  function reinstateReportedUser(item) {
+    Alert.alert('Reinstate this user?', 'Restores their profile and sign-in. Recorded in the moderation log.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Reinstate',
+        onPress: async () => {
+          const { data, error } = await supabase.rpc('admin_reinstate_user', {
+            user_id_param: item.reported_id,
+            reason_param: `Reinstated from report: ${item.reason}`,
+          });
+          if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => reinstateReportedUser(item) });
+          Alert.alert(data?.already ? 'Not suspended' : 'Reinstated', data?.already ? 'This account was not suspended.' : 'Their profile and sign-in are restored.');
+          load();
+        },
+      },
+    ]);
   }
 
   return (
@@ -96,17 +123,27 @@ export default function AdminReportsScreen({ navigation }) {
           <View style={[styles.card, item.resolved && styles.cardResolved]}>
             <Text style={styles.reason}>{item.reason}</Text>
             <Text style={styles.meta}>Against: {item.reported?.display_name || item.reported_id}</Text>
+            {item.reported?.suspended_at ? <Text style={styles.meta}>Suspended {new Date(item.reported.suspended_at).toLocaleString()}</Text> : null}
             {item.details ? <Text style={styles.details}>{item.details}</Text> : null}
             <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
 
-            {!item.resolved && (
+            {/* a suspended account can be reinstated from its report even after the report is resolved */}
+            {(!item.resolved || item.reported?.suspended_at) && (
               <View style={styles.actions}>
-                <TouchableOpacity style={styles.actionButton} onPress={() => suspendReportedUser(item.reported_id)}>
-                  <Text style={styles.actionText}>Suspend User</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.actionButton, styles.resolveButton]} onPress={() => markResolved(item.id)}>
-                  <Text style={styles.actionText}>Mark Resolved</Text>
-                </TouchableOpacity>
+                {item.reported?.suspended_at ? (
+                  <TouchableOpacity style={styles.actionButton} onPress={() => reinstateReportedUser(item)} accessibilityRole="button">
+                    <Text style={styles.actionText}>Reinstate User</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={styles.actionButton} onPress={() => suspendReportedUser(item)} accessibilityRole="button">
+                    <Text style={styles.actionText}>Suspend User</Text>
+                  </TouchableOpacity>
+                )}
+                {!item.resolved && (
+                  <TouchableOpacity style={[styles.actionButton, styles.resolveButton]} onPress={() => markResolved(item.id)}>
+                    <Text style={styles.actionText}>Mark Resolved</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
           </View>

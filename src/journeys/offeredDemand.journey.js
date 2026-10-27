@@ -28,6 +28,7 @@ d('journey: "people looking for what you offer" counts only what the business of
   for i in 1..17 loop v_u := v_u || gen_random_uuid(); end loop;
   foreach u in array v_u || array[v_o1, v_o2, v_o3, v_o4] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@offered128.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'J128-' || left(u::text, 4), date '1990-01-01');
   end loop;
   -- two businesses far from anything real (0.5 S, 0.5 W)

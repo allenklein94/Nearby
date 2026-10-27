@@ -15,6 +15,7 @@ d('journey: a friend acceptance opens that friend', () => {
       v_a uuid := gen_random_uuid(); v_b uuid := gen_random_uuid(); v_start bigint;`, `
   perform set_config('app.push_handoff_test_failure', 'on', true);
   insert into auth.users (id, aud, role, email) values (v_a, 'authenticated', 'authenticated', v_a || '@fa133.test'), (v_b, 'authenticated', 'authenticated', v_b || '@fa133.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (v_a, v_b);
   insert into profiles (id, display_name, birthdate) values (v_a, 'J133 Allen', date '1990-01-01'), (v_b, 'J133 Claude', date '1990-01-01');
   select coalesce(max(id), 0) into v_start from push_outbox;
   insert into friendships (user_a, user_b, status, requested_by) values (v_a, v_b, 'pending', v_a);

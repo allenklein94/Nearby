@@ -182,7 +182,7 @@ export default function ViewProfileScreen({ route, navigation }) {
 
       const { data } = await supabase
         .from('profiles')
-        .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders')
+        .select('id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, id_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders')
         .eq('id', userId)
         .single();
 
@@ -367,7 +367,7 @@ export default function ViewProfileScreen({ route, navigation }) {
   const age = calculateAge(profile.birthdate);
 
   const badges = [
-    profile.photo_verified && { icon: '✓', label: t('ui.viewProfile.badge.verified'), color: colors.success },
+    profile.id_verified && { icon: '✓', label: t('ui.viewProfile.badge.verified'), color: colors.success },
     profile.is_premium && { icon: '✨', label: t('ui.viewProfile.badge.premium'), color: colors.primary },
     isNewHere(profile.created_at) && { icon: '🌱', label: t('ui.viewProfile.badge.newHere'), color: colors.textSecondary },
   ].filter(Boolean);

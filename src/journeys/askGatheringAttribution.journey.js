@@ -19,6 +19,7 @@ d('journey: typed ask -> Create it yourself -> gathering records its ask, and on
       v_snap uuid := gen_random_uuid(); v_req uuid; v_err text; v_n int;`, `
   foreach u in array array[h, o] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@attr.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'A-' || left(u::text, 4), date '1990-01-01');
   end loop;
 

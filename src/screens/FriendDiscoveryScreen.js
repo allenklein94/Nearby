@@ -278,7 +278,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
   const filteredCandidates = candidatesWithScore.filter((c) => {
     const matchesInterest = interestFilters.length === 0 || (c.interests ?? []).some((i) => interestFilters.includes(i));
     const matchesDistance = !distanceFilter || c.distance_bucket === distanceFilter;
-    const matchesVerified = !verifiedOnlyFilter || c.photo_verified;
+    const matchesVerified = !verifiedOnlyFilter || c.id_verified;
     const matchesOnline = !onlineOnlyFilter || onlineStatuses[c.id];
     return matchesInterest && matchesDistance && matchesVerified && matchesOnline;
   });

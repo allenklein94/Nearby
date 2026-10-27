@@ -13,6 +13,8 @@ export default {
     errors: {
       notNow: 'Not now', tryAgain: 'Try Again', checkConnection: 'Check your connection.', draftSaved: 'Your draft is saved.', nothingLost: 'Nothing was lost. Please try again.',
       didntGoThrough: "That didn't go through",
+      phoneRequired: 'Messaging, invitations, connecting and hosting need an account with a verified phone number.',
+      accountSuspended: 'This account is suspended, so it can\'t message, invite, connect or host.',
       what: {
         complete_that: { service: "We couldn't complete that right now.", input: "We couldn't complete that. Please check it and try again." },
         update_these_ideas: { service: "We couldn't update these ideas right now.", input: "We couldn't update these ideas. Please check it and try again." },
@@ -55,6 +57,8 @@ export default {
     errors: {
       notNow: 'Ahora no', tryAgain: 'Intentar de nuevo', checkConnection: 'Revisa tu conexión.', draftSaved: 'Tu borrador está guardado.', nothingLost: 'No se perdió nada. Inténtalo de nuevo.',
       didntGoThrough: 'No se pudo completar',
+      phoneRequired: 'Para enviar mensajes, invitar, conectar u organizar necesitas una cuenta con un número de teléfono verificado.',
+      accountSuspended: 'Esta cuenta está suspendida, así que no puede enviar mensajes, invitar, conectar ni organizar.',
       what: {
         complete_that: { service: 'No pudimos completar eso ahora.', input: 'No pudimos completar eso. Revísalo e inténtalo de nuevo.' },
         update_these_ideas: { service: 'No pudimos actualizar estas ideas ahora.', input: 'No pudimos actualizar estas ideas. Revísalo e inténtalo de nuevo.' },
@@ -97,6 +101,8 @@ export default {
     errors: {
       notNow: 'Nicht jetzt', tryAgain: 'Erneut versuchen', checkConnection: 'Prüfe deine Verbindung.', draftSaved: 'Dein Entwurf ist gespeichert.', nothingLost: 'Es ging nichts verloren. Bitte versuche es erneut.',
       didntGoThrough: 'Das hat nicht geklappt',
+      phoneRequired: 'Für Nachrichten, Einladungen, Verbindungen und eigene Treffen brauchst du ein Konto mit bestätigter Telefonnummer.',
+      accountSuspended: 'Dieses Konto ist gesperrt und kann keine Nachrichten senden, einladen, sich verbinden oder etwas veranstalten.',
       what: {
         complete_that: { service: 'Das konnte gerade nicht abgeschlossen werden.', input: 'Das konnte nicht abgeschlossen werden. Bitte prüfe es und versuche es erneut.' },
         update_these_ideas: { service: 'Diese Ideen konnten gerade nicht aktualisiert werden.', input: 'Diese Ideen konnten nicht aktualisiert werden. Bitte prüfe es und versuche es erneut.' },
@@ -139,6 +145,8 @@ export default {
     errors: {
       notNow: 'Pas maintenant', tryAgain: 'Réessayer', checkConnection: 'Vérifiez votre connexion.', draftSaved: 'Votre brouillon est enregistré.', nothingLost: "Rien n'a été perdu. Veuillez réessayer.",
       didntGoThrough: "Cela n'a pas abouti",
+      phoneRequired: 'Pour envoyer des messages, inviter, te connecter ou organiser, il faut un compte avec un numéro de téléphone vérifié.',
+      accountSuspended: 'Ce compte est suspendu : il ne peut pas envoyer de messages, inviter, se connecter ni organiser.',
       what: {
         complete_that: { service: "Impossible de terminer cette action pour le moment.", input: "Impossible de terminer cette action. Vérifiez et réessayez." },
         update_these_ideas: { service: 'Impossible de mettre à jour ces idées pour le moment.', input: 'Impossible de mettre à jour ces idées. Vérifiez et réessayez.' },
@@ -181,6 +189,8 @@ export default {
     errors: {
       notNow: 'Agora não', tryAgain: 'Tentar novamente', checkConnection: 'Verifique sua conexão.', draftSaved: 'Seu rascunho está salvo.', nothingLost: 'Nada foi perdido. Tente novamente.',
       didntGoThrough: 'Não deu certo',
+      phoneRequired: 'Para enviar mensagens, convidar, se conectar ou organizar, é preciso uma conta com número de telefone verificado.',
+      accountSuspended: 'Esta conta está suspensa, então não pode enviar mensagens, convidar, se conectar nem organizar.',
       what: {
         complete_that: { service: 'Não foi possível concluir isso agora.', input: 'Não foi possível concluir isso. Verifique e tente novamente.' },
         update_these_ideas: { service: 'Não foi possível atualizar estas ideias agora.', input: 'Não foi possível atualizar estas ideias. Verifique e tente novamente.' },
@@ -223,6 +233,8 @@ export default {
     errors: {
       notNow: 'Pa kounye a', tryAgain: 'Eseye ankò', checkConnection: 'Verifye koneksyon ou.', draftSaved: 'Bouyon ou anrejistre.', nothingLost: 'Anyen pa pèdi. Tanpri eseye ankò.',
       didntGoThrough: 'Sa pa t pase',
+      phoneRequired: 'Pou voye mesaj, envite, konekte oswa òganize, ou bezwen yon kont ki gen yon nimewo telefòn verifye.',
+      accountSuspended: 'Kont sa a sispann, kidonk li pa ka voye mesaj, envite, konekte oswa òganize.',
       what: {
         complete_that: { service: 'Nou pa t ka fini sa kounye a.', input: 'Nou pa t ka fini sa. Tanpri verifye l epi eseye ankò.' },
         update_these_ideas: { service: 'Nou pa t ka mete ide sa yo ajou kounye a.', input: 'Nou pa t ka mete ide sa yo ajou. Tanpri verifye epi eseye ankò.' },
@@ -265,6 +277,8 @@ export default {
     errors: {
       notNow: '以后再说', tryAgain: '重试', checkConnection: '请检查网络连接。', draftSaved: '你的草稿已保存。', nothingLost: '没有丢失任何内容，请重试。',
       didntGoThrough: '操作未成功',
+      phoneRequired: '发消息、邀请、建立联系和发起活动需要一个已验证手机号码的账号。',
+      accountSuspended: '此账号已被暂停，无法发消息、邀请、建立联系或发起活动。',
       what: {
         complete_that: { service: '现在无法完成此操作。', input: '无法完成此操作。请检查后重试。' },
         update_these_ideas: { service: '现在无法更新这些建议。', input: '无法更新这些建议。请检查后重试。' },
@@ -307,6 +321,8 @@ export default {
     errors: {
       notNow: 'Để sau', tryAgain: 'Thử lại', checkConnection: 'Hãy kiểm tra kết nối.', draftSaved: 'Bản nháp của bạn đã được lưu.', nothingLost: 'Không mất gì cả. Vui lòng thử lại.',
       didntGoThrough: 'Không thực hiện được',
+      phoneRequired: 'Để nhắn tin, mời, kết nối hoặc tổ chức, bạn cần tài khoản có số điện thoại đã xác minh.',
+      accountSuspended: 'Tài khoản này đang bị tạm ngưng nên không thể nhắn tin, mời, kết nối hoặc tổ chức.',
       what: {
         complete_that: { service: 'Hiện không thể hoàn tất việc này.', input: 'Không thể hoàn tất việc này. Hãy kiểm tra và thử lại.' },
         update_these_ideas: { service: 'Hiện không thể cập nhật những gợi ý này.', input: 'Không thể cập nhật những gợi ý này. Hãy kiểm tra và thử lại.' },
@@ -349,6 +365,8 @@ export default {
     errors: {
       notNow: 'Hindi muna', tryAgain: 'Subukan Muli', checkConnection: 'Tingnan ang iyong koneksyon.', draftSaved: 'Naka-save ang iyong draft.', nothingLost: 'Walang nawala. Pakisubukan muli.',
       didntGoThrough: 'Hindi ito natuloy',
+      phoneRequired: 'Kailangan ng account na may verified na phone number para makapag-message, makapag-imbita, makakonekta o makapag-host.',
+      accountSuspended: 'Naka-suspend ang account na ito, kaya hindi ito makakapag-message, makakapag-imbita, makakakonekta o makakapag-host.',
       what: {
         complete_that: { service: 'Hindi ito matapos ngayon.', input: 'Hindi ito matapos. Pakisuri at subukan muli.' },
         update_these_ideas: { service: 'Hindi ma-update ang mga ideyang ito ngayon.', input: 'Hindi ma-update ang mga ideyang ito. Pakisuri at subukan muli.' },
@@ -391,6 +409,8 @@ export default {
     errors: {
       notNow: 'Не сейчас', tryAgain: 'Повторить', checkConnection: 'Проверьте подключение.', draftSaved: 'Ваш черновик сохранён.', nothingLost: 'Ничего не потеряно. Попробуйте снова.',
       didntGoThrough: 'Не получилось',
+      phoneRequired: 'Чтобы писать сообщения, приглашать, знакомиться и проводить встречи, нужен аккаунт с подтверждённым номером телефона.',
+      accountSuspended: 'Этот аккаунт заблокирован: он не может писать сообщения, приглашать, знакомиться или проводить встречи.',
       what: {
         complete_that: { service: 'Сейчас не удалось это выполнить.', input: 'Не удалось это выполнить. Проверьте и попробуйте снова.' },
         update_these_ideas: { service: 'Сейчас не удалось обновить эти идеи.', input: 'Не удалось обновить эти идеи. Проверьте и попробуйте снова.' },
@@ -433,6 +453,8 @@ export default {
     errors: {
       notNow: '나중에', tryAgain: '다시 시도', checkConnection: '연결 상태를 확인해 주세요.', draftSaved: '초안이 저장되어 있어요.', nothingLost: '잃어버린 것은 없어요. 다시 시도해 주세요.',
       didntGoThrough: '처리되지 않았어요',
+      phoneRequired: '메시지, 초대, 연결, 모임 주최는 전화번호가 인증된 계정에서만 할 수 있어요.',
+      accountSuspended: '이 계정은 정지되어 메시지, 초대, 연결, 모임 주최를 할 수 없어요.',
       what: {
         complete_that: { service: '지금은 완료할 수 없어요.', input: '완료할 수 없었어요. 확인 후 다시 시도해 주세요.' },
         update_these_ideas: { service: '지금은 이 아이디어를 업데이트할 수 없어요.', input: '이 아이디어를 업데이트할 수 없었어요. 확인 후 다시 시도해 주세요.' },

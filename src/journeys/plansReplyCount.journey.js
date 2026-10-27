@@ -48,6 +48,7 @@ d('journey: the Plans row says how many businesses replied, truthfully (item 160
   perform set_config('app.trusted_update', 'on', true);
   foreach u in array array[v_c, v_oa, v_ob, v_od] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@plansreply.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'PR-' || left(u::text, 4), date '1990-01-01');
   end loop;
   insert into brand_partners (id, name, active, latitude, longitude) values

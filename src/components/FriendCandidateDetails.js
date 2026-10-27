@@ -57,7 +57,7 @@ export default function FriendCandidateDetails({ item, compatibilityColor, bioLi
     <View>
       <View style={styles.nameRow}>
         <Text style={styles.name}>{item.display_name}</Text>
-        {item.photo_verified && <Text style={styles.verifiedBadge}>✓</Text>}
+        {item.id_verified && <Text style={styles.verifiedBadge}>✓</Text>}
         {typeof item.compatScore === 'number' && compatibilityColor && (
           <View style={[styles.compatBadge, { borderColor: compatibilityColor(item.compatScore) }]}>
             <Text style={[styles.compatText, { color: compatibilityColor(item.compatScore) }]}>{t('ui.friends.compatMatch', { score: item.compatScore })}</Text>

@@ -20,6 +20,7 @@ d('journey: typed asks + business requests -> canonical weekly people -> 4-week 
   for i in 1..12 loop
     v := gen_random_uuid();
     insert into auth.users (id, instance_id, aud, role, email) values (v, '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', v || '@trend.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (v);
     insert into profiles (id, display_name, birthdate) values (v, 'Trend ' || i, date '1990-01-01');
     p := p || v;
   end loop;

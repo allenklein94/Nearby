@@ -29,6 +29,7 @@ d('journey: a stated time carries into the business request (idea 305)', () => {
   perform set_config('app.push_handoff_test_failure', 'on', true);  -- kept in the outbox, never handed to send-push
   perform set_config('app.trusted_update', 'on', true);
   insert into auth.users (id, aud, role, email) values (v_c, 'authenticated', 'authenticated', v_c || '@j305.test'), (v_o, 'authenticated', 'authenticated', v_o || '@j305.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (v_c, v_o);
   insert into profiles (id, display_name, birthdate) values (v_c, 'J305 Customer', date '1990-01-01'), (v_o, 'J305 Owner', date '1990-01-01');
   insert into brand_partners (id, name, active, latitude, longitude, subcategory) values (v_p, 'J305 Bistro', true, 0.73, 0.73, ${sqlText(p.prefillCategory)});
   update profiles set managed_partner_id = v_p where id = v_o;

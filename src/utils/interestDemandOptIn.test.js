@@ -45,8 +45,10 @@ describe('Interested reaches business demand only by opt-in (idea 356)', () => {
       const sql = fs.readFileSync(path.join(dir, f), 'utf8');
       const re = /create or replace function\s+(?:public\.)?([a-z_0-9]+)\s*\(/gi;
       const starts = [...sql.matchAll(re)];
-      starts.forEach((m, i) => {
-        const end = i + 1 < starts.length ? starts[i + 1].index : sql.length;
+      // a function ends where the next function or view starts (a restated view column list is not a function reading it)
+      const others = [...sql.matchAll(/create\s+(?:or\s+replace\s+)?(?:function|view)\s/gi)].map((x) => x.index);
+      starts.forEach((m) => {
+        const end = Math.min(sql.length, ...others.filter((x) => x > m.index));
         if (/share_interest_in_demand/.test(sql.slice(m.index, end))) readers.add(m[1].toLowerCase());
       });
     }

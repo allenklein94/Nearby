@@ -59,8 +59,8 @@ export default function AdminVerificationScreen() {
   async function handleDecision(submission, approved) {
     setProcessingId(submission.id);
     try {
-      // Both the submission status and the submitter's own photo_verified
-      // flag are set atomically server-side (admin_approve_id_verification) --
+      // Both the submission status and the submitter's own id_verified
+      // flag (the Verified badge; 20270348) are set atomically server-side (admin_approve_id_verification) --
       // profiles has no client-updatable admin bypass, so a direct cross-user
       // update from here would silently affect 0 rows.
       const { error } = await supabase.rpc('admin_approve_id_verification', {

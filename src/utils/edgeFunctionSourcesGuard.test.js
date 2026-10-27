@@ -40,6 +40,13 @@ describe('recovered functions keep their behaviour', () => {
     expect(authUser).toBeGreaterThan(profile);
   });
 
+  test('delete-account: removes the whole ID folder, incl. uploads that never got a submission row (2026-10-27)', () => {
+    const s = src('delete-account');
+    const list = s.indexOf("storage.from('id-verification').list(userId");
+    expect(list).toBeGreaterThan(-1);
+    expect(list).toBeLessThan(s.indexOf("storage.from('id-verification').remove("));
+  });
+
   test('moderate-photo: verifies the caller, only their own photo, and fails closed when the age check fails', () => {
     const s = src('moderate-photo');
     expect(s).toMatch(/auth\.getUser\(token\)/);

@@ -63,6 +63,7 @@ d('journey: stories and sightings never store a precise location (item 148)', ()
       v_a text; v_b text; v_c text; v_d text; v_e text; v_n int; v_app jsonb; v_rpc jsonb; v_err text;`, `
   foreach u in array array[v_p, v_f, v_str, v_o, v_biz] loop
     insert into auth.users (id, aud, role, email) values (u, 'authenticated', 'authenticated', u || '@j148.test');
+    update auth.users set phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now() where id in (u);
     insert into profiles (id, display_name, birthdate) values (u, 'J148-' || left(u::text, 4), date '1990-01-01');
   end loop;
   insert into friendships (user_a, user_b, status, requested_by) values (v_p, v_f, 'accepted', v_p);

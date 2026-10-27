@@ -1,3 +1,13 @@
+# Trust & safety launch-blocker fixes (owner, 2026-10-27)
+
+Owner approved fixes 1-6 of `PRODUCT_AUDIT/TRUST_SAFETY_AUDIT_2026-10-27.md`, implemented and tested in isolation, no
+production deploy, no identity document deleted, no live permission changed. Full account, impact table, owner decisions
+and new findings (N1 push tokens readable by any signed-in user; N2 self-admin on profile INSERT, fixed; N3 "Set as main
+photo" failed halfway, fixed; N4 moderate-photo path race; N5 1-hour token after suspension):
+`PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`. Migrations 20270347-20270352 + rollbacks in `scripts/rollback/`;
+journey `trustSafety`; client: badge -> `id_verified`, `swap_main_photo`, admin Suspend/Reinstate, refusal messages
+(`ui.shared.errors.phoneRequired` / `accountSuspended`), `delete-account` folder cleanup (not deployed).
+
 # Activity suggestions in Discover's Gatherings search (owner, 2026-10-27)
 
 Gap found while assessing Dinner's discoverability: Discover had NO in-place way to choose an activity. The Gatherings tab's activity

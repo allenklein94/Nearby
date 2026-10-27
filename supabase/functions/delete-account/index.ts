@@ -62,6 +62,20 @@ serve(async (req) => {
       if (submission.selfie_path) verificationPaths.push(submission.selfie_path);
       if (submission.id_photo_path) verificationPaths.push(submission.id_photo_path);
     }
+    // Trust & safety fix 4 (2026-10-27): also every file in the person's own folder, so an upload that never got a
+    // submission row (the app failed between upload and insert) is deleted too. Uploads can only go into this folder.
+    for (let offset = 0; ; offset += 100) {
+      const { data: files, error: listError } = await admin.storage.from('id-verification').list(userId, { limit: 100, offset });
+      if (listError) {
+        console.error('ID verification folder listing failed (continuing anyway):', listError.message);
+        break;
+      }
+      for (const file of files ?? []) {
+        const path = `${userId}/${file.name}`;
+        if (!verificationPaths.includes(path)) verificationPaths.push(path);
+      }
+      if (!files || files.length < 100) break;
+    }
 
     if (verificationPaths.length > 0) {
       const { error: verificationStorageError } = await admin.storage.from('id-verification').remove(verificationPaths);
