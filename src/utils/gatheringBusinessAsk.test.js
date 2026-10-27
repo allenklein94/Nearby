@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-import { gatheringRequestText, gatheringAskFacts, gatheringAskInputs } from './gatheringBusinessAsk';
+import { gatheringRequestText, gatheringAskFacts, gatheringAskInputs, gatheringActivityLabel } from './gatheringBusinessAsk';
 
 // Item 111: Create "Coffee gathering" -> Find a business carries Coffee, date, time, group size and location, and asks only
 // "Anything specific you'd like the business to provide?".
@@ -28,6 +28,43 @@ describe('gatheringAskFacts', () => {
     const facts = gatheringAskFacts({ interest_tag: null, scheduled_at: null, capacity: null, approvedCount: 0 }, now);
     expect(facts.map((f) => f.key)).toEqual(['party', 'where']);
     expect(gatheringAskFacts(null)).toEqual([]);
+  });
+});
+
+// Owner, 2026-10-27: the host sees their own word for the activity ("Dinner"), never the internal category ("Foodie");
+// the request still routes on the gathering's category.
+describe('the activity word on "From your gathering"', () => {
+  const dinner = { ...coffee, interest_tag: 'Foodie', title: 'Dinner' };
+
+  it('a Dinner gathering shows Dinner, never Foodie, in the person\'s language', () => {
+    expect(gatheringAskFacts(dinner, now)[0].label).toBe('Dinner');
+    expect(gatheringAskFacts(dinner, now, 'es')[0].label).toBe('Cena');
+    expect(gatheringAskFacts({ ...dinner, title: 'Sam\'s birthday dinner' }, now)[0].label).toBe('Dinner');
+    expect(gatheringAskFacts(dinner, now).map((f) => f.label).join(' ')).not.toMatch(/Foodie/);
+  });
+
+  it('the same rule for every pick, never a word from another category', () => {
+    expect(gatheringActivityLabel({ interest_tag: 'Foodie', title: 'Lunch by the pier' })).toBe('Lunch');
+    expect(gatheringActivityLabel({ interest_tag: 'Sports', title: 'Beach volleyball' })).toBe('Beach Volleyball');
+    expect(gatheringActivityLabel({ interest_tag: 'Wine', title: 'Wine tasting' })).toBe('Wine Tasting');
+    expect(gatheringActivityLabel({ interest_tag: 'Coffee', title: 'Coffee' })).toBe('Coffee');
+    expect(gatheringActivityLabel({ interest_tag: 'Sports', title: 'Dinner after the game' })).toBe('Sports');
+  });
+
+  it('no pick word = the category\'s name (translated); no category = no row', () => {
+    expect(gatheringActivityLabel({ interest_tag: 'Foodie', title: 'Taco night' })).toBe('Foodie');
+    expect(gatheringActivityLabel({ interest_tag: 'Coffee', title: 'Catch-up' }, 'es')).not.toBe('');
+    expect(gatheringActivityLabel({ interest_tag: null, title: 'Dinner' })).toBeNull();
+  });
+
+  it('routing is unchanged: the request text and the one question still use the category', () => {
+    expect(dinner.interest_tag).toBe('Foodie');
+    expect(gatheringRequestText('Foodie')).toBe('A Foodie gathering looking for a place to go');
+    expect(gatheringAskInputs('Foodie')).toContain('dietary');
+    const screen = fs.readFileSync(path.join(__dirname, '..', 'screens/AskBusinessScreen.js'), 'utf8');
+    expect(screen).toMatch(/gatheringAskInputs\(category, \{ targeted: !!targetPartner \}\)/);
+    expect(screen).toMatch(/gatheringRequestText\(category\)/);
+    expect(screen).toMatch(/gatheringAskFacts\(gathering, new Date\(\), language\)/);
   });
 });
 

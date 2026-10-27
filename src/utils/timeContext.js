@@ -164,6 +164,22 @@ const QUICK_PROMPTS_BY_PERIOD = {
   ],
 };
 
+// The quick pick a gathering answers to (owner, 2026-10-27): its category AND, for a pick with a word, that word in its title
+// or description: the same test Discover's pick filter applies (`applyGatheringFilters`'s term), so a Foodie gathering
+// called "Dinner" is Dinner wherever Discover would list it under Dinner. A pick without a word (Coffee, Concert) means its
+// category; none = null.
+export function quickPickForGathering(gathering) {
+  const category = gathering?.interest_tag;
+  if (!category) return null;
+  const text = `${gathering.title ?? ''} ${gathering.description ?? ''}`.toLowerCase();
+  for (const items of Object.values(QUICK_PROMPTS_BY_PERIOD)) {
+    for (const item of items) {
+      if (item.category === category && item.searchTerm && text.includes(item.searchTerm)) return item;
+    }
+  }
+  return null;
+}
+
 export function getQuickPrompts(period = getTimePeriod()) {
   return QUICK_PROMPTS_BY_PERIOD[period] ?? QUICK_PROMPTS_BY_PERIOD.evening;
 }

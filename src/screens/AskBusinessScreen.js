@@ -161,10 +161,10 @@ function bookingAskHeading(mode, targetPartner) {
 
 // Item 111: the facts a gathering's request carries, shown read-only (change them on the gathering itself).
 function GatheringAskFacts({ styles, gathering, loadFailed }) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   if (loadFailed) return <Text style={styles.subtitle}>{t('ui.askBusiness.weCouldntLoadYourGatherings')}</Text>;
   if (!gathering) return <ActivityIndicator style={{ marginVertical: spacing.md }} />;
-  const facts = gatheringAskFacts(gathering);
+  const facts = gatheringAskFacts(gathering, new Date(), language);
   return (
     <View style={styles.recapCard} accessibilityLabel={t('ui.askBusiness.fromYourGatheringA11y', { join: facts.map((f) => f.label).join(', ') })}>
       <Text style={styles.factsKicker}>{t('ui.askBusiness.fromYourGathering')}</Text>

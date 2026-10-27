@@ -3,7 +3,9 @@
 // words them for the host) and the host is asked ONE thing: "Anything specific you'd like the business to provide?".
 // That answer is structured, never free text to a broadcast (minimum-payload rule): the closed requested-items list for
 // coffee/food gatherings (item 69), dietary needs for food, and a note only when the request goes to ONE business.
-import { whenLabel } from './timeContext';
+import { whenLabel, quickPickForGathering } from './timeContext';
+import { quickOptionLabel } from '../i18n/optionLabels';
+import { categoryName } from '../i18n/categoryNames';
 import { countLabel } from './plural';
 import { gatheringBusinessPartySize } from './gatheringFullness';
 import { REQUESTED_ITEM_CATEGORIES } from '../constants/businessAttributes';
@@ -15,10 +17,19 @@ export function gatheringRequestText(category) {
 
 // What the request will carry, in the order the owner listed it. A fact the gathering does not have is left out, never
 // guessed. Location is the gathering's own spot (the server routes from its coordinates; no place name is stored).
-export function gatheringAskFacts(gathering, now = new Date()) {
+// The host's own word for the activity (owner, 2026-10-27): a gathering started from Dinner shows "Dinner", never its
+// internal category; else the category's name in the person's language. Display only: the request still routes on
+// interest_tag (the server reads it from the gathering).
+export function gatheringActivityLabel(gathering, language = 'en') {
+  if (!gathering?.interest_tag) return null;
+  const pick = quickPickForGathering(gathering);
+  return pick ? quickOptionLabel(pick, language) : categoryName(gathering.interest_tag, language);
+}
+
+export function gatheringAskFacts(gathering, now = new Date(), language = 'en') {
   if (!gathering) return [];
   const facts = [];
-  if (gathering.interest_tag) facts.push({ key: 'category', icon: '🏷️', label: gathering.interest_tag });
+  if (gathering.interest_tag) facts.push({ key: 'category', icon: '🏷️', label: gatheringActivityLabel(gathering, language) });
   const when = gathering.scheduled_at ? whenLabel(gathering.scheduled_at, now) : null;
   if (when) facts.push({ key: 'when', icon: '🕐', label: when });
   const party = gatheringBusinessPartySize(gathering);
