@@ -161,6 +161,10 @@ to see if you tap this one?" for each. Gatherings to join now vs businesses' own
 repeated confusion or a misunderstanding that changes where they go. A fix renames the business-moments row only (owner's preferred
 wording "From Nearby Businesses", approval + 11 languages); never a merge, screen or architecture change.
 
+Dinner-in-Discover watch (owner 2026-10-27, session B, no hint): already on Discover with Coffee Tonight showing, ask "Now find dinner
+tonight". PASS = they get dinner results unaided (typing "dinner", or Home's Dinner pick). Looking for Dinner in the category row
+and stalling = USABILITY with the steps. Smallest fix = make Dinner reachable through the existing quick-pick / search-suggestion
+mechanism (proposal for owner approval); never a new category (V1 taxonomy frozen). Typed vs tile results compared in Quick pick (11).
 Discover lens watch (owner, 2026-10-25; USABILITY observation + PASS/FAIL for state): unprompted, ask the person to find
 "something to do this weekend", then "people to meet": (a) do they switch Things to Do <-> People, a type filter (Gatherings /
 Communities / Perks) and a time chip (Now / Today / This Weekend) without help, understanding each as a different view of the same
