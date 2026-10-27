@@ -446,6 +446,8 @@ no Dinner chip left; (8) from Dinner Tonight again, pick another category (e.g. 
 filter (a Coffee gathering without "dinner" in its title shows); (9) with no dinner gatherings tonight, the empty result reads
 "+ Start a Dinner Gathering" and Create opens with "Dinner" in What (not "Foodie"). A Foodie or "dinner" chip on a verified build = FAIL
 with a screenshot; no code change before it is recorded.
+Watch (no task, owner 2026-10-27): a tester who browses a category's results, finds nothing appealing and struggles to start their own
+(no hint given) = USABILITY with the steps. Never assume scrolling past results means they want to host.
 (10) Concert (owner, 2026-10-26; category maps directly, no extra word): Home -> Concert Tonight. PASS = Discover shows exactly
 "Concert ✕" + Tonight selected, no second chip, results = Concerts gatherings tonight only (no hidden filter). Same FAIL rule as (6)-(9).
 (11) Tile vs typed (owner, 2026-10-26; weekday evening, same place): note Coffee Tonight's gatherings, then type "coffee tonight" on Discover.
