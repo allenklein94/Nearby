@@ -155,7 +155,11 @@ false "Suspended"); the admin uses the new build.
    - test push B (new server-only path): Expo ticket + receipt `ok`.
 4. NOT verified: arrival on the phone (owner to confirm "Nearby check (1 of 2)" / "(2 of 2)"); a signed-in real-API probe
    (no dedicated test account exists; ready as `src/qa/pushTokenPrivacySignedIn.live.js`, read-only, skips without an account); real Spotify sign-in (0 accounts use Spotify).
-5. Spotify (owner decision): own-row token access accepted for internal testing; before Spotify is enabled for external
+5. Spotify NOT VERIFIED (separate requirement, owner 2026-10-27): no account has ever connected Spotify, so neither a real
+   connection (sign-in, refresh, reading its own tokens) nor isolation with populated rows has been tested; the signed-in
+   probe only proves no other person's row is visible while the table is empty. Must be verified with a real connected
+   test account before external Spotify access, together with the server-side refresh below.
+6. Spotify (owner decision): own-row token access accepted for internal testing; before Spotify is enabled for external
    users, token refresh + storage move fully server-side so no client can read a refresh token.
 
 ## Deployment plan (each step needs its own approval; nothing done)
