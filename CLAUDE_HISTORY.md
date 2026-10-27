@@ -1,3 +1,26 @@
+# Activity suggestions in Discover's Gatherings search (owner, 2026-10-27)
+
+Gap found while assessing Dinner's discoverability: Discover had NO in-place way to choose an activity. The Gatherings tab's activity
+chip only showed what an entry (Home quick pick) carried and only cleared; the Browse rail is All-view only and group-level; typing
+"coffee" with "Dinner ✕" set searched Dinner AND coffee (empty). Owner rejected adding Home's quick picks to the crowded filter row
+(clutter; time-dependent availability) and approved suggestions through the existing search box, with refinements (replace, never
+combine; typing works without supply; unrelated filters kept; Gatherings tab only; "Suggested activities", not "Browse").
+Built: `utils/activitySuggestions.js` = ONE catalog from what exists: every Home quick pick whatever the time of day (`allQuickPicks`
+in `timeContext.js`; shown in its own word via `quickOptionLabel`) + every consumer category (`PERSONAL_INTEREST_OPTIONS` minus need
+categories) not already a word-less pick (translated name). Empty focused box = up to 6 activities that really have gatherings in the
+tab's list under every filter except the activity (most first; no counts shown); typing = up to 3 recognized activities (name prefix in
+the person's language / English / the pick's word, then `tagsForPhrase` + one-word synonym prefixes), independent of supply; the current
+activity is never offered. `selectActivity` (`utils/gatheringFilters.js`) REPLACES pick + category + word, keeps when / Trending / price
+/ plan kind / Local (Outdoor/Indoor is separate screen state, untouched), drops For You like any category. Discover: suggestions render
+under the search box only while it is focused AND the Gatherings tab is active (`searchFocused`); chip ScrollView
+`keyboardShouldPersistTaps="handled"`; a pick clears the box (`clearSearchBox`, the ✕'s logic, now shared), closes the keyboard; free
+text + Enter unchanged (a typed word still combines with a set chip: ordinary search, as before). One new string
+`ui.discover.suggestedActivities` (11 languages; 10 machine-authored, need native review); heading = accessibilityRole header, each
+suggestion a button labelled with its word. No category, row, screen, server or motion change; All view and business search unchanged.
+Taxonomy code inventory unchanged (no new tag literals). Guard `utils/activitySuggestions.test.js` (16); full Jest 515 suites / 7031
+tests. Run order Quick pick (8) rewritten to Dinner -> Coffee -> Dinner through the suggestions; Dinner-in-Discover watch records
+whether people notice the search box. NOT DEVICE-VERIFIED (needs the new TestFlight build).
+
 # Typed "tonight" = 6 PM to the end of the local day (owner, 2026-10-26)
 
 From the read-only tile-vs-typed comparison (`PRODUCT_AUDIT/QUICK_PICK_VS_TYPED_ASK_COMPARISON_2026-10-26.md`): Home's Tonight quick

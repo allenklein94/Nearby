@@ -105,6 +105,16 @@ export function toggleForYou(f) {
   const base = f.pick ? { ...f, pick: null, term: null } : f;
   return f.forYou ? { ...base, forYou: false } : { ...base, forYou: true, category: null };
 }
+// An activity chosen from Discover's suggestions (owner 2026-10-27) REPLACES the current one (pick, category and word
+// together, never combined with it); time, Trending, price, plan kind and Local stay; For You drops as for any category.
+// A quick pick keeps the person's word (its category + its word); a plain category is its own word.
+export function selectActivity(f, activity) {
+  if (!activity?.category) return f;
+  const base = { ...f, forYou: false };
+  return activity.pick
+    ? { ...base, pick: activity.pick, category: activity.category, term: activity.term ?? null }
+    : { ...base, pick: null, category: activity.category, term: null };
+}
 export function selectCategory(f, tag) {
   const base = f.pick ? { ...f, pick: null, term: null } : f;
   return { ...base, category: f.category === tag ? null : tag, forYou: false };

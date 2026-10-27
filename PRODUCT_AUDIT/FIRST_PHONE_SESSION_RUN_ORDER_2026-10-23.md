@@ -162,9 +162,11 @@ repeated confusion or a misunderstanding that changes where they go. A fix renam
 wording "From Nearby Businesses", approval + 11 languages); never a merge, screen or architecture change.
 
 Dinner-in-Discover watch (owner 2026-10-27, session B, no hint): already on Discover with Coffee Tonight showing, ask "Now find dinner
-tonight". PASS = they get dinner results unaided (typing "dinner", or Home's Dinner pick). Looking for Dinner in the category row
-and stalling = USABILITY with the steps. Smallest fix = make Dinner reachable through the existing quick-pick / search-suggestion
-mechanism (proposal for owner approval); never a new category (V1 taxonomy frozen). Typed vs tile results compared in Quick pick (11).
+tonight". PASS = they get dinner results unaided (the search box's "Suggested activities", typing "dinner", or Home's Dinner pick).
+Record separately (owner: the fix exists, noticing it is not proven): did they tap the search box at all, did they see/understand
+"Suggested activities", did they hunt for Dinner in the filter chips or Browse rail first. Stalling = USABILITY with the steps; fix
+proposals stay wording/placement of the existing suggestions, never a new category (V1 taxonomy frozen) or a permanent row. Typed vs
+tile results compared in Quick pick (11).
 Discover lens watch (owner, 2026-10-25; USABILITY observation + PASS/FAIL for state): unprompted, ask the person to find
 "something to do this weekend", then "people to meet": (a) do they switch Things to Do <-> People, a type filter (Gatherings /
 Communities / Perks) and a time chip (Now / Today / This Weekend) without help, understanding each as a different view of the same
@@ -458,13 +460,17 @@ NAVIGATION BUG (record the build number + screenshot), never "old install". Buil
 build 86 (7d72d615) and later do not (no Gatherings route).
 Same check, Dinner (owner, 2026-10-26; build with commit 9b1c09c7 or later): Home -> Dinner Tonight. PASS = (6) Discover shows exactly
 "Dinner ✕" + Tonight selected, no "Foodie ✕" and no "“dinner” ✕" chip; (7) Dinner ✕ widens the results in place, Tonight stays selected,
-no Dinner chip left; (8) (corrected 2026-10-27, owner: Discover has NO in-place control to pick an activity today; the Gatherings tab's activity
-chip only shows what an entry carried and only clears) from Dinner Tonight again, go back to Home and tap another evening tile (Concert): the
-Discover tab (same mounted screen, no stacked page, no transition) now reads "Concert ✕" beside Tonight (Dinner gone), only Concert gatherings
-tonight, no hidden dinner filter (a Concert gathering without "dinner" in its title shows); Map pins and an empty result's "+ Start a …
-Gathering" say Concert (no leftover Dinner). On this Home path the entry REPLACES Discover's other filters by design (e.g. Outdoor set before
-is cleared): expected, never a FAIL. "Other filters kept" applies only to an in-Discover activity switch, which does not exist yet (proposal
-pending: activity suggestions in Discover's search box); if it ships before the session, (8) is rewritten to use it. (9) with no dinner gatherings tonight, the empty result reads
+no Dinner chip left; (8) (rewritten 2026-10-27, owner: the in-Discover activity switch now exists; build with the "activity suggestions"
+commit or later) from Dinner Tonight, first set one unrelated filter (e.g. Outdoor or Trending), then tap Discover's search box: under it
+"Suggested activities" appears (Gatherings tab only, only while the box is focused; never a permanent row). Type "cof" (or pick Coffee if
+listed) and tap Coffee: the chip reads "Coffee ✕" beside Tonight on the SAME Discover screen (Dinner gone, never "Dinner ✕" + "Coffee"
+together; no new screen, stacked page or transition), the search box is empty again and the keyboard closed; only Coffee gatherings tonight,
+no hidden dinner filter (a Coffee gathering without "dinner" in its title shows); Map pins and an empty result's "+ Start a … Gathering"
+say Coffee; Tonight AND the unrelated filter you set are still set (a reset = FAIL). Then the reverse: tap the box, type "din", tap Dinner:
+"Dinner ✕" + Tonight, same checks. Also: with the box focused and empty, every suggestion shown has a gathering behind it in the current
+results (a suggestion with nothing behind it = FAIL, invented supply); typing "bru" offers Brunch even when nothing loaded matches; typing a
+word and pressing Enter still runs the normal search; screen reader on: "Suggested activities" read as a heading, each suggestion as a
+button with its word. Not tested here: whether people NOTICE the search box offers this (that is the Dinner-in-Discover watch, unprompted). (9) with no dinner gatherings tonight, the empty result reads
 "+ Start a Dinner Gathering" and Create opens with "Dinner" in What (not "Foodie") and When = Tonight with today's date and "Pick a time"
 (owner 2026-10-27: no clock time filled in, Next blocked until a time is picked, a past time refused; no place or other settings pre-set).
 Also: Dinner ✕ first, then "+ Start a Gathering" = Create with Tonight and no activity; Today / This Weekend selected = no day carried. A Foodie or "dinner" chip on a verified build = FAIL

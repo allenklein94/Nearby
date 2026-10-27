@@ -198,6 +198,13 @@ export function quickPickActivityPairs() {
   return pairs;
 }
 
+// Every quick pick once, whatever the time of day (Discover's activity suggestions, owner 2026-10-27: never time-dependent).
+export function allQuickPicks() {
+  const seen = new Map();
+  for (const items of Object.values(QUICK_PROMPTS_BY_PERIOD)) for (const item of items) if (!seen.has(item.label)) seen.set(item.label, item);
+  return [...seen.values()];
+}
+
 export function getQuickPrompts(period = getTimePeriod()) {
   return QUICK_PROMPTS_BY_PERIOD[period] ?? QUICK_PROMPTS_BY_PERIOD.evening;
 }

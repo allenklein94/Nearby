@@ -30,7 +30,7 @@ import BusinessPreviewSheet from '../components/BusinessPreviewSheet';
 import PerkRedemptionPanel from '../components/PerkRedemptionPanel';
 import { listWithSelectedPerk } from '../utils/perkSelection';
 import { getTrail, subscribeTrail } from '../navigation/returnTrail';
-import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Alert, BackHandler } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Image, StyleSheet, SafeAreaView, Modal, FlatList, TextInput, ActivityIndicator, Alert, BackHandler, Keyboard } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Video } from 'expo-av';
 import { useFocusEffect } from '@react-navigation/native';
@@ -111,7 +111,8 @@ import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } 
 import { foundBlockShownIds, withoutFoundBlock } from '../utils/searchTopDedupe';
 import { matchesDateFilter, DATE_OPTIONS } from '../utils/gatheringDateFilter';
 import { quickOptionLabel } from '../i18n/optionLabels';
-import { applyGatheringFilters, gatheringFiltersFromParams, GATHERING_FILTER_DEFAULTS, hasActiveGatheringFilters, toggleForYou, selectCategory, pickedActivity, clearPick, createParamsFromGatheringFilters, PRICE_FILTER_OPTIONS, PLAN_KIND_FILTER_OPTIONS } from '../utils/gatheringFilters';
+import { activitySuggestions } from '../utils/activitySuggestions';
+import { applyGatheringFilters, gatheringFiltersFromParams, GATHERING_FILTER_DEFAULTS, hasActiveGatheringFilters, toggleForYou, selectCategory, selectActivity, pickedActivity, clearPick, createParamsFromGatheringFilters, PRICE_FILTER_OPTIONS, PLAN_KIND_FILTER_OPTIONS } from '../utils/gatheringFilters';
 import useMyInterests from '../hooks/useMyInterests';
 import { canonicalizeInterests } from '../constants/interestGraph';
 import { lightenHex } from '../utils/colorUtils';
@@ -411,6 +412,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   const [postingStory, setPostingStory] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState('');
+  // Owner 2026-10-27: the Gatherings tab's activity suggestions show only while the search box is focused (never a permanent row).
+  const [searchFocused, setSearchFocused] = useState(false);
   // Item 93: which result tab an All-view search is showing (Top Results until the person picks another).
   const [searchTab, setSearchTab] = useState('top');
   const [showMoreCategories, setShowMoreCategories] = useState(false);
@@ -1633,6 +1636,54 @@ export default function DiscoverHubScreen({ navigation, route }) {
       </TouchableOpacity>
     );
   }
+  // The search box back to empty: a changed search is a new ask (the saved one ends), as the ✕ in the box has always done.
+  function clearSearchBox() {
+    setSearchQuery('');
+    setSearchTab('top');
+    intentSearchRequestId.current += 1;
+    setIntentSearch(null);
+    endSearchSession();
+    clearDiscoverSurprise();
+  }
+
+  // Owner 2026-10-27: activity suggestions under the Gatherings tab's search box while it is focused (utils/activitySuggestions.js).
+  // A pick REPLACES the current activity in place (selectActivity: time, Trending, price, plan kind, Local, Outdoor/Indoor
+  // stay), the box clears and the keyboard closes; free text and Enter keep working as before.
+  function chooseSuggestedActivity(activity) {
+    setGatheringFilters((cur) => selectActivity(cur, activity));
+    clearSearchBox();
+    setSearchFocused(false);
+    Keyboard.dismiss();
+  }
+  function renderActivitySuggestions() {
+    const labelOf = (a) => (a.pick ? quickOptionLabel({ label: a.pick }, language) : names.tag(a.category));
+    // Supply for the empty box = the tab's list under every filter except the activity itself (never a count shown).
+    const supply = applyGatheringFilters(environmentGatherings, { ...gatheringFilters, pick: null, category: null, term: null, forYou: false }, { forYouCategories });
+    const suggestions = activitySuggestions({ text: searchQuery, gatherings: supply, filters: gatheringFilters, labelOf });
+    if (!suggestions.length) return null;
+    return (
+      <View style={{ marginBottom: spacing.sm }}>
+        <Text style={styles.suggestedActivitiesHeader} accessibilityRole="header">{t('ui.discover.suggestedActivities')}</Text>
+        <ScrollView horizontal keyboardShouldPersistTaps="handled" showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+          {suggestions.map((a) => {
+            const label = labelOf(a);
+            return (
+              <TouchableOpacity
+                key={a.key}
+                style={styles.filterChip}
+                onPress={() => chooseSuggestedActivity(a)}
+                accessibilityLabel={label}
+                accessibilityRole="button"
+              >
+                <Text style={styles.filterChipText} numberOfLines={1}>{`${a.icon} ${label}`}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
+    );
+  }
+
   function renderGatheringFilterRows() {
     const f = gatheringFilters;
     const set = (patch) => setGatheringFilters((cur) => ({ ...cur, ...patch }));
@@ -2599,19 +2650,14 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   clearDiscoverSurprise();
                 }}
                 onSubmitEditing={handleUnderstandSearch}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
                 returnKeyType="search"
                 accessibilityLabel={t('ui.discover.searchA11y')}
               />
               {searchQuery.length > 0 && (
                 <TouchableOpacity
-                  onPress={() => {
-                    setSearchQuery('');
-                    setSearchTab('top');
-                    intentSearchRequestId.current += 1;
-                    setIntentSearch(null);
-                    endSearchSession();
-                    clearDiscoverSurprise();
-                  }}
+                  onPress={clearSearchBox}
                   accessibilityLabel={t('ui.discover.clearSearchA11y')}
                   accessibilityRole="button"
                 >
@@ -2619,6 +2665,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                 </TouchableOpacity>
               )}
             </View>
+            {gatheringTabActive && searchFocused && renderActivitySuggestions()}
 
             <View style={styles.filterRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
@@ -3764,6 +3811,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   // Item 44: the screen's one visual hero -- taller, a slightly heavier
   // border, and a subtle card shadow, so it reads as the obvious place for
   // the eye to land instead of one pill among several similar ones.
+  suggestedActivitiesHeader: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', marginBottom: spacing.xs },
   searchBarWrap: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: colors.surface, borderRadius: radius.full,
     borderWidth: 1.5, borderColor: colors.border, paddingHorizontal: spacing.md, marginBottom: spacing.md,
