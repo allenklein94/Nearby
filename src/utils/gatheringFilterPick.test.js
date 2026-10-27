@@ -54,7 +54,7 @@ describe('the pick', () => {
   });
 
   test('Create gets the category and the person\'s word as the activity', () => {
-    expect(createParamsFromGatheringFilters({ ...dinner(), when: 'anytime' }, 'Dinner')).toEqual({ quickStartCategory: 'Foodie', quickStartTitle: 'Dinner' });
+    expect(createParamsFromGatheringFilters({ ...dinner(), when: 'anytime' }, 'Dinner')).toEqual({ quickStartCategory: 'Foodie', quickStartTitle: 'Dinner', quickStartActivity: 'Dinner' });
     expect(createParamsFromGatheringFilters({ ...GATHERING_FILTER_DEFAULTS, category: 'Coffee' }, 'Coffee')).toEqual({ quickStartCategory: 'Coffee', quickStartTitle: undefined });
     // Dinner ✕ keeps Tonight (it was the person's choice too), so Create still gets Tonight, with no activity.
     expect(createParamsFromGatheringFilters(clearPick(dinner()), null, new Date(2026, 9, 27, 17, 30))).toEqual({
@@ -66,7 +66,7 @@ describe('the pick', () => {
   test('a selected Tonight carries into Create as today\'s date, never a clock time', () => {
     const now = new Date(2026, 9, 27, 17, 30);
     expect(createParamsFromGatheringFilters(dinner(), 'Dinner', now)).toEqual({
-      quickStartCategory: 'Foodie', quickStartTitle: 'Dinner', quickStartWhenPreset: 'tonight', quickStartDateISO: '2026-10-27',
+      quickStartCategory: 'Foodie', quickStartTitle: 'Dinner', quickStartActivity: 'Dinner', quickStartWhenPreset: 'tonight', quickStartDateISO: '2026-10-27',
     });
     const late = createParamsFromGatheringFilters(dinner(), 'Dinner', new Date(2026, 9, 27, 23, 50));
     expect(late.quickStartDateISO).toBe('2026-10-27');

@@ -8,7 +8,8 @@
 //               feed's extra "top 20 in your stored profile area" cut is gone, so Trending means one measurable thing)
 //   price     = the host's declared price level (free / $ / $$ / $$$); undeclared is left out while a price is chosen
 //   planKind  = the host's declared party_type; undeclared is left out while a kind is chosen
-//   term      = a word an entry carried (a Home Quick Pick's "volleyball" inside Sports): the title or description contains it
+//   term      = a word an entry carried (a Home Quick Pick's "volleyball" inside Sports): the title or description contains it,
+//               or the gathering was started from the pick that word belongs to (its stored activity, owner 2026-10-27)
 //   local     = within LOCAL_FILTER_MILES (the feed's "Local" tier); off = everything Discover loaded (its wide tier)
 //   pick      = the Home Quick Pick the person tapped ("Dinner"), owner 2026-10-26: shown as ONE chip in its own words while
 //               category + term stay the internal matching (Foodie + "dinner"); removing it clears all three together
@@ -17,6 +18,7 @@ import { EXPERIENCE_PARTY_TYPE_OPTIONS } from '../constants/businessAttributes';
 import { matchesDateFilter, DATE_OPTIONS } from './gatheringDateFilter';
 import { attendeeTotal } from './gatheringFullness';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import { quickPickForActivity } from './timeContext';
 
 export const LOCAL_FILTER_MILES = 1;
 export const PRICE_FILTER_OPTIONS = [null, 'free', '$', '$$', '$$$'];
@@ -63,6 +65,8 @@ export function createParamsFromGatheringFilters(f, pickLabel = null, now = new 
   return {
     quickStartCategory: f?.category || undefined,
     quickStartTitle: pickedActivity(f) && pickLabel ? pickLabel : undefined,
+    // The pick itself (its label key, "Dinner"), kept on the gathering as its activity whatever the title becomes.
+    quickStartActivity: pickedActivity(f) && f.category ? f.pick : undefined,
     ...tonight,
   };
 }
@@ -74,6 +78,12 @@ export function gatheringsTabParams(filters = null) {
   return filters ? { ...GATHERINGS_TAB, gatheringFilters: { ...filters } } : { ...GATHERINGS_TAB };
 }
 
+function matchesTerm(g, term) {
+  const word = term.toLowerCase();
+  if (quickPickForActivity(g.interest_tag, g.activity)?.searchTerm === word) return true;
+  return `${g.title ?? ''} ${g.description ?? ''}`.toLowerCase().includes(word);
+}
+
 export function applyGatheringFilters(list, f, { forYouCategories = [] } = {}) {
   const filters = { ...GATHERING_FILTER_DEFAULTS, ...(f ?? {}) };
   return (list ?? []).filter((g) => {
@@ -81,7 +91,7 @@ export function applyGatheringFilters(list, f, { forYouCategories = [] } = {}) {
     if (filters.forYou ? !forYouCategories.includes(g.interest_tag) : (filters.category && g.interest_tag !== filters.category)) return false;
     if (filters.trending && attendeeTotal(g) < TRENDING_ATTENDANCE_MIN) return false;
     if (!matchesDateFilter(g.scheduled_at, filters.when)) return false;
-    if (filters.term && !`${g.title ?? ''} ${g.description ?? ''}`.toLowerCase().includes(filters.term.toLowerCase())) return false;
+    if (filters.term && !matchesTerm(g, filters.term)) return false;
     if (filters.price && g.price_level !== filters.price) return false;
     if (filters.planKind && g.party_type !== filters.planKind) return false;
     if (filters.local && !(typeof g.distanceMiles === 'number' && g.distanceMiles <= LOCAL_FILTER_MILES)) return false;

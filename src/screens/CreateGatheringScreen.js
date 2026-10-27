@@ -8,6 +8,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Aler
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { createGathering, isFirstGatheringHosted } from '../services/gatherings';
+import { gatheringActivityAtPublish } from '../utils/gatheringActivity';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { linkOccasionToPlan } from '../services/occasions';
 import { linkOccasionGroupPlanToPlan } from '../services/occasionGroupPlans';
@@ -160,6 +161,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [interestTag, setInterestTag] = useState(null);
+  // Owner 2026-10-27: the Quick Pick Create was opened from ("Dinner"); stored as the gathering's activity at publish.
+  const carriedActivity = route.params?.quickStartActivity ?? null;
   const [submitting, setSubmitting] = useState(false);
 
   const [visibility, setVisibility] = useState('everyone');
@@ -587,6 +590,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         title: title.trim(),
         description: description.trim() || null,
         interestTag,
+        activity: gatheringActivityAtPublish({ carried: carriedActivity, interestTag, title: title.trim(), description: description.trim() }),
         scheduledAt: scheduledAt.toISOString(),
         isPublic,
         customLocation,

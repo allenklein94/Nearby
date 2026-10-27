@@ -103,6 +103,10 @@ function ungrantedNewColumns(sql) {
 
 describe('item 146: precise gathering location is not client-readable', () => {
   const granted = grantedColumns();
+  // Columns added later carry their own grant in their own migration (the forward rule below); a client read may name them.
+  const grantedLater = fs.readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql') && f > GRANT_MIGRATION)
+    .flatMap((f) => grantedGatheringColumns(fs.readFileSync(path.join(MIGRATIONS, f), 'utf8')));
+  const readable = [...granted, ...grantedLater].filter((c) => !PRIVATE_COLUMNS.includes(c));
 
   test('the migration grants a column list without the point', () => {
     expect(granted.length).toBeGreaterThan(40);
@@ -116,7 +120,7 @@ describe('item 146: precise gathering location is not client-readable', () => {
       expect({ f: s.f, arg: s.arg, resolved: s.text !== undefined && s.text !== null }).toEqual({ f: s.f, arg: s.arg, resolved: true });
       expect({ f: s.f, star: s.text.includes('*') }).toEqual({ f: s.f, star: false });
       expect({ f: s.f, point: /precise_l(at|ng)/.test(s.text) }).toEqual({ f: s.f, point: false });
-      for (const c of topLevelColumns(s.text)) expect({ f: s.f, c, granted: granted.includes(c) }).toEqual({ f: s.f, c, granted: true });
+      for (const c of topLevelColumns(s.text)) expect({ f: s.f, c, granted: readable.includes(c) }).toEqual({ f: s.f, c, granted: true });
     }
   });
 

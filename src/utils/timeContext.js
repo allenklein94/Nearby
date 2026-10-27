@@ -164,13 +164,24 @@ const QUICK_PROMPTS_BY_PERIOD = {
   ],
 };
 
-// The quick pick a gathering answers to (owner, 2026-10-27): its category AND, for a pick with a word, that word in its title
-// or description: the same test Discover's pick filter applies (`applyGatheringFilters`'s term), so a Foodie gathering
-// called "Dinner" is Dinner wherever Discover would list it under Dinner. A pick without a word (Coffee, Concert) means its
-// category; none = null.
+// The quick pick a gathering answers to (owner, 2026-10-27). Activity != Category != Title: the pick the person started it
+// from is stored on the gathering (`activity`, migration 20270346: the pick's label key, set at creation, never changed by a
+// title edit), so a Dinner gathering retitled "Sam's Birthday" is still Dinner. Only a gathering without one (created before,
+// or not from a pick) falls back to the old reading: its category AND that pick's word in its title or description, the same
+// test Discover's pick filter applies. A pick without a word (Coffee, Concert) means its category; none = null.
+export function quickPickForActivity(category, activity) {
+  if (!category || !activity) return null;
+  for (const items of Object.values(QUICK_PROMPTS_BY_PERIOD)) {
+    for (const item of items) if (item.category === category && item.label === activity) return item;
+  }
+  return null;
+}
+
 export function quickPickForGathering(gathering) {
   const category = gathering?.interest_tag;
   if (!category) return null;
+  const stored = quickPickForActivity(category, gathering.activity);
+  if (stored) return stored;
   const text = `${gathering.title ?? ''} ${gathering.description ?? ''}`.toLowerCase();
   for (const items of Object.values(QUICK_PROMPTS_BY_PERIOD)) {
     for (const item of items) {
@@ -178,6 +189,13 @@ export function quickPickForGathering(gathering) {
     }
   }
   return null;
+}
+
+// Every (category, activity) pair a gathering may store: the database's check constraint lists the same pairs.
+export function quickPickActivityPairs() {
+  const pairs = [];
+  for (const items of Object.values(QUICK_PROMPTS_BY_PERIOD)) for (const item of items) pairs.push([item.category, item.label]);
+  return pairs;
 }
 
 export function getQuickPrompts(period = getTimePeriod()) {

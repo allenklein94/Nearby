@@ -452,11 +452,9 @@ Word watch (owner 2026-10-27, session A): the person's activity word must surviv
 -> publish -> Ask a business from the gathering -> request -> offer -> booked plan. Record each screen where "Foodie" (or any internal key) shows
 instead of "Dinner" (= USABILITY with a screenshot). The "From your gathering" card was FIXED 2026-10-27 (`gatheringActivityLabel`):
 expect "🏷️ Dinner" there; "Foodie" on a build with commit c7fa3e29 or later = FAIL. The business side keeps the category (it routes on it).
-Edited title (owner 2026-10-27, record only): edit that Dinner gathering's title so it no longer contains "dinner" (e.g. "Sam's birthday"),
-then Ask a business again. Expected as built: the card falls back to "Foodie" (the word is read from the title, the original pick is not stored).
-Record what shows + whether it confuses (= how visible the limitation is). Owner DECIDED 2026-10-27: a confirmed data-model limitation,
-fixed AFTER session A by storing the selected activity on the gathering (Activity != Category != Title); "Foodie" here is the expected
-as-built result on this build, recorded as a known limitation, never a new FAIL.
+Edited title (owner 2026-10-27; stored activity, migration 20270346): start a gathering from Discover's empty Dinner result
+("+ Start a Dinner Gathering"), publish, edit its title to "Sam's Birthday", then Ask a business again. PASS = the card still shows
+"🏷️ Dinner" and Discover's Dinner chip still lists it; "Foodie" on a build with the stored-activity commit or later = FAIL.
 Watch (no task, owner 2026-10-27): a tester who browses a category's results, finds nothing appealing and struggles to start their own
 (no hint given) = USABILITY with the steps. Never assume scrolling past results means they want to host.
 (10) Concert (owner, 2026-10-26; category maps directly, no extra word): Home -> Concert Tonight. PASS = Discover shows exactly
