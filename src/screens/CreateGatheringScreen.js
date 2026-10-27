@@ -35,7 +35,7 @@ import { canSkipWhatStep, startAfterWhatStep, capacityForPartySize } from '../ut
 import useMyInterests from '../hooks/useMyInterests';
 import { orderGroupsByInterests } from '../constants/interestGraph';
 import { VISIBILITY_OPTIONS } from '../constants/gatheringVisibility';
-import { WHEN_PRESETS, dateForPreset } from '../utils/whenPresets';
+import { WHEN_PRESETS, dateForPreset, presetLeavesTime } from '../utils/whenPresets';
 import { localDateFromKey, atMinutes } from '../utils/createStartTime';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -388,14 +388,21 @@ export default function CreateGatheringScreen({ navigation, route }) {
       if (route.params?.quickStartWhenISO) {
         setScheduledAt(new Date(route.params.quickStartWhenISO));
       } else if (day) {
-        setScheduledAt(atMinutes(day, 12 * 60)); // the picker's starting position only; timeNeeded keeps it unpicked
-        setTimeNeeded(true);
-        setTimeChoices(Array.isArray(route.params?.quickStartTimeChoices) ? route.params.quickStartTimeChoices : null);
+        leaveTimeOnDay(day, Array.isArray(route.params?.quickStartTimeChoices) ? route.params.quickStartTimeChoices : null);
+      } else if (presetLeavesTime(preset)) {
+        leaveTimeOnDay(new Date());
       } else {
         setScheduledAt(dateForPreset(preset));
       }
     }
   }, [route.params?.quickStartWhenPreset, route.params?.quickStartWhenISO, route.params?.quickStartDateISO]);
+
+  // A day with no time yet: the picker's starting position only; timeNeeded keeps it unpicked until the person picks.
+  function leaveTimeOnDay(day, choices = null) {
+    setScheduledAt(atMinutes(day, 12 * 60));
+    setTimeNeeded(true);
+    setTimeChoices(choices);
+  }
 
   function pickTimeOnDay(minutes) {
     Haptics.selectionAsync();
@@ -469,6 +476,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
       setShowPicker(true);
       return;
     }
+    if (presetLeavesTime(preset)) { leaveTimeOnDay(new Date()); return; }
     setScheduledAt(dateForPreset(preset));
   }
 

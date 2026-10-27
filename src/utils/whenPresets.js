@@ -13,6 +13,11 @@ export const WHEN_PRESETS = [
   { key: 'custom', icon: '🗓️', label: 'Pick a Date' },
 ];
 
+// Tonight sets the day only (owner, 2026-10-27): the person picks the clock time, on every path into Create.
+export function presetLeavesTime(preset) {
+  return preset === 'tonight';
+}
+
 export function dateForPreset(preset) {
   const now = new Date();
   if (preset === 'now') return new Date(now.getTime() + 15 * 60 * 1000);
