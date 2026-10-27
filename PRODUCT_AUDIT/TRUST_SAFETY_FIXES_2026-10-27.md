@@ -154,7 +154,7 @@ false "Suspended"); the admin uses the new build.
      `datingConsent` step 6 expected 0349's `id_verified` column and now accepts both states;
    - test push B (new server-only path): Expo ticket + receipt `ok`.
 4. NOT verified: arrival on the phone (owner to confirm "Nearby check (1 of 2)" / "(2 of 2)"); a signed-in real-API probe
-   (no dedicated test account exists); real Spotify sign-in (0 accounts use Spotify).
+   (no dedicated test account exists; ready as `src/qa/pushTokenPrivacySignedIn.live.js`, read-only, skips without an account); real Spotify sign-in (0 accounts use Spotify).
 5. Spotify (owner decision): own-row token access accepted for internal testing; before Spotify is enabled for external
    users, token refresh + storage move fully server-side so no client can read a refresh token.
 
