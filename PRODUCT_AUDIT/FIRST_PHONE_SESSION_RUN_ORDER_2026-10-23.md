@@ -444,7 +444,9 @@ Same check, Dinner (owner, 2026-10-26; build with commit 9b1c09c7 or later): Hom
 "Dinner ✕" + Tonight selected, no "Foodie ✕" and no "“dinner” ✕" chip; (7) Dinner ✕ widens the results in place, Tonight stays selected,
 no Dinner chip left; (8) from Dinner Tonight again, pick another category (e.g. Coffee): only Coffee gatherings tonight, no hidden dinner
 filter (a Coffee gathering without "dinner" in its title shows); (9) with no dinner gatherings tonight, the empty result reads
-"+ Start a Dinner Gathering" and Create opens with "Dinner" in What (not "Foodie") and nothing else pre-set (no day/time, place or other settings: Create asks the time as usual). A Foodie or "dinner" chip on a verified build = FAIL
+"+ Start a Dinner Gathering" and Create opens with "Dinner" in What (not "Foodie") and When = Tonight with today's date and "Pick a time"
+(owner 2026-10-27: no clock time filled in, Next blocked until a time is picked, a past time refused; no place or other settings pre-set).
+Also: Dinner ✕ first, then "+ Start a Gathering" = Create with Tonight and no activity; Today / This Weekend selected = no day carried. A Foodie or "dinner" chip on a verified build = FAIL
 with a screenshot; no code change before it is recorded.
 Watch (no task, owner 2026-10-27): a tester who browses a category's results, finds nothing appealing and struggles to start their own
 (no hint given) = USABILITY with the steps. Never assume scrolling past results means they want to host.

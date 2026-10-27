@@ -54,10 +54,16 @@ export function clearPick(f) {
 }
 
 // Create from an empty Gatherings result: the category, and the person's own words for the activity when a pick set it.
-export function createParamsFromGatheringFilters(f, pickLabel = null) {
+// A selected Tonight carries too (owner, 2026-10-27): Create's Tonight with today's date only, never a clock time, so Create
+// asks the time (the same day-only path as a named weekday). Other windows (Now, Today, This Weekend) carry nothing.
+export function createParamsFromGatheringFilters(f, pickLabel = null, now = new Date()) {
+  const tonight = f?.when === 'tonight'
+    ? { quickStartWhenPreset: 'tonight', quickStartDateISO: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}` }
+    : {};
   return {
     quickStartCategory: f?.category || undefined,
     quickStartTitle: pickedActivity(f) && pickLabel ? pickLabel : undefined,
+    ...tonight,
   };
 }
 

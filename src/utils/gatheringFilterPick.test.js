@@ -54,9 +54,37 @@ describe('the pick', () => {
   });
 
   test('Create gets the category and the person\'s word as the activity', () => {
-    expect(createParamsFromGatheringFilters(dinner(), 'Dinner')).toEqual({ quickStartCategory: 'Foodie', quickStartTitle: 'Dinner' });
+    expect(createParamsFromGatheringFilters({ ...dinner(), when: 'anytime' }, 'Dinner')).toEqual({ quickStartCategory: 'Foodie', quickStartTitle: 'Dinner' });
     expect(createParamsFromGatheringFilters({ ...GATHERING_FILTER_DEFAULTS, category: 'Coffee' }, 'Coffee')).toEqual({ quickStartCategory: 'Coffee', quickStartTitle: undefined });
-    expect(createParamsFromGatheringFilters(clearPick(dinner()), null)).toEqual({ quickStartCategory: undefined, quickStartTitle: undefined });
+    // Dinner ✕ keeps Tonight (it was the person's choice too), so Create still gets Tonight, with no activity.
+    expect(createParamsFromGatheringFilters(clearPick(dinner()), null, new Date(2026, 9, 27, 17, 30))).toEqual({
+      quickStartCategory: undefined, quickStartTitle: undefined, quickStartWhenPreset: 'tonight', quickStartDateISO: '2026-10-27',
+    });
+  });
+
+  // Owner, 2026-10-27: a selected Tonight carries as the day only; the exact time and the place stay the person's to choose.
+  test('a selected Tonight carries into Create as today\'s date, never a clock time', () => {
+    const now = new Date(2026, 9, 27, 17, 30);
+    expect(createParamsFromGatheringFilters(dinner(), 'Dinner', now)).toEqual({
+      quickStartCategory: 'Foodie', quickStartTitle: 'Dinner', quickStartWhenPreset: 'tonight', quickStartDateISO: '2026-10-27',
+    });
+    const late = createParamsFromGatheringFilters(dinner(), 'Dinner', new Date(2026, 9, 27, 23, 50));
+    expect(late.quickStartDateISO).toBe('2026-10-27');
+    for (const p of [createParamsFromGatheringFilters(dinner(), 'Dinner', now), late]) {
+      expect(p).not.toHaveProperty('quickStartWhenISO');
+      expect(Object.keys(p).some((k) => /location|place/i.test(k))).toBe(false);
+    }
+    for (const when of ['anytime', 'now', 'today', 'weekend']) {
+      const p = createParamsFromGatheringFilters({ ...GATHERING_FILTER_DEFAULTS, category: 'Concerts', when }, null, now);
+      expect(p).not.toHaveProperty('quickStartWhenPreset');
+      expect(p).not.toHaveProperty('quickStartDateISO');
+    }
+  });
+
+  test('Create takes a carried day without a time as "pick a time" (no 7 PM filled in)', () => {
+    const create = read('screens/CreateGatheringScreen.js');
+    expect(create).toMatch(/const day = localDateFromKey\(route\.params\?\.quickStartDateISO\);/);
+    expect(create).toMatch(/setTimeNeeded\(true\);/);
   });
 
   test('every Home quick pick has a word in the person\'s language', () => {
