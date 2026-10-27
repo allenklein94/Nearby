@@ -37,6 +37,8 @@ d('N1: tokens through the real signed-in API (read-only)', () => {
     expect(star.error).toBeNull();
     // eslint-disable-next-line no-console
     console.log({ profilesReadable: named.data.length, othersReadable: named.data.filter((r) => r.id !== userId).length });
+    // A pass is only meaningful if the account really sees other people's rows (else "no token" proves nothing).
+    expect(named.data.filter((r) => r.id !== userId).length).toBeGreaterThan(0);
     expect(leaked(named.data)).toBe(0);
     expect(leaked(star.data)).toBe(0);
   }, 30000);
