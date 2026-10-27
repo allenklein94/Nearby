@@ -165,6 +165,8 @@ USABILITY with the exact lens, wording fix proposed first; no new screens, tabs 
 many chips/controls competing)? Record which controls they ignore or hesitate over; crowding = simplify the visible controls or
 wording first, never add or remove screens. Gatherings tab (owner, 2026-10-25): note especially whether the second chip row
 (For you, Trending, Local, Outdoor, Indoor, Free/$/$$/$$$, plan kinds: 15+ chips) makes people hunt, esp. on a small phone.
+(d) Friends watch (owner 2026-10-27, no task given): does anyone look for a way to see only gatherings friends are going to or
+hosting? Struggle = USABILITY with the steps (a Friends filter is considered only on this evidence). No "My Plans" in Discover.
 CONDITIONAL FIX, NOT APPROVED TO BUILD (only if (c) confirms Gatherings crowding; layout unchanged until then): keep the
 day/time row + a FIXED visible set For you, Local, Outdoor, Indoor; Trending, Price and Plan kind move under ONE "More filters"
 chip that expands in place on Discover; an active hidden filter stays visible + removable (✕) until removed; "More filters" shows
