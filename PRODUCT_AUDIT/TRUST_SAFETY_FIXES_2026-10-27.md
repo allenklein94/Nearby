@@ -153,7 +153,8 @@ false "Suspended"); the admin uses the new build.
      full run 716/727: the 11 failures are `trustSafety` (tests 0348-0353, not deployed; 11/11 with the prelude);
      `datingConsent` step 6 expected 0349's `id_verified` column and now accepts both states;
    - test push B (new server-only path): Expo ticket + receipt `ok`.
-4. NOT verified: arrival on the phone (owner to confirm "Nearby check (1 of 2)" / "(2 of 2)"); a signed-in real-API probe
+4. Push delivery VERIFIED: the owner confirmed both "Nearby check (1 of 2)" and "(2 of 2)" appeared on the iPhone
+   (2026-10-27). NOT verified: a signed-in real-API probe
    (no dedicated test account exists; ready as `src/qa/pushTokenPrivacySignedIn.live.js`, read-only, skips without an account); real Spotify sign-in (0 accounts use Spotify).
 5. Spotify NOT VERIFIED (separate requirement, owner 2026-10-27): no account has ever connected Spotify, so neither a real
    connection (sign-in, refresh, reading its own tokens) nor isolation with populated rows has been tested; the signed-in
