@@ -187,6 +187,9 @@ not re-centred on you; type a NEW search, then Map: it starts fresh (default reg
 selected filters and chips remain unchanged, and the List displays the same eligible results as before switching. Any unexplained
 difference is a FAIL (owner, 2026-10-27). An unrelated business pin or a reset with the
 same search = FAIL (functional; fix in `utils/discoverBusinesses.js` / `utils/mapRegionMemory.js`).
+(c) Toggle findability (owner, 2026-10-27; USABILITY, observation only, session B, unprompted): does the person notice the
+🗺️ / 📋 button, understand it switches the same results between list and map, and switch without hesitation? Missed or
+misread = USABILITY; fix = a labelled "List | Map" control in the same place (no screen, filter or navigation change).
 
 Activity watch (owner, 2026-10-25; observation only): on Activity, can the person tell what needs their answer (Needs Your
 Attention: invitations, join requests) from what is only informational (Today, Earlier)? Ask "Which of these do you need to do
