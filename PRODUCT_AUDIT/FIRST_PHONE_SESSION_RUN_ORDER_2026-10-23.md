@@ -164,7 +164,9 @@ wording "From Nearby Businesses", approval + 11 languages); never a merge, scree
 Dinner-in-Discover watch (owner 2026-10-27, session B, no hint): already on Discover with Coffee Tonight showing, ask "Now find dinner
 tonight". PASS = they get dinner results unaided (the search box's "Suggested activities", typing "dinner", or Home's Dinner pick).
 Record separately (owner: the fix exists, noticing it is not proven): did they tap the search box at all, did they see/understand
-"Suggested activities", did they hunt for Dinner in the filter chips or Browse rail first. Stalling = USABILITY with the steps; fix
+"Suggested activities", did they hunt for Dinner in the filter chips or Browse rail first, and (owner 2026-10-27) did they pick
+from the suggestions or type the word and press Enter (Enter with a chip set = the old chip AND the word, e.g. Coffee ✕ + "dinner" =
+usually empty: record what they expected; repeated type+Enter = evidence to improve that interaction, nothing changed before). Stalling = USABILITY with the steps; fix
 proposals stay wording/placement of the existing suggestions, never a new category (V1 taxonomy frozen) or a permanent row. Typed vs
 tile results compared in Quick pick (11).
 Discover lens watch (owner, 2026-10-25; USABILITY observation + PASS/FAIL for state): unprompted, ask the person to find
