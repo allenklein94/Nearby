@@ -183,7 +183,9 @@ recommendations, and Home itself shows no made-up pick (FAIL). Period-boundary b
 Map consistency watch (owner, 2026-10-25; PASS/FAIL, seeded businesses, new build only): (a) on Discover All, type "kayak" (or pick
 Outdoor), switch to Map: business pins = only the businesses the list would show for that search / setting (Driftwood yes, Harbor
 Coffee no); with Open now on, only confirmed-open ones. (b) On Map, pan somewhere else, switch to List, back to Map: the same area,
-not re-centred on you; type a NEW search, then Map: it starts fresh (default region). An unrelated business pin or a reset with the
+not re-centred on you; type a NEW search, then Map: it starts fresh (default region). After switching List → Map → List, all
+selected filters and chips remain unchanged, and the List displays the same eligible results as before switching. Any unexplained
+difference is a FAIL (owner, 2026-10-27). An unrelated business pin or a reset with the
 same search = FAIL (functional; fix in `utils/discoverBusinesses.js` / `utils/mapRegionMemory.js`).
 
 Activity watch (owner, 2026-10-25; observation only): on Activity, can the person tell what needs their answer (Needs Your
