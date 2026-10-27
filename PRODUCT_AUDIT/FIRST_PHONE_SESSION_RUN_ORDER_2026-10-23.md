@@ -451,7 +451,7 @@ with a screenshot; no code change before it is recorded.
 Word watch (owner 2026-10-27, session A): the person's activity word must survive every step: Dinner Tonight -> "+ Start a Dinner Gathering"
 -> publish -> Ask a business from the gathering -> request -> offer -> booked plan. Record each screen where "Foodie" (or any internal key) shows
 instead of "Dinner" (= USABILITY with a screenshot). The "From your gathering" card was FIXED 2026-10-27 (`gatheringActivityLabel`):
-expect "🏷️ Dinner" there; "Foodie" on a build with commit 2026-10-27 or later = FAIL. The business side keeps the category (it routes on it).
+expect "🏷️ Dinner" there; "Foodie" on a build with commit c7fa3e29 or later = FAIL. The business side keeps the category (it routes on it).
 Watch (no task, owner 2026-10-27): a tester who browses a category's results, finds nothing appealing and struggles to start their own
 (no hint given) = USABILITY with the steps. Never assume scrolling past results means they want to host.
 (10) Concert (owner, 2026-10-26; category maps directly, no extra word): Home -> Concert Tonight. PASS = Discover shows exactly
