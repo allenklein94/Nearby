@@ -458,10 +458,13 @@ NAVIGATION BUG (record the build number + screenshot), never "old install". Buil
 build 86 (7d72d615) and later do not (no Gatherings route).
 Same check, Dinner (owner, 2026-10-26; build with commit 9b1c09c7 or later): Home -> Dinner Tonight. PASS = (6) Discover shows exactly
 "Dinner ✕" + Tonight selected, no "Foodie ✕" and no "“dinner” ✕" chip; (7) Dinner ✕ widens the results in place, Tonight stays selected,
-no Dinner chip left; (8) from Dinner Tonight again, pick another category (e.g. Coffee): the chip now reads "Coffee ✕" beside Tonight on the SAME Discover screen (Dinner gone,
-no new screen, no stacked page, no transition; owner 2026-10-27), only Coffee gatherings tonight, no hidden dinner
-filter (a Coffee gathering without "dinner" in its title shows); after the switch also check (owner 2026-10-27) that Map pins and an empty result's
-"+ Start a … Gathering" say Coffee (no leftover Dinner), and that another filter set before the switch (e.g. Outdoor) is still set unless you changed it; (9) with no dinner gatherings tonight, the empty result reads
+no Dinner chip left; (8) (corrected 2026-10-27, owner: Discover has NO in-place control to pick an activity today; the Gatherings tab's activity
+chip only shows what an entry carried and only clears) from Dinner Tonight again, go back to Home and tap another evening tile (Concert): the
+Discover tab (same mounted screen, no stacked page, no transition) now reads "Concert ✕" beside Tonight (Dinner gone), only Concert gatherings
+tonight, no hidden dinner filter (a Concert gathering without "dinner" in its title shows); Map pins and an empty result's "+ Start a …
+Gathering" say Concert (no leftover Dinner). On this Home path the entry REPLACES Discover's other filters by design (e.g. Outdoor set before
+is cleared): expected, never a FAIL. "Other filters kept" applies only to an in-Discover activity switch, which does not exist yet (proposal
+pending: activity suggestions in Discover's search box); if it ships before the session, (8) is rewritten to use it. (9) with no dinner gatherings tonight, the empty result reads
 "+ Start a Dinner Gathering" and Create opens with "Dinner" in What (not "Foodie") and When = Tonight with today's date and "Pick a time"
 (owner 2026-10-27: no clock time filled in, Next blocked until a time is picked, a past time refused; no place or other settings pre-set).
 Also: Dinner ✕ first, then "+ Start a Gathering" = Create with Tonight and no activity; Today / This Weekend selected = no day carried. A Foodie or "dinner" chip on a verified build = FAIL
