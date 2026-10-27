@@ -670,6 +670,8 @@ recorded on a real device (built; tests, the `planComplete` journey and parse ch
 
 **Test debt (owner, 2026-10-25), separate task, not started:** `src/utils/askUnderstanding.benchmark.test.js` has 4 date-dependent cases ("Saturday" asks: daughter's birthday, bowling, wine tasting, owner's two examples) that fail depending on the run date; fix = freeze the clock in that suite (convention: tests that depend on "now" freeze it), no resolver change.
 
+**Trust & safety audit (owner, 2026-10-27) DONE, read-only, NOTHING BUILT, owner decisions pending:** `PRODUCT_AUDIT/TRUST_SAFETY_AUDIT_2026-10-27.md`. Launch blockers PROVEN in rolled-back transactions: B1 any user can set their own `photo_verified` (+ insert an `approved` verification row); B2 admin "Suspend User" updates 0 rows yet says "Suspended". Also B3 `photo_verified` = photo screening + ID approval + suspension in one flag (the "✓ Verified" badge), B4 ID/selfie images kept forever after review, B5 email sign-up open at the API (no phone; 4 of 8 accounts have none). Recommended policy: ID verification required for Dating discovery (after B1+B3), not for hosting or messaging at launch. Fixes 1-8 there each need owner approval; device scoring + vendors stay deferred.
+
 **Blocked on the owner:**
 - **Anthropic credit:** every AI edge function returns 500 ("credit balance is too low"). Never run live:
   the intent extractor, offer/creative/logo/video screening (owner-typed content fails closed to "Try
