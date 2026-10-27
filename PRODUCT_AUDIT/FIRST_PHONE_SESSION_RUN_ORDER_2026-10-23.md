@@ -456,6 +456,9 @@ filter (a Coffee gathering without "dinner" in its title shows); (9) with no din
 (owner 2026-10-27: no clock time filled in, Next blocked until a time is picked, a past time refused; no place or other settings pre-set).
 Also: Dinner ✕ first, then "+ Start a Gathering" = Create with Tonight and no activity; Today / This Weekend selected = no day carried. A Foodie or "dinner" chip on a verified build = FAIL
 with a screenshot; no code change before it is recorded.
+Tonight-path watch (owner 2026-10-27, confirmed issue): then open Create directly and tap its own Tonight button: it still fills 7 PM
+(`dateForPreset`), while the Discover path leaves "Pick a time". Record whether testers notice or misunderstand the difference (USABILITY with
+the steps); not a FAIL. Fix (Tonight never fills a clock time on either path) revisited after session A, never before the build.
 Word watch (owner 2026-10-27, session A): the person's activity word must survive every step: Dinner Tonight -> "+ Start a Dinner Gathering"
 -> publish -> Ask a business from the gathering -> request -> offer -> booked plan. Record each screen where "Foodie" (or any internal key) shows
 instead of "Dinner" (= USABILITY with a screenshot). The "From your gathering" card was FIXED 2026-10-27 (`gatheringActivityLabel`):
