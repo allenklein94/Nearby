@@ -156,9 +156,10 @@ gatherings); close it: Discover's previous filter, view and scroll are back. The
 "🔴 Happening Nearby" is a business-moments row inside Discover. A separate Happening Nearby/gatherings SCREEN on the new build = FAIL
 (functional); results from build 86 or older don't count (SETUP-BLOCKED).
 Name watch (owner 2026-10-27, session B, before they tap): point at "Happening Now" and "🔴 Happening Nearby" and ask "What do you expect
-to see if you tap this one?" for each. Gatherings to join now vs businesses' own posts = PASS; treating them as the same thing = USABILITY
-(quote their words). A fix renames the business-moments row only (wording proposal for owner approval, e.g. "From nearby businesses";
-11 languages); never a merge, screen or architecture change.
+to see if you tap this one?" for each. Gatherings to join now vs businesses' own posts, in any words ("things I can go do right now" / "updates from local businesses")
+= PASS; treating them as the same thing = USABILITY (quote their words). One confused tester = investigate, not a rename; a rename needs
+repeated confusion or a misunderstanding that changes where they go. A fix renames the business-moments row only (owner's preferred
+wording "From Nearby Businesses", approval + 11 languages); never a merge, screen or architecture change.
 
 Discover lens watch (owner, 2026-10-25; USABILITY observation + PASS/FAIL for state): unprompted, ask the person to find
 "something to do this weekend", then "people to meet": (a) do they switch Things to Do <-> People, a type filter (Gatherings /
