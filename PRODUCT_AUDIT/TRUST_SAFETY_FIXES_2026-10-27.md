@@ -135,6 +135,29 @@ column only for that error; guard in `idVerifiedColumn.test.js` (every client re
 Therefore: external users only on the new build after the full set is live (old builds keep the misleading badge and the
 false "Suspended"); the admin uses the new build.
 
+## N1 deployed (2026-10-27, owner approved)
+
+1. `send-push` v25 -> v26 (live v25 = repo before N1, bundler formatting only). Test push A (old column path): Expo ticket
+   + receipt `ok`.
+2. `20270347` via `deploy.js`: applied 2026-10-27 23:32:38 UTC, sha 568a1c0f…, commit a0976a3d, ledger row recorded;
+   `migration:status` agrees.
+3. Production checks:
+   - tokens: 3/3 in `private.push_tokens`, md5 identical to the pre-deploy snapshot; 0 tokens left in `profiles` (constraint
+     `profiles_client_secrets_never_stored` present);
+   - permissions (catalog): anon + authenticated have no usage on `private`, no SELECT on `push_tokens`, no EXECUTE on
+     `push_token_for_delivery` (service role only); `spotify_connections` = one policy, own row, authenticated only;
+   - real API, signed out (public key): profiles / people_visible_to_me / spotify_connections / the reader = 42501, `private`
+     not exposed (PGRST106);
+   - `people_visible_to_me` still lists the old columns, but they come from `profiles` and are always NULL;
+   - journeys on prod without prelude: `pushTokenPrivacy` 6/6, `appVersionCompatibility` 4/4 (build 86 + new build),
+     full run 716/727: the 11 failures are `trustSafety` (tests 0348-0353, not deployed; 11/11 with the prelude);
+     `datingConsent` step 6 expected 0349's `id_verified` column and now accepts both states;
+   - test push B (new server-only path): Expo ticket + receipt `ok`.
+4. NOT verified: arrival on the phone (owner to confirm "Nearby check (1 of 2)" / "(2 of 2)"); a signed-in real-API probe
+   (no dedicated test account exists); real Spotify sign-in (0 accounts use Spotify).
+5. Spotify (owner decision): own-row token access accepted for internal testing; before Spotify is enabled for external
+   users, token refresh + storage move fully server-side so no client can read a refresh token.
+
 ## Deployment plan (each step needs its own approval; nothing done)
 
 1. **`send-push` first** (before 20270347, or every push stops: the old function would read the now-empty column).
