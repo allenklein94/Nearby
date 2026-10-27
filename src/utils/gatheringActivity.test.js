@@ -66,4 +66,11 @@ describe('one list of pairs', () => {
     const src = fs.readFileSync(path.join(__dirname, '../services/gatherings.js'), 'utf8');
     expect(src).toMatch(/const SAFE_GATHERING_FIELDS = '[^']*\bactivity'/);
   });
+  it('business routing keeps the category: the gathering request sends interest_tag, never the activity', () => {
+    const ask = fs.readFileSync(path.join(__dirname, '../screens/AskBusinessScreen.js'), 'utf8');
+    const svc = fs.readFileSync(path.join(__dirname, '../services/businessFulfillment.js'), 'utf8');
+    expect(ask).toMatch(/setCategory\(\(c\) => c \?\? g\.interest_tag\)/);
+    expect(ask).not.toMatch(/\.activity\b/);
+    expect(svc).not.toMatch(/\bactivity\b/);
+  });
 });
