@@ -449,7 +449,8 @@ NAVIGATION BUG (record the build number + screenshot), never "old install". Buil
 build 86 (7d72d615) and later do not (no Gatherings route).
 Same check, Dinner (owner, 2026-10-26; build with commit 9b1c09c7 or later): Home -> Dinner Tonight. PASS = (6) Discover shows exactly
 "Dinner ✕" + Tonight selected, no "Foodie ✕" and no "“dinner” ✕" chip; (7) Dinner ✕ widens the results in place, Tonight stays selected,
-no Dinner chip left; (8) from Dinner Tonight again, pick another category (e.g. Coffee): only Coffee gatherings tonight, no hidden dinner
+no Dinner chip left; (8) from Dinner Tonight again, pick another category (e.g. Coffee): the chip now reads "Coffee ✕" beside Tonight on the SAME Discover screen (Dinner gone,
+no new screen, no stacked page, no transition; owner 2026-10-27), only Coffee gatherings tonight, no hidden dinner
 filter (a Coffee gathering without "dinner" in its title shows); (9) with no dinner gatherings tonight, the empty result reads
 "+ Start a Dinner Gathering" and Create opens with "Dinner" in What (not "Foodie") and When = Tonight with today's date and "Pick a time"
 (owner 2026-10-27: no clock time filled in, Next blocked until a time is picked, a past time refused; no place or other settings pre-set).
