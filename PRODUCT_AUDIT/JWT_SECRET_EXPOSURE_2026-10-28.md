@@ -133,6 +133,13 @@ copy of the earlier conversation, now harmless. Post-revocation 24 h watch: revi
 (fires only if this session is open; otherwise ask for it): HS256 requests (any 2xx = escalate), 401 rates, cron, push outbox,
 re-run of both check scripts.
 
+**Interim check (2026-10-28 23:20 UTC, read-only, after a codespace restart lost the in-session schedule):** gateway logs
+23:10:30-23:20: 15 requests, all this session's own post-revocation checks + one edge-runtime `auth/v1/user`, 0 HS256 user/API
+tokens (the one HS256 string seen is Storage's own signed-URL signature, a separate key, 60 s expiry); cron 24 runs succeeded,
+0 failed; `net._http_response` non-2xx since 23:10 = 0; the 23:08 + 23:11 test pushes: send-push 200, Expo `ok`. Outbox rows
+stay `queued` after a 200 (all 5 rows in the table, incl. the 2026-10-20 one): pre-existing, not caused by the revocation, left as
+is. End-of-watch review re-scheduled in-session for 2026-10-29 23:19 UTC (lost again on another restart: then ask for it).
+
 ## Exploitation check (2026-10-28 ~23:10 UTC; owner: escalate at once on any sign of use)
 
 Source: API gateway logs (Management API `analytics/endpoints/logs`, ClickHouse table `logs`, `source = 'edge_logs'`, one
