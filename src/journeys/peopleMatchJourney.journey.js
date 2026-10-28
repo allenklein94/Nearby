@@ -114,15 +114,15 @@ d('journey (owner item 86): a typed people ask -> People mode, the right Dating/
       v_a uuid := '${p[0].id}'; v_far uuid := '${p[1].id}'; v_near uuid := '${p[2].id}'; v_rows jsonb;`, `
   ${actorsSql({ people: ['v_a', 'v_far', 'v_near'] })}
   -- three people opted into friend discovery, no prior relation between them (all rolled back). The far one shares an interest,
-  -- so the server ranks it FIRST; the near one (under 3 mi) is the one "tonight" must lead with.
+  -- so the server ranks it FIRST; the near one (same 0.1-degree bucket, as the app writes it) is the one "tonight" must lead with.
   perform set_config('app.trusted_update', 'on', true);
   delete from friendships where (user_a = v_a and user_b in (v_far, v_near)) or (user_b = v_a and user_a in (v_far, v_near));
   delete from matches where (user_a = v_a and user_b in (v_far, v_near)) or (user_b = v_a and user_a in (v_far, v_near));
   delete from friend_discovery_swipes where from_user = v_a and to_user in (v_far, v_near);
   delete from blocks where (blocker_id = v_a and blocked_id in (v_far, v_near)) or (blocked_id = v_a and blocker_id in (v_far, v_near));
-  update profiles set open_to_friend_discovery = true, wide_area = '40.00,-75.00', interests = array['Pickleball'] where id = v_a;
-  update profiles set open_to_friend_discovery = true, wide_area = '40.00,-75.10', interests = array['Pickleball'] where id = v_far;
-  update profiles set open_to_friend_discovery = true, wide_area = '40.00,-75.01', interests = array[]::text[] where id = v_near;
+  update profiles set open_to_friend_discovery = true, wide_area = '40.0,-75.0', interests = array['Pickleball'] where id = v_a;
+  update profiles set open_to_friend_discovery = true, wide_area = '40.0,-75.1', interests = array['Pickleball'] where id = v_far;
+  update profiles set open_to_friend_discovery = true, wide_area = '40.0,-75.0', interests = array[]::text[] where id = v_near;
   perform set_config('request.jwt.claims', json_build_object('sub', v_a, 'role', 'authenticated')::text, true);
   select coalesce(jsonb_agg(to_jsonb(c)), '[]'::jsonb) into v_rows
     from get_friend_discovery_candidates(200) c where c.id in (v_far, v_near);

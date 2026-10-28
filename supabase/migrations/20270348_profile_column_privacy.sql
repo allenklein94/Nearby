@@ -262,3 +262,9 @@ grant select (id, display_name, bio, photo_url, photo_verified, is_premium, crea
               profile_hidden, basics, prompts, relationship_intention, read_receipts_enabled, women_message_first,
               favorite_tracks, voice_intro_path, connection_goal, open_to_friend_discovery)
   on public.profiles to authenticated;
+
+-- 7. wide_area stays in the Dating view (owner, 2026-10-28) only as the coarse 0.1-degree bucket the app writes
+-- (wideAreaLabel in services/proximity.js): the database refuses anything finer, so no client can put exact coordinates
+-- there for daters to read. Every production value already has this shape (checked 2026-10-28).
+alter table public.profiles add constraint profiles_wide_area_coarse
+  check (wide_area is null or wide_area ~ '^-?[0-9]{1,3}(\.[0-9])?,-?[0-9]{1,3}(\.[0-9])?$');

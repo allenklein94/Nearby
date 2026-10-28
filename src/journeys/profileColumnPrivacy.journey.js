@@ -111,6 +111,8 @@ d('journey: another person reads only public profile columns (N6)', () => {
       'birthdate', v_out->0->>'birthdate', 'timezone', v_out->0->>'timezone', 'has_admin_flag', v_out->0 ? 'is_admin')`)}
   ${user('own_edit_private', 'v_a', `update profiles set timezone = 'America/Chicago', cuisine_preferences = array['mexican'], bio = 'mine' where id = v_a; get diagnostics v_n = row_count`, 'v_n')}
   ${rec('own_edit_saved', `(select jsonb_build_object('tz', timezone, 'cuisine', cuisine_preferences, 'bio', bio) from profiles where id = v_a)`)}
+  ${user('wide_area_precise', 'v_a', `update profiles set wide_area = '26.5512,-80.0634' where id = v_a`)}
+  ${user('wide_area_coarse', 'v_a', `update profiles set wide_area = '26.6,-80.1' where id = v_a; get diagnostics v_n = row_count`, 'v_n')}
   ${user('edit_other', 'v_a', `update profiles set bio = 'hijack', timezone = 'UTC' where id = v_b; get diagnostics v_n = row_count`, 'v_n')}
   ${rec('edit_other_effect', `(select jsonb_build_object('bio', bio, 'tz', timezone) from profiles where id = v_b)`)}
   ${user('own_update_returning_private', 'v_a', `update profiles set bio = 'again' where id = v_a returning birthdate::text into v_col`, 'v_col')}
@@ -238,6 +240,9 @@ d('journey: another person reads only public profile columns (N6)', () => {
     expect(data('own_edit_private')).toBe(1);
     expect(data('own_edit_saved')).toEqual({ tz: 'America/Chicago', cuisine: ['mexican'], bio: 'mine' });
     expect(data('edit_other')).toBe(0);
+    // Dating's wide_area: only the coarse 0.1-degree bucket is accepted (exact coordinates refused after N6).
+    expect(data('wide_area_coarse')).toBe(1);
+    if (n6()) expect(code('wide_area_precise')).toBe('23514');
     expect(data('edit_other_effect')).toEqual({ bio: null, tz: 'Europe/Paris' });
     expect(data('signup_insert')).toBe('ok');
     expect(data('signup_saved')).toEqual({ birthdate: '1999-09-09', motivations: ['Make new friends'] });

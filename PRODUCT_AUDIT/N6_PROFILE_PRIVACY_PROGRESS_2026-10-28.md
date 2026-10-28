@@ -77,6 +77,14 @@ Production stays unchanged until the owner separately approves the deploy.
 Rollback: `scripts/rollback/20270348_profile_column_privacy.rollback.sql` (proven: apply+rollback == prod fingerprint);
 rolling back reopens the exposure.
 
-## Open (owner decisions, not blockers for the migration itself)
-- Dating view still returns `wide_area` (coarse area, ~0.1 deg) for opted-in Dating people (Browse filters on it).
+## wide_area decision (owner, 2026-10-28) BUILT
+- Dating view keeps `wide_area` (Browse filters on it), but 0348 section 7 adds check `profiles_wide_area_coarse`: only the
+  0.1-degree bucket the app writes (`wideAreaLabel`), so no client can store exact coordinates there for daters to read.
+  Prod: 2 values set, 0 violate it. Journey `profileColumnPrivacy`: coarse write accepted, precise write refused (23514) after N6;
+  two journey fixtures with 2-decimal values corrected to the app's shape. Rollback drops the constraint (apply+rollback in a
+  rolled-back transaction: constraint, helpers and table SELECT back to prod). Journeys: 0348-0354 prelude 740/740; changed
+  journeys 43/43 with no prelude and with 0348 alone; Jest 519/7058. From-scratch replay NOT re-run for this addition
+  (last replay predates it).
+
+## Open
 - Not verifiable before deploy: the real API after 0348 and the app on a phone.

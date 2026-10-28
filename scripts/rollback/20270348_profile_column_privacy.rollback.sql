@@ -308,3 +308,5 @@ drop function if exists public.partner_owner_blocked_with_me(uuid);
 drop function if exists public.my_gender_is_woman();
 drop function if exists public.my_is_premium();
 drop function if exists public.my_managed_partner_id();
+-- 5. The coarse wide_area check.
+alter table public.profiles drop constraint if exists profiles_wide_area_coarse;
