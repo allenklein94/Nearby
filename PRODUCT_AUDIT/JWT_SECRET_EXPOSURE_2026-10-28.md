@@ -150,7 +150,7 @@ on the owner's iPhone (owner confirmed). End-of-watch review re-scheduled in-ses
 | 3 | Edge functions | send-push with the secret key reached its body validation (400); read-offer-creative as user 400 "Missing partnerId", signed out 401; function log errors since 23:10 = 0 (21 lines), function 5xx = 0 |
 | 4 | Scheduled jobs since 23:10:17 | 35 succeeded, 0 failed |
 | 5 | Background requests (`net._http_response`) since 23:10:17 | 2, 0 non-2xx/errors |
-| 6 | Push | 23:28 UTC test through `_send_push`: send-push 200, Expo `ok` (on-phone: owner to confirm; the 23:22 one was confirmed) |
+| 6 | Push | 23:28 UTC test through `_send_push`: send-push 200, Expo `ok`, arrival CONFIRMED on the owner's iPhone |
 | 7 | Gateway logs since 23:10:17 | 26 requests, 0 5xx, 4 401 (all this session's / the previous session's refusal checks). Detector validated (finds ES256 on the 8 signed-in requests). 4 HS256 entries: 3 refused (401) checks + **1 accepted (200): 23:22:44 `POST /admin/v1/network-bans/retrieve`, user agent `@supabase-infra/mgmt-api`, role `supabase_admin`, token issued 2026-07-02, expires 2036** = Supabase's own Management API serving this session's network-bans read (same shape as the 2026-10-27 call). Not a client of this project and not evidence of misuse |
 
 Held functions: `moderate-photo` (v17) as user = 404 "No primary photo found" (its DB lookup ran, so its key works), signed out 401;
