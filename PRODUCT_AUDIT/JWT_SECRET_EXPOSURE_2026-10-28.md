@@ -139,7 +139,7 @@ tokens (the one HS256 string seen is Storage's own signed-URL signature, a separ
 0 failed; `net._http_response` non-2xx since 23:10 = 0; the 23:08 + 23:11 test pushes: send-push 200, Expo `ok`. Outbox rows
 stay `queued` after a 200 (all 5 rows in the table, incl. the 2026-10-20 one): pre-existing, not caused by the revocation, left as
 is. Push after revocation CONFIRMED ON THE PHONE: a test push sent 23:22 UTC through the outbox (send-push 200, Expo `ok`) arrived
-on the owner's iPhone (owner confirmed). End-of-watch review re-scheduled in-session for 2026-10-29 23:19 UTC (lost again on another restart: then ask for it).
+on the owner's iPhone (owner confirmed). End-of-watch review re-scheduled in-session for 2026-10-29 23:19 UTC (lost again on another restart: then ask for it). Lost on the 2026-10-28 ~23:45 UTC restart; re-armed 23:54 UTC for 2026-10-29 23:19 UTC (session-only again).
 
 ## Full incident review run early (2026-10-28 23:26-23:28 UTC, owner asked; read-only except one test push; 24 h watch continues)
 
