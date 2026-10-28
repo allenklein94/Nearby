@@ -258,6 +258,56 @@ still writes `photo_verified` without an object id = new photos stay hidden from
 Not covered: the Storage HTTP API itself (enforces these same policies), signed URLs issued before a rejection/replacement
 (valid up to 1 h), the image checks themselves. The 0349 approval code changes (file changed): recompute at deploy.
 
+### Storage API verification + signed-link review (owner, 2026-10-28; NOT deployed)
+
+Real Storage API, pre-deploy (`scripts/replay/storage-api-up.sh` runs Supabase's `storage-api` v1.11.13 against the
+from-scratch replay on its internal network; `scripts/replay/photo-storage-api.js`, real JWTs: ordinary signed-in A + B,
+signed out): WITH 0349 all checks pass: B can't list, download (authenticated / legacy / public routes, HEAD, info),
+sign (single or batch), copy, move, delete or upload into A's pending, rejected, replaced, abandoned or re-uploaded
+photos; only A's currently approved files are reachable; replacing or rejecting a photo refuses NEW signed URLs at once;
+a late verdict is refused; A keeps (lists, reads, signs) every own file but can't overwrite in place (x-upsert, PUT) or
+move; signed out = nothing. WITHOUT 0349 (rollbacks 0354 -> 0349 on the same stack) it measures today's exposure: B lists +
+reads + signs A's whole folder (abandoned + rejected incl.), B can COPY A's rejected photo into B's own folder, A can
+overwrite / move approved files, a file re-uploaded at an approved path is readable; re-applying 0349-0354 = all pass.
+The storage policies were restored byte-identical around the Storage API's own schema migration (md5 compared).
+Production baseline, real API, read-only (`scripts/live-verify/photo-storage-signed-in.js`, dedicated test account,
+counts only): 4 other folders / 17 files / 7 approved; signed in, 2 NOT-approved files listable AND signable; signed out 0.
+After 0349 the same script must show 0 (it fails otherwise).
+No other path: the bucket is private (`public = false`); the API exposes only `public, graphql_public` (the storage
+schema is not reachable via PostgREST/GraphQL); no `public`/`private` function or view reads `storage.objects`; of the 36
+live edge functions only `moderate-photo` (being fixed), `delete-account` (own files) and `export-data` (own paths, no
+file access) touch profile photos (`setup-review-account` = a placeholder path); no `getPublicUrl` on profile photos.
+Signed links: profile photo URLs were signed for 60 min on every screen load (no cache). Now 15 min
+(`PROFILE_PHOTO_URL_LIFETIME_S` in `services/photos.js`, also extra photos), uploads cached no longer (`cacheControl`
+900: the Storage API returns `expires` +15 min, checked); every screen re-signs on focus. 15 rather than 5-10 min: the
+Dating list signs all rows up front, so a list left open longer shows a row's photo blank until refocus (phone watch).
+Guard `services/profilePhotoLinks.test.js` (lifetime, no upsert, no public URL, only these two files read the bucket).
+The server already refuses a new signed URL for anything not currently approved (0349); the app needs no other check.
+Preserved: existing approved photos (3/3 main + 9/9 extra bound, rolled-back check), own-profile editing (own files),
+`moderate-photo` (service role) and moderation via the Supabase dashboard (service role). Jest 520/7062; journeys unchanged
+(no DB change in this step; 746/746 with 0348-0354 earlier today).
+
+Remaining limitations (reported, not fixed):
+1. A signed URL issued while a photo was approved keeps working until it expires (measured: 200 after replacement and
+   after rejection). Now at most 15 min for new links; links issued by build 86 (60 min) until it's replaced. Images
+   already downloaded stay in the viewer's device cache. No revocation exists (bearer links); the CDN in front of
+   hosted Storage was not testable locally (its cache follows the file's cache-control, now 15 min for new uploads;
+   the 17 existing files keep 60 min).
+2. An approved MAIN photo's file stays signable by a signed-in person who already knows its path even when the profile
+   is hidden, suspended or has blocked them (same as before 0349, per file now instead of per folder; paths are only
+   handed out by profile reads that apply those rules).
+3. The app has no in-app view of rejected photos for admins; moderators use the dashboard (service role), as before.
+4. The hosted Storage API version may differ from the local v1.11.13; the post-deploy production run is the check.
+
+Deployment sequence (each production step its own owner approval):
+1. Compatible TestFlight build (incl. the 15-min links) installed on every device.
+2. 0348 (`deploy.js`).
+3. 0349 (`deploy.js`; approval code recomputed from the committed file), then at once
+4. `moderate-photo` redeploy (repo source). Between 3 and 4 new photos stay hidden from others (fails safe).
+5. Verify on prod: `photo-storage-signed-in.js` = 0 unapproved; journeys without prelude; one real photo upload on the
+   phone -> screened -> visible to the second account; a replaced photo hidden at once.
+6. 0350-0354 in number order afterwards (0352 after Session B).
+
 ## I2 requirements: progressive trust folded into I2 (owner, 2026-10-28; NOT built, design not locked)
 
 Progressive trust decides HOW MUCH activity an account can perform, never whether someone is a better or more

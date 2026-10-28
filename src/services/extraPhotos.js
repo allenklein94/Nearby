@@ -2,6 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Alert } from 'react-native';
 import { supabase, functionUrl } from './supabase';
+import { PROFILE_PHOTO_URL_LIFETIME_S } from './photos';
 
 const BASE64_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
@@ -107,7 +108,7 @@ export async function getExtraPhotos(userId) {
     data.map(async (photo) => {
       const { data: signedData } = await supabase.storage
         .from('profile-photos')
-        .createSignedUrl(photo.photo_url, 3600);
+        .createSignedUrl(photo.photo_url, PROFILE_PHOTO_URL_LIFETIME_S);
       return { ...photo, signedUrl: signedData?.signedUrl ?? null };
     })
   );
@@ -126,7 +127,7 @@ export async function uploadExtraPhoto(userId, asset, position) {
 
   const { error: uploadError } = await supabase.storage
     .from('profile-photos')
-    .upload(path, bytes, { contentType: 'image/jpeg' });
+    .upload(path, bytes, { contentType: 'image/jpeg', cacheControl: String(PROFILE_PHOTO_URL_LIFETIME_S) });
 
   if (uploadError) throw uploadError;
 

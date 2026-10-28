@@ -3,6 +3,11 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Alert } from 'react-native';
 import { supabase, functionUrl } from './supabase';
 
+// Profile photo links (owner, 2026-10-28): a signed URL is a bearer link the server can't take back, so it lives 15 min
+// (every screen re-signs on focus) and the file is cached no longer. A new link is refused by the server as soon as a
+// photo is replaced or rejected (20270349); one already issued keeps working until it expires.
+export const PROFILE_PHOTO_URL_LIFETIME_S = 900;
+
 // Offers both camera and library — most competitor apps let you take
 // a photo directly rather than only picking from an existing camera
 // roll. Wrapping the choice inside this single function means every
@@ -110,7 +115,7 @@ export async function uploadProfilePhoto(userId, asset) {
 
   const { error: uploadError } = await supabase.storage
     .from('profile-photos')
-    .upload(path, bytes, { contentType: 'image/jpeg' });
+    .upload(path, bytes, { contentType: 'image/jpeg', cacheControl: String(PROFILE_PHOTO_URL_LIFETIME_S) });
 
   if (uploadError) throw uploadError;
 
@@ -131,7 +136,7 @@ export async function getSignedPhotoUrl(path) {
   if (!path) return null;
   const { data, error } = await supabase.storage
     .from('profile-photos')
-    .createSignedUrl(path, 3600);
+    .createSignedUrl(path, PROFILE_PHOTO_URL_LIFETIME_S);
   if (error) return null;
   return data.signedUrl;
 }
