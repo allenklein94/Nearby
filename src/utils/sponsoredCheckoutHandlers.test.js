@@ -30,8 +30,9 @@ function makeWebhook({ env = {}, rpcResult = {}, rpcError = {}, dupe = false } =
     }),
   };
   // eslint-disable-next-line no-new-func
-  new Function('serve', 'createClient', 'Deno', 'Response', 'crypto', 'TextEncoder', WEBHOOK_SRC)(
-    (h) => { handler = h; }, () => client, { env: { get: (k) => e[k] } }, Res, nodeCrypto.webcrypto, TextEncoder);
+  new Function('serve', 'createClient', 'Deno', 'Response', 'crypto', 'TextEncoder', 'secretKey', WEBHOOK_SRC)(
+    (h) => { handler = h; }, () => client, { env: { get: (k) => e[k] } }, Res, nodeCrypto.webcrypto, TextEncoder,
+    () => e.SUPABASE_SERVICE_ROLE_KEY);
   const sign = (body, { ts = Math.floor(Date.now() / 1000), secret = 'whsec_test' } = {}) =>
     `t=${ts},v1=${nodeCrypto.createHmac('sha256', secret).update(`${ts}.${body}`).digest('hex')}`;
   const send = async (event, opts = {}) => {
@@ -140,9 +141,9 @@ function makeCheckout({ env = {}, check = { ok: true }, classify = { riskTier: '
     return { ok: r.ok, status: r.ok ? 200 : 400, json: async () => r.body };
   };
   // eslint-disable-next-line no-new-func
-  new Function('serve', 'createClient', 'classifyContent', 'Deno', 'Response', 'fetch', CHECKOUT_SRC)(
+  new Function('serve', 'createClient', 'classifyContent', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', CHECKOUT_SRC)(
     (h) => { handler = h; }, () => client, async () => { classifyCalls += 1; return classify; },
-    { env: { get: (k) => e[k] } }, Res, fetchStub);
+    { env: { get: (k) => e[k] } }, Res, fetchStub, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY);
   const tomorrow = () => new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
   const call = async (body = {}, auth = 'Bearer tok') => {
     const res = await handler({
@@ -277,8 +278,8 @@ describe('admin-sponsored-refund', () => {
     } });
     const fakeFetch = async (url, init) => { fetches.push({ url, init }); const r = stripe ?? { ok: true, body: { id: 're_1' } }; return { ok: r.ok, status: r.ok ? 200 : 400, json: async () => r.body }; };
     // eslint-disable-next-line no-new-func
-    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', SRC)(
-      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch);
+    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', SRC)(
+      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY);
     const call = async (body, auth = 'Bearer t') => {
       const res = await handler({ headers: { get: () => auth }, json: async () => body });
       return { status: res.status, body: res.json() };
@@ -332,8 +333,8 @@ describe('cancel-sponsored-placement', () => {
     } });
     const fakeFetch = async (url, init) => { fetches.push({ url, init }); const r = stripe ?? { ok: true, body: { id: 're_9' } }; return { ok: r.ok, status: r.ok ? 200 : 400, json: async () => r.body }; };
     // eslint-disable-next-line no-new-func
-    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', SRC)(
-      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch);
+    new Function('serve', 'createClient', 'Deno', 'Response', 'fetch', 'secretKey', 'publishableKey', SRC)(
+      (h) => { handler = h; }, (_u, _k, opts) => client(!!opts), { env: { get: (k) => e[k] } }, Res, fakeFetch, () => e.SUPABASE_SERVICE_ROLE_KEY, () => e.SUPABASE_ANON_KEY);
     const call = async (body, auth = 'Bearer t') => { const res = await handler({ headers: { get: () => auth }, json: async () => body }); return { status: res.status, body: res.json() }; };
     return { call, rpcs, fetches };
   }

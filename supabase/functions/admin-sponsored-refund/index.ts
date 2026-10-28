@@ -1,9 +1,10 @@
+import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+const SERVICE_ROLE_KEY = secretKey();
+const ANON_KEY = publishableKey();
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
 
 // Sponsored Spotlight refund (item 44). Stripe money movement, so it is a NAMED-APPROVER action: the database only lets

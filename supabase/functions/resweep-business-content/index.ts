@@ -1,3 +1,4 @@
+import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { classifyContent } from '../_shared/contentClassifier.ts';
@@ -28,7 +29,7 @@ import { classifyContent } from '../_shared/contentClassifier.ts';
 // was submitted by a person).
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SERVICE_ROLE_KEY = secretKey();
 
 // The four target types this whole re-sweep job covers -- matches
 // business_content_screening_results' own CHECK constraint, deliberately

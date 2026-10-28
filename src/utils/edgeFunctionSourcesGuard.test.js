@@ -7,7 +7,7 @@
 //      files incl. ID-verification images, then the profile, then the auth user; photo moderation fails CLOSED when the age
 //      check cannot run; report-presence keeps its speed check and 10-minute window).
 // Not covered: whether the repo matches what is deployed for functions deployed by the CLI (their bundles keep type-stripped
-// JavaScript, so a byte comparison is not possible), and 13 live functions that have no repo directory at all (reported).
+// JavaScript, so a byte comparison is not possible). The other 13 live functions were recovered 2026-10-28 (edgeFunctionKeys.test.js).
 const fs = require('fs');
 const path = require('path');
 

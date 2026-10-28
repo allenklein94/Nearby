@@ -1,10 +1,11 @@
+import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { classifyContent } from '../_shared/contentClassifier.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-const ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY');
+const SERVICE_ROLE_KEY = secretKey();
+const ANON_KEY = publishableKey();
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
 
 // Sponsored Spotlight checkout (item 44, phase 2). Nearby is the merchant and the business is the CUSTOMER: a one-time

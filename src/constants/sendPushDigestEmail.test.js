@@ -25,14 +25,15 @@ function load({ token = null, emailSettings = null, webUrl = null } = {}) {
   class Res { constructor(body, init = {}) { this.body = body; this.status = init.status ?? 200; } json() { return JSON.parse(this.body); } }
   const fetchStub = async (url, opts) => { pushes.push({ url, body: JSON.parse(opts.body) }); return { json: async () => ({ data: { status: 'ok' } }) }; };
   // eslint-disable-next-line no-new-func
-  new Function('serve', 'createClient', 'sendEmail', 'Deno', 'Response', 'fetch', SRC)(
+  new Function('serve', 'createClient', 'sendEmail', 'Deno', 'Response', 'fetch', 'secretKey', SRC)(
     (h) => { handler = h; },
     // 20270347: the token comes from push_token_for_delivery (service role).
     () => ({ from: chain, rpc: async () => ({ data: token, error: null }) }),
     async (to, subject, text) => { emails.push({ to, subject, text }); return { sent: true }; },
     { env: { get: (k) => env[k] } },
     Res,
-    fetchStub
+    fetchStub,
+    () => env.SUPABASE_SERVICE_ROLE_KEY, // _shared/supabaseKeys.ts (legacy-named fallback path)
   );
   const call = async (data, auth = `Bearer ${KEY}`) => {
     const res = await handler({

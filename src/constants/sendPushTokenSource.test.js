@@ -16,13 +16,14 @@ function load({ rpc, profileToken = null, expoAccessToken = null }) {
   const env = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: KEY, EXPO_ACCESS_TOKEN: expoAccessToken };
   class Res { constructor(body, init = {}) { this.body = body; this.status = init.status ?? 200; } json() { return JSON.parse(this.body); } }
   // eslint-disable-next-line no-new-func
-  new Function('serve', 'createClient', 'sendEmail', 'Deno', 'Response', 'fetch', SRC)(
+  new Function('serve', 'createClient', 'sendEmail', 'Deno', 'Response', 'fetch', 'secretKey', SRC)(
     (h) => { handler = h; },
     () => ({ from: chain, rpc: async (name, args) => { rpcCalls.push({ name, args }); return rpc; } }),
     async () => ({ sent: false }),
     { env: { get: (k) => env[k] } },
     Res,
     async (url, opts) => { pushes.push({ headers: opts.headers, body: JSON.parse(opts.body) }); return { json: async () => ({ data: { status: 'ok' } }) }; },
+    () => env.SUPABASE_SERVICE_ROLE_KEY, // _shared/supabaseKeys.ts (legacy-named fallback path)
   );
   const call = () => handler({ headers: { get: () => `Bearer ${KEY}` }, json: async () => ({ recipient_id: 'u1', title: 't', body: 'b', data: { type: 'message' } }) });
   return { call, pushes, rpcCalls };

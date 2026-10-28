@@ -17,7 +17,7 @@ function load() {
   const env = { SUPABASE_URL: 'https://x.supabase.co', SUPABASE_SERVICE_ROLE_KEY: KEY };
   class Res { constructor(body, init = {}) { this.body = body; this.status = init.status ?? 200; } json() { return JSON.parse(this.body); } }
   // eslint-disable-next-line no-new-func
-  new Function('serve', 'createClient', 'sendEmail', 'Deno', 'Response', 'fetch', SRC)(
+  new Function('serve', 'createClient', 'sendEmail', 'Deno', 'Response', 'fetch', 'secretKey', SRC)(
     (h) => { handler = h; },
     // Pre-20270347 path: the function is missing, so the token comes from the profiles column.
     () => ({ from: chain, rpc: async () => ({ data: null, error: { message: 'function not found' } }) }),
@@ -25,6 +25,7 @@ function load() {
     { env: { get: (k) => env[k] } },
     Res,
     async (url, opts) => { pushes.push(JSON.parse(opts.body)); return { json: async () => ({ data: { status: 'ok' } }) }; },
+    () => env.SUPABASE_SERVICE_ROLE_KEY, // _shared/supabaseKeys.ts (legacy-named fallback path)
   );
   const call = (data) => handler({ headers: { get: () => `Bearer ${KEY}` }, json: async () => ({ recipient_id: 'u1', title: 't', body: 'b', data }) });
   return { call, pushes };

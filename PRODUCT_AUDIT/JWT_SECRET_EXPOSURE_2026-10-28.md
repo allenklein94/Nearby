@@ -43,7 +43,16 @@ ever shared. The local scratch replay secret (`local-replay-jwt-secret-not-a-rea
 | 13 live functions with NO repo source (CLAUDE.md, item 148 list) | unknown | cannot be audited from the repo: may break; owner decision |
 | `.claude/mcp.json` Management API token (`sbp_…`) | not a JWT, unaffected | none |
 
-## Rotation procedure (each step needs owner approval; nothing done yet)
+## Status (2026-10-28)
+
+- Step 2 CODE DONE, NOT DEPLOYED: `supabase/functions/_shared/supabaseKeys.ts` (`secretKey()` / `publishableKey()` from
+  `SUPABASE_SECRET_KEYS` / `SUPABASE_PUBLISHABLE_KEYS`, legacy-named fallback only when missing) used by the 21 repo functions.
+  The 13 source-less functions were recovered verbatim from their live bundles (one change each in review-login /
+  setup-review-account: reviewer email read from `REVIEWER_EMAIL`, set it before any redeploy); not redeployed, their
+  legacy-named variable already holds the new key at runtime. Guard `src/utils/edgeFunctionKeys.test.js`.
+- Redeploying the 21 functions + one test call each = owner approval (not done). Steps 1, 3, 4, 5 not done.
+
+## Rotation procedure (each step needs owner approval)
 
 1. **Contain the copy now (owner choice):** delete or redact that one line of the local transcript (exact-value replace,
    verified by a re-search). Reversible only before it is done. Doesn't affect anything already sent.

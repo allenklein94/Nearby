@@ -1,8 +1,9 @@
+import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SERVICE_ROLE_KEY = secretKey();
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY');
 
 // PLATFORM_FEE_BPS is Nearby's own real commission on a captured offer

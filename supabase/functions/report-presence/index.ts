@@ -1,8 +1,9 @@
+import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SERVICE_ROLE_KEY = secretKey()!;
 
 const PRESENCE_WINDOW_MINUTES = 10;
 const AREA_BUCKET_SIZE = 0.0001; // matches the 4-decimal rounding used when generating area strings client-side

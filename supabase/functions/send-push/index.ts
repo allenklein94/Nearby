@@ -1,8 +1,9 @@
+import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { sendEmail } from '../_shared/email.ts';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SERVICE_ROLE_KEY = secretKey();
 
 // Item 141: notification priority (high / medium / low) per push type, and how each is delivered. MUST equal
 // src/constants/notificationTier.js NOTIFICATION_PRIORITY_BY_TYPE and PRIORITY_DELIVERY (Jest asserts equality). Unknown = medium.

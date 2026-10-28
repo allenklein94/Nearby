@@ -1,3 +1,4 @@
+import { secretKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { classifyContent } from '../_shared/contentClassifier.ts';
@@ -24,7 +25,7 @@ import { classifyContent } from '../_shared/contentClassifier.ts';
 //    shared classifier before anything is shown (not low = withheld; classifier down = 503, fail closed). The final
 //    accepted text is screened again, unchanged, at Send (screen-business-content), like any owner-typed offer.
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const SERVICE_ROLE_KEY = secretKey();
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
 const DAILY_AI_LIMIT = 50;
