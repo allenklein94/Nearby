@@ -1,4 +1,4 @@
-# Legacy JWT secret exposure (2026-10-28): review + rotation procedure (HS256 still trusted; revocation awaits owner approval)
+# Legacy JWT secret exposure (2026-10-28): HS256 key REVOKED 2026-10-28 23:10:17 UTC; post-revocation watch until ~2026-10-29 23:17 UTC
 
 The secret is never printed in this document, in commits or in chat.
 
@@ -100,6 +100,38 @@ restriction was worked around. Copies sent to the model provider are unaffected.
   does not affect photo links.
 - 24 h watch: started 22:36 UTC; re-check function errors, `push_outbox` failures, `net._http_response` non-2xx and cron
   failures at ~2026-10-29 22:40 UTC, plus one real push on the phone.
+
+## Step 4 DONE: HS256 revoked (2026-10-28 23:10:17 UTC, owner approved after confirming a real push on the phone)
+
+Pre-check: real push (outbox -> send-push v27 -> Expo, ticket + receipt `ok`) at 23:08 UTC; owner confirmed it on the phone.
+Baseline right before (status codes only; token held in memory, anon role, 60 s life): a token forged with the exposed secret
+was ACCEPTED (200), proving the exposure was real; the disabled legacy anon key was refused (401).
+
+Revocation: Management API `PATCH /config/auth/signing-keys/a875b5ff…` `{"status":"revoked"}` -> 200; keys now ES256 `in_use`,
+HS256 `revoked`. Irreversible.
+
+Post-revocation checks (23:10-23:13 UTC; scripts printed status codes only):
+
+| Check | Result |
+|---|---|
+| Forged HS256 anon token (same as baseline) | **401** (was 200): old key rejected |
+| Disabled legacy anon key | 401 |
+| Password sign-in / session refresh (dedicated test account) | 200 / 200, both ES256 |
+| Get user | 200 |
+| REST as user (publishable key) / with secret key / signed out / no key | 200 (3 rows) / 200 (3 rows) / 200 / 401 |
+| Storage list (secret key) / sign / fetch signed photo URL / list as user | 200 / 200 / 200 / 200 |
+| Function with the secret key (`send-push`) | reached the function (400 = its own body validation) |
+| Function with a user ES256 token (`read-offer-creative`, verify_jwt on) | reached the function (400 "Missing partnerId"); signed out 401 |
+| Real push through the outbox after revocation (23:11 UTC) | send-push 200, Expo ticket + receipt `ok`; on-phone arrival: owner to confirm |
+| Dashboard > Database > Network bans | owner to open (not reachable from here) |
+
+Not tested: Realtime websocket subscriptions (ES256 user tokens, same verification path as REST; watch the logs), the 13
+recovered functions individually (none uses a JWT secret; their legacy-named variables hold the new keys).
+
+Remaining exposure: none from this key: tokens signed with it are refused. The secret also remains in the model provider's
+copy of the earlier conversation, now harmless. Post-revocation 24 h watch: review scheduled in-session 2026-10-29 23:17 UTC
+(fires only if this session is open; otherwise ask for it): HS256 requests (any 2xx = escalate), 401 rates, cron, push outbox,
+re-run of both check scripts.
 
 ## Exploitation check (2026-10-28 ~23:10 UTC; owner: escalate at once on any sign of use)
 
