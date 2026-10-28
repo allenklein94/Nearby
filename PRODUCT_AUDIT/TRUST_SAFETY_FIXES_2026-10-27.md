@@ -207,3 +207,30 @@ Rollback limits (schema rollback is proven identical; operational rollback is no
   to a change made during the screening call itself. Fix = compare the path before writing (edge function change).
 - **N5 (open):** after a suspension, the person's current access token stays valid up to 1 hour: reads still work in
   that hour, every social write is refused.
+
+## N6 read-only inventory (2026-10-28, production, nothing changed)
+
+- `profiles`: 107 columns; `authenticated` holds table-level SELECT, i.e. every one of the 107 columns.
+- Row policy "Users can view own or verified profiles": own row, or `photo_verified = true AND profile_hidden = false`
+  (+ the admin policy). So any signed-in user reads ALL 107 columns of every verified, unhidden profile: 3 of the 4
+  profiles today (all the owner's accounts; no external user exposed so far).
+- `people_visible_to_me` (the people view, SELECT for authenticated) passes the same columns through: birthdate,
+  sexual_orientation, gender / gender_identity / ethnicity incl. their `*_hidden` switches, interested_in_genders,
+  dating preferences (ages, heights, hair/eye colours), wide_area, timezone, last_home_visit / last_activity_check,
+  is_admin, managed_partner_id, referral_code / referred_by, daily usage counters, notification settings and the
+  (now always NULL, N1) token columns.
+- Beyond what the 2026-10-27 note listed: `referral_code`, `ethnicity_preferences`, `interested_in_genders`, the
+  dating-preference columns, usage counters and notification settings are also exposed.
+- Functions: ~many SECURITY DEFINER functions read `is_admin` / `managed_partner_id`, but as authorization checks on
+  the caller's own row (not returned). A per-function check of what each RETURNS is part of the fix, not done here.
+- Fix shape unchanged: column-level SELECT grants on `profiles` (public-safe columns only), a narrowed
+  `people_visible_to_me` (age not birthdate, hidden fields nulled server-side), the app's own-row reads moved to an
+  own-profile read; build 86 compatibility path needed. Needs owner approval to build.
+
+## Priority order (owner, 2026-10-28)
+
+1. N6 (fix first). 2. Deploy + verify 0348-0353 (number order; 0351 after Session B). 3. B5: KEEP email sign-up;
+stronger passwords, bot protection, verified phone for consumer social actions (0351). 4. I2 limits. 5. I3 report
+evidence + moderation history (launch blocker). 6. I1 exact-duplicate photos. 7. Risk scoring / liveness vendors:
+deferred until real usage justifies. Session B proceeds on controlled test accounts only; no external users until
+these pass ordinary-user API tests.
