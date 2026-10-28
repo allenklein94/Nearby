@@ -40,18 +40,27 @@ d('Plans load path through the real signed-in API (read-only)', () => {
     expect(userId).toMatch(/^[0-9a-f-]{36}$/);
   });
 
-  test('every PlansScreen read succeeds (first load + focus reload): no error, arrays back', async () => {
+  test('every PlansScreen read succeeds (first load + focus reload): no error, expected shapes back', async () => {
     const reads = {
       getMyAttendingGatherings, getMyGatherings, getMyGroupPlans, getMyStandaloneBusinessRequestPlans,
       getMyDateProposalPlans, getMyExperiencePlans, getMyInterestedGatherings, getSharedExperiencePlans,
     };
     const out = {};
-    for (const [name, fn] of Object.entries(reads)) {
-      try { out[name] = await fn(); } catch (e) { out[name] = { error: e.message }; }
-    }
+    // several readers swallow a failed query (console.error + empty result), so any console.error fails the read
+    const logged = [];
+    const spy = jest.spyOn(console, 'error').mockImplementation((...args) => { logged.push(args.map(String).join(' ')); });
+    try {
+      for (const [name, fn] of Object.entries(reads)) {
+        try { out[name] = await fn(); } catch (e) { out[name] = { error: e.message }; }
+      }
+    } finally { spy.mockRestore(); }
+    // getMyAttendingGatherings returns { upcoming, past } (PlansScreen reads it that way); everything else an array
+    const shapeOk = (v) => Array.isArray(v) || (v && Array.isArray(v.upcoming) && Array.isArray(v.past));
+    const summary = (v) => (Array.isArray(v) ? `${v.length} rows` : shapeOk(v) ? `${v.upcoming.length} upcoming / ${v.past.length} past` : v);
     // eslint-disable-next-line no-console
-    console.log(Object.fromEntries(Object.entries(out).map(([k, v]) => [k, Array.isArray(v) ? `${v.length} rows` : v])));
-    for (const [name, v] of Object.entries(out)) expect([name, Array.isArray(v) ? 'ok' : v]).toEqual([name, 'ok']);
+    console.log(Object.fromEntries(Object.entries(out).map(([k, v]) => [k, summary(v)])));
+    expect(logged).toEqual([]);
+    for (const [name, v] of Object.entries(out)) expect([name, shapeOk(v) ? 'ok' : v]).toEqual([name, 'ok']);
     // the rule accepts whatever came back (no throw); rows are only the caller's own (RLS)
     for (const row of out.getMyStandaloneBusinessRequestPlans) businessPlanPlacement(row, new Date());
   }, 60000);
