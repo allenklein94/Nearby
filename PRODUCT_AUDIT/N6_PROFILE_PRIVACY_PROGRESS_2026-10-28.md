@@ -100,6 +100,9 @@ rolling back reopens the exposure.
 - Limit (owner, 2026-10-28): the rule enforces the intended coarse representation (one decimal ~ 11 km north-south, less
   east-west away from the equator); it is approximate location, never a guarantee of anonymity. The pattern checks shape,
   not range (an out-of-range number is not more precise).
+- Range validation (owner, 2026-10-28): DEFERRED follow-up, not part of N6. Checked: no crash or exposure path: the rule
+  guarantees a numeric parse, the friend-distance SQL clamps acos's input to [-1, 1], the client reads with Number();
+  an out-of-range value only gives that person's own row a wrong distance. N6 development FROZEN.
 
 ## Open
 - Not verifiable before deploy: the real API after 0348 and the app on a phone.
