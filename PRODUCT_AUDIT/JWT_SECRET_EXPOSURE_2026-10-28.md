@@ -1,4 +1,4 @@
-# Legacy JWT secret exposure (2026-10-28): review + rotation procedure (NOT rotated; owner approval required)
+# Legacy JWT secret exposure (2026-10-28): review + rotation procedure (HS256 still trusted; revocation awaits owner approval)
 
 The secret is never printed in this document, in commits or in chat.
 
@@ -73,6 +73,66 @@ provider are unaffected either way.
   customer-only vocabulary change too: needs its own approval).
 - The 13 recovered functions: not redeployed. `REVIEWER_EMAIL` is NOT set (secrets list 2026-10-28): set it before
   `review-login` / `setup-review-account` are ever redeployed.
+
+## Status update (2026-10-28, later; owner authorization of the 8-point plan)
+
+**Correction: the legacy API keys (anon / service_role) were ALREADY DISABLED on 2026-07-23 23:28 UTC** (Management API
+`api-keys/legacy` = `{"enabled": false}`; the REST API refuses a legacy key with "disabled on 2026-07-23"). So step 3 was done
+three months ago and nothing has depended on those keys since; no action was taken now and none is needed. The restoration
+path (`PUT /v1/projects/{ref}/api-keys/legacy?enabled=true`, or Dashboard > API Keys) was deliberately NOT exercised: re-enabling
+would put two JWTs signed with the exposed secret back into service. Disabling the keys does NOT close the exposure: a token
+forged with the secret is still accepted as a Bearer token while HS256 stays `previously_used`. Only step 4 closes it.
+
+**Step 1: no local copy remains.** Exact-value search (value held in memory only, never printed) over `~/.claude`, the repo
+(working tree, excl. compressed git objects; history checked earlier) and `/tmp`: 0 files. Escaped forms and four 12-character
+fragments: 0 hits in every transcript, incl. `8d29f6a8-….jsonl` (unchanged since 12:33 UTC). The earlier "second transcript
+still holds it" is not confirmed by this search; nothing is left to redact, so no manual procedure is needed and no safety
+restriction was worked around. Copies sent to the model provider are unaffected.
+
+**Verification since the 18 deploys (2026-10-28 22:36-22:50 UTC):**
+- Auth: password sign-in 200 (ES256), refresh 200 (ES256), get-user 200; REST as user 200; storage as user 200; signed-out REST 401.
+- Push: outbox -> `send-push` v27 with the new secret key: HTTP 200 `{"ok":true,"skipped":"no_token"}` (dedicated test account, no
+  device token; a real on-phone delivery after these deploys is still unobserved).
+- Cron: every job in the last 2 h succeeded (19 jobs incl. `retry-push-outbox`, `delete-expired-stories`, resweeps), 0 failures.
+- Database: no function signs JWTs or reads a JWT secret (only `private.location_pin`'s own HMAC, unrelated); no cron command
+  carries a token; no `jwt` setting.
+- Storage signed URLs are signed with Storage's own key (kid `faebca04…`), NOT the legacy secret (HMAC compared): revocation
+  does not affect photo links.
+- 24 h watch: started 22:36 UTC; re-check function errors, `push_outbox` failures, `net._http_response` non-2xx and cron
+  failures at ~2026-10-29 22:40 UTC, plus one real push on the phone.
+
+## Step 4 readiness (revoke HS256; IRREVERSIBLE; needs separate owner approval)
+
+| Dependency | Finding | Risk at revocation |
+|---|---|---|
+| User sessions (23 rows, oldest 2026-07-15, 21 active in the last hour) | access tokens ES256, 1 h lifetime (`jwt_exp` 3600); refresh tokens are not JWTs | none expected: no HS256 access token can still be valid |
+| App, web pages, business export | publishable key | none |
+| DB -> functions, cron | new secret key / no key | none |
+| Storage signed URLs | Storage's own key | none |
+| Functions with `verify_jwt = true` | already accept ES256 user tokens (smoke calls) | none expected |
+| Gateway handling of `sb_` keys | Supabase documents that new API keys keep working after revocation; NOT testable from here before revoking | low, untested: verify right after (REST with publishable + secret key, one function call, one push) |
+| Legacy anon / service_role keys | disabled since 2026-07-23 | they become permanently unusable (intended) |
+| Anything external holding an HS256 token | none known; no usage data exists | unknown, the only open item |
+
+Procedure when approved: Dashboard > Settings > JWT Keys > HS256 (previously used) > Revoke. Then read the key status
+(`revoked`) via the Management API, and run the checks above (sign-in, refresh, REST, storage, one function, one real push).
+No undo exists; a failure is fixed forward (there is no HS256 dependency to restore).
+
+## Fallback removal (item 7): code done, NOT deployed
+
+`_shared/supabaseKeys.ts` no longer falls back to `SUPABASE_SERVICE_ROLE_KEY` / `SUPABASE_ANON_KEY` (missing/invalid new
+variable = undefined); guard `edgeFunctionKeys.test.js` updated (61/61) + the 3 send-push suites that load the helper (80/80
+together). Deployment plan (separate approval): redeploy the 18 functions one at a time, same method as step 2 (live
+`verify_jwt` preserved, same harmless smoke call before/after, live source compared with git afterwards), send-push last
+with an outbox check. The 3 held functions get it automatically when they ship (delete-account + moderate-photo with 0349;
+create-assistant only on its own approval). The 13 recovered functions read the legacy-named variables directly and are
+untouched by this change.
+
+## REVIEWER_EMAIL (item 6)
+
+Not set. Set only when `review-login` / `setup-review-account` are about to be redeployed, by the owner, without echoing it:
+`! read -rs RE && npx supabase secrets set REVIEWER_EMAIL="$RE" --project-ref enmosvippabmuqslzrox; unset RE`
+(the value then appears only as a digest in `supabase secrets list`).
 
 ## Step 3 inventory: who uses the legacy JWT-based API keys (anon / service_role) (2026-10-28)
 

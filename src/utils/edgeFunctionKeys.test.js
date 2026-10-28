@@ -4,7 +4,7 @@
 //   2. functions read their API keys only through _shared/supabaseKeys.ts (SUPABASE_SECRET_KEYS / SUPABASE_PUBLISHABLE_KEYS),
 //      except the 13 sources recovered verbatim from live bundles (not redeployed; their legacy-named variable already holds
 //      the new key at runtime, digest compared 2026-10-28);
-//   3. the helper prefers the new variables, falls back to the legacy-named ones only when the new one is missing/invalid;
+//   3. the helper reads only the new variables (legacy-name fallback removed 2026-10-28): missing/invalid = undefined;
 //   4. every live function has a repo source (34 on 2026-10-28).
 const fs = require('fs');
 const path = require('path');
@@ -67,11 +67,13 @@ describe('_shared/supabaseKeys.ts', () => {
     expect(k.secretKey()).toBe('sb_secret_new');
     expect(k.publishableKey()).toBe('sb_publishable_new');
   });
-  test('falls back to the legacy-named variables when the new one is missing or invalid', () => {
-    expect(loadHelper({ SUPABASE_SERVICE_ROLE_KEY: 'x' }).secretKey()).toBe('x');
-    expect(loadHelper({ SUPABASE_SECRET_KEYS: 'not json', SUPABASE_SERVICE_ROLE_KEY: 'x' }).secretKey()).toBe('x');
-    expect(loadHelper({ SUPABASE_SECRET_KEYS: '{}', SUPABASE_SERVICE_ROLE_KEY: 'x' }).secretKey()).toBe('x');
+  test('never falls back to the legacy-named variables', () => {
+    expect(loadHelper({ SUPABASE_SERVICE_ROLE_KEY: 'x', SUPABASE_ANON_KEY: 'y' }).secretKey()).toBeUndefined();
+    expect(loadHelper({ SUPABASE_SERVICE_ROLE_KEY: 'x', SUPABASE_ANON_KEY: 'y' }).publishableKey()).toBeUndefined();
+    expect(loadHelper({ SUPABASE_SECRET_KEYS: 'not json', SUPABASE_SERVICE_ROLE_KEY: 'x' }).secretKey()).toBeUndefined();
+    expect(loadHelper({ SUPABASE_SECRET_KEYS: '{}', SUPABASE_SERVICE_ROLE_KEY: 'x' }).secretKey()).toBeUndefined();
     expect(loadHelper({}).secretKey()).toBeUndefined();
+    expect(fs.readFileSync(path.join(FUNCTIONS, '_shared', 'supabaseKeys.ts'), 'utf8')).not.toMatch(/Deno\.env\.get\('SUPABASE_(SERVICE_ROLE|ANON)_KEY'\)/);
   });
   test('uses the only key when it is not named "default"', () => {
     expect(loadHelper({ SUPABASE_SECRET_KEYS: '{"server":"sb_secret_a"}' }).secretKey()).toBe('sb_secret_a');
