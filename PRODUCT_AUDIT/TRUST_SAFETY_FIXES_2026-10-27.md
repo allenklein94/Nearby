@@ -229,6 +229,26 @@ Rollback limits (schema rollback is proven identical; operational rollback is no
   `people_visible_to_me` (age not birthdate, hidden fields nulled server-side), the app's own-row reads moved to an
   own-profile read; build 86 compatibility path needed. Needs owner approval to build.
 
+## I2 requirements: progressive trust folded into I2 (owner, 2026-10-28; NOT built, design not locked)
+
+Progressive trust decides HOW MUCH activity an account can perform, never whether someone is a better or more
+trustworthy person. Requirements for when I2 is implemented:
+1. Simple trust levels, nothing visible: New (recently created) = low limits; Established = verified phone + account age +
+   normal activity = standard limits; Restricted = suspended / administratively restricted = no social actions (0351).
+   Account age alone never unlocks higher limits.
+2. Limits target mass unsolicited activity, never legitimate gatherings, invitations, friendships or conversations.
+3. Unsolicited outreach (strangers) is limited separately from activity with existing friends, accepted invitations,
+   mutual matches and gathering participants (e.g. inviting your gathering's attendees != inviting strangers).
+4. Rate limits on repeated profile-name changes and profile-photo replacements (gap found 2026-10-28, not in the audit).
+5. Every newly uploaded photo is screened; a past pass never trusts a replacement. TODAY (prod, checked 2026-10-28) a
+   replacement keeps `photo_verified` (no reset trigger exists); 0349 resets it on every main/extra photo change.
+6. Enforced server-side (database), incl. direct API requests.
+7. Clear, friendly limit messages (like the gathering limit's "Try again tomorrow").
+8. No AI fraud scoring, device fingerprinting or third-party risk vendors yet.
+9. Exact numbers + trust-level rules go to the owner for approval BEFORE implementation.
+Existing today: daily limits on gatherings (10), communities, friend requests, notices, stories, AI uses (same for every
+account). Missing: messages, invitations, reports, business requests beyond duplicates, name/photo changes.
+
 ## Priority order (owner, 2026-10-28)
 
 1. N6 (fix first). 2. Deploy + verify 0349-0354 (number order; 0352 after Session B). 3. B5: KEEP email sign-up;
