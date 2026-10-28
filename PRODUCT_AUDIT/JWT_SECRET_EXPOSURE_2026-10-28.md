@@ -112,9 +112,26 @@ requests, every authenticated one ES256 except exactly 4 HS256 requests:
   Dashboard > Database > Network bans still loads (added to the post-revocation checks).
 - 2026-10-28 22:35:46-56: three requests with the disabled legacy anon / service_role keys on `/rest/v1/gatherings`, all
   401: the previous session's own confirmation that the legacy keys are refused.
-No request with an HS256 Bearer token beside a publishable key (the shape a forged token would take). Verdict: NO evidence
-of exploitation. Limits: gateway logs only (no direct DB connections, which need the DB password, not a JWT); log
-retention bounds how far back this can look.
+The gateway query flagged ANY request whose Authorization token was not ES256 (any role, any apikey) plus ANY request with
+a JWT as its apikey; the 4 above are all it found.
+
+**Widened scan (all sources that record auth, Oct 21-28, same day-by-day method):**
+- Function gateway logs (`function_edge_logs`, ~470 calls): non-ES256 tokens only 2, both 2026-10-28 22:35:47, legacy anon +
+  service_role keys, 401 (the same refused checks).
+- Privileged access (gateway + functions): every `service_role` / secret-key request came with an `sb_secret_` key (no JWT,
+  ~180-310/day, the DB -> function and function -> DB traffic); privileged JWTs = only the supabase_admin platform call and the 2
+  refused legacy service_role checks above.
+- Storage logs: roles authenticated / anon / service_role only; service_role only on Oct 28 (4, the session's own checks via the
+  secret key; no HS256 request reached storage per the gateway scan).
+- Auth audit: every event maps to a known account: the owner's phone account (build 86: refresh/revoke, logout, a password
+  recovery request + phone sign-in 2026-10-28 00:08), an unconfirmed phone sign-up started from build 86 (2026-10-27 23:45, before
+  the exposure), and the dedicated test account (created 2026-10-27 23:48 via the Management API; logins from node / Python =
+  this work). No admin user changes, no unknown account.
+
+**Conclusion (worded as the owner set it):** no suspicious HS256 activity was identified in the logs examined, but
+exploitation cannot be definitively ruled out. Limits: logs exist only for the API gateway, functions, storage, auth, realtime
+and Postgres; direct DB connections need the DB password, not a JWT; retention bounds the look-back; a forged token used once
+inside the window would show in these queries, but nothing can prove absence beyond the retained logs.
 
 ## Step 4 readiness (revoke HS256; IRREVERSIBLE; needs separate owner approval)
 
@@ -133,6 +150,12 @@ Procedure when approved: Dashboard > Settings > JWT Keys > HS256 (previously use
 (`revoked`) via the Management API, and run the checks above (sign-in, refresh, REST with publishable + secret key, storage,
 one function, one real push, Dashboard > Database > Network bans loads). Rejection of the old key: the gateway logs must show
 no HS256 request succeeding afterwards, and the disabled legacy anon key (an HS256 JWT) must still be refused (401).
+
+**Earlier revocation (assessment 2026-10-28):** safer. The watch measures the 18 new-key deploys, not any HS256 dependency;
+nothing but one Supabase platform call used HS256 in 8 days, and the remaining unknowns (gateway handling of `sb_` keys, that
+platform call) can only be checked after revocation, so waiting buys no information while keeping the key trusted. Only
+pre-revocation item left: one real push on the owner's phone. Waiting's one benefit: a failure in the 18 deploys can't be confused
+with a revocation failure.
 
 **End-of-watch review:** scheduled in-session for 2026-10-29 22:43 UTC (fires only if this session is still open; otherwise
 ask for it). It repeats the checks above + this exploitation scan for Oct 28 22:36 onward, then asks for revocation approval.
