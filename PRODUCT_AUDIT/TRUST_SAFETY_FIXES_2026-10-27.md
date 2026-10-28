@@ -242,9 +242,21 @@ Rollback limits (schema rollback is proven identical; operational rollback is no
 | Failed screening (service error) | no write | no write -> stays unscreened |
 | Stale verdict: photo A screened, replaced by B before the verdict lands | A's "safe" marks B verified | same: `moderate-photo` writes by user/row id without checking the path it screened |
 
-Proposed fix (NOT built, awaiting owner): in 0349, `profile_photos` read for others needs the row's own `photo_verified`;
-storage read for others = only the owner's current screened main path or a screened extra row's path (per file);
-`moderate-photo` writes its verdict only where `photo_url` still equals the path it screened (edge redeploy, approval).
+Fix BUILT into 0349 (2026-10-28), TESTED, NOT DEPLOYED: a screening result is bound to the exact storage object it
+was made on (`profiles.photo_object_id`, `profile_photos.screened_object_id`; a re-upload at the same path = new object id).
+Others read a photo row or file only when THAT photo passed on THAT object (`profile_photo_object_visible`, per file, never
+per folder); extra-photo rows need their own result; the in-place storage UPDATE policy is dropped (the app always uploads
+a new path, never upserts); `moderate-photo` reads its target (`photo_screening_target`) BEFORE the download and records
+the verdict only via `record_photo_screening` (service role only; refuses a replaced photo or a new object at the same
+path; a rejection always applies). Existing screened photos keep approval, bound to today's file (rolled-back check on
+prod: 3/3 main + 9/9 extra bound). Verified: journey `photoScreeningBinding` 6/6 on prod (asserts today's exposure) and
+with 0348-0354 as prelude; prod journeys 746/746 with 0348-0354 (without: only `trustSafety` fails, as before: it needs
+the fixes); from-scratch replay 478/478 + journeys 746/746 + all 4 concurrency scripts; grants prod+0348-0354 == replay
+3208/3208; 0349 rollback restores prod+0348's policies exactly (rolled back); Jest 519/7058.
+DEPLOY ORDER: 0349, then the `moderate-photo` redeploy right after (separate approval). Between the two the OLD function
+still writes `photo_verified` without an object id = new photos stay hidden from others (fails safe, never exposes).
+Not covered: the Storage HTTP API itself (enforces these same policies), signed URLs issued before a rejection/replacement
+(valid up to 1 h), the image checks themselves. The 0349 approval code changes (file changed): recompute at deploy.
 
 ## I2 requirements: progressive trust folded into I2 (owner, 2026-10-28; NOT built, design not locked)
 

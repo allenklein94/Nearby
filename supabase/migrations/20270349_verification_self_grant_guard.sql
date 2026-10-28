@@ -19,6 +19,16 @@
 --   admin_approve_id_verification  an admin can never review their own submission.
 -- Nothing in production changes value: every existing row already satisfies these rules (checked read-only 2026-10-27:
 -- 4/4 main + 10/10 extra photo paths in the owner's folder, 0 submissions).
+--
+-- Photo screening binds to the exact file version (owner, 2026-10-28; pre-deploy check found unscreened photos still
+-- reachable): a screening result is recorded with the storage object id it was made on (profiles.photo_object_id,
+-- profile_photos.screened_object_id; a re-upload at the same path is a new object id). Another person can read a photo
+-- row or file only when THAT photo passed screening on THAT object: never a whole folder, never a pending, rejected,
+-- replaced or abandoned upload. Owners can no longer overwrite a file in place (no storage UPDATE policy; the app never
+-- did). Verdicts are written only through record_photo_screening (service role), which refuses a stale one.
+
+alter table public.profiles add column if not exists photo_object_id uuid;
+alter table public.profile_photos add column if not exists screened_object_id uuid;
 
 create or replace function public._guard_profile_privileged_insert()
 returns trigger
@@ -31,6 +41,7 @@ begin
     new.is_admin := false;
     new.is_premium := false;
     new.photo_verified := false;
+    new.photo_object_id := null;
     new.managed_partner_id := null;
     new.referred_by := null;
     new.bonus_notices := 0;
@@ -69,8 +80,12 @@ begin
         raise exception 'Photo not found' using errcode = '42501', hint = 'photo_not_own';
       end if;
       new.photo_verified := false;
-    elsif coalesce(new.photo_verified, false) and not coalesce(old.photo_verified, false) then
-      new.photo_verified := old.photo_verified;
+      new.photo_object_id := null;
+    else
+      if coalesce(new.photo_verified, false) and not coalesce(old.photo_verified, false) then
+        new.photo_verified := old.photo_verified;
+      end if;
+      new.photo_object_id := old.photo_object_id;
     end if;
   end if;
   return new;
@@ -94,6 +109,7 @@ begin
   if auth.uid() is not null and coalesce(current_setting('app.trusted_update', true), '') <> 'true' then
     if tg_op = 'INSERT' then
       new.photo_verified := false;
+      new.screened_object_id := null;
       if new.photo_url is null or split_part(new.photo_url, '/', 1) <> new.user_id::text then
         raise exception 'Photo not found' using errcode = '42501', hint = 'photo_not_own';
       end if;
@@ -104,8 +120,12 @@ begin
           raise exception 'Photo not found' using errcode = '42501', hint = 'photo_not_own';
         end if;
         new.photo_verified := false;
-      elsif coalesce(new.photo_verified, false) and not coalesce(old.photo_verified, false) then
-        new.photo_verified := old.photo_verified;
+        new.screened_object_id := null;
+      else
+        if coalesce(new.photo_verified, false) and not coalesce(old.photo_verified, false) then
+          new.photo_verified := old.photo_verified;
+        end if;
+        new.screened_object_id := old.screened_object_id;
       end if;
     end if;
   end if;
@@ -134,16 +154,19 @@ declare
   v_extra record;
   v_main_url text;
   v_main_verified boolean;
+  v_main_object uuid;
 begin
   if v_me is null then raise exception 'Not signed in' using errcode = '42501'; end if;
-  select id, photo_url, photo_verified into v_extra from profile_photos where id = extra_photo_id_param and user_id = v_me for update;
+  select id, photo_url, photo_verified, screened_object_id into v_extra from profile_photos where id = extra_photo_id_param and user_id = v_me for update;
   if not found then raise exception 'Photo not found' using errcode = 'P0002'; end if;
-  select photo_url, coalesce(photo_verified, false) into v_main_url, v_main_verified from profiles where id = v_me for update;
+  select photo_url, coalesce(photo_verified, false), photo_object_id into v_main_url, v_main_verified, v_main_object from profiles where id = v_me for update;
 
   perform set_config('app.trusted_update', 'true', true);
-  update profiles set photo_url = v_extra.photo_url, photo_verified = coalesce(v_extra.photo_verified, false) where id = v_me;
+  update profiles set photo_url = v_extra.photo_url, photo_verified = coalesce(v_extra.photo_verified, false),
+    photo_object_id = v_extra.screened_object_id where id = v_me;
   if v_main_url is not null then
-    update profile_photos set photo_url = v_main_url, photo_verified = v_main_verified where id = v_extra.id;
+    update profile_photos set photo_url = v_main_url, photo_verified = v_main_verified, screened_object_id = v_main_object
+      where id = v_extra.id;
   else
     delete from profile_photos where id = v_extra.id;
   end if;
@@ -205,3 +228,117 @@ begin
   end if;
 end;
 $function$;
+
+-- Photo screening bound to the file version (owner, 2026-10-28). -----------------------------------------------------
+
+-- The ONE rule for another person reading a profile-photos file: the owner's current main photo that passed screening on
+-- this very object, or an extra photo that passed on this very object (with the profile itself visible, as the extra-photo
+-- row policy requires). Signed-in callers only. The owner's own folder stays in the storage policy itself.
+create or replace function public.profile_photo_object_visible(p_object_id uuid, p_name text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_owner uuid;
+begin
+  if auth.uid() is null or p_object_id is null or p_name is null then return false; end if;
+  if split_part(p_name, '/', 1) !~ '^[0-9a-fA-F-]{36}$' then return false; end if;
+  v_owner := split_part(p_name, '/', 1)::uuid;
+  return exists (select 1 from profiles p
+                  where p.id = v_owner and p.photo_url = p_name and p.photo_verified and p.photo_object_id = p_object_id)
+      or exists (select 1 from profile_photos pp join profiles p on p.id = pp.user_id
+                  where pp.user_id = v_owner and pp.photo_url = p_name and pp.photo_verified
+                    and pp.screened_object_id = p_object_id
+                    and p.photo_verified and coalesce(p.profile_hidden, false) = false);
+end;
+$function$;
+revoke all on function public.profile_photo_object_visible(uuid, text) from public;
+grant execute on function public.profile_photo_object_visible(uuid, text) to anon, authenticated;
+
+drop policy if exists "Users can view own or verified profile photos" on storage.objects;
+create policy "Users can view own or verified profile photos" on storage.objects
+  for select using (
+    bucket_id = 'profile-photos'
+    and ((storage.foldername(name))[1] = (auth.uid())::text
+         or public.profile_photo_object_visible(id, name))
+  );
+
+-- No overwriting a file in place (the app always uploads a new path and never upserts).
+drop policy if exists "Users can update their own profile photo" on storage.objects;
+
+-- Extra photo rows: another person sees a row only when that photo itself passed screening.
+alter policy "Users can view own or verified user's extra photos" on public.profile_photos
+  using ((auth.uid() = user_id) OR (photo_verified = true AND screened_object_id IS NOT NULL AND EXISTS (
+    SELECT 1 FROM profiles p WHERE p.id = profile_photos.user_id AND p.photo_verified = true AND p.profile_hidden = false)));
+
+-- For moderate-photo (service role only): the exact file it is about to screen ...
+create or replace function public.photo_screening_target(p_user uuid, p_extra uuid default null)
+returns table (path text, object_id uuid)
+language plpgsql
+stable
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_path text;
+begin
+  if p_extra is not null then
+    select pp.photo_url into v_path from profile_photos pp where pp.id = p_extra and pp.user_id = p_user;
+  else
+    select p.photo_url into v_path from profiles p where p.id = p_user;
+  end if;
+  if v_path is null then return; end if;
+  return query select v_path, (select o.id from storage.objects o where o.bucket_id = 'profile-photos' and o.name = v_path);
+end;
+$function$;
+
+-- ... and its verdict, applied only if that photo is still current AND still the same object (a late verdict, a
+-- replaced photo or a re-upload at the same path is refused; returns whether it was applied). A rejection always
+-- applies to whatever is current at that path (fails safe).
+create or replace function public.record_photo_screening(p_user uuid, p_extra uuid, p_path text, p_object_id uuid, p_safe boolean)
+returns boolean
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_current_path text;
+  v_current_object uuid;
+begin
+  if p_extra is not null then
+    select photo_url into v_current_path from profile_photos where id = p_extra and user_id = p_user for update;
+  else
+    select photo_url into v_current_path from profiles where id = p_user for update;
+  end if;
+  if v_current_path is null or v_current_path is distinct from p_path then return false; end if;
+  select o.id into v_current_object from storage.objects o where o.bucket_id = 'profile-photos' and o.name = p_path;
+  if p_safe and (p_object_id is null or v_current_object is distinct from p_object_id) then return false; end if;
+
+  perform set_config('app.trusted_update', 'true', true);
+  if p_extra is not null then
+    update profile_photos set photo_verified = p_safe, screened_object_id = case when p_safe then p_object_id end
+      where id = p_extra;
+  else
+    update profiles set photo_verified = p_safe, photo_object_id = case when p_safe then p_object_id end
+      where id = p_user;
+  end if;
+  perform set_config('app.trusted_update', 'false', true);
+  return p_safe;
+end;
+$function$;
+revoke all on function public.photo_screening_target(uuid, uuid) from public, anon, authenticated;
+revoke all on function public.record_photo_screening(uuid, uuid, text, uuid, boolean) from public, anon, authenticated;
+grant execute on function public.photo_screening_target(uuid, uuid) to service_role;
+grant execute on function public.record_photo_screening(uuid, uuid, text, uuid, boolean) to service_role;
+
+-- Existing screened photos keep their approval, bound to the file they point at today (production 2026-10-28: 3 main +
+-- 9 extra, every one with its file present; all accounts are the owner's).
+update public.profiles p set photo_object_id = o.id
+  from storage.objects o
+ where p.photo_verified and o.bucket_id = 'profile-photos' and o.name = p.photo_url;
+update public.profile_photos pp set screened_object_id = o.id
+  from storage.objects o
+ where pp.photo_verified and o.bucket_id = 'profile-photos' and o.name = pp.photo_url;

@@ -53,6 +53,12 @@ describe('recovered functions keep their behaviour', () => {
     expect(s).toMatch(/photoRow\.user_id !== userId/);
     expect(s).toMatch(/const isSafe = !failedModeration && !possibleMinorFlag && ageCheckSucceeded;/);
     expect(s).not.toMatch(/AKIA[0-9A-Z]{16}/); // credentials come from the environment, never the source
+    // 0349 (owner, 2026-10-28): the verdict binds to the exact object screened, read BEFORE the download, and is written
+    // only through record_photo_screening (refuses a stale verdict); never a direct photo_verified update.
+    expect(s.indexOf("rpc('photo_screening_target'")).toBeGreaterThan(-1);
+    expect(s.indexOf("rpc('photo_screening_target'")).toBeLessThan(s.indexOf('.download('));
+    expect(s).toMatch(/rpc\('record_photo_screening'[\s\S]*p_object_id: screenedObjectId/);
+    expect(s).not.toMatch(/update\(\{ photo_verified/);
   });
 
   test('report-presence: speed check and the 10-minute window', () => {

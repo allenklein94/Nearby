@@ -131,21 +131,21 @@ serve(async (req) => {
       if (photoRowError || !photoRow || photoRow.user_id !== userId) {
         return new Response(JSON.stringify({ error: 'Photo not found or not owned by this user' }), { status: 404 });
       }
-      resolvedPath = photoRow.photo_url;
-    } else {
-      // Primary photo no longer uses a fixed filename — look up whatever
-      // path is currently stored on the profile.
-      const { data: profileRow, error: profileError } = await admin
-        .from('profiles')
-        .select('photo_url')
-        .eq('id', userId)
-        .single();
-
-      if (profileError || !profileRow?.photo_url) {
-        return new Response(JSON.stringify({ error: 'No primary photo found for this user' }), { status: 404 });
-      }
-      resolvedPath = profileRow.photo_url;
     }
+
+    // The exact file version being screened (owner, 2026-10-28): its path AND storage object id, read BEFORE the
+    // download. The verdict is recorded only for that object (record_photo_screening), so a photo replaced or re-uploaded
+    // while this runs is never approved by this result.
+    const { data: targetRows, error: targetError } = await admin.rpc('photo_screening_target', {
+      p_user: userId,
+      p_extra: extraPhotoId,
+    });
+    const target = Array.isArray(targetRows) ? targetRows[0] : targetRows;
+    if (targetError || !target?.path || !target?.object_id) {
+      return new Response(JSON.stringify({ error: extraPhotoId ? 'Photo not found or not owned by this user' : 'No primary photo found for this user' }), { status: 404 });
+    }
+    resolvedPath = target.path;
+    const screenedObjectId: string = target.object_id;
 
     const { data: fileData, error: downloadError } = await admin.storage
       .from('profile-photos')
@@ -198,11 +198,14 @@ serve(async (req) => {
 
     const isSafe = !failedModeration && !possibleMinorFlag && ageCheckSucceeded;
 
-    if (extraPhotoId) {
-      await admin.from('profile_photos').update({ photo_verified: isSafe }).eq('id', extraPhotoId);
-    } else {
-      await admin.from('profiles').update({ photo_verified: isSafe }).eq('id', userId);
-    }
+    const { data: applied, error: recordError } = await admin.rpc('record_photo_screening', {
+      p_user: userId,
+      p_extra: extraPhotoId,
+      p_path: resolvedPath,
+      p_object_id: screenedObjectId,
+      p_safe: isSafe,
+    });
+    if (recordError) throw recordError;
 
     if (!isSafe) {
       await admin.from('reports').insert({
@@ -217,7 +220,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ ok: true, verified: isSafe }), {
+    return new Response(JSON.stringify({ ok: true, verified: applied === true, stale: isSafe && applied !== true }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
