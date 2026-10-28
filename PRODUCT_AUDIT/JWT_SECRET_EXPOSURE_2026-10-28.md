@@ -141,6 +141,28 @@ stay `queued` after a 200 (all 5 rows in the table, incl. the 2026-10-20 one): p
 is. Push after revocation CONFIRMED ON THE PHONE: a test push sent 23:22 UTC through the outbox (send-push 200, Expo `ok`) arrived
 on the owner's iPhone (owner confirmed). End-of-watch review re-scheduled in-session for 2026-10-29 23:19 UTC (lost again on another restart: then ask for it).
 
+## Full incident review run early (2026-10-28 23:26-23:28 UTC, owner asked; read-only except one test push; 24 h watch continues)
+
+| # | Check | Result |
+|---|---|---|
+| 1 | Old key rejected | signing keys ES256 `in_use`, HS256 `revoked`; an HS256 Bearer on REST = 401. A forged-with-the-real-secret test cannot be repeated (the value no longer exists here); the 23:10 test (200 -> 401) stands |
+| 2 | Sign-in / refresh / get user / REST as user (dedicated test account) | 200 ES256 / 200 ES256 / 200 / 200 (3 rows); signed out after |
+| 3 | Edge functions | send-push with the secret key reached its body validation (400); read-offer-creative as user 400 "Missing partnerId", signed out 401; function log errors since 23:10 = 0 (21 lines), function 5xx = 0 |
+| 4 | Scheduled jobs since 23:10:17 | 35 succeeded, 0 failed |
+| 5 | Background requests (`net._http_response`) since 23:10:17 | 2, 0 non-2xx/errors |
+| 6 | Push | 23:28 UTC test through `_send_push`: send-push 200, Expo `ok` (on-phone: owner to confirm; the 23:22 one was confirmed) |
+| 7 | Gateway logs since 23:10:17 | 26 requests, 0 5xx, 4 401 (all this session's / the previous session's refusal checks). Detector validated (finds ES256 on the 8 signed-in requests). 4 HS256 entries: 3 refused (401) checks + **1 accepted (200): 23:22:44 `POST /admin/v1/network-bans/retrieve`, user agent `@supabase-infra/mgmt-api`, role `supabase_admin`, token issued 2026-07-02, expires 2036** = Supabase's own Management API serving this session's network-bans read (same shape as the 2026-10-27 call). Not a client of this project and not evidence of misuse |
+
+Held functions: `moderate-photo` (v17) as user = 404 "No primary photo found" (its DB lookup ran, so its key works), signed out 401;
+`create-assistant` (v28) as user = 400 "Missing text", signed out 401; `delete-account` (v9) ACTIVE, deliberately not invoked
+(a real call deletes the account). Transcripts: no file under `~/.claude/projects` contains a `jwt_secret` field; the
+exact-value search cannot be repeated (no copy of the value left to search with), the earlier 0-hit result stands.
+
+**OPEN (blocks closing):** the platform's `/admin/v1` route still accepted an HS256 `supabase_admin` token AFTER the HS256 key
+was revoked. Unknown from here whether that token is signed with the exposed legacy secret (if so, a forged `supabase_admin`
+token might still reach `/admin/v1/*`) or with a separate platform key. Question for Supabase support, not answerable by a
+test without the secret. No production change made.
+
 ## Exploitation check (2026-10-28 ~23:10 UTC; owner: escalate at once on any sign of use)
 
 Source: API gateway logs (Management API `analytics/endpoints/logs`, ClickHouse table `logs`, `source = 'edge_logs'`, one
