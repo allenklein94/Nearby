@@ -229,6 +229,23 @@ Rollback limits (schema rollback is proven identical; operational rollback is no
   `people_visible_to_me` (age not birthdate, hidden fields nulled server-side), the app's own-row reads moved to an
   own-profile read; build 86 compatibility path needed. Needs owner approval to build.
 
+## Photo screening pre-deploy check (owner condition for 0348/0349, 2026-10-28; prod, rolled back; NOT fixed)
+
+| Check | Today | With 0348+0349 |
+|---|---|---|
+| Main photo replaced by direct API update, claiming verified | stays verified, visible | reset to unscreened in the SAME statement (BEFORE trigger); profile + folder hidden from others at once |
+| Extra photo inserted claiming verified | accepted as verified | forced unscreened |
+| Another user reads an UNSCREENED extra photo row | visible | STILL visible (`profile_photos` read policy gates on the MAIN photo, not the row's own result) |
+| Another user lists/reads files in the folder (unscreened extra, a not-yet-applied new main, old/replaced photos) | readable | STILL readable while the main is screened (storage policy is per folder, not per file) |
+| Rejected screening (main) | hidden | hidden (stays false) |
+| Rejected / failed screening (extra) | row + file readable via API (app filters it, ViewProfileScreen.js:186) | same |
+| Failed screening (service error) | no write | no write -> stays unscreened |
+| Stale verdict: photo A screened, replaced by B before the verdict lands | A's "safe" marks B verified | same: `moderate-photo` writes by user/row id without checking the path it screened |
+
+Proposed fix (NOT built, awaiting owner): in 0349, `profile_photos` read for others needs the row's own `photo_verified`;
+storage read for others = only the owner's current screened main path or a screened extra row's path (per file);
+`moderate-photo` writes its verdict only where `photo_url` still equals the path it screened (edge redeploy, approval).
+
 ## I2 requirements: progressive trust folded into I2 (owner, 2026-10-28; NOT built, design not locked)
 
 Progressive trust decides HOW MUCH activity an account can perform, never whether someone is a better or more
