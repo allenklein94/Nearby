@@ -161,7 +161,7 @@ exact-value search cannot be repeated (no copy of the value left to search with)
 **OPEN (blocks closing):** the platform's `/admin/v1` route still accepted an HS256 `supabase_admin` token AFTER the HS256 key
 was revoked. Unknown from here whether that token is signed with the exposed legacy secret (if so, a forged `supabase_admin`
 token might still reach `/admin/v1/*`) or with a separate platform key. Question for Supabase support, not answerable by a
-test without the secret. No production change made. Support ticket drafted (NOT sent; owner sends): `PRODUCT_AUDIT/SUPABASE_SUPPORT_TICKET_HS256_ADMIN_2026-10-28.md`.
+test without the secret. No production change made. Support ticket SENT by the owner via the support portal 2026-10-28, awaiting reply: `PRODUCT_AUDIT/SUPABASE_SUPPORT_TICKET_HS256_ADMIN_2026-10-28.md`.
 
 ## Exploitation check (2026-10-28 ~23:10 UTC; owner: escalate at once on any sign of use)
 

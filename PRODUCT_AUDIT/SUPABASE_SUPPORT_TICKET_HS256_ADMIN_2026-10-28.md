@@ -1,6 +1,6 @@
 # Supabase support ticket draft: HS256 admin request accepted after legacy key revocation (2026-10-28)
 
-Status: DRAFT, not sent. Owner sends it (Dashboard > Support, or support@supabase.com). Contains no credentials, secrets,
+Status: SENT by the owner via the Supabase support portal (2026-10-28, ~23:40 UTC). Awaiting reply. Contains no credentials, secrets,
 tokens or user data.
 
 ---
