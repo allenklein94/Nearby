@@ -122,7 +122,7 @@ Post-revocation checks (23:10-23:13 UTC; scripts printed status codes only):
 | Storage list (secret key) / sign / fetch signed photo URL / list as user | 200 / 200 / 200 / 200 |
 | Function with the secret key (`send-push`) | reached the function (400 = its own body validation) |
 | Function with a user ES256 token (`read-offer-creative`, verify_jwt on) | reached the function (400 "Missing partnerId"); signed out 401 |
-| Real push through the outbox after revocation (23:11 UTC) | send-push 200, Expo ticket + receipt `ok`; on-phone arrival: owner to confirm |
+| Real push through the outbox after revocation (23:11 UTC) | send-push 200, Expo ticket + receipt `ok`; on-phone arrival CONFIRMED by the owner with a 23:22 UTC re-test |
 | Dashboard > Database > Network bans | owner to open (not reachable from here) |
 
 Not tested: Realtime websocket subscriptions (ES256 user tokens, same verification path as REST; watch the logs), the 13
@@ -138,7 +138,8 @@ re-run of both check scripts.
 tokens (the one HS256 string seen is Storage's own signed-URL signature, a separate key, 60 s expiry); cron 24 runs succeeded,
 0 failed; `net._http_response` non-2xx since 23:10 = 0; the 23:08 + 23:11 test pushes: send-push 200, Expo `ok`. Outbox rows
 stay `queued` after a 200 (all 5 rows in the table, incl. the 2026-10-20 one): pre-existing, not caused by the revocation, left as
-is. End-of-watch review re-scheduled in-session for 2026-10-29 23:19 UTC (lost again on another restart: then ask for it).
+is. Push after revocation CONFIRMED ON THE PHONE: a test push sent 23:22 UTC through the outbox (send-push 200, Expo `ok`) arrived
+on the owner's iPhone (owner confirmed). End-of-watch review re-scheduled in-session for 2026-10-29 23:19 UTC (lost again on another restart: then ask for it).
 
 ## Exploitation check (2026-10-28 ~23:10 UTC; owner: escalate at once on any sign of use)
 
