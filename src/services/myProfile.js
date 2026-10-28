@@ -20,3 +20,15 @@ export async function readMyProfile(columns = '*') {
   if (!uid) return { data: null, error: null };
   return supabase.from('profiles').select(columns).eq('id', uid).maybeSingle();
 }
+
+// Sign-up's first profile write. An upsert (INSERT ... ON CONFLICT DO UPDATE) needs SELECT on every column it sets, so
+// after 20270348 it is refused for private columns (birthdate, onboarding answers, ...). Instead: insert the row; only if
+// it already exists (23505, e.g. a retry after a dropped response) update the same fields on the caller's own row.
+// Works the same before and after 20270348. Returns { error } like the upsert it replaces.
+export async function saveMyNewProfile(row) {
+  const inserted = await supabase.from('profiles').insert(row);
+  if (inserted?.error?.code !== '23505') return { error: inserted?.error || null };
+  const { id, ...fields } = row;
+  const updated = await supabase.from('profiles').update(fields).eq('id', id);
+  return { error: updated?.error || null };
+}

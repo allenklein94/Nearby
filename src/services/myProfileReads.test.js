@@ -93,4 +93,42 @@ describe('N6: profile reads name only public columns', () => {
       expect([col, new RegExp(`grant select \\(${col}\\) on public\\.profiles to authenticated`).test(sql)]).toEqual([col, true]);
     }
   });
+
+  // An upsert (INSERT ... ON CONFLICT DO UPDATE) needs SELECT on every column it sets: refused after 20270348 for private
+  // columns (the sign-up write broke this way). Own-row first writes go through saveMyNewProfile (insert, then update).
+  test('no upsert on profiles anywhere in the app', () => {
+    const hits = files(SRC).flatMap((f) => {
+      const text = fs.readFileSync(f, 'utf8');
+      const re = /from\(\s*['"`]profiles['"`]\s*\)\s*\.upsert\(/g;
+      const found = [];
+      let m;
+      while ((m = re.exec(text))) found.push(`${path.relative(SRC, f)}:${lineOf(text, m.index)}`);
+      return found;
+    });
+    expect(hits).toEqual([]);
+  });
+
+  // A later migration must never reopen what 20270348 closed: no table-wide SELECT on profiles, no grant on a private
+  // column, no new view or publication over profiles. (The database-level check is journey profileColumnPrivacy.)
+  test('no migration from 20270348 on reopens private profile columns', () => {
+    const dir = path.join(SRC, '..', 'supabase', 'migrations');
+    const OWN_VIEWS = new Set(['people_visible_to_me', 'dating_candidates_visible_to_me']);
+    const problems = [];
+    for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.sql') && n >= '20270348').sort()) {
+      const sql = fs.readFileSync(path.join(dir, f), 'utf8').replace(/--[^\n]*/g, '');
+      for (const m of sql.matchAll(/grant\s+([^;]*?)\s+on\s+(?:table\s+)?(?:public\.)?profiles\s+to\s+([^;]*);/gi)) {
+        const [, what, who] = m;
+        if (!/\b(authenticated|anon|public)\b/i.test(who)) continue;
+        if (/^\s*(all|select)\s*(privileges)?\s*$/i.test(what) || /\ball\b/i.test(what)) problems.push(`${f}: table-wide ${what.trim()} to ${who.trim()}`);
+        const cols = /select\s*\(([^)]*)\)/i.exec(what);
+        if (cols) for (const c of cols[1].split(',').map((x) => x.trim())) if (!isPublic(c)) problems.push(`${f}: private column ${c} granted`);
+      }
+      for (const m of sql.matchAll(/create\s+(?:or\s+replace\s+)?(?:materialized\s+)?view\s+(?:public\.)?([a-z_]+)([\s\S]*?);/gi)) {
+        if (/\bprofiles\b/i.test(m[2]) && !OWN_VIEWS.has(m[1])) problems.push(`${f}: new view ${m[1]} over profiles`);
+      }
+      if (/alter\s+publication[^;]*\bprofiles\b/i.test(sql)) problems.push(`${f}: profiles added to a publication`);
+      if (/alter\s+default\s+privileges[^;]*grant[^;]*select/i.test(sql)) problems.push(`${f}: default SELECT privileges`);
+    }
+    expect(problems).toEqual([]);
+  });
 });

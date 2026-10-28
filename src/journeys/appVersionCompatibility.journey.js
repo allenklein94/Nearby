@@ -9,10 +9,11 @@
 //   new build x any state: the id_verified read works when the column exists; when it doesn't, the server answers 42703
 //     and the same read without the column (selectWithIdVerified's retry) works.
 // N6 (20270348, state 'n6' = get_my_profile() exists): build 86's own select('*'), its Dating read (birthdate) and its
-// ViewProfile read (private columns on profiles) are REFUSED (fails closed: an error, never more data); its writes, sign-up,
-// push and Friends Browse keep working. Rollout requirement: the new build on every installed device before 20270348.
+// ViewProfile read (private columns on profiles) and its sign-up upsert (ON CONFLICT DO UPDATE needs SELECT on the private
+// columns it sets) are REFUSED (fails closed: an error, never more data); its edits, push and Friends Browse keep working. Rollout requirement: the new build on every installed device before 20270348.
 // The new build works in every state: own row via get_my_profile() (direct read before N6), other people only through the
-// views with `age` (before N6: 42703, then the birthdate read, services/peopleRead.js).
+// views with `age` (before N6: 42703, then the birthdate read, services/peopleRead.js); sign-up = insert, and on 23505 (row
+// already there) update the same fields (saveMyNewProfile in services/myProfile.js).
 // One rolled-back transaction. Not covered: the old build's screens on a phone, Spotify on build 86 (after 20270347 it
 // can't read its own tokens back; 0 accounts have Spotify connected).
 const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
@@ -48,7 +49,7 @@ d('journey: installed app versions keep working against the trust & safety datab
   beforeAll(async () => {
     const log = await runJourney(`
       ${actorDeclares(['v_a', 'v_b'])}
-      v_new uuid := gen_random_uuid(); v_out jsonb; v_n int; v_row jsonb; v_tok text;`, `
+      v_new uuid := gen_random_uuid(); v_new2 uuid := gen_random_uuid(); v_out jsonb; v_n int; v_row jsonb; v_tok text;`, `
   ${actorsSql({ people: ['v_a', 'v_b'], friends: [] })}
   update profiles set onboarding_motivations = array['Go on dates', 'Make new friends'], open_to_friend_discovery = true,
     wide_area = '41.2,-73.1' where id in (v_a, v_b);
@@ -81,7 +82,8 @@ d('journey: installed app versions keep working against the trust & safety datab
   -- ===== new build: the id_verified read and its retry =====
   ${as('new_friends_with_column', 'v_a', `select count(*) into v_n from (select ${B86_FRIENDS}, id_verified from people_visible_to_me where id = v_b) x`, 'v_n')}
   ${as('new_friends_retry', 'v_a', `select count(*) into v_n from (select ${B86_FRIENDS} from people_visible_to_me where id = v_b) x`, 'v_n')}
-  ${as('new_dating_with_column', 'v_a', `select count(*) into v_n from (select ${B86_DATING}, id_verified from dating_candidates_visible_to_me where id = v_b) x`, 'v_n')}
+  ${as('new_dating_with_column', 'v_a', `select count(*) into v_n from (select ${NEW_DATING}, id_verified from dating_candidates_visible_to_me where id = v_b) x`, 'v_n')}
+  ${as('new_dating_with_column_legacy', 'v_a', `select count(*) into v_n from (select ${B86_DATING}, id_verified from dating_candidates_visible_to_me where id = v_b) x`, 'v_n')}
   ${as('new_profile_with_column', 'v_a', `select count(*) into v_n from (select ${NEW_VIEW_PROFILE}, id_verified from people_visible_to_me where id = v_b) x`, 'v_n')}
 
   -- ===== new build: own row, ViewProfile and Dating in every N6 state =====
@@ -91,6 +93,13 @@ d('journey: installed app versions keep working against the trust & safety datab
   ${as('new_view_profile_age', 'v_a', `select count(*) into v_n from (select ${NEW_VIEW_PROFILE} from people_visible_to_me where id = v_b) x`, 'v_n')}
   ${as('new_view_profile_legacy', 'v_a', `select count(*) into v_n from (select ${LEGACY_VIEW_PROFILE} from people_visible_to_me where id = v_b) x`, 'v_n')}
   ${as('new_dating_age', 'v_a', `select count(*) into v_n from (select ${NEW_DATING} from dating_candidates_visible_to_me where id = v_b) x`, 'v_n')}
+  -- Sign-up (saveMyNewProfile): insert the row with its private answers; a second attempt gets 23505 and updates instead.
+  insert into auth.users (id, aud, role, email, phone, phone_confirmed_at) values (v_new2, 'authenticated', 'authenticated', v_new2 || '@new.invalid', '15550001235', now());
+  ${as('new_signup_insert', 'v_new2', `insert into profiles (id, display_name, birthdate, interests, terms_accepted_at, onboarding_motivations) values (v_new2, 'New Build', date '1996-03-03', array['Coffee'], now(), array['Make new friends'])`,
+    `(select display_name from profiles where id = v_new2)`)}
+  ${as('new_signup_retry_insert', 'v_new2', `insert into profiles (id, display_name, birthdate) values (v_new2, 'Again', date '1996-03-04')`)}
+  ${as('new_signup_retry_update', 'v_new2', `update profiles set display_name = 'Again', birthdate = date '1996-03-04', onboarding_motivations = array['Go on dates'] where id = v_new2; get diagnostics v_n = row_count`, 'v_n')}
+  ${rec('new_signup_saved', `(select jsonb_build_object('name', display_name, 'birthdate', birthdate, 'motivations', onboarding_motivations) from profiles where id = v_new2)`)}
   ${as('new_dating_legacy', 'v_a', `select count(*) into v_n from (select ${B86_DATING} from dating_candidates_visible_to_me where id = v_b) x`, 'v_n')}
 `);
     s = stepMap(log);
@@ -106,7 +115,15 @@ d('journey: installed app versions keep working against the trust & safety datab
     expect(data('b86_logout')).toBe(1);
     expect(data('b86_token_after_logout')).toBeNull();
     expect(data('b86_profile_edit')).toBe(1);
-    expect(data('b86_signup_upsert')).toBe('New On 86');
+    if (data('state').n6) expect(data('b86_signup_upsert').code).toBe('42501');
+    else expect(data('b86_signup_upsert')).toBe('New On 86');
+  });
+
+  test('new build: sign-up saves the private answers in every state; a retry updates the same row', () => {
+    expect(data('new_signup_insert')).toBe('New Build');
+    expect(data('new_signup_retry_insert').code).toBe('23505');
+    expect(data('new_signup_retry_update')).toBe(1);
+    expect(data('new_signup_saved')).toEqual({ name: 'Again', birthdate: '1996-03-04', motivations: ['Go on dates'] });
   });
 
   test('build 86: Friends Browse works; Dating and ViewProfile work before N6, are refused after it (never more data)', () => {
@@ -140,7 +157,9 @@ d('journey: installed app versions keep working against the trust & safety datab
 
   test('new build: id_verified read works when the column exists, else 42703 and the retry works', () => {
     const live = data('state').id_verified;
-    for (const k of ['new_friends_with_column', 'new_dating_with_column', 'new_profile_with_column']) {
+    // The new build's Dating read has age after N6 and birthdate (selectPeople's retry) before it.
+    const dating = data('state').n6 ? 'new_dating_with_column' : 'new_dating_with_column_legacy';
+    for (const k of ['new_friends_with_column', dating, 'new_profile_with_column']) {
       if (live) expect([k, data(k)]).toEqual([k, 1]);
       else expect([k, data(k).code]).toEqual([k, '42703']);
     }

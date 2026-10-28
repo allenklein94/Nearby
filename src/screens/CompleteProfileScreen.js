@@ -3,6 +3,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, Platform, Linking, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
+import { saveMyNewProfile } from '../services/myProfile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { mutesFromOnboardingChoices } from '../constants/notificationPreferences';
 import { ONBOARDING_ANSWERS_KEY, ONBOARDING_DRAFT_KEY } from './OnboardingQuestionsScreen';
@@ -235,7 +236,7 @@ export default function CompleteProfileScreen() {
       const wantsFriends = Array.isArray(onboardingAnswers.onboarding_motivations)
         && onboardingAnswers.onboarding_motivations.includes('Make new friends');
 
-      const { error: profileError } = await supabase.from('profiles').upsert({
+      const { error: profileError } = await saveMyNewProfile({
         id: userId,
         display_name: displayName.trim(),
         birthdate: birthdate.toISOString().split('T')[0],

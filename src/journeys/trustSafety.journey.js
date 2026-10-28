@@ -61,8 +61,9 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   ${as('self_photo_verified', 'v_u', 'update profiles set photo_verified = true where id = v_u', '(select photo_verified from profiles where id = v_u)')}
   insert into auth.users (id, aud, role, email) values (v_new, 'authenticated', 'authenticated', v_new || '@email-signup.invalid');
   ${as('new_profile_privileged', 'v_new', `insert into profiles (id, display_name, birthdate, is_admin, is_premium, photo_verified, id_verified, suspended_at, bonus_notices)
-      values (v_new, 'Email Signup', date '1990-01-01', true, true, true, true, now() - interval '1 day', 99)`,
-    `(select jsonb_build_object('is_admin', is_admin, 'is_premium', is_premium, 'photo_verified', photo_verified, 'id_verified', id_verified,
+      values (v_new, 'Email Signup', date '1990-01-01', true, true, true, true, now() - interval '1 day', 99)`)}
+  -- Read back by the server (after N6, 20270348, a client can't read its own private columns directly).
+  ${rec('new_profile_privileged_row', `(select jsonb_build_object('is_admin', is_admin, 'is_premium', is_premium, 'photo_verified', photo_verified, 'id_verified', id_verified,
        'suspended', suspended_at is not null, 'bonus_notices', bonus_notices) from profiles where id = v_new)`)}
   update profiles set photo_verified = true where id = v_u; -- screened by the service (moderate-photo), as in production
   ${as('new_photo_resets', 'v_u', `update profiles set photo_url = v_u || '/main-2.jpg', photo_verified = true where id = v_u`, '(select photo_verified from profiles where id = v_u)')}
@@ -89,7 +90,8 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
 
   -- ===== Fix 3: identity verified is its own state =====
   select photo_verified::int into v_n from profiles where id = v_u;
-  ${as('admin_approves', 'v_admin', 'perform admin_approve_id_verification(v_sub, true)', `(select jsonb_build_object('id_verified', id_verified,
+  ${as('admin_approves', 'v_admin', 'perform admin_approve_id_verification(v_sub, true)')}
+  ${rec('admin_approves_row', `(select jsonb_build_object('id_verified', id_verified,
       'id_verified_at_set', id_verified_at is not null, 'photo_verified_unchanged', photo_verified::int = v_n) from profiles where id = v_u)`)}
   ${as('self_id_verified', 'v_y', 'update profiles set id_verified = true, id_verified_at = now() where id = v_y', '(select id_verified from profiles where id = v_y)')}
   ${as('views_carry_id_verified', 'v_y', 'v_n := 0', `(select jsonb_build_object(
@@ -197,7 +199,8 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
 
   test('fix 1: nobody marks their own photo screened or makes themselves admin', () => {
     expect(data('self_photo_verified')).toBe(false);
-    expect(data('new_profile_privileged')).toEqual({ is_admin: false, is_premium: false, photo_verified: false, id_verified: false, suspended: false, bonus_notices: 0 });
+    expect(data('new_profile_privileged')).toBe('ok');
+    expect(data('new_profile_privileged_row')).toEqual({ is_admin: false, is_premium: false, photo_verified: false, id_verified: false, suspended: false, bonus_notices: 0 });
     expect(data('new_photo_resets')).toBe(false);
     expect(hint('photo_not_own')).toBe('photo_not_own');
     expect(data('extra_insert_verified')).toBe(false);
@@ -223,7 +226,8 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   });
 
   test('fix 3: an approved ID sets id_verified only; nobody sets it themselves; discovery carries it', () => {
-    expect(data('admin_approves')).toEqual({ id_verified: true, id_verified_at_set: true, photo_verified_unchanged: true });
+    expect(data('admin_approves')).toBe('ok');
+    expect(data('admin_approves_row')).toEqual({ id_verified: true, id_verified_at_set: true, photo_verified_unchanged: true });
     expect(data('self_id_verified')).toBe(false);
     expect(data('views_carry_id_verified')).toEqual({ people_view: true, others_unverified: false });
     expect(data('friend_browse_id_verified')).toEqual({ has_column: true, fb: true });

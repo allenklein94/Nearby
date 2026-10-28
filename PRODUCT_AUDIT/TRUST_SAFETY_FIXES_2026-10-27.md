@@ -193,7 +193,7 @@ Rollback limits (schema rollback is proven identical; operational rollback is no
 ## New findings while tracing (reported, not fixed)
 
 - **N1 (HIGH): FIXED by 20270347** (built + tested, not deployed; above).
-- **N6 (HIGH, recommend: blocker before external testing; NOT fixed, needs your approval):** the same whole-table read
+- **N6 (HIGH) UPDATE 2026-10-28: fix BUILT + VERIFIED pre-deploy (migration 20270348, NOT DEPLOYED; owner approved Option 1):** results, deployment sequence and build-86 limits in `PRODUCT_AUDIT/N6_PROFILE_PRIVACY_PROGRESS_2026-10-28.md`. Original finding: the same whole-table read
   exposes other columns. Proven read-only as an ordinary user: other people's exact birthdate, sexual orientation,
   approximate location area (`wide_area`), last Home visit time, which business they manage (`managed_partner_id`), the
   admin flag, dating preferences and time zone. The "hidden" switches (ethnicity, gender) hide only in the app: a set

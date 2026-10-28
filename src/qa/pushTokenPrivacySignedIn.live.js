@@ -32,8 +32,16 @@ d('N1: tokens through the real signed-in API (read-only)', () => {
 
   test('profiles: every readable row (other people and own, incl. select *) has no token', async () => {
     const named = await client.from('profiles').select(`id, ${TOKEN_COLUMNS.join(', ')}`);
-    expect(named.error).toBeNull();
     const star = await client.from('profiles').select('*');
+    // After N6 (20270348) a private column can't be read at all: the request itself is refused (42501), which is "no token".
+    const n6 = named.error?.code === '42501';
+    if (n6) {
+      expect(star.error?.code).toBe('42501');
+      const visible = await client.from('profiles').select('id');
+      expect(visible.data.filter((r) => r.id !== userId).length).toBeGreaterThan(0);
+      return;
+    }
+    expect(named.error).toBeNull();
     expect(star.error).toBeNull();
     // eslint-disable-next-line no-console
     console.log({ profilesReadable: named.data.length, othersReadable: named.data.filter((r) => r.id !== userId).length });
@@ -45,6 +53,7 @@ d('N1: tokens through the real signed-in API (read-only)', () => {
 
   test('people_visible_to_me: no token on any row', async () => {
     const { data, error } = await client.from('people_visible_to_me').select(`id, ${TOKEN_COLUMNS.join(', ')}`);
+    if (error?.code === '42703') return; // N6's narrowed view has no token column at all
     expect(error).toBeNull();
     expect(leaked(data)).toBe(0);
   }, 30000);
