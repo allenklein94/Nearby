@@ -8,6 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { useTheme } from '../context/ThemeContext';
 import { joinedNearbyDate } from '../utils/joinedDate';
 import { useLanguage } from '../context/LanguageContext';
@@ -300,7 +301,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     // which meant the screen's fields visibly filled in one at a time
     // instead of all at once. Fired together instead, same fix already
     // applied to Home's load().
-    const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
+    const { data } = await readMyProfile('*');
     if (data) {
       setDisplayName(data.display_name || '');
       setJoinedAt(data.created_at ?? null);
@@ -567,7 +568,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   // Photo changes save at once; re-read only the photos so nothing typed into the form (and not yet saved) is reset.
   async function reloadPhotos() {
     if (!userId) return;
-    const { data } = await supabase.from('profiles').select('photo_url, photo_verified').eq('id', userId).single();
+    const { data } = await readMyProfile('photo_url, photo_verified');
     setPhotoVerified(!!data?.photo_verified);
     await Promise.all([
       data?.photo_url ? getSignedPhotoUrl(data.photo_url).then(setPhotoUrl) : Promise.resolve(setPhotoUrl(null)),

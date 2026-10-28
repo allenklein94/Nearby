@@ -1,5 +1,6 @@
 import { tr } from '../i18n/translate';
 import { supabase } from './supabase';
+import { readMyProfile } from './myProfile';
 import { getNearbyMatches } from './proximity';
 import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
 import { getNearbyGatherings, getMyInterestedGatherings, getApprovedCounts, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
@@ -118,7 +119,7 @@ export async function getActivityBadgeCount() {
   const myId = sessionData?.session?.user?.id;
   if (!myId) return 0;
 
-  const { data: profile } = await supabase.from('profiles').select('last_activity_check').eq('id', myId).single();
+  const { data: profile } = await readMyProfile('last_activity_check');
   let newActivity = 0;
   if (profile?.last_activity_check) {
     const { count } = await supabase
@@ -324,11 +325,7 @@ export async function getOnboardingRecommendations() {
   const myId = sessionData?.session?.user?.id;
   if (!myId) return [];
 
-  const { data: myProfile } = await supabase
-    .from('profiles')
-    .select('monthly_interests, wide_area')
-    .eq('id', myId)
-    .single();
+  const { data: myProfile } = await readMyProfile('monthly_interests, wide_area');
 
   if (!myProfile?.wide_area) return [];
 
@@ -406,7 +403,7 @@ export async function getHomeDashboard() {
   const myId = sessionData?.session?.user?.id;
   if (!myId) return null;
 
-  const { data: profileData } = await supabase.from('profiles').select('last_home_visit, interests, monthly_interests, onboarding_motivations').eq('id', myId).single();
+  const { data: profileData } = await readMyProfile('last_home_visit, interests, monthly_interests, onboarding_motivations');
   const lastVisit = profileData?.last_home_visit ? new Date(profileData.last_home_visit) : null;
   await supabase.from('profiles').update({ last_home_visit: new Date().toISOString() }).eq('id', myId);
 

@@ -3,6 +3,7 @@ import Constants from 'expo-constants';
 import * as WebBrowser from 'expo-web-browser';
 import { supabase, functionUrl } from './supabase';
 
+import { readMyProfile } from './myProfile';
 // Real Stripe Connect client wiring — closes step 1 of the 2026-08-27
 // locked Decision 2 in CLAUDE.md (direct charges, business is merchant of
 // record, Nearby never custodies consumer funds). Every function here is
@@ -54,11 +55,7 @@ export async function getMyStripeConnectStatus() {
   const userId = sessionData?.session?.user?.id;
   if (!userId) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('managed_partner_id')
-    .eq('id', userId)
-    .single();
+  const { data: profile } = await readMyProfile('managed_partner_id');
   if (!profile?.managed_partner_id) return null;
 
   const { data: partner } = await supabase

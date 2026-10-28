@@ -31,24 +31,12 @@ import { typography, spacing, radius } from '../theme';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import useCategoryNames from '../hooks/useCategoryNames';
-import { selectWithIdVerified } from '../services/idVerifiedColumn';
+import { selectPeople } from '../services/peopleRead';
 const { width } = Dimensions.get('window');
 // Stored connection-goal value -> its label key (same map as ProfileScreen).
 const GOAL_KEYS = { 'Meet friends': 'meetFriends', Date: 'date', Network: 'network', 'Explore my city': 'exploreCity', 'Find community': 'findCommunity', 'Get out more': 'getOutMore' };
 const NEW_HERE_DAYS = 7;
 const FREQUENT_CHANGE_THRESHOLD = 3;
-
-function calculateAge(birthdateString) {
-  if (!birthdateString) return null;
-  const birthdate = new Date(birthdateString);
-  const today = new Date();
-  let age = today.getFullYear() - birthdate.getFullYear();
-  const monthDiff = today.getMonth() - birthdate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
-    age--;
-  }
-  return age;
-}
 
 function isNewHere(createdAt) {
   if (!createdAt) return false;
@@ -181,11 +169,13 @@ export default function ViewProfileScreen({ route, navigation }) {
         }
       }
 
-      const { data } = await selectWithIdVerified((columns) => supabase
-        .from('profiles')
+      // N6: another person's profile only through people_visible_to_me (age, never the birthdate; a hidden gender /
+      // ethnicity arrives empty).
+      const { data } = await selectPeople((columns) => supabase
+        .from('people_visible_to_me')
         .select(columns)
         .eq('id', userId)
-        .single(), 'id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, id_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders');
+        .single(), 'id, display_name, bio, photo_url, interests, basics, prompts, is_premium, age, photo_verified, id_verified, created_at, pronouns, gender, sexual_orientation, ethnicity, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders');
 
       let mainPhotoUrl = null;
       if (data?.photo_url) {
@@ -365,7 +355,7 @@ export default function ViewProfileScreen({ route, navigation }) {
     );
   }
 
-  const age = calculateAge(profile.birthdate);
+  const age = profile.age ?? null;
 
   const badges = [
     profile.id_verified && { icon: '✓', label: t('ui.viewProfile.badge.verified'), color: colors.success },
@@ -386,12 +376,12 @@ export default function ViewProfileScreen({ route, navigation }) {
 
   const details = [
     profile.pronouns && { key: 'pronouns', value: profile.pronouns },
-    profile.gender && !profile.gender_hidden && { key: 'gender', value: profile.gender },
+    profile.gender && { key: 'gender', value: profile.gender },
     profile.sexual_orientation && { key: 'orientation', value: profile.sexual_orientation },
-    profile.ethnicity && !profile.ethnicity_hidden && { key: 'ethnicity', value: basicsOption('ethnicity', profile.ethnicity, language) },
-    isDatingContext && !profile.gender_hidden && genderIdentity.length > 0 &&
+    profile.ethnicity && { key: 'ethnicity', value: basicsOption('ethnicity', profile.ethnicity, language) },
+    isDatingContext && genderIdentity.length > 0 &&
       { key: 'genderIdentity', value: genderIdentity.map((g) => basicsOption('gender', g, language)).join(', ') },
-    isDatingContext && !profile.gender_hidden && interestedInGenders.length > 0 &&
+    isDatingContext && interestedInGenders.length > 0 &&
       { key: 'interestedIn', value: t('ui.viewProfile.interestedIn', { genders: interestedInGenders.map((g) => basicsOption('gender', g, language)).join(', ') }) },
   ].filter(Boolean);
 

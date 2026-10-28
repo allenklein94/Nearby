@@ -6,3 +6,10 @@ export const PUBLIC_PROFILE_COLUMNS = [
   'profile_hidden', 'basics', 'prompts', 'relationship_intention', 'read_receipts_enabled', 'women_message_first',
   'favorite_tracks', 'voice_intro_path', 'connection_goal', 'open_to_friend_discovery',
 ];
+
+// Columns a later migration adds AND grants the same way (each grants its own, as 20270348 requires): the Verified badge
+// (20270350) and the suspension mark (20270351; set only on hidden profiles, so only the person and an admin see it set).
+export const LATER_PUBLIC_PROFILE_COLUMNS = {
+  id_verified: '20270350_identity_verified_separate.sql',
+  suspended_at: '20270351_account_suspension.sql',
+};

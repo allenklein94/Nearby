@@ -3,6 +3,7 @@
 // for the full two-half design (passive profile preferences + active
 // disguised-question polls). This file is the client wrapper for both.
 import { supabase } from './supabase';
+import { isMissingFunction } from './myProfile';
 
 // ---- (A) passive: a person's own standing dining preferences ----
 // No RPC needed -- profiles' own existing "Users can update own profile"
@@ -77,11 +78,20 @@ export async function getMyAskedPreferencePolls(targetId = null) {
 // gates or blocks it. Never reveals anything to the person being asked
 // about; both reads here are either the caller's own profile-read access
 // or the caller's own asker-scoped poll history.
+// N6 (20270348): another person's dining answers are private columns; the server returns them only for an accepted,
+// unblocked friend (get_friend_dining_preferences), else no row. Before 20270348 is live the function doesn't exist, so
+// the old direct read runs.
+async function readFriendDiningPreferences(friendId) {
+  const res = await supabase.rpc('get_friend_dining_preferences', { p_friend: friendId }).maybeSingle();
+  if (!isMissingFunction(res?.error)) return res;
+  return supabase.from('profiles').select('cuisine_preferences, venue_preferences').eq('id', friendId).maybeSingle();
+}
+
 export async function getWhoForPreferenceSignals(whoForFriendId) {
   if (!whoForFriendId) return { cuisineKeys: [], venueKeys: [] };
 
   const [profileResult, askedResult] = await Promise.allSettled([
-    supabase.from('profiles').select('cuisine_preferences, venue_preferences').eq('id', whoForFriendId).maybeSingle(),
+    readFriendDiningPreferences(whoForFriendId),
     getMyAskedPreferencePolls(whoForFriendId),
   ]);
 

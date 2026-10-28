@@ -17,6 +17,7 @@ import { shouldOfferBreak, dismissBreakSuggestion } from '../services/confidence
 import { isPremium } from '../services/purchases';
 import { checkNoticeLimit, checkWaveLimit } from '../services/noticeLimits';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { getSignedPhotoUrl } from '../services/photos';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
@@ -47,18 +48,6 @@ const DISCOVERY_FILTER_FIELDS = [
   ...BASICS_FIELDS.filter((f) => f.type === 'select'),
   { key: 'ethnicity', label: 'Ethnicity', icon: '🌍', options: ETHNICITY_OPTIONS, topLevel: true },
 ];
-
-function calculateAge(birthdateString) {
-  if (!birthdateString) return null;
-  const birthdate = new Date(birthdateString);
-  const today = new Date();
-  let age = today.getFullYear() - birthdate.getFullYear();
-  const monthDiff = today.getMonth() - birthdate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
-    age--;
-  }
-  return age;
-}
 
 // Aug 24 2026 (CLAUDE.md): an optional `embedded` prop lets this screen be
 // mounted directly inside Discover's People mode -- the exact same
@@ -154,7 +143,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     const myId = sessionData?.session?.user?.id;
     setMyUserId(myId);
     if (myId) {
-      const { data: mine } = await supabase.from('profiles').select('interests, basics, discovery_view_style, quick_filter_order, quick_filter_visible, quick_filter_config, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set, gender_identity, interested_in_genders').eq('id', myId).single();
+      const { data: mine } = await readMyProfile('interests, basics, discovery_view_style, quick_filter_order, quick_filter_visible, quick_filter_config, discovery_gender, show_me, preferred_min_age, preferred_max_age, relationship_intention, dating_preferences_set, gender_identity, interested_in_genders');
       if (mine?.quick_filter_order) setQuickFilterOrder(mine.quick_filter_order);
       if (mine?.quick_filter_visible) setQuickFilterVisible(mine.quick_filter_visible);
       if (mine?.quick_filter_config) setQuickFilterConfig({ ...DATING_DEFAULT_CONFIG, ...mine.quick_filter_config });
@@ -534,7 +523,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
       if (!intentionFilter.some((f) => intentions.includes(f))) return false;
     }
     if (isUserPremium && ageFilterActive) {
-      const age = calculateAge(item.profiles?.birthdate);
+      const age = item.profiles?.age ?? null;
       if (age !== null && (age < ageRangeFilter.min || age > ageRangeFilter.max)) return false;
     }
     if (isUserPremium) {

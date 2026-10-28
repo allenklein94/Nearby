@@ -4,141 +4,66 @@
 -- a view can't lose a column with CREATE OR REPLACE: drop the dependent view first, then recreate both
 drop view public.dating_candidates_visible_to_me;
 drop view public.people_visible_to_me;
-create view public.people_visible_to_me with (security_invoker = true) as
- SELECT id,
-    display_name,
-    bio,
-    birthdate,
-    photo_url,
-    photo_verified,
-    is_premium,
-    expo_push_token,
-    created_at,
-    is_admin,
-    terms_accepted_at,
-    interests,
-    pronouns,
-    gender,
-    sexual_orientation,
-    profile_hidden,
-    basics,
-    discovery_gender,
-    show_me,
-    preferred_min_age,
-    preferred_max_age,
-    notify_matches,
-    gender_hidden,
-    ethnicity,
-    ethnicity_hidden,
-    ethnicity_preferences,
-    prompts,
-    relationship_intention,
-    read_receipts_enabled,
-    women_message_first,
-    referral_code,
-    referred_by,
-    bonus_notices,
-    gender_identity,
-    interested_in_genders,
-    discovery_view_style,
-    wide_area,
-    seen_browse_callout,
-    browse_views_today,
-    browse_views_date,
-    ai_uses_today,
-    ai_uses_date,
-    spotify_access_token,
-    spotify_refresh_token,
-    spotify_token_expires_at,
-    favorite_tracks,
-    quick_filter_order,
-    quick_filter_visible,
-    last_home_visit,
-    last_activity_check,
-    managed_partner_id,
-    connection_goal,
-    timezone,
-    gatherings_created_today,
-    gatherings_created_date,
-    communities_created_today,
-    communities_created_date,
-    friend_requests_sent_today,
-    friend_requests_sent_date,
-    stories_posted_today,
-    stories_posted_date,
-    onboarding_motivations,
-    social_comfort_level,
-    monthly_interests,
-    monthly_interests_updated_at,
-    home_quick_pick_categories,
-    voice_intro_path,
-    intent_visibility,
-    open_to_friend_discovery,
-    contacts_matched_calls_today,
-    contacts_matched_date,
-    dating_preferences_set,
-    seen_home_first_run_moment,
-    dating_pref_hair_colors,
-    height_inches,
-    dating_pref_min_height_inches,
-    dating_pref_max_height_inches,
-    dating_pref_eye_colors,
-    quick_filter_config,
-    friend_quick_filter_order,
-    friend_quick_filter_visible,
-    friend_quick_filter_config,
-    notify_things_to_do_frequency,
-    notify_things_to_do_categories,
-    notify_things_to_do_max_distance_miles,
-    notify_things_to_do_time_pref,
-    notify_nearby_opportunities_frequency,
-    notify_nearby_opportunities_categories,
-    notify_nearby_opportunities_max_distance_miles,
-    notify_nearby_opportunities_time_pref,
-    notify_social,
-    notify_discovery,
-    notify_proximity,
-    notify_planning,
-    notify_business,
-    notify_community,
-    people_submode_dating_uses,
-    people_submode_friends_uses,
-    cuisine_preferences,
-    venue_preferences,
-    notify_dating,
-    interest_groups,
-    share_interest_in_demand,
-    interested_demand_disclosure_ack_at,
-    show_sponsored_places,
-    notification_mutes
+-- Back to N6's narrowed, owner-run views (20270348), never the old wide ones.
+create view public.people_visible_to_me with (security_invoker = false, security_barrier = true) as
+ SELECT p.id,
+    p.display_name,
+    p.bio,
+    p.photo_url,
+    p.photo_verified,
+    p.is_premium,
+    p.created_at,
+    p.interests,
+    p.pronouns,
+    p.basics,
+    p.prompts,
+    p.relationship_intention,
+    p.connection_goal,
+    p.favorite_tracks,
+    p.voice_intro_path,
+    p.open_to_friend_discovery,
+    date_part('year', age(current_date, p.birthdate))::integer AS age,
+    CASE WHEN coalesce(p.gender_hidden, false) THEN NULL ELSE p.gender END AS gender,
+    p.sexual_orientation,
+    CASE WHEN coalesce(p.ethnicity_hidden, false) THEN NULL ELSE p.ethnicity END AS ethnicity,
+    CASE WHEN coalesce(p.gender_hidden, false) OR NOT is_dating_discoverable(p.onboarding_motivations) THEN NULL
+         ELSE p.gender_identity END AS gender_identity,
+    CASE WHEN coalesce(p.gender_hidden, false) OR NOT is_dating_discoverable(p.onboarding_motivations) THEN NULL
+         ELSE p.interested_in_genders END AS interested_in_genders
    FROM profiles p
-  WHERE id = auth.uid() OR NOT viewer_blocked_either_way(id);
-create view public.dating_candidates_visible_to_me with (security_invoker = true) as
- SELECT id,
-    display_name,
-    photo_url,
-    bio,
-    discovery_gender,
-    birthdate,
-    ethnicity,
-    interests,
-    basics,
-    height_inches,
-    photo_verified,
-    relationship_intention,
-    gender_identity,
-    interested_in_genders,
-    show_me,
-    wide_area,
-    is_dating_discoverable(onboarding_motivations) AS dating_opted_in
-   FROM people_visible_to_me v
-  WHERE id <> auth.uid() AND is_dating_discoverable(onboarding_motivations);
-grant select, insert, update, delete, references, trigger on public.people_visible_to_me to authenticated;
-grant select, insert, update, delete, references, trigger, truncate on public.people_visible_to_me to service_role;
+  WHERE auth.uid() IS NOT NULL
+    AND (p.id = auth.uid()
+         OR (((p.photo_verified = true AND p.profile_hidden = false) OR check_is_admin(auth.uid()))
+             AND NOT viewer_blocked_either_way(p.id)));
+create view public.dating_candidates_visible_to_me with (security_invoker = false, security_barrier = true) as
+ SELECT p.id,
+    p.display_name,
+    p.photo_url,
+    p.bio,
+    p.discovery_gender,
+    date_part('year', age(current_date, p.birthdate))::integer AS age,
+    CASE WHEN coalesce(p.ethnicity_hidden, false) THEN NULL ELSE p.ethnicity END AS ethnicity,
+    p.interests,
+    p.basics,
+    p.height_inches,
+    p.photo_verified,
+    p.relationship_intention,
+    CASE WHEN coalesce(p.gender_hidden, false) THEN NULL ELSE p.gender_identity END AS gender_identity,
+    CASE WHEN coalesce(p.gender_hidden, false) THEN NULL ELSE p.interested_in_genders END AS interested_in_genders,
+    p.show_me,
+    p.wide_area,
+    is_dating_discoverable(p.onboarding_motivations) AS dating_opted_in
+   FROM profiles p
+  WHERE auth.uid() IS NOT NULL
+    AND p.id <> auth.uid()
+    AND is_dating_discoverable(p.onboarding_motivations)
+    AND ((p.photo_verified = true AND p.profile_hidden = false) OR check_is_admin(auth.uid()))
+    AND NOT viewer_blocked_either_way(p.id);
+revoke all on public.people_visible_to_me from public, anon, authenticated;
 revoke all on public.dating_candidates_visible_to_me from public, anon, authenticated;
+grant select on public.people_visible_to_me to authenticated;
 grant select on public.dating_candidates_visible_to_me to authenticated;
-grant select, insert, update, delete, references, trigger, truncate on public.dating_candidates_visible_to_me to service_role;
-revoke all on public.people_visible_to_me from anon;
+revoke select (id_verified) on public.profiles from authenticated;
 drop function if exists public.get_friend_discovery_candidates(integer);
 CREATE OR REPLACE FUNCTION public.get_friend_discovery_candidates(limit_param integer DEFAULT 20)
  RETURNS TABLE(id uuid, display_name text, photo_url text, bio text, interests text[], photo_verified boolean, shared_interest_count integer, shared_community_count integer, mutual_friend_count integer, distance_bucket text)

@@ -6,6 +6,7 @@ import { groupForTag } from '../constants/gatheringCategories';
 import { formatApproxDistanceAway } from '../utils/formatDistance';
 import { gatheringLocationProvenance } from '../utils/locationProvenance';
 import { supabase } from './supabase';
+import { readMyProfile } from './myProfile';
 import { tr } from '../i18n/translate';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
@@ -166,7 +167,7 @@ export async function fetchGatheringVisibilityContext(userId) {
   const [blockedByMeRes, blockedMeRes, profileRes, myFriends, myCommunities] = await Promise.all([
     supabase.from('blocks').select('blocked_id').eq('blocker_id', userId),
     supabase.from('blocks').select('blocker_id').eq('blocked_id', userId),
-    supabase.from('profiles').select('interests, gender, basics').eq('id', userId).single(),
+    readMyProfile('interests, gender, basics'),
     getMyFriends(),
     getMyCommunities(),
   ]);
@@ -478,7 +479,7 @@ export async function getInterestedDemandPrefs() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return { share: false, acknowledged: true };
-  const { data } = await supabase.from('profiles').select('share_interest_in_demand, interested_demand_disclosure_ack_at').eq('id', userId).single();
+  const { data } = await readMyProfile('share_interest_in_demand, interested_demand_disclosure_ack_at');
   return { share: data?.share_interest_in_demand === true, acknowledged: !!data?.interested_demand_disclosure_ack_at };
 }
 
@@ -1053,7 +1054,7 @@ export async function getGatheringById(gatheringId) {
   }
 
   const { data: myProfile } = userId
-    ? await supabase.from('profiles').select('interests').eq('id', userId).single()
+    ? await readMyProfile('interests')
     : { data: null };
   const myInterests = myProfile?.interests ?? [];
 

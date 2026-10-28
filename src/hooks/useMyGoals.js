@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { goalShortcuts } from '../constants/onboardingGoals';
 
 // The onboarding goals as Home shortcuts. [] until loaded / signed out / none saved, so Home renders exactly as before.
@@ -13,7 +14,7 @@ export default function useMyGoals() {
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData?.session?.user?.id;
         if (!uid) return;
-        const { data } = await supabase.from('profiles').select('onboarding_motivations').eq('id', uid).single();
+        const { data } = await readMyProfile('onboarding_motivations');
         if (!cancelled) setShortcuts(goalShortcuts(data?.onboarding_motivations));
       } catch {
         // supplementary

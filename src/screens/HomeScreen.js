@@ -74,6 +74,7 @@ import { joinAnd } from '../i18n/list';
 import PlanCard from '../components/PlanCard';
 import { resolveGatheringPlanStatus, resolveGroupPlanStatus, PLAN_STATUS_META } from '../constants/planStatus';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import StartSomethingModal, { CREATE_HUB_OPTIONS } from '../components/StartSomethingModal';
 import SurpriseMeSheet from '../components/SurpriseMeSheet';
 import QuickPicksEditModal from '../components/QuickPicksEditModal';
@@ -665,7 +666,7 @@ export default function HomeScreen({ navigation }) {
         // Phase J (CLAUDE.md) -- created_at is the one new column this
         // whole phase needs; a plain, already-fetched real timestamp, zero
         // new query, used below to compute real account-age maturity.
-        ({ data: profile } = await supabase.from('profiles').select('display_name, photo_url, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences, interest_groups').eq('id', myId).single());
+        ({ data: profile } = await readMyProfile('display_name, photo_url, home_quick_pick_categories, seen_home_first_run_moment, social_comfort_level, created_at, interests, cuisine_preferences, venue_preferences, interest_groups'));
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setMyPhotoUrl(profile?.photo_url ? await getSignedPhotoUrl(profile.photo_url).catch(() => null) : null);
         setMyDeclaredInterests(Array.isArray(profile?.interests) ? profile.interests : []);

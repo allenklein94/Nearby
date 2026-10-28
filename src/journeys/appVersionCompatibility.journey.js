@@ -8,6 +8,11 @@
 //     is live; its old "Suspend" changes nothing (0 rows: it never worked, and it still shows "Suspended" on that build).
 //   new build x any state: the id_verified read works when the column exists; when it doesn't, the server answers 42703
 //     and the same read without the column (selectWithIdVerified's retry) works.
+// N6 (20270348, state 'n6' = get_my_profile() exists): build 86's own select('*'), its Dating read (birthdate) and its
+// ViewProfile read (private columns on profiles) are REFUSED (fails closed: an error, never more data); its writes, sign-up,
+// push and Friends Browse keep working. Rollout requirement: the new build on every installed device before 20270348.
+// The new build works in every state: own row via get_my_profile() (direct read before N6), other people only through the
+// views with `age` (before N6: 42703, then the birthdate read, services/peopleRead.js).
 // One rolled-back transaction. Not covered: the old build's screens on a phone, Spotify on build 86 (after 20270347 it
 // can't read its own tokens back; 0 accounts have Spotify connected).
 const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
@@ -32,6 +37,11 @@ const rec = (step, value) => `log := log || jsonb_build_array(jsonb_build_object
 const B86_FRIENDS = 'id, display_name, photo_url, bio, interests, photo_verified, open_to_friend_discovery';
 const B86_DATING = 'id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in';
 const B86_VIEW_PROFILE = 'id, display_name, bio, photo_url, interests, basics, prompts, is_premium, birthdate, photo_verified, created_at, pronouns, gender, gender_hidden, sexual_orientation, ethnicity, ethnicity_hidden, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders';
+// The new build's lists (services/proximity.js, screens/ViewProfileScreen.js; id_verified via selectWithIdVerified).
+const NEW_DATING = B86_DATING.replace('birthdate', 'age');
+const NEW_VIEW_PROFILE = 'id, display_name, bio, photo_url, interests, basics, prompts, is_premium, age, photo_verified, created_at, pronouns, gender, sexual_orientation, ethnicity, relationship_intention, connection_goal, favorite_tracks, voice_intro_path, gender_identity, interested_in_genders';
+// selectPeople's pre-N6 retry (legacyColumns): age -> birthdate, + the hide switches.
+const LEGACY_VIEW_PROFILE = `${NEW_VIEW_PROFILE.replace('age', 'birthdate')}, gender_hidden, ethnicity_hidden`;
 
 d('journey: installed app versions keep working against the trust & safety database', () => {
   let s;
@@ -43,7 +53,8 @@ d('journey: installed app versions keep working against the trust & safety datab
   update profiles set onboarding_motivations = array['Go on dates', 'Make new friends'], open_to_friend_discovery = true,
     wide_area = '41.2,-73.1' where id in (v_a, v_b);
   ${rec('state', `jsonb_build_object('tokens_private', to_regclass('private.push_tokens') is not null,
-      'id_verified', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'id_verified'))`)}
+      'id_verified', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'id_verified'),
+      'n6', to_regprocedure('public.get_my_profile()') is not null)`)}
 
   -- ===== build 86 =====
   ${as('b86_own_profile_star', 'v_a', `select to_jsonb(p) into v_row from profiles p where id = v_a`, `v_row ? 'display_name'`)}
@@ -71,15 +82,25 @@ d('journey: installed app versions keep working against the trust & safety datab
   ${as('new_friends_with_column', 'v_a', `select count(*) into v_n from (select ${B86_FRIENDS}, id_verified from people_visible_to_me where id = v_b) x`, 'v_n')}
   ${as('new_friends_retry', 'v_a', `select count(*) into v_n from (select ${B86_FRIENDS} from people_visible_to_me where id = v_b) x`, 'v_n')}
   ${as('new_dating_with_column', 'v_a', `select count(*) into v_n from (select ${B86_DATING}, id_verified from dating_candidates_visible_to_me where id = v_b) x`, 'v_n')}
-  ${as('new_profile_with_column', 'v_a', `select count(*) into v_n from (select ${B86_VIEW_PROFILE}, id_verified from profiles where id = v_b) x`, 'v_n')}
+  ${as('new_profile_with_column', 'v_a', `select count(*) into v_n from (select ${NEW_VIEW_PROFILE}, id_verified from people_visible_to_me where id = v_b) x`, 'v_n')}
+
+  -- ===== new build: own row, ViewProfile and Dating in every N6 state =====
+  ${as('new_own_profile', 'v_a', `if to_regprocedure('public.get_my_profile()') is not null then
+      execute 'select to_jsonb(p) from public.get_my_profile() p' into v_row;
+    else select to_jsonb(p) into v_row from profiles p where id = v_a; end if`, `jsonb_build_object('id', v_row->>'id' = v_a::text, 'birthdate', v_row ? 'birthdate', 'settings', v_row ? 'notification_mutes')`)}
+  ${as('new_view_profile_age', 'v_a', `select count(*) into v_n from (select ${NEW_VIEW_PROFILE} from people_visible_to_me where id = v_b) x`, 'v_n')}
+  ${as('new_view_profile_legacy', 'v_a', `select count(*) into v_n from (select ${LEGACY_VIEW_PROFILE} from people_visible_to_me where id = v_b) x`, 'v_n')}
+  ${as('new_dating_age', 'v_a', `select count(*) into v_n from (select ${NEW_DATING} from dating_candidates_visible_to_me where id = v_b) x`, 'v_n')}
+  ${as('new_dating_legacy', 'v_a', `select count(*) into v_n from (select ${B86_DATING} from dating_candidates_visible_to_me where id = v_b) x`, 'v_n')}
 `);
     s = stepMap(log);
   }, 120000);
 
   const data = (k) => s[k].data;
 
-  test('build 86: own profile, sign-up, profile edit and push registration/logout still work', () => {
-    expect(data('b86_own_profile_star')).toBe(true);
+  test('build 86: own profile (refused after N6), sign-up, profile edit and push registration/logout still work', () => {
+    if (data('state').n6) expect(data('b86_own_profile_star').code).toBe('42501');
+    else expect(data('b86_own_profile_star')).toBe(true);
     expect(data('b86_register_token')).toBe(1);
     expect(data('b86_token_stored')).toBe('ExponentPushToken[b86]');
     expect(data('b86_logout')).toBe(1);
@@ -88,10 +109,28 @@ d('journey: installed app versions keep working against the trust & safety datab
     expect(data('b86_signup_upsert')).toBe('New On 86');
   });
 
-  test('build 86: Friends Browse, Dating and ViewProfile reads still return the person', () => {
+  test('build 86: Friends Browse works; Dating and ViewProfile work before N6, are refused after it (never more data)', () => {
     expect(data('b86_friends_browse')).toBe(1);
-    expect(data('b86_dating')).toBe(1);
-    expect(data('b86_view_profile')).toBe(1);
+    if (data('state').n6) {
+      expect(data('b86_dating').code).toBe('42703'); // the view has age, not birthdate
+      expect(data('b86_view_profile').code).toBe('42501');
+    } else {
+      expect(data('b86_dating')).toBe(1);
+      expect(data('b86_view_profile')).toBe(1);
+    }
+  });
+
+  test('new build: own row, ViewProfile and Dating return the person in every N6 state', () => {
+    expect(data('new_own_profile')).toEqual({ id: true, birthdate: true, settings: true });
+    if (data('state').n6) {
+      expect(data('new_view_profile_age')).toBe(1);
+      expect(data('new_dating_age')).toBe(1);
+    } else {
+      expect(data('new_view_profile_age').code).toBe('42703');
+      expect(data('new_view_profile_legacy')).toBe(1);
+      expect(data('new_dating_age').code).toBe('42703');
+      expect(data('new_dating_legacy')).toBe(1);
+    }
   });
 
   test("build 86's old Suspend changes nothing (0 rows), in every state", () => {

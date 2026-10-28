@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { readMyProfile } from './myProfile';
 import { expandSearchTerms } from '../constants/categorySynonyms';
 import { searchScope } from '../constants/categoryTree';
 import { serviceError } from '../utils/recoverableError';
@@ -95,7 +96,7 @@ export async function getActiveOffers(lat = null, lng = null) {
 
   let myInterests = [];
   if (myId) {
-    const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', myId).single();
+    const { data: myProfile } = await readMyProfile('interests');
     myInterests = myProfile?.interests ?? [];
   }
 
@@ -159,7 +160,7 @@ export async function searchOffers(queryText, lat = null, lng = null) {
 
   let myInterests = [];
   if (myId) {
-    const { data: myProfile } = await supabase.from('profiles').select('interests').eq('id', myId).single();
+    const { data: myProfile } = await readMyProfile('interests');
     myInterests = myProfile?.interests ?? [];
   }
 
@@ -1188,7 +1189,7 @@ export async function getMyManagedPartner() {
   const myId = sessionData?.session?.user?.id;
   if (!myId) return null;
 
-  const { data: profile } = await supabase.from('profiles').select('managed_partner_id').eq('id', myId).single();
+  const { data: profile } = await readMyProfile('managed_partner_id');
   if (!profile?.managed_partner_id) return null;
 
   const { data: partner } = await supabase.from('brand_partners').select('*').eq('id', profile.managed_partner_id).single();

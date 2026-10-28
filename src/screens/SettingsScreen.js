@@ -9,6 +9,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { visibleSettingsSections, groupTextKeys, toggleGroup } from '../constants/notificationPreferences';
 import { setMyNotificationGroup } from '../services/notificationPrefs';
 import { useAuth } from '../context/AuthContext';
@@ -277,7 +278,7 @@ export default function SettingsScreen({ navigation, route }) {
     const id = sessionData?.session?.user?.id;
     setUserId(id);
 
-    const { data } = await supabase.from('profiles').select('*').eq('id', id).single();
+    const { data } = await readMyProfile('*');
     if (data) {
       setNotificationMutes(data.notification_mutes ?? []);
       setIsBusinessOwner(!!data.managed_partner_id);

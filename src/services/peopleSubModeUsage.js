@@ -4,6 +4,7 @@
 // feeds, and 20261009_people_submode_usage_tracking.sql for the schema.
 import { supabase } from './supabase';
 
+import { readMyProfile } from './myProfile';
 // Fire-and-forget, same shape as this codebase's other lightweight
 // behavioral-analytics writes (intentOutcomes.js) -- never blocks the
 // caller's own selectPeopleSubMode() UI update.
@@ -20,11 +21,7 @@ export async function getMyPeopleSubModeUsage() {
   try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { datingUses: 0, friendsUses: 0, motivations: null };
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('people_submode_dating_uses, people_submode_friends_uses, onboarding_motivations')
-      .eq('id', user.id)
-      .single();
+    const { data, error } = await readMyProfile('people_submode_dating_uses, people_submode_friends_uses, onboarding_motivations');
     if (error) throw error;
     return {
       datingUses: data?.people_submode_dating_uses ?? 0,

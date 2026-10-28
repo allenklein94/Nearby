@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { pinProvenance } from '../utils/locationProvenance';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -31,7 +32,7 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
       const { data: sessionData } = await supabase.auth.getSession();
       const uid = sessionData?.session?.user?.id;
       if (!uid) return;
-      const { data: profile } = await supabase.from('profiles').select('managed_partner_id').eq('id', uid).single();
+      const { data: profile } = await readMyProfile('managed_partner_id');
       if (!profile?.managed_partner_id) return;
       const { data: partner } = await supabase.from('brand_partners').select('name, address, latitude, longitude').eq('id', profile.managed_partner_id).single();
       if (partner?.latitude != null && partner?.longitude != null) {

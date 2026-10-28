@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { hydrateCategoryTags } from '../services/categoryTags';
 import { discoverSession } from '../services/discoverSession';
 
@@ -21,11 +22,7 @@ export function AuthProvider({ children }) {
     }
     setProfileLoading(true);
     hydrateCategoryTags().catch(() => {});
-    const { data } = await supabase
-      .from('profiles')
-      .select('display_name, birthdate, photo_url, is_admin')
-      .eq('id', currentSession.user.id)
-      .maybeSingle();
+    const { data } = await readMyProfile('display_name, birthdate, photo_url, is_admin');
 
     setProfileComplete(!!(data && data.display_name && data.birthdate && data.photo_url));
     setIsAdmin(!!data?.is_admin);

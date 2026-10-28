@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert } from 'react-native';
 import { supabase, functionUrl } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { basicsOption } from '../i18n/basicsVocab';
 import { categoryName } from '../i18n/categoryNames';
 import { useTheme } from '../context/ThemeContext';
@@ -72,13 +73,7 @@ export default function DatingPreferencesScreen({ navigation }) {
     const id = sessionData?.session?.user?.id;
     setUserId(id);
     if (id) {
-      const { data } = await supabase
-        .from('profiles')
-        .select(
-          'preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, dating_preferences_set'
-        )
-        .eq('id', id)
-        .single();
+      const { data } = await readMyProfile('preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, dating_preferences_set');
       if (data) {
         setMinAge(String(data.preferred_min_age ?? 18));
         setMaxAge(String(data.preferred_max_age ?? 99));

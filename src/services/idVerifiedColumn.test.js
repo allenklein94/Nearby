@@ -46,6 +46,7 @@ describe('selectWithIdVerified', () => {
     expect(res.error).toBe(err);
   });
 
+  // selectPeople (services/peopleRead.js, N6) wraps selectWithIdVerified, so a read through it counts too.
   it('guard: every client read that names id_verified goes through selectWithIdVerified', () => {
     const root = path.join(__dirname, '..');
     const offenders = [];
@@ -55,7 +56,7 @@ describe('selectWithIdVerified', () => {
       if (!/\.js$/.test(e.name) || /\.(test|journey)\.js$/.test(e.name) || e.name === 'idVerifiedColumn.js') return;
       const src = fs.readFileSync(p, 'utf8');
       const namesColumn = /['"`][^'"`\n]*\bid_verified\b[^'"`\n]*['"`]/.test(src.replace(/^\s*\/\/.*$/gm, ''));
-      if (namesColumn && !src.includes('selectWithIdVerified')) offenders.push(path.relative(root, p));
+      if (namesColumn && !src.includes('selectWithIdVerified') && !src.includes('selectPeople(')) offenders.push(path.relative(root, p));
     });
     walk(root);
     expect(offenders).toEqual([]);

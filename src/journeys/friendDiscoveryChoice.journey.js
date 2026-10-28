@@ -22,7 +22,11 @@ function as(step, sub, stmt) {
   log := log || jsonb_build_array(jsonb_build_object('step', '${step}', 'ok', true, 'data', to_jsonb(v_err)));`;
 }
 
-const myStyle = (sub) => `select to_jsonb(p.friend_discovery_view_style) into v_res from profiles p where p.id = ${sub}`;
+// The person's own row is read the way the app reads it (readMyProfile): get_my_profile() once N6 (20270348) is live,
+// a direct read before it.
+const myStyle = (sub) => `if to_regprocedure('public.get_my_profile()') is not null then
+      execute 'select to_jsonb(friend_discovery_view_style) from public.get_my_profile()' into v_res;
+    else select to_jsonb(p.friend_discovery_view_style) into v_res from profiles p where p.id = ${sub}; end if`;
 const candidates = (sub) => `select coalesce(jsonb_agg(c.id order by c.id), '[]'::jsonb) into v_res from get_friend_discovery_candidates(20) c where c.id in (v_a, v_b, v_c, v_x)`;
 const decide = (target, direction) => `select to_jsonb(r) into v_res from record_friend_discovery_swipe(${target}, '${direction}') r`;
 

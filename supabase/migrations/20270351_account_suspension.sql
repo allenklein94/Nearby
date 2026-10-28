@@ -21,6 +21,9 @@
 -- Requires 20270350 (friend candidates' id_verified column).
 
 alter table public.profiles add column if not exists suspended_at timestamptz;
+-- N6 (20270348): a viewer reads only granted profiles columns. Others see only unhidden profiles, and a suspended one is
+-- hidden, so for anyone but the person and an admin this is never set.
+grant select (suspended_at) on public.profiles to authenticated;
 
 create or replace function private.account_suspended(uid uuid)
 returns boolean

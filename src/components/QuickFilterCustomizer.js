@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, Switch, StyleSheet } from 'react-native';
 import { NLoader } from '../motion';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import LoadErrorState from './LoadErrorState';
@@ -60,9 +61,7 @@ export default function QuickFilterCustomizer({ mode: modeProp, onChange }) {
     setLoading(true);
     try {
       const { order: orderCol, visible: visibleCol, config: configCol } = setup.columns;
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData?.session?.user?.id;
-      const { data, error } = await supabase.from('profiles').select(`${orderCol}, ${visibleCol}, ${configCol}`).eq('id', userId).single();
+      const { data, error } = await readMyProfile(`${orderCol}, ${visibleCol}, ${configCol}`);
       if (error) throw error;
       const savedOrder = data?.[orderCol];
       // A catalog key added after a user's saved order predates it -- append

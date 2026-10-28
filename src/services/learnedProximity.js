@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { readMyProfile } from './myProfile';
 import { learnProximity } from '../utils/learnedProximity';
 
 // The caller's learned trip distances per category (item 137), loaded once per session and refreshed after a minute.
@@ -17,7 +18,7 @@ export async function getMyLearnedProximity() {
     if (!uid) return {};
     const [{ data: rows, error }, { data: profile }] = await Promise.all([
       supabase.rpc('get_my_trip_choices'),
-      supabase.from('profiles').select('notify_things_to_do_max_distance_miles').eq('id', uid).maybeSingle(),
+      readMyProfile('notify_things_to_do_max_distance_miles'),
     ]);
     if (error) return {};
     const value = learnProximity(rows ?? [], { maxMiles: profile?.notify_things_to_do_max_distance_miles ?? null });

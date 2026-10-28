@@ -1,4 +1,5 @@
 import { supabase, functionUrl } from './supabase';
+import { readMyProfile } from './myProfile';
 import { setMyNotificationGroup } from './notificationPrefs';
 import { isOwnerGroup } from '../constants/notificationPreferences';
 
@@ -44,7 +45,7 @@ export async function getMyBusinessNotificationPrefs() {
   const { data: auth } = await supabase.auth.getUser();
   const uid = auth?.user?.id;
   if (!uid) return null;
-  const { data, error } = await supabase.from('profiles').select('notification_mutes, managed_partner_id').eq('id', uid).single();
+  const { data, error } = await readMyProfile('notification_mutes, managed_partner_id');
   if (error) throw new Error(error.message);
   if (!data?.managed_partner_id) return null;
   return (data.notification_mutes ?? []).filter((g) => isOwnerGroup(g)).map((g) => g.slice('owner_'.length));

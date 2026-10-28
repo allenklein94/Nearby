@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 
+import { readMyProfile } from './myProfile';
 // Client wiring for the Resy/OpenTable reservation-provider scaffolding
 // (see CLAUDE.md, Aug 24 2026 -- 20260824_reservation_provider_scaffolding.sql).
 // Genuinely inert for real bookings today -- there is no real outbound
@@ -17,11 +18,7 @@ export async function getMyReservationProviderStatus() {
   const userId = sessionData?.session?.user?.id;
   if (!userId) return null;
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('managed_partner_id')
-    .eq('id', userId)
-    .single();
+  const { data: profile } = await readMyProfile('managed_partner_id');
   if (!profile?.managed_partner_id) return null;
 
   const { data: partner } = await supabase

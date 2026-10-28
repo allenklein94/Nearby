@@ -4,6 +4,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Ale
 import { NLoader, showSuccessToast } from '../motion';
 import { getMyReferralCode, getMyReferralStats, redeemReferralCode } from '../services/referrals';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { usePostHog } from 'posthog-react-native';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
@@ -38,7 +39,7 @@ export default function InviteFriendsScreen() {
       const [myCode, stats, profile] = await Promise.all([
         getMyReferralCode(id),
         getMyReferralStats(id),
-        supabase.from('profiles').select('referred_by').eq('id', id).single(),
+        readMyProfile('referred_by'),
       ]);
       setCode(myCode);
       setReferralCount(stats.referralCount);

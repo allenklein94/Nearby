@@ -5,6 +5,7 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicat
 import FadeInState from '../components/FadeInState';
 import { getOnboardingRecommendations } from '../services/homeDashboard';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { wantsCelebrationsStep } from '../constants/onboardingGoals';
@@ -38,7 +39,7 @@ export default function OnboardingRecommendationsScreen({ navigation }) {
       const myId = sessionData?.session?.user?.id;
       setMyUserId(myId ?? null);
       if (myId) {
-        const { data: profile } = await supabase.from('profiles').select('display_name, onboarding_motivations').eq('id', myId).single();
+        const { data: profile } = await readMyProfile('display_name, onboarding_motivations');
         setMyName(profile?.display_name?.split(' ')[0] ?? '');
         setWantsCelebrations(wantsCelebrationsStep(profile?.onboarding_motivations));
       }

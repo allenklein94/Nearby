@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import { getMyBehaviorCategories } from '../services/behaviorSignals';
 import { canonicalizeInterests } from '../constants/interestGraph';
 import { behaviorWeightMap } from '../constants/blendedRanking';
@@ -22,7 +23,7 @@ export default function usePersonalization() {
         const uid = sessionData?.session?.user?.id;
         if (!uid) return;
         const [{ data: profile }, events, learnedProximity, feedback] = await Promise.all([
-          supabase.from('profiles').select('interests, interest_groups, created_at, social_comfort_level').eq('id', uid).single(),
+          readMyProfile('interests, interest_groups, created_at, social_comfort_level'),
           getMyBehaviorCategories().catch(() => []),
           getMyLearnedProximity().catch(() => ({})), // item 137: usual trip per category (nothing learned = {})
           getMyExperienceFeedback().catch(() => EMPTY_EXPERIENCE_FEEDBACK), // item 35: latest "How was it?" word, both ways

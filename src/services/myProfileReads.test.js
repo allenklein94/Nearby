@@ -4,12 +4,14 @@
 // column list the guard can't see would fail for every signed-in user once 20270348 is live.
 const fs = require('fs');
 const path = require('path');
-const { PUBLIC_PROFILE_COLUMNS } = require('../constants/publicProfileColumns');
+const { PUBLIC_PROFILE_COLUMNS, LATER_PUBLIC_PROFILE_COLUMNS } = require('../constants/publicProfileColumns');
 
 const SRC = path.join(__dirname, '..');
 const SKIP_DIRS = new Set(['journeys', 'qa', 'i18n']);
 // The one place allowed a variable column list on profiles: readMyProfile's fallback while 20270348 is not live.
 const ALLOWED_VARIABLE = new Set(['services/myProfile.js']);
+// Old-path reads that run ONLY when the server says the N6 function is missing (20270348 not live): after it they never run.
+const LEGACY_FALLBACK = new Set(['services/preferencePolls.js']);
 
 function files(dir) {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
@@ -32,7 +34,7 @@ function topLevelColumns(list) {
 }
 
 const lineOf = (text, i) => text.slice(0, i).split('\n').length;
-const isPublic = (c) => PUBLIC_PROFILE_COLUMNS.includes(c);
+const isPublic = (c) => PUBLIC_PROFILE_COLUMNS.includes(c) || c in LATER_PUBLIC_PROFILE_COLUMNS;
 
 function violations() {
   const out = [];
@@ -55,6 +57,7 @@ function violations() {
         continue;
       }
       const cols = topLevelColumns(sel[2]);
+      if (LEGACY_FALLBACK.has(rel) && /isMissingFunction\(/.test(text.slice(Math.max(0, m.index - 300), m.index))) continue;
       for (const c of cols) if (c === '*' || !isPublic(c)) out.push(`${rel}:${lineOf(text, m.index)} profiles read names private column "${c}"`);
     }
     // 2. embedded profiles in any select: profiles(...), alias:profiles!fk(...)
@@ -82,5 +85,12 @@ describe('N6: profile reads name only public columns', () => {
     expect(grant).not.toBeNull();
     const granted = grant[1].split(',').map((c) => c.trim()).sort();
     expect(granted).toEqual([...PUBLIC_PROFILE_COLUMNS].sort());
+  });
+
+  test('each later public column is granted by the migration that adds it', () => {
+    for (const [col, file] of Object.entries(LATER_PUBLIC_PROFILE_COLUMNS)) {
+      const sql = fs.readFileSync(path.join(SRC, '..', 'supabase', 'migrations', file), 'utf8');
+      expect([col, new RegExp(`grant select \\(${col}\\) on public\\.profiles to authenticated`).test(sql)]).toEqual([col, true]);
+    }
   });
 });

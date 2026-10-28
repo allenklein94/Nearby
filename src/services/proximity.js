@@ -18,9 +18,10 @@
 
 import * as Location from 'expo-location';
 import { getUserLocation } from './userLocation';
-import { selectWithIdVerified } from './idVerifiedColumn';
+import { selectPeople } from './peopleRead';
 import * as TaskManager from 'expo-task-manager';
 import { supabase, functionUrl } from './supabase';
+import { readMyProfile } from './myProfile';
 import { calculateCompatibility } from './compatibility';
 import { getMyActiveLiveTrackingSession } from './liveTracking';
 import { mergeCrossedPathsSignals } from './crossedPathsSignals';
@@ -47,7 +48,7 @@ async function getSharedGatheringPartners() {
 const BACKGROUND_LOCATION_TASK = 'nearby-background-location-task';
 
 // The one Dating candidate read's columns (both Dating reads below).
-const DATING_CANDIDATE_COLUMNS = 'id, display_name, photo_url, bio, discovery_gender, birthdate, ethnicity, interests, basics, height_inches, photo_verified, id_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in';
+const DATING_CANDIDATE_COLUMNS = 'id, display_name, photo_url, bio, discovery_gender, age, ethnicity, interests, basics, height_inches, photo_verified, id_verified, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in';
 
 export async function requestLocationPermission() {
   const { status } = await Location.requestForegroundPermissionsAsync();
@@ -171,18 +172,6 @@ export async function stopBackgroundPresenceReporting() {
   }
 }
 
-function calculateAge(birthdateString) {
-  if (!birthdateString) return null;
-  const birthdate = new Date(birthdateString);
-  const today = new Date();
-  let age = today.getFullYear() - birthdate.getFullYear();
-  const monthDiff = today.getMonth() - birthdate.getMonth();
-  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthdate.getDate())) {
-    age--;
-  }
-  return age;
-}
-
 function passesGenderMatch(myProfile, theirProfile) {
   const myIdentity = myProfile?.gender_identity ?? [];
   const myInterestedIn = myProfile?.interested_in_genders ?? [];
@@ -230,11 +219,7 @@ export async function getNearbyMatches() {
     ...(acceptedFriends ?? []).map((f) => (f.user_a === myIdForFriends ? f.user_b : f.user_a)),
   ]);
 
-  const { data: myProfile } = await supabase
-    .from('profiles')
-    .select('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders')
-    .eq('id', userId)
-    .single();
+  const { data: myProfile } = await readMyProfile('show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders');
 
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
@@ -305,7 +290,7 @@ export async function getNearbyMatches() {
 
   // Item 121 follow-up: Dating consent is decided by the server (dating_candidates_visible_to_me, 20270314): a sighting or
   // a shared gathering whose person never chose Dating returns no profile, so it never becomes a card or a count.
-  const { data: profiles, error: profilesError } = await selectWithIdVerified((columns) => supabase
+  const { data: profiles, error: profilesError } = await selectPeople((columns) => supabase
     .from('dating_candidates_visible_to_me')
     .select(columns)
     .in('id', otherUserIds), DATING_CANDIDATE_COLUMNS);
@@ -348,7 +333,7 @@ export async function getNearbyMatches() {
       if (!passesGenderMatch(myProfile, item.profiles)) {
         return false;
       }
-      const age = calculateAge(item.profiles.birthdate);
+      const age = item.profiles.age ?? null;
       if (age !== null && (age < minAge || age > maxAge)) {
         return false;
       }
@@ -401,11 +386,7 @@ export async function getBrowseMatches(offset = 0) {
     ...(acceptedFriends ?? []).map((f) => (f.user_a === userId ? f.user_b : f.user_a)),
   ]);
 
-  const { data: myProfile } = await supabase
-    .from('profiles')
-    .select('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders')
-    .eq('id', userId)
-    .single();
+  const { data: myProfile } = await readMyProfile('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders');
 
   if (!myProfile?.wide_area) return [];
 
@@ -448,7 +429,7 @@ export async function getBrowseMatches(offset = 0) {
   }
 
   // Item 121 follow-up: only people who chose Dating (server-side, dating_candidates_visible_to_me, 20270314).
-  const { data: profiles, error } = await selectWithIdVerified((columns) => supabase
+  const { data: profiles, error } = await selectPeople((columns) => supabase
     .from('dating_candidates_visible_to_me')
     .select(columns)
     .in('wide_area', neighborBuckets)
@@ -466,7 +447,7 @@ export async function getBrowseMatches(offset = 0) {
     .filter((p) => !excludedUserIds.has(p.id) && !matchedUserIds.has(p.id) && isDatingOptedIn({ profiles: p }))
     .filter((p) => passesGenderMatch(myProfile, p))
     .filter((p) => {
-      const age = calculateAge(p.birthdate);
+      const age = p.age ?? null;
       if (age !== null && (age < minAge || age > maxAge)) return false;
       if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
       const candidateHairColor = p.basics?.hair_color;

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 
+import { readMyProfile } from './myProfile';
 function generateReferralCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no ambiguous chars (0/O, 1/I)
   let code = '';
@@ -10,7 +11,7 @@ function generateReferralCode() {
 }
 
 export async function getMyReferralCode(userId) {
-  const { data } = await supabase.from('profiles').select('referral_code').eq('id', userId).single();
+  const { data } = await readMyProfile('referral_code');
   if (data?.referral_code) return data.referral_code;
 
   for (let attempt = 0; attempt < 5; attempt++) {

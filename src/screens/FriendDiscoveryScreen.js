@@ -18,6 +18,7 @@ import { getStoryPresenceForUsers } from '../services/stories';
 import StoryViewerModal from '../components/StoryViewerModal';
 import { calculateFriendCompatibility } from '../services/compatibility';
 import { supabase } from '../services/supabase';
+import { readMyProfile } from '../services/myProfile';
 import FriendDiscoverySwipeCards, { DISTANCE_BUCKET_KEYS } from '../components/FriendDiscoverySwipeCards';
 import FriendDiscoveryList from '../components/FriendDiscoveryList';
 import { friendViewStyle, otherFriendViewStyle, undecidedCandidates } from '../utils/friendDiscoveryView';
@@ -145,9 +146,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
         const userId = sessionData?.session?.user?.id;
         if (userId) {
           setMyUserId(userId);
-          const { data: mine } = await supabase.from('profiles')
-            .select('friend_quick_filter_order, friend_quick_filter_visible, friend_discovery_view_style')
-            .eq('id', userId).single();
+          const { data: mine } = await readMyProfile('friend_quick_filter_order, friend_quick_filter_visible, friend_discovery_view_style');
           if (mine?.friend_quick_filter_order) setQuickFilterOrder(mine.friend_quick_filter_order);
           if (mine?.friend_quick_filter_visible) setQuickFilterVisible(mine.friend_quick_filter_visible);
           setViewStyle(friendViewStyle(mine?.friend_discovery_view_style));
