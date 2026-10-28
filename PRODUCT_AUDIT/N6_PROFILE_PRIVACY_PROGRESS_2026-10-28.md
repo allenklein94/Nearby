@@ -66,6 +66,8 @@ Production stays unchanged until the owner separately approves the deploy.
 - Jest 519 suites / 7058 tests pass. Live signed-in tests (dedicated account, read-only) pass in today's state
   (n6Live false: `select *` on other rows returns 3 = today's exposure); they flip to the N6 assertions after deploy.
 
+## Status: N6 READY for the staged deployment below (2026-10-28); no further N6 expansion (owner)
+
 ## Deployment sequence (each step needs its own owner approval; nothing done)
 1. New iOS build from this commit or later (works before AND after 0348) installed on every device that signs in.
    Build 86 after 0348: its own-profile select('*'), Dating read (birthdate), ViewProfile and sign-up upsert are REFUSED
@@ -83,8 +85,21 @@ rolling back reopens the exposure.
   Prod: 2 values set, 0 violate it. Journey `profileColumnPrivacy`: coarse write accepted, precise write refused (23514) after N6;
   two journey fixtures with 2-decimal values corrected to the app's shape. Rollback drops the constraint (apply+rollback in a
   rolled-back transaction: constraint, helpers and table SELECT back to prod). Journeys: 0348-0354 prelude 740/740; changed
-  journeys 43/43 with no prelude and with 0348 alone; Jest 519/7058. From-scratch replay NOT re-run for this addition
-  (last replay predates it).
+  journeys 43/43 with no prelude and with 0348 alone; Jest 519/7058.
+- Final verification (owner checklist, 2026-10-28, after commit dfbd9c49; nothing deployed):
+  1. From-scratch replay with the updated 0348: 478/478 migrations; journeys 740/740 on it; all 4 concurrency scripts pass.
+  2. Constraint present + validated after every later migration (0349-0354 only READ wide_area; none drops/replaces it).
+  3. Direct writes as a signed-in user (replay DB): sign-up INSERT with exact coordinates refused (23514), coarse accepted;
+     UPDATE accepted for -33.9,151.2 / 33.9,-151.2 / -0.1,-0.1 / -0,-0 / 40,-75 / 179.9,-179.9; refused for 2+ decimals
+     (26.55,-80.06, 26.5512,-80.0634, -33.87,151.21), a space, trailing text, exponent, non-numbers; the trusted/server
+     path is refused too (a CHECK binds every writer); other profile edits unaffected.
+  4. Dating Browse (`datingConsent` browseArea, filters on wide_area), Friends distance (`peopleMatch`, `friendDiscoveryChoice`)
+     pass in all states; prod with 0348-0354 (rolled back): 4/4 profiles' id+wide_area identical before/after, 2 set, constraint validated.
+  5. Grants: prod + 0348-0354 (rolled back) == replay, 3203 lines, md5 63f195e0340d418457665b177200f15b.
+  6. Approval code for the committed 0348: `20270348:12372a270d356266336f3163bf2f53afd84611dad4be1c8edfb610089585a515`.
+- Limit (owner, 2026-10-28): the rule enforces the intended coarse representation (one decimal ~ 11 km north-south, less
+  east-west away from the equator); it is approximate location, never a guarantee of anonymity. The pattern checks shape,
+  not range (an out-of-range number is not more precise).
 
 ## Open
 - Not verifiable before deploy: the real API after 0348 and the app on a phone.
