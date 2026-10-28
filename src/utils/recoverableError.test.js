@@ -56,7 +56,7 @@ describe('errors always offer a way forward and never lose the draft (item 81)',
   });
 });
 
-describe('account rules the server enforces read as the rule, never a retry (trust & safety, 20270350 / 20270351)', () => {
+describe('account rules the server enforces read as the rule, never a retry (trust & safety, 20270351 / 20270352)', () => {
   test('phone_required and account_suspended give their own sentence and no Try Again', () => {
     const phone = recoverableErrorCopy({ what: 'complete that', error: { message: 'Verify your phone number to do this', hint: 'phone_required', code: '42501' } });
     expect(phone).toEqual({ title: "That didn't go through", message: 'Messaging, invitations, connecting and hosting need an account with a verified phone number.', canRetry: false });

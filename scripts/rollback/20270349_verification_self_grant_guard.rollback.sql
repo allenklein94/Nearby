@@ -1,5 +1,5 @@
--- Rollback for migration 20270348 (no self-granted verification or admin): restores the production definitions read 2026-10-27 before it was applied.
--- Run the rollbacks newest first (20270353 -> 20270347); each assumes the later ones were already rolled back.
+-- Rollback for migration 20270349 (no self-granted verification or admin): restores the production definitions read 2026-10-27 before it was applied.
+-- Run the rollbacks newest first (20270354 -> 20270347); each assumes the later ones were already rolled back.
 CREATE OR REPLACE FUNCTION public.admin_approve_id_verification(submission_id_param uuid, approved boolean)
  RETURNS void
  LANGUAGE plpgsql

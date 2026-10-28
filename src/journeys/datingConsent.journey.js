@@ -117,7 +117,7 @@ d('journey: Dating discovery shows and counts only people who chose Dating', () 
   test('6: anon refused, read-only, and no tokens, settings or motivations exposed', () => {
     expect(s.anonRefused.ok).toBe(true);
     expect(Number(s.writeGrants.data)).toBe(0);
-    // id_verified arrives with 20270349 (deployed after Session B); before it the view ends at dating_opted_in.
+    // id_verified arrives with 20270350 (deployed after Session B); before it the view ends at dating_opted_in.
     const base = ['id', 'display_name', 'photo_url', 'bio', 'discovery_gender', 'birthdate', 'ethnicity', 'interests', 'basics',
       'height_inches', 'photo_verified', 'relationship_intention', 'gender_identity', 'interested_in_genders', 'show_me', 'wide_area', 'dating_opted_in'];
     expect([base, [...base, 'id_verified']]).toContainEqual(s.columns.data);

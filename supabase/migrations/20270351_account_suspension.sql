@@ -18,7 +18,7 @@
 --                                hidden profiles; the client hid them afterwards) and skips suspended accounts.
 --   Gatherings                   a suspended host's gatherings stay visible to the people already in them / invited,
 --                                never to anyone new (_gathering_row_visible), so nobody new can join them.
--- Requires 20270349 (friend candidates' id_verified column).
+-- Requires 20270350 (friend candidates' id_verified column).
 
 alter table public.profiles add column if not exists suspended_at timestamptz;
 

@@ -1,5 +1,5 @@
 -- Rollback for migration 20270347 (push + Spotify tokens server-only). It is the OLDEST of the trust & safety set: when rolling back the
--- whole set, run it LAST (newest first: 20270353 -> 20270347). It puts every stored token back into profiles, so after it the N1 exposure (any signed-in user can
+-- whole set, run it LAST (newest first: 20270354 -> 20270347). It puts every stored token back into profiles, so after it the N1 exposure (any signed-in user can
 -- read other people's push tokens) is open again. Operational note: send-push keeps working either way (it falls back to
 -- profiles.expo_push_token when push_token_for_delivery is missing).
 

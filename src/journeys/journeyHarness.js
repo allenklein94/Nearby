@@ -41,7 +41,7 @@ function stepMap(log) {
 // Synthetic actors (owner, 2026-10-20): a journey creates its own people, accepted friendships and business INSIDE its
 // rolled-back transaction, never picking rows that production happens to hold (so it runs the same on any database).
 // `people` are uuid variables the journey declares with actorDeclares; each is like a real signed-up person (signed up in
-// the app with a verified phone, photo screened, visible, terms accepted, a timezone and a push token; 20270351 refuses
+// the app with a verified phone, photo screened, visible, terms accepted, a timezone and a push token; 20270352 refuses
 // social actions without a verified phone). `friends` = pairs of those variables (accepted).
 // `business` = { owner, partner, lat, lng, subcategory } (variables + placement): an active business that owner manages.
 function actorDeclares(names) {

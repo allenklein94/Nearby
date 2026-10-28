@@ -1,89 +1,92 @@
--- Trust & safety fix 3 (owner, 2026-10-27; audit B3): "Verified" means an approved identity check, nothing else.
--- Before: one flag, profiles.photo_verified, meant (a) the main photo passed automatic screening, (b) an admin approved
--- an ID submission, and (c) "not suspended" (the old Suspend button cleared it); the "Verified" badge read it.
--- After:
---   photo_verified  = the main photo passed screening (moderate-photo, swap_main_photo). Unchanged meaning for
---                     visibility: the profiles / extra-photo / voice-intro read policies keep using it, so nobody's
---                     visibility changes.
---   id_verified     = an admin approved this person's ID submission (admin_approve_id_verification only; never the
---                     person, never photo screening). id_verified_at = when. The "Verified" badge and every
---                     "Verified only" filter read id_verified.
--- Approving an ID no longer marks the photo screened (it never checked the photo for content).
--- Backfill: approved submissions -> id_verified (0 in production on 2026-10-27, so every existing badge disappears until a
--- real ID approval: today's 3 badges came from photo screening, not ID checks).
--- Requires 20270348 (its insert guard is extended here).
+-- Trust & safety fix 5 (owner, 2026-10-27; audit B5): a verified phone before consumer social participation.
+-- Email + password sign-up stays available (business accounts and the business website use it); what changes is what an
+-- account WITHOUT a verified phone can do with other people:
+--   * it cannot send to or contact anyone: a 1:1 message, a gathering / community / group-plan chat message, a photo comment, a
+--     question to a host, a wave, a friend request, an invitation (gathering, community, ...), hosting a gathering or
+--     starting a community. Refused in the database whatever the path ('phone_required').
+--   * it never appears in Dating or Friends discovery (dating view, Friends Browse, Friends Crossed Paths).
+-- Unchanged for it: browsing, joining or marking Interested on a gathering, accepting/declining what others send.
+-- Business side unchanged: offers, availability, business messages, the business website, asking businesses.
+-- "Verified phone" = Supabase Auth confirmed the number by SMS code (auth.users.phone_confirmed_at). The app only offers
+-- phone sign-in, so every account made in the app already has one (production 2026-10-27: 3 of the 4 profiles; the one
+-- without is an email account used as the business-owner test account).
+-- Service-role writes (seed scripts, edge functions) and rows written by someone else never count as the person acting.
+-- Requires 20270351 (suspension) and 20270350 (id_verified in the views).
 
-alter table public.profiles add column if not exists id_verified boolean not null default false;
-alter table public.profiles add column if not exists id_verified_at timestamptz;
+create or replace function private.has_verified_phone(uid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select exists (select 1 from auth.users u where u.id = uid and u.phone_confirmed_at is not null and coalesce(u.phone, '') <> '');
+$function$;
+revoke all on function private.has_verified_phone(uuid) from public, anon, authenticated;
 
-update public.profiles p set id_verified = true, id_verified_at = s.reviewed_at
-from (select distinct on (user_id) user_id, reviewed_at from public.id_verification_submissions
-      where status = 'approved' order by user_id, reviewed_at desc) s
-where s.user_id = p.id and not p.id_verified;
+-- May this person be shown to others in people discovery? One rule for Dating, Friends and the crossed-paths push.
+-- Returns only the combined yes/no, never why.
+create or replace function public.person_discoverable(uid uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select uid is not null and not private.account_suspended(uid) and private.has_verified_phone(uid);
+$function$;
+revoke all on function public.person_discoverable(uuid) from public, anon;
+grant execute on function public.person_discoverable(uuid) to authenticated, service_role;
 
--- Only trusted server code (app.trusted_update = 'true') or the service role changes it.
-create or replace function public._guard_identity_verified()
+create or replace function public._require_verified_phone()
 returns trigger
 language plpgsql
 security definer
 set search_path to 'public'
 as $function$
 begin
-  if auth.uid() is not null and coalesce(current_setting('app.trusted_update', true), '') <> 'true' then
-    if tg_op = 'INSERT' then
-      new.id_verified := false;
-      new.id_verified_at := null;
-    else
-      new.id_verified := old.id_verified;
-      new.id_verified_at := old.id_verified_at;
-    end if;
+  if auth.uid() is not null and not private.has_verified_phone(auth.uid()) then
+    raise exception 'Verify your phone number to do this' using errcode = '42501', hint = 'phone_required';
   end if;
   return new;
 end;
 $function$;
+revoke all on function public._require_verified_phone() from public, anon, authenticated;
 
-revoke all on function public._guard_identity_verified() from public, anon, authenticated;
-drop trigger if exists block_client_identity_verified_edit on public.profiles;
-create trigger block_client_identity_verified_edit before insert or update on public.profiles
-  for each row execute function public._guard_identity_verified();
+drop trigger if exists zz_require_verified_phone on public.messages;  -- 1:1 messages (incl. sharing a gathering in a chat)
+create trigger zz_require_verified_phone before insert on public.messages
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.gathering_messages;  -- gathering chat
+create trigger zz_require_verified_phone before insert on public.gathering_messages
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.community_messages;  -- community chat
+create trigger zz_require_verified_phone before insert on public.community_messages
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.plan_messages;  -- group plan chat
+create trigger zz_require_verified_phone before insert on public.plan_messages
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.photo_comments;  -- comments on photos
+create trigger zz_require_verified_phone before insert on public.photo_comments
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.gathering_questions;  -- questions to a host
+create trigger zz_require_verified_phone before insert on public.gathering_questions
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.notices;  -- waves / notices
+create trigger zz_require_verified_phone before insert on public.notices
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.friendships;  -- friend requests
+create trigger zz_require_verified_phone before insert on public.friendships
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.social_invites;  -- gathering, community and other invitations
+create trigger zz_require_verified_phone before insert on public.social_invites
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.gatherings;  -- hosting a gathering
+create trigger zz_require_verified_phone before insert on public.gatherings
+  for each row execute function public._require_verified_phone();
+drop trigger if exists zz_require_verified_phone on public.communities;  -- starting a community
+create trigger zz_require_verified_phone before insert on public.communities
+  for each row execute function public._require_verified_phone();
 
-create or replace function public.admin_approve_id_verification(submission_id_param uuid, approved boolean)
- returns void
- language plpgsql
- security definer
- set search_path to 'public'
-as $function$
-declare
-  v_user_id uuid;
-begin
-  if not exists (select 1 from profiles where id = auth.uid() and is_admin = true) then
-    raise exception 'Only admins can review verification submissions';
-  end if;
-
-  if exists (select 1 from id_verification_submissions where id = submission_id_param and user_id = auth.uid()) then
-    raise exception 'You can''t review your own verification' using errcode = '42501', hint = 'own_submission';
-  end if;
-
-  update id_verification_submissions
-  set status = case when approved then 'approved' else 'rejected' end,
-      reviewed_at = now(),
-      reviewed_by = auth.uid()
-  where id = submission_id_param and status = 'pending'
-  returning user_id into v_user_id;
-
-  if v_user_id is null then
-    raise exception 'Submission not found or already reviewed';
-  end if;
-
-  if approved then
-    perform set_config('app.trusted_update', 'true', true);
-    update profiles set id_verified = true, id_verified_at = now() where id = v_user_id;
-    perform set_config('app.trusted_update', 'false', true);
-  end if;
-end;
-$function$;
-
--- The two people views carry id_verified (appended; every existing column unchanged).
 create or replace view public.people_visible_to_me with (security_invoker = true) as
  SELECT id,
     display_name,
@@ -153,7 +156,10 @@ create or replace view public.people_visible_to_me with (security_invoker = true
     home_quick_pick_categories,
     voice_intro_path,
     intent_visibility,
-    open_to_friend_discovery,
+        CASE
+            WHEN id = auth.uid() THEN open_to_friend_discovery
+            ELSE open_to_friend_discovery AND person_discoverable(id)
+        END AS open_to_friend_discovery,
     contacts_matched_calls_today,
     contacts_matched_date,
     dating_preferences_set,
@@ -193,8 +199,7 @@ create or replace view public.people_visible_to_me with (security_invoker = true
     notification_mutes,
     id_verified
    FROM profiles p
-  WHERE id = auth.uid() OR NOT viewer_blocked_either_way(id)
-;
+  WHERE id = auth.uid() OR NOT viewer_blocked_either_way(id);
 
 create or replace view public.dating_candidates_visible_to_me with (security_invoker = true) as
  SELECT id,
@@ -216,10 +221,8 @@ create or replace view public.dating_candidates_visible_to_me with (security_inv
     is_dating_discoverable(onboarding_motivations) AS dating_opted_in,
     id_verified
    FROM people_visible_to_me v
-  WHERE id <> auth.uid() AND is_dating_discoverable(onboarding_motivations);
+  WHERE id <> auth.uid() AND is_dating_discoverable(onboarding_motivations) AND person_discoverable(id);
 
--- Friends Browse returns id_verified for the badge (a new result column, so the function is recreated; body unchanged).
-drop function if exists public.get_friend_discovery_candidates(integer);
 CREATE OR REPLACE FUNCTION public.get_friend_discovery_candidates(limit_param integer DEFAULT 20)
  RETURNS TABLE(id uuid, display_name text, photo_url text, bio text, interests text[], photo_verified boolean, id_verified boolean, shared_interest_count integer, shared_community_count integer, mutual_friend_count integer, distance_bucket text)
  LANGUAGE plpgsql
@@ -279,6 +282,10 @@ begin
     from profiles p
     where p.id <> v_me
     and p.open_to_friend_discovery = true
+    -- only profiles others may see at all (the profiles read policy's rule), never a suspended account, and only a
+    -- person with a verified phone (20270352)
+    and coalesce(p.photo_verified, false) and not coalesce(p.profile_hidden, false) and p.suspended_at is null
+    and public.person_discoverable(p.id)
     and not is_blocked(v_me, p.id)
     and not exists (
       select 1 from friendships f
@@ -309,5 +316,3 @@ begin
   limit limit_param;
 end;
 $function$;
-revoke all on function public.get_friend_discovery_candidates(integer) from public, anon;
-grant execute on function public.get_friend_discovery_candidates(integer) to authenticated, service_role;

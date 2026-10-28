@@ -6,6 +6,8 @@ always rolled back (verified afterwards: no new column, trigger or table exists 
 
 Source audit: `PRODUCT_AUDIT/TRUST_SAFETY_AUDIT_2026-10-27.md`.
 
+Renumbered again 2026-10-28 (nothing deployed): N6 became `20270348` so it deploys first (owner priority); the six fixes below moved up one more, to 0349-0354.
+
 Renumbered 2026-10-27 (nothing was deployed): N1 became `20270347` so it can go live first; the six fixes moved up one
 (`deploy.js` refuses a version lower than one already recorded, so deploy order = number order).
 
@@ -14,23 +16,23 @@ Renumbered 2026-10-27 (nothing was deployed): N1 became `20270347` so it can go 
 | Migration | Fix | What it does |
 |---|---|---|
 | `20270347_push_tokens_server_only` | N1 | Device push tokens and Spotify tokens are never readable by another user. They move to `private.push_tokens` (no client access) and `spotify_connections` (owner-only). The `profiles` columns stay but are always NULL (check constraint); a client write to them is moved into the new table by a trigger (`UPDATE OF` the column, so a logout's `= null` still clears it). `push_token_for_delivery()` = the one reader, service role only. anon loses SELECT on `profiles` (it was refused only by accident). The 3 stored tokens move; no other profile value changes. |
-| `20270348_verification_self_grant_guard` | 1 | Nobody grants themselves verification or admin. Profile INSERT by a signed-in user starts every privileged column at its default (**new finding, proven: a brand-new account could create its own profile as admin + premium + verified**; admin = read every report and ID image, approve IDs). `photo_verified` only true -> false from the client; a new photo resets it and must be in the person's own folder (main + extra photos). ID submissions: INSERT only as pending/unreviewed, paths in own folder, one pending per person. An admin can never review their own submission. `swap_main_photo` = the one way to set an extra photo as main (each photo keeps its own screening result). |
-| `20270349_identity_verified_separate` | 3 | New `profiles.id_verified` (+ `id_verified_at`), set only by `admin_approve_id_verification`, never by the person or photo screening. Approving an ID no longer marks the photo screened. `photo_verified` keeps meaning "main photo passed screening" and keeps controlling profile visibility (5 read policies use it; unchanged). Views + Friends Browse return `id_verified`. |
-| `20270350_account_suspension` | 2 | `profiles.suspended_at` (only via the two admin functions). `admin_suspend_user(user, reason, report, end_sessions = true)`: admin only, never yourself, reason required, report must be about that account; hides the profile, ends sessions + refuses sign-in (`auth.users.banned_until`, which Supabase Auth enforces), records the action. `admin_reinstate_user(user, reason)`: restores the earlier hidden choice, lifts the ban, records it. `account_moderation_actions` = audit trail (admins read, nobody writes from a client). A suspended person's inserts/updates on 24 social tables are refused (`account_suspended`) whatever the path (app, direct API, server function acting for them). A suspended host's gatherings stay visible to people already in them, never to anyone new (so nobody new can join). Reports, blocks, deleting own content stay possible. |
-| `20270351_phone_required_for_social` | 5 | Without a verified phone (`auth.users.phone_confirmed_at`, i.e. SMS-confirmed): no 1:1 / gathering / community / plan chat messages, photo comments, questions to a host, waves, friend requests, invitations, hosting a gathering or starting a community (`phone_required`, 11 tables, INSERT). Absent from Dating discovery, Friends Browse and Friends Crossed Paths (`person_discoverable`). Still allowed: browsing, joining / marking Interested, accepting what others send, the whole business side, asking businesses. Email sign-up stays available. |
-| `20270352_crossed_paths_push_consent` | 6 | The crossed-paths push names the other person only when both are discoverable (`person_discoverable`), the other's profile is visible, there is no block either way (the old trigger's block check could never work: it ran with no signed-in user), both opted into the SAME pool (both Dating, or both open to friend discovery), and the recipient's proximity notifications are on. Otherwise no push at all (never a nameless one: the push data carries the other person's id). |
-| `20270353_id_verification_upload_limits` | 4 (part) | id-verification bucket: images only (JPEG/PNG/WebP/HEIC/HEIF), 10 MB each. |
+| `20270349_verification_self_grant_guard` | 1 | Nobody grants themselves verification or admin. Profile INSERT by a signed-in user starts every privileged column at its default (**new finding, proven: a brand-new account could create its own profile as admin + premium + verified**; admin = read every report and ID image, approve IDs). `photo_verified` only true -> false from the client; a new photo resets it and must be in the person's own folder (main + extra photos). ID submissions: INSERT only as pending/unreviewed, paths in own folder, one pending per person. An admin can never review their own submission. `swap_main_photo` = the one way to set an extra photo as main (each photo keeps its own screening result). |
+| `20270350_identity_verified_separate` | 3 | New `profiles.id_verified` (+ `id_verified_at`), set only by `admin_approve_id_verification`, never by the person or photo screening. Approving an ID no longer marks the photo screened. `photo_verified` keeps meaning "main photo passed screening" and keeps controlling profile visibility (5 read policies use it; unchanged). Views + Friends Browse return `id_verified`. |
+| `20270351_account_suspension` | 2 | `profiles.suspended_at` (only via the two admin functions). `admin_suspend_user(user, reason, report, end_sessions = true)`: admin only, never yourself, reason required, report must be about that account; hides the profile, ends sessions + refuses sign-in (`auth.users.banned_until`, which Supabase Auth enforces), records the action. `admin_reinstate_user(user, reason)`: restores the earlier hidden choice, lifts the ban, records it. `account_moderation_actions` = audit trail (admins read, nobody writes from a client). A suspended person's inserts/updates on 24 social tables are refused (`account_suspended`) whatever the path (app, direct API, server function acting for them). A suspended host's gatherings stay visible to people already in them, never to anyone new (so nobody new can join). Reports, blocks, deleting own content stay possible. |
+| `20270352_phone_required_for_social` | 5 | Without a verified phone (`auth.users.phone_confirmed_at`, i.e. SMS-confirmed): no 1:1 / gathering / community / plan chat messages, photo comments, questions to a host, waves, friend requests, invitations, hosting a gathering or starting a community (`phone_required`, 11 tables, INSERT). Absent from Dating discovery, Friends Browse and Friends Crossed Paths (`person_discoverable`). Still allowed: browsing, joining / marking Interested, accepting what others send, the whole business side, asking businesses. Email sign-up stays available. |
+| `20270353_crossed_paths_push_consent` | 6 | The crossed-paths push names the other person only when both are discoverable (`person_discoverable`), the other's profile is visible, there is no block either way (the old trigger's block check could never work: it ran with no signed-in user), both opted into the SAME pool (both Dating, or both open to friend discovery), and the recipient's proximity notifications are on. Otherwise no push at all (never a nameless one: the push data carries the other person's id). |
+| `20270354_id_verification_upload_limits` | 4 (part) | id-verification bucket: images only (JPEG/PNG/WebP/HEIC/HEIF), 10 MB each. |
 
-Dependencies: 0349 needs 0348; 0350 needs 0349; 0351 needs 0350; 0352 needs 0351. 0347 and 0353 are independent of the
+Dependencies: 0350 needs 0349; 0351 needs 0350; 0352 needs 0351; 0353 needs 0352. 0347 and 0354 are independent of the
 others (by number they still deploy in order).
 
 App changes (ship with a new build; harmless before the migrations except where noted):
 - Verified badge + "Verified only" filters read `id_verified` (ViewProfile, Dating cards + filter, Friends cards + filter;
-  `proximity.js`, `friendDiscovery.js`). **Needs 0349 live first** (the selects name the new column).
-- "Set as main photo" calls `swap_main_photo` (**needs 0348 live first**). New finding: the old client update could never
+  `proximity.js`, `friendDiscovery.js`). **Needs 0350 live first** (the selects name the new column).
+- "Set as main photo" calls `swap_main_photo` (**needs 0349 live first**). New finding: the old client update could never
   have worked, `profile_photos.photo_verified` has no client UPDATE grant, so it failed halfway in production today.
 - Admin Reports: Suspend calls `admin_suspend_user` with the report, says what the server actually did, offers Reinstate
-  (also on resolved reports). **Needs 0350 live first.**
+  (also on resolved reports). **Needs 0351 live first.**
 - `presentRecoverableError`: hints `phone_required` / `account_suspended` read as their rule (2 new strings, 11
   languages, 10 machine-authored: native review needed), never Try Again.
 - `delete-account` edge function (NOT deployed): also deletes every file in the person's own id-verification folder
@@ -47,7 +49,7 @@ App changes (ship with a new build; harmless before the migrations except where 
   users directly; a fictional 1555 number derived from the id).
 - Rollback: applying all six and then the six rollback scripts (newest first) leaves production's schema identical to
   before (functions, policies, views, triggers, columns, table + column grants, relations, buckets; set comparison,
-  rolled back). Rollbacks: `scripts/rollback/20270348..20270352_*.rollback.sql`.
+  rolled back). Rollbacks: `scripts/rollback/20270349..20270353_*.rollback.sql`.
 - Existing data: unchanged by the migrations (profile rows byte-identical before/after, rolled back).
 - Jest: 515 suites / 7034 tests pass; journeys 717/717 with the six migrations as a rolled-back prelude (re-run 2026-10-27).
 
@@ -66,8 +68,8 @@ limits on a real upload; the admin screens and the two new messages on a phone; 
 
 ## Owner decisions (2026-10-27)
 
-1. **20270351 (verified phone) stays deferred until after Session B** so the approved seed (7530ef9b5bb4) keeps working.
-   Because deploy order = number order, 0352 (needs 0351) and 0353 wait with it. No external user joins before the full
+1. **20270352 (verified phone) stays deferred until after Session B** so the approved seed (7530ef9b5bb4) keeps working.
+   Because deploy order = number order, 0353 (needs 0352) and 0354 wait with it. No external user joins before the full
    set + a compatible build are deployed and verified.
 2. **ID image retention = implementation target** (approved 7 days / rejected 30 days / never reviewed: auto-reject +
    delete after 60 days / orphan uploads 24 h / account deletion: whole folder). NOT BUILT yet (after Session B in the
@@ -125,7 +127,7 @@ ordinary users. It passes in all three states: production today, 20270347 alone,
 | | DB today | + 20270347 | + all seven |
 |---|---|---|---|
 | Build 86 (installed) | works | works (token write lands server-side; Spotify can't read its tokens back: 0 accounts use it) | works; its old badge still means "photo screened"; its old "Suspend" still changes nothing (0 rows) and says "Suspended"; without a phone, social writes fail with a generic error |
-| New build (Session B) | works: the 3 `id_verified` reads fail with 42703 today, so `selectWithIdVerified` retries without it (no badge). Not usable yet: "Set as main photo" (needs 0348), admin Suspend (needs 0350), Spotify (needs 0347) show an error | works, Spotify too | works fully |
+| New build (Session B) | works: the 3 `id_verified` reads fail with 42703 today, so `selectWithIdVerified` retries without it (no badge). Not usable yet: "Set as main photo" (needs 0349), admin Suspend (needs 0351), Spotify (needs 0347) show an error | works, Spotify too | works fully |
 
 Found and fixed while checking: the new build as committed this morning would have broken Session B. Friends Browse,
 Dating discovery and ViewProfile named `id_verified`, which production answers with 42703 "column … does not exist"
@@ -150,8 +152,8 @@ false "Suspended"); the admin uses the new build.
      not exposed (PGRST106);
    - `people_visible_to_me` still lists the old columns, but they come from `profiles` and are always NULL;
    - journeys on prod without prelude: `pushTokenPrivacy` 6/6, `appVersionCompatibility` 4/4 (build 86 + new build),
-     full run 716/727: the 11 failures are `trustSafety` (tests 0348-0353, not deployed; 11/11 with the prelude);
-     `datingConsent` step 6 expected 0349's `id_verified` column and now accepts both states;
+     full run 716/727: the 11 failures are `trustSafety` (tests 0349-0354, not deployed; 11/11 with the prelude);
+     `datingConsent` step 6 expected 0350's `id_verified` column and now accepts both states;
    - test push B (new server-only path): Expo ticket + receipt `ok`.
 4. Push delivery VERIFIED: the owner confirmed both "Nearby check (1 of 2)" and "(2 of 2)" appeared on the iPhone
    (2026-10-27). NOT verified: a signed-in real-API probe
@@ -172,7 +174,7 @@ false "Suspended"); the admin uses the new build.
    `appVersionCompatibility` without prelude, and one real push to the phone.
 3. Optional, defence in depth: turn on Expo enhanced push security, set `EXPO_ACCESS_TOKEN` as a function secret.
 4. **New iOS build** (TestFlight) from a commit with `idVerifiedColumn.js` -> Session B (controlled accounts only).
-5. After Session B (seed cleaned up): **20270348 -> 20270349 -> 20270350 -> 20270351 -> 20270352 -> 20270353**, one at a
+5. After Session B (seed cleaned up): **20270349 -> 20270350 -> 20270351 -> 20270352 -> 20270353 -> 20270354**, one at a
    time in that order, each through `deploy.js` with its own hash; the journeys after each.
 6. Deploy `delete-account` (ID folder cleanup). Then the retention job, once its conditions (decision 2) are met.
 7. **N6** (below) fixed and deployed.
@@ -181,12 +183,12 @@ false "Suspended"); the admin uses the new build.
 Rollback limits (schema rollback is proven identical; operational rollback is not free):
 - 20270347: restores every token into `profiles` (incl. ones registered after deploy), so N1 is open again;
   `send-push` works either way;
-- 20270349: drops `id_verified`; approvals made since are lost from the profile (the submission rows keep them);
-- 20270350: drops `suspended_at` and the audit table; Supabase Auth bans set since stay until lifted by hand (the
+- 20270350: drops `id_verified`; approvals made since are lost from the profile (the submission rows keep them);
+- 20270351: drops `suspended_at` and the audit table; Supabase Auth bans set since stay until lifted by hand (the
   rollback lists the accounts first);
-- 20270351 / 0352 / 0353: no data of their own; a new build keeps working (its badge falls back, `phone_required` hints
+- 20270352 / 0353 / 0354: no data of their own; a new build keeps working (its badge falls back, `phone_required` hints
   just never occur);
-- a rollback of 0348 re-opens self-admin; never roll it back while external users exist.
+- a rollback of 0349 re-opens self-admin; never roll it back while external users exist.
 
 ## New findings while tracing (reported, not fixed)
 
@@ -200,10 +202,10 @@ Rollback limits (schema rollback is proven identical; operational rollback is no
   the app's own-row reads (`select('*')` in Settings + Profile, ~88 client reads to check) move to an own-profile read.
   Build 86 would break on column grants, so it needs a compatible path (e.g. own row through a function) and a build
   before it.
-- **N2 (fixed by 0348):** profile INSERT had no privileged-column guard (self-admin, above).
-- **N3 (fixed by 0348):** "Set as main photo" failed halfway (above).
+- **N2 (fixed by 0349):** profile INSERT had no privileged-column guard (self-admin, above).
+- **N3 (fixed by 0349):** "Set as main photo" failed halfway (above).
 - **N4 (small, open):** `moderate-photo` screens the photo path it read, then marks the profile's current photo; a photo
-  changed in those seconds could inherit the result. 0348 resets the flag on every client photo change, which narrows it
+  changed in those seconds could inherit the result. 0349 resets the flag on every client photo change, which narrows it
   to a change made during the screening call itself. Fix = compare the path before writing (edge function change).
 - **N5 (open):** after a suspension, the person's current access token stays valid up to 1 hour: reads still work in
   that hour, every social write is refused.
@@ -229,8 +231,8 @@ Rollback limits (schema rollback is proven identical; operational rollback is no
 
 ## Priority order (owner, 2026-10-28)
 
-1. N6 (fix first). 2. Deploy + verify 0348-0353 (number order; 0351 after Session B). 3. B5: KEEP email sign-up;
-stronger passwords, bot protection, verified phone for consumer social actions (0351). 4. I2 limits. 5. I3 report
+1. N6 (fix first). 2. Deploy + verify 0349-0354 (number order; 0352 after Session B). 3. B5: KEEP email sign-up;
+stronger passwords, bot protection, verified phone for consumer social actions (0352). 4. I2 limits. 5. I3 report
 evidence + moderation history (launch blocker). 6. I1 exact-duplicate photos. 7. Risk scoring / liveness vendors:
 deferred until real usage justifies. Session B proceeds on controlled test accounts only; no external users until
 these pass ordinary-user API tests.

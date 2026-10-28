@@ -1,5 +1,5 @@
--- Rollback for migration 20270350 (account suspension): restores the production definitions read 2026-10-27 before it was applied.
--- Run the rollbacks newest first (20270353 -> 20270347); each assumes the later ones were already rolled back.
+-- Rollback for migration 20270351 (account suspension): restores the production definitions read 2026-10-27 before it was applied.
+-- Run the rollbacks newest first (20270354 -> 20270347); each assumes the later ones were already rolled back.
 -- WARNING: a person suspended while this was live becomes unsuspended in the database by this rollback. Check first:
 --   select id from profiles where suspended_at is not null;  and lift any auth ban deliberately (auth.users.banned_until).
 drop trigger if exists zz_refuse_suspended_actor on public.messages;

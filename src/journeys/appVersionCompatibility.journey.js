@@ -3,7 +3,7 @@
 // 7d72d615: Settings/Profile select('*'), push token register + logout, sign-up upsert, profile edit, Friends Browse,
 // Dating, ViewProfile, the old admin "Suspend") and the new build's id_verified read, as ORDINARY signed-in users under the
 // real `authenticated` role. State-aware: it detects whether the migrations are live (private.push_tokens = 20270347,
-// profiles.id_verified = 20270349) and asserts what each state must do, so it stays valid before AND after the deploy.
+// profiles.id_verified = 20270350) and asserts what each state must do, so it stays valid before AND after the deploy.
 //   build 86 x any state: every read and write it makes still succeeds; its token write lands server-side when 20270347
 //     is live; its old "Suspend" changes nothing (0 rows: it never worked, and it still shows "Suspended" on that build).
 //   new build x any state: the id_verified read works when the column exists; when it doesn't, the server answers 42703

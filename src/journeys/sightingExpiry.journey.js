@@ -29,7 +29,7 @@ d('journey: a crossed-paths record is gone 48 hours after the last crossing', ()
       ${actorDeclares(['v_a', 'v_b', 'v_c', 'v_x', 'v_blk'])}
       v_seen jsonb; v_msg text; v_n int; v_id uuid;`, `
   ${actorsSql({ people: ['v_a', 'v_b', 'v_c', 'v_x', 'v_blk'] })}
-  -- A and B both chose Dating: a crossing push names the other only inside the same opted-in pool (20270352)
+  -- A and B both chose Dating: a crossing push names the other only inside the same opted-in pool (20270353)
   update profiles set onboarding_motivations = array['Go on dates'] where id in (v_a, v_b);
   perform set_config('app.push_handoff_test_failure', 'on', true);
   log := log || jsonb_build_array(jsonb_build_object('step','ids','ok', true, 'data', jsonb_build_object('b', v_b, 'c', v_c, 'blk', v_blk)));
