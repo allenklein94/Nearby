@@ -123,7 +123,7 @@ Post-revocation checks (23:10-23:13 UTC; scripts printed status codes only):
 | Function with the secret key (`send-push`) | reached the function (400 = its own body validation) |
 | Function with a user ES256 token (`read-offer-creative`, verify_jwt on) | reached the function (400 "Missing partnerId"); signed out 401 |
 | Real push through the outbox after revocation (23:11 UTC) | send-push 200, Expo ticket + receipt `ok`; on-phone arrival CONFIRMED by the owner with a 23:22 UTC re-test |
-| Dashboard > Database > Network bans | owner to open (not reachable from here) |
+| Network bans (Management API `network-bans/retrieve`, 2026-10-28 23:25 UTC) | none (`banned_ipv4_addresses: []`) |
 
 Not tested: Realtime websocket subscriptions (ES256 user tokens, same verification path as REST; watch the logs), the 13
 recovered functions individually (none uses a JWT secret; their legacy-named variables hold the new keys).
