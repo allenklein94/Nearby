@@ -4,7 +4,8 @@
 //   Another person sees a profile photo row or file only when THAT photo passed screening on THAT storage object: never a
 //   whole folder, never a pending, rejected, replaced or abandoned upload; a late verdict, a replaced photo or a new object
 //   at the same path is never approved; owners can't overwrite a file in place; owners keep every own file; swap_main_photo
-//   carries each photo's own result; only the service role records verdicts.
+//   carries each photo's own result; only the service role records verdicts; a hidden or suspended profile, or a block
+//   either way, closes every photo row and file to the other person (the owner keeps them).
 // State-aware: on a database without the fix (no record_photo_screening) it asserts today's exposure instead, so the
 // journey proves it detects the problem. One rolled-back transaction. Not covered: the Storage HTTP API itself (it
 // enforces these same storage.objects policies), signed URLs issued BEFORE a photo was rejected or replaced (valid up to
@@ -140,6 +141,24 @@ d('journey: photo screening is bound to the exact file version (0349)', () => {
   ${as('swap', 'v_a', 'perform swap_main_photo(v_e1)')}
   ${bSees('b_after_swap')}
 
+  -- the PROFILE's visibility governs too (owner, 2026-10-28): hidden, blocked either way, suspended
+  ${as('hide', 'v_a', 'update profiles set profile_hidden = true where id = v_a')}
+  ${bSees('b_profile_hidden')}
+  ${as('unhide', 'v_a', 'update profiles set profile_hidden = false where id = v_a')}
+  ${as('a_blocks_b', 'v_a', 'insert into blocks (blocker_id, blocked_id) values (v_a, v_b)')}
+  ${bSees('b_blocked_by_a')}
+  delete from blocks where blocker_id = v_a and blocked_id = v_b;
+  ${as('b_blocks_a', 'v_b', 'insert into blocks (blocker_id, blocked_id) values (v_b, v_a)')}
+  ${bSees('b_blocked_a')}
+  delete from blocks where blocker_id = v_b and blocked_id = v_a;
+  if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'suspended_at') then
+    execute format('update profiles set suspended_at = now(), profile_hidden = true where id = %L', v_a);
+    ${bSees('b_a_suspended')}
+    execute format('update profiles set suspended_at = null, profile_hidden = false where id = %L', v_a);
+  end if;
+  ${bSees('b_visible_again')}
+  ${as('owner_files_hidden_check', 'v_a', 'null', `(select count(*) from storage.objects where bucket_id = 'profile-photos' and name like v_a || '/%')`)}
+
   -- anon sees nothing
   ${as('anon_files', 'null', 'null', `(select count(*) from storage.objects where bucket_id = 'profile-photos' and name like v_a || '/%')`, 'anon')}
 `);
@@ -201,6 +220,21 @@ d('journey: photo screening is bound to the exact file version (0349)', () => {
     expect(data('client_binds_extra') === null || data('client_binds_extra').code === '42501').toBe(true);
     expect(data('client_record_verdict').code).toBe('42501');
     expect(data('client_target').code).toBe('42501');
+  });
+
+  test('hiding, suspending or blocking either way closes every approved photo and row to the other person', () => {
+    if (!fixed()) {
+      // today: a hidden profile's or a blocked person's approved main photo file stays readable by a known path
+      expect(data('b_profile_hidden').files.length + data('b_blocked_by_a').files.length).toBeGreaterThan(0);
+      return;
+    }
+    const none = { profile: 0, extras: [], files: [] };
+    expect(data('b_profile_hidden')).toEqual(none);
+    expect(data('b_blocked_by_a')).toEqual(none);
+    expect(data('b_blocked_a')).toEqual(none);
+    if (s.b_a_suspended) expect(data('b_a_suspended')).toEqual(none);
+    expect(data('b_visible_again')).toEqual({ profile: 1, extras: ['main-3.jpg'], files: ['extra-1.jpg', 'main-3.jpg'] });
+    expect(data('owner_files_hidden_check')).toBe(6);
   });
 
   test('swap_main_photo carries each photo its own result; anon sees nothing', () => {

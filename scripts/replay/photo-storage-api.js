@@ -9,7 +9,8 @@
 // photo of A can't be listed, downloaded (authenticated / legacy / public routes, HEAD, info), signed (single + batch),
 // copied or moved, and B can't write into A's folder; only A's currently approved files are readable, and only those
 // can be signed; losing approval (replacement or rejection) refuses NEW signed URLs at once; A keeps every own file and
-// can't overwrite in place (x-upsert, PUT, move). State-aware: on a database without 0349 it records today's exposure and
+// can't overwrite in place (x-upsert, PUT, move); hiding, suspending or blocking (either way) closes every route to
+// known paths at once. State-aware: on a database without 0349 it records today's exposure and
 // fails the run only on a regression of what 0349 promises. Rows and files it creates are deleted afterwards.
 // Residual it MEASURES, never fixes: a signed URL issued while a photo was approved keeps working until it expires.
 const dbUrl = process.env.NEARBY_LOCAL_DB_URL;
@@ -242,9 +243,54 @@ async function main() {
     check(eq(ownRead, own), 'A can read and sign every own file (incl. pending and rejected, for editing)');
     const anon = await reach('anon', all);
     check(eq(anon, { listed: [], files: [] }), `signed out: nothing listed, read, signed or public (${JSON.stringify(anon)})`);
+
+    // 8. visibility of the PROFILE, not only the file's screening (owner, 2026-10-28): hidden, suspended, blocked either
+    // way. B already knows the exact paths (direct known-path requests on every route, single + batch signing).
+    await screen(null, true); // the re-uploaded main-3 passes: B reaches main-3 + extra-1 again
+    const approved = ['extra-1.jpg', 'main-3.jpg'];
+    const extraRowsB = async () => (await asUser(B, 'select id from profile_photos where user_id = $1', [A])).rowCount;
+    const r8 = await reach('B', all);
+    check(eq(r8.files, approved), `baseline: B reaches A's approved files (${JSON.stringify(r8.files)})`);
+    const signed8 = await sign('B', 'main-3.jpg', 600);
+    const cut = async (label) => {
+      const r = await reach('B', all);
+      const batch = await signBatch('B', all);
+      const rows = await extraRowsB();
+      const closed = eq(r, { listed: [], files: [] }) && batch.length === 0 && rows === 0;
+      if (fixed) check(closed, `${label}: B can't list, read, sign (single or batch) A's known paths or read A's extra-photo rows (${JSON.stringify({ ...r, batch, rows })})`);
+      else note(`today, ${label}: B reaches ${JSON.stringify({ ...r, batch, rows })}`);
+      const ownOk = (await readable('A', 'main-3.jpg')).any && !!(await sign('A', 'main-3.jpg'));
+      check(ownOk, `${label}: A still reads and signs own photo`);
+    };
+    const back = async (label) => {
+      const r = await reach('B', all);
+      check(eq(r.files, approved), `${label}: B reaches the approved files again (${JSON.stringify(r.files)})`);
+    };
+    await asUser(A, 'update profiles set profile_hidden = true where id = $1', [A]);
+    await cut('A hides the profile');
+    await asUser(A, 'update profiles set profile_hidden = false where id = $1', [A]);
+    await back('A unhides');
+    await asUser(A, 'insert into blocks (blocker_id, blocked_id) values ($1, $2)', [A, B]);
+    await cut('A blocks B');
+    await db.query('delete from blocks where blocker_id = $1 and blocked_id = $2', [A, B]);
+    await back('A unblocks B');
+    await asUser(B, 'insert into blocks (blocker_id, blocked_id) values ($1, $2)', [B, A]);
+    await cut('B blocks A');
+    await db.query('delete from blocks where blocker_id = $1 and blocked_id = $2', [B, A]);
+    await back('B unblocks A');
+    const hasSuspension = (await db.query(`select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'suspended_at'`)).rowCount > 0;
+    if (hasSuspension) {
+      // as admin_suspend_user does (20270351): suspended + hidden in one write
+      await db.query('update profiles set suspended_at = now(), profile_hidden = true where id = $1', [A]);
+      await cut('A is suspended');
+      await db.query('update profiles set suspended_at = null, profile_hidden = false where id = $1', [A]);
+      await back('A is reinstated');
+    } else note('suspension: 20270351 not applied on this database, not checked');
+    note(`RESIDUAL: the signed URL B got for main-3 before hiding/blocking returns ${signed8 ? await fetchSigned(signed8) : 'n/a'} (valid to its expiry, at most 15 min from the app)`);
   } finally {
     await db.query(`delete from storage.objects where bucket_id = $1 and (name like $2 or name like $3)`, [BUCKET, `${A}/%`, `${B}/%`]);
     await db.query('delete from profile_photos where user_id = any($1)', [[A, B]]);
+    await db.query('delete from blocks where blocker_id = any($1) or blocked_id = any($1)', [[A, B]]);
     await db.query('delete from profiles where id = any($1)', [[A, B]]);
     await db.query('delete from auth.users where id = any($1)', [[A, B]]);
     await db.end();

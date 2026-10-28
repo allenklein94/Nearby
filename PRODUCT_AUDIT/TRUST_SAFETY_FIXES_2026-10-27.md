@@ -293,11 +293,31 @@ Remaining limitations (reported, not fixed):
    already downloaded stay in the viewer's device cache. No revocation exists (bearer links); the CDN in front of
    hosted Storage was not testable locally (its cache follows the file's cache-control, now 15 min for new uploads;
    the 17 existing files keep 60 min).
-2. An approved MAIN photo's file stays signable by a signed-in person who already knows its path even when the profile
-   is hidden, suspended or has blocked them (same as before 0349, per file now instead of per folder; paths are only
-   handed out by profile reads that apply those rules).
+2. FIXED 2026-10-28 (owner; see "Profile visibility governs photos" below): hidden / suspended / blocked profiles'
+   photos are no longer signable by a known path. Remaining: links signed BEFORE hiding/blocking work to expiry (item 1).
 3. The app has no in-app view of rejected photos for admins; moderators use the dashboard (service role), as before.
 4. The hosted Storage API version may differ from the local v1.11.13; the post-deploy production run is the check.
+
+### Profile visibility governs photos (owner, 2026-10-28; folded into 0349, NOT deployed)
+
+Gap: with the committed 0349 a person who knew an approved photo's path could still list, read and sign it after the
+owner hid the profile, was suspended, or a block existed either way (and across a block also read the extra-photo rows).
+Fix (0349, same file): `profile_photo_object_visible` returns false unless the owner's profile is not hidden (a suspended
+account is always hidden: 20270351's suspend sets it and its guard keeps it while suspended) and there is no block
+either way (`viewer_blocked_either_way`, the server rule profile reads already use, 0348); the extra-photo row policy adds
+the same block check. File screening rules unchanged; the owner's own folder unchanged; moderation = service role
+(bypasses RLS), unchanged. No admin exception added (none existed for photos).
+Verified: real Storage API (`photo-storage-api.js`, section 8): hidden, A blocks B, B blocks A, suspended = B can't list,
+read (all routes), sign (single + batch) A's known paths or read A's extra rows; A keeps read + sign; access returns on
+unhide / unblock / reinstate. Against the committed 0349 function the same run FAILS 4/4 (gap reproduced); restored = all
+pass. Journey `photoScreeningBinding` 7/7 on prod (asserts today's exposure), 7/7 with 0348-0354 as prelude, and FAILS
+with the committed 0349. Prod journeys 747/747 with 0348-0354; from-scratch replay 478/478 + journeys 747/747 + all 4
+concurrency scripts; grants prod+0348-0354 == replay 3208/3208; Jest 520/7062. Rollback file unchanged (it drops the
+function and restores the row policy verbatim; not re-run after this edit). 0349's approval code changes: recompute.
+Residual: a link signed before hiding/blocking returns 200 until it expires (<= 15 min from the new build).
+
+JWT secret exposure (same day): `PRODUCT_AUDIT/JWT_SECRET_EXPOSURE_2026-10-28.md` (legacy HS256 key still trusted;
+rotation procedure prepared, NOT done).
 
 Deployment sequence (each production step its own owner approval):
 1. Compatible TestFlight build (incl. the 15-min links) installed on every device.

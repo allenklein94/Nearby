@@ -234,6 +234,8 @@ $function$;
 -- The ONE rule for another person reading a profile-photos file: the owner's current main photo that passed screening on
 -- this very object, or an extra photo that passed on this very object (with the profile itself visible, as the extra-photo
 -- row policy requires). Signed-in callers only. The owner's own folder stays in the storage policy itself.
+-- The profile must also be one this person may see right now (owner, 2026-10-28): not hidden (a suspended account is
+-- always hidden, 20270351) and no block either way, so a known path never outlives hiding, suspension or a block.
 create or replace function public.profile_photo_object_visible(p_object_id uuid, p_name text)
 returns boolean
 language plpgsql
@@ -247,6 +249,10 @@ begin
   if auth.uid() is null or p_object_id is null or p_name is null then return false; end if;
   if split_part(p_name, '/', 1) !~ '^[0-9a-fA-F-]{36}$' then return false; end if;
   v_owner := split_part(p_name, '/', 1)::uuid;
+  if not exists (select 1 from profiles p where p.id = v_owner and coalesce(p.profile_hidden, false) = false)
+     or public.viewer_blocked_either_way(v_owner) then
+    return false;
+  end if;
   return exists (select 1 from profiles p
                   where p.id = v_owner and p.photo_url = p_name and p.photo_verified and p.photo_object_id = p_object_id)
       or exists (select 1 from profile_photos pp join profiles p on p.id = pp.user_id
@@ -269,10 +275,11 @@ create policy "Users can view own or verified profile photos" on storage.objects
 -- No overwriting a file in place (the app always uploads a new path and never upserts).
 drop policy if exists "Users can update their own profile photo" on storage.objects;
 
--- Extra photo rows: another person sees a row only when that photo itself passed screening.
+-- Extra photo rows: another person sees a row only when that photo itself passed screening, never across a block.
 alter policy "Users can view own or verified user's extra photos" on public.profile_photos
   using ((auth.uid() = user_id) OR (photo_verified = true AND screened_object_id IS NOT NULL AND EXISTS (
-    SELECT 1 FROM profiles p WHERE p.id = profile_photos.user_id AND p.photo_verified = true AND p.profile_hidden = false)));
+    SELECT 1 FROM profiles p WHERE p.id = profile_photos.user_id AND p.photo_verified = true AND p.profile_hidden = false)
+    AND NOT public.viewer_blocked_either_way(profile_photos.user_id)));
 
 -- For moderate-photo (service role only): the exact file it is about to screen ...
 create or replace function public.photo_screening_target(p_user uuid, p_extra uuid default null)
