@@ -69,7 +69,8 @@ d('journey: push + Spotify tokens are server-only (N1)', () => {
   ${rec('write_other_token', `(select expo_push_token from private.push_tokens where user_id = v_b) = 'ExponentPushToken[journey-' || left(v_b::text, 8) || ']'`)}
 
   ${user('spotify_old_path', 'v_a', `update profiles set spotify_access_token = 'sp-a', spotify_refresh_token = 'sp-r', spotify_token_expires_at = now() + interval '1 hour' where id = v_a`,
-    `(select jsonb_build_object('own', (select access_token from spotify_connections where user_id = v_a), 'column', (select spotify_access_token from profiles where id = v_a)))`)}
+    `(select access_token from spotify_connections where user_id = v_a)`)}
+  ${rec('spotify_old_path_column', `(select spotify_access_token from profiles where id = v_a)`)}
   ${user('spotify_new_path', 'v_b', `insert into spotify_connections (user_id, access_token, refresh_token, expires_at) values (v_b, 'sp-b', 'sp-rb', now())`,
     `(select access_token from spotify_connections where user_id = v_b)`)}
   ${user('spotify_others', 'v_a', 'perform 1', `(select count(*) from spotify_connections where user_id = v_b)`)}
@@ -97,9 +98,16 @@ d('journey: push + Spotify tokens are server-only (N1)', () => {
   });
 
   test("an ordinary user can see another person's profile but never their tokens", () => {
-    expect(data('other_profile_token')).toEqual({ row_visible: 1, token: null, spotify: null });
-    expect(data('other_view_token')).toEqual({ row_visible: 1, token: null });
-    expect(data('any_token_anywhere')).toBe(0);
+    // Before N6 (20270348) the columns are readable but empty; after it a direct read of a private profiles column is
+    // refused outright (42501) and the people view no longer has a token column (42703). Both are "never their tokens".
+    const refusedOr = (k, open, code) => {
+      const v = data(k);
+      if (v && v.code) expect([k, v.code]).toEqual([k, code]);
+      else expect([k, v]).toEqual([k, open]);
+    };
+    refusedOr('other_profile_token', { row_visible: 1, token: null, spotify: null }, '42501');
+    refusedOr('other_view_token', { row_visible: 1, token: null }, '42703');
+    refusedOr('any_token_anywhere', 0, '42501');
   });
 
   test('the token store and its reader are server-only; signed out reads no profiles', () => {
@@ -119,7 +127,8 @@ d('journey: push + Spotify tokens are server-only (N1)', () => {
   });
 
   test('Spotify tokens: own row only, old and new write paths both land there', () => {
-    expect(data('spotify_old_path')).toEqual({ own: 'sp-a', column: null });
+    expect(data('spotify_old_path')).toBe('sp-a');
+    expect(data('spotify_old_path_column')).toBeNull();
     expect(data('spotify_new_path')).toBe('sp-b');
     expect(data('spotify_others')).toBe(0);
     expect(data('spotify_insert_for_other').code).toBe('42501');
