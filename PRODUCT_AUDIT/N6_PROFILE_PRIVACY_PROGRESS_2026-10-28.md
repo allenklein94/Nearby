@@ -124,3 +124,18 @@ Unknown from here (owner checks in App Store Connect): (1) TestFlight > testers:
 not just invited; any installed build 86 that keeps connecting = upgrade or remove before 0348; (2) whether build 86 is
 released on the App Store publicly (a public install that signs up after 0348 would be refused). Production has no account
 outside the owner's own, so no other installed copy has ever signed in.
+
+### Follow-up checks (2026-10-29, read-only; owner: do not assume no sessions = no installs)
+- EAS build list: iOS production/store builds 77, 79, 80, 83, 84, 86 exist (86 = 7d72d615, 2026-10-18; 87 not started); no
+  Android build. Any of them could still be installed through TestFlight; every pre-87 build has the old profile reads.
+- Gateway logs, last 7 days (`logs`, source edge_logs, user agent = last field of event_message): the ONLY app user agent is
+  `Nearby/86 CFNetwork/3860.700.2 Darwin/25.6.0` (4,612 requests, 2026-10-22..10-28, one OS/device type); no other build, no
+  browser traffic to the business website. Evidence of what CONNECTED, not proof nothing else is installed.
+- Not visible here: TestFlight tester installs and App Store release status (App Store Connect only; owner to check).
+- Business website export prepared from main (1af87365+), NOT published, kept in the session scratchpad (regenerate with the
+  convention command if lost): new bundle has `get_my_profile` (1) and 0 profile `birthdate` reads (published one: 0 / 2),
+  reads people through the views. Headless render, all Supabase requests blocked: old and new both show the Sign in screen
+  (phone code), same 2 pre-existing navigation console errors in both (not new). Signed-in business pages are NOT tested
+  headless (needs a real business sign-in): after publishing, the owner signs in on the live site and opens Home,
+  Opportunities, Bookings, Offers, Profile before 0348. Business-facing code changed since the 2026-10-23 export: N6 reads,
+  one business-application screen by state (ec0b06f0), request deadlines/Reopen/posting refusals (ideas 384/393-395).
