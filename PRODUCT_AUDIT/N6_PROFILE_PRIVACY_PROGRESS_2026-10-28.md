@@ -141,6 +141,7 @@ outside the owner's own, so no other installed copy has ever signed in.
   one business-application screen by state (ec0b06f0), request deadlines/Reopen/posting refusals (ideas 384/393-395).
 
 ### 0348 verification sequence (owner APPROVED, 2026-10-29; supersedes the earlier two-pass note)
+Build 87 + Tier 1 passing is a testing milestone, never approval to deploy 0348 or any other migration (each needs its own approval).
 Order: build 87 installed + Tier 1 passes -> owner approves publishing the new business website export (stays UNPUBLISHED until
 then) -> website pass A -> 0348 deploy (own approval) -> direct function check -> website pass B -> 0349 (own approval).
 - Why two website passes: `readMyProfile` (`services/myProfile.js`) calls `get_my_profile()` and falls back to the old own-row
