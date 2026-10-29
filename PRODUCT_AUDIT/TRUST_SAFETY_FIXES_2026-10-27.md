@@ -462,6 +462,38 @@ Tests (2026-10-29, nothing written to production): journey `trustedWriteScope` 5
 rollback round trip 0348-0358 -> +0359 -> rollback = identical (md5 over every public/private function's definition, ACL
 and config, sorted); Jest 523 suites / 7152 tests. Rollback: `scripts/rollback/20270359_trusted_write_scope.rollback.sql`
 (re-opens the leak; only if a function misbehaves).
+
+**Authorization-boundary review of the flag (owner, 2026-10-29; nothing deployed or written to production):**
+- Real API, signed out AND signed in (dedicated test account, read-only): `rpc/set_config` 404 (PGRST202); `pg_catalog`
+  via Content-/Accept-Profile 406 (only public, graphql_public exposed); GraphQL disabled; `set_premium_status` /
+  `check_and_increment_ai_use` 401/403 (42501); trigger functions not callable (404). Catalog: anon / authenticated cannot
+  log in, no pre-request hook, the only client-executable function with dynamic SQL is an event-trigger function (not
+  callable), every flag-setter is SECURITY DEFINER owned by postgres and checks its caller (admin / owner / auth.uid())
+  before trust; no client-callable invoker function writes a guarded table; no profiles trigger before the guard sets the
+  flag. So through the API nobody can forge the flag, and no single request can chain "trust on" with a client-chosen write:
+  0359's leak was proven inside one database transaction, which an API client cannot compose (hardening, not an open API hole).
+- BUT the flag itself was forgeable: a session running as `authenticated` that calls set_config can give itself is_admin /
+  is_premium (proven on 0348-0359, rolled back); security rested on "no path to set_config" staying true forever.
+- **FIX BUILT + STAGED as 20270360 (NOT deployed, own approval, after 0359):** the 12 column guards (prevent_self_premium_edit,
+  hosting partner, community status, friendship / match / gathering_interest / gathering_question identity, and 0349-0351's
+  photo-screening, privileged-insert, identity-verified, suspension guards) run as the caller (SECURITY INVOKER; none reads a
+  table) and protect when the flag is not 'true' OR `current_user in ('anon','authenticated')`. Inside a definer server
+  function current_user is postgres, so trusted writes are unchanged; a direct client write is protected with or without the
+  flag. DO block + `trustedWriteScopeGuard.test.js` hold later migrations to it. Residual (same class, lower impact,
+  recorded, not fixed): a forged flag also skips the friend-request daily limit and 0356's rate limits (checked inside
+  definer functions); reachable only with raw SQL as a client role.
+- Tests (real client roles via `set local role` + JWT claims, rolled back): journey `trustedWriteScope` 12/12 with
+  0348-0360 (forged self-grant of admin / premium / bonus / business / ID verification refused, forged profile insert with
+  powers stripped, anon forge nothing, failed op + nested + friendship + community status protected, admin suspend /
+  reinstate, owner pause and counters still work); 3/12 fail on 0348-0359 (exactly the forgery cases); prod journeys
+  770/770 with 0348-0360; rollback round trip identical (definitions, ACL, config, security mode); Jest 523 / 7154.
+  A signed-in write probe through the real API (PATCH own is_admin) was NOT run (would write to production if it failed);
+  the role-switched journey is the same role + claims PostgREST uses.
+- Early separation of 0359/0360 from 0348-0358: technically safe (19 of 20 live flag-setters and all 7 live guards are
+  byte-identical on prod and after 0358; only admin_approve_id_verification differs, changed by 0350), but the ledger is
+  8-digit and strictly ordered with 20270347 the highest recorded, so it needs 0348-0359 renumbered (0348's recorded
+  approval code changes) and 0349-0358's own redefinitions would re-open the leak until 0359 runs again. Not recommended:
+  no API exploit path exists; deploy 0359 + 0360 immediately after 0358 in the same sequence.
 Not verified: a real report push on an admin's phone, the SHA-256 path through a real upload (needs the moderate-photo
 redeploy), the backfill script against production.
 
