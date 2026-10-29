@@ -366,6 +366,24 @@ I1 (duplicate/fake accounts), widened from "exact-duplicate photos" to FLAG -> I
   common names are legitimate).
 - e. Privacy: hashes/flags stored privately (no client grant), disclosed in the Privacy Policy before external users.
 
+## Owner decision 2026-10-29: I2 + I1 direction APPROVED with refinements (design only; NOT built, NOT deployed)
+Supersedes addition b above where they differ.
+I2:
+- Two distinct mechanisms: (1) automatic RATE LIMITS on repeated excessive activity (e.g. too many unsolicited messages /
+  invitations / business-like posts); (2) ACCOUNT RESTRICTION (Restricted level) only on stronger evidence or human review.
+- Reports trigger investigation, never proof: any number of reports alone never restricts an account or lowers its limits
+  (protects against malicious mass-reporting).
+- Established, mutual relationships (accepted friends, matches, fellow attendees, accepted invitations) get clearly more
+  generous limits than unsolicited stranger outreach.
+- Server-side only; exact thresholds to the owner for approval before implementation.
+I1:
+- Start with exact photo hashes + supporting signals; similar names = supporting evidence only, never enforcement alone.
+- An identical photo alone does not open a moderation case (stock / shared images): a case needs corroborating evidence
+  or a review threshold (rule to the owner with I2's numbers).
+- Similar-image (perceptual) detection = later, subject to a privacy review. Device fingerprinting stays deferred.
+- No automatic bans or hidden restrictions from duplicate signals alone.
+Priority unchanged: build 87 + phone testing -> 0348-0354 -> B5 -> I2 -> I3 -> I1.
+
 ## Priority order (owner, 2026-10-28)
 
 1. N6 (fix first). 2. Deploy + verify 0349-0354 (number order; 0352 after Session B). 3. B5: KEEP email sign-up;
