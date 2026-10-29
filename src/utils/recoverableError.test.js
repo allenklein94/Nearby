@@ -64,10 +64,14 @@ describe('account rules the server enforces read as the rule, never a retry (tru
     expect(suspended.message).toMatch(/suspended/);
     expect(suspended.canRetry).toBe(false);
   });
-  test('every language has both sentences', () => {
+  test('rate_limited (20270356) gives its own sentence and no Try Again', () => {
+    const limited = recoverableErrorCopy({ what: 'complete that', error: { message: "You've reached the limit for this for now. Please try again later.", hint: 'rate_limited', code: 'P0001' } });
+    expect(limited).toEqual({ title: "That didn't go through", message: "You've reached the limit for this for now. Please try again later.", canRetry: false });
+  });
+  test('every language has all three sentences', () => {
     const shared = require('../i18n/ui/shared').default;
     for (const lang of Object.keys(shared)) {
-      expect([lang, typeof shared[lang].errors.phoneRequired, typeof shared[lang].errors.accountSuspended]).toEqual([lang, 'string', 'string']);
+      expect([lang, typeof shared[lang].errors.phoneRequired, typeof shared[lang].errors.accountSuspended, typeof shared[lang].errors.rateLimited]).toEqual([lang, 'string', 'string', 'string']);
     }
   });
 });

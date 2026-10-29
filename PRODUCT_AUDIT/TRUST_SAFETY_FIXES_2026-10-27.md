@@ -388,6 +388,65 @@ for I1's exact hashes (count rule with I2's numbers). Generated/manipulated iden
 (reverse image search) need an AI or third-party service + a privacy review: DEFERRED with similar-image detection and L1.
 Any such result is a signal for review, never proof: a generated avatar is not evidence of a fake person.
 
+## I3 + I2 + I1 BUILT, STAGED, NOT DEPLOYED (owner: build the safe approved work now, 2026-10-29)
+
+Migrations (deploy order = number order, AFTER 0348-0354, each its own approval; none sent to production):
+- 20270355 I3: `reports.content_type/content_id` (message, gathering/community/plan/business message, whole 1:1 chat =
+  `match_chat`); the server copies the content at report time, read AS THE REPORTER (security invoker: only what they could
+  see) and only if the reported person wrote it (else hint `report_content_mismatch`); a 1:1 chat keeps the reported
+  person's last 20 messages there; client-sent copies are replaced; the copy survives deletion / disappearing messages;
+  evidence frozen after insert (only `resolved` changes, existing column grant); `report_actions` append-only log
+  (admins read; every resolve/reopen whatever the path) + `admin_resolve_report(id, no_action|action_taken, note)`.
+- 20270356 I2: ONE check `private.enforce_rate_limit` on messages, group chats (gathering + community + plan together),
+  business messages, invitations, reports, business requests, name changes, photo changes; counts the rows the person really
+  wrote; trust level = suspended -> restricted (0351 refuses), verified phone AND approved account age -> established, else
+  new. ENFORCES NOTHING until numbers are approved: `private.rate_limit_rules` empty, `trust_settings` null. Refusal = hint
+  `rate_limited` + "You've reached the limit for this for now. Please try again later." (11 languages, 10 machine-authored).
+  Reports never touch the reported person's limits; no automatic restriction anywhere.
+- 20270357 I1: fingerprint = Storage's own MD5 of the file (eTag; multipart skipped); existing photos fingerprinted on
+  apply; a case opens only under an approved rule (`account_signal_settings` null = no cases): same file on >= N accounts,
+  or same file + similar names (pg_trgm); one open case per file; private schema, admins read via
+  `admin_list_account_review_cases` (no fingerprint shown) and close via `admin_close_account_review_case` (outcome +
+  note); never bans, hides or limits anyone. Limit: byte-identical files only (resize/crop/re-encode not caught).
+App (works on today's DB and after; in build 87 if built from this commit): report sheets attach the long-pressed group /
+plan message, the business message, or the 1:1 chat (`utils/reportContent.js`: missing columns or a refused reference =
+the same report filed about the person, never lost); chat composer + error copy show phone-required / suspended /
+rate-limited as their own sentence (was "check your connection" in chats); admin Reports screen shows the evidence,
+resolves with an outcome (plain resolve before 0355) and lists review cases above reports (none before 0357).
+Tests: journey `trustSafetyI123` 7/7 (prod, 0348-0357 prelude, rolled back; real roles); prod journeys 754/754 with all ten
+as prelude; Jest 522 suites / 7147 tests; rollbacks `scripts/rollback/2027035[5-7]_*.rollback.sql`: apply 0348-0357 +
+rollbacks newest first == 0348-0354 alone (sorted catalog fingerprint, 4,574 items: functions + ACLs, policies, triggers,
+columns + column ACLs, relations + ACLs, constraints, indexes, cron); iOS JS bundle exports clean with the new code.
+Found while testing: admins CAN mark reports resolved today (column grant `reports.resolved` to authenticated);
+`information_schema.column_privileges` hides it (read `pg_attribute.attacl`).
+
+### Thresholds PROPOSED for owner approval (not applied; one reviewed SQL statement after approval)
+| Rule | New | Established |
+|---|---|---|
+| established = verified phone + account age | n/a | 7 days |
+| 1:1 messages (mutual matches only) | 20 / min, 300 / day | 40 / min, 1000 / day |
+| group chat messages (all group chats together) | 15 / min, 200 / day | 30 / min, 600 / day |
+| business conversation messages | 10 / min, 100 / day | 20 / min, 300 / day |
+| invitations sent (friends only today) | 30 / day | 100 / day |
+| reports filed (never acts on anyone by itself) | 10 / day | 20 / day |
+| business requests (+ existing 10-min duplicate check) | 10 / day | 20 / day |
+| display-name changes | 2 / 30 days | 3 / 30 days |
+| photo changes (extras added + main replaced; covers a full profile set-up) | 15 / day | 20 / day |
+| I1 case: same file on N accounts | N = 3 | |
+| I1 case: same file + similar names (trigram similarity) | >= 0.5 ("John Smith" / "Johnny Smith" qualifies, journey) | |
+
+### Still needs an owner decision (not built)
+- Business-like posting by a consumer (I2 a): no rule-based definition approved (links / phone numbers to non-friends?).
+- Admin notice of a new report (I3): channel (push to admins / email via Resend once its secrets exist).
+- Report retention: a report (and its content copy) is deleted when EITHER account is deleted (existing cascade), so a
+  reported person can erase reports by deleting their account. Keep reports past deletion? (privacy decision)
+- Privacy Policy sentences before deploying 0355 (copy of reported content kept for review) and 0357 (photo file
+  fingerprints compared for duplicate review).
+- B5: stronger passwords and bot protection are Supabase Auth settings (production auth change, not done). The app has no
+  email/password sign-up screen; Auth CAPTCHA would also gate the app's phone-code sign-in, so it needs a CAPTCHA provider
+  + client integration in a new native build. Proposal: password minimum 10 + leaked-password check (if the plan allows);
+  CAPTCHA only with a provider choice. 0352 (verified phone for social actions) is B5's other half, already staged.
+
 ## Priority order (owner, 2026-10-28)
 
 1. N6 (fix first). 2. Deploy + verify 0349-0354 (number order; 0352 after Session B). 3. B5: KEEP email sign-up;

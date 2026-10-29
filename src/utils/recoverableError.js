@@ -28,6 +28,7 @@ export function serviceError(response, result, fallback) {
 export const ACCOUNT_RULE_HINTS = {
   phone_required: 'ui.shared.errors.phoneRequired',
   account_suspended: 'ui.shared.errors.accountSuspended',
+  rate_limited: 'ui.shared.errors.rateLimited',  // 20270356: volume limits by trust level
 };
 
 const NETWORK = /network request failed|failed to fetch|network error|timed? ?out|offline|internet|connection/i;
@@ -53,7 +54,7 @@ export function recoverableErrorCopy({ what, error, draftKept = false }) {
     parts.push(tr(draftKept ? 'ui.shared.errors.draftSaved' : 'ui.shared.errors.nothingLost'));
     return { title: whatLine(what, 'service') ?? `We couldn't ${what} right now.`, message: parts.join(' '), canRetry: true };
   }
-  // An account rule the server enforces (20270351 / 20270352): say the rule in the person's language; retrying can't help.
+  // An account rule the server enforces (20270351 / 20270352 / 20270356): say the rule in the person's language; retrying can't help.
   const rule = ACCOUNT_RULE_HINTS[error?.hint];
   if (rule) return { title: tr('ui.shared.errors.didntGoThrough'), message: tr(rule), canRetry: false };
   const detail = String(error?.message ?? '').trim();

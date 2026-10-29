@@ -77,7 +77,7 @@ export default function BusinessConversationScreen({ route, navigation }) {
     if (!businessMessage) {
       return;
     }
-    setReportTarget({ id: businessMessage.sender_id, name: partnerName });
+    setReportTarget({ id: businessMessage.sender_id, name: partnerName, content: { type: 'business_message', id: businessMessage.id } });
   }
 
   async function handleSend() {
@@ -181,6 +181,7 @@ export default function BusinessConversationScreen({ route, navigation }) {
         onBlocked={() => setReportTarget(null)}
         reportedUserId={reportTarget?.id}
         reportedUserName={reportTarget?.name}
+        reportedContent={reportTarget?.content}
       />
     </SafeAreaView>
   );

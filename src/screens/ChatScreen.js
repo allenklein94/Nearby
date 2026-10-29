@@ -1512,6 +1512,7 @@ export default function ChatScreen({ route, navigation }) {
         }}
         reportedUserId={otherUser?.id}
         reportedUserName={otherUser?.display_name}
+        reportedContent={matchId ? { type: 'match_chat', id: matchId } : null}
       />
 
       <ActionSheetModal

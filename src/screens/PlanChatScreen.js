@@ -203,7 +203,7 @@ export default function PlanChatScreen({ route, navigation }) {
                     {!isMe && (
                       <TouchableOpacity
                         onPress={() => navigation.navigate('ViewProfile', { userId: item.sender_id })}
-                        onLongPress={() => setReportTarget({ id: item.sender_id, name: item.profiles?.display_name })}
+                        onLongPress={() => setReportTarget({ id: item.sender_id, name: item.profiles?.display_name, content: { type: 'plan_message', id: item.id } })}
                         accessibilityLabel={t('ui.groupChat.viewProfileHoldToReportA11y', { name: item.profiles?.display_name })}
                       >
                         <Text style={styles.senderName}>{item.profiles?.display_name}</Text>
@@ -246,6 +246,7 @@ export default function PlanChatScreen({ route, navigation }) {
         onBlocked={() => setReportTarget(null)}
         reportedUserId={reportTarget?.id}
         reportedUserName={reportTarget?.name}
+        reportedContent={reportTarget?.content}
       />
     </SafeAreaView>
   );

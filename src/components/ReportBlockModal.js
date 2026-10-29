@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation, showSuccessToast } from '../motion';
+import { reportRow, insertReport } from '../utils/reportContent';
 // `value` is what is saved in reports.reason and read by the admin queue (English, unchanged); `key` names the chip label
 // in the person's language (ui.reportBlock.reason.<key>).
 const REPORT_REASONS = [
@@ -20,7 +21,9 @@ const REPORT_REASONS = [
 
 // reportOnly: the caller owns blocking (a host's Block in Manage attendees also takes the person off the gathering), so
 // the sheet shows only the report.
-export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly = false }) {
+// reportedContent: optional { type, id } of what is being reported (a long-pressed message, or { type: 'match_chat',
+// id: matchId } from a 1:1 chat); the server keeps its own copy of it (utils/reportContent.js).
+export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly = false, reportedContent = null }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -36,12 +39,8 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
     const { data: sessionData } = await supabase.auth.getSession();
     const reporterId = sessionData?.session?.user?.id;
 
-    const { error } = await supabase.from('reports').insert({
-      reporter_id: reporterId,
-      reported_id: reportedUserId,
-      reason: selectedReason,
-      details: details.trim() || null,
-    });
+    const row = reportRow({ reporterId, reportedId: reportedUserId, reason: selectedReason, details: details.trim(), content: reportedContent });
+    const { error } = await insertReport((r) => supabase.from('reports').insert(r), row);
 
     setSubmitting(false);
     if (error) {
