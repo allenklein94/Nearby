@@ -448,8 +448,20 @@ journeys 758/758 with all eleven as prelude; Jest 522 suites / 7148 tests; rollb
 exports clean; `migration:status` = 0348-0358 not recorded.
 Found while testing (pre-existing, live, NOT fixed): `enforce_gathering_daily_limit` sets `app.trusted_update = true` and
 leaves it on for the rest of the request, so any check in the same request that honours that flag is skipped after a
-gathering insert. Single-statement PostgREST requests limit the impact; the commercial-post check ignores the flag. A fix
-(reset after its profile update) = its own small migration, owner decision.
+gathering insert. Single-statement PostgREST requests limit the impact; the commercial-post check ignores the flag.
+**FIX BUILT + STAGED as 20270359 (owner 2026-10-29, option 1 "restore in each body"; NOT deployed, own approval, after
+0358):** all 24 functions that turn the flag on (it was 25 incl. `_rate_limit_commercial_post`, which already restores and is
+unchanged) now save the caller's value on entry and put it back right after the guarded write; the seven that reset it to a
+bare 'false' (dropping a trusted caller's scope) restore the caller's value instead. A function-level `SET app.trusted_update`
+was tried first and is refused by Supabase (custom parameter, non-superuser). Bodies otherwise byte-identical to after 0358;
+owner, security, search_path and grants kept. A DO block in the migration refuses to commit if any public/private function
+turns the flag on without the save + restore; guard `trustedWriteScopeGuard.test.js` holds later migrations to the pattern.
+Tests (2026-10-29, nothing written to production): journey `trustedWriteScope` 5/5 with 0348-0359 as prelude, and 3/5 on
+0348-0358 alone (there a person's own `is_premium` / `is_admin` self-grant SUCCEEDS after a gathering insert or after
+`spend_bonus_notice`: the leak is real and exploitable within one transaction); prod journeys 763/763 with 0348-0359;
+rollback round trip 0348-0358 -> +0359 -> rollback = identical (md5 over every public/private function's definition, ACL
+and config, sorted); Jest 523 suites / 7152 tests. Rollback: `scripts/rollback/20270359_trusted_write_scope.rollback.sql`
+(re-opens the leak; only if a function misbehaves).
 Not verified: a real report push on an admin's phone, the SHA-256 path through a real upload (needs the moderate-photo
 redeploy), the backfill script against production.
 
