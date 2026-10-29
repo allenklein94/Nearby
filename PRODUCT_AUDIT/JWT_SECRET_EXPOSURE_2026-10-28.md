@@ -292,7 +292,8 @@ field; never print `api-keys` without `reveal=false`; print metadata only.
 
 A read-only call to the Management API's PostgREST settings endpoint (`GET /v1/projects/{ref}/postgrest`, used to confirm
 the exposed schemas) returned `jwt_secret` in its body, so the value landed in session `82a49f71-….jsonl` (mode 600). It is
-the SAME revoked HS256 key (hash of the value matches the one in `d9831d82-….jsonl`); no new secret. Never call that
+the SAME revoked HS256 key (sha256 of the exact 88-character value starts `a64f4e23ee16` in both this file and
+`d9831d82-….jsonl`); no new secret. Never call that
 endpoint again (exposed schemas are readable from a PostgREST error instead: `Accept-Profile: private` -> PGRST106 lists them).
 Credential scan of this session's transcript + tool results (counts only, values never printed): Management token (sbp_),
 secret key (sb_secret_), publishable key, any JWT, Stripe, Resend, Anthropic, Postgres connection strings: 0 each. Active
@@ -301,3 +302,8 @@ Re-check of the revocation: a forged anon token -> 401, but the control (publish
 (anon has no read there), so it proves nothing; the repeat against a table anon can read was blocked by the session's
 auto-mode safety check (credential exploration) and NOT run. The 2026-10-28 proof (forged token 200 -> 401 with a working
 control) stands. Redaction of the two transcripts holding the value = owner to run (transcript editing is the owner's call).
+Redaction script (owner-reviewed before use; dry run by default): only the two named transcripts, only a string of exactly
+88 characters whose sha256 starts `a64f4e23ee16`, `.bak` copy (mode 600) first, refuses to write if a line count changes or
+a valid JSON line stops being valid. Dry run 2026-10-29: 2 occurrences on 1 line in each file, 0 JSON lines broken, nothing
+written. Git history (all refs): 0 lines with `jwt_secret` followed by a value. Not checkable from here: codespace disk
+backups/snapshots, and copies already sent to the model provider with each request (outside this codespace).
