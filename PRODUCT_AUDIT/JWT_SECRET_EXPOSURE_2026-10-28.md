@@ -307,3 +307,9 @@ Redaction script (owner-reviewed before use; dry run by default): only the two n
 a valid JSON line stops being valid. Dry run 2026-10-29: 2 occurrences on 1 line in each file, 0 JSON lines broken, nothing
 written. Git history (all refs): 0 lines with `jwt_secret` followed by a value. Not checkable from here: codespace disk
 backups/snapshots, and copies already sent to the model provider with each request (outside this codespace).
+Owner APPROVED the redaction 2026-10-29, to run after session 82a49f71 ends (never on an active transcript). Final script
+`~/redact_legacy_jwt_secret.py` adds: refuses a file unless the key sits only on the dry run's line with the same line hash
+and 2 occurrences; after writing, 0 occurrences + every previously valid JSON line still valid = success and the `.bak` is
+deleted, else the original is restored and the `.bak` kept. Final dry run: both files unchanged, 2 + 2 occurrences, 0 JSON
+broken. Housekeeping item CLOSED (owner): no further credential investigation without new evidence. Deleting files does not
+erase codespace snapshots/backups (accepted: the key is revoked).
