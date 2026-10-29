@@ -24,10 +24,13 @@ const idOf = (key) => {
 const hash = (obj) => crypto.createHash('sha256').update(JSON.stringify(obj)).digest('hex').slice(0, 12);
 
 // The three test people. They exist only as hosts/attendees/the friend; nobody signs in as them.
+// Each carries a verified phone (owner, 2026-10-29: 20270352 goes live before session B, so seeded people must behave like
+// app accounts, which all sign in by SMS). The numbers are from 555-0100..0199, reserved for fiction (never assigned), so no
+// SMS can reach anyone and no real person can hold them; nobody signs in, so the flag simulates the state and never tests SMS.
 const PEOPLE = [
-  { key: 'person/maya', name: 'Maya (test)', interests: ['Coffee', 'Pickleball'] },
-  { key: 'person/jordan', name: 'Jordan (test)', interests: ['Live Music', 'Pickleball'] },
-  { key: 'person/sam', name: 'Sam (test)', interests: ['Pickleball', 'Live Music', 'Coffee'] },
+  { key: 'person/maya', name: 'Maya (test)', interests: ['Coffee', 'Pickleball'], phone: '15615550101' },
+  { key: 'person/jordan', name: 'Jordan (test)', interests: ['Live Music', 'Pickleball'], phone: '15615550102' },
+  { key: 'person/sam', name: 'Sam (test)', interests: ['Pickleball', 'Live Music', 'Coffee'], phone: '15615550103' },
 ];
 
 // Gatherings across the run order's S4 windows. day: 'today' | 'tomorrow' | 'friday' | 'saturday' | 'next_week' (that week's
@@ -139,7 +142,7 @@ function planSql(c) {
   }).join('\nunion all\n');
   return `select jsonb_build_object(
   'now_local', to_char(now() at time zone ${q(c.tz)}, 'Dy YYYY-MM-DD HH24:MI'),
-  'people', (select jsonb_agg(x) from (${PEOPLE.map((p) => `select ${q(p.key)} as key, ${idSql(p.key)} as id, ${q(p.name)} as name, ${q(`${p.key.split('/')[1]}@${EMAIL_DOMAIN}`)} as email, exists (select 1 from auth.users where id = ${idSql(p.key)}) as exists_already`).join(' union all ')}) x),
+  'people', (select jsonb_agg(x) from (${PEOPLE.map((p) => `select ${q(p.key)} as key, ${idSql(p.key)} as id, ${q(p.name)} as name, ${q(`${p.key.split('/')[1]}@${EMAIL_DOMAIN}`)} as email, exists (select 1 from auth.users where id = ${idSql(p.key)}) as exists_already, exists (select 1 from auth.users where phone = ${q(p.phone)} and id <> ${idSql(p.key)}) as phone_taken`).join(' union all ')}) x),
   'gatherings', (select jsonb_agg(x order by starts_local) from (${gRows}) x),
   'businesses', (select jsonb_agg(x order by miles) from (${c.businesses.map((b) => `select ${q(b.key)} as key, ${idSql(b.key)} as id, ${q(b.name)} as name,
       ${q(b.category)} as category, ${q(b.tag)} as tag, ${Math.round(Math.hypot(b.north, b.east) * 10) / 10} as miles, ${b.lat} as lat, ${b.lng} as lng,
@@ -156,7 +159,7 @@ function planSql(c) {
 function seedSql(c) {
   const people = PEOPLE.map((p, i) => `
   if not exists (select 1 from auth.users where id = ${idSql(p.key)}) then
-    insert into auth.users (id, aud, role, email, created_at) values (${idSql(p.key)}, 'authenticated', 'authenticated', ${q(`${p.key.split('/')[1]}@${EMAIL_DOMAIN}`)}, now());
+    insert into auth.users (id, aud, role, email, phone, phone_confirmed_at, created_at) values (${idSql(p.key)}, 'authenticated', 'authenticated', ${q(`${p.key.split('/')[1]}@${EMAIL_DOMAIN}`)}, ${q(p.phone)}, now(), now());
     insert into profiles (id, display_name, birthdate, terms_accepted_at, timezone, interests, bio)
       values (${idSql(p.key)}, ${q(p.name)}, date '${1988 + i}-04-1${i}', now(), ${q(c.tz)}, array[${p.interests.map(q).join(',')}]::text[],
               'Test account for the first phone session. Not a real person.');

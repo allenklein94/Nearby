@@ -26,7 +26,11 @@ const fp=(phase)=>`do $fp$ declare r record; k bigint; h text; ids uuid[] := arr
 let clean=L.cleanupSql({dryRun:true});
 clean=clean.slice(clean.indexOf('do $clean$'), clean.indexOf('end $clean$;')+'end $clean$;'.length)
   .replace(/raise exception 'PHONE_SESSION_DRY_RUN %', \(select report::text from _ps_report\);/, 'null;');
+// SIM_PRELUDE_FILE (optional): SQL applied first in the same aborted transaction, e.g. the staged migrations 20270348-20270354.
+const PRELUDE=process.env.SIM_PRELUDE_FILE?require('fs').readFileSync(process.env.SIM_PRELUDE_FILE,'utf8'):'';
 const sql=`begin;
+${PRELUDE}
+;
 create temp table _sim_fp (phase text, col text, n bigint, h text);
 create temp table _sim_counts (phase text, tbl text, n bigint);
 create temp table _ps_before (cnt bigint, tbl text);

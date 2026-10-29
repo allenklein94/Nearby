@@ -26,6 +26,7 @@ async function main() {
   if (mode === 'plan') {
     console.log(JSON.stringify(plan, null, 2));
     const blockers = [];
+    for (const person of plan.people || []) if (person.phone_taken) blockers.push(`test phone number of ${person.key} is already used by another account`);
     if (plan.friend_account && !plan.friend_account.found) blockers.push(`no account with FRIEND_ACCOUNT_EMAIL ${plan.friend_account.email}`);
     if (plan.business_owner_account && !(plan.business_owner_account.found && plan.business_owner_account.has_profile)) blockers.push(`no Nearby account with BUSINESS_OWNER_EMAIL ${plan.business_owner_account.email}`);
     if (plan.business_owner_account?.manages_other_business) blockers.push('BUSINESS_OWNER_EMAIL already manages another business');
