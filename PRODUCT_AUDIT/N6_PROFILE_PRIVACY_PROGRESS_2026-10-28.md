@@ -106,3 +106,21 @@ rolling back reopens the exposure.
 
 ## Open
 - Not verifiable before deploy: the real API after 0348 and the app on a phone.
+
+## Installed-client inventory before 0348 (2026-10-29, read-only on prod; owner: active installs, not invitations)
+
+Evidence: `auth.sessions` (live sessions + user agent), `private.push_tokens` (one Expo token per device; tokens compared, never
+printed), `auth.users.last_sign_in_at`, `profiles.last_home_visit`. TestFlight testers/installs are NOT visible from here.
+
+| Client | Evidence | Version | Must upgrade before 0348 |
+|---|---|---|---|
+| Owner's iPhone (the ONE device holding a push token) | all 3 tokens (phone login ..45, phone login ..74, applereview) are the same Expo token = one device; live session of phone login ..45, user agent `Nearby/86`, active 2026-10-28 | build 86 | YES: install build 87, sign in once per account used on it |
+| Business website (`docs/business/`, GitHub Pages) | published bundle last exported 2026-10-23 (f4726d9f), 8 `select('*')`, 0 `get_my_profile` = pre-N6 reads | pre-N6 web | YES: regenerate the export from current main and publish it (needs owner approval: outward-facing) before 0348 |
+| gmail ..5853 web session | live session from 2026-07-15, iPhone browser user agent, no profile, not refreshed since | web (served by whatever the website is) | covered by the website re-export |
+| Dedicated test account (gmail ..f76c) | signed in 2026-10-28 by the live tests, signed out, no session | scripts | no |
+| Other 5 auth rows | no profile, no session, no token (abandoned sign-ups / test rows) | none | no |
+
+Unknown from here (owner checks in App Store Connect): (1) TestFlight > testers: who has INSTALLED (installs/sessions columns),
+not just invited; any installed build 86 that keeps connecting = upgrade or remove before 0348; (2) whether build 86 is
+released on the App Store publicly (a public install that signs up after 0348 would be refused). Production has no account
+outside the owner's own, so no other installed copy has ever signed in.
