@@ -140,15 +140,22 @@ outside the owner's own, so no other installed copy has ever signed in.
   Opportunities, Bookings, Offers, Profile before 0348. Business-facing code changed since the 2026-10-23 export: N6 reads,
   one business-application screen by state (ec0b06f0), request deadlines/Reopen/posting refusals (ideas 384/393-395).
 
-### Business website: signed-in functional test is a 0348 gate (owner, 2026-10-29)
-- The headless comparison proves only the signed-out Sign in screen (Supabase blocked). It is NOT evidence the new website
-  works signed in. 0348 waits for a live signed-in test.
-- Why two passes: `readMyProfile` (`services/myProfile.js`) calls `get_my_profile()` and falls back to the old own-row read
-  while it is missing (PGRST202). So a test before 0348 exercises only the FALLBACK path; the `get_my_profile()` path runs
-  for the first time after 0348.
-  1. Before 0348 (after the owner approves publishing the new export): owner signs in on the live site with the account that
-     manages Coastal Coffee (phone login; the only business-owning account; the dedicated test account and outlook own no
-     business) and opens Home, Opportunities, Bookings, Offers, Profile; also Profile save. Any error / blank section = stop.
-  2. Right after 0348 is deployed: the same sign-in and pages again (first real run of the `get_my_profile()` path), with
-     0348's rollback ready; a failure = roll back 0348 before anything else (0349 waits for this pass).
-- Not runnable from a session: the business sign-in is a phone code to the owner's phone.
+### 0348 verification sequence (owner APPROVED, 2026-10-29; supersedes the earlier two-pass note)
+Order: build 87 installed + Tier 1 passes -> owner approves publishing the new business website export (stays UNPUBLISHED until
+then) -> website pass A -> 0348 deploy (own approval) -> direct function check -> website pass B -> 0349 (own approval).
+- Why two website passes: `readMyProfile` (`services/myProfile.js`) calls `get_my_profile()` and falls back to the old own-row
+  read while it is missing (PGRST202). Pass A (before 0348) exercises only the fallback; pass B is the first real run of
+  `get_my_profile()`. Headless (signed out, Supabase blocked) is not evidence for either.
+- Website pass A / B (owner, on the live site, the account that manages Coastal Coffee: the only business-owning account;
+  phone-code sign-in, so not runnable from a session): Home, Opportunities, Bookings, Offers, Profile, and save a profile change.
+- Direct function check, IMMEDIATELY after 0348, BEFORE pass B (session, read-only):
+  1. `npx jest -c jest.live.config.js src/qa/profileColumnPrivacySignedIn.live.js` with the dedicated test account (state-aware;
+     after 0348 it asserts): own row via `get_my_profile()` = the caller only, with private columns; another person's private
+     columns refused (select * and each sampled column); people views carry no private column; signed out: `profiles`, both
+     views and `get_my_profile()` refused.
+  2. Catalog check (Management API, read-only): `get_my_profile()` is SECURITY DEFINER with a fixed search_path, EXECUTE
+     granted to authenticated only (not public/anon), body returns only `auth.uid()`'s row; the `profiles` column grants =
+     the replay's (prod+0348 grants snapshot); `appVersionCompatibility` + `pushTokenPrivacy` journeys pass without prelude.
+- ANY failure (function check or either website pass): STOP the sequence, report the exact failure. No automatic rollback and
+  no automatic 0349: the owner reviews the security implications of rolling back 0348 (it re-opens N6) vs fixing forward and
+  approves the next step. External access stays restricted until the whole 0348-0354 sequence is done.
