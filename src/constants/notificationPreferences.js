@@ -128,8 +128,9 @@ export const NOTIFICATION_GROUP_BY_TYPE = {
   aggregated_demand_growing: 'owner_demand', occasion_demand_growing: 'owner_demand',
 };
 
-// Account notices to a business-partner applicant: never muted.
-export const ACCOUNT_NOTICE_TYPES = ['business_partner_approved', 'business_partner_denied', 'business_partner_needs_info'];
+// Account notices, never muted: to a business-partner applicant, and an admin's notice of a new report (20270355).
+export const ACCOUNT_NOTICE_TYPES = ['business_partner_approved', 'business_partner_denied', 'business_partner_needs_info',
+  'admin_report_received'];
 
 export function notificationGroupOf(type) {
   return NOTIFICATION_GROUP_BY_TYPE[type] ?? null;

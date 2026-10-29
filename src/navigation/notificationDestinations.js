@@ -300,6 +300,10 @@ export async function notificationDestination(data, { lookupAvailability = async
     case 'business_partner_needs_info':
       return to('BusinessPartnerApply');
       break;
+    // Trust & safety I3 (20270355): an admin's private notice of a new report opens the report queue (the push carries
+    // no name or content; the queue is admin-only).
+    case 'admin_report_received':
+      return to('AdminReports');
     // Item 55 fast-follow #2 (CLAUDE.md): CommunityDetail, the other
     // candidate the original Item 55 paragraph flagged and BusinessRequest
     // Detail's own fast-follow already left open — same real-reason banner,

@@ -41,12 +41,12 @@ const ACTION_OPENS = {
   view_progress: ['MainTabs'], open_dashboard: ['BusinessDashboard'], view_application: ['BusinessPartnerApply'],
   view_business: ['BusinessProfile'], view_opportunities: ['BusinessDashboard'], view_your_offers: ['BusinessDashboard'],
   view_booking: ['BusinessDashboard'], view_community: ['CommunityDetail'], see_ideas: ['MainTabs'],
-  view_proposal: ['DateProposal'], answer_question: ['PreferencePolls'],
+  view_proposal: ['DateProposal'], answer_question: ['PreferencePolls'], review_reports: ['AdminReports'],
 };
 
 describe('every notification has one next action', () => {
   test('every push type the app handles has an action, and nothing else does', () => {
-    expect(PUSH_TYPES).toHaveLength(90);
+    expect(PUSH_TYPES).toHaveLength(91);
     expect(Object.keys(NOTIFICATION_ACTION_BY_TYPE).sort()).toEqual([...PUSH_TYPES].sort());
     for (const a of Object.values(NOTIFICATION_ACTION_BY_TYPE)) expect(NOTIFICATION_ACTION_KEYS).toContain(a);
     expect(new Set(Object.values(NOTIFICATION_ACTION_BY_TYPE))).toEqual(new Set(NOTIFICATION_ACTION_KEYS)); // no unused labels

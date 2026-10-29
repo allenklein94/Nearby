@@ -157,6 +157,23 @@ serve(async (req) => {
     }
 
     const imageBytes = new Uint8Array(await fileData.arrayBuffer());
+
+    // I1 (20270357): SHA-256 of these exact bytes, recorded for this storage object before screening so it is kept even
+    // if screening fails. Only for admin duplicate review; never sent anywhere else. Before 20270357 the function doesn't
+    // exist and this is skipped.
+    try {
+      const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', imageBytes));
+      const sha256 = Array.from(digest, (b) => b.toString(16).padStart(2, '0')).join('');
+      const { error: fpError } = await admin.rpc('record_photo_fingerprint', {
+        p_user: userId,
+        p_object_id: screenedObjectId,
+        p_sha256: sha256,
+      });
+      if (fpError && fpError.code !== 'PGRST202') console.error('moderate-photo fingerprint not recorded:', fpError.message);
+    } catch (fpErr) {
+      console.error('moderate-photo fingerprint failed:', fpErr);
+    }
+
     let binaryString = '';
     for (let i = 0; i < imageBytes.length; i++) {
       binaryString += String.fromCharCode(imageBytes[i]);

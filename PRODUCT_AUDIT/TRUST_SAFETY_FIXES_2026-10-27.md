@@ -403,7 +403,8 @@ Migrations (deploy order = number order, AFTER 0348-0354, each its own approval;
   new. ENFORCES NOTHING until numbers are approved: `private.rate_limit_rules` empty, `trust_settings` null. Refusal = hint
   `rate_limited` + "You've reached the limit for this for now. Please try again later." (11 languages, 10 machine-authored).
   Reports never touch the reported person's limits; no automatic restriction anywhere.
-- 20270357 I1: fingerprint = Storage's own MD5 of the file (eTag; multipart skipped); existing photos fingerprinted on
+- 20270357 I1 (revised 2026-10-29: SHA-256 from moderate-photo, see below; the MD5 description that follows is superseded):
+  fingerprint = Storage's own MD5 of the file (eTag; multipart skipped); existing photos fingerprinted on
   apply; a case opens only under an approved rule (`account_signal_settings` null = no cases): same file on >= N accounts,
   or same file + similar names (pg_trgm); one open case per file; private schema, admins read via
   `admin_list_account_review_cases` (no fingerprint shown) and close via `admin_close_account_review_case` (outcome +
@@ -420,28 +421,57 @@ columns + column ACLs, relations + ACLs, constraints, indexes, cron); iOS JS bun
 Found while testing: admins CAN mark reports resolved today (column grant `reports.resolved` to authenticated);
 `information_schema.column_privileges` hides it (read `pg_attribute.attacl`).
 
-### Thresholds PROPOSED for owner approval (not applied; one reviewed SQL statement after approval)
-| Rule | New | Established |
-|---|---|---|
-| established = verified phone + account age | n/a | 7 days |
-| 1:1 messages (mutual matches only) | 20 / min, 300 / day | 40 / min, 1000 / day |
-| group chat messages (all group chats together) | 15 / min, 200 / day | 30 / min, 600 / day |
-| business conversation messages | 10 / min, 100 / day | 20 / min, 300 / day |
-| invitations sent (friends only today) | 30 / day | 100 / day |
-| reports filed (never acts on anyone by itself) | 10 / day | 20 / day |
-| business requests (+ existing 10-min duplicate check) | 10 / day | 20 / day |
-| display-name changes | 2 / 30 days | 3 / 30 days |
-| photo changes (extras added + main replaced; covers a full profile set-up) | 15 / day | 20 / day |
-| I1 case: same file on N accounts | N = 3 | |
-| I1 case: same file + similar names (trigram similarity) | >= 0.5 ("John Smith" / "Johnny Smith" qualifies, journey) | |
+### Open decisions FINALIZED (owner, 2026-10-29) and BUILT into the staged migrations (NOT deployed)
+Supersedes the proposed table and the open list that were here. Mechanism (0355-0357) and numbers (new 20270358) are
+separate migrations, each with its own approval; deploy order 0355 -> 0356 -> 0357 -> 0358, after 0348-0354.
 
-### Still needs an owner decision (not built)
-- Business-like posting by a consumer (I2 a): no rule-based definition approved (links / phone numbers to non-friends?).
-- Admin notice of a new report (I3): channel (push to admins / email via Resend once its secrets exist).
-- Report retention: a report (and its content copy) is deleted when EITHER account is deleted (existing cascade), so a
-  reported person can erase reports by deleting their account. Keep reports past deletion? (privacy decision)
-- Privacy Policy sentences before deploying 0355 (copy of reported content kept for review) and 0357 (photo file
-  fingerprints compared for duplicate review).
+| Decision | Built as |
+|---|---|
+| Established account | verified phone + account >= 7 days (0358); age alone never qualifies |
+| Age never raises unsolicited limits | business messages, business requests, commercial posts: same numbers at both levels |
+| 1:1 messages (mutual matches only: no stranger 1:1 path exists) | new 10/min, 200/day; established 20/min, 500/day |
+| group chats (members / attendees) | new 10/min, 150/day; established 20/min, 400/day |
+| business conversation messages | 5/min, 50/day (both) |
+| invitations (friends only) | new 20/day; established 50/day |
+| reports | 10/day ordinary (both); urgent safety reasons (Harassment or abuse, Underage user) NOT counted against it, own ceiling 30/day (flood protection only) |
+| business requests | 10/day (both) + the existing 10-minute duplicate check |
+| business-like posting | `commercial_post` = a PUBLIC gathering / community whose title/name or description carries a link, email or phone number (10-15 digits; ISO dates and clock times stripped; prices never count), when created or when an edit adds it: 3/day, 10/week (both). Ordinary event organizing never counts |
+| name / photo changes | name 2 (new) / 3 (established) per 30 days; photos 15 / 20 per day |
+| duplicate photos | case when the same file is in use on 3 accounts, or on 2 accounts with similar names (trigram >= 0.5); a similar name alone never; a case never acts on an account |
+| fingerprint | SHA-256 of the exact bytes, computed by `moderate-photo` from the file it already downloads (no MD5 / Storage eTag anywhere); recorded only for a photo the account is using (`record_photo_fingerprint`, service role only); a replaced / deleted photo's fingerprint is forgotten; existing photos: `scripts/trust-safety/fingerprint-existing-photos.js` once after 0357 |
+| admin notice of a new report | private push `admin_report_received` to each admin ("New report to review" / "N reports are waiting for review.", no name, reason or content), at most one per admin per 15 min (dedupe key), never to the reporter or a reported admin, never mutable (account notice); tap = Admin Reports ("Review Reports" action, 10 languages machine-authored) |
+| deleted accounts | reports + evidence copy outlive either account's deletion (FK now ON DELETE SET NULL, `reporter_deleted_at` / `reported_deleted_at` stamped; the evidence-freeze trigger allows only that change); readable by admins only (+ a living reporter's own); every report deleted 12 months after its last resolve (`purge_expired_reports`, daily cron); unresolved reports stay until resolved |
+
+Tests (2026-10-29, nothing written to production): journey `trustSafetyI123` 11/11 (prelude 0348-0358, real roles); prod
+journeys 758/758 with all eleven as prelude; Jest 522 suites / 7148 tests; rollbacks 0358 -> 0355 newest first after
+0348-0358 == 0348-0354 alone (catalog fingerprint 27c1b59a..., 4,557 items incl. FKs, triggers, cron); iOS JS bundle
+exports clean; `migration:status` = 0348-0358 not recorded.
+Found while testing (pre-existing, live, NOT fixed): `enforce_gathering_daily_limit` sets `app.trusted_update = true` and
+leaves it on for the rest of the request, so any check in the same request that honours that flag is skipped after a
+gathering insert. Single-statement PostgREST requests limit the impact; the commercial-post check ignores the flag. A fix
+(reset after its profile update) = its own small migration, owner decision.
+Not verified: a real report push on an admin's phone, the SHA-256 path through a real upload (needs the moderate-photo
+redeploy), the backfill script against production.
+
+Deploy additions (beyond the 0349 plan): the `moderate-photo` redeploy (already planned with 0349) now also records
+fingerprints (skipped harmlessly until 0357 exists); `send-push` gains a table entry for `admin_report_received` (same
+behaviour as today's unknown-type default; redeploy any time, before or after); run the backfill script after 0357;
+client routing for the admin push ships in build 87 if built from this commit.
+
+### Privacy Policy sentences (DRAFT, publish with 0355 / 0357; owner + counsel approve the wording)
+- Reports (§ on safety / moderation): "When you report someone, we keep a copy of the reported message or chat excerpt
+  with your report so our safety team can review it, even if the message is later deleted. Reports are visible only to
+  Nearby's safety team (you can see the reports you filed). We keep a report for 12 months after it is resolved, even if
+  either account is deleted, and then delete it."
+- Duplicate photos (§ on profile photos): "To find accounts that reuse the same photo, we compute a fingerprint (a
+  SHA-256 hash) of each profile photo you upload. A fingerprint only identifies an exact copy of the same file; it is not
+  face recognition or image analysis. A match is reviewed by a person and never by itself leads to action on your
+  account. We keep a photo's fingerprint only while that photo is on your profile."
+- Limits (§ on how we use information): "To prevent spam and abuse we limit how often some actions can be taken (for
+  example, messages per minute or public posts with contact details per day). Limits depend on whether your phone number
+  is verified and how long your account has existed."
+
+### Still open (not decisions about these migrations)
 - B5: stronger passwords and bot protection are Supabase Auth settings (production auth change, not done). The app has no
   email/password sign-up screen; Auth CAPTCHA would also gate the app's phone-code sign-in, so it needs a CAPTCHA provider
   + client integration in a new native build. Proposal: password minimum 10 + leaked-password check (if the plan allows);

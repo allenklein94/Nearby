@@ -3,12 +3,17 @@
 -- Flag -> investigate -> action: nothing here bans, hides, restricts or limits anyone, and neither person ever sees a
 -- signal or a case (private schema; only admins read it, through the two functions at the end).
 --
--- Fingerprint = the MD5 Storage itself computed for the uploaded file (storage.objects.metadata eTag, single-part
--- uploads; a multipart eTag "<hash>-<n>" is not a file hash and is skipped). Nothing is computed from or sent off the
--- device, no device data, no AI, no third party. It matches only byte-identical files: a resized, cropped or re-encoded
--- copy is NOT caught (similar-image detection = later, subject to a privacy review).
--- A case opens ONLY when an approved rule holds (private.account_signal_settings starts all null = no cases at all):
---   many_accounts   the same file on at least duplicate_photo_min_accounts distinct accounts
+-- Fingerprint = SHA-256 of the exact file bytes (owner decision 2026-10-29: SHA-256, not Storage's MD5 eTag). It is
+-- computed by the `moderate-photo` edge function from the bytes it already downloads to screen the photo, and recorded
+-- through record_photo_fingerprint (service role only) for that exact storage object. No device data, no AI, nothing
+-- sent to a third party. It matches only byte-identical files: a resized, cropped or re-encoded copy is NOT caught
+-- (similar-image detection = later, subject to a privacy review). Photos uploaded before deploy are fingerprinted by
+-- scripts/trust-safety/fingerprint-existing-photos.js (or when next screened).
+-- Only photos an account is USING count (its main photo or an extra photo); a replaced or deleted photo's fingerprint is
+-- forgotten.
+-- A case opens ONLY when an approved rule holds (private.account_signal_settings starts all null = no cases; numbers in
+-- 20270358):
+--   many_accounts   the same file in use on at least duplicate_photo_min_accounts distinct accounts
 --   similar_names   the same file on two or more accounts AND two of those accounts have similar display names
 --                   (pg_trgm similarity >= similar_name_min_similarity); a similar name alone never does anything
 -- An identical photo on just two accounts with unrelated names opens nothing (stock images, couples, shared photos).
@@ -16,14 +21,13 @@
 -- an account is the existing admin suspension (20270351), recorded there.
 
 create table if not exists private.photo_fingerprints (
+  object_id uuid primary key,               -- storage.objects.id of the screened file version
   user_id uuid not null references auth.users(id) on delete cascade,
-  slot text not null,                       -- 'main' or the extra photo's id
-  object_id uuid,
-  md5 text not null check (md5 ~ '^[0-9a-f]{32}$'),
-  recorded_at timestamptz not null default now(),
-  primary key (user_id, slot)
+  sha256 text not null check (sha256 ~ '^[0-9a-f]{64}$'),
+  recorded_at timestamptz not null default now()
 );
-create index if not exists photo_fingerprints_md5_idx on private.photo_fingerprints (md5);
+create index if not exists photo_fingerprints_sha256_idx on private.photo_fingerprints (sha256);
+create index if not exists photo_fingerprints_user_idx on private.photo_fingerprints (user_id);
 
 create table if not exists private.account_signal_settings (
   id boolean primary key default true check (id),
@@ -36,7 +40,7 @@ insert into private.account_signal_settings (id) values (true) on conflict (id) 
 create table if not exists private.account_review_cases (
   id uuid primary key default gen_random_uuid(),
   signal text not null check (signal in ('identical_photo')),
-  md5 text not null,
+  sha256 text not null,
   reason text not null check (reason in ('many_accounts', 'similar_names')),
   status text not null default 'open' check (status in ('open', 'closed')),
   opened_at timestamptz not null default now(),
@@ -47,7 +51,7 @@ create table if not exists private.account_review_cases (
   note text check (note is null or length(btrim(note)) between 1 and 1000),
   check ((status = 'closed') = (closed_at is not null and outcome is not null))
 );
-create unique index if not exists account_review_cases_one_open on private.account_review_cases (md5) where status = 'open';
+create unique index if not exists account_review_cases_one_open on private.account_review_cases (sha256) where status = 'open';
 
 create table if not exists private.account_review_case_members (
   case_id uuid not null references private.account_review_cases(id) on delete cascade,
@@ -67,8 +71,36 @@ as $function$
 $function$;
 revoke all on function private.normalized_name(text) from public, anon, authenticated;
 
+-- Is this storage object the account's main photo or one of its extra photos right now?
+create or replace function private.photo_object_in_use(p_user uuid, p_object uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select exists (
+    select 1 from storage.objects o
+     where o.id = p_object and o.bucket_id = 'profile-photos'
+       and (o.name = (select p.photo_url from profiles p where p.id = p_user)
+            or exists (select 1 from profile_photos pp where pp.user_id = p_user and pp.photo_url = o.name)));
+$function$;
+revoke all on function private.photo_object_in_use(uuid, uuid) from public, anon, authenticated;
+
+-- Forget the fingerprints of files the account no longer uses.
+create or replace function private.forget_unused_photo_fingerprints(p_user uuid)
+returns void
+language sql
+security definer
+set search_path to 'public'
+as $function$
+  delete from private.photo_fingerprints f
+   where f.user_id = p_user and not private.photo_object_in_use(p_user, f.object_id);
+$function$;
+revoke all on function private.forget_unused_photo_fingerprints(uuid) from public, anon, authenticated;
+
 -- Opens / extends the case for one fingerprint when an approved rule holds. Never touches the accounts themselves.
-create or replace function private.evaluate_photo_fingerprint(p_md5 text)
+create or replace function private.evaluate_photo_fingerprint(p_sha256 text)
 returns void
 language plpgsql
 security definer
@@ -82,7 +114,8 @@ declare
 begin
   select * into s from private.account_signal_settings where id;
   if s.duplicate_photo_min_accounts is null and s.similar_name_min_similarity is null then return; end if;
-  select array_agg(distinct user_id) into v_users from private.photo_fingerprints where md5 = p_md5;
+  select array_agg(distinct f.user_id) into v_users from private.photo_fingerprints f
+   where f.sha256 = p_sha256 and private.photo_object_in_use(f.user_id, f.object_id);
   if coalesce(cardinality(v_users), 0) < 2 then return; end if;
 
   if s.duplicate_photo_min_accounts is not null and cardinality(v_users) >= s.duplicate_photo_min_accounts then
@@ -98,13 +131,13 @@ begin
   end if;
   if v_reason is null then return; end if;
 
-  select id into v_case from private.account_review_cases where md5 = p_md5 and status = 'open' for update;
+  select id into v_case from private.account_review_cases where sha256 = p_sha256 and status = 'open' for update;
   if v_case is null then
-    insert into private.account_review_cases (signal, md5, reason) values ('identical_photo', p_md5, v_reason)
-      on conflict (md5) where status = 'open' do nothing
+    insert into private.account_review_cases (signal, sha256, reason) values ('identical_photo', p_sha256, v_reason)
+      on conflict (sha256) where status = 'open' do nothing
       returning id into v_case;
     if v_case is null then
-      select id into v_case from private.account_review_cases where md5 = p_md5 and status = 'open';
+      select id into v_case from private.account_review_cases where sha256 = p_sha256 and status = 'open';
     end if;
   else
     update private.account_review_cases
@@ -119,33 +152,32 @@ end;
 $function$;
 revoke all on function private.evaluate_photo_fingerprint(text) from public, anon, authenticated;
 
--- Records (or forgets) the fingerprint of one photo slot from the file it points at, then evaluates it.
-create or replace function private.record_photo_fingerprint(p_user uuid, p_slot text, p_path text)
-returns void
+-- Called by moderate-photo (service role) with the SHA-256 of the bytes it downloaded for that exact object. Records it
+-- only while the object is that account's photo; returns whether it was recorded.
+create or replace function public.record_photo_fingerprint(p_user uuid, p_object_id uuid, p_sha256 text)
+returns boolean
 language plpgsql
 security definer
 set search_path to 'public'
 as $function$
 declare
-  v_object uuid;
-  v_etag text;
+  v_sha text := lower(btrim(coalesce(p_sha256, '')));
 begin
-  if p_path is null then
-    delete from private.photo_fingerprints where user_id = p_user and slot = p_slot;
-    return;
+  if p_user is null or p_object_id is null or v_sha !~ '^[0-9a-f]{64}$' then
+    return false;
   end if;
-  select o.id, lower(btrim(o.metadata->>'eTag', '"')) into v_object, v_etag
-    from storage.objects o where o.bucket_id = 'profile-photos' and o.name = p_path;
-  if v_etag is null or v_etag !~ '^[0-9a-f]{32}$' then
-    delete from private.photo_fingerprints where user_id = p_user and slot = p_slot;
-    return;
+  perform private.forget_unused_photo_fingerprints(p_user);
+  if not private.photo_object_in_use(p_user, p_object_id) then
+    return false;
   end if;
-  insert into private.photo_fingerprints (user_id, slot, object_id, md5) values (p_user, p_slot, v_object, v_etag)
-    on conflict (user_id, slot) do update set object_id = excluded.object_id, md5 = excluded.md5, recorded_at = now();
-  perform private.evaluate_photo_fingerprint(v_etag);
+  insert into private.photo_fingerprints (object_id, user_id, sha256) values (p_object_id, p_user, v_sha)
+    on conflict (object_id) do update set sha256 = excluded.sha256, user_id = excluded.user_id, recorded_at = now();
+  perform private.evaluate_photo_fingerprint(v_sha);
+  return true;
 end;
 $function$;
-revoke all on function private.record_photo_fingerprint(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.record_photo_fingerprint(uuid, uuid, text) from public, anon, authenticated;
+grant execute on function public.record_photo_fingerprint(uuid, uuid, text) to service_role;
 
 create or replace function public._fingerprint_main_photo()
 returns trigger
@@ -154,18 +186,18 @@ security definer
 set search_path to 'public'
 as $function$
 begin
-  if tg_op = 'INSERT' or new.photo_url is distinct from old.photo_url then
-    perform private.record_photo_fingerprint(new.id, 'main', new.photo_url);
+  if new.photo_url is distinct from old.photo_url then
+    perform private.forget_unused_photo_fingerprints(new.id);
   elsif new.display_name is distinct from old.display_name then
     -- a name change can make an existing identical photo corroborated
-    perform private.evaluate_photo_fingerprint(f.md5) from private.photo_fingerprints f where f.user_id = new.id;
+    perform private.evaluate_photo_fingerprint(f.sha256) from private.photo_fingerprints f where f.user_id = new.id;
   end if;
   return null;
 end;
 $function$;
 revoke all on function public._fingerprint_main_photo() from public, anon, authenticated;
 drop trigger if exists fingerprint_main_photo on public.profiles;
-create trigger fingerprint_main_photo after insert or update of photo_url, display_name on public.profiles
+create trigger fingerprint_main_photo after update of photo_url, display_name on public.profiles
   for each row execute function public._fingerprint_main_photo();
 
 create or replace function public._fingerprint_extra_photo()
@@ -175,32 +207,14 @@ security definer
 set search_path to 'public'
 as $function$
 begin
-  if tg_op = 'DELETE' then
-    delete from private.photo_fingerprints where user_id = old.user_id and slot = old.id::text;
-    return null;
-  end if;
-  if tg_op = 'INSERT' or new.photo_url is distinct from old.photo_url then
-    perform private.record_photo_fingerprint(new.user_id, new.id::text, new.photo_url);
-  end if;
+  perform private.forget_unused_photo_fingerprints(old.user_id);
   return null;
 end;
 $function$;
 revoke all on function public._fingerprint_extra_photo() from public, anon, authenticated;
 drop trigger if exists fingerprint_extra_photo on public.profile_photos;
-create trigger fingerprint_extra_photo after insert or update of photo_url or delete on public.profile_photos
+create trigger fingerprint_extra_photo after update of photo_url or delete on public.profile_photos
   for each row execute function public._fingerprint_extra_photo();
-
--- Existing photos get their fingerprint now (no case can open: the settings start null).
-insert into private.photo_fingerprints (user_id, slot, object_id, md5)
-select p.id, 'main', o.id, lower(btrim(o.metadata->>'eTag', '"'))
-  from public.profiles p join storage.objects o on o.bucket_id = 'profile-photos' and o.name = p.photo_url
- where lower(btrim(o.metadata->>'eTag', '"')) ~ '^[0-9a-f]{32}$'
-on conflict (user_id, slot) do nothing;
-insert into private.photo_fingerprints (user_id, slot, object_id, md5)
-select pp.user_id, pp.id::text, o.id, lower(btrim(o.metadata->>'eTag', '"'))
-  from public.profile_photos pp join storage.objects o on o.bucket_id = 'profile-photos' and o.name = pp.photo_url
- where lower(btrim(o.metadata->>'eTag', '"')) ~ '^[0-9a-f]{32}$'
-on conflict (user_id, slot) do nothing;
 
 -- Admin review: list cases (open first) with each member's name and whether they are suspended; never the fingerprint.
 create or replace function public.admin_list_account_review_cases(include_closed_param boolean default false)

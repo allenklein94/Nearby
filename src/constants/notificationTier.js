@@ -59,6 +59,8 @@ const MEDIUM = [
   // business owner: account and status
   'business_partner_approved', 'business_partner_denied', 'business_partner_needs_info', 'business_partnership_response',
   'business_request_cancelled', 'business_offer_review_result',
+  // admins: a new report to review (20270355; private, no name or content)
+  'admin_report_received',
 ];
 
 export const NOTIFICATION_PRIORITY_BY_TYPE = Object.freeze(Object.fromEntries([

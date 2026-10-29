@@ -23,12 +23,12 @@ describe('sections reflect the central mapping', () => {
     for (const s of SETTINGS_SECTIONS) expect(s.groups.length).toBeGreaterThan(0);
     for (const g of NOTIFICATION_GROUPS) expect(typesForGroup(g).length).toBeGreaterThan(0);
   });
-  test('every notification type is behind exactly one switch, except the three mandatory account notices', () => {
+  test('every notification type is behind exactly one switch, except the four mandatory account notices (incl. the admin report notice)', () => {
     const behindSwitch = NOTIFICATION_GROUPS.flatMap(typesForGroup);
     expect(new Set(behindSwitch).size).toBe(behindSwitch.length);
     expect(behindSwitch.sort()).toEqual(Object.keys(NOTIFICATION_GROUP_BY_TYPE).sort());
     for (const t of ACCOUNT_NOTICE_TYPES) expect(behindSwitch).not.toContain(t);
-    expect(ACCOUNT_NOTICE_TYPES).toHaveLength(3);
+    expect(ACCOUNT_NOTICE_TYPES).toHaveLength(4);
   });
   test('the separate switches the owner asked to keep are still their own switches', () => {
     const where = (g) => SETTINGS_SECTIONS.find((s) => s.groups.includes(g)).key;
