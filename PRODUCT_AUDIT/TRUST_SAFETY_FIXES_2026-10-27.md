@@ -383,6 +383,10 @@ I1:
 - Similar-image (perceptual) detection = later, subject to a privacy review. Device fingerprinting stays deferred.
 - No automatic bans or hidden restrictions from duplicate signals alone.
 Priority unchanged: build 87 + phone testing -> 0348-0354 -> B5 -> I2 -> I3 -> I1.
+Photo abuse (owner input 2026-10-29, recorded, nothing built): the same photo on MANY accounts is a valid review threshold
+for I1's exact hashes (count rule with I2's numbers). Generated/manipulated identity photos and stolen public photos
+(reverse image search) need an AI or third-party service + a privacy review: DEFERRED with similar-image detection and L1.
+Any such result is a signal for review, never proof: a generated avatar is not evidence of a fake person.
 
 ## Priority order (owner, 2026-10-28)
 
