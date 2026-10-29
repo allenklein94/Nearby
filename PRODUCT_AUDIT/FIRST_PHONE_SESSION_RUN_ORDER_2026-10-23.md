@@ -38,7 +38,7 @@ shared source. A SETUP-BLOCKED flow is reported in its own list, never mixed wit
 ## Next session: priority order (consolidated 2026-10-25; adds no checks, only orders the blocks below)
 
 Pre-flight (before any check; a failure here = stop and rebuild, never record product results):
-- P1 Build: TestFlight shows the installed build is the one made from ec0b06f0 or later (build number 87+). Quick proof in the
+- P1 Build: TestFlight shows the installed build is the one made from 1af87365 or later (build number 87+; updated 2026-10-29: earlier builds miss the 10-25..10-28 changes below). Quick proof in the
   app: Profile has a "🔥 Your Progress" row that opens in place; Settings > Manage Subscription opens in place; Home has no
   "This week: ..." recap. Any of these missing = old build = everything SETUP-BLOCKED.
 - P2 Setup S2-S7 above. S4/S5 (seed) need the owner's explicit approval of seed code 7530ef9b5bb4 (7 test businesses, 2026-10-25; replaces d2893d6fd08b) (or a re-plan) and Option A
@@ -50,12 +50,25 @@ Pre-flight (before any check; a failure here = stop and rebuild, never record pr
   requests, gatherings. The seed's cleanup covers only seeded rows; anything else is cleaned only with separate approval.
 
 Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one phone, no seed needed unless noted):
+0. Account basics on the new build (2026-10-29; client paths rewritten for the trust & safety set; any failure = Sev 1, stop):
+   (a) sign out + sign in with your own account; Home loads; (b) Profile shows your own details and Edit Profile saves one
+   small change (then revert it); (c) open another person's profile (a friend or applereview); (d) Settings > Notifications
+   still on, then ask Claude for one test push and confirm it arrives; (e) Plans opens with no error; (f) optional, only
+   with a spare email: create a brand-new account through onboarding (C2) and note its email for later cleanup.
 1. Your Progress on Profile checks 1-4.
 2. Screen-reduction checks 4-6 (Emergency contacts incl. the keyboard, the date check-in link, Subscription).
 3. Screen-reduction checks 1-3 (business application; 2-3 need the admin account; see P3).
 4. Item 53 checklist check 13 (Home "N plans this month" -> Plans on Past) + Upcoming/Past watch (a) (Plans loads at all; a load
    error = Sev 1).
 5. Interested sharing checks 1-3.
+6. Changed 2026-10-25..10-28, no seed needed (empty results are expected without the seed: check the empty state, the
+   chips and what carries into Create, never the result list): Quick pick check (6)-(9) on the empty state (one "Dinner ✕"
+   chip beside Tonight; ✕ clears it; "+ Start a Dinner Gathering" opens Create with Dinner + today, no time picked);
+   Tonight-path check (Create's own Tonight = today + "Pick a time"); activity suggestions (Quick pick (8): tap the
+   Gatherings search box, suggestions appear, a pick replaces the activity); Home "Explore nearby →" + the Right Now
+   chevron (Button watch); "I'm Going" gone (Join stays Join after ☆ Interested on a gathering's detail).
+7. Needs at least one visible gathering (your own test gathering is enough; host-cancel it after): Discover ☆ Interested
+   check (a)-(f), Compact-row attendance check ("1 attending" on your own tile), Map consistency watch (a)-(c).
 
 Tier 2, the journey (session A parts 1-7, in order; seed required for 2-4, credit for hand-written replies):
 part 6's ~20-min gathering FIRST, then parts 1-5, part 7 (automatic reply), coming back for the Request deadline watch, Ask again
