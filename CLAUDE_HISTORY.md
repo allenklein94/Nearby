@@ -1,3 +1,14 @@
+# 2026-10-29: enforcement skips moved off the flag (20270361, built + staged, not deployed)
+
+Closes 20270360's recorded residual: a client role that forged `app.trusted_update` (raw SQL only, not reachable through
+the API) still skipped the 0356 rate limits, the name / photo and extra-photo limits and the friend-request daily limit,
+because those run as definer functions where 0360's caller-role test can't apply. They now skip only for a row in
+`private.trusted_write_marker` keyed by the current transaction, written only by `private.mark_trusted_write()` (no client
+access), set only by `swap_main_photo` and a mutual friend-discovery like, removed before the caller's flag is restored.
+Journey `forgedFlagLimits` 6/6 (fails 6/6 on 0348-0360); `trustSafetyI123`'s trusted-bypass step rewritten as a real server
+write (it had encoded the residual); prod journeys 776/776 with 0348-0361; rollback round trip identical (1,347 items);
+Jest 523 / 7155. Deploy right after 0360 with its own approval. Details: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`.
+
 # 2026-10-29: trusted-flag authorization review + 20270360 (built + staged, not deployed)
 
 Owner-requested boundary review. Real API (anon + signed-in test account, read-only): no path to set_config (pg_catalog not exposed, GraphQL off, no dynamic-SQL RPC), privileged functions refused, no login for client roles; no single request can chain a flag-setter with a client write, so 0359's leak is hardening, not an API hole. But the flag was forgeable by any `authenticated` session with raw SQL (self-admin proven, rolled back). 20270360: the 12 column guards run as the caller and ignore the flag for anon/authenticated. Journey `trustedWriteScope` 12/12 (forgery cases fail without it), prod journeys 770/770 with 0348-0360, rollback round trip identical, Jest 523/7154. Residual: forged flag skips friend-request/0356 rate limits (raw SQL only). Early separation feasible but needs renumbering; not recommended. Details: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`.

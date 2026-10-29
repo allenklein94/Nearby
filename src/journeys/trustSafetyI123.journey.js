@@ -1,5 +1,5 @@
 // Trust & safety I3 + I2 + I1 (migrations 20270355-20270357 + thresholds 20270358, staged after 20270348-20270354; run
-// with all eleven as JOURNEY_PRELUDE_FILE until they are live). Every attempt runs as an ORDINARY signed-in user (or the admin) under the
+// with 0348-0361 as JOURNEY_PRELUDE_FILE until they are live). Every attempt runs as an ORDINARY signed-in user (or the admin) under the
 // real `authenticated` role + JWT claims: grants, RLS, triggers.
 //   I3: a report attaches only content the reporter can see AND the reported person wrote; the server's copy replaces
 //     anything the client sent and survives the message being deleted; evidence can't be edited (admins included); every
@@ -153,9 +153,17 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
   ${rec('name_after', `(select display_name from profiles where id = v_c)`)}
   ${as('extra_photo_1', 'v_c', `insert into profile_photos (user_id, photo_url, position) values (v_c, v_c::text || '/x1.jpg', 1)`)}
   ${as('extra_photo_2', 'v_c', `insert into profile_photos (user_id, photo_url, position) values (v_c, v_c::text || '/x2.jpg', 2)`)}
+  -- a trusted SERVER write (definer role + 20270361's private marker), never a client role with the flag forged
+  perform set_config('request.jwt.claims', json_build_object('sub', v_c, 'role', 'authenticated')::text, true);
   perform set_config('app.trusted_update', 'true', true);
-  ${as('trusted_bypass', 'v_c', `update profiles set display_name = 'Cam Trusted' where id = v_c`)}
+  perform private.mark_trusted_write();
+  begin update profiles set display_name = 'Cam Trusted' where id = v_c; v_out := to_jsonb('ok'::text);
+  exception when others then v_out := jsonb_build_object('error', sqlerrm);
+  end;
+  perform private.unmark_trusted_write();
   perform set_config('app.trusted_update', 'false', true);
+  perform set_config('request.jwt.claims', '', true);
+  ${rec('trusted_bypass', 'v_out')}
   ${as('client_reads_rules', 'v_a', `v_n := (select count(*) from private.rate_limit_rules)`, 'v_n')}
   delete from private.rate_limit_rules;
 

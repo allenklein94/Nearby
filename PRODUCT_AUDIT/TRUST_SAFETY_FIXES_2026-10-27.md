@@ -479,8 +479,8 @@ and config, sorted); Jest 523 suites / 7152 tests. Rollback: `scripts/rollback/2
   photo-screening, privileged-insert, identity-verified, suspension guards) run as the caller (SECURITY INVOKER; none reads a
   table) and protect when the flag is not 'true' OR `current_user in ('anon','authenticated')`. Inside a definer server
   function current_user is postgres, so trusted writes are unchanged; a direct client write is protected with or without the
-  flag. DO block + `trustedWriteScopeGuard.test.js` hold later migrations to it. Residual (same class, lower impact,
-  recorded, not fixed): a forged flag also skips the friend-request daily limit and 0356's rate limits (checked inside
+  flag. DO block + `trustedWriteScopeGuard.test.js` hold later migrations to it. Residual (same class, lower impact;
+  CLOSED by 20270361, below): a forged flag also skips the friend-request daily limit and 0356's rate limits (checked inside
   definer functions); reachable only with raw SQL as a client role.
 - Tests (real client roles via `set local role` + JWT claims, rolled back): journey `trustedWriteScope` 12/12 with
   0348-0360 (forged self-grant of admin / premium / bonus / business / ID verification refused, forged profile insert with
@@ -494,6 +494,19 @@ and config, sorted); Jest 523 suites / 7152 tests. Rollback: `scripts/rollback/2
   8-digit and strictly ordered with 20270347 the highest recorded, so it needs 0348-0359 renumbered (0348's recorded
   approval code changes) and 0349-0358's own redefinitions would re-open the leak until 0359 runs again. Not recommended:
   no API exploit path exists; deploy 0359 + 0360 immediately after 0358 in the same sequence.
+- **Residual closed: FIX BUILT + STAGED as 20270361 (NOT deployed, own approval, right after 0360) (2026-10-29):** the 0356
+  rate limits (`private.enforce_rate_limit`), the name / photo change limit, the extra-photo limit and the friend-request
+  daily limit no longer skip on the flag. They skip only for a row in `private.trusted_write_marker` for the current
+  transaction, written only by `private.mark_trusted_write()` (definer; no client EXECUTE, no client table grant, no client
+  USAGE on `private`), set only by `swap_main_photo` and `record_friend_discovery_swipe` (mutual like) inside their 0359 scope
+  and removed before the caller's flag is put back (nested calls keep the outer marker; a failure rolls it back). Other bodies
+  byte-identical to after 0360. DO block + `trustedWriteScopeGuard.test.js` refuse any later function that skips on the flag.
+  Tests (rolled back, real client roles): new journey `forgedFlagLimits` 6/6 with 0348-0361 (6/6 fail on 0348-0360);
+  `trustSafetyI123`'s "trusted server writes bypass" step now models a real server write (definer + marker) instead of a
+  client role with the flag set (the old step passed only because of this residual; it fails under 0361 as intended);
+  prod journeys 776/776 with 0348-0361; rollback round trip (after 0360 -> +0361 -> rollback) identical on 1,347 functions,
+  relations and triggers (definitions, ACL, config, security mode); Jest 523 / 7155. Remaining (documented, not fixable in
+  the database): raw SQL as a client role could also set `request.jwt.claims`; the API boundary stays the primary control.
 Not verified: a real report push on an admin's phone, the SHA-256 path through a real upload (needs the moderate-photo
 redeploy), the backfill script against production.
 

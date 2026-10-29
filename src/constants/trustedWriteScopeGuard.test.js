@@ -5,6 +5,8 @@
 // must keep it. The live catalog is checked by journey `trustedWriteScope` and by 20270359's own DO block.
 // 20270360: a guard that protects columns unless the flag is 'true' must run as the caller (no SECURITY DEFINER) and also
 // protect when `current_user in ('anon', 'authenticated')`, so a client that forges the flag gains nothing.
+// 20270361: no enforcement (rate limits, friend-request limit) may SKIP because the flag is 'true'; a server path that must
+// skip a limit sets the private per-transaction marker (private.mark_trusted_write) instead.
 const fs = require('fs');
 const path = require('path');
 
@@ -96,6 +98,17 @@ describe('trusted-write flag scope', () => {
     for (const f of files.filter((x) => x.slice(0, 8) > FIX_FORGE)) {
       const sql = fs.readFileSync(path.join(dir, f), 'utf8');
       for (const fn of functionsIn(sql)) if (forgeable(fn)) bad.push(`${f}: ${fn.name}`);
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('from 20270361 on, no function skips enforcement on the flag', () => {
+    const FLAG_SKIP = /current_setting\(\s*'app\.trusted_update'\s*,\s*true\s*\)\s*,\s*''\s*\)\s*=\s*'true'/i;
+    expect(files.find((f) => f.startsWith('20270361'))).toBeTruthy();
+    const bad = [];
+    for (const f of files.filter((x) => x.slice(0, 8) >= '20270361')) {
+      const sql = fs.readFileSync(path.join(dir, f), 'utf8');
+      for (const fn of functionsIn(sql)) if (FLAG_SKIP.test(fn.text)) bad.push(`${f}: ${fn.name}`);
     }
     expect(bad).toEqual([]);
   });
