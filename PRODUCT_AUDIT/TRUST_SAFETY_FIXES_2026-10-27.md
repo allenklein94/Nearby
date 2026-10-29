@@ -348,6 +348,24 @@ trustworthy person. Requirements for when I2 is implemented:
 Existing today: daily limits on gatherings (10), communities, friend requests, notices, stories, AI uses (same for every
 account). Missing: messages, invitations, reports, business requests beyond duplicates, name/photo changes.
 
+## Owner input 2026-10-29 on I2 + I1 (PROPOSED additions, not locked, nothing built; numbers + rules to the owner before building)
+
+I2 (progressive trust): already covered by requirements 1-9 above. Proposed additions:
+- a. Limits also cover business-like posting by a consumer account (today only gatherings/communities/stories/notices have
+  daily caps; promotional content in chats/bios has none).
+- b. "Suspicious behaviour tightens limits automatically" = RULE-BASED only (consistent with requirement 8: no AI scoring):
+  e.g. repeated limit hits, reports from several distinct people, many refused/blocked outreach -> lower limits until an
+  admin reviews; never a hidden score, never a ban without review (0351 suspension stays the admin's action).
+
+I1 (duplicate/fake accounts), widened from "exact-duplicate photos" to FLAG -> INVESTIGATE -> ACTION:
+- c. Signals: identical photo bytes (hash, the recorded first step); same verified phone is already impossible (one auth
+  user per phone); similar names only as a supporting signal, never alone. Device and behavioural-pattern matching = device
+  fingerprinting, DEFERRED with L1 (requirement 8 + priority 7) until real usage justifies it.
+- d. A match creates an admin review item linked to both accounts (needs I3's report evidence + action log, so I1 follows
+  I3 as already ordered); never an automatic ban or hide, never shown to either person (households, shared devices and
+  common names are legitimate).
+- e. Privacy: hashes/flags stored privately (no client grant), disclosed in the Privacy Policy before external users.
+
 ## Priority order (owner, 2026-10-28)
 
 1. N6 (fix first). 2. Deploy + verify 0349-0354 (number order; 0352 after Session B). 3. B5: KEEP email sign-up;
