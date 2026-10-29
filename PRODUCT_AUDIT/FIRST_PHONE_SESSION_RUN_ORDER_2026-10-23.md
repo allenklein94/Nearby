@@ -53,8 +53,10 @@ Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one
 0. Account basics on the new build (2026-10-29; client paths rewritten for the trust & safety set; any failure = Sev 1, stop):
    (a) sign out + sign in with your own account; Home loads; (b) Profile shows your own details and Edit Profile saves one
    small change (then revert it); (c) open another person's profile (a friend or applereview); (d) Settings > Notifications
-   still on, then ask Claude for one test push and confirm it arrives; (e) Plans opens with no error; (f) optional, only
-   with a spare email: create a brand-new account through onboarding (C2) and note its email for later cleanup.
+   still on, then ask Claude for one test push and confirm it arrives; (e) Plans opens with no error; (f) REAL SMS
+   verification (owner 2026-10-29: required before Session B, never replaced by the seed's fixture phones): sign out, sign
+   up with a real phone number not already on an account, receive the text, enter the code, finish onboarding (C2); also
+   enter one wrong code first and confirm it is refused. Note the account for later cleanup (it writes real rows).
 1. Your Progress on Profile checks 1-4.
 2. Screen-reduction checks 4-6 (Emergency contacts incl. the keyboard, the date check-in link, Subscription).
 3. Screen-reduction checks 1-3 (business application; 2-3 need the admin account; see P3).

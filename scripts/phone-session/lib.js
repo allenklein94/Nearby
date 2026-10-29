@@ -339,7 +339,7 @@ begin
   -- the approval code covers the row changes AND the exact real-account request ids, so a different set can never be deleted
   d := encode(sha256(convert_to(diff::text || '|' || real_reqs_gone::text, 'utf8')), 'hex');
   insert into _ps_report values (jsonb_build_object('row_changes_by_table', diff, 'of_which_unlinked_rows_swept', swept, 'real_account_activity_removed_with_test_objects', real_activity, 'real_account_requests', real_reqs_gone,
-    'remaining_seeded', jsonb_build_object('people', (select count(*) from auth.users where id in (${pIds})), 'gatherings', (select count(*) from gatherings where id in (${gIds})),
+    'remaining_seeded', jsonb_build_object('people', (select count(*) from auth.users where id in (${pIds})), 'fixture_verified_phones', (select count(*) from auth.users where phone in (${PEOPLE.map((p) => q(p.phone)).join(', ')}) or id in (${pIds})), 'gatherings', (select count(*) from gatherings where id in (${gIds})),
       'businesses', (select count(*) from brand_partners where id in (${Bs}))),
     'confirm', left(d, 12), 'dry_run', ${dryRun ? 'true' : 'false'}));
   ${dryRun ? "raise exception 'PHONE_SESSION_DRY_RUN %', (select report::text from _ps_report);" : `if left(d, 12) <> ${q(expect)} then
