@@ -27,7 +27,7 @@ shared source. A SETUP-BLOCKED flow is reported in its own list, never mixed wit
 
 | # | Setup | Needed by |
 |---|---|---|
-| S1 | A native build of current main on ONE phone (iOS first; Android stays PENDING: no Android build has ever been made). Build 86 (2026-10-18, commit 7d72d615) is STALE; the session needs a TestFlight build made from ec0b06f0 or later (see Pre-flight P1) | everything |
+| S1 | A native build of current main on ONE phone (iOS first; Android stays PENDING: no Android build has ever been made). Build 86 (2026-10-18, commit 7d72d615) is STALE; the session needs a TestFlight build made from 2cdba35a or later (see Pre-flight P1) | everything |
 | S2 | Maps SDK for iOS (Android) + Places API (New) enabled on the key's project | 3.5 pin placement, address search |
 | S3 | Location permission granted, phone in the seeded area | every search, distance, "near me" |
 | S4 | Seeded TEST gatherings near the phone: this evening, tomorrow, the coming Friday + Saturday, one next week; Coffee, Pickleball, Live Music; one public, one requiring approval | parts 2-3 (else every result is an empty state) |
@@ -38,7 +38,7 @@ shared source. A SETUP-BLOCKED flow is reported in its own list, never mixed wit
 ## Next session: priority order (consolidated 2026-10-25; adds no checks, only orders the blocks below)
 
 Pre-flight (before any check; a failure here = stop and rebuild, never record product results):
-- P1 Build: TestFlight shows the installed build is the one made from 1af87365 or later (build number 87+; updated 2026-10-29: earlier builds miss the 10-25..10-28 changes below). Quick proof in the
+- P1 Build: TestFlight shows the installed build is the one made from 2cdba35a or later (build number 87+; updated 2026-10-29: earlier builds miss the 10-25..10-29 changes below, incl. the report sheet's context + rule-refusal wording). Quick proof in the
   app: Profile has a "🔥 Your Progress" row that opens in place; Settings > Manage Subscription opens in place; Home has no
   "This week: ..." recap. Any of these missing = old build = everything SETUP-BLOCKED.
 - P2 Setup S2-S7 above. S4/S5 (seed) need the owner's explicit approval of seed code 7530ef9b5bb4 (7 test businesses, 2026-10-25; replaces d2893d6fd08b) (or a re-plan) and Option A

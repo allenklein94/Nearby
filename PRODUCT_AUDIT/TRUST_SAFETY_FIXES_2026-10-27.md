@@ -507,6 +507,17 @@ and config, sorted); Jest 523 suites / 7152 tests. Rollback: `scripts/rollback/2
   prod journeys 776/776 with 0348-0361; rollback round trip (after 0360 -> +0361 -> rollback) identical on 1,347 functions,
   relations and triggers (definitions, ACL, config, security mode); Jest 523 / 7155. Remaining (documented, not fixable in
   the database): raw SQL as a client role could also set `request.jwt.claims`; the API boundary stays the primary control.
+- **Security assumption: database access (owner, 2026-10-29; accepted as an assumption, no further migration for it):** no
+  client can run its own SQL. The database cannot defend against raw SQL run as a client role (it could set the flag or
+  `request.jwt.claims`). Re-checked 2026-10-29 (read-only): PostgREST exposes only `public, graphql_public`; `pg_graphql` is
+  not installed (`/graphql/v1` = "pg_graphql extension is not enabled"); `anon` / `authenticated` cannot log in (only
+  `authenticator` can); anon `rpc/set_config`, `rpc/pg_catalog.set_config`, `rpc/query`, `rpc/exec_sql` = PGRST202 (not
+  found); `Accept-Profile: private` = PGRST106; no client-executable invoker function in `public` calls set_config; the only
+  client-executable functions with dynamic SQL are `rls_auto_enable()` (event trigger, not callable) and Supabase's own
+  `storage.search` / `storage.list_objects_with_delimiter` (schema not exposed through PostgREST). It stops holding if anyone
+  adds an exposed schema, enables pg_graphql, grants a client role login, or adds a client-callable function that runs
+  caller-chosen SQL or set_config: each of those needs this review repeated first. Database credentials (connection string,
+  service role, management token) stay off every client and out of chat.
 Not verified: a real report push on an admin's phone, the SHA-256 path through a real upload (needs the moderate-photo
 redeploy), the backfill script against production.
 
