@@ -139,3 +139,16 @@ outside the owner's own, so no other installed copy has ever signed in.
   headless (needs a real business sign-in): after publishing, the owner signs in on the live site and opens Home,
   Opportunities, Bookings, Offers, Profile before 0348. Business-facing code changed since the 2026-10-23 export: N6 reads,
   one business-application screen by state (ec0b06f0), request deadlines/Reopen/posting refusals (ideas 384/393-395).
+
+### Business website: signed-in functional test is a 0348 gate (owner, 2026-10-29)
+- The headless comparison proves only the signed-out Sign in screen (Supabase blocked). It is NOT evidence the new website
+  works signed in. 0348 waits for a live signed-in test.
+- Why two passes: `readMyProfile` (`services/myProfile.js`) calls `get_my_profile()` and falls back to the old own-row read
+  while it is missing (PGRST202). So a test before 0348 exercises only the FALLBACK path; the `get_my_profile()` path runs
+  for the first time after 0348.
+  1. Before 0348 (after the owner approves publishing the new export): owner signs in on the live site with the account that
+     manages Coastal Coffee (phone login; the only business-owning account; the dedicated test account and outlook own no
+     business) and opens Home, Opportunities, Bookings, Offers, Profile; also Profile save. Any error / blank section = stop.
+  2. Right after 0348 is deployed: the same sign-in and pages again (first real run of the `get_my_profile()` path), with
+     0348's rollback ready; a failure = roll back 0348 before anything else (0349 waits for this pass).
+- Not runnable from a session: the business sign-in is a phone code to the owner's phone.
