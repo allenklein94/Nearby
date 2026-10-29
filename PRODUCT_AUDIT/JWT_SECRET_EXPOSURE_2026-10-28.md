@@ -311,5 +311,6 @@ Owner APPROVED the redaction 2026-10-29, to run after session 82a49f71 ends (nev
 `~/redact_legacy_jwt_secret.py` adds: refuses a file unless the key sits only on the dry run's line with the same line hash
 and 2 occurrences; after writing, 0 occurrences + every previously valid JSON line still valid = success and the `.bak` is
 deleted, else the original is restored and the `.bak` kept. Final dry run: both files unchanged, 2 + 2 occurrences, 0 JSON
-broken. Housekeeping item CLOSED (owner): no further credential investigation without new evidence. Deleting files does not
+broken. Redaction NOT YET EXECUTED: complete only once `--apply` prints "ALL DONE: both transcripts redacted and
+verified." (record the date here). Investigation closed (owner): no further credential investigation without new evidence. Deleting files does not
 erase codespace snapshots/backups (accepted: the key is revoked).
