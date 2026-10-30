@@ -52,10 +52,11 @@ d('journey: trusted-write flag lasts only as long as the function that set it, a
           or (p.prosrc ~ 'set_config\\(\\s*''app\\.trusted_update''\\s*,\\s*''false'''
               and p.oid <> 'public._rate_limit_commercial_post()'::regprocedure)))`)}
 
-  -- a gathering insert fires the daily-limit trigger (a trusted counter write) ...
-  ${as('create_gathering', 'v_a', gathering('v_a', 'Scope test'))}
+  -- a community insert fires the daily-limit trigger (a trusted counter write; 20270362 retired the gathering counter
+  -- this step used to exercise) ...
+  ${as('create_gathering', 'v_a', `insert into communities (creator_id, name) values (v_a, 'Scope test community')`)}
   ${rec('flag_after_gathering', flag)}
-  ${rec('counter_written', `(select gatherings_created_today from profiles where id = v_a)`)}
+  ${rec('counter_written', `(select communities_created_today from profiles where id = v_a)`)}
   -- ... and the person's next statement in the same transaction must not inherit it
   ${as('self_grant_after_gathering', 'v_a', selfGrant('v_a'))}
   ${rec('powers_after_gathering', powers('v_a'))}
@@ -135,7 +136,7 @@ d('journey: trusted-write flag lasts only as long as the function that set it, a
     expect(data('unscoped_functions')).toEqual([]);
   });
 
-  test('after a gathering insert the flag is off again and a self-grant of premium / admin does nothing', () => {
+  test('after a trusted counter write (community insert) the flag is off again and a self-grant of premium / admin does nothing', () => {
     expect(data('create_gathering')).toBe('ok');
     expect(data('counter_written')).toBe(1); // the trusted write itself still works
     expect(data('flag_after_gathering')).not.toBe('true');

@@ -15,6 +15,7 @@
 // redemption changed (a check-in is never a redemption). The client helpers are applied to the same rows. Rolled back.
 // Not covered: rendering on a phone (the attending section's button and countdown), a real signed-in API call.
 const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
+const { LIFT_GATHERING_CREATION_LIMIT } = require('./journeyHarness'); // 20270362: fixture hosts create many gatherings
 import { checkInWindowState, isGatheringOver } from '../utils/gatheringCompletion';
 import { getCountdownLabel } from '../utils/gatheringAttending';
 
@@ -55,6 +56,7 @@ d('journey: check in only inside the window, enforced by the server', () => {
       v_id uuid; v_ids jsonb := '{}'::jsonb; v_res jsonb := '{}'::jsonb; v_p uuid; v_first timestamptz; v_err text;
       v_offers_before jsonb; v_perks_before jsonb;`, `
   ${actorsSql({ people: ['v_host', 'v_fan', 'v_third'] })}
+  ${LIFT_GATHERING_CREATION_LIMIT}
   v_offers_before := (select coalesce(jsonb_agg(jsonb_build_array(id, status, completed_at) order by id), '[]') from business_request_offers);
   v_perks_before := (select coalesce(jsonb_agg(jsonb_build_array(id, confirmed_at) order by id), '[]') from offer_redemptions);
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
@@ -231,6 +233,7 @@ d('journey: the exact check-in boundaries, server clock only', () => {
       v_host uuid := '${people[0].id}'; v_fan uuid := '${people[1].id}'; v_host2 uuid := '${people[2].id}';
       v_id uuid; v_ids jsonb := '{}'::jsonb; v_res jsonb := '{}'::jsonb; v_before jsonb;`, `
   ${actorsSql({ people: ['v_host', 'v_fan', 'v_host2'] })}
+  ${LIFT_GATHERING_CREATION_LIMIT}
   ${make}
   perform set_config('request.jwt.claims', '{}', true);
   update gatherings set wide_area = '40.3,-75.2', is_public = true where title like 'JCX %';

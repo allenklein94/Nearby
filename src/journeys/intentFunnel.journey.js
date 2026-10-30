@@ -6,6 +6,7 @@
 // happened, and the summary must count and divide by the right population. Fixture asks are moved into a week of their
 // own (2020-01-06) so the summary's week row is the fixture alone. Rolled back. Not covered: the app (no new client code).
 const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, journeyOwner } = require('./journeyHarness');
+const { LIFT_GATHERING_CREATION_LIMIT } = require('./journeyHarness'); // 20270362: fixture hosts create many gatherings
 
 const d = hasToken ? describe : describe.skip;
 
@@ -28,6 +29,7 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
 
   -- three upcoming public gatherings by another person
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  ${LIFT_GATHERING_CREATION_LIMIT}
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility)
     values (v_host, 'Funnel walk 1', now() + interval '2 days', 40.0, -75.0, 'Walking', 'journey', 'everyone') returning id into v_g1;
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility)

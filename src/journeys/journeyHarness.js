@@ -78,4 +78,11 @@ function actorsSql({ people, friends = [], business = null }) {
   return lines.join('\n  ');
 }
 
-module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET };
+// 20270362 (gathering creation limits, 5 / 15 a day): a journey whose fixture hosts create many gatherings to tell ANOTHER
+// story lifts only that rule inside its own rolled-back transaction (no-op before 0356's table exists). Never in a journey
+// about limits; journey `gatheringCreationLimits` proves the rule itself.
+const LIFT_GATHERING_CREATION_LIMIT = `if to_regclass('private.rate_limit_rules') is not null then
+    execute 'delete from private.rate_limit_rules where action = ''gathering_create''';
+  end if;`;
+
+module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, LIFT_GATHERING_CREATION_LIMIT };

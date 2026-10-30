@@ -355,7 +355,8 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
     expect(r['urgent_report:new:86400']).toBe(30);
     expect(r['commercial_post:new:86400']).toBe(3);
     expect(r['direct_message:established:60']).toBeGreaterThan(r['direct_message:new:60']);
-    expect(Object.keys(r)).toHaveLength(28);
+    // 20270358's 28 rows (20270362's gathering_create rows are proven by journey gatheringCreationLimits)
+    expect(Object.keys(r).filter((k) => !k.startsWith('gathering_create:'))).toHaveLength(28);
     expect(data('approved_signals')).toEqual({ min_accounts: 3, similarity: 0.5 });
   });
 

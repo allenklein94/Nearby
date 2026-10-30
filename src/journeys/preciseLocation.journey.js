@@ -17,6 +17,7 @@
 //     and the pin function are out of client reach; count_gatherings_near is gone.
 // Rolled back. Coordinates are mid-Atlantic so no real gathering shares their cell.
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { LIFT_GATHERING_CREATION_LIMIT } = require('./journeyHarness'); // 20270362: fixture hosts create many gatherings
 
 const d = hasToken ? describe : describe.skip;
 
@@ -73,6 +74,7 @@ d('journey: precise gathering location only for the host and approved attendees,
     insert into profiles (id, display_name, birthdate) values (u, 'J146-' || left(u::text, 4), date '1990-01-01');
   end loop;
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  ${LIFT_GATHERING_CREATION_LIMIT}
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J146 open', now() + interval '1 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 10, 'everyone') returning id into v_open;
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility, requires_approval)

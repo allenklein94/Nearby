@@ -545,6 +545,34 @@ client routing for the admin push ships in build 87 if built from this commit.
   + client integration in a new native build. Proposal: password minimum 10 + leaked-password check (if the plan allows);
   CAPTCHA only with a provider choice. 0352 (verified phone for social actions) is B5's other half, already staged.
 
+## Gathering creation limits by trust level: 20270362 BUILT, STAGED, NOT DEPLOYED (owner, 2026-10-30)
+
+Owner decision (2026-10-30): 5 gatherings per 24 h for a new account, 15 for an established one (verified phone + 7 days);
+restricted = the existing suspension (20270351). Starting thresholds, to be reviewed against real usage; no tuning before build 87.
+Built in the ONE rate-limit mechanism of 0356 (rule rows `gathering_create`, counted from `private.limited_action_log`
+'gathering' timestamps over the last 24 h; trigger `zz_rate_limit_gathering_create`, BEFORE INSERT on gatherings):
+every visibility counts; edits never count (insert only); cancel / delete never give one back (the timestamp stays);
+server-generated recurring occurrences (cron, no signed-in person) never count; joining / attending / invitations
+untouched; reaching the limit only refuses that creation (no flag, restriction or ban). Refusal = hint `gathering_limit`
+-> `ui.shared.errors.gatheringLimit` ("You've reached the limit for creating gatherings for now. Please try again later.",
+11 languages, 10 machine-authored, need native review), no Try Again. Replaces the live flat limit (trigger
+`on_gathering_created_enforce_limit`: 10 per local calendar day for everyone, which also counted generated recurring
+occurrences): only that trigger is dropped; its function + the profiles counter columns stay unused, so the rollback
+recreates the trigger. Differences to note: the window is a rolling 24 h (like every 0356 limit), not the local calendar day.
+Tests (2026-10-30, nothing written to production): new journey `gatheringCreationLimits` 8/8 with 0348-0362 as prelude
+(6/8 fail on 0348-0361); prod journeys 784/784 with 0348-0362; 778/784 with 0348-0361 (only the new journey fails, as
+expected); prod without prelude 736/784 (the 4 known trust/safety journeys + the new one need their prelude); six journeys
+whose fixture hosts create 6-28 gatherings to tell another story lift ONLY the `gathering_create` rule inside their own
+rolled-back transaction (`LIFT_GATHERING_CREATION_LIMIT` in `journeyHarness.js`, no-op before 0356); `trustedWriteScope`'s
+trusted-counter example moved from the retired gathering counter to the community counter; `trustSafetyI123` counts
+0358's 28 rows without 0362's. Rollback round trip (0348-0361 -> +0362 -> rollback) identical catalog fingerprint
+(functions + ACL + config + security, triggers, constraints, relation ACLs, rule rows). From-scratch replay 486/486 apply,
+journeys 773/784 on it + all 4 concurrency scripts; the 11 failures are `trustSafetyI123` and PRE-EXISTING (not 0362):
+0357's `similarity()` runs with search_path `public`; prod has pg_trgm in `public`, a fresh database (the replay, like
+a new hosted project) has it in `extensions`, so duplicate-name signals error there. Reported, NOT fixed (owner: no
+further trust & safety changes unless critical; fresh-install only, prod unaffected). Jest 523 / 7156.
+Deploy: right after 0361, own approval (`npm run migration:deploy`).
+
 ## Priority order (owner, 2026-10-28)
 
 1. N6 (fix first). 2. Deploy + verify 0349-0354 (number order; 0352 after Session B). 3. B5: KEEP email sign-up;

@@ -29,6 +29,7 @@ export const ACCOUNT_RULE_HINTS = {
   phone_required: 'ui.shared.errors.phoneRequired',
   account_suspended: 'ui.shared.errors.accountSuspended',
   rate_limited: 'ui.shared.errors.rateLimited',  // 20270356: volume limits by trust level
+  gathering_limit: 'ui.shared.errors.gatheringLimit',  // 20270362: gatherings created per day by trust level
 };
 
 const NETWORK = /network request failed|failed to fetch|network error|timed? ?out|offline|internet|connection/i;

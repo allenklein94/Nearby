@@ -13,6 +13,7 @@
 // Then the count, show-at-1, and the once-only roll for the newly completed plan. Rolled back.
 // Not covered: rendering on a device, the device's own month boundary (localMonthBounds, unit-tested).
 const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
+const { LIFT_GATHERING_CREATION_LIMIT } = require('./journeyHarness'); // 20270362: fixture hosts create many gatherings
 import { plansThisMonthCount, showPlansThisMonth, takePlansThisMonthMoment } from '../utils/plansThisMonth';
 
 const d = hasToken ? describe : describe.skip;
@@ -34,6 +35,7 @@ d('journey: things happen -> only what really happened counts -> "N plans this m
       v_oh uuid := gen_random_uuid();`, `
   ${actorsSql({ people: ['v_host', 'v_fan'] })}
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  ${LIFT_GATHERING_CREATION_LIMIT}
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)
     values (v_host, 'J53 A', now() + interval '3 days', 40.3, -75.2, 'Coffee', 'journey', 10, 'everyone') returning id into v_a;
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility)

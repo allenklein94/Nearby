@@ -68,10 +68,14 @@ describe('account rules the server enforces read as the rule, never a retry (tru
     const limited = recoverableErrorCopy({ what: 'complete that', error: { message: "You've reached the limit for this for now. Please try again later.", hint: 'rate_limited', code: 'P0001' } });
     expect(limited).toEqual({ title: "That didn't go through", message: "You've reached the limit for this for now. Please try again later.", canRetry: false });
   });
-  test('every language has all three sentences', () => {
+  test('gathering_limit (20270362) gives the gathering sentence and no Try Again', () => {
+    const limited = recoverableErrorCopy({ what: 'create your gathering', error: { message: "You've reached the limit for creating gatherings for now. Please try again later.", hint: 'gathering_limit', code: 'P0001' }, draftKept: true });
+    expect(limited).toEqual({ title: "That didn't go through", message: "You've reached the limit for creating gatherings for now. Please try again later.", canRetry: false });
+  });
+  test('every language has all four sentences', () => {
     const shared = require('../i18n/ui/shared').default;
     for (const lang of Object.keys(shared)) {
-      expect([lang, typeof shared[lang].errors.phoneRequired, typeof shared[lang].errors.accountSuspended, typeof shared[lang].errors.rateLimited]).toEqual([lang, 'string', 'string', 'string']);
+      expect([lang, typeof shared[lang].errors.phoneRequired, typeof shared[lang].errors.accountSuspended, typeof shared[lang].errors.rateLimited, typeof shared[lang].errors.gatheringLimit]).toEqual([lang, 'string', 'string', 'string', 'string']);
     }
   });
 });

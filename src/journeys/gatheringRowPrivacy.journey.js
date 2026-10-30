@@ -12,6 +12,7 @@
 //   `returning` still works.
 // Rolled back. Coordinates are mid-Atlantic so no real gathering is involved.
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { LIFT_GATHERING_CREATION_LIMIT } = require('./journeyHarness'); // 20270362: fixture hosts create many gatherings
 
 const d = hasToken ? describe : describe.skip;
 
@@ -92,6 +93,7 @@ d('journey: a gathering row reaches only the people who may see it, on every dat
   insert into blocks (blocker_id, blocked_id) values (v_host, v_blk);
 
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  ${LIFT_GATHERING_CREATION_LIMIT}
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, wide_area, capacity, visibility, is_public, discoverable, women_only, community_id, hosting_partner_id)
     values (v_host, 'J147 pub', now() + interval '1 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 'J147-area', 10, 'everyone', true, true, false, null, null) returning id into g_pub;
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, wide_area, capacity, visibility, is_public, discoverable)

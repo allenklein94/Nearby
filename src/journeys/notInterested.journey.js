@@ -9,6 +9,7 @@
 //   Clear. The set of database functions that read the table is pinned.
 // Rolled back. Coordinates are mid-Atlantic so no real gathering is involved.
 const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { LIFT_GATHERING_CREATION_LIMIT } = require('./journeyHarness'); // 20270362: fixture hosts create many gatherings
 const {
   experienceFeedbackFromRow, feedbackFor, feedbackDelta, forTypedAsk, FEEDBACK_POINTS, EMPTY_EXPERIENCE_FEEDBACK,
 } = require('../utils/experienceFeedback');
@@ -73,6 +74,7 @@ d('journey: Not interested hides one gathering for one person and lowers its kin
   update profiles set managed_partner_id = v_p where id = v_po;
 
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
+  ${LIFT_GATHERING_CREATION_LIMIT}
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, wide_area, capacity, visibility, is_public, discoverable, hosting_partner_id)
     values (v_host, 'JNI coffee A', now() + interval '1 day', ${LAT}, ${LNG}, 'Coffee', 'journey', 'JNI-area', 10, 'everyone', true, true, v_p) returning id into g_a;
   insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, wide_area, capacity, visibility, is_public, discoverable)
