@@ -102,6 +102,7 @@ export const SCREEN_REGISTRY = {
 
   // ---- admin ----
   AdminReports: { jobs: ['C'], reason: 'Admin: review user reports.' },
+  AdminReview: { jobs: ['C'], reason: 'Admin (business website only): review cases side by side, their history and decisions.' },
   AdminVerification: { jobs: ['C'], reason: 'Admin: review ID verifications.' },
   AdminBusinessRequests: { jobs: ['C'], reason: 'Admin: review business applications and map categories.' },
   AdminBusinessTier: { jobs: ['C'], reason: 'Admin: set business tiers.' },

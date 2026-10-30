@@ -19,6 +19,7 @@ import EditCommunityScreen from '../screens/EditCommunityScreen';
 import CommunityDetailScreen from '../screens/CommunityDetailScreen';
 import CommunityChatScreen from '../screens/CommunityChatScreen';
 import ViewProfileScreen from '../screens/ViewProfileScreen';
+import AdminReviewScreen from '../screens/AdminReviewScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -69,6 +70,8 @@ export default function BusinessWebNavigator() {
             <Stack.Screen name="EditCommunity" component={EditCommunityScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: 'Edit Community' }} />
             <Stack.Screen name="CommunityDetail" component={CommunityDetailScreen} options={{ headerShown: true, title: '', headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="CommunityChat" component={CommunityChatScreen} options={({ route }) => ({ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: route.params?.communityName ? `${route.params.communityName} Chat` : 'Community Chat' })} />
+            {/* Admin review (20270368 + 20270369): website only; every read/action is an admin-only server function. */}
+            <Stack.Screen name="AdminReview" component={AdminReviewScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: 'Admin review' }} />
             <Stack.Screen name="ViewProfile" component={ViewProfileScreen} options={{ headerShown: true, headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false, title: 'Profile' }} />
           </>
         )}

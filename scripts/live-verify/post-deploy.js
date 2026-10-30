@@ -40,6 +40,10 @@ const STEPS = {
   20270365: { journeys: ['behaviorSignalThresholds', 'behaviorReviewSignals'] },
   20270366: { journeys: ['intentionCountPrivacy'] },
   20270367: { journeys: ['signupPhoneOnlyHook'] }, // installs the hook only; the gap closes with signup-hook-settings below
+  // detects nothing until the owner approves distances (separate migration); moderate-photo redeploy carries the hashing
+  20270368: { journeys: ['reviewCaseHistory', 'trustSafetyI123'], edge: ['moderate-photo (right after; safe in either order: it skips the hashes while the function is missing)'] },
+  20270369: { journeys: ['reviewCaseHistory', 'trustSafetyI123', 'behaviorReviewSignals'], live: ['reviewCaseAdminSignedIn.live.js (NEARBY_POST_DEPLOY_0369=1)'],
+    manual: ['website (unpublished build, owner approval to publish): admin signs in, Admin review lists the queue; a non-admin account sees "Admins only" and every call refused'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
@@ -48,7 +52,7 @@ const OTHERS = {
     check: 'REVIEWER_EMAIL set FIRST; App Review number signs in once with the PIN; 6 wrong PINs from one address = the 6th refused (429); src/utils/reviewLoginConcurrency.test.js covers parallel guesses' },
   'report-presence': { rollback: 'redeploy the live bundle as recovered (git show 582c727e^:supabase/functions/report-presence/index.ts)',
     check: 'a normal presence report still 200; behaviorReviewSignals location block on prod' },
-  'moderate-photo': { rollback: 'redeploy the live bundle recovered 2026-10-28', check: 'journey photoScreeningBinding; a real photo upload on the phone is screened' },
+  'moderate-photo': { rollback: 'redeploy the live bundle recovered 2026-10-28 (or the 0349 version)', check: 'journey photoScreeningBinding; a real photo upload on the phone is screened; with 0368 live, private.photo_perceptual_hashes gets 6 rows for that photo (read-only count)' },
   'b5-auth-settings': { rollback: 'PATCH the "rollback:" values the apply prints', check: 'node scripts/trust-safety/b5-auth-settings.js verify, then the live sign-in tests' },
   'captcha-settings': { rollback: 'NEARBY_CAPTCHA_APPROVAL=captcha-off node scripts/trust-safety/captcha-settings.js disable (instant)',
     check: 'fresh sign-in by phone code on every installed build (shows no error; the code arrives); live sign-in tests (link path); website sign-in' },

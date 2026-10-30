@@ -3,6 +3,8 @@ import { secretKey } from '../_shared/supabaseKeys.ts';
 
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
+import jpeg from 'npm:jpeg-js@0.4.4';
+import { perceptualHashes } from '../_shared/perceptualHash.js';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = secretKey()!;
@@ -172,6 +174,27 @@ serve(async (req) => {
       if (fpError && fpError.code !== 'PGRST202') console.error('moderate-photo fingerprint not recorded:', fpError.message);
     } catch (fpErr) {
       console.error('moderate-photo fingerprint failed:', fpErr);
+    }
+
+    // 20270368: perceptual hashes of the same bytes (whole, centre 90%, centre 80%, each also mirrored) for admin near-duplicate review.
+    // JPEG only (the app always uploads JPEG); anything else, or a file that can't be decoded, gets no hash and exact
+    // matching still applies. Never sent anywhere else; never affects screening. Before 20270368 the function doesn't
+    // exist and this is skipped.
+    try {
+      if (imageBytes.length > 2 && imageBytes[0] === 0xff && imageBytes[1] === 0xd8) {
+        const pixels = jpeg.decode(imageBytes, { useTArray: true, formatAsRGBA: true, maxResolutionInMP: 40, maxMemoryUsageInMB: 256 });
+        const hashes = perceptualHashes(pixels);
+        if (hashes.length) {
+          const { error: phError } = await admin.rpc('record_photo_perceptual_hashes', {
+            p_user: userId,
+            p_object_id: screenedObjectId,
+            p_hashes: hashes,
+          });
+          if (phError && phError.code !== 'PGRST202') console.error('moderate-photo similarity hashes not recorded:', phError.message);
+        }
+      }
+    } catch (phErr) {
+      console.error('moderate-photo similarity hashes failed:', phErr);
     }
 
     let binaryString = '';
