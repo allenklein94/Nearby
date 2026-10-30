@@ -51,9 +51,13 @@ Pre-flight (before any check; a failure here = stop and rebuild, never record pr
 
 Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one phone, no seed needed unless noted):
 0. Account basics on the new build (2026-10-29; client paths rewritten for the trust & safety set; any failure = Sev 1, stop):
-   (a) sign out + sign in with your own account; Home loads; (b) Profile shows your own details and Edit Profile saves one
+   (a) sign out + sign in with your own EXISTING account; Home loads. Turnstile on this first sign-in (owner 2026-10-30;
+   Supabase Auth CAPTCHA stays OFF until this passes): note the exact time you tap send; the SMS arrives; no unexpected
+   ~15-second wait before the code is sent (a visible Cloudflare tick box is allowed, tick it); afterwards the owner checks
+   Cloudflare Turnstile Analytics for this widget shows a solved challenge at that time (the app logs no token); (b) Profile shows your own details and Edit Profile saves one
    small change (then revert it); (c) open another person's profile (a friend or applereview); (d) Settings > Notifications
-   still on, then ask Claude for one test push and confirm it arrives; (e) Plans opens with no error; (f) REAL SMS
+   still on, then ask Claude for one test push and confirm it arrives; (e) Plans opens with no error; (f) MOVED OUT of Tier 1 (owner 2026-10-30): a separate,
+   controlled test after Tier 1, with an unused number and planned cleanup. REAL SMS
    verification (owner 2026-10-29: required before Session B, never replaced by the seed's fixture phones): sign out, sign
    up with a real phone number not already on an account, receive the text, enter the code, finish onboarding (C2); also
    enter one wrong code first and confirm it is refused. Note the account for later cleanup (it writes real rows).
