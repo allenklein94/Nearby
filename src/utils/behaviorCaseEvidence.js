@@ -18,7 +18,7 @@ export function behaviorEvidenceLines(evidence) {
     const within = Number.isFinite(sig.window_minutes) ? ` within ${sig.window_minutes} min` : '';
     switch (sig.kind) {
       case 'repeated_messages':
-        return `Same message sent into ${sig.conversations} conversations${within}`;
+        return `Same message sent to ${sig.recipients} different recipients${within}`;
       case 'join_burst':
         return `Joined ${sig.gatherings} gatherings${within}`;
       case 'location_switching':

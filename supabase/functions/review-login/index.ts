@@ -11,8 +11,27 @@ const REVIEW_LOGIN_PIN = Deno.env.get('REVIEW_LOGIN_PIN');
 const REVIEWER_EMAIL = Deno.env.get('REVIEWER_EMAIL'); // live v6 has the address inline; kept out of this public repo
 const MAX_ATTEMPTS = 5;
 const WINDOW_MINUTES = 15;
+// 2026-10-30 (final gap audit, staged, NOT deployed): the per-IP limit keys on the FIRST x-forwarded-for entry, which a
+// caller can set, so rotating it would allow unlimited PIN guesses. A GLOBAL cap on failed attempts (all callers) bounds
+// brute force regardless of the address; the cost is that a flood can lock the reviewer login for the window, acceptable
+// for a path used only during App Review. No PIN configured = the path is closed. Constant-time comparison.
+const GLOBAL_MAX_FAILURES = 20;
+function samePin(a, b) {
+  const x = new TextEncoder().encode(String(a));
+  const y = new TextEncoder().encode(String(b));
+  let diff = x.length ^ y.length;
+  for(let i = 0; i < Math.max(x.length, y.length); i++)diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
 serve(async (req)=>{
   try {
+    if (!REVIEW_LOGIN_PIN || !REVIEWER_EMAIL) {
+      return new Response(JSON.stringify({
+        error: 'Invalid code'
+      }), {
+        status: 401
+      });
+    }
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
     // Rate-limit by IP before checking the PIN at all — without
     // this, the PIN could be brute-forced by simply calling this
@@ -24,7 +43,11 @@ serve(async (req)=>{
       count: 'exact',
       head: true
     }).eq('ip_address', ip).gte('attempted_at', windowStart);
-    if ((count ?? 0) >= MAX_ATTEMPTS) {
+    const { count: allFailures } = await admin.from('review_login_attempts').select('id', {
+      count: 'exact',
+      head: true
+    }).gte('attempted_at', windowStart);
+    if ((count ?? 0) >= MAX_ATTEMPTS || (allFailures ?? 0) >= GLOBAL_MAX_FAILURES) {
       return new Response(JSON.stringify({
         error: 'Too many attempts. Try again later.'
       }), {
@@ -32,7 +55,7 @@ serve(async (req)=>{
       });
     }
     const { pin } = await req.json();
-    if (!pin || pin !== REVIEW_LOGIN_PIN) {
+    if (!pin || !samePin(pin, REVIEW_LOGIN_PIN)) {
       await admin.from('review_login_attempts').insert({
         ip_address: ip
       });

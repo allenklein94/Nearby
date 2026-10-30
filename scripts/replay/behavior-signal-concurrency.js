@@ -3,7 +3,7 @@
 // (NEARBY_LOCAL_DB_URL; refuses anything else). A journey is one transaction and cannot race, so here separate sessions
 // really overlap, each holding its transaction open before committing.
 //   1. one person sends the same message into 8 conversations from 8 parallel sessions: every message is delivered, they
-//      are counted TOGETHER (one signal, conversations = 8, one open case), no deadlock.
+//      are counted TOGETHER (one signal, recipients = 8, one open case), no deadlock.
 //   2. six people each send their 5th identical message at the same moment while the queue has room for 3 more cases:
 //      exactly 3 new cases, 6 signals noted (flood protection holds under a race).
 //   3. one person joins 15 gatherings from 15 parallel sessions: every join approved (never capped), one join_burst
@@ -74,7 +74,7 @@ async function together(steps) {
     // only the limits this script would otherwise hit as a side effect (restored afterwards)
     await admin.query(`delete from private.rate_limit_rules where action in ('direct_message', 'gathering_create')`);
     await admin.query(`update private.behavior_signal_settings set
-      repeat_msg_min_conversations = 5, repeat_msg_window_minutes = 60, repeat_msg_min_chars = 20, repeat_msg_min_similarity = 0.8,
+      repeat_msg_min_recipients = 5, repeat_msg_window_minutes = 60, repeat_msg_min_chars = 20, repeat_msg_min_similarity = 0.8,
       join_burst_min_gatherings = 15, join_burst_window_minutes = 60, location_min_cells = 3, location_window_minutes = 60,
       limit_burst_min_actions = 3, limit_burst_window_minutes = 60, review_cases_enabled = true, case_min_signal_kinds = 2,
       case_window_hours = 24, case_alone_kinds = array['repeated_messages', 'limit_burst'], max_new_cases_per_day = 1000 where id`);
@@ -88,11 +88,11 @@ async function together(steps) {
     for (const r of recipients) sMatches.push(await match(s, r));
     let run = await together(sMatches.map((m) => dm(s, m)));
     const delivered = (await admin.query(`select count(*)::int n from messages where sender_id = $1`, [s])).rows[0].n;
-    const sig = (await admin.query(`select count(*)::int n, max((evidence ->> 'conversations')::int) conv from private.behavior_signals where user_id = $1`, [s])).rows[0];
+    const sig = (await admin.query(`select count(*)::int n, max((evidence ->> 'recipients')::int) conv from private.behavior_signals where user_id = $1`, [s])).rows[0];
     const sCases = (await admin.query(`select count(*)::int n from private.account_review_cases where signal = 'behavior' and subject_user = $1 and status = 'open'`, [s])).rows[0].n;
     check(run.results.every((r) => r.ok), `every session committed (${run.results.filter((r) => !r.ok).map((r) => r.error).join('; ') || 'no errors'}), ${run.ms} ms`);
     check(delivered === 8, `all 8 messages delivered (${delivered})`);
-    check(sig.n === 1 && sig.conv === 8, `one signal row counting all 8 conversations together (rows ${sig.n}, conversations ${sig.conv})`);
+    check(sig.n === 1 && sig.conv === 8, `one signal row counting all 8 recipients together (rows ${sig.n}, recipients ${sig.conv})`);
     check(sCases === 1, `one open case (${sCases})`);
 
     console.log('2. six people send their 5th identical message at the same moment; queue has room for 3');

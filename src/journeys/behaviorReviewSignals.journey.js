@@ -22,7 +22,7 @@ function as(step, sub, stmt, value = `'ok'::text`, role = 'authenticated') {
 }
 const rec = (step, value) => `log := log || jsonb_build_array(jsonb_build_object('step', '${step}', 'ok', true, 'data', to_jsonb(${value})));`;
 const PEOPLE = ['v_p1', 'v_p2', 'v_p3', 'v_p4', 'v_p5', 'v_p6'];
-const SENDERS = ['v_s', 'v_q', 'v_r', 'v_v', 'v_short'];
+const SENDERS = ['v_s', 'v_q', 'v_r', 'v_v', 'v_short', 'v_t', 'v_w', 'v_sh'];
 const ACTORS = [...PEOPLE, ...SENDERS, 'v_h', 'v_j', 'v_l', 'v_b', 'v_g', 'v_admin', 'v_owner'];
 const SPAM = 'Check out my new deal at the shop downtown today';
 const signals = (u, kind) => `(select count(*) from private.behavior_signals where user_id = ${u}${kind ? ` and kind = '${kind}'` : ''})`;
@@ -48,6 +48,11 @@ d('journey: behaviour review signals (20270363)', () => {
 
   -- 1. OFF until approved: defaults, then a spammer's 6 identical messages leave nothing
   ${rec('defaults', `(select to_jsonb(x) - 'updated_at' - 'id' from private.behavior_signal_settings x)`)}
+  -- the off state itself (with 20270365 applied the defaults are the approved numbers; journey behaviorSignalThresholds)
+  update private.behavior_signal_settings set repeat_msg_min_recipients = null, repeat_msg_window_minutes = null,
+    repeat_msg_min_chars = null, repeat_msg_min_similarity = null, join_burst_min_gatherings = null, join_burst_window_minutes = null,
+    location_min_cells = null, location_window_minutes = null, limit_burst_min_actions = null, limit_burst_window_minutes = null,
+    review_cases_enabled = false, case_min_signal_kinds = null, case_window_hours = null, case_alone_kinds = '{}', max_new_cases_per_day = null where id;
   ${as('off_spam', 'v_s', dm('v_s', PEOPLE, `'${SPAM}'`))}
   ${rec('off_left_nothing', `jsonb_build_object('events', (select count(*) from private.behavior_events), 'signals', (select count(*) from private.behavior_signals),
       'cases', (select count(*) from private.account_review_cases where signal = 'behavior'))`)}
@@ -55,7 +60,7 @@ d('journey: behaviour review signals (20270363)', () => {
 
   -- the PROPOSED numbers (owner approval pending), this transaction only
   update private.behavior_signal_settings set
-    repeat_msg_min_conversations = 5, repeat_msg_window_minutes = 60, repeat_msg_min_chars = 20, repeat_msg_min_similarity = 0.8,
+    repeat_msg_min_recipients = 5, repeat_msg_window_minutes = 60, repeat_msg_min_chars = 20, repeat_msg_min_similarity = 0.8,
     join_burst_min_gatherings = 15, join_burst_window_minutes = 60,
     location_min_cells = 3, location_window_minutes = 60,
     limit_burst_min_actions = 3, limit_burst_window_minutes = 60,
@@ -101,6 +106,23 @@ d('journey: behaviour review signals (20270363)', () => {
       from unnest(array[${PEOPLE.slice(0, 5).join(', ')}]) p;
   perform set_config('request.jwt.claims', '', true);
   ${rec('business_none', signals('v_owner'))}
+
+  -- distinct recipients, not threads: 3 people by DM + the same business in two threads (1) + a gathering whose only other
+  -- member is one of those people (0) = 4 recipients, nothing; a 4th person by DM = 5, a signal
+  insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public)
+    values (v_p1, 'P1 hosts', now() + interval '2 days', 10.02, -10.03, 'Pickleball', 'j', 'everyone', true) returning id into v_tmp;
+  insert into gathering_interest (gathering_id, user_id, status) values (v_tmp, v_t, 'approved');
+  insert into business_followers (brand_partner_id, user_id) values (v_partner, v_t);
+  ${as('threads_same_people', 'v_t', `${dm('v_t', PEOPLE.slice(0, 3), `'${SPAM}'`)};
+      insert into business_messages (partner_id, sender_id, from_business, body, conversation_with_id) values (v_partner, v_t, false, '${SPAM}', v_t), (v_partner, v_t, false, '${SPAM}!', v_t);
+      insert into gathering_messages (gathering_id, sender_id, body) values (v_tmp, v_t, '${SPAM}')`)}
+  ${rec('threads_none', signals('v_t'))}
+  ${as('fourth_person', 'v_t', dm('v_t', ['v_p4'], `'${SPAM}'`))}
+  ${rec('fourth_signal', `(select evidence from private.behavior_signals where user_id = v_t)`)}
+  -- shared-gathering cards (the only server-written message) never count
+  ${as('share_cards', 'v_sh', `perform share_gathering_in_chat((select id from matches where user_a = least(v_sh, p) and user_b = greatest(v_sh, p)), v_g0)
+      from unnest(array[${PEOPLE.join(', ')}]) p`, `(select count(*) from messages where sender_id = v_sh and gathering_id = v_g0)`)}
+  ${rec('share_none', signals('v_sh'))}
 
   -- 3. join bursts: never capped; a series counts once; an invited join and a re-join never count
   for i in 1..13 loop
@@ -152,10 +174,27 @@ d('journey: behaviour review signals (20270363)', () => {
   update private.behavior_signal_settings set max_new_cases_per_day =
     (select count(*) from private.account_review_cases where signal = 'behavior' and opened_at > now() - interval '24 hours') where id;
   ${as('capped_spam', 'v_q', dm('v_q', PEOPLE.slice(0, 5), `'${SPAM}'`))}
-  ${rec('capped', `jsonb_build_object('signals', ${signals('v_q')}, 'cases', ${openCases('v_q')})`)}
-  update private.behavior_signal_settings set max_new_cases_per_day = max_new_cases_per_day + 1 where id;
-  ${as('uncapped_spam', 'v_q', dm('v_q', ['v_p6'], `'${SPAM}'`))}
-  ${rec('uncapped', openCases('v_q'))}
+  ${rec('capped', `jsonb_build_object('signals', ${signals('v_q')}, 'cases', ${openCases('v_q')},
+      'overflow_today', (select suppressed from private.behavior_case_overflow where day = (now() at time zone 'utc')::date),
+      'waiting', (select times from private.behavior_case_waiting where user_id = v_q))`)}
+  ${as('capped_again', 'v_q', dm('v_q', ['v_p6'], `'${SPAM}'`))}
+  ${rec('capped_again_counts', `jsonb_build_object('overflow_today', (select suppressed from private.behavior_case_overflow where day = (now() at time zone 'utc')::date),
+      'waiting', (select times from private.behavior_case_waiting where user_id = v_q), 'cases', ${openCases('v_q')})`)}
+  -- a second person while still full: waiting too; the admin sees both and opens one case by hand (outside the cap)
+  ${as('capped_w', 'v_w', dm('v_w', PEOPLE.slice(0, 5), `'${SPAM}'`))}
+  ${as('admin_overflow', 'v_admin', `select admin_list_behavior_case_overflow() into v_out`,
+      `jsonb_build_object('today', (select (d ->> 'suppressed')::int from jsonb_array_elements(v_out -> 'days') d where (d ->> 'day')::date = (now() at time zone 'utc')::date),
+        'waiting', (select jsonb_agg(w ->> 'user_id' order by w ->> 'user_id') from jsonb_array_elements(v_out -> 'waiting') w where (w ->> 'user_id')::uuid in (v_q, v_w)),
+        'kinds', (select jsonb_agg(distinct e ->> 'kind') from jsonb_array_elements(v_out -> 'waiting') w, jsonb_array_elements(w -> 'evidence' -> 'signals') e where (w ->> 'user_id')::uuid = v_w),
+        'text_free', v_out::text !~* '(deal|downtown)', 'expected_waiting', (select jsonb_agg(x order by x) from unnest(array[v_q::text, v_w::text]) x))`)}
+  ${as('non_admin_overflow', 'v_s', `perform admin_list_behavior_case_overflow()`)}
+  ${as('non_admin_open', 'v_s', `perform admin_open_behavior_case(v_w)`)}
+  ${as('admin_open_call', 'v_admin', `perform admin_open_behavior_case(v_w)`)}
+  ${rec('admin_open', `jsonb_build_object('cases', ${openCases('v_w')}, 'waiting', (select count(*) from private.behavior_case_waiting where user_id = v_w))`)}
+  ${as('admin_open_not_waiting', 'v_admin', `perform admin_open_behavior_case(v_s)`)}
+  update private.behavior_signal_settings set max_new_cases_per_day = max_new_cases_per_day + 2 where id;
+  ${as('uncapped_spam', 'v_q', dm('v_q', ['v_p6'], `'${SPAM} again'`))}
+  ${rec('uncapped', `jsonb_build_object('cases', ${openCases('v_q')}, 'waiting', (select count(*) from private.behavior_case_waiting where user_id = v_q))`)}
 
   -- 7. review switched off: signals still noted, no case
   update private.behavior_signal_settings set review_cases_enabled = false where id;
@@ -197,16 +236,19 @@ d('journey: behaviour review signals (20270363)', () => {
 
   test('everything is off until the owner approves numbers: nothing recorded, noted or opened', () => {
     const def = data('defaults');
-    expect(def.review_cases_enabled).toBe(false);
+    if (def.review_cases_enabled) return; // 20270365 applied: proven by journey behaviorSignalThresholds
     expect(def.case_alone_kinds).toEqual([]);
     Object.entries(def).filter(([k]) => !['review_cases_enabled', 'case_alone_kinds'].includes(k)).forEach(([, v]) => expect(v).toBeNull());
+  });
+
+  test('switched off, a spammer leaves nothing: nothing recorded, noted or opened', () => {
     expect(data('off_spam')).toBe('ok');
     expect(data('off_left_nothing')).toEqual({ events: 0, signals: 0, cases: 0 });
   });
 
   test('repeated messages: the 5th distinct conversation notes one signal and opens one case; more of the same dedupes', () => {
     expect(data('after_4')).toBe(0);
-    expect(data('after_5')).toEqual({ signals: 1, cases: 1, evidence: { conversations: 5, window_minutes: 60, chars: 48 } });
+    expect(data('after_5')).toEqual({ signals: 1, cases: 1, evidence: { recipients: 5, window_minutes: 60, chars: 48 } });
     expect(data('dedupe')).toEqual({ signal_rows: 1, hits: 3, cases: 1 });
     expect(data('near_identical_signal').signals).toBe(1);
     expect(data('near_identical_signal').similarity).toBeGreaterThanOrEqual(0.8);
@@ -263,9 +305,31 @@ d('journey: behaviour review signals (20270363)', () => {
   });
 
   test('flood protection and the review switch', () => {
-    expect(data('capped')).toEqual({ signals: 1, cases: 0 });
-    expect(data('uncapped')).toBe(1);
+    expect(data('capped')).toEqual({ signals: 1, cases: 0, overflow_today: 1, waiting: 1 });
+    expect(data('capped_again_counts')).toEqual({ overflow_today: 2, waiting: 2, cases: 0 });
+    expect(data('uncapped')).toEqual({ cases: 1, waiting: 0 });
     expect(data('review_off')).toEqual({ signals: 1, cases: 0 });
+  });
+
+  test('repeated messages count distinct recipients: threads with the same person or business count once; share cards never', () => {
+    expect(data('threads_same_people')).toBe('ok');
+    expect(data('threads_none')).toBe(0);
+    expect(data('fourth_signal')).toEqual({ recipients: 5, window_minutes: 60, chars: 48 });
+    expect(data('share_cards')).toBe(6);
+    expect(data('share_none')).toBe(0);
+  });
+
+  test('a full queue is never silent: counted per day, people waiting, admins list them and open a case by hand', () => {
+    const o = data('admin_overflow');
+    expect(o.today).toBe(3);
+    expect(o.waiting).toEqual(o.expected_waiting);
+    expect(o.kinds).toEqual(['repeated_messages']);
+    expect(o.text_free).toBe(true);
+    expect(data('non_admin_overflow').hint).toBe('admin_only');
+    expect(data('non_admin_open').hint).toBe('admin_only');
+    expect(data('admin_open_call')).toBe('ok');
+    expect(data('admin_open')).toEqual({ cases: 1, waiting: 0 });
+    expect(data('admin_open_not_waiting').hint).toBe('not_waiting');
   });
 
   test('admins see counts only; nobody else sees anything; short retention', () => {

@@ -4,10 +4,12 @@
 -- signal is noted and no case opens until the owner approves numbers in a separate migration (as 0356 -> 0358).
 --
 -- What it can detect (deterministic rules, no AI, no score):
---   repeated_messages   the same (or near-identical, trigram) text of at least N characters sent by one person into at
---                       least N distinct conversations within a window. A group chat is ONE conversation however many
---                       people are in it. Not counted: chats of the sender's own gatherings / communities / plans
---                       (announcements to your own groups), replies a business sends from its business side.
+--   repeated_messages   the same (or near-identical, trigram) text of at least N characters sent by one person to at
+--                       least N DISTINCT RECIPIENTS within a window (a person, a business, or a group's set of other
+--                       members; threads with the same person count once; a group chat is one recipient however many
+--                       people are in it). Not counted: the sender's own gatherings / communities / plans (announcements
+--                       to your own groups), a business replying from its business side, shared-gathering cards and
+--                       media-only messages (the only server-written messages).
 --   join_burst          joins of at least N distinct gatherings within a window. A recurring series counts once; leaving
 --                       and re-joining one gathering counts once; joining a gathering you were invited to never counts;
 --                       status changes (RSVP / approval / waitlist) never count (INSERT only). Joining is NEVER capped.
@@ -22,8 +24,10 @@
 -- A signal is a private note about one person. A REVIEW CASE (the 0357 queue, signal 'behavior') opens only when
 -- review_cases_enabled AND either signals of at least case_min_signal_kinds distinct kinds fall within case_window_hours
 -- (corroboration), or a kind listed in case_alone_kinds (each intrinsically multi-evidence) is present. One open case per
--- person (later signals extend it); at most max_new_cases_per_day new behaviour cases a day (flood protection; signals are
--- still noted and a later signal re-evaluates). NOTHING here bans, suspends, hides, restricts or limits anyone, or tells
+-- person (later signals extend it); at most max_new_cases_per_day new behaviour cases a day (flood protection). Overflow is
+-- never silent: each suppressed case adds to a per-day count (private.behavior_case_overflow) and keeps the person on a
+-- waiting list (private.behavior_case_waiting: id + times only, never content), which admins list and can open a case from
+-- (admin_list_behavior_case_overflow / admin_open_behavior_case); a later signal also re-evaluates. NOTHING here bans, suspends, hides, restricts or limits anyone, or tells
 -- anyone; acting on a case is the admin's existing suspension (20270351). Reports are not an input.
 -- Never breaks the action it observes: every detector runs in its own exception block. Concurrency: while a detector is
 -- on, it holds a per-person transaction lock (behavior_detect, then behavior_signal, then the queue lock: always that
@@ -32,7 +36,7 @@
 
 create table if not exists private.behavior_signal_settings (
   id boolean primary key default true check (id),
-  repeat_msg_min_conversations integer check (repeat_msg_min_conversations is null or repeat_msg_min_conversations >= 2),
+  repeat_msg_min_recipients integer check (repeat_msg_min_recipients is null or repeat_msg_min_recipients >= 2),
   repeat_msg_window_minutes integer check (repeat_msg_window_minutes is null or repeat_msg_window_minutes between 5 and 1440),
   repeat_msg_min_chars integer check (repeat_msg_min_chars is null or repeat_msg_min_chars between 1 and 500),
   repeat_msg_min_similarity real check (repeat_msg_min_similarity is null or repeat_msg_min_similarity between 0.6 and 1),
@@ -72,8 +76,19 @@ create table if not exists private.behavior_signals (
   evidence jsonb not null default '{}'::jsonb
 );
 create index if not exists behavior_signals_user_idx on private.behavior_signals (user_id, last_at desc);
-revoke all on private.behavior_signal_settings, private.behavior_events, private.behavior_signals
-  from public, anon, authenticated;
+-- Overflow (queue full): a per-day count and the people waiting for a case (no content, no evidence copy).
+create table if not exists private.behavior_case_overflow (
+  day date primary key,
+  suppressed integer not null default 0 check (suppressed >= 0)
+);
+create table if not exists private.behavior_case_waiting (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  first_at timestamptz not null default now(),
+  last_at timestamptz not null default now(),
+  times integer not null default 1 check (times >= 1)
+);
+revoke all on private.behavior_signal_settings, private.behavior_events, private.behavior_signals,
+  private.behavior_case_overflow, private.behavior_case_waiting from public, anon, authenticated;
 
 -- The ONE review queue (0357) also holds behaviour cases: one subject person, evidence = counts only (never message text,
 -- never a location).
@@ -146,6 +161,11 @@ begin
   perform pg_advisory_xact_lock(hashtext('behavior_case_queue'));
   if (select count(*) from private.account_review_cases
        where signal = 'behavior' and opened_at > now() - interval '24 hours') >= s.max_new_cases_per_day then
+    -- queue full: never silent. Count it for the day and keep the person waiting (admins see both).
+    insert into private.behavior_case_overflow (day, suppressed) values ((now() at time zone 'utc')::date, 1)
+      on conflict (day) do update set suppressed = private.behavior_case_overflow.suppressed + 1;
+    insert into private.behavior_case_waiting (user_id) values (p_user)
+      on conflict (user_id) do update set last_at = now(), times = private.behavior_case_waiting.times + 1;
     return;
   end if;
   insert into private.account_review_cases (signal, reason, subject_user, evidence)
@@ -154,6 +174,7 @@ begin
     returning id into v_case;
   if v_case is not null then
     insert into private.account_review_case_members (case_id, user_id) values (v_case, p_user) on conflict do nothing;
+    delete from private.behavior_case_waiting where user_id = p_user;
   end if;
 end;
 $function$;
@@ -184,7 +205,11 @@ end;
 $function$;
 revoke all on function private.behavior_note_signal(uuid, text, jsonb) from public, anon, authenticated;
 
--- repeated_messages: called after a person's own message insert.
+-- repeated_messages: called after a person's own message insert. Counts DISTINCT RECIPIENTS, never threads: a 1:1 chat =
+-- the other person, a business chat = that business (however many threads), a group chat = its other members as one
+-- recipient set (two groups with the same people = one; a group whose people are all already counted through 1:1 chats
+-- adds nothing). Not counted: the sender's own gatherings / communities / plans, a business replying from its business side,
+-- shared-gathering cards and media-only messages (no text; the only server-written message is the empty-bodied share card).
 create or replace function private.behavior_check_repeated_message(p_user uuid, p_body text)
 returns void
 language plpgsql
@@ -198,7 +223,7 @@ declare
   v_n integer;
 begin
   select * into s from private.behavior_signal_settings where id;
-  if s.repeat_msg_min_conversations is null or s.repeat_msg_window_minutes is null or s.repeat_msg_min_chars is null
+  if s.repeat_msg_min_recipients is null or s.repeat_msg_window_minutes is null or s.repeat_msg_min_chars is null
      or s.repeat_msg_min_similarity is null then
     return;
   end if;
@@ -206,31 +231,59 @@ begin
   -- one detector run per person at a time: a parallel burst then sees its own earlier messages once they commit
   perform pg_advisory_xact_lock(hashtext('behavior_detect:' || p_user::text));
   v_since := now() - make_interval(mins => s.repeat_msg_window_minutes);
-  select count(distinct conv) into v_n from (
-      select 'm:' || m.match_id as conv, m.body from messages m
-       where m.sender_id = p_user and m.created_at > v_since and m.body is not null
+  with sent as (
+      select 'm'::text as kind, m.match_id as ref, m.body from messages m
+       where m.sender_id = p_user and m.created_at > v_since and m.body is not null and m.gathering_id is null
     union all
-      select 'g:' || gm.gathering_id, gm.body from gathering_messages gm
+      select 'g', gm.gathering_id, gm.body from gathering_messages gm
        where gm.sender_id = p_user and gm.created_at > v_since
          and not exists (select 1 from gatherings g where g.id = gm.gathering_id and g.host_id = p_user)
     union all
-      select 'c:' || cm.community_id, cm.body from community_messages cm
+      select 'c', cm.community_id, cm.body from community_messages cm
        where cm.sender_id = p_user and cm.created_at > v_since
          and not exists (select 1 from communities c where c.id = cm.community_id and c.creator_id = p_user)
     union all
-      select 'p:' || pm.plan_id, pm.body from plan_messages pm
+      select 'p', pm.plan_id, pm.body from plan_messages pm
        where pm.sender_id = p_user and pm.created_at > v_since
          and not exists (select 1 from plans pl where pl.id = pm.plan_id and pl.created_by = p_user)
     union all
-      select 'b:' || bm.partner_id || ':' || coalesce(bm.conversation_with_id::text, ''), bm.body from business_messages bm
+      select 'b', bm.partner_id, bm.body from business_messages bm
        where bm.sender_id = p_user and bm.created_at > v_since and not coalesce(bm.from_business, false)
-  ) x
-  where private.normalized_message(x.body) = v_norm
-     or (s.repeat_msg_min_similarity < 1
-         and private.name_similarity(private.normalized_message(x.body), v_norm) >= s.repeat_msg_min_similarity);
-  if v_n >= s.repeat_msg_min_conversations then
+  ),
+  same as (  -- distinct places that received this text
+    select distinct kind, ref from sent x
+     where private.normalized_message(x.body) = v_norm
+        or (s.repeat_msg_min_similarity < 1
+            and private.name_similarity(private.normalized_message(x.body), v_norm) >= s.repeat_msg_min_similarity)
+  ),
+  units as (
+      select 'u:' || (case when mt.user_a = p_user then mt.user_b else mt.user_a end)::text as unit,
+             array[case when mt.user_a = p_user then mt.user_b else mt.user_a end] as people
+        from same join matches mt on mt.id = same.ref where same.kind = 'm'
+    union all
+      select 'b:' || same.ref::text, null::uuid[] from same where same.kind = 'b'
+    union all
+      select 'grp', array(select distinct u from (
+                 select g.host_id as u from gatherings g where g.id = same.ref
+                 union select gi.user_id from gathering_interest gi where gi.gathering_id = same.ref and gi.status = 'approved') x
+               where u is not null and u <> p_user order by u)
+        from same where same.kind = 'g'
+    union all
+      select 'grp', array(select distinct cm.user_id from community_members cm
+                           where cm.community_id = same.ref and cm.user_id <> p_user order by cm.user_id)
+        from same where same.kind = 'c'
+    union all
+      select 'grp', array(select distinct r.user_id from public._plan_participant_rows(same.ref) r
+                           where r.user_id is not null and r.user_id <> p_user order by r.user_id)
+        from same where same.kind = 'p'
+  ),
+  direct as (select coalesce(array_agg(people[1]), '{}'::uuid[]) as people from units where unit like 'u:%')
+  select count(distinct case when u.unit = 'grp' then 'g:' || u.people::text else u.unit end) into v_n
+    from units u, direct d
+   where u.unit <> 'grp' or (cardinality(u.people) > 0 and not (u.people <@ d.people));
+  if v_n >= s.repeat_msg_min_recipients then
     perform private.behavior_note_signal(p_user, 'repeated_messages',
-      jsonb_build_object('conversations', v_n, 'window_minutes', s.repeat_msg_window_minutes, 'chars', length(v_norm)));
+      jsonb_build_object('recipients', v_n, 'window_minutes', s.repeat_msg_window_minutes, 'chars', length(v_norm)));
   end if;
 end;
 $function$;
@@ -416,7 +469,8 @@ $function$;
 revoke all on function public.record_location_jump(uuid, text) from public, anon, authenticated;
 grant execute on function public.record_location_jump(uuid, text) to service_role;
 
--- Retention: location cells 1 hour (presence's own), other events 48 hours (longest window 24 h), signals 30 days.
+-- Retention: location cells 1 hour (presence's own), other events 48 hours (longest window 24 h), signals and the waiting
+-- list 30 days, daily overflow counts 90 days.
 create or replace function private.purge_behavior_signals()
 returns void
 language sql
@@ -426,6 +480,8 @@ as $function$
   delete from private.behavior_events where kind = 'location_jump' and at < now() - interval '1 hour';
   delete from private.behavior_events where at < now() - interval '48 hours';
   delete from private.behavior_signals where last_at < now() - interval '30 days';
+  delete from private.behavior_case_waiting where last_at < now() - interval '30 days';
+  delete from private.behavior_case_overflow where day < (now() at time zone 'utc')::date - 90;
 $function$;
 revoke all on function private.purge_behavior_signals() from public, anon, authenticated;
 select cron.unschedule(jobid) from cron.job where jobname = 'purge-behavior-signals';
@@ -460,3 +516,67 @@ end;
 $function$;
 revoke all on function public.admin_list_account_review_cases(boolean) from public, anon;
 grant execute on function public.admin_list_account_review_cases(boolean) to authenticated;
+
+-- Overflow for admins: the daily suppressed counts (last 14 days) and who is waiting, with their current signals (counts only).
+create or replace function public.admin_list_behavior_case_overflow()
+returns jsonb
+language plpgsql
+stable
+security definer
+set search_path to 'public'
+as $function$
+begin
+  if auth.uid() is null or not check_is_admin(auth.uid()) then
+    raise exception 'Admins only' using errcode = '42501', hint = 'admin_only';
+  end if;
+  return jsonb_build_object(
+    'days', coalesce((select jsonb_agg(jsonb_build_object('day', o.day, 'suppressed', o.suppressed) order by o.day desc)
+                        from private.behavior_case_overflow o where o.day > (now() at time zone 'utc')::date - 14), '[]'::jsonb),
+    'waiting', coalesce((select jsonb_agg(jsonb_build_object(
+        'user_id', w.user_id, 'display_name', p.display_name, 'suspended', p.suspended_at is not null,
+        'first_at', w.first_at, 'last_at', w.last_at, 'times', w.times,
+        'evidence', jsonb_build_object('signals', (select coalesce(jsonb_agg(jsonb_build_object('kind', b.kind, 'first_at', b.first_at,
+                       'last_at', b.last_at, 'hits', b.hits) || b.evidence order by b.last_at desc), '[]'::jsonb)
+                      from private.behavior_signals b where b.user_id = w.user_id)))
+        order by w.last_at desc)
+      from private.behavior_case_waiting w left join profiles p on p.id = w.user_id), '[]'::jsonb));
+end;
+$function$;
+revoke all on function public.admin_list_behavior_case_overflow() from public, anon;
+grant execute on function public.admin_list_behavior_case_overflow() to authenticated;
+
+-- An admin opens a case for a waiting person (the admin's own decision, outside the daily cap). Never touches the account.
+create or replace function public.admin_open_behavior_case(user_id_param uuid)
+returns uuid
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_case uuid;
+  v_evidence jsonb;
+begin
+  if auth.uid() is null or not check_is_admin(auth.uid()) then
+    raise exception 'Admins only' using errcode = '42501', hint = 'admin_only';
+  end if;
+  if not exists (select 1 from private.behavior_case_waiting where user_id = user_id_param) then
+    raise exception 'This person is not waiting for review.' using hint = 'not_waiting';
+  end if;
+  perform pg_advisory_xact_lock(hashtext('behavior_signal:' || user_id_param::text));
+  select id into v_case from private.account_review_cases
+   where signal = 'behavior' and subject_user = user_id_param and status = 'open';
+  if v_case is null then
+    select jsonb_agg(jsonb_build_object('kind', kind, 'first_at', first_at, 'last_at', last_at, 'hits', hits) || evidence
+                     order by last_at desc) into v_evidence
+      from private.behavior_signals where user_id = user_id_param;
+    insert into private.account_review_cases (signal, reason, subject_user, evidence)
+      values ('behavior', 'behavior_pattern', user_id_param, jsonb_build_object('signals', coalesce(v_evidence, '[]'::jsonb)))
+      returning id into v_case;
+    insert into private.account_review_case_members (case_id, user_id) values (v_case, user_id_param) on conflict do nothing;
+  end if;
+  delete from private.behavior_case_waiting where user_id = user_id_param;
+  return v_case;
+end;
+$function$;
+revoke all on function public.admin_open_behavior_case(uuid) from public, anon;
+grant execute on function public.admin_open_behavior_case(uuid) to authenticated;

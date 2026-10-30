@@ -74,4 +74,13 @@ describe('recovered functions keep their behaviour', () => {
     expect(rejection).toMatch(/status: 400/);
     expect(s.match(/record_location_jump/g)).toHaveLength(1); // never for an accepted report
   });
+
+  test('review-login: failed PIN guesses are capped for ALL callers, not only per (spoofable) IP; no PIN = closed', () => {
+    const s = src('review-login');
+    expect(s).toMatch(/const GLOBAL_MAX_FAILURES = \d+;/);
+    expect(s).toMatch(/\.gte\('attempted_at', windowStart\);\s*if \(\(count \?\? 0\) >= MAX_ATTEMPTS \|\| \(allFailures \?\? 0\) >= GLOBAL_MAX_FAILURES\)/);
+    expect(s).toMatch(/if \(!REVIEW_LOGIN_PIN \|\| !REVIEWER_EMAIL\)/);
+    expect(s).toMatch(/!samePin\(pin, REVIEW_LOGIN_PIN\)/);
+    expect(s).not.toMatch(/pin !== REVIEW_LOGIN_PIN/);
+  });
 });

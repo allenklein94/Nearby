@@ -668,3 +668,85 @@ with 0348-0364 (rolled back); from-scratch replay 487/487 + journeys 794/794 + a
 queue with room for 3 = exactly 3 cases, 15 parallel joins all approved + one signal); 0364 on the replay 12/12; rollback
 round trips identical (0363 on prod + replay; 0364 with ACL entries sorted, the re-grant only reorders them); Jest 524 /
 7159. Deploy: 0363 then 0364, each its own approval, after 0362.
+
+## 2026-10-30 (later): thresholds approved + final gaps closed (STAGED, NOTHING DEPLOYED)
+
+Owner (2026-10-30): approve the four thresholds with two refinements; close the remaining meaningful gaps (Auth, the
+intention-count leak, regression + post-deploy coverage for 0364); each staged and tested separately, individual approvals,
+nothing deployed. Then freeze the scope and return to build 87 + Tier 1.
+
+### Refinements, folded into 0363 (not yet deployed, so changed in place; its approval hash changes)
+1. Repeated messages count DISTINCT RECIPIENTS, never threads: a 1:1 chat = the other person; a business = one recipient
+   however many threads; a group chat = its other members as one set (two groups with the same people = one; a group whose
+   people are all already counted through 1:1 chats adds nothing). Still excluded: the sender's own gatherings / communities /
+   plans (legitimate group coordination), a business replying from its business side, short messages, and the only
+   server-written messages (shared-gathering cards, media-only). Evidence now says `recipients`.
+2. The 20-a-day case cap is never silent: each suppressed case adds 1 to `private.behavior_case_overflow` (per UTC day,
+   kept 90 days) and keeps the person on `private.behavior_case_waiting` (user id + first/last time + times; no text, no
+   location, no evidence copy; 30 days). Admin-only `admin_list_behavior_case_overflow()` (14 days of counts + who is waiting,
+   with their signal counts) and `admin_open_behavior_case(user)` (the admin's own decision, outside the cap). A later signal
+   still re-evaluates. Still advisory: nothing bans, suspends, hides or limits anyone.
+Journey `behaviorReviewSignals`: + distinct-recipient block (3 DMs + one business in 2 threads + a group of an already-counted
+person = 4, nothing; a 4th person = 5, signal), share cards never count, overflow counted / waiting / listed text-free /
+opened by an admin / refused to non-admins.
+
+### 20270365: the approved numbers (activation)
+5 distinct recipients / 60 min / >= 20 chars / similarity >= 0.8; 15 gatherings / 60 min; 3 rejected far-apart areas / 60 min;
+3 different limits / 60 min; review on, repeated messages or several limits alone, join burst / location only with a second
+kind within 24 h; 20 new cases a day + overflow. Deploy after 0363 (+ `report-presence` redeploy) and 0364, own approval.
+Journey `behaviorSignalThresholds` 2/2 (installed numbers = approved; 5 recipients = one case, all 5 delivered, nobody
+suspended). Rollback = all off again (signals and cases kept).
+
+### 20270366: intention-change count privacy (the leak)
+`get_intention_change_count(user)` gave any signed-in caller anyone's 30-day "looking for" change count, incl. hidden,
+unverified, suspended and blocked-either-way profiles. Now: only yourself or a profile you can already open, by the SAME
+rule as `people_visible_to_me` (20270348; admins see hidden like the profile itself); else null (the app shows nothing, as
+for 0). Signature, grants, client unchanged; depends on 0348's view, so deploy after 0348 (and after 0365 in number order).
+Journey `intentionCountPrivacy` 3/3 (self / open / admin-hidden = count; hidden, unverified, suspended, blocked either way,
+unknown id = null; grants signed-in only). Rollback = production's function verbatim.
+
+### 0364 regression + post-deploy plan (weather fetcher + stall-nudge job)
+Regression (pre-deploy): journey `serverOnlyFunctionGrants` 2/2 (client refused; service role + cron keep them; fails before
+0364). Post-deploy, in order: (1) `scripts/live-verify/server-only-grants-post-deploy.sql` (read-only): client columns false,
+service true, cron job active; (2) `NEARBY_POST_DEPLOY_0364=1 npx jest -c jest.live.config.js src/qa/serverOnlyGrantsSignedIn.live.js`
+with the dedicated test account: both RPCs refused (42501) signed in AND signed out through the real API. Safety gate: it asks
+the catalog first and calls NOTHING while a client can still execute either function (run before deploy on purpose
+2026-10-30: failed closed, nothing called); (3) the same SQL after the next 12:00 UTC: the cron job's latest run `succeeded`
+after the deploy. Baseline today (read-only): clients can execute both (the gap), cron last run 2026-10-29 12:00 `succeeded`.
+Any failure = stop + report; rollback file exists.
+
+### B5 Auth (production setting, NOT applied; `scripts/trust-safety/b5-auth-settings.js`)
+Live config read 2026-10-30: password minimum 6, no character rules, leaked-password check off, CAPTCHA off, password change
+needs neither reauthentication nor the current password, no "password changed" email, email confirmation ON, phone sign-in
+via Twilio Verify, Auth rate limits 30/h (email, SMS, verify, OTP), refresh-token rotation on.
+How Nearby signs in: the app (build 86/87 and the website export) uses ONLY phone code (`signInWithOtp` + `verifyOtp`); it never
+sets or changes a password. All 10 auth accounts nevertheless carry a password hash, so the raw Auth API accepts password
+sign-in and email sign-up (confirmation required; 0352 then blocks social actions without a verified phone; 0356 limits).
+| change | needs | impact on existing users / phone sign-in |
+|---|---|---|
+| password minimum 10 | dashboard/API only (staged script) | checked only when a password is SET; existing passwords still sign in; phone sign-in untouched; dedicated test account already >= 10 |
+| reauthentication for password change | dashboard/API only | a stolen session can't change the password; the app has no password UI, so no app path changes |
+| "your password was changed" email | dashboard/API only (template already set) | email accounts only; nothing for phone-only accounts |
+| leaked-password check (HIBP) | Supabase Pro plan | not in the script; plan-dependent |
+| CAPTCHA (bot protection) | provider choice (hCaptcha / Turnstile) + client integration + a NEW native build on every device BEFORE switching on | switching it on first would break phone sign-in on build 86/87 (Supabase requires the token on OTP requests too). Not staged as a setting; needs an owner decision on the provider |
+| character rules | not proposed | length beats composition rules (NIST 800-63B) |
+Apply: `plan` (read-only) prints current vs proposed + approval code `b5:126c06eaa041a886eacbf236dda3c4acdca9be11cf9d9c65cfd3f28fadad56ff`;
+`apply` refuses without exactly that code (checked: wrong code = refused, nothing sent), PATCHes only the three keys, reads
+back, prints the rollback values. Bot protection today = email confirmation + Twilio Verify + Auth rate limits + 0352's
+verified phone for social actions + 0356/0362 limits; CAPTCHA is the remaining real bot gap.
+
+### review-login (edge function, staged, not redeployed)
+The per-IP PIN limit keyed on a client-settable `x-forwarded-for`, so rotating it allowed unlimited guesses. Added: a global
+cap of 20 failed attempts per 15 min for all callers, constant-time PIN comparison, closed when no PIN / reviewer email is set.
+Guard in `edgeFunctionSourcesGuard.test.js`. Redeploy needs `REVIEWER_EMAIL` set first (still not set) + its own approval.
+
+### Tests (2026-10-30)
+Prod journeys 804/804 with 0348-0366 as prelude (rolled back; the first full run had 14 environmental failures: a deadlock
+between the prelude's DDL and a live production session in `appVersionCompatibility`, and the default 5 s hook timeout in
+`understoodChipChange`; both suites 14/14 on re-run). From-scratch replay 490/490 + journeys 804/804 + all 5 concurrency
+scripts (incl. the updated `behavior-signal-concurrency.js`). Rollback round trips on prod (0348-0364 + 0365 + 0366 +
+rollbacks 0366, 0365): the count function's definition + grants = production's, behaviour settings = 0363's off state.
+Jest 524 suites / 7160 tests. Approval hashes (sha256 prefixes; full in the files): 0363 fce93cb0ae959820 (changed),
+0364 1977580f358ac61c, 0365 6628af479b2b1d0c, 0366 3995f31f363ff7d7; B5 = b5:126c06ea…56ff.
+Deploy order (each its own approval): 0348 ... 0362, 0363 (+ report-presence), 0364 (+ its post-deploy plan), 0365, 0366;
+B5 Auth settings independently (no migration dependency); review-login only after REVIEWER_EMAIL is set.

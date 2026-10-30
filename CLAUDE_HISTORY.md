@@ -1,3 +1,15 @@
+# 2026-10-30: behaviour thresholds approved + final trust & safety gaps (staged, not deployed)
+
+Owner approved the four 0363 thresholds with two refinements, both folded into 0363 before deploy: repeated messages count
+DISTINCT RECIPIENTS (1:1 = the person, a business once however many threads, a group = its member set, already-counted
+people add nothing; own groups, business replies, share cards and media-only messages excluded); the 20-a-day case cap
+keeps a per-day overflow count + a text-free waiting list admins list and open by hand. 20270365 activates the approved
+numbers. 20270366 closes the intention-change-count leak (now the `people_visible_to_me` rule). 0364 gets a gated
+post-deploy live test + read-only SQL check. B5 Auth staged as an approval-gated settings script (min 10, reauthentication,
+change email; CAPTCHA needs a provider + native build; HIBP needs Pro). review-login: global PIN failure cap, constant-time
+compare. Tests: prod journeys 804/804 with 0348-0366; replay 490/490 + 804/804 + 5 concurrency; rollbacks identical; Jest
+524/7160. Details: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`, last section. Scope frozen; next build 87 + Tier 1.
+
 # 2026-10-30: behaviour review signals (20270363) + server-only grants (20270364), built + staged, not deployed
 
 Owner: close the four remaining trust & safety gaps before launch (repeated identical messages, joining dozens of

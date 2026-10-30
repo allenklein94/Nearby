@@ -11,6 +11,8 @@ drop trigger if exists zz_behavior_signal on public.gathering_interest;
 drop function if exists public._behavior_message_inserted();
 drop function if exists public._behavior_gathering_joined();
 drop function if exists public.record_location_jump(uuid, text);
+drop function if exists public.admin_list_behavior_case_overflow();
+drop function if exists public.admin_open_behavior_case(uuid);
 drop function if exists private.purge_behavior_signals();
 drop function if exists private.behavior_check_repeated_message(uuid, text);
 drop function if exists private.behavior_note_limit_reached(uuid, text);
@@ -34,6 +36,8 @@ alter table private.account_review_cases add constraint account_review_cases_sig
 alter table private.account_review_cases drop column if exists evidence;
 alter table private.account_review_cases drop column if exists subject_user;
 alter table private.account_review_cases alter column sha256 set not null;
+drop table if exists private.behavior_case_waiting;
+drop table if exists private.behavior_case_overflow;
 drop table if exists private.behavior_signals;
 drop table if exists private.behavior_events;
 drop table if exists private.behavior_signal_settings;
