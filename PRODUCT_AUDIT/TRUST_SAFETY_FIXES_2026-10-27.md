@@ -535,6 +535,11 @@ client routing for the admin push ships in build 87 if built from this commit.
   SHA-256 hash) of each profile photo you upload. A fingerprint only identifies an exact copy of the same file; it is not
   face recognition or image analysis. A match is reviewed by a person and never by itself leads to action on your
   account. We keep a photo's fingerprint only while that photo is on your profile."
+  REPLACE with this version if 0368 is deployed (the sentence above would then be untrue): "To find accounts that reuse
+  the same photo, we compute fingerprints of each profile photo you upload: an exact one, and compact summaries of the
+  image's overall pattern that also match resized, re-saved, filtered, mirrored or slightly trimmed copies. They are not
+  face recognition and do not identify who is in a photo. A match is reviewed by a person and never by itself leads to
+  action on your account. We keep a photo's fingerprints only while that photo is on your profile."
 - Limits (§ on how we use information): "To prevent spam and abuse we limit how often some actions can be taken (for
   example, messages per minute or public posts with contact details per day). Limits depend on whether your phone number
   is verified and how long your account has existed."
@@ -789,3 +794,43 @@ website widget report the box; hook routes it. Tests: success, slow human, box b
 challenge, never loads, failure during the box, retry. Jest 528 / 7199; iOS export clean; dependencies up to date.
 Phone verification of a REAL token (not just the SMS arriving): Cloudflare Turnstile Analytics for this widget, solved
 challenges at the exact test times (one tester, one device); the app logs no token.
+
+# 2026-10-30: near-duplicate photos + review case history (0368 + 0369, staged, NOT deployed)
+
+Owner approved the two-migration plan with safeguards (2026-10-30; "final targeted improvement", trust & safety scope then
+closed unless a genuine vulnerability). Nothing deployed, website not published, detection not switched on, production
+unchanged.
+
+- **20270368 similar photos:** `moderate-photo` (changed, not redeployed) hashes the file it already downloads: dHash + pHash,
+  six variants (whole, mirrored, centre 90%/80% and their mirrors; `supabase/functions/_shared/perceptualHash.js`), recorded
+  per storage object (service role only, `private.photo_perceptual_hashes`, forgotten with the photo). Similar = both
+  distances within the limits for one allowed pairing. Cases open only under 0357's rules (3 accounts, or 2 with similar
+  names); a photo already in any case never opens another. **OFF until the owner approves distances** (columns null; a
+  separate activation migration). No AI, face or identity analysis, no third party, never restricts or tells anyone.
+- **Calibration:** `PRODUCT_AUDIT/PHOTO_SIMILARITY_CALIBRATION_2026-10-30.md`: 314 photos, 5,024 edited copies, 49,141
+  unrelated pairs. 0 false matches up to 12/12 (and 20/10); first false matches at 14/14 (headshots). Centred 20% trim
+  caught 100%, a 20% trim from a corner 0%: never claim "catches 20% crops". Script recommends 20/10; margin thin (closest
+  unrelated pair 13); cautious start 10/10. Deno decode path = Node calibration, 1,884/1,884 hashes identical.
+- **20270369 case history:** append-only `private.account_review_case_events` (opened, account added, new evidence, note,
+  outside check, report linked, closed, reopened; updates refused except nulling a deleted person's id). A closed case never
+  reopens itself: same photo again = nothing; a new account with it = "new evidence since closed" + surfaces in the queue,
+  stays closed; behaviour signals after closing = evidence on the closed case. Only an admin reopens, with a written reason.
+- **Photo review:** a case keeps its photos; `admin_get_account_review_case` gives paths to admins only; Storage policy
+  "Admins can view photos under review" (`admin_review_photo_visible`) re-checks the admin per file; 15-minute links;
+  bucket stays private; after a case is purged no admin can read those photos this way.
+- **Reports:** never open a case by themselves; an admin may open a linked investigation (`admin_open_case_from_report`):
+  joins the reported person's open case or opens a 'report' case; the report and its frozen evidence are untouched.
+- **Retention:** closed cases deleted 12 months after last closed / last new evidence (with members, photos, links,
+  events; daily purge). Open cases never auto-close: review date 30 days after opening/reopening, overdue listed first and
+  counted; a case with no remaining accounts is removed.
+- **Website admin screen** `AdminReviewScreen` (business website only, `BusinessWebNavigator`; native app/build 87
+  unchanged): queue (overdue first), side-by-side photos per account, history, notes, outside check, close/reopen with
+  reason, open from report. Registry 69 -> 70 (`AdminReview`, job C). Website export NOT regenerated (would publish).
+- **Tests:** journey `reviewCaseHistory` 14/14 on prod with 0348-0369 (rolled back); prod journeys 821/821 with 0348-0369;
+  from-scratch replay 493/493 + journeys 821/821 + 6 concurrency scripts incl. new `review-case-concurrency.js` (parallel
+  uploads = one case, closed case stays closed, two admins reopening at once = one reopen); rollbacks round-trip exactly
+  (catalog fingerprint, aborted transactions on prod); Jest 531 suites pass (incl. `adminReviewCase.test.js`,
+  `perceptualHash.test.js`). Post-deploy: `scripts/live-verify/post-deploy.js` steps + gated
+  `src/qa/reviewCaseAdminSignedIn.live.js`.
+- **Deploy order (each its own approval):** after 0367: 0368 (+ `moderate-photo` redeploy, either order), 0369; then the
+  activation migration with the owner's distances; then the website export + publish; Privacy Policy sentence above first.

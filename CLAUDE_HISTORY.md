@@ -1,3 +1,10 @@
+# 2026-10-30: near-duplicate photos (0368) + review case history (0369), staged
+
+Full record: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md` (last section) + `PRODUCT_AUDIT/PHOTO_SIMILARITY_CALIBRATION_2026-10-30.md`.
+Built across a codespace restart (work committed in daae090b, verification re-run after). Nothing deployed or published.
+Replay-only difference found: the replay's storage schema keeps `objects_owner_fkey` (prod dropped it), so the journey
+inserts test files without an owner. Website export not regenerated (would publish `docs/business/`).
+
 # 2026-10-30: behaviour thresholds approved + final trust & safety gaps (staged, not deployed)
 
 Owner approved the four 0363 thresholds with two refinements, both folded into 0363 before deploy: repeated messages count
