@@ -1,3 +1,19 @@
+# 2026-10-30: behaviour review signals (20270363) + server-only grants (20270364), built + staged, not deployed
+
+Owner: close the four remaining trust & safety gaps before launch (repeated identical messages, joining dozens of
+gatherings, location switching, several rate limits hit), private review signals only, thresholds approved before any case
+opens, plus a final gap audit. 0363: four deterministic detectors writing to `private.behavior_signals`, short-lived raw
+events (location = ~1-degree cell of a REJECTED report only, 1 h), the 0357 queue extended to one-person `behavior` cases
+(counts-only evidence, Admin Reports shows "Unusual activity pattern" + one line per signal via
+`utils/behaviorCaseEvidence.js`); every setting null / false, so it activates nothing. Per-person advisory lock added after a
+code review found parallel bursts would each see only their own row. `report-presence` records rejected jumps (errors
+ignored, same 400). 0364: client EXECUTE revoked from `get_social_forecast` (unused; up to 20 s connection hold per call)
+and `send_occasion_group_plan_stall_nudges` (cron job). Proposed thresholds, false-positive protections, the location
+limitation and the full audit: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`, last section. Tests: journeys
+`behaviorReviewSignals` 10/10, `serverOnlyFunctionGrants` 2/2; prod journeys 796/796 with 0348-0364 (rolled back);
+from-scratch replay 487/487 + journeys 794/794 + 5 concurrency scripts (new `behavior-signal-concurrency.js` 14/14);
+rollback round trips identical; Jest 524 / 7159. Next: build 87 + Tier 1 iPhone testing.
+
 # 2026-10-30: 0357 pg_trgm schema fix (ACCEPTED + CLOSED by the owner; staged, not deployed)
 
 0357's duplicate-name rule called `similarity()` under search_path `public`; production has pg_trgm in `public`, a fresh

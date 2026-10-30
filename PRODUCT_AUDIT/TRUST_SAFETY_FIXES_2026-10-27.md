@@ -594,3 +594,77 @@ stronger passwords, bot protection, verified phone for consumer social actions (
 evidence + moderation history (launch blocker). 6. I1 exact-duplicate photos. 7. Risk scoring / liveness vendors:
 deferred until real usage justifies. Session B proceeds on controlled test accounts only; no external users until
 these pass ordinary-user API tests.
+
+## Behaviour review signals 20270363 + server-only grants 20270364: BUILT, STAGED, NOT DEPLOYED (owner, 2026-10-30)
+
+Owner (2026-10-30): close the four remaining gaps now (repeated messages, join bursts, location switching, several limits
+reached), deterministic server rules, private review signals only, never a ban / suspension / hide / restriction; thresholds
+proposed for approval BEFORE any review case can open; plus one final gap audit. Separate from 0348-0362 (sequence intact).
+
+### What 20270363 builds (everything OFF: `private.behavior_signal_settings` all null / false)
+Nothing is recorded, noted or opened until the owner approves numbers in a separate small migration (as 0356 -> 0358).
+| detector | counts | never counted (false-positive protection) |
+|---|---|---|
+| repeated_messages | the same or near-identical (trigram) text of >= N characters (letters/digits only, case-blind) sent by one person into >= N DISTINCT conversations within a window | a group chat = ONE conversation however many people; the sender's own gatherings / communities / plans (a host announcing); a business replying from its business side; short messages ("On my way!") |
+| join_burst | joins of >= N distinct gatherings within a window | a recurring series = one; leave + re-join = one; a join to a gathering you were invited to; RSVP / approval / waitlist changes (INSERT only). Joining is NEVER capped or slowed |
+| location_switching | presence reports `report-presence` already REJECTS as implausible travel (> 700 mph) pointing to >= N distinct ~1-degree cells within <= 60 min | accepted reports (real travel, flights); one wrong fix repeating (= one cell) |
+| limit_burst | reaching >= N DIFFERENT 0356 rate limits within a window | reports (ordinary or urgent) never count against the reporter |
+
+Review case (the ONE 0357 queue, signal `behavior`, reason "Unusual activity pattern"): only when review is switched on AND
+either signals of >= K distinct kinds within the case window (corroboration) or a kind on the "alone" list. One open case per
+person (later signals extend it), a daily cap of new behaviour cases for the whole queue (signals still noted; a later signal
+re-evaluates). Reports are not an input. Evidence = counts only (never message text, never a location); the admin acts only
+through the existing suspension (20270351). Never breaks the action it observes (own exception block per detector; journey
+proves a message and a join still succeed with the detector broken). Concurrency: a per-person transaction lock while a
+detector is on, so parallel bursts are counted together; other people never wait on it.
+Privacy / retention: location = only the ~1-degree cell of a REJECTED claim, kept 1 hour (presence's own retention); other
+raw events 48 h; signals 30 days; no client grant on any table; `record_location_jump` = service role only. No device data,
+no coordinates, no movement history. Also: `(sender_id, created_at)` indexes on the five message tables.
+`report-presence` change (same commit): on a rejected jump it calls `record_location_jump` (errors ignored; the reply is
+still the same 400). Deploying it is separate (edge function, owner approval); safe in either order.
+
+### Thresholds PROPOSED for approval (not active anywhere; the journey and concurrency test use them in rolled-back / local DBs)
+| setting | proposed | why |
+|---|---|---|
+| repeated messages | >= 5 distinct conversations, 60 min, >= 20 characters, similarity >= 0.8 | 4 friends getting the same "running late" is normal; 5+ separate 1:1 chats with the same 20+ character text in an hour is the copy-paste pattern; 0.8 catches "Hey {name}, ..." variants (measured 0.8+) |
+| join burst | >= 15 distinct gatherings, 60 min | a busy weekend planner joins a handful; 15 in an hour is scraping / spam-joining |
+| location switching | >= 3 distinct ~1-degree cells, 60 min (rejected reports only) | 2 = one bad fix + home; 3 far-apart impossible jumps in an hour = a spoofing tool |
+| several limits | >= 3 different limits, 60 min | one limit is an enthusiastic person; three different ones in an hour is automation |
+| case rule | review ON; alone = repeated_messages, limit_burst; otherwise >= 2 kinds within 24 h | join bursts and location jumps alone are too ambiguous to open a case |
+| queue cap | 20 new behaviour cases a day | one admin can review that; more = a rule is wrong, not 20 bad actors |
+Activation = one migration setting these values, own approval code. Starting values; review against real cases.
+
+### Location: the limit, stated plainly
+Under the privacy rules (no history, no precise points, no device fingerprinting) the server only sees what the person's
+phone reports, rounded, kept 1 hour. It CAN see impossible jumps between consecutive reports. It CANNOT see a spoofer who
+moves at a plausible speed, or one who jumps once and stays (one cell). Closing that would need location history or device
+attestation (both declined); not weakened to detect more.
+
+### Final gap audit (2026-10-30, prod with 0348-0363 applied in rolled-back transactions; real roles)
+Actual vulnerabilities found:
+1. `get_social_forecast` (unused since the baseline): any signed-in account could make the database fetch OpenWeather with
+   the vault key and hold a connection up to 20 s per call (pg_sleep poll): connection-pool exhaustion + quota burn. FIXED
+   in 20270364 (client EXECUTE revoked).
+2. `send_occasion_group_plan_stall_nudges` (the cron job): any signed-in account could fire every stalled plan's "Still
+   deciding?" push early (once per plan). FIXED in 20270364. Cron (postgres) + service_role keep both.
+3. Auth (B5, already open, production setting + client work, owner): passwords minimum 6, no character rules, no CAPTCHA,
+   password change without re-authentication, no leaked-password check (plan-dependent). Proposal unchanged: minimum 10,
+   re-authentication on password change; CAPTCHA needs a provider + a new native build (it would also gate phone sign-in).
+   NOT changed (production Auth config needs the owner).
+Checked and holding (signed-in ordinary user): message into someone else's match / as another sender / group chat not a
+member = refused by RLS; reading others' messages, a private gathering, another's business request, reports = 0 rows;
+cancelling another's request = 0 rows; inviting as someone else = refused; joining a private gathering = "Gathering not
+found"; self-granting is_admin = refused; editing another profile = 0 rows; self id_verified / suspension clear = no effect;
+admin case list / suspension = "Admins only". Catalog: no public table without RLS that clients can reach; no write policy
+`true` for clients; every SECURITY DEFINER function has a fixed search_path; every `admin_*` function checks an admin /
+finance-approver helper; only public bucket = business-logos (by design).
+Speculative / by design (not fixed): `get_intention_change_count(user)` returns another person's 30-day count of "looking
+for" changes to any signed-in caller (shown on ViewProfile by design; ignores blocks / hidden profiles; count only, low);
+`get_live_tracking_session` by id for anon = the safety-share capability link (by design); partner reputation / response
+time readable by anyone (shown to customers by design).
+Tests: journey `behaviorReviewSignals` 10/10 + `serverOnlyFunctionGrants` 2/2 (fails before 0364); prod journeys 796/796
+with 0348-0364 (rolled back); from-scratch replay 487/487 + journeys 794/794 + all 5 concurrency scripts incl. the new
+`behavior-signal-concurrency.js` 14/14 (8 parallel identical messages counted together, 6 simultaneous 5th messages vs a
+queue with room for 3 = exactly 3 cases, 15 parallel joins all approved + one signal); 0364 on the replay 12/12; rollback
+round trips identical (0363 on prod + replay; 0364 with ACL entries sorted, the re-grant only reorders them); Jest 524 /
+7159. Deploy: 0363 then 0364, each its own approval, after 0362.

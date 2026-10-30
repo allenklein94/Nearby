@@ -85,6 +85,11 @@ serve(async (req) => {
       const elapsedHours = (Date.now() - new Date(previousReport.reported_at).getTime()) / (1000 * 60 * 60);
 
       if (elapsedHours > 0 && distanceMiles / elapsedHours > MAX_PLAUSIBLE_MPH) {
+        // 20270363: a private review-signal input (only the ~1-degree cell, kept 1 hour; off until the owner approves
+        // numbers). Never blocks this reply; before that migration the call just fails and is ignored.
+        try {
+          await admin.rpc('record_location_jump', { p_user: userId, p_area: area });
+        } catch (_) { /* ignored */ }
         return new Response(JSON.stringify({ error: 'Location update rejected — implausible travel speed.' }), { status: 400 });
       }
     }

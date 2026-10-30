@@ -66,4 +66,12 @@ describe('recovered functions keep their behaviour', () => {
     expect(s).toMatch(/const PRESENCE_WINDOW_MINUTES = 10;/);
     expect(s).toMatch(/MAX_PLAUSIBLE_MPH/);
   });
+
+  test('report-presence: a rejected jump is only recorded as a review-signal input (20270363) and is still rejected', () => {
+    const s = src('report-presence');
+    const rejection = s.slice(s.indexOf('> MAX_PLAUSIBLE_MPH'), s.indexOf('await admin.from(\'presence_reports\').upsert'));
+    expect(rejection).toMatch(/try \{\s*await admin\.rpc\('record_location_jump', \{ p_user: userId, p_area: area \}\);\s*\} catch/);
+    expect(rejection).toMatch(/status: 400/);
+    expect(s.match(/record_location_jump/g)).toHaveLength(1); // never for an accepted report
+  });
 });

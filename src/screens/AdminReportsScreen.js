@@ -7,9 +7,10 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { PullToRefresh } from '../motion';
+import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
-// review cases (identical photo + an approved rule) are listed above the reports. Both work on a database without those
+// review cases (identical photo + an approved rule; 20270363: behaviour patterns, counts only) are listed above the reports. Both work on a database without those
 // migrations: the old columns / direct resolve are used and no cases show.
 const REPORT_COLUMNS = 'id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name, suspended_at)';
 const CONTENT_COLUMNS = ', content_type, content_excerpt, content_sent_at';
@@ -17,6 +18,7 @@ const isMissing = (error) => !!error && ['PGRST202', 'PGRST204', '42703', '42883
 const CASE_REASON = {
   many_accounts: 'Same photo on several accounts',
   similar_names: 'Same photo + similar names',
+  behavior_pattern: 'Unusual activity pattern',
 };
 
 // This screen is reached as a top-level stack push (not a bottom tab),
@@ -156,6 +158,9 @@ export default function AdminReportsScreen({ navigation }) {
             {cases.map((c) => (
               <View key={c.id} style={styles.card}>
                 <Text style={styles.reason}>{CASE_REASON[c.reason] || c.reason}</Text>
+                {behaviorEvidenceLines(c.evidence).map((line) => (
+                  <Text key={line} style={styles.meta}>{line}</Text>
+                ))}
                 {(c.members || []).map((m) => (
                   <Text key={m.user_id} style={styles.meta}>{m.display_name || m.user_id}{m.suspended ? ' · suspended' : ''}</Text>
                 ))}
