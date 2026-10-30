@@ -37,4 +37,4 @@ async function signInTestAccount(client, { email, password }) {
   return { user: data.user, via: 'link' };
 }
 
-module.exports = { signInTestAccount };
+module.exports = { signInTestAccount, serviceKeyForCleanup: serviceKey };
