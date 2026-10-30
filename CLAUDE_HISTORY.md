@@ -9309,6 +9309,11 @@ columns, one store). Not surfaced at onboarding: Community. No migration. Jest 6
 (verified by rebuilding).
 
 
+## 2026-10-30 New accounts only by phone (20270367, staged)
+Owner: investigate the email sign-up exposure before freezing trust & safety; no prod Auth change without approval; no selfie, fingerprinting, VoIP intelligence or AI scoring.
+Findings (read-only, prod): Auth `external_email_enabled` true, `disable_signup` false, `external_anonymous_users_enabled` false, no OAuth, captcha off, `hook_before_user_created` off. App (`LoginScreen`) and the business website bundle only call `signInWithOtp({ phone })`. 10 auth users: 4 phone-only, 6 with email identities (one has phone too); email ones include applereview (review-login = admin generateLink magiclink for an existing address), the outlook business owner, the dedicated live-test account (`signInTestAccount.js`: password, else generateLink). So `external_email_enabled=false` would break existing sign-ins and `disable_signup=true` would block phone sign-up too.
+Change: migration 20270367 (Auth before-user-created Postgres hook, phone-only new accounts, 403 otherwise) + rollback + journey `signupPhoneOnlyHook` 3/3 with prelude + switch script `scripts/trust-safety/signup-hook-settings.js` (unit tests in `captcha-settings.test.js`). Supabase Auth source (master: signup.go, mail.go, invite.go, hooks.go) checked: hook called only before creating a user, with `app_metadata.provider` already set by `ToUserModel`; admin createUser doesn't call it. Not deployed; nothing changed in prod.
+
 ## Sep 18 2026 — Location powers the whole system ("the user should never repeatedly tell Nearby where they are") — DONE
 
 Direct request. Built in increments, each committed + pushed; Jest 677/677; nothing exercised on a device.

@@ -26,3 +26,23 @@ describe('B5 password settings: exactly the three approved keys', () => {
     expect(b5.approvalCode()).toBe('b5:126c06eaa041a886eacbf236dda3c4acdca9be11cf9d9c65cfd3f28fadad56ff');
   });
 });
+
+describe('sign-up hook switch: enables only a live hook that lets phone sign-ups through', () => {
+  const hook = require('./signup-hook-settings');
+  const good = { present: true, auth_admin: true, anon: false, authenticated: false, service_role: false, phone: {}, email: { error: { http_code: 403, message: 'x' } } };
+  test('a correct live hook has no refusals', () => {
+    expect(hook.liveRefusals(good)).toEqual([]);
+  });
+  test('missing function, wrong grants, a refused phone sign-up or an allowed email sign-up all refuse', () => {
+    expect(hook.liveRefusals({ present: false })).toHaveLength(1);
+    expect(hook.liveRefusals({ ...good, auth_admin: false })).toHaveLength(1);
+    expect(hook.liveRefusals({ ...good, anon: true })).toHaveLength(1);
+    expect(hook.liveRefusals({ ...good, phone: { error: { http_code: 403 } } })).toHaveLength(1);
+    expect(hook.liveRefusals({ ...good, email: {} })).toHaveLength(1);
+  });
+  test('the approval code binds the exact migration text', () => {
+    expect(hook.approvalCode('a')).toMatch(/^signup-hook:[0-9a-f]{32}$/);
+    expect(hook.approvalCode('a')).not.toBe(hook.approvalCode('b'));
+    expect(hook.URI).toBe('pg-functions://postgres/public/hook_before_user_created');
+  });
+});
