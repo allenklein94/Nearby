@@ -36,6 +36,9 @@ const TurnstileWidget = forwardRef(function TurnstileWidget({ config, dark, lang
         'error-callback': (c) => { emit.current?.({ type: 'error', code: String(c) }); return true; },
         'expired-callback': () => emit.current?.({ type: 'expired' }),
         'unsupported-callback': () => emit.current?.({ type: 'error', code: 'unsupported' }),
+        'timeout-callback': () => emit.current?.({ type: 'error', code: 'challenge_timeout' }),
+        'before-interactive-callback': () => emit.current?.({ type: 'interactive' }),
+        'after-interactive-callback': () => emit.current?.({ type: 'interactive_done' }),
       });
     }, () => emit.current?.({ type: 'error', code: 'script' }));
     return () => { gone = true; if (window.turnstile && wid.current != null) window.turnstile.remove(wid.current); wid.current = null; };

@@ -37,6 +37,7 @@ function onTsLoad(){
   o['error-callback']=function(c){post({type:'error',code:String(c)});return true};
   o['expired-callback']=function(){post({type:'expired'})};
   o['unsupported-callback']=function(){post({type:'error',code:'unsupported'})};
+  o['timeout-callback']=function(){post({type:'error',code:'challenge_timeout'})};
   o['before-interactive-callback']=function(){post({type:'interactive'})};
   o['after-interactive-callback']=function(){post({type:'interactive_done'})};
   wid=turnstile.render('#ts',o);
@@ -79,28 +80,49 @@ export function isCaptchaRefusal(error) {
 export const authCaptchaOptions = (token) => (token ? { captchaToken: token } : {});
 
 // One token at a time, handed out once. take() resolves with the current token (or the next one to arrive), rejects on a
-// widget error or after timeoutMs; after take() the token is gone and the widget must be reset for the next request.
-export function createCaptchaTokenStore({ timeoutMs = 15000, setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
+// widget error or when its timer runs out; after take() the token is gone and the widget must be reset for the next request.
+// Two timers, never none: timeoutMs while the widget is working on its own (never loads / stops responding = 'timeout');
+// interactiveTimeoutMs while Cloudflare shows its tick box, so a person still ticking is never cut off, yet a challenge
+// that hangs ends too ('challenge_timeout'). Each switch restarts the waiting request's timer in full (the box closing
+// without a token = a fresh timeoutMs). Every rejection reaches the screen's existing Try Again.
+export function createCaptchaTokenStore({
+  timeoutMs = 15000, interactiveTimeoutMs = 120000, setTimer = setTimeout, clearTimer = clearTimeout,
+} = {}) {
   let token = null;
   let failure = null;
   let waiters = [];
+  let interactive = false;
   const settle = (fn) => { const w = waiters; waiters = []; w.forEach(fn); };
+  const arm = (w) => {
+    if (w.timer != null) clearTimer(w.timer);
+    const code = interactive ? 'challenge_timeout' : 'timeout';
+    w.timer = setTimer(() => {
+      w.timer = null;
+      waiters = waiters.filter((x) => x !== w);
+      w.fail(captchaUnavailableError(code));
+    }, interactive ? interactiveTimeoutMs : timeoutMs);
+  };
   return {
-    onToken(t) { failure = null; if (waiters.length) { const w = waiters.shift(); w.resolve(t); } else token = t; },
-    onError(code) { token = null; failure = captchaUnavailableError(code); settle((w) => w.reject(failure)); },
+    onToken(t) { failure = null; interactive = false; if (waiters.length) { const w = waiters.shift(); w.resolve(t); } else token = t; },
+    onError(code) { token = null; interactive = false; failure = captchaUnavailableError(code); settle((w) => w.reject(failure)); },
     onExpired() { token = null; },
+    onInteractive() { interactive = true; waiters.forEach(arm); },
+    onInteractiveDone() { interactive = false; waiters.forEach(arm); },
+    isInteractive: () => interactive,
     hasToken: () => token != null,
     take() {
       if (token != null) { const t = token; token = null; return Promise.resolve(t); }
       if (failure) { const f = failure; failure = null; return Promise.reject(f); }
       return new Promise((resolve, reject) => {
-        const w = {};
-        const timer = setTimer(() => { waiters = waiters.filter((x) => x !== w); reject(captchaUnavailableError('timeout')); }, timeoutMs);
-        w.resolve = (t) => { clearTimer(timer); resolve(t); };
-        w.reject = (e) => { clearTimer(timer); reject(e); };
+        const w = { timer: null };
+        const stop = () => { if (w.timer != null) { clearTimer(w.timer); w.timer = null; } };
+        w.resolve = (t) => { stop(); resolve(t); };
+        w.reject = (e) => { stop(); reject(e); };
+        w.fail = reject;
+        arm(w);
         waiters.push(w);
       });
     },
-    clear() { token = null; failure = null; },
+    clear() { token = null; failure = null; interactive = false; },
   };
 }

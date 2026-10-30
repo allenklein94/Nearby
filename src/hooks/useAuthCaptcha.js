@@ -11,6 +11,8 @@ export default function useAuthCaptcha(config = TURNSTILE) {
     if (m.type === 'token') store.onToken(m.token);
     else if (m.type === 'error') store.onError(m.code);
     else if (m.type === 'expired') store.onExpired();
+    else if (m.type === 'interactive') store.onInteractive();
+    else if (m.type === 'interactive_done') store.onInteractiveDone();
   }, [store]);
   const take = useCallback(() => (config ? store.take() : Promise.resolve(null)), [config, store]);
   const reset = useCallback(() => { store.clear(); widget.current?.reset(); }, [store]);

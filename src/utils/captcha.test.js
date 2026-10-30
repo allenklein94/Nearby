@@ -95,6 +95,107 @@ describe('one single-use token per request', () => {
   });
 });
 
+describe('Cloudflare\'s tick box never gets cut off, and nothing waits forever', () => {
+  // records each timer's duration; fire() runs the live one
+  const clock = () => {
+    const live = [];
+    return {
+      live,
+      setTimer: (fn, ms) => { const t = { fn, ms }; live.push(t); return t; },
+      clearTimer: (t) => { const i = live.indexOf(t); if (i >= 0) live.splice(i, 1); },
+      fire() { const t = live.shift(); t.fn(); },
+    };
+  };
+  const make = (c) => createCaptchaTokenStore({ timeoutMs: 15000, interactiveTimeoutMs: 120000, ...c });
+
+  test('a challenge solved on its own: token at once, no timer left', async () => {
+    const c = clock(); const s = make(c);
+    const p = s.take();
+    expect(c.live.map((t) => t.ms)).toEqual([15000]);
+    s.onToken('ok');
+    await expect(p).resolves.toBe('ok');
+    expect(c.live).toHaveLength(0);
+  });
+  test('slow human: the box appearing swaps the 15 s limit for the long one; ticking late still succeeds', async () => {
+    const c = clock(); const s = make(c);
+    const p = s.take();
+    s.onInteractive();
+    expect(c.live.map((t) => t.ms)).toEqual([120000]); // the 15 s timer is gone, not just paused behind another
+    expect(s.isInteractive()).toBe(true);
+    s.onInteractiveDone();
+    s.onToken('ticked');
+    await expect(p).resolves.toBe('ticked');
+    expect(c.live).toHaveLength(0);
+    expect(s.isInteractive()).toBe(false);
+  });
+  test('the box shown BEFORE the tap: the request starts on the long limit', async () => {
+    const c = clock(); const s = make(c);
+    s.onInteractive();
+    const p = s.take();
+    expect(c.live.map((t) => t.ms)).toEqual([120000]);
+    s.onToken('t');
+    await expect(p).resolves.toBe('t');
+  });
+  test('box closes without a token (cancelled / dismissed): a fresh 15 s, then the retryable timeout', async () => {
+    const c = clock(); const s = make(c);
+    const p = s.take();
+    s.onInteractive();
+    s.onInteractiveDone();
+    expect(c.live.map((t) => t.ms)).toEqual([15000]);
+    c.fire();
+    await expect(p).rejects.toMatchObject({ code: 'captcha_unavailable', status: 503, captchaCode: 'timeout' });
+  });
+  test('a stuck challenge ends too (never an endless wait)', async () => {
+    const c = clock(); const s = make(c);
+    const p = s.take();
+    s.onInteractive();
+    c.fire();
+    await expect(p).rejects.toMatchObject({ captchaCode: 'challenge_timeout', status: 503 });
+    expect(c.live).toHaveLength(0);
+  });
+  test('the widget never loads: the 15 s limit still applies', async () => {
+    const c = clock(); const s = make(c);
+    const p = s.take();
+    c.fire();
+    await expect(p).rejects.toMatchObject({ captchaCode: 'timeout' });
+  });
+  test('a widget failure (incl. Cloudflare\'s own challenge timeout) during the box ends the wait at once', async () => {
+    const c = clock(); const s = make(c);
+    const p = s.take();
+    s.onInteractive();
+    s.onError('challenge_timeout');
+    await expect(p).rejects.toMatchObject({ captchaCode: 'challenge_timeout' });
+    expect(c.live).toHaveLength(0);
+    expect(s.isInteractive()).toBe(false);
+  });
+  test('retry after a failure: reset, fresh token, the next request succeeds on the normal limit', async () => {
+    const c = clock(); const s = make(c);
+    const first = s.take();
+    s.onInteractive();
+    c.fire();
+    await expect(first).rejects.toMatchObject({ captchaCode: 'challenge_timeout' });
+    s.clear(); // the screen resets the widget after every request
+    const again = s.take();
+    expect(c.live.map((t) => t.ms)).toEqual([15000]);
+    s.onToken('fresh');
+    await expect(again).resolves.toBe('fresh');
+  });
+  test('wiring: the page reports the box + Cloudflare\'s challenge timeout; the hook routes both to the store', () => {
+    const page = turnstileHtml({ siteKey: '0x4AAAAAAAtest_key' });
+    expect(page).toMatch(/before-interactive-callback/);
+    expect(page).toMatch(/after-interactive-callback/);
+    expect(page).toMatch(/timeout-callback'\]=function\(\)\{post\(\{type:'error',code:'challenge_timeout'\}\)/);
+    const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
+    const hook = read('hooks/useAuthCaptcha.js');
+    expect(hook).toMatch(/'interactive'\) store\.onInteractive\(\)/);
+    expect(hook).toMatch(/'interactive_done'\) store\.onInteractiveDone\(\)/);
+    const web = read('components/TurnstileWidget.web.js');
+    expect(web).toMatch(/before-interactive-callback/);
+    expect(web).toMatch(/after-interactive-callback/);
+    expect(web).toMatch(/'timeout-callback'/);
+  });
+});
+
 describe('failures read as plain, retryable words', () => {
   test('Supabase refusing the token is recognised and shown as a retryable service failure, never raw', () => {
     expect(isCaptchaRefusal({ code: 'captcha_failed' })).toBe(true);

@@ -780,3 +780,12 @@ Update (owner, 2026-10-30): Turnstile widget created (hostname `allenklein94.git
 device now FAILS OPEN: a check that can't complete (widget error, timeout) sends the request with no token, so with Auth
 CAPTCHA off sign-in is exactly today's; once on, Auth refuses tokenless requests (-> Try Again). Phone check before enable:
 the widget stays invisible, "Send Code" gets a token (no visible delay beyond "Checking…"), and sign-in still works.
+Interactive-challenge fix (owner approved, 2026-10-30, before build 87): the token wait has two limits, never none: 15 s
+while the widget works on its own (never loads / stops responding), 120 s while Cloudflare shows its tick box (a person
+ticking is never cut off; a hung challenge still ends). The box closing without a token restarts a full 15 s; Cloudflare's
+own `timeout-callback` and any widget error end the wait at once; every end = the existing retryable failure (fallback
+unchanged: no token while Auth CAPTCHA is off, Supabase refuses once it is on -> Try Again with a fresh token). Native page +
+website widget report the box; hook routes it. Tests: success, slow human, box before the tap, cancelled box, stuck
+challenge, never loads, failure during the box, retry. Jest 528 / 7199; iOS export clean; dependencies up to date.
+Phone verification of a REAL token (not just the SMS arriving): Cloudflare Turnstile Analytics for this widget, solved
+challenges at the exact test times (one tester, one device); the app logs no token.
