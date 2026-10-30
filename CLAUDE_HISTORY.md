@@ -1,4 +1,4 @@
-# 2026-10-30: 0357 pg_trgm schema fix (staged, not deployed)
+# 2026-10-30: 0357 pg_trgm schema fix (ACCEPTED + CLOSED by the owner; staged, not deployed)
 
 0357's duplicate-name rule called `similarity()` under search_path `public`; production has pg_trgm in `public`, a fresh
 Supabase database has it in `extensions`, so the rule errored on a fresh install (the 11 replay journey failures, all

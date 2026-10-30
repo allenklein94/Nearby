@@ -573,7 +573,7 @@ a new hosted project) has it in `extensions`, so duplicate-name signals error th
 "0357 pg_trgm schema fix" below. Jest 523 / 7156.
 Deploy: right after 0361, own approval (`npm run migration:deploy`).
 
-## 0357 pg_trgm schema fix (owner, 2026-10-30; 0357 still NOT deployed)
+## 0357 pg_trgm schema fix (owner, 2026-10-30; ACCEPTED + CLOSED by the owner the same day; 0357 still NOT deployed, approval requirements unchanged)
 
 0357 now calls `private.name_similarity(a, b)` (sql, immutable, search_path ''), generated at migration time from
 `pg_extension` as `<schema where pg_trgm is installed>.similarity(a, b)`: `public.similarity` on production,
