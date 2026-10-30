@@ -39,6 +39,7 @@ const STEPS = {
     live: ['serverOnlyGrantsSignedIn.live.js (NEARBY_POST_DEPLOY_0364=1)'] },
   20270365: { journeys: ['behaviorSignalThresholds', 'behaviorReviewSignals'] },
   20270366: { journeys: ['intentionCountPrivacy'] },
+  20270367: { journeys: ['signupPhoneOnlyHook'] }, // installs the hook only; the gap closes with signup-hook-settings below
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
@@ -51,6 +52,8 @@ const OTHERS = {
   'b5-auth-settings': { rollback: 'PATCH the "rollback:" values the apply prints', check: 'node scripts/trust-safety/b5-auth-settings.js verify, then the live sign-in tests' },
   'captcha-settings': { rollback: 'NEARBY_CAPTCHA_APPROVAL=captcha-off node scripts/trust-safety/captcha-settings.js disable (instant)',
     check: 'fresh sign-in by phone code on every installed build (shows no error; the code arrives); live sign-in tests (link path); website sign-in' },
+  'signup-hook-settings': { rollback: 'NEARBY_SIGNUP_HOOK_APPROVAL=signup-hook-off node scripts/trust-safety/signup-hook-settings.js disable (instant; BEFORE any rollback of 0367)',
+    check: 'own approval, only after 0367 is live: npx jest -c jest.live.config.js src/qa/signupPhoneOnlyAuthApi.live.js (fails while off; shared checks proven by scripts/replay/signup-hook-auth-local.js); a NEW phone account by real SMS on the phone (Tier 1 item 0(f))' },
 };
 
 function rollbackFile(version) {

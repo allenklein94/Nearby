@@ -24,7 +24,7 @@ test('every journey, live test and SQL check named exists', () => {
 });
 
 test('edge functions and Auth settings staged alongside each have a rollback and a check', () => {
-  ['review-login', 'report-presence', 'moderate-photo', 'b5-auth-settings', 'captcha-settings'].forEach((k) => {
+  ['review-login', 'report-presence', 'moderate-photo', 'b5-auth-settings', 'captcha-settings', 'signup-hook-settings'].forEach((k) => {
     expect(OTHERS[k].rollback).toBeTruthy();
     expect(OTHERS[k].check).toBeTruthy();
   });

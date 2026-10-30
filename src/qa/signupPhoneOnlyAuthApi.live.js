@@ -1,97 +1,73 @@
-// New accounts only by phone (20270367 + its Auth switch): checked through the REAL Supabase Auth API, not SQL.
-// GATED: while the hook is off in Auth (today, and until the owner approves the switch after 0367 is deployed) it calls
-// nothing and only reports "hook off". Once on:
-//   1. an email sign-up for an unknown address is refused with the hook's 403 and creates no auth user;
-//   2. an email code / magic link to an unknown address (shouldCreateUser) is refused the same way and creates no user;
-//   3. an existing email account still signs in by password AND by a server-issued magic link (the review-login path
-//      App Review uses; business owners with email accounts sign in the same way, never through the hook);
-//   4. password recovery for an existing account still sends (only with NEARBY_SIGNUP_CHECK_RECOVERY=1: a real email).
-// The address used in 1-2 is a fresh one on the reserved .invalid domain (nothing can be delivered); if a step ever creates
-// it, the test fails and removes exactly that user (matched by the full address) so nothing is left behind.
-// Not covered here: a NEW phone account through phone OTP needs a real SMS to a real, never-used number = run order Tier 1
-// item 0(f) on a phone, right after the switch. Adding an email/phone to an EXISTING account (updateUser) is not account
-// creation: the hook never runs and the account stays phone-verified or email-only as it was; an email-only account can't
-// add a phone first because it can't be created.
-// Run: npx jest -c jest.live.config.js src/qa/signupPhoneOnlyAuthApi.live.js   (needs SUPABASE_ACCESS_TOKEN)
+// New accounts only by phone (20270367 + its Auth switch), through the REAL production Auth API.
+// GATED: while the hook is off in production Auth (until 0367 is deployed AND the owner approves the switch) it calls
+// nothing, and every test FAILS with "hook off" instead of passing empty, so a run before the switch can't be read as proof.
+// Allow that state explicitly with NEARBY_SIGNUP_CHECK_EXPECT_OFF=1 (then it only confirms the hook is off).
+// The checks are the shared ones in ./live/signupHookChecks.js, already proven against an isolated Auth at production's
+// version (scripts/replay/signup-hook-auth-local.js, 13/13): a valid new address (the test mailbox + a tag) refused with
+// the hook's own 403 + message (never a validation/rate-limit/CAPTCHA error), no account created, a malformed-address
+// control told apart, the existing test account's password + magic-link sign-in, cleanup by exact address.
+// Production differences: no new phone account here (needs a real SMS to a never-used number = run order Tier 1 item 0(f)
+// on a phone, right after the switch); recovery only with NEARBY_SIGNUP_CHECK_RECOVERY=1 (a real email to the test account).
+// Run: npx jest -c jest.live.config.js src/qa/signupPhoneOnlyAuthApi.live.js   (needs SUPABASE_ACCESS_TOKEN + the test account)
 const { createClient } = require('@supabase/supabase-js');
+const { runSignupHookChecks } = require('./live/signupHookChecks');
+const { serviceKeyForCleanup } = require('./live/signInTestAccount');
 
 const URL = 'https://enmosvippabmuqslzrox.supabase.co';
 const REF = 'enmosvippabmuqslzrox';
 const KEY = 'sb_publishable_NU_9KSD7wft-FDSHclDHuw_6vsUDrZW'; // the app's own publishable key
-const HOOK_MESSAGE = 'New Nearby accounts are created with a phone number in the Nearby app.';
+const HOOK_URI = 'pg-functions://postgres/public/hook_before_user_created';
 const fileAccount = (() => {
   try { return JSON.parse(require('fs').readFileSync(require('path').join(__dirname, '..', '..', '.claude', 'live-test-account.json'), 'utf8')); } catch { return {}; }
 })();
 const EMAIL = process.env.NEARBY_TEST_EMAIL || fileAccount.email;
 const PASSWORD = process.env.NEARBY_TEST_PASSWORD || fileAccount.password;
 const TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-const PROBE = `signup-hook-check-${Date.now()}@nearby-check.invalid`;
 
-const anon = () => createClient(URL, KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
 async function mgmt(path, body) {
   const res = await fetch(`https://api.supabase.com/v1/projects/${REF}/${path}`, {
     method: body ? 'POST' : 'GET', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined });
   if (!res.ok) throw new Error(`${path}: HTTP ${res.status}`);
   return res.json();
 }
-const probeUsers = async () => mgmt('database/query', { query: `select id from auth.users where email = '${PROBE}'`, read_only: true });
-const refusedByHook = (error) => error && error.status === 403 && String(error.message).includes(HOOK_MESSAGE);
+const sqlString = (s) => `'${String(s).replace(/'/g, "''")}'`;
 
-const d = TOKEN ? describe : describe.skip;
+const d = TOKEN && EMAIL && PASSWORD ? describe : describe.skip;
 
-d('new accounts only by phone, through the real Auth API (20270367)', () => {
+d('new accounts only by phone, through the real production Auth API (20270367)', () => {
   let hookOn = false;
+  let results = [];
   beforeAll(async () => {
     const cfg = await mgmt('config/auth');
-    hookOn = cfg.hook_before_user_created_enabled === true && cfg.hook_before_user_created_uri === 'pg-functions://postgres/public/hook_before_user_created';
+    hookOn = cfg.hook_before_user_created_enabled === true && cfg.hook_before_user_created_uri === HOOK_URI;
+    if (!hookOn) return;
+    const admin = createClient(URL, await serviceKeyForCleanup(), { auth: { persistSession: false, autoRefreshToken: false } }).auth.admin;
+    results = await runSignupHookChecks({
+      auth: () => createClient(URL, KEY, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }).auth,
+      usersWithEmail: async (email) => (await mgmt('database/query', {
+        query: `select id from auth.users where lower(email) = lower(${sqlString(email)})`, read_only: true })).map((r) => r.id),
+      deleteUser: async (id) => { const { error } = await admin.deleteUser(id); if (error) throw error; },
+      magicLinkHash: async (email) => {
+        const { data, error } = await admin.generateLink({ type: 'magiclink', email });
+        if (error) throw error;
+        return data.properties.hashed_token;
+      },
+      existing: { email: EMAIL, password: PASSWORD },
+      phoneSignup: null,
+      recovery: process.env.NEARBY_SIGNUP_CHECK_RECOVERY === '1',
+    });
     // eslint-disable-next-line no-console
-    if (!hookOn) console.log('signup hook is OFF in Auth: nothing called (run again after the approved switch)');
-  }, 30000);
+    results.forEach((r) => console.log(`${r.pass ? 'PASS' : 'FAIL'}  ${r.check}  ${JSON.stringify(r.detail ?? null)}`));
+  }, 120000);
 
-  afterAll(async () => {
-    if (!hookOn) return;
-    const left = await probeUsers();
-    if (!left.length) return;
-    const admin = createClient(URL, await require('./live/signInTestAccount').serviceKeyForCleanup(), { auth: { persistSession: false } });
-    for (const u of left) await admin.auth.admin.deleteUser(u.id);
-  }, 30000);
+  test('the hook is on in production Auth (or the off state was explicitly expected)', () => {
+    if (process.env.NEARBY_SIGNUP_CHECK_EXPECT_OFF === '1') { expect(hookOn).toBe(false); return; }
+    expect(hookOn ? 'on' : 'hook off: deploy 0367 and switch it on first (nothing was called)').toBe('on');
+  });
 
-  test('1. email sign-up for an unknown address: refused by the hook, no user created', async () => {
+  test('every shared check passes (refusals attributed to the hook, no account, existing sign-in, cleanup)', () => {
     if (!hookOn) return;
-    const { error } = await anon().auth.signUp({ email: PROBE, password: `x-${Date.now()}-Long!` });
-    expect(refusedByHook(error)).toBe(true);
-    expect(await probeUsers()).toEqual([]);
-  }, 30000);
-
-  test('2. email code / magic link to an unknown address: refused by the hook, no user created', async () => {
-    if (!hookOn) return;
-    const { error } = await anon().auth.signInWithOtp({ email: PROBE, options: { shouldCreateUser: true } });
-    expect(refusedByHook(error)).toBe(true);
-    expect(await probeUsers()).toEqual([]);
-  }, 30000);
-
-  const withAccount = EMAIL && PASSWORD ? test : test.skip;
-  withAccount('3. an existing email account still signs in, by password and by server-issued magic link', async () => {
-    if (!hookOn) return;
-    const { signInTestAccount } = require('./live/signInTestAccount');
-    for (const via of ['password', 'link']) {
-      const client = anon();
-      const prev = process.env.NEARBY_TEST_SIGNIN;
-      if (via === 'link') process.env.NEARBY_TEST_SIGNIN = 'link';
-      try {
-        const r = await signInTestAccount(client, { email: EMAIL, password: PASSWORD });
-        expect(r.user.email).toBe(EMAIL);
-      } finally {
-        if (prev === undefined) delete process.env.NEARBY_TEST_SIGNIN; else process.env.NEARBY_TEST_SIGNIN = prev;
-        await client.auth.signOut();
-      }
-    }
-  }, 60000);
-
-  const recovery = EMAIL && process.env.NEARBY_SIGNUP_CHECK_RECOVERY === '1' ? test : test.skip;
-  recovery('4. password recovery for an existing account still sends (real email to the test account)', async () => {
-    if (!hookOn) return;
-    const { error } = await anon().auth.resetPasswordForEmail(EMAIL);
-    expect(error).toBeNull();
-  }, 30000);
+    expect(results.filter((r) => !r.pass).map((r) => r.check)).toEqual([]);
+    expect(results.length).toBeGreaterThanOrEqual(8);
+  });
 });
