@@ -99,6 +99,29 @@ as $function$
 $function$;
 revoke all on function private.forget_unused_photo_fingerprints(uuid) from public, anon, authenticated;
 
+-- Name similarity, explicitly schema-qualified (fix 2026-10-30): pg_trgm's similarity() lives in `public` on production
+-- but in `extensions` on a fresh Supabase database, so an unqualified call under search_path 'public' fails there. The
+-- wrapper is generated with the schema where pg_trgm is actually installed, read from pg_extension at migration time.
+-- (If pg_trgm is ever moved to another schema, re-run this block.)
+do $do$
+declare
+  v_schema text := (select n.nspname from pg_extension e join pg_namespace n on n.oid = e.extnamespace where e.extname = 'pg_trgm');
+begin
+  if v_schema is null then
+    raise exception 'pg_trgm is not installed (20260809_indexed_text_search.sql creates it)';
+  end if;
+  execute format($f$
+    create or replace function private.name_similarity(a text, b text)
+    returns real
+    language sql
+    immutable
+    set search_path to ''
+    as $body$ select %I.similarity(a, b) $body$
+  $f$, v_schema);
+end;
+$do$;
+revoke all on function private.name_similarity(text, text) from public, anon, authenticated;
+
 -- Opens / extends the case for one fingerprint when an approved rule holds. Never touches the accounts themselves.
 create or replace function private.evaluate_photo_fingerprint(p_sha256 text)
 returns void
@@ -125,7 +148,7 @@ begin
        where a.id = any(v_users) and b.id = any(v_users)
          and private.normalized_name(a.display_name) is not null
          and private.normalized_name(b.display_name) is not null
-         and similarity(private.normalized_name(a.display_name), private.normalized_name(b.display_name))
+         and private.name_similarity(private.normalized_name(a.display_name), private.normalized_name(b.display_name))
              >= s.similar_name_min_similarity) then
     v_reason := 'similar_names';
   end if;

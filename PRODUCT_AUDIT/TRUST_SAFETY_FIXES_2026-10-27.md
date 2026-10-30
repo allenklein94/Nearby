@@ -569,9 +569,23 @@ trusted-counter example moved from the retired gathering counter to the communit
 (functions + ACL + config + security, triggers, constraints, relation ACLs, rule rows). From-scratch replay 486/486 apply,
 journeys 773/784 on it + all 4 concurrency scripts; the 11 failures are `trustSafetyI123` and PRE-EXISTING (not 0362):
 0357's `similarity()` runs with search_path `public`; prod has pg_trgm in `public`, a fresh database (the replay, like
-a new hosted project) has it in `extensions`, so duplicate-name signals error there. Reported, NOT fixed (owner: no
-further trust & safety changes unless critical; fresh-install only, prod unaffected). Jest 523 / 7156.
+a new hosted project) has it in `extensions`, so duplicate-name signals error there. FIXED 2026-10-30 (owner): see
+"0357 pg_trgm schema fix" below. Jest 523 / 7156.
 Deploy: right after 0361, own approval (`npm run migration:deploy`).
+
+## 0357 pg_trgm schema fix (owner, 2026-10-30; 0357 still NOT deployed)
+
+0357 now calls `private.name_similarity(a, b)` (sql, immutable, search_path ''), generated at migration time from
+`pg_extension` as `<schema where pg_trgm is installed>.similarity(a, b)`: `public.similarity` on production,
+`extensions.similarity` on a fresh database. No rule or threshold changed (0358 still sets 3 accounts / 0.5 similarity);
+the rollback also drops the wrapper. 0357 had no ledger row, so editing it changes only its approval hash (new sha256
+c022bf60…3ea3b; no approval code had been issued for 0357); nothing deployed. Tests (nothing written to production):
+prod journeys 784/784 with 0348-0362 as prelude; from-scratch replay 486/486 apply, journeys 784/784 on it (was 773/784:
+all 11 were `trustSafetyI123`, i.e. this bug; no other fresh-database failure remains) + all 4 concurrency scripts;
+rollback round trips identical catalog fingerprint (functions + ACL + config + security, triggers, constraints,
+relations + ACL, columns, policies, extensions) on prod (0348-0356 -> +0357 -> rollback; and 0348-0362 -> rollbacks
+0362..0357) and on the replay (rollbacks 0362..0357 -> +0357 -> rollback; re-apply 0357-0362 = the full state);
+Jest 523 / 7156. Limit: if pg_trgm is ever moved to another schema, 0357's wrapper block must be re-run.
 
 ## Priority order (owner, 2026-10-28)
 

@@ -12,6 +12,7 @@ drop function if exists private.evaluate_photo_fingerprint(text);
 drop function if exists private.forget_unused_photo_fingerprints(uuid);
 drop function if exists private.photo_object_in_use(uuid, uuid);
 drop function if exists private.normalized_name(text);
+drop function if exists private.name_similarity(text, text);
 drop table if exists private.account_review_case_members;
 drop table if exists private.account_review_cases;
 drop table if exists private.account_signal_settings;

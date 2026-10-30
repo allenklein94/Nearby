@@ -1,3 +1,13 @@
+# 2026-10-30: 0357 pg_trgm schema fix (staged, not deployed)
+
+0357's duplicate-name rule called `similarity()` under search_path `public`; production has pg_trgm in `public`, a fresh
+Supabase database has it in `extensions`, so the rule errored on a fresh install (the 11 replay journey failures, all
+`trustSafetyI123`). Fix: `private.name_similarity(a, b)` generated at migration time from `pg_extension` with the schema
+where pg_trgm is actually installed; the rule calls it; rules and thresholds unchanged; rollback drops it. 0357 had no
+ledger row: only its approval hash changes (sha256 c022bf60…3ea3b). Prod journeys 784/784 with 0348-0362 (rolled back);
+replay 486/486 + journeys 784/784 + 4 concurrency scripts; rollback round trips identical on prod and replay; Jest 523 /
+7156. 0362 stays staged. Details: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md` ("0357 pg_trgm schema fix").
+
 # 2026-10-30: gathering creation limits by trust level (20270362, built + staged, not deployed)
 
 Owner decision (2026-10-30): 5 gatherings per 24 h for a new account, 15 for an established one (verified phone + 7 days);
