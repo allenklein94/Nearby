@@ -102,7 +102,7 @@
       "googleMapsApiKey": "$GOOGLE_MAPS_API_KEY",
       "spotifyClientId": "042d42d6db1d46dfac3859bd194c91d8",
       "stripePublishableKey": "",
-      "turnstileSiteKey": "",
+      "turnstileSiteKey": "0x4AAAAAAFsh5P6dQBgjPrup",
       "turnstileHost": "https://allenklein94.github.io"
     }
   }

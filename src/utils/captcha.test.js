@@ -110,7 +110,9 @@ describe('LoginScreen wiring (source guard)', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'screens', 'LoginScreen.js'), 'utf8');
   test('the code request carries the token; the token is reset after every use', () => {
     expect(src).toMatch(/signInWithOtp\(\{ phone: formatted, options: authCaptchaOptions\(captchaToken\) \}\)/);
-    expect(src.match(/captcha\.reset\(\)/g).length).toBeGreaterThanOrEqual(3);
+    expect(src.match(/captcha\.reset\(\)/g).length).toBeGreaterThanOrEqual(2);
+    // fail open on the device: a check that can't complete sends no token, never blocks sign-in by itself
+    expect(src).toMatch(/captchaToken = await captcha\.take\(\);\s*\} catch \{\s*captchaToken = null;/);
     expect(src).toMatch(/isCaptchaRefusal\(error\) \? captchaUnavailableError\('refused'\)/);
   });
   test('the App Review number never asks Cloudflare (it skips signInWithOtp)', () => {

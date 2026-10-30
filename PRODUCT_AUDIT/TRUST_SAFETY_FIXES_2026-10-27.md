@@ -775,3 +775,8 @@ its own row, a correct PIN removes its own; cannot record = 503. At most 20 PIN 
 `scripts/live-verify/post-deploy.js`: one read-only plan per staged migration 0348-0366 + edge functions + Auth settings
 (rollback file, journeys without prelude, live tests, SQL/manual checks); `--list` prints it.
 Tests: Jest 528 suites / 7190; iOS bundle exports clean. Nothing applied to production.
+Update (owner, 2026-10-30): Turnstile widget created (hostname `allenklein94.github.io`); public site key
+`0x4AAAAAAFsh5P6dQBgjPrup` committed in app.json; the secret stays with the owner (only `TURNSTILE_SECRET` at `enable`). The
+device now FAILS OPEN: a check that can't complete (widget error, timeout) sends the request with no token, so with Auth
+CAPTCHA off sign-in is exactly today's; once on, Auth refuses tokenless requests (-> Try Again). Phone check before enable:
+the widget stays invisible, "Send Code" gets a token (no visible delay beyond "Checking…"), and sign-in still works.

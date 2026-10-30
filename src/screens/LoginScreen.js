@@ -48,16 +48,15 @@ export default function LoginScreen({ navigation }) {
     }
     setLoading(true);
     // Bot protection (Turnstile): a fresh single-use token per request, verified by Supabase Auth server-side.
+    // A check that can't complete sends no token (fail open on the device): while Auth CAPTCHA is off that is today's
+    // sign-in; once it is on, Auth itself refuses the tokenless request (-> Try Again below). Never blocks on the widget alone.
     let captchaToken = null;
     if (captcha.enabled) {
       setChecking(true);
       try {
         captchaToken = await captcha.take();
-      } catch (e) {
-        setChecking(false);
-        setLoading(false);
-        captcha.reset();
-        return presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => sendOtp() });
+      } catch {
+        captchaToken = null;
       }
       setChecking(false);
     }
