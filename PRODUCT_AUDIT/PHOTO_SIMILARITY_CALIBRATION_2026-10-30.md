@@ -51,6 +51,13 @@ borders, any rotation. A quarter turn is never caught (0% everywhere).
 - **Before switching on:** owner picks the distances; ideally re-run this script on a larger, more varied set (real-looking
   dating-profile photos, group photos, selfies) and recheck the false-match column.
 
+## Owner decision (2026-10-30)
+
+Initial threshold **dHash <= 10, pHash <= 10**. Detection stays disabled until separately approved for production (after
+0368/0369 + the `moderate-photo` redeploy are live and the privacy review / Privacy Policy sentence is done); the
+activation migration is not written yet (development frozen). Reason: the 314-photo set is too small to establish a
+real-world false-match rate.
+
 ## Not verified
 
 - Real uploads through `moderate-photo` on production (0368 + the function redeploy are NOT deployed).
