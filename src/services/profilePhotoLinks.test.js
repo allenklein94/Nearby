@@ -34,6 +34,8 @@ describe('profile photo links', () => {
       if (fs.readFileSync(p, 'utf8').includes("'profile-photos'")) hits.push(path.relative(root, p));
     });
     walk(root);
-    expect(hits.sort()).toEqual(['services/extraPhotos.js', 'services/photos.js']);
+    // AdminReviewScreen: the website's admin case review signs 15-minute links for case photos only (Storage re-checks the
+    // admin per file, 20270369); it can't import services/photos.js (native picker/file-system modules on the website)
+    expect(hits.sort()).toEqual(['screens/AdminReviewScreen.js', 'services/extraPhotos.js', 'services/photos.js']);
   });
 });

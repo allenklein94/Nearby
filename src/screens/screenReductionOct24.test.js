@@ -32,8 +32,9 @@ describe('the three screens are gone', () => {
     expect(walk(SRC).filter((f) => pattern.test(fs.readFileSync(f, 'utf8')))).toEqual([]);
   });
 
-  test('69 registered screens', () => {
-    expect(Object.keys(SCREEN_REGISTRY)).toHaveLength(69);
+  test('70 registered screens', () => {
+    // 69 after this consolidation + AdminReview (business website admin only, owner 2026-10-30; not in the native app)
+    expect(Object.keys(SCREEN_REGISTRY)).toHaveLength(70);
   });
 });
 

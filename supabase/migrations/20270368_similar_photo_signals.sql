@@ -4,8 +4,8 @@
 -- opens (calibration numbers + measured false/missed matches: PRODUCT_AUDIT/PHOTO_SIMILARITY_CALIBRATION_2026-10-30.md).
 --
 -- What it adds to 20270357 (exact copies only):
---   * moderate-photo computes two 64-bit perceptual hashes (dHash, pHash) of four variants of the photo it already
---     downloads for screening (whole, mirrored, centre 80%, centre 80% mirrored; supabase/functions/_shared/perceptualHash.js)
+--   * moderate-photo computes two 64-bit perceptual hashes (dHash, pHash) of six variants of the photo it already
+--     downloads for screening (whole, mirrored, centre 90% and 80%, each also mirrored; supabase/functions/_shared/perceptualHash.js)
 --     and records them through record_photo_perceptual_hashes (service role only) for that exact storage object.
 --     No AI, no face or identity analysis, no device data, nothing sent to a third party.
 --   * Two photos of DIFFERENT accounts are "similar" when, for one allowed pairing (one photo's whole image against any

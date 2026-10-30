@@ -32,7 +32,9 @@ const tryOwner = (step, stmt) => `
   ${rec(step, 'v_out')}`;
 
 const PEOPLE = ['v_admin', 'v_x', 'v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_f', 'v_g', 'v_h', 'v_i', 'v_j', 'v_k', 'v_z', 'v_m', 'v_q'];
-const obj = (v, file) => `insert into storage.objects (bucket_id, name, owner, metadata) values ('profile-photos', ${v}::text || '/${file}', ${v}, '{}'::jsonb);`;
+// no owner: nothing reads it, and the replay's older storage schema still has an owner -> auth.users FK prod dropped
+// (it would block the account-deletion step there only)
+const obj = (v, file) => `insert into storage.objects (bucket_id, name, metadata) values ('profile-photos', ${v}::text || '/${file}', '{}'::jsonb);`;
 const objId = (v, file) => `(select id from storage.objects where bucket_id = 'profile-photos' and name = ${v}::text || '/${file}')`;
 const usePhoto = (v, file) => `${obj(v, file)} update profiles set photo_url = ${v}::text || '/${file}' where id = ${v};`;
 // the hashes moderate-photo would send: [{variant, dhash, phash}]
