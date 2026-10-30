@@ -5,6 +5,11 @@
 //   node scripts/trust-safety/b5-auth-settings.js plan               READ-ONLY: current vs proposed + the approval code
 //   NEARBY_AUTH_APPROVAL=b5:<sha256> node scripts/trust-safety/b5-auth-settings.js apply
 //                                                                    PATCHes only the keys below, reads back, prints rollback
+//   node scripts/trust-safety/b5-auth-settings.js verify             READ-ONLY, after apply: the three keys are set AND every
+//                                                                    sign-in setting it must not touch is as before (UNTOUCHED);
+//                                                                    then run the live sign-in tests (dedicated account)
+// Existing passwords shorter than 10 keep working: Supabase Auth checks strength on sign-in only to REPORT weak_password
+// (internal/api/token.go, upstream source read 2026-10-30), never to refuse; phone-code sign-in never involves a password.
 // Needs SUPABASE_ACCESS_TOKEN. Never touches CAPTCHA (needs a provider + a new native build first) or sign-up/sign-in providers.
 const crypto = require('crypto');
 
@@ -16,6 +21,12 @@ const PROPOSED = Object.freeze({
   password_min_length: 10, // was 6; checked only when a password is SET (sign-up, change, reset); existing passwords still sign in
   security_update_password_require_reauthentication: true, // a password change needs a fresh code: a stolen session can't lock the owner out
   mailer_notifications_password_changed_enabled: true, // the account's email is told when its password changes (template already set)
+});
+
+// Sign-in settings this change must leave exactly as they are (read 2026-10-30).
+const UNTOUCHED = Object.freeze({
+  external_phone_enabled: true, sms_provider: 'twilio_verify', sms_otp_length: 6, sms_autoconfirm: false,
+  external_email_enabled: true, mailer_autoconfirm: false, disable_signup: false, security_captcha_enabled: false,
 });
 
 const approvalCode = () => `b5:${crypto.createHash('sha256').update(JSON.stringify(PROPOSED)).digest('hex')}`;
@@ -41,6 +52,14 @@ async function main(mode) {
   console.log('proposed:', JSON.stringify(PROPOSED));
   console.log('changes :', diff.length ? diff.join(', ') : 'none (already applied)');
   console.log('approval:', approvalCode());
+  if (mode === 'verify') {
+    const all = await call('GET');
+    const bad = [...Object.keys(PROPOSED).filter((k) => all[k] !== PROPOSED[k]).map((k) => `${k} = ${all[k]} (expected ${PROPOSED[k]})`),
+      ...Object.keys(UNTOUCHED).filter((k) => all[k] !== UNTOUCHED[k]).map((k) => `${k} = ${all[k]} (was ${UNTOUCHED[k]})`)];
+    console.log(bad.length ? `VERIFY FAILED:\n- ${bad.join('\n- ')}` : 'VERIFY OK: the three keys set; phone, email, sign-up and CAPTCHA settings unchanged');
+    console.log('next: npx jest -c jest.live.config.js src/qa/plansLoadSignedIn.live.js src/qa/pushTokenPrivacySignedIn.live.js (existing account signs in)');
+    return bad.length ? 1 : 0;
+  }
   if (mode !== 'apply') return 0;
   if (process.env.NEARBY_AUTH_APPROVAL !== approvalCode()) {
     console.error('REFUSED (nothing sent): NEARBY_AUTH_APPROVAL must equal the approval code above');
@@ -58,4 +77,4 @@ async function main(mode) {
 if (require.main === module) {
   main(process.argv[2]).then((c) => process.exit(c), (e) => { console.error(e.message); process.exit(1); });
 }
-module.exports = { PROPOSED, approvalCode };
+module.exports = { PROPOSED, UNTOUCHED, approvalCode };

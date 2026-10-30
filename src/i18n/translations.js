@@ -821,6 +821,8 @@ export const translations = {
       differentNumber: 'Use a different number',
       invalidNumber: 'Invalid number',
       invalidNumberMessage: 'Enter a 10-digit US phone number.',
+      checking: 'Checking…',
+      securityCheckA11y: 'Security check',
     },
     discovery: {
       title: 'Crossed Paths',
@@ -1949,6 +1951,8 @@ export const translations = {
       differentNumber: 'Usar un n\u00famero diferente',
       invalidNumber: 'N\u00famero inv\u00e1lido',
       invalidNumberMessage: 'Ingresa un n\u00famero de tel\u00e9fono de 10 d\u00edgitos de EE. UU.',
+      checking: 'Comprobando…',
+      securityCheckA11y: 'Control de seguridad',
     },
     discovery: {
       title: 'Caminos Cruzados',
@@ -3049,6 +3053,8 @@ export const translations = {
       differentNumber: 'Andere Nummer verwenden',
       invalidNumber: 'Ung\u00fcltige Nummer',
       invalidNumberMessage: 'Gib eine 10-stellige US-Telefonnummer ein.',
+      checking: 'Wird geprüft…',
+      securityCheckA11y: 'Sicherheitsprüfung',
     },
     discovery: {
       title: 'Gekreuzte Wege',
@@ -4158,6 +4164,8 @@ export const translations = {
       differentNumber: 'Utiliser un autre num\u00e9ro',
       invalidNumber: 'Num\u00e9ro invalide',
       invalidNumberMessage: 'Entrez un num\u00e9ro de t\u00e9l\u00e9phone am\u00e9ricain \u00e0 10 chiffres.',
+      checking: 'Vérification…',
+      securityCheckA11y: 'Contrôle de sécurité',
     },
     discovery: {
       title: 'Chemins Crois\u00e9s',
@@ -5273,6 +5281,8 @@ export const translations = {
       differentNumber: 'Usar outro n\u00famero',
       invalidNumber: 'N\u00famero inv\u00e1lido',
       invalidNumberMessage: 'Digite um n\u00famero de telefone dos EUA com 10 d\u00edgitos.',
+      checking: 'Verificando…',
+      securityCheckA11y: 'Verificação de segurança',
     },
     discovery: {
       title: 'Caminhos Cruzados',
@@ -6375,6 +6385,8 @@ export const translations = {
       differentNumber: 'Itilize yon lòt nimewo',
       invalidNumber: 'Nimewo pa valab',
       invalidNumberMessage: 'Antre yon nimewo telefòn Ozetazini 10 chif.',
+      checking: 'N ap verifye…',
+      securityCheckA11y: 'Verifikasyon sekirite',
     },
     discovery: {
       title: 'Chemen Kwaze',
@@ -7477,6 +7489,8 @@ export const translations = {
       differentNumber: '使用其他号码',
       invalidNumber: '号码无效',
       invalidNumberMessage: '请输入10位美国电话号码。',
+      checking: '正在检查…',
+      securityCheckA11y: '安全检查',
     },
     discovery: {
       title: '擦肩而过',
@@ -8577,6 +8591,8 @@ export const translations = {
       differentNumber: 'Sử dụng số khác',
       invalidNumber: 'Số không hợp lệ',
       invalidNumberMessage: 'Nhập số điện thoại Mỹ 10 chữ số.',
+      checking: 'Đang kiểm tra…',
+      securityCheckA11y: 'Kiểm tra bảo mật',
     },
     discovery: {
       title: 'Đường Đời Giao Nhau',
@@ -9679,6 +9695,8 @@ export const translations = {
       differentNumber: 'Gumamit ng ibang numero',
       invalidNumber: 'Hindi wastong numero',
       invalidNumberMessage: 'Ilagay ang 10-digit na numero ng telepono ng US.',
+      checking: 'Sinusuri…',
+      securityCheckA11y: 'Pagsusuri sa seguridad',
     },
     discovery: {
       title: 'Nagkrus na Landas',
@@ -10811,6 +10829,8 @@ export const translations = {
       differentNumber: 'Использовать другой номер',
       invalidNumber: 'Неверный номер',
       invalidNumberMessage: 'Введите 10-значный номер телефона США.',
+      checking: 'Проверка…',
+      securityCheckA11y: 'Проверка безопасности',
     },
     discovery: {
       title: 'Пересечённые Пути',
@@ -11913,6 +11933,8 @@ export const translations = {
       differentNumber: '다른 번호 사용',
       invalidNumber: '잘못된 번호',
       invalidNumberMessage: '10자리 미국 전화번호를 입력하세요.',
+      checking: '확인 중…',
+      securityCheckA11y: '보안 확인',
     },
     discovery: {
       title: '스쳐 지나간 인연',

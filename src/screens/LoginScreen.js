@@ -6,6 +6,9 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import NearbyMark from '../components/brand/NearbyMark';
+import TurnstileWidget from '../components/TurnstileWidget';
+import useAuthCaptcha from '../hooks/useAuthCaptcha';
+import { authCaptchaOptions, captchaUnavailableError, isCaptchaRefusal, turnstileLanguage } from '../utils/captcha';
 
 const REVIEWER_PHONE_DIGITS = '5555550199';
 
@@ -17,8 +20,10 @@ function toE164(rawInput) {
 }
 
 export default function LoginScreen({ navigation }) {
-  const { colors, shadow } = useTheme();
-  const { t } = useLanguage();
+  const { colors, shadow, isDark } = useTheme();
+  const { t, language } = useLanguage();
+  const captcha = useAuthCaptcha();
+  const [checking, setChecking] = useState(false);
   const styles = getStyles(colors, shadow);
   const [phoneInput, setPhoneInput] = useState('');
   const [otp, setOtp] = useState('');
@@ -42,14 +47,33 @@ export default function LoginScreen({ navigation }) {
       return Alert.alert(t('login.invalidNumber'), t('login.invalidNumberMessage'));
     }
     setLoading(true);
+    // Bot protection (Turnstile): a fresh single-use token per request, verified by Supabase Auth server-side.
+    let captchaToken = null;
+    if (captcha.enabled) {
+      setChecking(true);
+      try {
+        captchaToken = await captcha.take();
+      } catch (e) {
+        setChecking(false);
+        setLoading(false);
+        captcha.reset();
+        return presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => sendOtp() });
+      }
+      setChecking(false);
+    }
     try {
-      const { error } = await supabase.auth.signInWithOtp({ phone: formatted });
+      const { error } = await supabase.auth.signInWithOtp({ phone: formatted, options: authCaptchaOptions(captchaToken) });
       setLoading(false);
-      if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => sendOtp() });
+      if (captcha.enabled) captcha.reset(); // the token is spent either way
+      if (error) {
+        const shown = isCaptchaRefusal(error) ? captchaUnavailableError('refused') : error;
+        return presentRecoverableError(Alert, { what: 'complete that', error: shown, onRetry: () => sendOtp() });
+      }
       setE164Phone(formatted);
       setOtpSent(true);
     } catch (e) {
       setLoading(false);
+      if (captcha.enabled) captcha.reset();
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => sendOtp() });
     }
   }
@@ -129,15 +153,25 @@ export default function LoginScreen({ navigation }) {
             accessibilityLabel={t('ui.onboarding.phoneNumberA11y')}
             textContentType="telephoneNumber"
           />
+          {captcha.enabled && (
+            <TurnstileWidget
+              ref={captcha.widget}
+              config={captcha.config}
+              dark={isDark}
+              language={turnstileLanguage(language)}
+              onEvent={captcha.onEvent}
+              accessibilityLabel={t('login.securityCheckA11y')}
+            />
+          )}
           <TouchableOpacity
             style={styles.button}
             onPress={sendOtp}
             disabled={loading}
             activeOpacity={0.85}
-            accessibilityLabel={loading ? t('login.sending') : t('login.sendCode')}
+            accessibilityLabel={checking ? t('login.checking') : loading ? t('login.sending') : t('login.sendCode')}
             accessibilityRole="button"
           >
-            <Text style={styles.buttonText}>{loading ? t('login.sending') : t('login.sendCode')}</Text>
+            <Text style={styles.buttonText}>{checking ? t('login.checking') : loading ? t('login.sending') : t('login.sendCode')}</Text>
           </TouchableOpacity>
         </>
       ) : (

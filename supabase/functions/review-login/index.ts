@@ -33,21 +33,35 @@ serve(async (req)=>{
       });
     }
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
-    // Rate-limit by IP before checking the PIN at all — without
-    // this, the PIN could be brute-forced by simply calling this
-    // endpoint repeatedly with different values, since there was
-    // previously no limit on attempts.
+    // Rate-limit before checking the PIN at all (per address AND for all callers).
     const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
     const windowStart = new Date(Date.now() - WINDOW_MINUTES * 60 * 1000).toISOString();
+    // 2026-10-30 (staged): RECORD FIRST, then count, then check the PIN. Counting first let N simultaneous guesses all see
+    // the same count before any was recorded (the caps only held one request at a time). Now every request's own row is
+    // already in the count, so the 21st request to record always sees >= 21 and is refused: at most GLOBAL_MAX_FAILURES
+    // PIN checks per window however requests interleave (and MAX_ATTEMPTS per address). A refused request removes its own
+    // row (the table stays bounded under a flood; rows that reached the PIN check stay); a correct PIN removes its own row.
+    // Cannot record = closed.
+    const { data: attempt, error: recordError } = await admin.from('review_login_attempts').insert({
+      ip_address: ip
+    }).select('id').single();
+    if (recordError || !attempt) {
+      return new Response(JSON.stringify({
+        error: 'Try again later.'
+      }), {
+        status: 503
+      });
+    }
     const { count } = await admin.from('review_login_attempts').select('id', {
       count: 'exact',
       head: true
     }).eq('ip_address', ip).gte('attempted_at', windowStart);
-    const { count: allFailures } = await admin.from('review_login_attempts').select('id', {
+    const { count: allAttempts } = await admin.from('review_login_attempts').select('id', {
       count: 'exact',
       head: true
     }).gte('attempted_at', windowStart);
-    if ((count ?? 0) >= MAX_ATTEMPTS || (allFailures ?? 0) >= GLOBAL_MAX_FAILURES) {
+    if (count == null || allAttempts == null || count > MAX_ATTEMPTS || allAttempts > GLOBAL_MAX_FAILURES) {
+      await admin.from('review_login_attempts').delete().eq('id', attempt.id);
       return new Response(JSON.stringify({
         error: 'Too many attempts. Try again later.'
       }), {
@@ -56,15 +70,13 @@ serve(async (req)=>{
     }
     const { pin } = await req.json();
     if (!pin || !samePin(pin, REVIEW_LOGIN_PIN)) {
-      await admin.from('review_login_attempts').insert({
-        ip_address: ip
-      });
       return new Response(JSON.stringify({
         error: 'Invalid code'
       }), {
         status: 401
       });
     }
+    await admin.from('review_login_attempts').delete().eq('id', attempt.id);
     const { data, error } = await admin.auth.admin.generateLink({
       type: 'magiclink',
       email: REVIEWER_EMAIL

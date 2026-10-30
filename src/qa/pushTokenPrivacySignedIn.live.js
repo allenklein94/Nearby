@@ -22,9 +22,8 @@ const d = EMAIL && PASSWORD ? describe : describe.skip;
 d('N1: tokens through the real signed-in API (read-only)', () => {
   let userId;
   beforeAll(async () => {
-    const { data, error } = await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
-    if (error) throw new Error(`sign in: ${error.message}`);
-    userId = data.user.id;
+    const signedIn = await require('./live/signInTestAccount').signInTestAccount(client, { email: EMAIL, password: PASSWORD }); // CAPTCHA-safe
+    userId = signedIn.user.id;
   }, 30000);
   afterAll(async () => { await client.auth.signOut(); });
 

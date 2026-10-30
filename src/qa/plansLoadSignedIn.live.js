@@ -30,9 +30,8 @@ const d = EMAIL && PASSWORD ? describe : describe.skip;
 d('Plans load path through the real signed-in API (read-only)', () => {
   let userId;
   beforeAll(async () => {
-    const { data, error } = await mockClient.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
-    if (error) throw new Error(`sign in: ${error.message}`);
-    userId = data.user.id;
+    const signedIn = await require('./live/signInTestAccount').signInTestAccount(mockClient, { email: EMAIL, password: PASSWORD }); // CAPTCHA-safe
+    userId = signedIn.user.id;
   }, 30000);
   afterAll(async () => { await mockClient.auth.signOut(); });
 

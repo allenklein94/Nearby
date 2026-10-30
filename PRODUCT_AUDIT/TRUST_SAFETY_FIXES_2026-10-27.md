@@ -750,3 +750,28 @@ Jest 524 suites / 7160 tests. Approval hashes (sha256 prefixes; full in the file
 0364 1977580f358ac61c, 0365 6628af479b2b1d0c, 0366 3995f31f363ff7d7; B5 = b5:126c06ea…56ff.
 Deploy order (each its own approval): 0348 ... 0362, 0363 (+ report-presence), 0364 (+ its post-deploy plan), 0365, 0366;
 B5 Auth settings independently (no migration dependency); review-login only after REVIEWER_EMAIL is set.
+
+### CAPTCHA (Cloudflare Turnstile) + review-login race + post-deploy plan (2026-10-30, BUILT, NOT APPLIED / NOT DEPLOYED)
+Owner chose Turnstile. Client: `utils/captcha.js` (pure rules: config from app.json `extra.turnstileSiteKey` +
+`turnstileHost`, widget page, message parsing, one-use token store), `hooks/useAuthCaptcha.js`, `components/TurnstileWidget.js`
+(Cloudflare's widget in a `react-native-webview` WebView, invisible unless Cloudflare needs a tick, links open in the browser)
++ `TurnstileWidget.web.js` (website export). LoginScreen takes a FRESH token per "Send Code" (`captchaToken` on
+`signInWithOtp`), button reads "Checking…" while it waits, a widget failure or Auth refusal = Try Again (never raw). Site key
+EMPTY in app.json = no widget, no token = exactly today's behaviour; a token sent while Auth CAPTCHA is off is ignored, so a
+build can carry this long before the switch. 2 new strings `login.checking` / `securityCheckA11y` (10 languages machine-authored,
+need native review). NEW NATIVE DEPENDENCY `react-native-webview` 13.15.0 (`expo install --check` clean): a build made from
+this commit differs natively from build 86; the switch needs a build WITH the site key on every device.
+Switch: `scripts/trust-safety/captcha-settings.js` (plan read-only; `enable` refuses unless app.json has a valid site key/host,
+`NEARBY_CAPTCHA_MIN_BUILD` set, no session from an older build / unknown client active in 30 days, website sessions only with
+`NEARBY_CAPTCHA_WEB_CONFIRMED=1`, `TURNSTILE_SECRET` set (never committed; goes only to Supabase Auth), approval code from
+plan; `disable` = instant rollback). Owner to do: Cloudflare account, Turnstile widget with hostname `allenklein94.github.io`,
+site key into app.json, build, then plan -> enable. Live tests sign in via `src/qa/live/signInTestAccount.js` (password,
+else a server-issued magic link when CAPTCHA refuses; dedicated account only).
+B5 script: new `verify` mode (the three keys set AND phone/email/sign-up/CAPTCHA settings unchanged). Existing passwords
+shorter than 10 still sign in (Auth only reports weak_password on sign-in).
+review-login: record-then-count (the old count-then-record let N parallel guesses all pass the cap); a refused request removes
+its own row, a correct PIN removes its own; cannot record = 503. At most 20 PIN checks per 15 min however requests interleave;
+`src/utils/reviewLoginConcurrency.test.js`. Redeploy still needs REVIEWER_EMAIL + approval.
+`scripts/live-verify/post-deploy.js`: one read-only plan per staged migration 0348-0366 + edge functions + Auth settings
+(rollback file, journeys without prelude, live tests, SQL/manual checks); `--list` prints it.
+Tests: Jest 528 suites / 7190; iOS bundle exports clean. Nothing applied to production.

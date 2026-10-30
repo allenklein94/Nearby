@@ -78,7 +78,12 @@ describe('recovered functions keep their behaviour', () => {
   test('review-login: failed PIN guesses are capped for ALL callers, not only per (spoofable) IP; no PIN = closed', () => {
     const s = src('review-login');
     expect(s).toMatch(/const GLOBAL_MAX_FAILURES = \d+;/);
-    expect(s).toMatch(/\.gte\('attempted_at', windowStart\);\s*if \(\(count \?\? 0\) >= MAX_ATTEMPTS \|\| \(allFailures \?\? 0\) >= GLOBAL_MAX_FAILURES\)/);
+    // record first, then count (concurrency: src/utils/reviewLoginConcurrency.test.js), then the PIN
+    const rec = s.indexOf("from('review_login_attempts').insert"), cnt = s.indexOf("count: allAttempts"), chk = s.indexOf('samePin(pin, REVIEW_LOGIN_PIN)');
+    expect(rec).toBeGreaterThan(-1);
+    expect(rec).toBeLessThan(cnt);
+    expect(cnt).toBeLessThan(chk);
+    expect(s).toMatch(/count > MAX_ATTEMPTS \|\| allAttempts > GLOBAL_MAX_FAILURES/);
     expect(s).toMatch(/if \(!REVIEW_LOGIN_PIN \|\| !REVIEWER_EMAIL\)/);
     expect(s).toMatch(/!samePin\(pin, REVIEW_LOGIN_PIN\)/);
     expect(s).not.toMatch(/pin !== REVIEW_LOGIN_PIN/);

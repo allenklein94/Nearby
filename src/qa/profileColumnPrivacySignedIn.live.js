@@ -30,9 +30,8 @@ d('N6: profile columns through the real signed-in API (read-only)', () => {
   let userId;
   let n6;
   beforeAll(async () => {
-    const { data, error } = await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
-    if (error) throw new Error(`sign in: ${error.message}`);
-    userId = data.user.id;
+    const signedIn = await require('./live/signInTestAccount').signInTestAccount(client, { email: EMAIL, password: PASSWORD }); // CAPTCHA-safe
+    userId = signedIn.user.id;
     const probe = await client.rpc('get_my_profile').select('id');
     n6 = !(probe.error && (probe.error.code === 'PGRST202' || probe.error.code === '42883'));
     // eslint-disable-next-line no-console

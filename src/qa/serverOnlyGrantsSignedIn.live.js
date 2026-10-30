@@ -47,8 +47,7 @@ d('20270364: server-only functions through the real signed-in API (post-deploy)'
     if (grants.forecast_auth || grants.forecast_anon || grants.nudges_auth || grants.nudges_anon) {
       throw new Error('0364 is not live (a client can still execute a function): refusing to call anything');
     }
-    const { error } = await client.auth.signInWithPassword({ email: EMAIL, password: PASSWORD });
-    if (error) throw new Error(`sign in: ${error.message}`);
+    await require('./live/signInTestAccount').signInTestAccount(client, { email: EMAIL, password: PASSWORD }); // CAPTCHA-safe
   }, 30000);
   afterAll(async () => { await client.auth.signOut(); });
 
