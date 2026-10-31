@@ -75,6 +75,11 @@ Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one
    chevron (Button watch); "I'm Going" gone (Join stays Join after ☆ Interested on a gathering's detail).
 7. Needs at least one visible gathering (your own test gathering is enough; host-cancel it after): Discover ☆ Interested
    check (a)-(f), Compact-row attendance check ("1 attending" on your own tile), Map consistency watch (a)-(c).
+8. Message reporting findability (owner 2026-10-31; chats are reports-based, so finding Report matters): in a chat with another
+   account (e.g. applereview), long-press one of THEIR messages: is Report there without hunting? Open it, read the sheet, then
+   either cancel, or submit only between two test accounts on a controlled test message (a submitted report is kept, never deleted).
+   Note whether the sheet shows which message is reported. Evidence retention after deletion is NOT tested here: it needs 0355 live
+   (post-deploy step 20270355). Findability problem = USABILITY, report the exact spot; no new reporting feature.
 
 Tier 2, the journey (session A parts 1-7, in order; seed required for 2-4, credit for hand-written replies):
 part 6's ~20-min gathering FIRST, then parts 1-5, part 7 (automatic reply), coming back for the Request deadline watch, Ask again
