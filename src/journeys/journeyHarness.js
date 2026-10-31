@@ -17,8 +17,65 @@ function prelude() {
   return f ? `begin;\n${require('fs').readFileSync(f, 'utf8')}\n` : '';
 }
 
-async function runJourney(declare, body) {
-  const sql = `${prelude()}do $j$ declare log jsonb := '[]'::jsonb; ${declare}
+// 20270372 (offer safety): a business's offer reply, availability posting or profile text edit needs a screening result
+// the screen-business-content edge function recorded for that exact content. A journey plays the business calling those
+// functions directly, standing in for the edge function, so by default each call goes through a stand-in that first
+// records the low-risk screening result the edge function would (built by the migration's own content functions), then
+// calls the real public function. Only where 20270372 is installed; before it, a plain pass-through. A journey that tests
+// the binding itself passes { unscreened: true } and calls the functions as a direct client would.
+const SCREENED_CALLS = /\b(?:public\.)?(submit_business_offer|post_business_availability|update_business_profile)\s*\(/g;
+const SCREENING_STAND_INS = `
+create or replace function pg_temp._journey_screened(p_target text, p_builder text, p_args text[]) returns void
+language plpgsql security definer set search_path = public as $f$
+declare p_content jsonb;
+begin
+  if to_regprocedure('private.require_business_screening(uuid,text,uuid,jsonb)') is null then return; end if;
+  execute format('select private.%I(%s)', p_builder,
+    (select string_agg(case when a is null then 'null' else quote_literal(a) end, ', ' order by o)
+       from unnest(p_args) with ordinality u(a, o))) into p_content;
+  insert into business_content_screening_results (partner_id, target_type, target_id, submitted_by, content_snapshot,
+                                                  risk_tier, model_reasoning, source)
+  select p.managed_partner_id, p_target, null, auth.uid(), p_content, 'low', 'journey stand-in for screen-business-content', 'submission'
+    from profiles p where p.id = auth.uid() and p.managed_partner_id is not null;
+end $f$;
+create or replace function pg_temp.j_submit_business_offer(request_id_param uuid, offer_type_param text, offer_description_param text,
+  offer_price_param numeric default null, proposed_time_param timestamptz default null, experience_id_param uuid default null,
+  media_path_param text default null, media_type_param text default null, offer_title_param text default null,
+  included_items_param text[] default '{}', price_is_per_person_param boolean default false, discount_pct_param numeric default null,
+  redemption_instructions_param text default null, media_poster_path_param text default null, creative_id_param uuid default null,
+  valid_until_param timestamptz default null, available_from_param time default null, available_until_param time default null,
+  proposed_time_alt_param timestamptz default null, proposed_party_size_alt_param smallint default null)
+returns jsonb language plpgsql as $f$
+begin
+    perform pg_temp._journey_screened('offer_response', 'screening_content_offer_response', array[request_id_param::text,
+      offer_description_param, offer_title_param, coalesce(included_items_param, '{}')::text, redemption_instructions_param,
+      media_path_param, media_type_param, media_poster_path_param, creative_id_param::text]);
+  return public.submit_business_offer($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20);
+end $f$;
+create or replace function pg_temp.j_post_business_availability(category_param text, title_param text, description_param text,
+  offer_type_param text, price_param numeric, capacity_param integer, starts_at_param timestamptz, ends_at_param timestamptz,
+  radius_miles_param double precision default 15, bundle_occasion_param text default null, bundle_components_param text[] default null,
+  discount_pct_param numeric default null)
+returns jsonb language plpgsql as $f$
+begin
+    perform pg_temp._journey_screened('availability', 'screening_content_availability', array[title_param, description_param]);
+  return public.post_business_availability($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12);
+end $f$;
+create or replace function pg_temp.j_update_business_profile(partner_id_param uuid, name_param text, description_param text,
+  address_param text, latitude_param double precision, longitude_param double precision, logo_url_param text,
+  category_param text default null, attributes_param text[] default null, cuisine_param text default null,
+  differentiator_param text default null, subcategory_param text default null, categories_param text[] default null)
+returns void language plpgsql as $f$
+begin
+    perform pg_temp._journey_screened('business_profile', 'screening_content_profile', array[name_param, description_param,
+      logo_url_param, differentiator_param]);
+  perform public.update_business_profile($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13);
+end $f$;
+`;
+
+async function runJourney(declare, rawBody, { unscreened = false } = {}) {
+  const body = unscreened ? rawBody : rawBody.replace(SCREENED_CALLS, 'pg_temp.j_$1(');
+  const sql = `${prelude()}${SCREENING_STAND_INS}do $j$ declare log jsonb := '[]'::jsonb; ${declare}
 begin
 ${body}
 raise exception 'JOURNEY_LOG %', log::text;

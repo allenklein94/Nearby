@@ -121,7 +121,20 @@ const OFFER_TYPE_OPTIONS = ['standard', 'discount', 'perk', 'upgrade', 'alt_time
 // vocabulary above is.
 const BUNDLE_OCCASION_OPTIONS = ['date_night', 'anniversary', 'birthday', 'celebration', 'family_gathering'];
 const BUNDLE_COMPONENT_OPTIONS = ['dinner', 'something_to_do', 'finish_the_night', 'something_fun', 'sweet_treat', 'food', 'family_fun'];
-const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response', 'creative'];
+const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response', 'creative', 'package'];
+
+// Offer safety (20270372, gap 2): offers never carry website links, email addresses or phone numbers. ONE rule in the
+// database (private.offer_contact_kind, also enforced by triggers on every offer table); asked here first, so contact
+// details are refused before screening and never held for review. A database without 20270372 has no such function:
+// nothing to check (its tables have no such trigger either).
+const OFFER_CONTACT_MESSAGE = "Offers can't include website links, email addresses or phone numbers. Customers reach you through Nearby.";
+async function offerContactRefusal(admin: any, texts: (string | null | undefined)[]) {
+  const list = texts.filter((t): t is string => typeof t === 'string' && t.trim() !== '');
+  if (list.length === 0) return null;
+  const { data, error } = await admin.rpc('offer_contact_info_kind', { texts_param: list });
+  if (error || !data) return null;
+  return json({ error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info', kind: data }, 400);
+}
 
 // The screening SERVICE failed (classifier unreachable/out of credit/bad reply, or the audit log write failed) -- not a
 // verdict on the content and not a validation problem (those return 400 with their own message, and a real policy hit is a
@@ -148,7 +161,8 @@ function conflictsOf(err: any): string[] | null {
 function writeRefusal(err: any) {
   const conflicts = conflictsOf(err);
   if (conflicts) return json({ error: conflicts.join('\n'), code: 'setting_conflict', conflicts }, 400);
-  const isRuleRefusal = err?.code === 'P0001' || err?.code === '23514';
+  if (err?.hint === 'offer_contact_info') return json({ error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info' }, 400);
+  const isRuleRefusal = err?.code === 'P0001' || err?.code === '23514' || err?.code === '22023';
   return json({ error: err?.message || 'Could not save your changes.' }, isRuleRefusal ? 400 : 500);
 }
 
@@ -667,7 +681,8 @@ Description: ${description || '(none)'}`;
           attributes_param: attributes,
           price_level_param: priceLevel,
           party_type_param: partyType,
-          ai_suggested_param: false,
+          // "Keep" on a suggestion Nearby derived (provenance only; it is screened like any other experience).
+          ai_suggested_param: body.aiSuggested === true,
           media_path_param: mediaPath,
           media_type_param: mediaType,
         });
@@ -721,6 +736,7 @@ Description: ${description || '(none)'}`;
       const contentBlock = `Title: ${title}
 Description: ${description || '(none)'}`;
 
+      { const refused = await offerContactRefusal(admin, [title, description, redemptionInstructions]); if (refused) return refused; }
       const result = await classifyContent(contentBlock);
       if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
@@ -767,7 +783,7 @@ Description: ${description || '(none)'}`;
         });
         if (writeError) {
           console.error('screen-business-content: low-tier offer write failed', writeError);
-          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+          return writeRefusal(writeError);
         }
         return json({ riskTier, published: true, blocked: false, screeningId });
       }
@@ -838,6 +854,7 @@ Description: ${description || '(none)'}`;
         const conflict = await preCheckConflicts(supabaseAsUser, partnerId, 'availability', { bundle_occasion: bundleOccasion });
         if (conflict) return conflict;
       }
+      { const refused = await offerContactRefusal(admin, [title, description]); if (refused) return refused; }
       const result = await classifyContent(contentBlock);
       if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
@@ -881,6 +898,80 @@ Description: ${description || '(none)'}`;
           return writeRefusal(writeError);
         }
         return json({ riskTier, published: true, blocked: false, screeningId, availabilityId: writeResult?.availabilityId, matchedCount: writeResult?.matchedCount });
+      }
+
+      if (riskTier === 'high') {
+        return json({
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be published — it was flagged during a routine content check.",
+        }, 200);
+      }
+
+      return json({ riskTier, published: false, blocked: false, screeningId });
+    }
+
+    if (targetType === 'package') {
+      // Occasion packages (business_occasion_packages; 20270372): a standing package becomes an automatic offer to matching
+      // requests, so it is screened like an offer reply. packageId null = new, else that package of this business (edit).
+      // The snapshot holds the whole package: the write function's binding compares name / description / included items
+      // (normalized exactly as the package functions store them), and an approved held package is applied from it.
+      const packageId = typeof body.packageId === 'string' && body.packageId ? body.packageId : null;
+      const name = typeof body.name === 'string' ? body.name.trim().slice(0, 120) : '';
+      if (!name) return json({ error: 'Give this package a real name.' }, 400);
+      const descriptionRaw = typeof body.description === 'string' ? body.description.trim().slice(0, 1000) : '';
+      const description = descriptionRaw || null;
+      const includedItems = Array.isArray(body.includedItems)
+        ? body.includedItems.filter((i: unknown) => typeof i === 'string' && (i as string).trim()).map((i: string) => i.trim().slice(0, 80)).slice(0, 20)
+        : [];
+      const occasionType = typeof body.occasionType === 'string' && body.occasionType ? body.occasionType : null;
+      if (!occasionType) return json({ error: 'Invalid occasion' }, 400);
+      const minGuests = Number.isInteger(body.minGuests) ? body.minGuests : null;
+      const pricePerPerson = Number.isFinite(body.pricePerPerson) ? body.pricePerPerson : null;
+      const availableDays = Array.isArray(body.availableDays) ? body.availableDays.filter((d: unknown) => Number.isInteger(d)) : null;
+      if (packageId) {
+        const { data: existing } = await admin.from('business_occasion_packages').select('partner_id').eq('id', packageId).maybeSingle();
+        if (!existing || existing.partner_id !== partnerId) return json({ error: 'Package not found.' }, 404);
+      }
+      { const refused = await offerContactRefusal(admin, [name, description, ...includedItems]); if (refused) return refused; }
+
+      const contentBlock = [
+        `Package name: ${name}`,
+        `Description: ${description || '(none)'}`,
+        includedItems.length > 0 ? `Included items: ${includedItems.join(', ')}` : null,
+      ].filter(Boolean).join('\n');
+      const result = await classifyContent(contentBlock);
+      if (!result) return screeningUnavailable();
+      const { riskTier, matchedCategories, reasoning } = result;
+
+      const contentSnapshot = { packageId, occasionType, name, description, includedItems, minGuests, pricePerPerson, availableDays };
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: 'package',
+        target_id_param: packageId,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
+      });
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return screeningUnavailable();
+      }
+
+      if (riskTier === 'low') {
+        const args = {
+          occasion_type_param: occasionType, name_param: name, description_param: description, included_items_param: includedItems,
+          min_guests_param: minGuests, price_per_person_param: pricePerPerson, available_days_param: availableDays,
+        };
+        const { data: writeResult, error: writeError } = packageId
+          ? await supabaseAsUser.rpc('update_occasion_package', { package_id_param: packageId, ...args })
+          : await supabaseAsUser.rpc('create_occasion_package', args);
+        if (writeError) {
+          console.error('screen-business-content: low-tier package write failed', writeError);
+          return writeRefusal(writeError);
+        }
+        return json({ riskTier, published: true, blocked: false, screeningId, packageId: writeResult?.packageId ?? packageId });
       }
 
       if (riskTier === 'high') {
@@ -1059,6 +1150,16 @@ Body: ${updateBody || '(none)'}`;
       }
     }
 
+    {
+      const refused = await offerContactRefusal(admin, [offerTitle, offerDescription, redemptionInstructions, ...includedItems]);
+      if (refused) {
+        if (submissionId) {
+          await admin.from('business_offer_submissions').update({ status: 'needs_changes', reason: OFFER_CONTACT_MESSAGE, updated_at: new Date().toISOString() }).eq('id', submissionId);
+        }
+        return refused;
+      }
+    }
+
     const UNAVAILABLE = { status: 503, body: { error: "We couldn't review this right now. Please try again in a bit.", code: 'screening_unavailable' } };
     const runOfferScreening = async (): Promise<{ status: number; body: any }> => {
       const contentBlock = [
@@ -1149,6 +1250,7 @@ Body: ${updateBody || '(none)'}`;
         });
         if (writeError) {
           console.error('screen-business-content: low-tier offer_response write failed', writeError);
+          if (writeError.hint === 'offer_contact_info') return { status: 400, body: { error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info' } };
           return { status: 500, body: { error: writeError.message || 'Could not send your response.' } };
         }
         // Item 51: the business's first-ever offer = the server's one claim (partner_first_offers, set by trigger in this write).
