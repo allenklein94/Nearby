@@ -13,6 +13,9 @@ const { screenUserContent, blockedByScreening, handledScreeningRefusal } = requi
 const { normalizeUgcText, ugcRefusalOf, UGC_KINDS } = require('../utils/ugcText');
 const { BASICS_FIELDS } = require('../constants/basicsFields');
 const { MULTILINGUAL_SAMPLES } = require('../utils/ugcMultilingualSamples');
+const { ACCOUNT_RULE_HINTS } = require('../utils/recoverableError');
+const { requestRefusal } = require('../utils/requestRefusal');
+const { tr } = require('../i18n/translate');
 
 const ROOT = path.join(__dirname, '..', '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -138,5 +141,21 @@ describe('scope: public screens go through screening; private conversations neve
       expect(read(file)).not.toMatch(/screenUserContent|screen-user-content/);
     }
     expect(MIGRATION).not.toMatch(/on public\.(messages|plan_messages)\b/);
+  });
+});
+
+describe('held content: truthful notice, nothing points anyone at it', () => {
+  test('GatheringDetail says "only you can see this gathering" only for a held NEW gathering, never a held edit', () => {
+    expect(read('src/screens/GatheringDetailScreen.js')).toMatch(/i\.target_id === gatheringId && i\.kind === 'new_row'/);
+    expect(MIGRATION).toMatch(/returns table \(item_id uuid, target_table text, target_id uuid, field text, kind text,/);
+  });
+  test('invitations, business requests and partnership requests to held content are refused at the table; the invite-link preview hides it', () => {
+    for (const t of ['social_invites', 'business_requests', 'business_partnership_requests']) {
+      expect(MIGRATION).toMatch(new RegExp(`create trigger zzz_ugc_target_visible before insert on public\\.${t}\\b`));
+    }
+    expect(MIGRATION).toMatch(/hint = 'held_not_shareable'/);
+    expect(ACCOUNT_RULE_HINTS.held_not_shareable).toBe('ui.shared.errors.heldNotShareable');
+    expect(requestRefusal({ hint: 'held_not_shareable', message: 'x' }).message).toBe(tr('ui.shared.errors.heldNotShareable'));
+    expect(MIGRATION).toMatch(/get_public_gathering_invite_preview[\s\S]*?and g\.moderation_state = 'visible'/);
   });
 });

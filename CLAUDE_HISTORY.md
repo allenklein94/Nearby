@@ -1,3 +1,21 @@
+# 2026-10-31: User-content screening (20270373), built + staged, not deployed
+
+Owner approved (external-user security gate). Branch `post-tier1/ugc-moderation` (stacked on `post-tier1/offer-safety`), main +
+build 87 unchanged. Findings, design, status and the full verification: `PRODUCT_AUDIT/UGC_MODERATION_PROGRESS_2026-10-31.md`;
+rules in the migration header (`supabase/migrations/20270373_user_content_screening.sql`). Finding that drove it: all public
+consumer text was a direct client write screened only client-side by `moderate-text` (AWS, English-only, fail-open), so a direct
+API call skipped it and 10 of 11 languages were effectively unscreened. Built: server-bound screening rows (sha256 of the trimmed
+text, single user, < 30 min), BEFORE triggers on the public tables, held review queue (`private.ugc_held_items`, admin
+approve/reject, never own content, decided once, lock order content row -> item), per-language calibration table (all pending =
+held), group-chat post-send queue + cron, `held_not_shareable` on invitations / business + partnership requests / invite-link
+preview, `get_my_held_content` (kind new_row vs edit), new edge `screen-user-content` (shared classifier module, Anthropic
+haiku, fail closed), client wiring on 8 screens + admin section, 11-language strings, gated calibration runner + set, gated
+signed-in post-deploy test, concurrency script, post-deploy step. Verification after a codespace restart (2026-10-31): Jest
+536/7277; replay 497/497 + journeys 858/858 + 9 concurrency scripts; prod journeys 858/858 with 0348-0373 (rolled back);
+`ugcModeration` 8/8, fails 8/8 without 0373; rollback round trip identical on replay and prod (aborted, exact ACL order);
+grants replay == prod+0348-0373 3285/3285. Not run: calibration (no Anthropic credit), signed-in live test (0373 not live),
+any device check, native review.
+
 # 2026-10-31: Offer safety (20270372), built + staged, not deployed; ACCEPTED + CLOSED by the owner (code-complete, locally verified; 5 activation gates in the progress doc, first = a successful real screening call)
 
 Owner approved gaps 1-3. Branch `post-tier1/offer-safety` (stacked on `post-tier1/business-verification`), main + build 87

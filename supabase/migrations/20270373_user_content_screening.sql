@@ -40,6 +40,10 @@
 --    result is recorded here: high risk = hidden from everyone but the sender, kept as evidence, queued for a person;
 --    medium / uncertain = queued for a person, still visible; low = nothing. Service failure = retried with backoff, given
 --    up after 48 attempts (recorded). Never an account consequence.
+--    Readers that bypass the policies (SECURITY DEFINER) were inventoried (2026-10-31): the ones that hand a gathering or
+--    community to someone else (an invitation and its push, a business request, a partnership request, the signed-out
+--    invite-link preview) refuse or hide held content (hint 'held_not_shareable'); the rest act for the author or only on
+--    rows nobody else can be part of while held.
 -- 4. Not changed: private 1:1 messages and group-plan chat (report + evidence, 0355), business content (0372), photos
 --    (moderate-photo), and the old `moderate-text` function (still used by private content screens).
 -- No existing row changes: every new column defaults to 'visible'.
@@ -569,6 +573,79 @@ begin
 end;
 $function$;
 
+-- Readers that bypass the policies above (SECURITY DEFINER) and hand a gathering or community to SOMEONE ELSE: an invitation
+-- (its push carries the title: _on_invitation_sent), a business request (a directed one shows the title to that business
+-- in its Opportunities) and a partnership request. While its text is held nothing may point anyone at it, by any
+-- path (both invite functions, a direct insert, every business-request function): refused, hint 'held_not_shareable'. Server
+-- writes included (none should ever target held content). After approval it works again. (A visible gathering never
+-- becomes held: an edit parks its new text, so the title these readers show is always published text.)
+create function private.ugc_refuse_while_held()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'private', 'public'
+as $function$
+declare
+  v_gathering uuid;
+  v_community uuid;
+begin
+  if tg_table_name = 'social_invites' then
+    if new.invite_type = 'gathering' then v_gathering := new.target_id;
+    elsif new.invite_type = 'community' then v_community := new.target_id; end if;
+  elsif tg_table_name = 'business_partnership_requests' then
+    if new.target_type = 'gathering' then v_gathering := new.target_id;
+    elsif new.target_type = 'community' then v_community := new.target_id; end if;
+  else
+    v_gathering := new.gathering_id;
+    v_community := new.community_id;
+  end if;
+  if (v_gathering is not null and exists (select 1 from public.gatherings where id = v_gathering and moderation_state <> 'visible'))
+     or (v_community is not null and exists (select 1 from public.communities where id = v_community and moderation_state <> 'visible')) then
+    raise exception 'Only you can see this until Nearby checks it. You can invite people or ask businesses once it''s approved.'
+      using errcode = '42501', hint = 'held_not_shareable';
+  end if;
+  return new;
+end;
+$function$;
+
+create trigger zzz_ugc_target_visible before insert on public.social_invites
+  for each row execute function private.ugc_refuse_while_held();
+create trigger zzz_ugc_target_visible before insert on public.business_requests
+  for each row execute function private.ugc_refuse_while_held();
+create trigger zzz_ugc_target_visible before insert on public.business_partnership_requests
+  for each row execute function private.ugc_refuse_while_held();
+
+-- The signed-out invite-link preview shows a gathering's title by id: never a held or removed one.
+CREATE OR REPLACE FUNCTION public.get_public_gathering_invite_preview(gathering_id_param uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_result jsonb;
+begin
+  select jsonb_build_object(
+    'id', g.id,
+    'title', g.title,
+    'interest_tag', g.interest_tag,
+    'scheduled_at', g.scheduled_at,
+    'host_display_name', p.display_name,
+    'attendee_count', (
+      select count(*) from public.gathering_interest gi
+      where gi.gathering_id = g.id and gi.status = 'approved'
+    )
+  )
+  into v_result
+  from public.gatherings g
+  join public.profiles p on p.id = g.host_id
+  where g.id = gathering_id_param
+    and g.moderation_state = 'visible';  -- 20270373
+
+  return v_result;
+end;
+$function$;
+
 -- ---------------------------------------------------------------------------------------------------------------------
 -- Edge function entry points (service role only)
 -- ---------------------------------------------------------------------------------------------------------------------
@@ -768,13 +845,15 @@ select cron.schedule('screen-group-chat', '* * * * *', 'select private.ugc_chat_
 -- ---------------------------------------------------------------------------------------------------------------------
 
 create function public.get_my_held_content()
-returns table (item_id uuid, target_table text, target_id uuid, field text, created_at timestamptz)
+returns table (item_id uuid, target_table text, target_id uuid, field text, kind text, created_at timestamptz)
 language sql
 stable
 security definer
 set search_path to 'private', 'public'
 as $function$
-  select h.id, h.target_table, h.target_id, h.field, h.created_at
+  -- kind: 'new_row' = the row itself is hidden from others until approved; 'edit' = the row stays visible with its
+  -- published text and only this change waits
+  select h.id, h.target_table, h.target_id, h.field, h.kind, h.created_at
     from private.ugc_held_items h
    where h.author_id = auth.uid() and h.status = 'pending' and h.kind in ('new_row', 'edit')
    order by h.created_at desc;
@@ -840,8 +919,14 @@ begin
     raise exception 'Admins only.' using errcode = '42501';
   end if;
   if p_approve is null then raise exception 'Choose approve or reject.' using errcode = '22023'; end if;
-  select * into h from private.ugc_held_items where id = p_item_id for update;
+  -- Lock order = the author's own edit (its row first, then the held item, in the trigger): lock the content row first,
+  -- then the item, so a decision racing an edit waits instead of deadlocking.
+  select target_table into v_state from private.ugc_held_items where id = p_item_id;
   if not found then raise exception 'That item doesn''t exist.' using errcode = 'P0002'; end if;
+  execute format('select 1 from public.%I where id = $1 for update',
+    (select target_table from private.ugc_held_items where id = p_item_id))
+    using (select target_id from private.ugc_held_items where id = p_item_id);
+  select * into h from private.ugc_held_items where id = p_item_id for update;
   if h.status <> 'pending' then
     raise exception 'That item was already decided.' using errcode = 'P0001', hint = 'already_decided';
   end if;
@@ -929,7 +1014,7 @@ revoke all on function private.ugc_norm(text), private.ugc_text_sha(text), priva
   private.ugc_hold(text, uuid, text, jsonb, text, text), private.ugc_supersede(text, uuid, text),
   private.ugc_screen_profiles(), private.ugc_screen_two_fields(), private.ugc_screen_questions(),
   private.ugc_screen_photo_comments(), private.ugc_enqueue_chat(), private.ugc_chat_state_guard(), private.ugc_chat_kick(),
-  private.ugc_record_approval(uuid, text, text, jsonb), private.purge_ugc_moderation()
+  private.ugc_record_approval(uuid, text, text, jsonb), private.purge_ugc_moderation(), private.ugc_refuse_while_held()
   from public, anon, authenticated;
 
 revoke all on function public.record_ugc_screening(uuid, text, text, boolean, text, text[], text[], text, text),

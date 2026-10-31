@@ -61,6 +61,15 @@ const STEPS = {
     node: ['scripts/replay/screening-single-use-concurrency.js + reschedule-reply-concurrency.js (replay only, before the deploy)'],
     manual: ['read-only: 0 screening results consumed right after the deploy; a direct submit_business_offer / post_business_availability call as a business owner (dedicated test account) = refused screening_required, nothing written',
       'Report this offer on a real reply (phone): one report, reported_id = the business manager, content captured'] },
+  // User-content screening: public text bound to its screening; held review; group chat screened after sending
+  20270373: { journeys: ['ugcModeration', 'gatheringRowPrivacy', 'trustedWriteScope', 'interestedPrivacy'],
+    edge: ['screen-user-content BEFORE the migration (until 0373 is live it answers not_installed and the app keeps today\'s check); never after it (the app would refuse every public save as unavailable in between)'],
+    node: ['scripts/replay/ugc-moderation-concurrency.js (replay only, before the deploy)',
+      'scripts/trust-safety/ugc-calibration.js run (real classifier, controlled environment, owner-approved): its per-language results decide the separate calibration migration; until it runs every language is held for a person'],
+    live: ['ugcScreeningSignedIn.live.js (NEARBY_POST_DEPLOY_0373=1)'],
+    manual: ['BEFORE: every device on a build that screens through screen-user-content (build 87 does not: its profile / gathering / community / Q&A / comment saves would be refused)',
+      'read-only right after: 0 ugc_screenings, 0 held items, cron jobs screen-group-chat + purge-ugc-moderation present; one profile save + one gathering on the phone (dedicated test account) publish or are held as the calibration says',
+      'one community chat message from the test account is screened within ~2 minutes (queue row done); a person reviews the admin queue'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

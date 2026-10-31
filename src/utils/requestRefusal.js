@@ -10,6 +10,7 @@ const REFUSAL_WORDS = {
   posting_unavailable: 'ui.actions.noLongerAvailable',
   posting_mismatch: 'ui.actions.noLongerAvailable',
   request_time_passed: 'ui.bizHelp.availability.passed',
+  held_not_shareable: 'ui.shared.errors.heldNotShareable',  // 20270373: a gathering still waiting for review
 };
 export function requestRefusal(error) {
   const key = REFUSAL_WORDS[error?.hint];

@@ -461,7 +461,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
     if (!isHostViewer || !gatheringId) { setHeldForReview(false); return undefined; }
     let cancelled = false;
     getMyHeldContent().then((items) => {
-      if (!cancelled) setHeldForReview(items.some((i) => i.target_table === 'gatherings' && i.target_id === gatheringId));
+      // only a held NEW gathering is hidden from others; a held edit leaves the published gathering visible
+      if (!cancelled) setHeldForReview(items.some((i) => i.target_table === 'gatherings' && i.target_id === gatheringId && i.kind === 'new_row'));
     });
     return () => { cancelled = true; };
   }, [isHostViewer, gatheringId]));

@@ -69,7 +69,7 @@ describe('the moment', () => {
     const create = read('screens/CreateGatheringScreen.js');
     const submit = create.slice(create.indexOf('async function submit()'));
     expect(submit.indexOf('await createGathering(')).toBeLessThan(submit.indexOf('const firstHosted = await isFirstGatheringHosted()'));
-    expect(submit.indexOf('const firstHosted = await isFirstGatheringHosted()')).toBeLessThan(submit.indexOf("navigation.replace('GatheringDetail'"));
+    expect(submit.indexOf('const firstHosted = await isFirstGatheringHosted()')).toBeLessThan(submit.lastIndexOf("navigation.replace('GatheringDetail'") /* the published landing; a held gathering (20270373) lands earlier without the panel */);
     const panel = read('components/GatheringPublishedPanel.js');
     expect(panel).not.toMatch(/isFirstGatheringHosted|setIsFirstHosted/);
     expect(panel).toMatch(/const isFirstHosted = !!firstHosted;/);

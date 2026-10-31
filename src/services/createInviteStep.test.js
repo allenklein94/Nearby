@@ -78,7 +78,7 @@ describe('4-5, 10. invitations only after a successful publish; the gathering it
     const catchAt = submit.indexOf('} catch (e) {');
     expect(created).toBeGreaterThan(0);
     expect(send).toBeGreaterThan(created);
-    expect(send).toBeLessThan(submit.indexOf("navigation.replace('GatheringDetail'"));
+    expect(send).toBeLessThan(submit.lastIndexOf("navigation.replace('GatheringDetail'") /* the published landing; a held gathering (20270373) lands earlier without the panel */);
     expect(send).toBeLessThan(catchAt);
     expect(submit).toMatch(/businessesAsked: askLocalBusinesses, preInviteResult,/); // "We invited N of M", now in item 43's Who piece
   });

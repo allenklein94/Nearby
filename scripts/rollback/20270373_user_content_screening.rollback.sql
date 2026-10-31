@@ -78,6 +78,40 @@ $function$
 
 ;
 
+drop trigger if exists zzz_ugc_target_visible on public.social_invites;
+drop trigger if exists zzz_ugc_target_visible on public.business_requests;
+drop trigger if exists zzz_ugc_target_visible on public.business_partnership_requests;
+drop function if exists private.ugc_refuse_while_held();
+
+CREATE OR REPLACE FUNCTION public.get_public_gathering_invite_preview(gathering_id_param uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_result jsonb;
+begin
+  select jsonb_build_object(
+    'id', g.id,
+    'title', g.title,
+    'interest_tag', g.interest_tag,
+    'scheduled_at', g.scheduled_at,
+    'host_display_name', p.display_name,
+    'attendee_count', (
+      select count(*) from public.gathering_interest gi
+      where gi.gathering_id = g.id and gi.status = 'approved'
+    )
+  )
+  into v_result
+  from public.gatherings g
+  join public.profiles p on p.id = g.host_id
+  where g.id = gathering_id_param;
+
+  return v_result;
+end;
+$function$;
+
 CREATE OR REPLACE FUNCTION public.emit_gathering_created()
  RETURNS trigger
  LANGUAGE plpgsql

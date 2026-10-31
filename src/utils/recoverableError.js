@@ -33,6 +33,7 @@ export const ACCOUNT_RULE_HINTS = {
   rate_limited: 'ui.shared.errors.rateLimited',  // 20270356: volume limits by trust level
   gathering_limit: 'ui.shared.errors.gatheringLimit',  // 20270362: gatherings created per day by trust level
   offer_contact_info: 'ui.shared.errors.offerContactInfo',  // 20270372: no links, emails or phone numbers in offer text
+  held_not_shareable: 'ui.shared.errors.heldNotShareable',  // 20270373: no invitation / business request for held content
 };
 
 const NETWORK = /network request failed|failed to fetch|network error|timed? ?out|offline|internet|connection/i;

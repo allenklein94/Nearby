@@ -8,7 +8,8 @@
 //      else's screening, use an expired one, or set moderation_state itself
 //   C. languages: low + calibrated = publish; low / high in a pending language = held (never refused on an unmeasured
 //      verdict); a language outside the 11 = held; mixed = the least calibrated governs; names judged on their own row
-//   D. held new rows: seen only by the author; nobody can join a held gathering; no "this matches you" event until approved
+//   D. held new rows: seen only by the author; nobody can join a held gathering; no invitation, business request or
+//      invite-link preview points anyone at it; no "this matches you" event until approved
 //   E. edits: held text keeps the published text; a later edit supersedes the pending one; approve applies, reject doesn't
 //   F. review: admins only, never their own content, decided once
 //   G. group chat: queued on send, claimed by the server, high = hidden from others (sender + evidence keep it), approve
@@ -54,7 +55,7 @@ d('journey: user-content screening bound to the write (20270373)', () => {
       ${actorDeclares(['v_a', 'v_b', 'v_h', 'v_ad', 'v_new'])}
       v_out jsonb; v_hint text; g1 uuid; g2 uuid; g3 uuid; g4 uuid; c1 uuid; c2 uuid; qn uuid; m1 uuid; v_item uuid;
       v_q bigint; i int; v_sample text;`, `
-  ${actorsSql({ people: ['v_a', 'v_b', 'v_h', 'v_ad'] })}
+  ${actorsSql({ people: ['v_a', 'v_b', 'v_h', 'v_ad'], friends: [['v_h', 'v_b']] })}
   ${LIFT_GATHERING_CREATION_LIMIT}
   perform set_config('app.trusted_update', 'off', true);
   update profiles set is_admin = true where id = v_ad;
@@ -122,10 +123,19 @@ d('journey: user-content screening bound to the write (20270373)', () => {
   select id into g2 from gatherings where host_id = v_h and title = 'Beach cleanup';
   ${note('held_no_created_event', `(select count(*) from domain_events where type = 'GATHERING_CREATED' and object_id = g2)`)}
   ${as('host_sees_held', 'v_h', `select count(*) into i from gatherings where id = g2`, 'i')}
+  ${as('host_held_kind', 'v_h', `select kind into v_sample from public.get_my_held_content() where target_id = g2 limit 1`, 'v_sample')}
   ${as('stranger_sees_held', 'v_b', `select count(*) into i from gatherings where id = g2`, 'i')}
   ${as('stranger_joins_held', 'v_b', `perform public.join_gathering(g2)`)}
   ${as('host_unholds_itself', 'v_h', `update gatherings set moderation_state = 'visible' where id = g2`)}
   ${note('still_held_after_client_update', `(select moderation_state from gatherings where id = g2)`)}
+  -- nothing may point anyone else at a held gathering: no invitation (its push carries the title), no business request
+  -- (a directed one shows the title), no invite-link preview
+  ${as('invite_to_held', 'v_h', `perform public.invite_friend_to_gathering(g2, v_b)`)}
+  ${as('social_invite_to_held', 'v_h', `perform public.send_social_invite('gathering', g2, v_b)`)}
+  ${note('held_invite_rows', `(select count(*) from social_invites where target_id = g2)`)}
+  ${as('business_request_for_held', 'v_h', `perform public.create_business_request_for_gathering(g2, 'A court for our group', null, null, null, null, null, null, null, null, null, null)`)}
+  ${note('held_business_request_rows', `(select count(*) from business_requests where gathering_id = g2)`)}
+  ${as('preview_of_held', 'v_b', `v_out := public.get_public_gathering_invite_preview(g2)`, 'v_out')}
   -- a client can't insert a gathering as visible with held text either
   ${rec('v_h', 'Second beach day', 'low', ['ht'])}
   ${as('insert_claims_visible', 'v_h', `insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public, moderation_state)
@@ -138,6 +148,7 @@ d('journey: user-content screening bound to the write (20270373)', () => {
   ${note('held_community_state', `(select moderation_state from communities where id = c1)`)}
   ${as('stranger_sees_held_community', 'v_b', `select count(*) into i from communities where id = c1`, 'i')}
   ${as('creator_sees_held_community', 'v_h', `select count(*) into i from communities where id = c1`, 'i')}
+  ${as('invite_to_held_community', 'v_h', `perform public.send_social_invite('community', c1, v_b)`)}
   ${rec('v_h', 'Visible run')}
   ${as('visible_gathering', 'v_h', `${gathering('g3', 'v_h', 'Visible run')}; v_out := to_jsonb(g3)`, 'v_out')}
   select id into g3 from gatherings where host_id = v_h and title = 'Visible run';
@@ -171,7 +182,7 @@ d('journey: user-content screening bound to the write (20270373)', () => {
   ${as('prompt_answer_held', 'v_a', `update profiles set prompts = '[{"question":"Q1","answer":"Pikleball, tanpri"}]'::jsonb where id = v_a`)}
   ${note('prompts_kept', `(select prompts from profiles where id = v_a)`)}
   ${as('basics_select_only', 'v_a', `update profiles set basics = jsonb_build_object('hair_color', 'Brown') where id = v_a`)}
-  ${as('basics_text_unscreened', 'v_a', `update profiles set basics = jsonb_build_object('hair_color', 'Brown', 'job_title', 'Spammer') where id = v_a`)}
+  ${as('basics_text_unscreened', 'v_a', `update profiles set basics = jsonb_build_object('hair_color', 'Brown', 'school', 'Buy followers U') where id = v_a`)}
   ${rec('v_a', 'Mwen se yon enfimyè', 'medium', ['ht'], true)}
   ${as('display_name_held', 'v_a', `update profiles set display_name = 'Mwen se yon enfimyè' where id = v_a`)}
   ${note('display_name_kept', `(select display_name from profiles where id = v_a)`)}
@@ -186,6 +197,8 @@ d('journey: user-content screening bound to the write (20270373)', () => {
   ${note('gathering_after_approval', `(select moderation_state from gatherings where id = g2)`)}
   ${note('created_event_after_approval', `(select count(*) from domain_events where type = 'GATHERING_CREATED' and object_id = g2)`)}
   ${as('stranger_sees_after_approval', 'v_b', `select count(*) into i from gatherings where id = g2`, 'i')}
+  ${as('preview_after_approval', 'v_b', `v_out := public.get_public_gathering_invite_preview(g2) -> 'title'`, 'v_out')}
+  ${as('invite_after_approval', 'v_h', `perform public.invite_friend_to_gathering(g2, v_b)`)}
   ${as('decided_twice', 'v_ad', `perform public.admin_decide_held_user_content(v_item, false, null)`)}
   select id into v_item from private.ugc_held_items where target_table = 'communities' and target_id = c1 and status = 'pending';
   ${as('admin_rejects_community', 'v_ad', `perform public.admin_decide_held_user_content(v_item, false, 'no')`)}
@@ -299,8 +312,16 @@ d('journey: user-content screening bound to the write (20270373)', () => {
     expect(s.held_gathering_state.data).toBe('held');
     expect(s.held_no_created_event.data).toBe(0);
     expect(s.host_sees_held.data).toBe(1);
+    expect(s.host_held_kind.data).toBe('new_row'); // GatheringDetail's "only you can see this" reads it
     expect(s.stranger_sees_held.data).toBe(0);
     expect(s.stranger_joins_held.data.error).toBeTruthy();
+    expect(s.invite_to_held.data.hint).toBe('held_not_shareable');
+    expect(s.social_invite_to_held.data.hint).toBe('held_not_shareable');
+    expect(s.held_invite_rows.data).toBe(0);
+    expect(s.business_request_for_held.data.hint).toBe('held_not_shareable');
+    expect(s.held_business_request_rows.data).toBe(0);
+    expect(s.preview_of_held.data).toBeNull();
+    expect(s.invite_to_held_community.data.hint).toBe('held_not_shareable');
     expect(s.visible_created_event.data).toBe(1);
     expect(s.held_community_state.data).toBe('held');
     expect(s.stranger_sees_held_community.data).toBe(0);
@@ -327,6 +348,8 @@ d('journey: user-content screening bound to the write (20270373)', () => {
     expect(s.gathering_after_approval.data).toBe('visible');
     expect(s.created_event_after_approval.data).toBe(1);
     expect(s.stranger_sees_after_approval.data).toBe(1);
+    expect(s.preview_after_approval.data).toBe('Beach cleanup');
+    expect(s.invite_after_approval.data).toBe('ok');
     refused('decided_twice', 'already_decided');
     expect(s.community_after_reject.data).toBe('removed');
     expect(s.display_name_applied.data).toBe('Mwen se yon enfimyè');
