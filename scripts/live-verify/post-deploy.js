@@ -48,6 +48,9 @@ const STEPS = {
   // before the deploy: node scripts/replay/report-reason-backfill.js <prelude 0348-0369> (rolled back on prod)
   20270370: { journeys: ['reportReasonCodes', 'trustSafetyI123', 'reviewCaseHistory'], sql: ['report-reason-codes-post-deploy.sql'],
     node: ['scripts/replay/report-reason-backfill.js (BEFORE the deploy, rolled back)'] },
+  // Verified Business: no business is verified by the deploy (0 events); the badge shows only after an admin review
+  20270371: { journeys: ['businessVerification'], live: ['businessVerificationSignedIn.live.js (NEARBY_POST_DEPLOY_0371=1; dedicated non-admin test account: verify / revoke / list refused, record unchanged; any write = STOP)'],
+    manual: ['read-only: select count(*) from private.business_verification_events = 0 right after the deploy; get_verified_business_ids(every business) = {}'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

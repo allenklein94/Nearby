@@ -97,6 +97,7 @@ describe('where the sheet is used (business browsing on Discover only)', () => {
   });
   test('the sheet is a presentation, not a data source: no fetch, no service, no second business model', () => {
     const sheet = read('src/components/BusinessPreviewSheet.js') + read('src/utils/businessPreview.js');
-    expect(sheet).not.toMatch(/services\/|supabase/);
+    // ONE exception (owner decision A, 2026-10-31): the Verified Business status of the business shown, via its one reader.
+    expect(sheet.replace("import { isVerifiedBusiness } from '../services/businessVerification';", '')).not.toMatch(/services\/|supabase/);
   });
 });

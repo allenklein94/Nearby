@@ -109,6 +109,9 @@ export default {
         host: "The host",
       },
     },
+    verifiedBusiness: "Verified Business",
+    verifiedBusinessA11y: "Verified Business: Nearby checked that {name} exists and that the person running it on Nearby represents it.",
+    verifiedBusinessMeaning: "Nearby checked that this business exists and that the person running it here represents it. It isn't a rating of its quality or safety.",
   },
   es: {
     videoAttached: "🎬 Video adjunto",
@@ -218,6 +221,9 @@ export default {
         host: "El anfitrión",
       },
     },
+    verifiedBusiness: "Negocio verificado",
+    verifiedBusinessA11y: "Negocio verificado: Nearby comprobó que {name} existe y que quien lo gestiona en Nearby lo representa.",
+    verifiedBusinessMeaning: "Nearby comprobó que este negocio existe y que quien lo gestiona aquí lo representa. No es una valoración de su calidad ni de su seguridad.",
   },
   de: {
     videoAttached: "🎬 Video angehängt",
@@ -327,6 +333,9 @@ export default {
         host: "Der Gastgeber",
       },
     },
+    verifiedBusiness: "Verifiziertes Geschäft",
+    verifiedBusinessA11y: "Verifiziertes Geschäft: Nearby hat geprüft, dass es {name} gibt und dass die Person, die es auf Nearby führt, es vertritt.",
+    verifiedBusinessMeaning: "Nearby hat geprüft, dass es dieses Geschäft gibt und dass die Person, die es hier führt, es vertritt. Das ist keine Bewertung seiner Qualität oder Sicherheit.",
   },
   fr: {
     videoAttached: "🎬 Vidéo jointe",
@@ -436,6 +445,9 @@ export default {
         host: "L'hôte",
       },
     },
+    verifiedBusiness: "Commerce vérifié",
+    verifiedBusinessA11y: "Commerce vérifié : Nearby a vérifié que {name} existe et que la personne qui le gère sur Nearby le représente.",
+    verifiedBusinessMeaning: "Nearby a vérifié que ce commerce existe et que la personne qui le gère ici le représente. Ce n'est pas une évaluation de sa qualité ni de sa sécurité.",
   },
   pt: {
     videoAttached: "🎬 Vídeo anexado",
@@ -545,6 +557,9 @@ export default {
         host: "O anfitrião",
       },
     },
+    verifiedBusiness: "Estabelecimento verificado",
+    verifiedBusinessA11y: "Estabelecimento verificado: o Nearby confirmou que {name} existe e que quem o gerencia no Nearby o representa.",
+    verifiedBusinessMeaning: "O Nearby confirmou que este estabelecimento existe e que quem o gerencia aqui o representa. Não é uma avaliação da qualidade nem da segurança dele.",
   },
   ht: {
     videoAttached: "🎬 Videyo tache",
@@ -654,6 +669,9 @@ export default {
         host: "Lame a",
       },
     },
+    verifiedBusiness: "Biznis verifye",
+    verifiedBusinessA11y: "Biznis verifye: Nearby tcheke {name} egziste e moun ki jere l sou Nearby reprezante l.",
+    verifiedBusinessMeaning: "Nearby tcheke biznis sa a egziste e moun ki jere l isit la reprezante l. Se pa yon nòt sou kalite oswa sekirite l.",
   },
   zh: {
     videoAttached: "🎬 已附视频",
@@ -763,6 +781,9 @@ export default {
         host: "主办人",
       },
     },
+    verifiedBusiness: "已验证商家",
+    verifiedBusinessA11y: "已验证商家：Nearby 已核实{name}确实存在，且在 Nearby 上管理它的人有权代表它。",
+    verifiedBusinessMeaning: "Nearby 已核实这家商家确实存在，且在这里管理它的人有权代表它。这不是对其质量或安全性的评价。",
   },
   vi: {
     videoAttached: "🎬 Đã đính kèm video",
@@ -872,6 +893,9 @@ export default {
         host: "Người tổ chức",
       },
     },
+    verifiedBusiness: "Doanh nghiệp đã xác minh",
+    verifiedBusinessA11y: "Doanh nghiệp đã xác minh: Nearby đã kiểm tra rằng {name} có thật và người quản lý trên Nearby đại diện cho doanh nghiệp.",
+    verifiedBusinessMeaning: "Nearby đã kiểm tra rằng doanh nghiệp này có thật và người quản lý ở đây đại diện cho doanh nghiệp. Đây không phải là đánh giá chất lượng hay độ an toàn.",
   },
   tl: {
     videoAttached: "🎬 May nakalakip na video",
@@ -981,6 +1005,9 @@ export default {
         host: "Ang host",
       },
     },
+    verifiedBusiness: "Verified na negosyo",
+    verifiedBusinessA11y: "Verified na negosyo: tiningnan ng Nearby na totoo ang {name} at na kinakatawan ito ng taong nagpapatakbo nito sa Nearby.",
+    verifiedBusinessMeaning: "Tiningnan ng Nearby na totoo ang negosyong ito at na kinakatawan ito ng taong nagpapatakbo nito dito. Hindi ito rating ng kalidad o kaligtasan nito.",
   },
   ru: {
     videoAttached: "🎬 Видео прикреплено",
@@ -1090,6 +1117,9 @@ export default {
         host: "Организатор",
       },
     },
+    verifiedBusiness: "Проверенное заведение",
+    verifiedBusinessA11y: "Проверенное заведение: Nearby проверил, что {name} существует и что человек, который ведёт его в Nearby, представляет его.",
+    verifiedBusinessMeaning: "Nearby проверил, что это заведение существует и что человек, который ведёт его здесь, его представляет. Это не оценка его качества или безопасности.",
   },
   ko: {
     videoAttached: "🎬 동영상 첨부됨",
@@ -1199,5 +1229,8 @@ export default {
         host: "호스트",
       },
     },
+    verifiedBusiness: "인증된 업체",
+    verifiedBusinessA11y: "인증된 업체: Nearby가 {name}이(가) 실제로 있고 Nearby에서 운영하는 사람이 업체를 대표한다는 것을 확인했어요.",
+    verifiedBusinessMeaning: "Nearby가 이 업체가 실제로 있고 여기서 운영하는 사람이 업체를 대표한다는 것을 확인했어요. 품질이나 안전에 대한 평가는 아니에요.",
   },
 };

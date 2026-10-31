@@ -8,12 +8,14 @@ import PinToSheetFrame from '../motion/PinToSheetFrame';
 import { toOverlayPoint } from '../motion/pinToSheet';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { businessPreview, businessPreviewRoute } from '../utils/businessPreview';
+import { isVerifiedBusiness } from '../services/businessVerification';
 
 // The one business sheet (owner item 17, 2026-10-04, LOCKED): a lightweight preview over Discover's business browsing surfaces
 // (result rows, map pins). Not a screen and not a mini Business Profile: name, measured distance, open status, two declared
 // qualities, the business's own action, and "View business" for the full profile. Closing (tap outside, Android Back, or opening
 // something) leaves Discover exactly as it was underneath: search, filters and scroll belong to Discover and are never touched.
-// Content comes only from utils/businessPreview.js; the screen passes the row it already holds.
+// Content comes only from utils/businessPreview.js; the screen passes the row it already holds. Owner decision A (2026-10-31):
+// the "✓ Verified Business" line under the name, read from the server through its one reader, is the one addition.
 // Owner item 44 (2026-10-11): opened from a map pin (`pinSpot`, a promise of the pin's window spot from GatheringsMapView), the
 // sheet grows out of that pin instead of sliding up: it opens at the tap (text readable, buttons live from frame one), rises and
 // grows into place while a pin-coloured outline travels from the pin into its edge (motion/PinToSheetFrame.js). Same content,
@@ -31,6 +33,15 @@ export default function BusinessPreviewSheet({ partner, pinSpot = null, navigati
   const overlayRef = useRef(null);
   const [pin, setPin] = useState(null);
   const [sheetRect, setSheetRect] = useState(null);
+  // Verified Business (owner, 2026-10-31): the server decides; read for the business this sheet shows, unknown = no badge.
+  const [verified, setVerified] = useState(false);
+  useEffect(() => {
+    setVerified(false);
+    if (!partner?.id) return undefined;
+    let live = true;
+    isVerifiedBusiness(partner.id).then((v) => { if (live) setVerified(v); }).catch(() => {});
+    return () => { live = false; };
+  }, [partner?.id]);
 
   useEffect(() => {
     setPin(null);
@@ -90,6 +101,11 @@ export default function BusinessPreviewSheet({ partner, pinSpot = null, navigati
           >
             <View style={styles.grabber} />
             <Text style={styles.title} numberOfLines={2}>{preview.title}</Text>
+            {verified ? (
+              <Text style={styles.verified} accessibilityLabel={t('ui.businessSheet.verifiedBusinessA11y', { name: preview.title ?? '' })}>
+                ✓ {t('ui.businessSheet.verifiedBusiness')}
+              </Text>
+            ) : null}
             {preview.distance ? <Text style={styles.line}>{preview.distance}</Text> : null}
             {preview.hours ? <Text style={styles.line}>🕒 {preview.hours}</Text> : null}
             {preview.qualities.length > 0 ? <Text style={styles.line}>{preview.qualities.join(' · ')}</Text> : null}
@@ -117,6 +133,7 @@ const getStyles = (colors) => StyleSheet.create({
   grabber: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: spacing.md },
   title: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   line: { color: colors.textSecondary, fontSize: 14, marginBottom: spacing.xs },
+  verified: { color: colors.success, fontSize: 13, fontWeight: '600', marginBottom: spacing.xs },
   primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.md },
   primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   secondary: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.sm },

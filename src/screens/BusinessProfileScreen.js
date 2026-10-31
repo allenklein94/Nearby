@@ -26,6 +26,7 @@ import { followerCountLine, reliabilityLine, hoursLine, weekHoursRows, bookingMo
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
+import { isVerifiedBusiness } from '../services/businessVerification';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
 // uploaded creative, rendered INSIDE its existing experience card, never
@@ -74,6 +75,8 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [loadError, setLoadError] = useState(false);
   // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
   const [unavailable, setUnavailable] = useState(false);
+  // Verified Business (owner, 2026-10-31): decided by the server only; unknown = no badge.
+  const [verified, setVerified] = useState(false);
   const [followerCount, setFollowerCount] = useState(0);
   const [following, setFollowing] = useState(false);
   const [gatherings, setGatherings] = useState([]);
@@ -144,6 +147,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
       setExperiences((signatureExperiences ?? []).filter((e) => e.active));
       setLoadError(false);
       getBusinessMessagesPage(partnerId, null, { limit: 1 }).then((rows) => setHasThread(rows.length > 0)).catch(() => {});
+      isVerifiedBusiness(partnerId).then(setVerified).catch(() => setVerified(false));
 
       if (activeOffers.length > 0) {
         getRedemptionCounts(activeOffers.map((o) => o.id)).then(setRedemptionCounts);
@@ -268,6 +272,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
           )}
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{partner.name}</Text>
+            {verified ? (
+              <View accessible accessibilityLabel={t('ui.businessProfile.verifiedBusinessA11y', { name: partner.name })}>
+                <Text style={styles.verifiedBadge}>✓ {t('ui.businessProfile.verifiedBusiness')}</Text>
+                <Text style={styles.verifiedMeaning}>{t('ui.businessProfile.verifiedBusinessMeaning')}</Text>
+              </View>
+            ) : null}
             <Text style={styles.meta}>
               {followerCountLine(followerCount, language)}
               {partner.address ? ` · ${partner.address}` : ''}
@@ -657,6 +667,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   logoPlaceholderText: { fontSize: 28 },
   title: { ...typography.title, color: colors.textPrimary },
   meta: { color: colors.textTertiary, fontSize: 13, marginTop: 2 },
+  verifiedBadge: { color: colors.success, fontSize: 13, fontWeight: '600', marginTop: 2 },
+  verifiedMeaning: { color: colors.textTertiary, fontSize: 12, marginTop: 1 },
   reliabilityLine: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
   attributeSectionHeader: { ...typography.small, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },

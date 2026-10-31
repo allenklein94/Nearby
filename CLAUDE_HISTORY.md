@@ -1,3 +1,24 @@
+# 2026-10-31: Verified Business (20270371), built + staged, not deployed
+
+Owner decisions A (badge shown only on the business preview sheet + Business Profile; never read by routing, matching,
+ranking, offers, replies or Opportunities) + B (evidence-based admin review). Built across a codespace restart; verification
+re-run after it. Migration header in `supabase/migrations/20270371_business_verification.sql` holds the full rules: four
+checks with fixed method lists (identity, authority, contact, consistency), outcome + factual note each; all four passed =
+verified, inconclusive never verifies; append-only `private.business_verification_events` (update only for a deleted
+admin's id going null, delete only by the business's own cascade); admin-only verify / revoke (reason required) / list,
+conflict of interest refused (`verification_conflict_of_interest`), decisions serialized by a row lock; badge only while
+the business is active and its verified name, address and manager still hold. Client: `services/businessVerification.js`
+(the one reader; missing function or any error = no badge), `utils/businessVerification.js`,
+`components/AdminBusinessVerificationSection.js` (in Admin Business Requests); strings `ui.businessSheet.verifiedBusiness*`
++ `ui.businessProfile.verifiedBusiness*` (10 languages machine-authored, need native review). Tests: journey
+`businessVerification` 14/14; prod journeys 843/843 with 0348-0371 as prelude (rolled back); from-scratch replay 495/495,
+journeys 843/843 on it, `scripts/replay/business-verification-concurrency.js` all pass (concurrent revokes = one, verify vs
+revoke 10 rounds always one order, no deadlocks); rollback round trip: catalog fingerprint identical on the replay and on
+prod (aborted transaction, prelude 0348-0370); grants replay = prod+0348-0371 3265/3265; Jest 534 suites / 7239 tests.
+Rollback `scripts/rollback/20270371_business_verification.rollback.sql` (deletes the history: export first). Post-deploy:
+`scripts/live-verify/post-deploy.js` 20270371 + gated `src/qa/businessVerificationSignedIn.live.js`. Website export not
+regenerated (would publish). Nothing deployed.
+
 # 2026-10-31: account state model approved as built
 
 Owner approved the six-state model (Unverified / Verified / Established / Restricted / Suspended / Under Review) as built, no changes. Checked: no user-facing "Trusted"/"Established" badge or string exists (only "trusted contact" in date check-in, unrelated). Added to the post-Tier-1 consolidated deployment checklist: a real-API proof on prod, with a dedicated test account, that a suspended account cannot write through direct API calls or server functions and cannot sign in (0351), since today that is proven only by journeys in rolled-back transactions. Migrations 0348-0369 stay staged; Build 87 next.

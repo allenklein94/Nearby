@@ -15,6 +15,7 @@ import { subcategoryOptionsFor } from '../constants/gatheringCategories';
 import { adminAddCategoryTag } from '../services/categoryTags';
 import { applyRemoteCategoryTags } from '../constants/categoryRegistry';
 import { existingCategoryMatches, emergingResolveCopy } from '../utils/emergingCategoryHint';
+import AdminBusinessVerificationSection from '../components/AdminBusinessVerificationSection';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -198,7 +199,9 @@ export default function AdminBusinessRequestsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ padding: spacing.lg }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
-        ListHeaderComponent={emerging.length ? (
+        ListHeaderComponent={<>
+        <AdminBusinessVerificationSection refreshKey={refreshing} />
+        {emerging.length ? (
           <View style={styles.card}>
             <Text style={styles.businessName}>Business wording no category covers</Text>
             <Text style={styles.contact}>Three or more different businesses described themselves, in their own words, in a way no category covers. That alone never justifies a new category: file it under an existing category whenever one fits (its qualities stay attributes on each business). Add a new category only when this is something customers would actually ask for by name.</Text>
@@ -256,6 +259,7 @@ export default function AdminBusinessRequestsScreen() {
             ))}
           </View>
         ) : null}
+        </>}
         ListEmptyComponent={
           <FadeInState style={styles.emptyState}>
             <EmptyCopy id="admin_business_requests" />
