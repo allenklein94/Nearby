@@ -10,6 +10,7 @@ import { reportReasonLabel } from '../utils/reportReasons';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
   linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
+  priorSuspensionLines, PRIOR_SUSPENSION_NOTE,
 } from '../utils/adminReviewCase';
 
 // Admin review on the business website (owner, 2026-10-30; 20270368 + 20270369). Website only (BusinessWebNavigator), so
@@ -29,6 +30,7 @@ export default function AdminReviewScreen() {
   const [includeClosed, setIncludeClosed] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState(null); // full case from admin_get_account_review_case
+  const [prior, setPrior] = useState(null); // a prior-suspension case's earlier decisions (20270374), else null
   const [links, setLinks] = useState({ at: 0, urls: {} });
   const [note, setNote] = useState('');
   const [reason, setReason] = useState('');
@@ -56,6 +58,11 @@ export default function AdminReviewScreen() {
     const { data, error } = await supabase.rpc('admin_get_account_review_case', { case_id_param: id });
     if (error) return presentRecoverableError(Alert, { what: 'open that case', error, onRetry: () => openCase(id) });
     setSelected(data);
+    setPrior(null);
+    if (data?.signal === 'prior_suspension') {
+      const earlier = await supabase.rpc('admin_get_prior_suspension', { case_id_param: id });
+      setPrior(earlier.error ? { error: true } : (earlier.data || []));
+    }
     setNote(''); setReason(''); setCheck({ source: '', result: 'no_match', link: '' });
     signPhotos(data);
   }, [signPhotos]);
@@ -164,6 +171,14 @@ export default function AdminReviewScreen() {
       <Text style={styles.meta}>
         {selected.status === 'open' ? `Review by ${new Date(selected.review_due_at).toLocaleDateString()}` : `Closed ${new Date(selected.closed_at).toLocaleString()}`}
       </Text>
+      {selected.signal === 'prior_suspension' ? (
+        <>
+          <Text style={styles.subTitle}>Earlier suspension</Text>
+          <Text style={styles.meta}>{PRIOR_SUSPENSION_NOTE}</Text>
+          {prior?.error ? <Text style={styles.meta}>Couldn't load the earlier decisions. Open the case again to retry.</Text> : null}
+          {Array.isArray(prior) ? priorSuspensionLines(prior).map((line, i) => <Text key={`p${i}`} style={styles.event}>{line}</Text>) : null}
+        </>
+      ) : null}
       <Text style={styles.subTitle}>Photos side by side</Text>
       <Text style={styles.meta}>A similar photo is a reason to look, never proof (shared, stock and group photos match too). Links last 15 minutes.</Text>
       <ScrollView horizontal contentContainerStyle={styles.photoRow}>

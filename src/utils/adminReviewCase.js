@@ -12,6 +12,7 @@ export const CASE_SIGNAL_LABEL = {
   similar_photo: 'Similar photo',
   behavior: 'Activity pattern',
   report: 'From a report',
+  prior_suspension: 'Phone number of a suspended account',
 };
 
 export const CASE_REASON_LABEL = {
@@ -19,6 +20,7 @@ export const CASE_REASON_LABEL = {
   similar_names: 'On accounts with similar names',
   behavior_pattern: 'Unusual activity pattern',
   reported_profile: 'Opened by an admin from a report',
+  suspended_number_reused: 'Signed up with a number a suspended account used',
 };
 
 export const OUTCOME_LABEL = { no_action: 'No action needed', action_taken: 'Action taken' };
@@ -124,4 +126,24 @@ export function linkProblem(link) {
 // Reports an admin may turn into an investigation (any report about an account; the report itself never opens one).
 export function canOpenInvestigation(report) {
   return !!report && !!report.reported_id;
+}
+
+// A prior-suspension case (20270374): the earlier account's decisions, from admin_get_prior_suspension. A matching number is
+// a reason to look, never proof it is the same person: numbers are reassigned. Never shows the number (the server never
+// returns it). One line per decision, oldest first, plus a line when the record has expired (12 months).
+export const PRIOR_SUSPENSION_NOTE = 'A matching phone number is a reason to look, not proof it is the same person: carriers reassign numbers. Nothing has happened to this account.';
+const RELEASED_LABEL = { account_deleted: 'Earlier account deleted', number_changed: 'Earlier account moved to another number' };
+const DECISION_LABEL = { suspend: 'Suspended', reinstate: 'Reinstated' };
+
+export function priorSuspensionLines(records) {
+  const out = [];
+  for (const r of Array.isArray(records) ? records : []) {
+    if (!r || !r.still_kept) { out.push('Earlier record no longer kept (12-month limit)'); continue; }
+    out.push(`${RELEASED_LABEL[r.released] || 'Earlier account'} ${new Date(r.released_at).toLocaleDateString()} · record kept until ${new Date(r.expires_at).toLocaleDateString()}`);
+    for (const d of Array.isArray(r.decisions) ? r.decisions : []) {
+      const by = d.admin_name || (d.admin_id ? `Admin ${String(d.admin_id).slice(0, 8)}` : 'an admin');
+      out.push(`${new Date(d.at).toLocaleString()} · ${DECISION_LABEL[d.action] || d.action} by ${by}${d.reason ? `: ${d.reason}` : ''}`);
+    }
+  }
+  return out;
 }

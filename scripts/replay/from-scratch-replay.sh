@@ -19,6 +19,8 @@
 #   internal Docker network with no route out (checked before any migration runs: the replay aborts if it can reach the
 #   internet). pg_net is the real one; its queued calls just fail. vault gets a placeholder secret (not a key).
 #   Cron jobs are created by the migrations, then paused after the replay.
+#  BEFORE_MIGRATIONS (opt-in, unset by default): a command run right after the isolation check, before the environment
+#   steps; used only to let a real Auth server migrate its own schema first (scripts/replay/suspended-number-auth-local.js).
 #  OPERATIONAL STEPS production ran outside a migration file, reproduced at the same point:
 #   - before 20270294 (item 168): the app code inventory sync (scripts/taxonomy/sync-code-dependencies.js). The migration's
 #     moves refuse to run on a database that has never been synced. Inventory = scripts/taxonomy/code-dependencies.json at
@@ -46,6 +48,9 @@ docker run -d --name "$NAME" --network nearby-replay-internal -e POSTGRES_PASSWO
 for _ in $(seq 1 90); do [ "$(docker inspect -f '{{.State.Health.Status}}' "$NAME")" = healthy ] && break; sleep 2; done
 # no route out: a real request from inside the container must fail
 if docker exec "$NAME" timeout 5 bash -c 'exec 3<>/dev/tcp/1.1.1.1/443' 2>/dev/null; then echo "container can reach the internet; refusing"; exit 1; fi
+# optional, opt-in: a command run on the fresh, empty database before anything else (e.g. a real Auth server doing its own
+# schema migrations first, as on a hosted project: node scripts/replay/suspended-number-auth-local.js prepare)
+if [ -n "${BEFORE_MIGRATIONS:-}" ]; then bash -c "$BEFORE_MIGRATIONS" || { echo "BEFORE_MIGRATIONS failed"; exit 1; }; fi
 
 psql_as supabase_admin <<'SQL' || exit 1
 alter table auth.users add column if not exists phone text unique default null;

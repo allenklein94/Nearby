@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
-  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation,
+  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, priorSuspensionLines, PRIOR_SUSPENSION_NOTE,
 } = require('./adminReviewCase');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', '..', p), 'utf8');
@@ -67,6 +67,29 @@ describe('admin review case rules', () => {
   });
 });
 
+describe('prior-suspension cases (20270374)', () => {
+  test('titled neutrally: a number match, never "the same person"', () => {
+    expect(caseTitle({ signal: 'prior_suspension', reason: 'suspended_number_reused' }))
+      .toBe('Phone number of a suspended account · Signed up with a number a suspended account used');
+    expect(PRIOR_SUSPENSION_NOTE).toMatch(/not proof/);
+    expect(PRIOR_SUSPENSION_NOTE).toMatch(/reassign/);
+  });
+
+  test('earlier decisions listed oldest first with who and why; an expired record says so; never a number', () => {
+    const lines = priorSuspensionLines([
+      { still_kept: true, released: 'account_deleted', released_at: '2026-10-01T12:00:00Z', expires_at: '2027-10-01T12:00:00Z',
+        decisions: [{ action: 'suspend', reason: 'Harassment', admin_name: 'Robin', at: '2026-09-20T12:00:00Z' }] },
+      { still_kept: false },
+    ]);
+    expect(lines).toHaveLength(3);
+    expect(lines[0]).toMatch(/^Earlier account deleted /);
+    expect(lines[1]).toMatch(/Suspended by Robin: Harassment$/);
+    expect(lines[2]).toBe('Earlier record no longer kept (12-month limit)');
+    expect(priorSuspensionLines(null)).toEqual([]);
+    expect(read('src/utils/adminReviewCase.js') + read('src/screens/AdminReviewScreen.js')).not.toMatch(/phone_key|\.phone\b/);
+  });
+});
+
 describe('admin review screen boundaries', () => {
   const screen = read('src/screens/AdminReviewScreen.js');
 
@@ -84,7 +107,7 @@ describe('admin review screen boundaries', () => {
   test('every action is an admin-only server function; nothing suspends, bans or restricts from here', () => {
     const rpcs = [...screen.matchAll(/rpc\('(\w+)'/g)].map((m) => m[1]).sort();
     expect([...new Set(rpcs)]).toEqual(['admin_add_account_review_note', 'admin_close_account_review_case', 'admin_get_account_review_case',
-      'admin_list_account_review_cases', 'admin_open_case_from_report', 'admin_record_case_external_check', 'admin_reopen_account_review_case']);
+      'admin_get_prior_suspension', 'admin_list_account_review_cases', 'admin_open_case_from_report', 'admin_record_case_external_check', 'admin_reopen_account_review_case']);
     expect(screen).not.toMatch(/admin_suspend_user|\.update\(|\.delete\(/);
   });
 });

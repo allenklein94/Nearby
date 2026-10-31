@@ -70,6 +70,15 @@ const STEPS = {
     manual: ['BEFORE: every device on a build that screens through screen-user-content (build 87 does not: its profile / gathering / community / Q&A / comment saves would be refused)',
       'read-only right after: 0 ugc_screenings, 0 held items, cron jobs screen-group-chat + purge-ugc-moderation present; one profile save + one gathering on the phone (dedicated test account) publish or are held as the calibration says',
       'one community chat message from the test account is screened within ~2 minutes (queue row done); a person reviews the admin queue'] },
+  // Suspended-number retention: a suspended account's number kept as a keyed hash for 12 months; a re-registration = a private case
+  20270374: { journeys: ['suspendedNumberRetention', 'reviewCaseHistory', 'trustSafety', 'signupPhoneOnlyHook'],
+    node: ['scripts/replay/suspended-number-concurrency.js + scripts/replay/suspended-number-auth-local.js (replay / isolated real Auth only, before the deploy)'],
+    live: ['suspendedNumberSignedIn.live.js (NEARBY_POST_DEPLOY_0374=1; read-only)'],
+    manual: ['BEFORE: the Privacy Policy sentence (PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md, last section) approved, published with the deploy',
+      'read-only right after: private.phone_match_secret has 1 row of 32 bytes; 0 suspended_account_records (no account has ever been suspended on prod), 0 suspended_number_failures; cron jobs match-suspended-numbers + purge-suspended-account-records present; triggers zz_retain_suspended_account + zz_queue_phone_match on auth.users',
+      'a normal phone sign-in on the phone still works (Auth unaffected); the next match run leaves the queue empty',
+      'controlled end to end (owner present, two dedicated test numbers, never a real person\'s): suspend test account A (admin_suspend_user), delete it through the app, sign up again with A\'s number by real SMS: sign-up works as usual, the account is NOT restricted, within 10 minutes one prior-suspension case appears for an admin on the website with the earlier decision and no number; close it; then clean up (the record stays 12 months by design: record its id)',
+      'any failure row, any visible difference at sign-up, or any client read that answers = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
