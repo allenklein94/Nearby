@@ -32,7 +32,7 @@ export default {
     voiceIntro: "🎙️ Voice intro",
     music: "🎵 Music",
     badge: {
-      verified: "Verified",
+      verified: "ID Verified",
       premium: "Premium",
       newHere: "New Here",
     },
@@ -87,7 +87,7 @@ export default {
     voiceIntro: "🎙️ Presentación de voz",
     music: "🎵 Música",
     badge: {
-      verified: "Verificado",
+      verified: "Identidad verificada",
       premium: "Premium",
       newHere: "Nuevo aquí",
     },
@@ -142,7 +142,7 @@ export default {
     voiceIntro: "🎙️ Sprachvorstellung",
     music: "🎵 Musik",
     badge: {
-      verified: "Verifiziert",
+      verified: "Identität verifiziert",
       premium: "Premium",
       newHere: "Neu hier",
     },
@@ -197,7 +197,7 @@ export default {
     voiceIntro: "🎙️ Présentation vocale",
     music: "🎵 Musique",
     badge: {
-      verified: "Vérifié",
+      verified: "Identité vérifiée",
       premium: "Premium",
       newHere: "Nouveau ici",
     },
@@ -252,7 +252,7 @@ export default {
     voiceIntro: "🎙️ Apresentação em áudio",
     music: "🎵 Música",
     badge: {
-      verified: "Verificado",
+      verified: "Identidade verificada",
       premium: "Premium",
       newHere: "Novo por aqui",
     },
@@ -307,7 +307,7 @@ export default {
     voiceIntro: "🎙️ Prezantasyon vwa",
     music: "🎵 Mizik",
     badge: {
-      verified: "Verifye",
+      verified: "Idantite verifye",
       premium: "Premium",
       newHere: "Nouvo isit la",
     },
@@ -362,7 +362,7 @@ export default {
     voiceIntro: "🎙️ 语音介绍",
     music: "🎵 音乐",
     badge: {
-      verified: "已验证",
+      verified: "身份已验证",
       premium: "高级会员",
       newHere: "新成员",
     },
@@ -417,7 +417,7 @@ export default {
     voiceIntro: "🎙️ Giới thiệu bằng giọng nói",
     music: "🎵 Âm nhạc",
     badge: {
-      verified: "Đã xác minh",
+      verified: "Đã xác minh danh tính",
       premium: "Premium",
       newHere: "Mới tham gia",
     },
@@ -472,7 +472,7 @@ export default {
     voiceIntro: "🎙️ Voice intro",
     music: "🎵 Musika",
     badge: {
-      verified: "Verified",
+      verified: "ID Verified",
       premium: "Premium",
       newHere: "Bago Rito",
     },
@@ -527,7 +527,7 @@ export default {
     voiceIntro: "🎙️ Голосовое приветствие",
     music: "🎵 Музыка",
     badge: {
-      verified: "Подтверждён",
+      verified: "Личность подтверждена",
       premium: "Премиум",
       newHere: "Новичок",
     },
@@ -582,7 +582,7 @@ export default {
     voiceIntro: "🎙️ 음성 소개",
     music: "🎵 음악",
     badge: {
-      verified: "인증됨",
+      verified: "신분 인증됨",
       premium: "프리미엄",
       newHere: "새로 왔어요",
     },

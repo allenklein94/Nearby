@@ -84,7 +84,7 @@ export default {
       },
       idVerification: {
         name: "ID Verification",
-        desc: "Verify your identity to get a badge on your profile and appear when others filter for verified profiles.",
+        desc: "Verify your identity to get an ID Verified badge on your profile and appear when others filter for ID-verified profiles.",
       },
       blockedUsers: {
         name: "Blocked Users",
@@ -199,7 +199,7 @@ export default {
       },
       idVerification: {
         name: "Verificación de identidad",
-        desc: "Verifica tu identidad para tener una insignia en tu perfil y aparecer cuando otros filtren por perfiles verificados.",
+        desc: "Verifica tu identidad para tener la insignia Identidad verificada en tu perfil y aparecer cuando otros filtren por perfiles con identidad verificada.",
       },
       blockedUsers: {
         name: "Usuarios bloqueados",
@@ -314,7 +314,7 @@ export default {
       },
       idVerification: {
         name: "Identitätsprüfung",
-        desc: "Bestätige deine Identität, um ein Abzeichen im Profil zu bekommen und angezeigt zu werden, wenn andere nach verifizierten Profilen filtern.",
+        desc: "Verifiziere deine Identität, um das Abzeichen „Identität verifiziert“ auf deinem Profil zu bekommen und zu erscheinen, wenn andere nach Profilen mit verifizierter Identität filtern.",
       },
       blockedUsers: {
         name: "Blockierte Personen",
@@ -429,7 +429,7 @@ export default {
       },
       idVerification: {
         name: "Vérification d'identité",
-        desc: "Vérifiez votre identité pour obtenir un badge sur votre profil et apparaître quand d'autres filtrent les profils vérifiés.",
+        desc: "Vérifie ton identité pour obtenir le badge Identité vérifiée sur ton profil et apparaître quand d'autres filtrent les profils à identité vérifiée.",
       },
       blockedUsers: {
         name: "Utilisateurs bloqués",
@@ -544,7 +544,7 @@ export default {
       },
       idVerification: {
         name: "Verificação de identidade",
-        desc: "Verifique sua identidade para ganhar um selo no perfil e aparecer quando outras pessoas filtrarem por perfis verificados.",
+        desc: "Verifique sua identidade para ter o selo Identidade verificada no seu perfil e aparecer quando outras pessoas filtrarem por perfis com identidade verificada.",
       },
       blockedUsers: {
         name: "Usuários bloqueados",
@@ -659,7 +659,7 @@ export default {
       },
       idVerification: {
         name: "Verifikasyon idantite",
-        desc: "Verifye idantite w pou jwenn yon badj sou pwofil ou epi parèt lè lòt moun filtre pou pwofil verifye.",
+        desc: "Verifye idantite w pou w jwenn badj Idantite verifye a sou pwofil ou epi parèt lè lòt moun filtre pou pwofil ak idantite verifye.",
       },
       blockedUsers: {
         name: "Moun ki bloke",
@@ -774,7 +774,7 @@ export default {
       },
       idVerification: {
         name: "身份认证",
-        desc: "认证身份后，资料上会显示徽章，别人筛选已认证资料时也能看到你。",
+        desc: "验证你的身份，即可在个人资料上获得“身份已验证”徽章，并在其他人筛选身份已验证的资料时出现。",
       },
       blockedUsers: {
         name: "已屏蔽的用户",
@@ -889,7 +889,7 @@ export default {
       },
       idVerification: {
         name: "Xác minh danh tính",
-        desc: "Xác minh danh tính để có huy hiệu trên hồ sơ và xuất hiện khi người khác lọc hồ sơ đã xác minh.",
+        desc: "Xác minh danh tính để có huy hiệu Đã xác minh danh tính trên hồ sơ và xuất hiện khi người khác lọc hồ sơ đã xác minh danh tính.",
       },
       blockedUsers: {
         name: "Người đã chặn",
@@ -1004,7 +1004,7 @@ export default {
       },
       idVerification: {
         name: "ID verification",
-        desc: "I-verify ang pagkakakilanlan mo para magkaroon ng badge sa profile at lumabas kapag nag-filter ang iba ng verified na profile.",
+        desc: "I-verify ang pagkakakilanlan mo para magkaroon ng ID Verified badge sa profile at lumabas kapag nag-filter ang iba ng ID verified na profile.",
       },
       blockedUsers: {
         name: "Mga naka-block",
@@ -1119,7 +1119,7 @@ export default {
       },
       idVerification: {
         name: "Проверка личности",
-        desc: "Подтвердите личность, чтобы получить значок в профиле и появляться, когда другие фильтруют проверенные профили.",
+        desc: "Подтвердите личность, чтобы получить значок «Личность подтверждена» в профиле и появляться, когда другие ищут профили с подтверждённой личностью.",
       },
       blockedUsers: {
         name: "Заблокированные",
@@ -1234,7 +1234,7 @@ export default {
       },
       idVerification: {
         name: "신원 인증",
-        desc: "신원을 인증하면 프로필에 배지가 생기고, 인증된 프로필만 보는 사람에게도 표시돼요.",
+        desc: "신분을 인증하면 프로필에 신분 인증됨 배지가 표시되고, 다른 사람이 신분 인증된 프로필만 볼 때도 나타나요.",
       },
       blockedUsers: {
         name: "차단한 사용자",

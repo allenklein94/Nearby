@@ -293,7 +293,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
     ...interestFilters.slice(0, 2),
     ...(interestFilters.length > 2 ? [`+${interestFilters.length - 2}`] : []),
     ...(distanceFilter ? [distanceFilter] : []),
-    ...(verifiedOnlyFilter ? ['Verified'] : []),
+    ...(verifiedOnlyFilter ? [t('ui.friends.verified')] : []),
     ...(onlineOnlyFilter ? ['Online'] : []),
   ];
   const filterSummary = filterSummaryParts.length > 0 ? filterSummaryParts.join(' · ') : 'All';

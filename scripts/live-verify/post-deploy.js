@@ -21,7 +21,7 @@ const STEPS = {
     manual: ['N6 sequence: get_my_profile() own/cross-user/signed-out check, then the owner repeats the website pass (PRODUCT_AUDIT/N6_PROFILE_PRIVACY_PROGRESS_2026-10-28.md)'] },
   20270349: { journeys: ['photoScreeningBinding', 'trustSafety'], node: ['scripts/replay/photo-storage-api.js (against prod storage, read-only)'],
     edge: ['moderate-photo (right after)'] },
-  20270350: { journeys: ['datingConsent', 'appVersionCompatibility'] },
+  20270350: { journeys: ['datingConsent', 'appVersionCompatibility'], live: ['verificationSelfGrantSignedIn.live.js (NEARBY_POST_DEPLOY_0350=1; dedicated test account: own id_verified / photo_verified / is_admin / approved submission / approve RPC all refused or unchanged; any write = STOP)'] },
   20270351: { journeys: ['friendDiscoveryChoice', 'trustSafety'] },
   20270352: { journeys: ['gatheringCreationLimits', 'trustSafety'], manual: ['run order Tier 1 item 0(f): a real phone sign-up can still verify and act'] },
   20270353: { journeys: ['sightingExpiry'] },
