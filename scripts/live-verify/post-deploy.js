@@ -27,7 +27,7 @@ const STEPS = {
   20270353: { journeys: ['sightingExpiry'] },
   20270354: { journeys: ['trustSafety', 'trustSafetyI123'] },
   20270355: { journeys: ['trustSafetyI123'],
-    manual: ['two accounts on prod (owner): long-press a message -> Report; delete that message; the admin queue still shows its exact text + sent/captured times (the app has no message editing, so deletion is the case to test)'] },
+    manual: ['two accounts on prod (owner): long-press a message -> Report; delete that message; the admin queue still shows its exact text + sent/captured times (the app has no message editing, so deletion is the case to test). Controlled test messages between the two test accounts only, never a private conversation; afterwards remove only the test messages/chat, never the report or its evidence (kept for auditing; reports are retained by 0355/0357 rules)'] },
   20270356: { journeys: ['forgedFlagLimits', 'trustSafetyI123'] },
   20270357: { journeys: ['trustSafetyI123'] },
   20270358: { journeys: ['trustSafetyI123', 'trustedWriteScope'] },
