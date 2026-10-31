@@ -52,3 +52,17 @@ Build 87 / main unchanged. No deploy, merge, publish or activation without separ
 - Not device-verified: ⋯ Report this offer on the request screen, package save via screening, contact-info message.
 - Native review: `ui.requestDetail.reportThisOffer` / `offerMoreA11y`, `ui.shared.errors.offerContactInfo` (10 machine-authored languages).
 - Classifier path never run live (Anthropic credit). (CLAUDE.md, history, post-deploy plan)
+
+## Owner decision (2026-10-31): ACCEPTED + CLOSED
+Code-complete and locally verified; NOT deployed, NOT production-verified. The acceptance authorizes no code change, merge,
+migration deploy, function redeploy or website publish. Activation gates, all mandatory, in order:
+1. Restore Anthropic screening availability and verify a successful real screening call (controlled environment) before
+   0372 goes live. Once deployed, every screened business save fails closed until screening works.
+2. Deploy 0372 only after 0371, with separate owner approval, as one coordinated release with the `screen-business-content`
+   redeploy and the documented rollback (`scripts/rollback/20270372_offer_safety.rollback.sql`).
+3. Verify direct-API bypass protection (refused `screening_required`, nothing written) and that legitimate business saves
+   succeed, through the real API with dedicated test accounts.
+4. Test Report this offer, contact-detail refusal and package creation on the appropriate iPhone build.
+5. Complete native-language review of the new strings before public release.
+Build 87 unchanged. Next = Build 87 submission + Tier 1 iPhone testing; no further feature development unless a new
+critical security defect is found.

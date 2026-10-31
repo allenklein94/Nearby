@@ -1,4 +1,4 @@
-# 2026-10-31: Offer safety (20270372), built + staged, not deployed
+# 2026-10-31: Offer safety (20270372), built + staged, not deployed; ACCEPTED + CLOSED by the owner (code-complete, locally verified; 5 activation gates in the progress doc, first = a successful real screening call)
 
 Owner approved gaps 1-3. Branch `post-tier1/offer-safety` (stacked on `post-tier1/business-verification`), main + build 87
 unchanged. Findings, design and full verification: `PRODUCT_AUDIT/OFFER_SAFETY_PROGRESS_2026-10-31.md`; rules in the
