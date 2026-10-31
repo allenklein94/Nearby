@@ -834,3 +834,18 @@ unchanged.
   `src/qa/reviewCaseAdminSignedIn.live.js`.
 - **Deploy order (each its own approval):** after 0367: 0368 (+ `moderate-photo` redeploy, either order), 0369; then the
   activation migration with the owner's distances; then the website export + publish; Privacy Policy sentence above first.
+
+## Suspended-number re-registration (owner decision 2026-10-31; NOT BUILT, required before external users)
+
+Gap: a suspended person can delete their account, free the phone number and register again without the suspension history following them.
+
+Approved design (implement after Tier 1 on a separate branch, new migration, own deploy approval):
+1. On deletion of a suspended account, retain only a keyed hash of its phone number (HMAC with a server-side secret, never a plain or unsalted hash), expiring automatically 12 months after deletion.
+2. A new registration whose number matches is allowed and opens a private admin review case. No automatic suspension or restriction from the match alone (numbers are reassigned); an admin decides on the evidence.
+3. Keep the suspension audit record (decision, reason, administrator, timestamp) with data minimization; do not keep the deleted profile.
+4. Nothing public reveals the match: no badge, API response, error text or timing difference exposes whether a number was previously suspended.
+5. Privacy Policy disclosure and retention/expiry handling.
+
+Verification required: concurrency tests, from-scratch replay, rollback round trip, real-API tests where appropriate. Production unchanged until the owner approves deployment.
+
+Limit: closes same-number re-registration only. Return with a different number stays covered by the duplicate-account signals (0357, 0368) and human review.
