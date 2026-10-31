@@ -73,9 +73,23 @@ begin
 end $f$;
 `;
 
-async function runJourney(declare, rawBody, { unscreened = false } = {}) {
+// 20270373 (user-content screening): every consumer text a journey's people write (profile text, gathering titles and
+// descriptions, communities, Q&A, photo comments) needs a screening the screen-user-content edge function recorded. Inside
+// the rolled-back transaction the ONE lookup the binding reads is replaced to answer "publish", so journeys about other
+// stories keep writing as before. Only where 20270373 is installed. Journey `ugcModeration` passes
+// { realUgcScreening: true } and proves the binding against the real lookup.
+const UGC_STAND_IN = `
+do $ugc$ begin
+  if to_regprocedure('private.ugc_screening_lookup(uuid,text,boolean)') is not null then
+    execute $x$create or replace function private.ugc_screening_lookup(p_user uuid, p_sha text, p_is_name boolean)
+      returns text language sql stable as $y$ select 'publish'::text $y$$x$;
+  end if;
+end $ugc$;
+`;
+
+async function runJourney(declare, rawBody, { unscreened = false, realUgcScreening = false } = {}) {
   const body = unscreened ? rawBody : rawBody.replace(SCREENED_CALLS, 'pg_temp.j_$1(');
-  const sql = `${prelude()}${SCREENING_STAND_INS}do $j$ declare log jsonb := '[]'::jsonb; ${declare}
+  const sql = `${prelude()}${SCREENING_STAND_INS}${realUgcScreening ? '' : UGC_STAND_IN}do $j$ declare log jsonb := '[]'::jsonb; ${declare}
 begin
 ${body}
 raise exception 'JOURNEY_LOG %', log::text;
