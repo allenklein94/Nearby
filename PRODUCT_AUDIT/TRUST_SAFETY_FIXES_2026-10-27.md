@@ -869,6 +869,10 @@ Known limits:
 - An account suspended and then deleted in the SAME second as a reinstatement can't be ordered by the decision log (only when delete-account has already removed the profile); not reachable through the admin screens in practice.
 - Numbers on accounts deleted before 0374 is live are not retained (production has never suspended anyone: 0351 is not live).
 
+### Owner decision (2026-10-31): ACCEPTED + CLOSED as code-complete and locally verified, NOT deployed
+
+Stays on its branch; migration order and individual deploy approvals kept. Mandatory activation gates: (1) focused security review of the keyed-hash secret before final deploy approval (access by ordinary database roles, exposed APIs, backups reachable by lower-trust operators, logs; whether to hold the key outside the database, e.g. an edge-function secret or Vault). Phone numbers are a small, predictable search space, so anyone who can read the secret and the kept keys can test guesses. Change the implementation only if the review finds a material exposure. (2) Privacy Policy sentence below, published with the deploy. (3) The post-deploy real-SMS test. No merge, no deploy; development frozen again.
+
 ### Privacy Policy sentence (DRAFT, publish with 0374; owner + counsel approve the wording)
 - (§ on safety / retention): "If we suspend an account for breaking our rules and that account is later deleted, we keep a
   scrambled code made from its phone number (not the number itself) and a record of our decision for 12 months, then delete
