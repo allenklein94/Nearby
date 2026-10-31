@@ -58,14 +58,14 @@ d('journey: a forged trusted-write flag skips no rate or friend-request limit', 
   ${as('forged_second_name_change', 'v_d', `${forge}; update profiles set display_name = 'Renamed twice' where id = v_d`)}
   ${rec('name_after', `(select display_name from profiles where id = v_d)`)}
   ${as('forged_friend_request', 'v_d', `${forge}; ${friendRequest('v_d', 'v_g')}`)}
-  ${as('first_report', 'v_d', `insert into reports (reporter_id, reported_id, reason) values (v_d, v_g, 'spam')`)}
-  ${as('forged_second_report', 'v_d', `${forge}; insert into reports (reporter_id, reported_id, reason) values (v_d, v_f, 'spam')`)}
+  ${as('first_report', 'v_d', `insert into reports (reporter_id, reported_id, reason) values (v_d, v_g, 'Spam or scam')`)}
+  ${as('forged_second_report', 'v_d', `${forge}; insert into reports (reporter_id, reported_id, reason) values (v_d, v_f, 'Spam or scam')`)}
   ${as('forged_photo_change', 'v_d', `${forge}; update profiles set photo_url = v_d || '/forged.jpg' where id = v_d`)}
   ${rec('photo_kept', `(select photo_url = v_d || '/main.jpg' from profiles where id = v_d)`)}
   -- the client cannot create the marker itself
   ${as('client_marks', 'v_d', `perform private.mark_trusted_write()`)}
   -- anon with a forged flag
-  ${as('anon_forged_report', 'null', `${forge}; insert into reports (reporter_id, reported_id, reason) values (v_d, v_g, 'spam')`, `'ok'::text`, 'anon')}
+  ${as('anon_forged_report', 'null', `${forge}; insert into reports (reporter_id, reported_id, reason) values (v_d, v_g, 'Spam or scam')`, `'ok'::text`, 'anon')}
 
   -- legitimate server paths still skip: swap_main_photo with photo changes at 0 ...
   update profiles set photo_url = 'journey/main.jpg' where id = v_f;

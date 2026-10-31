@@ -44,6 +44,9 @@ const STEPS = {
   20270368: { journeys: ['reviewCaseHistory', 'trustSafetyI123'], edge: ['moderate-photo (right after; safe in either order: it skips the hashes while the function is missing)'] },
   20270369: { journeys: ['reviewCaseHistory', 'trustSafetyI123', 'behaviorReviewSignals'], live: ['reviewCaseAdminSignedIn.live.js (NEARBY_POST_DEPLOY_0369=1)'],
     manual: ['website (unpublished build, owner approval to publish): admin signs in, Admin review lists the queue; a non-admin account sees "Admins only" and every call refused'] },
+  // before the deploy: node scripts/replay/report-reason-backfill.js <prelude 0348-0369> (rolled back on prod)
+  20270370: { journeys: ['reportReasonCodes', 'trustSafetyI123', 'reviewCaseHistory'], sql: ['report-reason-codes-post-deploy.sql'],
+    node: ['scripts/replay/report-reason-backfill.js (BEFORE the deploy, rolled back)'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

@@ -4,7 +4,7 @@
 // never reopens for unchanged evidence, only an admin reopens it, with a reason; a report never opens a case by itself.
 // Hashes here are fixed numbers (the matching rule is what's tested); real photos are measured by
 // scripts/trust-safety/calibrate-photo-hashes.js. Every client action runs under the real role (set local role + JWT claims).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, storedReason } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -321,7 +321,7 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
     expect(data('admin_opens_from_report').new).toBe(true);
     expect(data('admin_links_second_report')).toEqual({ case_id: data('admin_opens_from_report').case_id, new: false });
     expect(data('report_case')).toEqual({ signal: 'report', reason: 'reported_profile', members: 1, photos: 1, reports: 2, linked_events: 2 });
-    expect(data('report_untouched')).toEqual({ reason: 'Fake profile', resolved: false });
+    expect(data('report_untouched')).toEqual({ reason: storedReason('Fake profile'), resolved: false });
   });
 
   test('0369: a case photo is readable only by an admin, and only while it is attached to a case', () => {

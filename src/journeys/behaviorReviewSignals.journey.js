@@ -159,7 +159,7 @@ d('journey: behaviour review signals (20270363)', () => {
   insert into private.rate_limit_rules (action, trust_level, window_seconds, max_count)
     select a, l, 86400, 1 from unnest(array['report', 'name_change', 'photo_change', 'group_message']) a, unnest(array['new', 'established']) l;
   update profiles set photo_url = v_b || '/main.jpg' where id = v_b;
-  ${as('limit_report', 'v_b', `insert into reports (reporter_id, reported_id, reason) values (v_b, v_s, 'spam')`)}
+  ${as('limit_report', 'v_b', `insert into reports (reporter_id, reported_id, reason) values (v_b, v_s, 'Spam or scam')`)}
   ${rec('report_not_counted', `(select count(*) from private.behavior_events where user_id = v_b)`)}
   ${as('limit_name', 'v_b', `update profiles set display_name = 'B renamed' where id = v_b`)}
   ${as('limit_photo', 'v_b', `update profiles set photo_url = v_b || '/new.jpg' where id = v_b`)}

@@ -8,6 +8,7 @@ import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { PullToRefresh } from '../motion';
 import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
+import { reportReasonLabel } from '../utils/reportReasons';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
 // review cases (identical photo + an approved rule; 20270363: behaviour patterns, counts only) are listed above the reports. Both work on a database without those
@@ -103,7 +104,7 @@ export default function AdminReportsScreen({ navigation }) {
           onPress: async () => {
             const { data, error } = await supabase.rpc('admin_suspend_user', {
               user_id_param: item.reported_id,
-              reason_param: `Report: ${item.reason}`,
+              reason_param: `Report: ${reportReasonLabel(item.reason)}`,
               report_id_param: item.id,
             });
             if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => suspendReportedUser(item) });
@@ -123,7 +124,7 @@ export default function AdminReportsScreen({ navigation }) {
         onPress: async () => {
           const { data, error } = await supabase.rpc('admin_reinstate_user', {
             user_id_param: item.reported_id,
-            reason_param: `Reinstated from report: ${item.reason}`,
+            reason_param: `Reinstated from report: ${reportReasonLabel(item.reason)}`,
           });
           if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => reinstateReportedUser(item) });
           Alert.alert(data?.already ? 'Not suspended' : 'Reinstated', data?.already ? 'This account was not suspended.' : 'Their profile and sign-in are restored.');
@@ -184,7 +185,7 @@ export default function AdminReportsScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <View style={[styles.card, item.resolved && styles.cardResolved]}>
-            <Text style={styles.reason}>{item.reason}</Text>
+            <Text style={styles.reason}>{reportReasonLabel(item.reason)}</Text>
             <Text style={styles.meta}>Against: {item.reported?.display_name || item.reported_id}</Text>
             {item.reported?.suspended_at ? <Text style={styles.meta}>Suspended {new Date(item.reported.suspended_at).toLocaleString()}</Text> : null}
             {item.details ? <Text style={styles.details}>{item.details}</Text> : null}

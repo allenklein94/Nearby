@@ -21,7 +21,7 @@
 // One rolled-back transaction. Thresholds used here are journey-only test values, never proposals. Not covered: the
 // app screens, real uploads through the Storage API + the hash moderate-photo computes (Jest guard reads its source), the
 // push actually reaching an admin's phone, group chats other than the shapes shown (same trigger function on each table).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, storedReason } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -269,7 +269,7 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
     // the existing direct "Mark Resolved" still works and is now logged with the admin
     expect(data('admin_direct_resolve')).toEqual([{ action: 'resolved', by_admin: true }]);
     // a server-side update (no client role) still can't change the evidence
-    expect(data('server_edits_evidence')).toEqual({ excerpt: 'second from b', reason: 'Harassment or abuse', reported_b: true, resolved: true });
+    expect(data('server_edits_evidence')).toEqual({ excerpt: 'second from b', reason: storedReason('Harassment or abuse'), reported_b: true, resolved: true });
     expect(data('server_resolve_logged')).toEqual([{ action: 'resolved', by_admin: true }]);
     expect(hint('non_admin_resolve')).toBe('admin_only');
     expect(data('admin_resolve')).toEqual({ rows: [{ action: 'resolved_action_taken', note: 'Warned in person' }], resolved: true });
@@ -289,7 +289,7 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
 
   test('I3 retention: a report outlives either account; resolved reports go after 12 months, unresolved never', () => {
     expect(data('report_by_e')).toBe('ok');
-    expect(data('reported_deleted')).toEqual({ reported_null: true, stamped: true, reporter_kept: true, excerpt: 'threat from f', reason: 'Harassment or abuse' });
+    expect(data('reported_deleted')).toEqual({ reported_null: true, stamped: true, reporter_kept: true, excerpt: 'threat from f', reason: storedReason('Harassment or abuse') });
     expect(data('reporter_deleted')).toEqual({ reporter_null: true, stamped: true, reported_kept: true });
     expect(data('admin_reads_after_delete')).toBe(2);
     expect(data('reporter_still_reads_own')).toBe(1);

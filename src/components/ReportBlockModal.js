@@ -8,16 +8,10 @@ import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation, showSuccessToast } from '../motion';
 import { reportRow, insertReport } from '../utils/reportContent';
-// `value` is what is saved in reports.reason and read by the admin queue (English, unchanged); `key` names the chip label
-// in the person's language (ui.reportBlock.reason.<key>).
-const REPORT_REASONS = [
-  { value: 'Inappropriate photo', key: 'inappropriatePhoto' },
-  { value: 'Harassment or abuse', key: 'harassment' },
-  { value: 'Fake profile', key: 'fakeProfile' },
-  { value: 'Spam or scam', key: 'spam' },
-  { value: 'Underage user', key: 'underage' },
-  { value: 'Other', key: 'other' },
-];
+import { REPORT_REASONS } from '../utils/reportReasons';
+// One reason table (utils/reportReasons.js): the chip label is translated (ui.reportBlock.reason.<key>); what is saved is
+// the reason's fixed `legacy` value, which the database maps to its stable code (20270370). Never a translated string.
+const REPORT_REASON_CHIPS = REPORT_REASONS.map((r) => ({ value: r.legacy, key: r.key }));
 
 // reportOnly: the caller owns blocking (a host's Block in Manage attendees also takes the person off the gathering), so
 // the sheet shows only the report.
@@ -83,7 +77,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
 
           <Text style={styles.label}>{t('ui.reportBlock.reasonForReport')}</Text>
           <View style={styles.reasonsWrap}>
-            {REPORT_REASONS.map(({ value, key }) => (
+            {REPORT_REASON_CHIPS.map(({ value, key }) => (
               <TouchableOpacity
                 key={value}
                 style={[styles.reasonChip, selectedReason === value && styles.reasonChipSelected]}

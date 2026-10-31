@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { reportReasonLabel } from '../utils/reportReasons';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
   linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
@@ -143,7 +144,7 @@ export default function AdminReviewScreen() {
       {!reports.length ? <Text style={styles.meta}>No open reports.</Text> : null}
       {reports.map((r) => (
         <View key={r.id} style={styles.card}>
-          <Text style={styles.title}>{r.reason}</Text>
+          <Text style={styles.title}>{reportReasonLabel(r.reason)}</Text>
           <Text style={styles.meta}>About {r.reported?.display_name || 'an account'} · {new Date(r.created_at).toLocaleString()}</Text>
           {r.details ? <Text style={styles.details}>{r.details}</Text> : null}
           {canOpenInvestigation(r) ? (
@@ -184,7 +185,7 @@ export default function AdminReviewScreen() {
         <>
           <Text style={styles.subTitle}>Linked reports</Text>
           {selected.reports.map((r) => (
-            <Text key={r.report_id} style={styles.meta}>{r.still_kept ? `${r.reason} · ${new Date(r.created_at).toLocaleString()}${r.resolved ? ' · resolved' : ''}` : 'Report no longer kept (retention)'}</Text>
+            <Text key={r.report_id} style={styles.meta}>{r.still_kept ? `${reportReasonLabel(r.reason)} · ${new Date(r.created_at).toLocaleString()}${r.resolved ? ' · resolved' : ''}` : 'Report no longer kept (retention)'}</Text>
           ))}
         </>
       ) : null}

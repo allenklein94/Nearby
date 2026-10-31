@@ -107,7 +107,7 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
     values (v_x, 'JTS coffee', now() + interval '2 days', 1.5, -150.5, 'Coffee', 'journey', 10, 'everyone', true) returning id into v_g;
   perform set_config('request.jwt.claims', '', true);
   insert into gathering_interest (gathering_id, user_id, status) values (v_g, v_att, 'approved');
-  insert into reports (reporter_id, reported_id, reason) values (v_y, v_x, 'Journey report') returning id into v_rep;
+  insert into reports (reporter_id, reported_id, reason) values (v_y, v_x, 'Other') returning id into v_rep;
   select id into v_match from matches where (user_a = v_x and user_b = v_y) or (user_a = v_y and user_b = v_x) limit 1;
   if v_match is null then
     insert into matches (user_a, user_b) values (least(v_x, v_y), greatest(v_x, v_y)) returning id into v_match;
@@ -135,7 +135,7 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   ${as('suspended_waves', 'v_x', `insert into notices (from_user, to_user) values (v_x, v_u)`)}
   ${as('suspended_unhides', 'v_x', 'update profiles set profile_hidden = false where id = v_x', '(select profile_hidden from profiles where id = v_x)')}
   ${as('suspended_unsuspends', 'v_x', 'update profiles set suspended_at = null where id = v_x', '(select suspended_at is not null from profiles where id = v_x)')}
-  ${as('suspended_can_report', 'v_x', `insert into reports (reporter_id, reported_id, reason) values (v_x, v_y, 'Journey counter-report')`)}
+  ${as('suspended_can_report', 'v_x', `insert into reports (reporter_id, reported_id, reason) values (v_x, v_y, 'Other')`)}
   ${as('others_read_profile', 'v_u', 'v_n := 0', '(select count(*) from profiles where id = v_x)')}
   ${as('admin_reads_profile', 'v_admin', 'v_n := 0', '(select count(*) from profiles where id = v_x)')}
   ${as('new_viewer_sees_gathering', 'v_u', 'v_n := 0', '(select count(*) from gatherings where id = v_g)')}

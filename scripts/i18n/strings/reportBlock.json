@@ -17,7 +17,7 @@
   "blockUser": "Block User",
   "reason.inappropriatePhoto": "Inappropriate photo",
   "reason.harassment": "Harassment or abuse",
-  "reason.fakeProfile": "Fake profile",
+  "reason.fakeProfile": "Fake profile or impersonation",
   "reason.spam": "Spam or scam",
   "reason.underage": "Underage user",
   "reason.other": "Other"
@@ -40,7 +40,7 @@
   "blockUser": "Bloquear usuario",
   "reason.inappropriatePhoto": "Foto inapropiada",
   "reason.harassment": "Acoso o abuso",
-  "reason.fakeProfile": "Perfil falso",
+  "reason.fakeProfile": "Perfil falso o suplantación de identidad",
   "reason.spam": "Spam o estafa",
   "reason.underage": "Usuario menor de edad",
   "reason.other": "Otro"
@@ -63,7 +63,7 @@
   "blockUser": "Person blockieren",
   "reason.inappropriatePhoto": "Unangemessenes Foto",
   "reason.harassment": "Belästigung oder Missbrauch",
-  "reason.fakeProfile": "Falsches Profil",
+  "reason.fakeProfile": "Falsches Profil oder Identitätsbetrug",
   "reason.spam": "Spam oder Betrug",
   "reason.underage": "Minderjährige Person",
   "reason.other": "Sonstiges"
@@ -86,7 +86,7 @@
   "blockUser": "Bloquer la personne",
   "reason.inappropriatePhoto": "Photo inappropriée",
   "reason.harassment": "Harcèlement ou abus",
-  "reason.fakeProfile": "Faux profil",
+  "reason.fakeProfile": "Faux profil ou usurpation d'identité",
   "reason.spam": "Spam ou arnaque",
   "reason.underage": "Personne mineure",
   "reason.other": "Autre"
@@ -109,7 +109,7 @@
   "blockUser": "Bloquear usuário",
   "reason.inappropriatePhoto": "Foto inadequada",
   "reason.harassment": "Assédio ou abuso",
-  "reason.fakeProfile": "Perfil falso",
+  "reason.fakeProfile": "Perfil falso ou falsificação de identidade",
   "reason.spam": "Spam ou golpe",
   "reason.underage": "Usuário menor de idade",
   "reason.other": "Outro"
@@ -132,7 +132,7 @@
   "blockUser": "Bloke moun nan",
   "reason.inappropriatePhoto": "Foto ki pa apwopriye",
   "reason.harassment": "Arasman oswa abi",
-  "reason.fakeProfile": "Fo pwofil",
+  "reason.fakeProfile": "Fo pwofil oswa moun k ap pase pou yon lòt",
   "reason.spam": "Spam oswa eskwokri",
   "reason.underage": "Moun ki poko gen laj",
   "reason.other": "Lòt"
@@ -155,7 +155,7 @@
   "blockUser": "屏蔽用户",
   "reason.inappropriatePhoto": "不当照片",
   "reason.harassment": "骚扰或辱骂",
-  "reason.fakeProfile": "虚假资料",
+  "reason.fakeProfile": "虚假资料或冒充他人",
   "reason.spam": "垃圾信息或诈骗",
   "reason.underage": "未成年用户",
   "reason.other": "其他"
@@ -178,7 +178,7 @@
   "blockUser": "Chặn người dùng",
   "reason.inappropriatePhoto": "Ảnh không phù hợp",
   "reason.harassment": "Quấy rối hoặc lạm dụng",
-  "reason.fakeProfile": "Hồ sơ giả",
+  "reason.fakeProfile": "Hồ sơ giả hoặc mạo danh",
   "reason.spam": "Spam hoặc lừa đảo",
   "reason.underage": "Người dùng chưa đủ tuổi",
   "reason.other": "Khác"
@@ -201,7 +201,7 @@
   "blockUser": "I-block ang user",
   "reason.inappropriatePhoto": "Hindi angkop na larawan",
   "reason.harassment": "Panliligalig o pang-aabuso",
-  "reason.fakeProfile": "Pekeng profile",
+  "reason.fakeProfile": "Pekeng profile o pagpapanggap",
   "reason.spam": "Spam o panloloko",
   "reason.underage": "Menor de edad na user",
   "reason.other": "Iba pa"
@@ -224,7 +224,7 @@
   "blockUser": "Заблокировать",
   "reason.inappropriatePhoto": "Неприемлемое фото",
   "reason.harassment": "Преследование или оскорбления",
-  "reason.fakeProfile": "Фейковый профиль",
+  "reason.fakeProfile": "Фейковый профиль или выдача себя за другого",
   "reason.spam": "Спам или мошенничество",
   "reason.underage": "Несовершеннолетний пользователь",
   "reason.other": "Другое"
@@ -247,7 +247,7 @@
   "blockUser": "사용자 차단",
   "reason.inappropriatePhoto": "부적절한 사진",
   "reason.harassment": "괴롭힘 또는 욕설",
-  "reason.fakeProfile": "가짜 프로필",
+  "reason.fakeProfile": "가짜 프로필 또는 사칭",
   "reason.spam": "스팸 또는 사기",
   "reason.underage": "미성년 사용자",
   "reason.other": "기타"

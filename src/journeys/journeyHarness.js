@@ -85,4 +85,11 @@ const LIFT_GATHERING_CREATION_LIMIT = `if to_regclass('private.rate_limit_rules'
     execute 'delete from private.rate_limit_rules where action = ''gathering_create''';
   end if;`;
 
-module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, LIFT_GATHERING_CREATION_LIMIT };
+// A stored report reason, read back: the English value the app sends, or its stable code once 20270370 is installed
+// (prod before it, or a prelude with it). Matches either, never anything else.
+const { reportReasonCode } = require('../utils/reportReasons');
+function storedReason(legacy) {
+  return expect.stringMatching(new RegExp(`^(${legacy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${reportReasonCode(legacy)})$`));
+}
+
+module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, LIFT_GATHERING_CREATION_LIMIT, storedReason };
