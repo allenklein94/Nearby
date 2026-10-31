@@ -60,6 +60,9 @@ describe('report reasons', () => {
     expect(reportReasonLabel('fake_profile')).toBe('Fake profile or impersonation');
     expect(reportReasonLabel('Fake profile')).toBe('Fake profile or impersonation');
     expect(reportReasonLabel('underage_user')).toBe('Underage user');
+    // display only (owner 2026-10-31): the label covers messages and posts too; code + legacy value unchanged
+    expect(reportReasonLabel('inappropriate_photo')).toBe('Inappropriate content');
+    expect(reportReasonLabel('Inappropriate photo')).toBe('Inappropriate content');
     expect(reportReasonLabel('Something from long ago')).toBe('Something from long ago');
     expect(reportReasonLabel(null)).toBe('');
   });
@@ -71,6 +74,8 @@ describe('report reasons', () => {
     expect(langs).toHaveLength(11);
     for (const lang of langs) for (const r of REPORT_REASONS) expect(reportBlock[lang].reason[r.key]).toEqual(expect.any(String));
     expect(reportBlock.en.reason.fakeProfile).toBe('Fake profile or impersonation');
+    expect(reportBlock.en.reason.inappropriatePhoto).toBe('Inappropriate content');
+    for (const lang of langs.filter((l) => l !== 'en')) expect(reportBlock[lang].reason.inappropriatePhoto).not.toBe(reportBlock.en.reason.inappropriatePhoto);
     for (const lang of langs.filter((l) => l !== 'en')) expect(reportBlock[lang].reason.fakeProfile).not.toBe(reportBlock.en.reason.fakeProfile);
   });
 });

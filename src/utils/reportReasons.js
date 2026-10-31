@@ -7,7 +7,7 @@
 // The report sheet still SENDS `legacy`: it works on every database state (today's prod has no codes, and between the
 // staged 0356 and 0370 a code would miss 0356's urgent rule). Switch the sheet to `code` once 0370 is live.
 export const REPORT_REASONS = [
-  { code: 'inappropriate_photo', legacy: 'Inappropriate photo', key: 'inappropriatePhoto', admin: 'Inappropriate photo' },
+  { code: 'inappropriate_photo', legacy: 'Inappropriate photo', key: 'inappropriatePhoto', admin: 'Inappropriate content' },
   { code: 'harassment', legacy: 'Harassment or abuse', key: 'harassment', admin: 'Harassment or abuse', urgent: true },
   { code: 'fake_profile', legacy: 'Fake profile', key: 'fakeProfile', admin: 'Fake profile or impersonation' },
   { code: 'spam_scam', legacy: 'Spam or scam', key: 'spam', admin: 'Spam or scam' },

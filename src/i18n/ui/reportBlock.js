@@ -17,7 +17,7 @@ export default {
     submitting: "Submitting...",
     submitReport: "Submit Report",
     blockUser: "Block User",
-    reason: { inappropriatePhoto: "Inappropriate photo", harassment: "Harassment or abuse", fakeProfile: "Fake profile or impersonation", spam: "Spam or scam", underage: "Underage user", other: "Other" },
+    reason: { inappropriatePhoto: "Inappropriate content", harassment: "Harassment or abuse", fakeProfile: "Fake profile or impersonation", spam: "Spam or scam", underage: "Underage user", other: "Other" },
   },
   es: {
     selectAReason: "Elige un motivo",
@@ -35,7 +35,7 @@ export default {
     submitting: "Enviando...",
     submitReport: "Enviar reporte",
     blockUser: "Bloquear usuario",
-    reason: { inappropriatePhoto: "Foto inapropiada", harassment: "Acoso o abuso", fakeProfile: "Perfil falso o suplantación de identidad", spam: "Spam o estafa", underage: "Usuario menor de edad", other: "Otro" },
+    reason: { inappropriatePhoto: "Contenido inapropiado", harassment: "Acoso o abuso", fakeProfile: "Perfil falso o suplantación de identidad", spam: "Spam o estafa", underage: "Usuario menor de edad", other: "Otro" },
   },
   de: {
     selectAReason: "Grund auswählen",
@@ -53,7 +53,7 @@ export default {
     submitting: "Wird gesendet...",
     submitReport: "Meldung senden",
     blockUser: "Person blockieren",
-    reason: { inappropriatePhoto: "Unangemessenes Foto", harassment: "Belästigung oder Missbrauch", fakeProfile: "Falsches Profil oder Identitätsbetrug", spam: "Spam oder Betrug", underage: "Minderjährige Person", other: "Sonstiges" },
+    reason: { inappropriatePhoto: "Unangemessene Inhalte", harassment: "Belästigung oder Missbrauch", fakeProfile: "Falsches Profil oder Identitätsbetrug", spam: "Spam oder Betrug", underage: "Minderjährige Person", other: "Sonstiges" },
   },
   fr: {
     selectAReason: "Choisis un motif",
@@ -71,7 +71,7 @@ export default {
     submitting: "Envoi...",
     submitReport: "Envoyer le signalement",
     blockUser: "Bloquer la personne",
-    reason: { inappropriatePhoto: "Photo inappropriée", harassment: "Harcèlement ou abus", fakeProfile: "Faux profil ou usurpation d'identité", spam: "Spam ou arnaque", underage: "Personne mineure", other: "Autre" },
+    reason: { inappropriatePhoto: "Contenu inapproprié", harassment: "Harcèlement ou abus", fakeProfile: "Faux profil ou usurpation d'identité", spam: "Spam ou arnaque", underage: "Personne mineure", other: "Autre" },
   },
   pt: {
     selectAReason: "Escolha um motivo",
@@ -89,7 +89,7 @@ export default {
     submitting: "Enviando...",
     submitReport: "Enviar denúncia",
     blockUser: "Bloquear usuário",
-    reason: { inappropriatePhoto: "Foto inadequada", harassment: "Assédio ou abuso", fakeProfile: "Perfil falso ou falsificação de identidade", spam: "Spam ou golpe", underage: "Usuário menor de idade", other: "Outro" },
+    reason: { inappropriatePhoto: "Conteúdo inadequado", harassment: "Assédio ou abuso", fakeProfile: "Perfil falso ou falsificação de identidade", spam: "Spam ou golpe", underage: "Usuário menor de idade", other: "Outro" },
   },
   ht: {
     selectAReason: "Chwazi yon rezon",
@@ -107,7 +107,7 @@ export default {
     submitting: "N ap voye...",
     submitReport: "Voye rapò a",
     blockUser: "Bloke moun nan",
-    reason: { inappropriatePhoto: "Foto ki pa apwopriye", harassment: "Arasman oswa abi", fakeProfile: "Fo pwofil oswa moun k ap pase pou yon lòt", spam: "Spam oswa eskwokri", underage: "Moun ki poko gen laj", other: "Lòt" },
+    reason: { inappropriatePhoto: "Kontni ki pa apwopriye", harassment: "Arasman oswa abi", fakeProfile: "Fo pwofil oswa moun k ap pase pou yon lòt", spam: "Spam oswa eskwokri", underage: "Moun ki poko gen laj", other: "Lòt" },
   },
   zh: {
     selectAReason: "请选择原因",
@@ -125,7 +125,7 @@ export default {
     submitting: "正在提交...",
     submitReport: "提交举报",
     blockUser: "屏蔽用户",
-    reason: { inappropriatePhoto: "不当照片", harassment: "骚扰或辱骂", fakeProfile: "虚假资料或冒充他人", spam: "垃圾信息或诈骗", underage: "未成年用户", other: "其他" },
+    reason: { inappropriatePhoto: "不当内容", harassment: "骚扰或辱骂", fakeProfile: "虚假资料或冒充他人", spam: "垃圾信息或诈骗", underage: "未成年用户", other: "其他" },
   },
   vi: {
     selectAReason: "Chọn lý do",
@@ -143,7 +143,7 @@ export default {
     submitting: "Đang gửi...",
     submitReport: "Gửi báo cáo",
     blockUser: "Chặn người dùng",
-    reason: { inappropriatePhoto: "Ảnh không phù hợp", harassment: "Quấy rối hoặc lạm dụng", fakeProfile: "Hồ sơ giả hoặc mạo danh", spam: "Spam hoặc lừa đảo", underage: "Người dùng chưa đủ tuổi", other: "Khác" },
+    reason: { inappropriatePhoto: "Nội dung không phù hợp", harassment: "Quấy rối hoặc lạm dụng", fakeProfile: "Hồ sơ giả hoặc mạo danh", spam: "Spam hoặc lừa đảo", underage: "Người dùng chưa đủ tuổi", other: "Khác" },
   },
   tl: {
     selectAReason: "Pumili ng dahilan",
@@ -161,7 +161,7 @@ export default {
     submitting: "Ipinapadala...",
     submitReport: "Ipadala ang ulat",
     blockUser: "I-block ang user",
-    reason: { inappropriatePhoto: "Hindi angkop na larawan", harassment: "Panliligalig o pang-aabuso", fakeProfile: "Pekeng profile o pagpapanggap", spam: "Spam o panloloko", underage: "Menor de edad na user", other: "Iba pa" },
+    reason: { inappropriatePhoto: "Hindi angkop na nilalaman", harassment: "Panliligalig o pang-aabuso", fakeProfile: "Pekeng profile o pagpapanggap", spam: "Spam o panloloko", underage: "Menor de edad na user", other: "Iba pa" },
   },
   ru: {
     selectAReason: "Выберите причину",
@@ -179,7 +179,7 @@ export default {
     submitting: "Отправка...",
     submitReport: "Отправить жалобу",
     blockUser: "Заблокировать",
-    reason: { inappropriatePhoto: "Неприемлемое фото", harassment: "Преследование или оскорбления", fakeProfile: "Фейковый профиль или выдача себя за другого", spam: "Спам или мошенничество", underage: "Несовершеннолетний пользователь", other: "Другое" },
+    reason: { inappropriatePhoto: "Неприемлемый контент", harassment: "Преследование или оскорбления", fakeProfile: "Фейковый профиль или выдача себя за другого", spam: "Спам или мошенничество", underage: "Несовершеннолетний пользователь", other: "Другое" },
   },
   ko: {
     selectAReason: "이유를 선택하세요",
@@ -197,6 +197,6 @@ export default {
     submitting: "제출 중...",
     submitReport: "신고 제출",
     blockUser: "사용자 차단",
-    reason: { inappropriatePhoto: "부적절한 사진", harassment: "괴롭힘 또는 욕설", fakeProfile: "가짜 프로필 또는 사칭", spam: "스팸 또는 사기", underage: "미성년 사용자", other: "기타" },
+    reason: { inappropriatePhoto: "부적절한 콘텐츠", harassment: "괴롭힘 또는 욕설", fakeProfile: "가짜 프로필 또는 사칭", spam: "스팸 또는 사기", underage: "미성년 사용자", other: "기타" },
   },
 };
