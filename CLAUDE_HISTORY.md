@@ -1,4 +1,4 @@
-# 2026-10-31: Verified Business (20270371), built + staged, not deployed
+# 2026-10-31: Verified Business (20270371), built + staged, not deployed; ACCEPTED + CLOSED by the owner (code-complete, locally verified; activation = 4 post-deploy steps)
 
 Owner decisions A (badge shown only on the business preview sheet + Business Profile; never read by routing, matching,
 ranking, offers, replies or Opportunities) + B (evidence-based admin review). Built across a codespace restart; verification

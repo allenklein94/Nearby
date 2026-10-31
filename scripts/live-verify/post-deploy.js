@@ -50,7 +50,11 @@ const STEPS = {
     node: ['scripts/replay/report-reason-backfill.js (BEFORE the deploy, rolled back)'] },
   // Verified Business: no business is verified by the deploy (0 events); the badge shows only after an admin review
   20270371: { journeys: ['businessVerification'], live: ['businessVerificationSignedIn.live.js (NEARBY_POST_DEPLOY_0371=1; dedicated non-admin test account: verify / revoke / list refused, record unchanged; any write = STOP)'],
-    manual: ['read-only: select count(*) from private.business_verification_events = 0 right after the deploy; get_verified_business_ids(every business) = {}'] },
+    manual: ['read-only: select count(*) from private.business_verification_events = 0 right after the deploy; get_verified_business_ids(every business) = {}',
+      'ACTIVATION (owner, 2026-10-31; separate from the deploy, each step reported on its own): (1) the real-API anti-forgery test above passes;',
+      '(2) a real admin (not the business\'s manager) records a legitimate review of one test business with all four checks: badge appears; then revokes with a reason: badge gone, history keeps both events;',
+      '(3) badge visibility: shown ONLY on the business preview sheet + Business Profile (never offer cards, replies, Opportunities, request screens, rankings), signed in + signed out, on build 87+ and the re-exported website;',
+      '(4) native review of ui.businessSheet.verifiedBusiness* + ui.businessProfile.verifiedBusiness* (10 languages) before public release'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
