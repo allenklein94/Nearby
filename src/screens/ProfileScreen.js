@@ -14,7 +14,8 @@ import { joinedNearbyDate } from '../utils/joinedDate';
 import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS, normalizeUgcText } from '../utils/ugcText';
 import { getProfileQuickStats, getAchievements, getEarnedProfileStats } from '../services/homeDashboard';
 import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl, deleteVoiceIntro } from '../services/voiceNotes';
 import { BASICS_FIELDS } from '../constants/basicsFields';
@@ -455,10 +456,8 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     if (!draftAnswer.trim()) {
       return Alert.alert(t('ui.profile.answerRequired'), t('ui.profile.writeAShortAnswerTo'));
     }
-    const check = await checkTextModeration(draftAnswer);
-    if (!check.safe) {
-      return Alert.alert(t('ui.profile.answerNotAllowed'), t('ui.profile.pleaseReviseYourAnswerAnd'));
-    }
+    const check = await screenUserContent([{ text: draftAnswer, kind: UGC_KINDS.bio }]);
+    if (blockedByScreening(Alert, t, check, { notAllowedTitle: t('ui.profile.answerNotAllowed'), notAllowedBody: t('ui.profile.pleaseReviseYourAnswerAnd') })) return;
 
     setPrompts((prev) => {
       const next = [...prev];
@@ -577,32 +576,36 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   }
 
   async function save() {
-    const nameCheck = await checkTextModeration(displayName);
-    if (!nameCheck.safe) {
-      return Alert.alert(t('ui.profile.displayNameNotAllowed'), t('ui.profile.pleaseReviseYourDisplayName'));
-    }
-    const bioCheck = await checkTextModeration(bio);
-    if (!bioCheck.safe) {
-      return Alert.alert(t('ui.profile.bioNotAllowed'), t('ui.profile.pleaseReviseYourBioAnd'));
-    }
-    for (const [label, value] of [[t('ui.profile.fieldPronouns'), pronouns], [t('ui.profile.fieldGender'), gender], [t('ui.profile.fieldOrientation'), sexualOrientation]]) {
-      if (value.trim()) {
-        const check = await checkTextModeration(value);
-        if (!check.safe) {
-          return Alert.alert(t('ui.profile.notAllowed', { label: label }), t('ui.profile.pleaseReviseThisFieldAnd'));
-        }
-      }
+    // 20270373: every changed public text is screened before the save (the database refuses unscreened text and checks only
+    // what changes); 'hold' = saved, the published text stays until a person approves the new one.
+    const base = baselineRef.current ? JSON.parse(baselineRef.current) : {};
+    let held = false;
+    const screenChanged = async (value, baseValue, kind, notAllowedTitle, notAllowedBody) => {
+      const now = normalizeUgcText(value);
+      if (!now || now === normalizeUgcText(baseValue ?? '')) return true;
+      const result = await screenUserContent([{ text: value, kind }]);
+      if (blockedByScreening(Alert, t, result, { notAllowedTitle, notAllowedBody })) return false;
+      if (result.outcome === 'hold') held = true;
+      return true;
+    };
+    if (!(await screenChanged(displayName, base.displayName, UGC_KINDS.displayName, t('ui.profile.displayNameNotAllowed'), t('ui.profile.pleaseReviseYourDisplayName')))) return;
+    if (!(await screenChanged(bio, base.bio, UGC_KINDS.bio, t('ui.profile.bioNotAllowed'), t('ui.profile.pleaseReviseYourBioAnd')))) return;
+    for (const [label, value, baseValue] of [[t('ui.profile.fieldPronouns'), pronouns, base.pronouns], [t('ui.profile.fieldGender'), gender, base.gender], [t('ui.profile.fieldOrientation'), sexualOrientation, base.sexualOrientation]]) {
+      if (!(await screenChanged(value, baseValue, UGC_KINDS.profileDetail, t('ui.profile.notAllowed', { label: label }), t('ui.profile.pleaseReviseThisFieldAnd')))) return;
     }
 
     const textBasicsFields = BASICS_FIELDS.filter((f) => f.type === 'text');
     for (const field of textBasicsFields) {
       const value = basics[field.key];
-      if (value && value.trim()) {
-        const check = await checkTextModeration(value);
-        if (!check.safe) {
-          return Alert.alert(t('ui.profile.notAllowed', { label: basicsLabel(field, language) }), t('ui.profile.pleaseReviseThisFieldAnd'));
-        }
+      if (typeof value === 'string' && value.trim()) {
+        if (!(await screenChanged(value, base.basics?.[field.key], UGC_KINDS.profileDetail, t('ui.profile.notAllowed', { label: basicsLabel(field, language) }), t('ui.profile.pleaseReviseThisFieldAnd')))) return;
       }
+    }
+    // Prompt answers were screened when written; a new one is screened again here so the save is within its window.
+    const baseAnswers = new Set((base.prompts || []).map((p) => normalizeUgcText(p?.answer)));
+    for (const prompt of prompts) {
+      if (baseAnswers.has(normalizeUgcText(prompt?.answer))) continue;
+      if (!(await screenChanged(prompt?.answer, '', UGC_KINDS.bio, t('ui.profile.answerNotAllowed'), t('ui.profile.pleaseReviseYourAnswerAnd')))) return;
     }
 
     // Phase F -- height is optional, but a genuinely half-filled pair
@@ -640,8 +643,12 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         connection_goal: connectionGoal || null,
       })
       .eq('id', userId);
-    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
-    showSuccessToast(t('ui.profile.saved'));
+    if (error) {
+      if (handledScreeningRefusal(Alert, t, error, { notAllowedTitle: t('ui.profile.bioNotAllowed'), notAllowedBody: t('ui.profile.pleaseReviseYourBioAnd') })) return;
+      return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
+    }
+    if (held) showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
+    else showSuccessToast(t('ui.profile.saved'));
     baselineRef.current = currentSnapshot;
     if (editing && navigation.canGoBack?.()) {
       allowLeaveRef.current = true;

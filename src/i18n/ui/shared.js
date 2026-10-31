@@ -10,6 +10,9 @@ export default {
     header: { messages: 'Messages', messagesUnread: 'Messages, {count} unread', profile: 'Your Profile', hint: '💬 Your messages live here now', dismissHint: 'Dismiss this tip', gotIt: 'Got it' },
     gatheringStatus: { hosting: 'Hosting', going: 'Going', interested: 'Requested', maybe: 'Interested', waitlisted: 'Waitlisted', attended: 'Attended', hosted: 'Hosted', didNotAttend: "Didn't attend" },
     planStatus: { pending: 'Pending', accepted: 'Accepted', confirmed: 'Confirmed', declined: 'Declined', cancelled: 'Cancelled', completed: 'Completed' },
+    contentHeldTitle: 'Thanks, we\'re taking a look',
+    contentHeld: 'We check some posts before others can see them. Only you can see this until it\'s approved, usually soon.',
+    gatheringHeld: 'Only you can see this gathering while Nearby checks it. It will appear for others once it\'s approved.',
     errors: {
       notNow: 'Not now', tryAgain: 'Try Again', checkConnection: 'Check your connection.', draftSaved: 'Your draft is saved.', nothingLost: 'Nothing was lost. Please try again.',
       didntGoThrough: "That didn't go through",
@@ -18,6 +21,9 @@ export default {
       rateLimited: 'You\'ve reached the limit for this for now. Please try again later.',
       gatheringLimit: 'You\'ve reached the limit for creating gatherings for now. Please try again later.',
       offerContactInfo: 'Offers can\'t include website links, email addresses or phone numbers. Customers reach you through Nearby.',
+      contentCheckUnavailableTitle: 'Couldn\'t check this right now',
+      contentCheckUnavailable: 'Nearby checks what you post before others see it, and the check isn\'t available right now. Nothing was posted. Please try again in a moment.',
+      contentCheckLimit: 'You\'ve reached today\'s limit for posting new text. You can try again tomorrow.',
       what: {
         complete_that: { service: "We couldn't complete that right now.", input: "We couldn't complete that. Please check it and try again." },
         update_these_ideas: { service: "We couldn't update these ideas right now.", input: "We couldn't update these ideas. Please check it and try again." },
@@ -57,6 +63,9 @@ export default {
     header: { messages: 'Mensajes', messagesUnread: 'Mensajes, {count} sin leer', profile: 'Tu perfil', hint: '💬 Tus mensajes ahora están aquí', dismissHint: 'Descartar este consejo', gotIt: 'Entendido' },
     gatheringStatus: { hosting: 'Organizas', going: 'Vas', interested: 'Solicitado', maybe: 'Te interesa', waitlisted: 'En lista de espera', attended: 'Asististe', hosted: 'Organizaste', didNotAttend: 'No asististe' },
     planStatus: { pending: 'Pendiente', accepted: 'Aceptado', confirmed: 'Confirmado', declined: 'Rechazado', cancelled: 'Cancelado', completed: 'Completado' },
+    contentHeldTitle: 'Gracias, lo estamos revisando',
+    contentHeld: 'Revisamos algunas publicaciones antes de que otros las vean. Solo tú puedes verla hasta que se apruebe, normalmente pronto.',
+    gatheringHeld: 'Solo tú puedes ver esta reunión mientras Nearby la revisa. Aparecerá para los demás cuando se apruebe.',
     errors: {
       notNow: 'Ahora no', tryAgain: 'Intentar de nuevo', checkConnection: 'Revisa tu conexión.', draftSaved: 'Tu borrador está guardado.', nothingLost: 'No se perdió nada. Inténtalo de nuevo.',
       didntGoThrough: 'No se pudo completar',
@@ -65,6 +74,9 @@ export default {
       rateLimited: 'Llegaste al límite de esto por ahora. Inténtalo de nuevo más tarde.',
       gatheringLimit: 'Llegaste al límite para crear reuniones por ahora. Inténtalo de nuevo más tarde.',
       offerContactInfo: 'Las ofertas no pueden incluir enlaces a sitios web, correos electrónicos ni números de teléfono. Los clientes te contactan a través de Nearby.',
+      contentCheckUnavailableTitle: 'No pudimos revisar esto ahora',
+      contentCheckUnavailable: 'Nearby revisa lo que publicas antes de que otros lo vean, y la revisión no está disponible ahora. No se publicó nada. Inténtalo de nuevo en un momento.',
+      contentCheckLimit: 'Llegaste al límite de hoy para publicar texto nuevo. Puedes intentarlo de nuevo mañana.',
       what: {
         complete_that: { service: 'No pudimos completar eso ahora.', input: 'No pudimos completar eso. Revísalo e inténtalo de nuevo.' },
         update_these_ideas: { service: 'No pudimos actualizar estas ideas ahora.', input: 'No pudimos actualizar estas ideas. Revísalo e inténtalo de nuevo.' },
@@ -104,6 +116,9 @@ export default {
     header: { messages: 'Nachrichten', messagesUnread: 'Nachrichten, {count} ungelesen', profile: 'Dein Profil', hint: '💬 Deine Nachrichten findest du jetzt hier', dismissHint: 'Tipp ausblenden', gotIt: 'Verstanden' },
     gatheringStatus: { hosting: 'Du veranstaltest', going: 'Du gehst hin', interested: 'Angefragt', maybe: 'Interessiert', waitlisted: 'Auf der Warteliste', attended: 'Teilgenommen', hosted: 'Veranstaltet', didNotAttend: 'Nicht teilgenommen' },
     planStatus: { pending: 'Ausstehend', accepted: 'Angenommen', confirmed: 'Bestätigt', declined: 'Abgelehnt', cancelled: 'Abgesagt', completed: 'Abgeschlossen' },
+    contentHeldTitle: 'Danke, wir schauen es uns an',
+    contentHeld: 'Manche Beiträge prüfen wir, bevor andere sie sehen. Bis zur Freigabe siehst nur du ihn, meist dauert das nicht lange.',
+    gatheringHeld: 'Nur du siehst dieses Treffen, während Nearby es prüft. Andere sehen es, sobald es freigegeben ist.',
     errors: {
       notNow: 'Nicht jetzt', tryAgain: 'Erneut versuchen', checkConnection: 'Prüfe deine Verbindung.', draftSaved: 'Dein Entwurf ist gespeichert.', nothingLost: 'Es ging nichts verloren. Bitte versuche es erneut.',
       didntGoThrough: 'Das hat nicht geklappt',
@@ -112,6 +127,9 @@ export default {
       rateLimited: 'Du hast dafür vorerst das Limit erreicht. Bitte versuch es später noch einmal.',
       gatheringLimit: 'Du hast vorerst das Limit für neue Treffen erreicht. Bitte versuch es später noch einmal.',
       offerContactInfo: 'Angebote dürfen keine Website-Links, E-Mail-Adressen oder Telefonnummern enthalten. Kunden erreichen dich über Nearby.',
+      contentCheckUnavailableTitle: 'Das konnten wir gerade nicht prüfen',
+      contentCheckUnavailable: 'Nearby prüft, was du veröffentlichst, bevor andere es sehen, und die Prüfung ist gerade nicht verfügbar. Es wurde nichts veröffentlicht. Bitte versuche es gleich noch einmal.',
+      contentCheckLimit: 'Du hast das heutige Limit für neue Texte erreicht. Du kannst es morgen wieder versuchen.',
       what: {
         complete_that: { service: 'Das konnte gerade nicht abgeschlossen werden.', input: 'Das konnte nicht abgeschlossen werden. Bitte prüfe es und versuche es erneut.' },
         update_these_ideas: { service: 'Diese Ideen konnten gerade nicht aktualisiert werden.', input: 'Diese Ideen konnten nicht aktualisiert werden. Bitte prüfe es und versuche es erneut.' },
@@ -151,6 +169,9 @@ export default {
     header: { messages: 'Messages', messagesUnread: 'Messages, {count} non lus', profile: 'Votre profil', hint: '💬 Vos messages se trouvent désormais ici', dismissHint: 'Ignorer ce conseil', gotIt: 'Compris' },
     gatheringStatus: { hosting: "Vous l'organisez", going: "Vous y allez", interested: 'Demandé', maybe: 'Intéressé', waitlisted: "Sur liste d'attente", attended: 'Participé', hosted: 'Organisé', didNotAttend: 'Absent' },
     planStatus: { pending: 'En attente', accepted: 'Accepté', confirmed: 'Confirmé', declined: 'Refusé', cancelled: 'Annulé', completed: 'Terminé' },
+    contentHeldTitle: 'Merci, nous y jetons un œil',
+    contentHeld: 'Nous vérifions certaines publications avant que d\'autres les voient. Vous seul la voyez jusqu\'à son approbation, en général rapidement.',
+    gatheringHeld: 'Vous seul voyez ce rassemblement pendant que Nearby le vérifie. Il apparaîtra pour les autres une fois approuvé.',
     errors: {
       notNow: 'Pas maintenant', tryAgain: 'Réessayer', checkConnection: 'Vérifiez votre connexion.', draftSaved: 'Votre brouillon est enregistré.', nothingLost: "Rien n'a été perdu. Veuillez réessayer.",
       didntGoThrough: "Cela n'a pas abouti",
@@ -159,6 +180,9 @@ export default {
       rateLimited: 'Tu as atteint la limite pour le moment. Réessaie plus tard.',
       gatheringLimit: 'Tu as atteint la limite de création de rassemblements pour le moment. Réessaie plus tard.',
       offerContactInfo: 'Les offres ne peuvent pas contenir de liens vers des sites web, d\'adresses e-mail ni de numéros de téléphone. Les clients te contactent via Nearby.',
+      contentCheckUnavailableTitle: 'Impossible de vérifier ceci pour le moment',
+      contentCheckUnavailable: 'Nearby vérifie ce que vous publiez avant que d\'autres le voient, et la vérification n\'est pas disponible pour le moment. Rien n\'a été publié. Réessayez dans un instant.',
+      contentCheckLimit: 'Vous avez atteint la limite du jour pour publier du nouveau texte. Vous pourrez réessayer demain.',
       what: {
         complete_that: { service: "Impossible de terminer cette action pour le moment.", input: "Impossible de terminer cette action. Vérifiez et réessayez." },
         update_these_ideas: { service: 'Impossible de mettre à jour ces idées pour le moment.', input: 'Impossible de mettre à jour ces idées. Vérifiez et réessayez.' },
@@ -198,6 +222,9 @@ export default {
     header: { messages: 'Mensagens', messagesUnread: 'Mensagens, {count} não lidas', profile: 'Seu perfil', hint: '💬 Suas mensagens agora ficam aqui', dismissHint: 'Dispensar esta dica', gotIt: 'Entendi' },
     gatheringStatus: { hosting: 'Você organiza', going: 'Você vai', interested: 'Solicitado', maybe: 'Interessado', waitlisted: 'Na lista de espera', attended: 'Participou', hosted: 'Organizou', didNotAttend: 'Não participou' },
     planStatus: { pending: 'Pendente', accepted: 'Aceito', confirmed: 'Confirmado', declined: 'Recusado', cancelled: 'Cancelado', completed: 'Concluído' },
+    contentHeldTitle: 'Obrigado, estamos dando uma olhada',
+    contentHeld: 'Verificamos algumas publicações antes que outras pessoas as vejam. Só você vê isso até ser aprovado, normalmente em pouco tempo.',
+    gatheringHeld: 'Só você vê este encontro enquanto o Nearby o verifica. Ele aparecerá para os outros quando for aprovado.',
     errors: {
       notNow: 'Agora não', tryAgain: 'Tentar novamente', checkConnection: 'Verifique sua conexão.', draftSaved: 'Seu rascunho está salvo.', nothingLost: 'Nada foi perdido. Tente novamente.',
       didntGoThrough: 'Não deu certo',
@@ -206,6 +233,9 @@ export default {
       rateLimited: 'Você atingiu o limite disso por enquanto. Tente novamente mais tarde.',
       gatheringLimit: 'Você atingiu o limite para criar encontros por enquanto. Tente novamente mais tarde.',
       offerContactInfo: 'As ofertas não podem incluir links de sites, endereços de e-mail nem números de telefone. Os clientes falam com você pelo Nearby.',
+      contentCheckUnavailableTitle: 'Não conseguimos verificar isso agora',
+      contentCheckUnavailable: 'O Nearby verifica o que você publica antes que outras pessoas vejam, e a verificação não está disponível agora. Nada foi publicado. Tente de novo em instantes.',
+      contentCheckLimit: 'Você atingiu o limite de hoje para publicar texto novo. Tente de novo amanhã.',
       what: {
         complete_that: { service: 'Não foi possível concluir isso agora.', input: 'Não foi possível concluir isso. Verifique e tente novamente.' },
         update_these_ideas: { service: 'Não foi possível atualizar estas ideias agora.', input: 'Não foi possível atualizar estas ideias. Verifique e tente novamente.' },
@@ -245,6 +275,9 @@ export default {
     header: { messages: 'Mesaj', messagesUnread: 'Mesaj, {count} ou poko li', profile: 'Pwofil ou', hint: '💬 Mesaj ou yo la a kounye a', dismissHint: 'Retire konsèy sa a', gotIt: 'Mwen konprann' },
     gatheringStatus: { hosting: 'W ap òganize', going: 'W ap prale', interested: 'Mande', maybe: 'Enterese', waitlisted: 'Sou lis datant', attended: 'Te ale', hosted: 'Te òganize', didNotAttend: 'Pa t ale' },
     planStatus: { pending: 'Ap tann', accepted: 'Aksepte', confirmed: 'Konfime', declined: 'Refize', cancelled: 'Anile', completed: 'Fini' },
+    contentHeldTitle: 'Mèsi, n ap gade l',
+    contentHeld: 'Nou verifye kèk piblikasyon anvan lòt moun wè yo. Se sèlman ou ki ka wè l jiskaske li apwouve, anjeneral byen vit.',
+    gatheringHeld: 'Se sèlman ou ki ka wè rasanbleman sa a pandan Nearby ap verifye l. L ap parèt pou lòt moun lè li apwouve.',
     errors: {
       notNow: 'Pa kounye a', tryAgain: 'Eseye ankò', checkConnection: 'Verifye koneksyon ou.', draftSaved: 'Bouyon ou anrejistre.', nothingLost: 'Anyen pa pèdi. Tanpri eseye ankò.',
       didntGoThrough: 'Sa pa t pase',
@@ -253,6 +286,9 @@ export default {
       rateLimited: 'Ou rive nan limit pou sa a pou kounye a. Tanpri eseye ankò pita.',
       gatheringLimit: 'Ou rive nan limit pou kreye rasanbleman pou kounye a. Tanpri eseye ankò pita.',
       offerContactInfo: 'Òf yo pa ka gen lyen sit entènèt, adrès imèl oswa nimewo telefòn. Kliyan yo kontakte w atravè Nearby.',
+      contentCheckUnavailableTitle: 'Nou pa t ka verifye sa a kounye a',
+      contentCheckUnavailable: 'Nearby verifye sa ou pibliye anvan lòt moun wè l, epi verifikasyon an pa disponib kounye a. Anyen pa t pibliye. Tanpri eseye ankò nan yon ti moman.',
+      contentCheckLimit: 'Ou rive nan limit jodi a pou pibliye nouvo tèks. Ou ka eseye ankò demen.',
       what: {
         complete_that: { service: 'Nou pa t ka fini sa kounye a.', input: 'Nou pa t ka fini sa. Tanpri verifye l epi eseye ankò.' },
         update_these_ideas: { service: 'Nou pa t ka mete ide sa yo ajou kounye a.', input: 'Nou pa t ka mete ide sa yo ajou. Tanpri verifye epi eseye ankò.' },
@@ -292,6 +328,9 @@ export default {
     header: { messages: '消息', messagesUnread: '消息，{count}条未读', profile: '你的个人资料', hint: '💬 消息现在在这里', dismissHint: '关闭此提示', gotIt: '知道了' },
     gatheringStatus: { hosting: '你是组织者', going: '你会去', interested: '已申请', maybe: '感兴趣', waitlisted: '候补中', attended: '已参加', hosted: '已组织', didNotAttend: '未参加' },
     planStatus: { pending: '待定', accepted: '已接受', confirmed: '已确认', declined: '已拒绝', cancelled: '已取消', completed: '已完成' },
+    contentHeldTitle: '谢谢，我们正在查看',
+    contentHeld: '部分内容会在其他人看到之前经过检查。通过之前只有你能看到，通常很快。',
+    gatheringHeld: 'Nearby 检查期间只有你能看到这个聚会。通过后其他人就能看到。',
     errors: {
       notNow: '以后再说', tryAgain: '重试', checkConnection: '请检查网络连接。', draftSaved: '你的草稿已保存。', nothingLost: '没有丢失任何内容，请重试。',
       didntGoThrough: '操作未成功',
@@ -300,6 +339,9 @@ export default {
       rateLimited: '你暂时已达到此操作的上限，请稍后再试。',
       gatheringLimit: '你暂时已达到创建聚会的上限，请稍后再试。',
       offerContactInfo: '优惠内容不能包含网站链接、电子邮件地址或电话号码。顾客会通过 Nearby 联系你。',
+      contentCheckUnavailableTitle: '暂时无法检查',
+      contentCheckUnavailable: 'Nearby 会在其他人看到之前检查你发布的内容，但检查服务暂时不可用。什么都没有发布。请稍后再试。',
+      contentCheckLimit: '你已达到今天发布新文字的上限。明天可以再试。',
       what: {
         complete_that: { service: '现在无法完成此操作。', input: '无法完成此操作。请检查后重试。' },
         update_these_ideas: { service: '现在无法更新这些建议。', input: '无法更新这些建议。请检查后重试。' },
@@ -339,6 +381,9 @@ export default {
     header: { messages: 'Tin nhắn', messagesUnread: 'Tin nhắn, {count} chưa đọc', profile: 'Hồ sơ của bạn', hint: '💬 Tin nhắn của bạn giờ nằm ở đây', dismissHint: 'Ẩn mẹo này', gotIt: 'Đã hiểu' },
     gatheringStatus: { hosting: 'Bạn tổ chức', going: 'Bạn sẽ đi', interested: 'Đã gửi yêu cầu', maybe: 'Quan tâm', waitlisted: 'Trong danh sách chờ', attended: 'Đã tham dự', hosted: 'Đã tổ chức', didNotAttend: 'Không tham dự' },
     planStatus: { pending: 'Đang chờ', accepted: 'Đã chấp nhận', confirmed: 'Đã xác nhận', declined: 'Đã từ chối', cancelled: 'Đã hủy', completed: 'Đã hoàn thành' },
+    contentHeldTitle: 'Cảm ơn, chúng tôi đang xem xét',
+    contentHeld: 'Chúng tôi kiểm tra một số bài đăng trước khi người khác thấy. Chỉ bạn thấy nội dung này cho đến khi được duyệt, thường là sớm.',
+    gatheringHeld: 'Chỉ bạn thấy buổi gặp mặt này trong khi Nearby kiểm tra. Người khác sẽ thấy khi được duyệt.',
     errors: {
       notNow: 'Để sau', tryAgain: 'Thử lại', checkConnection: 'Hãy kiểm tra kết nối.', draftSaved: 'Bản nháp của bạn đã được lưu.', nothingLost: 'Không mất gì cả. Vui lòng thử lại.',
       didntGoThrough: 'Không thực hiện được',
@@ -347,6 +392,9 @@ export default {
       rateLimited: 'Bạn đã đạt giới hạn cho việc này trong lúc này. Vui lòng thử lại sau.',
       gatheringLimit: 'Bạn đã đạt giới hạn tạo buổi gặp mặt trong lúc này. Vui lòng thử lại sau.',
       offerContactInfo: 'Ưu đãi không được chứa liên kết trang web, địa chỉ email hoặc số điện thoại. Khách hàng liên hệ với bạn qua Nearby.',
+      contentCheckUnavailableTitle: 'Không thể kiểm tra lúc này',
+      contentCheckUnavailable: 'Nearby kiểm tra nội dung bạn đăng trước khi người khác thấy, và việc kiểm tra hiện không khả dụng. Chưa có gì được đăng. Vui lòng thử lại sau giây lát.',
+      contentCheckLimit: 'Bạn đã đạt giới hạn đăng văn bản mới hôm nay. Bạn có thể thử lại vào ngày mai.',
       what: {
         complete_that: { service: 'Hiện không thể hoàn tất việc này.', input: 'Không thể hoàn tất việc này. Hãy kiểm tra và thử lại.' },
         update_these_ideas: { service: 'Hiện không thể cập nhật những gợi ý này.', input: 'Không thể cập nhật những gợi ý này. Hãy kiểm tra và thử lại.' },
@@ -386,6 +434,9 @@ export default {
     header: { messages: 'Mga Mensahe', messagesUnread: 'Mga Mensahe, {count} hindi pa nababasa', profile: 'Ang Iyong Profile', hint: '💬 Nandito na ngayon ang mga mensahe mo', dismissHint: 'Isara ang tip na ito', gotIt: 'Sige' },
     gatheringStatus: { hosting: 'Ikaw ang host', going: 'Pupunta ka', interested: 'Humiling', maybe: 'Interesado', waitlisted: 'Nasa waitlist', attended: 'Dumalo', hosted: 'Nag-host', didNotAttend: 'Hindi dumalo' },
     planStatus: { pending: 'Nakabinbin', accepted: 'Tinanggap', confirmed: 'Kumpirmado', declined: 'Tinanggihan', cancelled: 'Kinansela', completed: 'Tapos na' },
+    contentHeldTitle: 'Salamat, tinitingnan namin ito',
+    contentHeld: 'Tinitingnan muna namin ang ilang post bago ito makita ng iba. Ikaw lang ang nakakakita nito hanggang maaprubahan, kadalasan ay mabilis.',
+    gatheringHeld: 'Ikaw lang ang nakakakita ng gathering na ito habang tinitingnan ito ng Nearby. Lalabas ito sa iba kapag naaprubahan.',
     errors: {
       notNow: 'Hindi muna', tryAgain: 'Subukan Muli', checkConnection: 'Tingnan ang iyong koneksyon.', draftSaved: 'Naka-save ang iyong draft.', nothingLost: 'Walang nawala. Pakisubukan muli.',
       didntGoThrough: 'Hindi ito natuloy',
@@ -394,6 +445,9 @@ export default {
       rateLimited: 'Naabot mo na ang limitasyon dito sa ngayon. Pakisubukan ulit mamaya.',
       gatheringLimit: 'Naabot mo na ang limitasyon sa paggawa ng mga pagtitipon sa ngayon. Pakisubukan ulit mamaya.',
       offerContactInfo: 'Hindi puwedeng maglaman ang mga alok ng link ng website, email address o numero ng telepono. Naaabot ka ng mga customer sa pamamagitan ng Nearby.',
+      contentCheckUnavailableTitle: 'Hindi ito ma-check ngayon',
+      contentCheckUnavailable: 'Tinitingnan ng Nearby ang ipinopost mo bago ito makita ng iba, at hindi available ang pag-check ngayon. Walang na-post. Pakisubukan ulit maya-maya.',
+      contentCheckLimit: 'Naabot mo na ang limit ngayong araw sa pag-post ng bagong text. Puwede kang sumubok ulit bukas.',
       what: {
         complete_that: { service: 'Hindi ito matapos ngayon.', input: 'Hindi ito matapos. Pakisuri at subukan muli.' },
         update_these_ideas: { service: 'Hindi ma-update ang mga ideyang ito ngayon.', input: 'Hindi ma-update ang mga ideyang ito. Pakisuri at subukan muli.' },
@@ -433,6 +487,9 @@ export default {
     header: { messages: 'Сообщения', messagesUnread: 'Сообщения, непрочитанных: {count}', profile: 'Ваш профиль', hint: '💬 Сообщения теперь здесь', dismissHint: 'Скрыть подсказку', gotIt: 'Понятно' },
     gatheringStatus: { hosting: 'Вы организатор', going: 'Вы идёте', interested: 'Запрос отправлен', maybe: 'Интересно', waitlisted: 'В листе ожидания', attended: 'Были', hosted: 'Организовали', didNotAttend: 'Не были' },
     planStatus: { pending: 'Ожидает', accepted: 'Принято', confirmed: 'Подтверждено', declined: 'Отклонено', cancelled: 'Отменено', completed: 'Завершено' },
+    contentHeldTitle: 'Спасибо, мы посмотрим',
+    contentHeld: 'Некоторые публикации мы проверяем, прежде чем их увидят другие. До одобрения это видите только вы, обычно недолго.',
+    gatheringHeld: 'Пока Nearby проверяет эту встречу, её видите только вы. Другие увидят её после одобрения.',
     errors: {
       notNow: 'Не сейчас', tryAgain: 'Повторить', checkConnection: 'Проверьте подключение.', draftSaved: 'Ваш черновик сохранён.', nothingLost: 'Ничего не потеряно. Попробуйте снова.',
       didntGoThrough: 'Не получилось',
@@ -441,6 +498,9 @@ export default {
       rateLimited: 'Вы пока достигли лимита для этого действия. Попробуйте позже.',
       gatheringLimit: 'Вы пока достигли лимита на создание встреч. Попробуйте позже.',
       offerContactInfo: 'В предложениях нельзя указывать ссылки на сайты, адреса электронной почты или номера телефонов. Клиенты связываются с вами через Nearby.',
+      contentCheckUnavailableTitle: 'Сейчас не удалось проверить',
+      contentCheckUnavailable: 'Nearby проверяет публикации, прежде чем их увидят другие, а проверка сейчас недоступна. Ничего не опубликовано. Попробуйте ещё раз чуть позже.',
+      contentCheckLimit: 'Вы достигли сегодняшнего лимита на публикацию нового текста. Попробуйте снова завтра.',
       what: {
         complete_that: { service: 'Сейчас не удалось это выполнить.', input: 'Не удалось это выполнить. Проверьте и попробуйте снова.' },
         update_these_ideas: { service: 'Сейчас не удалось обновить эти идеи.', input: 'Не удалось обновить эти идеи. Проверьте и попробуйте снова.' },
@@ -480,6 +540,9 @@ export default {
     header: { messages: '메시지', messagesUnread: '메시지, 읽지 않음 {count}개', profile: '내 프로필', hint: '💬 이제 메시지는 여기에 있어요', dismissHint: '이 팁 닫기', gotIt: '알겠어요' },
     gatheringStatus: { hosting: '주최 중', going: '참석 예정', interested: '요청함', maybe: '관심 있음', waitlisted: '대기 중', attended: '참석함', hosted: '주최함', didNotAttend: '불참' },
     planStatus: { pending: '대기 중', accepted: '수락됨', confirmed: '확정됨', declined: '거절됨', cancelled: '취소됨', completed: '완료됨' },
+    contentHeldTitle: '감사합니다, 확인하고 있어요',
+    contentHeld: '일부 게시물은 다른 사람이 보기 전에 확인해요. 승인될 때까지 나만 볼 수 있으며, 보통 금방 끝나요.',
+    gatheringHeld: 'Nearby가 확인하는 동안 이 모임은 나만 볼 수 있어요. 승인되면 다른 사람에게도 보여요.',
     errors: {
       notNow: '나중에', tryAgain: '다시 시도', checkConnection: '연결 상태를 확인해 주세요.', draftSaved: '초안이 저장되어 있어요.', nothingLost: '잃어버린 것은 없어요. 다시 시도해 주세요.',
       didntGoThrough: '처리되지 않았어요',
@@ -488,6 +551,9 @@ export default {
       rateLimited: '지금은 이 작업의 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       gatheringLimit: '지금은 모임 만들기 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       offerContactInfo: '제안에는 웹사이트 링크, 이메일 주소, 전화번호를 넣을 수 없어요. 고객은 Nearby를 통해 연락해요.',
+      contentCheckUnavailableTitle: '지금은 확인할 수 없어요',
+      contentCheckUnavailable: 'Nearby는 다른 사람이 보기 전에 게시물을 확인하는데, 지금은 확인을 할 수 없어요. 아무것도 게시되지 않았어요. 잠시 후 다시 시도해 주세요.',
+      contentCheckLimit: '오늘 새 글을 게시할 수 있는 한도에 도달했어요. 내일 다시 시도해 주세요.',
       what: {
         complete_that: { service: '지금은 완료할 수 없어요.', input: '완료할 수 없었어요. 확인 후 다시 시도해 주세요.' },
         update_these_ideas: { service: '지금은 이 아이디어를 업데이트할 수 없어요.', input: '이 아이디어를 업데이트할 수 없었어요. 확인 후 다시 시도해 주세요.' },

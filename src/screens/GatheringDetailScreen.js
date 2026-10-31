@@ -52,6 +52,7 @@ import { getMyPartnershipRequestForTarget } from '../services/businessPartnershi
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
+import { getMyHeldContent } from '../services/userContentScreening';
 import { approvedIds, newJoinsToAnimate, joinedNote, noteLeadId, acceptedInviteeIds, joinArrivalPlan, asideMs } from '../utils/hostLiveJoins';
 import { AvatarArrive } from '../motion/JoinArrival';
 import InterestedSaved from '../motion/InterestedSaved';
@@ -452,6 +453,18 @@ export default function GatheringDetailScreen({ route, navigation }) {
       unsubscribe();
     };
   }, [isHostViewer, gatheringId, load]));
+
+  // 20270373: a gathering waiting for a person's check is seen only by its host; say so (from the host's own held items,
+  // never a gathering column, so this works before the migration is live: no function = nothing held).
+  const [heldForReview, setHeldForReview] = useState(false);
+  useFocusEffect(useCallback(() => {
+    if (!isHostViewer || !gatheringId) { setHeldForReview(false); return undefined; }
+    let cancelled = false;
+    getMyHeldContent().then((items) => {
+      if (!cancelled) setHeldForReview(items.some((i) => i.target_table === 'gatherings' && i.target_id === gatheringId));
+    });
+    return () => { cancelled = true; };
+  }, [isHostViewer, gatheringId]));
 
   // A gathering is its own plan, so there is no "whole plan" screen for it (screen-reduction audit B2). Only when it is part
   // of something bigger (a night out, an occasion) does it link up to that plan, for the host and approved attendees.
@@ -1119,6 +1132,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     </Text>
                   ) : null;
                 })()
+              )}
+              {heldForReview && (
+                <Text style={styles.almostFullNudge} accessibilityRole="text">{t('ui.shared.gatheringHeld')}</Text>
               )}
               <HostCommandCenter
                 stats={countdownStats}

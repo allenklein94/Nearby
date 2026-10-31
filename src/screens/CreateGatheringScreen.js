@@ -22,7 +22,8 @@ import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_O
 import { searchNearbyPlacesResult, placesDiscoveryEnabled } from '../services/places';
 import usePlacesDiscovery from '../hooks/usePlacesDiscovery';
 import GoogleMapsAttribution from '../components/GoogleMapsAttribution';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS } from '../utils/ugcText';
 import { getOfferById, getBusinessProfile } from '../services/brandOffers';
 import { businessPlanPrefill } from '../utils/businessPlanPrefill';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
@@ -42,7 +43,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { displayDateTime, displayWeekdayDate, displayClock } from '../i18n/display';
 import { typography, spacing, radius } from '../theme';
 
-import { NLoader } from '../motion';
+import { NLoader, showSuccessToast } from '../motion';
 import { getUserLocation } from '../services/userLocation';
 import useCategoryNames from '../hooks/useCategoryNames';
 // Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
@@ -580,15 +581,15 @@ export default function CreateGatheringScreen({ navigation, route }) {
   async function submit() {
     // Re-run every required check now; earlier step checks are never trusted.
     if (publishProblems(validationForm, STEP_DEFS.map((s) => s.key)).length > 0) return;
-    const titleCheck = await checkTextModeration(title);
-    if (!titleCheck.safe) {
-      return Alert.alert(t('ui.gatheringForm.alert.titleNotAllowed'), t('ui.gatheringForm.alert.reviseBody'));
-    }
+    // 20270373: screened before it's written (the database refuses unscreened text); 'hold' = written, seen only by the
+    // host until a person approves it.
+    const titleCheck = await screenUserContent([{ text: title, kind: UGC_KINDS.gatheringTitle }]);
+    if (blockedByScreening(Alert, t, titleCheck, { notAllowedTitle: t('ui.gatheringForm.alert.titleNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseBody') })) return;
+    let held = titleCheck.outcome === 'hold';
     if (description.trim()) {
-      const descCheck = await checkTextModeration(description);
-      if (!descCheck.safe) {
-        return Alert.alert(t('ui.gatheringForm.alert.descNotAllowed'), t('ui.gatheringForm.alert.reviseDescBody'));
-      }
+      const descCheck = await screenUserContent([{ text: description, kind: UGC_KINDS.gatheringDescription }]);
+      if (blockedByScreening(Alert, t, descCheck, { notAllowedTitle: t('ui.gatheringForm.alert.descNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseDescBody') })) return;
+      held = held || descCheck.outcome === 'hold';
     }
 
     setSubmitting(true);
@@ -634,6 +635,13 @@ export default function CreateGatheringScreen({ navigation, route }) {
       });
       gatheringDraft.clear();
       recordBehaviorEvent('create', 'gathering', created.id, interestTag);
+      // A held gathering (20270373) is seen only by its host until approved: no invitations, no "Your gathering is live!".
+      if (held) {
+        setSubmitting(false);
+        navigation.replace('GatheringDetail', { gatheringId: created.id });
+        showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.gatheringHeld'));
+        return;
+      }
       // Item 109: only now that the gathering exists; a failed send never undoes it (the count shows on the next screen).
       const preInviteResult = await sendGatheringInvites(created.id, selectedFriendIdList(inviteIds));
 
@@ -677,6 +685,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
         },
       });
     } catch (e) {
+      if (handledScreeningRefusal(Alert, t, e, { notAllowedTitle: t('ui.gatheringForm.alert.titleNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseBody') })) { setSubmitting(false); return; }
       presentRecoverableError(Alert, { what: 'create your gathering', error: e, draftKept: true, onRetry: () => submit() });
     }
     setSubmitting(false);

@@ -3,7 +3,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
 import { updateCommunity } from '../services/communities';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS } from '../utils/ugcText';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
@@ -29,15 +30,17 @@ export default function EditCommunityScreen({ route, navigation }) {
       return Alert.alert(t('ui.community.nameRequired'), t('ui.community.giveYourCommunityAName'));
     }
 
-    const nameCheck = await checkTextModeration(name);
-    if (!nameCheck.safe) {
-      return Alert.alert(t('ui.community.nameNotAllowed'), t('ui.community.pleaseReviseTheNameAnd'));
+    // 20270373: screened before it's written; 'hold' = the published text stays until a person approves the new one.
+    let held = false;
+    if (name.trim() !== (community.name || '').trim()) {
+      const nameCheck = await screenUserContent([{ text: name, kind: UGC_KINDS.communityName }]);
+      if (blockedByScreening(Alert, t, nameCheck, { notAllowedTitle: t('ui.community.nameNotAllowed'), notAllowedBody: t('ui.community.pleaseReviseTheNameAnd') })) return;
+      held = nameCheck.outcome === 'hold';
     }
-    if (description.trim()) {
-      const descCheck = await checkTextModeration(description);
-      if (!descCheck.safe) {
-        return Alert.alert(t('ui.community.descriptionNotAllowed'), t('ui.community.pleaseReviseYourDescriptionAnd'));
-      }
+    if (description.trim() && description.trim() !== (community.description || '').trim()) {
+      const descCheck = await screenUserContent([{ text: description, kind: UGC_KINDS.communityDescription }]);
+      if (blockedByScreening(Alert, t, descCheck, { notAllowedTitle: t('ui.community.descriptionNotAllowed'), notAllowedBody: t('ui.community.pleaseReviseYourDescriptionAnd') })) return;
+      held = held || descCheck.outcome === 'hold';
     }
 
     setSubmitting(true);
@@ -48,9 +51,11 @@ export default function EditCommunityScreen({ route, navigation }) {
         interestTag,
         isPublic,
       });
-      showSuccessToast(t('ui.community.updated'), t('ui.community.yourChangesAreSaved'));
+      if (held) showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
+      else showSuccessToast(t('ui.community.updated'), t('ui.community.yourChangesAreSaved'));
       navigation.goBack();
     } catch (e) {
+      if (handledScreeningRefusal(Alert, t, e, { notAllowedTitle: t('ui.community.nameNotAllowed'), notAllowedBody: t('ui.community.pleaseReviseTheNameAnd') })) { setSubmitting(false); return; }
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
     }
     setSubmitting(false);

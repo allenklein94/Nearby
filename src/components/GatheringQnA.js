@@ -4,7 +4,9 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { getGatheringQuestions, askGatheringQuestion, answerGatheringQuestion } from '../services/gatherings';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS } from '../utils/ugcText';
+import { showSuccessToast } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -37,18 +39,18 @@ export default function GatheringQnA({ gatheringId, isHost }) {
   async function handleAsk() {
     if (!questionDraft.trim()) return;
 
-    const check = await checkTextModeration(questionDraft);
-    if (!check.safe) {
-      Alert.alert(t('ui.gatheringParts.questionNotAllowed'), t('ui.gatheringParts.pleaseRephraseYourQuestionAnd'));
-      return;
-    }
+    // 20270373: screened before it's written; 'hold' = posted, seen only by you until a person approves it.
+    const check = await screenUserContent([{ text: questionDraft, kind: UGC_KINDS.question }]);
+    if (blockedByScreening(Alert, t, check, { notAllowedTitle: t('ui.gatheringParts.questionNotAllowed'), notAllowedBody: t('ui.gatheringParts.pleaseRephraseYourQuestionAnd') })) return;
 
     setAsking(true);
     try {
       await askGatheringQuestion(gatheringId, questionDraft.trim());
       setQuestionDraft('');
+      if (check.outcome === 'hold') showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
       await load();
     } catch (e) {
+      if (handledScreeningRefusal(Alert, t, e, { notAllowedTitle: t('ui.gatheringParts.questionNotAllowed'), notAllowedBody: t('ui.gatheringParts.pleaseRephraseYourQuestionAnd') })) { setAsking(false); return; }
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAsk() });
     }
     setAsking(false);
@@ -58,18 +60,18 @@ export default function GatheringQnA({ gatheringId, isHost }) {
     const answer = (answerDrafts[questionId] || '').trim();
     if (!answer) return;
 
-    const check = await checkTextModeration(answer);
-    if (!check.safe) {
-      Alert.alert(t('ui.gatheringParts.answerNotAllowed'), t('ui.gatheringParts.pleaseRephraseYourAnswerAnd'));
-      return;
-    }
+    // 20270373: 'hold' = saved; the answer shows once a person approves it.
+    const check = await screenUserContent([{ text: answer, kind: UGC_KINDS.answer }]);
+    if (blockedByScreening(Alert, t, check, { notAllowedTitle: t('ui.gatheringParts.answerNotAllowed'), notAllowedBody: t('ui.gatheringParts.pleaseRephraseYourAnswerAnd') })) return;
 
     setAnsweringId(questionId);
     try {
       await answerGatheringQuestion(questionId, answer);
       setAnswerDrafts((prev) => ({ ...prev, [questionId]: '' }));
+      if (check.outcome === 'hold') showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
       await load();
     } catch (e) {
+      if (handledScreeningRefusal(Alert, t, e, { notAllowedTitle: t('ui.gatheringParts.answerNotAllowed'), notAllowedBody: t('ui.gatheringParts.pleaseRephraseYourAnswerAnd') })) { setAnsweringId(null); return; }
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleAnswer(questionId) });
     }
     setAnsweringId(null);

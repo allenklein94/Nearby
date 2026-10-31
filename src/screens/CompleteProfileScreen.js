@@ -9,7 +9,8 @@ import { mutesFromOnboardingChoices } from '../constants/notificationPreferences
 import { ONBOARDING_ANSWERS_KEY, ONBOARDING_DRAFT_KEY } from './OnboardingQuestionsScreen';
 import { canonicalizeInterests, sanitizeInterestGroups } from '../constants/interestGraph';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS } from '../utils/ugcText';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -193,9 +194,11 @@ export default function CompleteProfileScreen() {
       return Alert.alert(t('ui.onboarding.agreementRequired'), t('ui.onboarding.youMustAgreeToThe'));
     }
 
-    const nameCheck = await checkTextModeration(displayName);
-    if (!nameCheck.safe) {
-      return Alert.alert(t('ui.onboarding.displayNameNotAllowed'), t('ui.onboarding.pleaseChooseADifferentDisplay'));
+    // 20270373: a new profile needs a name others can see, so a name held for a person's check can't be used yet.
+    const nameCheck = await screenUserContent([{ text: displayName, kind: UGC_KINDS.displayName }]);
+    if (blockedByScreening(Alert, t, nameCheck, { notAllowedTitle: t('ui.onboarding.displayNameNotAllowed'), notAllowedBody: t('ui.onboarding.pleaseChooseADifferentDisplay') })) return;
+    if (nameCheck.outcome === 'hold') {
+      return Alert.alert(t('ui.shared.contentHeldTitle'), t('ui.onboarding.nameNeedsReview'));
     }
 
     setSubmitting(true);
@@ -263,6 +266,7 @@ export default function CompleteProfileScreen() {
 
       if (profileError) {
         setSubmitting(false);
+        if (handledScreeningRefusal(Alert, t, profileError, { notAllowedTitle: t('ui.onboarding.displayNameNotAllowed'), notAllowedBody: t('ui.onboarding.pleaseChooseADifferentDisplay') })) return;
         return Alert.alert(t('ui.onboarding.error'), profileError.message);
       }
 

@@ -62,7 +62,12 @@ async function screenForUser(admin: any, userId: string, body: any) {
     const { data: earlier, error: findError } = await admin.rpc('find_ugc_screening', {
       p_user: userId, p_text_sha256: sha, p_is_name: isName,
     });
-    if (findError) { console.error('screen-user-content: lookup failed', findError.message); return unavailable(); }
+    if (findError) {
+      // 20270373 not installed yet: the database doesn't enforce screening, so the app keeps today's check.
+      if (findError.code === 'PGRST202' || findError.code === '42883') return json({ code: 'not_installed' });
+      console.error('screen-user-content: lookup failed', findError.message);
+      return unavailable();
+    }
     if (earlier === 'publish' || earlier === 'hold') { results.push({ outcome: earlier }); continue; }
 
     const { data: withinLimit, error: limitError } = await admin.rpc('check_and_increment_ai_use', {
