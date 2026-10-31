@@ -1,4 +1,10 @@
-# 2026-10-31: User-content screening (20270373), built + staged, not deployed
+# 2026-10-31: User-content screening (20270373), built + staged, not deployed; ACCEPTED + CLOSED by the owner
+
+Owner (2026-10-31): accepted as code-complete and locally verified, NOT production-verified; stays staged. Decision: group-plan,
+gathering and community chat stay reports-based (preserved evidence + human review), no routine AI screening of conversations
+without a separate decision, so 0373's group-chat queue/triggers/cron/edge batch must be removed and re-verified before 0373 can be
+approved (not done: freeze). Gates: that removal, multilingual calibration, working screening service, compatible native build,
+signed-in real-API tests, native review, iPhone testing. Development frozen again: next = build 87 + Tier 1.
 
 Owner approved (external-user security gate). Branch `post-tier1/ugc-moderation` (stacked on `post-tier1/offer-safety`), main +
 build 87 unchanged. Findings, design, status and the full verification: `PRODUCT_AUDIT/UGC_MODERATION_PROGRESS_2026-10-31.md`;

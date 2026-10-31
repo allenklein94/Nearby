@@ -52,3 +52,14 @@ Build 87 / main / production unchanged. No merge, deploy, publish or activation 
 - [ ] NOT DONE / gates: no deploy, merge or edge deploy authorized; calibration run (all 11 languages stay "pending" = held for a
       person until it passes and its activation migration is approved); every device must run a build that screens through
       screen-user-content before 0373 (build 87 does not); native review; device checks.
+
+## Owner decision (2026-10-31): ACCEPTED + CLOSED as code-complete and locally verified, NOT production-verified, staged
+- Group-plan, gathering and community chat stay REPORTS-BASED (report + preserved evidence + human review). No routine AI screening of
+  private or group conversations without a separate decision.
+- Conflict with the staged code: 0373 still enqueues and screens every community/gathering chat message (`private.ugc_chat_queue`,
+  `zzz_screen_chat_state` + `zzz_screen_chat_after_insert` triggers, cron `screen-group-chat`, `ugc_chat_kick`, the edge function's chat
+  batch, journey section G, concurrency scenario 4). It has no off switch, so it must be REMOVED from 0373 and the verification rerun
+  before 0373 can be approved. Not changed now: development frozen.
+- Gates, all mandatory: the removal above; successful multilingual calibration; working screening service; a native build that screens
+  through screen-user-content on every device (build 87 does not); signed-in real-API tests; native-language review; iPhone testing.
+- No deploy of 0373 or screen-user-content, no merge, no website publish, no build 87 change. Migration order and separate approvals kept.
