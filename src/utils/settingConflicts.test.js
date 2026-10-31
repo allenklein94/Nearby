@@ -82,10 +82,11 @@ describe('reading the refusal (client knows no rule)', () => {
     expect(settingConflictsOf(e)).toEqual(lines);
     expect(isServiceFailure(e)).toBe(false);
   });
-  it('through a service that rewraps the error (occasion packages)', () => {
+  it('through a service that rewraps the error', () => {
     const e = errorWithConflicts({ message: lines[0], hint: 'setting_conflict', details: JSON.stringify([lines[0]]) });
     expect(settingConflictsOf(e)).toEqual([lines[0]]);
-    expect(read('src/services/occasionPackages.js')).toMatch(/throw errorWithConflicts\(error\)/);
+    // occasion packages save through the screening function (20270372): its 400 {code, conflicts} is carried by serviceError
+    expect(read('src/services/occasionPackages.js')).toMatch(/throw serviceError\(response, result, [^)]*\); \/\/ carries item 86's conflicts/);
   });
   it('duplicates collapse', () => {
     expect(settingConflictsOf({ conflicts: [lines[0], lines[0], lines[1]] })).toEqual(lines);

@@ -318,6 +318,8 @@ export default {
     offerJustChanged: "This offer just changed. Check the new terms.",
     forCountOfYour: "For {count} of your {total}",
     forCountPeople: "For {count} people",
+    reportThisOffer: "Report this offer",
+    offerMoreA11y: "More options for {name}'s offer",
   },
   es: {
     youreBooked: "Tienes reserva",
@@ -636,6 +638,8 @@ export default {
     offerJustChanged: "Esta oferta acaba de cambiar. Revisa las nuevas condiciones.",
     forCountOfYour: "Para {count} de tus {total}",
     forCountPeople: "Para {count} personas",
+    reportThisOffer: "Denunciar esta oferta",
+    offerMoreA11y: "Más opciones para la oferta de {name}",
   },
   de: {
     youreBooked: "Du bist gebucht",
@@ -954,6 +958,8 @@ export default {
     offerJustChanged: "Dieses Angebot wurde gerade geändert. Prüfe die neuen Bedingungen.",
     forCountOfYour: "Für {count} von euren {total}",
     forCountPeople: "Für {count} Personen",
+    reportThisOffer: "Dieses Angebot melden",
+    offerMoreA11y: "Weitere Optionen für das Angebot von {name}",
   },
   fr: {
     youreBooked: "C'est réservé",
@@ -1272,6 +1278,8 @@ export default {
     offerJustChanged: "Cette offre vient de changer. Vérifiez les nouvelles conditions.",
     forCountOfYour: "Pour {count} sur vos {total}",
     forCountPeople: "Pour {count} personnes",
+    reportThisOffer: "Signaler cette offre",
+    offerMoreA11y: "Plus d'options pour l'offre de {name}",
   },
   pt: {
     youreBooked: "Reserva feita",
@@ -1590,6 +1598,8 @@ export default {
     offerJustChanged: "Esta oferta acabou de mudar. Confira os novos termos.",
     forCountOfYour: "Para {count} dos seus {total}",
     forCountPeople: "Para {count} pessoas",
+    reportThisOffer: "Denunciar esta oferta",
+    offerMoreA11y: "Mais opções para a oferta de {name}",
   },
   ht: {
     youreBooked: "Ou gen rezèvasyon",
@@ -1908,6 +1918,8 @@ export default {
     offerJustChanged: "Òf sa a fèk chanje. Gade nouvo kondisyon yo.",
     forCountOfYour: "Pou {count} sou {total} ou yo",
     forCountPeople: "Pou {count} moun",
+    reportThisOffer: "Siyale òf sa a",
+    offerMoreA11y: "Plis opsyon pou òf {name}",
   },
   zh: {
     youreBooked: "已预订",
@@ -2226,6 +2238,8 @@ export default {
     offerJustChanged: "此报价刚刚有变化，请查看新条款。",
     forCountOfYour: "适合你们 {total} 人中的 {count} 人",
     forCountPeople: "适合 {count} 人",
+    reportThisOffer: "举报此优惠",
+    offerMoreA11y: "{name} 的优惠的更多选项",
   },
   vi: {
     youreBooked: "Bạn đã đặt chỗ",
@@ -2544,6 +2558,8 @@ export default {
     offerJustChanged: "Ưu đãi này vừa thay đổi. Hãy xem điều khoản mới.",
     forCountOfYour: "Cho {count} trong {total} người của bạn",
     forCountPeople: "Cho {count} người",
+    reportThisOffer: "Báo cáo ưu đãi này",
+    offerMoreA11y: "Thêm tùy chọn cho ưu đãi của {name}",
   },
   tl: {
     youreBooked: "Naka-book ka na",
@@ -2862,6 +2878,8 @@ export default {
     offerJustChanged: "Nagbago lang ang alok na ito. Tingnan ang mga bagong tuntunin.",
     forCountOfYour: "Para sa {count} sa iyong {total}",
     forCountPeople: "Para sa {count} tao",
+    reportThisOffer: "I-report ang alok na ito",
+    offerMoreA11y: "Higit pang opsyon para sa alok ng {name}",
   },
   ru: {
     youreBooked: "Бронь подтверждена",
@@ -3180,6 +3198,8 @@ export default {
     offerJustChanged: "Это предложение только что изменилось. Посмотрите новые условия.",
     forCountOfYour: "Для {count} из ваших {total}",
     forCountPeople: "Для {count} человек",
+    reportThisOffer: "Пожаловаться на это предложение",
+    offerMoreA11y: "Другие действия с предложением {name}",
   },
   ko: {
     youreBooked: "예약 완료",
@@ -3498,5 +3518,7 @@ export default {
     offerJustChanged: "이 제안이 방금 변경됐어요. 새 조건을 확인하세요.",
     forCountOfYour: "{total}명 중 {count}명",
     forCountPeople: "{count}명",
+    reportThisOffer: "이 제안 신고하기",
+    offerMoreA11y: "{name}의 제안에 대한 더 많은 옵션",
   },
 };

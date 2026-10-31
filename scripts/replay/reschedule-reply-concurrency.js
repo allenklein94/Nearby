@@ -56,6 +56,7 @@ async function race(first, second) {
   const a = await connect();
   const b = await connect();
   const run = async (c, step) => {
+    if (step.screen) await step.screen();
     await c.query(`begin; ${claims(step.sub)}`);
     if (step.asClient) await c.query('set local role authenticated');
     return c.query(step.sql, step.args);
@@ -80,10 +81,20 @@ async function race(first, second) {
   const [{ host }] = (await admin.query(`select id as host from profiles where managed_partner_id is null order by created_at limit 1`)).rows;
   await admin.query(`update profiles set timezone = 'America/New_York' where id = $1`, [host]);
 
+  // 20270372: the business's reply / posting needs the screening result the edge function records first (committed by the
+  // server, as the edge function does); none on a database without 20270372.
+  const has0372 = (await admin.query(`select to_regprocedure('private.require_business_screening(uuid,text,uuid,jsonb)') is not null as y`)).rows[0].y;
+  const screened = (target, contentSql, args) => async () => {
+    if (!has0372) return;
+    await admin.query(`insert into business_content_screening_results (partner_id, target_type, submitted_by, content_snapshot, risk_tier, model_reasoning)
+      values ($1, $2, $3, ${contentSql}, 'low', 'replay stand-in for screen-business-content')`, [partner, target, owner, ...args]);
+  };
   const moveTime = (o) => ({ sql: `update gatherings set scheduled_at = scheduled_at + interval '1 hour' where id = $1`, args: [o.g], sub: host, asClient: true });
-  const offer = (o) => ({ sql: `select submit_business_offer(request_id_param => $1, offer_type_param => 'standard', offer_description_param => 'Replay race offer')`, args: [o.req], sub: owner, asClient: true });
+  const offer = (o) => ({ sql: `select submit_business_offer(request_id_param => $1, offer_type_param => 'standard', offer_description_param => 'Replay race offer')`, args: [o.req], sub: owner, asClient: true,
+    screen: screened('offer_response', `private.screening_content_offer_response($4::uuid, 'Replay race offer', null, '{}', null, null, null, null, null)`, [o.req]) });
   const decline = (o) => ({ sql: `select decline_business_offer($1, 'too_busy_right_now')`, args: [o.req], sub: owner, asClient: true });
-  const post = () => ({ sql: `select post_business_availability('Coffee', 'Replay race slot', null, 'standard', null, 10, now() - interval '1 hour', now() + interval '5 days')`, args: [], sub: owner, asClient: true });
+  const post = () => ({ sql: `select post_business_availability('Coffee', 'Replay race slot', null, 'standard', null, 10, now() - interval '1 hour', now() + interval '5 days')`, args: [], sub: owner, asClient: true,
+    screen: screened('availability', `private.screening_content_availability('Replay race slot', null)`, []) });
   const state = async (o) => (await admin.query(
     `select g.scheduled_at as t, r.expires_at as expires, r.date = (g.scheduled_at at time zone 'America/New_York')::date as date_follows,
             r.time_window_start = (g.scheduled_at at time zone 'America/New_York')::time as time_follows,
@@ -130,6 +141,7 @@ async function race(first, second) {
     check(+s.t === +o.t + 3600e3 && +s.expires === +s.t && s.date_follows && s.offer === 'offered', '5 the request had already moved when the automatic reply landed');
     await cleanup(admin, o, partner);
   }
+  if (has0372) await admin.query(`delete from business_content_screening_results where submitted_by = $1 and model_reasoning = 'replay stand-in for screen-business-content'`, [owner]);
   await admin.end();
   console.log(failures ? `\n${failures} check(s) FAILED` : '\nreschedule-reply-concurrency: all checks passed');
   process.exit(failures ? 1 : 0);

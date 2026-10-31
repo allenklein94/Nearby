@@ -773,7 +773,7 @@ export async function submitBusinessProfileForScreening(partnerId, { name, descr
 // free text) or handleToggleExperienceActive() (only flips `active`,
 // carries the already-published fields forward unchanged) -- neither
 // introduces new unscreened content.
-export async function submitBusinessExperienceForScreening(partnerId, { experienceId, title, description, icon, attributes, priceLevel, partyType, mediaPath = null, mediaType = null }) {
+export async function submitBusinessExperienceForScreening(partnerId, { experienceId, title, description, icon, attributes, priceLevel, partyType, mediaPath = null, mediaType = null, aiSuggested = false }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -796,6 +796,7 @@ export async function submitBusinessExperienceForScreening(partnerId, { experien
       partyType: partyType ?? null,
       mediaPath,
       mediaType,
+      aiSuggested: aiSuggested === true,
     }),
   });
 

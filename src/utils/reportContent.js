@@ -5,7 +5,10 @@
 //   - shouldRetryWithoutContent: the server doesn't know the columns yet (PGRST204 / 42703 naming content_*) OR refused
 //     the reference itself (the message was deleted / isn't from this person: 'report_content_mismatch'). Then the same
 //     report is filed about the person alone. Any other error is a real failure (shown with Try Again).
-export const REPORT_CONTENT_TYPES = ['message', 'gathering_message', 'community_message', 'plan_message', 'business_message', 'match_chat'];
+//   - a business offer ('business_offer', 20270372): the server sets who the report is about (the business's manager), so
+//     the client sends no person. Without the columns (an older database) the report is still filed, naming the offer in
+//     its details; a refusal of the offer itself (not visible to the reporter) is a real failure, never a report about nobody.
+export const REPORT_CONTENT_TYPES = ['message', 'gathering_message', 'community_message', 'plan_message', 'business_message', 'match_chat', 'business_offer'];
 
 export function reportRow({ reporterId, reportedId, reason, details, content }) {
   const row = { reporter_id: reporterId, reported_id: reportedId, reason, details: details || null };
@@ -18,12 +21,17 @@ export function reportRow({ reporterId, reportedId, reason, details, content }) 
 
 export function shouldRetryWithoutContent(error, row) {
   if (!error || !row?.content_type) return false;
-  if (error.hint === 'report_content_mismatch') return true;
+  if (error.hint === 'report_content_mismatch') return row.content_type !== 'business_offer';
+  // 20270355 without 20270372: the columns exist but 'business_offer' isn't an allowed type yet
+  if (row.content_type === 'business_offer' && error.code === '23514' && /content_type/.test(String(error.message || ''))) return true;
   return (error.code === 'PGRST204' || error.code === '42703') && /content_(type|id)/.test(String(error.message || ''));
 }
 
 export function withoutContent(row) {
   const { content_type, content_id, ...rest } = row;
+  if (content_type === 'business_offer') {
+    return { ...rest, details: [`[offer ${content_id}]`, rest.details].filter(Boolean).join(' ') };
+  }
   return rest;
 }
 

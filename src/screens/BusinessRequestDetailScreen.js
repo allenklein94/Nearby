@@ -42,6 +42,7 @@ import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
 import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import OfferMedia from '../components/OfferMedia';
+import ReportBlockModal from '../components/ReportBlockModal';
 import OfferAssembly, { AssemblyStep, AssemblyGlow } from '../components/OfferAssembly';
 import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
 import { presentOffer } from '../utils/offerPresentationEngine';
@@ -222,6 +223,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
   const [unavailable, setUnavailable] = useState(false);
   const [actingOfferId, setActingOfferId] = useState(null);
+  // 20270372: the reply being reported (⋯ -> Report this offer); the server decides who the report is about.
+  const [reportingOfferId, setReportingOfferId] = useState(null);
   // Item 119: the time picked on each two-time reply (offer id -> ISO), until "I'll take this one" books it.
   const [pickedTimes, setPickedTimes] = useState({});
   const [cancelling, setCancelling] = useState(false);
@@ -1663,6 +1666,21 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               <View style={styles.offerPartnerRow}>
                 <BusinessLogoMark uri={logoFor(partnerLogos, o.partner_id)} />
                 <Text style={[styles.offerPartnerName, styles.offerPartnerNameFlex]}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
+                {/* 20270372: a quiet ⋯ on a reply the business really sent: Report this offer (the only item). */}
+                {o.status !== 'pending' && o.offer_description ? (
+                  <TouchableOpacity
+                    style={styles.offerMoreButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('ui.requestDetail.offerMoreA11y', { name: o.brand_partners?.name ?? t('ui.requestDetail.aBusiness') })}
+                    onPress={() => Alert.alert(o.brand_partners?.name ?? t('ui.requestDetail.aBusiness'), undefined, [
+                      { text: t('ui.requestDetail.reportThisOffer'), onPress: () => setReportingOfferId(o.id) },
+                      { text: t('ui.reportBlock.cancel'), style: 'cancel' },
+                    ])}
+                  >
+                    <Text style={styles.offerMoreText}>⋯</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
               {/* Item 92 ("Businesses should be able to respond specifically to
                   the occasion", CLAUDE.md): a real, named offer title -- "Special
@@ -2263,6 +2281,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         onClose={() => setOutcomeModalOfferId(null)}
       />
       <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
+      <ReportBlockModal
+        visible={!!reportingOfferId}
+        onClose={() => setReportingOfferId(null)}
+        reportedUserId={null}
+        reportOnly
+        reportedContent={reportingOfferId ? { type: 'business_offer', id: reportingOfferId } : null}
+      />
     </SafeAreaView>
   );
 }
@@ -2343,6 +2368,8 @@ const getStyles = (colors) => StyleSheet.create({
   offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
   offerPartnerRow: { flexDirection: 'row', alignItems: 'center' },
   offerPartnerNameFlex: { flexShrink: 1 },
+  offerMoreButton: { marginLeft: 'auto', paddingLeft: spacing.sm },
+  offerMoreText: { ...typography.body, color: colors.textTertiary, fontWeight: '700' },
   // Item 92 ("Businesses should be able to respond specifically to the
   // occasion", CLAUDE.md): a real, named offer reads as its own headline
   // -- "Special Birthday Offer" -- distinct from the plain business-name

@@ -1,3 +1,19 @@
+# 2026-10-31: Offer safety (20270372), built + staged, not deployed
+
+Owner approved gaps 1-3. Branch `post-tier1/offer-safety` (stacked on `post-tier1/business-verification`), main + build 87
+unchanged. Findings, design and full verification: `PRODUCT_AUDIT/OFFER_SAFETY_PROGRESS_2026-10-31.md`; rules in the
+migration header (`supabase/migrations/20270372_offer_safety.sql`). Summary: the seven screened write functions moved to
+private (`*_unscreened`) behind thin public wrappers that require and consume a matching low-risk screening result
+(`private.require_business_screening`); perks + business updates by a BEFORE INSERT trigger; occasion packages get a
+'package' screening branch (client `services/occasionPackages.js` now saves through screen-business-content; held packages
+applied on admin approval); AI-suggested experiences kept via the screening path; one contact rule enforced by triggers
+on every offer text + an edge pre-check; `reports.content_type 'business_offer'` with server-side capture
+(`BusinessRequestDetailScreen` ⋯ -> Report this offer -> `ReportBlockModal reportOnly`). Journey harness: screened stand-ins
+(pg_temp.j_*) for journeys playing a business directly. Rollback `scripts/rollback/20270372_offer_safety.rollback.sql`
+(refuses if offer reports or package screening rows exist). Work spanned a codespace restart; all verification re-run after
+it (numbers in the progress doc). Deploy: after 0371, `screen-business-content` right after the migration; post-deploy step
+in `scripts/live-verify/post-deploy.js`.
+
 # 2026-10-31: Verified Business (20270371), built + staged, not deployed; ACCEPTED + CLOSED by the owner (code-complete, locally verified; activation = 4 post-deploy steps)
 
 Owner decisions A (badge shown only on the business preview sheet + Business Profile; never read by routing, matching,

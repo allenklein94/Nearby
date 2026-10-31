@@ -17,6 +17,7 @@ export default {
       accountSuspended: 'This account is suspended, so it can\'t message, invite, connect or host.',
       rateLimited: 'You\'ve reached the limit for this for now. Please try again later.',
       gatheringLimit: 'You\'ve reached the limit for creating gatherings for now. Please try again later.',
+      offerContactInfo: 'Offers can\'t include website links, email addresses or phone numbers. Customers reach you through Nearby.',
       what: {
         complete_that: { service: "We couldn't complete that right now.", input: "We couldn't complete that. Please check it and try again." },
         update_these_ideas: { service: "We couldn't update these ideas right now.", input: "We couldn't update these ideas. Please check it and try again." },
@@ -63,6 +64,7 @@ export default {
       accountSuspended: 'Esta cuenta está suspendida, así que no puede enviar mensajes, invitar, conectar ni organizar.',
       rateLimited: 'Llegaste al límite de esto por ahora. Inténtalo de nuevo más tarde.',
       gatheringLimit: 'Llegaste al límite para crear reuniones por ahora. Inténtalo de nuevo más tarde.',
+      offerContactInfo: 'Las ofertas no pueden incluir enlaces a sitios web, correos electrónicos ni números de teléfono. Los clientes te contactan a través de Nearby.',
       what: {
         complete_that: { service: 'No pudimos completar eso ahora.', input: 'No pudimos completar eso. Revísalo e inténtalo de nuevo.' },
         update_these_ideas: { service: 'No pudimos actualizar estas ideas ahora.', input: 'No pudimos actualizar estas ideas. Revísalo e inténtalo de nuevo.' },
@@ -109,6 +111,7 @@ export default {
       accountSuspended: 'Dieses Konto ist gesperrt und kann keine Nachrichten senden, einladen, sich verbinden oder etwas veranstalten.',
       rateLimited: 'Du hast dafür vorerst das Limit erreicht. Bitte versuch es später noch einmal.',
       gatheringLimit: 'Du hast vorerst das Limit für neue Treffen erreicht. Bitte versuch es später noch einmal.',
+      offerContactInfo: 'Angebote dürfen keine Website-Links, E-Mail-Adressen oder Telefonnummern enthalten. Kunden erreichen dich über Nearby.',
       what: {
         complete_that: { service: 'Das konnte gerade nicht abgeschlossen werden.', input: 'Das konnte nicht abgeschlossen werden. Bitte prüfe es und versuche es erneut.' },
         update_these_ideas: { service: 'Diese Ideen konnten gerade nicht aktualisiert werden.', input: 'Diese Ideen konnten nicht aktualisiert werden. Bitte prüfe es und versuche es erneut.' },
@@ -155,6 +158,7 @@ export default {
       accountSuspended: 'Ce compte est suspendu : il ne peut pas envoyer de messages, inviter, se connecter ni organiser.',
       rateLimited: 'Tu as atteint la limite pour le moment. Réessaie plus tard.',
       gatheringLimit: 'Tu as atteint la limite de création de rassemblements pour le moment. Réessaie plus tard.',
+      offerContactInfo: 'Les offres ne peuvent pas contenir de liens vers des sites web, d\'adresses e-mail ni de numéros de téléphone. Les clients te contactent via Nearby.',
       what: {
         complete_that: { service: "Impossible de terminer cette action pour le moment.", input: "Impossible de terminer cette action. Vérifiez et réessayez." },
         update_these_ideas: { service: 'Impossible de mettre à jour ces idées pour le moment.', input: 'Impossible de mettre à jour ces idées. Vérifiez et réessayez.' },
@@ -201,6 +205,7 @@ export default {
       accountSuspended: 'Esta conta está suspensa, então não pode enviar mensagens, convidar, se conectar nem organizar.',
       rateLimited: 'Você atingiu o limite disso por enquanto. Tente novamente mais tarde.',
       gatheringLimit: 'Você atingiu o limite para criar encontros por enquanto. Tente novamente mais tarde.',
+      offerContactInfo: 'As ofertas não podem incluir links de sites, endereços de e-mail nem números de telefone. Os clientes falam com você pelo Nearby.',
       what: {
         complete_that: { service: 'Não foi possível concluir isso agora.', input: 'Não foi possível concluir isso. Verifique e tente novamente.' },
         update_these_ideas: { service: 'Não foi possível atualizar estas ideias agora.', input: 'Não foi possível atualizar estas ideias. Verifique e tente novamente.' },
@@ -247,6 +252,7 @@ export default {
       accountSuspended: 'Kont sa a sispann, kidonk li pa ka voye mesaj, envite, konekte oswa òganize.',
       rateLimited: 'Ou rive nan limit pou sa a pou kounye a. Tanpri eseye ankò pita.',
       gatheringLimit: 'Ou rive nan limit pou kreye rasanbleman pou kounye a. Tanpri eseye ankò pita.',
+      offerContactInfo: 'Òf yo pa ka gen lyen sit entènèt, adrès imèl oswa nimewo telefòn. Kliyan yo kontakte w atravè Nearby.',
       what: {
         complete_that: { service: 'Nou pa t ka fini sa kounye a.', input: 'Nou pa t ka fini sa. Tanpri verifye l epi eseye ankò.' },
         update_these_ideas: { service: 'Nou pa t ka mete ide sa yo ajou kounye a.', input: 'Nou pa t ka mete ide sa yo ajou. Tanpri verifye epi eseye ankò.' },
@@ -293,6 +299,7 @@ export default {
       accountSuspended: '此账号已被暂停，无法发消息、邀请、建立联系或发起活动。',
       rateLimited: '你暂时已达到此操作的上限，请稍后再试。',
       gatheringLimit: '你暂时已达到创建聚会的上限，请稍后再试。',
+      offerContactInfo: '优惠内容不能包含网站链接、电子邮件地址或电话号码。顾客会通过 Nearby 联系你。',
       what: {
         complete_that: { service: '现在无法完成此操作。', input: '无法完成此操作。请检查后重试。' },
         update_these_ideas: { service: '现在无法更新这些建议。', input: '无法更新这些建议。请检查后重试。' },
@@ -339,6 +346,7 @@ export default {
       accountSuspended: 'Tài khoản này đang bị tạm ngưng nên không thể nhắn tin, mời, kết nối hoặc tổ chức.',
       rateLimited: 'Bạn đã đạt giới hạn cho việc này trong lúc này. Vui lòng thử lại sau.',
       gatheringLimit: 'Bạn đã đạt giới hạn tạo buổi gặp mặt trong lúc này. Vui lòng thử lại sau.',
+      offerContactInfo: 'Ưu đãi không được chứa liên kết trang web, địa chỉ email hoặc số điện thoại. Khách hàng liên hệ với bạn qua Nearby.',
       what: {
         complete_that: { service: 'Hiện không thể hoàn tất việc này.', input: 'Không thể hoàn tất việc này. Hãy kiểm tra và thử lại.' },
         update_these_ideas: { service: 'Hiện không thể cập nhật những gợi ý này.', input: 'Không thể cập nhật những gợi ý này. Hãy kiểm tra và thử lại.' },
@@ -385,6 +393,7 @@ export default {
       accountSuspended: 'Naka-suspend ang account na ito, kaya hindi ito makakapag-message, makakapag-imbita, makakakonekta o makakapag-host.',
       rateLimited: 'Naabot mo na ang limitasyon dito sa ngayon. Pakisubukan ulit mamaya.',
       gatheringLimit: 'Naabot mo na ang limitasyon sa paggawa ng mga pagtitipon sa ngayon. Pakisubukan ulit mamaya.',
+      offerContactInfo: 'Hindi puwedeng maglaman ang mga alok ng link ng website, email address o numero ng telepono. Naaabot ka ng mga customer sa pamamagitan ng Nearby.',
       what: {
         complete_that: { service: 'Hindi ito matapos ngayon.', input: 'Hindi ito matapos. Pakisuri at subukan muli.' },
         update_these_ideas: { service: 'Hindi ma-update ang mga ideyang ito ngayon.', input: 'Hindi ma-update ang mga ideyang ito. Pakisuri at subukan muli.' },
@@ -431,6 +440,7 @@ export default {
       accountSuspended: 'Этот аккаунт заблокирован: он не может писать сообщения, приглашать, знакомиться или проводить встречи.',
       rateLimited: 'Вы пока достигли лимита для этого действия. Попробуйте позже.',
       gatheringLimit: 'Вы пока достигли лимита на создание встреч. Попробуйте позже.',
+      offerContactInfo: 'В предложениях нельзя указывать ссылки на сайты, адреса электронной почты или номера телефонов. Клиенты связываются с вами через Nearby.',
       what: {
         complete_that: { service: 'Сейчас не удалось это выполнить.', input: 'Не удалось это выполнить. Проверьте и попробуйте снова.' },
         update_these_ideas: { service: 'Сейчас не удалось обновить эти идеи.', input: 'Не удалось обновить эти идеи. Проверьте и попробуйте снова.' },
@@ -477,6 +487,7 @@ export default {
       accountSuspended: '이 계정은 정지되어 메시지, 초대, 연결, 모임 주최를 할 수 없어요.',
       rateLimited: '지금은 이 작업의 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       gatheringLimit: '지금은 모임 만들기 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
+      offerContactInfo: '제안에는 웹사이트 링크, 이메일 주소, 전화번호를 넣을 수 없어요. 고객은 Nearby를 통해 연락해요.',
       what: {
         complete_that: { service: '지금은 완료할 수 없어요.', input: '완료할 수 없었어요. 확인 후 다시 시도해 주세요.' },
         update_these_ideas: { service: '지금은 이 아이디어를 업데이트할 수 없어요.', input: '이 아이디어를 업데이트할 수 없었어요. 확인 후 다시 시도해 주세요.' },

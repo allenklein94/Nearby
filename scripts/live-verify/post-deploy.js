@@ -55,6 +55,12 @@ const STEPS = {
       '(2) a real admin (not the business\'s manager) records a legitimate review of one test business with all four checks: badge appears; then revokes with a reason: badge gone, history keeps both events;',
       '(3) badge visibility: shown ONLY on the business preview sheet + Business Profile (never offer cards, replies, Opportunities, request screens, rankings), signed in + signed out, on build 87+ and the re-exported website;',
       '(4) native review of ui.businessSheet.verifiedBusiness* + ui.businessProfile.verifiedBusiness* (10 languages) before public release'] },
+  // Offer safety: every screened business write needs its own unconsumed low-risk screening result; contact info refused in offer text
+  20270372: { journeys: ['offerSafety', 'offerJourney', 'availabilityNoBroadcast', 'exclusivePostingRequest'],
+    edge: ['screen-business-content (right after the migration; until it is live, package saves are refused (the old version has no package branch) and other screened business writes may be refused: check one reply + one posting after both)'],
+    node: ['scripts/replay/screening-single-use-concurrency.js + reschedule-reply-concurrency.js (replay only, before the deploy)'],
+    manual: ['read-only: 0 screening results consumed right after the deploy; a direct submit_business_offer / post_business_availability call as a business owner (dedicated test account) = refused screening_required, nothing written',
+      'Report this offer on a real reply (phone): one report, reported_id = the business manager, content captured'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

@@ -31,8 +31,24 @@ Build 87 / main unchanged. No deploy, merge, publish or activation without separ
 - [x] replay (isolated): 496/496 apply; existing journeys 843/843 on it with 0372; new `offerSafety` 7/7
 - [x] edge function: 'package' branch, contact pre-check (offer_contact_info_kind), writeRefusal maps offer_contact_info,
       aiSuggested passthrough (not deployed)
-- [ ] client (package via screening, Keep suggestion via screening, contact error message, ⋯ Report this offer)
-- [ ] reschedule-reply-concurrency.js needs screening rows (calls submit/post as a client)
-- [ ] full verification (prod prelude journeys 0348-0372, journey fails without 0372, concurrency, rollback round trip,
-      grants replay vs prod+prelude, Jest)
-- [ ] rollback script, records (CLAUDE.md, history, post-deploy plan)
+- [x] client (package via screening, Keep suggestion via screening, contact error message, ⋯ Report this offer) (2026-10-31, after a codespace restart: re-checked)
+- [x] reschedule-reply-concurrency.js records screening stand-ins when 0372 is present; new screening-single-use-concurrency.js
+- [x] full verification (2026-10-31, re-run after the codespace restart; nothing written to prod):
+      from-scratch replay 496/496 apply + journeys 850/850 on it; all 8 replay concurrency scripts pass on it, incl. the new
+      `screening-single-use-concurrency.js` (10 rounds: one result = one write, the concurrent send refused at once, freed
+      again on rollback) and `reschedule-reply-concurrency.js` with screening stand-ins; prod journeys 850/850 with 0348-0372
+      as prelude (rolled back); `offerSafety` fails 7/7 with 0348-0371 only; rollback round trip identical on prod (aborted)
+      and on the replay (4,681 functions / triggers / constraints / policies / columns / indexes / ACLs; first prod run found
+      ACL entry ORDER only on the 7 restored functions, fixed in the rollback script); grants replay == prod+0348-0372
+      3272/3272; Jest 534/534 suites, 7240 tests (4 stale guards updated: occasion packages now via serviceError, writeRefusal pattern
+      window, two held-for-review dialogs -> showSuccessToast (idea 274), post-deploy step for 0372).
+      Migration sha256 8267ea4eab4f0b030c87183af2c696e594283402a2ade5bca3d99f7613bdb047.
+- [x] rollback script written (scripts/rollback/20270372_offer_safety.rollback.sql)
+- [x] records (CLAUDE.md status line, CLAUDE_HISTORY.md top, post-deploy.js step 20270372)
+
+## Not verified / open
+- Not deployed: migration + `screen-business-content` redeploy (right after it) each need owner approval; after 0371.
+- No real-API signed-in test yet (post-deploy manual step: direct call refused `screening_required`).
+- Not device-verified: ⋯ Report this offer on the request screen, package save via screening, contact-info message.
+- Native review: `ui.requestDetail.reportThisOffer` / `offerMoreA11y`, `ui.shared.errors.offerContactInfo` (10 machine-authored languages).
+- Classifier path never run live (Anthropic credit). (CLAUDE.md, history, post-deploy plan)

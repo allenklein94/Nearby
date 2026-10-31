@@ -33,4 +33,14 @@ describe('report content reference (I3, 20270355): never lost because of the ref
     expect(calls[1].content_id).toBeUndefined();
     expect(calls[1].reason).toBe('Spam or scam');
   });
+
+  test('a business offer (20270372): no person from the client, never refiled about nobody, kept on an older database', () => {
+    const row = reportRow({ reporterId: 'r', reportedId: null, reason: 'Spam or scam', details: '', content: { type: 'business_offer', id: 'o1' } });
+    expect(row).toEqual({ reporter_id: 'r', reported_id: null, reason: 'Spam or scam', details: null, content_type: 'business_offer', content_id: 'o1' });
+    expect(shouldRetryWithoutContent({ code: '22023', hint: 'report_content_mismatch' }, row)).toBe(false);
+    expect(shouldRetryWithoutContent({ code: '23514', message: 'new row for relation "reports" violates check constraint "reports_content_type_check"' }, row)).toBe(true);
+    expect(shouldRetryWithoutContent({ code: '42703', message: 'column "content_type" of relation "reports" does not exist' }, row)).toBe(true);
+    expect(withoutContent(row)).toEqual({ reporter_id: 'r', reported_id: null, reason: 'Spam or scam', details: '[offer o1]' });
+    expect(withoutContent({ ...row, details: 'pushy' }).details).toBe('[offer o1] pushy');
+  });
 });

@@ -22,6 +22,8 @@ export function serviceError(response, result, fallback) {
   e.code = result?.code ?? null;
   // Item 86: a refused contradictory setting carries the server's exact lines, shown inline (utils/settingConflicts.js).
   if (Array.isArray(result?.conflicts)) e.conflicts = result.conflicts;
+  // A rule the edge function reports by code (20270372: offer_contact_info) is read like the database's own hint.
+  if (result?.code && ACCOUNT_RULE_HINTS[result.code]) e.hint = result.code;
   return e;
 }
 
@@ -30,6 +32,7 @@ export const ACCOUNT_RULE_HINTS = {
   account_suspended: 'ui.shared.errors.accountSuspended',
   rate_limited: 'ui.shared.errors.rateLimited',  // 20270356: volume limits by trust level
   gathering_limit: 'ui.shared.errors.gatheringLimit',  // 20270362: gatherings created per day by trust level
+  offer_contact_info: 'ui.shared.errors.offerContactInfo',  // 20270372: no links, emails or phone numbers in offer text
 };
 
 const NETWORK = /network request failed|failed to fetch|network error|timed? ?out|offline|internet|connection/i;

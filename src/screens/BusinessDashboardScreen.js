@@ -41,7 +41,7 @@ import OpportunityArrival, { ArrivalSignal } from '../motion/OpportunityArrival'
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, setBusinessLocation, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore, setBusinessDietaryOptions } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, setBusinessLocation, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore, setBusinessDietaryOptions } from '../services/brandOffers';
 import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
 import { BUSINESS_PRICE_LEVELS, typicalSpendProblem } from '../constants/businessPrice';
 import { getBusinessCommunities } from '../services/communities';
@@ -1854,7 +1854,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   async function handleKeepSuggestion(suggestion) {
     if (!selectedPartner) return;
     try {
-      await createBusinessExperience(selectedPartner.id, {
+      // 20270372: a kept suggestion is published through the same content check as any experience (aiSuggested = provenance).
+      const result = await submitBusinessExperienceForScreening(selectedPartner.id, {
+        experienceId: null,
         title: suggestion.title,
         description: suggestion.description,
         icon: suggestion.icon,
@@ -1865,6 +1867,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       });
       await loadExperiences(selectedPartner.id);
       settingConflicts.clear(`experience_suggestion:${suggestion.attribute}`);
+      if (result?.blocked) {
+        Alert.alert(t('ui.bizDash1.couldntPublish'), t('ui.bizDash1.thisContentCouldntBePublished'));
+      } else if (!result?.published) {
+        showSuccessToast(t('ui.bizDash1.submittedForReview'), t('ui.bizDash1.thisExperienceIsBeingReviewed'));
+      }
     } catch (e) {
       const entitlementError = parseEntitlementError(e);
       if (entitlementError?.kind === 'limit') {
@@ -2857,14 +2864,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         pricePerPerson: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
         availableDays: packageAvailableDaysInput.length > 0 ? packageAvailableDaysInput : null,
       };
-      if (editingPackageId) {
-        await updateOccasionPackage(editingPackageId, params);
-      } else {
-        await createOccasionPackage(params);
-      }
+      // 20270372: saved through the content check (a package becomes an automatic offer), like an offer reply.
+      const result = editingPackageId
+        ? await updateOccasionPackage(selectedPartner.id, editingPackageId, params)
+        : await createOccasionPackage(selectedPartner.id, params);
       settingConflicts.clear('package');
-      setPackageModalVisible(false);
-      await loadMyOccasionPackages();
+      if (result?.blocked) {
+        Alert.alert(t('ui.bizDash1.couldntPublish'), t('ui.bizDash1.thisContentCouldntBePublished'));
+      } else {
+        setPackageModalVisible(false);
+        await loadMyOccasionPackages();
+        if (!result?.published) {
+          showSuccessToast(t('ui.bizDash1.submittedForReview'),
+            editingPackageId ? t('ui.bizDash1.yourChangesAreBeingReviewed2') : t('ui.bizDash1.thisOfferIsBeingReviewed'));
+        }
+      }
     } catch (e) {
       if (!settingConflicts.report('package', e, { check: { kind: 'package', patch: { occasion_type: packageOccasionInput } } })) {
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePackage() });

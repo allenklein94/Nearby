@@ -932,6 +932,10 @@ Description: ${description || '(none)'}`;
         const { data: existing } = await admin.from('business_occasion_packages').select('partner_id').eq('id', packageId).maybeSingle();
         if (!existing || existing.partner_id !== partnerId) return json({ error: 'Package not found.' }, 404);
       }
+      {
+        const conflict = await preCheckConflicts(supabaseAsUser, partnerId, 'package', { occasion_type: occasionType });
+        if (conflict) return conflict;
+      }
       { const refused = await offerContactRefusal(admin, [name, description, ...includedItems]); if (refused) return refused; }
 
       const contentBlock = [

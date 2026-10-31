@@ -5,9 +5,9 @@
 // 20261028_business_occasion_packages.sql, for the full architecture
 // rationale -- a genuinely different concept from a one-time posted
 // business_availability slot or a flat priority_occasions appetite signal.
-import { supabase } from './supabase';
+import { supabase, functionUrl } from './supabase';
+import { serviceError } from '../utils/recoverableError';
 import { getUserLocation } from './userLocation';
-import { errorWithConflicts } from '../utils/settingConflicts';
 
 // Pure display helpers live in a separate, dependency-free module so they
 // stay directly unit-testable (see that file's own header comment) --
@@ -23,37 +23,35 @@ export async function getMyOccasionPackages() {
   return data ?? [];
 }
 
-export async function createOccasionPackage({
+// Offer safety (20270372): a package becomes an automatic offer to matching requests, so it is saved only through the same
+// content check as an offer reply (screen-business-content, target 'package'). Low risk = saved at once ({ published }),
+// high = refused ({ blocked }), anything else = held for the team ({ published: false, blocked: false }); a held package
+// appears once a reviewer approves it. The database refuses a package write that didn't go through this check.
+async function submitOccasionPackageForScreening(partnerId, packageId, {
   occasionType, name, description = null, includedItems = [], minGuests = null, pricePerPerson = null, availableDays = null,
 }) {
-  const { data, error } = await supabase.rpc('create_occasion_package', {
-    occasion_type_param: occasionType,
-    name_param: name,
-    description_param: description,
-    included_items_param: includedItems,
-    min_guests_param: minGuests,
-    price_per_person_param: pricePerPerson,
-    available_days_param: availableDays,
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      partnerId, targetType: 'package', packageId: packageId ?? null,
+      occasionType, name, description, includedItems, minGuests, pricePerPerson, availableDays,
+    }),
   });
-  if (error) throw errorWithConflicts(error); // item 86: a Family Gathering package vs No children is shown inline
-  return data;
+  const result = await response.json();
+  if (!response.ok && !result?.riskTier) throw serviceError(response, result, 'Could not save this package right now.'); // carries item 86's conflicts
+  return result;
 }
 
-export async function updateOccasionPackage(packageId, {
-  occasionType, name, description = null, includedItems = [], minGuests = null, pricePerPerson = null, availableDays = null,
-}) {
-  const { data, error } = await supabase.rpc('update_occasion_package', {
-    package_id_param: packageId,
-    occasion_type_param: occasionType,
-    name_param: name,
-    description_param: description,
-    included_items_param: includedItems,
-    min_guests_param: minGuests,
-    price_per_person_param: pricePerPerson,
-    available_days_param: availableDays,
-  });
-  if (error) throw errorWithConflicts(error); // item 86: a Family Gathering package vs No children is shown inline
-  return data;
+export async function createOccasionPackage(partnerId, params) {
+  return submitOccasionPackageForScreening(partnerId, null, params);
+}
+
+export async function updateOccasionPackage(partnerId, packageId, params) {
+  return submitOccasionPackageForScreening(partnerId, packageId, params);
 }
 
 export async function setOccasionPackageActive(packageId, active) {
