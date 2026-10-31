@@ -1,3 +1,7 @@
+# 2026-10-31: account state model approved as built
+
+Owner approved the six-state model (Unverified / Verified / Established / Restricted / Suspended / Under Review) as built, no changes. Checked: no user-facing "Trusted"/"Established" badge or string exists (only "trusted contact" in date check-in, unrelated). Added to the post-Tier-1 consolidated deployment checklist: a real-API proof on prod, with a dedicated test account, that a suspended account cannot write through direct API calls or server functions and cannot sign in (0351), since today that is proven only by journeys in rolled-back transactions. Migrations 0348-0369 stay staged; Build 87 next.
+
 # 2026-10-30: near-duplicate photos (0368) + review case history (0369), staged
 
 Full record: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md` (last section) + `PRODUCT_AUDIT/PHOTO_SIMILARITY_CALIBRATION_2026-10-30.md`.
