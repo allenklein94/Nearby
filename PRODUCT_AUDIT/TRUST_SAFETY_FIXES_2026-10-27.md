@@ -1097,8 +1097,11 @@ consumes the daily counter, on-conflict skip, mutual Connect, established = same
 check); with the rollback as prelude it fails 9/12 (the 3 that pass don't depend on 0377). Concurrency
 `scripts/replay/friend-request-concurrency.js`: 8 parallel = exactly 5 + 3 refused, no deadlock; 3 more while full = all
 refused; parallel duplicates = 23505, uncounted; 3 parallel at 14/day = 1 + 2 daily refusals. Full journeys on the replay
-912/913 then 913/913 after updating `trustSafetyI123`'s rule-row count (it counted 0358's 28 rows; the 2 new rows are now
-excluded the way 0362's are). All 13 replay concurrency scripts pass. Rollback round trip: apply rollback + re-apply = 0
+(normal order: journeys first, then the concurrency scripts) 912/913; the 1 failure was `trustSafetyI123` counting 0358's 28
+rule rows (the 2 new rows are now excluded the way 0362's are) and that test passes after the fix. NOT re-run as one clean
+full suite: a second full run on the same replay (after the concurrency scripts) fails 2 `behaviorReviewSignals` tests and
+1 `trustSafetyI123` test because `behavior-signal-concurrency.js` and `review-case-concurrency.js` commit an overflow count
+and 2 reports by design; those journeys read them (order-dependent on a reused replay, unrelated to 0377). All 13 replay concurrency scripts pass. Rollback round trip: apply rollback + re-apply = 0
 differences over 2342 catalog items; the rollback removes exactly the 0377 objects and restores 0362's `rate_limit_count`
 text byte for byte. Jest 538/538 suites (7294 passed).
 **Not run (deploy gates):** prod journeys with the 0348-0377 prelude, an aborted rollback on prod, grants vs prod; the phone
@@ -1106,5 +1109,5 @@ check in `scripts/live-verify/post-deploy.js` (20270377).
 **Known gaps / existing behaviour left as is.** The daily limit's refusal is still an English server sentence with no hint
 (unchanged by request); an "on conflict do nothing" direct call still advances the DAILY counter (existing behaviour; the
 app never sends one); no reset time is shown (the window is rolling; the sentence says "a few minutes", true for <= 10).
-Test isolation: `trustSafetyI123`'s admin-push test reads every `admin_report_received` outbox row, so run after
-`review-case-concurrency.js` (which by design leaves 2 reports) it sees an extra body; it passes in the normal order.
+Test isolation (pre-existing): `trustSafetyI123`'s admin-push test and `behaviorReviewSignals`' overflow tests read
+database-wide rows, so they fail on a replay where the concurrency scripts already ran; they pass in the normal order.
