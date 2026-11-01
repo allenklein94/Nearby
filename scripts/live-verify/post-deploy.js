@@ -119,6 +119,15 @@ const STEPS = {
       'signed-in real API, dedicated NON-admin test account: admin_get_shared_review_cases refuses with hint admin_only (gated test: NEARBY_POST_DEPLOY_0379=1 npx jest -c jest.live.config.js src/qa/sharedReviewCasesSignedIn.live.js)',
       'on the business website (after the website is re-exported with this screen, own approval): an admin opening a case sees "Shared review cases"; a linked case opens in place; no account changes',
       'any answer to a non-admin, or any row written by the call = security defect: STOP, report'] },
+  // Duplicate-photo detection activation: near-duplicates on at the owner's 10/10 (exact copies already on from 0358)
+  20270380: { journeys: ['photoDetectionActivation', 'reviewCaseHistory', 'trustSafetyI123'],
+    node: ['scripts/replay/review-case-concurrency.js (replay only, before the deploy; step 6 = activation race)',
+      'NEARBY_PHOTO_DETECTION_APPROVAL=photo-detection-sweep node scripts/trust-safety/photo-detection-switch.js sweep --target=prod (ONCE, right after: judges photos recorded while the activation transaction was open)'],
+    manual: ['BEFORE the deploy approval: 0357 + 0358 + 0368 + 0369 live, moderate-photo redeployed (hashing), fingerprint-existing-photos.js run (dry run first) so photos uploaded earlier are fingerprinted; prod journeys with the 0348-0380 prelude + an aborted rollback round trip on prod; grants vs prod; the photo Privacy Policy sentence approved + published; website re-exported with AdminReviewScreen (0369) so an admin can actually review',
+      'read-only right after: node scripts/trust-safety/photo-detection-switch.js status --target=prod = min_accounts 3, name_similarity 0.5, max_dhash 10, max_phash 10, activation_installed true; private.evaluate_existing_photo_signals() EXECUTE: no client role and not service_role',
+      'controlled check (owner, test accounts only): the same test photo on 3 dedicated test accounts opens ONE private case in the admin queue; an admin closes it "No action needed"; none of the accounts is hidden, suspended or notified; then delete the test accounts (the case stays as history)',
+      'monitoring: a weekly look at the photo cases (count, how many closed "No action needed"); many legitimate matches = turn near-duplicates off (switch "off") and report, never change the numbers without approval',
+      'any account restricted / hidden / notified by a photo case, or a client that can read a case = security defect: STOP, switch off, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
@@ -128,6 +137,8 @@ const OTHERS = {
   'report-presence': { rollback: 'redeploy the live bundle as recovered (git show 582c727e^:supabase/functions/report-presence/index.ts)',
     check: 'a normal presence report still 200; behaviorReviewSignals location block on prod' },
   'moderate-photo': { rollback: 'redeploy the live bundle recovered 2026-10-28 (or the 0349 version)', check: 'journey photoScreeningBinding; a real photo upload on the phone is screened; with 0368 live, private.photo_perceptual_hashes gets 6 rows for that photo (read-only count)' },
+  'photo-detection-switch': { rollback: 'NEARBY_PHOTO_DETECTION_APPROVAL=photo-detection-off node scripts/trust-safety/photo-detection-switch.js off --target=prod (instant; near-duplicates only; add --all to stop exact copies too; open cases stay for review)',
+    check: 'status --target=prod shows the numbers off; a new test photo copy opens nothing; back on only with the code from status (own approval), which re-judges existing photos in a separate transaction' },
   'b5-auth-settings': { rollback: 'PATCH the "rollback:" values the apply prints', check: 'node scripts/trust-safety/b5-auth-settings.js verify, then the live sign-in tests' },
   'captcha-settings': { rollback: 'NEARBY_CAPTCHA_APPROVAL=captcha-off node scripts/trust-safety/captcha-settings.js disable (instant)',
     check: 'fresh sign-in by phone code on every installed build (shows no error; the code arrives); live sign-in tests (link path); website sign-in' },

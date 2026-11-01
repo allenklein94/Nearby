@@ -11,6 +11,11 @@
 //      exactly one "reopened" event. Then two admins close it at once: exactly one "closed" event.
 //   5. two admins open an investigation from two reports about the same person at the same moment: ONE report case, both
 //      reports linked.
+//   6. (20270380) activation while photos are being recorded: three similar copies hashed while near-duplicates are off;
+//      the activation (settings on + sweep, ONE transaction, as the migration) runs while two more copies are recorded in
+//      parallel. Those two saw detection off and were invisible to that sweep, so they are left out (the race, shown);
+//      the separate sweep afterwards (photo-detection-switch.js sweep / on), run while a sixth copy is recorded, judges
+//      them: ONE case with all six, no second case.
 // Uses test distances on the replay database only; settings and every row it creates are restored / deleted afterwards.
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/review-case-concurrency.js
 const url = process.env.NEARBY_LOCAL_DB_URL;
@@ -40,7 +45,7 @@ async function together(steps) {
       const r = await c.query(step.sql, step.args);
       await sleep(HOLD_MS);
       await c.query('commit');
-      return { ok: true, row: r.rows[0] };
+      return { ok: true, row: (Array.isArray(r) ? r[r.length - 1] : r).rows[0] }; // a multi-statement query returns one result per statement
     } catch (e) {
       await c.query('rollback').catch(() => {});
       return { ok: false, error: e.message };
@@ -161,6 +166,37 @@ const errors = (run) => run.results.filter((r) => !r.ok).map((r) => r.error).joi
     c5.forEach((c) => caseIds.push(c.id));
     check(run.results.every((x) => x.ok), `both sessions committed (${errors(run)})`);
     check(c5.length === 1 && c5[0].reports === 2, `one report case, both reports linked (${c5.length}, ${c5[0]?.reports})`);
+
+    console.log('6. activation (20270380) while copies are being recorded, then the separate sweep');
+    const installed = (await admin.query(`select to_regprocedure('private.evaluate_existing_photo_signals()') is not null ok`)).rows[0].ok;
+    check(installed, '20270380 applied on this database');
+    if (installed) {
+      await admin.query(`update private.account_signal_settings set similar_photo_max_dhash = null, similar_photo_max_phash = null where id`);
+      const D6 = 5555555555555555555n;
+      const P6 = 7777777777777777777n;
+      const hashStep = (u, o, k) => ({ sub: u, role: 'service_role', sql: 'select public.record_photo_perceptual_hashes($1, $2, $3::jsonb) ok',
+        args: [u, o, JSON.stringify([{ variant: 'full', dhash: String(D6 ^ BigInt(k)), phash: String(P6 ^ BigInt(k)) }])] });
+      const six6 = [];
+      for (let i = 0; i < 6; i += 1) { const u = await named(`act${i}`); six6.push({ u, o: await photo(u, 'act.jpg'), k: 1 << i }); }
+      for (const x of six6.slice(0, 3)) await together([hashStep(x.u, x.o, x.k)]);
+      const caseOf6 = async () => (await admin.query(`select c.id, c.status, (select count(*)::int from private.account_review_case_members m where m.case_id = c.id) members
+        from private.account_review_cases c where c.signal = 'similar_photo'
+         and exists (select 1 from private.account_review_case_members m where m.case_id = c.id and m.user_id = any($1::uuid[]))`, [six6.map((x) => x.u)])).rows;
+      check((await caseOf6()).length === 0, 'off: three copies recorded, no case');
+      run = await together([
+        { sub: adminA, role: 'postgres', sql: `update private.account_signal_settings set similar_photo_max_dhash = 10, similar_photo_max_phash = 10 where id;
+           select private.evaluate_existing_photo_signals() r` },
+        hashStep(six6[3].u, six6[3].o, six6[3].k), hashStep(six6[4].u, six6[4].o, six6[4].k)]);
+      let c6 = await caseOf6();
+      c6.forEach((c) => caseIds.push(c.id));
+      check(run.results.every((x) => x.ok), `activation + two parallel recordings committed (${errors(run)})`);
+      check(c6.length === 1 && c6[0].members === 3, `in-transaction sweep alone: one case, the two parallel copies left out (${c6.length}, ${c6[0]?.members})`);
+      run = await together([{ sub: adminA, role: 'postgres', sql: 'select private.evaluate_existing_photo_signals() r' }, hashStep(six6[5].u, six6[5].o, six6[5].k)]);
+      c6 = await caseOf6();
+      c6.forEach((c) => { if (!caseIds.includes(c.id)) caseIds.push(c.id); });
+      check(run.results.every((x) => x.ok), `separate sweep + a sixth parallel recording committed (${errors(run)})`);
+      check(c6.length === 1 && c6[0].members === 6 && c6[0].status === 'open', `after the separate sweep: ONE open case with all six (${c6.length}, ${c6[0]?.members}, ${c6[0]?.status})`);
+    }
   } finally {
     await admin.query(`update private.account_signal_settings set duplicate_photo_min_accounts = $1, similar_name_min_similarity = $2,
       similar_photo_max_dhash = $3, similar_photo_max_phash = $4 where id`,

@@ -73,7 +73,8 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
   update profiles set display_name = 'Ravi Shah' where id = v_g;
   update profiles set display_name = 'Olu Ade' where id = v_m;
   update profiles set display_name = 'Tess Nguyen' where id = v_q;
-  ${rec('defaults', `(select jsonb_build_object('dhash', similar_photo_max_dhash, 'phash', similar_photo_max_phash) from private.account_signal_settings)`)}
+  ${rec('defaults', `(select jsonb_build_object('dhash', similar_photo_max_dhash, 'phash', similar_photo_max_phash,
+      'activated', to_regprocedure('private.evaluate_existing_photo_signals()') is not null) from private.account_signal_settings)`)}
   -- the exact-copy rules as approved (20270358); similarity distances OFF
   update private.account_signal_settings set duplicate_photo_min_accounts = 3, similar_name_min_similarity = 0.5,
     similar_photo_max_dhash = null, similar_photo_max_phash = null;
@@ -251,8 +252,9 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
   const data = (k) => s[k].data;
   const hint = (k) => s[k].data && s[k].data.hint;
 
-  test('0368: off until approved; recorded only by the service role, for a photo in use, with valid hashes', () => {
-    expect(data('defaults')).toEqual({ dhash: null, phash: null });
+  test('0368: off until approved (20270380 activates at 10/10); recorded only by the service role, for a photo in use, with valid hashes', () => {
+    const { activated } = data('defaults');
+    expect(data('defaults')).toEqual(activated ? { dhash: 10, phash: 10, activated } : { dhash: null, phash: null, activated });
     expect(data('off_recorded_no_case')).toEqual({ hashes: 5, cases: 0 });
     expect(data('client_records_hashes').error).toMatch(/permission denied/);
     expect(data('bad_variant_refused')).toBe(false);

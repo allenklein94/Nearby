@@ -58,6 +58,10 @@ Initial threshold **dHash <= 10, pHash <= 10**. Detection stays disabled until s
 activation migration is not written yet (development frozen). Reason: the 314-photo set is too small to establish a
 real-world false-match rate.
 
+## Activation (2026-11-01)
+
+The activation migration is now written and staged (20270380, owner 2026-11-01), NOT deployed: `PRODUCT_AUDIT/PHOTO_DETECTION_ACTIVATION_PLAN_2026-11-01.md`.
+
 ## Not verified
 
 - Real uploads through `moderate-photo` on production (0368 + the function redeploy are NOT deployed).
