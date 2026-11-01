@@ -17,6 +17,13 @@
 --     two requests from one person are decided one after the other and the second sees the first one's log row;
 --   * reaching the limit never restricts, flags, scores or asks to verify an account: it refuses that one request.
 -- Refusal = hint 'friend_request_limit' (the app shows its own sentence in the person's language).
+--
+-- Daily counter fix (owner, 2026-11-01): the daily limit used to add one to profiles.friend_requests_sent_today in its
+-- BEFORE INSERT trigger. Postgres runs BEFORE triggers before it checks a conflict, so an "on conflict do nothing" insert
+-- of an existing pair (a direct API call; the app never sends one) used a daily slot without creating a request. Now the
+-- BEFORE trigger only locks + checks (unchanged limit, message and scope), and the +1 happens in an AFTER INSERT trigger,
+-- which runs only for a row really written. The profiles-row lock taken before the check is held to the end of the
+-- transaction, so simultaneous requests are still decided one at a time and each sees the previous one's +1.
 
 alter table private.rate_limit_rules drop constraint if exists rate_limit_rules_action_check;
 alter table private.rate_limit_rules add constraint rate_limit_rules_action_check
@@ -111,6 +118,81 @@ create trigger zz_rate_limit_friend_request before insert on public.friendships
 drop trigger if exists zz_log_friend_request on public.friendships;
 create trigger zz_log_friend_request after insert on public.friendships
   for each row execute function public._log_friend_request();
+
+-- The daily limit: check only (before the insert). Same limit, message, scope and lock as 20270361.
+CREATE OR REPLACE FUNCTION public.enforce_friend_request_daily_limit()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_current_count integer;
+  v_current_date date;
+  v_timezone text;
+  v_today_in_user_tz date;
+  v_daily_limit integer := 15;
+begin
+  if private.trusted_write_active() /* 20270361: never the forgeable flag */ then
+    return new;
+  end if;
+
+  select friend_requests_sent_today, friend_requests_sent_date, coalesce(timezone, 'UTC')
+  into v_current_count, v_current_date, v_timezone
+  from profiles where id = new.requested_by for update;
+
+  begin
+    v_today_in_user_tz := (now() at time zone v_timezone)::date;
+  exception when others then
+    v_today_in_user_tz := current_date;
+  end;
+
+  if v_current_date is distinct from v_today_in_user_tz then
+    v_current_count := 0;
+  end if;
+
+  if v_current_count >= v_daily_limit then
+    raise exception 'You can send up to % friend requests per day. Try again tomorrow.', v_daily_limit;
+  end if;
+
+  return new;  -- 20270377: the +1 is written after the insert (_count_friend_request_daily), only for a real row
+end;
+$function$;
+
+-- The daily counter: +1 after the insert (same day reading and scope as the check: every non-trusted insert).
+create or replace function public._count_friend_request_daily()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_caller_trusted text := current_setting('app.trusted_update', true);
+  v_timezone text;
+  v_today date;
+begin
+  if private.trusted_write_active() then
+    return null;
+  end if;
+  select coalesce(timezone, 'UTC') into v_timezone from profiles where id = new.requested_by;
+  begin
+    v_today := (now() at time zone v_timezone)::date;
+  exception when others then
+    v_today := current_date;
+  end;
+  perform set_config('app.trusted_update', 'true', true);
+  update profiles
+  set friend_requests_sent_today = case when friend_requests_sent_date = v_today then friend_requests_sent_today + 1 else 1 end,
+      friend_requests_sent_date = v_today
+  where id = new.requested_by;
+  perform set_config('app.trusted_update', coalesce(v_caller_trusted, 'false'), true);
+  return null;
+end;
+$function$;
+revoke all on function public._count_friend_request_daily() from public, anon, authenticated;
+drop trigger if exists on_friend_request_count_daily on public.friendships;
+create trigger on_friend_request_count_daily after insert on public.friendships
+  for each row execute function public._count_friend_request_daily();
 
 -- The numbers (owner, 2026-11-01): 5 per rolling 10 minutes, both levels; the daily 15 stays where it is.
 insert into private.rate_limit_rules (action, trust_level, window_seconds, max_count) values

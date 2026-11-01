@@ -1090,24 +1090,30 @@ Connect in friend discovery (a trusted server write), other server writes. A dec
 minutes (cancel-and-resend can't get around it). The log is private (no client grant), purged after 30 days with the rest.
 **Never.** Restricts, suspends, scores, flags or asks to verify an account; it refuses that one request.
 
-**Verification (replay only; nothing touched production).** From-scratch replay (real Auth first) 501/501. Journey
-`friendRequestBurstLimit` 12/12 (boundaries 5/6, duplicate + reverse-duplicate retries, blocked pair, rolling window still
-counted at 9:59 and released at exactly 10:00, decline keeps the count, daily-cap interplay + a burst refusal never
-consumes the daily counter, on-conflict skip, mutual Connect, established = same 5, client can't read the log or call the
-check); with the rollback as prelude it fails 9/12 (the 3 that pass don't depend on 0377). Concurrency
-`scripts/replay/friend-request-concurrency.js`: 8 parallel = exactly 5 + 3 refused, no deadlock; 3 more while full = all
-refused; parallel duplicates = 23505, uncounted; 3 parallel at 14/day = 1 + 2 daily refusals. Full journeys on the replay
-(normal order: journeys first, then the concurrency scripts) 912/913; the 1 failure was `trustSafetyI123` counting 0358's 28
-rule rows (the 2 new rows are now excluded the way 0362's are) and that test passes after the fix. NOT re-run as one clean
-full suite: a second full run on the same replay (after the concurrency scripts) fails 2 `behaviorReviewSignals` tests and
-1 `trustSafetyI123` test because `behavior-signal-concurrency.js` and `review-case-concurrency.js` commit an overflow count
-and 2 reports by design; those journeys read them (order-dependent on a reused replay, unrelated to 0377). All 13 replay concurrency scripts pass. Rollback round trip: apply rollback + re-apply = 0
-differences over 2342 catalog items; the rollback removes exactly the 0377 objects and restores 0362's `rate_limit_count`
-text byte for byte. Jest 538/538 suites (7294 passed).
+**Daily counter fix (owner, 2026-11-01, in 0377).** The daily limit added its +1 in a BEFORE INSERT trigger, and Postgres
+runs BEFORE triggers before the conflict check, so an "on conflict do nothing" insert of an existing pair (a direct API call;
+the app never sends one) used a daily slot without creating anything. Now `enforce_friend_request_daily_limit` only locks +
+checks (same limit, message, scope, lock) and `_count_friend_request_daily` (AFTER INSERT) adds the +1 only for a row really
+written; the profiles-row lock taken before the check is held to commit, so simultaneous requests still see each other's +1.
+Remaining, existing behaviour: at 15/day a skip is still REFUSED by the daily check (it runs before the conflict is seen);
+it creates nothing and uses no slot either way.
+
+**Verification (replay only; nothing touched production; re-run 2026-11-01 after the daily counter fix + test isolation).**
+Fresh from-scratch replay (real Auth first) 501/501. Journey `friendRequestBurstLimit` 13/13 (boundaries 5/6, duplicate +
+reverse-duplicate retries, blocked pair, rolling window still counted at 9:59 and released at exactly 10:00, decline keeps the
+count, daily-cap interplay + a burst refusal never consumes the daily counter, on-conflict skips (both directions) use neither
+allowance and leave the 15th slot free, the daily counter restarts on a new local day, mutual Connect, established = same 5,
+client can't read the log or call the check); with the rollback as prelude it fails 9/13 (the skip test included; the 4 that
+pass don't depend on 0377). Full journeys 914/914, then all 13 concurrency scripts, then full journeys AGAIN on the same
+reused replay 914/914 (the order dependence is fixed: `trustSafetyI123`'s admin-push titles/bodies read only its own admins;
+`behaviorReviewSignals` measures only the overflow count it adds). Concurrency `friend-request-concurrency.js` 10/10 runs
+(new case 5: 3 parallel skips + 1 new request at 14/day = the new request created, daily 15, 2 log rows; depending on
+interleaving 0-3 skips are refused by the daily check after the 15th commits, never another error: all four interleavings
+seen). Rollback round trip: rollback + re-apply = 0 differences over 4676 sorted catalog items (functions, triggers,
+policies, constraints, table ACLs, columns, rule rows); the rollback removes exactly the 0377 objects and restores 0361's
+`enforce_friend_request_daily_limit` body byte for byte. Jest 538/538 suites (7294 passed).
 **Not run (deploy gates):** prod journeys with the 0348-0377 prelude, an aborted rollback on prod, grants vs prod; the phone
 check in `scripts/live-verify/post-deploy.js` (20270377).
 **Known gaps / existing behaviour left as is.** The daily limit's refusal is still an English server sentence with no hint
-(unchanged by request); an "on conflict do nothing" direct call still advances the DAILY counter (existing behaviour; the
-app never sends one); no reset time is shown (the window is rolling; the sentence says "a few minutes", true for <= 10).
-Test isolation (pre-existing): `trustSafetyI123`'s admin-push test and `behaviorReviewSignals`' overflow tests read
-database-wide rows, so they fail on a replay where the concurrency scripts already ran; they pass in the normal order.
+(recorded separately in CLAUDE.md, owner 2026-11-01; a server change needing its own migration + approval); no reset time is
+shown (the window is rolling; the sentence says "a few minutes", true for <= 10).

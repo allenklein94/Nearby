@@ -3,6 +3,54 @@ drop trigger if exists zz_log_friend_request on public.friendships;
 drop trigger if exists zz_rate_limit_friend_request on public.friendships;
 drop function if exists public._log_friend_request();
 drop function if exists public._rate_limit_friend_request();
+drop trigger if exists on_friend_request_count_daily on public.friendships;
+drop function if exists public._count_friend_request_daily();
+-- the daily limit's check + counter back in one BEFORE trigger (20270361's text)
+CREATE OR REPLACE FUNCTION public.enforce_friend_request_daily_limit()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_caller_trusted text := current_setting('app.trusted_update', true); -- 20270359: the caller's value, put back after the trusted write
+  v_current_count integer;
+  v_current_date date;
+  v_timezone text;
+  v_today_in_user_tz date;
+  v_daily_limit integer := 15;
+begin
+  if private.trusted_write_active() /* 20270361: never the forgeable flag */ then
+    return new;
+  end if;
+
+  select friend_requests_sent_today, friend_requests_sent_date, coalesce(timezone, 'UTC')
+  into v_current_count, v_current_date, v_timezone
+  from profiles where id = new.requested_by for update;
+
+  begin
+    v_today_in_user_tz := (now() at time zone v_timezone)::date;
+  exception when others then
+    v_today_in_user_tz := current_date;
+  end;
+
+  if v_current_date is distinct from v_today_in_user_tz then
+    v_current_count := 0;
+  end if;
+
+  if v_current_count >= v_daily_limit then
+    raise exception 'You can send up to % friend requests per day. Try again tomorrow.', v_daily_limit;
+  end if;
+
+  perform set_config('app.trusted_update', 'true', true);
+  update profiles
+  set friend_requests_sent_today = v_current_count + 1, friend_requests_sent_date = v_today_in_user_tz
+  where id = new.requested_by;
+  perform set_config('app.trusted_update', coalesce(v_caller_trusted, 'false'), true); -- 20270359: the caller's value, not 'false'
+
+  return new;
+end;
+$function$;
 delete from private.rate_limit_rules where action = 'friend_request';
 delete from private.limited_action_log where field = 'friend_request';
 

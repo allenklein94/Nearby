@@ -97,12 +97,14 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
   ${as('reporter_reads_own', 'v_a', `v_n := (select count(*) from reports where content_excerpt is not null)`, 'v_n')}
 
   -- admin notice: one push per admin per 15 minutes, worded without names; never to the reporter / reported admin
+  -- (titles / bodies read from this journey's own admins only: other admins' pushes, e.g. a replay's committed
+  -- review-case-concurrency.js rows, are not this journey's)
   ${rec('admin_pushes', `(select jsonb_build_object(
       'admin', (select count(*) from push_outbox where recipient_id = v_admin and data->>'type' = 'admin_report_received'),
       'admin2', (select count(*) from push_outbox where recipient_id = v_admin2 and data->>'type' = 'admin_report_received'),
       'non_admins', (select count(*) from push_outbox where recipient_id in (v_a, v_b, v_c, v_d, v_np, v_e, v_f) and data->>'type' = 'admin_report_received'),
-      'titles', (select jsonb_agg(distinct title) from push_outbox where data->>'type' = 'admin_report_received'),
-      'bodies', (select jsonb_agg(distinct body) from push_outbox where data->>'type' = 'admin_report_received')))`)}
+      'titles', (select jsonb_agg(distinct title) from push_outbox where recipient_id in (v_admin, v_admin2) and data->>'type' = 'admin_report_received'),
+      'bodies', (select jsonb_agg(distinct body) from push_outbox where recipient_id in (v_admin, v_admin2) and data->>'type' = 'admin_report_received')))`)}
   delete from push_outbox where data->>'type' = 'admin_report_received';
   ${as('admin_reports_admin2', 'v_admin', `insert into reports (reporter_id, reported_id, reason) values (v_admin, v_admin2, 'Other')`)}
   ${rec('admin_reports_admin2_pushes', `(select jsonb_build_object('admin', count(*) filter (where recipient_id = v_admin), 'admin2', count(*) filter (where recipient_id = v_admin2)) from push_outbox where data->>'type' = 'admin_report_received')`)}

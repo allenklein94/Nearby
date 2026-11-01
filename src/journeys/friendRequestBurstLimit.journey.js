@@ -1,7 +1,8 @@
 // Friend-request burst limit (migration 20270377, owner 2026-11-01; staged after 20270376, run with 0348-0377 as
 // JOURNEY_PRELUDE_FILE, or on the from-scratch replay, until live). 5 friend requests per rolling 10 minutes at both trust
 // levels, beside the unchanged 15-per-local-day limit. Only requests really created count: a refused or skipped insert,
-// a duplicate retry, a blocked pair and the mutual Connect never do; declining a request never gives the allowance back;
+// a duplicate retry, an "on conflict do nothing" skip, a blocked pair and the mutual Connect never do (neither the
+// burst nor the daily allowance); declining a request never gives the allowance back;
 // reaching the limit never restricts the account. Every request runs as an ordinary signed-in person under the real
 // client role, exactly as the app writes it (services/friends.js: a plain insert), in ONE rolled-back transaction.
 // now() is fixed inside the transaction, so the rolling window is moved by ageing the person's own log rows.
@@ -104,10 +105,23 @@ d('journey: friend-request burst limit (20270377)', () => {
   -- and the burst limit never consumes the daily allowance: a burst refusal leaves the daily counter where it was
   ${rec('s_daily_after_burst_refusals', daily('v_s'))}
 
-  -- an "on conflict do nothing" retry of an existing pair (a direct API call; the app never sends one) is not counted
+  -- an "on conflict do nothing" retry of an existing pair (a direct API call; the app never sends one) creates nothing and
+  -- uses neither allowance: with 13 already today, the skip leaves the 15th slot free for a real request
+  update profiles set friend_requests_sent_today = 13, friend_requests_sent_date = (now() at time zone 'America/New_York')::date where id = v_r;
   ${as('r_1', 'v_r', fr('v_r', 'v_t1'))}
+  ${rec('r_daily_after_1', daily('v_r'))}
   ${as('r_ignore_duplicate', 'v_r', fr('v_r', 'v_t1', ' on conflict (user_a, user_b) do nothing'))}
+  ${as('r_ignore_reverse', 'v_t1', fr('v_t1', 'v_r', ' on conflict (user_a, user_b) do nothing'))}
+  ${rec('r_daily_after_skip', daily('v_r'))}
+  ${rec('t1_daily_after_skip', daily('v_t1'))}
+  ${as('r_15th', 'v_r', fr('v_r', 'v_t2'))}
+  ${as('r_16th_daily', 'v_r', fr('v_r', 'v_t3'))}
+  ${rec('r_daily_end', daily('v_r'))}
   ${rec('r_logged', logged('v_r'))}
+  -- a counter from an earlier day starts again at 1 (the day reading is the person's own time zone, as before)
+  update profiles set friend_requests_sent_today = 15, friend_requests_sent_date = (now() at time zone 'America/New_York')::date - 1 where id = v_t9;
+  ${as('c_new_day', 'v_t9', fr('v_t9', 'v_t8'))}
+  ${rec('c_daily_new_day', daily('v_t9'))}
 
   -- the mutual Connect in friend discovery (a trusted server write of an accepted friendship) is never counted
   ${as('c_likes_x', 'v_c', `perform record_friend_discovery_swipe(v_x, 'like')`)}
@@ -190,10 +204,22 @@ d('journey: friend-request burst limit (20270377)', () => {
     expect(data('s_daily_after_burst_refusals')).toBe(6);
   });
 
-  test('an "on conflict do nothing" retry is not counted', () => {
+  test('an "on conflict do nothing" retry uses neither the daily nor the burst allowance', () => {
     expect(data('r_1')).toBe('ok');
+    expect(data('r_daily_after_1')).toBe(14);
     expect(data('r_ignore_duplicate')).toBe('ok');
-    expect(data('r_logged')).toBe(1);
+    expect(data('r_ignore_reverse')).toBe('ok');
+    expect(data('r_daily_after_skip')).toBe(14);
+    expect(data('t1_daily_after_skip')).toBe(0);
+    expect(data('r_15th')).toBe('ok');
+    expect(data('r_16th_daily').error).toBe('You can send up to 15 friend requests per day. Try again tomorrow.');
+    expect(data('r_daily_end')).toBe(15);
+    expect(data('r_logged')).toBe(2);
+  });
+
+  test('the daily counter still starts again on a new local day', () => {
+    expect(data('c_new_day')).toBe('ok');
+    expect(data('c_daily_new_day')).toBe(1);
   });
 
   test('the mutual Connect is never counted', () => {

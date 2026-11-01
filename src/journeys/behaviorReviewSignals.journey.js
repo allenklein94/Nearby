@@ -38,7 +38,7 @@ d('journey: behaviour review signals (20270363)', () => {
   beforeAll(async () => {
     const log = await runJourney(`
       ${actorDeclares(ACTORS)}
-      v_partner uuid := gen_random_uuid(); v_out jsonb; v_hint text; v_series uuid := gen_random_uuid(); v_inv uuid; v_g0 uuid; v_tmp uuid; v_gs uuid[] := '{}'; i int;`, `
+      v_partner uuid := gen_random_uuid(); v_out jsonb; v_hint text; v_series uuid := gen_random_uuid(); v_inv uuid; v_g0 uuid; v_tmp uuid; v_gs uuid[] := '{}'; i int; v_ovf0 int;`, `
   ${actorsSql({ people: ACTORS, business: { owner: 'v_owner', partner: 'v_partner' } })}
   perform set_config('app.trusted_update', 'false', true);
   update profiles set is_admin = true where id = v_admin;
@@ -170,20 +170,23 @@ d('journey: behaviour review signals (20270363)', () => {
   ${as('over_limit_refused', 'v_b', `insert into gathering_messages (gathering_id, sender_id, body) values (v_g0, v_b, 'again')`)}
   ${rec('b_unrestricted', `(select suspended_at is null from profiles where id = v_b)`)}
 
-  -- 6. flood protection: at the daily cap a signal is noted but no case opens; raising it, the next signal opens one
+  -- 6. flood protection: at the daily cap a signal is noted but no case opens; raising it, the next signal opens one.
+  -- The overflow count is one row per day for the whole database: measure only what this journey adds to it (a replay
+  -- that already ran behavior-signal-concurrency.js keeps that script's committed count for today).
+  v_ovf0 := coalesce((select suppressed from private.behavior_case_overflow where day = (now() at time zone 'utc')::date), 0);
   update private.behavior_signal_settings set max_new_cases_per_day =
     (select count(*) from private.account_review_cases where signal = 'behavior' and opened_at > now() - interval '24 hours') where id;
   ${as('capped_spam', 'v_q', dm('v_q', PEOPLE.slice(0, 5), `'${SPAM}'`))}
   ${rec('capped', `jsonb_build_object('signals', ${signals('v_q')}, 'cases', ${openCases('v_q')},
-      'overflow_today', (select suppressed from private.behavior_case_overflow where day = (now() at time zone 'utc')::date),
+      'overflow_today', (select suppressed from private.behavior_case_overflow where day = (now() at time zone 'utc')::date) - v_ovf0,
       'waiting', (select times from private.behavior_case_waiting where user_id = v_q))`)}
   ${as('capped_again', 'v_q', dm('v_q', ['v_p6'], `'${SPAM}'`))}
-  ${rec('capped_again_counts', `jsonb_build_object('overflow_today', (select suppressed from private.behavior_case_overflow where day = (now() at time zone 'utc')::date),
+  ${rec('capped_again_counts', `jsonb_build_object('overflow_today', (select suppressed from private.behavior_case_overflow where day = (now() at time zone 'utc')::date) - v_ovf0,
       'waiting', (select times from private.behavior_case_waiting where user_id = v_q), 'cases', ${openCases('v_q')})`)}
   -- a second person while still full: waiting too; the admin sees both and opens one case by hand (outside the cap)
   ${as('capped_w', 'v_w', dm('v_w', PEOPLE.slice(0, 5), `'${SPAM}'`))}
   ${as('admin_overflow', 'v_admin', `select admin_list_behavior_case_overflow() into v_out`,
-      `jsonb_build_object('today', (select (d ->> 'suppressed')::int from jsonb_array_elements(v_out -> 'days') d where (d ->> 'day')::date = (now() at time zone 'utc')::date),
+      `jsonb_build_object('today', (select (d ->> 'suppressed')::int from jsonb_array_elements(v_out -> 'days') d where (d ->> 'day')::date = (now() at time zone 'utc')::date) - v_ovf0,
         'waiting', (select jsonb_agg(w ->> 'user_id' order by w ->> 'user_id') from jsonb_array_elements(v_out -> 'waiting') w where (w ->> 'user_id')::uuid in (v_q, v_w)),
         'kinds', (select jsonb_agg(distinct e ->> 'kind') from jsonb_array_elements(v_out -> 'waiting') w, jsonb_array_elements(w -> 'evidence' -> 'signals') e where (w ->> 'user_id')::uuid = v_w),
         'text_free', v_out::text !~* '(deal|downtown)', 'expected_waiting', (select jsonb_agg(x order by x) from unnest(array[v_q::text, v_w::text]) x))`)}

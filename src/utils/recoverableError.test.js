@@ -76,8 +76,16 @@ describe('account rules the server enforces read as the rule, never a retry (tru
     const limited = recoverableErrorCopy({ what: 'complete that', error: { message: "You've sent several friend requests in a short time. Please wait a few minutes and try again.", hint: 'friend_request_limit', code: 'P0001' } });
     expect(limited).toEqual({ title: "That didn't go through", message: "You've sent several friend requests in a short time. Please wait a few minutes and try again.", canRetry: false });
     // neutral wording: never about the account being new, never a penalty
+    // translated in every language the app offers (LanguageContext's list), each its own sentence, not the English
     const shared = require('../i18n/ui/shared').default;
-    for (const lang of Object.keys(shared)) expect([lang, typeof shared[lang].errors.friendRequestLimit]).toEqual([lang, 'string']);
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../context/LanguageContext.js'), 'utf8');
+    const langs = /SUPPORTED_LANGUAGES = \[([^\]]+)\]/.exec(src)[1].match(/'([a-z]+)'/g).map((k) => k.slice(1, -1));
+    expect(langs).toHaveLength(11);
+    for (const lang of langs) {
+      const v = shared[lang]?.errors?.friendRequestLimit;
+      expect([lang, typeof v, v.trim().length > 20]).toEqual([lang, 'string', true]);
+      if (lang !== 'en') expect([lang, v === shared.en.errors.friendRequestLimit]).toEqual([lang, false]);
+    }
     expect(shared.en.errors.friendRequestLimit).not.toMatch(/new|account|suspend|restrict|verify/i);
   });
   test('every language has all four sentences', () => {
