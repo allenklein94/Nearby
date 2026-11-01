@@ -175,4 +175,14 @@ function storedReason(legacy) {
   return expect.stringMatching(new RegExp(`^(${legacy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${reportReasonCode(legacy)})$`));
 }
 
-module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, fixturePhoneWrite, LIFT_GATHERING_CREATION_LIMIT, storedReason };
+
+// 20270382 (people anti-scraping): another person's profile is readable only with a reason (friends, a shared gathering,
+// crossed paths, ...) or after Nearby SHOWED them to the viewer through a capped discovery function. A journey about
+// something else whose viewer reads an unrelated person records that neutral reason, "Nearby showed them" (no-op before
+// 0382, so the journey still runs on older databases). Never in a journey about who may read whom.
+const profileReadGrant = (viewer, targets) => `if to_regclass('private.profile_served') is not null then
+    execute 'insert into private.profile_served (viewer_id, target_id, via) select $1, t, ''dating_browse'' from unnest($2::uuid[]) t on conflict do nothing'
+      using ${viewer}, array[${targets.join(', ')}]::uuid[];
+  end if;`;
+
+module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, fixturePhoneWrite, LIFT_GATHERING_CREATION_LIMIT, storedReason, profileReadGrant };

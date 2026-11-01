@@ -19,6 +19,7 @@
 import * as Location from 'expo-location';
 import { getUserLocation } from './userLocation';
 import { selectPeople } from './peopleRead';
+import { browseDatingCandidates } from './datingBrowse';
 import * as TaskManager from 'expo-task-manager';
 import { supabase, functionUrl } from './supabase';
 import { readMyProfile } from './myProfile';
@@ -428,15 +429,11 @@ export async function getBrowseMatches(offset = 0) {
     }
   }
 
-  // Item 121 follow-up: only people who chose Dating (server-side, dating_candidates_visible_to_me, 20270314).
-  const { data: profiles, error } = await selectPeople((columns) => supabase
-    .from('dating_candidates_visible_to_me')
-    .select(columns)
-    .in('wide_area', neighborBuckets)
-    // A stable order is required for paging: without one, Postgres may return rows in any order per request, so
-    // consecutive pages could repeat or skip people (item 131 audit). The batch is then ordered by compatibility below.
-    .order('id', { ascending: true })
-    .range(offset, offset + BROWSE_BATCH_SIZE - 1), DATING_CANDIDATE_COLUMNS);
+  // Item 121 follow-up: only people who chose Dating (server-side, 20270314). Idea 9 (20270382): strangers only through
+  // browse_dating_candidates (capped page, daily limit); the view read is its fallback while 20270382 is not live.
+  const { data: profiles, error } = await browseDatingCandidates({
+    buckets: neighborBuckets, offset, limit: BROWSE_BATCH_SIZE, columns: DATING_CANDIDATE_COLUMNS,
+  });
 
   if (error) {
     console.error('getBrowseMatches error', error);

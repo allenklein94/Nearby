@@ -10,7 +10,7 @@
 // journey proves it detects the problem. One rolled-back transaction. Not covered: the Storage HTTP API itself (it
 // enforces these same storage.objects policies), signed URLs issued BEFORE a photo was rejected or replaced (valid up to
 // their 1-hour expiry), moderate-photo's image checks (Rekognition).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql , profileReadGrant } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -62,6 +62,7 @@ d('journey: photo screening is bound to the exact file version (0349)', () => {
       ${actorDeclares(['v_a', 'v_b'])}
       v_fixed boolean; v_out jsonb; v_hint text; v_path text; v_obj uuid; v_e1 uuid; v_e2 uuid; v_n int;`, `
   ${actorsSql({ people: ['v_a', 'v_b'] })}
+  ${profileReadGrant('v_b', ['v_a'])}
   v_fixed := to_regprocedure('public.record_photo_screening(uuid,uuid,text,uuid,boolean)') is not null;
   ${rec('fixed', 'v_fixed')}
   perform set_config('app.trusted_update', 'true', true);

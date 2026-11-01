@@ -16,7 +16,7 @@
 //   Fix 4: the id-verification bucket accepts images only, 10 MB max.
 // One rolled-back transaction. Not covered: real sign-in being refused by Supabase Auth (banned_until is what Auth reads;
 // proven on a phone/device only), storage uploads through the Storage API (limits are bucket settings), the app screens.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite , profileReadGrant } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -56,6 +56,10 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   update profiles set open_to_friend_discovery = true, wide_area = '41.2,-73.1' where id in (v_fa, v_fb, v_np);
   insert into profile_photos (user_id, photo_url, position, photo_verified) values (v_u, v_u || '/extra-1.jpg', 1, true) returning id into v_extra;
   insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), v_x, now(), now());
+  ${profileReadGrant('v_y', ['v_u'])}
+  ${profileReadGrant('v_u', ['v_x'])}
+  ${profileReadGrant('v_da', ['v_db', 'v_np', 'v_dc'])}
+  ${profileReadGrant('v_fa', ['v_fb', 'v_np'])}
 
   -- ===== Fix 1: self-grant =====
   ${as('self_photo_verified', 'v_u', 'update profiles set photo_verified = true where id = v_u', '(select photo_verified from profiles where id = v_u)')}
