@@ -1,3 +1,7 @@
+# 2026-11-01: owner idea 8 (impersonation) closed as covered by staged protections
+
+Owner agreed (2026-11-01): covered by 0381 (Impersonation reason prioritized in the admin queue + Report business), 0371 (Verified Business: identity + authority evidence) and 0350 (ID Verified: an ID check only, never a particular celebrity). Reports never punish automatically; an admin reviews evidence. Deferred improvement: a formal ownership dispute process for a brand owner or public figure who is not a Nearby user (admins receive and evaluate an outside claim manually, independent evidence, no account required). Principle: verified identity is not verified ownership of a name, brand or persona. Declined: celebrity verification, more badges, automated penalties, another reporting system. Nothing built; all migrations stay staged.
+
 # 2026-11-01: 20270381 impersonation reason + "Report business", built + locally verified, staged, not deployed
 
 Owner approved (2026-11-01): impersonation as its own report reason, and a way to report a business itself. Branch
