@@ -304,6 +304,10 @@ export async function notificationDestination(data, { lookupAvailability = async
     // no name or content; the queue is admin-only).
     case 'admin_report_received':
       return to('AdminReports');
+    // 20270375: "New sign-in to your Nearby account" / "Your Nearby phone number was changed" open Settings, where Sign Out
+    // ends every session (the push carries no device, place or name).
+    case 'account_security_notice':
+      return to('Settings');
     // Item 55 fast-follow #2 (CLAUDE.md): CommunityDetail, the other
     // candidate the original Item 55 paragraph flagged and BusinessRequest
     // Detail's own fast-follow already left open — same real-reason banner,

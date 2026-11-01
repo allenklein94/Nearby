@@ -80,6 +80,16 @@ const STEPS = {
       'a normal phone sign-in on the phone still works (Auth unaffected); the next match run leaves the queue empty',
       'controlled end to end (owner present, two dedicated test numbers, never a real person\'s): suspend test account A (admin_suspend_user), delete it through the app, sign up again with A\'s number by real SMS: sign-up works as usual, the account is NOT restricted, within 10 minutes one prior-suspension case appears for an admin on the website with the earlier decision and no number; close it; then clean up (the record stays 12 months by design: record its id)',
       'any failure row, any visible difference at sign-up, or any client read that answers = security defect: STOP, report'] },
+  // Account takeover through a phone number: phone-only accounts never gain a password/email; number change waits 24 h after a sign-in; one security notice
+  20270375: { journeys: ['accountTakeoverProtection', 'suspendedNumberRetention', 'signupPhoneOnlyHook', 'trustSafety'],
+    node: ['scripts/replay/account-takeover-auth-local.js (replay + isolated real Auth only, before the deploy)'],
+    live: ['accountTakeoverSignedIn.live.js (NEARBY_POST_DEPLOY_0375=1)'],
+    manual: ['BEFORE: every device on a build that asks get_my_phone_change_wait before a number change (older builds still work: the change is simply not saved within 24 h of a sign-in and their code step fails with Auth\'s own error)',
+      'read-only right after: triggers aa_account_takeover_guard + zz_account_phone_changed_notice on auth.users, zz_account_new_sign_in on auth.sessions; cron purge-account-security-events present; 0 guard_failure events',
+      'on the phone (dedicated test account): sign in by real SMS on a second device while the first is signed in = ONE "New sign-in" push on the first; Settings > Sign Out on the first ends the second (its next refresh fails)',
+      'a normal phone sign-in, refresh and sign-out still work; the dedicated email test account still signs in by password; review-login (applereview) still signs in',
+      'production sends codes through Twilio Verify (the local test used Auth\'s test OTP): with a dedicated test phone account, Settings > change number right after signing in = the wait message, no code sent; and (owner present, two test numbers) a number change from an account signed in > 24 h works and sends ONE "number changed" push',
+      'any guard_failure row, any phone-only account that gains a password or email, or a client read that answers = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

@@ -6,6 +6,7 @@ import { PERKS_TAB } from '../utils/recommendationContext';
 import { navigateKeepingTrail } from '../services/openDestination';
 import { FRIEND_VIEW_STYLES, friendViewStyle } from '../utils/friendDiscoveryView';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { phoneChangeWaitUntil, phoneChangeWaitTime } from '../utils/phoneChangeWait';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
@@ -376,6 +377,11 @@ export default function SettingsScreen({ navigation, route }) {
     const formatted = toE164(newPhoneInput);
     if (!formatted) {
       return Alert.alert(t('ui.settings.invalidNumber'), t('ui.settings.enterA10DigitUs'));
+    }
+    // 20270375: a number can change only 24 h after the latest sign-in; ask first so no code is sent that can't work
+    const waitUntil = phoneChangeWaitUntil(await supabase.rpc('get_my_phone_change_wait'));
+    if (waitUntil) {
+      return Alert.alert(t('ui.settings.phoneChangeWaitTitle'), t('ui.settings.phoneChangeWaitBody', { time: phoneChangeWaitTime(waitUntil) }));
     }
     const { error } = await supabase.auth.updateUser({ phone: formatted });
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => sendPhoneChangeOtp() });

@@ -26,6 +26,8 @@ const HIGH = [
   'message', 'plan_message', 'video_call',
   // business owner: a same-day/next-day request (only urgent requests push individually), a booking, a customer cancelling
   'business_opportunity_received', 'business_offer_accepted', 'reservation_cancelled_by_customer',
+  // your account: a new sign-in elsewhere, or your number changed (20270375); if it wasn't you, act now
+  'account_security_notice',
 ];
 
 const LOW = [

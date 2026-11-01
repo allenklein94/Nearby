@@ -28,7 +28,7 @@ describe('sections reflect the central mapping', () => {
     expect(new Set(behindSwitch).size).toBe(behindSwitch.length);
     expect(behindSwitch.sort()).toEqual(Object.keys(NOTIFICATION_GROUP_BY_TYPE).sort());
     for (const t of ACCOUNT_NOTICE_TYPES) expect(behindSwitch).not.toContain(t);
-    expect(ACCOUNT_NOTICE_TYPES).toHaveLength(4);
+    expect(ACCOUNT_NOTICE_TYPES).toHaveLength(5);
   });
   test('the separate switches the owner asked to keep are still their own switches', () => {
     const where = (g) => SETTINGS_SECTIONS.find((s) => s.groups.includes(g)).key;

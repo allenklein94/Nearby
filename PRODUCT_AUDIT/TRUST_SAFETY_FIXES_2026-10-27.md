@@ -878,3 +878,109 @@ Stays on its branch; migration order and individual deploy approvals kept. Manda
   scrambled code made from its phone number (not the number itself) and a record of our decision for 12 months, then delete
   them. If someone signs up with the same number during that time, a member of our safety team reviews it. Phone numbers are
   reassigned, so this never by itself leads to action on the new account."
+
+## Account takeover through a phone number / SIM swap (owner exception 2026-10-31; BUILT + STAGED as 20270375, NOT DEPLOYED)
+
+Owner (2026-10-31): finish the SIM-swap and phone-number account-takeover review now, as an exception to the freeze for genuine
+account-security vulnerabilities; audit first, fix only confirmed critical gaps, smallest effective change, separate post-Tier-1
+branch (`post-tier1/account-takeover`, stacked on `post-tier1/suspended-number-retention`), never in build 87, no merge/deploy.
+Requirements kept: simple phone-code sign-up, no mandatory ID, no device fingerprinting or vendors, no public score or badge,
+no lock-out of people who change phones or numbers, existing account-state rules.
+
+### Audit (2026-10-31; production Auth settings + accounts read-only; attacks played against a real Auth v2.197.0 = production's version with production's settings, locally)
+
+Production: 10 accounts (4 phone-only, all 4 already carry an Auth-generated password hash; 1 with both), 0 MFA factors, sms
+provider Twilio Verify, refresh-token rotation on, `security_update_password_require_reauthentication` false, secure email change
+on, TOTP enrolment ON, no triggers on `auth.users` / `auth.sessions` before 0374.
+
+**Already protected:**
+- Suspension (0351, staged): an Auth ban + database refusals; a code, a password reset or a refresh never lifts it.
+- Settings > Sign Out = `auth.signOut()` with the library's default scope `global`: it ends EVERY session of the account (proven
+  on real Auth: the intruder's refresh is refused afterwards).
+- Email accounts: an email change needs both addresses to confirm (secure email change on).
+- New accounts by phone only (0367 + switch, staged); a suspended account's number returning = a private case (0374, staged).
+- The app never offers a password, an email or an authenticator app on a phone account; a number change only in Settings.
+
+**Genuinely exploitable (confirmed on real Auth), by anyone who gets ONE valid SMS code for the owner's number (SIM swap,
+carrier port-out, or a recycled number):**
+- **V1 (critical) the account moved to the intruder's number:** Auth asks only the NEW number for a code; the owner's number then
+  opens a new, empty account. Full, permanent takeover.
+- **V2 (critical) a password added to a phone-only account:** Auth ends every other session (the owner is signed out) and the
+  intruder can return by phone + password without any SMS, even after the owner recovers the number.
+- **V3 (critical) an email added to a phone-only account:** the confirmation goes only to the new (intruder's) address: a second
+  way in (email code, magic link, password reset).
+- **V4 (critical, after V3) an authenticator app enrolled:** the owner can then change neither phone, email nor password (AAL2).
+  (Without an email, TOTP enrolment fails on a phone-only account.)
+- **No signal to the owner** of a new sign-in or a number change, and **no record** for an admin.
+
+**Theoretical or inherent (not fixed, see limits):** the SMS sign-in itself; a recycled number; deletion by the intruder.
+
+### As built (20270375, staged after 0374; needs 0369's `private.require_admin`)
+
+1. **A phone-only account never gains a password or an email** (BEFORE UPDATE trigger `aa_account_takeover_guard` on
+   `auth.users`): the change is quietly not saved (Auth goes on, nothing raised inside Auth), the attempt recorded. Closes V2,
+   V3 and so V4. Email accounts change their own password and email as before.
+2. **A number change waits 24 hours after the account's latest sign-in** (same trigger; starting a change and the number itself;
+   a token refresh is not a sign-in; ONE rule `private.phone_change_allowed_at`). A fresh sign-in may be a new device; someone who
+   just got in with a stolen code must keep the account a full day before moving it, while the owner is told (3). The app asks
+   first (`get_my_phone_change_wait`, own row only) and says when ("Try again later" / "...You can change it after {time}.", 11
+   languages, 10 machine-authored); an account signed in longer changes its number exactly as before. Narrows V1.
+3. **One security notice** (push `account_security_notice`, high priority, never muted, opens Settings with an "Open Settings"
+   button; no name, device or place): a new sign-in while another session of the account was used in the last 30 days (at most
+   one an hour; not the session a number change itself opens), and a completed number change. Wording: "New sign-in to your Nearby
+   account" / "If this wasn't you, open Settings and tap Sign Out to end every session, then contact your mobile carrier."; "Your
+   Nearby phone number was changed" / "If this wasn't you, contact Nearby support right away."
+4. **A private record** `private.account_security_events` (kind + time only; no number, IP or device; 12 months then purged
+   daily; kept if the account is deleted), read only by admins (`admin_get_account_security_events`). Never an automatic
+   restriction, a public signal or a case on its own. Any failure inside a guard fails closed on the sensitive fields, never blocks
+   Auth, and leaves a `guard_failure` row.
+
+Files: migration `supabase/migrations/20270375_account_takeover_protection.sql`, rollback
+`scripts/rollback/20270375_account_takeover_protection.rollback.sql`, journey `src/journeys/accountTakeoverProtection.journey.js`,
+real-Auth check `scripts/replay/account-takeover-auth-local.js`, concurrency `scripts/replay/account-security-concurrency.js`,
+gated live test `src/qa/accountTakeoverSignedIn.live.js`, post-deploy step (`scripts/live-verify/post-deploy.js` 20270375), app:
+`src/utils/phoneChangeWait.js` (+ test), Settings' number change, push tables (destination, priority, action, never-muted list,
+`send-push` copy), lifecycle matrix regenerated.
+
+### Verification (2026-11-01; a codespace restart interrupted it, everything was rerun afterwards)
+
+- Journey `accountTakeoverProtection` 8/8 with 0348-0375 as prelude; fails 8/8 without 0375.
+- Prod journeys 876/876 with 0348-0375 as prelude (rolled back); prod checked read-only afterwards: no 0375 table, trigger or job.
+- From-scratch replay 499/499 + journeys 876/876 on it; all 10 existing concurrency scripts + the new one pass (six simultaneous
+  sign-ins = ONE push; four parallel takeover writes = nothing saved, each recorded, no error to Auth; two simultaneous number
+  changes = one saved, the other refused by the clock the first started, one push).
+- Real Auth v2.197.0 on the replay with a mail catcher, 19/19: the intruder's code sign-in works (inherent) and the owner gets ONE
+  notice; no password (phone + it doesn't sign in), no email (the mailed confirmation doesn't attach it), no authenticator, no move
+  to the intruder's number; the owner's number still opens the SAME account; the owner's Sign Out ends the intruder's session; a
+  long-signed-in account changes its number normally with ONE notice; an email account changes its own password; no failures.
+- Rollback round trip identical: replay (4773 -> 4750 -> 4773 items) and prod in an aborted transaction (4975 -> 4998 -> 4975).
+- Grants replay == prod+0348-0375 3291/3291 (0374's 3287 + the 4 intended EXECUTE lines on the two public functions).
+- Jest 537 suites (536 pass; the one failing suite is the known date-dependent `askUnderstanding.benchmark`, 4 cases, test debt).
+
+### Remaining risks (recorded, not fixed)
+- **The SMS sign-in itself can't be stopped by SMS alone.** Someone holding the number gets a session and can read what the
+  account can read until the owner signs out everywhere. Real protection needs a second factor or passkeys: a later decision.
+- **The intruder can still sign the owner out:** on a password attempt Auth ends the other sessions before the database refuses
+  the password (observed on real Auth). Denial, not takeover; the owner signs in again by SMS once they have their number.
+- **The 24-hour wait can be outlasted** if the owner has no signed-in device (then no notice reaches them); a recycled number's
+  new holder is in the same position after 24 h. Support contact is the recovery path.
+- **The intruder can delete the account** from a stolen session (delete-account): destructive, not a takeover; a re-check by SMS
+  wouldn't help (the intruder holds the number) and delaying deletion conflicts with easy in-app deletion (App Store 5.1.1(v)).
+  Not changed: owner decision if wanted.
+- **Email accounts** (business owner, reviewer, test account): a stolen session can change the password without re-checking;
+  B5's staged Auth settings (`security_update_password_require_reauthentication` true) close it when applied.
+- Production sends codes by Twilio Verify; the local test used Auth's test OTP: the Verify path is a post-deploy phone check.
+- An operator with database-owner access works around every rule (as for every guard).
+
+### Deployment dependencies (each its own approval; nothing deployed)
+- After 0374, in migration order, through `deploy.js`.
+- A build that asks `get_my_phone_change_wait` for the friendly wait message; older builds still work (the change isn't saved
+  within 24 h and their code step fails with Auth's own error).
+- `send-push` redeploy for the high priority + "Open Settings" button (without it the notice is delivered at medium, no button).
+- Privacy Policy sentence below, published with the deploy.
+- The post-deploy checks in `post-deploy.js` (incl. the Twilio Verify phone checks with test numbers, owner present).
+
+### Privacy Policy sentence (DRAFT, publish with 0375; owner + counsel approve the wording)
+- (§ on security): "To protect your account, we keep a short record of security events, such as a new sign-in while you're
+  signed in elsewhere, a phone number change, or a blocked attempt to add a password or email. It holds only what happened and
+  when, never your number, device or location, is seen only by our safety team, and is deleted after 12 months."
