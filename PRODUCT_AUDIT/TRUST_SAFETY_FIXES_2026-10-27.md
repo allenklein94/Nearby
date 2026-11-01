@@ -1005,3 +1005,21 @@ Questions answered (from the migration + the real-Auth test; no new code):
 - (§ on security): "To protect your account, we keep a short record of security events, such as a new sign-in while you're
   signed in elsewhere, a phone number change, or a blocked attempt to add a password or email. It holds only what happened and
   when, never your number, device or location, is seen only by our safety team, and is deleted after 12 months."
+
+## Repeat bad actors cycling accounts (owner idea 18, decision 2026-11-01): COVERED BY STAGED PROTECTIONS, TWO KNOWN GAPS, nothing built
+
+Covered (all STAGED, none deployed; none protects a live user until deployed + verified): 0352 (verified phone for social
+actions + discovery: each new account costs a real number), 0374 (a suspended account's number re-confirmed elsewhere opens a
+private admin case with the earlier decisions; never an automatic restriction), 0357 + 0368 (name / identical + near-duplicate
+photo signals to admins; near-duplicate detection OFF), 0356/0358/0362 (progressive trust: tight limits for new accounts),
+0375 (recovery needs a case + a takeover signal, a trusted device alone is not evidence, 42 days per incident, second admin
+for a new incident, audited). No single signal restricts anyone; only an admin decision does.
+
+Residual gaps, DEFERRED (documented, not fixed):
+1. No device-level signal. Cheapest later option = the same push token on a second account (tokens already private, 0347) as a
+   private admin-review signal only; never proof of the same person (shared/resold phones), never a block.
+2. A banned person with a DIFFERENT number is not caught by 0374 (only by 0357/0368 if a name/photo is reused). Virtual/VoIP
+   number checks at sign-up are not built (would need a paid lookup vendor and would turn away some real users).
+
+Not to add: device fingerprinting, third-party vendors, automatic account restrictions, extra sign-up friction. Revisit only if
+real usage or abuse investigations show repeat account cycling the existing controls cannot adequately detect.
