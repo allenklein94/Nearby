@@ -72,6 +72,14 @@ describe('account rules the server enforces read as the rule, never a retry (tru
     const limited = recoverableErrorCopy({ what: 'create your gathering', error: { message: "You've reached the limit for creating gatherings for now. Please try again later.", hint: 'gathering_limit', code: 'P0001' }, draftKept: true });
     expect(limited).toEqual({ title: "That didn't go through", message: "You've reached the limit for creating gatherings for now. Please try again later.", canRetry: false });
   });
+  test('friend_request_limit (20270377) gives the friend-request sentence and no Try Again (every screen that sends one)', () => {
+    const limited = recoverableErrorCopy({ what: 'complete that', error: { message: "You've sent several friend requests in a short time. Please wait a few minutes and try again.", hint: 'friend_request_limit', code: 'P0001' } });
+    expect(limited).toEqual({ title: "That didn't go through", message: "You've sent several friend requests in a short time. Please wait a few minutes and try again.", canRetry: false });
+    // neutral wording: never about the account being new, never a penalty
+    const shared = require('../i18n/ui/shared').default;
+    for (const lang of Object.keys(shared)) expect([lang, typeof shared[lang].errors.friendRequestLimit]).toEqual([lang, 'string']);
+    expect(shared.en.errors.friendRequestLimit).not.toMatch(/new|account|suspend|restrict|verify/i);
+  });
   test('every language has all four sentences', () => {
     const shared = require('../i18n/ui/shared').default;
     for (const lang of Object.keys(shared)) {

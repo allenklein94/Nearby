@@ -1070,3 +1070,41 @@ permission to deploy or activate): suspended-account token reuse ON; shared-toke
 review only, never an automatic restriction; VoIP/virtual-number lookup DEFERRED. Gates kept: production-equivalent tests
 (prod journeys with 0348-0376 prelude, aborted rollback on prod, grants vs prod), secret-storage review, Privacy Policy
 approval, real-device push verification after deploy. No merge, deploy, activation or production change authorized.
+
+## Friend-request burst limit (owner 2026-11-01, from idea 24; BUILT + STAGED as 20270377, NOT DEPLOYED)
+
+Branch `post-tier1/friend-request-burst` (stacked on `post-tier1/shared-device-signal`); not in build 87; own deploy
+approval after 0376. Number = the owner's proposed starting point, kept as is after inspection (no reason found to change it).
+
+**Rule.** At most 5 friend requests per rolling 10 minutes, both trust levels (unsolicited outreach: age never raises it,
+20270358). The existing 15 per local day (`enforce_friend_request_daily_limit`) is unchanged and checked first.
+**Mechanism.** The ONE rate-limit mechanism of 20270356: rule rows `friend_request` (600 s, 5) + a case in
+`private.rate_limit_count`; `zz_rate_limit_friend_request` (BEFORE INSERT on `friendships`) locks the sender's `profiles`
+row (the same row the daily limit locks: same order, no deadlock) then checks; `zz_log_friend_request` (AFTER INSERT) writes
+one `private.limited_action_log` row ('friend_request') per request REALLY created. Refusal = hint `friend_request_limit`,
+app sentence `ui.shared.errors.friendRequestLimit` (11 languages, 10 machine-authored: native review) via
+`utils/recoverableError.js` on every screen that sends one (Friends, a profile, story viewers); no Try Again.
+**What counts.** Only the signed-in person's own new pending request. Never counted: a refused insert (duplicate pair
+23505, block policy, missing phone, suspension, the daily limit, this limit), an "on conflict do nothing" skip, the mutual
+Connect in friend discovery (a trusted server write), other server writes. A declined request still counts for its 10
+minutes (cancel-and-resend can't get around it). The log is private (no client grant), purged after 30 days with the rest.
+**Never.** Restricts, suspends, scores, flags or asks to verify an account; it refuses that one request.
+
+**Verification (replay only; nothing touched production).** From-scratch replay (real Auth first) 501/501. Journey
+`friendRequestBurstLimit` 12/12 (boundaries 5/6, duplicate + reverse-duplicate retries, blocked pair, rolling window still
+counted at 9:59 and released at exactly 10:00, decline keeps the count, daily-cap interplay + a burst refusal never
+consumes the daily counter, on-conflict skip, mutual Connect, established = same 5, client can't read the log or call the
+check); with the rollback as prelude it fails 9/12 (the 3 that pass don't depend on 0377). Concurrency
+`scripts/replay/friend-request-concurrency.js`: 8 parallel = exactly 5 + 3 refused, no deadlock; 3 more while full = all
+refused; parallel duplicates = 23505, uncounted; 3 parallel at 14/day = 1 + 2 daily refusals. Full journeys on the replay
+912/913 then 913/913 after updating `trustSafetyI123`'s rule-row count (it counted 0358's 28 rows; the 2 new rows are now
+excluded the way 0362's are). All 13 replay concurrency scripts pass. Rollback round trip: apply rollback + re-apply = 0
+differences over 2342 catalog items; the rollback removes exactly the 0377 objects and restores 0362's `rate_limit_count`
+text byte for byte. Jest 538/538 suites (7294 passed).
+**Not run (deploy gates):** prod journeys with the 0348-0377 prelude, an aborted rollback on prod, grants vs prod; the phone
+check in `scripts/live-verify/post-deploy.js` (20270377).
+**Known gaps / existing behaviour left as is.** The daily limit's refusal is still an English server sentence with no hint
+(unchanged by request); an "on conflict do nothing" direct call still advances the DAILY counter (existing behaviour; the
+app never sends one); no reset time is shown (the window is rolling; the sentence says "a few minutes", true for <= 10).
+Test isolation: `trustSafetyI123`'s admin-push test reads every `admin_report_received` outbox row, so run after
+`review-case-concurrency.js` (which by design leaves 2 reports) it sees an extra body; it passes in the normal order.

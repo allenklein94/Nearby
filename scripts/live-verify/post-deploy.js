@@ -98,6 +98,12 @@ const STEPS = {
       'read-only right after: device_signal_secret 1 row of 32 bytes; settings shared_device_min_accounts null + shared_device_suspended_enabled false; 0 device_sightings, 0 suspended_device_keys, 0 device_signal_failures; cron purge-device-sightings present; triggers zz_push_token_sighting (private.push_tokens), zz_suspension_device_check (profiles), zz_keep_suspended_device_keys (auth.users)',
       'push still delivered: one real test push to the owner\'s iPhone arrives after the deploy (the trigger runs after every token write)',
       'after activation: the owner\'s iPhone carries 3 accounts on ONE token = expect ONE many_accounts case if the threshold is 3 (expected, close it as "one person, several accounts"); any failure row or client read that answers = security defect: STOP, report'] },
+  // Friend-request burst limit: 5 per rolling 10 minutes at both levels, beside the unchanged 15 per local day; refuses that one request, never restricts
+  20270377: { journeys: ['friendRequestBurstLimit', 'trustSafety', 'trustedWriteScope', 'forgedFlagLimits'],
+    node: ['scripts/replay/friend-request-concurrency.js (replay only, before the deploy)'],
+    manual: ['read-only right after: 2 private.rate_limit_rules rows (friend_request, new + established, 600 s, 5); triggers zz_rate_limit_friend_request (before insert) + zz_log_friend_request (after insert) on friendships; on_friend_request_enforce_limit still enabled; 0 friend_request log rows',
+      'on the phone: one ordinary friend request from Friends or a profile still sends ("Friend request sent"); a 6th within 10 minutes (dedicated test accounts only, never real people) shows "You\'ve sent several friend requests in a short time. Please wait a few minutes and try again." with no Try Again',
+      'any request refused below 5 in 10 minutes, or a refusal that restricts / suspends the account = defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

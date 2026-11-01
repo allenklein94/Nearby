@@ -1,4 +1,8 @@
+# 2026-11-01: friend-request burst limit (20270377) built + staged
+**Friend-request burst limit (owner 2026-11-01, from idea 24) BUILT + STAGED as 20270377 on `post-tier1/friend-request-burst`, NOT merged, NOT deployed.** 5 friend requests per rolling 10 minutes at both trust levels beside the unchanged 15 per local day; counted from a private log written only for requests really created (AFTER INSERT), checked under the sender's profiles-row lock; refusal hint `friend_request_limit` -> `ui.shared.errors.friendRequestLimit` (11 languages, 10 need native review); never restricts. Files: migration, rollback `scripts/rollback/20270377_friend_request_burst_limit.rollback.sql`, journey `src/journeys/friendRequestBurstLimit.journey.js`, concurrency `scripts/replay/friend-request-concurrency.js`, `utils/recoverableError.js` (+test), `i18n/ui/shared.js`, post-deploy step, `trustSafetyI123` row count. Verification + gaps: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`, last section.
+
 # 2026-11-01: shared device token signal (20270376) built + staged, VoIP numbers assessed
+
 
 Owner (2026-11-01): finish idea 18's account-cycling gaps now, separate from build 87 and production. Gap 1 built as
 20270376 (staged, detection off); gap 2 (VoIP / virtual numbers) assessed only, nothing built or activated. Files:
