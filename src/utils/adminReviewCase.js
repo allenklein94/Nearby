@@ -184,3 +184,59 @@ export function sharedTextLines(evidence) {
   if (ids.length) out.push(`Gatherings: ${ids.map((id) => String(id).slice(0, 8)).join(', ')}`);
   return out;
 }
+
+// Shared review cases (20270379): for each account in the open case, the OTHER existing review cases it is in and the
+// other accounts in those cases, from admin_get_shared_review_cases. Direct connections only: the accounts listed under a
+// linked case are never expanded further (the admin opens that case to look). The relationship is always "Shared review
+// case", never "same person" or "likely related"; each line names the case's own signal, reason and status.
+export const SHARED_CASE_LABEL = 'Shared review case';
+export const SHARED_CASES_NOTE = 'Other review cases these accounts are in. Being in the same review case is not proof the accounts belong to the same person or are related; open a case to see why it exists. Nothing here changes any account.';
+
+const CASE_STATUS_LABEL = { open: 'Open' };
+
+export function caseStatusLine(c) {
+  if (!c) return '';
+  const parts = [c.status === 'closed' ? `Closed · ${OUTCOME_LABEL[c.outcome] || c.outcome}` : (CASE_STATUS_LABEL[c.status] || c.status)];
+  if (c.status === 'open' && c.overdue) parts.push('Review overdue');
+  if (c.status === 'closed' && c.new_evidence_since_closed) parts.push('New evidence since closed');
+  return parts.join(' · ');
+}
+
+// One group per account of the open case that is in at least one other case; each linked case once, with the other
+// accounts by name (an account also in the open case is marked so). Accounts with no other case are left out.
+export function sharedCaseGroups(result) {
+  const out = [];
+  for (const a of Array.isArray(result) ? result : []) {
+    const seen = new Set();
+    const cases = [];
+    for (const c of Array.isArray(a?.cases) ? a.cases : []) {
+      if (!c || !c.id || seen.has(c.id)) continue;
+      seen.add(c.id);
+      const others = [];
+      const seenOther = new Set();
+      for (const o of Array.isArray(c.other_accounts) ? c.other_accounts : []) {
+        if (!o || seenOther.has(o.user_id) || o.user_id === a.user_id) continue;
+        seenOther.add(o.user_id);
+        others.push(`${who(o.display_name, o.user_id)}${o.in_this_case ? ' (also in this case)' : ''}${o.suspended ? ' · Suspended' : ''}`);
+      }
+      cases.push({
+        id: c.id,
+        label: SHARED_CASE_LABEL,
+        title: caseTitle(c),
+        status: caseStatusLine(c),
+        opened: c.opened_at,
+        others: others.length ? `With ${others.join(', ')}` : 'No other accounts in that case',
+      });
+    }
+    if (!cases.length) continue;
+    const total = Number.isFinite(a.total) ? a.total : cases.length;
+    out.push({
+      userId: a.user_id,
+      name: who(a.display_name, a.user_id),
+      suspended: !!a.suspended,
+      cases,
+      more: total > cases.length ? total - cases.length : 0,
+    });
+  }
+  return out;
+}

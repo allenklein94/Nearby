@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, StyleSheet, SafeAreaView, Alert, useWindowDimensions } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -11,6 +11,7 @@ import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
   linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
   priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE, sharedTextLines, SHARED_TEXT_NOTE,
+  sharedCaseGroups, SHARED_CASES_NOTE,
 } from '../utils/adminReviewCase';
 
 // Admin review on the business website (owner, 2026-10-30; 20270368 + 20270369). Website only (BusinessWebNavigator), so
@@ -31,6 +32,8 @@ export default function AdminReviewScreen() {
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState(null); // full case from admin_get_account_review_case
   const [prior, setPrior] = useState(null); // a prior-suspension case's earlier decisions (20270374), else null
+  const [shared, setShared] = useState(null); // other review cases its accounts are in (20270379, read-only), else null
+  const openId = useRef(null); // the case on screen: a late answer for an earlier case is dropped
   const [links, setLinks] = useState({ at: 0, urls: {} });
   const [note, setNote] = useState('');
   const [reason, setReason] = useState('');
@@ -59,6 +62,11 @@ export default function AdminReviewScreen() {
     if (error) return presentRecoverableError(Alert, { what: 'open that case', error, onRetry: () => openCase(id) });
     setSelected(data);
     setPrior(null);
+    setShared(null);
+    openId.current = id;
+    supabase.rpc('admin_get_shared_review_cases', { case_id_param: id }).then(
+      (r) => { if (openId.current === id) setShared(r.error ? { error: true } : sharedCaseGroups(r.data)); },
+      () => { if (openId.current === id) setShared({ error: true }); });
     if (data?.signal === 'prior_suspension') {
       const earlier = await supabase.rpc('admin_get_prior_suspension', { case_id_param: id });
       setPrior(earlier.error ? { error: true } : (earlier.data || []));
@@ -193,6 +201,24 @@ export default function AdminReviewScreen() {
           {sharedTextLines(selected.evidence).map((line, i) => <Text key={`t${i}`} style={styles.event}>{line}</Text>)}
         </>
       ) : null}
+      <Text style={styles.subTitle}>Shared review cases</Text>
+      <Text style={styles.meta}>{SHARED_CASES_NOTE}</Text>
+      {shared?.error ? <Text style={styles.meta}>Couldn't load the shared review cases. Open the case again to retry.</Text> : null}
+      {Array.isArray(shared) && !shared.length ? <Text style={styles.meta}>These accounts are in no other review case.</Text> : null}
+      {Array.isArray(shared) ? shared.map((g) => (
+        <View key={g.userId} style={styles.card}>
+          <Text style={styles.title}>{g.name}{g.suspended ? ' · Suspended' : ''}</Text>
+          {g.cases.map((c) => (
+            <TouchableOpacity key={c.id} onPress={() => openCase(c.id)} accessibilityRole="button" accessibilityLabel={`${c.label}: ${c.title}, ${c.status}. Open this case`}>
+              <Text style={styles.badge}>{c.label}</Text>
+              <Text style={styles.link}>{c.title}</Text>
+              <Text style={styles.meta}>{c.status} · Opened {new Date(c.opened).toLocaleDateString()}</Text>
+              <Text style={styles.meta}>{c.others}</Text>
+            </TouchableOpacity>
+          ))}
+          {g.more ? <Text style={styles.meta}>{g.more} older case{g.more === 1 ? '' : 's'} not shown</Text> : null}
+        </View>
+      )) : null}
       <Text style={styles.subTitle}>Photos side by side</Text>
       <Text style={styles.meta}>A similar photo is a reason to look, never proof (shared, stock and group photos match too). Links last 15 minutes.</Text>
       <ScrollView horizontal contentContainerStyle={styles.photoRow}>

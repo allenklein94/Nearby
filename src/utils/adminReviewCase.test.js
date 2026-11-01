@@ -143,7 +143,7 @@ describe('admin review screen boundaries', () => {
   test('every action is an admin-only server function; nothing suspends, bans or restricts from here', () => {
     const rpcs = [...screen.matchAll(/rpc\('(\w+)'/g)].map((m) => m[1]).sort();
     expect([...new Set(rpcs)]).toEqual(['admin_add_account_review_note', 'admin_close_account_review_case', 'admin_get_account_review_case',
-      'admin_get_prior_suspension', 'admin_list_account_review_cases', 'admin_open_case_from_report', 'admin_record_case_external_check', 'admin_reopen_account_review_case']);
+      'admin_get_prior_suspension', 'admin_get_shared_review_cases', 'admin_list_account_review_cases', 'admin_open_case_from_report', 'admin_record_case_external_check', 'admin_reopen_account_review_case']);
     expect(screen).not.toMatch(/admin_suspend_user|\.update\(|\.delete\(/);
   });
 });

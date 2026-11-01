@@ -113,6 +113,12 @@ const STEPS = {
       'read-only right after: text_signal_secret 1 row of 32 bytes; settings shared_text_min_accounts null (min_chars 80, min_words 12); 0 text_sightings, 0 shared_text_excluded_keys, 0 text_signal_failures; cron purge-text-sightings present; triggers zz_profile_bio_sighting (profiles) + zz_gathering_description_sighting (gatherings)',
       'on the phone: saving a profile bio and publishing a public gathering with a description still work exactly as before (the triggers run after every such write)',
       'any failure row, any restricted / hidden account, or a client read that answers = security defect: STOP, report'] },
+  // Shared review cases: read-only admin view of the other existing review cases an account is in (direct links only); stores nothing, changes nothing
+  20270379: { journeys: ['sharedReviewCases', 'reviewCaseHistory', 'sharedDeviceSignal', 'sharedPublicText'],
+    manual: ['read-only right after: public.admin_get_shared_review_cases(uuid) exists, security definer, stable; EXECUTE = authenticated only (anon + public none)',
+      'signed-in real API, dedicated NON-admin test account: admin_get_shared_review_cases refuses with hint admin_only (gated test: NEARBY_POST_DEPLOY_0379=1 npx jest -c jest.live.config.js src/qa/sharedReviewCasesSignedIn.live.js)',
+      'on the business website (after the website is re-exported with this screen, own approval): an admin opening a case sees "Shared review cases"; a linked case opens in place; no account changes',
+      'any answer to a non-admin, or any row written by the call = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
