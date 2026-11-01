@@ -1,3 +1,16 @@
+# 2026-11-01: shared device token signal (20270376) built + staged, VoIP numbers assessed
+
+Owner (2026-11-01): finish idea 18's account-cycling gaps now, separate from build 87 and production. Gap 1 built as
+20270376 (staged, detection off); gap 2 (VoIP / virtual numbers) assessed only, nothing built or activated. Files:
+migration `supabase/migrations/20270376_shared_device_signals.sql`, rollback
+`scripts/rollback/20270376_shared_device_signals.rollback.sql`, journey `src/journeys/sharedDeviceSignal.journey.js`,
+concurrency `scripts/replay/shared-device-concurrency.js`, website admin wording (`src/utils/adminReviewCase.js`,
+`src/screens/AdminReviewScreen.js`), post-deploy step (`scripts/live-verify/post-deploy.js` 20270376), assessment
+`PRODUCT_AUDIT/VOIP_NUMBER_ASSESSMENT_2026-11-01.md`, design + privacy draft in `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`
+(last section). Verification: a plain replay stops at 0375 (its stand-in auth tables lack `auth.sessions.not_after` and
+`auth.mfa_factors`), so the replay ran with real Auth migrating first (`BEFORE_MIGRATIONS='node scripts/replay/account-takeover-auth-local.js prepare'`),
+as 0375's own verification did: 500/500, journeys 901/901, 12/12 concurrency scripts, rollback round trip identical, Jest 538/538.
+
 # 2026-11-01: 0375 revised in place (account takeover + recovery, D1-D4 with owner adjustments), locally verified, not deployed
 
 Owner approved D1-D4 with adjustments (step-up, no blanket deletion delay after checking Apple, audited recovery with independent evidence, passkeys = evaluation). Built into 20270375 (never deployed), `services/accountStepUp.js`, `utils/accountStepUp.js`, Settings, `delete-account`. On resume after a codespace restart, verification found and fixed: trusted-write save/restore missing in `account_deletion_authorize` + `admin_recover_account` (0359 guard); the step-up's code request needed a Turnstile token (Auth checks /otp); journey fixtures clearing/moving test phones now use the scoped recovery marker (`fixturePhoneWrite` in journeyHarness.js); a hold-expiry journey case id bug; `account-security-concurrency.js` rewritten for the permit model. Results: see CLAUDE.md's 0375 line. Design + facts: `PRODUCT_AUDIT/ACCOUNT_RECOVERY_DESIGN_2026-11-01.md` sections 4-5; runbook DRAFT.

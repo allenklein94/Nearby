@@ -13,6 +13,7 @@ export const CASE_SIGNAL_LABEL = {
   behavior: 'Activity pattern',
   report: 'From a report',
   prior_suspension: 'Phone number of a suspended account',
+  shared_device: 'Same phone notification token',
 };
 
 export const CASE_REASON_LABEL = {
@@ -21,6 +22,7 @@ export const CASE_REASON_LABEL = {
   behavior_pattern: 'Unusual activity pattern',
   reported_profile: 'Opened by an admin from a report',
   suspended_number_reused: 'Signed up with a number a suspended account used',
+  suspended_device: 'Also used by a suspended account',
 };
 
 export const OUTCOME_LABEL = { no_action: 'No action needed', action_taken: 'Action taken' };
@@ -144,6 +146,22 @@ export function priorSuspensionLines(records) {
       const by = d.admin_name || (d.admin_id ? `Admin ${String(d.admin_id).slice(0, 8)}` : 'an admin');
       out.push(`${new Date(d.at).toLocaleString()} · ${DECISION_LABEL[d.action] || d.action} by ${by}${d.reason ? `: ${d.reason}` : ''}`);
     }
+  }
+  return out;
+}
+
+// Shared-device cases (20270376): the same app install's notification token registered by several accounts. Only counts and
+// the suspended accounts' ids/times reach the admin; never the token or its key.
+export const SHARED_DEVICE_NOTE = 'The same notification token is a reason to look, not proof it is the same person: families share phones, one person may have several accounts, and a token can move with a phone. Nothing has happened to these accounts.';
+
+export function sharedDeviceLines(evidence) {
+  const e = evidence && typeof evidence === 'object' ? evidence : {};
+  const out = [];
+  if (Number.isFinite(e.accounts)) out.push(`${e.accounts} account${e.accounts === 1 ? '' : 's'} registered this token in the last ${e.window_days || 90} days`);
+  const live = Array.isArray(e.suspended_accounts) ? e.suspended_accounts : [];
+  if (live.length) out.push(`${live.length} of them suspended`);
+  for (const f of Array.isArray(e.former_suspended_accounts) ? e.former_suspended_accounts : []) {
+    out.push(`Earlier on a suspended account since deleted (Account ${String(f.former_account_id).slice(0, 8)}, suspended ${new Date(f.suspended_at).toLocaleDateString()})`);
   }
   return out;
 }

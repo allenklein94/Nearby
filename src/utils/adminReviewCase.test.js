@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
-  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, priorSuspensionLines, PRIOR_SUSPENSION_NOTE,
+  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE,
 } = require('./adminReviewCase');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', '..', p), 'utf8');
@@ -87,6 +87,24 @@ describe('prior-suspension cases (20270374)', () => {
     expect(lines[2]).toBe('Earlier record no longer kept (12-month limit)');
     expect(priorSuspensionLines(null)).toEqual([]);
     expect(read('src/utils/adminReviewCase.js') + read('src/screens/AdminReviewScreen.js')).not.toMatch(/phone_key|\.phone\b/);
+  });
+});
+
+describe('shared-device cases (20270376)', () => {
+  test('title + reason say what was seen, never that accounts are the same person', () => {
+    expect(caseTitle({ signal: 'shared_device', reason: 'many_accounts' })).toBe('Same phone notification token · On several accounts');
+    expect(caseTitle({ signal: 'shared_device', reason: 'suspended_device' })).toBe('Same phone notification token · Also used by a suspended account');
+    expect(SHARED_DEVICE_NOTE).toMatch(/not proof/);
+    expect(SHARED_DEVICE_NOTE).not.toMatch(/fake|certain|confirmed/i);
+  });
+  test('evidence lines: counts, suspended accounts, deleted suspended accounts; never a token', () => {
+    const lines = sharedDeviceLines({ accounts: 3, window_days: 90, suspended_accounts: ['u1'],
+      former_suspended_accounts: [{ former_account_id: 'abcdef12-0000-0000-0000-000000000000', suspended_at: '2026-10-01T00:00:00Z' }] });
+    expect(lines[0]).toBe('3 accounts registered this token in the last 90 days');
+    expect(lines[1]).toBe('1 of them suspended');
+    expect(lines[2]).toMatch(/^Earlier on a suspended account since deleted \(Account abcdef12, suspended /);
+    expect(lines.join(' ')).not.toMatch(/ExponentPushToken/);
+    expect(sharedDeviceLines(null)).toEqual([]);
   });
 });
 

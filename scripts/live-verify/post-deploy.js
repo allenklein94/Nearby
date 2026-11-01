@@ -90,6 +90,14 @@ const STEPS = {
       'a normal phone sign-in, refresh and sign-out still work; the dedicated email test account still signs in by password; review-login (applereview) still signs in',
       'production sends codes through Twilio Verify (the local test used Auth\'s test OTP): with a dedicated test phone account, Settings > change number right after signing in = the wait message, no code sent; and (owner present, two test numbers) a number change from an account signed in > 24 h works and sends ONE "number changed" push',
       'any guard_failure row, any phone-only account that gains a password or email, or a client read that answers = security defect: STOP, report'] },
+  // Shared device notification token across accounts: keyed hash only, private admin-review case, never restricts; OFF until a separate activation migration
+  20270376: { journeys: ['sharedDeviceSignal', 'reviewCaseHistory', 'pushTokenPrivacy', 'suspendedNumberRetention', 'trustSafety'],
+    node: ['scripts/replay/shared-device-concurrency.js (replay only, before the deploy)'],
+    manual: ['BEFORE final deploy approval: private.device_signal_secret included in the same secret review as 20270374 (who can read the private schema, backups, logs)',
+      'BEFORE activation (a separate migration, owner-approved numbers, runs private.backfill_device_sightings() once): the Privacy Policy sentence (PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md, shared-device section) approved + published',
+      'read-only right after: device_signal_secret 1 row of 32 bytes; settings shared_device_min_accounts null + shared_device_suspended_enabled false; 0 device_sightings, 0 suspended_device_keys, 0 device_signal_failures; cron purge-device-sightings present; triggers zz_push_token_sighting (private.push_tokens), zz_suspension_device_check (profiles), zz_keep_suspended_device_keys (auth.users)',
+      'push still delivered: one real test push to the owner\'s iPhone arrives after the deploy (the trigger runs after every token write)',
+      'after activation: the owner\'s iPhone carries 3 accounts on ONE token = expect ONE many_accounts case if the threshold is 3 (expected, close it as "one person, several accounts"); any failure row or client read that answers = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

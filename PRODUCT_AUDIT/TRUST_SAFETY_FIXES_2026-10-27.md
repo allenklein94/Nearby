@@ -1023,3 +1023,44 @@ Residual gaps, DEFERRED (documented, not fixed):
 
 Not to add: device fingerprinting, third-party vendors, automatic account restrictions, extra sign-up friction. Revisit only if
 real usage or abuse investigations show repeat account cycling the existing controls cannot adequately detect.
+
+## Shared device notification token (owner 2026-11-01, idea 18 gap 1; BUILT + STAGED as 20270376, NOT DEPLOYED, detection OFF)
+
+Branch `post-tier1/shared-device-signal` (stacked on the 0375 branch; off main, build 87 unchanged). No app change for
+users; the website admin review screen gains one evidence block (`sharedDeviceLines`, `SHARED_DEVICE_NOTE`).
+
+**What it does.** The Expo push token the app already registers (20270347, `private.push_tokens`) identifies an app
+install, not a person. When the same token is registered by several accounts, a private admin-review case may open.
+Never proof, never a block: families share phones, one person has several accounts (the owner's iPhone has 3 on one
+token), tokens move and rotate. No device fingerprinting: no model, OS, IP, location or advertising id is read or stored.
+
+- Stored: an HMAC-SHA256 key of the token under a server-only secret (`private.device_signal_secret`), per account, with
+  first/last registration time (`private.device_sightings`, 90 days after the last registration, purged daily). Never
+  the token. Sign-out removes the token (0347) but keeps the sighting, so a later account on the same install compares.
+- A suspended account being deleted keeps only its keys, 12 months (`private.suspended_device_keys`, same rule as 0374).
+- Case rules (each off until approved): `suspended_device` = a token on a suspended account (live, suspended later, or
+  deleted within 12 months) and on another account; `many_accounts` = at least N accounts in 90 days, N >= 3 enforced by a
+  check constraint (two accounts alone, the shared family phone, never open anything).
+- One case per token; later accounts join it; on a closed case a new account is "new evidence" and the case stays closed
+  (0369); only an admin reopens. Evidence = counts + suspended accounts' ids and times; never the token or key.
+- Never restricts, hides, suspends, notifies or limits anyone; push delivery untouched; every step in its own exception
+  block (failures -> `private.device_signal_failures`, no personal detail), so token registration, suspension and account
+  deletion never fail because of it. Concurrency: advisory lock per key + unique index on the case's key.
+
+**Activation (separate migration, owner approval):** set `shared_device_suspended_enabled` and/or
+`shared_device_min_accounts` (proposed: suspended on, many-accounts 4 — the owner's own phone already has 3), then run
+`private.backfill_device_sightings()` once. Before that: the Privacy Policy sentence below published.
+
+**Privacy Policy sentence (DRAFT, publish with activation):** "To help detect people who return after being suspended,
+we keep a scrambled, one-way code derived from your device's notification token (not the token itself, and nothing else
+about your device) for 90 days after you last used Nearby on that device. If the account is suspended and then deleted,
+that code is kept for 12 months. It is only used to let our team review possible misuse; it never blocks or limits an
+account by itself."
+
+**Limits.** A token changes on reinstall or a new phone, so a determined person evades it; denying notification
+permission means no token and no signal; the secret lives in the database (same accepted limit + same pre-deploy secret
+review as 0374).
+
+**VoIP / virtual numbers (gap 2):** assessed, NOT built, NOT activated: `PRODUCT_AUDIT/VOIP_NUMBER_ASSESSMENT_2026-11-01.md`
+(not available through the current Twilio Verify integration; $0.008/lookup via Lookup v2; the owner's own Google Voice
+login would be flagged; recommendation = do not build until real abuse shows the need, then evidence-only, never reject).

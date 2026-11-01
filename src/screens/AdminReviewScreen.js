@@ -10,7 +10,7 @@ import { reportReasonLabel } from '../utils/reportReasons';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
   linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
-  priorSuspensionLines, PRIOR_SUSPENSION_NOTE,
+  priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE,
 } from '../utils/adminReviewCase';
 
 // Admin review on the business website (owner, 2026-10-30; 20270368 + 20270369). Website only (BusinessWebNavigator), so
@@ -177,6 +177,13 @@ export default function AdminReviewScreen() {
           <Text style={styles.meta}>{PRIOR_SUSPENSION_NOTE}</Text>
           {prior?.error ? <Text style={styles.meta}>Couldn't load the earlier decisions. Open the case again to retry.</Text> : null}
           {Array.isArray(prior) ? priorSuspensionLines(prior).map((line, i) => <Text key={`p${i}`} style={styles.event}>{line}</Text>) : null}
+        </>
+      ) : null}
+      {selected.signal === 'shared_device' ? (
+        <>
+          <Text style={styles.subTitle}>Same phone notification token</Text>
+          <Text style={styles.meta}>{SHARED_DEVICE_NOTE}</Text>
+          {sharedDeviceLines(selected.evidence).map((line, i) => <Text key={`d${i}`} style={styles.event}>{line}</Text>)}
         </>
       ) : null}
       <Text style={styles.subTitle}>Photos side by side</Text>
