@@ -622,7 +622,7 @@ create table if not exists private.account_recovery_audit (
   actor uuid,                          -- the recovery admin; null = the system (hold expiry)
   user_id uuid not null,
   action text not null check (action in ('case_opened', 'hold_placed', 'hold_extended', 'hold_released', 'hold_expired',
-                                         'account_recovered', 'deletion_cancelled')),
+                                         'account_recovered', 'deletion_cancelled', 'new_incident_authorized')),
   case_id uuid,
   evidence text[] not null default '{}',
   note text,
@@ -658,6 +658,32 @@ alter table private.account_review_cases add constraint account_review_cases_sub
          and (signal in ('behavior', 'report', 'prior_suspension', 'account_recovery')) = (subject_user is not null));
 create unique index if not exists account_review_cases_one_open_recovery on private.account_review_cases (subject_user)
   where status = 'open' and signal = 'account_recovery';
+
+-- Incidents (owner, 2026-11-01): the 42-day maximum belongs to the INCIDENT (= its recovery case), measured from the FIRST hold
+-- placed under it; releasing / re-placing / extending never restarts it, and a reopened case is the same incident. A hold under
+-- ANOTHER case on an account that has had any hold is a NEW incident: allowed only once a recovery admin who acted in none of
+-- the earlier incidents authorizes it with a written justification (admin_authorize_new_recovery_incident). Single-admin
+-- setups: the owner adds a second recovery admin first (by SQL), by design.
+create table if not exists private.account_recovery_incidents (
+  case_id uuid primary key,
+  user_id uuid not null,
+  authorized_by uuid not null,
+  justification text not null,
+  authorized_at timestamptz not null default now()
+);
+revoke all on private.account_recovery_incidents from public, anon, authenticated;
+
+-- when this incident's holds must end at the latest (null = no hold yet under this case)
+create or replace function private.recovery_incident_ends(p_case uuid)
+returns timestamptz
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select min(h.placed_at) + private.account_security_rule('hold_max') from private.account_recovery_holds h where h.case_id = p_case;
+$function$;
+revoke all on function private.recovery_incident_ends(uuid) from public, anon, authenticated;
 
 -- recovery admins only: admin + on the allow-list + aal2 if they have a second factor
 create or replace function private.require_recovery_admin()
@@ -764,14 +790,29 @@ declare
   v_admin uuid := private.require_recovery_admin();
   v_reason text := private.recovery_text(reason_param, 30);
   v_exp timestamptz := now() + private.account_security_rule('hold');
+  v_end timestamptz;
 begin
   if user_id_param = v_admin then raise exception 'Not your own account' using errcode = '42501', hint = 'recovery_self'; end if;
   perform private.open_recovery_case(user_id_param, case_id_param);
+  perform 1 from auth.users where id = user_id_param for update;          -- one decision per account at a time
   perform private.expire_recovery_holds();
   if private.recovery_hold_active(user_id_param) then
     raise exception 'A hold is already in place' using errcode = '22023', hint = 'hold_exists';
   end if;
-  insert into private.account_recovery_holds (user_id, case_id, placed_by, expires_at) values (user_id_param, case_id_param, v_admin, v_exp);
+  -- a new incident needs its own authorization; the same incident keeps its first hold's 42-day window
+  if exists (select 1 from private.account_recovery_holds h where h.user_id = user_id_param and h.case_id <> case_id_param)
+     and not exists (select 1 from private.account_recovery_incidents i where i.case_id = case_id_param) then
+    raise exception 'A new incident needs a separate authorization' using errcode = '42501', hint = 'new_incident_required';
+  end if;
+  v_end := private.recovery_incident_ends(case_id_param);
+  if v_end is not null then
+    v_exp := least(v_exp, v_end);
+    if v_exp <= now() then
+      raise exception 'This incident has reached its hold limit' using errcode = '22023', hint = 'hold_limit';
+    end if;
+  end if;
+  insert into private.account_recovery_holds (user_id, case_id, placed_by, placed_at, expires_at)
+  values (user_id_param, case_id_param, v_admin, now(), v_exp);
   update auth.users set banned_until = greatest(coalesce(banned_until, v_exp), v_exp) where id = user_id_param;  -- never shorter
   delete from auth.sessions where user_id = user_id_param;
   update private.account_step_ups set consumed_at = now() where user_id = user_id_param and consumed_at is null;
@@ -798,7 +839,7 @@ declare
 begin
   select * into h from private.account_recovery_holds where user_id = user_id_param and released_at is null and expires_at > now() for update;
   if not found then raise exception 'No hold in place' using errcode = '22023', hint = 'no_hold'; end if;
-  v_exp := least(now() + private.account_security_rule('hold'), h.placed_at + private.account_security_rule('hold_max'));
+  v_exp := least(now() + private.account_security_rule('hold'), private.recovery_incident_ends(h.case_id));   -- the INCIDENT's limit
   if v_exp <= h.expires_at then
     raise exception 'The hold has reached its limit' using errcode = '22023', hint = 'hold_limit';
   end if;
@@ -811,6 +852,43 @@ end;
 $function$;
 revoke all on function public.admin_extend_recovery_hold(uuid, text) from public, anon;
 grant execute on function public.admin_extend_recovery_hold(uuid, text) to authenticated;
+
+-- Authorize a NEW incident (a hold under another case on an account that has had a hold). The caller must be a recovery admin
+-- who placed or extended no hold in any earlier incident on this account, and writes why this is a separate incident.
+create or replace function public.admin_authorize_new_recovery_incident(user_id_param uuid, case_id_param uuid, justification_param text)
+returns void
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_admin uuid := private.require_recovery_admin();
+  v_just text := private.recovery_text(justification_param, 30);
+begin
+  if user_id_param = v_admin then raise exception 'Not your own account' using errcode = '42501', hint = 'recovery_self'; end if;
+  perform private.open_recovery_case(user_id_param, case_id_param);
+  perform 1 from auth.users where id = user_id_param for update;
+  if not exists (select 1 from private.account_recovery_holds h where h.user_id = user_id_param and h.case_id <> case_id_param) then
+    raise exception 'No earlier incident: place the hold directly' using errcode = '22023', hint = 'no_prior_incident';
+  end if;
+  if exists (select 1 from private.account_recovery_holds h where h.user_id = user_id_param and h.case_id = case_id_param) then
+    raise exception 'This incident already has holds' using errcode = '22023', hint = 'incident_started';
+  end if;
+  if exists (select 1 from private.account_recovery_holds h where h.user_id = user_id_param and h.case_id <> case_id_param
+               and h.placed_by = v_admin)
+     or exists (select 1 from private.account_recovery_audit a where a.user_id = user_id_param and a.case_id <> case_id_param
+                  and a.actor = v_admin and a.action in ('hold_placed', 'hold_extended')) then
+    raise exception 'Another recovery admin must authorize a new incident' using errcode = '42501', hint = 'separate_admin_required';
+  end if;
+  insert into private.account_recovery_incidents (case_id, user_id, authorized_by, justification)
+  values (case_id_param, user_id_param, v_admin, v_just)
+  on conflict (case_id) do nothing;
+  insert into private.account_recovery_audit (actor, user_id, action, case_id, note)
+  values (v_admin, user_id_param, 'new_incident_authorized', case_id_param, v_just);
+end;
+$function$;
+revoke all on function public.admin_authorize_new_recovery_incident(uuid, uuid, text) from public, anon;
+grant execute on function public.admin_authorize_new_recovery_incident(uuid, uuid, text) to authenticated;
 
 create or replace function public.admin_release_recovery_hold(user_id_param uuid, reason_param text)
 returns void

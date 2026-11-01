@@ -43,7 +43,8 @@ function owner(step, stmt) {
 const rec = (step, value) => `log := log || jsonb_build_array(jsonb_build_object('step', '${step}', 'ok', true, 'data', to_jsonb(${value})));`;
 
 const P = { p: '15615550160', q: '15615550161', p_new: '15615550162', q_new: '15615550163', n: '15615550164',
-  v: '15615550165', atk: '15615550166', x: '15615550167', m: '15615550168', o: '15615550169' };
+  v: '15615550165', atk: '15615550166', x: '15615550167', m: '15615550168', o: '15615550169',
+  h: '15615550170', hs: '15615550171' };
 // a phone-only account the way Auth makes one (no email; Auth stores a random password hash on OTP sign-up)
 const phoneOnly = (v, phone, created = `now() - interval '30 days'`) => `
   insert into auth.users (id, aud, role, phone, encrypted_password, created_at)
@@ -62,7 +63,7 @@ const sessions = (v) => `(select count(*) from auth.sessions where user_id = ${v
 
 const PEOPLE = ['v_admin', 'v_e', 'v_admin2'];
 const IDS = ['v_p', 'v_q', 'v_n', 'v_v', 'v_x', 'v_m', 'v_o', 'v_proof', 'v_proof_old',
-  'v_s1', 'v_s2', 'v_sq', 'v_sx1', 'v_sx2', 'v_sm1', 'v_sm2', 'v_so', 'v_sv', 'v_step', 'v_step2', 'v_case', 'v_qcase'];
+  'v_s1', 'v_s2', 'v_sq', 'v_sx1', 'v_sx2', 'v_sm1', 'v_sm2', 'v_so', 'v_sv', 'v_step', 'v_step2', 'v_case', 'v_qcase', 'v_h', 'v_hcase', 'v_hcase2', 'v_hs'];
 
 d('journey: account takeover protection + recovery (20270375)', () => {
   let s;
@@ -273,6 +274,57 @@ d('journey: account takeover protection + recovery (20270375)', () => {
   ${as('client_reads_recovery', 'v_admin2', `perform admin_get_account_recovery(v_v)`)}
   ${as('admin_reads_recovery', 'v_admin', `v_out := admin_get_account_recovery(v_v)`, { value: 'v_out' })}
 
+  -- ===== incident-level 42-day limit + mistaken hold released (owner, 2026-11-01) =====
+  ${phoneOnly('v_h', P.h)}
+  ${as('h_open', 'v_admin', `v_out := to_jsonb(admin_open_account_recovery(v_h, 'A report that turns out to be about another account.'))`, { value: 'v_out' })}
+  v_hcase := (v_out #>> '{}')::uuid;
+  ${as('h_hold', 'v_admin', `perform admin_place_recovery_hold(v_h, v_hcase, 'Hold while we check the takeover report on this account.')`)}
+  ${rec('h_held', `(select jsonb_build_object('banned', banned_until > now(), 'hold', ${'exists (select 1 from private.account_recovery_holds where user_id = v_h and released_at is null)'}) from auth.users where id = v_h)`)}
+  ${as('h_release', 'v_admin', `perform admin_release_recovery_hold(v_h, 'Mistaken: the report was about a different account.')`)}
+  ${rec('h_released', `(select jsonb_build_object('banned', u.banned_until, 'suspended', p.suspended_at is not null, 'is_suspended', private.account_suspended(v_h),
+      'hold_open', exists (select 1 from private.account_recovery_holds where user_id = v_h and released_at is null),
+      'hold_active', private.recovery_hold_active(v_h), 'floor', private.account_ban_floor(v_h), 'hidden', p.profile_hidden)
+      from auth.users u join profiles p on p.id = u.id where u.id = v_h)`)}
+  ${session('gen_random_uuid()', 'v_h', '30 days')}
+  ${rec('h_can_sign_in_db', `(select count(*) = 1 from auth.sessions where user_id = v_h)`)}
+  -- the same incident: release + re-place never restarts the clock (the first hold was 41 days ago)
+  update private.account_recovery_holds set placed_at = now() - interval '41 days', expires_at = now() - interval '27 days' where user_id = v_h;
+  ${as('h_replace', 'v_admin', `perform admin_place_recovery_hold(v_h, v_hcase, 'Re-placing a hold in the same incident after a release.')`)}
+  ${rec('h_replace_capped', `(select expires_at <= now() + interval '1 day' + interval '1 minute' from private.account_recovery_holds where user_id = v_h and released_at is null)`)}
+  ${as('h_extend', 'v_admin', `perform admin_extend_recovery_hold(v_h, 'Trying to extend past the incident maximum.')`)}
+  ${as('h_release2', 'v_admin', `perform admin_release_recovery_hold(v_h, 'Released again before the incident limit is reached.')`)}
+  update private.account_recovery_holds set placed_at = now() - interval '43 days', expires_at = now() - interval '29 days' where user_id = v_h and case_id = v_hcase;
+  ${as('h_replace_past', 'v_admin', `perform admin_place_recovery_hold(v_h, v_hcase, 'Re-placing after the incident maximum has passed.')`)}
+  -- a reopened case is the same incident
+  ${as('h_close', 'v_admin', `perform admin_close_account_review_case(v_hcase, 'no_action', 'Closed: the report was mistaken.')`)}
+  ${as('h_reopen', 'v_admin', `perform admin_reopen_account_review_case(v_hcase, 'Reopened: the owner wrote again about it.')`)}
+  ${as('h_reopen_hold', 'v_admin', `perform admin_place_recovery_hold(v_h, v_hcase, 'A hold under the reopened case of the same incident.')`)}
+  -- a new case = a new incident: refused until another recovery admin authorizes it with a justification
+  ${as('h_close2', 'v_admin', `perform admin_close_account_review_case(v_hcase, 'no_action', 'Closed again before a new report.')`)}
+  ${as('h_open2', 'v_admin', `v_out := to_jsonb(admin_open_account_recovery(v_h, 'A second, separate report a month later.'))`, { value: 'v_out' })}
+  v_hcase2 := (v_out #>> '{}')::uuid;
+  ${as('h_new_unauthorized', 'v_admin', `perform admin_place_recovery_hold(v_h, v_hcase2, 'Trying to start a fresh 42 days without authorization.')`)}
+  ${as('h_auth_same_admin', 'v_admin', `perform admin_authorize_new_recovery_incident(v_h, v_hcase2, 'I placed the earlier holds and try to authorize myself.')`)}
+  insert into private.account_recovery_admins (user_id) values (v_admin2);
+  ${as('h_auth_short', 'v_admin2', `perform admin_authorize_new_recovery_incident(v_h, v_hcase2, 'too short')`)}
+  ${as('h_auth_other', 'v_admin2', `perform admin_authorize_new_recovery_incident(v_h, v_hcase2, 'Separate incident: a new port-out reported by the carrier on Nov 30.')`)}
+  ${as('h_new_hold', 'v_admin', `v_out := to_jsonb(admin_place_recovery_hold(v_h, v_hcase2, 'Hold for the separately authorized new incident.'))`, { value: 'v_out' })}
+  ${rec('h_new_hold_14', `(select expires_at between now() + interval '13 days' and now() + interval '14 days' + interval '1 minute' from private.account_recovery_holds where user_id = v_h and released_at is null)`)}
+  ${rec('h_audit', `(select jsonb_agg(action order by id) filter (where action = 'new_incident_authorized') from private.account_recovery_audit where user_id = v_h)`)}
+  ${as('h_client_authorizes', 'v_h', `perform admin_authorize_new_recovery_incident(v_h, v_hcase2, 'A client trying to authorize an incident on itself.')`)}
+  delete from private.account_recovery_admins where user_id = v_admin2;
+  -- a legitimately suspended account: placing + releasing a hold never lifts the suspension
+  ${phoneOnly('v_hs', P.hs)}
+  update auth.users set banned_until = now() + interval '100 years' where id = v_hs;
+  perform set_config('app.trusted_update', 'true', true);
+  update profiles set suspended_at = now() where id = v_hs;
+  perform set_config('app.trusted_update', 'false', true);
+  ${as('hs_open', 'v_admin', `v_out := to_jsonb(admin_open_account_recovery(v_hs, 'A takeover report on an account that is suspended.'))`, { value: 'v_out' })}
+  ${as('hs_hold', 'v_admin', `perform admin_place_recovery_hold(v_hs, (v_out #>> '{}')::uuid, 'Hold while we look at the suspended account too.')`)}
+  ${as('hs_release', 'v_admin', `perform admin_release_recovery_hold(v_hs, 'Released: mistaken, the suspension stays as decided.')`)}
+  ${rec('hs_after', `(select jsonb_build_object('banned_long', u.banned_until > now() + interval '90 years', 'suspended', private.account_suspended(v_hs))
+      from auth.users u where u.id = v_hs)`)}
+
   -- ===== 12 months + jobs =====
   v_out := to_jsonb(private.purge_account_security_events());
   ${rec('failures', `(select count(*) from private.account_security_events where kind = 'guard_failure' and user_id in (v_p, v_q, v_n, v_e, v_v, v_x, v_m, v_o))`)}
@@ -385,6 +437,41 @@ d('journey: account takeover protection + recovery (20270375)', () => {
   test('a hold never shortens a suspension; holds expire by themselves', () => {
     expect(s.q_still_suspended.data).toBe(true);
     expect(s.expired.data).toEqual({ n: 1, last: 'hold_expired' });
+  });
+
+  test('a mistaken hold on an innocent account is released: no hold, no ban, no suspension, sign-in works', () => {
+    expect(s.h_hold.data).toBe('ok');
+    expect(s.h_held.data).toEqual({ banned: true, hold: true });
+    expect(s.h_release.data).toBe('ok');
+    expect(s.h_released.data).toEqual({ banned: null, suspended: false, is_suspended: false, hold_open: false, hold_active: false, floor: null, hidden: false });
+    expect(s.h_can_sign_in_db.data).toBe(true);
+  });
+
+  test('the 42-day maximum is per INCIDENT: release + re-place, extension and a reopened case never restart it', () => {
+    expect(s.h_replace.data).toBe('ok');
+    expect(s.h_replace_capped.data).toBe(true);
+    expect(s.h_extend.data.hint).toBe('hold_limit');
+    expect(s.h_release2.data).toBe('ok');
+    expect(s.h_replace_past.data.hint).toBe('hold_limit');
+    expect(s.h_close.data).toBe('ok');
+    expect(s.h_reopen.data).toBe('ok');
+    expect(s.h_reopen_hold.data.hint).toBe('hold_limit');
+  });
+
+  test('a new incident needs another recovery admin + a written justification; then a fresh 14-day hold', () => {
+    expect(s.h_new_unauthorized.data.hint).toBe('new_incident_required');
+    expect(s.h_auth_same_admin.data.hint).toBe('separate_admin_required');
+    expect(s.h_auth_short.data.hint).toBe('note_required');
+    expect(s.h_auth_other.data).toBe('ok');
+    expect(s.h_new_hold.data).toBeTruthy();
+    expect(s.h_new_hold_14.data).toBe(true);
+    expect(s.h_audit.data).toEqual(['new_incident_authorized']);
+    expect(s.h_client_authorizes.data.hint).toBe('admin_only');
+  });
+
+  test('placing + releasing a hold never lifts a legitimate suspension', () => {
+    expect(s.hs_release.data).toBe('ok');
+    expect(s.hs_after.data).toEqual({ banned_long: true, suspended: true });
   });
 
   test('the new-sign-in notice is unchanged', () => {

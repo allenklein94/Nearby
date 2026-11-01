@@ -7,6 +7,11 @@
 import { resolveAsk } from './askResolver';
 import { planAsk } from './planAsk';
 
+// Frozen clock (convention: tests that depend on "now" freeze it). A Wednesday noon, local time: a named "Saturday" is then this
+// weekend's Saturday, as the benchmark rows expect; the test only reads Date (no production code changes).
+const FIXED_NOW = new Date(2026, 9, 28, 12, 0);
+jest.useFakeTimers({ now: FIXED_NOW, doNotFake: ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'hrtime', 'performance', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback'] });
+
 // expected: tag | parts (sorted plan part keys) | when | who | size | occasion | price | budget | pricey | cuisine
 const C = [
  ["I want to grab dinner, maybe see some live music, nothing too expensive, tonight.", {parts:['activity','food'], when:'tonight', pricey:true}],

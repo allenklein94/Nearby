@@ -199,10 +199,21 @@ recovery must be resolved before public launch.
 Hold checks (existing tests, journey `accountTakeoverProtection`): one open hold per account (`hold_exists`); extension
 stops at 42 days from placement (`extend_capped`, then `hold_limit`); only allow-listed recovery admins act
 (`recovery_admin_only`); release (`q_release`) and expiry (`hold_expired`) work; a release never shortens a suspension.
-Open, recorded, not fixed: the 42-day cap is per hold (release + a new hold restarts it; audited and notified, the runbook
-escalates repeats to the owner, the server does not enforce it); a release restoring sign-in on a non-suspended account is
-not directly asserted (it uses the same `reset_account_ban` as recovery, which is) and not tested on real Auth. The
-date-dependent benchmark failure is the recorded test debt (freeze its clock), to fix or formally waive before release.
+Hold gaps CLOSED (2026-11-01, in 0375 in place, still not deployed): the 42-day maximum now belongs to the INCIDENT
+(= its recovery case), measured from the first hold placed under it (`private.recovery_incident_ends`); release + re-place,
+extension and a reopened case never restart it (`hold_limit`). A hold under ANOTHER case on an account that has had a hold
+is a new incident: refused (`new_incident_required`) until a recovery admin who placed/extended no hold in the earlier
+incidents authorizes it with a written justification (`admin_authorize_new_recovery_incident`; same admin =
+`separate_admin_required`; table `private.account_recovery_incidents`, audit `new_incident_authorized`). A single-admin
+setup must add a second recovery admin first (by design). A mistaken hold released on an innocent account is now asserted
+directly (no hold, no ban, no suspension, profile not hidden, sign-in works) in the journey AND on real Auth (sign-in again,
+new session refreshes); a hold + release on a suspended account never lifts the suspension (journey + real Auth). The
+date-dependent benchmark is FIXED (clock frozen in the suite, no resolver change).
+Verified 2026-11-01 (local only): fresh from-scratch replay 499/499; journeys 887/887 before AND after the real-Auth run
+(nothing left behind; the real-Auth cleanup now also removes the suspended test account's 0374 number record); journey
+`accountTakeoverProtection` 19/19; real Auth v2.197.0 27/27; all 11 concurrency scripts; rollback round trip on the replay
+identical (5356 -> 5219 -> 5356 items, sorted fingerprint); Jest 538/538. NOT re-run after this change: prod journeys with
+0348-0375 as a rolled-back prelude, the aborted rollback round trip on prod, and the grants replay = prod comparison.
 
 Remaining gates (unchanged order): owner review of this revision + runbook; support address chosen; Privacy Policy
 sentences (deletion timeline, recovery evidence + retention) approved; tabletop rehearsal; Apple wording reviewed;

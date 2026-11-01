@@ -33,6 +33,7 @@ const AUTH = 'nearby-ato-auth'; const MAIL = 'nearby-ato-mail'; const AUTH_NET =
 const AUTH_PORT = 59997; const MAIL_PORT = 58026;
 let JWT_SECRET = crypto.randomBytes(32).toString('hex'); // local, throwaway (prepare's; main reads it back from the container)
 const OWNER = '15615550181'; const INTRUDER_NEW = '15615550182'; const LEGIT = '15615550183'; const LEGIT_NEW = '15615550184';
+const INNOCENT = '15615550185'; const SUSPENDED = '15615550186';
 const OTP = '123456';
 
 const sh = (args, opts = {}) => execFileSync('docker', args, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], ...opts });
@@ -203,6 +204,36 @@ async function main() {
     rec('from a fresh session on an account with takeover signals: scheduled, every session ended, real Auth refuses sign-in',
       sch === 'scheduled' && !afterSch.session && one(`select count(*) from auth.sessions where user_id = '${owner.id}'`) === '0',
       { sch, signIn: afterSch.error });
+    // ===== 7. a mistaken hold on an innocent account, released (owner, 2026-11-01); a suspended account stays suspended =====
+    const inn = await signIn(INNOCENT);
+    profile(inn.id);
+    const innCase = asUser(adminIn.data.session, `select admin_open_account_recovery('${inn.id}', 'A report that turns out to be about someone else.')`);
+    const innHold = asUser(adminIn.data.session, `select admin_place_recovery_hold('${inn.id}', '${innCase}', 'Hold while we check this report on the account.')`);
+    const innHeld = await signIn(INNOCENT);
+    const innOldRefresh = await auth().refreshSession({ refresh_token: inn.session.refresh_token });
+    rec('mistaken hold: real Auth refuses sign-in and the existing session ends',
+      typeof innHold === 'string' && !innHeld.session && !!innOldRefresh.error, { innHold, signIn: innHeld.error });
+    const innRel = asUser(adminIn.data.session, `select admin_release_recovery_hold('${inn.id}', 'Mistaken: the report concerned a different account.')`);
+    const innBack = await signIn(INNOCENT);
+    const innState = one(`select jsonb_build_object('banned', u.banned_until, 'suspended', private.account_suspended(u.id), 'hold', private.recovery_hold_active(u.id))::text
+        from auth.users u where u.id = '${inn.id}'`);
+    rec('released: real Auth signs the same account in again; no ban, no suspension, no hold left',
+      typeof innRel === 'string' && innBack.id === inn.id && !!innBack.session
+        && (() => { const v = JSON.parse(innState); return v.banned === null && v.suspended === false && v.hold === false; })(),
+      { innRel, back: innBack.error, innState });
+    const innRefresh = await auth().refreshSession({ refresh_token: innBack.session.refresh_token });
+    rec('…and the new session refreshes normally', !innRefresh.error, innRefresh.error && innRefresh.error.message);
+    const sus = await signIn(SUSPENDED);
+    profile(sus.id);
+    psql(`select set_config('app.trusted_update', 'on', false); update profiles set suspended_at = now() where id = '${sus.id}';
+          update auth.users set banned_until = now() + interval '100 years' where id = '${sus.id}'; delete from auth.sessions where user_id = '${sus.id}';`);
+    const susCase = asUser(adminIn.data.session, `select admin_open_account_recovery('${sus.id}', 'A takeover report on an account that is suspended.')`);
+    asUser(adminIn.data.session, `select admin_place_recovery_hold('${sus.id}', '${susCase}', 'Hold on the suspended account while we check.')`);
+    const susRel = asUser(adminIn.data.session, `select admin_release_recovery_hold('${sus.id}', 'Released: mistaken, the suspension stays as decided.')`);
+    const susTry = await signIn(SUSPENDED);
+    rec('a legitimately suspended account: hold + release never lifts it (real Auth still refuses sign-in)',
+      typeof susRel === 'string' && !susTry.session && one(`select private.account_suspended('${sus.id}')`) === 't', { susRel, signIn: susTry.error });
+
     rec('nothing failed (no guard_failure rows)', one(`select count(*) from private.account_security_events where kind = 'guard_failure'`) === failuresBefore);
   } finally {
     psql(`update private.account_security_settings set deletion_protection_enabled = false;`);
@@ -217,9 +248,19 @@ async function main() {
           delete from push_outbox where recipient_id in (${list});
           update private.account_review_cases set status = 'closed', closed_at = now(), outcome = 'no_action'
             where signal = 'account_recovery' and status = 'open' and subject_user is null;`);
-    const left = one(`select (select count(*) from auth.users where phone in ('${OWNER}', '${INTRUDER_NEW}', '${LEGIT}', '${LEGIT_NEW}') or id in (${list})) || '|' ||
-        (select count(*) from private.account_security_events where user_id in (${list}))`);
-    rec('cleaned up (users | security events)', left === '0|0', { left });
+    // deleting the suspended test account makes 20270374 keep its number record (append-only): removed here, as in
+    // suspended-number-auth-local.js, so later journeys on this replay start clean
+    const has0374 = one(`select to_regclass('private.suspended_account_records') is not null`) === 't';
+    if (has0374) {
+      psql(`set session_replication_role = replica;
+            delete from private.suspended_account_records where former_account_id in (${list});
+            set session_replication_role = origin;
+            delete from private.phone_match_queue;`);
+    }
+    const left = one(`select (select count(*) from auth.users where phone in ('${OWNER}', '${INTRUDER_NEW}', '${LEGIT}', '${LEGIT_NEW}', '${INNOCENT}', '${SUSPENDED}') or id in (${list})) || '|' ||
+        (select count(*) from private.account_security_events where user_id in (${list})) || '|' ||
+        ${has0374 ? `(select count(*) from private.suspended_account_records where former_account_id in (${list}))` : '0'}`);
+    rec('cleaned up (users | security events | suspended-number records)', left === '0|0|0', { left });
   }
 
   let failed = 0;
@@ -256,7 +297,7 @@ async function prepare() {
     GOTRUE_SMTP_ADMIN_EMAIL: 'auth@example.com', GOTRUE_SMTP_SENDER_NAME: 'Local Auth', GOTRUE_MAILER_OTP_EXP: '3600',
     GOTRUE_SMS_PROVIDER: 'twilio', GOTRUE_SMS_TWILIO_ACCOUNT_SID: 'AClocal', GOTRUE_SMS_TWILIO_AUTH_TOKEN: 'local',
     GOTRUE_SMS_TWILIO_MESSAGE_SERVICE_SID: 'MGlocal',
-    GOTRUE_SMS_TEST_OTP: [OWNER, INTRUDER_NEW, LEGIT, LEGIT_NEW].map((p) => `${p}:${OTP}`).join(','),
+    GOTRUE_SMS_TEST_OTP: [OWNER, INTRUDER_NEW, LEGIT, LEGIT_NEW, INNOCENT, SUSPENDED].map((p) => `${p}:${OTP}`).join(','),
     GOTRUE_SMS_TEST_OTP_VALID_UNTIL: new Date(Date.now() + 6 * 3600e3).toISOString(),
     GOTRUE_RATE_LIMIT_SMS_SENT: '1000', GOTRUE_SMS_MAX_FREQUENCY: '1ns', GOTRUE_RATE_LIMIT_VERIFY: '1000',
     GOTRUE_RATE_LIMIT_EMAIL_SENT: '1000', GOTRUE_SMTP_MAX_FREQUENCY: '1ns',

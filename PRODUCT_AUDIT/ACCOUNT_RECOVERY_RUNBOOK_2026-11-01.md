@@ -31,6 +31,10 @@ Design + owner decisions: `ACCOUNT_RECOVERY_DESIGN_2026-11-01.md`.
    - Lasts **14 days**. `admin_extend_recovery_hold(user, reason)` adds up to 14 days at a time, never beyond **42 days**
      from placement. It is never renewed silently; it expires on its own (`expire-recovery-holds`, every 15 min).
    - `admin_release_recovery_hold(user, reason)` ends it early (e.g. the claim was mistaken).
+   - The 42 days count per INCIDENT (the recovery case), from its first hold: releasing and placing again, extending, or
+     reopening the case never restarts them. A hold under a NEW case on an account that has had a hold needs a different
+     recovery admin (one who placed or extended none of the earlier holds) to run
+     `admin_authorize_new_recovery_incident(user, case, justification)` first, writing why it is a separate incident.
    - A hold never shortens a suspension.
 4. No signal: the server refuses a recovery (`no_takeover_signal`). Tell the claimant nothing about the account beyond "we
    can't act on this request"; do not confirm whether the number has an account.
