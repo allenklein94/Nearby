@@ -106,6 +106,13 @@ describe('shared-device cases (20270376)', () => {
     expect(lines.join(' ')).not.toMatch(/ExponentPushToken/);
     expect(sharedDeviceLines(null)).toEqual([]);
   });
+  test('a many-accounts case names the other review cases that corroborate it (option 3), by kind only', () => {
+    const lines = sharedDeviceLines({ accounts: 4, window_days: 90, suspended_accounts: [],
+      corroborating_cases: [{ id: 'c1', signal: 'similar_photo' }, { id: 'c2', signal: 'behavior' }, { id: 'c3', signal: 'behavior' }] });
+    expect(lines).toEqual(['4 accounts registered this token in the last 90 days',
+      'Opened because these accounts are also in 3 other review cases: Similar photo, Activity pattern']);
+    expect(sharedDeviceLines({ accounts: 4, corroborating_cases: [] })).toEqual(['4 accounts registered this token in the last 90 days']);
+  });
 });
 
 describe('admin review screen boundaries', () => {
