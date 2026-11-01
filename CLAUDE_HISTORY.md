@@ -1,3 +1,30 @@
+# 2026-11-01: 20270381 impersonation reason + "Report business", built + locally verified, staged, not deployed
+
+Owner approved (2026-11-01): impersonation as its own report reason, and a way to report a business itself. Branch
+`post-tier1/impersonation-and-business-reports` (stacked on `post-tier1/photo-detection-activation`; off main, build 87
+unchanged). Files: migration `supabase/migrations/20270381_impersonation_and_business_reports.sql`, rollback
+`scripts/rollback/20270381_impersonation_and_business_reports.rollback.sql`, journey
+`src/journeys/impersonationBusinessReports.journey.js`, client `utils/reportReasons.js` (`reportReasonsFor`,
+`sortReportQueue`), `utils/reportContent.js` (fallbacks), `ReportBlockModal` (`target="business"` = report only, business
+reasons only), Report business link on `BusinessPreviewSheet` + `BusinessProfileScreen`, admin queue order on
+`AdminReportsScreen` + `AdminReviewScreen`, post-deploy step `scripts/live-verify/post-deploy.js` 20270381.
+As built: reason `impersonation` (legacy value "Impersonation"), prioritized via generated `reports.review_priority` (ordering
+only), NOT urgent (ordinary cap); existing `fake_profile` rows unchanged; label "Fake profile or impersonation" split into
+"Fake profile" + "Impersonation" (11 languages, 10 machine-authored, need native review, + `reportBusiness` /
+`reportBusinessTitle`). Business report = `content_type 'business'`: read as the reporter (active + visible only), server
+copy (name, address, description), `reported_id` forced NULL, own business refused, no account investigation or Suspend.
+Old-database safety: Impersonation refused (`report_reason_invalid`) -> refiled as "Fake profile" with "[Impersonation]";
+business type refused (constraint) -> filed with nobody named and "[business id]" in details (both checked on a
+pre-0381 replay). The sheet stays a presentation (item 17 lock): the viewer's managed business is read by DiscoverHubScreen
+and passed in (`myPartnerId`).
+Resume after a codespace restart: the WIP commit had the journey written but not run. Verification (2026-11-01): fresh
+replay with real Auth first 505/505; journey 8/8 (fails 8/8 after rollback); `reportReasonCodes` scoped to 0370's six
+reasons so it still passes at 0370's own post-deploy step (it failed 3 on a pre-0381 DB because it iterated the client's
+7-reason table); predecessor journeys 40/40 on the rolled-back DB; rollback round trip identical (5297 items); 14
+concurrency scripts; journeys 959/959 before and after them; Jest 540/540 (7326; the 3 WIP failures fixed: item 17 sheet
+lock, `{!reportOnly && (` guard, missing post-deploy step). NOT run (deploy gates): prod journeys with the 0348-0381
+prelude, prod aborted rollback, grants vs prod, phone check.
+
 **Duplicate-photo detection activation prepared (owner, 2026-11-01).** Owner: activate before public launch, prepare now on a separate staged branch, keep thresholds + human review + privacy, check dependencies / production verification / admin workflow / rollback, add a controlled activation plan with a way to disable; deploy nothing. Branch `post-tier1/photo-detection-activation` (stacked on `post-tier1/shared-case-links`). Files: migration `supabase/migrations/20270380_photo_detection_activation.sql`, rollback `scripts/rollback/20270380_photo_detection_activation.rollback.sql`, switch `scripts/trust-safety/photo-detection-switch.js` (+ test, 11), backfill `scripts/trust-safety/fingerprint-existing-photos.js` (near-duplicate step added: before, older photos would only ever get exact fingerprints), journey `src/journeys/photoDetectionActivation.journey.js` (8), `reviewCaseHistory` defaults made activation-aware, concurrency `scripts/replay/review-case-concurrency.js` step 6 (+ multi-statement result fix in its helper), `post-deploy.js` step 20270380 + switch entry, plan `PRODUCT_AUDIT/PHOTO_DETECTION_ACTIVATION_PLAN_2026-11-01.md`. Found: the activation race (a photo recorded while the activation transaction is open is judged by nobody); fixed operationally (`on` commits the numbers then sweeps separately; one `sweep` right after the 0380 deploy), proven by step 6 (3/3 deterministic before the fix path, one case with all six after). Verification: fresh replay 504/504 (real Auth first), journeys 951/951 before + after all 14 concurrency scripts, journey fails 8/8 with 0380 rolled back, rollback round trip 882 -> 881 -> 882 functions identical (defs + ACLs + settings), refusals with exact rules 4/0.5 and without 0369, switch exercised against the replay, Jest 540/540 (7321). NOT run: prod prelude journeys, prod aborted rollback, grants vs prod.
 
 # 2026-11-01: shared-device option 3 (0376 revised in place)

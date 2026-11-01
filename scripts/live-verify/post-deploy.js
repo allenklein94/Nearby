@@ -128,6 +128,12 @@ const STEPS = {
       'controlled check (owner, test accounts only): the same test photo on 3 dedicated test accounts opens ONE private case in the admin queue; an admin closes it "No action needed"; none of the accounts is hidden, suspended or notified; then delete the test accounts (the case stays as history)',
       'monitoring: a weekly look at the photo cases (count, how many closed "No action needed"); many legitimate matches = turn near-duplicates off (switch "off") and report, never change the numbers without approval',
       'any account restricted / hidden / notified by a photo case, or a client that can read a case = security defect: STOP, switch off, report'] },
+  // Impersonation as its own (prioritized, not urgent) report reason + "Report business" (about the business itself, nobody named)
+  20270381: { journeys: ['impersonationBusinessReports', 'reportReasonCodes', 'offerSafety', 'reviewCaseHistory'],
+    manual: ['BEFORE the deploy approval: 0355 + 0370 + 0372 live; prod journeys with the 0348-0381 prelude + an aborted rollback round trip on prod; grants vs prod; a build that offers "Pretending to be someone else" + "Report business" on the phone (older builds keep working: they never send the new reason or type)',
+      'read-only right after: reports_reason_code_check includes impersonation; reports_content_type_check includes business; reports.review_priority exists (generated); trigger capture_report_content_business present; private._capture_report_business EXECUTE: no client role',
+      'controlled check (owner, dedicated test accounts only): report a test business from the phone = one open report with reported_id NULL and the business copy; the business owner sees nothing and is not suspended; an impersonation report sorts first in the admin queue; resolve both',
+      'a business report that names a person, a business owner who can read it, or any automatic restriction = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

@@ -45,7 +45,7 @@ import { cardInterestedEligible } from '../utils/cardInterested';
 import { NotInterestedMore, NotInterestedRow, NotInterestedLine } from '../components/NotInterested';
 import { withoutHidden } from '../utils/notInterested';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
-import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows } from '../services/brandOffers';
+import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows, getMyManagedPartner } from '../services/brandOffers';
 import { perkRedemptionState, redemptionsByOffer } from '../utils/perkRedemptionState';
 import { searchNearbyPlacesResult } from '../services/places';
 import useAlsoNearby from '../hooks/useAlsoNearby';
@@ -652,6 +652,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Item 17 (owner, 2026-10-04): a business tapped on a browsing surface (result row, map pin) opens the shared preview sheet
   // over Discover; nothing underneath changes. Perks and gatherings keep their own in-place expansion.
   const [previewBusiness, setPreviewBusiness] = useState(null);
+  // "Report business" on the preview sheet (20270381): the business this person manages (if any) is never offered for
+  // reporting. Read here, only once a sheet opens, so the sheet stays a presentation (item 17). undefined = not known yet.
+  const [myManagedPartnerId, setMyManagedPartnerId] = useState(undefined);
+  useEffect(() => {
+    if (!previewBusiness || myManagedPartnerId !== undefined) return undefined;
+    let live = true;
+    getMyManagedPartner().then((p) => { if (live) setMyManagedPartnerId(p?.id ?? null); }).catch(() => { if (live) setMyManagedPartnerId(null); });
+    return () => { live = false; };
+  }, [previewBusiness, myManagedPartnerId]);
   const [previewPinSpot, setPreviewPinSpot] = useState(null); // item 44: set only when the sheet opens from a map pin
   // A screen opened on top (a push tap, an action from the sheet) never keeps the sheet floating over it.
   useFocusEffect(useCallback(() => () => { setPreviewBusiness(null); setPreviewPinSpot(null); }, []));
@@ -3714,7 +3723,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           />
         </SafeAreaView>
       </Modal>
-      <BusinessPreviewSheet partner={previewBusiness} pinSpot={previewPinSpot} navigation={navigation} onClose={() => { setPreviewBusiness(null); setPreviewPinSpot(null); }} />
+      <BusinessPreviewSheet partner={previewBusiness} pinSpot={previewPinSpot} navigation={navigation} myPartnerId={myManagedPartnerId} onClose={() => { setPreviewBusiness(null); setPreviewPinSpot(null); }} />
     </SafeAreaView>
   );
 }

@@ -20,9 +20,9 @@ const reasonChips = (target) => reportReasonsFor(target).map((r) => ({ value: r.
 // id: matchId } from a 1:1 chat); the server keeps its own copy of it (utils/reportContent.js).
 // target 'business' + reportedContent { type: 'business', id: partnerId } (20270381, "Report business"): report only, no
 // person named (the server sets nobody), title = title prop ("Report {name}").
-export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly = false, reportedContent = null, target = 'person', title = null }) {
+export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly: reportOnlyProp = false, reportedContent = null, target = 'person', title = null }) {
   const REPORT_REASON_CHIPS = reasonChips(target);
-  const onlyReport = reportOnly || target === 'business';
+  const reportOnly = reportOnlyProp || target === 'business';
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -108,7 +108,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
             <Text style={styles.reportButtonText}>{submitting ? t('ui.reportBlock.submitting') : t('ui.reportBlock.submitReport')}</Text>
           </TouchableOpacity>
 
-          {!onlyReport && (
+          {!reportOnly && (
             <TouchableOpacity style={styles.blockButton} onPress={blockUser}>
               <Text style={styles.blockButtonText}>{t('ui.reportBlock.blockUser')}</Text>
             </TouchableOpacity>

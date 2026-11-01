@@ -13,7 +13,10 @@
 // One rolled-back transaction. Not covered: the app screens (reportReasons.test.js covers the table they read), the
 // backfill of old rows (scripts/replay/report-reason-backfill.js, rolled back on prod).
 const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
-const { REPORT_REASONS, reportReasonCode } = require('../utils/reportReasons');
+const { REPORT_REASONS: ALL_REASONS, reportReasonCode } = require('../utils/reportReasons');
+// 0370's six reasons only: 'impersonation' arrives with 20270381 (its own journey, impersonationBusinessReports), so this
+// journey also passes at 0370's own post-deploy step, before 0381 is live.
+const REPORT_REASONS = ALL_REASONS.filter((r) => r.code !== 'impersonation');
 
 const d = hasToken ? describe : describe.skip;
 

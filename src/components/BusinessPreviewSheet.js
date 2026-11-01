@@ -9,7 +9,6 @@ import { toOverlayPoint } from '../motion/pinToSheet';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { businessPreview, businessPreviewRoute } from '../utils/businessPreview';
 import { isVerifiedBusiness } from '../services/businessVerification';
-import { getMyManagedPartner } from '../services/brandOffers';
 import { canReportBusiness } from '../utils/reportContent';
 import ReportBlockModal from './ReportBlockModal';
 
@@ -25,7 +24,7 @@ import ReportBlockModal from './ReportBlockModal';
 // same actions; Reduce Motion or any other opening = the plain modal animation as before.
 const PIN = SEQUENCES.pinToSheet;
 
-export default function BusinessPreviewSheet({ partner, pinSpot = null, navigation, onClose }) {
+export default function BusinessPreviewSheet({ partner, pinSpot = null, navigation, onClose, myPartnerId = undefined }) {
   const { t, language } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -40,12 +39,7 @@ export default function BusinessPreviewSheet({ partner, pinSpot = null, navigati
   const [verified, setVerified] = useState(false);
   // "Report business" (20270381): a quiet link under the actions; the report is about the business, never its owner.
   const [reporting, setReporting] = useState(false);
-  const [myPartnerId, setMyPartnerId] = useState(undefined);
-  useEffect(() => {
-    let live = true;
-    getMyManagedPartner().then((p) => { if (live) setMyPartnerId(p?.id ?? null); }).catch(() => { if (live) setMyPartnerId(null); });
-    return () => { live = false; };
-  }, []);
+  // myPartnerId (prop): the business this person manages, read by the screen; undefined = not known yet = no link.
   useEffect(() => {
     setVerified(false);
     if (!partner?.id) return undefined;
