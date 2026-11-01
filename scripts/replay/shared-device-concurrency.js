@@ -8,6 +8,10 @@
 //   3. a new account registers a token at the same moment an admin suspends the other account on it: whichever commits
 //      first, ONE suspended-device case exists afterwards (the lock on the key serializes the two evaluations).
 //   4. the same account registers the same token from three sessions at once: one sighting, no error.
+//   5. option 3 (owner 2026-11-01): the corroborating photo case is created at the same moment the last account registers
+//      the token (both orders): ONE many-accounts case afterwards (one evaluation at a time, after each side's own write).
+// (Scenarios 1-2 first record a photo case tying two of the six accounts together: since option 3 the many-accounts rule
+// needs one, and a phone shared by accounts with no other case opens nothing.)
 // Uses test numbers on the replay database only; settings and every row it creates are restored / deleted afterwards
 // (incl. what deleting the suspended test accounts keeps: 20270374's number record, 20270376's device keys).
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/shared-device-concurrency.js
@@ -80,6 +84,14 @@ const REGISTER = 'update profiles set expo_push_token = $1 where id = auth.uid()
     const t1 = token();
     const six = [];
     for (let i = 0; i < 6; i += 1) six.push(await person(`six${i}`));
+    const photoCase = async (users) => {
+      const { rows: [r] } = await admin.query(`insert into private.account_review_cases (signal, sha256, reason)
+        values ('identical_photo', encode(extensions.gen_random_bytes(32), 'hex'), 'many_accounts') returning id`);
+      caseIds.push(r.id);
+      for (const u of users) await admin.query('insert into private.account_review_case_members (case_id, user_id) values ($1, $2)', [r.id, u]);
+      return r.id;
+    };
+    await photoCase([six[0], six[1]]);
     let run = await together(six.map((u) => ({ sub: u, role: 'authenticated', sql: REGISTER, args: [t1] })));
     let c = await caseFor(t1);
     c.forEach((x) => caseIds.push(x.id));
@@ -121,6 +133,28 @@ const REGISTER = 'update profiles set expo_push_token = $1 where id = auth.uid()
     const n4 = (await admin.query(`select count(*)::int n from private.device_sightings where user_id = $1`, [one])).rows[0].n;
     check(run.results.every((x) => x.ok), `all three committed (${errors(run)})`);
     check(n4 === 1, `one sighting (${n4})`);
+
+    console.log('5. the corroborating photo case and the last account\'s registration at the same moment (both orders)');
+    for (const caseFirst of [true, false]) {
+      const t5 = token();
+      const [u1, u2, u3] = [await person('c1'), await person('c2'), await person('c3')];
+      await together([u1, u2].map((u) => ({ sub: u, role: 'authenticated', sql: REGISTER, args: [t5], hold: 0 })));
+      const steps = [
+        { sub: u3, role: 'authenticated', sql: REGISTER, args: [t5], hold: caseFirst ? HOLD_MS * 2 : HOLD_MS },
+        { sub: u1, role: 'postgres', sql: `with c as (insert into private.account_review_cases (signal, sha256, reason)
+              values ('identical_photo', encode(extensions.gen_random_bytes(32), 'hex'), 'many_accounts') returning id)
+            insert into private.account_review_case_members (case_id, user_id) select c.id, u from c, unnest($1::uuid[]) u returning case_id`,
+          args: [[u1, u2]], hold: caseFirst ? HOLD_MS : HOLD_MS * 2 },
+      ];
+      run = await together(steps);
+      const photo = run.results[1].row?.case_id;
+      if (photo) caseIds.push(photo);
+      c = await caseFor(t5);
+      c.forEach((x) => caseIds.push(x.id));
+      check(run.results.every((x) => x.ok), `both committed (${errors(run)})`);
+      check(c.length === 1 && c[0].reason === 'many_accounts' && c[0].members === 3,
+        `${caseFirst ? 'case first' : 'registration first'}: ONE many-accounts case with the three accounts (${c.length}, ${c[0]?.reason}, ${c[0]?.members})`);
+    }
 
     const f = (await admin.query('select count(*)::int n from private.device_signal_failures')).rows[0].n;
     check(f === failuresBefore, `no failure rows (${f - failuresBefore} new)`);
