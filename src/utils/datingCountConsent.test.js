@@ -81,10 +81,19 @@ describe('every Dating card source reads the server opt-in view (cards, not only
   const body = (name) => prox.slice(prox.indexOf(`export async function ${name}(`), prox.indexOf('\n}\n', prox.indexOf(`export async function ${name}(`)));
   test.each(['getNearbyMatches', 'getBrowseMatches'])('%s reads dating_candidates_visible_to_me, never people_visible_to_me, and re-checks the verdict', (name) => {
     const fn = body(name);
-    expect(fn).toMatch(/\.from\('dating_candidates_visible_to_me'\)/);
+    // 20270382: Browse reads through browseDatingCandidates (services/datingBrowse.js): browse_dating_candidates, whose
+    // rows come from private.dating_candidate_rows (the same opt-in rule), else this same view.
+    if (name === 'getBrowseMatches') {
+      expect(fn).toMatch(/browseDatingCandidates\(/);
+      const browse = src('services/datingBrowse.js');
+      expect(browse).toMatch(/\.from\('dating_candidates_visible_to_me'\)/);
+      expect(browse).toMatch(/rpc\('browse_dating_candidates'/);
+    } else {
+      expect(fn).toMatch(/\.from\('dating_candidates_visible_to_me'\)/);
+    }
     expect(fn).not.toMatch(/\.from\('people_visible_to_me'\)|\.from\('profiles'\)\s*\n\s*\.select\('id, display_name/);
     // Both reads share ONE column list (it carries the server's verdict, dating_opted_in).
-    expect(fn).toMatch(/DATING_CANDIDATE_COLUMNS\)/);
+    expect(fn).toMatch(/DATING_CANDIDATE_COLUMNS[,)]/);
     expect(prox).toMatch(/const DATING_CANDIDATE_COLUMNS = '[^']*, dating_opted_in';/);
     expect(fn).toMatch(/isDatingOptedIn\(/);
   });

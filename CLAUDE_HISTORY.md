@@ -1,3 +1,20 @@
+# 2026-11-01: 20270382 people anti-scraping (idea 9, option B), built + locally verified, staged, not deployed
+
+Owner chose option B (2026-11-01). Branch `post-tier1/profile-anti-scraping` (off main, build 87 unchanged). Files: migration
+`supabase/migrations/20270382_profile_anti_scraping.sql` (header lists the before/after), rollback
+`scripts/rollback/20270382_profile_anti_scraping.rollback.sql`, journey `src/journeys/profileAntiScraping.journey.js` (13),
+concurrency `scripts/replay/profile-serve-concurrency.js`, client `src/services/datingBrowse.js` (+ test; `proximity.js`
+Browse reads through it), journey harness + 5 journeys adjusted to the read rule, guards updated (`myProfileReads`,
+`blockVisibilityGuard`, `datingCountConsent`, `nearbyOntology`: owner-only private row views allowed only while revoked
+from every client role), `post-deploy.js` step 20270382. Verification (2026-11-01, after a codespace restart): fresh replay
+with real Auth first 506/506; journeys 972/972; all 15 concurrency scripts pass; journeys 972/972 again after them;
+`profileAntiScraping` fails 13/13 with 0382 rolled back; rollback -> re-apply snapshot identical (29,633 items: functions
+with defs/ACLs/settings, policies, views, columns, column + table grants, triggers, constraints, indexes, cron jobs; sorted
+with collate "C"); the rolled-back snapshot equals a separate fresh replay of 0001-0381 (29,284 items, no diff); on that
+0381 database the other 959 journeys pass; Jest 541/541 (7330). NOT run (deploy gates): prod journeys with the 0348-0382
+prelude, prod aborted rollback, grants vs prod, new build with `browse_dating_candidates` on every device before deploy,
+phone check. Numbers proposed, not approved; the discovery-limit signal stays off until separately approved.
+
 # 2026-11-01: owner idea 8 (impersonation) closed as covered by staged protections
 
 Owner agreed (2026-11-01): covered by 0381 (Impersonation reason prioritized in the admin queue + Report business), 0371 (Verified Business: identity + authority evidence) and 0350 (ID Verified: an ID check only, never a particular celebrity). Reports never punish automatically; an admin reviews evidence. Deferred improvement: a formal ownership dispute process for a brand owner or public figure who is not a Nearby user (admins receive and evaluate an outside claim manually, independent evidence, no account required). Principle: verified identity is not verified ownership of a name, brand or persona. Declined: celebrity verification, more badges, automated penalties, another reporting system. Nothing built; all migrations stay staged.

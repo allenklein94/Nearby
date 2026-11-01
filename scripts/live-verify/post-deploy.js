@@ -134,6 +134,13 @@ const STEPS = {
       'read-only right after: reports_reason_code_check includes impersonation; reports_content_type_check includes business; reports.review_priority exists (generated); trigger capture_report_content_business present; private._capture_report_business EXECUTE: no client role',
       'controlled check (owner, dedicated test accounts only): report a test business from the phone = one open report with reported_id NULL and the business copy; the business owner sees nothing and is not suspended; an impersonation report sorts first in the admin queue; resolve both',
       'a business report that names a person, a business owner who can read it, or any automatic restriction = security defect: STOP, report'] },
+  // People anti-scraping (idea 9, option B): one profile read rule + capped discovery functions + daily new-profile count
+  20270382: { journeys: ['profileAntiScraping', 'profileColumnPrivacy', 'intentionCountPrivacy', 'datingConsent', 'appVersionCompatibility', 'trustSafety'],
+    node: ['scripts/replay/profile-serve-concurrency.js (replay only, before the deploy)'],
+    manual: ['BEFORE the deploy approval: a build whose Dating Browse calls browse_dating_candidates on EVERY device (older builds fail closed: Browse shows only people already readable); 0352 + 0363 live; numbers approved (page_max, daily_new_profiles, grant_days, max_buckets; signal settings stay null unless separately approved); prod journeys with the 0348-0382 prelude + an aborted rollback round trip on prod; grants vs prod; website re-exported if any business screen reads people',
+      'read-only right after: private.profile_read_limits has one row with the approved numbers; profiles read policy calls viewer_may_read_profile; private.people_rows / dating_candidate_rows / profile_served: no client role; cron job purge-profile-served scheduled',
+      'controlled check (owner, dedicated test accounts only): a stranger\'s profile by id = no row; after Browse shows them = readable; Browse page larger than page_max returns page_max; Friends, Dating, contacts and suggested friends still show people on the phone',
+      'a stranger readable by id without a reason, a page above page_max, or any account restricted by the limit = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
