@@ -189,6 +189,21 @@ Found and fixed while verifying: trusted-write flag save/restore in `account_del
 (0359 rule); step-up code request carries a CAPTCHA token; test fixtures that clear/move a test phone now do it like
 `admin_recover_account` (the guard refuses them otherwise, correctly).
 
+Owner decision (2026-11-01): ACCEPTED as code-complete + locally verified; staged, isolated, external-launch blocker; no
+merge/deploy/publish/production change; no further security feature work before the first iPhone session unless a new
+critical defect. 0375 does not fully prevent account takeover: an intruder holding the SIM with a session kept alive 7 days
+can still move the number (proven on real Auth), the step-up code reaches a SIM-swapper too, and a refused password attempt
+still signs the owner out (Supabase Auth). Passkeys are never mandatory for sign-up; stronger authentication + reliable
+recovery must be resolved before public launch.
+
+Hold checks (existing tests, journey `accountTakeoverProtection`): one open hold per account (`hold_exists`); extension
+stops at 42 days from placement (`extend_capped`, then `hold_limit`); only allow-listed recovery admins act
+(`recovery_admin_only`); release (`q_release`) and expiry (`hold_expired`) work; a release never shortens a suspension.
+Open, recorded, not fixed: the 42-day cap is per hold (release + a new hold restarts it; audited and notified, the runbook
+escalates repeats to the owner, the server does not enforce it); a release restoring sign-in on a non-suspended account is
+not directly asserted (it uses the same `reset_account_ban` as recovery, which is) and not tested on real Auth. The
+date-dependent benchmark failure is the recorded test debt (freeze its clock), to fix or formally waive before release.
+
 Remaining gates (unchanged order): owner review of this revision + runbook; support address chosen; Privacy Policy
 sentences (deletion timeline, recovery evidence + retention) approved; tabletop rehearsal; Apple wording reviewed;
 native review of the new strings; controlled real-SMS test on production after deploy (two test numbers, owner present);
