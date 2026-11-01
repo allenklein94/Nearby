@@ -105,6 +105,14 @@ const STEPS = {
       'on the phone: one ordinary friend request from Friends or a profile still sends ("Friend request sent"); a 6th within 10 minutes (dedicated test accounts only, never real people) shows "You\'ve sent several friend requests in a short time. Please wait a few minutes and try again." with no Try Again',
       'on the phone, app set to a non-English language (dedicated test account at 15 today, never real people): the 16th request shows the daily sentence in that language (e.g. es "Puedes enviar hasta 15 solicitudes de amistad por día. Inténtalo de nuevo mañana."), never the English server text, no Try Again; needs a build with the friend_request_daily_limit mapping (NOT build 87: build 87 keeps showing the English text, as today)',
       'any request refused below 5 in 10 minutes, or a refusal that restricts / suspends the account = defect: STOP, report'] },
+  // The same public text (bio / public gathering description) on several accounts: keyed hash only, private admin-review case, never restricts; OFF until a separate activation migration
+  20270378: { journeys: ['sharedPublicText', 'reviewCaseHistory', 'ugcModeration', 'sharedDeviceSignal', 'trustSafety'],
+    node: ['scripts/replay/shared-text-concurrency.js (replay only, before the deploy)'],
+    manual: ['BEFORE final deploy approval: private.text_signal_secret included in the same secret review as 20270374 / 20270376',
+      'BEFORE activation (a separate migration, owner-approved numbers, runs private.backfill_shared_text_sightings() once): the 5-accounts / 30-days starting point validated against legitimate shared text (recurring meetups, co-organisers, a club\'s standard description); known templates listed with private.exclude_shared_text; the Privacy Policy sentence (PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md, shared-text section) approved + published',
+      'read-only right after: text_signal_secret 1 row of 32 bytes; settings shared_text_min_accounts null (min_chars 80, min_words 12); 0 text_sightings, 0 shared_text_excluded_keys, 0 text_signal_failures; cron purge-text-sightings present; triggers zz_profile_bio_sighting (profiles) + zz_gathering_description_sighting (gatherings)',
+      'on the phone: saving a profile bio and publishing a public gathering with a description still work exactly as before (the triggers run after every such write)',
+      'any failure row, any restricted / hidden account, or a client read that answers = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

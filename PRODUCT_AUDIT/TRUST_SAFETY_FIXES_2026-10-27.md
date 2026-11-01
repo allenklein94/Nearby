@@ -1127,3 +1127,70 @@ Jest 538/538 (7295). Post-deploy phone check added (non-English language, needs 
 IMPLEMENTATION CLOSED (owner, 2026-11-01).
 **Known gaps / existing behaviour left as is.** No reset time is
 shown (the window is rolling; the sentence says "a few minutes", true for <= 10).
+
+## The same public text on several accounts (owner 2026-11-01, idea 4 gap 1; BUILT + STAGED as 20270378, NOT DEPLOYED, detection OFF)
+
+Branch `post-tier1/shared-text-signal` (stacked on `post-tier1/friend-request-burst`); not in build 87; own deploy approval
+after 0377. Owner decision (2026-11-01): build the cross-account public-text duplication signal now, keep it disabled;
+**cross-account behavioural-sequence detection DEFERRED** (more complex, higher false-positive risk, no real usage data to
+validate it; 0363/0365's per-account behaviour signals stay the only behaviour detectors).
+
+**Inspected first (no duplication).** Nothing compared TEXT across accounts: 0357/0368 compare names + photos, 0363 repeated
+messages per sender only, 0356 limits commercial public posts per account, 0373 screens each text on its own. The review
+queue (0357 + 0369 history, website admin screen) is reused; the mechanism mirrors 0376 (keyed hash, sightings table,
+cluster rule, settings null = off, separate activation migration with backfill). No material architectural or privacy
+concern found; the one accepted limit is the same as 0374/0376 (the HMAC secret lives in the database).
+
+**Rule.** Looks ONLY at text others can already read: a profile's published bio and the description of a public gathering
+(visibility `everyone`, `moderation_state` `visible`; a 0373-held gathering is read only once approved, a held bio edit
+keeps the published bio). Friends-only / community / invite-only gatherings and every message are never read. Normalized
+(lower case, NFKC, every run of non-letters/digits = one space), then left out when shorter than 80 characters or fewer than
+12 distinct words, or listed as a known template (`private.exclude_shared_text`, server-only). Stored = HMAC-SHA256 key under
+`private.text_signal_secret` + account + source (+ gathering id) + first/last time; never the text, an excerpt, its length
+or language; kept 30 days after last posted (daily purge), deleted with the account. A case (0357 queue, signal
+`shared_text`, reason `many_accounts`) opens only when >= `shared_text_min_accounts` DISTINCT accounts posted the same key
+within 30 days (owner's starting point 5; >= 3 enforced; an initial testing assumption, NOT a proven abuse threshold).
+One host's recurring gatherings are one account. **One cluster = one case:** a qualifying key joins an existing shared-text
+case when at least half its accounts are already members (the same group's bio AND gathering description = one case); later
+accounts join the open case; on a closed case a new account is "new evidence" and the case stays closed (0369); closing as
+"No action needed" is how a legitimate shared text is dismissed for good. Evidence = counts (accounts, texts, by source),
+the window, up to 20 public gathering ids. **Never** bans, suspends, hides, restricts, limits, scores, notifies or tells
+anyone; each step runs in its own exception block (a failure never blocks a save; recorded in `private.text_signal_failures`
+with no detail about the person). Concurrency: an advisory lock per key + one for the cluster decision; a unique index on
+each key's case backs it up. Website admin screen: "Same public text" case title, a not-proof note, count lines + short
+gathering ids (`sharedTextLines`, `SHARED_TEXT_NOTE`); not published (website publish = its own approval).
+
+**Verification (replay only; nothing touched production).** Fresh from-scratch replay (real Auth first) 502/502. Journey
+`sharedPublicText` 15/15: off = nothing stored; key = 32-byte keyed hash, not a plain hash, case/punctuation/spacing variant
+= same key, short / few-word / blank = none; 4 accounts = no case, 5th = one case (evidence counts only); variant joins it;
+re-saving adds nothing; short, few-word and listed-template bios never recorded (false-positive cases); one host's 4
+recurring gatherings = no case; friends-only gatherings never read; a held public gathering not read until approved; 5 hosts'
+public description = a case with 5 gathering ids; the bio group's gathering description joins its bio case (one case, 2
+texts); a sighting 31 days old doesn't count; closed case + new account = new evidence, still one closed case; nobody
+restricted, hidden, banned or pushed, bios kept, flagged account keeps creating; no text or key in any stored row; admins
+list/read cases, 11 client/anon probes all refused; deleted account = no sightings; purge, backfill (public only; 0 while
+off), cron job, 0 failure rows. With the rollback as prelude it fails 15/15. Full journeys 930/930, then all 14 concurrency
+scripts (new `shared-text-concurrency.js`: six parallel saves = one case; closed case + four parallel new accounts = still one
+closed case, 4 new-evidence events; bio and gathering description reaching the threshold in parallel = ONE case with both
+texts, 3 rounds; one account from three sessions = one sighting; no failure rows; cleanup verified), then journeys again
+930/930. Rollback round trip on the replay: apply -> rollback -> apply -> rollback -> apply, applied states identical (5318
+sorted catalog items), rolled-back states identical (5255); the difference is exactly 0378's objects plus the case-kind
+constraint restored. Jest 538/538. Test helpers fixed on the way: the real-Auth replay helpers (`account-takeover-auth-local.js`,
+`suspended-number-auth-local.js`) now attach both networks before Auth starts (it could otherwise start before reaching the
+database and fail on the existing `auth.schema_migrations`).
+**Not run (deploy gates):** prod journeys with the 0348-0378 prelude, an aborted rollback on prod, grants vs prod, the
+secret review (with 0374/0376), validation of the 5-accounts starting point against legitimate shared text (recurring
+meetups, co-organisers, a club's standard description) before activation, the post-deploy checks in
+`scripts/live-verify/post-deploy.js` (20270378).
+
+**Privacy Policy sentence (DRAFT, publish with activation):** "To help our team find networks of fake accounts, when the
+same longer profile bio or public gathering description appears on several accounts, we keep a scrambled, one-way code of
+that text (never the text itself) for 30 days. It is only used to let our team review possible misuse; it never blocks or
+limits an account by itself."
+
+**Known gaps (left as is).** Exact match after normalization only: changing one word evades it (near-duplicate text, like
+photo similarity, deferred until real abuse shows it); private and group messages stay reports-based (owner decision
+2026-10-31); a shared URL alone is not compared (0356's commercial-post limit covers links in public posts); editing a text
+away doesn't delete its sighting (it was posted within the window); the cluster join is a half-overlap heuristic (two
+different groups sharing many members merge into one case: acceptable, a person reviews it); a later normalization change
+needs a new key version (`public-text:v1:` prefix).

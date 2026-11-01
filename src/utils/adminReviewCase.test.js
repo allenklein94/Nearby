@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
-  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE,
+  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE, sharedTextLines, SHARED_TEXT_NOTE,
 } = require('./adminReviewCase');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', '..', p), 'utf8');
@@ -105,6 +105,24 @@ describe('shared-device cases (20270376)', () => {
     expect(lines[2]).toMatch(/^Earlier on a suspended account since deleted \(Account abcdef12, suspended /);
     expect(lines.join(' ')).not.toMatch(/ExponentPushToken/);
     expect(sharedDeviceLines(null)).toEqual([]);
+  });
+});
+
+describe('shared-text cases (20270378)', () => {
+  test('title + note say what was seen, never that accounts are the same person', () => {
+    expect(caseTitle({ signal: 'shared_text', reason: 'many_accounts' })).toBe('Same public text · On several accounts');
+    expect(SHARED_TEXT_NOTE).toMatch(/not proof/);
+    expect(SHARED_TEXT_NOTE).not.toMatch(/fake|certain|confirmed/i);
+  });
+  test('evidence lines: counts by source and short gathering ids; never text', () => {
+    const lines = sharedTextLines({ accounts: 6, window_days: 30, texts: 2, bio_accounts: 6, gathering_accounts: 5,
+      gathering_ids: ['abcdef12-0000-0000-0000-000000000000', '12345678-0000-0000-0000-000000000000'] });
+    expect(lines).toEqual(['6 accounts in this case', '2 different texts shared by the same accounts',
+      '6 posted the same profile bio in the last 30 days', '5 posted the same public gathering description in the last 30 days',
+      'Gatherings: abcdef12, 12345678']);
+    expect(sharedTextLines({ accounts: 5, texts: 1, bio_accounts: 5, gathering_accounts: 0, gathering_ids: [] }))
+      .toEqual(['5 accounts in this case', '5 posted the same profile bio in the last 30 days']);
+    expect(sharedTextLines(null)).toEqual([]);
   });
 });
 

@@ -14,6 +14,7 @@ export const CASE_SIGNAL_LABEL = {
   report: 'From a report',
   prior_suspension: 'Phone number of a suspended account',
   shared_device: 'Same phone notification token',
+  shared_text: 'Same public text',
 };
 
 export const CASE_REASON_LABEL = {
@@ -163,5 +164,23 @@ export function sharedDeviceLines(evidence) {
   for (const f of Array.isArray(e.former_suspended_accounts) ? e.former_suspended_accounts : []) {
     out.push(`Earlier on a suspended account since deleted (Account ${String(f.former_account_id).slice(0, 8)}, suspended ${new Date(f.suspended_at).toLocaleDateString()})`);
   }
+  return out;
+}
+
+// Shared-text cases (20270378): the same long public bio or public gathering description posted by several accounts. Only
+// counts and the public gatherings' ids reach the admin; never the text or its key (the admin reads the text where it is
+// already public: the accounts' profiles and those gatherings).
+export const SHARED_TEXT_NOTE = 'The same public text is a reason to look, not proof it is the same person: co-organisers, clubs and friends copy each other\'s descriptions. If it is legitimate, close the case as "No action needed". Nothing has happened to these accounts.';
+
+export function sharedTextLines(evidence) {
+  const e = evidence && typeof evidence === 'object' ? evidence : {};
+  const out = [];
+  const days = e.window_days || 30;
+  if (Number.isFinite(e.accounts)) out.push(`${e.accounts} account${e.accounts === 1 ? '' : 's'} in this case`);
+  if (Number.isFinite(e.texts) && e.texts > 1) out.push(`${e.texts} different texts shared by the same accounts`);
+  if (Number.isFinite(e.bio_accounts) && e.bio_accounts > 0) out.push(`${e.bio_accounts} posted the same profile bio in the last ${days} days`);
+  if (Number.isFinite(e.gathering_accounts) && e.gathering_accounts > 0) out.push(`${e.gathering_accounts} posted the same public gathering description in the last ${days} days`);
+  const ids = Array.isArray(e.gathering_ids) ? e.gathering_ids : [];
+  if (ids.length) out.push(`Gatherings: ${ids.map((id) => String(id).slice(0, 8)).join(', ')}`);
   return out;
 }

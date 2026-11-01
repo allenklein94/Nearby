@@ -302,9 +302,12 @@ async function prepare() {
     GOTRUE_RATE_LIMIT_SMS_SENT: '1000', GOTRUE_SMS_MAX_FREQUENCY: '1ns', GOTRUE_RATE_LIMIT_VERIFY: '1000',
     GOTRUE_RATE_LIMIT_EMAIL_SENT: '1000', GOTRUE_SMTP_MAX_FREQUENCY: '1ns',
   };
-  sh(['run', '-d', '--name', AUTH, '--network', AUTH_NET, '-p', `127.0.0.1:${AUTH_PORT}:9999`,
+  // both networks attached BEFORE Auth starts: started first, its migrator can miss the database and then trip over the
+  // existing auth.schema_migrations ("relation already exists")
+  sh(['create', '--name', AUTH, '--network', AUTH_NET, '-p', `127.0.0.1:${AUTH_PORT}:9999`,
     ...Object.entries(env).flatMap(([k, v]) => ['-e', `${k}=${v}`]), AUTH_IMAGE, 'auth']);
   sh(['network', 'connect', DB_NET, AUTH]);
+  sh(['start', AUTH]);
   for (let i = 0; ; i += 1) {
     try { if ((await fetch(`http://127.0.0.1:${AUTH_PORT}/health`)).ok) break; } catch { /* not up */ }
     if (i > 90) { let logs = ''; try { logs = sh(['logs', '--tail', '20', AUTH]); } catch { /* none */ } throw new Error(`Auth did not come up\n${logs}`); }
