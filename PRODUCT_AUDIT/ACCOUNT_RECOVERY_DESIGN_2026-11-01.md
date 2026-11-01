@@ -1,8 +1,9 @@
-# Account recovery, protected deletion, stronger sign-in: investigation + proposed design (2026-11-01)
+# Account recovery, protected deletion, stronger sign-in: investigation + design (2026-11-01)
 
-Status: INVESTIGATION DONE, DESIGN PROPOSED, NOTHING BUILT OR DEPLOYED. Owner decision (2026-11-01): R4 (no recovery
-path) is a genuine security gap and an EXTERNAL-LAUNCH BLOCKER; 0375 stays staged, not deployed, not merged; build 87 +
-Tier 1 stay the immediate priority.
+Status: DESIGN APPROVED WITH ADJUSTMENTS (owner, 2026-11-01) and BUILT as a revision of 20270375 IN PLACE (never deployed or
+merged), branch `post-tier1/account-takeover`. NOT DEPLOYED, NOT MERGED, NOT DEVICE-VERIFIED. 0375 stays an EXTERNAL-LAUNCH
+BLOCKER until the gates in section 5 pass. Build 87 + Tier 1 stay the immediate priority. Sections 1-3 = the original
+investigation + proposal; section 4 = what was actually built after the owner's adjustments; section 5 = verification + gates.
 
 ## 1. What was tested (2026-11-01)
 
@@ -131,3 +132,65 @@ silent Auth admin path, which stays refused for number changes so that a service
    intruder scenario, hold, recovery, and scheduled + cancelled deletion.
 6. **Deploy approvals** in migration order, build 88 on every device before the deletion schedule is switched on.
 7. **External users** only after 1-6 pass. D4 can follow after launch only if the owner accepts that, recorded.
+
+## 4. As built (owner's adjustments, 2026-11-01)
+
+Owner adjustments: D1 session age alone is not proof, add step-up, admin recovery bypasses cooldowns under audited
+authorization; D2 no blanket 7-day deletion delay, verify Apple first; D3 independent evidence, documented procedure, audit,
+limited admins, safeguards against false claims, a trusted device supports but never establishes ownership, appeal +
+escalation; D4 evaluate, verify how Supabase enforces a second factor, optional passkeys don't solve SMS takeover alone.
+
+Facts checked before building:
+- **Apple (5.1.1(v), developer.apple.com "Offering account deletion in your app"):** deletion must be initiable in the app;
+  a process that "takes a reasonable amount of time" is acceptable if the person is told how long and gets a confirmation;
+  apps "may add steps to verify the identity of the person making the request ... such as by entering a code from an email
+  or phone number already associated with the account"; "unnecessarily difficult" deletion fails review; only offering
+  temporary deactivation is insufficient.
+- **Supabase MFA (supabase.com/docs/guides/auth/auth-mfa):** enforcement is NOT automatic; the app's database/APIs must check
+  the JWT's `aal`. Passkeys/WebAuthn are experimental (browser + Swift helpers); nothing confirms React Native support.
+- **Auth's reauthenticate endpoint** with Twilio Verify skips its own confirmation step (source, v2.177.0), so the step-up
+  uses an ordinary code sign-in on a throw-away client instead, which Auth verifies on every provider.
+
+What 20270375 now does:
+- **D1 number change** needs ALL of: a calling session at least 7 days old; a step-up = a fresh sign-in code to the
+  account's CURRENT number, verified by Auth, tied by the server to the established session (the fresh session is deleted
+  again, sends no new-sign-in notice); aal2 when the account has a verified second factor; no recovery hold. The step-up
+  yields a single-use permit for ONE number (15 min). Without a permit: starting a change is quietly not saved (recorded);
+  the number itself changing (Auth admin API / dashboard) is REFUSED WITH AN ERROR (no more silent "OK"). Emergency changes
+  go only through `admin_recover_account` (per-transaction marker, as 0361). Honest limit: under a SIM swap the intruder
+  also receives the step-up code, so the step-up adds friction and an audit trail; the protection is the 7-day session +
+  notices + hold.
+- **D2 deletion**: the same step-up first (Apple explicitly allows a code to the account's number). Immediate in every case
+  EXCEPT a session younger than 7 days on an account with a takeover signal in the last 30 days: then every session ends,
+  the profile is hidden, sign-in is refused, and the account is permanently deleted 7 days later (the app shows the date;
+  "reasonable time" + told + confirmation). Support can stop it (D3). Behind a server switch, OFF until every device runs a
+  build that does the step-up and shows the date (build 87 does not: it deletes at once).
+- **D3** recovery admins = admin + an owner-maintained allow-list + aal2 if they have a factor; never on their own account.
+  Case required; hold 14 days, extendable with a reason, hard cap 42 days, expires by itself; recovery enforces: open case,
+  takeover signal in 30 days, at least one INDEPENDENT item (carrier confirmation, prior passkey, prior ID match), a trusted
+  device alone refused, a fresh proof account to restore the number. Append-only audit (24 months). Procedure, appeal and
+  escalation: `ACCOUNT_RECOVERY_RUNBOOK_2026-11-01.md` (DRAFT, not rehearsed).
+- **D4**: every function above requires aal2 when the account has a verified second factor (Supabase won't). No passkey
+  enrolment built: native support unverified; optional enrolment never protects users who don't enrol.
+- Kept from the first version: no password or email on a phone-only account; one security notice; the private record.
+- App (build 88, never build 87): Settings number change and Delete Account run the step-up (code field in place; the code
+  request carries a Turnstile token, since Auth checks CAPTCHA on every `/otp` call once enforcement is on); scheduled
+  deletion shows its date. Before 0375 is live the app behaves exactly as before.
+
+## 5. Verification (2026-11-01, local only, nothing sent to production) + remaining gates
+
+Verified: from-scratch replay 499/499 + journeys 883/883 + all 11 concurrency scripts (`account-security-concurrency.js`:
+no-permit writes, one permit vs two concurrent moves, single-use deletion step-up); real Auth v2.197.0 on the replay 23/23
+(`scripts/replay/account-takeover-auth-local.js`); production journeys 883/883 with 0348-0375 as prelude (rolled back);
+rollback round trip identical on the replay and on production in an aborted transaction (0 differences from 0348-0374);
+grants replay = production + 0348-0375, 3310/3310; Jest 537/538 (only the known date-dependent benchmark).
+
+Found and fixed while verifying: trusted-write flag save/restore in `account_deletion_authorize` + `admin_recover_account`
+(0359 rule); step-up code request carries a CAPTCHA token; test fixtures that clear/move a test phone now do it like
+`admin_recover_account` (the guard refuses them otherwise, correctly).
+
+Remaining gates (unchanged order): owner review of this revision + runbook; support address chosen; Privacy Policy
+sentences (deletion timeline, recovery evidence + retention) approved; tabletop rehearsal; Apple wording reviewed;
+native review of the new strings; controlled real-SMS test on production after deploy (two test numbers, owner present);
+deploy approval in migration order after 0374; build 88 on every device before the deletion switch is turned on; external
+users only after all of these.

@@ -5,11 +5,13 @@
 // database owner, the role Auth's connection uses on a hosted project).
 //   1. six new sign-ins (sessions) for one signed-in account commit at once: ONE "new sign-in" push (never six), six records,
 //      no error or deadlock.
-//   2. a phone-only account signed in an hour ago: four parallel attempts to add a password / an email / start a number
-//      change / set the number: none saved, each recorded, no error (Auth never sees a failure).
-//   3. a long-signed-in account: two number changes complete at once (each the way Auth's verify writes it): the account
-//      ends on ONE of the two numbers, the second is refused by the clock the first one's sign-in started; exactly one
-//      "number changed" push.
+//   2. a phone-only account with no permit: four parallel attempts to add a password / an email / start a number change /
+//      set the number: none saved; the first three are quiet for Auth and recorded, the direct number write is REFUSED
+//      with an error (revised 0375: never a silent "OK").
+//   3. one verified number-change permit (for X) and two number changes at once (to X, to Y with no permit): the account
+//      ends on X, the move to Y is refused with an error, the permit is consumed exactly once, one "number changed" push.
+//   4. one verified deletion step-up and two deletion authorizations at once from the same established session: exactly one
+//      is authorized, the other is refused (step_up_required): a step-up is single use.
 // Every row it creates is deleted afterwards.
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/account-security-concurrency.js
 const url = process.env.NEARBY_LOCAL_DB_URL;
@@ -73,7 +75,7 @@ const errors = (rs) => rs.filter((r) => !r.ok).map((r) => r.error).join('; ') ||
     check((await pushes(a)) === 1, `ONE "new sign-in" push (got ${await pushes(a)})`);
     check((await events(a)).filter((k) => k === 'new_sign_in_elsewhere').length === 6, 'six sign-ins recorded');
 
-    console.log('2. parallel takeover attempts on a phone-only account signed in an hour ago');
+    console.log('2. parallel takeover attempts on a phone-only account with no permit');
     const b = await person('15615550192', '1 hour');
     const before = (await db.query(`select phone, coalesce(phone_change, '') pc, coalesce(email, '') e, coalesce(email_change, '') ec, encrypted_password pw from auth.users where id = $1`, [b])).rows[0];
     const r2 = await together([
@@ -83,29 +85,51 @@ const errors = (rs) => rs.filter((r) => !r.ok).map((r) => r.error).join('; ') ||
       { sql: `update auth.users set phone = '15615550193', phone_confirmed_at = now() where id = $1`, args: [b] },
     ]);
     const after = (await db.query(`select phone, coalesce(phone_change, '') pc, coalesce(email, '') e, coalesce(email_change, '') ec, encrypted_password pw from auth.users where id = $1`, [b])).rows[0];
-    check(r2.every((r) => r.ok), `Auth never sees a failure (${errors(r2)})`);
+    check(r2.slice(0, 3).every((r) => r.ok), `password / email / starting a change: quiet for Auth (${errors(r2.slice(0, 3))})`);
+    check(!r2[3].ok && /not permitted/.test(r2[3].error), `the direct number write is refused with an error (${r2[3].error || 'no error'})`);
     check(JSON.stringify(after) === JSON.stringify(before), 'nothing saved: password, email, pending and actual number all unchanged');
     const ev2 = (await events(b)).sort().join();
-    check(ev2 === ['email_add_refused', 'password_add_refused', 'phone_change_refused', 'phone_change_refused'].sort().join(), `each attempt recorded (${ev2})`);
+    check(ev2 === ['email_add_refused', 'password_add_refused', 'phone_change_refused'].sort().join(), `each quiet attempt recorded (${ev2})`);
 
-    console.log('3. two number changes complete at once on a long-signed-in account');
-    const c = await person('15615550194', '3 days');
+    console.log('3. one permit, two number changes at once');
+    const c = await person('15615550194', '30 days');
+    const sessC = (await db.query(`insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), $1, now() - interval '30 days', now()) returning id`, [c])).rows[0].id;
+    const permit = (await db.query(`insert into private.account_step_ups (user_id, purpose, session_id, new_phone, expires_at, verified_at)
+        values ($1, 'phone_change', $2, '15615550195', now() + interval '10 minutes', now()) returning id`, [c, sessC])).rows[0].id;
     const r3 = await together(['15615550195', '15615550196'].map((n) => ({
-      sql: `update auth.users set phone = $2, phone_confirmed_at = now(), phone_change = '', phone_change_token = '', last_sign_in_at = now() where id = $1 returning phone`,
+      sql: `update auth.users set phone = $2, phone_confirmed_at = now(), phone_change = '', phone_change_token = '' where id = $1 returning phone`,
       args: [c, n] })));
     const phone = (await db.query('select phone from auth.users where id = $1', [c])).rows[0].phone;
-    check(r3.every((r) => r.ok), `both writes return without error (${errors(r3)})`);
-    check(['15615550195', '15615550196'].includes(phone), `the account ends on ONE of the two numbers (${phone})`);
+    check(phone === '15615550195', `the account ends on the permitted number (${phone})`);
+    check(r3[0].ok && !r3[1].ok && /not permitted/.test(r3[1].error), `the unpermitted move is refused with an error (${errors(r3)})`);
+    const consumed = (await db.query('select consumed_at is not null c from private.account_step_ups where id = $1', [permit])).rows[0].c;
+    check(consumed === true, 'the permit is consumed');
     const ev3 = await events(c);
-    check(ev3.filter((k) => k === 'phone_changed').length === 1 && ev3.filter((k) => k === 'phone_change_refused').length === 1,
-      `one change saved, the other refused by the fresh sign-in (${ev3.join()})`);
+    check(ev3.filter((k) => k === 'phone_changed').length === 1, `one change recorded (${ev3.join()})`);
     check((await pushes(c)) === 1, `exactly one "number changed" push (got ${await pushes(c)})`);
+
+    console.log('4. one deletion step-up, two authorizations at once');
+    const d = await person('15615550197', '30 days');
+    const sessD = (await db.query(`insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), $1, now() - interval '30 days', now()) returning id`, [d])).rows[0].id;
+    await db.query(`insert into private.account_step_ups (user_id, purpose, session_id, expires_at, verified_at)
+        values ($1, 'delete', $2, now() + interval '10 minutes', now())`, [d, sessD]);
+    const prevSwitch = (await db.query('select deletion_protection_enabled v from private.account_security_settings')).rows[0].v;
+    await db.query('update private.account_security_settings set deletion_protection_enabled = true');
+    try {
+      const r4 = await together([0, 1].map(() => ({ sql: `select public.account_deletion_authorize($1, $2, 'aal1') ->> 'mode' as mode`, args: [d, sessD] })));
+      const okd = r4.filter((r) => r.ok);
+      check(okd.length === 1 && okd[0].row.mode === 'immediate', `exactly one authorized (${r4.map((r) => (r.ok ? r.row.mode : r.error)).join(' | ')})`);
+      check(r4.some((r) => !r.ok && /code first/i.test(r.error)), 'the other is refused: the step-up is single use');
+    } finally {
+      await db.query('update private.account_security_settings set deletion_protection_enabled = $1', [prevSwitch]);
+    }
 
     const fails = Number((await db.query(`select count(*) n from private.account_security_events where kind = 'guard_failure'`)).rows[0].n);
     check(fails === failuresBefore, 'no guard_failure rows');
   } finally {
     await db.query('delete from push_outbox where recipient_id = any($1::uuid[])', [ids]);
     await db.query('delete from private.account_security_events where user_id = any($1::uuid[])', [ids]);
+    await db.query('delete from private.account_step_ups where user_id = any($1::uuid[])', [ids]);
     await db.query('delete from auth.sessions where user_id = any($1::uuid[])', [ids]);
     await db.query('delete from profiles where id = any($1::uuid[])', [ids]);
     await db.query('delete from auth.users where id = any($1::uuid[])', [ids]);
