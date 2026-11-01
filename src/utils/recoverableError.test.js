@@ -88,6 +88,37 @@ describe('account rules the server enforces read as the rule, never a retry (tru
     }
     expect(shared.en.errors.friendRequestLimit).not.toMatch(/new|account|suspend|restrict|verify/i);
   });
+  test('daily (friend_request_daily_limit) and burst (friend_request_limit) refusals: each its own sentence, in every language, never Try Again', () => {
+    const { setCurrentLanguage, hasOwnTranslation } = require('../i18n/translate');
+    const shared = require('../i18n/ui/shared').default;
+    const src = require('fs').readFileSync(require('path').join(__dirname, '../context/LanguageContext.js'), 'utf8');
+    const langs = /SUPPORTED_LANGUAGES = \[([^\]]+)\]/.exec(src)[1].match(/'([a-z]+)'/g).map((k) => k.slice(1, -1));
+    expect(langs).toHaveLength(11);
+    // exactly what the server raises (20270377): the English text old builds keep showing + the hint
+    const DAILY = { message: 'You can send up to 15 friend requests per day. Try again tomorrow.', hint: 'friend_request_daily_limit', code: 'P0001' };
+    const BURST = { message: "You've sent several friend requests in a short time. Please wait a few minutes and try again.", hint: 'friend_request_limit', code: 'P0001' };
+    try {
+      for (const lang of langs) {
+        setCurrentLanguage(lang);
+        expect([lang, hasOwnTranslation(lang, 'ui.shared.errors.friendRequestDailyLimit')]).toEqual([lang, true]);
+        const daily = recoverableErrorCopy({ what: 'complete that', error: DAILY });
+        const burst = recoverableErrorCopy({ what: 'complete that', error: BURST });
+        expect([lang, daily.message, daily.canRetry]).toEqual([lang, shared[lang].errors.friendRequestDailyLimit, false]);
+        expect([lang, burst.message, burst.canRetry]).toEqual([lang, shared[lang].errors.friendRequestLimit, false]);
+        expect([lang, daily.title]).toEqual([lang, shared[lang].errors.didntGoThrough]);
+        expect([lang, daily.message === burst.message]).toEqual([lang, false]);
+        // the number stays the server's limit in every language (the server's 15 per local day)
+        expect([lang, /15/.test(daily.message)]).toEqual([lang, true]);
+        if (lang !== 'en') expect([lang, daily.message === DAILY.message]).toEqual([lang, false]);
+      }
+    } finally { setCurrentLanguage('en'); }
+    expect(shared.en.errors.friendRequestDailyLimit).toBe(DAILY.message);  // same friendly wording as before
+    expect(shared.en.errors.friendRequestDailyLimit).not.toMatch(/new|account|suspend|restrict|verify/i);
+    // the migration raises this hint with this English text
+    const sql = require('fs').readFileSync(require('path').join(__dirname, '../../supabase/migrations/20270377_friend_request_burst_limit.sql'), 'utf8');
+    expect(sql).toMatch(/'You can send up to % friend requests per day\. Try again tomorrow\.', v_daily_limit\s+using hint = 'friend_request_daily_limit'/);
+    expect(sql).toMatch(/v_daily_limit integer := 15;/);
+  });
   test('every language has all four sentences', () => {
     const shared = require('../i18n/ui/shared').default;
     for (const lang of Object.keys(shared)) {

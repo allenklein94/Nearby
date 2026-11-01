@@ -101,8 +101,9 @@ const STEPS = {
   // Friend-request burst limit: 5 per rolling 10 minutes at both levels, beside the unchanged 15 per local day; refuses that one request, never restricts
   20270377: { journeys: ['friendRequestBurstLimit', 'trustSafety', 'trustedWriteScope', 'forgedFlagLimits'],
     node: ['scripts/replay/friend-request-concurrency.js (replay only, before the deploy)'],
-    manual: ['read-only right after: 2 private.rate_limit_rules rows (friend_request, new + established, 600 s, 5); triggers zz_rate_limit_friend_request (before insert) + zz_log_friend_request (after insert) on friendships; on_friend_request_enforce_limit still enabled; 0 friend_request log rows',
+    manual: ['read-only right after: 2 private.rate_limit_rules rows (friend_request, new + established, 600 s, 5); triggers zz_rate_limit_friend_request (before insert) + zz_log_friend_request + on_friend_request_count_daily (after insert) on friendships; on_friend_request_enforce_limit still enabled; enforce_friend_request_daily_limit raises hint friend_request_daily_limit; 0 friend_request log rows',
       'on the phone: one ordinary friend request from Friends or a profile still sends ("Friend request sent"); a 6th within 10 minutes (dedicated test accounts only, never real people) shows "You\'ve sent several friend requests in a short time. Please wait a few minutes and try again." with no Try Again',
+      'on the phone, app set to a non-English language (dedicated test account at 15 today, never real people): the 16th request shows the daily sentence in that language (e.g. es "Puedes enviar hasta 15 solicitudes de amistad por día. Inténtalo de nuevo mañana."), never the English server text, no Try Again; needs a build with the friend_request_daily_limit mapping (NOT build 87: build 87 keeps showing the English text, as today)',
       'any request refused below 5 in 10 minutes, or a refusal that restricts / suspends the account = defect: STOP, report'] },
 };
 

@@ -36,7 +36,7 @@ const daily = (v) => `(select friend_requests_sent_today from profiles where id 
 const age = (v, interval) => `update private.limited_action_log set changed_at = now() - interval '${interval}'
     where id = (select min(id) from private.limited_action_log where user_id = ${v} and field = 'friend_request' and changed_at > now() - interval '10 minutes')`;
 
-const PEOPLE = ['v_s', 'v_e', 'v_d', 'v_r', 'v_c', 'v_x', 'v_t1', 'v_t2', 'v_t3', 'v_t4', 'v_t5', 'v_t6', 'v_t7', 'v_t8', 'v_t9'];
+const PEOPLE = ['v_s', 'v_e', 'v_d', 'v_r', 'v_c', 'v_x', 'v_t1', 'v_t2', 'v_t3', 'v_t4', 'v_t5', 'v_t6', 'v_t7', 'v_t8', 'v_t9', 'v_b'];
 
 d('journey: friend-request burst limit (20270377)', () => {
   let s;
@@ -104,6 +104,28 @@ d('journey: friend-request burst limit (20270377)', () => {
   ${rec('d_logged', logged('v_d'))}
   -- and the burst limit never consumes the daily allowance: a burst refusal leaves the daily counter where it was
   ${rec('s_daily_after_burst_refusals', daily('v_s'))}
+
+  -- both limits together (the app reads each by its hint): 9 today, then 5 in a row = daily 14 + burst full
+  update profiles set friend_requests_sent_today = 9, friend_requests_sent_date = (now() at time zone 'America/New_York')::date where id = v_b;
+  ${as('b_1', 'v_b', fr('v_b', 'v_t1'))}
+  ${as('b_2', 'v_b', fr('v_b', 'v_t2'))}
+  ${as('b_3', 'v_b', fr('v_b', 'v_t3'))}
+  ${as('b_4', 'v_b', fr('v_b', 'v_t4'))}
+  ${as('b_5', 'v_b', fr('v_b', 'v_t5'))}
+  ${rec('b_daily_after_5', daily('v_b'))}
+  -- burst full, daily not: the burst sentence
+  ${as('b_6_burst', 'v_b', fr('v_b', 'v_t6'))}
+  -- both full (daily 15 + burst full): the daily check runs first (its trigger fires first), so the daily sentence
+  update profiles set friend_requests_sent_today = 15 where id = v_b;
+  ${as('b_both_full', 'v_b', fr('v_b', 'v_t6'))}
+  -- the burst window passes, the daily cap still holds: still the daily sentence
+  update private.limited_action_log set changed_at = now() - interval '600 seconds' where user_id = v_b and field = 'friend_request';
+  ${as('b_daily_only', 'v_b', fr('v_b', 'v_t6'))}
+  -- a new local day with the burst window clear: goes through
+  update profiles set friend_requests_sent_date = (now() at time zone 'America/New_York')::date - 1 where id = v_b;
+  ${as('b_next_day', 'v_b', fr('v_b', 'v_t6'))}
+  ${rec('b_daily_next_day', daily('v_b'))}
+  ${rec('b_logged', logged('v_b'))}
 
   -- an "on conflict do nothing" retry of an existing pair (a direct API call; the app never sends one) creates nothing and
   -- uses neither allowance: with 13 already today, the skip leaves the 15th slot free for a real request
@@ -199,9 +221,22 @@ d('journey: friend-request burst limit (20270377)', () => {
   test('the daily cap is unchanged and the burst limit never consumes it', () => {
     expect(data('d_15th')).toBe('ok');
     expect(data('d_16th_daily').error).toBe('You can send up to 15 friend requests per day. Try again tomorrow.');
+    expect(data('d_16th_daily').hint).toBe('friend_request_daily_limit');
     expect(data('d_logged')).toBe(1);
     // s really created 6 requests (t1, t2, t3, t4, t5, t6); 4 burst refusals left the daily counter alone
     expect(data('s_daily_after_burst_refusals')).toBe(6);
+  });
+
+  test('daily and burst limits together: each refusal carries its own hint, the daily one wins when both are full', () => {
+    for (const k of ['b_1', 'b_2', 'b_3', 'b_4', 'b_5']) expect([k, data(k)]).toEqual([k, 'ok']);
+    expect(data('b_daily_after_5')).toBe(14);
+    expect(data('b_6_burst').hint).toBe('friend_request_limit');
+    expect(data('b_both_full').hint).toBe('friend_request_daily_limit');
+    expect(data('b_both_full').error).toBe('You can send up to 15 friend requests per day. Try again tomorrow.');
+    expect(data('b_daily_only').hint).toBe('friend_request_daily_limit');
+    expect(data('b_next_day')).toBe('ok');
+    expect(data('b_daily_next_day')).toBe(1);
+    expect(data('b_logged')).toBe(6);
   });
 
   test('an "on conflict do nothing" retry uses neither the daily nor the burst allowance', () => {
@@ -213,6 +248,7 @@ d('journey: friend-request burst limit (20270377)', () => {
     expect(data('t1_daily_after_skip')).toBe(0);
     expect(data('r_15th')).toBe('ok');
     expect(data('r_16th_daily').error).toBe('You can send up to 15 friend requests per day. Try again tomorrow.');
+    expect(data('r_16th_daily').hint).toBe('friend_request_daily_limit');
     expect(data('r_daily_end')).toBe(15);
     expect(data('r_logged')).toBe(2);
   });

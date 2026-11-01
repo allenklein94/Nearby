@@ -1114,6 +1114,16 @@ policies, constraints, table ACLs, columns, rule rows); the rollback removes exa
 `enforce_friend_request_daily_limit` body byte for byte. Jest 538/538 suites (7294 passed).
 **Not run (deploy gates):** prod journeys with the 0348-0377 prelude, an aborted rollback on prod, grants vs prod; the phone
 check in `scripts/live-verify/post-deploy.js` (20270377).
-**Known gaps / existing behaviour left as is.** The daily limit's refusal is still an English server sentence with no hint
-(recorded separately in CLAUDE.md, owner 2026-11-01; a server change needing its own migration + approval); no reset time is
+**Daily-limit message localized (owner 2026-11-01, in 0377; no separate migration: 0377 already redefines the function).**
+The daily refusal keeps its exact English text (build 87 and older keep showing it) and now carries hint
+`friend_request_daily_limit` -> `ui.shared.errors.friendRequestDailyLimit` in all 11 languages (es, de, fr, pt, ht, zh, vi,
+tl, ru, ko machine-authored: NATIVE REVIEW NEEDED). Tested together with the burst message: Jest runs both refusals through
+`recoverableErrorCopy` in every supported language (own sentence each, distinct, "15" kept, no Try Again, the English = the
+old wording, the migration raises that hint); journey case "both limits together" on a fresh replay: 9 today + 5 in a row =
+daily 14, the 6th = burst hint, both full = daily hint (its trigger fires first), burst window passed with daily 15 = still
+daily, new local day = through (counter 1), 6 log rows. Re-verified: fresh replay 501/501, journey 14/14 (fails 10/14 with
+the rollback as prelude), journeys 915/915 before and after the 13 concurrency scripts, rollback round trip identical (4676),
+Jest 538/538 (7295). Post-deploy phone check added (non-English language, needs a build with the mapping, not build 87).
+IMPLEMENTATION CLOSED (owner, 2026-11-01).
+**Known gaps / existing behaviour left as is.** No reset time is
 shown (the window is rolling; the sentence says "a few minutes", true for <= 10).

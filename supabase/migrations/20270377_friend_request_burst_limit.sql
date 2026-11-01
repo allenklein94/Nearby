@@ -17,6 +17,8 @@
 --     two requests from one person are decided one after the other and the second sees the first one's log row;
 --   * reaching the limit never restricts, flags, scores or asks to verify an account: it refuses that one request.
 -- Refusal = hint 'friend_request_limit' (the app shows its own sentence in the person's language).
+-- The daily limit's refusal (unchanged limit and English text) now also carries a hint, 'friend_request_daily_limit',
+-- so the app shows that sentence in the person's language too (owner, 2026-11-01; it was English-only).
 --
 -- Daily counter fix (owner, 2026-11-01): the daily limit used to add one to profiles.friend_requests_sent_today in its
 -- BEFORE INSERT trigger. Postgres runs BEFORE triggers before it checks a conflict, so an "on conflict do nothing" insert
@@ -152,7 +154,9 @@ begin
   end if;
 
   if v_current_count >= v_daily_limit then
-    raise exception 'You can send up to % friend requests per day. Try again tomorrow.', v_daily_limit;
+    -- 20270377: same English sentence (older builds keep showing it), plus a hint the app maps to its own sentence
+    raise exception 'You can send up to % friend requests per day. Try again tomorrow.', v_daily_limit
+      using hint = 'friend_request_daily_limit';
   end if;
 
   return new;  -- 20270377: the +1 is written after the insert (_count_friend_request_daily), only for a real row
