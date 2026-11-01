@@ -1194,3 +1194,12 @@ photo similarity, deferred until real abuse shows it); private and group message
 away doesn't delete its sighting (it was posted within the window); the cluster join is a half-overlap heuristic (two
 different groups sharing many members merge into one case: acceptable, a person reviews it); a later normalization change
 needs a new key version (`public-text:v1:` prefix).
+
+**ACCEPTED AS BUILT + LOCALLY TESTED, CLOSED (owner, 2026-11-01).** Complete but staged, disabled, unmerged and undeployed;
+every existing deployment and activation approval stays required. The 5-account threshold is PROVISIONAL (five matches open
+a review, never imply wrongdoing) until legitimate shared-text scenarios are reviewed. **Activation checklist (all
+mandatory):** (1) secret-key security review: `private.text_signal_secret` and the fingerprints protected against
+unauthorized access, the secret kept outside any client-reachable object (with 0374/0376's review); (2) prod journeys with
+the 0348-0378 prelude + an aborted rollback round trip on prod; (3) grants vs prod; (4) Privacy Policy sentence approved +
+published; (5) threshold validated against legitimate shared text. The one-word-change evasion is ACCEPTED for this version:
+no fuzzy text matching, no cross-account behavioural clustering, no further security features (owner).
