@@ -80,6 +80,12 @@ Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one
    either cancel, or submit only between two test accounts on a controlled test message (a submitted report is kept, never deleted).
    Note whether the sheet shows which message is reported. Evidence retention after deletion is NOT tested here: it needs 0355 live
    (post-deploy step 20270355). Findability problem = USABILITY, report the exact spot; no new reporting feature.
+9. Limit-message watch (owner 2026-11-01, observe only, never hunt for a limit): if any limit message appears ("You've reached the
+   limit for creating gatherings for now. Please try again later." or a rate-limit sentence), note the exact words + screen. Is it
+   neutral and helpful, and never says or implies "because your account is new"? Production runs the OLD flat gathering trigger
+   until 0362 is deployed, so the staged per-tier wording is checked again in 0362's post-deploy step. No reset time is shown:
+   the server sends none today (hint only); adding one = a separate approved change. Translations: native review (10 languages).
+   Punitive or confusing wording = USABILITY with the exact text; wording-only fix proposed, no new feature.
 
 Tier 2, the journey (session A parts 1-7, in order; seed required for 2-4, credit for hand-written replies):
 part 6's ~20-min gathering FIRST, then parts 1-5, part 7 (automatic reply), coming back for the Request deadline watch, Ask again
