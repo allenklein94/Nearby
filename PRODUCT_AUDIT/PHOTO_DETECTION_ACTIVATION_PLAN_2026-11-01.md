@@ -104,9 +104,12 @@ real uploads through `moderate-photo` on prod.
    "Privacy Policy sentences"; owner + counsel approve). The SHA-256-only version becomes untrue once 0368 is live.
 5. Prod-equivalent checks for 0380: prod journeys with the 0348-0380 prelude, prod aborted rollback, grants vs prod.
 6. 0380's own deploy approval, then the sweep, status and the controlled check above.
-7. Recommended, owner's call: re-run `calibrate-photo-hashes.js` on a larger, more realistic photo set (selfies, group
-   photos) before switching near-duplicates on. The 314-photo set had 0 false matches at 10/10, but the closest unrelated
-   pair was at 13, so the margin is thin.
+7. DONE 2026-11-01 (larger set, 1,456 photos, 1,059,240 different pairs, at the approved 10/10, threshold unchanged):
+   28 pairs flagged = 2 correct duplicates in the set, 9 photo-vs-its-own-edited-copy, 16 two people on a pixel-identical
+   background (constructed worst case), 1 real false match (two near-featureless seascapes, at exactly 10); portrait on
+   portrait 0. Not caught: full screenshots, off-centre crops >= 10%, rotations, the same person in a different photo.
+   Details: `PHOTO_SIMILARITY_CALIBRATION_2026-10-30.md`, "Larger calibration". Real selfies / group / family photos still
+   untested (need owner-supplied consented photos).
 
 ## Known limits (unchanged, accepted)
 

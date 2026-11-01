@@ -62,6 +62,47 @@ real-world false-match rate.
 
 The activation migration is now written and staged (20270380, owner 2026-11-01), NOT deployed: `PRODUCT_AUDIT/PHOTO_DETECTION_ACTIVATION_PLAN_2026-11-01.md`.
 
+## Larger calibration (2026-11-01, at the approved 10/10; threshold NOT changed)
+
+**Set:** 1,473 files: 993 Lorem Picsum / Unsplash photos, 200 randomuser.me portraits, 160 constructed shared-background
+images (40 backgrounds, 4 different faces pasted on each), 120 constructed same-face images (the same face on different
+backgrounds). Sources + licences in the local `manifest.json` (never committed). 17 byte-identical files dropped, so
+**1,456 photos**, **1,059,240 pairs of different photos**, 33,486 edited copies (23 edits each). Same hashing module as
+`moderate-photo`. Run: `calibrate-photo-hashes.js general portraits shared-bg same-face` (local results
+`/workspaces/.nearby-calibration/calib-2026-11-01.{json,log}` + `fp-10-10.txt`, not committed).
+
+**Pairs flagged at 10/10: 28 of 1,059,240.** Each one inspected, by kind:
+
+| Kind | Count | What they are | Real false match? |
+|---|---|---|---|
+| Same picture under two source ids | 2 | picsum-128 / picsum-456 (one Unsplash photo published twice), randomuser women-2 / women-85 (same portrait served twice); distance 0 | No: correct duplicates the set itself contained |
+| A photo vs its own copy with a face pasted on | 9 | each "general" photo against a constructed image that uses it as background (distance 8-10) | No: an edited copy of the same photo |
+| Two different people on a pixel-identical background | 16 | constructed shared-background groups (distance 4-10) | **Yes, worst case.** Real photos of two people at the same place won't share every background pixel, so this overstates the real risk; real family / look-alike / same-venue photos were NOT in the set |
+| Two unrelated real photos | 1 | picsum-279 / picsum-467: two near-featureless foggy seascapes by the same photographer, exactly at distance 10 | **Yes** (low-detail image at the boundary) |
+
+So among real, unrelated photos (general + portraits, about 690,900 pairs, incl. 16,653 portrait-on-portrait pairs) there
+is **1 false match at 10/10**, at the boundary; portrait-on-portrait: **0** (apart from the duplicate). The constructed
+worst case adds 16. Any match only opens a case for a person to review under 20270357's rules (3 accounts, or 2 with
+similar names); it never restricts or tells anyone.
+
+**Margin** (pairs of different photos whose closest pairing is at or below the distance, cumulative; includes the 2
+duplicates and the constructed images): <=8: 14, <=10: 28, <=11: 29, <=12: 60, <=13: 67, <=14: 141, <=16: 313, <=18: 1,028,
+<=20: 4,309. Going to 12/12 would roughly double the flagged pairs (60); 10/10 sits just before the climb.
+
+**Missed duplicates (recall at 10/10, per edit):** caught (>= 97%): resize 50% / 25%, JPEG q30, brighter, blur, greyscale,
+mirror, centred crop 10% / 20%, mirror + crop 20%, JPEG q10 (98.1%), re-saved twice, thumbnail upscaled, a screenshot
+cropped back to the photo (97.9%). Partly: contrast 90.7%, 10% border 85.8%, 5% off-centre crop 49.7%, 5 degree rotation
+20.5%, 30% crop 13.7%. **Not caught:** a full phone screenshot of the photo (0.1%), 20% off-centre crop (0.1%), 10%
+off-centre crop (1.4%), 90 degree rotation (0%). Same face on a different background: **0 matched** (closest 12): these
+hashes compare whole images and never detect the same person in a different photo. Claimed-edit recall 99.1%.
+
+**Compared with the 314-photo run:** that run had 0 false matches to 12/12; this one finds 1 real false match at exactly
+10 and confirms the shared-background worst case. The approved 10/10 is unchanged (owner: never change the threshold from
+this run).
+
+**Still not covered:** real dating-profile selfies, group photos, family members and look-alikes (need owner-supplied,
+consented photos).
+
 ## Not verified
 
 - Real uploads through `moderate-photo` on production (0368 + the function redeploy are NOT deployed).
