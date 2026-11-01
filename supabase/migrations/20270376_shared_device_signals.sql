@@ -23,7 +23,17 @@
 --   suspended_device  the token is on a suspended account (live, or deleted within 12 months) AND on another account;
 --                     also evaluated when an account is suspended AFTER the sharing began
 --   many_accounts     the token is on at least shared_device_min_accounts accounts within the 90 days (>= 3: two
---                     accounts alone, the shared family phone, NEVER open anything)
+--                     accounts alone, the shared family phone, NEVER open anything) AND (owner 2026-11-01, option 3) at
+--                     least one independent, relevant existing signal involving THOSE accounts: sharing a phone is not
+--                     suspicious by itself (a household of four adults opens nothing). Relevant = an existing review case
+--                     that is open or was closed "Action taken" (a case closed "No action needed" never counts), of a
+--                     named kind, tying the accounts together by itself:
+--                       * an identical- or similar-photo case containing at least TWO of the accounts on the token; or
+--                       * behaviour / report cases about at least TWO DIFFERENT accounts on the token (one report about
+--                         one person in a household never puts the whole household under review).
+--                     Shared-device, shared-text, prior-suspension and recovery cases never count. No score: a named
+--                     rule that holds or doesn't. Re-checked when such a case gains an account or changes status/outcome
+--                     (private._review_case_device_recheck), so the order things happen in doesn't matter.
 -- One case per token ever (until 20270369's retention removes it): later accounts join the open case; on a closed case a
 -- new account is "new evidence since closed" and the case stays closed (20270369's triggers); only an admin reopens.
 -- Case evidence = counts, the suspended accounts' ids and suspension times; never the token or its key.
@@ -123,6 +133,40 @@ alter table private.account_review_cases add constraint account_review_cases_rea
 -- (account_review_cases_subject_check is unchanged: a shared-device case has neither sha256 nor subject_user; its
 -- accounts are its members, like a similar-photo case.)
 
+-- 5a. Corroboration for a many-accounts case (owner 2026-11-01, option 3): the qualifying existing cases, [] = none.
+create or replace function private.shared_device_corroboration(p_users uuid[])
+returns jsonb
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  with counting as (                   -- cases that still count: open, or closed with action taken
+    select c.id, c.signal from private.account_review_cases c
+     where c.signal in ('identical_photo', 'similar_photo', 'behavior', 'report')
+       and (c.status = 'open' or c.outcome = 'action_taken')
+  ),
+  touched as (                         -- which of the token's accounts each such case involves (members + subject)
+    select k.id, k.signal, a.user_id
+      from counting k
+      join lateral (select m.user_id from private.account_review_case_members m where m.case_id = k.id
+                    union select c.subject_user from private.account_review_cases c where c.id = k.id and c.subject_user is not null) a on true
+     where a.user_id = any(p_users)
+  ),
+  photo as (                           -- one photo case tying two or more of them together
+    select id, signal from touched where signal in ('identical_photo', 'similar_photo')
+     group by id, signal having count(distinct user_id) >= 2
+  ),
+  person as (                          -- behaviour / report cases, counted only if they cover two or more different accounts
+    select id, signal from touched where signal in ('behavior', 'report')
+     and (select count(distinct t.user_id) from touched t where t.signal in ('behavior', 'report')) >= 2
+     group by id, signal
+  )
+  select coalesce(jsonb_agg(jsonb_build_object('id', id, 'signal', signal) order by signal, id), '[]'::jsonb)
+    from (select * from photo union select * from person) q;
+$function$;
+revoke all on function private.shared_device_corroboration(uuid[]) from public, anon, authenticated;
+
 -- 5. Evaluation ------------------------------------------------------------------------------------------------------------
 -- Opens / extends the shared-device case for one key when an approved rule holds. Never touches an account.
 create or replace function private.evaluate_shared_device(p_key bytea)
@@ -140,10 +184,14 @@ declare
   v_case uuid;
   v_status text;
   v_evidence jsonb;
+  v_corroboration jsonb := '[]'::jsonb;
 begin
   select * into s from private.account_signal_settings where id;
   if s.shared_device_min_accounts is null and not s.shared_device_suspended_enabled then return; end if;
   if p_key is null then return; end if;
+  -- one shared-device evaluation at a time, taken AFTER the caller's own write and BEFORE anything is read: a sighting and
+  -- a corroborating case committed by two overlapping transactions are then always seen together by the later one
+  perform pg_advisory_xact_lock(hashtext('device_case_evaluation'));
   perform pg_advisory_xact_lock(hashtext('device_case:' || encode(p_key, 'hex')));
 
   select coalesce(array_agg(d.user_id order by d.first_seen), '{}') into v_users
@@ -161,16 +209,21 @@ begin
    where cd.token_key = p_key
    for update of c;
 
+  if s.shared_device_min_accounts is not null and cardinality(v_users) >= s.shared_device_min_accounts then
+    v_corroboration := private.shared_device_corroboration(v_users);
+  end if;
   if s.shared_device_suspended_enabled
      and ((cardinality(v_suspended) >= 1 and cardinality(v_users) >= 2)
           or (jsonb_array_length(v_former) >= 1 and cardinality(v_users) >= 1)) then
     v_reason := 'suspended_device';
-  elsif s.shared_device_min_accounts is not null and cardinality(v_users) >= s.shared_device_min_accounts then
+  elsif s.shared_device_min_accounts is not null and cardinality(v_users) >= s.shared_device_min_accounts
+        and jsonb_array_length(v_corroboration) >= 1 then
     v_reason := 'many_accounts';
   end if;
 
   v_evidence := jsonb_build_object('accounts', cardinality(v_users), 'window_days', 90,
-                                   'suspended_accounts', to_jsonb(v_suspended), 'former_suspended_accounts', v_former);
+                                   'suspended_accounts', to_jsonb(v_suspended), 'former_suspended_accounts', v_former,
+                                   'corroborating_cases', v_corroboration);
 
   if v_case is null then
     if v_reason is null then return; end if;
@@ -258,6 +311,46 @@ revoke all on function private._suspension_device_check() from public, anon, aut
 drop trigger if exists zz_suspension_device_check on public.profiles;
 create trigger zz_suspension_device_check after update of suspended_at on public.profiles
   for each row execute function private._suspension_device_check();
+
+-- A corroborating case (photo / behaviour / report) gaining an account, or opening, closing or being reopened: re-evaluate
+-- the keys of its accounts (option 3), so a phone shared by 4+ accounts opens a case when the other signal arrives later.
+create or replace function private._review_case_device_recheck()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_case uuid;
+  k bytea;
+begin
+  if tg_table_name = 'account_review_cases' then v_case := new.id; else v_case := new.case_id; end if;
+  begin
+    if private.shared_device_active()
+       and exists (select 1 from private.account_review_cases c where c.id = v_case
+                    and c.signal in ('identical_photo', 'similar_photo', 'behavior', 'report')) then
+      for k in select distinct d.token_key from private.device_sightings d
+                where d.last_seen > now() - interval '90 days'
+                  and d.user_id in (select m.user_id from private.account_review_case_members m where m.case_id = v_case
+                                    union select c.subject_user from private.account_review_cases c where c.id = v_case)
+                order by 1 loop
+        perform private.evaluate_shared_device(k);
+      end loop;
+    end if;
+  exception when others then
+    insert into private.device_signal_failures (step, sqlstate) values ('corroboration', sqlstate);
+  end;
+  return null;
+end;
+$function$;
+revoke all on function private._review_case_device_recheck() from public, anon, authenticated;
+drop trigger if exists zz_review_member_device_recheck on private.account_review_case_members;
+create trigger zz_review_member_device_recheck after insert on private.account_review_case_members
+  for each row execute function private._review_case_device_recheck();
+drop trigger if exists zz_review_case_device_recheck on private.account_review_cases;
+create trigger zz_review_case_device_recheck after update of status, outcome on private.account_review_cases
+  for each row when (old.status is distinct from new.status or old.outcome is distinct from new.outcome)
+  execute function private._review_case_device_recheck();
 
 -- A suspended account being deleted keeps only its keys, 12 months (before the sightings cascade away). "Suspended" =
 -- the profile says so, or (delete-account removed the profile first) the latest admin decision is 'suspend' (as 20270374).

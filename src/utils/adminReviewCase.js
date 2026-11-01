@@ -160,6 +160,11 @@ export function sharedDeviceLines(evidence) {
   if (Number.isFinite(e.accounts)) out.push(`${e.accounts} account${e.accounts === 1 ? '' : 's'} registered this token in the last ${e.window_days || 90} days`);
   const live = Array.isArray(e.suspended_accounts) ? e.suspended_accounts : [];
   if (live.length) out.push(`${live.length} of them suspended`);
+  const also = Array.isArray(e.corroborating_cases) ? e.corroborating_cases : [];
+  if (also.length) {
+    const kinds = [...new Set(also.map((c) => CASE_SIGNAL_LABEL[c.signal] || c.signal))];
+    out.push(`Opened because these accounts are also in ${also.length} other review case${also.length === 1 ? '' : 's'}: ${kinds.join(', ')}`);
+  }
   for (const f of Array.isArray(e.former_suspended_accounts) ? e.former_suspended_accounts : []) {
     out.push(`Earlier on a suspended account since deleted (Account ${String(f.former_account_id).slice(0, 8)}, suspended ${new Date(f.suspended_at).toLocaleDateString()})`);
   }
