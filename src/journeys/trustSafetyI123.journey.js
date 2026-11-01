@@ -21,7 +21,7 @@
 // One rolled-back transaction. Thresholds used here are journey-only test values, never proposals. Not covered: the
 // app screens, real uploads through the Storage API + the hash moderate-photo computes (Jest guard reads its source), the
 // push actually reaching an admin's phone, group chats other than the shapes shown (same trigger function on each table).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, storedReason } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, storedReason, fixturePhoneWrite } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -63,7 +63,7 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
   delete from private.rate_limit_rules;
   update private.trust_settings set established_min_account_age = null;
   update private.account_signal_settings set duplicate_photo_min_accounts = null, similar_name_min_similarity = null;
-  update auth.users set phone = null, phone_confirmed_at = null where id = v_np;
+  ${fixturePhoneWrite(`update auth.users set phone = null, phone_confirmed_at = null where id = v_np;`)}
   insert into matches (user_a, user_b) values (v_a, v_b) returning id into v_m;
   insert into matches (user_a, user_b) values (v_a, v_c) returning id into v_m2;
   insert into messages (match_id, sender_id, body, created_at) values (v_m, v_b, 'first from b', now() - interval '2 minutes');

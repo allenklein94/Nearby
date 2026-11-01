@@ -129,6 +129,18 @@ const journeyOwner = () => ({ id: randomUUID(), managed_partner_id: randomUUID()
 // journey; never a real person's number).
 const JOURNEY_PHONE_SET = `phone = '1555' || lpad(((('x0' || substr(md5(id::text), 1, 7))::bit(32)::int) % 100000000)::text, 8, '0'), phone_confirmed_at = now()`;
 
+// A FIXTURE phone write on auth.users (clearing or moving a test actor's number). From 20270375 the takeover guard refuses a
+// number change without a permit, as it must for Auth; journeys set up their state the way admin_recover_account does: the
+// per-transaction recovery marker, for this one statement only (absent before 0375 = the plain statement).
+const fixturePhoneWrite = (stmt) => `
+  if to_regclass('private.account_recovery_marker') is not null then
+    execute 'insert into private.account_recovery_marker (txid) values (txid_current()) on conflict do nothing';
+  end if;
+  ${stmt}
+  if to_regclass('private.account_recovery_marker') is not null then
+    execute 'delete from private.account_recovery_marker where txid = txid_current()';
+  end if;`;
+
 function actorsSql({ people, friends = [], business = null }) {
   const lines = [`perform set_config('app.trusted_update', 'on', true);`];
   people.forEach((v, i) => {
@@ -163,4 +175,4 @@ function storedReason(legacy) {
   return expect.stringMatching(new RegExp(`^(${legacy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${reportReasonCode(legacy)})$`));
 }
 
-module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, LIFT_GATHERING_CREATION_LIMIT, storedReason };
+module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, fixturePhoneWrite, LIFT_GATHERING_CREATION_LIMIT, storedReason };

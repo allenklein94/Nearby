@@ -3,7 +3,7 @@ import settings from '../i18n/ui/settings';
 
 const NOW = Date.parse('2026-11-01T15:00:00Z');
 
-describe('phone number change wait (20270375)', () => {
+describe('phone number change wait (20270375, revised 2026-11-01)', () => {
   test('a future time from the server = wait until then', () => {
     expect(phoneChangeWaitUntil({ data: '2026-11-02T09:30:00+00:00', error: null }, NOW).toISOString()).toBe('2026-11-02T09:30:00.000Z');
   });
@@ -22,11 +22,17 @@ describe('phone number change wait (20270375)', () => {
   test('the time renders as text', () => {
     expect(typeof phoneChangeWaitTime(new Date('2026-11-02T09:30:00Z'))).toBe('string');
   });
-  test('every language has both strings, each body carries {time} and says 24', () => {
+  test('every language has the strings, the wait body carries {time} and says 7 (revised 2026-11-01: 7-day session)', () => {
     for (const [lang, s] of Object.entries(settings)) {
       expect([lang, typeof s.phoneChangeWaitTitle]).toEqual([lang, 'string']);
       expect(s.phoneChangeWaitBody).toContain('{time}');
-      expect(s.phoneChangeWaitBody).toContain('24');
+      expect(s.phoneChangeWaitBody).toContain('7');
+      expect(s.phoneChangeWaitBody).not.toContain('24');
+      for (const k of ['confirmItsYouTitle', 'stepUpFailed', 'stepUpRateLimited', 'accountOnHold', 'deletionScheduledTitle']) {
+        expect([lang, k, typeof s[k]]).toEqual([lang, k, 'string']);
+      }
+      expect(s.confirmItsYouBody).toContain('{target}');
+      expect(s.deletionScheduledBody).toContain('{date}');
     }
   });
 });

@@ -3,7 +3,7 @@
 // and sign up again with the same number. Sign-up works exactly as for anyone; a private review case opens for an admin;
 // nothing restricts the new account; nothing the person can read reveals the match; the record expires after 12 months.
 // Phones are fictional 1555 / 561-555-01xx numbers. Every client action runs under the real role (set local role + JWT).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -36,7 +36,7 @@ const signUp = (v, phone) => `
   update auth.users set phone_confirmed_at = now() where id = ${v};
   insert into profiles (id, display_name, birthdate, created_at, terms_accepted_at, timezone, photo_verified, profile_hidden)
   values (${v}, 'New ' || left(${v}::text, 4), date '1995-03-01', now(), now(), 'America/New_York', true, false);`;
-const setPhone = (v, phone) => `update auth.users set phone = '${phone}', phone_confirmed_at = now() where id = ${v};`;
+const setPhone = (v, phone) => fixturePhoneWrite(`update auth.users set phone = '${phone}', phone_confirmed_at = now() where id = ${v};`);
 const suspend = (step, v, why) => as(step, 'v_admin', `v_out := admin_suspend_user(${v}, '${why}')`, 'v_out');
 const caseOf = (v) => `(select id from private.account_review_cases where signal = 'prior_suspension' and subject_user = ${v})`;
 const queued = (v) => `(select count(*) from private.phone_match_queue where user_id = ${v})`;
@@ -54,7 +54,7 @@ d('journey: suspended-number re-registration (20270374)', () => {
   ${actorsSql({ people: PEOPLE })}
   update profiles set is_admin = true where id = v_admin;
   ${setPhone('v_s', P.s)} ${setPhone('v_r', P.r)} ${setPhone('v_n', P.n)} ${setPhone('v_s2', P.s2)} ${setPhone('v_t', P.t_old)}
-  update auth.users set phone = null, phone_confirmed_at = null where id = v_e;   -- an email-only account
+  ${fixturePhoneWrite(`update auth.users set phone = null, phone_confirmed_at = null where id = v_e;`)}   -- an email-only account
   delete from private.phone_match_queue;
 
   -- the key: normalized, keyed (not a plain hash of the number), 32 bytes

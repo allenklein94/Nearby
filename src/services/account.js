@@ -3,7 +3,7 @@ import { supabase, functionUrl } from './supabase';
 // Calls the delete-account Edge Function, which permanently removes the
 // user's profile, uploaded photo, and all associated app data (cascaded
 // via foreign keys), then deletes their actual login/auth record. This
-// cannot be undone — the confirmation UI lives in ProfileScreen.js.
+// cannot be undone — the confirmation UI lives in SettingsScreen.js (with the 20270375 step-up before it).
 export async function deleteAccount() {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
@@ -19,8 +19,11 @@ export async function deleteAccount() {
 
   const result = await response.json();
   if (!response.ok || result.error) {
-    throw new Error(result.error || 'Account deletion failed.');
+    throw Object.assign(new Error(result.error || 'Account deletion failed.'), { hint: result.hint });
   }
 
-  await supabase.auth.signOut();
+  // 20270375 D2: a deletion from a recently signed-in device may be scheduled (its sessions are already ended server-side);
+  // the caller tells the person the date. Signing out locally either way.
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+  return { scheduled: result.scheduled === true, purgeAt: result.purge_at || null };
 }

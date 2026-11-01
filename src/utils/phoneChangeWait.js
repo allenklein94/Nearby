@@ -1,7 +1,7 @@
-// The app's side of 20270375's number-change rule: a phone number can be changed only 24 hours after the account's latest
-// sign-in (a fresh sign-in = maybe someone with a stolen code). The SERVER decides (get_my_phone_change_wait, the same
-// rule as the auth.users guard, which stays the final authority); the app asks first so the person is told when, instead
-// of sending a code that can't work. Before 0375 is live the function doesn't exist: the app then goes on as it always did.
+// The app's side of 20270375's number-change rule (revised 2026-11-01): a phone number can be changed only from a session
+// (this device's sign-in) that has existed for 7 days, plus a fresh code to the current number (utils/accountStepUp.js).
+// The SERVER decides (get_my_phone_change_wait reads the calling session; the auth.users guard stays the final authority);
+// the app asks first so the person is told when. Before 0375 is live the function doesn't exist: the app goes on as before.
 
 // The RPC result -> the time a change becomes possible (a Date in the future), or null = go ahead.
 // Missing function (PGRST202, before 0375) or any other read failure = null: the guard still refuses a too-early change.
@@ -12,7 +12,7 @@ export function phoneChangeWaitUntil(result, now = Date.now()) {
   return until;
 }
 
-// "{time}" for the message: weekday + clock in the phone's own locale (a wait is at most a day away).
+// "{time}" for the message: date + clock in the phone's own locale (a wait is at most 7 days away).
 export function phoneChangeWaitTime(until) {
-  return until.toLocaleString([], { weekday: 'short', hour: 'numeric', minute: '2-digit' });
+  return until.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 }

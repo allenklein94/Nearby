@@ -16,7 +16,7 @@
 //   Fix 4: the id-verification bucket accepts images only, 10 MB max.
 // One rolled-back transaction. Not covered: real sign-in being refused by Supabase Auth (banned_until is what Auth reads;
 // proven on a phone/device only), storage uploads through the Storage API (limits are bucket settings), the app screens.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -49,7 +49,7 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   })}
   update profiles set is_admin = true where id = v_admin;
   -- v_np signed up by email: no phone
-  update auth.users set phone = null, phone_confirmed_at = null where id = v_np;
+  ${fixturePhoneWrite(`update auth.users set phone = null, phone_confirmed_at = null where id = v_np;`)}
   update profiles set photo_url = v_u || '/main-1.jpg', photo_verified = false where id = v_u;
   update profiles set onboarding_motivations = array['Go on dates'], wide_area = '41.2,-73.1' where id in (v_da, v_db, v_dc, v_np);
   update profiles set onboarding_motivations = array['Make new friends'] where id = v_dc;
