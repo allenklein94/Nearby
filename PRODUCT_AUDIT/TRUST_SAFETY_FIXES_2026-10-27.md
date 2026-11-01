@@ -1064,3 +1064,9 @@ review as 0374).
 **VoIP / virtual numbers (gap 2):** assessed, NOT built, NOT activated: `PRODUCT_AUDIT/VOIP_NUMBER_ASSESSMENT_2026-11-01.md`
 (not available through the current Twilio Verify integration; $0.008/lookup via Lookup v2; the owner's own Google Voice
 login would be flagged; recommendation = do not build until real abuse shows the need, then evidence-only, never reject).
+
+**Owner decision (2026-11-01):** 0376 ACCEPTED as code-complete, tested locally and staged. Activation preferences (not
+permission to deploy or activate): suspended-account token reuse ON; shared-token threshold N = 4 within 90 days; admin
+review only, never an automatic restriction; VoIP/virtual-number lookup DEFERRED. Gates kept: production-equivalent tests
+(prod journeys with 0348-0376 prelude, aborted rollback on prod, grants vs prod), secret-storage review, Privacy Policy
+approval, real-device push verification after deploy. No merge, deploy, activation or production change authorized.
