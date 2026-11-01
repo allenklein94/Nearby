@@ -9,6 +9,9 @@ import { toOverlayPoint } from '../motion/pinToSheet';
 import useReduceMotion from '../hooks/useReduceMotion';
 import { businessPreview, businessPreviewRoute } from '../utils/businessPreview';
 import { isVerifiedBusiness } from '../services/businessVerification';
+import { getMyManagedPartner } from '../services/brandOffers';
+import { canReportBusiness } from '../utils/reportContent';
+import ReportBlockModal from './ReportBlockModal';
 
 // The one business sheet (owner item 17, 2026-10-04, LOCKED): a lightweight preview over Discover's business browsing surfaces
 // (result rows, map pins). Not a screen and not a mini Business Profile: name, measured distance, open status, two declared
@@ -35,6 +38,14 @@ export default function BusinessPreviewSheet({ partner, pinSpot = null, navigati
   const [sheetRect, setSheetRect] = useState(null);
   // Verified Business (owner, 2026-10-31): the server decides; read for the business this sheet shows, unknown = no badge.
   const [verified, setVerified] = useState(false);
+  // "Report business" (20270381): a quiet link under the actions; the report is about the business, never its owner.
+  const [reporting, setReporting] = useState(false);
+  const [myPartnerId, setMyPartnerId] = useState(undefined);
+  useEffect(() => {
+    let live = true;
+    getMyManagedPartner().then((p) => { if (live) setMyPartnerId(p?.id ?? null); }).catch(() => { if (live) setMyPartnerId(null); });
+    return () => { live = false; };
+  }, []);
   useEffect(() => {
     setVerified(false);
     if (!partner?.id) return undefined;
@@ -115,8 +126,21 @@ export default function BusinessPreviewSheet({ partner, pinSpot = null, navigati
             <TouchableOpacity style={styles.secondary} onPress={viewBusiness} accessibilityRole="button" accessibilityLabel={t('ui.businessSheet.viewBusinessA11y', { name: preview.title ?? '' })}>
               <Text style={styles.secondaryText}>{t('ui.businessSheet.viewBusiness')}</Text>
             </TouchableOpacity>
+            {myPartnerId !== undefined && canReportBusiness(partner?.id, myPartnerId) ? (
+              <TouchableOpacity style={styles.report} onPress={() => setReporting(true)} accessibilityRole="button" accessibilityLabel={t('ui.reportBlock.reportBusinessTitle', { name: preview.title ?? '' })}>
+                <Text style={styles.reportText}>{t('ui.reportBlock.reportBusiness')}</Text>
+              </TouchableOpacity>
+            ) : null}
           </Animated.View>
         ) : null}
+        <ReportBlockModal
+          visible={reporting}
+          onClose={() => setReporting(false)}
+          target="business"
+          title={t('ui.reportBlock.reportBusinessTitle', { name: preview?.title ?? '' })}
+          reportedUserId={null}
+          reportedContent={partner?.id ? { type: 'business', id: partner.id } : null}
+        />
         {fromPin && pin && sheetRect ? <PinToSheetFrame pin={pin} rect={sheetRect} /> : null}
       </View>
     </Modal>
@@ -138,4 +162,6 @@ const getStyles = (colors) => StyleSheet.create({
   primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   secondary: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.sm },
   secondaryText: { color: colors.textPrimary, fontWeight: '600', fontSize: 15 },
+  report: { alignSelf: 'center', paddingVertical: spacing.sm, marginTop: spacing.xs },
+  reportText: { color: colors.textTertiary, fontSize: 13 },
 });

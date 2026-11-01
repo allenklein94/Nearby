@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { reportReasonLabel } from '../utils/reportReasons';
+import { reportReasonLabel, sortReportQueue, isPriorityReportReason } from '../utils/reportReasons';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
   linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
@@ -20,6 +20,7 @@ import {
 // under review"). A case is a reason to look, never proof: closing or reopening it changes nothing about the accounts.
 // Reports stay reports: an admin may open a linked investigation from one; a report never opens one by itself.
 const REPORT_COLUMNS = 'id, reason, details, created_at, resolved, reported_id, reported:profiles!reports_reported_id_fkey(display_name)';
+const isMissingColumn = (error) => !!error && ['PGRST204', '42703'].includes(error.code);
 
 export default function AdminReviewScreen() {
   const { colors } = useTheme();
@@ -41,11 +42,18 @@ export default function AdminReviewScreen() {
 
   const load = useCallback(async () => {
     const listed = await supabase.rpc('admin_list_account_review_cases', { include_closed_param: includeClosed });
-    const rep = await supabase.from('reports').select(REPORT_COLUMNS).eq('resolved', false).order('created_at', { ascending: false }).limit(100);
+    // 20270381: impersonation first (review_priority, before the 100-row limit); older databases: newest first
+    const openReports = (columns, byPriority) => {
+      let query = supabase.from('reports').select(columns).eq('resolved', false);
+      if (byPriority) query = query.order('review_priority', { ascending: false });
+      return query.order('created_at', { ascending: false }).limit(100);
+    };
+    let rep = await openReports(`${REPORT_COLUMNS}, content_type, content_excerpt`, true);
+    if (isMissingColumn(rep.error)) rep = await openReports(REPORT_COLUMNS, false);
     if (listed.error || rep.error) { setLoadError(true); return; }
     setLoadError(false);
     setCases(listed.data || []);
-    setReports(rep.data || []);
+    setReports(sortReportQueue(rep.data || []));
   }, [includeClosed]);
 
   useEffect(() => { if (isAdmin) load(); }, [isAdmin, load]);
@@ -159,8 +167,9 @@ export default function AdminReviewScreen() {
       {!reports.length ? <Text style={styles.meta}>No open reports.</Text> : null}
       {reports.map((r) => (
         <View key={r.id} style={styles.card}>
-          <Text style={styles.title}>{reportReasonLabel(r.reason)}</Text>
-          <Text style={styles.meta}>About {r.reported?.display_name || 'an account'} · {new Date(r.created_at).toLocaleString()}</Text>
+          <Text style={styles.title}>{reportReasonLabel(r.reason)}{isPriorityReportReason(r.reason) ? ' · Priority' : ''}</Text>
+          <Text style={styles.meta}>{r.content_type === 'business' ? 'About a business (nobody named)' : `About ${r.reported?.display_name || 'an account'}`} · {new Date(r.created_at).toLocaleString()}</Text>
+          {r.content_type === 'business' && r.content_excerpt ? <Text style={styles.details}>{r.content_excerpt}</Text> : null}
           {r.details ? <Text style={styles.details}>{r.details}</Text> : null}
           {canOpenInvestigation(r) ? (
             <TouchableOpacity style={styles.button} onPress={() => openFromReport(r)} accessibilityRole="button">

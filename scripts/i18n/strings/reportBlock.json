@@ -17,10 +17,13 @@
   "blockUser": "Block User",
   "reason.inappropriatePhoto": "Inappropriate content",
   "reason.harassment": "Harassment or abuse",
-  "reason.fakeProfile": "Fake profile or impersonation",
+  "reason.fakeProfile": "Fake profile",
+  "reason.impersonation": "Impersonation",
   "reason.spam": "Spam or scam",
   "reason.underage": "Underage user",
-  "reason.other": "Other"
+  "reason.other": "Other",
+  "reportBusiness": "Report business",
+  "reportBusinessTitle": "Report {name}"
  },
  "es": {
   "selectAReason": "Elige un motivo",
@@ -40,10 +43,13 @@
   "blockUser": "Bloquear usuario",
   "reason.inappropriatePhoto": "Contenido inapropiado",
   "reason.harassment": "Acoso o abuso",
-  "reason.fakeProfile": "Perfil falso o suplantación de identidad",
+  "reason.fakeProfile": "Perfil falso",
+  "reason.impersonation": "Suplantación de identidad",
   "reason.spam": "Spam o estafa",
   "reason.underage": "Usuario menor de edad",
-  "reason.other": "Otro"
+  "reason.other": "Otro",
+  "reportBusiness": "Reportar negocio",
+  "reportBusinessTitle": "Reportar {name}"
  },
  "de": {
   "selectAReason": "Grund auswählen",
@@ -63,10 +69,13 @@
   "blockUser": "Person blockieren",
   "reason.inappropriatePhoto": "Unangemessene Inhalte",
   "reason.harassment": "Belästigung oder Missbrauch",
-  "reason.fakeProfile": "Falsches Profil oder Identitätsbetrug",
+  "reason.fakeProfile": "Falsches Profil",
+  "reason.impersonation": "Identitätsbetrug",
   "reason.spam": "Spam oder Betrug",
   "reason.underage": "Minderjährige Person",
-  "reason.other": "Sonstiges"
+  "reason.other": "Sonstiges",
+  "reportBusiness": "Unternehmen melden",
+  "reportBusinessTitle": "{name} melden"
  },
  "fr": {
   "selectAReason": "Choisis un motif",
@@ -86,10 +95,13 @@
   "blockUser": "Bloquer la personne",
   "reason.inappropriatePhoto": "Contenu inapproprié",
   "reason.harassment": "Harcèlement ou abus",
-  "reason.fakeProfile": "Faux profil ou usurpation d'identité",
+  "reason.fakeProfile": "Faux profil",
+  "reason.impersonation": "Usurpation d'identité",
   "reason.spam": "Spam ou arnaque",
   "reason.underage": "Personne mineure",
-  "reason.other": "Autre"
+  "reason.other": "Autre",
+  "reportBusiness": "Signaler l'entreprise",
+  "reportBusinessTitle": "Signaler {name}"
  },
  "pt": {
   "selectAReason": "Escolha um motivo",
@@ -109,10 +121,13 @@
   "blockUser": "Bloquear usuário",
   "reason.inappropriatePhoto": "Conteúdo inadequado",
   "reason.harassment": "Assédio ou abuso",
-  "reason.fakeProfile": "Perfil falso ou falsificação de identidade",
+  "reason.fakeProfile": "Perfil falso",
+  "reason.impersonation": "Falsificação de identidade",
   "reason.spam": "Spam ou golpe",
   "reason.underage": "Usuário menor de idade",
-  "reason.other": "Outro"
+  "reason.other": "Outro",
+  "reportBusiness": "Denunciar empresa",
+  "reportBusinessTitle": "Denunciar {name}"
  },
  "ht": {
   "selectAReason": "Chwazi yon rezon",
@@ -132,10 +147,13 @@
   "blockUser": "Bloke moun nan",
   "reason.inappropriatePhoto": "Kontni ki pa apwopriye",
   "reason.harassment": "Arasman oswa abi",
-  "reason.fakeProfile": "Fo pwofil oswa moun k ap pase pou yon lòt",
+  "reason.fakeProfile": "Fo pwofil",
+  "reason.impersonation": "Moun k ap pase pou yon lòt",
   "reason.spam": "Spam oswa eskwokri",
   "reason.underage": "Moun ki poko gen laj",
-  "reason.other": "Lòt"
+  "reason.other": "Lòt",
+  "reportBusiness": "Rapòte biznis la",
+  "reportBusinessTitle": "Rapòte {name}"
  },
  "zh": {
   "selectAReason": "请选择原因",
@@ -155,10 +173,13 @@
   "blockUser": "屏蔽用户",
   "reason.inappropriatePhoto": "不当内容",
   "reason.harassment": "骚扰或辱骂",
-  "reason.fakeProfile": "虚假资料或冒充他人",
+  "reason.fakeProfile": "虚假资料",
+  "reason.impersonation": "冒充他人",
   "reason.spam": "垃圾信息或诈骗",
   "reason.underage": "未成年用户",
-  "reason.other": "其他"
+  "reason.other": "其他",
+  "reportBusiness": "举报商家",
+  "reportBusinessTitle": "举报{name}"
  },
  "vi": {
   "selectAReason": "Chọn lý do",
@@ -178,10 +199,13 @@
   "blockUser": "Chặn người dùng",
   "reason.inappropriatePhoto": "Nội dung không phù hợp",
   "reason.harassment": "Quấy rối hoặc lạm dụng",
-  "reason.fakeProfile": "Hồ sơ giả hoặc mạo danh",
+  "reason.fakeProfile": "Hồ sơ giả",
+  "reason.impersonation": "Mạo danh",
   "reason.spam": "Spam hoặc lừa đảo",
   "reason.underage": "Người dùng chưa đủ tuổi",
-  "reason.other": "Khác"
+  "reason.other": "Khác",
+  "reportBusiness": "Báo cáo doanh nghiệp",
+  "reportBusinessTitle": "Báo cáo {name}"
  },
  "tl": {
   "selectAReason": "Pumili ng dahilan",
@@ -201,10 +225,13 @@
   "blockUser": "I-block ang user",
   "reason.inappropriatePhoto": "Hindi angkop na nilalaman",
   "reason.harassment": "Panliligalig o pang-aabuso",
-  "reason.fakeProfile": "Pekeng profile o pagpapanggap",
+  "reason.fakeProfile": "Pekeng profile",
+  "reason.impersonation": "Pagpapanggap",
   "reason.spam": "Spam o panloloko",
   "reason.underage": "Menor de edad na user",
-  "reason.other": "Iba pa"
+  "reason.other": "Iba pa",
+  "reportBusiness": "I-report ang negosyo",
+  "reportBusinessTitle": "I-report ang {name}"
  },
  "ru": {
   "selectAReason": "Выберите причину",
@@ -224,10 +251,13 @@
   "blockUser": "Заблокировать",
   "reason.inappropriatePhoto": "Неприемлемый контент",
   "reason.harassment": "Преследование или оскорбления",
-  "reason.fakeProfile": "Фейковый профиль или выдача себя за другого",
+  "reason.fakeProfile": "Фейковый профиль",
+  "reason.impersonation": "Выдача себя за другого",
   "reason.spam": "Спам или мошенничество",
   "reason.underage": "Несовершеннолетний пользователь",
-  "reason.other": "Другое"
+  "reason.other": "Другое",
+  "reportBusiness": "Пожаловаться на компанию",
+  "reportBusinessTitle": "Пожаловаться на {name}"
  },
  "ko": {
   "selectAReason": "이유를 선택하세요",
@@ -247,9 +277,12 @@
   "blockUser": "사용자 차단",
   "reason.inappropriatePhoto": "부적절한 콘텐츠",
   "reason.harassment": "괴롭힘 또는 욕설",
-  "reason.fakeProfile": "가짜 프로필 또는 사칭",
+  "reason.fakeProfile": "가짜 프로필",
+  "reason.impersonation": "사칭",
   "reason.spam": "스팸 또는 사기",
   "reason.underage": "미성년 사용자",
-  "reason.other": "기타"
+  "reason.other": "기타",
+  "reportBusiness": "업체 신고",
+  "reportBusinessTitle": "{name} 신고"
  }
 }

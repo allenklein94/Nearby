@@ -8,7 +8,7 @@ import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { PullToRefresh } from '../motion';
 import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
-import { reportReasonLabel } from '../utils/reportReasons';
+import { reportReasonLabel, sortReportQueue, isPriorityReportReason } from '../utils/reportReasons';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
 // review cases (identical photo + an approved rule; 20270363: behaviour patterns, counts only) are listed above the reports. Both work on a database without those
@@ -16,6 +16,7 @@ import { reportReasonLabel } from '../utils/reportReasons';
 const REPORT_COLUMNS = 'id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name, suspended_at)';
 const CONTENT_COLUMNS = ', content_type, content_excerpt, content_sent_at';
 const isMissing = (error) => !!error && ['PGRST202', 'PGRST204', '42703', '42883'].includes(error.code);
+const REPORTED_WHAT = { match_chat: 'chat (their last messages)', business_offer: 'offer', business: 'business (as it showed then)' };
 const CASE_REASON = {
   many_accounts: 'Same photo on several accounts',
   similar_names: 'Same photo + similar names',
@@ -41,15 +42,17 @@ export default function AdminReportsScreen({ navigation }) {
   async function load() {
     setLoading(true);
     try {
-      const run = (columns) => supabase
-        .from('reports')
-        .select(columns)
-        .order('resolved', { ascending: true })
-        .order('created_at', { ascending: false });
-      let { data, error } = await run(REPORT_COLUMNS + CONTENT_COLUMNS);
-      if (isMissing(error)) ({ data, error } = await run(REPORT_COLUMNS));
+      // 20270381: impersonation first among open reports (review_priority); older databases: same order client-side
+      const run = (columns, byPriority) => {
+        let query = supabase.from('reports').select(columns).order('resolved', { ascending: true });
+        if (byPriority) query = query.order('review_priority', { ascending: false });
+        return query.order('created_at', { ascending: false });
+      };
+      let { data, error } = await run(REPORT_COLUMNS + CONTENT_COLUMNS, true);
+      if (isMissing(error)) ({ data, error } = await run(REPORT_COLUMNS + CONTENT_COLUMNS, false));
+      if (isMissing(error)) ({ data, error } = await run(REPORT_COLUMNS, false));
       if (error) throw error;
-      setReports(data);
+      setReports(sortReportQueue(data));
       setLoadError(false);
       const listed = await supabase.rpc('admin_list_account_review_cases');
       setCases(listed.error ? [] : listed.data || []);
@@ -185,13 +188,17 @@ export default function AdminReportsScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <View style={[styles.card, item.resolved && styles.cardResolved]}>
-            <Text style={styles.reason}>{reportReasonLabel(item.reason)}</Text>
-            <Text style={styles.meta}>Against: {item.reported?.display_name || item.reported_id}</Text>
+            <Text style={styles.reason}>{reportReasonLabel(item.reason)}{isPriorityReportReason(item.reason) && !item.resolved ? ' · Priority' : ''}</Text>
+            {item.content_type === 'business' ? (
+              <Text style={styles.meta}>About a business (nobody named)</Text>
+            ) : item.reported_id ? (
+              <Text style={styles.meta}>Against: {item.reported?.display_name || item.reported_id}</Text>
+            ) : null}
             {item.reported?.suspended_at ? <Text style={styles.meta}>Suspended {new Date(item.reported.suspended_at).toLocaleString()}</Text> : null}
             {item.details ? <Text style={styles.details}>{item.details}</Text> : null}
             {item.content_excerpt ? (
               <View style={styles.evidence}>
-                <Text style={styles.meta}>Reported {item.content_type === 'match_chat' ? 'chat (their last messages)' : 'message'}{item.content_sent_at ? ` · sent ${new Date(item.content_sent_at).toLocaleString()}` : ''}</Text>
+                <Text style={styles.meta}>Reported {REPORTED_WHAT[item.content_type] || 'message'}{item.content_sent_at ? ` · sent ${new Date(item.content_sent_at).toLocaleString()}` : ''}</Text>
                 <Text style={styles.details}>{item.content_excerpt}</Text>
               </View>
             ) : null}
@@ -200,7 +207,8 @@ export default function AdminReportsScreen({ navigation }) {
             {/* a suspended account can be reinstated from its report even after the report is resolved */}
             {(!item.resolved || item.reported?.suspended_at) && (
               <View style={styles.actions}>
-                {item.reported?.suspended_at ? (
+                {/* a report with no person on it (a business report, 20270381) offers no Suspend: nobody is accused */}
+                {!item.reported_id ? null : item.reported?.suspended_at ? (
                   <TouchableOpacity style={styles.actionButton} onPress={() => reinstateReportedUser(item)} accessibilityRole="button">
                     <Text style={styles.actionText}>Reinstate User</Text>
                   </TouchableOpacity>

@@ -27,6 +27,8 @@ import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 import { isVerifiedBusiness } from '../services/businessVerification';
+import ReportBlockModal from '../components/ReportBlockModal';
+import { canReportBusiness } from '../utils/reportContent';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
 // uploaded creative, rendered INSIDE its existing experience card, never
@@ -77,6 +79,9 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [unavailable, setUnavailable] = useState(false);
   // Verified Business (owner, 2026-10-31): decided by the server only; unknown = no badge.
   const [verified, setVerified] = useState(false);
+  // "Report business" (20270381): quiet link at the end of the page; the report is about the business, never its owner.
+  const [reporting, setReporting] = useState(false);
+  const [myPartnerId, setMyPartnerId] = useState(undefined);
   const [followerCount, setFollowerCount] = useState(0);
   const [following, setFollowing] = useState(false);
   const [gatherings, setGatherings] = useState([]);
@@ -125,6 +130,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
         getBusinessExperiences(partnerId),
       ]);
 
+      setMyPartnerId(myPartner?.id ?? null);
       if (!hasLoggedView.current && myPartner?.id !== partnerId) {
         hasLoggedView.current = true;
         logBusinessProfileView(partnerId, route.params?.source === 'deep_link' ? 'deep_link' : 'in_app');
@@ -654,13 +660,28 @@ export default function BusinessProfileScreen({ route, navigation }) {
             })}
           </View>
         )}
+        {myPartnerId !== undefined && canReportBusiness(partnerId, myPartnerId) ? (
+          <TouchableOpacity style={styles.reportLink} onPress={() => setReporting(true)} accessibilityRole="button" accessibilityLabel={t('ui.reportBlock.reportBusinessTitle', { name: partner.name })}>
+            <Text style={styles.reportLinkText}>{t('ui.reportBlock.reportBusiness')}</Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
+      <ReportBlockModal
+        visible={reporting}
+        onClose={() => setReporting(false)}
+        target="business"
+        title={t('ui.reportBlock.reportBusinessTitle', { name: partner.name })}
+        reportedUserId={null}
+        reportedContent={{ type: 'business', id: partnerId }}
+      />
     </SafeAreaView>
   );
 }
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  reportLink: { alignSelf: 'center', paddingVertical: spacing.md, marginTop: spacing.lg },
+  reportLinkText: { color: colors.textTertiary, fontSize: 13 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
   logo: { width: 64, height: 64, borderRadius: radius.lg, marginRight: spacing.md },
   logoPlaceholder: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' },

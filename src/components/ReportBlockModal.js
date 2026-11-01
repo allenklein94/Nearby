@@ -8,16 +8,21 @@ import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation, showSuccessToast } from '../motion';
 import { reportRow, insertReport } from '../utils/reportContent';
-import { REPORT_REASONS } from '../utils/reportReasons';
+import { reportReasonsFor } from '../utils/reportReasons';
 // One reason table (utils/reportReasons.js): the chip label is translated (ui.reportBlock.reason.<key>); what is saved is
 // the reason's fixed `legacy` value, which the database maps to its stable code (20270370). Never a translated string.
-const REPORT_REASON_CHIPS = REPORT_REASONS.map((r) => ({ value: r.legacy, key: r.key }));
+// A report about a business (target 'business', 20270381) offers the business reasons only.
+const reasonChips = (target) => reportReasonsFor(target).map((r) => ({ value: r.legacy, key: r.key }));
 
 // reportOnly: the caller owns blocking (a host's Block in Manage attendees also takes the person off the gathering), so
 // the sheet shows only the report.
 // reportedContent: optional { type, id } of what is being reported (a long-pressed message, or { type: 'match_chat',
 // id: matchId } from a 1:1 chat); the server keeps its own copy of it (utils/reportContent.js).
-export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly = false, reportedContent = null }) {
+// target 'business' + reportedContent { type: 'business', id: partnerId } (20270381, "Report business"): report only, no
+// person named (the server sets nobody), title = title prop ("Report {name}").
+export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly = false, reportedContent = null, target = 'person', title = null }) {
+  const REPORT_REASON_CHIPS = reasonChips(target);
+  const onlyReport = reportOnly || target === 'business';
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -33,7 +38,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
     const { data: sessionData } = await supabase.auth.getSession();
     const reporterId = sessionData?.session?.user?.id;
 
-    const row = reportRow({ reporterId, reportedId: reportedUserId, reason: selectedReason, details: details.trim(), content: reportedContent });
+    const row = reportRow({ reporterId, reportedId: target === 'business' ? null : reportedUserId, reason: selectedReason, details: details.trim(), content: reportedContent });
     const { error } = await insertReport((r) => supabase.from('reports').insert(r), row);
 
     setSubmitting(false);
@@ -73,7 +78,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>{t('ui.reportBlock.reportOrBlock')}</Text>
+          <Text style={styles.title}>{title || t('ui.reportBlock.reportOrBlock')}</Text>
 
           <Text style={styles.label}>{t('ui.reportBlock.reasonForReport')}</Text>
           <View style={styles.reasonsWrap}>
@@ -103,7 +108,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
             <Text style={styles.reportButtonText}>{submitting ? t('ui.reportBlock.submitting') : t('ui.reportBlock.submitReport')}</Text>
           </TouchableOpacity>
 
-          {!reportOnly && (
+          {!onlyReport && (
             <TouchableOpacity style={styles.blockButton} onPress={blockUser}>
               <Text style={styles.blockButtonText}>{t('ui.reportBlock.blockUser')}</Text>
             </TouchableOpacity>
