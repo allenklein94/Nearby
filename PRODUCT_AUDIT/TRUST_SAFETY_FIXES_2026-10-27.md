@@ -972,6 +972,27 @@ gated live test `src/qa/accountTakeoverSignedIn.live.js`, post-deploy step (`scr
 - Production sends codes by Twilio Verify; the local test used Auth's test OTP: the Verify path is a post-deploy phone check.
 - An operator with database-owner access works around every rule (as for every guard).
 
+### Owner review (2026-11-01): accepted as code-complete + staged, residual risks open
+
+Decision: 0375 is ACCEPTED as code-complete and staged; NOT deployed. R1-R4 stay OPEN for the external-launch security review;
+SMS-only sign-in is never described as resistant to SIM swaps. Next = build 87 + Tier 1, then the controlled staged deployment.
+
+Questions answered (from the migration + the real-Auth test; no new code):
+- **What the 24 h clock measures:** `auth.users.last_sign_in_at`, the account's MOST RECENT sign-in on any device (Auth sets it
+  on every successful sign-in: SMS code, password, magic link), never the creation time of the session making the request; a
+  token refresh never moves it. Evidence: the real-Auth test sets the owner's last sign-in to 3 days ago, the intruder then signs
+  in by code, and the intruder's number change is refused (so Auth's code sign-in moved the clock). Consequences: whoever signed
+  in last restarts the wait for everyone (an owner signing in again pushes an intruder's window out; the owner's own change also
+  waits 24 h after their sign-in). Not checked: whether Auth's `reauthenticate` nonce moves it (the app doesn't use it).
+- **Recovery after an unauthorized number change: NONE that works reliably (R4).** If the owner still has a signed-in device they
+  get "Your Nearby phone number was changed" and could, in principle, change the number back from Settings (the intruder's
+  sign-in is then >= 24 h old) before tapping Sign Out; NOT TESTED (whether Auth ends other sessions on a number change, and the
+  race with the intruder). If the owner has no signed-in device, the only path is "contact Nearby support", and today there is no
+  support runbook, no way for a phone-only owner to prove ownership (the number now belongs to the intruder), and the guard also
+  refuses an admin-API number change within 24 h of the intruder's latest sign-in. The private record (`phone_changed`, time
+  only) is the only evidence. To be designed in the launch review together with R1/R2 (second factor / passkeys, protected
+  deletion); not built (development frozen).
+
 ### Deployment dependencies (each its own approval; nothing deployed)
 - After 0374, in migration order, through `deploy.js`.
 - A build that asks `get_my_phone_change_wait` for the friendly wait message; older builds still work (the change isn't saved
