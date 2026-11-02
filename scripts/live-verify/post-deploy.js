@@ -155,8 +155,10 @@ const STEPS = {
       'controlled check (owner, dedicated test accounts only, two phones): both in Dating, only one switch on = nothing recorded; both on and near = Crossed Paths shows each other + one push each; one turns the switch off = the row disappears for both at once and the other can no longer open that profile through it',
       'a crossing recorded or a profile readable through a crossing for someone whose switch is off, or a presence report refused because of the probe record = security defect: STOP, report'] },
   // Gathering review signals (owner idea 11, 2026-11-02): detectors installed, all OFF
-  20270385: { journeys: ['gatheringReviewSignals', 'behaviorReviewSignals', 'behaviorSignalThresholds', 'gatheringCreationLimits'],
+  20270385: { journeys: ['gatheringReviewSignals', 'reviewCaseHistory', 'behaviorReviewSignals', 'behaviorSignalThresholds', 'gatheringCreationLimits'],
     manual: ['BEFORE the deploy approval: 0384 live (in order); prod journeys with the 0348-0385 prelude + an aborted rollback round trip on prod; grants vs prod',
+      'BEFORE the deploy approval (owner 2026-11-02, after the closed-case fix): the rolled-back state = the pre-0385 originals ITEM FOR ITEM, compared again on a fresh replay AND in the prod aborted rollback (sorted snapshot): private.behavior_evaluate_case byte-identical to 0382\'s, the purge = 0363\'s, the 0382 / 0363 constraints, case_alone_kinds order; any difference = do not deploy, report',
+      'read-only right after: a closed behaviour case is never written to by a signal (no new_evidence event on behaviour cases created after the deploy); fresh qualifying signals after a close open a new case with previous_case_id (journey gatheringReviewSignals)',
       'read-only right after: private.gathering_signal_settings all null; private.gathering_cancel_log + gathering_size_marks: no client role, 0 rows; triggers zz_gathering_signal_capacity / _cancel on gatherings, zz_gathering_signal_join on gathering_interest',
       'a gathering create / join / cancel refused or failing because of a detector = defect: STOP, report'] },
   // ... and switched on with the owner's approved starting numbers (2026-11-02, provisional)
