@@ -9,6 +9,8 @@
 //      person who turned it off, and no error or deadlock.
 //   3. "off" vs that person's own presence report: afterwards no stored cell is left for them.
 //   4. both people's report-presence calls write the same crossing at once: one record, one push each, no error.
+//   5. one encounter per pair: after a crossing, 4 rounds of switching off and on racing fresh reports + re-crossings (both
+//      directions) never create a second encounter: no crossing left, still one push each, one memory row, no error.
 // Every row it creates is deleted afterwards.
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/crossed-paths-concurrency.js
 const url = process.env.NEARBY_LOCAL_DB_URL;
@@ -126,6 +128,35 @@ const errors = (rs) => rs.filter((r) => !r.ok).map((r) => `${r.code} ${r.error}`
     const pushes = (await admin.query(`select recipient_id, count(*)::int n from push_outbox where id > $1
       and data->>'type' = 'crossed_paths_sighting' and recipient_id = any($2) group by recipient_id`, [start, [p, q]])).rows;
     check(pushes.length === 2 && pushes.every((r) => r.n === 1), `one push each (${JSON.stringify(pushes)})`);
+
+    console.log('5. switching off and on while re-crossings are written: no second encounter');
+    const u = await person();
+    const w = await person();
+    await ready(u, w);
+    const start5 = Number((await admin.query('select coalesce(max(id), 0) m from push_outbox')).rows[0].m);
+    await run(CROSS(u, w, CELL));
+    check(await crossing(u, w) === 1, 'first encounter recorded');
+    const eligibleAgain = () => admin.query(`update private.crossed_paths_probe set last_new_cell_at = now() - interval '31 seconds'
+      where user_id = any($1)`, [[u, w]]);
+    const rs5 = [];
+    for (let round = 0; round < 4; round += 1) {
+      await eligibleAgain();
+      rs5.push(...await Promise.all([
+        run(SWITCH(w, false)).then(async (r) => [r, await run(SWITCH(w, true))]),
+        (async () => [await run(REPORT(w, CELL), 50), await run(REPORT(u, CELL)), await run(CROSS(u, w, CELL)), await run(CROSS(w, u, CELL))])(),
+      ]).then((x) => x.flat()));
+    }
+    check(errors(rs5).length === 0, `no error or deadlock (${JSON.stringify(errors(rs5))})`);
+    await eligibleAgain();
+    await ready(u, w);
+    await run(CROSS(u, w, CELL));
+    check(await crossing(u, w) === 0, `no fresh encounter after off -> on (got ${await crossing(u, w)})`);
+    const pushes5 = (await admin.query(`select recipient_id, count(*)::int n from push_outbox where id > $1
+      and data->>'type' = 'crossed_paths_sighting' and recipient_id = any($2) group by recipient_id`, [start5, [u, w]])).rows;
+    check(pushes5.length === 2 && pushes5.every((r) => r.n === 1), `still one push each (${JSON.stringify(pushes5)})`);
+    const mem5 = Number((await admin.query(`select count(*) from private.crossed_paths_encounters
+      where user_a = least($1::uuid, $2::uuid) and user_b = greatest($1::uuid, $2::uuid) and expires_at > now()`, [u, w])).rows[0].count);
+    check(mem5 === 1, `one live encounter memory (got ${mem5})`);
   } finally {
     await admin.query('delete from push_outbox where recipient_id = any($1)', [ids]);
     await admin.query('delete from sightings where user_a = any($1) or user_b = any($1)', [ids]);
@@ -136,6 +167,7 @@ const errors = (rs) => rs.filter((r) => !r.ok).map((r) => `${r.code} ${r.error}`
       + (select count(*) from private.crossed_paths_consent where user_id = any($1))
       + (select count(*) from private.crossed_paths_consent_log where user_id = any($1))
       + (select count(*) from private.crossed_paths_probe where user_id = any($1))
+      + (select count(*) from private.crossed_paths_encounters where user_a = any($1) or user_b = any($1))
       + (select count(*) from sightings where user_a = any($1) or user_b = any($1)) as n`, [ids])).rows[0].n);
     check(left === 0, `cleanup: ${left} rows left`);
     await admin.end();

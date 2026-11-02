@@ -158,6 +158,9 @@ d('journey: stories and sightings never store a precise location (item 148)', ()
   -- D4: sightings (written by the server only; no client insert path exists)
   insert into sightings (user_a, user_b, approx_area, first_seen_at, last_seen_at, expires_at)
     values (v_p, v_f, '12.3457,-45.6789', now(), now(), now() + interval '1 day') returning id into v_s;
+  -- the swapped-order row is the same pair: from 20270384 one encounter per pair, so forget the first one's memory to test
+  -- the pin in the other order
+  if to_regclass('private.crossed_paths_encounters') is not null then execute 'delete from private.crossed_paths_encounters'; end if;
   insert into sightings (user_a, user_b, approx_area, first_seen_at, last_seen_at, expires_at)
     values (v_f, v_p, '12.3458,-45.6788', now(), now(), now() + interval '1 day') returning id into v_s2;
   insert into sightings (user_a, user_b, approx_area, first_seen_at, last_seen_at, expires_at)

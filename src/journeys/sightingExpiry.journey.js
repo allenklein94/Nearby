@@ -68,12 +68,15 @@ d('journey: a crossed-paths record is gone 48 hours after the last crossing', ()
   log := log || jsonb_build_array(jsonb_build_object('step','scheduled','ok',
      exists (select 1 from cron.job where jobname = 'purge-expired-sightings' and command ~ 'purge_expired_sightings')));
 
-  -- crossing again: within 48 h = the same record, no new push; after expiry = a new record and a new push
+  -- crossing again: within 48 h = the same record, no new push (from 20270384 never refreshed: one encounter per pair until
+  -- it expires); after expiry = a new record and a new push
   v_n := ${pushes('v_a')};
   select id into v_id from sightings where user_a = least(v_a, v_c) and user_b = greatest(v_a, v_c);
   ${cross('v_a', 'v_c')};
   log := log || jsonb_build_array(jsonb_build_object('step','recross_within_48h_same_record','ok',
-     (select id = v_id and expires_at > now() + interval '47 hours 59 minutes' from sightings where user_a = least(v_a, v_c) and user_b = greatest(v_a, v_c))
+     (select id = v_id and (expires_at > now() + interval '47 hours 59 minutes'
+                            or (to_regclass('private.crossed_paths_encounters') is not null and expires_at = now() + interval '47 hours'))
+        from sightings where user_a = least(v_a, v_c) and user_b = greatest(v_a, v_c))
      and ${pushes('v_a')} = v_n));
   ${cross('v_a', 'v_b')};
   log := log || jsonb_build_array(jsonb_build_object('step','recross_after_expiry_new_record_and_push','ok',

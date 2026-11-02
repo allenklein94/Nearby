@@ -1,7 +1,10 @@
 -- Rollback for migration 20270384 (crossed paths safeguards). Restores 20270383's pair rule, write guard and purge and
--- 20270382's viewer_may_read_profile exactly; drops the consent, consent log and probe record (their rows are lost: nobody
+-- 20270382's viewer_may_read_profile exactly; drops the consent, consent log, probe record and encounter memory (their rows are lost: nobody
 -- could have opted in before 0384, and after it a rollback means re-asking). Sightings removed by 0384 are not restored.
 drop trigger if exists zz_presence_probe_record on public.presence_reports;
+drop trigger if exists zz_sighting_new_encounter_push on public.sightings;
+drop trigger if exists zz_sighting_encounter_memory on public.sightings;
+drop function if exists private.sighting_encounter_memory();
 drop function if exists private.presence_probe_record();
 
 create or replace function private.crossed_paths_pair_allowed(a uuid, b uuid)
@@ -142,6 +145,7 @@ drop function if exists public.set_crossed_paths_sharing(boolean);
 drop function if exists public.get_my_crossed_paths_sharing();
 drop function if exists private.cells_within_one_tile(text, text);
 drop function if exists private.crossed_paths_probe_limits();
+drop table if exists private.crossed_paths_encounters;
 drop table if exists private.crossed_paths_probe;
 drop table if exists private.crossed_paths_consent_log;
 drop table if exists private.crossed_paths_consent;

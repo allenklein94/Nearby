@@ -17,14 +17,23 @@
 --      on keep them (off clears only the cell). Several accounts each get their own allowance (each needs its own verified
 --      phone, 0352); documented in PRODUCT_AUDIT/CROSSED_PATHS_LOCATION_TRUST_2026-11-02.md. A sighting is recorded only if BOTH people have an
 --      eligible cell from the last 10 minutes, the sighting's cell is one of them and the two are at most one tile apart
---      (the premium 3 x 3). An over-limit sweep therefore creates nothing, even on an exact hit. An existing crossing
---      refreshes at most once an hour (last_seen_at / expires_at), so it can't be used as a live trail.
+--      (the premium 3 x 3). An over-limit sweep therefore creates nothing, even on an exact hit.
+--   4. One encounter per pair until it expires (owner decision 2026-11-02): a crossing is recorded ONCE and never refreshed
+--      (last_seen_at / expires_at stay as first written, 48 h), so repeated claims of a guessed cell confirm nothing new.
+--      A private per-pair memory (private.crossed_paths_encounters: the two account ids + the expiry, no location, no time
+--      of the crossing) is written with every new crossing and is NOT deleted when either person switches off, leaves the
+--      pool, is hidden or blocks: while it is live, no crossing for that pair is created again, so switching off and on (or
+--      leaving and rejoining Dating/Friends, or blocking and unblocking) can't manufacture a fresh encounter. It is deleted
+--      at its expiry (purge, every 10 min) or with either account. After that a new crossing is a new encounter (+ its push):
+--      inherent to the feature, disclosed. A re-crossing that finds an expired, not-yet-purged row turns it into the new
+--      encounter (first_seen_at reset) and sends the same push as a new row.
 --      The edge function's `matchedCount` (a per-cell headcount returned to ANY caller, consent or not; unused by the app)
 --      is removed in the report-presence source (redeploy with this migration).
 -- Not changed: presence_reports themselves (still stored for every reporter: push targeting + online status), the push rule
 -- (20270353), 48 h expiry, the stored pin (item 148), the app's reads. Probe records are purged by purge_expired_sightings
--- (every 10 min): the cell after 10 minutes, the row after an hour. Residual by design: two people who BOTH turned Crossed
--- Paths on can still learn "within ~11-33 m in the last 10 minutes" from one well-guessed claimed cell, once an hour per pair.
+-- (every 10 min): the cell after 10 minutes, the row after an hour; encounter memories at their expiry. Residual by design:
+-- two people who BOTH turned Crossed Paths on can learn "within ~11-33 m in the last 10 minutes" from one well-guessed
+-- claimed cell, once per encounter (48 h per pair), and the target is told who it was.
 -- Requires 20270383 (pair rule + guard), 20270382 (viewer_may_read_profile). Deploy after 20270383.
 
 create table if not exists private.crossed_paths_consent (
@@ -46,14 +55,24 @@ create table if not exists private.crossed_paths_probe (
   window_start timestamptz,
   window_count integer not null default 0
 );
-revoke all on private.crossed_paths_consent, private.crossed_paths_consent_log, private.crossed_paths_probe from public, anon, authenticated;
+-- 4. one encounter per pair: ids + expiry only (user_a < user_b, as sightings store them)
+create table if not exists private.crossed_paths_encounters (
+  user_a uuid not null references public.profiles(id) on delete cascade,
+  user_b uuid not null references public.profiles(id) on delete cascade,
+  expires_at timestamptz not null,
+  primary key (user_a, user_b),
+  check (user_a < user_b)
+);
+create index if not exists crossed_paths_encounters_user_b on private.crossed_paths_encounters (user_b);
+create index if not exists crossed_paths_encounters_expires on private.crossed_paths_encounters (expires_at);
+revoke all on private.crossed_paths_consent, private.crossed_paths_consent_log, private.crossed_paths_probe,
+  private.crossed_paths_encounters from public, anon, authenticated;
 revoke all on sequence private.crossed_paths_consent_log_id_seq from public, anon, authenticated;
 
--- The numbers, in one place (proposed starting values).
+-- The numbers, in one place (owner approved as initial values, 2026-11-02).
 create or replace function private.crossed_paths_probe_limits()
 returns jsonb language sql immutable set search_path to 'public' as $function$
-  select jsonb_build_object('new_cell_gap_seconds', 30, 'new_cells_per_hour', 20, 'eligible_minutes', 10,
-                            'refresh_cooldown_minutes', 60, 'tile', 0.0001);
+  select jsonb_build_object('new_cell_gap_seconds', 30, 'new_cells_per_hour', 20, 'eligible_minutes', 10, 'tile', 0.0001);
 $function$;
 revoke all on function private.crossed_paths_probe_limits() from public, anon, authenticated;
 
@@ -115,6 +134,8 @@ begin
     -- limits; the purge deletes the row after an hour idle
     update private.crossed_paths_probe set eligible_area = null, eligible_at = null where user_id = v;
     delete from sightings where user_a = v or user_b = v;
+    -- private.crossed_paths_encounters is kept on purpose (ids + expiry, no location): switching back on must not create
+    -- a fresh encounter with the same person before the original one would have expired
   end if;
   if v_was is distinct from enabled then
     insert into private.crossed_paths_consent_log (user_id, enabled) values (v, enabled);
@@ -208,6 +229,21 @@ begin
   if not private.crossed_paths_pair_allowed(new.user_a, new.user_b) then
     return null;
   end if;
+  -- an UPDATE that doesn't move last_seen_at is not a crossing (report-presence always sets it): maintenance by a trusted
+  -- writer, kept as is (clients can't write sightings at all)
+  if tg_op = 'UPDATE' and new.last_seen_at is not distinct from old.last_seen_at then
+    return new;
+  end if;
+  -- 4. one encounter per pair: a live encounter (even one whose row was deleted by an off / pool change / block) means
+  -- nothing new and nothing refreshed
+  if exists (select 1 from private.crossed_paths_encounters e
+              where e.user_a = least(new.user_a, new.user_b) and e.user_b = greatest(new.user_a, new.user_b)
+                and e.expires_at > now()) then
+    return null;
+  end if;
+  if tg_op = 'UPDATE' and old.expires_at > now() then
+    return null; -- a live row is never refreshed
+  end if;
   select * into pa from private.crossed_paths_probe where user_id = new.user_a;
   select * into pb from private.crossed_paths_probe where user_id = new.user_b;
   if pa.eligible_area is null or pb.eligible_area is null or pa.eligible_at <= v_fresh or pb.eligible_at <= v_fresh
@@ -220,14 +256,40 @@ begin
   if tg_op = 'INSERT' and (new.approx_area is null or new.approx_area not in (pa.eligible_area, pb.eligible_area)) then
     return null;
   end if;
-  if tg_op = 'UPDATE' and old.expires_at > now()
-     and old.last_seen_at > now() - make_interval(mins => (l->>'refresh_cooldown_minutes')::int) then
-    return null; -- refreshed within the hour: keep the record as it is
+  if tg_op = 'UPDATE' then
+    new.first_seen_at := now(); -- an expired row re-used for a NEW encounter (zz_sighting_new_encounter_push tells both)
   end if;
   return new;
 end;
 $function$;
 revoke all on function private.sighting_consent_guard() from public, anon, authenticated;
+
+-- 4. the encounter memory, written with every new crossing (AFTER: an upsert's insert attempt that turns into an update
+-- must not see its own memory). Never swallowed: no crossing without its memory.
+create or replace function private.sighting_encounter_memory()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+begin
+  if tg_op = 'INSERT' or new.expires_at is distinct from old.expires_at then
+    insert into private.crossed_paths_encounters (user_a, user_b, expires_at)
+    values (least(new.user_a, new.user_b), greatest(new.user_a, new.user_b), new.expires_at)
+    on conflict (user_a, user_b) do update set expires_at = excluded.expires_at;
+  end if;
+  return null;
+end;
+$function$;
+revoke all on function private.sighting_encounter_memory() from public, anon, authenticated;
+drop trigger if exists zz_sighting_encounter_memory on public.sightings;
+create trigger zz_sighting_encounter_memory after insert or update on public.sightings
+  for each row execute function private.sighting_encounter_memory();
+-- an expired row turned into a new encounter sends the same "You crossed paths!" push as a new row (consent rules inside)
+drop trigger if exists zz_sighting_new_encounter_push on public.sightings;
+create trigger zz_sighting_new_encounter_push after update on public.sightings
+  for each row when (old.first_seen_at is distinct from new.first_seen_at)
+  execute function public.notify_sighting_crossed_paths();
 
 -- 1. Read: a sighting grants a profile read only while live and allowed (0382's function, only that clause changed).
 CREATE OR REPLACE FUNCTION public.viewer_may_read_profile(target uuid)
@@ -335,6 +397,7 @@ begin
   delete from private.crossed_paths_probe
    where (eligible_at is null or eligible_at <= now() - interval '1 hour')
      and (window_start is null or window_start <= now() - interval '1 hour');
+  delete from private.crossed_paths_encounters where expires_at <= now();
 end;
 $function$;
 revoke execute on function public.purge_expired_sightings() from public, anon, authenticated;

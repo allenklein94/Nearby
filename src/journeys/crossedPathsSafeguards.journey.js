@@ -8,8 +8,11 @@
 //     once, before any purge);
 //   probing (limits are per account: off -> on and clearing presence never reset them): a new cell is eligible at most once per 30 s and 20 times an hour (re-reporting the same cell is free); an
 //     ineligible report never makes a crossing, not even on an exact hit; cells more than one tile apart never cross; a
-//     crossing refreshes at most once an hour; an eligible cell expires after 10 minutes; presence itself is still stored;
-//   purge: probe cells after 10 minutes, probe rows after an hour.
+//     an eligible cell expires after 10 minutes; presence itself is still stored;
+//   one encounter per pair (owner 2026-11-02): a crossing is never refreshed (not within the hour, not after it); off -> on,
+//     leaving and rejoining the pool can't create a fresh encounter while the first one is live (the private memory survives
+//     them); once it expires, a re-crossing is a new encounter told once each (also when it re-uses an unpurged row);
+//   purge: probe cells after 10 minutes, probe rows after an hour, encounter memories at their expiry.
 // Not covered: the live report-presence edge function itself (its upsert is reproduced here), a device, real push delivery.
 const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 
@@ -30,6 +33,7 @@ const as = (who) => `perform set_config('request.jwt.claims', json_build_object(
   set local role authenticated;`;
 const asNobody = `perform set_config('request.jwt.claims', '', true); set local role authenticated;`;
 const step = (name, ok, data = 'null') => `log := log || jsonb_build_array(jsonb_build_object('step', '${name}', 'ok', coalesce(${ok}, false), 'data', ${data}));`;
+const mem = (a, b) => `(select expires_at from private.crossed_paths_encounters where ${pair(a, b)})`;
 const probe = (who) => `(select to_jsonb(p) from private.crossed_paths_probe p where p.user_id = ${who})`;
 // rewrite a row without its triggers (only to move time back in this rolled-back transaction)
 const raw = (sql) => `set local session_replication_role = replica; ${sql}; set local session_replication_role = origin;`;
@@ -39,7 +43,7 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
   beforeAll(async () => {
     const log = await runJourney(`
       ${actorDeclares(PEOPLE)}
-      v_msg text; v_b2 boolean; v_n int; v_ts timestamptz; v_j jsonb; v_start bigint;`, `
+      v_msg text; v_b2 boolean; v_n int; v_ts timestamptz; v_exp timestamptz; v_j jsonb; v_start bigint;`, `
   ${actorsSql({ people: PEOPLE })}
   perform set_config('app.push_handoff_test_failure', 'on', true);
   update profiles set onboarding_motivations = array['Go on dates'] where id in (${PEOPLE.join(', ')});
@@ -73,6 +77,13 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
   ${report('v_b', T)};
   ${cross('v_a', 'v_b', T)};
   ${step('off_nothing_new', `not ${rowExists('v_a', 'v_b')}`)}
+  -- off -> on can't manufacture a fresh encounter: the memory (ids + expiry) outlives the deleted crossing
+  ${step('encounter_memory_kept_after_off', `${mem('v_a', 'v_b')} > now()`)}
+  ${as('v_b')} perform set_crossed_paths_sharing(true); reset role;
+  update private.crossed_paths_probe set last_new_cell_at = clock_timestamp() - interval '31 seconds' where user_id = v_b;
+  ${report('v_b', T)};
+  ${cross('v_a', 'v_b', T)};
+  ${step('off_on_no_new_encounter', `(${probe('v_b')}->>'eligible_area') = '${T}' and not ${rowExists('v_a', 'v_b')}`)}
   ${asNobody}
   begin perform set_crossed_paths_sharing(true); v_msg := 'RAN'; exception when others then v_msg := sqlerrm; end;
   reset role;
@@ -84,6 +95,8 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
      and not has_table_privilege('authenticated', 'private.crossed_paths_consent', 'SELECT')
      and not has_table_privilege('authenticated', 'private.crossed_paths_consent_log', 'SELECT')
      and not has_table_privilege('authenticated', 'private.crossed_paths_probe', 'SELECT')
+     and not has_table_privilege('authenticated', 'private.crossed_paths_encounters', 'SELECT')
+     and not has_function_privilege('authenticated', 'private.sighting_encounter_memory()', 'execute')
      and not has_function_privilege('anon', 'public.set_crossed_paths_sharing(boolean)', 'execute')
      and not has_function_privilege('anon', 'public.get_my_crossed_paths_sharing()', 'execute')
      and not has_function_privilege('authenticated', 'private.presence_probe_record()', 'execute')`, 'to_jsonb(v_msg)')}
@@ -147,16 +160,25 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
   ${cross('v_x', 'v_t', ADJ)};
   ${step('one_tile_apart_recorded', rowExists('v_x', 'v_t'))}
   ${step('recorded_pushed_once_each', `(select count(*) = 2 from push_outbox where id > v_start and data->>'type' = 'crossed_paths_sighting')`)}
-  -- refresh cooldown
-  select last_seen_at into v_ts from sightings where ${pair('v_x', 'v_t')};
+  -- one encounter per pair: never refreshed (repeated claims of the target's cell confirm nothing new)
+  select last_seen_at, expires_at into v_ts, v_exp from sightings where ${pair('v_x', 'v_t')};
+  ${step('encounter_memory_written', `${mem('v_x', 'v_t')} = v_exp`)}
   ${raw(`update sightings set last_seen_at = v_ts - interval '30 minutes' where ${pair('v_x', 'v_t')}`)}
   ${cross('v_x', 'v_t', ADJ)};
-  ${step('refresh_within_hour_ignored', `(select last_seen_at = v_ts - interval '30 minutes' from sightings where ${pair('v_x', 'v_t')})`)}
+  ${step('no_refresh_while_live', `(select last_seen_at = v_ts - interval '30 minutes' and expires_at = v_exp from sightings where ${pair('v_x', 'v_t')})`)}
   ${raw(`update sightings set last_seen_at = v_ts - interval '61 minutes' where ${pair('v_x', 'v_t')}`)}
   ${cross('v_x', 'v_t', ADJ)};
-  ${step('refresh_after_hour_applied', `(select last_seen_at = now() from sightings where ${pair('v_x', 'v_t')})`)}
+  ${step('no_refresh_after_an_hour', `(select last_seen_at = v_ts - interval '61 minutes' and expires_at = v_exp from sightings where ${pair('v_x', 'v_t')})`)}
+  -- the encounter expires (row not purged yet): a re-crossing is a NEW encounter, told once each
+  ${raw(`update sightings set expires_at = now() - interval '1 minute', first_seen_at = now() - interval '49 hours' where ${pair('v_x', 'v_t')}`)}
+  update private.crossed_paths_encounters set expires_at = now() - interval '1 minute' where ${pair('v_x', 'v_t')};
+  select coalesce(max(id), 0) into v_start from push_outbox;
+  ${cross('v_x', 'v_t', ADJ)};
+  ${step('expired_row_becomes_new_encounter', `(select expires_at > now() and first_seen_at = now() and last_seen_at = now() from sightings where ${pair('v_x', 'v_t')}) and ${mem('v_x', 'v_t')} > now()`)}
+  ${step('new_encounter_pushed_once_each', `(select count(*) = 2 from push_outbox where id > v_start and data->>'type' = 'crossed_paths_sighting')`)}
   -- an eligible cell lasts 10 minutes
   ${raw(`delete from sightings where ${pair('v_x', 'v_t')}`)}
+  delete from private.crossed_paths_encounters where ${pair('v_x', 'v_t')};
   update private.crossed_paths_probe set eligible_at = clock_timestamp() - interval '11 minutes' where user_id = v_x;
   ${cross('v_x', 'v_t', ADJ)};
   ${step('stale_eligible_cell_not_recorded', `not ${rowExists('v_x', 'v_t')}`)}
@@ -170,6 +192,16 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
   ${step('purge_clears_old_cell', `(${probe('v_t')}->>'eligible_area') is null and ${probe('v_t')} is not null`)}
   ${step('purge_deletes_idle_record', `${probe('v_x')} is null`)}
   ${step('purge_deletes_withdrawn_and_expired', `not ${rowExists('v_a', 'v_c')} and not ${rowExists('v_a', 'v_d')}`)}
+  ${step('purge_deletes_expired_memory', `${mem('v_a', 'v_d')} is null and ${mem('v_a', 'v_c')} > now()`)}
+  -- leaving and rejoining the pool can't manufacture a fresh encounter (C's crossing was purged, its memory is live)
+  update profiles set onboarding_motivations = array['Go on dates'] where id = v_c;
+  ${cross('v_a', 'v_c', T)};
+  ${step('rejoin_pool_no_new_encounter', `not ${rowExists('v_a', 'v_c')}`)}
+  -- after expiry a crossing is a new encounter (inherent to the feature), told once each
+  select coalesce(max(id), 0) into v_start from push_outbox;
+  ${cross('v_a', 'v_d', T)};
+  ${step('new_encounter_after_expiry', `${rowExists('v_a', 'v_d')} and ${mem('v_a', 'v_d')} > now()
+     and (select count(*) = 2 from push_outbox where id > v_start and data->>'type' = 'crossed_paths_sighting')`)}
   ${step('purge_not_callable_by_apps', `not has_function_privilege('authenticated', 'public.purge_expired_sightings()', 'execute')`)}
 `);
     s = stepMap(log);
@@ -178,14 +210,16 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
   test.each([
     'off_by_default', 'neither_on_not_recorded', 'no_probe_record_without_consent', 'one_on_not_recorded', 'both_on_recorded',
     'both_on_pushed', 'get_reads_own', 'off_deletes_crossings_at_once', 'off_clears_probe_cell', 'changes_logged_once',
-    'off_nothing_new', 'signed_out_refused', 'private_tables_closed',
+    'off_nothing_new', 'encounter_memory_kept_after_off', 'off_on_no_new_encounter', 'signed_out_refused', 'private_tables_closed',
     'live_crossing_grants_read', 'withdrawn_row_still_stored', 'withdrawn_crossing_no_read_at_once', 'expired_row_still_stored',
     'expired_crossing_no_read_at_once',
     'first_cell_eligible', 'second_cell_too_soon_ineligible', 'presence_still_stored', 'exact_hit_while_ineligible_not_recorded', 'off_on_and_presence_reset_keep_limits', 'after_reset_exact_hit_not_recorded',
     'hourly_cap_ineligible', 'hourly_cap_not_recorded', 'new_window_eligible', 'two_tiles_apart_not_recorded',
     'same_cell_costs_nothing', 'cell_not_reported_not_recorded', 'one_tile_apart_recorded', 'recorded_pushed_once_each',
-    'refresh_within_hour_ignored', 'refresh_after_hour_applied', 'stale_eligible_cell_not_recorded', 'unparseable_never_eligible',
-    'purge_clears_old_cell', 'purge_deletes_idle_record', 'purge_deletes_withdrawn_and_expired', 'purge_not_callable_by_apps',
+    'encounter_memory_written', 'no_refresh_while_live', 'no_refresh_after_an_hour', 'expired_row_becomes_new_encounter',
+    'new_encounter_pushed_once_each', 'stale_eligible_cell_not_recorded', 'unparseable_never_eligible',
+    'purge_clears_old_cell', 'purge_deletes_idle_record', 'purge_deletes_withdrawn_and_expired', 'purge_deletes_expired_memory',
+    'rejoin_pool_no_new_encounter', 'new_encounter_after_expiry', 'purge_not_callable_by_apps',
   ])('step %s', (n) => {
     expect(s[n]).toBeDefined();
     expect(s[n].ok).toBe(true);

@@ -1,3 +1,31 @@
+# 2026-11-02: 20270384 one encounter per pair (owner decision), accepted as locally complete, Crossed Paths development stopped
+
+Owner (2026-11-02): accept 0384 as locally complete; for the confirmation residual choose ONE crossing record per pair until
+it expires (not a vaguer card time: that hides it on screen but repeated updates still reveal it); keep the 48 h expiry; turning
+the feature off and on must not create an artificial new encounter; keep mutual opt-in, immediate withdrawal, server-side
+limits and "You crossed paths nearby"; show the exact Privacy Policy paragraph for approval, never publish automatically; test
+locally (concurrent reports, consent toggling, expiry, probing); stay staged; then stop Crossed Paths work and return to build
+87 + Tier 1; flag the live production issue as a release priority.
+Built in 0384 in place: `refresh_cooldown_minutes` removed; the write guard refuses any crossing (insert or refresh) while a
+live memory exists for the pair and never refreshes a live row; `private.crossed_paths_encounters` (user_a < user_b, expiry
+only, FK cascade, no client grant) written by AFTER trigger `zz_sighting_encounter_memory` with every new crossing (never
+swallowed: no crossing without its memory), NOT deleted by switching off, a pool change or a block, deleted by the purge at its
+expiry; an expired, unpurged row re-used for a new encounter resets `first_seen_at` and trigger `zz_sighting_new_encounter_push`
+sends the same push as a new row; an UPDATE that doesn't move last_seen_at (trusted maintenance; clients can't write
+sightings) passes unchanged. Rollback drops the table, function and two triggers. Fixtures adjusted (pass before AND after):
+`sightingExpiry` (re-crossing within 48 h = same record, not refreshed from 0384), `storySightingLocation` (its swapped-order
+second row of the same pair forgets the first memory to test the pin). Journey `crossedPathsSafeguards` 48 steps (new: memory
+written, kept after off, off -> on no new encounter, no refresh within or after the hour, expired unpurged row = new encounter
+pushed once each, purge deletes expired memory, pool rejoin no new encounter, new encounter after expiry); concurrency step 5.
+Verification: fresh replay with real Auth first 508/508; journeys 1047/1047 (first full run had one failure in
+`profileAntiScraping` mia2_signal, unrelated to crossings; passed alone and in 3 later full runs: recorded as a flake);
+16 concurrency scripts all pass; journeys 1047/1047 after them; step 5 FAILS with the memory trigger disabled (2 encounters,
+2 pushes each); with 0384 rolled back the journey fails 48/48 and the other 999 pass; re-apply = schema identical (pg_dump,
+49,931 sorted lines); Jest 542/542 (7336). Privacy Policy paragraph PROPOSED in
+`PRODUCT_AUDIT/CROSSED_PATHS_LOCATION_TRUST_2026-11-02.md` section 3 (optional/off by default, approximate, one record per
+encounter, 48 h, withdrawal, the pair note kept until the original 48 h end, what it can reveal); not published. Not run
+(deploy gates): prod prelude journeys 0348-0384, prod aborted rollback, grants vs prod, two-phone check.
+
 # 2026-11-02: 20270384 follow-up (limit bypass check, location-trust residual, copy without distance, Privacy Policy draft)
 
 Owner (2026-11-02): probe numbers (30 s / 20 an hour / 10 min / hourly refresh) APPROVED as initial values; confirm they

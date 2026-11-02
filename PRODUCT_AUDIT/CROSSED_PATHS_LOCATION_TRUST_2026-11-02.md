@@ -9,7 +9,7 @@ approximate proximity, retention and turning it off. Everything below is from co
 ## 1. Can the limits be bypassed?
 
 The limits (owner approved as initial values 2026-11-02: a new square at most every 30 s, at most 20 new squares per rolling
-hour, an eligible square lasts 10 minutes, a crossing refreshes at most once an hour) live in `private.crossed_paths_probe`,
+hour, an eligible square lasts 10 minutes) live in `private.crossed_paths_probe`,
 one row per ACCOUNT (`user_id`). Clients have no access to it; only the presence trigger and the switch write it.
 
 | Attempt | Result |
@@ -44,47 +44,56 @@ at most one square apart: roughly a 3 x 3 block, about 33 m x 30 m (~0.001 km2).
   - the first hit creates a crossing and sends the target a "You crossed paths!" push with the attacker's own profile
     (the attacker is never anonymous to the target);
   - the target can block (hides it both ways at once) or switch Crossed Paths off (deletes it at once);
-  - after the first hit, the same pair refreshes at most once an hour, and a refresh sends no new push. So an attacker
-    who keeps claiming the target's suspected square can see the crossing's "N hours ago" stay fresh, i.e. confirm hourly
-    that the target is still around there, without a further notice to the target. Recorded, not changed.
+  - **one encounter per pair until it expires (owner decision 2026-11-02, BUILT in 0384):** the crossing is written once and
+    never refreshed, so repeated claims of the target's square confirm nothing new for 48 hours. Switching off and on,
+    leaving and rejoining Dating/Friends, or blocking and unblocking can't create a fresh one either: a private memory of
+    the pair (`private.crossed_paths_encounters`: the two account ids + the expiry, no location, no crossing time, no client
+    access) survives those and is deleted at the expiry (purge every 10 min) or with either account. After it expires, a new
+    crossing is a new encounter and the target is told again (inherent to the feature).
 
-**Options if the owner wants the confirmation residual smaller** (NOT built; each is a separate decision, none is tracking
-or fingerprinting):
-1. Coarser time on the card: show "today" / "this week" instead of "N hours ago", so a refresh confirms nothing new.
-2. No refresh at all: a crossing records the first time only, until it expires (48 h); repeat claims learn nothing.
-3. Tell the target again when a crossing refreshes after more than a day (makes repeated probing visible).
+**Options considered** (owner chose 2, 2026-11-02): 1. coarser time on the card (DECLINED: hides it on screen, repeated
+updates still reveal it); 2. no refresh, one record per encounter (BUILT); 3. re-notify after a day (not needed with 2).
 
-Recommendation: decide on (1) or (2) before external launch; both are small and server-side or copy-only. Until then, the
-residual is: two people who both turned it on, one of whom guesses the other's location, can confirm it roughly hourly,
-after the target has been told once who crossed paths with them.
+Remaining residual (by design, disclosed): two people who both turned it on, one of whom guesses the other's location, can
+confirm "within ~30 m in the last 10 minutes" once per 48 hours per pair, and the target is told who it was each time.
+Verified locally (2026-11-02): journey `crossedPathsSafeguards` 48/48 (no refresh within or after the hour, off -> on and
+pool rejoin = no new encounter, expiry = a new one told once each, also on an unpurged row; fails 48/48 with 0384 rolled
+back); `crossed-paths-concurrency.js` step 5 (4 rounds of off/on racing re-crossings: no second encounter, one push each;
+FAILS with the memory trigger disabled).
 
-## 3. Privacy Policy (DRAFT, publish with 0384; not published; docs/privacy.html unchanged on this branch)
+## 3. Privacy Policy (PROPOSED for owner approval; NOT published; docs/privacy.html unchanged)
 
-Replace the "Crossed Paths" paragraph in §2 (it currently starts "For "Crossed Paths" matching: to detect when two users are
-near each other...") with:
+Publish only after the owner approves this exact wording, in the same release as 0384 (never before: the switch doesn't
+exist until then).
 
-> For "Crossed Paths": this is off unless you turn it on in Settings ("Show when I cross paths with people"). You and another
-> person see that you crossed paths only if you have BOTH turned it on, you are both in Dating or both in Friends, neither of
-> you has blocked the other, and you were near each other in the last several minutes. "Near" is approximate: Nearby never
-> shows a distance or where it happened. To detect it, the App sends a rounded version of your current location (an area
-> of a few dozen meters). We keep only your most recent one, never a history or trail of your movements, and it is deleted
-> automatically after one hour; with Crossed Paths on, we also keep the most recent rounded location we used for matching
-> for at most 10 minutes, and a count of how often it changed (no location) for about an hour, to prevent misuse. A
-> crossed-paths record does not contain either person's actual location: it keeps only an approximate area, a point our
-> servers place somewhere inside a fixed grid area several hundred meters across. It expires 48 hours after the last time
-> you were near each other and is then deleted automatically (checked every 10 minutes). You can turn Crossed Paths off at
-> any time in Settings: your crossed-paths records and the location kept for matching are deleted at once, and no new ones
-> are created. Each time you turn it on or off we keep a record of the change and when it happened. Matches, Notices,
-> messages and notifications you already received are separate and are not deleted with it.
+**§2, replace the paragraph that starts "For "Crossed Paths" matching: to detect when two users are near each other..." with:**
 
-§3 "With other users": change "visible to other users you've crossed paths with" to "visible to other users you've crossed
-paths with (only when you both turned Crossed Paths on)".
+> **Crossed Paths (optional, off by default).** Crossed Paths is off unless you turn it on in Settings ("Show when I cross
+> paths with people"). You and another person are told that you crossed paths only if you have BOTH turned it on, you are
+> both in Dating or both in Friends, neither of you has blocked the other, and you were near each other within the last
+> several minutes. "Near" is approximate (roughly within a few dozen meters): Nearby never shows a distance, an address or
+> where it happened. To detect it, the App sends a rounded version of your current location. We keep only your most recent
+> one, never a history or trail of your movements, and delete it automatically after one hour; with Crossed Paths on we
+> also keep the rounded location we last used for matching for at most 10 minutes, and a count of how often it changed (no
+> location) for about an hour, to limit misuse. When you cross paths with someone, we record it once: the two accounts, when
+> it first happened, and an approximate area (a point our servers place somewhere inside a fixed grid area several hundred
+> meters across, never either person's actual location). The record is not updated if you keep crossing paths, and it is
+> deleted automatically 48 hours after it was made (checked every 10 minutes). **Turning it off:** you can turn Crossed Paths
+> off at any time in Settings. Your crossed-paths records and the location kept for matching are deleted at once and no new
+> ones are created. So that switching it off and on again can't create a new crossing with the same person, we keep only a
+> note that your two accounts crossed paths and when that note expires (no location and no time of the crossing), until
+> the original 48 hours end; then it is deleted. Each time you turn Crossed Paths on or off we keep a record of the change
+> and when it happened. Matches, Notices, messages and notifications you already received are separate and are not deleted
+> with it. **What it can reveal:** because it is based on being near each other, someone who has also turned it on and is
+> told you crossed paths learns that you were near them at about that time. Only turn it on if you are comfortable with
+> that; you can turn it off or block someone at any time.
 
-§6 retention list: add "The rounded location used for Crossed Paths matching is kept at most 10 minutes; the count of how
-often it changed (no location) is deleted after about an hour of inactivity."
+**§3 "With other users":** change "visible to other users you've crossed paths with" to "visible to other users you've
+crossed paths with (only when you both turned Crossed Paths on)".
 
-Needs: owner approval of the wording, then publish in the same release as 0384 (never before: before 0384 the switch
-doesn't exist).
+**§6 retention list, add:** "Crossed Paths: the rounded location used for matching, at most 10 minutes; the count of how
+often it changed (no location), about an hour after it was last used; a crossed-paths record and the note that two
+accounts crossed paths, 48 hours after the crossing."
 
 ## 4. Wording changed on the branch (no distance anywhere)
 
