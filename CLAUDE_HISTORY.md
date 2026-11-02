@@ -1,3 +1,32 @@
+# 2026-11-02: 20270383 crossed paths only between people who both chose it (idea 10 follow-up), built + locally verified, staged, not deployed
+
+Branch `post-tier1/crossed-paths-consent` (stacked on `post-tier1/profile-anti-scraping`; off main, build 87 unchanged). Found
+2026-11-01 by code reading (LIVE prod behaviour, not only staged): `report-presence` records a sighting for ANY two people in the
+same ~11 m cell (premium ~33 m) within 10 minutes, opted in or not (its block check is a no-op under the service role), and
+each person can read their own sighting rows through the API (other id + last_seen_at), so a client-supplied cell could
+confirm a non-consenting person's presence at a place. 0353 (staged) fixed only the push; with 0382 a sighting would also
+grant a profile read. Files: migration `supabase/migrations/20270383_crossed_paths_consent.sql`, rollback
+`scripts/rollback/20270383_crossed_paths_consent.rollback.sql`, journey `src/journeys/crossedPathsConsent.journey.js` (27),
+`post-deploy.js` step 20270383. As built: ONE pair rule `private.crossed_paths_pair_allowed` (= 0353's push rule minus the
+recipient's notification switch: both discoverable, both screened + not hidden, no block either way, both in the SAME pool,
+Dating or friend discovery); a BEFORE INSERT/UPDATE trigger drops a refused sighting silently (no row, no push, no error; edge
+function + app unchanged); the read policy also needs it (`sighting_pair_visible`, answers only for a pair that includes the
+caller), so opt-out / hide / suspension / block hide existing rows at once; `purge_expired_sightings` (cron 10 min) also
+deletes refused pairs, run once by the migration. Journey fixtures adjusted (pass before AND after 0383): `sightingExpiry`
+(C + blocked person choose Dating; the blocked row may be purged), `storySightingLocation` (poster/friend/stranger choose
+Dating; anon refusal message from either function), `datingConsent` (A-D crossing not stored from 0383). Also found while
+resuming: `notify_proximity` is derived from `notification_mutes` (20270258), so the journey mutes `discover_nearby_people`;
+suspension needs `app.trusted_update`.
+Verification (2026-11-02, after a codespace restart): fresh replay with real Auth first 507/507; journey 27/27; journeys
+999/999; with 0383 rolled back the journey fails 27/27 and the other 972 pass; rollback round trip identical (27,150 sorted
+catalog items applied / 27,146 rolled back, diff = exactly 0383's 3 functions + trigger + policy + purge body); all 15
+concurrency scripts pass; journeys 999/999 again after them; Jest 541/541 (7330). NOT run (deploy gates): prod journeys with
+the 0348-0383 prelude, prod aborted rollback, grants vs prod, a read-only count of rows the one-off purge would delete, the
+two-phone check; rolled-back schema not compared against a separate fresh 0382 replay.
+Residuals: for a pair who BOTH opted in, a crossing still means "within ~11-33 m within 10 minutes" from a client-supplied
+cell (coarsening/delay = owner decision); 0382's `viewer_may_read_profile` reads sightings without the pair rule or expiry,
+so a withdrawn or expired row can still grant a profile read until the next purge (<= 10 min).
+
 # 2026-11-01: 20270382 people anti-scraping (idea 9, option B), built + locally verified, staged, not deployed
 
 Owner chose option B (2026-11-01). Branch `post-tier1/profile-anti-scraping` (off main, build 87 unchanged). Files: migration

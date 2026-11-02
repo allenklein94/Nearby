@@ -70,6 +70,8 @@ d('journey: stories and sightings never store a precise location (item 148)', ()
   insert into brand_partners (name, tier) values ('J148 Cafe', 'growth') returning id into v_partner;
   perform set_config('app.trusted_update', 'true', true);
   update profiles set managed_partner_id = v_partner where id = v_biz;
+  -- from 20270383 a crossing is recorded only inside a pool both people chose: poster, friend and stranger choose Dating
+  update profiles set onboarding_motivations = array['Go on dates'], photo_verified = true where id in (v_p, v_f, v_str);
 
   -- the poster's own inserts, the way uploadStory makes them (insert, no returning)
   ${as('v_p')}
@@ -254,8 +256,9 @@ d('journey: stories and sightings never store a precise location (item 148)', ()
     for (const k of ['stranger', 'friend', 'poster']) {
       expect(data(k).app_reads).toEqual({ stories: expect.any(Number), sightings: expect.any(Number) });
     }
-    // signed out: the app never reads these; the sightings policy already refused anon before item 148 (is_blocked)
-    expect(data('anon').app_reads).toBe('permission denied for function is_blocked');
+    // signed out: the app never reads these; the sightings policy already refused anon before item 148 (is_blocked; from
+    // 20270383 its pair rule sighting_pair_visible, also authenticated-only)
+    expect(['permission denied for function is_blocked', 'permission denied for function sighting_pair_visible']).toContain(data('anon').app_reads);
     expect(data('poster').app_reads.sightings).toBe(3); // two with the friend + one with the stranger
     expect(data('stranger').app_reads.sightings).toBe(1); // the stranger's own (unparseable) sighting with the poster
   });

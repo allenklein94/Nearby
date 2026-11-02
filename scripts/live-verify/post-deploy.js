@@ -141,6 +141,12 @@ const STEPS = {
       'read-only right after: private.profile_read_limits has one row with the approved numbers; profiles read policy calls viewer_may_read_profile; private.people_rows / dating_candidate_rows / profile_served: no client role; cron job purge-profile-served scheduled',
       'controlled check (owner, dedicated test accounts only): a stranger\'s profile by id = no row; after Browse shows them = readable; Browse page larger than page_max returns page_max; Friends, Dating, contacts and suggested friends still show people on the phone',
       'a stranger readable by id without a reason, a page above page_max, or any account restricted by the limit = security defect: STOP, report'] },
+  // Crossed paths only between two people who both chose the same pool (idea 10 follow-up): write guard + read rule + purge
+  20270383: { journeys: ['crossedPathsConsent', 'storySightingLocation', 'datingConsent', 'trustSafety', 'profileAntiScraping'],
+    manual: ['BEFORE the deploy approval: 0339 + 0352 + 0353 live (0382 before it, in order); prod journeys with the 0348-0383 prelude + an aborted rollback round trip on prod; grants vs prod; count sightings the one-off purge would delete (read-only, rolled back) and report it',
+      'read-only right after: trigger aa_sighting_consent_guard on sightings (BEFORE insert/update); sightings read policy calls sighting_pair_visible; private.crossed_paths_pair_allowed EXECUTE: no client role; sighting_pair_visible EXECUTE: authenticated only; cron purge-expired-sightings still scheduled',
+      'controlled check (owner, dedicated test accounts only, two phones): both in Dating and near each other = Crossed Paths shows each other + one push each; one account switches to friends-only = the row disappears for both at once and no new crossing is recorded',
+      'a sighting readable by someone outside the pair, or a crossing recorded for a person who never opted in = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

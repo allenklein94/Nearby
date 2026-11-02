@@ -52,7 +52,9 @@ d('journey: Dating discovery shows and counts only people who chose Dating', () 
     values (v_d, 'Trivia night', now() + interval '1 day', 40.3, -75.2, 'Trivia', 'x', 'everyone') returning id into g;
   update gatherings set scheduled_at = now() - interval '2 days' where id = g;
   insert into gathering_interest (gathering_id, user_id, status) values (g, v_a, 'approved'), (g, v_b, 'approved'), (g, v_c, 'approved');
-  -- sightings: A near B and near D, an hour ago
+  -- sightings: A near B and near D, an hour ago (from 20270383 the A-D crossing is not recorded: D chose no pool)
+  log := log || jsonb_build_array(jsonb_build_object('step', 'pairRule', 'ok', true,
+    'data', to_regprocedure('private.crossed_paths_pair_allowed(uuid, uuid)') is not null));
   insert into sightings (user_a, user_b, last_seen_at) values (v_a, v_b, now() - interval '1 hour'), (v_a, v_d, now() - interval '1 hour');
 
   -- 1: raw sources (unchanged)
@@ -95,7 +97,9 @@ d('journey: Dating discovery shows and counts only people who chose Dating', () 
 
   test('1: the raw sources still hold the non-opted-in people (Friends discovery and sightings unchanged)', () => {
     expect(s.partners.data.map((r) => r.other_user_id).sort()).toEqual([ids.b, ids.c].sort());
-    expect(s.sightings.data).toHaveLength(2);
+    // before 20270383 both crossings are stored; from it only A-B (both chose Dating), never A-D (D chose nothing)
+    expect(s.sightings.data).toHaveLength(s.pairRule.data ? 1 : 2);
+    if (s.pairRule.data) expect(s.sightings.data.map((x) => (x.user_a === ids.a ? x.user_b : x.user_a))).toEqual([ids.b]);
     expect(Number(s.peopleView.data)).toBe(3);
   });
 
@@ -128,7 +132,7 @@ d('journey: Dating discovery shows and counts only people who chose Dating', () 
   test('client: cards and both counts built from these rows contain only the opted-in person', () => {
     const sightingSignals = s.sightings.data.map((x) => ({ otherUserId: x.user_a === ids.a ? x.user_b : x.user_a, last_seen_at: x.last_seen_at, sightingId: x.id }));
     const merged = mergeCrossedPathsSignals(sightingSignals, s.partners.data);
-    expect(merged.map((m) => m.otherUserId).sort()).toEqual([ids.b, ids.c, ids.d].sort());
+    expect(merged.map((m) => m.otherUserId).sort()).toEqual((s.pairRule.data ? [ids.b, ids.c] : [ids.b, ids.c, ids.d]).sort());
     const byId = Object.fromEntries(s.dating.data.map((p) => [p.id, p]));
     // what getNearbyMatches returns: a profile only from the Dating read, then the verdict re-checked
     const cards = merged.map((m) => ({ ...m, profiles: byId[m.otherUserId] ?? null })).filter((i) => i.profiles !== null && isDatingOptedIn(i));

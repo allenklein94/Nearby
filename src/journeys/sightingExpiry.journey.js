@@ -29,8 +29,9 @@ d('journey: a crossed-paths record is gone 48 hours after the last crossing', ()
       ${actorDeclares(['v_a', 'v_b', 'v_c', 'v_x', 'v_blk'])}
       v_seen jsonb; v_msg text; v_n int; v_id uuid;`, `
   ${actorsSql({ people: ['v_a', 'v_b', 'v_c', 'v_x', 'v_blk'] })}
-  -- A and B both chose Dating: a crossing push names the other only inside the same opted-in pool (20270353)
-  update profiles set onboarding_motivations = array['Go on dates'] where id in (v_a, v_b);
+  -- A, B and C chose Dating: a crossing push names the other only inside the same opted-in pool (20270353), and from
+  -- 20270383 a crossing is only recorded inside it (the blocked person too, so the block is what hides that row)
+  update profiles set onboarding_motivations = array['Go on dates'] where id in (v_a, v_b, v_c, v_blk);
   perform set_config('app.push_handoff_test_failure', 'on', true);
   log := log || jsonb_build_array(jsonb_build_object('step','ids','ok', true, 'data', jsonb_build_object('b', v_b, 'c', v_c, 'blk', v_blk)));
 
@@ -59,7 +60,9 @@ d('journey: a crossed-paths record is gone 48 hours after the last crossing', ()
      not exists (select 1 from sightings where user_a = least(v_a, v_b) and user_b = greatest(v_a, v_b))));
   log := log || jsonb_build_array(jsonb_build_object('step','active_kept','ok',
      exists (select 1 from sightings where user_a = least(v_a, v_c) and user_b = greatest(v_a, v_c))
-     and exists (select 1 from sightings where user_a = least(v_a, v_blk) and user_b = greatest(v_a, v_blk))
+     -- the blocked pair's row: kept by the 48 h purge alone; from 20270383 the purge also deletes a pair a block now refuses
+     and (exists (select 1 from sightings where user_a = least(v_a, v_blk) and user_b = greatest(v_a, v_blk))
+          or to_regprocedure('private.crossed_paths_pair_allowed(uuid, uuid)') is not null)
      and exists (select 1 from profiles where id = v_b)));
   log := log || jsonb_build_array(jsonb_build_object('step','scheduled','ok',
      exists (select 1 from cron.job where jobname = 'purge-expired-sightings' and command ~ 'purge_expired_sightings')));
