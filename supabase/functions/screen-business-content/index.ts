@@ -2,7 +2,8 @@ import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { loadCategoryVocab } from '../_shared/categoryTags.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
-import { classifyContent, RISK_CATEGORIES } from '../_shared/contentClassifier.ts';
+import { classifyContent, RISK_CATEGORIES, reportClassifierHealth } from '../_shared/contentClassifier.ts';
+import { screeningFailureKind } from '../_shared/screeningHealth.js';
 import { screenOfferMedia as screenOfferMediaShared, OFFER_MEDIA_BUCKET } from '../_shared/offerMediaScreening.js';
 
 // Aug 27 2026 plan (CLAUDE.md), Decision 6 -- the real Business Trust &
@@ -262,30 +263,43 @@ Reply with ONLY valid JSON in this exact shape, nothing else:
 
 Guidance: "low" means this reads as an ordinary, legitimate business logo with no concerning signal -- this should be the overwhelming majority of real submissions, never a de facto bottleneck for normal content. "high" means a clear, unambiguous match to one or more prohibited categories -- reserve this for genuinely obvious cases. "medium" means a real but ambiguous or partial signal a human should look at. "uncertain" means you genuinely cannot tell either way from the image given -- treat this the same as medium, never as low.`;
 
-  const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: contentType, data: base64Data } },
-          { type: 'text', text: promptText },
-        ],
-      }],
-    }),
-  });
+  if (!ANTHROPIC_API_KEY) {
+    await reportClassifierHealth(false, screeningFailureKind({ keyMissing: true }));
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
+  }
+  let anthropicResponse: Response;
+  try {
+    anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      signal: AbortSignal.timeout(20000),
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: contentType, data: base64Data } },
+            { type: 'text', text: promptText },
+          ],
+        }],
+      }),
+    });
+  } catch (e) {
+    console.error('screen-business-content: SERVICE_FAILURE vision request failed', String(e));
+    await reportClassifierHealth(false, screeningFailureKind({ error: e }));
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
+  }
 
-  const anthropicData = await anthropicResponse.json();
+  const anthropicData = await anthropicResponse.json().catch(() => null);
   const raw = anthropicData?.content?.[0]?.text?.trim();
   if (!raw) {
     console.error('screen-business-content: SERVICE_FAILURE unexpected Anthropic vision response', anthropicResponse.status, JSON.stringify(anthropicData));
+    await reportClassifierHealth(false, screeningFailureKind({ status: anthropicResponse.status, body: anthropicData }), anthropicResponse.status);
     return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
   }
 
@@ -293,9 +307,11 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
   try {
     parsed = JSON.parse(raw);
   } catch (_e) {
-    console.error('screen-business-content: model did not return valid JSON for image', raw);
+    console.error('screen-business-content: SERVICE_FAILURE model did not return valid JSON for image', raw.length);
+    await reportClassifierHealth(false, 'bad_reply', anthropicResponse.status);
     return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
   }
+  await reportClassifierHealth(true);
 
   const riskTier = ['low', 'medium', 'high', 'uncertain'].includes(parsed?.risk_tier) ? parsed.risk_tier : 'uncertain';
   const matchedCategories = Array.isArray(parsed?.matched_categories)

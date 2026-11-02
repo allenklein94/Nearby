@@ -16,7 +16,16 @@
 // Phase 5 design's own text. Those stay local to screen-business-content/
 // index.ts, the one real-time surface that still needs them.
 
+import { screeningFailureKind, reportScreeningHealth } from './screeningHealth.js';
+import { secretKey } from './supabaseKeys.ts';
+
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
+
+// Provider health (owner 2026-11-02, 20270387): every call reports ok / a failure KIND to the admin outage monitor. Only the
+// kind + HTTP status leave here (never the content, the verdict or a key). Never changes the result or fail-closed.
+export function reportClassifierHealth(ok: boolean, kind: string | null = null, status: number | null = null) {
+  return reportScreeningHealth({ ok, kind, status }, { url: Deno.env.get('SUPABASE_URL'), key: secretKey() });
+}
 
 // The fixed 13-category vocabulary, locked exactly as given in the
 // CLAUDE.md plan -- must match business_content_screening_results' own
@@ -46,6 +55,12 @@ Reply with ONLY valid JSON in this exact shape, nothing else:
 
 Guidance: "low" means this reads as ordinary, legitimate content with no concerning signal -- this should be the overwhelming majority of real submissions, never a de facto bottleneck for normal content. "high" means a clear, unambiguous match to one or more prohibited categories -- reserve this for genuinely obvious cases. "medium" means a real but ambiguous or partial signal a human should look at. "uncertain" means you genuinely cannot tell either way from the text given -- treat this the same as medium, never as low.`;
 
+  if (!ANTHROPIC_API_KEY) {
+    console.error('contentClassifier: SERVICE_FAILURE ANTHROPIC_API_KEY is not set');
+    await reportClassifierHealth(false, screeningFailureKind({ keyMissing: true }));
+    return null;
+  }
+
   let anthropicResponse: Response;
   try {
     anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
@@ -65,6 +80,7 @@ Guidance: "low" means this reads as ordinary, legitimate content with no concern
   } catch (e) {
     // Screening SERVICE failure (network/timeout), not a verdict on the content.
     console.error('contentClassifier: SERVICE_FAILURE request failed', String(e));
+    await reportClassifierHealth(false, screeningFailureKind({ error: e }));
     return null;
   }
 
@@ -73,6 +89,7 @@ Guidance: "low" means this reads as ordinary, legitimate content with no concern
   if (!raw) {
     // Screening SERVICE failure (e.g. 401/402 credit/429/5xx), not a verdict on the content.
     console.error('contentClassifier: SERVICE_FAILURE unexpected Anthropic response', anthropicResponse.status, JSON.stringify(anthropicData));
+    await reportClassifierHealth(false, screeningFailureKind({ status: anthropicResponse.status, body: anthropicData }), anthropicResponse.status);
     return null;
   }
 
@@ -80,9 +97,12 @@ Guidance: "low" means this reads as ordinary, legitimate content with no concern
   try {
     parsed = JSON.parse(raw);
   } catch (_e) {
-    console.error('contentClassifier: model did not return valid JSON', raw);
+    // Length only: the model's reply may echo the screened content, which never goes to logs or alerts.
+    console.error('contentClassifier: SERVICE_FAILURE model did not return valid JSON', raw.length);
+    await reportClassifierHealth(false, 'bad_reply', anthropicResponse.status);
     return null;
   }
+  await reportClassifierHealth(true);
 
   const riskTier = ['low', 'medium', 'high', 'uncertain'].includes(parsed?.risk_tier) ? parsed.risk_tier : 'uncertain';
   const matchedCategories = Array.isArray(parsed?.matched_categories)

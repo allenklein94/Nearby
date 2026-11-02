@@ -392,8 +392,8 @@ describe('the audit: every push type has one registered destination', () => {
   const types = [...dest.matchAll(/case '(\w+)':/g)].map((m) => m[1]);
   const root = fs.readFileSync(path.join(__dirname, 'RootNavigator.js'), 'utf8');
   const registered = new Set([...root.matchAll(/<Stack\.Screen\s+name="(\w+)"/g)].map((m) => m[1]));
-  test('92 push types, each handled once', () => {
-    expect(types).toHaveLength(92);
+  test('93 push types, each handled once', () => {
+    expect(types).toHaveLength(93);
     expect(new Set(types).size).toBe(types.length);
   });
   test('every destination a push can produce is a registered signed-in screen', async () => {

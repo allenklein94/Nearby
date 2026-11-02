@@ -58,6 +58,12 @@ business application until 0372 is live and verified. Under that gate the live b
       | "Click this link and enter your card: example.com" | refused (0372 contact rule after deploy; fraud_scams before) |
       A wrong verdict = report it; the classifier prompt is changed only with a separate approval.
 
+### Phase A+: outage monitoring (owner, 2026-11-02; BUILT + STAGED as 20270387, see section 6)
+- [ ] A4 Before ANY external business onboarding: 20270387 deployed (its own approval, after 0386) + `send-push` redeployed
+      with the new type, and its post-deploy check passed (one deliberate failure state observed or a success recorded).
+- [ ] A5 Before opening business onboarding: one successful REAL screening request (A2) in the environment businesses
+      will use, recorded; automated tests alone never count (owner).
+
 ### Phase B: pre-deploy gates for 0372 (after 0371 is live; nothing written to prod)
 - [ ] B1 Prod journeys with 0372 as a rolled-back prelude on the then-current prod (0348-0371 live): all pass, incl.
       `offerSafety` 7/7, `offerJourney`, `availabilityNoBroadcast`, `exclusivePostingRequest`.
@@ -103,13 +109,49 @@ business application until 0372 is live and verified. Under that gate the live b
 - **Until 0372 is live the bypass exists**; mitigated only by who can reach it (approved business managers: today only
   the owner). Approving an outside business before 0372 makes it real.
 - **Timing:** 0372 waits on the whole 0348-0371 chain, which waits on build 87 + Tier 1. Any slip there delays it.
-- **Credit can lapse again:** screening fails closed, so hand-written offers stop until it is restored. No alert exists
-  for this today (a monitoring line is a possible later, separately approved item; not built).
+- **Credit can lapse again:** screening fails closed, so hand-written offers stop until it is restored. Admin alerts for
+  this are BUILT + STAGED (20270387, section 6) but alert nobody until deployed with their edge functions + send-push.
 - **Classifier never run in production** (0 results): its real verdict quality is unknown until A3; prohibited content
   outside the 13 categories, or a model change, may be classified wrongly.
 - **Model id** `claude-haiku-4-5-20251001` may be retired; A2 detects it (fails closed). Changing it = a code change.
 - Medium/uncertain offers wait for a human: an admin must watch the queue once real businesses exist.
 - Accepted residual (unchanged): offer media and the AI's own suggestions rely on the same screening; anything the
   classifier misses is caught only by reports + admin review afterwards.
+
+## 6. Screening outage alerts (owner 2026-11-02) — BUILT + STAGED, NOT DEPLOYED
+
+Inspection (2026-11-02): no outage monitoring existed. Every provider failure (credit, bad key, retired model, timeout,
+5xx) became the same `screening_unavailable` 503 + a console line; nothing told an admin. Reusable infrastructure found:
+`_send_push` + push_outbox dedupe keys, 0355's admin-recipient rule (admins, not suspended), private failure tables, the
+existing admin screen for held business content (`AdminContentReview`).
+
+Smallest change (branch `post-tier1/screening-outage-alerts`, stacked on `post-tier1/gathering-review-signals`):
+- `supabase/functions/_shared/screeningHealth.js` (pure, Jest-tested): failure KIND from the HTTP status + the provider's
+  error type/message only (credit / credentials / model / rate_limit / timeout / provider_error / bad_reply) and a
+  reporter that posts only { ok, kind, status, source } to a service-role RPC, 3 s timeout, never throws.
+- `_shared/contentClassifier.ts` + the logo (vision) classifier in `screen-business-content`: every Anthropic call reports
+  ok or its failure kind. A content verdict (incl. refused / held) is never a failure. Return values and fail-closed are
+  unchanged (the vision call now also has the 20 s timeout and a caught network error = the same retryable 503 instead
+  of an uncaught 500). The model's raw reply (which may echo the offer) is no longer logged, only its length.
+- migration 20270387: `record_screening_service_result` (service_role only), `private.screening_service_failures`
+  (kind, status, source, time; 30 days) + `private.screening_outages` (one open at a time, advisory lock + unique index;
+  closed kept 90 days). Opens on the FIRST credit / credentials / model failure, or the 3rd other failure within 10 min
+  since the last recovery. Alerts each unsuspended admin ONCE on open ("Offer screening is unavailable" + plain reason),
+  at most one reminder per 24 h while failures continue, ONCE on the first success ("working again"); dedupe key per
+  outage + phase + admin. The push carries only type / phase / kind: no offer text, business, user, request or key.
+- push type `admin_screening_outage`: priority medium, never muted (account notice), action "Review Content" (11
+  languages, 10 machine-authored: native review) opening `AdminContentReview`. No new screen.
+Verified locally (fresh replay 510/510 with real Auth first, then 0387): journey `screeningOutageAlerts` 7/7 (fails 7/7
+without 0387), journeys 1070/1070, `scripts/replay/screening-outage-concurrency.js` all pass (12 parallel failures = one
+outage + one alert per admin; parallel successes = one "working again"; 6 parallel timeouts = one outage; interleaved =
+never two open), rollback round trip identical (35,614 schema lines), Jest 543/543 (7358).
+Not run (deploy gates): prod journeys with 0348-0387 prelude, prod aborted rollback, grants vs prod.
+Deploy notes: 0387 is a migration after 0386 (own approval). The edge code reports only once deployed; before 0387 is
+live a report is a swallowed 404 (harmless), so `screen-business-content` may ship in 0372's release from this branch.
+The other three classifier users (resweep-business-content, rewrite-offer-plain-language, create-sponsored-checkout) each
+need their own redeploy approval to report. `send-push` needs a redeploy for the priority + action button (before it,
+the type falls back to medium with no button). Limits: an outage is detected only when someone tries to screen (no
+traffic = no alert, no recovery); a provider that answers with valid JSON but wrong verdicts is not an outage; the user
+content classifier (0373, `userContentClassifier.ts`) is not wired (separate decision).
 
 Build 87 and Tier 1 are unaffected: nothing in this checklist changes main or the build.

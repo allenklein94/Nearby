@@ -1,3 +1,18 @@
+# 2026-11-02: screening outage alerts (20270387) built + staged; 0372 activation checklist
+
+Owner (2026-11-02): offer screening's two production issues are PRIORITY RELEASE BLOCKERS (screening never succeeded in
+prod: 0 results, credit unverified; the submit_business_offer / post_business_availability / update_business_profile
+bypass is live for approved business managers). Checklist `PRODUCT_AUDIT/OFFER_SCREENING_ACTIVATION_CHECKLIST_2026-11-02.md`
+(read-only facts, ordering: 0372 only after 0348-0371, approvals, risks). Then the owner asked for admin outage monitoring
+before external onboarding, smallest change on existing infrastructure, deduped, infrastructure failures distinct from
+content verdicts, fail-closed kept, no content or credentials in alerts. Built on `post-tier1/screening-outage-alerts`:
+`_shared/screeningHealth.js`, reporting in `_shared/contentClassifier.ts` + the logo classifier, migration
+`20270387_screening_outage_alerts.sql` + rollback, push type `admin_screening_outage` (medium, never muted, "Review
+Content" -> AdminContentReview, 11 languages, 10 need native review), journey `screeningOutageAlerts`, concurrency
+`scripts/replay/screening-outage-concurrency.js`, Jest `src/constants/screeningOutageAlerts.test.js`, post-deploy step.
+Full design, verification and limits: the checklist's section 6. NOT deployed, NOT merged; build 87 unchanged.
+Screening development stopped here (owner); next = Build 87 + Tier 1.
+
 # 2026-11-02: Verified Business badge explanation (owner), staged with 0371
 
 Owner (2026-11-02): improve the badge's explanation now, not defer it; keep 0371's four checks and every locked rule; inspect

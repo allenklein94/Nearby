@@ -211,6 +211,7 @@ The business's view of the same offer row: Allowed actions and Animation are tha
 |---|---|---|---|
 | account_security_notice | Settings | high | (none) |
 | admin_report_received | AdminReports | medium | (none) |
+| admin_screening_outage | AdminContentReview | medium | (none) |
 | anniversary_upcoming | CelebrateSomething / Occasions | medium | friends_occasions |
 | birthday | ViewProfile | medium | friends_occasions |
 | birthday_upcoming | CelebrateSomething / Occasions | medium | friends_occasions |

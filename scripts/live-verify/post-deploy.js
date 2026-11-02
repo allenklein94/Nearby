@@ -167,6 +167,13 @@ const STEPS = {
     manual: ['BEFORE the deploy approval: 0385 live; 0365 live (review cases on); own approval',
       'read-only right after: gathering_signal_settings = 15 / 60 / 0.5, 3 / 7 / 48, 50 / 25 / 90; case_alone_kinds includes attendee_surge_new, create_cancel, large_public_gathering (not attendee_surge)',
       'rollback = scripts/rollback/20270386_gathering_review_signal_thresholds.rollback.sql (instant, back OFF; cases kept)'] },
+  20270387: { journeys: ['screeningOutageAlerts'],
+    node: ['scripts/replay/screening-outage-concurrency.js (replay only, before the deploy)'],
+    edge: ['the screening functions that import _shared/contentClassifier.ts (screen-business-content, resweep-business-content, rewrite-offer-plain-language, create-sponsored-checkout) only report health once redeployed with this code; before 0387 is live a report is a swallowed 404, after it a report opens / closes outages. screen-business-content ships with 0372\'s coordinated release; the others = their own approval',
+      'send-push redeploy (new type admin_screening_outage: priority medium + action review_content; until then the type falls back to medium with no action button)'],
+    manual: ['read-only right after the deploy: private.screening_outages = 0 rows, private.screening_service_failures = 0 rows; anon / authenticated have no EXECUTE on record_screening_service_result',
+      'with 0372 Phase A (owner-approved real screening call): one success records nothing; if screening is still failing, the admin gets ONE "Offer screening is unavailable" push with the right reason, tap opens the held-content queue; the first success sends ONE "working again"',
+      'rollback = scripts/rollback/20270387_screening_outage_alerts.rollback.sql (monitoring only; the edge functions keep working: a report becomes a swallowed 404)'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

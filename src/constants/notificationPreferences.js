@@ -131,7 +131,7 @@ export const NOTIFICATION_GROUP_BY_TYPE = {
 // Account notices, never muted: to a business-partner applicant, an admin's notice of a new report (20270355), and the
 // account security notice (20270375: a new sign-in elsewhere, a number change).
 export const ACCOUNT_NOTICE_TYPES = ['business_partner_approved', 'business_partner_denied', 'business_partner_needs_info',
-  'admin_report_received', 'account_security_notice'];
+  'admin_report_received', 'admin_screening_outage', 'account_security_notice'];
 
 export function notificationGroupOf(type) {
   return NOTIFICATION_GROUP_BY_TYPE[type] ?? null;

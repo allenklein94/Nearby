@@ -304,6 +304,10 @@ export async function notificationDestination(data, { lookupAvailability = async
     // no name or content; the queue is admin-only).
     case 'admin_report_received':
       return to('AdminReports');
+    // 20270387: "Offer screening is unavailable / working again" to admins opens the held-content queue (screening's own
+    // admin screen; held offers wait there). The push carries only its phase + failure kind.
+    case 'admin_screening_outage':
+      return to('AdminContentReview');
     // 20270375: "New sign-in to your Nearby account" / "Your Nearby phone number was changed" open Settings, where Sign Out
     // ends every session (the push carries no device, place or name).
     case 'account_security_notice':
