@@ -1,3 +1,26 @@
+# 2026-11-02: 0385 closed-case fix (owner): fresh signals after a closed behaviour case open a new case; idea 11 closed
+
+Owner (2026-11-02): accept 0385 + 0386 as locally verified; before closing idea 11, fix the 0369 rule that sent every later
+behaviour signal to the person's closed case as new evidence (so an old closed case silenced future alerts); smallest compatible
+fix, keep dedup, daily cap and the 90-day size-only quiet, never reopen historical cases automatically, nothing unrelated; then
+close idea 11, stop anti-abuse development, return to build 87 + Tier 1.
+
+Changed in place in `20270385_gathering_review_signals.sql` (`private.behavior_evaluate_case`; rollback unchanged, it restores
+0382's original): signals with `last_at` after the latest closed behaviour case that qualify by the existing rules open a NEW
+case carrying `previous_case_id`; the closed case gets no event and no `new_evidence_at`; an open case's refresh keeps its other
+evidence keys; the large-gathering quiet = ANY behaviour case about a large_public_gathering closed 'no_action' within 90 days
+(was: only the latest close). Behaviour cases only. Tests: `gatheringReviewSignals` (repeat rule rewritten + six-months-later
+case + cap holds with a waiting-list entry), `reviewCaseHistory` (behaviour expectation now one new case, old closed),
+`gathering-signal-concurrency.js` step 6.
+
+Verification (2026-11-02, local replay only, after a codespace restart): fresh replay 510/510 (real Auth first); the three
+affected journeys 30/30; journeys 1063/1063 before AND after all 17 concurrency scripts; rollback of 0386 + 0385 then re-apply
+then rollback again: identical both ways (5,356 rolled back / 5,408 applied, sorted snapshot of functions + ACLs, policies,
+constraints, triggers, columns, relations + ACLs, indexes, cron); both journeys fail 16/16 on the rolled-back DB; Jest 542/542
+(7337). NOT run (deploy gates): prod prelude journeys 0348-0386, prod aborted rollback, grants vs prod. Staged, not merged, not
+deployed, detection OFF. The earlier entry's limit ("a closed behaviour case means later signals become new evidence on it")
+no longer holds.
+
 # 2026-11-02: gathering review signals 20270385 + 20270386 built + locally verified, staged (owner idea 11 pre-launch items)
 
 Owner (2026-11-02) approved the three signals from `PRODUCT_AUDIT/GATHERING_REVIEW_SIGNALS_PROPOSAL_2026-11-02.md`: attendee
