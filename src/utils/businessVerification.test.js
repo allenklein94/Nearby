@@ -50,16 +50,36 @@ describe('Verified Business: where it may appear (decision A, LOCKED)', () => {
     expect(hits).toEqual(['supabase/migrations/20270371_business_verification.sql']);
   });
 
-  test('the wording names what was checked and never claims quality, safety or trust', () => {
-    expect(sheet.en.verifiedBusiness).toBe('Verified Business');
+  test('the wording names what was checked, says what it does NOT promise, and never claims quality, safety or trust', () => {
     expect(profile.en.verifiedBusiness).toBe('Verified Business');
-    expect(profile.en.verifiedBusinessMeaning).toMatch(/isn't a rating of its quality or safety/);
+    expect(profile.en.verifiedBusinessExplanation).toBe(
+      "Nearby has confirmed this business's identity and authorization to operate its account. Verification does not guarantee service quality, safety, or individual transactions.");
     for (const lang of Object.keys(profile)) {
-      for (const k of ['verifiedBusiness', 'verifiedBusinessA11y', 'verifiedBusinessMeaning']) expect(profile[lang][k]).toBeTruthy();
-      for (const k of ['verifiedBusiness', 'verifiedBusinessA11y']) expect(sheet[lang][k]).toBeTruthy();
+      for (const k of ['verifiedBusiness', 'verifiedBusinessExplanation']) expect(profile[lang][k]).toBeTruthy();
+      expect(profile[lang].verifiedBusinessMeaning).toBeUndefined();
+      expect(profile[lang].verifiedBusinessA11y).toBeUndefined();
     }
-    const en = JSON.stringify([sheet.en.verifiedBusiness, sheet.en.verifiedBusinessA11y, profile.en.verifiedBusiness, profile.en.verifiedBusinessA11y, profile.en.verifiedBusinessMeaning]);
+    for (const lang of Object.keys(sheet)) {
+      expect(sheet[lang].verifiedBusiness).toBeUndefined(); // one string set for every place the badge appears
+      expect(sheet[lang].verifiedBusinessA11y).toBeUndefined();
+    }
+    // the only "guarantee" allowed is the explicit negation
+    const en = [profile.en.verifiedBusiness, profile.en.verifiedBusinessExplanation].join(' ').replace('does not guarantee', '');
     expect(en).not.toMatch(/\b(trusted|safe business|guarantee|recommended)\b/i);
+  });
+
+  test('ONE badge rendering: every screen showing the badge uses VerifiedBusinessBadge (tap = explanation in place, no screen/sheet)', () => {
+    const badgeText = sourceFiles(path.join(ROOT, 'src'))
+      .filter((f) => /ui\.business(Profile|Sheet)\.verifiedBusiness/.test(fs.readFileSync(f, 'utf8')))
+      .map((f) => path.relative(ROOT, f));
+    expect(badgeText).toEqual(['src/components/VerifiedBusinessBadge.js']);
+    for (const f of ['src/components/BusinessPreviewSheet.js', 'src/screens/BusinessProfileScreen.js']) {
+      expect(fs.readFileSync(path.join(ROOT, f), 'utf8')).toMatch(/<VerifiedBusinessBadge\b/);
+    }
+    const badge = fs.readFileSync(path.join(ROOT, 'src/components/VerifiedBusinessBadge.js'), 'utf8');
+    expect(badge).toMatch(/accessibilityState=\{\{ expanded: open \}\}/);
+    expect(badge).not.toMatch(/navigation|navigate\(|<Modal|Animated/);
+    expect(badge).toMatch(/VERIFIED_BUSINESS_EXPLANATION_KEY = 'ui\.businessProfile\.verifiedBusinessExplanation'/);
   });
 
   test('unknown = no badge: an error (e.g. the function before 20270371 is live) or a bad payload shows nothing', () => {
