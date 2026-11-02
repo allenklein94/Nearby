@@ -61,39 +61,69 @@ pool rejoin = no new encounter, expiry = a new one told once each, also on an un
 back); `crossed-paths-concurrency.js` step 5 (4 rounds of off/on racing re-crossings: no second encounter, one push each;
 FAILS with the memory trigger disabled).
 
-## 3. Privacy Policy (PROPOSED for owner approval; NOT published; docs/privacy.html unchanged)
+## 3. Privacy Policy: FINAL WORDING FOR LEGAL REVIEW (not published; docs/privacy.html unchanged)
 
-Publish only after the owner approves this exact wording, in the same release as 0384 (never before: the switch doesn't
-exist until then).
+Status (owner, 2026-11-02): substance APPROVED IN PRINCIPLE, with two clarifications now made: (1) the approximate area is
+stored internally and never shown to anyone; what the other person sees is listed separately; (2) switching off deletes
+location and crossing records at once, but a minimal record (the two account IDs + its expiry) stays up to 48 hours to
+prevent repeat encounters. Next: legal review of this text, then a SEPARATE owner approval to publish, in the same release as
+0384 (never before: the switch doesn't exist until then). Matched against the live `docs/privacy.html` (§2 line 34, §3 line 52,
+§6 lines 66-67) so the three sections agree.
 
-**§2, replace the paragraph that starts "For "Crossed Paths" matching: to detect when two users are near each other..." with:**
+**§2: replace the paragraph that starts "For "Crossed Paths" matching: to detect when two users are near each other..." with:**
 
 > **Crossed Paths (optional, off by default).** Crossed Paths is off unless you turn it on in Settings ("Show when I cross
-> paths with people"). You and another person are told that you crossed paths only if you have BOTH turned it on, you are
-> both in Dating or both in Friends, neither of you has blocked the other, and you were near each other within the last
-> several minutes. "Near" is approximate (roughly within a few dozen meters): Nearby never shows a distance, an address or
-> where it happened. To detect it, the App sends a rounded version of your current location. We keep only your most recent
-> one, never a history or trail of your movements, and delete it automatically after one hour; with Crossed Paths on we
-> also keep the rounded location we last used for matching for at most 10 minutes, and a count of how often it changed (no
-> location) for about an hour, to limit misuse. When you cross paths with someone, we record it once: the two accounts, when
-> it first happened, and an approximate area (a point our servers place somewhere inside a fixed grid area several hundred
-> meters across, never either person's actual location). The record is not updated if you keep crossing paths, and it is
-> deleted automatically 48 hours after it was made (checked every 10 minutes). **Turning it off:** you can turn Crossed Paths
-> off at any time in Settings. Your crossed-paths records and the location kept for matching are deleted at once and no new
-> ones are created. So that switching it off and on again can't create a new crossing with the same person, we keep only a
-> note that your two accounts crossed paths and when that note expires (no location and no time of the crossing), until
-> the original 48 hours end; then it is deleted. Each time you turn Crossed Paths on or off we keep a record of the change
-> and when it happened. Matches, Notices, messages and notifications you already received are separate and are not deleted
-> with it. **What it can reveal:** because it is based on being near each other, someone who has also turned it on and is
-> told you crossed paths learns that you were near them at about that time. Only turn it on if you are comfortable with
-> that; you can turn it off or block someone at any time.
+> paths with people"). Nearby tells you and another person that you crossed paths only if you have BOTH turned it on, you
+> are both in Dating or both in Friends, neither of you has blocked the other, and you were near each other within the last
+> several minutes. "Near" is approximate, roughly within a few dozen meters.
+>
+> *What the other person sees:* that you crossed paths, about how long ago, and your profile (display name, photos, bio and
+> the details you chose to share). They never see a distance, an address, a map point or where it happened, and nobody sees
+> your location.
+>
+> *What we use and keep:* to detect crossings, the App sends a rounded version of your current location. We keep only your
+> most recent one, never a history or trail of your movements, and delete it automatically after one hour. While Crossed
+> Paths is on, we also keep the rounded location we last used for matching for at most 10 minutes, and a count of how often
+> it changed (no location) for about an hour, to limit misuse. When you cross paths with someone we create one record: the
+> two accounts, when it happened, and an approximate area used only inside our systems (a point our servers place somewhere
+> inside a fixed grid area several hundred meters across, never either person's actual location, and never shown to anyone).
+> The record is not updated if you keep crossing paths, and it is deleted automatically 48 hours after it was created
+> (checked every 10 minutes).
+>
+> *Turning it off:* you can turn Crossed Paths off at any time in Settings. Your crossed-paths records and the location kept
+> for matching are deleted immediately, and no new crossings are recorded for you. One minimal record is not deleted
+> immediately: for each person you had crossed paths with, we keep only your two account IDs and the time this record
+> expires, for up to 48 hours after that crossing was first recorded. It contains no location and no time of the crossing,
+> is never shown to anyone, and exists only so that switching Crossed Paths off and on again can't create a new crossing
+> with the same person; it is then deleted automatically (or right away if either account is deleted). We also keep a
+> record of each time you turn Crossed Paths on or off and when. Matches, Notices, messages and notifications you already
+> received are separate and are not deleted when you turn it off.
+>
+> *What it can reveal:* because it is based on being near each other, another person who has also turned it on and is told
+> you crossed paths learns that you were near them at about that time. Only turn it on if you are comfortable with that; you
+> can turn it off, or block someone, at any time.
 
-**§3 "With other users":** change "visible to other users you've crossed paths with" to "visible to other users you've
-crossed paths with (only when you both turned Crossed Paths on)".
+**§3 "With other users": replace** "are visible to other users you've crossed paths with, once your photo has passed
+moderation." **with** "are visible to other users you've crossed paths with (only when you both turned Crossed Paths on), once
+your photo has passed moderation. They see that you crossed paths and about how long ago, never where."
+(The next sentence, "Your exact location is never shown to any other user.", stays.)
 
-**§6 retention list, add:** "Crossed Paths: the rounded location used for matching, at most 10 minutes; the count of how
-often it changed (no location), about an hour after it was last used; a crossed-paths record and the note that two
-accounts crossed paths, 48 hours after the crossing."
+**§6 retention list: replace the two Crossed Paths items** ("The rounded location used to detect crossed paths is deleted
+automatically after 1 hour." and "A crossed-paths record expires 48 hours after the two users were last near each other; ...")
+**with:**
+
+> - The rounded location used to detect crossed paths is deleted automatically after 1 hour. While Crossed Paths is on, the
+>   rounded location last used for matching is kept at most 10 minutes, and the count of how often it changed (no location)
+>   about an hour after it was last used.
+> - A crossed-paths record is deleted automatically 48 hours after it was created (checked about every 10 minutes), or
+>   immediately when either person turns Crossed Paths off. The minimal record of the two account IDs and its expiry is
+>   deleted at the same 48-hour point, even if Crossed Paths was turned off earlier, or when either account is deleted.
+>   Matches, Notices, messages and notifications are separate records and are not affected.
+
+Consistency checked (§2 = §3 = §6): off by default + mutual opt-in; approximate area internal only, never shown; one record
+per encounter, not refreshed, 48 h from creation; off = immediate deletion except the minimal ID-plus-expiry record up to 48 h;
+consent changes logged. Each statement matches 0384 as built (journey `crossedPathsSafeguards`). §2 line 42 ("showing you
+people you've crossed paths with") needs no change.
 
 ## 4. Wording changed on the branch (no distance anywhere)
 
