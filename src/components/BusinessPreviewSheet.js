@@ -11,6 +11,7 @@ import { businessPreview, businessPreviewRoute } from '../utils/businessPreview'
 import { isVerifiedBusiness } from '../services/businessVerification';
 import { canReportBusiness } from '../utils/reportContent';
 import ReportBlockModal from './ReportBlockModal';
+import VerifiedBusinessBadge from './VerifiedBusinessBadge';
 
 // The one business sheet (owner item 17, 2026-10-04, LOCKED): a lightweight preview over Discover's business browsing surfaces
 // (result rows, map pins). Not a screen and not a mini Business Profile: name, measured distance, open status, two declared
@@ -107,9 +108,7 @@ export default function BusinessPreviewSheet({ partner, pinSpot = null, navigati
             <View style={styles.grabber} />
             <Text style={styles.title} numberOfLines={2}>{preview.title}</Text>
             {verified ? (
-              <Text style={styles.verified} accessibilityLabel={t('ui.businessSheet.verifiedBusinessA11y', { name: preview.title ?? '' })}>
-                ✓ {t('ui.businessSheet.verifiedBusiness')}
-              </Text>
+              <VerifiedBusinessBadge style={styles.verified} />
             ) : null}
             {preview.distance ? <Text style={styles.line}>{preview.distance}</Text> : null}
             {preview.hours ? <Text style={styles.line}>🕒 {preview.hours}</Text> : null}
@@ -151,7 +150,7 @@ const getStyles = (colors) => StyleSheet.create({
   grabber: { alignSelf: 'center', width: 36, height: 4, borderRadius: 2, backgroundColor: colors.border, marginBottom: spacing.md },
   title: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
   line: { color: colors.textSecondary, fontSize: 14, marginBottom: spacing.xs },
-  verified: { color: colors.success, fontSize: 13, fontWeight: '600', marginBottom: spacing.xs },
+  verified: { marginBottom: spacing.xs },
   primary: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.md },
   primaryText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   secondary: { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.sm },
