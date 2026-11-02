@@ -133,8 +133,15 @@ moment of crossing: it was missing from "what the other person sees"; (c) `get_s
 both at {title}") appear in the same Crossed Paths list and are NOT gated by the new switch (unchanged by 0384; Dating side
 via `dating_candidates_visible_to_me`, Friends via its own filter): now disclosed as separate. Profile shown = the
 Dating/Friends candidate columns (name, photos, bio, age, interests, basics etc.), covered by "details you chose to share".
-Wording-only corrections; no feature change. Whether shared-gathering cards should also follow the switch is an owner
-product question, not decided here.
+Wording-only corrections; no feature change. Owner decision (2026-11-02, LOCKED): shared-gathering cards stay independent of the switch (attendance-based, not
+location). Privacy check of `get_shared_gathering_partners` (20270265, code reading): returns a person only when BOTH are
+`approved` in `gathering_interest` for the same gathering whose time has passed, so the caller was already an authorized
+attendee who sees Who's going (names to fellow attendees, the locked rule; private / invite-only / women-only add no one
+new); `viewer_blocked_either_way` both ways; a cancelled gathering is deleted (`cancel_gathering`), a person who left or was
+removed is no longer `approved`; profiles come only through `dating_candidates_visible_to_me` (Dating consent) or
+`people_visible_to_me` + `open_to_friend_discovery` (Friends). Not specific to this feature: suspended / hidden profiles
+are filtered by the staged 0351 / 0382 path, and the Friends opt-in filter is client-side (0382 moves profile reads behind
+the server rule). No material gap; nothing changed.
 
 Consistency checked (§2 = §3 = §6): off by default + mutual opt-in; approximate area internal only, never shown; one record
 per encounter, not refreshed, 48 h from creation; off = immediate deletion except the minimal ID-plus-expiry record up to 48 h;
