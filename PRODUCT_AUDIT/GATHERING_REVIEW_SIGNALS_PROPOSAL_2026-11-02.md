@@ -1,6 +1,6 @@
 # Gathering review signals: threshold proposal (owner idea 11, 2026-11-02)
 
-Status: PROPOSAL ONLY, awaiting owner decision. Nothing built. Branch `post-tier1/gathering-review-signals` (stacked on
+Status: APPROVED by the owner 2026-11-02 (case rule B; repeat rule: size-only signals after a 'No action needed' large case within 90 days open nothing alone but count beside a different signal). BUILT + locally verified as 20270385 + 20270386, staged, not deployed (see CLAUDE_HISTORY.md, 2026-11-02). Original proposal below. Branch `post-tier1/gathering-review-signals` (stacked on
 `post-tier1/crossed-paths-safeguards`); off main, build 87 unchanged, nothing deployed. Host-distance signal: NOT built (owner).
 
 ## What exists (read from the staged migrations)

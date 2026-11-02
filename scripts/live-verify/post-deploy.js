@@ -154,6 +154,16 @@ const STEPS = {
       'read-only right after: private.crossed_paths_consent / _log / _probe: no client role; set_crossed_paths_sharing + get_my_crossed_paths_sharing EXECUTE: authenticated only; trigger zz_presence_probe_record on presence_reports; viewer_may_read_profile body has the expires_at + crossed_paths_pair_allowed clause; 0 sightings (the one-off purge); report-presence answers {"ok":true} without matchedCount',
       'controlled check (owner, dedicated test accounts only, two phones): both in Dating, only one switch on = nothing recorded; both on and near = Crossed Paths shows each other + one push each; one turns the switch off = the row disappears for both at once and the other can no longer open that profile through it',
       'a crossing recorded or a profile readable through a crossing for someone whose switch is off, or a presence report refused because of the probe record = security defect: STOP, report'] },
+  // Gathering review signals (owner idea 11, 2026-11-02): detectors installed, all OFF
+  20270385: { journeys: ['gatheringReviewSignals', 'behaviorReviewSignals', 'behaviorSignalThresholds', 'gatheringCreationLimits'],
+    manual: ['BEFORE the deploy approval: 0384 live (in order); prod journeys with the 0348-0385 prelude + an aborted rollback round trip on prod; grants vs prod',
+      'read-only right after: private.gathering_signal_settings all null; private.gathering_cancel_log + gathering_size_marks: no client role, 0 rows; triggers zz_gathering_signal_capacity / _cancel on gatherings, zz_gathering_signal_join on gathering_interest',
+      'a gathering create / join / cancel refused or failing because of a detector = defect: STOP, report'] },
+  // ... and switched on with the owner's approved starting numbers (2026-11-02, provisional)
+  20270386: { journeys: ['gatheringSignalThresholds', 'gatheringReviewSignals'],
+    manual: ['BEFORE the deploy approval: 0385 live; 0365 live (review cases on); own approval',
+      'read-only right after: gathering_signal_settings = 15 / 60 / 0.5, 3 / 7 / 48, 50 / 25 / 90; case_alone_kinds includes attendee_surge_new, create_cancel, large_public_gathering (not attendee_surge)',
+      'rollback = scripts/rollback/20270386_gathering_review_signal_thresholds.rollback.sql (instant, back OFF; cases kept)'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

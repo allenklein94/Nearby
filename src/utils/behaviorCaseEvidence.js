@@ -27,6 +27,18 @@ export function behaviorEvidenceLines(evidence) {
         const names = (Array.isArray(sig.actions) ? sig.actions : []).map((a) => ACTION_NAMES[a] || a);
         return `Reached ${names.length} different limits${within}${names.length ? ` (${names.join(', ')})` : ''}`;
       }
+      // 20270385: about the host's gatherings (counts only; the gathering id is in the evidence for the admin to look up)
+      case 'attendee_surge':
+      case 'attendee_surge_new':
+        return `One gathering gained ${sig.joiners} uninvited joiners${within}`
+          + (Number.isFinite(sig.new_accounts) ? ` (${sig.new_accounts} from new accounts)` : '');
+      case 'create_cancel':
+        return `Cancelled ${sig.cancellations} gatherings others had joined or been invited to, within ${sig.window_days} days`
+          + (Number.isFinite(sig.within_hours) ? ` (each within ${sig.within_hours} h of creating it)` : '');
+      case 'large_public_gathering':
+        return sig.trigger === 'attendees'
+          ? `Public gathering reached ${sig.attendees} attendees`
+          : `Public gathering set to a capacity of ${sig.capacity}`;
       default:
         return null;
     }

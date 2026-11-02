@@ -20,4 +20,19 @@ describe('behaviorEvidenceLines (20270363 admin review)', () => {
     expect(behaviorEvidenceLines({})).toEqual([]);
     expect(behaviorEvidenceLines({ signals: [{ kind: 'something_new', n: 1 }] })).toEqual([]);
   });
+  test('gathering signals (20270385): counts only, never a title or place', () => {
+    expect(behaviorEvidenceLines({ signals: [
+      { kind: 'attendee_surge_new', joiners: 15, new_accounts: 15, window_minutes: 60, gathering_id: 'g1' },
+      { kind: 'attendee_surge', joiners: 17, new_accounts: 2, window_minutes: 60 },
+      { kind: 'create_cancel', cancellations: 3, window_days: 7, within_hours: 48 },
+      { kind: 'large_public_gathering', trigger: 'capacity', capacity: 50 },
+      { kind: 'large_public_gathering', trigger: 'attendees', attendees: 25 },
+    ] })).toEqual([
+      'One gathering gained 15 uninvited joiners within 60 min (15 from new accounts)',
+      'One gathering gained 17 uninvited joiners within 60 min (2 from new accounts)',
+      'Cancelled 3 gatherings others had joined or been invited to, within 7 days (each within 48 h of creating it)',
+      'Public gathering set to a capacity of 50',
+      'Public gathering reached 25 attendees',
+    ]);
+  });
 });

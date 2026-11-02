@@ -36,7 +36,8 @@ d('journey: behaviour signal thresholds (20270365)', () => {
       repeat_msg_min_recipients: 5, repeat_msg_window_minutes: 60, repeat_msg_min_chars: 20, repeat_msg_min_similarity: 0.8,
       join_burst_min_gatherings: 15, join_burst_window_minutes: 60, location_min_cells: 3, location_window_minutes: 60,
       limit_burst_min_actions: 3, limit_burst_window_minutes: 60, review_cases_enabled: true, case_min_signal_kinds: 2,
-      case_window_hours: 24, case_alone_kinds: ['repeated_messages', 'limit_burst'], max_new_cases_per_day: 20,
+      case_window_hours: 24, // 20270386 (staged) adds the three gathering kinds to the same list
+      case_alone_kinds: expect.arrayContaining(['repeated_messages', 'limit_burst']), max_new_cases_per_day: 20,
     });
   });
 

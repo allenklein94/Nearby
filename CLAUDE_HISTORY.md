@@ -1,3 +1,35 @@
+# 2026-11-02: gathering review signals 20270385 + 20270386 built + locally verified, staged (owner idea 11 pre-launch items)
+
+Owner (2026-11-02) approved the three signals from `PRODUCT_AUDIT/GATHERING_REVIEW_SIGNALS_PROPOSAL_2026-11-02.md`: attendee
+surge 15 / 60 min with case rule B (alone only when >= half are New accounts, else a private note needing a second distinct
+signal); create-then-cancel 3 in 7 days, each within 48 h, only with someone else joined or invited, 30-day minimal log without
+titles or locations; large public gathering capacity >= 50 or attendance >= 25, once per gathering / series, first opens a case,
+after a 'No action needed' large-gathering case within 90 days size-only signals open nothing but still count beside a different
+signal. Private admin review only; detection OFF until a separate activation migration with its own approval; isolated branch;
+then STOP expanding the anti-abuse backlog and return to build 87 + Tier 1.
+
+Built (branch `post-tier1/gathering-review-signals`, stacked on `post-tier1/crossed-paths-safeguards`): migration
+`supabase/migrations/20270385_gathering_review_signals.sql` (settings table all null, cancel log, size marks, 4 new kinds,
+`behavior_evaluate_case` = 0382's + attendee-surge family + repeat rule, triggers on gatherings / gathering_interest, purge),
+`supabase/migrations/20270386_gathering_review_signal_thresholds.sql` (approved numbers; appends the three alone kinds, keeping
+the existing order so the rollback restores it exactly; refuses without 0385 or with review cases off), rollbacks
+`scripts/rollback/20270385_gathering_review_signals.rollback.sql` + `20270386_...rollback.sql`, journeys
+`src/journeys/gatheringReviewSignals.journey.js` (12) + `gatheringSignalThresholds.journey.js` (3), concurrency
+`scripts/replay/gathering-signal-concurrency.js` (20 parallel New joiners = one signal + one case; 30 parallel joins = one size
+mark; 4 parallel cancellations = one signal + one case; two parallel capacity edits = one mark; cross-joins between two surging
+gatherings both commit), admin wording `src/utils/behaviorCaseEvidence.js` (counts only), `post-deploy.js` steps 20270385/6.
+
+Verification (2026-11-02, local replay only): fresh replay 510/510 (real Auth first); the two journeys 15/15; journeys
+1062/1062 before AND after all 17 concurrency scripts (found + fixed on resume: the journey's OFF check counted the whole cancel
+log, so another script's rows broke it; now scoped to its own actors); rollback of 0386 + 0385 = the pre-0385 originals item for
+item (0382's evaluate_case, 0363's purge, 0382 / 0363 constraints, re-created in a rolled-back transaction and compared); both
+journeys fail 15/15 on the rolled-back DB; re-apply round trip identical (5,190 items, run twice: the first showed only the
+case_alone_kinds order, which led to the append fix); one intermittent `profileAntiScraping` failure on the rolled-back DB,
+passed 3 runs in a row after (that suite has a recorded flake); Jest 542/542 (7337). NOT run (deploy gates): prod journeys with
+the 0348-0386 prelude, prod aborted rollback, grants vs prod. Limits: thresholds provisional (no real usage); a closed behaviour
+case means later signals become new evidence on it, never a fresh case (0369, unchanged); a detector failure is caught and only
+that signal is missed.
+
 # 2026-11-02: 20270384 one encounter per pair (owner decision), accepted as locally complete, Crossed Paths development stopped
 
 Owner (2026-11-02): accept 0384 as locally complete; for the confirmation residual choose ONE crossing record per pair until
