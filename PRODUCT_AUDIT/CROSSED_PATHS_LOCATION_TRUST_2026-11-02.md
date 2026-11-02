@@ -77,9 +77,14 @@ prevent repeat encounters. Next: legal review of this text, then a SEPARATE owne
 > are both in Dating or both in Friends, neither of you has blocked the other, and you were near each other within the last
 > several minutes. "Near" is approximate, roughly within a few dozen meters.
 >
-> *What the other person sees:* that you crossed paths, about how long ago, and your profile (display name, photos, bio and
-> the details you chose to share). They never see a distance, an address, a map point or where it happened, and nobody sees
-> your location.
+> *What the other person sees:* a notification at the time ("You and {your display name} were near each other just now",
+> if they allow notifications), and in Crossed Paths: that you crossed paths, when it happened (how long ago, with the date
+> and time to the minute), and your profile (display name, photos, bio and the details you chose to share). They never see a
+> distance, an address, a map point or where it happened, and nobody sees your location.
+>
+> *Shared gatherings are separate:* the same Crossed Paths list can also show people you both attended a past gathering
+> with ("You were both at {gathering}"). That comes from gathering attendance, not location, and does not depend on this
+> setting.
 >
 > *What we use and keep:* to detect crossings, the App sends a rounded version of your current location. We keep only your
 > most recent one, never a history or trail of your movements, and delete it automatically after one hour. While Crossed
@@ -105,7 +110,7 @@ prevent repeat encounters. Next: legal review of this text, then a SEPARATE owne
 
 **§3 "With other users": replace** "are visible to other users you've crossed paths with, once your photo has passed
 moderation." **with** "are visible to other users you've crossed paths with (only when you both turned Crossed Paths on), once
-your photo has passed moderation. They see that you crossed paths and about how long ago, never where."
+your photo has passed moderation. They are notified when it happens and see when you crossed paths (date and time), never where."
 (The next sentence, "Your exact location is never shown to any other user.", stays.)
 
 **§6 retention list: replace the two Crossed Paths items** ("The rounded location used to detect crossed paths is deleted
@@ -119,6 +124,17 @@ automatically after 1 hour." and "A crossed-paths record expires 48 hours after 
 >   immediately when either person turns Crossed Paths off. The minimal record of the two account IDs and its expiry is
 >   deleted at the same 48-hour point, even if Crossed Paths was turned off earlier, or when either account is deleted.
 >   Matches, Notices, messages and notifications are separate records and are not affected.
+
+App-behaviour check (2026-11-02, code reading of the 0384 branch): (a) the time shown is the crossing's `last_seen_at`,
+frozen at creation by 0384, rendered by `formatCrossedPathsTime` as "3 hours ago (Nov 2, 2:14 PM)" (exact to the minute;
+past 7 days the stamp alone) and on cards as "N min ago": the earlier "about how long ago" understated it; (b) the
+`crossed_paths_sighting` push (`notify_sighting_crossed_paths`, 20270353, unchanged by 0384) names the other person at the
+moment of crossing: it was missing from "what the other person sees"; (c) `get_shared_gathering_partners` cards ("You were
+both at {title}") appear in the same Crossed Paths list and are NOT gated by the new switch (unchanged by 0384; Dating side
+via `dating_candidates_visible_to_me`, Friends via its own filter): now disclosed as separate. Profile shown = the
+Dating/Friends candidate columns (name, photos, bio, age, interests, basics etc.), covered by "details you chose to share".
+Wording-only corrections; no feature change. Whether shared-gathering cards should also follow the switch is an owner
+product question, not decided here.
 
 Consistency checked (§2 = §3 = §6): off by default + mutual opt-in; approximate area internal only, never shown; one record
 per encounter, not refreshed, 48 h from creation; off = immediate deletion except the minimal ID-plus-expiry record up to 48 h;
