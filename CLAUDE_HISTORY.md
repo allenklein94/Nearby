@@ -1,3 +1,21 @@
+# 2026-11-02: Verified Business badge explanation (owner), staged with 0371
+
+Owner (2026-11-02): improve the badge's explanation now, not defer it; keep 0371's four checks and every locked rule; inspect
+first; tap = an existing lightweight popover or sheet, never a new screen; same words wherever it appears (app + business
+website); no Stripe check, no new levels, no ranking/routing/offer change; staged branch only, no merge/deploy/publish, build 87
+unchanged. Found: Business Profile showed badge + an always-visible meaning line ("…isn't a rating of its quality or safety");
+the preview sheet showed the badge alone with no explanation; no popover component exists in the app.
+
+Built on `post-tier1/business-verification` (257eb167), then merged forward through all 14 stacked branches (one import-only
+conflict on `post-tier1/impersonation-and-business-reports`, both sides kept): `src/components/VerifiedBusinessBadge.js` = the
+ONE rendering, a button (`accessibilityState.expanded`) that shows the explanation in place under it and hides it on a second tap
+(item 45: expand inline; inside the preview sheet a second sheet would stack); both screens use it. String
+`ui.businessProfile.verifiedBusinessExplanation` (owner's exact English; 10 machine-authored translations need native review);
+removed `verifiedBusinessMeaning`, `ui.businessProfile.verifiedBusinessA11y`, `ui.businessSheet.verifiedBusiness(A11y)`. Guard
+`businessVerification.test.js`: exact wording, only the explicit "does not guarantee" negation allowed, one badge rendering, no
+navigation/modal/animation in it, decision A readers unchanged. Jest 534/534 on the 0371 branch, 542/542 (7338) at the top of the
+stack. NOT done: device check, iOS bundle export of the branch, business website re-export (not published; happens with 0371).
+
 # 2026-11-02: 0385 closed-case fix (owner): fresh signals after a closed behaviour case open a new case; idea 11 closed
 
 Owner (2026-11-02): accept 0385 + 0386 as locally verified; before closing idea 11, fix the 0369 rule that sent every later
