@@ -7,7 +7,7 @@ describe('Dating cards explain themselves (item 77)', () => {
   test('shared interests are the WHY; the crossing is the WHERE/WHEN', () => {
     const f = datingCardFacts({ sharedInterests: ['Live Music', 'Coffee'] }, { crossedPathsTime: '2 hours ago' });
     expect(f.reason).toEqual({ kind: 'shared_interests', tags: ['Live Music', 'Coffee'] });
-    expect(f.where).toBe('📍 Within about 35 feet · 2 hours ago');
+    expect(f.where).toBe('📍 You crossed paths nearby · 2 hours ago');
   });
   test('a shared gathering replaces the crossing text', () => {
     expect(datingCardFacts({ sharedInterests: [] }, { gatheringText: 'You both went to Trivia' }).where).toBe('🗓️ You both went to Trivia');

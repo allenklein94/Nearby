@@ -11,8 +11,11 @@
 --      700 mph against the caller's own previous report, with no rate limit. Tiles 11-33 m apart can be claimed every ~0.1 s,
 --      so an opted-in account could sweep ~1 km2 in about 2 minutes and find an opted-in person to ~33 m, then repeat to
 --      follow them. Now, for people with Crossed Paths on only, a private one-row record keeps their last ELIGIBLE cell:
---      a NEW cell is eligible at most once per 30 s and 20 times per rolling hour (same numbers as item 39's fixes; proposed,
---      not owner-approved); re-reporting the same cell only refreshes it. A sighting is recorded only if BOTH people have an
+--      a NEW cell is eligible at most once per 30 s and 20 times per rolling hour (owner approved as initial values,
+--      2026-11-02; watch for friction after launch); re-reporting the same cell only refreshes it. The limits are per account
+--      (never per session or device): signing out/in, a new session, clearing presence or switching Crossed Paths off and
+--      on keep them (off clears only the cell). Several accounts each get their own allowance (each needs its own verified
+--      phone, 0352); documented in PRODUCT_AUDIT/CROSSED_PATHS_LOCATION_TRUST_2026-11-02.md. A sighting is recorded only if BOTH people have an
 --      eligible cell from the last 10 minutes, the sighting's cell is one of them and the two are at most one tile apart
 --      (the premium 3 x 3). An over-limit sweep therefore creates nothing, even on an exact hit. An existing crossing
 --      refreshes at most once an hour (last_seen_at / expires_at), so it can't be used as a live trail.
@@ -108,7 +111,9 @@ begin
     insert into private.crossed_paths_consent (user_id) values (v) on conflict (user_id) do nothing;
   else
     delete from private.crossed_paths_consent where user_id = v;
-    delete from private.crossed_paths_probe where user_id = v;
+    -- the cell goes at once; the rate counters stay (no location in them) so off -> on can't reset the 30 s / 20 an hour
+    -- limits; the purge deletes the row after an hour idle
+    update private.crossed_paths_probe set eligible_area = null, eligible_at = null where user_id = v;
     delete from sightings where user_a = v or user_b = v;
   end if;
   if v_was is distinct from enabled then
@@ -152,7 +157,7 @@ declare
   v_now timestamptz := clock_timestamp();
 begin
   begin
-    -- share lock: a concurrent "off" (deletes consent, then this record) can't leave a record behind
+    -- share lock: a concurrent "off" (deletes consent, then clears this record's cell) can't leave a cell behind
     perform 1 from private.crossed_paths_consent where user_id = new.user_id for share;
     if not found then return new; end if;
     if not private.cells_within_one_tile(new.area, new.area) then return new; end if; -- unparseable: never eligible

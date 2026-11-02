@@ -7,7 +7,7 @@
 //      (window_count = 1), no error or deadlock (the 30 s gap can't be beaten by sending in parallel).
 //   2. "off" vs a crossing being written, both orders: whichever commits first, afterwards there is no crossing for the
 //      person who turned it off, and no error or deadlock.
-//   3. "off" vs that person's own presence report: afterwards no probe record is left for them.
+//   3. "off" vs that person's own presence report: afterwards no stored cell is left for them.
 //   4. both people's report-presence calls write the same crossing at once: one record, one push each, no error.
 // Every row it creates is deleted afterwards.
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/crossed-paths-concurrency.js
@@ -110,7 +110,8 @@ const errors = (rs) => rs.filter((r) => !r.ok).map((r) => `${r.code} ${r.error}`
       const offFirst = order === 'off first';
       const rs3 = await Promise.all([run(SWITCH(z, false), offFirst ? 0 : 150), run(REPORT(z, '26.7101,-80.0501'), offFirst ? 150 : 0)]);
       check(errors(rs3).length === 0, `no error or deadlock (${JSON.stringify(errors(rs3))})`);
-      check(!(await probe(z)), 'no probe record left');
+      const pz = await probe(z);
+      check(!pz || (pz.eligible_area === null && pz.eligible_at === null), 'no stored cell left');
     }
 
     console.log('4. both report-presence calls write the same crossing at once');

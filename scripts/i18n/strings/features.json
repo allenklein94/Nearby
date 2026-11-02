@@ -2,7 +2,7 @@
  "en": {
   "cat.meeting": "Meeting People",
   "f.crossedPaths.name": "Crossed Paths",
-  "f.crossedPaths.desc": "The main way you find people — shows you who you've actually been near recently (about 35 feet, a few minutes ago), not just anyone in the city.",
+  "f.crossedPaths.desc": "The main way you find people — shows you who you've actually been near recently (a few minutes ago), not just anyone in the city.",
   "f.noticesWaves.name": "Notices & Waves",
   "f.noticesWaves.desc": "A Notice is silent — the other person only finds out if they notice you back too. A Wave tells them right away. Both live in the \"Interested\" tab.",
   "f.browse.name": "Browse",
@@ -63,7 +63,7 @@
  "es": {
   "cat.meeting": "Conocer gente",
   "f.crossedPaths.name": "Caminos Cruzados",
-  "f.crossedPaths.desc": "La forma principal de encontrar gente: te muestra con quién has coincidido de verdad hace poco (a unos 10 metros, hace unos minutos), no a cualquiera de la ciudad.",
+  "f.crossedPaths.desc": "La forma principal de encontrar gente: te muestra con quién has coincidido de verdad hace poco (hace unos minutos), no a cualquiera de la ciudad.",
   "f.noticesWaves.name": "Avisos y saludos",
   "f.noticesWaves.desc": "Un aviso es silencioso: la otra persona solo se entera si también se fija en ti. Un saludo se lo dice enseguida. Ambos están en la pestaña «Interesados».",
   "f.browse.name": "Explorar",
@@ -124,7 +124,7 @@
  "de": {
   "cat.meeting": "Leute kennenlernen",
   "f.crossedPaths.name": "Gekreuzte Wege",
-  "f.crossedPaths.desc": "Der wichtigste Weg, Menschen zu finden: Er zeigt, wem du kürzlich wirklich nahe warst (etwa 10 Meter, vor ein paar Minuten), nicht irgendwen in der Stadt.",
+  "f.crossedPaths.desc": "Der wichtigste Weg, Menschen zu finden: Er zeigt, wem du kürzlich wirklich nahe warst (vor ein paar Minuten), nicht irgendwen in der Stadt.",
   "f.noticesWaves.name": "Hinweise & Winken",
   "f.noticesWaves.desc": "Ein Hinweis ist still: Die andere Person erfährt es nur, wenn sie dich auch bemerkt. Beim Winken erfährt sie es sofort. Beides findest du im Tab „Interessiert“.",
   "f.browse.name": "Stöbern",
@@ -185,7 +185,7 @@
  "fr": {
   "cat.meeting": "Rencontrer des gens",
   "f.crossedPaths.name": "Chemins Croisés",
-  "f.crossedPaths.desc": "Le moyen principal de trouver des gens : il vous montre qui vous avez vraiment croisé récemment (à environ 10 mètres, il y a quelques minutes), pas n'importe qui en ville.",
+  "f.crossedPaths.desc": "Le moyen principal de trouver des gens : il vous montre qui vous avez vraiment croisé récemment (il y a quelques minutes), pas n'importe qui en ville.",
   "f.noticesWaves.name": "Avis et signes",
   "f.noticesWaves.desc": "Un avis est discret : l'autre personne ne le sait que si elle vous remarque aussi. Un signe le lui dit tout de suite. Les deux se trouvent dans l'onglet « Intéressés ».",
   "f.browse.name": "Parcourir",
@@ -246,7 +246,7 @@
  "pt": {
   "cat.meeting": "Conhecer pessoas",
   "f.crossedPaths.name": "Caminhos Cruzados",
-  "f.crossedPaths.desc": "O principal jeito de encontrar pessoas: mostra quem esteve mesmo perto de você recentemente (cerca de 10 metros, há poucos minutos), não qualquer pessoa da cidade.",
+  "f.crossedPaths.desc": "O principal jeito de encontrar pessoas: mostra quem esteve mesmo perto de você recentemente (há poucos minutos), não qualquer pessoa da cidade.",
   "f.noticesWaves.name": "Avisos e acenos",
   "f.noticesWaves.desc": "Um aviso é silencioso: a outra pessoa só fica sabendo se também notar você. Um aceno avisa na hora. Os dois ficam na aba \"Interessados\".",
   "f.browse.name": "Explorar",
@@ -307,7 +307,7 @@
  "ht": {
   "cat.meeting": "Rankontre moun",
   "f.crossedPaths.name": "Chemen Kwaze",
-  "f.crossedPaths.desc": "Prensipal fason pou jwenn moun: li montre w moun ki te vrèman toupre w dènyèman (anviwon 35 pye, kèk minit de sa), pa nenpòt moun nan vil la.",
+  "f.crossedPaths.desc": "Prensipal fason pou jwenn moun: li montre w moun ki te vrèman toupre w dènyèman (kèk minit de sa), pa nenpòt moun nan vil la.",
   "f.noticesWaves.name": "Avi ak salitasyon",
   "f.noticesWaves.desc": "Yon avi an silans: lòt moun nan konnen sèlman si li remake w tou. Yon salitasyon di l touswit. Tou de nan onglè \"Enterese\" a.",
   "f.browse.name": "Gade",
@@ -368,7 +368,7 @@
  "zh": {
   "cat.meeting": "认识新朋友",
   "f.crossedPaths.name": "擦肩而过",
-  "f.crossedPaths.desc": "找到人的主要方式：显示最近真正在你附近出现过的人（约 10 米内、几分钟前），而不是城里的任何人。",
+  "f.crossedPaths.desc": "找到人的主要方式：显示最近真正在你附近出现过的人（几分钟前），而不是城里的任何人。",
   "f.noticesWaves.name": "提醒与招手",
   "f.noticesWaves.desc": "提醒是悄悄的：只有对方也提醒你时才会知道。招手会立即告诉对方。两者都在“感兴趣”标签页里。",
   "f.browse.name": "浏览",
@@ -429,7 +429,7 @@
  "vi": {
   "cat.meeting": "Gặp gỡ mọi người",
   "f.crossedPaths.name": "Đường Đời Giao Nhau",
-  "f.crossedPaths.desc": "Cách chính để tìm người: cho bạn thấy ai thật sự ở gần bạn gần đây (khoảng 10 mét, vài phút trước), không phải bất kỳ ai trong thành phố.",
+  "f.crossedPaths.desc": "Cách chính để tìm người: cho bạn thấy ai thật sự ở gần bạn gần đây (vài phút trước), không phải bất kỳ ai trong thành phố.",
   "f.noticesWaves.name": "Thông báo & vẫy tay",
   "f.noticesWaves.desc": "Thông báo là âm thầm: người kia chỉ biết khi họ cũng để ý bạn. Vẫy tay cho họ biết ngay. Cả hai nằm trong thẻ \"Quan tâm\".",
   "f.browse.name": "Khám phá",
@@ -490,7 +490,7 @@
  "tl": {
   "cat.meeting": "Pagkilala sa mga tao",
   "f.crossedPaths.name": "Nagkrus na Landas",
-  "f.crossedPaths.desc": "Ang pangunahing paraan para makahanap ng tao: ipinapakita kung sino talaga ang napalapit sa iyo kamakailan (mga 35 talampakan, ilang minuto na ang nakalipas), hindi kung sinuman sa lungsod.",
+  "f.crossedPaths.desc": "Ang pangunahing paraan para makahanap ng tao: ipinapakita kung sino talaga ang napalapit sa iyo kamakailan (ilang minuto na ang nakalipas), hindi kung sinuman sa lungsod.",
   "f.noticesWaves.name": "Mga abiso at Wave",
   "f.noticesWaves.desc": "Tahimik ang abiso: malalaman lang ng kabila kung mapansin ka rin nila. Agad namang sinasabi ng Wave. Pareho silang nasa tab na \"Interested\".",
   "f.browse.name": "Browse",
@@ -551,7 +551,7 @@
  "ru": {
   "cat.meeting": "Знакомства",
   "f.crossedPaths.name": "Пересечённые Пути",
-  "f.crossedPaths.desc": "Главный способ находить людей: показывает тех, кто недавно действительно был рядом (около 10 метров, несколько минут назад), а не кого угодно в городе.",
+  "f.crossedPaths.desc": "Главный способ находить людей: показывает тех, кто недавно действительно был рядом (несколько минут назад), а не кого угодно в городе.",
   "f.noticesWaves.name": "Уведомления и взмахи",
   "f.noticesWaves.desc": "Уведомление тихое: человек узнает о нём, только если тоже заметит вас. Взмах сообщает сразу. И то и другое во вкладке «Интересуются».",
   "f.browse.name": "Обзор",
@@ -612,7 +612,7 @@
  "ko": {
   "cat.meeting": "새로운 만남",
   "f.crossedPaths.name": "스쳐 지나간 인연",
-  "f.crossedPaths.desc": "사람을 찾는 주된 방법이에요. 도시 아무나가 아니라 최근 실제로 가까이 있었던 사람(약 10미터, 몇 분 전)을 보여 줘요.",
+  "f.crossedPaths.desc": "사람을 찾는 주된 방법이에요. 도시 아무나가 아니라 최근 실제로 가까이 있었던 사람(몇 분 전)을 보여 줘요.",
   "f.noticesWaves.name": "알림 & 웨이브",
   "f.noticesWaves.desc": "알림은 조용해요. 상대방도 나에게 관심을 보여야만 알게 돼요. 웨이브는 바로 알려 줘요. 둘 다 '관심' 탭에 있어요.",
   "f.browse.name": "둘러보기",

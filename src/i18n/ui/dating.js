@@ -97,7 +97,7 @@ export default {
       sharedInterestsA11y: "Filter to people who share at least one of your interests",
     },
     modeHelp: {
-      crossedPaths: "People you've actually been near recently (about 35 feet, with the app open).",
+      crossedPaths: "People you've actually been near recently (with the app open).",
       browse: "A wider pool of people matching your filters — not limited to physical proximity.",
     },
     filterByA11y: "Filter by {label}",
@@ -202,7 +202,7 @@ export default {
       sharedInterestsA11y: "Mostrar personas que comparten al menos uno de tus intereses",
     },
     modeHelp: {
-      crossedPaths: "Personas con las que de verdad has coincidido hace poco (a unos 10 metros, con la app abierta).",
+      crossedPaths: "Personas con las que de verdad has coincidido hace poco (con la app abierta).",
       browse: "Más personas que encajan con tus filtros, sin limitarse a la cercanía física.",
     },
     filterByA11y: "Filtrar por {label}",
@@ -307,7 +307,7 @@ export default {
       sharedInterestsA11y: "Menschen zeigen, die mindestens eines deiner Interessen teilen",
     },
     modeHelp: {
-      crossedPaths: "Menschen, denen du kürzlich wirklich nahe warst (etwa 10 Meter, mit geöffneter App).",
+      crossedPaths: "Menschen, denen du kürzlich wirklich nahe warst (mit geöffneter App).",
       browse: "Mehr Menschen, die zu deinen Filtern passen, nicht nur räumlich nahe.",
     },
     filterByA11y: "Nach {label} filtern",
@@ -412,7 +412,7 @@ export default {
       sharedInterestsA11y: "Afficher les personnes qui partagent au moins un de vos centres d'intérêt",
     },
     modeHelp: {
-      crossedPaths: "Les personnes que vous avez vraiment croisées récemment (à environ 10 mètres, app ouverte).",
+      crossedPaths: "Les personnes que vous avez vraiment croisées récemment (app ouverte).",
       browse: "Un plus large choix de personnes correspondant à vos filtres, sans se limiter à la proximité physique.",
     },
     filterByA11y: "Filtrer par {label}",
@@ -517,7 +517,7 @@ export default {
       sharedInterestsA11y: "Mostrar pessoas com pelo menos um interesse em comum",
     },
     modeHelp: {
-      crossedPaths: "Pessoas que estiveram mesmo perto de você recentemente (cerca de 10 metros, com o app aberto).",
+      crossedPaths: "Pessoas que estiveram mesmo perto de você recentemente (com o app aberto).",
       browse: "Mais pessoas que combinam com seus filtros, sem se limitar à proximidade física.",
     },
     filterByA11y: "Filtrar por {label}",
@@ -622,7 +622,7 @@ export default {
       sharedInterestsA11y: "Montre moun ki gen omwen yon enterè menm jan ak ou",
     },
     modeHelp: {
-      crossedPaths: "Moun ki te vrèman toupre w dènyèman (anviwon 35 pye, ak aplikasyon an louvri).",
+      crossedPaths: "Moun ki te vrèman toupre w dènyèman (ak aplikasyon an louvri).",
       browse: "Plis moun ki koresponn ak filt ou yo, san limite l a sa ki toupre w.",
     },
     filterByA11y: "Filtre pa {label}",
@@ -727,7 +727,7 @@ export default {
       sharedInterestsA11y: "显示与你至少有一个共同兴趣的人",
     },
     modeHelp: {
-      crossedPaths: "最近真正在你附近出现过的人（约 10 米内，且 App 处于打开状态）。",
+      crossedPaths: "最近真正在你附近出现过的人（App 处于打开状态时）。",
       browse: "更多符合你筛选条件的人，不限于实际距离。",
     },
     filterByA11y: "按{label}筛选",
@@ -832,7 +832,7 @@ export default {
       sharedInterestsA11y: "Hiện người có ít nhất một sở thích chung với bạn",
     },
     modeHelp: {
-      crossedPaths: "Những người thật sự ở gần bạn gần đây (khoảng 10 mét, khi mở ứng dụng).",
+      crossedPaths: "Những người thật sự ở gần bạn gần đây (khi mở ứng dụng).",
       browse: "Nhiều người hơn hợp với bộ lọc của bạn, không giới hạn ở khoảng cách thực tế.",
     },
     filterByA11y: "Lọc theo {label}",
@@ -937,7 +937,7 @@ export default {
       sharedInterestsA11y: "Ipakita ang mga taong may kahit isang kaparehong interes mo",
     },
     modeHelp: {
-      crossedPaths: "Mga taong talagang napalapit sa iyo kamakailan (mga 35 talampakan, habang bukas ang app).",
+      crossedPaths: "Mga taong talagang napalapit sa iyo kamakailan (habang bukas ang app).",
       browse: "Mas maraming taong tugma sa mga filter mo, hindi limitado sa pisikal na lapit.",
     },
     filterByA11y: "I-filter ayon sa {label}",
@@ -1042,7 +1042,7 @@ export default {
       sharedInterestsA11y: "Показывать людей хотя бы с одним общим интересом",
     },
     modeHelp: {
-      crossedPaths: "Люди, которые недавно действительно были рядом (около 10 метров, при открытом приложении).",
+      crossedPaths: "Люди, которые недавно действительно были рядом (при открытом приложении).",
       browse: "Больше людей под ваши фильтры, без привязки к физической близости.",
     },
     filterByA11y: "Фильтр: {label}",
@@ -1147,7 +1147,7 @@ export default {
       sharedInterestsA11y: "관심사가 하나 이상 같은 사람 보기",
     },
     modeHelp: {
-      crossedPaths: "최근 실제로 가까이 있었던 사람들이에요 (약 10미터, 앱이 켜져 있을 때).",
+      crossedPaths: "최근 실제로 가까이 있었던 사람들이에요 (앱이 켜져 있을 때).",
       browse: "실제 거리와 상관없이 필터에 맞는 더 많은 사람이에요.",
     },
     filterByA11y: "{label}(으)로 필터",

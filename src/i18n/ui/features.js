@@ -12,7 +12,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Crossed Paths",
-        desc: "The main way you find people — shows you who you've actually been near recently (about 35 feet, a few minutes ago), not just anyone in the city.",
+        desc: "The main way you find people — shows you who you've actually been near recently (a few minutes ago), not just anyone in the city.",
       },
       noticesWaves: {
         name: "Notices & Waves",
@@ -127,7 +127,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Caminos Cruzados",
-        desc: "La forma principal de encontrar gente: te muestra con quién has coincidido de verdad hace poco (a unos 10 metros, hace unos minutos), no a cualquiera de la ciudad.",
+        desc: "La forma principal de encontrar gente: te muestra con quién has coincidido de verdad hace poco (hace unos minutos), no a cualquiera de la ciudad.",
       },
       noticesWaves: {
         name: "Avisos y saludos",
@@ -242,7 +242,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Gekreuzte Wege",
-        desc: "Der wichtigste Weg, Menschen zu finden: Er zeigt, wem du kürzlich wirklich nahe warst (etwa 10 Meter, vor ein paar Minuten), nicht irgendwen in der Stadt.",
+        desc: "Der wichtigste Weg, Menschen zu finden: Er zeigt, wem du kürzlich wirklich nahe warst (vor ein paar Minuten), nicht irgendwen in der Stadt.",
       },
       noticesWaves: {
         name: "Hinweise & Winken",
@@ -357,7 +357,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Chemins Croisés",
-        desc: "Le moyen principal de trouver des gens : il vous montre qui vous avez vraiment croisé récemment (à environ 10 mètres, il y a quelques minutes), pas n'importe qui en ville.",
+        desc: "Le moyen principal de trouver des gens : il vous montre qui vous avez vraiment croisé récemment (il y a quelques minutes), pas n'importe qui en ville.",
       },
       noticesWaves: {
         name: "Avis et signes",
@@ -472,7 +472,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Caminhos Cruzados",
-        desc: "O principal jeito de encontrar pessoas: mostra quem esteve mesmo perto de você recentemente (cerca de 10 metros, há poucos minutos), não qualquer pessoa da cidade.",
+        desc: "O principal jeito de encontrar pessoas: mostra quem esteve mesmo perto de você recentemente (há poucos minutos), não qualquer pessoa da cidade.",
       },
       noticesWaves: {
         name: "Avisos e acenos",
@@ -587,7 +587,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Chemen Kwaze",
-        desc: "Prensipal fason pou jwenn moun: li montre w moun ki te vrèman toupre w dènyèman (anviwon 35 pye, kèk minit de sa), pa nenpòt moun nan vil la.",
+        desc: "Prensipal fason pou jwenn moun: li montre w moun ki te vrèman toupre w dènyèman (kèk minit de sa), pa nenpòt moun nan vil la.",
       },
       noticesWaves: {
         name: "Avi ak salitasyon",
@@ -702,7 +702,7 @@ export default {
     f: {
       crossedPaths: {
         name: "擦肩而过",
-        desc: "找到人的主要方式：显示最近真正在你附近出现过的人（约 10 米内、几分钟前），而不是城里的任何人。",
+        desc: "找到人的主要方式：显示最近真正在你附近出现过的人（几分钟前），而不是城里的任何人。",
       },
       noticesWaves: {
         name: "提醒与招手",
@@ -817,7 +817,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Đường Đời Giao Nhau",
-        desc: "Cách chính để tìm người: cho bạn thấy ai thật sự ở gần bạn gần đây (khoảng 10 mét, vài phút trước), không phải bất kỳ ai trong thành phố.",
+        desc: "Cách chính để tìm người: cho bạn thấy ai thật sự ở gần bạn gần đây (vài phút trước), không phải bất kỳ ai trong thành phố.",
       },
       noticesWaves: {
         name: "Thông báo & vẫy tay",
@@ -932,7 +932,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Nagkrus na Landas",
-        desc: "Ang pangunahing paraan para makahanap ng tao: ipinapakita kung sino talaga ang napalapit sa iyo kamakailan (mga 35 talampakan, ilang minuto na ang nakalipas), hindi kung sinuman sa lungsod.",
+        desc: "Ang pangunahing paraan para makahanap ng tao: ipinapakita kung sino talaga ang napalapit sa iyo kamakailan (ilang minuto na ang nakalipas), hindi kung sinuman sa lungsod.",
       },
       noticesWaves: {
         name: "Mga abiso at Wave",
@@ -1047,7 +1047,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Пересечённые Пути",
-        desc: "Главный способ находить людей: показывает тех, кто недавно действительно был рядом (около 10 метров, несколько минут назад), а не кого угодно в городе.",
+        desc: "Главный способ находить людей: показывает тех, кто недавно действительно был рядом (несколько минут назад), а не кого угодно в городе.",
       },
       noticesWaves: {
         name: "Уведомления и взмахи",
@@ -1162,7 +1162,7 @@ export default {
     f: {
       crossedPaths: {
         name: "스쳐 지나간 인연",
-        desc: "사람을 찾는 주된 방법이에요. 도시 아무나가 아니라 최근 실제로 가까이 있었던 사람(약 10미터, 몇 분 전)을 보여 줘요.",
+        desc: "사람을 찾는 주된 방법이에요. 도시 아무나가 아니라 최근 실제로 가까이 있었던 사람(몇 분 전)을 보여 줘요.",
       },
       noticesWaves: {
         name: "알림 & 웨이브",

@@ -1,3 +1,20 @@
+# 2026-11-02: 20270384 follow-up (limit bypass check, location-trust residual, copy without distance, Privacy Policy draft)
+
+Owner (2026-11-02): probe numbers (30 s / 20 an hour / 10 min / hourly refresh) APPROVED as initial values; confirm they
+can't be trivially bypassed by resetting a session or switching accounts; document the client-supplied-location residual
+(no tracking or fingerprinting); Privacy Policy describing mutual opt-in, approximate proximity, retention, turning it off.
+Found + FIXED: switching Crossed Paths off deleted the probe row, so off -> on reset the counters (a bypass). Off now
+clears only the stored cell; the counters (no location) stay until an hour idle (purge). Limits are per account; several
+accounts = each its own allowance, bounded by 0352's verified phone (+ 0376 when activated): recorded residual. Copy: no
+distance anywhere ("📍 You crossed paths nearby", the old "35 feet" understated 3 x 3 matches), 11 languages. Doc with the
+bypass table, the confirmation residual, three options (coarser card time, no refresh, re-notify after a day; none built)
+and the Privacy Policy DRAFT (not published): `PRODUCT_AUDIT/CROSSED_PATHS_LOCATION_TRUST_2026-11-02.md`. A codespace restart
+interrupted the work; afterwards a mangled journey step (three names passed to `step`) was fixed and everything rerun:
+fresh replay with real Auth first 508/508, journeys 1039/1039 (journey 40/40, 2 new steps: off -> on + clearing presence
+keep the limits, an exact hit after that still not recorded), 16 concurrency scripts (crossed-paths step 3 now checks no
+stored CELL is left), journeys 1039/1039 again, journey fails 40/40 with 0384 rolled back and the other 999 pass, Jest
+542/542 (7336). Not run: prod deploy gates (unchanged).
+
 # 2026-11-02: 20270384 crossed paths safeguards (idea 10, second follow-up), built + locally verified, staged, not deployed
 
 Owner (2026-11-02): accept 0383 as locally tested, do NOT close idea 10; fix (1) 0382's stale read (a sighting granted a

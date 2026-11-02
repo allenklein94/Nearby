@@ -2,11 +2,11 @@
 // crossing never grants a profile read, and repeated presence reports can't be used to sweep for or follow someone.
 // Rolled back. Presence reports and sightings are written as report-presence writes them (no signed-in user, its upsert
 // reproduced); the switch and the reads run under the real `authenticated` role.
-//   consent: off by default; one person on = nothing; both on = recorded; off = that person's crossings + probe record gone
-//     at once; each change logged once; never callable signed out; no client can read the private tables;
+//   consent: off by default; one person on = nothing; both on = recorded; off = that person's crossings + stored cell gone
+//     at once (rate counters kept); each change logged once; never callable signed out; no client can read the private tables;
 //   stale read (0382): a crossing grants a profile read only while live AND allowed (expired / left the pool = no read at
 //     once, before any purge);
-//   probing: a new cell is eligible at most once per 30 s and 20 times an hour (re-reporting the same cell is free); an
+//   probing (limits are per account: off -> on and clearing presence never reset them): a new cell is eligible at most once per 30 s and 20 times an hour (re-reporting the same cell is free); an
 //     ineligible report never makes a crossing, not even on an exact hit; cells more than one tile apart never cross; a
 //     crossing refreshes at most once an hour; an eligible cell expires after 10 minutes; presence itself is still stored;
 //   purge: probe cells after 10 minutes, probe rows after an hour.
@@ -68,7 +68,7 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
   ${as('v_b')} perform set_crossed_paths_sharing(true); reset role; -- no change: no new log row
   ${as('v_b')} perform set_crossed_paths_sharing(false); reset role;
   ${step('off_deletes_crossings_at_once', `not ${rowExists('v_a', 'v_b')}`)}
-  ${step('off_deletes_probe_record', `${probe('v_b')} is null`)}
+  ${step('off_clears_probe_cell', `${probe('v_b')} is not null and (${probe('v_b')}->>'eligible_area') is null and (${probe('v_b')}->>'eligible_at') is null`)}
   ${step('changes_logged_once', `(select array_agg(enabled order by id) = array[true, false] from private.crossed_paths_consent_log where user_id = v_b)`)}
   ${report('v_b', T)};
   ${cross('v_a', 'v_b', T)};
@@ -116,6 +116,13 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
   ${step('presence_still_stored', `(select area = '${T}' from presence_reports where user_id = v_x)`)}
   ${cross('v_x', 'v_t', T)};
   ${step('exact_hit_while_ineligible_not_recorded', `not ${rowExists('v_x', 'v_t')}`)}
+  -- no reset: switching off and on, or clearing presence, keeps the per-account limits (sessions never enter into it)
+  ${as('v_x')} perform set_crossed_paths_sharing(false); perform set_crossed_paths_sharing(true); reset role;
+  delete from presence_reports where user_id = v_x;
+  ${report('v_x', T)};
+  ${step('off_on_and_presence_reset_keep_limits', `(${probe('v_x')}->>'eligible_area') is null and (${probe('v_x')}->>'window_count')::int = 1`)}
+  ${cross('v_x', 'v_t', T)};
+  ${step('after_reset_exact_hit_not_recorded', `not ${rowExists('v_x', 'v_t')}`)}
   -- 30 s later: the hourly cap. 20 new cells already used this hour = still ineligible
   update private.crossed_paths_probe set last_new_cell_at = clock_timestamp() - interval '31 seconds',
          window_start = clock_timestamp() - interval '10 minutes', window_count = 20 where user_id = v_x;
@@ -170,11 +177,11 @@ d('journey: crossed paths safeguards (consent, stale reads, probing)', () => {
 
   test.each([
     'off_by_default', 'neither_on_not_recorded', 'no_probe_record_without_consent', 'one_on_not_recorded', 'both_on_recorded',
-    'both_on_pushed', 'get_reads_own', 'off_deletes_crossings_at_once', 'off_deletes_probe_record', 'changes_logged_once',
+    'both_on_pushed', 'get_reads_own', 'off_deletes_crossings_at_once', 'off_clears_probe_cell', 'changes_logged_once',
     'off_nothing_new', 'signed_out_refused', 'private_tables_closed',
     'live_crossing_grants_read', 'withdrawn_row_still_stored', 'withdrawn_crossing_no_read_at_once', 'expired_row_still_stored',
     'expired_crossing_no_read_at_once',
-    'first_cell_eligible', 'second_cell_too_soon_ineligible', 'presence_still_stored', 'exact_hit_while_ineligible_not_recorded',
+    'first_cell_eligible', 'second_cell_too_soon_ineligible', 'presence_still_stored', 'exact_hit_while_ineligible_not_recorded', 'off_on_and_presence_reset_keep_limits', 'after_reset_exact_hit_not_recorded',
     'hourly_cap_ineligible', 'hourly_cap_not_recorded', 'new_window_eligible', 'two_tiles_apart_not_recorded',
     'same_cell_costs_nothing', 'cell_not_reported_not_recorded', 'one_tile_apart_recorded', 'recorded_pushed_once_each',
     'refresh_within_hour_ignored', 'refresh_after_hour_applied', 'stale_eligible_cell_not_recorded', 'unparseable_never_eligible',
