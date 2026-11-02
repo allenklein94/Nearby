@@ -27,6 +27,7 @@ import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 import { isVerifiedBusiness } from '../services/businessVerification';
+import VerifiedBusinessBadge from '../components/VerifiedBusinessBadge';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
 // uploaded creative, rendered INSIDE its existing experience card, never
@@ -273,10 +274,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{partner.name}</Text>
             {verified ? (
-              <View accessible accessibilityLabel={t('ui.businessProfile.verifiedBusinessA11y', { name: partner.name })}>
-                <Text style={styles.verifiedBadge}>✓ {t('ui.businessProfile.verifiedBusiness')}</Text>
-                <Text style={styles.verifiedMeaning}>{t('ui.businessProfile.verifiedBusinessMeaning')}</Text>
-              </View>
+              <VerifiedBusinessBadge style={styles.verifiedBadge} />
             ) : null}
             <Text style={styles.meta}>
               {followerCountLine(followerCount, language)}
@@ -667,8 +665,7 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   logoPlaceholderText: { fontSize: 28 },
   title: { ...typography.title, color: colors.textPrimary },
   meta: { color: colors.textTertiary, fontSize: 13, marginTop: 2 },
-  verifiedBadge: { color: colors.success, fontSize: 13, fontWeight: '600', marginTop: 2 },
-  verifiedMeaning: { color: colors.textTertiary, fontSize: 12, marginTop: 1 },
+  verifiedBadge: { marginTop: 2 },
   reliabilityLine: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
   attributeSectionHeader: { ...typography.small, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
