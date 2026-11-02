@@ -154,4 +154,27 @@ the type falls back to medium with no button). Limits: an outage is detected onl
 traffic = no alert, no recovery); a provider that answers with valid JSON but wrong verdicts is not an outage; the user
 content classifier (0373, `userContentClassifier.ts`) is not wired (separate decision).
 
+## 7. Coordinated deployment of the outage alerts (owner 2026-11-02: 0387 ACCEPTED AS STAGED)
+
+Accepted as staged, subject to the existing approvals and production verification. Nothing deployed. The danger to
+avoid: 0387 live while the functions that REPORT are still old = monitoring that looks on but never fires. Every step
+below is its own approval unless grouped; stop at the first failure and report.
+
+| # | Step | Why this order | Verify |
+|---|---|---|---|
+| D0 | Prerequisites: 0348-0386 live in order; 0372 + `screen-business-content` (from `post-tier1/screening-outage-alerts` or later, so it carries the reporter) released together (section 3, Phase C) | the 0372 release already redeploys this function; shipping the reporting version then avoids a second redeploy | record the deployed version + bundle hash; before 0387 its reports are swallowed 404s (harmless, screening unchanged) |
+| D1 | Redeploy `send-push` with `admin_screening_outage` (priority medium, action review_content) | must exist before the first alert, else the alert arrives with no button | one ordinary push still delivered (real phone); rollback = previous version |
+| D2 | Deploy 0387 via `deploy.js` | alerts can only be created once the functions report (D0) and send-push knows the type (D1) | read-only: both private tables 0 rows; anon / authenticated no EXECUTE on `record_screening_service_result`; journey `screeningOutageAlerts` on prod without prelude |
+| D3 | Redeploy `resweep-business-content`, `rewrite-offer-plain-language`, `create-sponsored-checkout` from the same commit | they share `_shared/contentClassifier.ts`; until redeployed, THEIR failures are not seen (screen-business-content's are) | list function versions = the commit's; until done, record "monitoring covers screen-business-content only" |
+| D4 | **[APPROVAL] End-to-end proof** (the only way to prove the deployed functions report: a success leaves no row): (a) open a synthetic outage with ONE service-role call `record_screening_service_result('business-content', false, 'provider_error', 500)` x3 -> the owner's iPhone gets ONE "Offer screening is unavailable"; tap opens Content Review; (b) one REAL screening request through the app (needs credit, section 3 A2) -> the function's success report closes it -> ONE "Offer screening is working again" | proves D0-D2 are wired together on prod | outage row closed by the function (recovered_at set right after the real request); exactly one push of each phase; delete nothing (history = evidence) |
+| D5 | Build with the "Review Content" button on the admin's phone + native review of `review_content` (10 languages) | the label is client-side | tap from the push shows the button text |
+
+Rollback (owner decides, never automatic), reverse order: D3 functions back to their previous versions (optional: an
+old function just doesn't report) -> 0387 rollback script (monitoring gone; reports become swallowed 404s) -> send-push
+previous version. Screening itself is unaffected by every rollback step.
+
+Unchanged requirements before ANY outside business onboarding: one successful REAL screening request (A2/A5), 0372's
+bypass verified closed through the real API (Phase D2), and the outage alerts proven end to end (D4). Withholding
+outside approvals until then reduces exposure; it does not close the bypass.
+
 Build 87 and Tier 1 are unaffected: nothing in this checklist changes main or the build.

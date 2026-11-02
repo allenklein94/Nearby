@@ -168,6 +168,7 @@ const STEPS = {
       'read-only right after: gathering_signal_settings = 15 / 60 / 0.5, 3 / 7 / 48, 50 / 25 / 90; case_alone_kinds includes attendee_surge_new, create_cancel, large_public_gathering (not attendee_surge)',
       'rollback = scripts/rollback/20270386_gathering_review_signal_thresholds.rollback.sql (instant, back OFF; cases kept)'] },
   20270387: { journeys: ['screeningOutageAlerts'],
+    order: 'D0 screen-business-content (reporting version, with 0372) -> D1 send-push -> D2 0387 -> D3 the other 3 classifier functions -> D4 end-to-end proof (owner approval) -> D5 build with Review Content; see PRODUCT_AUDIT/OFFER_SCREENING_ACTIVATION_CHECKLIST_2026-11-02.md section 7',
     node: ['scripts/replay/screening-outage-concurrency.js (replay only, before the deploy)'],
     edge: ['the screening functions that import _shared/contentClassifier.ts (screen-business-content, resweep-business-content, rewrite-offer-plain-language, create-sponsored-checkout) only report health once redeployed with this code; before 0387 is live a report is a swallowed 404, after it a report opens / closes outages. screen-business-content ships with 0372\'s coordinated release; the others = their own approval',
       'send-push redeploy (new type admin_screening_outage: priority medium + action review_content; until then the type falls back to medium with no action button)'],
