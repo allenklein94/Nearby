@@ -16,12 +16,12 @@
 --   large_public_gathering  a PUBLIC gathering (visibility 'everyone') whose capacity is set to at least N (create or edit),
 --                           or whose approved attendance (host excluded) reaches M, whichever comes first. Once per
 --                           gathering or recurring series (private.gathering_size_marks). Noted on the host.
---                           Repeat rule (owner): when the host's most recent closed behaviour case was closed
---                           'no_action' within the quiet period AND included a large_public_gathering signal, later
---                           size-only signals do nothing on their own; alongside a different signal they still count.
+--                           Repeat rule (owner): when any of the host's behaviour cases about a large_public_gathering
+--                           signal was closed 'no_action' within the quiet period, later size-only signals do nothing on
+--                           their own (still recorded); alongside a different signal they still count.
 -- Case rules = 20270363/20270369/20270382's: one open case per person, corroboration by distinct families, alone kinds from
--- behavior_signal_settings.case_alone_kinds, a closed case is never reopened by a signal (new evidence is noted on it for an
--- admin), 20 new cases a day with overflow kept. NOTHING here refuses, delays, hides, cancels, restricts or notifies anyone:
+-- behavior_signal_settings.case_alone_kinds, 20 new cases a day with overflow kept; a closed case is never reopened by a
+-- signal, and (owner 2026-11-02) signals detected after it closed may open a NEW behaviour case (section 3). NOTHING here refuses, delays, hides, cancels, restricts or notifies anyone:
 -- every detector runs in its own exception block and the gathering, the join and the cancellation always go through.
 -- Concurrency: a per-gathering (or per-host) transaction lock makes parallel joins / cancellations count together; a lock
 -- cycle with another detector is caught by the exception block (that one signal may be missed; the action never fails).
@@ -79,7 +79,12 @@ alter table private.behavior_signal_settings add constraint behavior_signal_sett
                                    'discovery_limit_repeated', 'attendee_surge_new', 'create_cancel',
                                    'large_public_gathering']);
 
--- 3. Case rule: as after 20270382 + the attendee-surge family + the large-gathering repeat rule.
+-- 3. Case rule: as after 20270382 + the attendee-surge family + the large-gathering repeat rule + a fresh case after a
+--    closed one (owner, 2026-11-02, narrowing 20270369 for behaviour cases ONLY): signals detected after the person's latest
+--    closed behaviour case may open a NEW case when they qualify on their own (same rules, same daily cap and waiting list,
+--    same one-open-case dedup); signals from before that close never count. A closed case is never reopened or written to
+--    by a signal (only an admin reopens, 20270369; if a new case is open the reopen is refused as case_conflict). Photo,
+--    report, shared-device / text and prior-suspension cases keep their own rules, unchanged.
 create or replace function private.behavior_evaluate_case(p_user uuid)
 returns void
 language plpgsql
@@ -96,15 +101,11 @@ declare
   v_case uuid;
   v_closed uuid;
   v_closed_at timestamptz;
-  v_closed_outcome text;
-  v_closed_evidence jsonb;
-  v_last_new timestamptz;
 begin
   select * into s from private.behavior_signal_settings where id;
   if not s.review_cases_enabled or s.case_window_hours is null or s.max_new_cases_per_day is null then return; end if;
   v_alone := s.case_alone_kinds;
-  select id, closed_at, new_evidence_at, outcome, evidence
-    into v_closed, v_closed_at, v_last_new, v_closed_outcome, v_closed_evidence
+  select id, closed_at into v_closed, v_closed_at
     from private.account_review_cases
    where signal = 'behavior' and subject_user = p_user and status = 'closed'
    order by closed_at desc limit 1;
@@ -116,11 +117,13 @@ begin
    where user_id = p_user and last_at > now() - make_interval(hours => s.case_window_hours)
      and (v_closed_at is null or last_at > v_closed_at);
   if v_kinds is null then return; end if;
-  -- 20270385: a large-gathering case closed 'no_action' within the quiet period silences later size-only signals: they
-  -- never act alone, and with nothing else in the window nothing happens (not even new evidence on that case).
-  if v_quiet_days is not null and v_closed_outcome = 'no_action'
-     and v_closed_at > now() - make_interval(days => v_quiet_days)
-     and coalesce(v_closed_evidence -> 'signals', '[]'::jsonb) @> '[{"kind": "large_public_gathering"}]'::jsonb then
+  -- 20270385 repeat rule: any of the person's behaviour cases closed 'no_action' within the quiet period that was about a
+  -- large public gathering silences later size-only signals: they never act alone (the signal itself stays recorded).
+  if v_quiet_days is not null and exists (
+       select 1 from private.account_review_cases c
+        where c.signal = 'behavior' and c.subject_user = p_user and c.status = 'closed' and c.outcome = 'no_action'
+          and c.closed_at > now() - make_interval(days => v_quiet_days)
+          and coalesce(c.evidence -> 'signals', '[]'::jsonb) @> '[{"kind": "large_public_gathering"}]'::jsonb) then
     if v_kinds <@ array['large_public_gathering'] then return; end if;
     v_alone := array_remove(v_alone, 'large_public_gathering');
   end if;
@@ -137,18 +140,10 @@ begin
   select id into v_case from private.account_review_cases
    where signal = 'behavior' and subject_user = p_user and status = 'open' for update;
   if v_case is not null then
-    update private.account_review_cases set evidence = jsonb_build_object('signals', v_evidence), updated_at = now()
+    -- signals refreshed; other keys (previous_case_id) kept
+    update private.account_review_cases set evidence = coalesce(evidence, '{}'::jsonb) || jsonb_build_object('signals', v_evidence),
+                                            updated_at = now()
      where id = v_case;
-    return;
-  end if;
-  if v_closed is not null then
-    -- decided before: note the new signals on that case (the admin may reopen it), never a fresh case
-    if v_last_new is null or v_last_new < v_closed_at or v_last_new < now() - interval '24 hours' then
-      perform 1 from private.account_review_cases where id = v_closed for update;
-      insert into private.account_review_case_events (case_id, kind, subject, detail)
-        values (v_closed, 'new_evidence', p_user, jsonb_build_object('signals', v_evidence));
-      update private.account_review_cases set new_evidence_at = now(), updated_at = now() where id = v_closed;
-    end if;
     return;
   end if;
   perform pg_advisory_xact_lock(hashtext('behavior_case_queue'));
@@ -161,7 +156,9 @@ begin
     return;
   end if;
   insert into private.account_review_cases (signal, reason, subject_user, evidence)
-    values ('behavior', 'behavior_pattern', p_user, jsonb_build_object('signals', v_evidence))
+    values ('behavior', 'behavior_pattern', p_user,
+            jsonb_build_object('signals', v_evidence) || case when v_closed is null then '{}'::jsonb
+                                                              else jsonb_build_object('previous_case_id', v_closed) end)
     on conflict (subject_user) where status = 'open' and signal = 'behavior' do nothing
     returning id into v_case;
   if v_case is not null then

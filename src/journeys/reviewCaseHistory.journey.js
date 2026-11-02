@@ -192,7 +192,7 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
   ${obj('v_x', 'other.jpg')}
   ${as('admin_sees_unrelated_photo', 'v_admin', `select count(*) into v_n from storage.objects where id = ${objId('v_x', 'other.jpg')}`, 'v_n')}
 
-  -- ===== behaviour: a closed case doesn't come back on old signals =====
+  -- ===== behaviour: a closed case doesn't come back on old signals; fresh ones open a new case (20270385) =====
   update private.behavior_signal_settings set review_cases_enabled = true, case_window_hours = 24, max_new_cases_per_day = 20,
     case_alone_kinds = array['repeated_messages'];
   insert into private.behavior_signals (user_id, kind, evidence) values (v_b, 'repeated_messages', '{"recipients": 9}');
@@ -219,7 +219,7 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
   update private.account_review_cases set opened_at = now() - interval '13 months', review_due_at = now() - interval '12 months' where id = v_case;
   perform private.purge_account_review_cases();
   ${rec('purged', `jsonb_build_object('identical_left', (select count(*) from private.account_review_cases where sha256 = ${shaT}),
-      'behavior_left', (select count(*) from private.account_review_cases where signal = 'behavior' and subject_user = v_b),
+      'behavior_left', (select count(*) from private.account_review_cases where signal = 'behavior' and subject_user = v_b and status = 'closed'),
       'orphan_events', (select count(*) from private.account_review_case_events e where not exists (select 1 from private.account_review_cases c where c.id = e.case_id)),
       'open_kept', (select status from private.account_review_cases where id = v_case))`)}
   ${as('admin_sees_purged_photo', 'v_admin', `select count(*) into v_n from storage.objects where id = ${objId('v_k', 'k1.jpg')}`, 'v_n')}
@@ -334,9 +334,9 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
     expect(data('admin_sees_purged_photo')).toBe(0);
   });
 
-  test('0369: a closed behaviour case does not come back on old signals; new signals are noted once a day on it', () => {
+  test('0369 + 0385: a closed behaviour case does not come back on old signals; fresh ones open ONE new case, the old stays closed', () => {
     expect(data('behavior_old_signals')).toEqual({ cases: 1, new_evidence: 0 });
-    expect(data('behavior_new_signals')).toEqual({ cases: 1, open: 0, new_evidence: 1 });
+    expect(data('behavior_new_signals')).toEqual({ cases: 2, open: 1, new_evidence: 0 });
   });
 
   test('0369: resolved cases go 12 months after closing with their history; open cases stay and are flagged overdue', () => {

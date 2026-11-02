@@ -12,6 +12,9 @@
 //      one mark, one note.
 //   5. two hosts join each other's surging gatherings at the same moment (a possible lock cycle between detectors): both
 //      joins always commit (a detector failure is caught, never the join).
+//   6. (owner 2026-11-02) a host whose earlier behaviour case was closed months ago raises two public gatherings to
+//      capacity 50 from two parallel sessions: exactly ONE new case, the old one stays closed and untouched; a host whose
+//      large-gathering case was closed 'no_action' 10 days ago does the same: NO case (size-only stays quiet).
 // Uses the APPROVED numbers (20270386) on the replay database only; settings, rules and every row it creates are
 // restored / deleted afterwards.
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/gathering-signal-concurrency.js
@@ -150,6 +153,35 @@ async function together(steps) {
     const both = await one(`select count(*)::int n from gathering_interest where (gathering_id = $1 and user_id = $2) or (gathering_id = $3 and user_id = $4)`, [ga, hb, gb, ha]);
     check(run.results.every((r) => r.ok), `both joins committed (${errors(run)}), ${run.ms} ms`);
     check(both.n === 2, `both joined (${both.n})`);
+
+    console.log('6. fresh qualifying signals after a closed case, from two parallel sessions');
+    // two of the host's own public gatherings raised to capacity 50 at once (set_gathering_capacity, the app's path)
+    const raiseBoth = async (host) => {
+      const gs = [await gathering(host, { cap: 20 }), await gathering(host, { cap: 20 })];
+      gatherings.push(...gs);
+      return together(gs.map((g) => ({ sub: host, sql: 'select set_gathering_capacity($2, $1)', args: [50, g] })));
+    };
+    const closedCase = async (host, outcome, daysAgo, kind) => (await admin.query(`insert into private.account_review_cases
+      (signal, reason, subject_user, evidence, status, closed_at, outcome) values ('behavior', 'behavior_pattern', $1,
+      jsonb_build_object('signals', jsonb_build_array(jsonb_build_object('kind', $4::text))), 'closed', now() - make_interval(days => $3), $2)
+      returning id, to_jsonb(account_review_cases) - 'updated_at' as row`, [host, outcome, daysAgo, kind])).rows[0];
+    const h6 = await person('host6');
+    const old6 = await closedCase(h6, 'action_taken', 180, 'create_cancel');
+    run = await raiseBoth(h6);
+    const c6 = await one(`select count(*) filter (where status = 'open')::int open, count(*)::int total,
+      max((evidence ->> 'previous_case_id')) prev from private.account_review_cases where signal = 'behavior' and subject_user = $1`, [h6]);
+    const o6 = await one(`select to_jsonb(c) - 'updated_at' as row, (select count(*)::int from private.account_review_case_events where case_id = c.id and kind in ('new_evidence', 'reopened')) ev
+      from private.account_review_cases c where id = $1`, [old6.id]);
+    check(run.results.every((r) => r.ok), `both capacity edits committed (${errors(run)})`);
+    check(c6.open === 1 && c6.total === 2 && c6.prev === old6.id, `exactly one new case, pointing to the old one (open ${c6.open}, total ${c6.total})`);
+    check(JSON.stringify(o6.row) === JSON.stringify(old6.row) && o6.ev === 0, `the closed case is unchanged, no event on it (events ${o6.ev})`);
+    const h7 = await person('host7');
+    await closedCase(h7, 'no_action', 10, 'large_public_gathering');
+    run = await raiseBoth(h7);
+    const c7 = await one(`select count(*) filter (where status = 'open')::int open from private.account_review_cases where signal = 'behavior' and subject_user = $1`, [h7]);
+    const s7 = await one(`select count(*)::int n from private.behavior_signals where user_id = $1 and kind = 'large_public_gathering'`, [h7]);
+    check(run.results.every((r) => r.ok), `both capacity edits committed (${errors(run)})`);
+    check(c7.open === 0 && s7.n === 1, `size-only after a recent 'No action needed' large case: no case, signal recorded (open ${c7.open}, signals ${s7.n})`);
 
     const suspended = await one(`select count(*)::int n from profiles where id = any($1::uuid[]) and suspended_at is not null`, [ids]);
     check(suspended.n === 0, `nobody suspended or restricted (${suspended.n})`);

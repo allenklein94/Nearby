@@ -3,6 +3,7 @@
 // repeatedly cancelling fresh gatherings people had joined or been invited to, and a very large public gathering. Proves:
 // OFF until numbers are set; each rule's edges (host / invited / re-join / empty draft / old gathering / series once /
 // friends-only / below the line); the New-account half rule; the large-gathering repeat rule after a 'no_action' close;
+// a NEW case for fresh qualifying signals after any closed case (owner 2026-11-02), with the cap and dedup unchanged;
 // nothing is refused, cancelled or restricted; no client can read the new tables. Every action runs under the real client
 // role (set local role + JWT claims). The approved numbers are set inside this rolled-back transaction (20270386 installs
 // them; journey gatheringSignalThresholds proves that).
@@ -12,7 +13,7 @@ const d = hasToken ? describe : describe.skip;
 
 const NEW = Array.from({ length: 15 }, (_, i) => `v_n${i + 1}`);
 const EST = Array.from({ length: 15 }, (_, i) => `v_e${i + 1}`);
-const HOSTS = ['v_h1', 'v_h2', 'v_h3', 'v_h4', 'v_h5', 'v_c1', 'v_l1', 'v_l2', 'v_l3', 'v_l4', 'v_r1', 'v_r2', 'v_x'];
+const HOSTS = ['v_h1', 'v_h2', 'v_h3', 'v_h4', 'v_h5', 'v_c1', 'v_c2', 'v_c3', 'v_l1', 'v_l2', 'v_l3', 'v_l4', 'v_r1', 'v_r2', 'v_x'];
 const ACTORS = [...NEW, ...EST, ...HOSTS, 'v_admin'];
 
 function as(step, sub, stmt, value = `'ok'::text`) {
@@ -54,7 +55,7 @@ d('journey: gathering review signals (20270385)', () => {
   beforeAll(async () => {
     const log = await runJourney(`
       ${actorDeclares(ACTORS)}
-      v_out jsonb; v_hint text; v_g uuid; v_g2 uuid; v_series uuid := gen_random_uuid(); v_case uuid; i int;`, `
+      v_out jsonb; v_hint text; v_g uuid; v_g2 uuid; v_series uuid := gen_random_uuid(); v_case uuid; v_case2 uuid; i int;`, `
   ${actorsSql({ people: ACTORS })}
   ${LIFT_GATHERING_CREATION_LIMIT}
   update profiles set is_admin = true where id = v_admin;
@@ -167,28 +168,75 @@ d('journey: gathering review signals (20270385)', () => {
   ${rec('large_attendance', sigEv('v_l3', 'large_public_gathering'))}
 
   -- 7. repeat rule: a large-gathering case closed 'no_action' silences later size-only signals for 90 days; a different
-  --    signal still counts (as new evidence on that closed case: closed cases are never reopened by a signal, 20270369)
+  --    signal still counts (owner 2026-11-02: fresh qualifying signals after a close open a NEW case; the closed case is
+  --    never reopened or written to by a signal)
   ${gathering('v_g', 'v_r1', { cap: 50 })};
   select id into v_case from private.account_review_cases where signal = 'behavior' and subject_user = v_r1 and status = 'open';
   ${as('close_no_action', 'v_admin', `perform admin_close_account_review_case(v_case, 'no_action', 'Regular community organiser')`)}
   update private.account_review_cases set closed_at = now() - interval '1 hour' where id = v_case;
   delete from private.behavior_signals where user_id = v_r1;  -- the old signal, as after the 24 h case window
   ${gathering('v_g', 'v_r1', { cap: 80, title: 'Next big one' })};
+  ${gathering('v_g', 'v_r1', { cap: 90, title: 'And another' })};
   ${rec('quiet_size_only', `jsonb_build_object('signal_rows', ${sig('v_r1', 'large_public_gathering')},
-      'new_evidence', (select count(*) from private.account_review_case_events where case_id = v_case and kind = 'new_evidence'),
+      'hits', (select hits from private.behavior_signals where user_id = v_r1 and kind = 'large_public_gathering'),
+      'events_on_closed', (select count(*) from private.account_review_case_events where case_id = v_case and kind in ('new_evidence', 'reopened')),
       'open', ${openCases('v_r1')})`)}
   perform private.behavior_note_signal(v_r1, 'join_burst', '{"gatherings": 15, "window_minutes": 60}'::jsonb);
-  ${rec('quiet_with_other', `jsonb_build_object('new_evidence', (select count(*) from private.account_review_case_events where case_id = v_case and kind = 'new_evidence'),
-      'kinds', (select jsonb_agg(e -> 'kind' order by e ->> 'kind') from private.account_review_case_events ev, jsonb_array_elements(ev.detail -> 'signals') e
-                 where ev.case_id = v_case and ev.kind = 'new_evidence'), 'open', ${openCases('v_r1')})`)}
-  -- the same close 100 days ago (outside the 90 days): a size-only signal is new evidence again
+  perform private.behavior_note_signal(v_r1, 'join_burst', '{"gatherings": 16, "window_minutes": 60}'::jsonb);  -- refresh keeps the link
+  ${rec('quiet_with_other', `jsonb_build_object('open', ${openCases('v_r1')},
+      'kinds', (select jsonb_agg(e -> 'kind' order by e ->> 'kind') from private.account_review_cases c, jsonb_array_elements(c.evidence -> 'signals') e
+                 where c.subject_user = v_r1 and c.signal = 'behavior' and c.status = 'open'),
+      'previous', (select (evidence ->> 'previous_case_id')::uuid = v_case from private.account_review_cases
+                    where subject_user = v_r1 and signal = 'behavior' and status = 'open'),
+      'old_status', (select status from private.account_review_cases where id = v_case),
+      'events_on_closed', (select count(*) from private.account_review_case_events where case_id = v_case and kind in ('new_evidence', 'reopened')))`)}
+  -- that new case closed 'action_taken' (a later decision): the earlier 'no_action' large case still keeps size-only quiet
+  select id into v_case2 from private.account_review_cases where signal = 'behavior' and subject_user = v_r1 and status = 'open';
+  ${as('close_second', 'v_admin', `perform admin_close_account_review_case(v_case2, 'action_taken', 'Spoke with the host about the other events')`)}
+  update private.account_review_cases set closed_at = now() - interval '30 minutes' where id = v_case2;
+  delete from private.behavior_signals where user_id = v_r1;
+  ${gathering('v_g', 'v_r1', { cap: 70, title: 'Third big one' })};
+  ${rec('quiet_after_later_close', `jsonb_build_object('open', ${openCases('v_r1')}, 'signal_rows', ${sig('v_r1', 'large_public_gathering')})`)}
+  -- the same close 100 days ago (outside the 90 days): a size-only signal opens a new case again
   ${gathering('v_g', 'v_r2', { cap: 50 })};
   select id into v_case from private.account_review_cases where signal = 'behavior' and subject_user = v_r2 and status = 'open';
   ${as('close_old', 'v_admin', `perform admin_close_account_review_case(v_case, 'no_action', 'Regular community organiser')`)}
   update private.account_review_cases set closed_at = now() - interval '100 days' where id = v_case;
   delete from private.behavior_signals where user_id = v_r2;
   ${gathering('v_g', 'v_r2', { cap: 80, title: 'Next big one' })};
-  ${rec('quiet_expired', `(select count(*) from private.account_review_case_events where case_id = v_case and kind = 'new_evidence')`)}
+  ${rec('quiet_expired', `jsonb_build_object('open', ${openCases('v_r2')}, 'old_status', (select status from private.account_review_cases where id = v_case))`)}
+
+  -- 7b. six months later (owner 2026-11-02): a host whose create-then-cancel case was closed 'no_action' 180 days ago starts
+  --     cancelling joined gatherings again: a NEW case opens; the old one stays closed with nothing written to it; signals
+  --     recorded before that close never count; a second evaluation adds no second case; the daily cap still holds
+  insert into private.account_review_cases (signal, reason, subject_user, evidence, status, closed_at, outcome)
+    values ('behavior', 'behavior_pattern', v_c2, '{"signals": [{"kind": "create_cancel"}]}', 'closed', now() - interval '180 days', 'no_action')
+    returning id into v_case;
+  insert into private.behavior_signals (user_id, kind, first_at, last_at, evidence)
+    values (v_c2, 'join_burst', now() - interval '181 days', now() - interval '181 days', '{}');
+  perform private.behavior_evaluate_case(v_c2);
+  ${rec('after_close_old_only', openCases('v_c2'))}
+  for i in 1..3 loop
+    ${gathering('v_g', 'v_c2')};
+    insert into social_invites (inviter_id, invitee_id, invite_type, target_id) values (v_c2, v_e5, 'gathering', v_g);
+    ${as('c2_cancel', 'v_c2', `perform cancel_gathering(v_g)`)}
+  end loop;
+  perform private.behavior_evaluate_case(v_c2);
+  ${rec('after_close_fresh', `jsonb_build_object('open', ${openCases('v_c2')},
+      'total', (select count(*) from private.account_review_cases where signal = 'behavior' and subject_user = v_c2),
+      'kinds', (select jsonb_agg(e -> 'kind') from private.account_review_cases c, jsonb_array_elements(c.evidence -> 'signals') e
+                 where c.subject_user = v_c2 and c.signal = 'behavior' and c.status = 'open'),
+      'old', (select jsonb_build_object('status', status, 'outcome', outcome, 'new_evidence_at', new_evidence_at)
+                from private.account_review_cases where id = v_case),
+      'events_on_old', (select count(*) from private.account_review_case_events where case_id = v_case and kind in ('new_evidence', 'reopened')))`)}
+  -- daily cap: with today's cap already reached, a fresh qualifying signal after a close waits (no case), as for anyone
+  update private.behavior_signal_settings set max_new_cases_per_day = 1 where id;  -- this journey has already opened several today
+  insert into private.account_review_cases (signal, reason, subject_user, evidence, status, closed_at, outcome)
+    values ('behavior', 'behavior_pattern', v_c3, '{"signals": [{"kind": "create_cancel"}]}', 'closed', now() - interval '180 days', 'no_action');
+  perform private.behavior_note_signal(v_c3, 'repeated_messages', '{"recipients": 9}'::jsonb);
+  ${rec('after_close_capped', `jsonb_build_object('open', ${openCases('v_c3')},
+      'waiting', (select count(*) from private.behavior_case_waiting where user_id = v_c3))`)}
+  update private.behavior_signal_settings set max_new_cases_per_day = 20 where id;
 
   -- 8. a broken detector never fails the action
   alter table private.gathering_size_marks rename to gathering_size_marks_x;
@@ -252,11 +300,21 @@ d('journey: gathering review signals (20270385)', () => {
     expect(s.large_attendance.data).toEqual({ trigger: 'attendees', attendees: 25 });
   });
 
-  test('repeat rule: after a no_action large case, size-only does nothing; with a different signal it is new evidence', () => {
+  test('repeat rule: after a no_action large case, size-only stays quiet (recorded, no case); with a different signal = a NEW case', () => {
     expect(s.close_no_action.data).toBe('ok');
-    expect(s.quiet_size_only.data).toEqual({ signal_rows: 1, new_evidence: 0, open: 0 });
-    expect(s.quiet_with_other.data).toEqual({ new_evidence: 1, kinds: ['join_burst', 'large_public_gathering'], open: 0 });
-    expect(s.quiet_expired.data).toBe(1);
+    expect(s.quiet_size_only.data).toEqual({ signal_rows: 1, hits: 2, events_on_closed: 0, open: 0 });
+    expect(s.quiet_with_other.data).toEqual({ open: 1, kinds: ['join_burst', 'large_public_gathering'], previous: true,
+      old_status: 'closed', events_on_closed: 0 });
+    expect(s.close_second.data).toBe('ok');
+    expect(s.quiet_after_later_close.data).toEqual({ open: 0, signal_rows: 1 });
+    expect(s.quiet_expired.data).toEqual({ open: 1, old_status: 'closed' });
+  });
+
+  test('six months after a closed case: fresh qualifying behaviour opens a new case; old stays closed + untouched; cap holds', () => {
+    expect(s.after_close_old_only.data).toBe(0);
+    expect(s.after_close_fresh.data).toEqual({ open: 1, total: 2, kinds: ['create_cancel'],
+      old: { status: 'closed', outcome: 'no_action', new_evidence_at: null }, events_on_old: 0 });
+    expect(s.after_close_capped.data).toEqual({ open: 0, waiting: 1 });
   });
 
   test('a broken detector never fails the action', () => {
