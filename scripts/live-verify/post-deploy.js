@@ -147,6 +147,13 @@ const STEPS = {
       'read-only right after: trigger aa_sighting_consent_guard on sightings (BEFORE insert/update); sightings read policy calls sighting_pair_visible; private.crossed_paths_pair_allowed EXECUTE: no client role; sighting_pair_visible EXECUTE: authenticated only; cron purge-expired-sightings still scheduled',
       'controlled check (owner, dedicated test accounts only, two phones): both in Dating and near each other = Crossed Paths shows each other + one push each; one account switches to friends-only = the row disappears for both at once and no new crossing is recorded',
       'a sighting readable by someone outside the pair, or a crossing recorded for a person who never opted in = security defect: STOP, report'] },
+  // Crossed paths safeguards: own Crossed Paths switch (off by default), crossings grant a profile read only while live and
+  // allowed, presence-probe limits; report-presence redeployed WITH it (no matchedCount)
+  20270384: { journeys: ['crossedPathsSafeguards', 'crossedPathsConsent', 'sightingExpiry', 'storySightingLocation', 'datingConsent', 'trustSafety', 'profileAntiScraping'],
+    manual: ['BEFORE the deploy approval: 0383 live (in order); probe numbers approved by the owner (proposed: new cell at most every 30 s, 20 an hour, eligible 10 min, refresh once an hour); a build with the Settings Crossed Paths switch on the phone (older builds have no switch, so nobody can opt in and Crossed Paths records nothing); Privacy Policy sentence for the switch; prod journeys with the 0348-0384 prelude + an aborted rollback round trip on prod; grants vs prod; report-presence redeploy ready (same release)',
+      'read-only right after: private.crossed_paths_consent / _log / _probe: no client role; set_crossed_paths_sharing + get_my_crossed_paths_sharing EXECUTE: authenticated only; trigger zz_presence_probe_record on presence_reports; viewer_may_read_profile body has the expires_at + crossed_paths_pair_allowed clause; 0 sightings (the one-off purge); report-presence answers {"ok":true} without matchedCount',
+      'controlled check (owner, dedicated test accounts only, two phones): both in Dating, only one switch on = nothing recorded; both on and near = Crossed Paths shows each other + one push each; one turns the switch off = the row disappears for both at once and the other can no longer open that profile through it',
+      'a crossing recorded or a profile readable through a crossing for someone whose switch is off, or a presence report refused because of the probe record = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

@@ -7,7 +7,7 @@
 //   crossing again: within 48 h updates the same record (no new push); after expiry + purge it is a new record and a new
 //     "You crossed paths!" push (the owner-known effect of deleting records).
 // Not covered: the live report-presence edge function itself (its upsert is reproduced here), a device.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, crossingReady, CROSSING_AREA } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -16,9 +16,9 @@ const visibleTo = (who) => `
   set local role authenticated;
   select coalesce(jsonb_agg(case when user_a = ${who} then user_b else user_a end), '[]') into v_seen from (select user_a, user_b from sightings) x;
   reset role;`;
-const cross = (a, b) => `insert into sightings (user_a, user_b, last_seen_at, expires_at)
-    values (least(${a}, ${b}), greatest(${a}, ${b}), now(), now() + interval '48 hours')
-    on conflict (user_a, user_b) do update set last_seen_at = excluded.last_seen_at, expires_at = excluded.expires_at`;
+const cross = (a, b) => `insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at)
+    values (least(${a}, ${b}), greatest(${a}, ${b}), '${CROSSING_AREA}', now(), now() + interval '48 hours')
+    on conflict (user_a, user_b) do update set approx_area = excluded.approx_area, last_seen_at = excluded.last_seen_at, expires_at = excluded.expires_at`; // as report-presence's upsert
 const pushes = (who) => `(select count(*) from push_outbox where recipient_id = ${who} and data->>'type' = 'crossed_paths_sighting')`;
 
 d('journey: a crossed-paths record is gone 48 hours after the last crossing', () => {
@@ -32,14 +32,15 @@ d('journey: a crossed-paths record is gone 48 hours after the last crossing', ()
   -- A, B and C chose Dating: a crossing push names the other only inside the same opted-in pool (20270353), and from
   -- 20270383 a crossing is only recorded inside it (the blocked person too, so the block is what hides that row)
   update profiles set onboarding_motivations = array['Go on dates'] where id in (v_a, v_b, v_c, v_blk);
+  ${crossingReady(['v_a', 'v_b', 'v_c', 'v_blk'])}
   perform set_config('app.push_handoff_test_failure', 'on', true);
   log := log || jsonb_build_array(jsonb_build_object('step','ids','ok', true, 'data', jsonb_build_object('b', v_b, 'c', v_c, 'blk', v_blk)));
 
   -- A crossed B 49 h ago (expired an hour ago), C an hour ago (active), and a blocked person an hour ago
-  insert into sightings (user_a, user_b, last_seen_at, expires_at)
-    values (least(v_a, v_b), greatest(v_a, v_b), now() - interval '49 hours', now() - interval '1 hour'),
-           (least(v_a, v_c), greatest(v_a, v_c), now() - interval '1 hour', now() + interval '47 hours'),
-           (least(v_a, v_blk), greatest(v_a, v_blk), now() - interval '1 hour', now() + interval '47 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at)
+    values (least(v_a, v_b), greatest(v_a, v_b), '${CROSSING_AREA}', now() - interval '49 hours', now() - interval '1 hour'),
+           (least(v_a, v_c), greatest(v_a, v_c), '${CROSSING_AREA}', now() - interval '1 hour', now() + interval '47 hours'),
+           (least(v_a, v_blk), greatest(v_a, v_blk), '${CROSSING_AREA}', now() - interval '1 hour', now() + interval '47 hours');
   insert into blocks (blocker_id, blocked_id) values (v_blk, v_a);
 
   ${visibleTo('v_a')}

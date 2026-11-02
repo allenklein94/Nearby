@@ -8,15 +8,15 @@
 //     row is hidden from both at once, a new crossing is not recorded, the purge deletes it;
 //   no oracle: the read helper answers only for a pair that includes the caller; the rule itself is not callable by apps.
 // Not covered: the live report-presence edge function (its upsert is reproduced here), a device, real push delivery.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, crossingReady, CROSSING_AREA } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
 const PEOPLE = ['v_a', 'v_b', 'v_c', 'v_f1', 'v_f2', 'v_n', 'v_x', 'v_h', 'v_s', 'v_k', 'v_o'];
 const pair = (a, b) => `user_a = least(${a}, ${b}) and user_b = greatest(${a}, ${b})`;
-const cross = (a, b) => `insert into sightings (user_a, user_b, last_seen_at, expires_at)
-    values (least(${a}, ${b}), greatest(${a}, ${b}), now(), now() + interval '48 hours')
-    on conflict (user_a, user_b) do update set last_seen_at = excluded.last_seen_at, expires_at = excluded.expires_at`;
+const cross = (a, b) => `insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at)
+    values (least(${a}, ${b}), greatest(${a}, ${b}), '${CROSSING_AREA}', now(), now() + interval '48 hours')
+    on conflict (user_a, user_b) do update set approx_area = excluded.approx_area, last_seen_at = excluded.last_seen_at, expires_at = excluded.expires_at`; // as report-presence's upsert
 const rowExists = (a, b) => `exists (select 1 from sightings where ${pair(a, b)})`;
 // pushes since v_start as [recipient, other] labels
 const label = (col) => `case ${col} ${PEOPLE.map((p) => `when ${p}${col.includes('->>') ? '::text' : ''} then '${p.slice(2)}'`).join(' ')} end`;
@@ -47,6 +47,8 @@ d('journey: crossed paths only between people who both chose it', () => {
   -- notify_proximity is derived from notification_mutes (20270258): mute the group, never the column
   update profiles set notification_mutes = array['discover_nearby_people'] where id = v_c;
   insert into blocks (blocker_id, blocked_id) values (v_k, v_a);
+  -- from 20270384 everyone also turns Crossed Paths on and reports the same cell, so only the pool rules decide here
+  ${crossingReady(PEOPLE)}
   ${step('setup', `(select profile_hidden from profiles where id = v_h) and (select suspended_at is not null from profiles where id = v_s)
      and not (select notify_proximity from profiles where id = v_c)`)}
 

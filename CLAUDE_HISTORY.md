@@ -1,3 +1,44 @@
+# 2026-11-02: 20270384 crossed paths safeguards (idea 10, second follow-up), built + locally verified, staged, not deployed
+
+Owner (2026-11-02): accept 0383 as locally tested, do NOT close idea 10; fix (1) 0382's stale read (a sighting granted a
+profile read until the 10-minute purge, even expired or no longer allowed), (2) verify Crossed Paths needs both people's
+OWN consent (it didn't: being in the same Dating/Friends pool was treated as consent), (3) review report-presence for
+location probing and add the smallest server-side safeguard if a concrete exploit exists. No new screens, scores or
+tracking systems. Branch `post-tier1/crossed-paths-safeguards` (stacked on `post-tier1/crossed-paths-consent`), NOT merged,
+NOT deployed, build 87 unchanged; own deploy approval after 0383.
+
+Files: `supabase/migrations/20270384_crossed_paths_safeguards.sql` (header = the full reasoning), rollback
+`scripts/rollback/20270384_crossed_paths_safeguards.rollback.sql`, journey `src/journeys/crossedPathsSafeguards.journey.js`
+(38), concurrency `scripts/replay/crossed-paths-concurrency.js`, client `src/services/crossedPathsSharing.js` (+ test: only the
+Settings switch can turn it on), Settings switch (shown only when the server has it), 2 strings `ui.crossedPaths.settingTitle`
+/ `settingHelper` (10 machine-authored, need native review), `report-presence` source (redeploy WITH the migration),
+`post-deploy.js` step 20270384, journey harness `crossingReady` (fixtures pass before AND after 0384).
+
+As built: (1) `viewer_may_read_profile`: a sighting grants a read only while `expires_at > now()` AND the pair passes
+`private.crossed_paths_pair_allowed`, checked on every read. (2) `private.crossed_paths_consent` (OFF by default, no
+backfill), changed only by `set_crossed_paths_sharing` (logged with time in `private.crossed_paths_consent_log`; off =
+consent, probe record and every crossing of that person deleted at once); the pair rule needs both rows, so every reader of
+it (write guard, read policy, push, purge, profile read) inherits it. (3) Concrete exploit found (code reading): the cell is
+client-supplied, the only check is 700 mph vs the caller's own last report, no rate limit, so an opted-in account could claim
+11 m tiles every ~0.1 s, sweep ~1 km2 in ~2 min and locate an opted-in person to ~30 m, then repeat to follow; and the
+function returned `matchedCount` (headcount of a claimed cell) to ANY caller. Fix: for people with the switch on, a private
+probe record keeps their last ELIGIBLE cell: a new cell at most every 30 s and 20 per rolling hour (same cell again = free;
+proposed numbers, NOT owner-approved); a crossing is recorded only if both have a fresh (< 10 min) eligible cell, one tile
+apart at most, the record's cell being one of them; refresh at most once an hour; `matchedCount` removed. Presence itself is
+unchanged (push targeting, online status). Concurrency fix found while testing: "off" racing a crossing write left the
+crossing behind in BOTH orders (shown by the new script with the lock removed: 2 FAILED); the write guard and probe trigger
+now read consent `for share`, and the switch locks its profile row `for no key update` (never blocks the crossing's FK check).
+
+Verification (2026-11-02, after a codespace restart): fresh replay with real Auth first 508/508; journeys 1037/1037; with 0384
+rolled back the new journey fails 38/38 and the other 999 pass; rollback removes exactly 0384's objects and re-apply is
+identical (5,480 sorted items); all 16 concurrency scripts pass (new one: 8 parallel cells = 1 counted; off vs crossing both
+orders; off vs own report both orders; both sides writing one crossing = 1 record, 1 push each); journeys 1037/1037 again
+after them; Jest 542/542. NOT run (deploy gates): prod journeys with 0348-0384 prelude, prod aborted rollback, grants vs prod,
+owner approval of the probe numbers, Privacy Policy sentence, two-phone check.
+Residual by design: two people who BOTH turned it on can learn "within ~30 m in the last 10 minutes" from one well-guessed
+claimed cell, once an hour per pair (the feature itself). Observation, not changed: the existing card label "Within about 35
+feet" understates premium 3 x 3 matches (up to ~30 m). Production keeps the original vulnerability until 0383 + 0384 deploy.
+
 # 2026-11-02: 20270383 crossed paths only between people who both chose it (idea 10 follow-up), built + locally verified, staged, not deployed
 
 Branch `post-tier1/crossed-paths-consent` (stacked on `post-tier1/profile-anti-scraping`; off main, build 87 unchanged). Found

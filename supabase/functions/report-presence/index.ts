@@ -143,7 +143,9 @@ serve(async (req) => {
         );
     }
 
-    return new Response(JSON.stringify({ ok: true, matchedCount: others?.length ?? 0 }), {
+    // 20270384: never a headcount. The old match count told ANY caller how many people reported that claimed cell in the last
+    // 10 minutes (consent or not); the app never read it. Whether a crossing was recorded is decided by the database.
+    return new Response(JSON.stringify({ ok: true }), {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {

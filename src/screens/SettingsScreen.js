@@ -25,6 +25,7 @@ import { deleteAccount } from '../services/account';
 import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
 import { getMyFriendNearbySharing, setFriendNearbySharing } from '../services/friendNearby';
+import { getMyCrossedPathsSharing, setCrossedPathsSharing } from '../services/crossedPathsSharing';
 import { getUserLocation } from '../services/userLocation';
 import { clearMyBehaviorHistory, getMyBehaviorCategories, forgetBehaviorCategory, addLearnedInterestToProfile, removeAddedInterestFromProfile } from '../services/behaviorSignals';
 import { learnedAffinities } from '../utils/learnedAffinity';
@@ -123,6 +124,8 @@ export default function SettingsScreen({ navigation, route }) {
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
   // Item 39: "Let friends know when I'm nearby" -- OFF by default; this toggle is the ONLY way to turn it on.
   const [friendNearbyOn, setFriendNearbyOn] = useState(false);
+  // 20270384: null = the server has no Crossed Paths switch yet (no row shown); off by default
+  const [crossedPathsOn, setCrossedPathsOn] = useState(null);
   const [friendNearbyNoLocation, setFriendNearbyNoLocation] = useState(false);
   const [shareInterestInDemand, setShareInterestInDemand] = useState(false);
   const [showSponsoredPlaces, setShowSponsoredPlaces] = useState(true);
@@ -199,9 +202,19 @@ export default function SettingsScreen({ navigation, route }) {
     }
   }
 
+  // The ONLY place Crossed Paths can be turned on (crossedPathsSharing.test.js).
+  async function toggleCrossedPaths(on) {
+    try {
+      setCrossedPathsOn(await setCrossedPathsSharing(on));
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'complete that', error: e });
+    }
+  }
+
   useEffect(() => {
     load();
     checkOsPermission();
+    getMyCrossedPathsSharing().then(setCrossedPathsOn).catch(() => setCrossedPathsOn(null));
     getMyFriendNearbySharing()
       .then((on) => { setFriendNearbyOn(on); if (on) checkFriendNearbyLocation(false); })
       .catch(() => {});
@@ -1074,6 +1087,23 @@ export default function SettingsScreen({ navigation, route }) {
               accessibilityLabel={t('ui.friendNearby.settingTitle')}
             />
           </View>
+          {crossedPathsOn !== null && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.settingRow}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingLabel}>{t('ui.crossedPaths.settingTitle')}</Text>
+                  <Text style={styles.helperText}>{t('ui.crossedPaths.settingHelper')}</Text>
+                </View>
+                <Switch
+                  value={crossedPathsOn}
+                  onValueChange={toggleCrossedPaths}
+                  trackColor={{ true: colors.primary, false: colors.border }}
+                  accessibilityLabel={t('ui.crossedPaths.settingTitle')}
+                />
+              </View>
+            </>
+          )}
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>

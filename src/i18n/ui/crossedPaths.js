@@ -17,6 +17,8 @@ export default {
     within35Feet: "📍 Within about 35 feet",
     within35FeetWhen: "📍 Within about 35 feet · {time}",
     bothFreeTonight: "🌙 Both free tonight",
+    settingTitle: "Show when I cross paths with people",
+    settingHelper: "If you and someone who also turned this on are both in Dating or both in Friends and pass within about 100 feet (30 m) of each other, you each see that you crossed paths, never where. It's off unless you turn it on. Turning it off removes your crossings.",
   },
   es: {
     justNow: "Hace un momento",
@@ -34,6 +36,8 @@ export default {
     within35Feet: "📍 A unos 10 metros",
     within35FeetWhen: "📍 A unos 10 metros · {time}",
     bothFreeTonight: "🌙 Ambos libres esta noche",
+    settingTitle: "Mostrar cuando me cruce con personas",
+    settingHelper: "Si tú y alguien que también lo activó están ambos en Citas o ambos en Amigos y pasan a unos 30 metros el uno del otro, cada uno verá que se cruzaron, nunca dónde. Está desactivado a menos que lo actives. Al desactivarlo se eliminan tus cruces.",
   },
   de: {
     justNow: "Gerade eben",
@@ -51,6 +55,8 @@ export default {
     within35Feet: "📍 Etwa 10 Meter entfernt",
     within35FeetWhen: "📍 Etwa 10 Meter entfernt · {time}",
     bothFreeTonight: "🌙 Beide heute Abend frei",
+    settingTitle: "Anzeigen, wenn sich meine Wege mit anderen kreuzen",
+    settingHelper: "Wenn du und jemand, der das ebenfalls eingeschaltet hat, beide bei Dating oder beide bei Freunde seid und ihr euch auf etwa 30 Meter nahe kommt, seht ihr beide, dass sich eure Wege gekreuzt haben, aber nie wo. Es ist aus, bis du es einschaltest. Beim Ausschalten werden deine Begegnungen gelöscht.",
   },
   fr: {
     justNow: "À l’instant",
@@ -68,6 +74,8 @@ export default {
     within35Feet: "📍 À environ 10 mètres",
     within35FeetWhen: "📍 À environ 10 mètres · {time}",
     bothFreeTonight: "🌙 Libres tous les deux ce soir",
+    settingTitle: "Indiquer quand je croise quelqu'un",
+    settingHelper: "Si vous et une personne qui l'a aussi activé êtes tous deux dans Rencontres ou tous deux dans Amis et passez à environ 30 mètres l'un de l'autre, vous voyez chacun que vous vous êtes croisés, jamais où. C'est désactivé sauf si vous l'activez. Le désactiver supprime vos croisements.",
   },
   pt: {
     justNow: "Agora mesmo",
@@ -85,6 +93,8 @@ export default {
     within35Feet: "📍 A cerca de 10 metros",
     within35FeetWhen: "📍 A cerca de 10 metros · {time}",
     bothFreeTonight: "🌙 Os dois livres hoje à noite",
+    settingTitle: "Mostrar quando eu cruzar com pessoas",
+    settingHelper: "Se você e alguém que também ativou isto estiverem ambos em Encontros ou ambos em Amigos e passarem a cerca de 30 metros um do outro, cada um verá que vocês se cruzaram, nunca onde. Fica desativado a menos que você ative. Desativar remove seus cruzamentos.",
   },
   ht: {
     justNow: "Kounye a la",
@@ -102,6 +112,8 @@ export default {
     within35Feet: "📍 Apeprè 10 mèt",
     within35FeetWhen: "📍 Apeprè 10 mèt · {time}",
     bothFreeTonight: "🌙 Nou tou de lib aswè a",
+    settingTitle: "Montre lè mwen kwaze ak moun",
+    settingHelper: "Si ou menm ak yon moun ki aktive sa tou nan Randevou tou de oswa nan Zanmi tou de, epi nou pase anviwon 30 mèt youn ak lòt, chak moun ap wè nou te kwaze, men pa janm ki kote. Li fèmen sòf si ou limen l. Si ou fèmen l, kwazman ou yo efase.",
   },
   zh: {
     justNow: "刚刚",
@@ -119,6 +131,8 @@ export default {
     within35Feet: "📍 约 10 米内",
     within35FeetWhen: "📍 约 10 米内 · {time}",
     bothFreeTonight: "🌙 今晚都有空",
+    settingTitle: "显示我与他人擦肩而过",
+    settingHelper: "如果你和同样开启此功能的人都在约会或都在交友中，并且彼此相距约 30 米经过，你们会各自看到曾擦肩而过，但永远不会看到地点。除非你开启，否则此功能保持关闭。关闭后会删除你的擦肩记录。",
   },
   vi: {
     justNow: "Vừa xong",
@@ -136,6 +150,8 @@ export default {
     within35Feet: "📍 Trong khoảng 10 mét",
     within35FeetWhen: "📍 Trong khoảng 10 mét · {time}",
     bothFreeTonight: "🌙 Cả hai đều rảnh tối nay",
+    settingTitle: "Hiển thị khi tôi lướt qua ai đó",
+    settingHelper: "Nếu bạn và một người cũng bật tính năng này đều ở Hẹn hò hoặc đều ở Bạn bè và đi qua nhau trong khoảng 30 mét, mỗi người sẽ thấy hai bạn đã lướt qua nhau, không bao giờ thấy ở đâu. Tính năng này tắt trừ khi bạn bật. Tắt đi sẽ xóa các lần lướt qua của bạn.",
   },
   tl: {
     justNow: "Ngayon lang",
@@ -153,6 +169,8 @@ export default {
     within35Feet: "📍 Mga 10 metro ang layo",
     within35FeetWhen: "📍 Mga 10 metro ang layo · {time}",
     bothFreeTonight: "🌙 Pareho kayong libre ngayong gabi",
+    settingTitle: "Ipakita kapag nakasalubong ko ang mga tao",
+    settingHelper: "Kung ikaw at ang isang taong nag-on din nito ay parehong nasa Dating o parehong nasa Friends at dumaan nang mga 30 metro sa isa't isa, makikita ninyong dalawa na nagkasalubong kayo, pero hindi kung saan. Naka-off ito maliban kung i-on mo. Kapag in-off mo, mabubura ang mga pagsasalubong mo.",
   },
   ru: {
     justNow: "Только что",
@@ -170,6 +188,8 @@ export default {
     within35Feet: "📍 Примерно в 10 метрах",
     within35FeetWhen: "📍 Примерно в 10 метрах · {time}",
     bothFreeTonight: "🌙 Оба свободны сегодня вечером",
+    settingTitle: "Показывать, когда мои пути пересекаются с людьми",
+    settingHelper: "Если вы и человек, который тоже это включил, оба в Знакомствах или оба в Друзьях и окажетесь примерно в 30 метрах друг от друга, каждый увидит, что ваши пути пересеклись, но никогда не увидит где. Выключено, пока вы не включите. Выключение удаляет ваши пересечения.",
   },
   ko: {
     justNow: "방금",
@@ -187,5 +207,7 @@ export default {
     within35Feet: "📍 약 10미터 거리",
     within35FeetWhen: "📍 약 10미터 거리 · {time}",
     bothFreeTonight: "🌙 오늘 밤 둘 다 시간 있음",
+    settingTitle: "다른 사람과 스쳐 지나갔을 때 표시",
+    settingHelper: "나와 이 기능을 켠 상대가 둘 다 데이트에 있거나 둘 다 친구에 있고 서로 약 30미터 안으로 지나가면, 각자 스쳐 지나갔다는 사실을 볼 수 있지만 장소는 절대 보이지 않습니다. 직접 켜기 전에는 꺼져 있습니다. 끄면 스쳐 지나간 기록이 삭제됩니다.",
   },
 };

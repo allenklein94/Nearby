@@ -16,7 +16,7 @@
 //   Fix 4: the id-verification bucket accepts images only, 10 MB max.
 // One rolled-back transaction. Not covered: real sign-in being refused by Supabase Auth (banned_until is what Auth reads;
 // proven on a phone/device only), storage uploads through the Storage API (limits are bucket settings), the app screens.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite , profileReadGrant } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite , profileReadGrant, crossingReady, CROSSING_AREA } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -178,14 +178,16 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   ${as('own_flag_kept', 'v_np', 'v_n := 0', '(select open_to_friend_discovery from people_visible_to_me where id = v_np)')}
 
   -- ===== Crossed-paths push consent (sightings are written by the service: no signed-in user) =====
+  -- from 20270384 also: everyone here turned Crossed Paths on and reports the same cell, so only the pool rules decide
+  ${crossingReady(['v_da', 'v_db', 'v_dc', 'v_fa', 'v_fb', 'v_np', 'v_u'])}
   select coalesce(max(id), 0) into v_start from push_outbox;
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_da, v_db, now(), now() + interval '48 hours');
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_da, v_dc, now(), now() + interval '48 hours');
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_fa, v_fb, now(), now() + interval '48 hours');
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_da, v_np, now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_da, v_db, '${CROSSING_AREA}', now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_da, v_dc, '${CROSSING_AREA}', now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_fa, v_fb, '${CROSSING_AREA}', now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_da, v_np, '${CROSSING_AREA}', now(), now() + interval '48 hours');
   insert into blocks (blocker_id, blocked_id) values (v_fb, v_u);
   update profiles set open_to_friend_discovery = true where id = v_u;
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_u, v_fb, now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_u, v_fb, '${CROSSING_AREA}', now(), now() + interval '48 hours');
   ${rec('crossed_pushes', `(select coalesce(jsonb_agg(jsonb_build_array(
       case recipient_id when v_da then 'da' when v_db then 'db' when v_dc then 'dc' when v_fa then 'fa' when v_fb then 'fb' when v_np then 'np' when v_u then 'u' end,
       case data->>'other_user_id' when v_da::text then 'da' when v_db::text then 'db' when v_dc::text then 'dc' when v_fa::text then 'fa'

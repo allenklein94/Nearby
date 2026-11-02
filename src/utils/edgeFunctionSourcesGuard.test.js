@@ -75,6 +75,12 @@ describe('recovered functions keep their behaviour', () => {
     expect(s.match(/record_location_jump/g)).toHaveLength(1); // never for an accepted report
   });
 
+  test('report-presence: never returns a headcount of a claimed cell (20270384)', () => {
+    const s = src('report-presence');
+    expect(s).not.toMatch(/matchedCount/);
+    expect(s).toMatch(/JSON\.stringify\(\{ ok: true \}\)/);
+  });
+
   test('review-login: failed PIN guesses are capped for ALL callers, not only per (spoofable) IP; no PIN = closed', () => {
     const s = src('review-login');
     expect(s).toMatch(/const GLOBAL_MAX_FAILURES = \d+;/);

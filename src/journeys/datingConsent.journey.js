@@ -13,7 +13,7 @@
 // Then Jest runs the client helpers the screens use (merge -> isDatingOptedIn -> countTonightSupply / countNewDatingPeople /
 // Home's crossed-paths row / orderForTonight) on the very rows the database returned.
 // Not covered (device only): how the Dating deck, Home row and Activity rows look on a phone.
-const { runJourney, stepMap, hasToken, actorsSql, journeyPeople } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorsSql, journeyPeople, crossingReady, CROSSING_AREA } = require('./journeyHarness');
 const { mergeCrossedPathsSignals } = require('../services/crossedPathsSignals');
 const { isDatingOptedIn, countNewDatingPeople } = require('../utils/datingCountConsent');
 const { countTonightSupply, orderForTonight } = require('../utils/meetTonight');
@@ -55,7 +55,9 @@ d('journey: Dating discovery shows and counts only people who chose Dating', () 
   -- sightings: A near B and near D, an hour ago (from 20270383 the A-D crossing is not recorded: D chose no pool)
   log := log || jsonb_build_array(jsonb_build_object('step', 'pairRule', 'ok', true,
     'data', to_regprocedure('private.crossed_paths_pair_allowed(uuid, uuid)') is not null));
-  insert into sightings (user_a, user_b, last_seen_at) values (v_a, v_b, now() - interval '1 hour'), (v_a, v_d, now() - interval '1 hour');
+  ${crossingReady(['v_a', 'v_b', 'v_c', 'v_d'])}
+  insert into sightings (user_a, user_b, approx_area, last_seen_at)
+    values (v_a, v_b, '${CROSSING_AREA}', now() - interval '1 hour'), (v_a, v_d, '${CROSSING_AREA}', now() - interval '1 hour');
 
   -- 1: raw sources (unchanged)
   ${as('v_a')}

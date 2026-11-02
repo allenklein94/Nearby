@@ -185,4 +185,20 @@ const profileReadGrant = (viewer, targets) => `if to_regclass('private.profile_s
       using ${viewer}, array[${targets.join(', ')}]::uuid[];
   end if;`;
 
-module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, fixturePhoneWrite, LIFT_GATHERING_CREATION_LIMIT, storedReason, profileReadGrant };
+
+// 20270384: a crossing is recorded only between two people who BOTH turned Crossed Paths on and both have a fresh eligible
+// presence cell (within one tile of each other). Journeys that write sightings call this first for the people involved;
+// on an older database (no consent table) only the presence report is made, which changes nothing there. `people` are
+// plpgsql variable names; every person reports the same cell, so each sighting written with approx_area = `area` passes.
+const CROSSING_AREA = '40.0001,-75.0001';
+function crossingReady(people, area = CROSSING_AREA) {
+  const arr = `array[${people.join(', ')}]::uuid[]`;
+  return `
+  if to_regclass('private.crossed_paths_consent') is not null then
+    execute 'insert into private.crossed_paths_consent (user_id) select unnest($1) on conflict do nothing' using ${arr};
+  end if;
+  insert into presence_reports (user_id, area, reported_at) select cr_u, '${area}', now() from unnest(${arr}) cr_u
+    on conflict (user_id) do update set area = excluded.area, reported_at = excluded.reported_at;`;
+}
+
+module.exports = { crossingReady, CROSSING_AREA, runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, fixturePhoneWrite, LIFT_GATHERING_CREATION_LIMIT, storedReason, profileReadGrant };
