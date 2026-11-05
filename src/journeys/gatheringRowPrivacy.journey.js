@@ -123,6 +123,8 @@ d('journey: a gathering row reaches only the people who may see it, on every dat
   insert into gathering_interest (gathering_id, user_id, status) values (g_comm, v_pend, 'pending'), (g_invite, v_wait, 'waitlisted');
   insert into gathering_questions (gathering_id, asker_id, question_body) select x, v_fill, 'J147 question?' from unnest(v_ids) x;
   insert into storage.objects (bucket_id, name, owner) select 'gathering-photos', x || '/cover-j147.jpg', v_host from unnest(v_ids) x;
+  -- from 20270390 a cover is readable only by the host until screening exists (owner 2026-11-05), whoever may see the row
+  log := log || jsonb_build_array(jsonb_build_object('step', 'coverRule', 'ok', true, 'data', to_regclass('private.story_media_settings') is not null));
 
   ${probe('anon', 'anon', null)}
   ${probe('stranger', 'authenticated', 'v_str')}
@@ -178,7 +180,7 @@ d('journey: a gathering row reaches only the people who may see it, on every dat
     expect(v.breakdown).toEqual(want);
     expect(v.first_timers).toEqual(want);
     expect(v.questions).toEqual(want);
-    expect(v.photos).toEqual(want);
+    expect(v.photos).toEqual(s.coverRule.data && k !== 'host' ? [] : want);
     expect(v.bounded).toEqual(k === 'host' ? [] : want.filter((x) => x !== 'link'));
   }
 

@@ -1,3 +1,15 @@
+# 2026-11-05: Stories security + launch media policy (20270390, staged)
+
+Owner decisions after the public media audit: public Stories and all Story video off until moderation + reporting exist; build
+the security migration now; friends-only photos only once verified with a working report path, otherwise off; covers kept but
+never shown unreviewed, using existing fallback imagery; all server-enforced; verify direct API, foreign file references,
+expiry, visibility, rollback, concurrency where relevant, and the real Storage API. Built on `post-tier1/stories-security`:
+migration + rollback, journey `storiesSecurity`, `scripts/replay/story-storage-api.js`, post-deploy step. The Story report path
+was not built (needs a content type, evidence kept past the 24 h deletion, an admin view and a build), so friends-only stays off.
+A cover fallback needed no client change: `getSignedGatheringPhotoUrl` returns null on refusal, the same branch as no cover.
+`gatheringRowPrivacy` encoded the old "cover follows gathering visibility" rule and was updated; four journeys that post
+personal Stories on purpose turn the switch on inside their rolled-back transaction. Verification: CLAUDE.md line.
+
 # 2026-11-05: Business Moments paused (20270389, staged) + public media audit
 
 Owner approved 0388 as staged only, approved pausing Business Moments entirely before outside business onboarding (photos have

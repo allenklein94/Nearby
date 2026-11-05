@@ -192,6 +192,15 @@ const STEPS = {
       're-enabling = a separate owner-approved migration, only after media screening for moments is built and tested; never by editing the row by hand',
       'rollback = scripts/rollback/20270389_business_moments_paused.rollback.sql (moment photos accepted again, unscreened; defect only, owner decides)',
       'any Business Moment accepted while the switch is off = security defect: STOP, report'] },
+  // Stories security + launch media policy (owner 2026-11-05): ownership, expiry, types, phone; public + friends-only + video Stories off; covers host-only
+  20270390: { journeys: ['storiesSecurity', 'gatheringMemory', 'storySightingLocation'],
+    manual: ['BEFORE the deploy approval: 0389 live (in order); prod journeys with the 0348-0390 prelude + an aborted rollback round trip on prod; grants vs prod; read-only: 0 stories with gathering_id set and a non-image media_type (the migration refuses otherwise)',
+      'read-only right after: private.story_media_settings = one row, all three false, no client role; triggers ac_story_rules + zz_require_verified_phone on stories; no client UPDATE on stories; both buckets 10 MB, photo types only; 0 personal stories with expires_at > now()',
+      'REQUIRED BEFORE EXTERNAL USERS (owner 2026-11-05), through the real API + real Storage API with dedicated test accounts: a story naming another account\'s file = refused (story_media_not_yours) and that file stays unreadable; a sent expires_at is ignored (24 h); public, friends-only and video stories refused; a non-host can\'t sign a cover and sees the category image in the app',
+      'friends-only Story photos stay OFF until a separate owner-approved migration, after these checks pass AND a working Story report path exists; public Stories + covers for viewers only after image screening exists; all Story video only after video moderation exists; never by editing the row by hand',
+      'build 87 after this deploy: posting a Story fails with a generic error, and the host still sees their own cover while others see the category image; a later build fixes the wording (PRODUCT_AUDIT/PUBLIC_MEDIA_AUDIT_2026-11-05.md section 4)',
+      'rollback = scripts/rollback/20270390_stories_security.rollback.sql (reopens the ownership and expiry defects; defect only, owner decides)',
+      'any refused case accepted, or any cover or foreign file readable = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

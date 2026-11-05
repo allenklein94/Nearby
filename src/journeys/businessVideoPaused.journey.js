@@ -23,6 +23,7 @@ d('journey: business video paused (20270388)', () => {
   ${actorsSql({ people: ['v_o', 'v_c'], business: { owner: 'v_o', partner: 'v_p' } })}
   update brand_partners set tier = 'growth' where id = v_p; -- Business Moments are a paid feature: the refusal below must be the pause's
   if to_regclass('private.business_moments_settings') is not null then execute 'update private.business_moments_settings set enabled = true where id'; end if; -- moments paused by 0389: this checks what a moment stores / the 0388 refusal
+  if to_regclass('private.story_media_settings') is not null then execute 'update private.story_media_settings set friends_stories_enabled = true, story_video_enabled = true where id'; end if; -- personal Stories paused by 0390: this checks the moment rules leave a person's own story alone
   update private.business_video_settings set enabled = false where id;
   insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, party_size, category, date)
     values (v_c, 'journey video pause', 40.0, -75.0, now() + interval '1 day', 2, 'Coffee', current_date) returning id into v_r;

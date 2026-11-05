@@ -71,6 +71,7 @@ d('journey: stories and sightings never store a precise location (item 148)', ()
   perform set_config('app.trusted_update', 'true', true);
   update profiles set managed_partner_id = v_partner where id = v_biz;
   if to_regclass('private.business_moments_settings') is not null then execute 'update private.business_moments_settings set enabled = true where id'; end if; -- moments paused by 0389: this checks what a moment stores / the 0388 refusal
+  if to_regclass('private.story_media_settings') is not null then execute 'update private.story_media_settings set public_stories_enabled = true, friends_stories_enabled = true where id'; end if; -- personal Stories paused by 0390: this journey checks visibility + location, not the pause
   -- from 20270383 a crossing is recorded only inside a pool both people chose: poster, friend and stranger choose Dating
   update profiles set onboarding_motivations = array['Go on dates'], photo_verified = true where id in (v_p, v_f, v_str);
   -- from 20270384 also Crossed Paths on + a fresh presence cell each (poster and friend one tile apart; stranger's

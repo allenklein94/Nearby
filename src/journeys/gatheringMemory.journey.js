@@ -36,6 +36,7 @@ d('journey: a completed gathering keeps memories only the people who were there 
       v_h uuid := '${ids.h}'; v_a uuid := '${ids.a}'; v_k uuid := '${ids.k}'; v_f uuid := '${ids.f}';
       g uuid; mem uuid; pub uuid; ord uuid; v_ok boolean; v_n int;`, `
   ${actorsSql({ people: ['v_h', 'v_a', 'v_k', 'v_f'] })}
+  if to_regclass('private.story_media_settings') is not null then execute 'update private.story_media_settings set friends_stories_enabled = true where id'; end if; -- personal Stories paused by 0390: section 5 checks an ordinary story's rule, not the pause
   -- setup: only the relations this journey names
   delete from friendships where user_a in (v_h, v_a, v_k, v_f) and user_b in (v_h, v_a, v_k, v_f);
   delete from matches where user_a in (v_h, v_a, v_k, v_f) and user_b in (v_h, v_a, v_k, v_f);

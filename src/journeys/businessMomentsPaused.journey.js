@@ -21,6 +21,7 @@ d('journey: business moments paused (20270389)', () => {
     const log = await runJourney(`${actorDeclares(['v_o', 'v_p'])} v_st uuid; v_out jsonb; v_hint text;`, `
   ${actorsSql({ people: ['v_o'], business: { owner: 'v_o', partner: 'v_p' } })}
   update brand_partners set tier = 'growth' where id = v_p; -- a paid feature: the refusals below must be the pause's
+  if to_regclass('private.story_media_settings') is not null then execute 'update private.story_media_settings set friends_stories_enabled = true, story_video_enabled = true where id'; end if; -- personal Stories paused by 0390: this checks the moment rules leave a person's own story alone
   update private.business_moments_settings set enabled = false where id;
   log := log || jsonb_build_array(jsonb_build_object('step', 'default', 'ok', true, 'data', jsonb_build_object(
     'enabled', (select enabled from private.business_moments_settings), 'rows', (select count(*) from private.business_moments_settings))));

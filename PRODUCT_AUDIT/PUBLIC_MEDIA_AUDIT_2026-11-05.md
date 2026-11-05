@@ -77,3 +77,21 @@ it is the one line that could reasonably stay on if the owner prefers; it would 
   `business_moments_paused` hints. Today the Moment path goes through the generic error with Try Again, which can't succeed.
 - Upload happens before the row is refused, so a refused Moment leaves an orphaned file in the poster's folder. Harmless
   (unreadable with no row), but the later build should stop before uploading.
+
+## 5. Owner decisions (2026-11-05) and what was built: migration 20270390 (STAGED, NOT DEPLOYED)
+
+| Decision | Enforced by | State after deploy |
+|---|---|---|
+| Public Stories off | Server trigger, hint `stories_paused` | Off until image screening + a report path exist |
+| All Story video off, memories included | Server trigger, hint `story_video_paused`; buckets take photos only | Off until video moderation exists |
+| Friends-only Story photos only after verification + working reporting, otherwise off | Server trigger, hint `stories_paused` | **OFF: no Story report path exists yet** |
+| Covers kept, never shown unreviewed | Storage read rule: host only | Viewers get the existing category image; the host still sees their own |
+| Ownership, 24 h expiry, media types, phone | Trigger, check constraint, storage rule | S3, S4, S6, S7 closed |
+
+Additional finding while building: S3 also let a forged Story get someone else's file deleted, because `delete_expired_stories`
+deletes the path a row names. Closed by the same ownership check.
+
+Limits: file type is the DECLARED type, so mislabelled bytes pass the bucket, though viewers play only `media_type = 'video'`.
+Gathering memory photos stay on, unscreened and unreportable, limited to the host + approved attendees. S1 and S5 stay open
+by design: the switches contain them, nothing screens or reports a Story yet. A cover has no screening path yet, so no viewer
+sees any uploaded cover until one exists. The Storage API proof ran on the local image (v1.11.13), not production's.
