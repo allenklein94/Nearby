@@ -141,3 +141,18 @@ Native review: `ui.reportBlock.reportPhoto`, `ui.gatheringMemories.report` (10 l
 
 **Not built, by decision:** the cover fix (later build; the host must see either the same image as everyone else or a clearly
 labelled private preview), image screening, moderation of Story video, any new screen or moderation system.
+
+## 7. 0391 accepted as staged only: deployment gates (owner, 2026-11-05)
+
+The implementation and local results are accepted. Not deployed, not merged, build 87 unchanged. Mandatory, in `post-deploy.js` 20270391:
+
+1. **Orphaned files:** inventory path, owner folder, size and date before approval, and again right before the deploy. Deploying
+   queues them for permanent deletion, so the inventory has to come first. A file that must be kept stops the deploy.
+2. **Real deletion:** prove on production, with a test account, that the hourly job's DELETE returns 200 and the object is gone.
+3. **Failed deletions logged, monitored, safely retried:** **NOT MET by 0391 as built.** A path leaves the queue when the call is
+   queued, the response is never read, and nothing retries or alerts. This gate can't pass without a small owner-approved change;
+   none was made, under the instruction not to expand development.
+4. **Legal review of retention:** the 12-month rule must not automatically apply to suspected child sexual abuse material or to
+   content under a legal preservation requirement. Those need a specialized, legally reviewed procedure.
+5. **Existing gates:** production prelude journeys, aborted rollback, grants, authorization, real-API and Storage checks, and migration
+   order after 0390, each with its own approval.
