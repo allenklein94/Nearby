@@ -163,6 +163,7 @@ function writeRefusal(err: any) {
   const conflicts = conflictsOf(err);
   if (conflicts) return json({ error: conflicts.join('\n'), code: 'setting_conflict', conflicts }, 400);
   if (err?.hint === 'offer_contact_info') return json({ error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info' }, 400);
+  if (err?.hint === 'business_video_paused') return json({ error: VIDEO_PAUSED_MESSAGE, code: 'business_video_paused' }, 400);
   const isRuleRefusal = err?.code === 'P0001' || err?.code === '23514' || err?.code === '22023';
   return json({ error: err?.message || 'Could not save your changes.' }, isRuleRefusal ? 400 : 500);
 }
@@ -197,6 +198,21 @@ const SUPPORTED_IMAGE_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'im
 // and the first frame becomes its poster. Limits, disclosed: the audio track and moments between sampled frames are not
 // reviewed (playback is muted by default). A storage or screening-service failure is a 503 (fail closed), never a pass.
 // The rules live in _shared/offerMediaScreening.js (pure, Jest-tested); this only supplies storage and the classifier.
+// Video offers paused (owner 2026-11-02, migration 20270388): the database refuses every new business video while its switch
+// is off; asked here first so a refused video costs no storage reads or AI calls. The database stays the authority: before
+// 20270388 is live the function doesn't exist (PGRST202) and nothing changes here.
+const VIDEO_PAUSED_MESSAGE = "Video offers aren't available yet. Attach a photo instead.";
+async function videoPausedRefusal(admin: any, mediaType: string) {
+  if (mediaType !== 'video') return null;
+  const { data, error } = await admin.rpc('business_video_enabled');
+  if (error?.code === 'PGRST202') return null;
+  if (error) return { status: 503, service: true };
+  return data === true ? null : { status: 400, error: VIDEO_PAUSED_MESSAGE, code: 'business_video_paused' };
+}
+async function screenUnlessVideoPaused(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
+  return (await videoPausedRefusal(admin, mediaType)) ?? screenOfferMedia(admin, partnerId, mediaPath, mediaType, framePaths);
+}
+
 function screenOfferMedia(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
   return screenOfferMediaShared({
     storage: {
@@ -408,6 +424,9 @@ serve(async (req) => {
       if (cMediaType === 'video' && (cFrames.length < 1 || !cFrames.every((f) => f.startsWith(folder) && !f.includes('..')))) {
         return json({ error: 'A video needs preview images. Please add it again.' }, 400);
       }
+      const pausedVideo: any = await videoPausedRefusal(admin, cMediaType);
+      if (pausedVideo?.service) return json({ error: "We couldn't save that right now. Please try again.", code: 'screening_unavailable' }, 503);
+      if (pausedVideo) return json({ error: pausedVideo.error, code: pausedVideo.code }, 400);
 
       const now = new Date().toISOString();
       if (rowId) {
@@ -431,7 +450,7 @@ serve(async (req) => {
       const work = (async () => {
         let patch: Record<string, unknown>;
         try {
-          const m: any = await screenOfferMedia(admin, partnerId, cMediaPath, cMediaType, cFrames);
+          const m: any = await screenUnlessVideoPaused(admin, partnerId, cMediaPath, cMediaType, cFrames);
           if (m.service) patch = { status: 'retry' };
           else if (m.error) patch = { status: 'needs_changes', problem: String(m.error).slice(0, 300) };
           else {
@@ -621,6 +640,11 @@ What makes them different: ${differentiator || '(none)'}`;
       // icon.
       const mediaPath = typeof body.mediaPath === 'string' && body.mediaPath.trim() ? body.mediaPath.trim() : null;
       const mediaType = body.mediaType === 'image' || body.mediaType === 'video' ? body.mediaType : null;
+      if (mediaType === 'video') {
+        const pausedVideo: any = await videoPausedRefusal(admin, mediaType);
+        if (pausedVideo?.service) return json({ error: "We couldn't save that right now. Please try again.", code: 'screening_unavailable' }, 503);
+        if (pausedVideo) return json({ error: pausedVideo.error, code: pausedVideo.code }, 400);
+      }
 
       // Defense in depth for the edit case -- confirm the experience being
       // edited genuinely belongs to this partner before ever screening or
@@ -1217,7 +1241,7 @@ Body: ${updateBody || '(none)'}`;
       if (creativeRow) {
         posterPath = creativeRow.poster_path; // already screened when saved: reused without re-screening
       } else if (mediaPath) {
-        const m: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType!, framePaths);
+        const m: any = await screenUnlessVideoPaused(admin, partnerId, mediaPath, mediaType!, framePaths);
         if (m.service) return UNAVAILABLE;
         if (m.error) return { status: m.status, body: { error: m.error, ...(m.code ? { code: m.code } : {}) } };
         result = {

@@ -1,3 +1,15 @@
+# Business video paused for the first launch (20270388, staged)
+
+Owner approved Option A as a temporary first-launch safeguard, not a removal: a business video is judged only from 1-3 frames
+the business's phone supplies, so a modified client can pair harmless frames with any video; no audio check; a reviewer sees
+only the first frame. Built on `post-tier1/video-offers-hold`: migration `20270388_video_offers_paused.sql` + rollback, early
+refusal in `screen-business-content` (`videoPausedRefusal`, `screenUnlessVideoPaused`; tolerates 0388 not live, PGRST202),
+journey `businessVideoPaused`, post-deploy step, activation checklist section 8 + the outside-business conditions. The audit
+of surfaces found a fourth path the first draft missed: Business Moments are direct `stories` inserts with no screening,
+readable by every signed-in user; the pause covers them (`partner_id` set only; a person's story unchanged). Clients have no
+UPDATE policy on `stories`. `media_type` can't be spoofed into playback (check constraints; clients play only 'video'). Prod
+read-only 2026-11-05: 0 videos on offers / creatives / experiences, 0 moments. Verification and open items: CLAUDE.md line.
+
 # 2026-11-02: screening outage alerts (20270387) built + staged; 0372 activation checklist
 
 Owner (2026-11-02): offer screening's two production issues are PRIORITY RELEASE BLOCKERS (screening never succeeded in

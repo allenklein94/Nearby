@@ -175,6 +175,15 @@ const STEPS = {
     manual: ['read-only right after the deploy: private.screening_outages = 0 rows, private.screening_service_failures = 0 rows; anon / authenticated have no EXECUTE on record_screening_service_result',
       'with 0372 Phase A (owner-approved real screening call): one success records nothing; if screening is still failing, the admin gets ONE "Offer screening is unavailable" push with the right reason, tap opens the held-content queue; the first success sends ONE "working again"',
       'rollback = scripts/rollback/20270387_screening_outage_alerts.rollback.sql (monitoring only; the edge functions keep working: a report becomes a swallowed 404)'] },
+  // Business video paused for the first launch (owner 2026-11-02, Option A, temporary): server enforcement on all four tables
+  20270388: { journeys: ['businessVideoPaused', 'offerSafety', 'offerJourney', 'gatheringMemory'],
+    edge: ['screen-business-content ships in 0372\'s coordinated release; it tolerates 0388 not being live yet (PGRST202 = no early refusal) and the database stays the authority either way'],
+    manual: ['BEFORE the deploy approval: 0387 live (in order); prod journeys with the 0348-0388 prelude + an aborted rollback round trip on prod; grants vs prod',
+      'read-only right after: private.business_video_settings = one row, enabled false, no client role; business_video_enabled EXECUTE: service_role only; trigger aa_business_video_paused on business_request_offers, business_creatives, business_experiences, stories',
+      'REQUIRED BEFORE ANY OUTSIDE BUSINESS IS ONBOARDED (owner 2026-11-02): through the real API, dedicated test business, signed in as its manager, a modified-client call with media_type video to submit_business_offer, the creative path and a direct insert into stories with partner_id = refused with hint business_video_paused and nothing written; the same calls with a photo succeed. A checklist entry alone never counts as the restriction',
+      're-enabling = a separate owner-approved migration, only after real video moderation is built and tested (PRODUCT_AUDIT/OFFER_SCREENING_ACTIVATION_CHECKLIST_2026-11-02.md section 8); never by editing the row by hand',
+      'rollback = scripts/rollback/20270388_video_offers_paused.rollback.sql (removes the enforcement; defect only, owner decides)',
+      'any business video accepted while the switch is off = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
