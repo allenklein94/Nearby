@@ -43,7 +43,7 @@ describe('the screens read that rule', () => {
     const d = code('src/screens/GatheringDetailScreen.js');
     expect(d).toMatch(/const memoryState = gatheringMemoryState\(gathering\)/);
     expect(d).toMatch(/memoryState\.completed \? <Text style=\{styles\.titleCompleted\}>\{` · \$\{PLAN_STATUS_META\[PLAN_STATUS\.COMPLETED\]\.label\}`\}/);
-    expect(d).toMatch(/\{memoryState\.showMemories && <GatheringMemories gatheringId=\{gatheringId\} openOnLoad=\{route\.params\?\.openMemories === true\} \/>\}/);
+    expect(d).toMatch(/\{memoryState\.showMemories && <GatheringMemories gatheringId=\{gatheringId\} openOnLoad=\{route\.params\?\.openMemories === true\} isHost=\{isHostViewer\} \/>\}/);
   });
   test('Plans -> Past: Completed only once really over (a started gathering stays Confirmed)', () => {
     const p = code('src/screens/PlansScreen.js');

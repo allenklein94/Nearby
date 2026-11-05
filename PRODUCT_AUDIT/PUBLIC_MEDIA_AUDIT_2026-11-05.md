@@ -92,6 +92,52 @@ Additional finding while building: S3 also let a forged Story get someone else's
 deletes the path a row names. Closed by the same ownership check.
 
 Limits: file type is the DECLARED type, so mislabelled bytes pass the bucket, though viewers play only `media_type = 'video'`.
-Gathering memory photos stay on, unscreened and unreportable, limited to the host + approved attendees. S1 and S5 stay open
-by design: the switches contain them, nothing screens or reports a Story yet. A cover has no screening path yet, so no viewer
+Gathering memory photos stay on, unscreened, limited to the host + approved attendees. S1 stays open by design: the switches
+contain it, nothing screens a Story yet. S5 is addressed by section 6 (staged). A cover has no screening path yet, so no viewer
 sees any uploaded cover until one exists. The Storage API proof ran on the local image (v1.11.13), not production's.
+
+## 6. Owner decisions (2026-11-05, second set) and what was built: migration 20270391 (STAGED, NOT DEPLOYED)
+
+Migration 0390 approved as staged only. Decisions: gathering memory photos stay on, with server-enforced visibility, a way to report
+and removal by the host or an admin; a focused report path for memories and Stories on the existing report system; public,
+friends-only and video Stories stay off; the cover mismatch is fixed in a later build; nothing reaches build 87, main or production.
+
+| Requirement | Enforced by | Proven by |
+|---|---|---|
+| Only someone who can see a photo can report it | The server reads it as the reporter | Journey: stranger, unknown id, expired Story refused |
+| Your own photo can't be reported; a forged person or copy is ignored | Server sets poster and copy after the visibility check | Journey |
+| Evidence survives expiry, removal, gathering loss, account deletion | The one file stays held in place, `private.report_media_evidence` | Journey + real Storage API |
+| The poster can't alter or remove held evidence | The bucket has no client UPDATE or DELETE policy | Real Storage API: overwrite, PUT, single and bulk delete, move all fail, bytes unchanged |
+| No unrelated media kept | One file per report; no_action releases it at once | Journey: exactly one file held; unheld files deleted |
+| Only admins see held evidence, by signed link | Storage policy "Admins can view reported media" | Real Storage API, for each role |
+| Host or admin can remove a memory | `remove_gathering_memory`, `admin_remove_reported_media`, both logged | Journey: attendee, stranger, suspended host, non-admin refused |
+| A report and an expiry or removal can't lose evidence | Row lock taken at report time | 60 concurrent rounds in both orders |
+
+Retention: held while the report is open; `no_action` releases at once; `action_taken` or a plain resolve keeps it until the report's
+12-month purge; reopening restores the hold if the file still exists.
+
+**Defect found while building:** the expiry job asked Storage to delete with a POST the API doesn't have (404 on the real API), so no
+Story file has ever been deleted, on expiry or on removal. Removing a row only made the file unreadable. Production confirms it:
+2 files, 0 stories (read-only, 2026-11-05). 0391 fixes it: every deleted row queues its file, and the hourly job sends one DELETE per
+file. Existing orphans are queued once. Whether the job's key is accepted by production's Storage is untested: `post-deploy.js` has
+a required check.
+
+Limits, stated plainly:
+- Memory photos are unscreened. Reports act after someone has seen the photo.
+- A photo removed before anyone reports it, or a Story expired, can't be reported: the row is gone or unreadable. The app then
+  files the report about the poster, without the photo. A poster can therefore delete before a report arrives.
+- `action_taken` keeps the image for 12 months, matching reports. **Before outside users, counsel must set the handling of illegal
+  imagery, above all child sexual abuse material: legal reporting and preservation duties can differ from this rule, and an admin
+  viewing such a file needs a defined procedure. No runbook for this exists.**
+- A refused DELETE isn't retried: that file stays, unreadable.
+- A reported file with an open report stays held for as long as the report is open; there is no time limit, the same as reports.
+
+**Privacy Policy sentence (DRAFT, needs legal review, publish with 0391):** "If you report a photo, we keep a copy of that photo and
+the details of your report so our team can review it, even if the photo expires, is removed, or its owner deletes their account. If no
+action is needed, we delete the kept photo when the review ends. If we act on the report, we keep it with the report for up to 12
+months after the review ends. Only authorized reviewers can see it."
+
+Native review: `ui.reportBlock.reportPhoto`, `ui.gatheringMemories.report` (10 languages, machine-authored).
+
+**Not built, by decision:** the cover fix (later build; the host must see either the same image as everyone else or a clearly
+labelled private preview), image screening, moderation of Story video, any new screen or moderation system.

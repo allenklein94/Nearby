@@ -6,6 +6,7 @@ import { Video } from 'expo-av';
 import { getSignedStoryUrl, markStoryViewed, getStoryViewers, deleteStory } from '../services/stories';
 import { getMyFriends, sendFriendRequest } from '../services/friends';
 import { getSignedPhotoUrl } from '../services/photos';
+import ReportBlockModal from './ReportBlockModal';
 import { supabase } from '../services/supabase';
 import { spacing, radius } from '../theme';
 
@@ -22,6 +23,7 @@ export default function StoryViewerModal({ visible, group, onClose }) {
   const [myFriendIds, setMyFriendIds] = useState(new Set());
   const [requestedViewerIds, setRequestedViewerIds] = useState({});
   const [viewerPhotoUrls, setViewerPhotoUrls] = useState({});
+  const [reporting, setReporting] = useState(false);
   const progress = useRef(new Animated.Value(0)).current;
   const timerRef = useRef(null);
 
@@ -33,6 +35,7 @@ export default function StoryViewerModal({ visible, group, onClose }) {
     if (visible) {
       setIndex(0);
       setShowViewers(false);
+      setReporting(false);
     }
   }, [visible, group?.userId]);
 
@@ -61,6 +64,22 @@ export default function StoryViewerModal({ visible, group, onClose }) {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [visible, group, index]);
+
+  // A photo stays on screen while it's being reported (20270391); the timer carries on from where it stopped.
+  function startReport() {
+    progress.stopAnimation();
+    setReporting(true);
+  }
+
+  function finishReport() {
+    setReporting(false);
+    if (group?.stories[index]?.media_type !== 'image') return;
+    progress.stopAnimation((at) => {
+      Animated.timing(progress, { toValue: 1, duration: IMAGE_DURATION_MS * (1 - at), useNativeDriver: false }).start(({ finished }) => {
+        if (finished) advance();
+      });
+    });
+  }
 
   function advance() {
     if (!group) return;
@@ -176,7 +195,7 @@ export default function StoryViewerModal({ visible, group, onClose }) {
               source={{ uri: mediaUrl }}
               style={styles.media}
               resizeMode="contain"
-              shouldPlay
+              shouldPlay={!reporting}
               onPlaybackStatusUpdate={handleVideoStatus}
             />
           ) : mediaUrl ? (
@@ -192,6 +211,12 @@ export default function StoryViewerModal({ visible, group, onClose }) {
         <TouchableOpacity style={styles.shareButton} onPress={handleShareStory} accessibilityLabel={t('ui.media.shareThisStoryA11y')} accessibilityRole="button">
           <Text style={styles.shareButtonText}>↗</Text>
         </TouchableOpacity>
+
+        {!isOwnStory && story && (
+          <TouchableOpacity style={styles.reportButton} onPress={startReport} accessibilityLabel={t('ui.reportBlock.reportPhoto')} accessibilityRole="button">
+            <Text style={styles.reportButtonText}>⚑</Text>
+          </TouchableOpacity>
+        )}
 
         {isOwnStory && (
           <>
@@ -246,6 +271,16 @@ export default function StoryViewerModal({ visible, group, onClose }) {
             </TouchableOpacity>
           </View>
         )}
+        <ReportBlockModal
+          visible={reporting}
+          onClose={finishReport}
+          onBlocked={() => { setReporting(false); onClose(); }}
+          reportedUserId={group.userId}
+          reportedUserName={group.displayName}
+          reportedContent={story ? { type: 'story', id: story.id } : null}
+          target="media"
+          title={t('ui.reportBlock.reportPhoto')}
+        />
       </View>
     </Modal>
   );
@@ -274,6 +309,12 @@ const styles = StyleSheet.create({
     width: 40, height: 40, justifyContent: 'center', alignItems: 'center',
   },
   shareButtonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
+  reportButton: {
+    position: 'absolute', bottom: 30, left: spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full,
+    width: 40, height: 40, justifyContent: 'center', alignItems: 'center',
+  },
+  reportButtonText: { color: '#fff', fontSize: 18, fontWeight: '700' },
   deleteButton: {
     position: 'absolute', bottom: 30, left: spacing.lg,
     backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: radius.full,

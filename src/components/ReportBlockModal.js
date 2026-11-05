@@ -20,6 +20,8 @@ const reasonChips = (target) => reportReasonsFor(target).map((r) => ({ value: r.
 // id: matchId } from a 1:1 chat); the server keeps its own copy of it (utils/reportContent.js).
 // target 'business' + reportedContent { type: 'business', id: partnerId } (20270381, "Report business"): report only, no
 // person named (the server sets nobody), title = title prop ("Report {name}").
+// target 'media' + reportedContent { type: 'story', id } (20270391, a Story or a gathering memory): the reasons about a photo;
+// Block stays, since the person who posted it is known.
 export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly: reportOnlyProp = false, reportedContent = null, target = 'person', title = null }) {
   const REPORT_REASON_CHIPS = reasonChips(target);
   const reportOnly = reportOnlyProp || target === 'business';

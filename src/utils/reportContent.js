@@ -11,9 +11,12 @@
 //   - a business itself ('business', 20270381, "Report business"): the server names NOBODY (reported_id NULL): the report is
 //     about the business, never automatically its owner or staff. Without that type (an older database) it is filed the
 //     same way as an offer (no person, the business named in its details).
+//   - a photo ('story', 20270391: a Story or a gathering memory, one row in `stories`): the server sets who posted it and holds
+//     the file as evidence, so what the client sends as the person is ignored. Without that type (an older database, or a
+//     photo that has just gone) the report is still filed about the person who posted it, with the photo's id in its details.
 //   - 'Impersonation' (20270381): a database with reason codes but without that reason refuses it ('report_reason_invalid');
 //     the same report is then filed as 'Fake profile' with "[Impersonation]" at the start of its details. Never lost.
-export const REPORT_CONTENT_TYPES = ['message', 'gathering_message', 'community_message', 'plan_message', 'business_message', 'match_chat', 'business_offer', 'business'];
+export const REPORT_CONTENT_TYPES = ['message', 'gathering_message', 'community_message', 'plan_message', 'business_message', 'match_chat', 'business_offer', 'business', 'story'];
 // reports about something that names no person on the client (the server decides who, if anyone)
 const NO_PERSON_TYPES = ['business_offer', 'business'];
 
@@ -36,7 +39,7 @@ export function shouldRetryWithoutContent(error, row) {
   if (!error || !row?.content_type) return false;
   if (error.hint === 'report_content_mismatch') return !NO_PERSON_TYPES.includes(row.content_type);
   // 20270355 without 20270372 / 20270381: the columns exist but the type isn't allowed yet
-  if (NO_PERSON_TYPES.includes(row.content_type) && error.code === '23514' && /content_type/.test(String(error.message || ''))) return true;
+  if ((NO_PERSON_TYPES.includes(row.content_type) || row.content_type === 'story') && error.code === '23514' && /content_type/.test(String(error.message || ''))) return true;
   return (error.code === 'PGRST204' || error.code === '42703') && /content_(type|id)/.test(String(error.message || ''));
 }
 
@@ -47,6 +50,9 @@ export function withoutContent(row) {
   }
   if (content_type === 'business') {
     return { ...rest, reported_id: null, details: [`[business ${content_id}]`, rest.details].filter(Boolean).join(' ') };
+  }
+  if (content_type === 'story') {
+    return { ...rest, details: [`[photo ${content_id}]`, rest.details].filter(Boolean).join(' ') };
   }
   return rest;
 }

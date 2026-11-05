@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -9,6 +9,8 @@ import LoadErrorState from '../components/LoadErrorState';
 import { PullToRefresh } from '../motion';
 import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
 import { reportReasonLabel, sortReportQueue, isPriorityReportReason } from '../utils/reportReasons';
+import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
+import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
 // review cases (identical photo + an approved rule; 20270363: behaviour patterns, counts only) are listed above the reports. Both work on a database without those
@@ -16,7 +18,7 @@ import { reportReasonLabel, sortReportQueue, isPriorityReportReason } from '../u
 const REPORT_COLUMNS = 'id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name, suspended_at)';
 const CONTENT_COLUMNS = ', content_type, content_excerpt, content_sent_at';
 const isMissing = (error) => !!error && ['PGRST202', 'PGRST204', '42703', '42883'].includes(error.code);
-const REPORTED_WHAT = { match_chat: 'chat (their last messages)', business_offer: 'offer', business: 'business (as it showed then)' };
+const REPORTED_WHAT = { match_chat: 'chat (their last messages)', business_offer: 'offer', business: 'business (as it showed then)', story: 'photo' };
 const CASE_REASON = {
   many_accounts: 'Same photo on several accounts',
   similar_names: 'Same photo + similar names',
@@ -34,6 +36,7 @@ export default function AdminReportsScreen({ navigation }) {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
   const [cases, setCases] = useState([]);
+  const [media, setMedia] = useState({});
 
   useEffect(() => {
     load();
@@ -54,6 +57,7 @@ export default function AdminReportsScreen({ navigation }) {
       if (error) throw error;
       setReports(sortReportQueue(data));
       setLoadError(false);
+      await loadMedia(data);
       const listed = await supabase.rpc('admin_list_account_review_cases');
       setCases(listed.error ? [] : listed.data || []);
     } catch (e) {
@@ -61,6 +65,34 @@ export default function AdminReportsScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
+  }
+
+  // A reported photo (20270391): Storage issues the 15-minute link only after re-checking the admin and the hold.
+  async function loadMedia(rows) {
+    const ids = (rows || []).filter((r) => r.content_type === 'story').map((r) => r.id);
+    if (!ids.length) { setMedia({}); return; }
+    const held = await supabase.rpc('admin_get_report_media', { report_ids_param: ids });
+    if (held.error) { setMedia({}); return; }
+    const paths = reportMediaPaths(held.data);
+    const signed = paths.length
+      ? await supabase.storage.from('stories').createSignedUrls(paths, ADMIN_PHOTO_LINK_SECONDS)
+      : { data: [] };
+    setMedia(reportMediaByReport(held.data, signed.error ? [] : signed.data));
+  }
+
+  function removePhoto(item) {
+    Alert.alert('Remove this photo?', 'Everyone stops seeing it now. It stays here for review until you resolve the report.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: async () => {
+          const { error } = await supabase.rpc('admin_remove_reported_media', { report_id_param: item.id });
+          if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => removePhoto(item) });
+          load();
+        },
+      },
+    ]);
   }
 
   // The outcome is recorded with the admin and time (report_actions); before 20270355 the plain resolve is used.
@@ -200,6 +232,10 @@ export default function AdminReportsScreen({ navigation }) {
               <View style={styles.evidence}>
                 <Text style={styles.meta}>Reported {REPORTED_WHAT[item.content_type] || 'message'}{item.content_sent_at ? ` · sent ${new Date(item.content_sent_at).toLocaleString()}` : ''}</Text>
                 <Text style={styles.details}>{item.content_excerpt}</Text>
+                {media[item.id]?.url && media[item.id].media_type === 'image' ? (
+                  <Image source={{ uri: media[item.id].url }} style={styles.reportPhoto} resizeMode="contain" accessibilityLabel="Reported photo" />
+                ) : null}
+                {media[item.id] ? <Text style={styles.meta}>{reportMediaStatus(media[item.id])}</Text> : null}
               </View>
             ) : null}
             <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
@@ -217,6 +253,11 @@ export default function AdminReportsScreen({ navigation }) {
                     <Text style={styles.actionText}>Suspend User</Text>
                   </TouchableOpacity>
                 )}
+                {!item.resolved && media[item.id]?.still_live ? (
+                  <TouchableOpacity style={styles.actionButton} onPress={() => removePhoto(item)} accessibilityRole="button">
+                    <Text style={styles.actionText}>Remove Photo</Text>
+                  </TouchableOpacity>
+                ) : null}
                 {!item.resolved && (
                   <TouchableOpacity style={[styles.actionButton, styles.resolveButton]} onPress={() => markResolved(item)}>
                     <Text style={styles.actionText}>Mark Resolved</Text>
@@ -237,6 +278,7 @@ const getStyles = (colors) => StyleSheet.create({
   backButton: { padding: spacing.xs },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   empty: { color: colors.textTertiary, textAlign: 'center', marginTop: spacing.xxl },
+  reportPhoto: { width: '100%', height: 240, marginTop: spacing.sm, borderRadius: radius.sm },
   card: {
     backgroundColor: colors.surface,
     borderRadius: radius.md,

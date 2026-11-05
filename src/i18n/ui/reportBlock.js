@@ -20,6 +20,7 @@ export default {
     reason: { inappropriatePhoto: "Inappropriate content", harassment: "Harassment or abuse", fakeProfile: "Fake profile", impersonation: "Impersonation", spam: "Spam or scam", underage: "Underage user", other: "Other" },
     reportBusiness: "Report business",
     reportBusinessTitle: "Report {name}",
+    reportPhoto: "Report this photo",
   },
   es: {
     selectAReason: "Elige un motivo",
@@ -40,6 +41,7 @@ export default {
     reason: { inappropriatePhoto: "Contenido inapropiado", harassment: "Acoso o abuso", fakeProfile: "Perfil falso", impersonation: "Suplantación de identidad", spam: "Spam o estafa", underage: "Usuario menor de edad", other: "Otro" },
     reportBusiness: "Reportar negocio",
     reportBusinessTitle: "Reportar {name}",
+    reportPhoto: "Denunciar esta foto",
   },
   de: {
     selectAReason: "Grund auswählen",
@@ -60,6 +62,7 @@ export default {
     reason: { inappropriatePhoto: "Unangemessene Inhalte", harassment: "Belästigung oder Missbrauch", fakeProfile: "Falsches Profil", impersonation: "Identitätsbetrug", spam: "Spam oder Betrug", underage: "Minderjährige Person", other: "Sonstiges" },
     reportBusiness: "Unternehmen melden",
     reportBusinessTitle: "{name} melden",
+    reportPhoto: "Dieses Foto melden",
   },
   fr: {
     selectAReason: "Choisis un motif",
@@ -80,6 +83,7 @@ export default {
     reason: { inappropriatePhoto: "Contenu inapproprié", harassment: "Harcèlement ou abus", fakeProfile: "Faux profil", impersonation: "Usurpation d'identité", spam: "Spam ou arnaque", underage: "Personne mineure", other: "Autre" },
     reportBusiness: "Signaler l'entreprise",
     reportBusinessTitle: "Signaler {name}",
+    reportPhoto: "Signaler cette photo",
   },
   pt: {
     selectAReason: "Escolha um motivo",
@@ -100,6 +104,7 @@ export default {
     reason: { inappropriatePhoto: "Conteúdo inadequado", harassment: "Assédio ou abuso", fakeProfile: "Perfil falso", impersonation: "Falsificação de identidade", spam: "Spam ou golpe", underage: "Usuário menor de idade", other: "Outro" },
     reportBusiness: "Denunciar empresa",
     reportBusinessTitle: "Denunciar {name}",
+    reportPhoto: "Denunciar esta foto",
   },
   ht: {
     selectAReason: "Chwazi yon rezon",
@@ -120,6 +125,7 @@ export default {
     reason: { inappropriatePhoto: "Kontni ki pa apwopriye", harassment: "Arasman oswa abi", fakeProfile: "Fo pwofil", impersonation: "Moun k ap pase pou yon lòt", spam: "Spam oswa eskwokri", underage: "Moun ki poko gen laj", other: "Lòt" },
     reportBusiness: "Rapòte biznis la",
     reportBusinessTitle: "Rapòte {name}",
+    reportPhoto: "Siyale foto sa a",
   },
   zh: {
     selectAReason: "请选择原因",
@@ -140,6 +146,7 @@ export default {
     reason: { inappropriatePhoto: "不当内容", harassment: "骚扰或辱骂", fakeProfile: "虚假资料", impersonation: "冒充他人", spam: "垃圾信息或诈骗", underage: "未成年用户", other: "其他" },
     reportBusiness: "举报商家",
     reportBusinessTitle: "举报{name}",
+    reportPhoto: "举报这张照片",
   },
   vi: {
     selectAReason: "Chọn lý do",
@@ -160,6 +167,7 @@ export default {
     reason: { inappropriatePhoto: "Nội dung không phù hợp", harassment: "Quấy rối hoặc lạm dụng", fakeProfile: "Hồ sơ giả", impersonation: "Mạo danh", spam: "Spam hoặc lừa đảo", underage: "Người dùng chưa đủ tuổi", other: "Khác" },
     reportBusiness: "Báo cáo doanh nghiệp",
     reportBusinessTitle: "Báo cáo {name}",
+    reportPhoto: "Báo cáo ảnh này",
   },
   tl: {
     selectAReason: "Pumili ng dahilan",
@@ -180,6 +188,7 @@ export default {
     reason: { inappropriatePhoto: "Hindi angkop na nilalaman", harassment: "Panliligalig o pang-aabuso", fakeProfile: "Pekeng profile", impersonation: "Pagpapanggap", spam: "Spam o panloloko", underage: "Menor de edad na user", other: "Iba pa" },
     reportBusiness: "I-report ang negosyo",
     reportBusinessTitle: "I-report ang {name}",
+    reportPhoto: "I-report ang larawang ito",
   },
   ru: {
     selectAReason: "Выберите причину",
@@ -200,6 +209,7 @@ export default {
     reason: { inappropriatePhoto: "Неприемлемый контент", harassment: "Преследование или оскорбления", fakeProfile: "Фейковый профиль", impersonation: "Выдача себя за другого", spam: "Спам или мошенничество", underage: "Несовершеннолетний пользователь", other: "Другое" },
     reportBusiness: "Пожаловаться на компанию",
     reportBusinessTitle: "Пожаловаться на {name}",
+    reportPhoto: "Пожаловаться на это фото",
   },
   ko: {
     selectAReason: "이유를 선택하세요",
@@ -220,5 +230,6 @@ export default {
     reason: { inappropriatePhoto: "부적절한 콘텐츠", harassment: "괴롭힘 또는 욕설", fakeProfile: "가짜 프로필", impersonation: "사칭", spam: "스팸 또는 사기", underage: "미성년 사용자", other: "기타" },
     reportBusiness: "업체 신고",
     reportBusinessTitle: "{name} 신고",
+    reportPhoto: "이 사진 신고하기",
   },
 };

@@ -169,7 +169,7 @@ export default function AdminReviewScreen() {
         <View key={r.id} style={styles.card}>
           <Text style={styles.title}>{reportReasonLabel(r.reason)}{isPriorityReportReason(r.reason) ? ' · Priority' : ''}</Text>
           <Text style={styles.meta}>{r.content_type === 'business' ? 'About a business (nobody named)' : `About ${r.reported?.display_name || 'an account'}`} · {new Date(r.created_at).toLocaleString()}</Text>
-          {r.content_type === 'business' && r.content_excerpt ? <Text style={styles.details}>{r.content_excerpt}</Text> : null}
+          {(r.content_type === 'business' || r.content_type === 'story') && r.content_excerpt ? <Text style={styles.details}>{r.content_excerpt}</Text> : null}
           {r.details ? <Text style={styles.details}>{r.details}</Text> : null}
           {canOpenInvestigation(r) ? (
             <TouchableOpacity style={styles.button} onPress={() => openFromReport(r)} accessibilityRole="button">

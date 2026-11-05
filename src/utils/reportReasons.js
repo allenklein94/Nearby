@@ -21,10 +21,11 @@ export const REPORT_REASONS = [
 // What a report about a BUSINESS may say (20270381): the sheet offers only these. A business isn't a dating profile and
 // can't be underage, so 'fake_profile' and 'underage_user' aren't offered there.
 export const BUSINESS_REPORT_CODES = ['impersonation', 'spam_scam', 'inappropriate_photo', 'harassment', 'other'];
+// What a report about a PHOTO may say (a Story or a gathering memory, 20270391): about what it shows.
+export const MEDIA_REPORT_CODES = ['inappropriate_photo', 'harassment', 'spam_scam', 'underage_user', 'other'];
 export function reportReasonsFor(target) {
-  return target === 'business'
-    ? BUSINESS_REPORT_CODES.map((c) => REPORT_REASONS.find((r) => r.code === c))
-    : REPORT_REASONS;
+  const codes = target === 'business' ? BUSINESS_REPORT_CODES : target === 'media' ? MEDIA_REPORT_CODES : null;
+  return codes ? codes.map((c) => REPORT_REASONS.find((r) => r.code === c)) : REPORT_REASONS;
 }
 
 // Written by the system, never offered in the sheet: "Report this ad" (services/sponsored.js) and moderate-photo's

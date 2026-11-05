@@ -201,6 +201,16 @@ const STEPS = {
       'build 87 after this deploy: posting a Story fails with a generic error, and the host still sees their own cover while others see the category image; a later build fixes the wording (PRODUCT_AUDIT/PUBLIC_MEDIA_AUDIT_2026-11-05.md section 4)',
       'rollback = scripts/rollback/20270390_stories_security.rollback.sql (reopens the ownership and expiry defects; defect only, owner decides)',
       'any refused case accepted, or any cover or foreign file readable = security defect: STOP, report'] },
+  20270391: { journeys: ['mediaReports', 'storiesSecurity', 'gatheringMemory', 'reportReasonCodes'],
+    manual: ['BEFORE the deploy approval: 0390 live (in order); prod journeys with the 0348-0391 prelude + an aborted rollback round trip on prod; grants vs prod; Privacy Policy sentence (PRODUCT_AUDIT/PUBLIC_MEDIA_AUDIT_2026-11-05.md section 6) approved, published in the same release',
+      'BEFORE the deploy approval: note the file count: the migration queues every stories file with no row (2 on 2026-11-05) for real deletion on the next hourly run; list them read-only first',
+      'read-only right after: content_type check includes story; triggers capture_report_content_story, hold_reported_story_media, report_media_follow_outcome, queue_story_file; the 3 private tables have no client role; policy "Admins can view reported media"; delete_expired_stories executable by service_role only',
+      'REQUIRED BEFORE TRUSTING DELETION: the hourly job authenticates to Storage with the vault key, never tested on production. With a dedicated test account, post a memory, remove it, wait for the next run, confirm in net._http_response that the DELETE returned 200 and storage.objects has no row. A 401/403 means the job authenticates wrongly: nothing is lost (files stay unreadable) but deletion is not working: STOP, report',
+      'REQUIRED BEFORE EXTERNAL USERS, through the real API + real Storage API with dedicated test accounts: a stranger reporting a memory = refused; an attendee report names the poster whatever was sent; the poster can\'t overwrite, delete or move the held file; after the poster removes it only the admin can sign it; a non-host can\'t remove a memory; a no_action resolve closes the file to the admin and it is then deleted',
+      'a build with Report + host Remove only AFTER this is live: on an older database the host\'s Remove fails with Try Again (the report itself is kept, filed about the person). Check on a real iPhone + the website after re-export: Report and Remove in the memories viewer, Report on a Story, the photo + Remove Photo on the admin report',
+      'friends-only Story photos still need their own owner-approved migration, after these checks pass; public Stories need image screening too; Story video needs video moderation',
+      'rollback = scripts/rollback/20270391_media_reports.rollback.sql (a photo report stays as a plain report about the poster; held files stay in the bucket, listed in each report\'s details; the job stops deleting again); defect only, owner decides',
+      'any refused case accepted, any held file changed, or any file readable by a non-admin = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

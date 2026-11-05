@@ -1,3 +1,16 @@
+# 2026-11-05: Photo reports + removal + real file deletion (20270391, staged)
+
+Owner approved 0390 as staged only and decided: memory photos stay on (server visibility, reporting, host or admin removal); build a
+focused report path for memories and Stories on the existing report system, evidence kept past expiry and removal without keeping
+unrelated media; Stories stay off; cover mismatch fixed in a later build; stage and test on the post-Tier-1 sequence, no build 87,
+main or production change; then stop feature development. Built on `post-tier1/story-reports`: migration + rollback, journey
+`mediaReports`, `scripts/replay/media-report-storage-api.js`, `media-report-concurrency.js`, post-deploy step, `utils/memoryActions.js`,
+`utils/reportMedia.js`, audit section 6. Design: hold the one file in place rather than copy it, because the bucket has no client
+UPDATE or DELETE policy (proven through the real Storage API) and a hold commits atomically with the report. Found on the way: the
+expiry job's POST is a 404, so no Story file was ever deleted (prod: 2 files, 0 stories); fixed with one DELETE per file, the form that
+works on both pg_net versions (prod 0.20.3, replay 0.7.1). The first journey run on a rolled-back-and-reapplied DB saw orphans the
+migration had rightly queued, so its delete assertions are scoped to the journey's own folder. Verification: CLAUDE.md line.
+
 # 2026-11-05: Stories security + launch media policy (20270390, staged)
 
 Owner decisions after the public media audit: public Stories and all Story video off until moderation + reporting exist; build

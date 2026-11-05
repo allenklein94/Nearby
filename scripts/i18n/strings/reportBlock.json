@@ -23,7 +23,8 @@
   "reason.underage": "Underage user",
   "reason.other": "Other",
   "reportBusiness": "Report business",
-  "reportBusinessTitle": "Report {name}"
+  "reportBusinessTitle": "Report {name}",
+  "reportPhoto": "Report this photo"
  },
  "es": {
   "selectAReason": "Elige un motivo",
@@ -49,7 +50,8 @@
   "reason.underage": "Usuario menor de edad",
   "reason.other": "Otro",
   "reportBusiness": "Reportar negocio",
-  "reportBusinessTitle": "Reportar {name}"
+  "reportBusinessTitle": "Reportar {name}",
+  "reportPhoto": "Denunciar esta foto"
  },
  "de": {
   "selectAReason": "Grund auswählen",
@@ -75,7 +77,8 @@
   "reason.underage": "Minderjährige Person",
   "reason.other": "Sonstiges",
   "reportBusiness": "Unternehmen melden",
-  "reportBusinessTitle": "{name} melden"
+  "reportBusinessTitle": "{name} melden",
+  "reportPhoto": "Dieses Foto melden"
  },
  "fr": {
   "selectAReason": "Choisis un motif",
@@ -101,7 +104,8 @@
   "reason.underage": "Personne mineure",
   "reason.other": "Autre",
   "reportBusiness": "Signaler l'entreprise",
-  "reportBusinessTitle": "Signaler {name}"
+  "reportBusinessTitle": "Signaler {name}",
+  "reportPhoto": "Signaler cette photo"
  },
  "pt": {
   "selectAReason": "Escolha um motivo",
@@ -127,7 +131,8 @@
   "reason.underage": "Usuário menor de idade",
   "reason.other": "Outro",
   "reportBusiness": "Denunciar empresa",
-  "reportBusinessTitle": "Denunciar {name}"
+  "reportBusinessTitle": "Denunciar {name}",
+  "reportPhoto": "Denunciar esta foto"
  },
  "ht": {
   "selectAReason": "Chwazi yon rezon",
@@ -153,7 +158,8 @@
   "reason.underage": "Moun ki poko gen laj",
   "reason.other": "Lòt",
   "reportBusiness": "Rapòte biznis la",
-  "reportBusinessTitle": "Rapòte {name}"
+  "reportBusinessTitle": "Rapòte {name}",
+  "reportPhoto": "Siyale foto sa a"
  },
  "zh": {
   "selectAReason": "请选择原因",
@@ -179,7 +185,8 @@
   "reason.underage": "未成年用户",
   "reason.other": "其他",
   "reportBusiness": "举报商家",
-  "reportBusinessTitle": "举报{name}"
+  "reportBusinessTitle": "举报{name}",
+  "reportPhoto": "举报这张照片"
  },
  "vi": {
   "selectAReason": "Chọn lý do",
@@ -205,7 +212,8 @@
   "reason.underage": "Người dùng chưa đủ tuổi",
   "reason.other": "Khác",
   "reportBusiness": "Báo cáo doanh nghiệp",
-  "reportBusinessTitle": "Báo cáo {name}"
+  "reportBusinessTitle": "Báo cáo {name}",
+  "reportPhoto": "Báo cáo ảnh này"
  },
  "tl": {
   "selectAReason": "Pumili ng dahilan",
@@ -231,7 +239,8 @@
   "reason.underage": "Menor de edad na user",
   "reason.other": "Iba pa",
   "reportBusiness": "I-report ang negosyo",
-  "reportBusinessTitle": "I-report ang {name}"
+  "reportBusinessTitle": "I-report ang {name}",
+  "reportPhoto": "I-report ang larawang ito"
  },
  "ru": {
   "selectAReason": "Выберите причину",
@@ -257,7 +266,8 @@
   "reason.underage": "Несовершеннолетний пользователь",
   "reason.other": "Другое",
   "reportBusiness": "Пожаловаться на компанию",
-  "reportBusinessTitle": "Пожаловаться на {name}"
+  "reportBusinessTitle": "Пожаловаться на {name}",
+  "reportPhoto": "Пожаловаться на это фото"
  },
  "ko": {
   "selectAReason": "이유를 선택하세요",
@@ -283,6 +293,7 @@
   "reason.underage": "미성년 사용자",
   "reason.other": "기타",
   "reportBusiness": "업체 신고",
-  "reportBusinessTitle": "{name} 신고"
+  "reportBusinessTitle": "{name} 신고",
+  "reportPhoto": "이 사진 신고하기"
  }
 }
