@@ -174,8 +174,7 @@ old function just doesn't report) -> 0387 rollback script (monitoring gone; repo
 previous version. Screening itself is unaffected by every rollback step.
 
 Unchanged requirements before ANY outside business onboarding: one successful REAL screening request (A2/A5), 0372's
-bypass verified closed through the real API (Phase D2), the outage alerts proven end to end (D4), and business video
-refused through the real API with 0388 live (section 8). Withholding outside approvals until then reduces exposure; it does
+bypass verified closed through the real API (Phase D2), the outage alerts proven end to end (D4), and business video and moments refused through the real API with 0388 + 0389 live (section 8). Withholding outside approvals until then reduces exposure; it does
 not close the bypass.
 
 ## 8. Business video paused for the first launch (owner 2026-11-02: Option A, TEMPORARY, not a removal)
@@ -192,8 +191,12 @@ Enforcement = migration 20270388 (STAGED, NOT DEPLOYED, own approval, in order a
 (hint `business_video_paused`). `screen-business-content` refuses early so a refused video costs no AI call; the database
 stays the authority. Every video column, the 30 s length gate, storage, the picker and the player are kept for later.
 
-**Gate:** 0388 live AND its real-API check passed (`post-deploy.js` 20270388) before any outside business is onboarded.
-Disabling video in a checklist is not the restriction: until 0388 is live, the production API still accepts business video.
+**Business Moments paused too (owner 2026-11-05, temporary):** migration 20270389 (STAGED, NOT DEPLOYED, own approval, in
+order after 0388) refuses every new moment, photo included, because moments have no screening at all. Infrastructure kept.
+
+**Gate:** 0388 AND 0389 live AND both real-API checks passed (`post-deploy.js` 20270388, 20270389) before any outside business
+is approved. Disabling media in a checklist is not the restriction: until they are live, the production API still accepts
+business video and moments.
 
 **To re-enable (a separate owner-approved migration, nothing else), all required:**
 1. frames extracted by the server from the actual uploaded file, never supplied by the client;
@@ -201,6 +204,9 @@ Disabling video in a checklist is not the restriction: until 0388 is live, the p
 3. OCR of on-screen text, with the 0372 contact-detail rule applied to both OCR text and transcript;
 4. held videos playable in full, with audio, by an administrator in the review queue;
 5. Business Moments screened through the same pipeline (they have no screening today).
+
+To re-enable Moment photos (a separate approved migration): image screening for moments, built and tested. Client changes
+for a later build: `PRODUCT_AUDIT/PUBLIC_MEDIA_AUDIT_2026-11-05.md` section 4.
 
 These substantially improve screening but cannot guarantee detection of every harmful visual or spoken claim; a few sampled
 frames can miss what happens between them. Reports and human review stay part of the design.

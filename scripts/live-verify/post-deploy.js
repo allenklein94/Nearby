@@ -184,6 +184,14 @@ const STEPS = {
       're-enabling = a separate owner-approved migration, only after real video moderation is built and tested (PRODUCT_AUDIT/OFFER_SCREENING_ACTIVATION_CHECKLIST_2026-11-02.md section 8); never by editing the row by hand',
       'rollback = scripts/rollback/20270388_video_offers_paused.rollback.sql (removes the enforcement; defect only, owner decides)',
       'any business video accepted while the switch is off = security defect: STOP, report'] },
+  // Business Moments paused for the first launch (owner 2026-11-05, temporary): photos too, server enforced
+  20270389: { journeys: ['businessMomentsPaused', 'businessVideoPaused', 'storySightingLocation'],
+    manual: ['BEFORE the deploy approval: 0388 live (in order); prod journeys with the 0348-0389 prelude + an aborted rollback round trip on prod; grants vs prod',
+      'read-only right after: private.business_moments_settings = one row, enabled false, no client role; trigger ab_business_moments_paused on stories; 0 stories with partner_id and expires_at > now()',
+      'REQUIRED BEFORE ANY OUTSIDE BUSINESS IS ONBOARDED (owner 2026-11-05): through the real API, dedicated test business on a plan with Moments, signed in as its manager, a direct insert into stories with partner_id and an image = refused with hint business_moments_paused and nothing written; a person\'s own story still saves',
+      're-enabling = a separate owner-approved migration, only after media screening for moments is built and tested; never by editing the row by hand',
+      'rollback = scripts/rollback/20270389_business_moments_paused.rollback.sql (moment photos accepted again, unscreened; defect only, owner decides)',
+      'any Business Moment accepted while the switch is off = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

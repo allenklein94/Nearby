@@ -1,3 +1,14 @@
+# 2026-11-05: Business Moments paused (20270389, staged) + public media audit
+
+Owner approved 0388 as staged only, approved pausing Business Moments entirely before outside business onboarding (photos have
+no screening; infrastructure kept), and asked for a focused read-only audit of Stories and every public media entry point,
+no moderation platform, with onboarding requiring verified server-side enforcement. Built on `post-tier1/moments-pause`:
+migration `20270389_business_moments_paused.sql` + rollback, journey `businessMomentsPaused`, post-deploy step, activation
+checklist sections 7-8; two journeys that post a moment on purpose turn the switch on inside their rolled-back transaction.
+Audit `PRODUCT_AUDIT/PUBLIC_MEDIA_AUDIT_2026-11-05.md`: probes ran under the real `authenticated` role on a replay, in
+rolled-back transactions; the real Storage API and a phone were not tested. The session was cut off by a codespace restart
+before its verification was read, so it was rerun from a fresh replay. Verification and open decision: CLAUDE.md line.
+
 # Business video paused for the first launch (20270388, staged)
 
 Owner approved Option A as a temporary first-launch safeguard, not a removal: a business video is judged only from 1-3 frames
