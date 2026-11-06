@@ -37,7 +37,7 @@ Exposure meanwhile is narrow (section 1): only a manager of an approved business
 the only such business is the owner's. **Interim gate APPROVED (owner, 2026-11-06), a LAUNCH REQUIREMENT:** no external
 business account may be approved until 0372 and its screening function are deployed, tested against the real screening
 provider, and shown to reject unscreened direct API submissions: D2, D4 and D7 below all passed with real provider
-responses, never mocked. The gate is procedural: nothing in the admin approval flow enforces it, so every business approval
+responses, never mocked, and D8 (QR code) rejected or resolved. The gate is procedural: nothing in the admin approval flow enforces it, so every business approval
 checks this line first. It doesn't close the bypass; it means the bypass has no external user.
 
 ## 3. Activation checklist (in order; stop at the first failure and report)
