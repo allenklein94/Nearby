@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image } from 'react-native';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -12,6 +12,7 @@ import { reportReasonLabel, sortReportQueue, isPriorityReportReason } from '../u
 import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
 import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
 import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
+import { REMOVAL_REASON_MAX, canRemoveReportedObject, removalReasonReady, removeActionLabel, reportObjectIds, reportObjectStatus } from '../utils/reportObjects';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
 // review cases (identical photo + an approved rule; 20270363: behaviour patterns, counts only) are listed above the reports. Both work on a database without those
@@ -39,6 +40,8 @@ export default function AdminReportsScreen({ navigation }) {
   const [cases, setCases] = useState([]);
   const [media, setMedia] = useState({});
   const [cleanup, setCleanup] = useState(null);
+  const [objects, setObjects] = useState({});
+  const [removing, setRemoving] = useState(null); // { id, reason }: the one report whose Remove form is open
 
   useEffect(() => {
     load();
@@ -60,6 +63,7 @@ export default function AdminReportsScreen({ navigation }) {
       setReports(sortReportQueue(data));
       setLoadError(false);
       await loadMedia(data);
+      await loadObjects(data);
       const listed = await supabase.rpc('admin_list_account_review_cases');
       setCases(listed.error ? [] : listed.data || []);
       // 20270391: files that won't delete. An older database simply has nothing to show.
@@ -83,6 +87,24 @@ export default function AdminReportsScreen({ navigation }) {
       ? await supabase.storage.from('stories').createSignedUrls(paths, ADMIN_PHOTO_LINK_SECONDS)
       : { data: [] };
     setMedia(reportMediaByReport(held.data, signed.error ? [] : signed.data));
+  }
+
+  // 20270393: is a reported gathering or community still there? An older database shows no status and no Remove button.
+  async function loadObjects(rows) {
+    const ids = reportObjectIds(rows);
+    if (!ids.length) { setObjects({}); return; }
+    const { data, error } = await supabase.rpc('admin_get_report_objects', { report_ids_param: ids });
+    setObjects(error ? {} : Object.fromEntries((data || []).map((o) => [o.report_id, o])));
+  }
+
+  // The server checks the admin, the report and the reason, and keeps the record. The report stays open: Mark Resolved closes it.
+  async function removeObject() {
+    const { id, reason } = removing;
+    const { data, error } = await supabase.rpc('admin_remove_reported_content', { report_id_param: id, reason_param: reason });
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: removeObject });
+    setRemoving(null);
+    if (data?.already) Alert.alert('Already gone', 'It was removed or cancelled before this. Nothing changed.');
+    load();
   }
 
   async function retryCleanup() {
@@ -262,6 +284,7 @@ export default function AdminReportsScreen({ navigation }) {
                   <Image source={{ uri: media[item.id].url }} style={styles.reportPhoto} resizeMode="contain" accessibilityLabel="Reported photo" />
                 ) : null}
                 {media[item.id] ? <Text style={styles.meta}>{reportMediaStatus(media[item.id])}</Text> : null}
+                {reportObjectStatus(objects[item.id]) ? <Text style={styles.meta}>{reportObjectStatus(objects[item.id])}</Text> : null}
               </View>
             ) : null}
             <Text style={styles.date}>{new Date(item.created_at).toLocaleString()}</Text>
@@ -284,6 +307,11 @@ export default function AdminReportsScreen({ navigation }) {
                     <Text style={styles.actionText}>Remove Photo</Text>
                   </TouchableOpacity>
                 ) : null}
+                {canRemoveReportedObject(item, objects[item.id]) && removing?.id !== item.id ? (
+                  <TouchableOpacity style={styles.actionButton} onPress={() => setRemoving({ id: item.id, reason: '' })} accessibilityRole="button">
+                    <Text style={styles.actionText}>{removeActionLabel(item.content_type)}</Text>
+                  </TouchableOpacity>
+                ) : null}
                 {!item.resolved && (
                   <TouchableOpacity style={[styles.actionButton, styles.resolveButton]} onPress={() => markResolved(item)}>
                     <Text style={styles.actionText}>Mark Resolved</Text>
@@ -291,6 +319,35 @@ export default function AdminReportsScreen({ navigation }) {
                 )}
               </View>
             )}
+            {removing?.id === item.id ? (
+              <View style={styles.evidence}>
+                <Text style={styles.meta}>Gone for everyone at once, including attendees and members, and repeats of a gathering. Its chat is deleted and unpaid bookings are cancelled. This can't be undone. The report keeps its copy.</Text>
+                <TextInput
+                  style={styles.reasonInput}
+                  value={removing.reason}
+                  onChangeText={(reason) => setRemoving({ id: item.id, reason })}
+                  placeholder="Why? Recorded with your account."
+                  placeholderTextColor={colors.textTertiary}
+                  maxLength={REMOVAL_REASON_MAX}
+                  multiline
+                  accessibilityLabel="Reason for removing"
+                />
+                <View style={styles.actions}>
+                  <TouchableOpacity style={styles.actionButton} onPress={() => setRemoving(null)} accessibilityRole="button">
+                    <Text style={styles.actionText}>Keep It</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.resolveButton, !removalReasonReady(removing.reason) && styles.actionDisabled]}
+                    onPress={removeObject}
+                    disabled={!removalReasonReady(removing.reason)}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: !removalReasonReady(removing.reason) }}
+                  >
+                    <Text style={styles.actionText}>Remove for Everyone</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : null}
           </View>
         )}
       />
@@ -320,8 +377,10 @@ const getStyles = (colors) => StyleSheet.create({
   meta: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
   details: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, fontStyle: 'italic' },
   date: { ...typography.small, color: colors.textTertiary, marginTop: spacing.sm },
-  actions: { flexDirection: 'row', marginTop: spacing.md, gap: spacing.sm },
+  actions: { flexDirection: 'row', flexWrap: 'wrap', marginTop: spacing.md, gap: spacing.sm },
   actionButton: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   resolveButton: { backgroundColor: colors.primary },
+  actionDisabled: { opacity: 0.4 },
+  reasonInput: { ...typography.caption, color: colors.textPrimary, marginTop: spacing.sm, padding: spacing.sm, minHeight: 64, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, textAlignVertical: 'top' },
   actionText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });

@@ -204,3 +204,19 @@ The owner authorized a narrow reliability fix to the staged migration. Nothing w
   production's S3 backend can't be observed from here.
 - A delete already sent can't be recalled. An admin reopening a released report after the DELETE left is too late, and the file is gone.
 - Tested on pg_net 0.7.1 and Storage 1.11.13 locally. Production runs pg_net 0.20.3 and a newer Storage: the real-deletion gate covers that gap.
+
+## 9. Launch requirements: Privacy Policy and legal review (owner, 2026-11-06). NOT DONE
+
+Required before outside users. Nothing here has been legally reviewed or approved; `docs/privacy.html` is unchanged.
+
+- **Update the reporting line.** Today: "you may report another user's profile or messages for review." That no longer covers what can be
+  reported once 0381, 0391 and 0392 are live (businesses, offers, photos, gatherings, communities).
+- **Disclose removal records (0393).** Admins can remove a reported gathering or community. A copy of its details and the list of people in
+  it are kept for 12 months for safety review; who removed it, when and why is kept after that. Its chat is deleted except messages someone
+  reported, which keep their report copy for the report's retention period.
+- **DRAFT wording, for legal review only:** "You may report profiles, messages, photos, gatherings, communities, businesses and offers. We
+  may remove content that breaks our rules. When we remove a gathering or community, we keep its details and the list of people in it for
+  12 months for safety review, and a record of the decision."
+- **Legal review must also cover:** the retention above, content needing legal preservation (the 12-month purges have no exception today,
+  section 7), whether a removal notice to the owner should give a reason or an appeal route, and the 0391 sentence still in draft (section 6).
+

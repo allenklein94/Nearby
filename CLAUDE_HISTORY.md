@@ -1,3 +1,18 @@
+# 2026-11-06: Admins remove reported gatherings + communities (20270393, staged)
+
+Owner approved 0392 as staged and asked for one final addition, then a stop. Built on `post-tier1/admin-content-removal`: migration +
+rollback, journey `contentRemoval`, `content-removal-concurrency.js`, `utils/reportObjects.js` + test, the card's Remove form, post-deploy
+step. The first plan was 0373's existing `moderation_state = 'removed'` (no new state, reversible). The catalog ruled it out: 74 SECURITY
+DEFINER functions read gatherings without the visibility rule (meet-up point, join, check-in, reminders), and held rows never had
+attendees, so nobody had audited those paths for existing participants. Deleting the row closes them by construction and the app
+already handles a deleted gathering. The cost is that it can't be undone. Reading the side effects found: memories fall back to ordinary
+Stories on SET NULL; the generator re-creates a series from past occurrences (race closed with a shared advisory lock, proven both
+orders); `notify_gathering_cancelled` would say "cancelled by the host". The journey found one more: a gated perk's check refuses the
+FK's SET NULL, so the delete failed. Same check also fails a host's cancel of such a gathering today: reported, not fixed. Bulk chat
+retention deliberately not built: unasked, a new privacy flow; chat goes as on a cancel, reported messages keep their copies. A verification
+run stopped on the 3-a-day community limit (test setup), leaving that replay dirty; all results are from a second, clean replay.
+Verification: CLAUDE.md line.
+
 # 2026-11-06: Direct gathering + community reports (20270392, staged)
 
 Owner reversed the earlier deferral: build now on a separate post-Tier-1 branch, tested, not merged or deployed, build 87 untouched. Built

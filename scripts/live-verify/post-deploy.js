@@ -222,6 +222,13 @@ const STEPS = {
       'a real iPhone: the link on GatheringDetail + CommunityDetail, absent for the host / creator, the sheet offers report only, the already-reported message; native review of ui.reportBlock.reportGathering / reportCommunity / alreadyReported (10 languages machine-authored)',
       'rollback = scripts/rollback/20270392_gathering_community_reports.rollback.sql (each report stays a plain report about the owner, copy kept, id in its details); defect only, owner decides',
       'a hidden object reportable, a forged copy kept or a report changing anything about the host = security defect: STOP, report'] },
+  20270393: { journeys: ['contentRemoval', 'objectReports', 'gatheringRowPrivacy', 'mediaReports'],
+    manual: ['read-only right after: private.content_removals has no client grants; admin_remove_reported_content + admin_get_report_objects execute for authenticated only; private.content_remove_* and private.refuse_removed_series have no client EXECUTE; cron job purge-content-removal-snapshots listed',
+      'REQUIRED BEFORE EXTERNAL USERS, through the real API with dedicated test accounts: an attendee, a community member, an invitee and a stranger each refused for a removal; an admin removes a test gathering + community from a report: all of them, the host and a signed-out invite link get nothing (row, chat, meet-up point, join, check-in); the report keeps its copy; the record says who, when, why; a repeating test gathering stays gone after the generator next runs',
+      'a real iPhone: Remove Gathering + Remove Community on Admin Reports, the reason form, the status line afterwards; an attendee with the screen already open: what they see until it reloads, and that its chat refuses a new message; the removal push opens Discover; native review not needed (English admin screen; push words English like the other pushes)',
+      're-export + publish the business website only with its own approval (Admin Reports)',
+      'rollback = scripts/rollback/20270393_admin_content_removal.rollback.sql: removed objects stay removed; who / when / why goes into each report\'s details; copy private.content_removals out first if the snapshots are still needed; defect only, owner decides',
+      'a non-admin able to remove, a removed object reachable by anyone, or a report copy changed = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
