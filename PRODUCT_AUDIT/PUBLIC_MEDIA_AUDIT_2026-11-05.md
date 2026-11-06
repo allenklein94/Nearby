@@ -149,10 +149,55 @@ The implementation and local results are accepted. Not deployed, not merged, bui
 1. **Orphaned files:** inventory path, owner folder, size and date before approval, and again right before the deploy. Deploying
    queues them for permanent deletion, so the inventory has to come first. A file that must be kept stops the deploy.
 2. **Real deletion:** prove on production, with a test account, that the hourly job's DELETE returns 200 and the object is gone.
-3. **Failed deletions logged, monitored, safely retried:** **NOT MET by 0391 as built.** A path leaves the queue when the call is
-   queued, the response is never read, and nothing retries or alerts. This gate can't pass without a small owner-approved change;
-   none was made, under the instruction not to expand development.
+3. **Failed deletions logged, monitored, safely retried:** built and tested locally, see section 8. Production's half stays open: gate 2
+   is what proves it works there.
 4. **Legal review of retention:** the 12-month rule must not automatically apply to suspected child sexual abuse material or to
    content under a legal preservation requirement. Those need a specialized, legally reviewed procedure.
 5. **Existing gates:** production prelude journeys, aborted rollback, grants, authorization, real-API and Storage checks, and migration
    order after 0390, each with its own approval.
+
+## 8. Deletion reliability fix (owner, 2026-11-05): in 0391 in place, STAGED, NOT DEPLOYED
+
+The owner authorized a narrow reliability fix to the staged migration. Nothing was deployed, merged, or changed in build 87.
+
+**Defects, both reproduced on the committed 0391 against the real Storage API before anything changed:**
+
+1. **Silent loss.** The queue row was deleted in the same transaction that queued the HTTP call, before any answer existed.
+2. **Evidence could be destroyed by its poster (found during this fix).** The path was concatenated raw into the URL. 0390's filename rule
+   allows `?`, and Storage accepts it in a key. Queuing `P/held.jpg?x` made the job's service-role DELETE land on `P/held.jpg`: the real
+   API answered 200, `held.jpg` was gone and `held.jpg?x` survived. A poster could use this on their own reported photo: post a memory
+   named that way, then remove it. Not live: it needs 0391's queue.
+
+**How it works now.** pg_net is asynchronous, so one hourly run sends and the next reads `net._http_response`.
+
+| Answer | Object row | Result |
+|---|---|---|
+| 2xx, or not-found (404, or Storage's older 400 with `statusCode: "404"`) | absent | Done. The only way a file leaves the queue. |
+| 2xx or not-found | present | Failed attempt (`still_present`) |
+| 401, 403 (also inside a 400) | any | Failed attempt (`refused`) |
+| 429 | any | Failed attempt (`rate_limited`) |
+| 5xx | any, even absent | Failed attempt (`server`); the retry's not-found then finishes it |
+| timeout, dropped connection | any | Failed attempt (`timeout`, `network`) |
+| no answer in 2 hours | any | Failed attempt (`no_response`) |
+
+- **Bounded retries:** after 1, 2, 4, 8, 16, then 24 hours; 10 attempts, then the file stops being sent and stays queued until an admin
+  re-arms it. An hourly job makes each attempt take at least two runs, so the full run is roughly a week.
+- **Logged:** `private.story_file_cleanup_log`, one row per failure, give-up, admin retry or job error; 90 days; no client access.
+- **Visible to admins:** failing = given up, 3+ attempts, or due and unsent for 24 hours (so a missing key can't hide). A file's clock starts
+  when nothing protects it, so releasing old evidence raises no alarm, and a DELETE on its way isn't a failure. One private push a day while
+  anything is failing, reusing `admin_report_received` (no new push type, no `send-push` redeploy), and a notice on Reports with counts,
+  reasons and Retry. Never a path.
+- **Concurrency:** one run at a time (advisory lock), row locks against a reopen, and each send re-checks the hold in its own statement.
+- **Evidence:** a held file is never sent, never counts as failing and never alerts, however old. Names are percent-encoded; a path with an
+  empty, `.` or `..` segment is never sent and stays visible to admins. So nobody can cause one on purpose, a Story's file can't be named
+  `.` or `..` (constraint `stories_media_name_safe`): 0390's rule allowed those names, the real Storage API accepts them as keys, and such a
+  file would never delete and would alert admins daily.
+- **Isolation:** a cleanup error is logged and can't stop Stories expiring.
+
+**Limits:**
+- The job's address moved to `private.story_media_settings.storage_url` so the local test can route it; production's value is the default.
+- If the hourly job itself stops, nothing alerts: `post-deploy.js` adds a manual check of `cron.job_run_details`.
+- "Gone" means Storage answered and its object row is absent. Bytes leaving the disk were checked locally on the file backend only;
+  production's S3 backend can't be observed from here.
+- A delete already sent can't be recalled. An admin reopening a released report after the DELETE left is too late, and the file is gone.
+- Tested on pg_net 0.7.1 and Storage 1.11.13 locally. Production runs pg_net 0.20.3 and a newer Storage: the real-deletion gate covers that gap.

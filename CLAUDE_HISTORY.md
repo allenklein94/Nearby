@@ -1,3 +1,14 @@
+# 2026-11-06: Story file deletion reliability (inside staged 20270391)
+
+Owner authorized a narrow fix for the gate 0391 failed: failed Storage deletions logged, monitored, safely retried. Both defects were
+reproduced on committed 0391 first (4 of 24 journey tests failing): a queue row deleted before any answer existed, and a raw path in
+the URL, so a name ending `?x` made the service-role DELETE land on another file, letting a poster destroy their own held evidence.
+pg_net is asynchronous, so one hourly run sends and the next reads `net._http_response`. Added: `private.story_file_cleanup_log`,
+bounded backoff, admin status/retry RPCs, the Reports notice (`utils/storyFileCleanup.js`), `stories_media_name_safe`, and
+`media-cleanup-faults.js` + `fault-proxy.js`, which drive real pg_net and real Storage with failures injected per file. The first
+rollback proof was vacuous (it compared states that never had 0391 applied); it now reports whether the apply changed anything.
+A codespace restart interrupted the final run; it was rebuilt and re-run in full. Verification: CLAUDE.md line, audit section 8.
+
 # 2026-11-05: Photo reports + removal + real file deletion (20270391, staged)
 
 Owner approved 0390 as staged only and decided: memory photos stay on (server visibility, reporting, host or admin removal); build a

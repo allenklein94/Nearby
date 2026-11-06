@@ -1,13 +1,16 @@
 -- Rollback of 20270391 (photo reports, removal, real file deletion). A photo report is kept as a plain report about the poster: its
--- server copy stays in content_excerpt, "[photo <story id> <path>]" goes at the start of its details. Holds and the queue go, so
--- held files stay in the bucket, unreadable to anyone but the service role, and need listing first. The expiry job returns
+-- server copy stays in content_excerpt, "[photo <story id> <path>]" goes at the start of its details. Holds, the queue and its
+-- failure log go, so held and still-queued files stay in the bucket, unreadable to anyone but the service role, and need listing first. The expiry job returns
 -- to its old POST, which deletes nothing. Defect only; owner decides.
 drop policy if exists "Admins can view reported media" on storage.objects;
 drop function if exists public.admin_report_media_visible(text);
 drop function if exists public.admin_remove_reported_media(uuid, text);
 drop function if exists public.admin_get_report_media(uuid[]);
 drop function if exists public.remove_gathering_memory(uuid);
+drop function if exists public.admin_retry_story_file_cleanup();
+drop function if exists public.admin_story_file_cleanup_status();
 
+alter table public.stories drop constraint if exists stories_media_name_safe;
 drop trigger if exists queue_story_file on public.stories;
 drop function if exists private._queue_story_file();
 drop trigger if exists report_media_follow_outcome on public.report_actions;
@@ -31,8 +34,17 @@ alter table public.reports add constraint reports_content_type_check check (
   or content_type in ('message', 'gathering_message', 'community_message', 'plan_message', 'business_message', 'match_chat',
                       'business_offer', 'business'));
 
+drop function if exists private._story_file_alert();
+drop function if exists private._story_files_failing();
+drop function if exists private._story_file_send(text);
+drop function if exists private._story_file_read_responses();
+drop function if exists private._story_file_failed(text, integer, text, text, boolean);
+drop function if exists private._story_file_path_unsafe(text);
+drop function if exists private._storage_url_path(text);
 drop table if exists private.story_media_removals;
+drop table if exists private.story_file_cleanup_log;
 drop table if exists private.story_file_cleanup;
+alter table private.story_media_settings drop column if exists storage_url;
 drop table if exists private.report_media_evidence;
 
 -- 20270381's function, verbatim

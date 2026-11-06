@@ -7,6 +7,9 @@
 //   3. report vs the host removing it.
 //   4. two people report the same photo at once: both filed, one held file, resolving one keeps it.
 //   5. the job run twice at once: each file gets one DELETE, nothing fails.
+//   6. two runs reading the same answers: a failure counts and logs once, a success finishes once, no file is lost.
+//   7. an admin reopening a released report vs the job: reopened first = no DELETE; the job first = its one DELETE, and the reopen
+//      waits for it, never interleaves.
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/media-report-concurrency.js
 const url = process.env.NEARBY_LOCAL_DB_URL;
 if (!url || !/@(localhost|127\.|172\.|10\.|192\.168\.)/.test(url)) {
@@ -139,12 +142,57 @@ async function run(step) {
     check(both.every((r) => r.ok), `no failure or deadlock (${both.map((r) => r.error || 'ok').join(', ')})`);
     const counts = await Promise.all(paths.map(queued));
     check(counts.every((c) => c === 1), `each of the ${paths.length} files got exactly one DELETE (${Math.min(...counts)}-${Math.max(...counts)})`);
+
+    console.log('6. Two runs reading the same answers');
+    await db.query('delete from private.story_file_cleanup');
+    let reads = true;
+    for (let i = 0; i < ROUNDS; i += 1) {
+      await db.query('delete from private.story_file_cleanup_log');
+      const failing = [...Array(10)].map((_, n) => `${P}/fail-${i}-${n}.jpg`);
+      const done = [...Array(10)].map((_, n) => `${P}/done-${i}-${n}.jpg`);
+      const rows = await db.query(`insert into private.story_file_cleanup (media_path, request_id, sent_at)
+        select p, floor(random() * 1e12)::bigint + 1000000, now() from unnest($1::text[]) p returning media_path, request_id`, [[...failing, ...done]]);
+      for (const r of rows.rows) {
+        await db.query('insert into net._http_response (id, status_code, content) values ($1, $2, $3)', [r.request_id, failing.includes(r.media_path) ? 503 : 200, '{}']);
+      }
+      const pair = await Promise.all([run({ sql: 'select delete_expired_stories()' }), run({ sql: 'select delete_expired_stories()' })]);
+      const state = (await db.query(`select count(*) filter (where attempts = 1)::int one, count(*)::int n from private.story_file_cleanup where media_path = any($1)`, [[...failing, ...done]])).rows[0];
+      const logged = (await db.query(`select count(*)::int n, count(distinct media_path)::int d from private.story_file_cleanup_log where kind = 'server'`)).rows[0];
+      if (!pair.every((r) => r.ok) || state.n !== 10 || state.one !== 10 || logged.n !== 10 || logged.d !== 10) { reads = false; console.log('   ', state, logged, pair.map((r) => r.error)); }
+      await db.query('delete from private.story_file_cleanup');
+    }
+    check(reads, `each failure counted and logged once, each success finished once (${ROUNDS} rounds)`);
+
+    console.log('7. Reopen vs the job');
+    let [reopenFirst, jobFirst, evidenceSafe] = [0, 0, true];
+    for (let i = 0; i < ROUNDS * 2; i += 1) {
+      const photo = await post(G);
+      const rep = await run({ sub: R, sql: reportSql, args: [R, photo.id] });
+      await db.query('delete from stories where id = $1', [photo.id]);
+      await db.query(`insert into report_actions (report_id, action) values ($1, 'resolved_no_action')`, [rep.rows[0].id]);
+      await db.query('delete from net.http_request_queue');
+      const reopenAhead = i % 2 === 0;
+      const steps = [
+        run({ sql: `insert into report_actions (report_id, action) values ($1, 'reopened')`, args: [rep.rows[0].id], wait: reopenAhead ? 0 : 50 }),
+        run({ sql: 'select delete_expired_stories()', wait: reopenAhead ? 50 : 0 }),
+      ];
+      const [a, b] = await Promise.all(steps);
+      const sends = await queued(photo.path);
+      const hold = (await db.query('select count(*)::int n from private.report_media_evidence where media_path = $1 and released_at is null', [photo.path])).rows[0].n;
+      if (!a.ok || !b.ok || hold !== 1) { evidenceSafe = false; console.log('   ', a.error, b.error, hold); }
+      if (reopenAhead) { reopenFirst += 1; if (sends !== 0) evidenceSafe = false; } else { jobFirst += sends; }
+      await db.query('delete from reports where id = $1', [rep.rows[0].id]).catch(() => {});
+      await db.query('delete from private.story_file_cleanup where media_path = $1', [photo.path]);
+    }
+    check(evidenceSafe, `a report reopened first is never followed by a DELETE (${reopenFirst} rounds), always held after`);
+    check(jobFirst > 0, `the other order really happened (${jobFirst} rounds the job got there first)`);
   } finally {
     await db.query('delete from net.http_request_queue');
     await db.query('delete from reports where reporter_id = any($1)', [people]);
     await db.query('delete from stories where user_id = any($1)', [people]);
     await db.query(`delete from private.story_media_removals where gathering_id = $1`, [G]);
     await db.query(`delete from private.story_file_cleanup where media_path like $1`, [`${P}/%`]);
+    await db.query(`delete from private.story_file_cleanup_log where media_path like $1`, [`${P}/%`]);
     await db.query('delete from gatherings where id = $1', [G]);
     await db.query('delete from friendships where user_a = any($1)', [people]);
     await db.query('delete from profiles where id = any($1)', [people]);

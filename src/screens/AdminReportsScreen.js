@@ -11,6 +11,7 @@ import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
 import { reportReasonLabel, sortReportQueue, isPriorityReportReason } from '../utils/reportReasons';
 import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
 import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
+import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
 // review cases (identical photo + an approved rule; 20270363: behaviour patterns, counts only) are listed above the reports. Both work on a database without those
@@ -37,6 +38,7 @@ export default function AdminReportsScreen({ navigation }) {
   const [loadError, setLoadError] = useState(false);
   const [cases, setCases] = useState([]);
   const [media, setMedia] = useState({});
+  const [cleanup, setCleanup] = useState(null);
 
   useEffect(() => {
     load();
@@ -60,6 +62,9 @@ export default function AdminReportsScreen({ navigation }) {
       await loadMedia(data);
       const listed = await supabase.rpc('admin_list_account_review_cases');
       setCases(listed.error ? [] : listed.data || []);
+      // 20270391: files that won't delete. An older database simply has nothing to show.
+      const fileStatus = await supabase.rpc('admin_story_file_cleanup_status');
+      setCleanup(fileStatus.error ? null : storyFileCleanupNotice(fileStatus.data));
     } catch (e) {
       setLoadError(true);
     } finally {
@@ -78,6 +83,13 @@ export default function AdminReportsScreen({ navigation }) {
       ? await supabase.storage.from('stories').createSignedUrls(paths, ADMIN_PHOTO_LINK_SECONDS)
       : { data: [] };
     setMedia(reportMediaByReport(held.data, signed.error ? [] : signed.data));
+  }
+
+  async function retryCleanup() {
+    const { error } = await supabase.rpc('admin_retry_story_file_cleanup');
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: retryCleanup });
+    Alert.alert('Retry queued', 'The next hourly run tries them again.');
+    load();
   }
 
   function removePhoto(item) {
@@ -188,9 +200,23 @@ export default function AdminReportsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
         refreshControl={<PullToRefresh refreshing={loading} onRefresh={load} />}
-        ListHeaderComponent={cases.length ? (
+        ListHeaderComponent={cases.length || cleanup ? (
           <View>
-            <Text style={styles.sectionTitle}>Account review</Text>
+            {cleanup ? (
+              <View style={styles.card}>
+                <Text style={styles.reason}>{cleanup.title}</Text>
+                <Text style={styles.meta}>{cleanup.reasons}</Text>
+                <Text style={styles.meta}>Nobody can see these files. They stay in Storage until deleted.</Text>
+                {cleanup.canRetry ? (
+                  <View style={styles.actions}>
+                    <TouchableOpacity style={[styles.actionButton, styles.resolveButton]} onPress={retryCleanup} accessibilityRole="button">
+                      <Text style={styles.actionText}>Retry</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
+            {cases.length ? <Text style={styles.sectionTitle}>Account review</Text> : null}
             {cases.map((c) => (
               <View key={c.id} style={styles.card}>
                 <Text style={styles.reason}>{CASE_REASON[c.reason] || c.reason}</Text>
