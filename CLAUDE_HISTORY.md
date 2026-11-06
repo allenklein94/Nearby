@@ -1,3 +1,15 @@
+# 2026-11-06: Direct gathering + community reports (20270392, staged)
+
+Owner reversed the earlier deferral: build now on a separate post-Tier-1 branch, tested, not merged or deployed, build 87 untouched. Built
+on `post-tier1/gathering-community-reports`: migration + rollback, journey `objectReports`, `object-report-concurrency.js`, post-deploy
+step, `OBJECT_REPORT_CODES`, the two links. Followed the business/story pattern: invoker branch proves visibility, a definer trigger
+sets the owner and copy. Neither screen has a ⋯ menu, so the links reuse "Report business"'s quiet link instead of a new menu. The
+journey caught a defect in the first draft: the duplicate check ran on the client-sent reporter_id before RLS refused it, so anyone
+could learn whether another person had reported an object; it now runs only for auth.uid(). The new race script first deleted the
+shared rate-limit rules and left its people behind, failing 8 journeys in the second pass; it now restores both (rules hash equal
+before and after). The rollback was compared by diff against the live schema (only 0392's items) and re-apply identity, not against
+a pristine 0391-only replay. Verification: CLAUDE.md line.
+
 # 2026-11-06: Story file deletion reliability (inside staged 20270391)
 
 Owner authorized a narrow fix for the gate 0391 failed: failed Storage deletions logged, monitored, safely retried. Both defects were

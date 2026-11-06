@@ -53,7 +53,8 @@ const report = (sub, id, wait = 0) => ({ sub, wait, sql: `insert into reports (r
     await db.query(`insert into profiles (id, display_name, birthdate, created_at, terms_accepted_at, timezone, photo_verified, profile_hidden)
       values ($1, $2, date '1994-05-01', now() - interval '20 days', now(), 'America/New_York', true, false)`, [u, `Race ${i}`]);
   }
-  await db.query(`delete from private.rate_limit_rules where action in ('report', 'urgent_report', 'gathering_create')`);
+  // the report caps would stop these rounds; put back exactly below, with everything else this script made
+  const { rows: caps } = await db.query(`delete from private.rate_limit_rules where action in ('report', 'urgent_report') returning *`);
   const gathering = async () => {
     const id = crypto.randomUUID();
     await db.query(`insert into gatherings (id, host_id, title, description, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public)
@@ -99,6 +100,14 @@ const report = (sub, id, wait = 0) => ({ sub, wait, sql: `insert into reports (r
     check(res.every((x) => x.ok) && consistent, `round ${i}: copy is wholly ${filed?.content_excerpt.slice(11, 13)}`);
   }
 
+  await db.query(`delete from reports where reporter_id = any($1)`, [[H, R, R2]]);
+  await db.query(`delete from gatherings where host_id = $1`, [H]);
+  await db.query(`delete from push_outbox where recipient_id = any($1)`, [[H, R, R2]]);
+  await db.query(`delete from auth.users where id = any($1)`, [[H, R, R2]]);
+  for (const c of caps) {
+    const keys = Object.keys(c);
+    await db.query(`insert into private.rate_limit_rules (${keys.join(', ')}) values (${keys.map((_, i) => `$${i + 1}`).join(', ')})`, keys.map((k) => c[k]));
+  }
   await db.end();
   console.log(failures ? `\n${failures} FAILED` : '\nall passed');
   process.exit(failures ? 1 : 0);

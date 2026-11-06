@@ -50,7 +50,8 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
       presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => submitReport() });
       return;
     }
-    showSuccessToast(t(error ? 'ui.reportBlock.alreadyReported' : 'ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
+    if (error) showSuccessToast(t('ui.reportBlock.alreadyReported'), t('ui.reportBlock.thankYouOurTeamWill')); // a duplicate: nothing lost
+    else showSuccessToast(t('ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
     setSelectedReason(null);
     setDetails('');
     onClose();
