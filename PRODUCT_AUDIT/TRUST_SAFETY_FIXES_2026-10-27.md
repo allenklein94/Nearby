@@ -1203,3 +1203,15 @@ unauthorized access, the secret kept outside any client-reachable object (with 0
 the 0348-0378 prelude + an aborted rollback round trip on prod; (3) grants vs prod; (4) Privacy Policy sentence approved +
 published; (5) threshold validated against legitimate shared text. The one-word-change evasion is ACCEPTED for this version:
 no fuzzy text matching, no cross-account behavioural clustering, no further security features (owner).
+
+## Launch requirement: direct reporting of gatherings and communities (owner, 2026-11-06)
+
+Blocks outside users, not build 87 or the owner's own Tier 1 testing. NOT BUILT. Include it in the consolidated deployment checklist.
+
+- Found 2026-11-06: no report action on the gathering or community screen, and `reports.content_type` has no such type. A person can only
+  report the host's profile, an attendee or a chat message, so the admin may not see which gathering prompted the report.
+- Scope: Report Gathering and Report Community in the existing ⋯ menus; the existing report form, admin queue and moderation.
+- Evidence: the server keeps the reported title, description and relevant metadata at report time, surviving later edit or deletion.
+- Access: works without joining, only if the reporter is authorized to view the content. Privacy rules unchanged.
+- Tests: direct-API bypasses, including a fabricated id and content the reporter can't see.
+- Delivery: a separate post-Tier-1 migration + app build, each with its own approval.
