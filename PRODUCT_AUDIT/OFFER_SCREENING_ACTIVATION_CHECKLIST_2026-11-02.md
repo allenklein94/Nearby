@@ -34,8 +34,11 @@ Deploying 0372 ahead of them would permanently block 0348-0371 (same reason 0367
 standalone bypass fix outside the chain would be a new migration + edge redesign (declined: no redesign).
 
 Exposure meanwhile is narrow (section 1): only a manager of an approved business can call the functions directly, and
-the only such business is the owner's. **Recommended interim gate [APPROVAL: owner decision]:** approve no external
-business application until 0372 is live and verified. Under that gate the live bypass has no external user.
+the only such business is the owner's. **Interim gate APPROVED (owner, 2026-11-06), a LAUNCH REQUIREMENT:** no external
+business account may be approved until 0372 and its screening function are deployed, tested against the real screening
+provider, and shown to reject unscreened direct API submissions: D2, D4 and D7 below all passed with real provider
+responses, never mocked. The gate is procedural: nothing in the admin approval flow enforces it, so every business approval
+checks this line first. It doesn't close the bypass; it means the bypass has no external user.
 
 ## 3. Activation checklist (in order; stop at the first failure and report)
 
@@ -95,11 +98,14 @@ business application until 0372 is live and verified. Under that gate the live b
       the business manager, content captured; package creation via screening.
 - [ ] D6 Native review of `ui.requestDetail.reportThisOffer` / `offerMoreA11y`, `ui.shared.errors.offerContactInfo`
       before public release.
+- [ ] D7 **Real provider, owner requirement 2026-11-06, needed before ANY outside business:** one acceptable submission
+      passes screening AND one deliberately unsafe submission is rejected, both with actual provider responses (no contact
+      details in the unsafe one, so the provider decides, not D4's rule). With D2, this proves the system works live.
 
 ## 4. Actions that need the owner's explicit approval
 1. Anthropic credit / billing (A1), or naming another provider (code change, separate decision).
 2. The real screening calls A2 + A3 (small spend; writes screening rows / a test reply in prod if run there).
-3. The interim gate: no external business approved until 0372 is live (section 2).
+3. ~~The interim gate~~ APPROVED 2026-11-06 (section 2). The owner's real-provider + bypass tests (D2, D7) must pass before any outside business.
 4. Each migration 0348 ... 0371 before it, each its own approval (existing sequence).
 5. The 0372 + `screen-business-content` coordinated release (C1-C2), one approval naming both.
 6. Any rollback (C3).
