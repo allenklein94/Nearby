@@ -23,8 +23,11 @@ export const REPORT_REASONS = [
 export const BUSINESS_REPORT_CODES = ['impersonation', 'spam_scam', 'inappropriate_photo', 'harassment', 'other'];
 // What a report about a PHOTO may say (a Story or a gathering memory, 20270391): about what it shows.
 export const MEDIA_REPORT_CODES = ['inappropriate_photo', 'harassment', 'spam_scam', 'underage_user', 'other'];
+// What a report about a GATHERING or COMMUNITY may say (20270392): about what it is, not about a dating profile.
+export const OBJECT_REPORT_CODES = ['spam_scam', 'inappropriate_photo', 'harassment', 'impersonation', 'underage_user', 'other'];
+const CODES_BY_TARGET = { business: BUSINESS_REPORT_CODES, media: MEDIA_REPORT_CODES, gathering: OBJECT_REPORT_CODES, community: OBJECT_REPORT_CODES };
 export function reportReasonsFor(target) {
-  const codes = target === 'business' ? BUSINESS_REPORT_CODES : target === 'media' ? MEDIA_REPORT_CODES : null;
+  const codes = CODES_BY_TARGET[target];
   return codes ? codes.map((c) => REPORT_REASONS.find((r) => r.code === c)) : REPORT_REASONS;
 }
 

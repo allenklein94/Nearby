@@ -1,7 +1,7 @@
 // Report reasons (owner 2026-10-31, migration 20270370): one table for the app, mirroring private.report_reason_code.
 const fs = require('fs');
 const path = require('path');
-const { REPORT_REASONS, SYSTEM_REPORT_REASONS, reportReasonCode, reportReasonLabel, isUrgentReportReason, isPriorityReportReason, reportReasonsFor, sortReportQueue, BUSINESS_REPORT_CODES } = require('./reportReasons');
+const { REPORT_REASONS, SYSTEM_REPORT_REASONS, reportReasonCode, reportReasonLabel, isUrgentReportReason, isPriorityReportReason, reportReasonsFor, sortReportQueue, BUSINESS_REPORT_CODES, OBJECT_REPORT_CODES } = require('./reportReasons');
 const reportBlock = require('../i18n/ui/reportBlock').default;
 
 const ROOT = path.join(__dirname, '..', '..');
@@ -26,6 +26,9 @@ describe('report reasons', () => {
   test('a business report offers business reasons only (no Fake profile, no Underage user)', () => {
     expect(reportReasonsFor('business').map((r) => r.code)).toEqual(BUSINESS_REPORT_CODES);
     expect(BUSINESS_REPORT_CODES).toEqual(['impersonation', 'spam_scam', 'inappropriate_photo', 'harassment', 'other']);
+    expect(reportReasonsFor('gathering').map((r) => r.code)).toEqual(OBJECT_REPORT_CODES);
+    expect(reportReasonsFor('community').map((r) => r.code)).toEqual(OBJECT_REPORT_CODES);
+    expect(reportReasonsFor('gathering').every(Boolean)).toBe(true);
     expect(reportReasonsFor('person')).toBe(REPORT_REASONS);
     expect(reportReasonsFor(undefined)).toBe(REPORT_REASONS);
   });

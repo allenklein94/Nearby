@@ -214,6 +214,14 @@ const STEPS = {
       'friends-only Story photos still need their own owner-approved migration, after these checks pass; public Stories need image screening too; Story video needs video moderation',
       'rollback = scripts/rollback/20270391_media_reports.rollback.sql (a photo report stays as a plain report about the poster; held files stay in the bucket, listed in each report\'s details; the job stops deleting again); defect only, owner decides',
       'any refused case accepted, any held file changed, or any file readable by a non-admin = security defect: STOP, report'] },
+  20270392: { journeys: ['objectReports', 'impersonationBusinessReports', 'reportReasonCodes', 'mediaReports'],
+    manual: ['read-only right after: content_type check includes gathering + community; trigger capture_report_content_object; private._capture_report_object has no client EXECUTE',
+      'REQUIRED BEFORE EXTERNAL USERS, through the real API with dedicated test accounts: a public gathering + community reported without joining; an invite-only gathering, a private community, a fabricated id and your own = refused, and the refusal for a hidden object is identical to an unknown id; a sent reported_id / content_excerpt is replaced; a second report = report_duplicate; edit + delete the object: the admin still reads the original copy',
+      'DEPLOY GATE: this migration live + verified BEFORE any build with Report Gathering / Report Community reaches users; on an older database the report files about the host with only the id in its details',
+      're-export + publish the business website only with its own approval (Admin Reports + Admin Review show the new types)',
+      'a real iPhone: the link on GatheringDetail + CommunityDetail, absent for the host / creator, the sheet offers report only, the already-reported message; native review of ui.reportBlock.reportGathering / reportCommunity / alreadyReported (10 languages machine-authored)',
+      'rollback = scripts/rollback/20270392_gathering_community_reports.rollback.sql (each report stays a plain report about the owner, copy kept, id in its details); defect only, owner decides',
+      'a hidden object reportable, a forged copy kept or a report changing anything about the host = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

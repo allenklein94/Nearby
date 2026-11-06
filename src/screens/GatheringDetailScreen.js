@@ -76,6 +76,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import { bookedPartySize } from '../utils/acceptedBooking';
 import PlanCompletionRow from '../components/PlanCompletionRow';
+import ReportBlockModal from '../components/ReportBlockModal';
 import { getGatheringPlanCompletion, formatPlaceStatusLabel } from '../utils/planCompletion';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
@@ -135,6 +136,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [shareInChatVisible, setShareInChatVisible] = useState(false);
+  const [reporting, setReporting] = useState(false);
   // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
   const canInvite = !!gathering && (gathering.isHost || gathering.allow_attendee_invites !== false);
   const [countdownStats, setCountdownStats] = useState(null);
@@ -1492,8 +1494,29 @@ export default function GatheringDetailScreen({ route, navigation }) {
             justJoined={justJoined}
             onChanged={load}
           />
+
+          {/* Report Gathering (20270392): a quiet link, as on a business; joining isn't needed. Never for the host. */}
+          {!gathering.isHost && (
+            <TouchableOpacity
+              onPress={() => setReporting(true)}
+              style={styles.reportLink}
+              accessibilityLabel={t('ui.reportBlock.reportBusinessTitle', { name: gathering.title })}
+              accessibilityRole="button"
+            >
+              <Text style={styles.reportLinkText}>{t('ui.reportBlock.reportGathering')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
+
+      <ReportBlockModal
+        visible={reporting}
+        onClose={() => setReporting(false)}
+        reportedUserId={gathering.host_id}
+        reportedContent={{ type: 'gathering', id: gathering.id }}
+        target="gathering"
+        title={t('ui.reportBlock.reportBusinessTitle', { name: gathering.title })}
+      />
 
       <GatheringIntentModal
         visible={intentModalVisible}
@@ -1527,6 +1550,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   loadingContainer: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   notFoundText: { color: colors.textSecondary, fontSize: 15 },
+  reportLink: { alignSelf: 'center', paddingVertical: spacing.sm, marginTop: spacing.md },
+  reportLinkText: { color: colors.textTertiary, fontSize: 13 },
   hero: { width: '100%', height: HERO_HEIGHT },
   heroFallback: { alignItems: 'center', justifyContent: 'center' },
   heroFallbackIcon: { fontSize: 72 },

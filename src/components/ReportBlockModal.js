@@ -7,7 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation, showSuccessToast } from '../motion';
-import { reportRow, insertReport } from '../utils/reportContent';
+import { reportRow, insertReport, isDuplicateReport } from '../utils/reportContent';
 import { reportReasonsFor } from '../utils/reportReasons';
 // One reason table (utils/reportReasons.js): the chip label is translated (ui.reportBlock.reason.<key>); what is saved is
 // the reason's fixed `legacy` value, which the database maps to its stable code (20270370). Never a translated string.
@@ -22,9 +22,11 @@ const reasonChips = (target) => reportReasonsFor(target).map((r) => ({ value: r.
 // person named (the server sets nobody), title = title prop ("Report {name}").
 // target 'media' + reportedContent { type: 'story', id } (20270391, a Story or a gathering memory): the reasons about a photo;
 // Block stays, since the person who posted it is known.
+// target 'gathering' / 'community' + reportedContent { type, id } (20270392): report only, reportedUserId = the host or creator (the
+// server sets it from the object; the client value is only the older-database fallback).
 export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly: reportOnlyProp = false, reportedContent = null, target = 'person', title = null }) {
   const REPORT_REASON_CHIPS = reasonChips(target);
-  const reportOnly = reportOnlyProp || target === 'business';
+  const reportOnly = reportOnlyProp || target === 'business' || target === 'gathering' || target === 'community';
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -44,11 +46,11 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
     const { error } = await insertReport((r) => supabase.from('reports').insert(r), row);
 
     setSubmitting(false);
-    if (error) {
+    if (error && !isDuplicateReport(error)) {
       presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => submitReport() });
       return;
     }
-    showSuccessToast(t('ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
+    showSuccessToast(t(error ? 'ui.reportBlock.alreadyReported' : 'ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
     setSelectedReason(null);
     setDetails('');
     onClose();

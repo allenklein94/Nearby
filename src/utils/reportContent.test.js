@@ -1,4 +1,5 @@
-import { reportRow, shouldRetryWithoutContent, withoutContent, insertReport, canReportBusiness } from './reportContent';
+import { reportRow, shouldRetryWithoutContent, withoutContent, insertReport, canReportBusiness, isDuplicateReport } from './reportContent';
+import { readFileSync } from 'fs';
 
 describe('report content reference (I3, 20270355): never lost because of the reference', () => {
   const base = { reporterId: 'r', reportedId: 'p', reason: 'Spam or scam', details: '' };
@@ -81,5 +82,43 @@ describe('report content reference (I3, 20270355): never lost because of the ref
     const res = await insertReport(run, reportRow({ reporterId: 'r', reportedId: null, reason: 'Impersonation', content: { type: 'business', id: 'b1' } }));
     expect(res.error).toBeNull();
     expect(calls[2]).toEqual({ reporter_id: 'r', reported_id: null, reason: 'Fake profile', details: '[business b1] [Impersonation]' });
+  });
+});
+
+describe('a gathering or community itself (20270392)', () => {
+  const screens = (f) => readFileSync(`src/screens/${f}`, 'utf8');
+  const row = (type) => reportRow({ reporterId: 'r', reportedId: 'owner', reason: 'Spam or scam', details: 'why', content: { type, id: 'o1' } });
+
+  test.each(['gathering', 'community'])('%s: the row carries the reference; the server replaces the person', (type) => {
+    expect(row(type)).toEqual({ reporter_id: 'r', reported_id: 'owner', reason: 'Spam or scam', details: 'why', content_type: type, content_id: 'o1' });
+  });
+
+  test.each(['gathering', 'community'])('%s: an older database, or one just gone: filed about the owner, id in the details, never lost', async (type) => {
+    const calls = [];
+    const run = async (r) => {
+      calls.push(r);
+      return { error: calls.length === 1 ? { code: '23514', message: 'violates check constraint "reports_content_type_check"' } : null };
+    };
+    expect((await insertReport(run, row(type))).error).toBeNull();
+    expect(calls[1]).toEqual({ reporter_id: 'r', reported_id: 'owner', reason: 'Spam or scam', details: `[${type} o1] why` });
+    expect(shouldRetryWithoutContent({ hint: 'report_content_mismatch' }, row(type))).toBe(true);
+  });
+
+  test('a duplicate is never retried and is recognised, so the sheet doesn\'t offer Try Again', async () => {
+    const calls = [];
+    const res = await insertReport(async (r) => { calls.push(r); return { error: { hint: 'report_duplicate' } }; }, row('gathering'));
+    expect(calls).toHaveLength(1);
+    expect(isDuplicateReport(res.error)).toBe(true);
+    expect(isDuplicateReport({ hint: 'rate_limited' })).toBe(false);
+    expect(isDuplicateReport(null)).toBe(false);
+  });
+
+  test('the link is on both screens, gated on not being the owner, and passes the reference', () => {
+    const gathering = screens('GatheringDetailScreen.js');
+    expect(gathering).toContain("{!gathering.isHost && (\n            <TouchableOpacity\n              onPress={() => setReporting(true)}");
+    expect(gathering).toContain("reportedContent={{ type: 'gathering', id: gathering.id }}");
+    const community = screens('CommunityDetailScreen.js');
+    expect(community).toContain("{!isCreator && (\n          <TouchableOpacity\n            onPress={() => setReporting(true)}");
+    expect(community).toContain("reportedContent={{ type: 'community', id: community.id }}");
   });
 });

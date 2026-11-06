@@ -30,6 +30,7 @@ import { isGatheringUpcoming } from '../utils/objectState';
 import { unlockStatus } from '../utils/unlockProgress';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
+import ReportBlockModal from '../components/ReportBlockModal';
 import { displayGatheringDateTime } from '../i18n/display';
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
@@ -57,6 +58,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
   const [isMember, setIsMember] = useState(false);
   const [isCreator, setIsCreator] = useState(false);
   const [myId, setMyId] = useState(null);
+  const [reporting, setReporting] = useState(false);
   const [memberCount, setMemberCount] = useState(null); // null = not known (never shown as 0)
   const [gatherings, setGatherings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -833,7 +835,28 @@ export default function CommunityDetailScreen({ route, navigation }) {
             ))}
           </>
         )}
+
+        {/* Report Community (20270392): a quiet link, as on a business; joining isn't needed. Never for the creator. */}
+        {!isCreator && (
+          <TouchableOpacity
+            onPress={() => setReporting(true)}
+            style={styles.reportLink}
+            accessibilityLabel={t('ui.reportBlock.reportBusinessTitle', { name: community.name })}
+            accessibilityRole="button"
+          >
+            <Text style={styles.reportLinkText}>{t('ui.reportBlock.reportCommunity')}</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
+
+      <ReportBlockModal
+        visible={reporting}
+        onClose={() => setReporting(false)}
+        reportedUserId={community.creator_id}
+        reportedContent={{ type: 'community', id: community.id }}
+        target="community"
+        title={t('ui.reportBlock.reportBusinessTitle', { name: community.name })}
+      />
 
       <InviteFriendsModal
         visible={inviteModalVisible}
@@ -980,6 +1003,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   areaText: { color: colors.textSecondary, fontSize: 13, marginTop: 2, marginBottom: spacing.xs },
   editAreaLink: { color: colors.primary, fontSize: 12, fontWeight: '700' },
   statusNotice: { color: colors.textTertiary, fontSize: 13, fontWeight: '600', marginBottom: spacing.xs },
+  reportLink: { alignSelf: 'center', paddingVertical: spacing.sm, marginTop: spacing.md },
+  reportLinkText: { color: colors.textTertiary, fontSize: 13 },
   manageSection: { marginTop: spacing.sm, marginBottom: spacing.lg },
   manageSectionLabel: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
   manageLinkRow: { marginBottom: spacing.md },

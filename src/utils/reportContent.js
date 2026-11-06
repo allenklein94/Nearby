@@ -14,16 +14,27 @@
 //   - a photo ('story', 20270391: a Story or a gathering memory, one row in `stories`): the server sets who posted it and holds
 //     the file as evidence, so what the client sends as the person is ignored. Without that type (an older database, or a
 //     photo that has just gone) the report is still filed about the person who posted it, with the photo's id in its details.
+//   - a gathering or community itself ('gathering' / 'community', 20270392): the server decides who it is about (the host or
+//     creator) and keeps its own copy, so what the client sends as the person is only the fallback: without that type (an older
+//     database, or one that has just gone) the report is still filed about that person, with the object's id in its details.
+//     A second report on the same object while the first is open is refused ('report_duplicate'): nothing is lost, so the
+//     sheet says so rather than offering Try Again.
 //   - 'Impersonation' (20270381): a database with reason codes but without that reason refuses it ('report_reason_invalid');
 //     the same report is then filed as 'Fake profile' with "[Impersonation]" at the start of its details. Never lost.
-export const REPORT_CONTENT_TYPES = ['message', 'gathering_message', 'community_message', 'plan_message', 'business_message', 'match_chat', 'business_offer', 'business', 'story'];
+export const REPORT_CONTENT_TYPES = ['message', 'gathering_message', 'community_message', 'plan_message', 'business_message', 'match_chat', 'business_offer', 'business', 'story', 'gathering', 'community'];
 // reports about something that names no person on the client (the server decides who, if anyone)
 const NO_PERSON_TYPES = ['business_offer', 'business'];
+// reports the server attaches to the person behind them (the poster, the host, the creator)
+const SERVER_PERSON_TYPES = ['story', 'gathering', 'community'];
 
 // "Report business" (20270381) is offered on a business's preview sheet and profile to anyone except the people who
 // manage that business (the server refuses those too). myPartnerId = the viewer's managed business, if any.
 export function canReportBusiness(partnerId, myPartnerId) {
   return !!partnerId && partnerId !== myPartnerId;
+}
+
+export function isDuplicateReport(error) {
+  return error?.hint === 'report_duplicate';
 }
 
 export function reportRow({ reporterId, reportedId, reason, details, content }) {
@@ -38,8 +49,8 @@ export function reportRow({ reporterId, reportedId, reason, details, content }) 
 export function shouldRetryWithoutContent(error, row) {
   if (!error || !row?.content_type) return false;
   if (error.hint === 'report_content_mismatch') return !NO_PERSON_TYPES.includes(row.content_type);
-  // 20270355 without 20270372 / 20270381: the columns exist but the type isn't allowed yet
-  if ((NO_PERSON_TYPES.includes(row.content_type) || row.content_type === 'story') && error.code === '23514' && /content_type/.test(String(error.message || ''))) return true;
+  // 20270355 without 20270372 / 20270381 / 20270391 / 20270392: the columns exist but the type isn't allowed yet
+  if ((NO_PERSON_TYPES.includes(row.content_type) || SERVER_PERSON_TYPES.includes(row.content_type)) && error.code === '23514' && /content_type/.test(String(error.message || ''))) return true;
   return (error.code === 'PGRST204' || error.code === '42703') && /content_(type|id)/.test(String(error.message || ''));
 }
 
@@ -53,6 +64,9 @@ export function withoutContent(row) {
   }
   if (content_type === 'story') {
     return { ...rest, details: [`[photo ${content_id}]`, rest.details].filter(Boolean).join(' ') };
+  }
+  if (content_type === 'gathering' || content_type === 'community') {
+    return { ...rest, details: [`[${content_type} ${content_id}]`, rest.details].filter(Boolean).join(' ') };
   }
   return rest;
 }

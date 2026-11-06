@@ -19,7 +19,7 @@ import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
 const REPORT_COLUMNS = 'id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name, suspended_at)';
 const CONTENT_COLUMNS = ', content_type, content_excerpt, content_sent_at';
 const isMissing = (error) => !!error && ['PGRST202', 'PGRST204', '42703', '42883'].includes(error.code);
-const REPORTED_WHAT = { match_chat: 'chat (their last messages)', business_offer: 'offer', business: 'business (as it showed then)', story: 'photo' };
+const REPORTED_WHAT = { match_chat: 'chat (their last messages)', business_offer: 'offer', business: 'business (as it showed then)', story: 'photo', gathering: 'gathering (as it showed then)', community: 'community (as it showed then)' };
 const CASE_REASON = {
   many_accounts: 'Same photo on several accounts',
   similar_names: 'Same photo + similar names',
