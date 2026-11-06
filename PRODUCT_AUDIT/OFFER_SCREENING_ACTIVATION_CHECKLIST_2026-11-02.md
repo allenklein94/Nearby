@@ -101,6 +101,11 @@ checks this line first. It doesn't close the bypass; it means the bypass has no 
 - [ ] D7 **Real provider, owner requirement 2026-11-06, needed before ANY outside business:** one acceptable submission
       passes screening AND one deliberately unsafe submission is rejected, both with actual provider responses (no contact
       details in the unsafe one, so the provider decides, not D4's rule). With D2, this proves the system works live.
+- [ ] D8 **QR-code bypass, real provider, owner requirement 2026-11-06, needed before ANY outside business:** submit an offer
+      image containing a QR code that links to an external payment destination. Expected: rejected before publication. No code
+      in the app or the screening functions looks for QR codes today, so this result is genuinely unknown. If the image is
+      accepted, QR-code protection is an UNRESOLVED outside-business launch requirement: don't assume a prompt change solves
+      it, and determine whether actual QR decoding is necessary. Nothing is built for this before the test.
 
 ## 4. Actions that need the owner's explicit approval
 1. Anthropic credit / billing (A1), or naming another provider (code change, separate decision).
