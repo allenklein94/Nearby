@@ -158,6 +158,9 @@ The implementation and local results are accepted. Not deployed, not merged, bui
 
 ## 8. Deletion reliability fix (owner, 2026-11-05): in 0391 in place, STAGED, NOT DEPLOYED
 
+**Accepted as staged only (owner, 2026-11-06) at commit 0b274052, migration sha256 `fc6ab9c7256a7df8d974294ce3469da3d74802a2348d151eac87e7d015e1da8d`.** A deploy approval must name this hash; any later
+change to the file voids it. Section 7's gates stand, plus cleanup-job monitoring in place before outside users.
+
 The owner authorized a narrow reliability fix to the staged migration. Nothing was deployed, merged, or changed in build 87.
 
 **Defects, both reproduced on the committed 0391 against the real Storage API before anything changed:**
