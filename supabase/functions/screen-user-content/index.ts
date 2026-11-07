@@ -150,7 +150,7 @@ async function screenLinkedText(admin: any, userId: string, item: any, sha: stri
 
   const check: any = await checkLinks(links, linkDeps(admin, userId));
   if (check.verdict === 'unavailable') {
-    console.error('screen-user-content: link check unavailable', JSON.stringify({ links: links.length, lookups: check.lookups }));
+    console.error('screen-user-content: link check unavailable', JSON.stringify({ linkCount: links.length, lookups: check.lookups }));
     return json({ code: 'link_check_unavailable', error: "We couldn't check this right now. Please try again in a moment." }, 503);
   }
   if (check.verdict === 'unverifiable') {
