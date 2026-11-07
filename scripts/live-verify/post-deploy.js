@@ -229,6 +229,20 @@ const STEPS = {
       're-export + publish the business website only with its own approval (Admin Reports)',
       'rollback = scripts/rollback/20270393_admin_content_removal.rollback.sql: removed objects stay removed; who / when / why goes into each report\'s details; copy private.content_removals out first if the snapshots are still needed; defect only, owner decides',
       'a non-admin able to remove, a removed object reachable by anyone, or a report copy changed = security defect: STOP, report'] },
+  20270394: { journeys: ['gatedPerkCancel', 'contentRemoval', 'perkRedemption'],
+    manual: ['read-only right after: brand_offers.gate_removed_at exists; brand_offers_unlock_shape_check accepts a gated perk without its id only when gate_removed_at is set; triggers on_community_deleted_deactivate_offer + brand_offer_gate_removed_guard present; authenticated still has UPDATE on brand_offers (active) only',
+      'scripts/replay/gated-perk-legal-hold-concurrency.js sections 1-2 passed on a fresh replay before deploy (local only)',
+      'through the real API with dedicated test accounts: a host cancels a test gathering with a gated test perk attached (succeeds; the perk is off and stays off); a creator deletes a test community with a gated test perk (succeeds); the paid / unpaid booking rules on cancel unchanged',
+      'rollback = scripts/rollback/20270394_gated_perk_gate_removed.rollback.sql: marked perks stay off with their gate cleared; deleting a gathering / community with a gated perk fails again; defect only, owner decides',
+      'a cancel or account deletion still refused because of a perk, or a perk active again after its gathering went = defect: STOP, report'] },
+  20270395: { journeys: ['legalHolds', 'contentRemoval', 'mediaReports', 'reviewCaseHistory', 'trustSafetyI123'],
+    manual: ['read-only right after: private.legal_holds has no client grants; admin_place_legal_hold / admin_release_legal_hold / admin_list_legal_holds execute for authenticated only (anon none); private.report_on_legal_hold / removal_on_legal_hold / case_on_legal_hold / legal_hold_lock have no client EXECUTE; the 3 purge jobs still scheduled',
+      'scripts/replay/gated-perk-legal-hold-concurrency.js sections 3-5 passed on a fresh replay before deploy (local only)',
+      'through the real API with dedicated test accounts: a non-admin is refused all three functions; an admin places a hold on a test report and releases it with a reason',
+      'LEGAL REVIEW (not done): which matters need a hold, who may place and release one, how long the ordinary 12-month periods should be; the mechanism decides none of this and holds nothing by itself',
+      'no admin screen exists for holds: until one is approved, holds are placed by an admin calling the functions (signed in as that admin)',
+      'rollback = scripts/rollback/20270395_legal_holds.rollback.sql: the hold records go with the table (copy them out first); held evidence becomes purgeable on the next nightly runs; defect only, owner decides',
+      'held evidence purged, a hold placed or released by a non-admin, or a hold rewritten = defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

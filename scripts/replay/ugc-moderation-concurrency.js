@@ -9,6 +9,10 @@
 //   3. the same person sends two held edits of one field from two sessions: at most ONE pending edit is left, and the shown
 //      text is unchanged.
 //   4. two workers claim the group-chat queue at once: disjoint batches that together cover every queued message.
+//      The queue is shared by the whole database, so queue rows this script didn't create are parked (made not due) for the
+//      section and restored after it. Without that, rows left by another script (e.g. content-removal-concurrency.js deletes
+//      gatherings + communities with their chat; their queue rows stay pending until a claim marks them done) took the
+//      first round's batch slots: the cause of the one-off failure seen 2026-11-06 (reproduced 2026-11-07).
 //   5. concurrent submissions, one screened and one not: the screened one is written, the other refused (screening_required).
 // The calibration it needs (English + names) is set and restored; every row it creates is deleted afterwards.
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/ugc-moderation-concurrency.js
@@ -86,6 +90,7 @@ async function together(steps) {
   let community = null;
   // section 4 sends 60 group messages: the group_message rate limit (20270356) is lifted for the run, then restored
   const savedLimits = (await admin.query(`select * from private.rate_limit_rules where action = 'group_message'`)).rows;
+  let parked = [];
   try {
     await admin.query(`delete from private.rate_limit_rules where action = 'group_message'`);
     await admin.query(`update private.ugc_language_calibration set status = 'calibrated', calibrated_at = now(), evidence = 'race'
@@ -153,6 +158,10 @@ async function together(steps) {
     await admin.query(`select public.record_ugc_screening($1, private.ugc_text_sha('Race chat club'), 'community_name', true, 'low', '{}', array['en'], 'race', 'race')`, [author]);
     community = (await admin.query(`insert into communities (creator_id, name) values ($1, 'Race chat club') returning id`, [author])).rows[0].id;
     await admin.query(`insert into community_members (community_id, user_id, role) values ($1, $2, 'creator') on conflict do nothing`, [community, author]);
+    parked = (await admin.query(`select id, status, next_attempt_at, claimed_at from private.ugc_chat_queue
+      where status in ('pending', 'claimed')`)).rows;
+    await admin.query(`update private.ugc_chat_queue set status = 'pending', next_attempt_at = now() + interval '100 years'
+      where id = any($1::bigint[])`, [parked.map((r) => r.id)]);
     let ok4 = true;
     for (let i = 0; i < ROUNDS; i += 1) {
       const mine = [];
@@ -194,6 +203,10 @@ async function together(steps) {
     }
     check(ok5, `${ROUNDS} rounds: the screened write lands, the unscreened one is refused`);
   } finally {
+    for (const r of parked) {
+      await admin.query('update private.ugc_chat_queue set status = $2, next_attempt_at = $3, claimed_at = $4 where id = $1',
+        [r.id, r.status, r.next_attempt_at, r.claimed_at]);
+    }
     for (const r of savedLimits) {
       const cols = Object.keys(r);
       await admin.query(`insert into private.rate_limit_rules (${cols.join(', ')}) values (${cols.map((_, i) => `$${i + 1}`).join(', ')})
@@ -211,9 +224,10 @@ async function together(steps) {
     const left = (await admin.query(`select (select count(*)::int from auth.users where id = any($1::uuid[])) users,
       (select count(*)::int from private.ugc_held_items where author_id = any($1::uuid[])) held,
       (select count(*)::int from private.ugc_language_calibration where status <> 'pending') calibrated,
-      (select count(*)::int from private.rate_limit_rules where action = 'group_message') limits`, [ids])).rows[0];
-    check(left.users === 0 && left.held === 0 && left.limits === savedLimits.length,
-      `cleaned up (users ${left.users}, held ${left.held}, calibrated rows ${left.calibrated} as before, group_message limits ${left.limits}/${savedLimits.length} restored)`);
+      (select count(*)::int from private.rate_limit_rules where action = 'group_message') limits,
+      (select count(*)::int from private.ugc_chat_queue where next_attempt_at > now() + interval '50 years') parked`, [ids])).rows[0];
+    check(left.users === 0 && left.held === 0 && left.limits === savedLimits.length && left.parked === 0,
+      `cleaned up (users ${left.users}, held ${left.held}, calibrated rows ${left.calibrated} as before, group_message limits ${left.limits}/${savedLimits.length} restored, ${parked.length} other queue rows restored, ${left.parked} still parked)`);
     await admin.end();
   }
   console.log(failures ? `\n${failures} FAILED` : '\nall passed');

@@ -80,8 +80,28 @@ async function run(step) {
     return { id: r.rows[0].id, path };
   };
   const reportSql = `insert into reports (reporter_id, reason, content_type, content_id) values ($1, 'Other', 'story', $2) returning id`;
-  const queued = async (path) => (await db.query(`select count(*)::int n from net.http_request_queue where url like $1`, [`%${path}`])).rows[0].n;
-  const flush = async () => { await db.query('delete from net.http_request_queue'); await db.query('select delete_expired_stories()'); };
+  // DELETEs are counted from a log written by a trigger on net.http_request_queue, never from the queue itself: pg_net's
+  // background worker is running and removes a request from the queue once it has tried it, so a count read off the queue
+  // depended on whether the worker had got there yet (the cause of scenario 5's one-off "0-0" seen 2026-11-07). The log is
+  // test instrumentation only, created here and dropped in the finally block.
+  // net.http_request_queue belongs to supabase_admin (as on a hosted project), so the trigger is added + removed as that role,
+  // over the same LOCAL replay connection (replay password); nothing else in the script uses this connection.
+  const netOwner = new Client({ connectionString: (() => { const u = new URL(url); u.username = 'supabase_admin'; return u.toString(); })() });
+  await netOwner.connect();
+  const dropLog = async () => {
+    await netOwner.query('drop trigger if exists race_http_log on net.http_request_queue');
+    await netOwner.query('drop function if exists private.race_http_log_add()');
+    await netOwner.query('drop table if exists private.race_http_log');
+  };
+  await dropLog();
+  await netOwner.query(`create table private.race_http_log (url text not null)`);
+  await netOwner.query(`grant select, insert, delete on private.race_http_log to postgres`);
+  await netOwner.query(`create function private.race_http_log_add() returns trigger language plpgsql security definer set search_path = private as $f$
+    begin insert into private.race_http_log (url) values (new.url); return new; end $f$`);
+  await netOwner.query(`create trigger race_http_log after insert on net.http_request_queue for each row execute function private.race_http_log_add()`);
+  const clearSends = async () => { await db.query('delete from net.http_request_queue'); await db.query('delete from private.race_http_log'); };
+  const queued = async (path) => (await db.query(`select count(*)::int n from private.race_http_log where url like $1`, [`%${path}`])).rows[0].n;
+  const flush = async () => { await clearSends(); await db.query('select delete_expired_stories()'); };
 
   async function race(title, setup, otherStep, reporter) {
     console.log(title);
@@ -134,7 +154,7 @@ async function run(step) {
     check(ok, `both filed, and the file stays until the second is released (${ROUNDS} rounds)`);
 
     console.log('5. The job twice at once');
-    await db.query('delete from net.http_request_queue');
+    await clearSends();
     const paths = [];
     for (let i = 0; i < 30; i += 1) { const p = await post(null); paths.push(p.path); }
     await db.query(`update stories set expires_at = now() - interval '1 second' where media_path = any($1)`, [paths]);
@@ -170,7 +190,7 @@ async function run(step) {
       const rep = await run({ sub: R, sql: reportSql, args: [R, photo.id] });
       await db.query('delete from stories where id = $1', [photo.id]);
       await db.query(`insert into report_actions (report_id, action) values ($1, 'resolved_no_action')`, [rep.rows[0].id]);
-      await db.query('delete from net.http_request_queue');
+      await clearSends();
       const reopenAhead = i % 2 === 0;
       const steps = [
         run({ sql: `insert into report_actions (report_id, action) values ($1, 'reopened')`, args: [rep.rows[0].id], wait: reopenAhead ? 0 : 50 }),
@@ -188,6 +208,8 @@ async function run(step) {
     check(jobFirst > 0, `the other order really happened (${jobFirst} rounds the job got there first)`);
   } finally {
     await db.query('delete from net.http_request_queue');
+    await dropLog();
+    await netOwner.end();
     await db.query('delete from reports where reporter_id = any($1)', [people]);
     await db.query('delete from stories where user_id = any($1)', [people]);
     await db.query(`delete from private.story_media_removals where gathering_id = $1`, [G]);

@@ -272,7 +272,9 @@ d('journey: an admin removes a reported gathering or community and nobody can re
     expect(data('booking')).toEqual({ offer: 'cancelled', reservation: 'cancelled', open_offer: 'cancelled', open_request: 'cancelled' });
     expect(data('plan')).toEqual({ status: 'cancelled', title: null, place: null });
     expect(data('invite')).toBe(0);
-    expect(data('gated_perk')).toEqual({ active: false, scope: null, gathering: null });
+    // before 20270394 the removal cleared the gate; from 20270394 the perk keeps it and is marked (can't come back on)
+    expect(data('gated_perk')).toEqual(expect.objectContaining({ active: false, gathering: null }));
+    expect([null, 'gathering']).toContain(data('gated_perk').scope);
   });
 
   test('pushes tell the truth and carry no title; a host\'s own cancel keeps its words', () => {
@@ -313,7 +315,8 @@ d('journey: an admin removes a reported gathering or community and nobody can re
     expect(data('community_copy')).toBe(true);
     expect(data('community_audit')).toEqual({ why: 'Scam club selling fake tickets', name: 'Fraud club', members: expect.any(Number) });
     expect(data('community_gathering')).toEqual({ alive: 1, community: null });
-    expect(data('community_links')).toEqual({ request: 'cancelled', perk: { active: false, scope: null }, invite: 0 });
+    expect(data('community_links')).toEqual(expect.objectContaining({ request: 'cancelled', perk: expect.objectContaining({ active: false }), invite: 0 }));
+    expect([null, 'community']).toContain(data('community_links').perk.scope);
     expect(data('community_pushes')).toEqual([
       { to: 'member', title: 'A community was removed', type: 'community_cancelled' },
       { to: 'creator', title: 'Your community was removed', type: 'community_cancelled' },
