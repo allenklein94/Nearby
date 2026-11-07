@@ -1,3 +1,39 @@
+# 2026-11-07: 0399 review fixes (owner review: business reply path, paused-action wording, legal holds)
+
+Owner review of staged 0399 (2026-11-07): accept as staged; fix (1) the restriction message on the real paused action
+paths without rebuilding screens, (2) test whether a paused business can still reply through another path, (3) check the
+12-month purge against 20270395's legal holds; no feature expansion. 0399 edited in place (staged), new sha256
+d9e01d8b11f8514b075e4781a3cd18e215f2277b1c9aa087c1c2f79a7a5ec7f1; the earlier a1397db9... hash is void.
+- (2) Business reply: the app's real path is Make an Offer -> `screen-business-content` (queued, `async`) -> background
+  screening -> `submit_business_offer` as the signed-in manager. The DB trigger already refused it (now proven in the journey:
+  refused, row stays pending, goes out after Lift Pause), BUT the app first said "sent for review" and the background job then
+  stored the refusal as `not_sent` with the server's English text, after spending a screening call. FIXED: new
+  `public.get_my_account_restriction(capability)` (the caller's own pause only; authenticated) asked by the edge function
+  BEFORE the AI-use count, screening or queuing for offer_response / availability / offer / update = 400
+  {code 'account_restricted', details}; `writeRefusal` + the low-tier reply write map the DB refusal the same way (a pause
+  starting in between); the background job records such a refusal as `not_sent` (never "needs changes"). App: `serviceError`
+  carries the hint + details, so `recoverableErrorCopy` shows the localized pause line, no Try Again. Needs the
+  `screen-business-content` redeploy in the SAME release, right after 0399 (post-deploy step added).
+- (1) Paused action paths audited (code reading): chats (all five use `useChatComposer`), photo comments, gathering
+  questions, gathering invites (`InviteFriendsModal`, publish panel single invite), gathering + community create/edit,
+  profile save, business owner replies already reach the shared copy. FIXED (each reuses `presentRecoverableError`):
+  `sendFriendRequest` turned every 42501 (the pause's errcode) into "You can't send a friend request to this person" (Friends,
+  ViewProfile, Story viewer); Friend discovery Connect showed a generic "couldn't save" + Retry; Dating notice/wave showed the
+  server's English message; the publish panel's circle invite said "some invites didn't go through, try again". No new
+  strings, screens or components. Guard tests in `utils/accountRestrictions.test.js` (13).
+- (3) Legal holds: the purge took no account of holds. FIXED: `purge_ended_account_restrictions` takes `legal_hold_lock()`
+  and skips a restriction whose report (`report_on_legal_hold`, incl. its removal record) or review case is under an active
+  hold; released = purged on the next run. Not changed (owner: no arbitrary retention change): a restriction is not itself a
+  hold target, one made without a report/case can't be held, and account deletion still removes it (as 0357's case members;
+  holds don't stop an account deletion anywhere today): recorded for the legal-hold procedure review.
+- Verified locally 2026-11-07: from-scratch replay (real Auth first) 523/523 with the ORIGINAL 0399 (the gate "replay with
+  0399" now run), then 0399 rolled back + the revised file applied: journey `adminAccountRestrictions` 9/9 (new: business reply
+  refused + nothing written + after lift; reader own-only, anon refused; held case kept, unheld purged, purged after release),
+  journeys 1189/1189, `account-restriction-concurrency.js` 11/11, rollback leaves no 0399 object + re-apply identical (0 diff
+  lines), Jest 550/550 (7420 + 11 todo; one run first failed nearbyPulse's ring heuristic on a new '// 20270399' comment, reworded), iOS bundle exports clean.
+- Not run: `deno check` of the edge function (no Deno in this environment: read by eye + source guard test), the edge
+  function running, prod prelude journeys 0348-0399, prod aborted rollback, grants vs prod, real API, phone, native review.
+
 # 2026-11-07: Admin-controlled temporary restrictions (20270399, staged)
 
 Owner (2026-11-07) declined "shadow friction" (automatic, hidden limits on suspicious accounts) and approved instead an

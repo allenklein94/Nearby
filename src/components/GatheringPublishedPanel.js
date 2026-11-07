@@ -155,7 +155,7 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
       setInvitedIds((prev) => ({ ...prev, ...newlyInvited }));
     }
     const failedCount = results.length - Object.keys(newlyInvited).length;
-    // 20270399: a paused account's invites all fail the same way: say that (what is paused, until when), never "try again"
+    // An admin pause (migration 20270399): a paused account's invites all fail the same way: say that (what is paused, until when), never "try again"
     const paused = results.find((r) => r.status === 'rejected' && restrictionRefusal(r.reason));
     if (paused) {
       presentRecoverableError(Alert, { what: 'complete that', error: paused.reason });
