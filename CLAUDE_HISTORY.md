@@ -1,3 +1,42 @@
+# 2026-11-07: Admin-controlled temporary restrictions (20270399, staged)
+
+Owner (2026-11-07) declined "shadow friction" (automatic, hidden limits on suspicious accounts) and approved instead an
+admin-controlled response: existing signals stay admin-only; an admin, after reviewing evidence, applies temporary targeted
+restrictions that expire by themselves, are explained to the person, auditable and reversible. Checked first: the only admin
+response was 0351's suspension (indefinite, every social action, no explanation of what or until when), so this was built.
+
+Built on `post-tier1/admin-restrictions` (stacked on `post-tier1/unsafe-report-reason`), migration 20270399 (sha256
+a1397db9b244905b7f8af496c96ed04742a11a9ac1e221ca59587fad2d5c5f57), NOT merged, NOT deployed, build 87 unchanged.
+- Server: `private.account_restrictions` (one row per paused action: user, capability, reason 10-1000, report / review case,
+  admin, starts_at, expires_at <= 30 days, lifted_at/by/reason; a row can only be lifted, once) + append-only
+  `private.account_restriction_events` (restrict / lift, admin, reason; no update, delete only by cascade). No client access.
+  ONE reading `private.account_restricted_until`; `private._refuse_restricted_actor` on 27 BEFORE triggers (named zz_refuse_
+  restricted_*, so they run before screening / suspension checks): messages = new rows in messages, gathering/community/plan/
+  business messages, photo comments, gathering questions (actor column = the caller); invitations = social_invites; friend_
+  requests = pending friendships, friend-discovery likes (pass still works), notices; gatherings = new gatherings + communities;
+  offers = the business's own manager sending/changing a reply, availability, perks, updates (a customer's write on the same row
+  never counts); links = a link not already in the text (20270396's `ugc_links`) in profiles, gatherings, communities, questions,
+  comments, every chat. Refusal: errcode 42501, hint `account_restricted`, detail JSON {capability, until}. Expiry is read at
+  each action (no job); service-role/cron writes never count. Admin: `admin_restrict_account` (admin, never self, 1-30 days,
+  known capabilities, optional report / case, advisory lock per account), `admin_lift_account_restriction` (reason; ended or
+  lifted = {already}), `admin_list_account_restrictions` (active + ended, who, why). Purge 12 months after a pause ended (cron
+  `purge-ended-account-restrictions`, 04:40). Rollback `scripts/rollback/20270399_admin_account_restrictions.rollback.sql`.
+- App: `utils/accountRestrictions.js` (capabilities + what each covers, 1/3/7/14/30 days, reason rule, status lines, refusal
+  reader); `recoverableErrorCopy` shows `ui.shared.errors.accountRestricted` with the end date, no Try Again (11 languages, 10
+  machine-authored, need native review). Admin Reports: "Pause Actions" on an open report's person and each review-case member
+  (not for a suspended account), six action toggles, duration, reason; active pauses listed with "Lift Pause". Older database =
+  no control.
+- Verified locally (2026-11-07, on the 0398 replay database with 0399 applied on top): journey `adminAccountRestrictions` 7/7
+  (fails 7/7 with 0399 rolled back), journeys 1187/1187, `scripts/replay/account-restriction-concurrency.js` 11/11 (two admins
+  lift at once = one lift; two pause at once = both recorded; a message before the pause stays, the next is refused; after a
+  lift the next goes through), rollback = 0398 schema 0 diff lines, re-apply identical (pg_dump 69,711 lines), Jest 550/550
+  (7417 + 11 todo), iOS bundle exports with the control.
+- Limits: a paused business's automatic replies keep answering (a customer's request must never fail; deactivate or suspend the
+  business for that); editing an existing message and discovery reach are not covered; surfaces not using the shared error copy
+  show the server's English line; the business reply path (submit_business_offer) is not in the journey (availability is).
+- Not run (deploy gates, `post-deploy.js` 20270399): a from-scratch replay with 0399 in it, prod prelude journeys 0348-0399,
+  prod aborted rollback, grants vs prod, real API with test accounts, phone, website re-export, native review.
+
 # 2026-11-07: "Unsafe activity or situation" + urgent-first admin queue (20270398, staged)
 
 Owner approved (2026-11-07, options 1/1/2): an urgent report reason for in-person safety, offered on profiles, messages,
