@@ -33,15 +33,16 @@ phishing or malware site. We don't store the link for this check."
   names count), IPv4; and the usual disguises: `dot com`, `[.]`, `(dot)`, `hxxp`, full-width letters and dots, invisible
   characters, `http:\\`, `user@host` links, a name glued to text in another script. Email addresses, decimals, times and
   abbreviations are not links. The edge function asks the database which links to check, so the two never disagree.
-- Public text with a link needs a result recorded by the link-checking `screen-user-content`: every link and every redirect
-  hop looked up in Web Risk. Old (word-only) results don't count: refused `link_check_required`.
+- Public text with a link needs a result recorded by the link-checking `screen-user-content`: every link, plus the
+  destinations recognisably embedded in it (query values, path, fragment, after percent-decoding), looked up in Web Risk.
+  NOTHING user-submitted is ever fetched, resolved or followed (Option B, below). Old (word-only) results don't count: refused `link_check_required`.
 - Listed destination = refused `link_not_allowed` (stored: verdict + threat types only, no URL), whatever the language rule.
-- Fail closed, nothing recorded: Web Risk down, no key, budget used up (503); a shortener that won't resolve, more than 5
-  redirects, a private / local / non-web-port address, more than 5 links (refused, the app's existing "change it" words).
+- Fail closed, nothing recorded: Web Risk down, no key, budget used up (503); a known shortener / link-in-bio page (also
+  when embedded), a private / local / non-web-port address, an embedded destination that won't parse, more than 5 links,
+  more than 3 embedded destinations in a link, nesting deeper than 2, or more than 15 lookups for one text (planned before
+  any call; refused, the app's existing "change it" words).
 - Applies to all of 0373's public text (gathering title + description, community name + description, profile text, Q&A,
   photo comments): one rule, so a link moved from a gathering into a community or bio gets the same check.
-- Redirects followed by the server with `redirect: manual`, each hop's address checked before it is fetched; never a private
-  or local address (also after DNS), never a port other than 80/443, user:password@ dropped, 4 s per hop.
 - No new screen, string, client change, score or chat scanning. Logs keep counts only.
 
 ## Verified (2026-11-07, local)
@@ -70,7 +71,7 @@ Read the code, not the summary. Results:
   localhost / .local / .internal / .home.arpa / dotless names refused, every redirect hop re-checked before fetch
   (`redirect: manual`), max 5 hops, 4 s per hop, body never read, credentials dropped, Web Risk called with `redirect: error`.
   The request is a blind GET: nothing from the fetched page reaches the user.
-- **DNS rebinding: still a limit, not fixed.** The check resolves, then `fetch` resolves again; Deno's fetch can't be
+- **DNS rebinding: still a limit, not fixed** (resolved by Option B, below: no fetching). The check resolves, then `fetch` resolves again; Deno's fetch can't be
   pinned to the checked IP. A name that answers public then private could get one blind GET into the edge runtime's network.
 - **Quota / outage: blocks legitimate users, by design.** Web Risk down, key missing, 200/account or 3000/day used up =
   any text WITH a link is refused (`link_check_required`); text without links unaffected. A popular day could exhaust 3000.
@@ -81,14 +82,49 @@ Read the code, not the summary. Results:
   `uris:search` docs, unconfirmed against the live API. Pricing (100k/month free, then $0.50/1000) from Google's page,
   to reconfirm when the key is created.
 
+## Option B: no server-side fetching (owner approved 2026-11-07, third pass)
+
+Why: the second pass left DNS rebinding open (Deno's `fetch` can't be pinned to a checked IP; pinning would need a
+hand-written HTTP/1.1 client over `Deno.connect` + `Deno.startTls`). Fetching also added little: a site can show a checker
+a clean page, use a JavaScript redirect, or change its target after posting.
+
+What changed (edge-function code `_shared/linkSafety.ts` + `screen-user-content`; migration SQL unchanged, comments only):
+- Removed: redirect following, DNS lookups, every request to a user-supplied address. The ONLY request is Web Risk's
+  `uris:search` endpoint, and the code checks the request's origin is Google's before sending it.
+- Added: embedded destinations (`?q=https://...`, `/redirect/https%3A%2F%2F...`, `#u=...`, `www.` values, up to 3 rounds of
+  percent-decoding) looked up as well; '&' ends a destination so two in one link are both found.
+- Caps, all planned before any lookup: 5 links, 3 embedded per link, depth 2, 15 lookups per text; over = refused.
+  Repeats looked up once.
+- Shortener / link-in-bio list (now 51 domains) refused, also when embedded. SUPPLEMENTAL ONLY: any domain can redirect,
+  and an unlisted shortener is looked up only as its own address.
+- Private / local / non-web-port addresses still refused (they can't be judged by Web Risk); the IPv6 parsing fix stays,
+  but no longer guards a network path.
+
+Tests: Deno 15/15 (each asserts the only request went to Web Risk; covers safe, listed, shorteners, open redirect on
+google.com, path / fragment / double-encoded / www. forms, embedded shortener, depth, caps, two destinations in one link
+(found a real bug while writing it: the first destination swallowed the rest; fixed), private addresses, userinfo, outage /
+429 / network error / no key / no budget / budget running out mid-text, several links, punycode). Jest guard adds a static
+check: one `deps.fetch` call, to the Web Risk endpoint, and no `resolveDns` / `Deno.connect` / `startTls` /
+`redirect: 'manual'`. `deno check` of the edge function passes. Journeys not re-run (no SQL change).
+
+Limits (accepted by the owner for the first launch, provided the real Web Risk tests pass before external users):
+- A new or unlisted domain that redirects to a listed site passes (its own address is clean). So does an unlisted shortener.
+- Newly created phishing domains aren't listed yet; a site can turn bad after posting (no re-check of published text).
+- Destinations hidden in ways other than plain or percent-encoded text (base64, custom encodings) aren't found.
+- Legitimate short links (bit.ly, linktr.ee, ...) are refused: people post the full link.
+- An embedded destination's own later query parameters are dropped from its lookup (Web Risk matches on host + path).
+
+Still required before deploy: a real Web Risk call with the owner's key (clean link passes, Google's test URL refused, also
+when embedded in a google.com/url link), the edge function running on Supabase's runtime, the quota test, prod journeys with
+0348-0396 prelude, prod aborted rollback, grants vs prod (`scripts/live-verify/post-deploy.js` 20270396).
+
 ## Not verified / limits
 
 - Real Web Risk never called (needs the owner's Google Cloud key). The edge function was type-checked, not run.
 - No scanner proves a link is safe: new phishing sites aren't listed yet; a site can turn bad after publishing (no re-check
   of published text); a site can show the checker something different from a browser (cloaking); JavaScript and
-  meta-refresh redirects aren't followed. This complements screening + reports, never replaces them.
-- DNS check happens before fetch, but the fetch resolves again (DNS rebinding could reach a private address in theory; the
-  edge runtime's network position limits what that reaches).
+  meta-refresh redirects aren't followed (no redirect is followed at all since Option B). This complements screening + reports, never replaces them.
+- (Second-pass DNS rebinding limit: GONE with Option B; nothing is fetched.)
 - Phone numbers, emails, payment instructions and QR codes are not part of this (offers refuse contact details, 0372;
   QR = the D8 launch requirement).
 - Private and group chats stay reports-based (owner decision).

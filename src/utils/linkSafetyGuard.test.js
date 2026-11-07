@@ -49,6 +49,18 @@ describe('link destination safety (20270396)', () => {
     expect(MIGRATION).not.toMatch(/add column [a-z_]*url/i);
   });
 
+  test('no server-side fetching of user links (Option B): the only request is the Web Risk lookup', () => {
+    const fetchCalls = LIB.match(/deps\.fetch\(/g) || [];
+    expect(fetchCalls).toHaveLength(1);
+    expect(LIB).toMatch(/deps\.fetch\(endpoint,/);
+    expect(LIB).toMatch(/const endpoint = `\$\{WEB_RISK_ENDPOINT\}\?/);
+    expect(LIB).toContain("new URL(endpoint).origin !== new URL(WEB_RISK_ENDPOINT).origin");
+    for (const banned of [/resolveDns/, /Deno\.connect/, /startTls/, /redirect: 'manual'/, /[^.]\bfetch\(/]) {
+      expect(LIB).not.toMatch(banned);
+    }
+    expect(EDGE).not.toMatch(/resolveDns|resolveAll|Deno\.connect/);
+  });
+
   test('only the commercial Web Risk API is called (Safe Browsing v4 is non-commercial only)', () => {
     expect(LIB).toContain('https://webrisk.googleapis.com/v1/uris:search');
     expect(LIB + EDGE).not.toContain('safebrowsing.googleapis.com');

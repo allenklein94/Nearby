@@ -9,12 +9,13 @@
 -- After, for any such text that contains a link (ONE detector, private.ugc_links, below; the edge function asks the same
 -- function which links to check, so the two can never disagree):
 --   - the write needs a screening row recorded through record_ugc_link_screening, i.e. by a screen-user-content version that
---     checked every link's destination with Google Web Risk (each hop of its redirect chain); a row from the 0373 path
+--     looked up every link (and the destinations embedded in it) in Google Web Risk, never visiting it (no server-side
+--     fetching of user links, owner Option B 2026-11-07); a row from the 0373 path
 --     (link_check null) no longer counts for linked text: refused, hint 'link_check_required', nothing written;
 --   - a confirmed malicious destination = a 'refuse' row (link_check 'malicious', threat types only): refused, hint
 --     'link_not_allowed', whatever the language calibration says (a known-bad address is not a language judgement);
---   - the edge function records NOTHING when Web Risk can't answer, a redirect chain can't be followed to its end (a shortener
---     that won't resolve, too many hops, a private or non-web address), a text has more than 5 links, or the daily lookup
+--   - the edge function records NOTHING when Web Risk can't answer, a link can't be checked without visiting it (a known
+--     shortener / link-in-bio page, a private or non-web address), a text is over the link / lookup caps, or the daily lookup
 --     budget is used up: the write is refused (fail closed for linked text only);
 --   - text with no link is unchanged (0373's path, no Web Risk call).
 -- A person's approval of held text (source 'review', 0373) still counts: it can only exist for text that first passed.

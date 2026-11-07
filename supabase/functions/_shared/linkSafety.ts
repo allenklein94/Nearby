@@ -1,30 +1,42 @@
-// Link destination check for public text (migration 20270396). Pure: the network, DNS, the Web Risk key and the lookup
-// budget are passed in, so the same code runs in screen-user-content and in Jest (src/utils/linkSafetyEdge.test.js).
+// Link destination check for public text (migration 20270396). Pure: the Web Risk call, the key and the lookup budget
+// are passed in, so the same code runs in screen-user-content and in the Deno tests.
+//
+// NO SERVER-SIDE FETCHING (owner, Option B, 2026-11-07): Nearby never opens, resolves or follows a user-submitted link.
+// The ONLY network request this file makes is Google Web Risk's lookup endpoint (asserted before every call), so there is
+// no SSRF or DNS-rebinding path. Each link is looked up as written, plus the destinations recognisably embedded in it
+// (`?url=https://...`, `/redirect/https%3A%2F%2F...`, a fragment), with strict caps.
 //
 // checkLinks(links, deps) -> { verdict, threats, lookups }
-//   'clean'        every link and every hop of its redirect chain was looked up in Google Web Risk and none is listed
+//   'clean'        every link and every embedded destination was looked up in Google Web Risk and none is listed
 //   'malicious'    one of them is listed (MALWARE, SOCIAL_ENGINEERING or UNWANTED_SOFTWARE); threats = those types
-//   'unverifiable' the destination can't be established: not a web address, a private / local / non-web-port address, a
-//                  chain longer than MAX_HOPS, a redirect to such an address, or a known link shortener that won't resolve
+//   'unverifiable' the destination can't be checked without visiting it: a known link shortener / link-in-bio page
+//                  (also when embedded), not a web address, a private / local / non-web-port address, an embedded
+//                  destination that won't parse, or more embedded destinations than the caps allow
 //   'unavailable'  Web Risk didn't answer, or the lookup budget is used up (fail closed: the caller records nothing)
-// The links come from the database's own detector (public.ugc_links_for_check), never parsed here.
+// The links come from the database's own detector (public.ugc_links_for_check), never found here.
 // Never logs or returns a URL.
 
-export const MAX_LINKS = 5;
-export const MAX_HOPS = 5;
-export const HOP_TIMEOUT_MS = 4000;
+export const MAX_LINKS = 5;                 // links per text (more = refused before any lookup)
+export const MAX_EMBEDDED_PER_LINK = 3;     // embedded destinations per link (more = refused)
+export const MAX_EMBED_DEPTH = 2;           // a destination inside a destination inside the link, no deeper
+export const MAX_LOOKUPS_PER_TEXT = 15;     // all lookups for one text; planned before any call, over = refused
+export const LOOKUP_TIMEOUT_MS = 4000;
 export const THREAT_TYPES = ['MALWARE', 'SOCIAL_ENGINEERING', 'UNWANTED_SOFTWARE'];
+export const WEB_RISK_ENDPOINT = 'https://webrisk.googleapis.com/v1/uris:search';
 
-// Shorteners: a destination we can't follow from one of these is unknown, never assumed safe.
+// Shorteners + link-in-bio pages: their destination can't be known without visiting them, so they're refused.
+// SUPPLEMENTAL, NOT COMPREHENSIVE: any domain can redirect; an unlisted shortener is looked up only as its own address.
 export const SHORTENERS = [
   'bit.ly', 'bitly.com', 'tinyurl.com', 't.co', 'goo.gl', 'ow.ly', 'is.gd', 'buff.ly', 'rebrand.ly', 'cutt.ly', 'shorturl.at',
   'tiny.cc', 'rb.gy', 's.id', 'lnkd.in', 'trib.al', 'bl.ink', 'short.io', 'shorte.st', 'adf.ly', 'v.gd', 'clck.ru', 'qr.ae',
   'u.to', 't.ly', 'tiny.one', 'urlz.fr', 'x.co', 'linktr.ee', 'shor.by', 'snip.ly', 'surl.li', 'kutt.it', 'ln.run', 'qrco.de',
+  'tr.ee', 'goo.su', 'cli.re', 'href.li', 'beacons.ai', 'bio.link', 'lnk.bio', 'linkin.bio', 'taplink.cc', 'solo.to',
+  'tap.bio', 'flow.page', 'many.link', 'linkr.bio', 'hoo.be', 'msha.ke',
 ];
 
 export function isShortener(host: string) {
   const h = host.toLowerCase().replace(/^www\./, '');
-  return SHORTENERS.some((s) => h === s || h.endsWith(`.${s}`));
+  return SHORTENERS.some((sh) => h === sh || h.endsWith(`.${sh}`));
 }
 
 // An address we never fetch: loopback, private, link-local, carrier-grade NAT, multicast, unspecified, documentation /
@@ -76,7 +88,7 @@ export function isPrivateAddress(ip: string) {
 
 const IP_LITERAL = /^(\d{1,3}(\.\d{1,3}){3}|\[[0-9a-f:.]+\])$/i;
 
-// A candidate from the detector -> a URL we may look at, or null (unverifiable).
+// A candidate from the detector -> a URL, or null (unverifiable).
 export function toWebUrl(candidate: string): URL | null {
   let c = String(candidate || '').trim().replace(/^[^\p{L}\p{N}]+/u, '');
   if (!c) return null;
@@ -85,25 +97,71 @@ export function toWebUrl(candidate: string): URL | null {
   let url: URL;
   try { url = new URL(c); } catch { return null; }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return null;
+  url.username = '';
+  url.password = ''; // the host is what counts (good.example@bad.example = bad.example)
   return url;
 }
 
-// May we fetch this URL to see where it goes? Only ordinary public web addresses on the default ports.
-export function fetchable(url: URL) {
+// An ordinary public web address on a default port. Not a network safeguard (nothing is fetched): a link people can't
+// reach from the internet can't be judged by Web Risk, so it isn't published.
+export function publicWebAddress(url: URL) {
   const host = url.hostname.toLowerCase();
   if (!host || host === 'localhost' || host.endsWith('.localhost') || host.endsWith('.local') || host.endsWith('.internal')
       || host.endsWith('.home.arpa') || !host.includes('.')) return false;
   if (IP_LITERAL.test(host) && isPrivateAddress(host)) return false;
   if (url.port && url.port !== '80' && url.port !== '443') return false;
-  return true; // a user:password@ part is dropped before fetching: the host is what counts
+  return true;
+}
+
+function decodeRepeatedly(s: string) {
+  let out = s;
+  for (let i = 0; i < 3; i += 1) {
+    let next: string;
+    try { next = decodeURIComponent(out.replace(/\+/g, ' ')); } catch { break; }
+    if (next === out) break;
+    out = next;
+  }
+  return out;
+}
+
+// '&' ends a destination, so ?a=https://x.example&b=https://y.example yields both (an embedded URL's own later query
+// parameters are dropped from its lookup; a destination among them is still found and looked up on its own).
+const EMBEDDED = /(?:https?:\/\/|www\.)[^\s"'<>()\[\]{}|\\^`&]+/gi;
+
+// Destinations written inside a link (path, query values, fragment), after percent-decoding. 'tooMany' over the cap.
+export function embeddedDestinations(url: URL): string[] | 'tooMany' {
+  const tail = decodeRepeatedly(`${url.pathname}${url.search}${url.hash}`);
+  const found: string[] = [];
+  for (const m of tail.matchAll(EMBEDDED)) {
+    const d = m[0].replace(/[.,!?;]+$/, '');
+    if (!found.includes(d)) found.push(d);
+    if (found.length > MAX_EMBEDDED_PER_LINK) return 'tooMany';
+  }
+  return found;
+}
+
+type Plan = { urls: string[] } | { refuse: 'unverifiable' };
+
+// Every address to look up for one link, planned before any call: the link, then its embedded destinations.
+export function planLink(candidate: string, depth = 0): Plan {
+  const url = toWebUrl(candidate);
+  if (!url || !publicWebAddress(url) || isShortener(url.hostname)) return { refuse: 'unverifiable' };
+  const urls = [url.href];
+  const inner = embeddedDestinations(url);
+  if (inner === 'tooMany') return { refuse: 'unverifiable' };
+  if (inner.length && depth >= MAX_EMBED_DEPTH) return { refuse: 'unverifiable' };
+  for (const d of inner) {
+    const sub = planLink(d, depth + 1);
+    if ('refuse' in sub) return sub;
+    for (const u of sub.urls) if (!urls.includes(u)) urls.push(u);
+  }
+  return { urls };
 }
 
 export type LinkDeps = {
-  fetch: (url: string, init: any) => Promise<{ status: number; headers: { get(name: string): string | null }; body?: any }>;
-  resolveDns?: (host: string) => Promise<string[]>;   // all A/AAAA records; missing = a named host is never fetched (unverifiable)
+  fetch: (url: string, init: any) => Promise<{ status: number; json?: () => Promise<any> }>; // used for Web Risk ONLY
   webRiskKey: string | undefined;
   claimLookups: (n: number) => Promise<boolean>;      // the database budget (claim_link_checks)
-  now?: () => number;
 };
 
 async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
@@ -113,14 +171,15 @@ async function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   } finally { clearTimeout(t); }
 }
 
-// One Web Risk Lookup call: 'clean' | { threats } | 'unavailable'.
+// One Web Risk Lookup call: 'clean' | { threats } | 'unavailable'. The only request this file ever sends.
 export async function webRiskLookup(url: string, deps: LinkDeps): Promise<'clean' | 'unavailable' | { threats: string[] }> {
   if (!deps.webRiskKey) return 'unavailable';
   if (!(await deps.claimLookups(1))) return 'unavailable';
   const q = THREAT_TYPES.map((t) => `threatTypes=${t}`).join('&');
-  const endpoint = `https://webrisk.googleapis.com/v1/uris:search?${q}&uri=${encodeURIComponent(url)}&key=${encodeURIComponent(deps.webRiskKey)}`;
+  const endpoint = `${WEB_RISK_ENDPOINT}?${q}&uri=${encodeURIComponent(url)}&key=${encodeURIComponent(deps.webRiskKey)}`;
+  if (new URL(endpoint).origin !== new URL(WEB_RISK_ENDPOINT).origin) return 'unavailable';
   try {
-    const res: any = await withTimeout(deps.fetch(endpoint, { method: 'GET', redirect: 'error' }), HOP_TIMEOUT_MS);
+    const res: any = await withTimeout(deps.fetch(endpoint, { method: 'GET', redirect: 'error' }), LOOKUP_TIMEOUT_MS);
     if (res.status !== 200) return 'unavailable';
     const body = typeof res.json === 'function' ? await res.json() : null;
     const types = body?.threat?.threatTypes;
@@ -132,83 +191,29 @@ export async function webRiskLookup(url: string, deps: LinkDeps): Promise<'clean
   }
 }
 
-// The next hop: a redirect target, null when the chain ends here, or 'unverifiable' / 'error'.
-async function nextHop(url: URL, deps: LinkDeps): Promise<URL | null | 'unverifiable' | 'error'> {
-  if (!fetchable(url)) return 'unverifiable';
-  if (!IP_LITERAL.test(url.hostname)) {
-    // no DNS check available = we can't tell where the name points: never fetch it (fail closed, not open)
-    if (!deps.resolveDns) return 'unverifiable';
-    let addrs: string[] = [];
-    try { addrs = await withTimeout(deps.resolveDns(url.hostname), HOP_TIMEOUT_MS); } catch { return 'error'; }
-    if (!addrs.length) return 'error';
-    if (addrs.some(isPrivateAddress)) return 'unverifiable';
-  }
-  const target = new URL(url.href);
-  target.username = '';
-  target.password = '';
-  let res: any;
-  try {
-    res = await withTimeout(deps.fetch(target.href, {
-      method: 'GET', redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NearbyLinkCheck/1.0)' },
-    }), HOP_TIMEOUT_MS);
-  } catch {
-    return 'error';
-  }
-  try { res.body?.cancel?.(); } catch { /* nothing to read */ }
-  if (res.status >= 300 && res.status < 400) {
-    const location = res.headers.get('location');
-    if (!location) return null;
-    try {
-      const next = new URL(location, url);
-      if (next.protocol !== 'http:' && next.protocol !== 'https:') return 'unverifiable';
-      return next;
-    } catch { return 'unverifiable'; }
-  }
-  return null;
-}
-
-// One link's whole chain.
-export async function checkLink(candidate: string, deps: LinkDeps) {
-  let url = toWebUrl(candidate);
-  if (!url) return { verdict: 'unverifiable' as const, threats: [] as string[], lookups: 0 };
-  const seen = new Set<string>();
-  let lookups = 0;
-  for (let hop = 0; hop <= MAX_HOPS; hop += 1) {
-    const key = url.href;
-    if (!seen.has(key)) {
-      seen.add(key);
-      const verdict = await webRiskLookup(key, deps);
-      lookups += 1;
-      if (verdict === 'unavailable') return { verdict: 'unavailable' as const, threats: [], lookups };
-      if (verdict !== 'clean') return { verdict: 'malicious' as const, threats: verdict.threats, lookups };
-    }
-    const next = await nextHop(url, deps);
-    if (next === 'unverifiable') return { verdict: 'unverifiable' as const, threats: [], lookups };
-    if (next === 'error') {
-      // the site didn't answer: its own address is checked; a shortener's destination is unknown
-      return isShortener(url.hostname) ? { verdict: 'unverifiable' as const, threats: [], lookups } : { verdict: 'clean' as const, threats: [], lookups };
-    }
-    if (next === null) {
-      // the chain ends; a shortener that doesn't redirect (an interstitial page, a "link disabled" page) hides its target
-      return isShortener(url.hostname) ? { verdict: 'unverifiable' as const, threats: [], lookups } : { verdict: 'clean' as const, threats: [], lookups };
-    }
-    url = next;
-  }
-  return { verdict: 'unverifiable' as const, threats: [], lookups }; // more than MAX_HOPS redirects
-}
-
-// Every link of one text. Worst wins: malicious > unavailable > unverifiable > clean.
+// Every link of one text. Planned in full first (no lookup if any link is refused or the caps are exceeded), then looked
+// up in order; a listed address ends it. Worst wins: malicious > unavailable > unverifiable > clean.
 export async function checkLinks(links: string[], deps: LinkDeps) {
   if (!links.length) return { verdict: 'clean' as const, threats: [] as string[], lookups: 0 };
   if (links.length > MAX_LINKS) return { verdict: 'unverifiable' as const, threats: [], lookups: 0, tooMany: true };
-  let lookups = 0;
-  let worst: 'clean' | 'unverifiable' | 'unavailable' = 'clean';
+  const all: string[] = [];
   for (const link of links) {
-    const r = await checkLink(link, deps);
-    lookups += r.lookups;
-    if (r.verdict === 'malicious') return { verdict: 'malicious' as const, threats: [...new Set(r.threats)], lookups };
-    if (r.verdict === 'unavailable') worst = 'unavailable';
-    else if (r.verdict === 'unverifiable' && worst === 'clean') worst = 'unverifiable';
+    const plan = planLink(link);
+    if ('refuse' in plan) return { verdict: 'unverifiable' as const, threats: [], lookups: 0 };
+    for (const u of plan.urls) if (!all.includes(u)) all.push(u);
   }
-  return { verdict: worst, threats: [] as string[], lookups };
+  if (all.length > MAX_LOOKUPS_PER_TEXT) return { verdict: 'unverifiable' as const, threats: [], lookups: 0, tooMany: true };
+  let lookups = 0;
+  for (const u of all) {
+    const verdict = await webRiskLookup(u, deps);
+    lookups += 1;
+    if (verdict === 'unavailable') return { verdict: 'unavailable' as const, threats: [], lookups };
+    if (verdict !== 'clean') return { verdict: 'malicious' as const, threats: [...new Set(verdict.threats)], lookups };
+  }
+  return { verdict: 'clean' as const, threats: [] as string[], lookups };
+}
+
+// One link on its own (tests, callers with a single link).
+export function checkLink(candidate: string, deps: LinkDeps) {
+  return checkLinks([candidate], deps);
 }

@@ -1,189 +1,181 @@
-// Deno tests for linkSafety.ts (20270396). Run: docker run --rm -v "$PWD":/w -w /w denoland/deno:alpine-1.45.5 test \
-//   supabase/functions/_shared/linkSafety_test.ts      (no network: Web Risk, the sites and DNS are fakes)
+// Deno tests for linkSafety.ts (20270396, Option B: no server-side fetching). Run:
+//   docker run --rm -v "$PWD":/w -w /w --entrypoint deno denoland/deno:alpine-1.45.5 test supabase/functions/_shared/linkSafety_test.ts
+// No network: Web Risk is a fake. EVERY test also proves the only request sent went to Web Risk's endpoint.
 import { assertEquals } from 'https://deno.land/std@0.203.0/assert/mod.ts';
-import { checkLink, checkLinks, fetchable, isPrivateAddress, MAX_HOPS, toWebUrl } from './linkSafety.ts';
+import {
+  checkLink, checkLinks, embeddedDestinations, isPrivateAddress, isShortener, MAX_EMBEDDED_PER_LINK, MAX_LOOKUPS_PER_TEXT,
+  publicWebAddress, toWebUrl, WEB_RISK_ENDPOINT,
+} from './linkSafety.ts';
 
-type Site = { status: number; location?: string } | 'down';
-
-function fakeWorld({ listed = {} as Record<string, string[]>, sites = {} as Record<string, Site>, dns = {} as Record<string, string[]>,
-  webRiskStatus = 200, budget = 1000 } = {}) {
-  const calls = { webRisk: [] as string[], fetched: [] as string[], claimed: 0 };
+function fakeWorld({ listed = {} as Record<string, string[]>, webRiskStatus = 200, budget = 1000, throws = false } = {}) {
+  const calls = { requests: [] as string[], webRisk: [] as string[], claimed: 0 };
   const deps = {
-    webRiskKey: 'test-key',
+    webRiskKey: 'test-key' as string | undefined,
     claimLookups: async (n: number) => { if (calls.claimed + n > budget) return false; calls.claimed += n; return true; },
-    resolveDns: async (host: string) => dns[host] ?? ['93.184.216.34'],
     fetch: async (url: string, _init: any) => {
-      if (url.startsWith('https://webrisk.googleapis.com/')) {
-        const uri = decodeURIComponent(new URL(url).searchParams.get('uri')!);
-        calls.webRisk.push(uri);
-        if (webRiskStatus !== 200) return { status: webRiskStatus, headers: { get: () => null }, json: async () => ({}) };
-        const types = listed[uri];
-        return { status: 200, headers: { get: () => null }, json: async () => (types ? { threat: { threatTypes: types } } : {}) };
-      }
-      calls.fetched.push(url);
-      const site = sites[url] ?? { status: 200 };
-      if (site === 'down') throw new Error('connection refused');
-      return { status: site.status, headers: { get: (h: string) => (h.toLowerCase() === 'location' ? site.location ?? null : null) } };
+      calls.requests.push(url);
+      if (throws) throw new Error('network down');
+      const uri = new URL(url).searchParams.get('uri') ?? '';
+      calls.webRisk.push(uri);
+      if (webRiskStatus !== 200) return { status: webRiskStatus, json: async () => ({}) };
+      const types = listed[uri];
+      return { status: 200, json: async () => (types ? { threat: { threatTypes: types } } : {}) };
     },
   };
   return { deps, calls };
 }
 
-Deno.test('a safe link is looked up and fetched once, clean', async () => {
+// No request to anything but Web Risk's own endpoint, ever.
+function onlyWebRisk(calls: { requests: string[] }, label = '') {
+  for (const r of calls.requests) assertEquals(r.startsWith(`${WEB_RISK_ENDPOINT}?`), true, `${label} sent ${r}`);
+}
+
+Deno.test('a safe link is looked up once and never visited', async () => {
   const { deps, calls } = fakeWorld();
   const r = await checkLink('example.org/events', deps);
   assertEquals(r.verdict, 'clean');
   assertEquals(calls.webRisk, ['http://example.org/events']);
-  assertEquals(calls.fetched, ['http://example.org/events']);
+  assertEquals(calls.requests.length, 1);
+  onlyWebRisk(calls);
 });
 
-Deno.test('a listed link is malicious, with its threat types, and is never fetched', async () => {
+Deno.test('a listed link is malicious, with its threat types', async () => {
   const { deps, calls } = fakeWorld({ listed: { 'https://bad.example/login': ['SOCIAL_ENGINEERING'] } });
   const r = await checkLink('https://bad.example/login', deps);
   assertEquals(r.verdict, 'malicious');
   assertEquals(r.threats, ['SOCIAL_ENGINEERING']);
-  assertEquals(calls.fetched, []);
+  onlyWebRisk(calls);
 });
 
-Deno.test('a shortener redirecting to a listed site is malicious (every hop is looked up)', async () => {
-  const { deps, calls } = fakeWorld({
-    sites: { 'https://bit.ly/abc': { status: 301, location: 'https://hop.example/r' }, 'https://hop.example/r': { status: 302, location: '/final' } },
-    listed: { 'https://hop.example/final': ['MALWARE'] },
-  });
-  const r = await checkLink('https://bit.ly/abc', deps);
-  assertEquals(r.verdict, 'malicious');
-  assertEquals(calls.webRisk, ['https://bit.ly/abc', 'https://hop.example/r', 'https://hop.example/final']);
-});
-
-Deno.test('a shortener that does not redirect, or is down, hides its target: unverifiable', async () => {
-  const a = fakeWorld({ sites: { 'https://tinyurl.com/x': { status: 200 } } });
-  assertEquals((await checkLink('https://tinyurl.com/x', a.deps)).verdict, 'unverifiable');
-  const b = fakeWorld({ sites: { 'https://t.co/x': 'down' } });
-  assertEquals((await checkLink('https://t.co/x', b.deps)).verdict, 'unverifiable');
-});
-
-Deno.test('an ordinary site that is down: its own address was checked, clean', async () => {
-  const { deps } = fakeWorld({ sites: { 'http://quiet.example/': 'down' } });
-  assertEquals((await checkLink('quiet.example', deps)).verdict, 'clean');
-});
-
-Deno.test('too many redirects: unverifiable', async () => {
-  const sites: Record<string, Site> = {};
-  for (let i = 0; i <= MAX_HOPS + 1; i += 1) sites[`https://loop.example/${i}`] = { status: 302, location: `https://loop.example/${i + 1}` };
-  const { deps } = fakeWorld({ sites });
-  assertEquals((await checkLink('https://loop.example/0', deps)).verdict, 'unverifiable');
-});
-
-Deno.test('a redirect loop ends once every hop was seen (no endless lookups)', async () => {
-  const { deps, calls } = fakeWorld({ sites: { 'https://a.example/': { status: 302, location: 'https://b.example/' }, 'https://b.example/': { status: 302, location: 'https://a.example/' } } });
-  assertEquals((await checkLink('https://a.example/', deps)).verdict, 'unverifiable');
-  assertEquals(calls.webRisk.length, 2);
-});
-
-Deno.test('private, local and non-web addresses are never fetched: unverifiable', async () => {
-  for (const c of ['http://127.0.0.1/admin', 'http://10.0.0.5', 'http://192.168.1.1', 'http://169.254.169.254/latest/meta-data',
-    'http://[::1]/', 'http://localhost:8080', 'http://intranet', 'http://example.org:8443/x', 'printer.local']) {
+Deno.test('known shorteners and link-in-bio pages are refused without any request', async () => {
+  for (const c of ['https://bit.ly/abc', 'tinyurl.com/x', 'https://t.co/x', 'https://www.bit.ly/y', 'https://linktr.ee/someone',
+    'https://beacons.ai/me', 'https://sub.bitly.com/z']) {
     const { deps, calls } = fakeWorld();
     assertEquals((await checkLink(c, deps)).verdict, 'unverifiable', c);
-    assertEquals(calls.fetched, [], c);
+    assertEquals(calls.requests, [], c);
+  }
+  assertEquals(isShortener('notbit.ly'), false); // a look-alike suffix is not the shortener (it's looked up as itself)
+});
+
+Deno.test('an open redirect on a trusted site: the embedded destination is looked up too', async () => {
+  const { deps, calls } = fakeWorld({ listed: { 'https://phish.example/pay': ['SOCIAL_ENGINEERING'] } });
+  const r = await checkLink('https://www.google.com/url?q=https%3A%2F%2Fphish.example%2Fpay&sa=D', deps);
+  assertEquals(r.verdict, 'malicious');
+  assertEquals(calls.webRisk, ['https://www.google.com/url?q=https%3A%2F%2Fphish.example%2Fpay&sa=D', 'https://phish.example/pay']);
+  onlyWebRisk(calls);
+});
+
+Deno.test('embedded destinations in path, fragment, double encoding and www. forms are found', () => {
+  const at = (s: string) => embeddedDestinations(toWebUrl(s)!);
+  assertEquals(at('https://ok.example/redirect/https://a.example/x'), ['https://a.example/x']);
+  assertEquals(at('https://ok.example/#u=https://b.example/'), ['https://b.example/']);
+  assertEquals(at('https://ok.example/?u=https%253A%252F%252Fc.example%252F'), ['https://c.example/']);
+  assertEquals(at('https://ok.example/?next=www.d.example/page&x=1'), ['www.d.example/page']);
+  assertEquals(at('https://ok.example/plain/path?x=1'), []);
+});
+
+Deno.test('a shortener hidden inside a link is refused', async () => {
+  const { deps, calls } = fakeWorld();
+  assertEquals((await checkLink('https://l.facebook.com/l.php?u=https%3A%2F%2Fbit.ly%2Fabc', deps)).verdict, 'unverifiable');
+  assertEquals(calls.requests, []);
+});
+
+Deno.test('nesting: one level inside another is checked; deeper is refused', async () => {
+  const inner = encodeURIComponent('https://c.example/?go=' + encodeURIComponent('https://d.example/'));
+  const two = fakeWorld();
+  // link -> b.example -> its own embedded c.example: depth 2, all looked up (d.example is depth 3 = refused)
+  assertEquals((await checkLink(`https://a.example/?u=https%3A%2F%2Fb.example%2F%3Fv%3D${inner}`, two.deps)).verdict, 'unverifiable');
+  assertEquals(two.calls.requests, []);
+  const ok = fakeWorld();
+  assertEquals((await checkLink(`https://a.example/?u=${encodeURIComponent('https://b.example/')}`, ok.deps)).verdict, 'clean');
+  assertEquals(ok.calls.webRisk, [`https://a.example/?u=${encodeURIComponent('https://b.example/')}`, 'https://b.example/']);
+});
+
+Deno.test('lookups are capped and planned before any call (no excessive lookups)', async () => {
+  const many = Array.from({ length: MAX_EMBEDDED_PER_LINK + 1 }, (_, i) => `u${i}=${encodeURIComponent(`https://e${i}.example/`)}`).join('&');
+  const a = fakeWorld();
+  assertEquals((await checkLink(`https://a.example/?${many}`, a.deps)).verdict, 'unverifiable');
+  assertEquals(a.calls.requests, []);
+  // 5 links x (1 + 3 embedded) = 20 > MAX_LOOKUPS_PER_TEXT: refused before any lookup
+  const three = (i: number) => [0, 1, 2].map((j) => `u${j}=${encodeURIComponent(`https://x${i}${j}.example/`)}`).join('&');
+  const links = [0, 1, 2, 3, 4].map((i) => `https://l${i}.example/?${three(i)}`);
+  const b = fakeWorld();
+  const r: any = await checkLinks(links, b.deps);
+  assertEquals(r.verdict, 'unverifiable');
+  assertEquals(r.tooMany, true);
+  assertEquals(b.calls.requests, []);
+  assertEquals(20 > MAX_LOOKUPS_PER_TEXT, true);
+  // repeats are looked up once
+  const c = fakeWorld();
+  await checkLinks(['https://same.example/', 'same.example/'.replace(/^/, 'https://')], c.deps);
+  assertEquals(c.calls.webRisk.length, 1);
+});
+
+Deno.test('private, local and non-web addresses are refused without any request', async () => {
+  for (const c of ['http://127.0.0.1/admin', 'http://10.0.0.5', 'http://192.168.1.1', 'http://169.254.169.254/latest/meta-data',
+    'http://[::1]/', 'http://[::ffff:127.0.0.1]/', 'http://[64:ff9b::a9fe:a9fe]/', 'http://localhost:8080', 'http://intranet',
+    'http://example.org:8443/x', 'printer.local', 'ftp://example.org', 'javascript:alert(1)']) {
+    const { deps, calls } = fakeWorld();
+    assertEquals((await checkLink(c, deps)).verdict, 'unverifiable', c);
+    assertEquals(calls.requests, [], c);
   }
 });
 
-Deno.test('a public name that resolves to a private address (DNS) is not fetched', async () => {
-  const { deps, calls } = fakeWorld({ dns: { 'sneaky.example': ['10.1.2.3'] } });
-  assertEquals((await checkLink('https://sneaky.example/', deps)).verdict, 'unverifiable');
-  assertEquals(calls.fetched, []);
+Deno.test('user:password@ is dropped; the real host is what is looked up', async () => {
+  const { deps, calls } = fakeWorld({ listed: { 'http://bad.example/': ['SOCIAL_ENGINEERING'] } });
+  assertEquals((await checkLink('http://good.example@bad.example/', deps)).verdict, 'malicious');
+  assertEquals(calls.webRisk, ['http://bad.example/']);
 });
 
-Deno.test('a redirect to a private address or another scheme: unverifiable', async () => {
-  const a = fakeWorld({ sites: { 'https://ok.example/': { status: 302, location: 'http://169.254.169.254/' } } });
-  assertEquals((await checkLink('https://ok.example/', a.deps)).verdict, 'unverifiable');
-  assertEquals(a.calls.fetched, ['https://ok.example/']);
-  const b = fakeWorld({ sites: { 'https://ok.example/': { status: 302, location: 'javascript:alert(1)' } } });
-  assertEquals((await checkLink('https://ok.example/', b.deps)).verdict, 'unverifiable');
-});
-
-Deno.test('user:password@ is dropped before fetching; the real host is what is looked up', async () => {
-  const { deps, calls } = fakeWorld({ listed: { 'http://good.example@bad.example/': ['SOCIAL_ENGINEERING'] } });
-  const r = await checkLink('http://good.example@bad.example/', deps);
-  assertEquals(r.verdict, 'malicious');
-  const c = fakeWorld();
-  await checkLink('http://good.example@clean.example/', c.deps);
-  assertEquals(c.calls.fetched, ['http://clean.example/']);
-});
-
-Deno.test('Web Risk down, no key, or the budget used up: unavailable (fail closed)', async () => {
+Deno.test('Web Risk down, erroring, no key, or the budget used up: unavailable (fail closed)', async () => {
   assertEquals((await checkLink('example.org', fakeWorld({ webRiskStatus: 503 }).deps)).verdict, 'unavailable');
-  const noKey = fakeWorld(); (noKey.deps as any).webRiskKey = undefined;
+  assertEquals((await checkLink('example.org', fakeWorld({ webRiskStatus: 429 }).deps)).verdict, 'unavailable');
+  assertEquals((await checkLink('example.org', fakeWorld({ throws: true }).deps)).verdict, 'unavailable');
+  const noKey = fakeWorld(); noKey.deps.webRiskKey = undefined;
   assertEquals((await checkLink('example.org', noKey.deps)).verdict, 'unavailable');
-  assertEquals((await checkLink('example.org', fakeWorld({ budget: 0 }).deps)).verdict, 'unavailable');
+  assertEquals(noKey.calls.requests, []);
+  const broke = fakeWorld({ budget: 0 });
+  assertEquals((await checkLink('example.org', broke.deps)).verdict, 'unavailable');
+  assertEquals(broke.calls.requests, []);
+  // budget runs out mid-text: unavailable, never a partial "clean"
+  const half = fakeWorld({ budget: 1 });
+  assertEquals((await checkLinks(['a.example', 'b.example'], half.deps)).verdict, 'unavailable');
 });
 
-Deno.test('several links: worst wins; more than 5 links refused before any lookup', async () => {
+Deno.test('several links: worst wins; more than 5 refused before any lookup; none = clean', async () => {
   const w = fakeWorld({ listed: { 'http://b.example/': ['MALWARE'] } });
   assertEquals((await checkLinks(['a.example', 'b.example'], w.deps)).verdict, 'malicious');
   const many = fakeWorld();
   const r: any = await checkLinks(['a.example', 'b.example', 'c.example', 'd.example', 'e.example', 'f.example'], many.deps);
   assertEquals(r.verdict, 'unverifiable');
   assertEquals(r.tooMany, true);
-  assertEquals(many.calls.webRisk, []);
-  const mixed = fakeWorld({ webRiskStatus: 500 });
-  assertEquals((await checkLinks(['a.example', 'printer.local'], mixed.deps)).verdict, 'unavailable');
+  assertEquals(many.calls.requests, []);
+  const mixed = fakeWorld();
+  assertEquals((await checkLinks(['a.example', 'printer.local'], mixed.deps)).verdict, 'unverifiable');
+  assertEquals(mixed.calls.requests, []); // planned first: nothing looked up when one link can't be checked
   assertEquals((await checkLinks([], fakeWorld().deps)).verdict, 'clean');
 });
 
-Deno.test('look-alike (Cyrillic) names are checked under their real punycode name', async () => {
-  const url = toWebUrl('раураl.com')!;
-  assertEquals(url.hostname.startsWith('xn--'), true);
+Deno.test('look-alike (Cyrillic) names are looked up under their real punycode name', async () => {
+  const { deps, calls } = fakeWorld();
+  await checkLink('раураl.com', deps);
+  assertEquals(new URL(calls.webRisk[0]).hostname.startsWith('xn--'), true);
 });
 
 Deno.test('address helpers', () => {
-  for (const ip of ['10.0.0.1', '172.16.0.1', '172.31.255.255', '192.168.0.1', '127.0.0.1', '0.0.0.0', '169.254.1.1', '100.64.0.1',
-    '224.0.0.1', '::1', 'fd00::1', 'fe80::1', '::ffff:10.0.0.1']) assertEquals(isPrivateAddress(ip), true, ip);
-  for (const ip of ['8.8.8.8', '172.32.0.1', '93.184.216.34', '2606:4700::1111']) assertEquals(isPrivateAddress(ip), false, ip);
-  assertEquals(fetchable(new URL('https://example.org/')), true);
-  assertEquals(toWebUrl('ftp://example.org'), null);
+  for (const ip of ['10.0.0.1', '172.16.0.1', '192.168.0.1', '127.0.0.1', '0.0.0.0', '169.254.1.1', '100.64.0.1', '224.0.0.1',
+    '::1', 'fd00::1', 'fe80::1', '::ffff:10.0.0.1', '::ffff:7f00:1', '64:ff9b::a00:1', '2002:c0a8:101::1', 'zz::zz'])
+    assertEquals(isPrivateAddress(ip), true, ip);
+  for (const ip of ['8.8.8.8', '172.32.0.1', '93.184.216.34', '2606:4700::1111', '::ffff:5db8:d822'])
+    assertEquals(isPrivateAddress(ip), false, ip);
+  assertEquals(publicWebAddress(new URL('https://example.org/')), true);
   assertEquals(toWebUrl('not a url at all'), null);
 });
 
-Deno.test('IPv6 forms that carry a private IPv4 address are never fetched (parser writes them in hex)', async () => {
-  for (const u of ['http://[::ffff:127.0.0.1]/', 'http://[::ffff:169.254.169.254]/latest/meta-data', 'http://[::ffff:a00:1]/',
-    'http://[::127.0.0.1]/', 'http://[64:ff9b::a9fe:a9fe]/', 'http://[2002:a9fe:a9fe::]/', 'http://[0:0:0:0:0:ffff:7f00:1]/',
-    'http://[fe80::1]/', 'http://[fd00::1]/', 'http://[::]/', 'http://[::1]/']) {
-    const { deps, calls } = fakeWorld();
-    const r = await checkLink(u, deps);
-    assertEquals(r.verdict, 'unverifiable', u);
-    assertEquals(calls.fetched, [], u);
-  }
-});
-
-Deno.test('a redirect into a hex-written IPv4-mapped address is refused', async () => {
-  const { deps, calls } = fakeWorld({ sites: { 'http://example.org/': { status: 302, location: 'http://[::ffff:169.254.169.254]/' } } });
-  const r = await checkLink('http://example.org/', deps);
-  assertEquals(r.verdict, 'unverifiable');
-  assertEquals(calls.fetched, ['http://example.org/']);
-});
-
-Deno.test('DNS answering with a mapped or NAT64 private address is not fetched', async () => {
-  for (const addr of ['::ffff:7f00:1', '64:ff9b::a00:1', '2002:c0a8:101::1']) {
-    const { deps, calls } = fakeWorld({ dns: { 'evil.example': [addr] } });
-    const r = await checkLink('http://evil.example/', deps);
-    assertEquals(r.verdict, 'unverifiable', addr);
-    assertEquals(calls.fetched, [], addr);
-  }
-});
-
-Deno.test('no DNS check available: a named host is never fetched (fail closed)', async () => {
-  const { deps, calls } = fakeWorld();
-  const r = await checkLink('http://example.org/', { ...deps, resolveDns: undefined });
-  assertEquals(r.verdict, 'unverifiable');
-  assertEquals(calls.fetched, []);
-});
-
-Deno.test('public IPv6 and IPv4 stay fetchable', () => {
-  assertEquals(isPrivateAddress('2606:4700::1111'), false);
-  assertEquals(isPrivateAddress('::ffff:93.184.216.34'), false);
-  assertEquals(isPrivateAddress('[::ffff:5db8:d822]'), false);
-  assertEquals(isPrivateAddress('93.184.216.34'), false);
-  assertEquals(isPrivateAddress('not:an:address::zz'), true);
+Deno.test('two destinations in one link are both looked up (the first never swallows the next)', async () => {
+  const { deps, calls } = fakeWorld({ listed: { 'https://second.example/': ['MALWARE'] } });
+  const link = `https://ok.example/?a=${encodeURIComponent('https://first.example/')}&b=${encodeURIComponent('https://second.example/')}`;
+  assertEquals((await checkLink(link, deps)).verdict, 'malicious');
+  assertEquals(calls.webRisk, [link, 'https://first.example/', 'https://second.example/']);
+  onlyWebRisk(calls);
 });

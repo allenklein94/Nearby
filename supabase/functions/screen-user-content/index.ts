@@ -13,9 +13,10 @@
 //  2. The cron job (private.ugc_chat_kick), with the service key: POST { mode: 'chat_batch' } screens queued community
 //     and gathering group-chat messages after they were sent.
 // Private 1:1 messages and group-plan chat never come here.
-// 20270396: a text with a link (the database's own detector, ugc_links_for_check) is checked first: every link and every hop
-// of its redirect chain in Google Web Risk (_shared/linkSafety.ts). Listed = recorded as refused ('link_not_allowed');
-// a destination that can't be established or more than 5 links = 'refuse' with nothing recorded; Web Risk down or the
+// 20270396: a text with a link (the database's own detector, ugc_links_for_check) is checked first: every link and the
+// destinations embedded in it are looked up in Google Web Risk (_shared/linkSafety.ts). Nothing user-submitted is ever
+// fetched, resolved or followed (no SSRF path); known shorteners / link-in-bio pages are refused. Listed = recorded as refused ('link_not_allowed');
+// a destination that can't be checked without visiting it (shortener, private address), or over the link / lookup caps, = 'refuse' with nothing recorded; Web Risk down or the
 // lookup budget used up = 503 'link_check_unavailable', nothing recorded. Either way the database refuses the write.
 // No URL is ever logged.
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
@@ -52,20 +53,9 @@ export function normalizeText(text: string) {
 const SEVERITY: Record<string, number> = { publish: 0, hold: 1, refuse: 2 };
 const isMissingFn = (e: any) => !!e && (e.code === 'PGRST202' || e.code === '42883');
 
-async function resolveAll(host: string) {
-  const out: string[] = [];
-  for (const type of ['A', 'AAAA'] as const) {
-    try { out.push(...(await (Deno as any).resolveDns(host, type))); } catch (e) {
-      if (!(e instanceof (Deno as any).errors.NotFound)) throw e;
-    }
-  }
-  return out;
-}
-
 function linkDeps(admin: any, userId: string) {
   return {
-    fetch: (url: string, init: any) => fetch(url, init),
-    resolveDns: typeof (Deno as any).resolveDns === 'function' ? resolveAll : undefined,
+    fetch: (url: string, init: any) => fetch(url, init), // linkSafety.ts sends only Web Risk lookups through it
     webRiskKey: Deno.env.get('GOOGLE_WEB_RISK_API_KEY'),
     claimLookups: async (n: number) => {
       const { data, error } = await admin.rpc('claim_link_checks', { p_user: userId, p_lookups: n });
