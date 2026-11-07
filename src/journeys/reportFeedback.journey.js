@@ -44,7 +44,7 @@ d('journey: the reporter sees "received" then "review completed", once, and noth
   delete from private.rate_limit_rules;
   update private.trust_settings set established_min_account_age = null;
   insert into gatherings (id, host_id, title, description, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public)
-    values (v_g, v_b, 'Feedback journey coffee', 'Original words', now() + interval '3 days', 26.7123, -80.0321, 'Coffee', 'abc', 'public', true);
+    values (v_g, v_b, 'Feedback journey coffee', 'Original words', now() + interval '3 days', 26.7123, -80.0321, 'Coffee', 'abc', 'everyone', true);
   insert into communities (id, name, description, creator_id, interest_tag, is_public) values (v_cm, 'Feedback journey club', 'Community words', v_b, 'Coffee', true);
   insert into matches (user_a, user_b) values (least(v_a, v_b), greatest(v_a, v_b));
   insert into messages (match_id, sender_id, body)
