@@ -145,3 +145,45 @@ Deno.test('address helpers', () => {
   assertEquals(toWebUrl('ftp://example.org'), null);
   assertEquals(toWebUrl('not a url at all'), null);
 });
+
+Deno.test('IPv6 forms that carry a private IPv4 address are never fetched (parser writes them in hex)', async () => {
+  for (const u of ['http://[::ffff:127.0.0.1]/', 'http://[::ffff:169.254.169.254]/latest/meta-data', 'http://[::ffff:a00:1]/',
+    'http://[::127.0.0.1]/', 'http://[64:ff9b::a9fe:a9fe]/', 'http://[2002:a9fe:a9fe::]/', 'http://[0:0:0:0:0:ffff:7f00:1]/',
+    'http://[fe80::1]/', 'http://[fd00::1]/', 'http://[::]/', 'http://[::1]/']) {
+    const { deps, calls } = fakeWorld();
+    const r = await checkLink(u, deps);
+    assertEquals(r.verdict, 'unverifiable', u);
+    assertEquals(calls.fetched, [], u);
+  }
+});
+
+Deno.test('a redirect into a hex-written IPv4-mapped address is refused', async () => {
+  const { deps, calls } = fakeWorld({ sites: { 'http://example.org/': { status: 302, location: 'http://[::ffff:169.254.169.254]/' } } });
+  const r = await checkLink('http://example.org/', deps);
+  assertEquals(r.verdict, 'unverifiable');
+  assertEquals(calls.fetched, ['http://example.org/']);
+});
+
+Deno.test('DNS answering with a mapped or NAT64 private address is not fetched', async () => {
+  for (const addr of ['::ffff:7f00:1', '64:ff9b::a00:1', '2002:c0a8:101::1']) {
+    const { deps, calls } = fakeWorld({ dns: { 'evil.example': [addr] } });
+    const r = await checkLink('http://evil.example/', deps);
+    assertEquals(r.verdict, 'unverifiable', addr);
+    assertEquals(calls.fetched, [], addr);
+  }
+});
+
+Deno.test('no DNS check available: a named host is never fetched (fail closed)', async () => {
+  const { deps, calls } = fakeWorld();
+  const r = await checkLink('http://example.org/', { ...deps, resolveDns: undefined });
+  assertEquals(r.verdict, 'unverifiable');
+  assertEquals(calls.fetched, []);
+});
+
+Deno.test('public IPv6 and IPv4 stay fetchable', () => {
+  assertEquals(isPrivateAddress('2606:4700::1111'), false);
+  assertEquals(isPrivateAddress('::ffff:93.184.216.34'), false);
+  assertEquals(isPrivateAddress('[::ffff:5db8:d822]'), false);
+  assertEquals(isPrivateAddress('93.184.216.34'), false);
+  assertEquals(isPrivateAddress('not:an:address::zz'), true);
+});

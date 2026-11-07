@@ -27,22 +27,51 @@ export function isShortener(host: string) {
   return SHORTENERS.some((s) => h === s || h.endsWith(`.${s}`));
 }
 
-// An address we never fetch: loopback, private, link-local, carrier-grade NAT, multicast, unspecified (v4 and v6).
+// An address we never fetch: loopback, private, link-local, carrier-grade NAT, multicast, unspecified, documentation /
+// benchmark ranges (v4), and every IPv6 form that carries an IPv4 address (mapped ::ffff:, compatible ::/96, NAT64
+// 64:ff9b::/96, 6to4 2002::/16), judged by the IPv4 inside. The URL parser writes [::ffff:127.0.0.1] as [::ffff:7f00:1],
+// so IPv6 is parsed into its 8 groups, never matched as text.
+function privateV4(a: number, b: number, c: number) {
+  return a === 0 || a === 10 || a === 127 || a >= 224 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31)
+    || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || (a === 192 && b === 0)
+    || (a === 198 && (b === 18 || b === 19)) || (a === 198 && b === 51 && c === 100) || (a === 203 && b === 0 && c === 113);
+}
+
+function ipv6Groups(v: string): number[] | null {
+  let s = v;
+  const dotted = s.match(/^(.*:)(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (dotted) {
+    const q = dotted.slice(2).map(Number);
+    if (q.some((n) => n > 255)) return null;
+    s = `${dotted[1]}${((q[0] << 8) | q[1]).toString(16)}:${((q[2] << 8) | q[3]).toString(16)}`;
+  }
+  const halves = s.split('::');
+  if (halves.length > 2) return null;
+  const part = (h: string) => (h ? h.split(':') : []);
+  const head = part(halves[0]);
+  const tail = halves.length === 2 ? part(halves[1]) : [];
+  const fill = halves.length === 2 ? 8 - head.length - tail.length : 0;
+  if (fill < 0 || (halves.length === 1 && head.length !== 8)) return null;
+  const all = [...head, ...Array(fill).fill('0'), ...tail];
+  if (all.length !== 8 || all.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return null;
+  return all.map((g) => parseInt(g, 16));
+}
+
 export function isPrivateAddress(ip: string) {
-  const v = ip.replace(/^\[|\]$/g, '').toLowerCase();
+  const v = ip.replace(/^\[|\]$/g, '').replace(/%.*$/, '').toLowerCase();
   const m = v.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
-  if (m) {
-    const [a, b] = [Number(m[1]), Number(m[2])];
-    return a === 0 || a === 10 || a === 127 || a >= 224 || (a === 169 && b === 254) || (a === 172 && b >= 16 && b <= 31)
-      || (a === 192 && b === 168) || (a === 100 && b >= 64 && b <= 127) || (a === 192 && b === 0) || (a === 198 && (b === 18 || b === 19));
-  }
-  if (v.includes(':')) {
-    if (v === '::' || v === '::1') return true;
-    const mapped = v.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/);
-    if (mapped) return isPrivateAddress(mapped[1]);
-    return /^(fc|fd|fe8|fe9|fea|feb|ff)/.test(v);
-  }
-  return false;
+  if (m) return privateV4(Number(m[1]), Number(m[2]), Number(m[3]));
+  if (!v.includes(':')) return false;
+  const g = ipv6Groups(v);
+  if (!g) return true; // can't read it: never fetch it
+  const embedded = (hi: number, lo: number) => privateV4(hi >> 8, hi & 255, lo >> 8);
+  if (g.every((x) => x === 0)) return true;                                   // ::
+  if (g.slice(0, 7).every((x) => x === 0) && g[7] === 1) return true;         // ::1
+  if (g.slice(0, 5).every((x) => x === 0) && (g[5] === 0xffff || g[5] === 0)) return embedded(g[6], g[7]) || g[5] === 0; // mapped / compatible
+  if (g[0] === 0x64 && g[1] === 0xff9b && g.slice(2, 6).every((x) => x === 0)) return embedded(g[6], g[7]); // NAT64
+  if (g[0] === 0x2002) return embedded(g[1], g[2]);                           // 6to4
+  if (g[0] === 0x2001 && g[1] === 0x0db8) return true;                        // documentation
+  return (g[0] & 0xfe00) === 0xfc00 || (g[0] & 0xffc0) === 0xfe80 || (g[0] & 0xff00) === 0xff00; // unique local, link-local, multicast
 }
 
 const IP_LITERAL = /^(\d{1,3}(\.\d{1,3}){3}|\[[0-9a-f:.]+\])$/i;
@@ -71,7 +100,7 @@ export function fetchable(url: URL) {
 
 export type LinkDeps = {
   fetch: (url: string, init: any) => Promise<{ status: number; headers: { get(name: string): string | null }; body?: any }>;
-  resolveDns?: (host: string) => Promise<string[]>;   // all A/AAAA records; missing = not checked (documented limit)
+  resolveDns?: (host: string) => Promise<string[]>;   // all A/AAAA records; missing = a named host is never fetched (unverifiable)
   webRiskKey: string | undefined;
   claimLookups: (n: number) => Promise<boolean>;      // the database budget (claim_link_checks)
   now?: () => number;
@@ -106,9 +135,12 @@ export async function webRiskLookup(url: string, deps: LinkDeps): Promise<'clean
 // The next hop: a redirect target, null when the chain ends here, or 'unverifiable' / 'error'.
 async function nextHop(url: URL, deps: LinkDeps): Promise<URL | null | 'unverifiable' | 'error'> {
   if (!fetchable(url)) return 'unverifiable';
-  if (deps.resolveDns && !IP_LITERAL.test(url.hostname)) {
+  if (!IP_LITERAL.test(url.hostname)) {
+    // no DNS check available = we can't tell where the name points: never fetch it (fail closed, not open)
+    if (!deps.resolveDns) return 'unverifiable';
     let addrs: string[] = [];
     try { addrs = await withTimeout(deps.resolveDns(url.hostname), HOP_TIMEOUT_MS); } catch { return 'error'; }
+    if (!addrs.length) return 'error';
     if (addrs.some(isPrivateAddress)) return 'unverifiable';
   }
   const target = new URL(url.href);

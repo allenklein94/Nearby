@@ -54,6 +54,33 @@ phishing or malware site. We don't store the link for this check."
   Guard `src/utils/linkSafetyGuard.test.js`.
 - See the history entry for the full regression numbers.
 
+## Focused security verification (owner, 2026-11-07, second pass)
+
+Read the code, not the summary. Results:
+
+- **SSRF: one real defect FOUND + FIXED** (edge-function code only; migration 0396 unchanged).
+  (a) `isPrivateAddress` matched IPv6 as text, so a DNS answer in hex IPv4-mapped (`::ffff:7f00:1`), NAT64
+  (`64:ff9b::a9fe:a9fe` = the cloud metadata address) or 6to4 (`2002:c0a8:...`) form counted as public and was fetched.
+  Literal URLs like `http://[::ffff:127.0.0.1]` were already refused, but only by accident (the hex form has no dot).
+  Now IPv6 is parsed into its 8 groups and any embedded IPv4 is judged as IPv4; unreadable = private; documentation ranges added.
+  (b) If the runtime had no `Deno.resolveDns`, the DNS check was skipped (fail OPEN). Now a named host is never fetched
+  without a DNS check (unverifiable = refused). DEPLOY CHECK: confirm `Deno.resolveDns` exists in Supabase's edge runtime,
+  or every link will be refused.
+  Deno tests 20/20 (5 new; 3 fail on the previous code). Already in place, re-read: http/https only, ports 80/443 only,
+  localhost / .local / .internal / .home.arpa / dotless names refused, every redirect hop re-checked before fetch
+  (`redirect: manual`), max 5 hops, 4 s per hop, body never read, credentials dropped, Web Risk called with `redirect: error`.
+  The request is a blind GET: nothing from the fetched page reaches the user.
+- **DNS rebinding: still a limit, not fixed.** The check resolves, then `fetch` resolves again; Deno's fetch can't be
+  pinned to the checked IP. A name that answers public then private could get one blind GET into the edge runtime's network.
+- **Quota / outage: blocks legitimate users, by design.** Web Risk down, key missing, 200/account or 3000/day used up =
+  any text WITH a link is refused (`link_check_required`); text without links unaffected. A popular day could exhaust 3000.
+  Test after deploy: one legitimate save with a link (passes), then the budget forced to 0 (refused, link-free save passes).
+- **Legitimate links:** a site that's down or times out = clean (its own address was looked up); a shortener that doesn't
+  redirect = refused (could block some real short links). Not measured on real sites.
+- **Real Google Web Risk API: NEVER CALLED.** Every test uses a fake. The request/response shape follows Google's
+  `uris:search` docs, unconfirmed against the live API. Pricing (100k/month free, then $0.50/1000) from Google's page,
+  to reconfirm when the key is created.
+
 ## Not verified / limits
 
 - Real Web Risk never called (needs the owner's Google Cloud key). The edge function was type-checked, not run.
