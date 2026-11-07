@@ -24,6 +24,8 @@ NOT deployed; own deploy approval after 0396.
 - Not run (deploy gates, `post-deploy.js` 20270397): prod prelude journeys 0348-0397, prod aborted rollback, grants vs prod, real
   API with test accounts, phone, native review. Not covered by the journey: offer + Story/memory report inserts (the trigger has no
   type condition; their fixtures live in offerSafety / mediaReports).
+- Owner ACCEPTED as staged (2026-11-07). Full Jest rerun after the post-deploy fix: 549/549 suites, 7407 passed + 11 todo. Build 87
+  status checked read-only (`eas build:list`, 2026-11-07): latest iOS build is still 86 (7d72d615, 2026-10-18); build 87 never started.
 
 # 2026-11-07: Legal-hold control in Admin Reports (20270395's functions, staged)
 
