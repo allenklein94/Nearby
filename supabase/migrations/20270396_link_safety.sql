@@ -50,7 +50,7 @@ declare
   v_links text[] := '{}';
   m text[];
   c text;
-  v_sep constant text := '[:space:]<>"''`(){}\[\],;!?|^*';
+  v_sep constant text := '[:space:]<>"''`(){}\[\],;!|^*';  -- not '?': a query string belongs to its link
 begin
   if p_text is null or btrim(p_text) = '' then return '{}'; end if;
   s := lower(normalize(p_text, NFKC));
@@ -63,7 +63,7 @@ begin
 
   -- scheme addresses (everything up to a separator), then removed so nothing below reads them twice
   for m in select regexp_matches(s, '\mhttps?://[^' || v_sep || ']+', 'g') loop
-    v_links := v_links || regexp_replace(m[1], '[.:/]+$', '');
+    v_links := v_links || regexp_replace(m[1], '[.:/?]+$', '');
   end loop;
   s := regexp_replace(s, '\mhttps?://[^' || v_sep || ']+', ' ', 'g');
   -- email addresses are not links
@@ -72,7 +72,7 @@ begin
   for m in select regexp_matches(s,
       '(?:^|[' || v_sep || '/@:.])((?:[^' || v_sep || './@:_]+\.)+(?:xn--[a-z0-9-]+|[^' || v_sep || './@:_0-9-]{2,24})(?::[0-9]{1,5})?(?:/[^' || v_sep || ']*)?)',
       'g') loop
-    c := regexp_replace(m[1], '[.:/]+$', '');
+    c := regexp_replace(m[1], '[.:/?]+$', '');
     -- a word.word that is really a decimal or a time ("3.5km", "7.30pm") never reaches here: the ending has no digits
     v_links := v_links || c;
   end loop;
@@ -80,7 +80,7 @@ begin
   -- whole run of letters as one name)
   for m in select regexp_matches(s,
       '(?:^|[^a-z0-9-])((?:[a-z0-9-]+\.)+(?:xn--[a-z0-9-]+|[a-z]{2,24})(?::[0-9]{1,5})?(?:/[^' || v_sep || ']*)?)', 'g') loop
-    v_links := v_links || regexp_replace(m[1], '[.:/]+$', '');
+    v_links := v_links || regexp_replace(m[1], '[.:/?]+$', '');
   end loop;
   -- IPv4 addresses (with an optional port and path)
   for m in select regexp_matches(s, '(?:^|[^0-9])((?:[0-9]{1,3}\.){3}[0-9]{1,3}(?::[0-9]{1,5})?(?:/[^' || v_sep || ']*)?)', 'g') loop
@@ -230,16 +230,17 @@ begin
   if private.ugc_norm(p_text) = '' then return 'none'; end if;
   v_sha := private.ugc_text_sha(p_text);
   if cardinality(private.ugc_links(p_text)) > 0 then
+    -- a known-bad destination wins over any other result for the same text
+    if exists (select 1 from private.ugc_screenings s
+                where s.user_id = auth.uid() and s.text_sha256 = v_sha and s.is_name = p_is_name and s.valid_until > now()
+                  and s.link_check = 'malicious') then
+      raise exception 'This link can''t be shared on Nearby. Please remove it and try again.'
+        using errcode = '42501', hint = 'link_not_allowed';
+    end if;
     v_outcome := private.ugc_link_screening_lookup(auth.uid(), v_sha, p_is_name);
     if v_outcome is null then
       raise exception 'Nearby needs to check where this link goes before it can be published.'
         using errcode = '42501', hint = 'link_check_required';
-    elsif v_outcome = 'refuse' and exists (
-        select 1 from private.ugc_screenings s
-         where s.user_id = auth.uid() and s.text_sha256 = v_sha and s.is_name = p_is_name and s.valid_until > now()
-           and s.link_check = 'malicious') then
-      raise exception 'This link can''t be shared on Nearby. Please remove it and try again.'
-        using errcode = '42501', hint = 'link_not_allowed';
     end if;
   else
     v_outcome := private.ugc_screening_lookup(auth.uid(), v_sha, p_is_name);

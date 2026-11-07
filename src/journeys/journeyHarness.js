@@ -84,6 +84,10 @@ do $ugc$ begin
     execute $x$create or replace function private.ugc_screening_lookup(p_user uuid, p_sha text, p_is_name boolean)
       returns text language sql stable as $y$ select 'publish'::text $y$$x$;
   end if;
+  if to_regprocedure('private.ugc_link_screening_lookup(uuid,text,boolean)') is not null then
+    execute $x$create or replace function private.ugc_link_screening_lookup(p_user uuid, p_sha text, p_is_name boolean)
+      returns text language sql stable as $y$ select 'publish'::text $y$$x$;
+  end if;
 end $ugc$;
 `;
 
