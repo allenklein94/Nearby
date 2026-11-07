@@ -13,10 +13,16 @@
 //  2. The cron job (private.ugc_chat_kick), with the service key: POST { mode: 'chat_batch' } screens queued community
 //     and gathering group-chat messages after they were sent.
 // Private 1:1 messages and group-plan chat never come here.
+// 20270396: a text with a link (the database's own detector, ugc_links_for_check) is checked first: every link and every hop
+// of its redirect chain in Google Web Risk (_shared/linkSafety.ts). Listed = recorded as refused ('link_not_allowed');
+// a destination that can't be established or more than 5 links = 'refuse' with nothing recorded; Web Risk down or the
+// lookup budget used up = 503 'link_check_unavailable', nothing recorded. Either way the database refuses the write.
+// No URL is ever logged.
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 import { secretKey } from '../_shared/supabaseKeys.ts';
 import { classifyUserText, TEXT_KINDS, USER_CONTENT_MODEL } from '../_shared/userContentClassifier.ts';
+import { checkLinks } from '../_shared/linkSafety.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 const SERVICE_ROLE_KEY = secretKey();
@@ -44,6 +50,29 @@ export function normalizeText(text: string) {
 }
 
 const SEVERITY: Record<string, number> = { publish: 0, hold: 1, refuse: 2 };
+const isMissingFn = (e: any) => !!e && (e.code === 'PGRST202' || e.code === '42883');
+
+async function resolveAll(host: string) {
+  const out: string[] = [];
+  for (const type of ['A', 'AAAA'] as const) {
+    try { out.push(...(await (Deno as any).resolveDns(host, type))); } catch (e) {
+      if (!(e instanceof (Deno as any).errors.NotFound)) throw e;
+    }
+  }
+  return out;
+}
+
+function linkDeps(admin: any, userId: string) {
+  return {
+    fetch: (url: string, init: any) => fetch(url, init),
+    resolveDns: typeof (Deno as any).resolveDns === 'function' ? resolveAll : undefined,
+    webRiskKey: Deno.env.get('GOOGLE_WEB_RISK_API_KEY'),
+    claimLookups: async (n: number) => {
+      const { data, error } = await admin.rpc('claim_link_checks', { p_user: userId, p_lookups: n });
+      return !error && data === true;
+    },
+  };
+}
 
 async function screenForUser(admin: any, userId: string, body: any) {
   const raw = Array.isArray(body?.texts) ? body.texts : [];
@@ -59,6 +88,17 @@ async function screenForUser(admin: any, userId: string, body: any) {
     if (!item.text) { results.push({ outcome: 'publish' }); continue; }
     const isName = NAME_KINDS.includes(item.kind);
     const sha = await sha256Hex(item.text);
+    const { data: links, error: linksError } = await admin.rpc('ugc_links_for_check', { p_text: item.text });
+    if (linksError && !isMissingFn(linksError)) {
+      console.error('screen-user-content: link detection failed', linksError.message);
+      return unavailable();
+    }
+    if (Array.isArray(links) && links.length) {
+      const linked = await screenLinkedText(admin, userId, item, sha, isName, links);
+      if (linked instanceof Response) return linked;
+      results.push(linked);
+      continue;
+    }
     const { data: earlier, error: findError } = await admin.rpc('find_ugc_screening', {
       p_user: userId, p_text_sha256: sha, p_is_name: isName,
     });
@@ -91,6 +131,51 @@ async function screenForUser(admin: any, userId: string, body: any) {
   }
   const outcome = results.reduce((w, r) => (SEVERITY[r.outcome] > SEVERITY[w] ? r.outcome : w), 'publish');
   return json({ outcome, results });
+}
+
+// A text with links: an earlier link-checked result, else the destination check, then (only if every link is clean) the
+// classifier. Returns a result or a Response to send as is.
+async function screenLinkedText(admin: any, userId: string, item: any, sha: string, isName: boolean, links: string[]) {
+  const { data: earlier, error: findError } = await admin.rpc('find_ugc_link_screening', {
+    p_user: userId, p_text_sha256: sha, p_is_name: isName,
+  });
+  if (findError) { console.error('screen-user-content: link lookup failed', findError.message); return unavailable(); }
+  if (earlier === 'publish' || earlier === 'hold') return { outcome: earlier };
+
+  const { data: withinLimit, error: limitError } = await admin.rpc('check_and_increment_ai_use', {
+    user_id_param: userId, daily_limit: DAILY_AI_LIMIT,
+  });
+  if (limitError) { console.error('screen-user-content: usage check failed', limitError.message); return unavailable(); }
+  if (!withinLimit) return json({ code: 'usage_limit', error: "You've hit today's limit for this. It resets tomorrow." }, 429);
+
+  const check: any = await checkLinks(links, linkDeps(admin, userId));
+  if (check.verdict === 'unavailable') {
+    console.error('screen-user-content: link check unavailable', JSON.stringify({ links: links.length, lookups: check.lookups }));
+    return json({ code: 'link_check_unavailable', error: "We couldn't check this right now. Please try again in a moment." }, 503);
+  }
+  if (check.verdict === 'unverifiable') {
+    return { outcome: 'refuse', code: check.tooMany ? 'too_many_links' : 'link_unverifiable' };
+  }
+  if (check.verdict === 'malicious') {
+    const { error } = await admin.rpc('record_ugc_link_screening', {
+      p_user: userId, p_text_sha256: sha, p_kind: item.kind, p_is_name: isName, p_link_check: 'malicious',
+      p_link_count: links.length, p_link_threats: check.threats,
+    });
+    if (error) { console.error('screen-user-content: could not record the link result', error.message); return unavailable(); }
+    return { outcome: 'refuse', code: 'link_not_allowed' };
+  }
+  const verdict = await classifyUserText(item.text, item.kind);
+  if (!verdict) return unavailable();
+  const { data: recorded, error: recordError } = await admin.rpc('record_ugc_link_screening', {
+    p_user: userId, p_text_sha256: sha, p_kind: item.kind, p_is_name: isName, p_link_check: 'clean',
+    p_link_count: links.length, p_link_threats: [], p_risk: verdict.riskTier, p_categories: verdict.matchedCategories,
+    p_languages: verdict.languages, p_reasoning: verdict.reasoning, p_model: USER_CONTENT_MODEL,
+  });
+  if (recordError || !recorded?.outcome) {
+    console.error('screen-user-content: could not record the result', recordError?.message);
+    return unavailable();
+  }
+  return { outcome: recorded.outcome, languages: verdict.languages };
 }
 
 async function screenChatBatch(admin: any) {
