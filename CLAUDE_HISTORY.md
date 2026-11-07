@@ -1,3 +1,30 @@
+# 2026-11-07: "Unsafe activity or situation" + urgent-first admin queue (20270398, staged)
+
+Owner approved (2026-11-07, options 1/1/2): an urgent report reason for in-person safety, offered on profiles, messages,
+gatherings, communities, businesses and offers (not photos), on the existing sheet + optional details; and the admin queue fixed
+so urgent safety reports come first. Correction recorded: before 0398 "urgent" (harassment, underage) meant only its own cap
+(30 / 24 h instead of the ordinary 10); the queue sorted only impersonation first (0381). Earlier today I had told the owner
+urgent reports "go first": that was wrong.
+
+Built on `post-tier1/unsafe-report-reason` (stacked on `post-tier1/report-feedback`), migration 20270398 (sha256
+04953678…07be), NOT merged, NOT deployed, not in build 87; own deploy approval after 0397.
+- Server: code `unsafe_situation` (English value 'Unsafe activity or situation') in `private.report_reason_code` + the reason
+  check; `private.is_urgent_report_reason` = harassment, underage_user, unsafe_situation. ONE shared urgent allowance: the
+  `urgent_report` rate limit counts every urgent report by that reporter, whichever reason (journey: a 4th urgent report past a
+  cap of 3 refused for any reason); the ordinary cap is still skipped. `reports.review_priority` (generated, dropped + re-added:
+  PG 15 can't alter the expression; no index, view, policy or column grant used it) = 2 urgent safety, 1 impersonation, 0 rest.
+  Ordering only: nothing suspends, hides, removes or notifies anyone.
+- App: `utils/reportReasons.js` (new reason, business + gathering/community lists include it, media doesn't; `reportQueuePriority`,
+  `reportQueueTag` " · Urgent" / " · Priority"; `sortReportQueue` = open, priority, OLDEST first within each group, then resolved
+  newest first); both admin screens ask the server for review_priority desc, created_at asc. Label `ui.reportBlock.reason.unsafe`
+  in 11 languages (10 machine-authored, need native review). DEPLOY GATE: 0398 live before any build offering the reason
+  (0370-0397 refuse the value).
+- Verified locally (2026-11-07): 0398 applied on the fresh 0397 replay (521 migrations + 0398), journey `unsafeReportReason` 5/5
+  (fails on the rolled-back DB, as does `reportReasonCodes`, which loops over the app's table), journeys 1180/1180, object-report +
+  media-report + review-case concurrency pass, rollback = 0397 schema 0 diff lines, re-apply identical (69,032 lines), Jest 549/549
+  (7407 + 11 todo). Not run: a from-scratch replay with 0398 in it (applied on top), prod gates (`post-deploy.js` 20270398), real
+  API, phone (8 reasons in the sheet), native review. Offer report with this reason not in the journey (no content-type condition).
+
 # 2026-11-07: Reporter feedback loop (20270397, staged)
 
 Owner approved a narrowly scoped post-Tier 1 change: the person who filed a report sees, privately in the existing Activity tab,

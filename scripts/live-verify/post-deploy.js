@@ -261,6 +261,14 @@ const STEPS = {
       'phone (a build with the Activity rows): both statuses render in Activity > Earlier, no tap destination, VoiceOver reads the title + time; native review of ui.activity.reportReceived / reviewCompleted + the reworded ui.reportBlock.reportSubmitted (10 languages)',
       'rollback = scripts/rollback/20270397_report_feedback.rollback.sql: reporters\' statuses go with their table; reports, evidence and the admin workflow untouched; defect only, owner decides',
       'a status readable by anyone but its reporter, any outcome/note/reported account reaching the reporter, or a second completion for one report = defect: STOP, report'] },
+  20270398: { journeys: ['unsafeReportReason', 'impersonationBusinessReports', 'reportReasonCodes', 'reportFeedback', 'objectReports'],
+    manual: ['DEPLOY GATE: 0398 live + verified BEFORE any app build offering "Unsafe activity or situation" reaches users (on 0370-0397 the database refuses that value: the report would fail with a generic error)',
+      'read-only right after: reports_reason_code_check lists unsafe_situation; private.is_urgent_report_reason = harassment, underage_user, unsafe_situation; review_priority = 2 for those three, 1 impersonation, 0 else, for existing rows too; no client grant on the private functions',
+      'urgent cap unchanged (private.rate_limit_rules urgent_report 30 / 24 h, new + established) and shared: one dedicated test account files 3 urgent reports of different reasons with a temporary cap of 3 in a rolled-back transaction = the 4th refused',
+      'through the real API with dedicated test accounts: the sheet offers the reason on a profile, a message, a gathering, a community, a business and an offer (never on a photo); a report saves as unsafe_situation, the reporter sees "Report received"; Admin Reports shows it "· Urgent" above impersonation, oldest urgent first; nobody is suspended, hidden or notified',
+      'native review of ui.reportBlock.reason.unsafe (10 machine-authored languages); phone: the sheet still fits (8 reasons for people)',
+      'rollback = scripts/rollback/20270398_unsafe_report_reason.rollback.sql: unsafe_situation rows become "other" with the original reason in details; harassment / underage return to the ordinary queue order; defect only, owner decides',
+      'an urgent reason that suspends, hides, removes or notifies anyone, a second urgent allowance per reason, or a client able to set a priority = defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
