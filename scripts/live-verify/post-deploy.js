@@ -240,9 +240,18 @@ const STEPS = {
       'scripts/replay/gated-perk-legal-hold-concurrency.js sections 3-5 passed on a fresh replay before deploy (local only)',
       'through the real API with dedicated test accounts: a non-admin is refused all three functions; an admin places a hold on a test report and releases it with a reason',
       'LEGAL REVIEW (not done): which matters need a hold, who may place and release one, how long the ordinary 12-month periods should be; the mechanism decides none of this and holds nothing by itself',
-      'no admin screen exists for holds: until one is approved, holds are placed by an admin calling the functions (signed in as that admin)',
+      'the hold control is in Admin Reports (a later build, not build 87); until that build is on the admin\'s device, holds are placed by an admin calling the functions (signed in as that admin); procedure DRAFT PRODUCT_AUDIT/LEGAL_HOLD_PROCEDURE_2026-11-07.md',
       'rollback = scripts/rollback/20270395_legal_holds.rollback.sql: the hold records go with the table (copy them out first); held evidence becomes purgeable on the next nightly runs; defect only, owner decides',
       'held evidence purged, a hold placed or released by a non-admin, or a hold rewritten = defect: STOP, report'] },
+  20270396: { journeys: ['linkSafety', 'ugcModeration'],
+    manual: ['BEFORE deploy (owner): a Google Cloud project with billing, the Web Risk API enabled, a NEW API key restricted to the Web Risk API only, set as the edge secret GOOGLE_WEB_RISK_API_KEY (never in chat or Git); a budget alert on that project',
+      'deploy together: this migration + the screen-user-content version with the link check (supabase/functions/_shared/linkSafety.ts); 20270373 + its gates first (this changes nothing until 0373 is live)',
+      'read-only right after: ugc_links_for_check / claim_link_checks / find_ugc_link_screening / record_ugc_link_screening execute for service_role only; private.link_check_usage + private.ugc_links have no client access; cron job purge-link-check-usage listed',
+      'scripts/replay/link-check-budget-concurrency.js passed on a fresh replay before deploy (local only)',
+      'through the real API with a dedicated test account: (1) a test gathering whose description has a link and NO screening, written directly = refused link_check_required, nothing written; (2) the same through screen-user-content with a harmless link (e.g. https://example.org) = published; (3) Google\'s own Web Risk test URL (testsafebrowsing.appspot.com/s/phishing.html) = refused link_not_allowed; (4) a bit.ly link to that test URL = refused; (5) with the secret unset = 503 link_check_unavailable and a text-only gathering still publishes; then restore the secret',
+      'Privacy Policy sentence (links in public text are sent to Google Web Risk to check them) approved + published with the deploy; legal review',
+      'rollback = deploy the previous screen-user-content first, then scripts/rollback/20270396_link_safety.rollback.sql: linked text needs only the word screening again; defect only, owner decides',
+      'a linked public text published without a link-checked result, a client able to record or find a result, or a URL in a log = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
