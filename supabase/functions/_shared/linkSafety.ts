@@ -51,6 +51,7 @@ const IP_LITERAL = /^(\d{1,3}(\.\d{1,3}){3}|\[[0-9a-f:.]+\])$/i;
 export function toWebUrl(candidate: string): URL | null {
   let c = String(candidate || '').trim().replace(/^[^\p{L}\p{N}]+/u, '');
   if (!c) return null;
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(c) && !/^https?:\/\//i.test(c)) return null; // ftp://, data://, ...
   if (!/^https?:\/\//i.test(c)) c = `http://${c}`;
   let url: URL;
   try { url = new URL(c); } catch { return null; }
@@ -65,8 +66,7 @@ export function fetchable(url: URL) {
       || host.endsWith('.home.arpa') || !host.includes('.')) return false;
   if (IP_LITERAL.test(host) && isPrivateAddress(host)) return false;
   if (url.port && url.port !== '80' && url.port !== '443') return false;
-  if (url.username || url.password) return true; // fetched without them (fetch drops userinfo); the host is what counts
-  return true;
+  return true; // a user:password@ part is dropped before fetching: the host is what counts
 }
 
 export type LinkDeps = {
@@ -111,9 +111,12 @@ async function nextHop(url: URL, deps: LinkDeps): Promise<URL | null | 'unverifi
     try { addrs = await withTimeout(deps.resolveDns(url.hostname), HOP_TIMEOUT_MS); } catch { return 'error'; }
     if (addrs.some(isPrivateAddress)) return 'unverifiable';
   }
+  const target = new URL(url.href);
+  target.username = '';
+  target.password = '';
   let res: any;
   try {
-    res = await withTimeout(deps.fetch(url.href, {
+    res = await withTimeout(deps.fetch(target.href, {
       method: 'GET', redirect: 'manual', headers: { 'User-Agent': 'Mozilla/5.0 (compatible; NearbyLinkCheck/1.0)' },
     }), HOP_TIMEOUT_MS);
   } catch {
