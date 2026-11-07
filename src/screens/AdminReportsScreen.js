@@ -8,7 +8,7 @@ import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { PullToRefresh } from '../motion';
 import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
-import { reportReasonLabel, sortReportQueue, isPriorityReportReason } from '../utils/reportReasons';
+import { reportReasonLabel, sortReportQueue, reportQueueTag } from '../utils/reportReasons';
 import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
 import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
 import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
@@ -59,11 +59,11 @@ export default function AdminReportsScreen({ navigation }) {
   async function load() {
     setLoading(true);
     try {
-      // 20270381: impersonation first among open reports (review_priority); older databases: same order client-side
+      // 20270398: urgent safety, then impersonation, oldest first within each (review_priority); older databases: same order client-side
       const run = (columns, byPriority) => {
         let query = supabase.from('reports').select(columns).order('resolved', { ascending: true });
         if (byPriority) query = query.order('review_priority', { ascending: false });
-        return query.order('created_at', { ascending: false });
+        return query.order('created_at', { ascending: byPriority });
       };
       let { data, error } = await run(REPORT_COLUMNS + CONTENT_COLUMNS, true);
       if (isMissing(error)) ({ data, error } = await run(REPORT_COLUMNS + CONTENT_COLUMNS, false));
@@ -375,7 +375,7 @@ export default function AdminReportsScreen({ navigation }) {
         }
         renderItem={({ item }) => (
           <View style={[styles.card, item.resolved && styles.cardResolved]}>
-            <Text style={styles.reason}>{reportReasonLabel(item.reason)}{isPriorityReportReason(item.reason) && !item.resolved ? ' · Priority' : ''}</Text>
+            <Text style={styles.reason}>{reportReasonLabel(item.reason)}{!item.resolved ? reportQueueTag(item.reason) : ''}</Text>
             {item.content_type === 'business' ? (
               <Text style={styles.meta}>About a business (nobody named)</Text>
             ) : item.reported_id ? (

@@ -10,6 +10,9 @@
 export const REPORT_REASONS = [
   { code: 'inappropriate_photo', legacy: 'Inappropriate photo', key: 'inappropriatePhoto', admin: 'Inappropriate content' },
   { code: 'harassment', legacy: 'Harassment or abuse', key: 'harassment', admin: 'Harassment or abuse', urgent: true },
+  // 20270398: urgent like harassment + underage (one shared urgent cap; first in the admin queue). Needs 0398 live before a
+  // build offering it ships: on 0370-0397 the database refuses the value (report_reason_invalid).
+  { code: 'unsafe_situation', legacy: 'Unsafe activity or situation', key: 'unsafe', admin: 'Unsafe activity or situation', urgent: true },
   { code: 'fake_profile', legacy: 'Fake profile', key: 'fakeProfile', admin: 'Fake profile' },
   // prioritized in the admin queue (reports.review_priority, 20270381); NOT urgent: the ordinary report cap applies
   { code: 'impersonation', legacy: 'Impersonation', key: 'impersonation', admin: 'Impersonation', priority: true },
@@ -20,11 +23,11 @@ export const REPORT_REASONS = [
 
 // What a report about a BUSINESS may say (20270381): the sheet offers only these. A business isn't a dating profile and
 // can't be underage, so 'fake_profile' and 'underage_user' aren't offered there.
-export const BUSINESS_REPORT_CODES = ['impersonation', 'spam_scam', 'inappropriate_photo', 'harassment', 'other'];
+export const BUSINESS_REPORT_CODES = ['unsafe_situation', 'impersonation', 'spam_scam', 'inappropriate_photo', 'harassment', 'other'];
 // What a report about a PHOTO may say (a Story or a gathering memory, 20270391): about what it shows.
 export const MEDIA_REPORT_CODES = ['inappropriate_photo', 'harassment', 'spam_scam', 'underage_user', 'other'];
 // What a report about a GATHERING or COMMUNITY may say (20270392): about what it is, not about a dating profile.
-export const OBJECT_REPORT_CODES = ['spam_scam', 'inappropriate_photo', 'harassment', 'impersonation', 'underage_user', 'other'];
+export const OBJECT_REPORT_CODES = ['unsafe_situation', 'spam_scam', 'inappropriate_photo', 'harassment', 'impersonation', 'underage_user', 'other'];
 const CODES_BY_TARGET = { business: BUSINESS_REPORT_CODES, media: MEDIA_REPORT_CODES, gathering: OBJECT_REPORT_CODES, community: OBJECT_REPORT_CODES };
 export function reportReasonsFor(target) {
   const codes = CODES_BY_TARGET[target];
@@ -54,15 +57,27 @@ export function reportReasonLabel(stored) {
   return r ? r.admin : String(stored ?? '');
 }
 
-// The admin queue's order (both admin screens): open first, then prioritized reasons (impersonation), then newest. The
-// server orders by reports.review_priority the same way; this keeps a list fetched from an older database (no column)
-// in the same order. Ordering only, never a consequence.
-export function isPriorityReportReason(stored) {
+// The admin queue's order (both admin screens), mirroring reports.review_priority (20270398): open first; then urgent
+// safety (unsafe situation, harassment, underage user) = 2, impersonation = 1, everything else = 0; OLDEST first within
+// each group (the longest-waiting report first). Resolved reports follow, newest first. Keeps a list fetched from an older
+// database (no column, or 0381's 1/0 column) in the same order. Ordering only, never a consequence.
+export function reportQueuePriority(stored) {
   const code = reportReasonCode(stored);
-  return REPORT_REASONS.some((x) => x.code === code && x.priority);
+  const r = REPORT_REASONS.find((x) => x.code === code);
+  if (!r) return 0;
+  return r.urgent ? 2 : r.priority ? 1 : 0;
+}
+export function isPriorityReportReason(stored) {
+  return reportQueuePriority(stored) === 1;
+}
+// what the admin card adds after the reason label: ' · Urgent' / ' · Priority' / ''
+export function reportQueueTag(stored) {
+  const p = reportQueuePriority(stored);
+  return p === 2 ? ' · Urgent' : p === 1 ? ' · Priority' : '';
 }
 export function sortReportQueue(rows) {
-  const key = (r) => [r.resolved ? 1 : 0, isPriorityReportReason(r.reason) ? 0 : 1, -new Date(r.created_at).getTime()];
+  const t = (r) => new Date(r.created_at).getTime();
+  const key = (r) => (r.resolved ? [1, 0, -t(r)] : [0, -reportQueuePriority(r.reason), t(r)]);
   return [...(rows || [])].sort((a, b) => {
     const ka = key(a); const kb = key(b);
     for (let i = 0; i < ka.length; i += 1) if (ka[i] !== kb[i]) return ka[i] - kb[i];
