@@ -1,5 +1,10 @@
 # 2026-11-07: 0399 review fixes (owner review: business reply path, paused-action wording, legal holds)
 
+Owner (2026-11-07, after the fixes): ACCEPTED AS STAGED + LOCALLY VERIFIED; not merged, not deployed; no further reporting
+or account-restriction features. Pre-production compliance review item recorded: account deletion vs legal holds (below).
+`useChatComposer`'s diff (included in the fix commit from an earlier uncommitted change) reviewed: only the pause branch.
+Build 87 status checked on EAS the same day: latest iOS build = 86 (2026-10-18, 7d72d615); 87 not started.
+
 Owner review of staged 0399 (2026-11-07): accept as staged; fix (1) the restriction message on the real paused action
 paths without rebuilding screens, (2) test whether a paused business can still reply through another path, (3) check the
 12-month purge against 20270395's legal holds; no feature expansion. 0399 edited in place (staged), new sha256
