@@ -7,6 +7,7 @@
 // Wording is ui.shared.errors (one sentence pair per `what` phrase); a phrase with no entry keeps the English frame.
 import { tr } from '../i18n/translate';
 import { videoProblemText, SERVER_VIDEO_MESSAGES } from './videoProblem';
+import { restrictionRefusal, restrictionRefusalMessage } from './accountRestrictions';
 
 const whatSlug = (what) => String(what).replace(/\W+/g, '_');
 function whatLine(what, form) {
@@ -62,6 +63,9 @@ export function recoverableErrorCopy({ what, error, draftKept = false }) {
     return { title: whatLine(what, 'service') ?? `We couldn't ${what} right now.`, message: parts.join(' '), canRetry: true };
   }
   // An account rule the server enforces (20270351 / 20270352 / 20270356): say the rule in the person's language; retrying can't help.
+  // 20270399: an admin's temporary pause on this one action: say so, and until when; retrying can't help.
+  const paused = restrictionRefusal(error);
+  if (paused) return { title: tr('ui.shared.errors.didntGoThrough'), message: restrictionRefusalMessage(paused), canRetry: false };
   const rule = ACCOUNT_RULE_HINTS[error?.hint];
   if (rule) return { title: tr('ui.shared.errors.didntGoThrough'), message: tr(rule), canRetry: false };
   const detail = String(error?.message ?? '').trim();

@@ -18,6 +18,7 @@ export default {
       didntGoThrough: "That didn't go through",
       phoneRequired: 'Messaging, invitations, connecting and hosting need an account with a verified phone number.',
       accountSuspended: 'This account is suspended, so it can\'t message, invite, connect or host.',
+      accountRestricted: 'Nearby paused this on your account after a review. Available again: {date}. Everything else works as usual.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'You\'ve reached the limit for this for now. Please try again later.',
       gatheringLimit: 'You\'ve reached the limit for creating gatherings for now. Please try again later.',
       friendRequestLimit: 'You\'ve sent several friend requests in a short time. Please wait a few minutes and try again.',
@@ -74,6 +75,7 @@ export default {
       didntGoThrough: 'No se pudo completar',
       phoneRequired: 'Para enviar mensajes, invitar, conectar u organizar necesitas una cuenta con un número de teléfono verificado.',
       accountSuspended: 'Esta cuenta está suspendida, así que no puede enviar mensajes, invitar, conectar ni organizar.',
+      accountRestricted: 'Nearby pausó esto en tu cuenta tras una revisión. Disponible de nuevo: {date}. Todo lo demás funciona con normalidad.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'Llegaste al límite de esto por ahora. Inténtalo de nuevo más tarde.',
       gatheringLimit: 'Llegaste al límite para crear reuniones por ahora. Inténtalo de nuevo más tarde.',
       friendRequestLimit: 'Enviaste varias solicitudes de amistad en poco tiempo. Espera unos minutos e inténtalo de nuevo.',
@@ -130,6 +132,7 @@ export default {
       didntGoThrough: 'Das hat nicht geklappt',
       phoneRequired: 'Für Nachrichten, Einladungen, Verbindungen und eigene Treffen brauchst du ein Konto mit bestätigter Telefonnummer.',
       accountSuspended: 'Dieses Konto ist gesperrt und kann keine Nachrichten senden, einladen, sich verbinden oder etwas veranstalten.',
+      accountRestricted: 'Nearby hat das nach einer Prüfung für dein Konto pausiert. Wieder verfügbar: {date}. Alles andere funktioniert wie gewohnt.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'Du hast dafür vorerst das Limit erreicht. Bitte versuch es später noch einmal.',
       gatheringLimit: 'Du hast vorerst das Limit für neue Treffen erreicht. Bitte versuch es später noch einmal.',
       friendRequestLimit: 'Du hast in kurzer Zeit mehrere Freundschaftsanfragen gesendet. Bitte warte ein paar Minuten und versuch es dann noch einmal.',
@@ -186,6 +189,7 @@ export default {
       didntGoThrough: "Cela n'a pas abouti",
       phoneRequired: 'Pour envoyer des messages, inviter, te connecter ou organiser, il faut un compte avec un numéro de téléphone vérifié.',
       accountSuspended: 'Ce compte est suspendu : il ne peut pas envoyer de messages, inviter, se connecter ni organiser.',
+      accountRestricted: 'Nearby a mis cela en pause sur ton compte après un examen. De nouveau disponible : {date}. Tout le reste fonctionne normalement.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'Tu as atteint la limite pour le moment. Réessaie plus tard.',
       gatheringLimit: 'Tu as atteint la limite de création de rassemblements pour le moment. Réessaie plus tard.',
       friendRequestLimit: 'Tu as envoyé plusieurs demandes d\'ami en peu de temps. Attends quelques minutes et réessaie.',
@@ -242,6 +246,7 @@ export default {
       didntGoThrough: 'Não deu certo',
       phoneRequired: 'Para enviar mensagens, convidar, se conectar ou organizar, é preciso uma conta com número de telefone verificado.',
       accountSuspended: 'Esta conta está suspensa, então não pode enviar mensagens, convidar, se conectar nem organizar.',
+      accountRestricted: 'O Nearby pausou isso na sua conta após uma análise. Disponível novamente: {date}. Todo o resto funciona normalmente.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'Você atingiu o limite disso por enquanto. Tente novamente mais tarde.',
       gatheringLimit: 'Você atingiu o limite para criar encontros por enquanto. Tente novamente mais tarde.',
       friendRequestLimit: 'Você enviou vários pedidos de amizade em pouco tempo. Aguarde alguns minutos e tente novamente.',
@@ -298,6 +303,7 @@ export default {
       didntGoThrough: 'Sa pa t pase',
       phoneRequired: 'Pou voye mesaj, envite, konekte oswa òganize, ou bezwen yon kont ki gen yon nimewo telefòn verifye.',
       accountSuspended: 'Kont sa a sispann, kidonk li pa ka voye mesaj, envite, konekte oswa òganize.',
+      accountRestricted: 'Nearby mete sa an poz sou kont ou apre yon revizyon. Disponib ankò: {date}. Tout lòt bagay mache nòmalman.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'Ou rive nan limit pou sa a pou kounye a. Tanpri eseye ankò pita.',
       gatheringLimit: 'Ou rive nan limit pou kreye rasanbleman pou kounye a. Tanpri eseye ankò pita.',
       friendRequestLimit: 'Ou voye plizyè demann zanmi nan yon ti tan. Tanpri tann kèk minit epi eseye ankò.',
@@ -354,6 +360,7 @@ export default {
       didntGoThrough: '操作未成功',
       phoneRequired: '发消息、邀请、建立联系和发起活动需要一个已验证手机号码的账号。',
       accountSuspended: '此账号已被暂停，无法发消息、邀请、建立联系或发起活动。',
+      accountRestricted: '经过审核，Nearby 暂停了你账户的这项操作。恢复时间：{date}。其他功能照常使用。',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: '你暂时已达到此操作的上限，请稍后再试。',
       gatheringLimit: '你暂时已达到创建聚会的上限，请稍后再试。',
       friendRequestLimit: '你在短时间内发送了多个好友请求。请等几分钟后再试。',
@@ -410,6 +417,7 @@ export default {
       didntGoThrough: 'Không thực hiện được',
       phoneRequired: 'Để nhắn tin, mời, kết nối hoặc tổ chức, bạn cần tài khoản có số điện thoại đã xác minh.',
       accountSuspended: 'Tài khoản này đang bị tạm ngưng nên không thể nhắn tin, mời, kết nối hoặc tổ chức.',
+      accountRestricted: 'Nearby đã tạm dừng thao tác này trên tài khoản của bạn sau khi xem xét. Dùng lại được từ: {date}. Mọi thứ khác vẫn hoạt động bình thường.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'Bạn đã đạt giới hạn cho việc này trong lúc này. Vui lòng thử lại sau.',
       gatheringLimit: 'Bạn đã đạt giới hạn tạo buổi gặp mặt trong lúc này. Vui lòng thử lại sau.',
       friendRequestLimit: 'Bạn đã gửi nhiều lời mời kết bạn trong thời gian ngắn. Vui lòng đợi vài phút rồi thử lại.',
@@ -466,6 +474,7 @@ export default {
       didntGoThrough: 'Hindi ito natuloy',
       phoneRequired: 'Kailangan ng account na may verified na phone number para makapag-message, makapag-imbita, makakonekta o makapag-host.',
       accountSuspended: 'Naka-suspend ang account na ito, kaya hindi ito makakapag-message, makakapag-imbita, makakakonekta o makakapag-host.',
+      accountRestricted: 'Ipinahinto muna ito ng Nearby sa account mo pagkatapos ng isang pagsusuri. Magagamit ulit: {date}. Gumagana pa rin nang normal ang lahat ng iba pa.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'Naabot mo na ang limitasyon dito sa ngayon. Pakisubukan ulit mamaya.',
       gatheringLimit: 'Naabot mo na ang limitasyon sa paggawa ng mga pagtitipon sa ngayon. Pakisubukan ulit mamaya.',
       friendRequestLimit: 'Nagpadala ka ng ilang friend request sa maikling panahon. Maghintay ng ilang minuto at subukan ulit.',
@@ -522,6 +531,7 @@ export default {
       didntGoThrough: 'Не получилось',
       phoneRequired: 'Чтобы писать сообщения, приглашать, знакомиться и проводить встречи, нужен аккаунт с подтверждённым номером телефона.',
       accountSuspended: 'Этот аккаунт заблокирован: он не может писать сообщения, приглашать, знакомиться или проводить встречи.',
+      accountRestricted: 'После проверки Nearby приостановил это действие в вашем аккаунте. Снова доступно: {date}. Всё остальное работает как обычно.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: 'Вы пока достигли лимита для этого действия. Попробуйте позже.',
       gatheringLimit: 'Вы пока достигли лимита на создание встреч. Попробуйте позже.',
       friendRequestLimit: 'Вы отправили несколько запросов в друзья за короткое время. Подождите несколько минут и попробуйте снова.',
@@ -578,6 +588,7 @@ export default {
       didntGoThrough: '처리되지 않았어요',
       phoneRequired: '메시지, 초대, 연결, 모임 주최는 전화번호가 인증된 계정에서만 할 수 있어요.',
       accountSuspended: '이 계정은 정지되어 메시지, 초대, 연결, 모임 주최를 할 수 없어요.',
+      accountRestricted: '검토 후 Nearby가 계정에서 이 기능을 일시 중지했어요. 다시 사용 가능: {date}. 다른 기능은 평소처럼 이용할 수 있어요.',  // 20270399: an admin's temporary pause; {date} = when it ends
       rateLimited: '지금은 이 작업의 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       gatheringLimit: '지금은 모임 만들기 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       friendRequestLimit: '짧은 시간에 친구 요청을 여러 번 보냈어요. 몇 분 후에 다시 시도해 주세요.',

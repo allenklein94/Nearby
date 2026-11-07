@@ -13,6 +13,7 @@ import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
 import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
 import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
 import { LEGAL_HOLD_REASON_MAX, LEGAL_HOLD_REFERENCE_MAX, activeHoldsByTarget, holdFor, legalHoldPhotoNote, legalHoldReasonReady, legalHoldReferenceReady, legalHoldStatusLine, legalHoldTargetLabel } from '../utils/legalHolds';
+import { RESTRICTION_CAPABILITIES, RESTRICTION_DAYS, RESTRICTION_DEFAULT_DAYS, RESTRICTION_REASON_MAX, activeRestrictions, restrictionFormReady, restrictionReasonReady, restrictionStatusLine, toggleCapability } from '../utils/accountRestrictions';
 import { REMOVAL_REASON_MAX, canRemoveReportedObject, removalReasonReady, removeActionLabel, reportObjectIds, reportObjectStatus } from '../utils/reportObjects';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
@@ -46,6 +47,9 @@ export default function AdminReportsScreen({ navigation }) {
   // 20270395: active legal holds (null = an older database: no hold control at all) and the one open hold form
   const [holds, setHolds] = useState(null);
   const [holdForm, setHoldForm] = useState(null); // { mode: 'place' | 'release', targetType, targetId, holdId, reason, reference }
+  // 20270399: each listed person's restrictions (null = an older database: no restriction control) and the one open form
+  const [restrictions, setRestrictions] = useState(null); // { [userId]: rows }
+  const [restrictForm, setRestrictForm] = useState(null); // { mode: 'restrict' | 'lift', userId, reportId, caseId, capabilities, days, reason, restrictionId }
 
   useEffect(() => {
     load();
@@ -80,11 +84,149 @@ export default function AdminReportsScreen({ navigation }) {
       setCleanup(fileStatus.error ? null : storyFileCleanupNotice(fileStatus.data));
       const held = await supabase.rpc('admin_list_legal_holds', { include_released_param: false });
       setHolds(held.error ? null : held.data || []);
+      await loadRestrictions(data, listed.error ? [] : listed.data || []);
     } catch (e) {
       setLoadError(true);
     } finally {
       setLoading(false);
     }
+  }
+
+  // 20270399: restrictions of every person a card names (the reported person, review-case members). An older database = no control.
+  async function loadRestrictions(rows, caseRows) {
+    const ids = [...new Set([
+      ...(rows || []).map((r) => r.reported_id),
+      ...(caseRows || []).flatMap((c) => (c.members || []).map((m) => m.user_id)),
+    ].filter(Boolean))];
+    const byUser = {};
+    for (const id of ids) {
+      const { data, error } = await supabase.rpc('admin_list_account_restrictions', { user_id_param: id });
+      if (error) return setRestrictions(null);
+      byUser[id] = data || [];
+    }
+    setRestrictions(byUser);
+  }
+
+  // Pause actions / lift a pause (20270399). The server checks the admin, the reason and the duration and keeps the record; a pause
+  // ends by itself, and the person is told at the refused action what is paused and until when. Never automatic.
+  async function submitRestriction() {
+    const f = restrictForm;
+    const { data, error } = f.mode === 'restrict'
+      ? await supabase.rpc('admin_restrict_account', {
+        user_id_param: f.userId, capabilities_param: f.capabilities, days_param: f.days, reason_param: f.reason,
+        report_id_param: f.reportId || null, review_case_id_param: f.caseId || null,
+      })
+      : await supabase.rpc('admin_lift_account_restriction', { restriction_id_param: f.restrictionId, reason_param: f.reason });
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: submitRestriction });
+    setRestrictForm(null);
+    if (f.mode === 'lift' && data?.already) Alert.alert('Already ended', 'This pause had already ended or been lifted. Nothing changed.');
+    load();
+  }
+
+  // One control per person: their active pauses (each with Lift), Pause Actions, and the form when it is open for them.
+  function renderRestrictionControl(userId, { reportId = null, caseId = null } = {}) {
+    if (restrictions === null || !userId) return null;
+    const active = activeRestrictions(restrictions[userId]);
+    const open = restrictForm && restrictForm.userId === userId && restrictForm.reportId === reportId && restrictForm.caseId === caseId;
+    const ready = open && (restrictForm.mode === 'restrict' ? restrictionFormReady(restrictForm) : restrictionReasonReady(restrictForm.reason));
+    return (
+      <View>
+        {active.map((r) => (
+          <View key={r.restriction_id}>
+            <Text style={styles.holdLine}>{restrictionStatusLine(r)}</Text>
+            {!open ? (
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => setRestrictForm({ mode: 'lift', userId, reportId, caseId, restrictionId: r.restriction_id, reason: '' })}
+                  accessibilityRole="button"
+                >
+                  <Text style={styles.actionText}>Lift Pause</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+          </View>
+        ))}
+        {!open ? (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setRestrictForm({ mode: 'restrict', userId, reportId, caseId, capabilities: [], days: RESTRICTION_DEFAULT_DAYS, reason: '' })}
+              accessibilityRole="button"
+            >
+              <Text style={styles.actionText}>Pause Actions</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.evidence}>
+            {restrictForm.mode === 'restrict' ? (
+              <>
+                <Text style={styles.meta}>Only the chosen actions are paused, for this person only, and end by themselves. They're told what is paused and until when. Nothing else changes. Recorded with your account and the time.</Text>
+                <View style={styles.actions}>
+                  {RESTRICTION_CAPABILITIES.map((c) => {
+                    const on = restrictForm.capabilities.includes(c.key);
+                    return (
+                      <TouchableOpacity
+                        key={c.key}
+                        style={[styles.actionButton, on && styles.resolveButton]}
+                        onPress={() => setRestrictForm({ ...restrictForm, capabilities: toggleCapability(restrictForm.capabilities, c.key) })}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: on }}
+                        accessibilityLabel={`${c.label}: ${c.covers}`}
+                      >
+                        <Text style={styles.actionText}>{on ? '✓ ' : ''}{c.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {restrictForm.capabilities.map((k) => (
+                  <Text key={k} style={styles.meta}>{RESTRICTION_CAPABILITIES.find((c) => c.key === k)?.label}: {RESTRICTION_CAPABILITIES.find((c) => c.key === k)?.covers}</Text>
+                ))}
+                <View style={styles.actions}>
+                  {RESTRICTION_DAYS.map((d) => (
+                    <TouchableOpacity
+                      key={d}
+                      style={[styles.actionButton, restrictForm.days === d && styles.resolveButton]}
+                      onPress={() => setRestrictForm({ ...restrictForm, days: d })}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: restrictForm.days === d }}
+                    >
+                      <Text style={styles.actionText}>{d === 1 ? '1 day' : `${d} days`}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <Text style={styles.meta}>The action works again at once. Recorded with your account and the time.</Text>
+            )}
+            <TextInput
+              style={styles.reasonInput}
+              value={restrictForm.reason}
+              onChangeText={(reason) => setRestrictForm({ ...restrictForm, reason })}
+              placeholder={restrictForm.mode === 'restrict' ? 'Why? What did the evidence show?' : 'Why is it lifted early?'}
+              placeholderTextColor={colors.textTertiary}
+              maxLength={RESTRICTION_REASON_MAX}
+              multiline
+              accessibilityLabel={restrictForm.mode === 'restrict' ? 'Reason for pausing actions' : 'Reason for lifting the pause'}
+            />
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => setRestrictForm(null)} accessibilityRole="button">
+                <Text style={styles.actionText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.resolveButton, !ready && styles.actionDisabled]}
+                onPress={submitRestriction}
+                disabled={!ready}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !ready }}
+              >
+                <Text style={styles.actionText}>{restrictForm.mode === 'restrict' ? `Pause for ${restrictForm.days === 1 ? '1 day' : `${restrictForm.days} days`}` : 'Lift Pause'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    );
   }
 
   // A reported photo (20270391): Storage issues the 15-minute link only after re-checking the admin and the hold.
@@ -352,7 +494,10 @@ export default function AdminReportsScreen({ navigation }) {
                   <Text key={line} style={styles.meta}>{line}</Text>
                 ))}
                 {(c.members || []).map((m) => (
-                  <Text key={m.user_id} style={styles.meta}>{m.display_name || m.user_id}{m.suspended ? ' · suspended' : ''}</Text>
+                  <View key={m.user_id}>
+                    <Text style={styles.meta}>{m.display_name || m.user_id}{m.suspended ? ' · suspended' : ''}</Text>
+                    {!m.suspended ? renderRestrictionControl(m.user_id, { caseId: c.id }) : null}
+                  </View>
                 ))}
                 <Text style={styles.date}>Opened {new Date(c.opened_at).toLocaleString()}</Text>
                 <View style={styles.actions}>
@@ -455,6 +600,8 @@ export default function AdminReportsScreen({ navigation }) {
                 </View>
               </View>
             ) : null}
+            {/* a temporary pause on the reported person (20270399); a suspended account needs none */}
+            {item.reported_id && !item.reported?.suspended_at && !item.resolved ? renderRestrictionControl(item.reported_id, { reportId: item.id }) : null}
             {/* a hold on a report also keeps its removal record (20270395), so a removed object's evidence is held from here too */}
             {renderHoldControl('report', item.id)}
           </View>
