@@ -47,7 +47,7 @@ phishing or malware site. We don't store the link for this check."
 ## Verified (2026-11-07, local)
 
 - Fresh replay 520/520 (real Auth first). Journey `linkSafety` 6/6 (detector, bypasses, clean/malicious, forged results,
-  budget). Journeys 1170/1170. Deno tests `supabase/functions/_shared/linkSafety.test.ts` 15/15 (fake Web Risk + sites:
+  budget). Journeys 1170/1170. Deno tests `supabase/functions/_shared/linkSafety_test.ts` 15/15 (fake Web Risk + sites:
   safe, listed, shortener -> listed, shortener unresolved, too many hops, loops, private addresses incl. DNS + metadata IP,
   redirect to private / javascript:, userinfo, outage / no key / no budget, several links). `deno check` of the edge function
   passes. `scripts/replay/link-check-budget-concurrency.js` 5 rounds pass. Rollback + re-apply: schema identical (0 diff lines).

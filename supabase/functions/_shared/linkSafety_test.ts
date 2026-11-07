@@ -1,5 +1,5 @@
 // Deno tests for linkSafety.ts (20270396). Run: docker run --rm -v "$PWD":/w -w /w denoland/deno:alpine-1.45.5 test \
-//   supabase/functions/_shared/linkSafety.test.ts      (no network: Web Risk, the sites and DNS are fakes)
+//   supabase/functions/_shared/linkSafety_test.ts      (no network: Web Risk, the sites and DNS are fakes)
 import { assertEquals } from 'https://deno.land/std@0.203.0/assert/mod.ts';
 import { checkLink, checkLinks, fetchable, isPrivateAddress, MAX_HOPS, toWebUrl } from './linkSafety.ts';
 

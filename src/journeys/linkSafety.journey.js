@@ -11,7 +11,7 @@
 //      use an expired one; a person's approval (source 'review') still counts
 //   E. the lookup budget: 200 per account, 3000 for everyone, a day; nothing over 50 at once
 // One rolled-back transaction. NOT covered here: the edge function's network side (Deno tests
-// supabase/functions/_shared/linkSafety.test.ts with fake Web Risk + sites; real Web Risk needs the key), two transactions
+// supabase/functions/_shared/linkSafety_test.ts with fake Web Risk + sites; real Web Risk needs the key), two transactions
 // racing on the budget (scripts/replay/link-check-budget-concurrency.js).
 const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, LIFT_GATHERING_CREATION_LIMIT } = require('./journeyHarness');
 
