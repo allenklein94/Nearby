@@ -2,7 +2,7 @@
 
 Owner approval 2026-11-07: basic manual appeals now. No new screen, migration, automated restriction or separate appeals system.
 It reuses the suspension and restriction messages, the admin controls that already reverse decisions, and their audit records.
-Status: ACCEPTED AS STAGED (owner, 2026-11-07; wording corrected the same day). Client wording BUILT + TESTED, STAGED on `post-tier1/admin-restrictions` (NOT merged, NOT deployed, NOT in build 87).
+Status: ACCEPTED AS STAGED (owner, 2026-11-07; wording corrected the same day); FEATURE CLOSED the same day). PRE-LAUNCH REQUIREMENT (owner): the account-verification procedure (section 3 step 1) must be defined before launch; a suspension, pause or hold is NEVER reversed solely because someone emailed support: the account must be confirmed separately and the evidence re-read first. Client wording BUILT + TESTED, STAGED on `post-tier1/admin-restrictions` (NOT merged, NOT deployed, NOT in build 87).
 This procedure has NOT been legally reviewed and has never been rehearsed.
 
 ## 1. What can be appealed
