@@ -83,6 +83,8 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
       'main_url', (select photo_url from profiles where id = v_u), 'main_verified', (select photo_verified from profiles where id = v_u),
       'extra_url', (select photo_url from profile_photos where id = v_extra), 'extra_verified', (select photo_verified from profile_photos where id = v_extra)))`)}
   ${as('swap_others_photo', 'v_y', 'perform swap_main_photo(v_extra)')}
+  -- 20270400 closes new ID submissions until an admin migration opens them; these checks are about the insert rules, so open it here
+  if to_regclass('private.id_document_settings') is not null then execute 'update private.id_document_settings set uploads_enabled = true where id'; end if;
   ${as('submission_approved', 'v_u', `insert into id_verification_submissions (user_id, selfie_path, id_photo_path, status) values (v_u, v_u || '/selfie-1.jpg', v_u || '/id-1.jpg', 'approved')`)}
   ${as('submission_other_folder', 'v_u', `insert into id_verification_submissions (user_id, selfie_path, id_photo_path) values (v_u, v_y || '/selfie-1.jpg', v_u || '/id-1.jpg')`)}
   ${as('submission_pending', 'v_u', `insert into id_verification_submissions (user_id, selfie_path, id_photo_path, status) values (v_u, v_u || '/selfie-1.jpg', v_u || '/id-1.jpg', 'pending') returning id into v_sub`)}

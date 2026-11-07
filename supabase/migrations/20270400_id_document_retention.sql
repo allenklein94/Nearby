@@ -53,6 +53,7 @@ update public.id_verification_submissions
 create or replace function private.id_submission_retention()
 returns trigger
 language plpgsql
+security definer
 set search_path to 'public'
 as $function$
 begin
