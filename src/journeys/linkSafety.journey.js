@@ -105,12 +105,12 @@ d('journey: link destination safety (20270396)', () => {
   ${rec('v_h', 'Details at evil.example')}
   ${as('edit_adds_link_word_only', 'v_h', `update gatherings set description = 'Details at evil.example' where id = g1`)}
   ${note('desc_after_edit', `(select description from gatherings where id = g1)`)}
-  ${as('edit_other_field', 'v_h', `update gatherings set max_attendees = 12 where id = g1`)}
+  ${as('edit_other_field', 'v_h', `update gatherings set interest_tag = 'Tennis' where id = g1`)}
   -- other public text (0373's surfaces) follows the same rule
   ${rec('v_a', 'Follow me on evil.example')}
   ${as('bio_link_word_only', 'v_a', `update profiles set bio = 'Follow me on evil.example' where id = v_a`)}
   ${note('bio_after', `(select bio from profiles where id = v_a)`)}
-  ${rec('v_h', 'Runners')}
+  perform public.record_ugc_screening(v_h, private.ugc_text_sha('Runners'), 'community_name', true, 'low', '{}', array['en'], 'j', 'j');
   ${rec('v_h', 'Join at evil.example')}
   ${as('community_link_word_only', 'v_h', `insert into communities (creator_id, name, description) values (v_h, 'Runners', 'Join at evil.example')`)}
 
