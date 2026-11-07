@@ -41,8 +41,8 @@ async function race(users, holdMs = 300) {
     console.error('20270396 is not installed on this database.');
     process.exit(2);
   }
-  const people = (await admin.query(`select id from profiles order by created_at limit 12`)).rows.map((r) => r.id);
-  if (people.length < 12) { console.error('Needs 12 profiles (journey-fixtures.sql).'); process.exit(2); }
+  // the budget keys on an id only (no account row is read), so fresh ids stand in for twelve accounts
+  const people = (await admin.query(`select gen_random_uuid() as id from generate_series(1, 12)`)).rows.map((r) => r.id);
   const reset = async () => admin.query(`delete from private.link_check_usage where day = ${TODAY}`);
   const lookups = async (u) => (await admin.query(`select coalesce(max(lookups), 0) as n from private.link_check_usage where day = ${TODAY} and user_id = $1`, [u])).rows[0].n;
 
