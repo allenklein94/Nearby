@@ -1,3 +1,41 @@
+# 2026-11-07: Removal follow-ups (20270394 + 20270395, staged)
+
+Owner approved three follow-ups to 0393 on 2026-11-07. Built on `post-tier1/removal-followups` (stacked on 0393's branch), not
+merged, not deployed, build 87 unchanged.
+
+**20270394 (gated perk gate removed, sha256 a597730d3e6fafafdef4948ff6648504f5290673ebc118567a9ed63ecda9f06d).** Defect found by
+0393's journey: `brand_offers.gathering_id` / `unlock_community_id` are ON DELETE SET NULL but `brand_offers_unlock_shape_check`
+required the id while `unlock_scope` was set, so deleting a gathering / community with a gated perk failed the whole statement: a
+host's `cancel_gathering`, a creator deleting a community, the account-deletion cascade of that host / creator, and 0393's removal
+(which cleared the gate as a workaround, leaving a perk a business could re-enable for everyone). Fix: `gate_removed_at`; BEFORE
+DELETE triggers on gatherings + communities deactivate and stamp every attached perk (incl. unscoped perks attached by gathering_id
+alone); the check accepts a gated perk without its id only when stamped; `brand_offer_gate_removed_guard` keeps the stamp and refuses
+active = true (hint `perk_gate_removed`); 0393's `content_removal_close_links` loses its perk branch. Unchanged: redemptions,
+expired perks, billing, bookings / refunds / paid reservations (cancel_gathering's rules), pushes. Perks orphaned before 0394 can't be
+identified (id already null): left as they are.
+
+**20270395 (legal holds, sha256 532d63b0f58aa1bc54f2b8e3e027a8bb27b28e95a5b53ed0b9590ed5ff0142b0).** `private.legal_holds` (no
+client access; append-only by trigger, one release with a reason); `admin_place_legal_hold` / `admin_release_legal_hold` /
+`admin_list_legal_holds` (check_is_admin). While active: `purge_expired_reports`, `purge_content_removal_snapshots`,
+`purge_account_review_cases` skip the evidence; "No action needed" doesn't release a held report's photo; placing a hold re-holds a
+released photo still in Storage (an already deleted file is said, never claimed). A hold on a removal keeps its report and vice versa.
+Holds and purges share one lock (no half outcome). Nothing is held automatically, no content classed as legally held by the system, no
+retention period set: the 12-month periods are unchanged and still need LEGAL REVIEW. No admin screen (functions only, owner to decide).
+
+**Test fixes.** `ugc-moderation-concurrency.js` section 4 parks queue rows other scripts left (cause of the 2026-11-06 one-off,
+reproduced); `media-report-concurrency.js` counts DELETEs from a temporary trigger log on `net.http_request_queue` (as supabase_admin,
+removed after) instead of the queue pg_net's worker drains (cause of scenario 5's "0-0"). New race script's `report()` now throws the
+server's reason.
+
+**Verification (local, 2026-11-07).** Fresh replay 519/519 (real Auth first, fixtures); journeys 1164/1164 before and after one pass
+of all 22 concurrency scripts, run alone, each exit code + a fingerprint of `private.rate_limit_rules` recorded after it (unchanged
+every time); `gated-perk-legal-hold-concurrency.js` 5 sections pass; on a fresh replay of a worktree at e4be8225 (0393 only) the new
+journeys fail 17/17 and the other 1147 pass; rollback 0395 then 0394 = that fresh 0393 schema, pg_dump 0 diff lines (65,647, grants
+included); re-apply = 0 diff lines (66,039); Jest 546/546 (7389 + 11 todo). An earlier attempt the same day showed failures that came
+from two runners overlapping on one database (a first background run still going): not a code defect; the runner's log line also
+printed date's exit code, now fixed. Not run (deploy gates, `post-deploy.js` 20270394 / 20270395): prod prelude journeys 0348-0395,
+prod aborted rollback, grants vs prod, real API with test accounts. Progress log: `PRODUCT_AUDIT/REMOVAL_FOLLOWUPS_VERIFICATION_2026-11-07.md`.
+
 # 2026-11-06: Admins remove reported gatherings + communities (20270393, staged)
 
 Owner approved 0392 as staged and asked for one final addition, then a stop. Built on `post-tier1/admin-content-removal`: migration +

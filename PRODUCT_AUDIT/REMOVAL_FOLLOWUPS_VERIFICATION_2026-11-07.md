@@ -22,8 +22,10 @@ Branch `post-tier1/removal-followups`. Staged only: nothing merged, deployed, or
   database while the second run started, so scripts overlapped (shared phone numbers, one script's emptied rate-limit
   rules seen by another). Not a code defect. Rerunning alone on a fresh replay, one runner only.
 
-## Still to do (each step < 15 min)
-1. Concurrency: 22 scripts, run in batches (record each batch here)
-2. Journeys after concurrency
-3. Rollback 0395 + 0394 on the replay; compare pg_dump with a fresh replay from a worktree at e4be8225 (0393 only); re-apply
-4. CLAUDE.md + CLAUDE_HISTORY.md entries
+## Clean run, 13:49-14:05 (one runner only, fresh replay)
+- Replay 519/519; 22/22 concurrency scripts rc=0, 0 FAIL lines, rate-limit rules 32 / md5 6984d2e0 unchanged after every script
+- Journeys after: 1164/1164
+- Rollback 0395 + 0394 = fresh 0393 replay (worktree at e4be8225): pg_dump 0 diff lines (65,647); re-apply 0 diff lines (66,039)
+- On the pre-0394 DB: gatedPerkCancel + legalHolds fail 17/17, other 1147 pass
+
+DONE. Recorded in CLAUDE.md + CLAUDE_HISTORY.md.
