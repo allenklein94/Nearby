@@ -9,6 +9,15 @@ Branch `post-tier1/removal-followups`. Staged only: nothing merged, deployed, or
 - Journeys before concurrency: 1164/1164
 - Concurrency pass 1 (earlier session, before a restart): 22/22
 
+## Found 2026-11-07 13:45 (one full concurrency pass, then journeys)
+- Journeys after concurrency: 15-19 failures, all in suites that depend on rate limits: `private.rate_limit_rules` was left EMPTY
+  by some script (test state, not a migration defect; being pinpointed by a per-script rule-count run).
+- `gated-perk-legal-hold-concurrency.js` (new) crashed in section 3: a refused report insert was read as a row. Fixed:
+  report() now throws the server's reason.
+- The runner's log line printed date's exit code, not the script's (all said 0); fixed (rc captured first).
+- Also FAILED in that pass: friend-request + screening-single-use (likely knock-on of the missing rules), booking-capacity
+  (one deadlock; to recheck).
+
 ## Still to do (each step < 15 min)
 1. Concurrency: 22 scripts, run in batches (record each batch here)
 2. Journeys after concurrency

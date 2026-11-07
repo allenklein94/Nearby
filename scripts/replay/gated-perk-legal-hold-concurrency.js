@@ -76,7 +76,11 @@ const WHY = 'Preservation request from counsel';
       values ($1, 'Race perk', 'discount', true, $2, 'gathering', 1) returning id`, [partner, g])).rows[0].id;
   const perkState = async (p) => (await db.query(`select active, unlock_scope, gate_removed_at is not null as marked, gathering_id from brand_offers where id = $1`, [p])).rows[0];
   const perkStopped = (s) => s && s.active === false && s.marked && s.unlock_scope === 'gathering' && s.gathering_id === null;
-  const report = async (type, id, who = R) => (await run({ sub: who, sql: `insert into reports (reporter_id, reason, content_type, content_id) values ($1, 'other', '${type}', $2) returning id`, args: [who, id] })).rows[0].id;
+  const report = async (type, id, who = R) => {
+    const r = await run({ sub: who, sql: `insert into reports (reporter_id, reason, content_type, content_id) values ($1, 'other', '${type}', $2) returning id`, args: [who, id] });
+    if (!r.ok) throw new Error(`report refused: ${r.error} (${r.hint})`);
+    return r.rows[0].id;
+  };
   const exists = async (table, id) => (await db.query(`select 1 from ${table} where id = $1`, [id])).rows.length > 0;
   const activeHold = async (type, id) => (await db.query(`select 1 from private.legal_holds where target_type = $1 and target_id = $2 and released_at is null`, [type, id])).rows.length > 0;
   const hold = (type, id, wait = 0) => ({ sub: A1, wait, sql: `select public.admin_place_legal_hold('${type}', $1, '${WHY}', null) as h`, args: [id] });
