@@ -254,6 +254,13 @@ const STEPS = {
       'Privacy Policy sentence (links in public text are sent to Google Web Risk to check them) approved + published with the deploy; legal review',
       'rollback = deploy the previous screen-user-content first, then scripts/rollback/20270396_link_safety.rollback.sql: linked text needs only the word screening again; defect only, owner decides',
       'a linked public text published without a link-checked result, a client able to record or find a result, or a URL in a log = security defect: STOP, report'] },
+  20270397: { journeys: ['reportFeedback', 'objectReports', 'mediaReports'],
+    manual: ['read-only right after: get_my_report_updates() executes for authenticated only (not anon/public); private.report_reporter_status has no client grant; triggers report_status_received + report_status_completed present on public.reports',
+      'backfill check: one status row per existing non-automated report with a reporter; resolved reports have completed_at, open ones do not',
+      'through the real API with two dedicated test accounts + an admin: (1) A reports B (profile) = "Report received" toast and an Activity row "Report received"; (2) B and a third account see no row; (3) admin resolves it = A\'s Activity shows "Review completed. Thank you for helping keep Nearby safe." and nothing about the outcome, note or B; (4) resolve retry / reopen + resolve again = still ONE completion row, completed time unchanged; (5) no push sent to A for either status',
+      'phone (a build with the Activity rows): both statuses render in Activity > Earlier, no tap destination, VoiceOver reads the title + time; native review of ui.activity.reportReceived / reviewCompleted + the reworded ui.reportBlock.reportSubmitted (10 languages)',
+      'rollback = scripts/rollback/20270397_report_feedback.rollback.sql: reporters\' statuses go with their table; reports, evidence and the admin workflow untouched; defect only, owner decides',
+      'a status readable by anyone but its reporter, any outcome/note/reported account reaching the reporter, or a second completion for one report = defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

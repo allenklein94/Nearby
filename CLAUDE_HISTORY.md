@@ -1,3 +1,30 @@
+# 2026-11-07: Reporter feedback loop (20270397, staged)
+
+Owner approved a narrowly scoped post-Tier 1 change: the person who filed a report sees, privately in the existing Activity tab,
+"Report received" and later "Review completed. Thank you for helping keep Nearby safe." No new screen, tab, reporting or moderation
+system; no push (owner: Activity update only); build 87 and main unchanged.
+
+Built on `post-tier1/report-feedback` (stacked on `post-tier1/link-safety`), migration 20270397 (sha256 dc01b74f…f175), NOT merged,
+NOT deployed; own deploy approval after 0396.
+- Server: one private row per report `private.report_reporter_status` (report id, reporter id, received_at, completed_at; no client
+  grant). AFTER INSERT trigger on `reports` creates it for every non-automated report with a reporter (every content type: profile,
+  gathering, community, business, offer, message, Story/memory, sponsored; refused inserts create nothing; moderate-photo's `auto_%`
+  codes none). AFTER UPDATE OF resolved sets completed_at once (`where completed_at is null`) on resolved false -> true, so a retry of
+  `admin_resolve_report` (returns `{already}`), a reopen + second resolve and the old direct "Mark Resolved" path never complete it
+  again: one completion per report, ever. Backfill: existing reports get a row (resolved = completed at first resolve action).
+  Reader `get_my_report_updates()` (definer, authenticated only): the caller's own rows, newest 20, ids + times only (never outcome,
+  note, reason, reported account or evidence). Rows go with the report (12-month purge cascade) and the reporter's account.
+- App: ActivityScreen reads `services/reportUpdates.js` -> `utils/reportUpdates.js` (one row per report: received, then completed in
+  its place, dated then; Earlier group, no destination, plain row). ReportBlockModal's toast now says "Report received"
+  (`ui.reportBlock.reportSubmitted` reworded, 11 languages); new `ui.activity.reportReceived` / `reviewCompleted` (11 languages; 10
+  machine-authored, need native review). Older DB = function missing = no rows, never an error.
+- Verified locally (2026-11-07): fresh replay 521/521 (real Auth first), journey `reportFeedback` 5/5 (fails 5/5 after rollback),
+  journeys 1175/1175, object-report + media-report + review-case concurrency scripts pass, rollback removes only 0397's objects,
+  re-apply schema identical (pg_dump 69,029 lines), Jest 549/549 (7407 + 11 todo) after adding 0397's post-deploy step.
+- Not run (deploy gates, `post-deploy.js` 20270397): prod prelude journeys 0348-0397, prod aborted rollback, grants vs prod, real
+  API with test accounts, phone, native review. Not covered by the journey: offer + Story/memory report inserts (the trigger has no
+  type condition; their fixtures live in offerSafety / mediaReports).
+
 # 2026-11-07: Legal-hold control in Admin Reports (20270395's functions, staged)
 
 Owner approved one final addition: a minimal legal-hold control inside Admin Reports (no new screen). Client only; 20270395 is
