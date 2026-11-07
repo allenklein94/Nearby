@@ -5,7 +5,9 @@
 //      actions are checked by the server.
 //   2. Each capability pauses exactly its actions for that one person, with hint 'account_restricted' + detail
 //      {capability, until}: messages, invitations, friend requests (request, Connect/like, notice; a pass still works),
-//      gatherings (creating a gathering or community), offers (the business's own manager posting availability), links (a NEW
+//      gatherings (creating a gathering or community), offers (the business's own manager posting availability AND replying
+//      to a customer's request through submit_business_offer, the app's real reply path behind screen-business-content;
+//      the request stays answerable once the pause is lifted), links (a NEW
 //      link in a profile or a message; text without a new link still saves). Everything else they do, and everyone else, is
 //      unaffected.
 //   3. It ends by itself: a restriction past its end refuses nothing. An admin may lift early (written reason; a second lift =
@@ -13,7 +15,9 @@
 //   4. Auditable: the record is append-only (no update, no delete), a restriction can only be lifted (once), clients can read
 //      neither table, the admin list shows active + ended with who and why.
 //   5. No other consequence: never suspended, hidden or sent a push.
-//   6. Retention: ended more than 12 months ago = purged with its record; active kept.
+//   6. Retention: ended more than 12 months ago = purged with its record; active kept; kept while the review case (or
+//      report) it came from is under an active legal hold (20270395), purged once that hold is released.
+//   7. get_my_account_restriction: the caller's own pause only (what screen-business-content asks before screening).
 // One rolled-back transaction. Not covered: the app's wording (Jest: accountRestrictions.test.js), the admin screen on a phone,
 // two admins at once (scripts/replay/account-restriction-concurrency.js).
 const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
@@ -45,7 +49,8 @@ d('journey: admin-controlled temporary restrictions pause specific actions, end 
     const log = await runJourney(`
       ${actorDeclares(['v_admin', 'v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_o'])}
       v_p uuid := gen_random_uuid(); v_g uuid := gen_random_uuid();
-      v_out jsonb; v_hint text; v_detail text; v_push_before bigint; v_rid uuid; v_old uuid;`, `
+      v_out jsonb; v_hint text; v_detail text; v_push_before bigint; v_rid uuid; v_old uuid; v_req uuid;
+      v_case_held uuid; v_case_free uuid; v_held_r uuid; v_free_r uuid; v_hold uuid;`, `
   ${actorsSql({ people: ['v_admin', 'v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_o'], business: { owner: 'v_o', partner: 'v_p' } })}
   update profiles set is_admin = true where id = v_admin;
   ${rec('installed', `to_regprocedure('public.admin_restrict_account(uuid,text[],integer,text,uuid,uuid)') is not null`)}
@@ -101,6 +106,21 @@ d('journey: admin-controlled temporary restrictions pause specific actions, end 
   ${as('o_availability', 'v_o', `insert into business_availability (partner_id, category, title, description, offer_type, starts_at, ends_at)
       values (v_p, 'Coffee', 'Two seats open', 'Window seats', 'discount', now() + interval '1 hour', now() + interval '3 hours')`)}
   ${as('o_message_ok', 'v_o', `insert into notices (from_user, to_user) values (v_o, v_e)`)}
+  -- the business's reply to a customer's request: the real write path (submit_business_offer; the harness records the
+  -- low-risk screening result screen-business-content would, so only the pause can refuse it)
+  insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, party_size, category, date)
+    values (v_a, 'journey restricted reply', 26.7123, -80.0321, now() + interval '1 day', 2, 'Coffee', current_date) returning id into v_req;
+  insert into business_request_offers (request_id, partner_id) values (v_req, v_p) on conflict do nothing;
+  ${as('o_reply', 'v_o', `perform submit_business_offer(request_id_param => v_req, offer_type_param => 'standard', offer_description_param => 'Two window seats at seven.')`)}
+  ${rec('o_reply_row', `(select jsonb_build_object('status', status, 'description', offer_description) from business_request_offers where request_id = v_req and partner_id = v_p)`)}
+  ${as('o_reader', 'v_o', `v_out := to_jsonb(public.get_my_account_restriction('offers'))`, 'authenticated', 'v_out')}
+  ${as('o_reader_other_cap', 'v_o', `v_out := to_jsonb(public.get_my_account_restriction('messages'))`, 'authenticated', 'v_out')}
+  ${as('a_reader', 'v_a', `v_out := to_jsonb(public.get_my_account_restriction('offers'))`, 'authenticated', 'v_out')}
+  ${as('anon_reader', 'null', `v_out := to_jsonb(public.get_my_account_restriction('offers'))`, 'anon', 'v_out')}
+  v_old := (select id from private.account_restrictions where user_id = v_o and capability = 'offers');
+  ${as('lift_o', 'v_admin', `select public.admin_lift_account_restriction(v_old, 'Business explained the duplicates') into v_out`, 'authenticated', 'v_out')}
+  ${as('o_reply_after_lift', 'v_o', `perform submit_business_offer(request_id_param => v_req, offer_type_param => 'standard', offer_description_param => 'Two window seats at seven.')`)}
+  ${rec('o_reply_row_after_lift', `(select status from business_request_offers where request_id = v_req and partner_id = v_p)`)}
 
   -- ===== 3. ends by itself; lift early =====
   insert into private.account_restrictions (user_id, capability, reason, admin_id, starts_at, expires_at)
@@ -141,6 +161,21 @@ d('journey: admin-controlled temporary restrictions pause specific actions, end 
   insert into private.account_restrictions (user_id, capability, reason, admin_id, starts_at, expires_at)
     values (v_d, 'links', 'A pause from more than a year ago', v_admin, now() - interval '400 days', now() - interval '390 days') returning id into v_old;
   insert into private.account_restriction_events (restriction_id, user_id, action, admin_id, reason) values (v_old, v_d, 'restrict', v_admin, 'A pause from more than a year ago');
+  -- legal holds (20270395): an old restriction decided from a held review case stays; one from a case without a hold goes
+  insert into private.account_review_cases (signal, sha256, reason) values ('identical_photo', 'journey-0399-held', 'many_accounts') returning id into v_case_held;
+  insert into private.account_review_cases (signal, sha256, reason) values ('identical_photo', 'journey-0399-free', 'many_accounts') returning id into v_case_free;
+  insert into private.account_restrictions (user_id, capability, reason, review_case_id, admin_id, starts_at, expires_at)
+    values (v_e, 'links', 'Old pause, case under legal hold', v_case_held, v_admin, now() - interval '400 days', now() - interval '390 days') returning id into v_held_r;
+  insert into private.account_restrictions (user_id, capability, reason, review_case_id, admin_id, starts_at, expires_at)
+    values (v_e, 'messages', 'Old pause, case not on hold', v_case_free, v_admin, now() - interval '400 days', now() - interval '390 days') returning id into v_free_r;
+  ${as('place_hold', 'v_admin', `select public.admin_place_legal_hold('review_case', v_case_held, 'Preservation request from counsel', null) into v_out`, 'authenticated', 'v_out')}
+  perform private.purge_ended_account_restrictions();
+  ${rec('held_purge', `jsonb_build_object('held_kept', exists(select 1 from private.account_restrictions where id = v_held_r),
+      'unheld_purged', not exists(select 1 from private.account_restrictions where id = v_free_r))`)}
+  v_hold := (select id from private.legal_holds where target_type = 'review_case' and target_id = v_case_held and released_at is null);
+  ${as('release_hold', 'v_admin', `select public.admin_release_legal_hold(v_hold, 'Matter closed, preservation ended') into v_out`, 'authenticated', 'v_out')}
+  perform private.purge_ended_account_restrictions();
+  ${rec('after_release', `not exists(select 1 from private.account_restrictions where id = v_held_r)`)}
   perform private.purge_ended_account_restrictions();
   ${rec('purged', `jsonb_build_object('old', exists(select 1 from private.account_restrictions where id = v_old),
       'old_events', (select count(*) from private.account_restriction_events where restriction_id = v_old),
@@ -206,6 +241,18 @@ d('journey: admin-controlled temporary restrictions pause specific actions, end 
     notRestricted('o_message_ok');
   });
 
+  test('a paused business cannot reply to a customer request through submit_business_offer; after the lift it can', () => {
+    restricted('o_reply', 'offers');
+    expect(data('o_reply_row')).toEqual({ status: 'pending', description: null }); // nothing was written
+    expect(Date.parse(data('o_reader'))).toBeGreaterThan(Date.now());
+    expect(data('o_reader_other_cap')).toBeNull();
+    expect(data('a_reader')).toBeNull(); // only the caller's own pause, never anyone else's
+    expect(data('anon_reader')).toEqual(expect.objectContaining({ code: '42501' }));
+    expect(data('lift_o')).toEqual({ lifted: true, already: false });
+    expect(data('o_reply_after_lift')).toBe('ok');
+    expect(data('o_reply_row_after_lift')).toBe('offered');
+  });
+
   test('ends by itself; an admin can lift early (reason, once); then the action goes through', () => {
     expect(data('e_message_after_expiry')).toBe('ok');
     refusedWith('lift_non_admin', 'admin_only');
@@ -237,6 +284,13 @@ d('journey: admin-controlled temporary restrictions pause specific actions, end 
     expect(data('r_a')).toEqual(expect.objectContaining({ capabilities: ['links', 'messages'] }));
     for (const p of data('nobody_suspended')) expect(p).toEqual({ suspended: false, hidden: false });
     expect(data('no_push')).toBe(0);
+  });
+
+  test('retention respects legal holds: kept while its review case is held, purged once released', () => {
+    expect(data('place_hold')?.error).toBeUndefined();
+    expect(data('held_purge')).toEqual({ held_kept: true, unheld_purged: true });
+    expect(data('release_hold')?.error).toBeUndefined();
+    expect(data('after_release')).toBe(true);
   });
 
   test('retention: ended over 12 months ago is purged with its record; active and recently ended stay', () => {

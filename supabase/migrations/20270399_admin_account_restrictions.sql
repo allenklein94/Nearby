@@ -18,8 +18,13 @@
 --   links            adding a NEW link to public text or a message (profile, gathering, community, questions, comments, chats);
 --                    a link already there may stay; uses 20270396's link detector
 -- Not covered (deliberately, first version): discovery reach (would change every discovery reader), editing an existing message.
--- Retention: a restriction and its record are deleted 12 months after it ended (expired or lifted), and with the account.
--- Requires 20270351 (account_moderation_actions pattern, check_is_admin), 20270357 (account_review_cases), 20270396 (ugc_links).
+-- Retention: a restriction and its record are deleted 12 months after it ended (expired or lifted), and with the account,
+--   EXCEPT while the report or review case it was decided from is under an active legal hold (20270395): then the purge
+--   keeps it until that hold is released. A restriction is not itself a hold target (holds stay on reports, removal
+--   records and review cases); a restriction made without a report or case can't be held this way. Account deletion still
+--   removes it (same as 20270357's case members; a hold doesn't stop an account deletion today).
+-- Requires 20270351 (account_moderation_actions pattern, check_is_admin), 20270357 (account_review_cases), 20270395
+-- (legal holds), 20270396 (ugc_links).
 
 create table if not exists private.account_restrictions (
   id uuid primary key default gen_random_uuid(),
@@ -123,6 +128,21 @@ begin
 end;
 $function$;
 revoke all on function private.refuse_restricted(uuid, text) from public, anon, authenticated;
+
+-- The caller's OWN pause of one kind (null = none). Only for asking before the work: screen-business-content checks it
+-- before spending a screening call or queuing an offer. It tells the person nothing they aren't told at the refused
+-- action anyway; never anyone else's.
+create or replace function public.get_my_account_restriction(capability_param text)
+returns timestamptz
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select private.account_restricted_until(auth.uid(), capability_param) where auth.uid() is not null;
+$function$;
+revoke all on function public.get_my_account_restriction(text) from public, anon;
+grant execute on function public.get_my_account_restriction(text) to authenticated;
 
 -- Row trigger. tg_argv[0] = capability; tg_argv[1] = the column naming the actor ('' = the signed-in caller themselves);
 -- for 'links', tg_argv[1..] = the text columns to look in. Runs only for a signed-in caller (service-role / cron writes and
@@ -403,15 +423,21 @@ $function$;
 revoke all on function public.admin_list_account_restrictions(uuid) from public, anon;
 grant execute on function public.admin_list_account_restrictions(uuid) to authenticated;
 
--- Retention: a restriction (and with it its record) is deleted 12 months after it ended. Never while active.
+-- Retention: a restriction (and with it its record) is deleted 12 months after it ended. Never while active, never while
+-- the report or review case it came from is under an active legal hold (20270395's lock, as its own purge jobs take it).
 create or replace function private.purge_ended_account_restrictions()
 returns void
-language sql
+language plpgsql
 security definer
 set search_path to 'public'
 as $function$
-  delete from private.account_restrictions
-   where coalesce(lifted_at, expires_at) < now() - interval '12 months';
+begin
+  perform private.legal_hold_lock();
+  delete from private.account_restrictions r
+   where coalesce(r.lifted_at, r.expires_at) < now() - interval '12 months'
+     and not (r.report_id is not null and private.report_on_legal_hold(r.report_id))
+     and not (r.review_case_id is not null and private.case_on_legal_hold(r.review_case_id));
+end;
 $function$;
 revoke all on function private.purge_ended_account_restrictions() from public, anon, authenticated;
 

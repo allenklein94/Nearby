@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { restrictionRefusal } from '../utils/accountRestrictions';
 import EmptyCopy from './EmptyCopy';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Share, Animated } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
@@ -154,7 +155,11 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
       setInvitedIds((prev) => ({ ...prev, ...newlyInvited }));
     }
     const failedCount = results.length - Object.keys(newlyInvited).length;
-    if (failedCount > 0) {
+    // 20270399: a paused account's invites all fail the same way: say that (what is paused, until when), never "try again"
+    const paused = results.find((r) => r.status === 'rejected' && restrictionRefusal(r.reason));
+    if (paused) {
+      presentRecoverableError(Alert, { what: 'complete that', error: paused.reason });
+    } else if (failedCount > 0) {
       Alert.alert(
         t('ui.gatheringConfirmation.someInvitesDidntGoThrough'),
         t('ui.gatheringConfirmation.invitedOfInTryThe', { sent: Object.keys(newlyInvited).length, total: targetIds.length, name: circle.name })

@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { restrictionRefusal } from '../utils/accountRestrictions';
 
 // Relationship-state audit (external UX critique item 32, 2026-09-11): the
 // one canonical place to derive a real person's relationship to the
@@ -94,6 +95,8 @@ export async function sendFriendRequest(otherUserId) {
 
   if (error) {
     if (error.code === '23505') throw new Error("You've already sent or received a friend request with this person.");
+    // 20270399: an admin's pause is also 42501; pass it through so the shared error copy says what is paused and until when
+    if (restrictionRefusal(error)) throw error;
     // The friendships insert policy refuses a pair in a block either way (20270265). One generic line for it, whichever
     // side blocked.
     if (error.code === '42501') throw new Error("You can't send a friend request to this person.");

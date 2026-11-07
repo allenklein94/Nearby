@@ -159,7 +159,21 @@ function conflictsOf(err: any): string[] | null {
   } catch { return null; }
 }
 
+// 20270399: an admin's temporary pause on this manager's business actions. The database refuses the write (hint
+// 'account_restricted', detail = JSON {capability, until}); passed on as 400 with that detail so the app says, in the
+// person's language, what is paused and until when (utils/accountRestrictions.js), never "try again".
+const RESTRICTED_MESSAGE = 'This action is paused on your account';
+const RESTRICTED_TARGETS = ['offer_response', 'availability', 'offer', 'update'];
+function restrictedResponse(details: string | null) {
+  return { status: 400, body: { error: RESTRICTED_MESSAGE, code: 'account_restricted', details } };
+}
+function restrictedRefusal(err: any) {
+  return err?.hint === 'account_restricted' ? restrictedResponse(err.details ?? err.detail ?? null) : null;
+}
+
 function writeRefusal(err: any) {
+  const paused = restrictedRefusal(err);
+  if (paused) return json(paused.body, paused.status);
   const conflicts = conflictsOf(err);
   if (conflicts) return json({ error: conflicts.join('\n'), code: 'setting_conflict', conflicts }, 400);
   if (err?.hint === 'offer_contact_info') return json({ error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info' }, 400);
@@ -376,6 +390,19 @@ serve(async (req) => {
     const { data: profile } = await admin.from('profiles').select('managed_partner_id').eq('id', myId).single();
     if (!profile?.managed_partner_id || profile.managed_partner_id !== partnerId) {
       return json({ error: 'You do not manage this business' }, 403);
+    }
+
+    // 20270399: a paused manager is told at once, before any screening call is spent and before an offer is queued (the
+    // app's offer path queues and screens in the background, so a refusal at write time would first say "sent for
+    // review"). The write itself is still refused by the database if a pause starts in between. Before 20270399 the
+    // reader doesn't exist: nothing is paused.
+    if (RESTRICTED_TARGETS.includes(targetType)) {
+      const asCaller = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, { global: { headers: { Authorization: authHeader } } });
+      const { data: pausedUntil, error: pausedError } = await asCaller.rpc('get_my_account_restriction', { capability_param: 'offers' });
+      if (!pausedError && pausedUntil) {
+        const r = restrictedResponse(JSON.stringify({ capability: 'offers', until: new Date(pausedUntil).toISOString().replace(/\.\d{3}Z$/, 'Z') }));
+        return json(r.body, r.status);
+      }
     }
 
     const { data: withinLimit } = await admin.rpc('check_and_increment_ai_use', {
@@ -1295,6 +1322,8 @@ Body: ${updateBody || '(none)'}`;
         if (writeError) {
           console.error('screen-business-content: low-tier offer_response write failed', writeError);
           if (writeError.hint === 'offer_contact_info') return { status: 400, body: { error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info' } };
+          const paused = restrictedRefusal(writeError);
+          if (paused) return paused;
           return { status: 500, body: { error: writeError.message || 'Could not send your response.' } };
         }
         // Item 51: the business's first-ever offer = the server's one claim (partner_first_offers, set by trigger in this write).
@@ -1338,6 +1367,7 @@ Body: ${updateBody || '(none)'}`;
           else if (b.published) patch = { status: 'published', offer_id: b.offerId ?? null, screening_id: b.screeningId ?? null };
           else if (b.blocked) patch = { status: 'needs_changes', matched_categories: b.matchedCategories ?? [], screening_id: b.screeningId ?? null };
           else if (o.status === 200) patch = { status: 'in_review', screening_id: b.screeningId ?? null };
+          else if (b.code === 'account_restricted') patch = { status: 'not_sent', reason: null };
           else if (o.status === 400) patch = { status: 'needs_changes', reason: String(b.error ?? 'Please review your offer and send it again.').slice(0, 300) };
           else patch = { status: 'not_sent', reason: String(b.error ?? 'It could not be sent.').slice(0, 300) };
         } catch (e) {

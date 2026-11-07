@@ -4,7 +4,7 @@ import {
   RESTRICTION_CAPABILITIES, RESTRICTION_DAYS, activeRestrictions, restrictionFormReady, restrictionLabel, restrictionReasonReady,
   restrictionRefusal, restrictionRefusalMessage, restrictionStatusLine, toggleCapability,
 } from './accountRestrictions';
-import { recoverableErrorCopy } from './recoverableError';
+import { recoverableErrorCopy, serviceError } from './recoverableError';
 import { setCurrentLanguage as setLanguage } from '../i18n/translate';
 import fs from 'fs';
 import path from 'path';
@@ -79,5 +79,40 @@ describe('what the person is told', () => {
     expect(restrictionRefusalMessage(restrictionRefusal(refusal), () => '10 de noviembre')).toBe(
       'Nearby pausó esto en tu cuenta tras una revisión. Disponible de nuevo: 10 de noviembre. Todo lo demás funciona con normalidad.'
     );
+  });
+});
+
+// The six paused action paths (owner review of 0399, 2026-11-07): each one the app really uses reaches the shared copy
+// above, never a block message, a generic "try again" or the server's English line. Shared paths (useChatComposer,
+// presentRecoverableError) are covered by the tests above; these are the paths that used to bypass them.
+describe('every paused action path shows the shared wording', () => {
+  const src = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
+  test('business offers: the edge function passes the pause on with its detail, the app reads it', () => {
+    setLanguage('en');
+    const e = serviceError({ status: 400 }, { error: 'This action is paused on your account', code: 'account_restricted',
+      details: JSON.stringify({ capability: 'offers', until: '2026-11-10T12:00:00Z' }) }, 'fallback');
+    expect(restrictionRefusal(e)).toEqual({ capability: 'offers', until: new Date('2026-11-10T12:00:00Z') });
+    const copy = recoverableErrorCopy({ what: 'send this offer', error: e, draftKept: true });
+    expect(copy.canRetry).toBe(false);
+    expect(copy.message).toMatch(/^Nearby paused this on your account after a review\./);
+    const fn = src('../supabase/functions/screen-business-content/index.ts');
+    // asked BEFORE screening or queuing (the app queues offers), and mapped if the write is refused anyway
+    expect(fn.indexOf("rpc('get_my_account_restriction'")).toBeGreaterThan(0);
+    expect(fn.indexOf("rpc('get_my_account_restriction'")).toBeLessThan(fn.indexOf("rpc('check_and_increment_ai_use'"));
+    expect(fn).toMatch(/function writeRefusal\(err: any\) \{\s+const paused = restrictedRefusal\(err\);/);
+    expect(fn).toMatch(/b\.code === 'account_restricted'\) patch = \{ status: 'not_sent'/);
+  });
+  test('friend requests: the pause (also 42501) is not turned into the block message', () => {
+    const s = src('services/friends.js');
+    expect(s.indexOf('if (restrictionRefusal(error)) throw error;')).toBeGreaterThan(0);
+    expect(s.indexOf('if (restrictionRefusal(error)) throw error;')).toBeLessThan(s.indexOf("error.code === '42501'"));
+  });
+  test('Connect, notices and waves, and circle invites say what is paused (no Retry)', () => {
+    expect(src('screens/FriendDiscoveryScreen.js')).toMatch(/if \(restrictionRefusal\(e\)\) \{ presentRecoverableError\(Alert/);
+    const d = src('screens/DiscoveryScreen.js');
+    expect(d).toMatch(/if \(restrictionRefusal\(insertError\)\) \{ presentRecoverableError\(Alert/);
+    expect(d).toMatch(/if \(restrictionRefusal\(updateError\)\) \{ presentRecoverableError\(Alert/);
+    expect(src('components/GatheringPublishedPanel.js')).toMatch(/restrictionRefusal\(r\.reason\)/);
+    expect(src('hooks/useChatComposer.js')).toMatch(/restrictionRefusalMessage\(paused\)/);
   });
 });

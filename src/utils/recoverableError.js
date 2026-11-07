@@ -25,6 +25,8 @@ export function serviceError(response, result, fallback) {
   if (Array.isArray(result?.conflicts)) e.conflicts = result.conflicts;
   // A rule the edge function reports by code (20270372: offer_contact_info) is read like the database's own hint.
   if (result?.code && ACCOUNT_RULE_HINTS[result.code]) e.hint = result.code;
+  // 20270399: an admin's pause, passed on by the edge function with the database's detail {capability, until}
+  if (result?.code === 'account_restricted') { e.hint = 'account_restricted'; e.details = result.details ?? null; }
   return e;
 }
 

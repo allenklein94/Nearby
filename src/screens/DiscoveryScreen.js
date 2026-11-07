@@ -17,6 +17,8 @@ import { shouldOfferBreak, dismissBreakSuggestion } from '../services/confidence
 import { isPremium } from '../services/purchases';
 import { checkNoticeLimit, checkWaveLimit } from '../services/noticeLimits';
 import { supabase } from '../services/supabase';
+import { presentRecoverableError } from '../utils/recoverableError';
+import { restrictionRefusal } from '../utils/accountRestrictions';
 import { readMyProfile } from '../services/myProfile';
 import { getSignedPhotoUrl } from '../services/photos';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
@@ -453,6 +455,8 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
             .eq('id', existing.id);
 
           if (updateError) {
+            // 20270399: a paused wave says what is paused and until when, in the person's language
+            if (restrictionRefusal(updateError)) { presentRecoverableError(Alert, { what: 'complete that', error: updateError }); return false; }
             Alert.alert(t('ui.dating.waveNotSent'), updateError.message);
             return false;
           }
@@ -465,6 +469,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
         return true;
       }
 
+      if (restrictionRefusal(insertError)) { presentRecoverableError(Alert, { what: 'complete that', error: insertError }); return false; }
       Alert.alert(isWave ? t('ui.dating.waveNotSent') : t('ui.dating.noticeNotSent'), insertError.message);
       return false;
     }

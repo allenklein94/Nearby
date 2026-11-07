@@ -37,6 +37,7 @@ drop trigger if exists zz_refuse_restricted_links on public.community_messages;
 drop trigger if exists zz_refuse_restricted_links on public.plan_messages;
 drop trigger if exists zz_refuse_restricted_links on public.business_messages;
 
+drop function if exists public.get_my_account_restriction(text);
 drop function if exists public.admin_list_account_restrictions(uuid);
 drop function if exists public.admin_lift_account_restriction(uuid, text);
 drop function if exists public.admin_restrict_account(uuid, text[], int, text, uuid, uuid);
