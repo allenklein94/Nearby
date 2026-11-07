@@ -9963,6 +9963,16 @@ columns, one store). Not surfaced at onboarding: Community. No migration. Jest 6
 (verified by rebuilding).
 
 
+## Manual account appeals (owner idea 20, 2026-11-07)
+
+Owner approved a basic manual appeals process now (no screen, migration, automated restriction or appeals system). Built, client only, staged on `post-tier1/admin-restrictions`:
+- `src/constants/support.js`: ONE support address for appeals + recovery; `SUPPORT_EMAIL = null`, `SUPPORT_EMAIL_VERIFIED = false` until the owner configures and verifies a mailbox.
+- `src/utils/accountReview.js`: `supportEmail` (shown only when set + verified + well-formed), `reviewRequestLine`, `withReviewLine`, `isSignInBlocked` (Auth `user_banned` or the banned message).
+- `recoverableError.js`: `accountRuleMessage(hint)` = the one account-rule wording; `account_suspended` carries the review line; banned sign-in = `signInBlocked` + review line, no Try Again. `accountRestrictions.restrictionRefusalMessage` carries the line (all pause paths). `useChatComposer` uses `accountRuleMessage`. LoginScreen reviewer path routes a banned refusal to the shared copy (the SMS path already did).
+- Strings `ui.shared.errors.signInBlocked` / `requestReview` (11 languages; 10 machine-authored).
+- Procedure DRAFT `PRODUCT_AUDIT/ACCOUNT_APPEALS_PROCEDURE_2026-11-07.md` (intake, identity check, independent admin when possible, written decision via the existing reason-required controls + `account_moderation_actions` / restriction / recovery audit, reply = outcome only); recovery runbook points to it.
+- Verified: guard `accountReview.test.js` (11), Jest 551/551 (7432 + 11 todo), iOS bundle exports. NOT verified: real Auth's banned `verifyOtp` response, phone rendering, legal review. Website has no public instructions yet (Terms §9 sentence drafted, not added).
+
 ## 2026-10-30 New accounts only by phone (20270367, staged)
 Owner: investigate the email sign-up exposure before freezing trust & safety; no prod Auth change without approval; no selfie, fingerprinting, VoIP intelligence or AI scoring.
 Findings (read-only, prod): Auth `external_email_enabled` true, `disable_signup` false, `external_anonymous_users_enabled` false, no OAuth, captcha off, `hook_before_user_created` off. App (`LoginScreen`) and the business website bundle only call `signInWithOtp({ phone })`. 10 auth users: 4 phone-only, 6 with email identities (one has phone too); email ones include applereview (review-login = admin generateLink magiclink for an existing address), the outlook business owner, the dedicated live-test account (`signInTestAccount.js`: password, else generateLink). So `external_email_enabled=false` would break existing sign-ins and `disable_signup=true` would block phone sign-up too.

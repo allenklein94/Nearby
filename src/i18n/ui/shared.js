@@ -19,6 +19,8 @@ export default {
       phoneRequired: 'Messaging, invitations, connecting and hosting need an account with a verified phone number.',
       accountSuspended: 'This account is suspended, so it can\'t message, invite, connect or host.',
       accountRestricted: 'Nearby paused this on your account after a review. Available again: {date}. Everything else works as usual.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'This account can\'t sign in right now. It has been suspended, or it is on hold while an account problem is checked.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'If you think this is a mistake, email {email} with the phone number on your account to ask for a review.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'You\'ve reached the limit for this for now. Please try again later.',
       gatheringLimit: 'You\'ve reached the limit for creating gatherings for now. Please try again later.',
       friendRequestLimit: 'You\'ve sent several friend requests in a short time. Please wait a few minutes and try again.',
@@ -76,6 +78,8 @@ export default {
       phoneRequired: 'Para enviar mensajes, invitar, conectar u organizar necesitas una cuenta con un número de teléfono verificado.',
       accountSuspended: 'Esta cuenta está suspendida, así que no puede enviar mensajes, invitar, conectar ni organizar.',
       accountRestricted: 'Nearby pausó esto en tu cuenta tras una revisión. Disponible de nuevo: {date}. Todo lo demás funciona con normalidad.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Esta cuenta no puede iniciar sesión ahora mismo. Fue suspendida o está en espera mientras se revisa un problema con la cuenta.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'Si crees que es un error, escribe a {email} con el número de teléfono de tu cuenta para pedir una revisión.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Llegaste al límite de esto por ahora. Inténtalo de nuevo más tarde.',
       gatheringLimit: 'Llegaste al límite para crear reuniones por ahora. Inténtalo de nuevo más tarde.',
       friendRequestLimit: 'Enviaste varias solicitudes de amistad en poco tiempo. Espera unos minutos e inténtalo de nuevo.',
@@ -133,6 +137,8 @@ export default {
       phoneRequired: 'Für Nachrichten, Einladungen, Verbindungen und eigene Treffen brauchst du ein Konto mit bestätigter Telefonnummer.',
       accountSuspended: 'Dieses Konto ist gesperrt und kann keine Nachrichten senden, einladen, sich verbinden oder etwas veranstalten.',
       accountRestricted: 'Nearby hat das nach einer Prüfung für dein Konto pausiert. Wieder verfügbar: {date}. Alles andere funktioniert wie gewohnt.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Mit diesem Konto ist die Anmeldung gerade nicht möglich. Es wurde gesperrt oder ist angehalten, während ein Kontoproblem geprüft wird.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'Wenn du glaubst, dass das ein Fehler ist, schreib an {email} mit der Telefonnummer deines Kontos und bitte um eine Prüfung.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Du hast dafür vorerst das Limit erreicht. Bitte versuch es später noch einmal.',
       gatheringLimit: 'Du hast vorerst das Limit für neue Treffen erreicht. Bitte versuch es später noch einmal.',
       friendRequestLimit: 'Du hast in kurzer Zeit mehrere Freundschaftsanfragen gesendet. Bitte warte ein paar Minuten und versuch es dann noch einmal.',
@@ -190,6 +196,8 @@ export default {
       phoneRequired: 'Pour envoyer des messages, inviter, te connecter ou organiser, il faut un compte avec un numéro de téléphone vérifié.',
       accountSuspended: 'Ce compte est suspendu : il ne peut pas envoyer de messages, inviter, se connecter ni organiser.',
       accountRestricted: 'Nearby a mis cela en pause sur ton compte après un examen. De nouveau disponible : {date}. Tout le reste fonctionne normalement.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Ce compte ne peut pas se connecter pour le moment. Il a été suspendu ou il est en attente pendant la vérification d\'un problème de compte.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'Si tu penses que c\'est une erreur, écris à {email} avec le numéro de téléphone de ton compte pour demander un réexamen.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Tu as atteint la limite pour le moment. Réessaie plus tard.',
       gatheringLimit: 'Tu as atteint la limite de création de rassemblements pour le moment. Réessaie plus tard.',
       friendRequestLimit: 'Tu as envoyé plusieurs demandes d\'ami en peu de temps. Attends quelques minutes et réessaie.',
@@ -247,6 +255,8 @@ export default {
       phoneRequired: 'Para enviar mensagens, convidar, se conectar ou organizar, é preciso uma conta com número de telefone verificado.',
       accountSuspended: 'Esta conta está suspensa, então não pode enviar mensagens, convidar, se conectar nem organizar.',
       accountRestricted: 'O Nearby pausou isso na sua conta após uma análise. Disponível novamente: {date}. Todo o resto funciona normalmente.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Esta conta não pode entrar agora. Ela foi suspensa ou está em espera enquanto um problema da conta é verificado.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'Se você acha que isso é um erro, envie um e-mail para {email} com o número de telefone da sua conta para pedir uma análise.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Você atingiu o limite disso por enquanto. Tente novamente mais tarde.',
       gatheringLimit: 'Você atingiu o limite para criar encontros por enquanto. Tente novamente mais tarde.',
       friendRequestLimit: 'Você enviou vários pedidos de amizade em pouco tempo. Aguarde alguns minutos e tente novamente.',
@@ -304,6 +314,8 @@ export default {
       phoneRequired: 'Pou voye mesaj, envite, konekte oswa òganize, ou bezwen yon kont ki gen yon nimewo telefòn verifye.',
       accountSuspended: 'Kont sa a sispann, kidonk li pa ka voye mesaj, envite, konekte oswa òganize.',
       accountRestricted: 'Nearby mete sa an poz sou kont ou apre yon revizyon. Disponib ankò: {date}. Tout lòt bagay mache nòmalman.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Kont sa a pa ka konekte kounye a. Yo sispann li, oswa li an atant pandan y ap verifye yon pwoblèm sou kont lan.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'Si ou panse se yon erè, ekri {email} ak nimewo telefòn kont ou a pou mande yon revizyon.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Ou rive nan limit pou sa a pou kounye a. Tanpri eseye ankò pita.',
       gatheringLimit: 'Ou rive nan limit pou kreye rasanbleman pou kounye a. Tanpri eseye ankò pita.',
       friendRequestLimit: 'Ou voye plizyè demann zanmi nan yon ti tan. Tanpri tann kèk minit epi eseye ankò.',
@@ -361,6 +373,8 @@ export default {
       phoneRequired: '发消息、邀请、建立联系和发起活动需要一个已验证手机号码的账号。',
       accountSuspended: '此账号已被暂停，无法发消息、邀请、建立联系或发起活动。',
       accountRestricted: '经过审核，Nearby 暂停了你账户的这项操作。恢复时间：{date}。其他功能照常使用。',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: '此账户目前无法登录。它已被停用，或在核查账户问题期间被暂时冻结。',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: '如果你认为这是误判，请发邮件至 {email}，附上你账户的手机号码，申请复核。',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: '你暂时已达到此操作的上限，请稍后再试。',
       gatheringLimit: '你暂时已达到创建聚会的上限，请稍后再试。',
       friendRequestLimit: '你在短时间内发送了多个好友请求。请等几分钟后再试。',
@@ -418,6 +432,8 @@ export default {
       phoneRequired: 'Để nhắn tin, mời, kết nối hoặc tổ chức, bạn cần tài khoản có số điện thoại đã xác minh.',
       accountSuspended: 'Tài khoản này đang bị tạm ngưng nên không thể nhắn tin, mời, kết nối hoặc tổ chức.',
       accountRestricted: 'Nearby đã tạm dừng thao tác này trên tài khoản của bạn sau khi xem xét. Dùng lại được từ: {date}. Mọi thứ khác vẫn hoạt động bình thường.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Tài khoản này hiện không thể đăng nhập. Tài khoản đã bị đình chỉ hoặc đang bị tạm giữ trong khi kiểm tra một vấn đề về tài khoản.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'Nếu bạn cho rằng đây là nhầm lẫn, hãy gửi email đến {email} kèm số điện thoại của tài khoản để yêu cầu xem xét lại.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Bạn đã đạt giới hạn cho việc này trong lúc này. Vui lòng thử lại sau.',
       gatheringLimit: 'Bạn đã đạt giới hạn tạo buổi gặp mặt trong lúc này. Vui lòng thử lại sau.',
       friendRequestLimit: 'Bạn đã gửi nhiều lời mời kết bạn trong thời gian ngắn. Vui lòng đợi vài phút rồi thử lại.',
@@ -475,6 +491,8 @@ export default {
       phoneRequired: 'Kailangan ng account na may verified na phone number para makapag-message, makapag-imbita, makakonekta o makapag-host.',
       accountSuspended: 'Naka-suspend ang account na ito, kaya hindi ito makakapag-message, makakapag-imbita, makakakonekta o makakapag-host.',
       accountRestricted: 'Ipinahinto muna ito ng Nearby sa account mo pagkatapos ng isang pagsusuri. Magagamit ulit: {date}. Gumagana pa rin nang normal ang lahat ng iba pa.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Hindi makakapag-sign in ang account na ito sa ngayon. Sinuspinde ito, o naka-hold habang sinusuri ang isang problema sa account.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'Kung sa tingin mo ay pagkakamali ito, mag-email sa {email} kasama ang phone number ng account mo para humiling ng pagsusuri.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Naabot mo na ang limitasyon dito sa ngayon. Pakisubukan ulit mamaya.',
       gatheringLimit: 'Naabot mo na ang limitasyon sa paggawa ng mga pagtitipon sa ngayon. Pakisubukan ulit mamaya.',
       friendRequestLimit: 'Nagpadala ka ng ilang friend request sa maikling panahon. Maghintay ng ilang minuto at subukan ulit.',
@@ -532,6 +550,8 @@ export default {
       phoneRequired: 'Чтобы писать сообщения, приглашать, знакомиться и проводить встречи, нужен аккаунт с подтверждённым номером телефона.',
       accountSuspended: 'Этот аккаунт заблокирован: он не может писать сообщения, приглашать, знакомиться или проводить встречи.',
       accountRestricted: 'После проверки Nearby приостановил это действие в вашем аккаунте. Снова доступно: {date}. Всё остальное работает как обычно.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Сейчас в этот аккаунт нельзя войти. Он заблокирован или временно приостановлен, пока проверяется проблема с аккаунтом.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: 'Если вы считаете, что это ошибка, напишите на {email}, указав номер телефона аккаунта, и попросите пересмотреть решение.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Вы пока достигли лимита для этого действия. Попробуйте позже.',
       gatheringLimit: 'Вы пока достигли лимита на создание встреч. Попробуйте позже.',
       friendRequestLimit: 'Вы отправили несколько запросов в друзья за короткое время. Подождите несколько минут и попробуйте снова.',
@@ -589,6 +609,8 @@ export default {
       phoneRequired: '메시지, 초대, 연결, 모임 주최는 전화번호가 인증된 계정에서만 할 수 있어요.',
       accountSuspended: '이 계정은 정지되어 메시지, 초대, 연결, 모임 주최를 할 수 없어요.',
       accountRestricted: '검토 후 Nearby가 계정에서 이 기능을 일시 중지했어요. 다시 사용 가능: {date}. 다른 기능은 평소처럼 이용할 수 있어요.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: '지금은 이 계정으로 로그인할 수 없어요. 계정이 정지되었거나 계정 문제를 확인하는 동안 보류 중이에요.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      requestReview: '잘못된 조치라고 생각되면 계정의 전화번호를 적어 {email}(으)로 이메일을 보내 검토를 요청하세요.',  // owner 2026-11-07: manual appeals; shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: '지금은 이 작업의 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       gatheringLimit: '지금은 모임 만들기 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       friendRequestLimit: '짧은 시간에 친구 요청을 여러 번 보냈어요. 몇 분 후에 다시 시도해 주세요.',

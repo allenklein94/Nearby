@@ -16,7 +16,7 @@ Design + owner decisions: `ACCOUNT_RECOVERY_DESIGN_2026-11-01.md`.
 ## 1. Intake (works while signed out)
 
 - Channel: the support address on the sign-in help link, in the "number changed" notice, and on the website. (Address to be
-  chosen by the owner; not yet published.)
+  chosen by the owner; not yet published. The same ONE address serves account appeals: `src/constants/support.js`, PRODUCT_AUDIT/ACCOUNT_APPEALS_PROCEDURE_2026-11-07.md.)
 - Ask for: the account's phone number, the approximate date it stopped working, and whether a device is still signed in.
   Never ask for a password, an SMS code, or ID documents by email.
 - Knowing the account's content (friends, messages, plans) is **never** evidence: an intruder can read it.

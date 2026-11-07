@@ -3,6 +3,7 @@
 // everything again (admin_restrict_account / admin_lift_account_restriction / admin_list_account_restrictions: admins only,
 // written reason, 1-30 days, append-only record); nothing here can restrict anyone. Nothing is ever automatic.
 import { tr } from '../i18n/translate';
+import { withReviewLine } from './accountReview';
 
 export const RESTRICTION_REASON_MIN = 10; // = the server's check
 export const RESTRICTION_REASON_MAX = 1000;
@@ -68,8 +69,9 @@ export function restrictionRefusal(error) {
 export function restrictionRefusalMessage(refusal, formatDate = defaultFormatDate) {
   if (!refusal) return null;
   // the server always sends the end; if it can't be read, keep only the first sentence (never a made-up date)
-  if (!refusal.until) return tr('ui.shared.errors.accountRestricted', { date: '' }).split(/(?<=[.。])\s*/u)[0];
-  return tr('ui.shared.errors.accountRestricted', { date: formatDate(refusal.until) });
+  // + how to ask for a review (owner 2026-11-07), only once the support address is configured + verified
+  if (!refusal.until) return withReviewLine(tr('ui.shared.errors.accountRestricted', { date: '' }).split(/(?<=[.。])\s*/u)[0]);
+  return withReviewLine(tr('ui.shared.errors.accountRestricted', { date: formatDate(refusal.until) }));
 }
 
 function defaultFormatDate(date) {

@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { tr } from '../i18n/translate';
-import { ACCOUNT_RULE_HINTS } from '../utils/recoverableError';
+import { accountRuleMessage } from '../utils/recoverableError';
 import { restrictionRefusal, restrictionRefusalMessage } from '../utils/accountRestrictions';
 
 // Shared send-and-recover-on-failure logic for every chat-style composer
@@ -32,8 +31,8 @@ export default function useChatComposer(initialText = '') {
       // a rule the server enforces (phone required, suspended, rate limited) says the rule, never "check your connection"
       // 20270399: an admin's temporary pause says what is paused and until when
       const paused = restrictionRefusal(e);
-      const rule = ACCOUNT_RULE_HINTS[e?.hint];
-      setSendError(paused ? restrictionRefusalMessage(paused) : rule ? tr(rule) : "Couldn't send — check your connection and tap Send to try again.");
+      const rule = accountRuleMessage(e?.hint);
+      setSendError(paused ? restrictionRefusalMessage(paused) : rule || "Couldn't send — check your connection and tap Send to try again.");
     }
   }
 
