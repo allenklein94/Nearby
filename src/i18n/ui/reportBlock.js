@@ -4,7 +4,7 @@ export default {
   en: {
     selectAReason: "Select a reason",
     pleaseChooseAReasonFor: "Please choose a reason for this report.",
-    reportSubmitted: "Report submitted",
+    reportSubmitted: "Report received",
     thankYouOurTeamWill: "Thank you — our team will review this.",
     block: "Block {reportedUserName}?",
     thisUser: "this user",
@@ -28,7 +28,7 @@ export default {
   es: {
     selectAReason: "Elige un motivo",
     pleaseChooseAReasonFor: "Elige un motivo para este reporte.",
-    reportSubmitted: "Reporte enviado",
+    reportSubmitted: "Reporte recibido",
     thankYouOurTeamWill: "Gracias, nuestro equipo lo revisará.",
     block: "¿Bloquear a {reportedUserName}?",
     thisUser: "este usuario",
@@ -52,7 +52,7 @@ export default {
   de: {
     selectAReason: "Grund auswählen",
     pleaseChooseAReasonFor: "Bitte wähle einen Grund für diese Meldung.",
-    reportSubmitted: "Meldung gesendet",
+    reportSubmitted: "Meldung erhalten",
     thankYouOurTeamWill: "Danke, unser Team prüft das.",
     block: "{reportedUserName} blockieren?",
     thisUser: "diese Person",
@@ -76,7 +76,7 @@ export default {
   fr: {
     selectAReason: "Choisis un motif",
     pleaseChooseAReasonFor: "Choisis un motif pour ce signalement.",
-    reportSubmitted: "Signalement envoyé",
+    reportSubmitted: "Signalement reçu",
     thankYouOurTeamWill: "Merci, notre équipe va l’examiner.",
     block: "Bloquer {reportedUserName} ?",
     thisUser: "cette personne",
@@ -100,7 +100,7 @@ export default {
   pt: {
     selectAReason: "Escolha um motivo",
     pleaseChooseAReasonFor: "Escolha um motivo para esta denúncia.",
-    reportSubmitted: "Denúncia enviada",
+    reportSubmitted: "Denúncia recebida",
     thankYouOurTeamWill: "Obrigado, nossa equipe vai analisar.",
     block: "Bloquear {reportedUserName}?",
     thisUser: "este usuário",
@@ -124,7 +124,7 @@ export default {
   ht: {
     selectAReason: "Chwazi yon rezon",
     pleaseChooseAReasonFor: "Tanpri chwazi yon rezon pou rapò sa a.",
-    reportSubmitted: "Rapò a voye",
+    reportSubmitted: "Rapò a resevwa",
     thankYouOurTeamWill: "Mèsi, ekip nou an ap egzamine sa.",
     block: "Bloke {reportedUserName}?",
     thisUser: "moun sa a",
@@ -148,7 +148,7 @@ export default {
   zh: {
     selectAReason: "请选择原因",
     pleaseChooseAReasonFor: "请为这次举报选择一个原因。",
-    reportSubmitted: "举报已提交",
+    reportSubmitted: "已收到举报",
     thankYouOurTeamWill: "谢谢，我们的团队会进行审核。",
     block: "要屏蔽 {reportedUserName} 吗？",
     thisUser: "此用户",
@@ -172,7 +172,7 @@ export default {
   vi: {
     selectAReason: "Chọn lý do",
     pleaseChooseAReasonFor: "Vui lòng chọn lý do cho báo cáo này.",
-    reportSubmitted: "Đã gửi báo cáo",
+    reportSubmitted: "Đã nhận báo cáo",
     thankYouOurTeamWill: "Cảm ơn bạn, đội ngũ của chúng tôi sẽ xem xét.",
     block: "Chặn {reportedUserName}?",
     thisUser: "người dùng này",
@@ -196,7 +196,7 @@ export default {
   tl: {
     selectAReason: "Pumili ng dahilan",
     pleaseChooseAReasonFor: "Pumili ng dahilan para sa ulat na ito.",
-    reportSubmitted: "Naipadala ang ulat",
+    reportSubmitted: "Natanggap ang ulat",
     thankYouOurTeamWill: "Salamat, susuriin ito ng aming team.",
     block: "I-block si {reportedUserName}?",
     thisUser: "ang user na ito",
@@ -220,7 +220,7 @@ export default {
   ru: {
     selectAReason: "Выберите причину",
     pleaseChooseAReasonFor: "Выберите причину жалобы.",
-    reportSubmitted: "Жалоба отправлена",
+    reportSubmitted: "Жалоба получена",
     thankYouOurTeamWill: "Спасибо, наша команда её рассмотрит.",
     block: "Заблокировать {reportedUserName}?",
     thisUser: "этого пользователя",

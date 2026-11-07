@@ -23,6 +23,7 @@ export default {
     startingSoon: 'starting soon', inHours: { one: 'in {count} hour', other: 'in {count} hours' },
     youreHosting: "You're hosting", hostedBy: 'Hosted by {name}', hostedByUnknown: 'Hosted by someone',
     expiredTitle: 'Invitation expired', pastDetail: '{date} • Past',
+    reportReceived: "Report received", reviewCompleted: "Review completed. Thank you for helping keep Nearby safe.",
   },
   es: {
     title: 'Actividad',
@@ -46,6 +47,7 @@ export default {
     startingSoon: 'empieza pronto', inHours: { one: 'en {count} hora', other: 'en {count} horas' },
     youreHosting: 'Tú organizas', hostedBy: 'Organiza {name}', hostedByUnknown: 'Lo organiza alguien',
     expiredTitle: 'Invitación vencida', pastDetail: '{date} • Pasado',
+    reportReceived: "Reporte recibido", reviewCompleted: "Revisión completada. Gracias por ayudar a mantener Nearby seguro.",
   },
   de: {
     title: 'Aktivität',
@@ -69,6 +71,7 @@ export default {
     startingSoon: 'beginnt bald', inHours: { one: 'in {count} Stunde', other: 'in {count} Stunden' },
     youreHosting: 'Du veranstaltest', hostedBy: 'Veranstaltet von {name}', hostedByUnknown: 'Veranstaltet von jemandem',
     expiredTitle: 'Einladung abgelaufen', pastDetail: '{date} • Vorbei',
+    reportReceived: "Meldung erhalten", reviewCompleted: "Prüfung abgeschlossen. Danke, dass du hilfst, Nearby sicher zu halten.",
   },
   fr: {
     title: 'Activité',
@@ -92,6 +95,7 @@ export default {
     startingSoon: 'commence bientôt', inHours: { one: 'dans {count} heure', other: 'dans {count} heures' },
     youreHosting: "C'est vous qui organisez", hostedBy: 'Organisé par {name}', hostedByUnknown: "Organisé par quelqu'un",
     expiredTitle: 'Invitation expirée', pastDetail: '{date} • Passé',
+    reportReceived: "Signalement reçu", reviewCompleted: "Examen terminé. Merci de contribuer à la sécurité de Nearby.",
   },
   pt: {
     title: 'Atividade',
@@ -115,6 +119,7 @@ export default {
     startingSoon: 'começa em breve', inHours: { one: 'em {count} hora', other: 'em {count} horas' },
     youreHosting: 'Você organiza', hostedBy: 'Organizado por {name}', hostedByUnknown: 'Organizado por alguém',
     expiredTitle: 'Convite expirado', pastDetail: '{date} • Passado',
+    reportReceived: "Denúncia recebida", reviewCompleted: "Análise concluída. Obrigado por ajudar a manter o Nearby seguro.",
   },
   ht: {
     title: 'Aktivite',
@@ -138,6 +143,7 @@ export default {
     startingSoon: 'pral kòmanse talè', inHours: { one: 'nan {count} èdtan', other: 'nan {count} èdtan' },
     youreHosting: 'Se ou k ap òganize', hostedBy: '{name} ap òganize', hostedByUnknown: 'Se yon moun k ap òganize',
     expiredTitle: 'Envitasyon an ekspire', pastDetail: '{date} • Pase',
+    reportReceived: "Rapò a resevwa", reviewCompleted: "Revizyon an fini. Mèsi paske w ede kenbe Nearby an sekirite.",
   },
   zh: {
     title: '动态',
@@ -161,6 +167,7 @@ export default {
     startingSoon: '即将开始', inHours: { other: '{count} 小时后' },
     youreHosting: '由你组织', hostedBy: '由 {name} 组织', hostedByUnknown: '由他人组织',
     expiredTitle: '邀请已过期', pastDetail: '{date} • 已结束',
+    reportReceived: "已收到举报", reviewCompleted: "审核已完成。感谢你帮助维护 Nearby 的安全。",
   },
   vi: {
     title: 'Hoạt động',
@@ -184,6 +191,7 @@ export default {
     startingSoon: 'sắp bắt đầu', inHours: { other: 'trong {count} giờ nữa' },
     youreHosting: 'Bạn tổ chức', hostedBy: '{name} tổ chức', hostedByUnknown: 'Người khác tổ chức',
     expiredTitle: 'Lời mời đã hết hạn', pastDetail: '{date} • Đã qua',
+    reportReceived: "Đã nhận báo cáo", reviewCompleted: "Đã xem xét xong. Cảm ơn bạn đã giúp giữ Nearby an toàn.",
   },
   tl: {
     title: 'Aktibidad',
@@ -207,6 +215,7 @@ export default {
     startingSoon: 'magsisimula na', inHours: { one: 'sa loob ng {count} oras', other: 'sa loob ng {count} oras' },
     youreHosting: 'Ikaw ang host', hostedBy: 'Host: {name}', hostedByUnknown: 'Iba ang host',
     expiredTitle: 'Expired na ang imbitasyon', pastDetail: '{date} • Nakaraan',
+    reportReceived: "Natanggap ang ulat", reviewCompleted: "Tapos na ang pagsusuri. Salamat sa pagtulong na panatilihing ligtas ang Nearby.",
   },
   ru: {
     title: 'Активность',
@@ -230,6 +239,7 @@ export default {
     startingSoon: 'скоро начнётся', inHours: { one: 'через {count} час', few: 'через {count} часа', many: 'через {count} часов', other: 'через {count} часа' },
     youreHosting: 'Вы организатор', hostedBy: 'Организатор: {name}', hostedByUnknown: 'Организует другой человек',
     expiredTitle: 'Приглашение истекло', pastDetail: '{date} • Прошло',
+    reportReceived: "Жалоба получена", reviewCompleted: "Проверка завершена. Спасибо, что помогаете сделать Nearby безопасным.",
   },
   ko: {
     title: '활동',
@@ -253,5 +263,6 @@ export default {
     startingSoon: '곧 시작', inHours: { other: '{count}시간 후' },
     youreHosting: '내가 주최', hostedBy: '{name}님 주최', hostedByUnknown: '다른 사람이 주최',
     expiredTitle: '초대가 만료됐어요', pastDetail: '{date} • 지남',
+    reportReceived: "신고가 접수되었습니다", reviewCompleted: "검토가 완료되었습니다. Nearby를 안전하게 지켜 주셔서 감사합니다.",
   },
 };

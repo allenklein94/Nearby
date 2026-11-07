@@ -15,6 +15,7 @@ import { getPendingFriendRequests, respondToFriendRequest } from '../services/fr
 import { MatchAnimation, PullToRefresh, SkeletonFeed } from '../motion';
 import { getFollowedBusinessUpdates } from '../services/brandOffers';
 import { getMyBusinessEcosystemActivity, formatOfferSummary } from '../services/businessFulfillment';
+import { getMyReportUpdates } from '../services/reportUpdates';
 import { getAllPendingRequests, approveInterest, getUpcomingReminders } from '../services/gatherings';
 import { getMyReceivedInvites, respondToInvite } from '../services/invites';
 import { expiredInviteLabel } from '../utils/inviteExpiry';
@@ -138,6 +139,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       sightings,
       businessUpdates,
       businessEcosystemItems,
+      reportUpdateItems,
     ] = await Promise.all([
       isPremium().catch(() => false),
       supabase.from('profiles').select('interests, basics, relationship_intention').eq('id', myId).single(),
@@ -161,6 +163,8 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
       // reservation), interleaved into the same chronological feed as
       // every other real signal here, not a separate section.
       settle(getMyBusinessEcosystemActivity(myId), 'businessActivity'),
+      // Reporter feedback (20270397): the person's own reports, "Report received" -> "Review completed", ids + times only.
+      settle(getMyReportUpdates(), 'reportUpdates'),
     ]);
     setPremium(premiumStatus);
 
@@ -198,7 +202,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
     // Friend requests are no longer interleaved into this chronological
     // feed — they now render in the "Invitations" group below instead,
     // alongside gathering/community invites, so they aren't shown twice.
-    const allItems = [...noticeItems, ...sightingItems, ...businessUpdateItems, ...businessEcosystemItems].sort(
+    const allItems = [...noticeItems, ...sightingItems, ...businessUpdateItems, ...businessEcosystemItems, ...reportUpdateItems].sort(
       (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
     );
 
@@ -632,6 +636,22 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
             </FadeInState>
           )}
           renderItem={({ item }) => {
+            if (item.type === 'report_update') {
+              // Private status of the person's own report: no destination, no outcome, nothing about another account.
+              const title = t(item.raw.titleKey);
+              return (
+                <View style={styles.row} accessible accessibilityLabel={`${title}, ${formatTimeAgo(item.timestamp)}`}>
+                  <View style={[styles.rowAvatar, styles.avatarPlaceholder, { justifyContent: 'center', alignItems: 'center' }]}>
+                    <Text style={{ fontSize: 20 }}>{item.raw.state === 'completed' ? '✓' : '🛡️'}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.rowTitle}>{title}</Text>
+                    <Text style={styles.rowSubtitle}>{formatTimeAgo(item.timestamp)}</Text>
+                  </View>
+                </View>
+              );
+            }
+
             if (item.type === 'business_update') {
               const u = item.raw;
               return (
