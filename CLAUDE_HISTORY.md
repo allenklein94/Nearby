@@ -1,3 +1,17 @@
+# 2026-11-07: Legal-hold control in Admin Reports (20270395's functions, staged)
+
+Owner approved one final addition: a minimal legal-hold control inside Admin Reports (no new screen). Client only; 20270395 is
+unchanged (its sha256 stays 532d63b0…42b0), so the server's admin-only checks, written reasons, append-only record, one active hold
+per item, retention skips and "release never overrides another hold" remain proven by journey `legalHolds` 8/8 (not re-run: no
+server change). Built: `src/utils/legalHolds.js` (reason/reference limits = the migration's, active-hold lookup, status line,
+photo-already-deleted note) + `AdminReportsScreen.js` (Place / Release on every report and review case card; release asks for
+confirmation and says nothing is deleted now; "Other legal holds" lists holds without a card, e.g. a removal record held directly;
+a report hold also keeps its removal record; an older database shows no control). Guard `src/utils/legalHolds.test.js` (5: limits
+match the migration, only the three admin functions, no table access, control on both card types, confirmation). Jest 547/547
+(7394 + 11 todo), iOS bundle exports clean. Procedure DRAFT `PRODUCT_AUDIT/LEGAL_HOLD_PROCEDURE_2026-11-07.md` (who / place /
+review / release / audit; NOT legally reviewed, no retention period invented). Not merged, not deployed, not in build 87, NOT
+DEVICE-VERIFIED. Development stops here: next = build 87 + Tier 1.
+
 # 2026-11-07: Removal follow-ups (20270394 + 20270395, staged)
 
 Owner approved three follow-ups to 0393 on 2026-11-07. Built on `post-tier1/removal-followups` (stacked on 0393's branch), not

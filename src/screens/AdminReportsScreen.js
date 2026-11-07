@@ -12,6 +12,7 @@ import { reportReasonLabel, sortReportQueue, isPriorityReportReason } from '../u
 import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
 import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
 import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
+import { LEGAL_HOLD_REASON_MAX, LEGAL_HOLD_REFERENCE_MAX, activeHoldsByTarget, holdFor, legalHoldPhotoNote, legalHoldReasonReady, legalHoldReferenceReady, legalHoldStatusLine, legalHoldTargetLabel } from '../utils/legalHolds';
 import { REMOVAL_REASON_MAX, canRemoveReportedObject, removalReasonReady, removeActionLabel, reportObjectIds, reportObjectStatus } from '../utils/reportObjects';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
@@ -42,10 +43,18 @@ export default function AdminReportsScreen({ navigation }) {
   const [cleanup, setCleanup] = useState(null);
   const [objects, setObjects] = useState({});
   const [removing, setRemoving] = useState(null); // { id, reason }: the one report whose Remove form is open
+  // 20270395: active legal holds (null = an older database: no hold control at all) and the one open hold form
+  const [holds, setHolds] = useState(null);
+  const [holdForm, setHoldForm] = useState(null); // { mode: 'place' | 'release', targetType, targetId, holdId, reason, reference }
 
   useEffect(() => {
     load();
   }, []);
+
+  const holdsByTarget = activeHoldsByTarget(holds);
+  // holds whose item has no card here (a removal record held by procedure, a case no longer listed): shown so they can be released
+  const shownTargets = new Set([...reports.map((r) => `report:${r.id}`), ...cases.map((c) => `review_case:${c.id}`)]);
+  const otherHolds = (holds || []).filter((h) => !shownTargets.has(`${h.target_type}:${h.target_id}`));
 
   async function load() {
     setLoading(true);
@@ -69,6 +78,8 @@ export default function AdminReportsScreen({ navigation }) {
       // 20270391: files that won't delete. An older database simply has nothing to show.
       const fileStatus = await supabase.rpc('admin_story_file_cleanup_status');
       setCleanup(fileStatus.error ? null : storyFileCleanupNotice(fileStatus.data));
+      const held = await supabase.rpc('admin_list_legal_holds', { include_released_param: false });
+      setHolds(held.error ? null : held.data || []);
     } catch (e) {
       setLoadError(true);
     } finally {
@@ -105,6 +116,93 @@ export default function AdminReportsScreen({ navigation }) {
     setRemoving(null);
     if (data?.already) Alert.alert('Already gone', 'It was removed or cancelled before this. Nothing changed.');
     load();
+  }
+
+  // Place or release a legal hold (20270395). The server checks the admin and the reason and keeps the record (who, when, why);
+  // a release returns the evidence to its ordinary retention, never deletes it, and another active hold still keeps it.
+  async function submitHold() {
+    const f = holdForm;
+    const { data, error } = f.mode === 'place'
+      ? await supabase.rpc('admin_place_legal_hold', { target_type_param: f.targetType, target_id_param: f.targetId, reason_param: f.reason, reference_param: f.reference || null })
+      : await supabase.rpc('admin_release_legal_hold', { hold_id_param: f.holdId, reason_param: f.reason });
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: submitHold });
+    setHoldForm(null);
+    const note = f.mode === 'place' ? legalHoldPhotoNote(data) : null;
+    if (data?.already) Alert.alert(f.mode === 'place' ? 'Already on hold' : 'Already released', 'Nothing changed.');
+    else if (note) Alert.alert('Hold placed', note);
+    load();
+  }
+
+  function confirmRelease() {
+    Alert.alert('Release this legal hold?', 'Nothing is deleted now. The evidence goes back to its ordinary retention; another active hold still keeps it. Recorded with your account.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Release', style: 'destructive', onPress: submitHold },
+    ]);
+  }
+
+  // One control for every holdable item: the status line, Place / Release, and the form when it is open for this item.
+  function renderHoldControl(targetType, targetId) {
+    if (holds === null) return null;
+    const hold = holdFor(holdsByTarget, targetType, targetId);
+    const open = holdForm && holdForm.targetType === targetType && holdForm.targetId === targetId;
+    const ready = open && legalHoldReasonReady(holdForm.reason) && legalHoldReferenceReady(holdForm.reference);
+    return (
+      <View>
+        {hold ? <Text style={styles.holdLine}>{legalHoldStatusLine(hold)}</Text> : null}
+        {!open ? (
+          <View style={styles.actions}>
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => setHoldForm({ mode: hold ? 'release' : 'place', targetType, targetId, holdId: hold?.hold_id, reason: '', reference: '' })}
+              accessibilityRole="button"
+            >
+              <Text style={styles.actionText}>{hold ? 'Release Legal Hold' : 'Place Legal Hold'}</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.evidence}>
+            <Text style={styles.meta}>{holdForm.mode === 'place'
+              ? 'Kept past every retention job until an admin releases it. Recorded with your account and the time.'
+              : 'Nothing is deleted now: the evidence goes back to its ordinary retention. Recorded with your account and the time.'}</Text>
+            <TextInput
+              style={styles.reasonInput}
+              value={holdForm.reason}
+              onChangeText={(reason) => setHoldForm({ ...holdForm, reason })}
+              placeholder={holdForm.mode === 'place' ? 'Why is it held?' : 'Why is it released?'}
+              placeholderTextColor={colors.textTertiary}
+              maxLength={LEGAL_HOLD_REASON_MAX}
+              multiline
+              accessibilityLabel={holdForm.mode === 'place' ? 'Reason for the legal hold' : 'Reason for releasing the legal hold'}
+            />
+            {holdForm.mode === 'place' ? (
+              <TextInput
+                style={[styles.reasonInput, styles.referenceInput]}
+                value={holdForm.reference}
+                onChangeText={(reference) => setHoldForm({ ...holdForm, reference })}
+                placeholder="Reference (optional): a ticket or request number"
+                placeholderTextColor={colors.textTertiary}
+                maxLength={LEGAL_HOLD_REFERENCE_MAX}
+                accessibilityLabel="Legal hold reference, optional"
+              />
+            ) : null}
+            <View style={styles.actions}>
+              <TouchableOpacity style={styles.actionButton} onPress={() => setHoldForm(null)} accessibilityRole="button">
+                <Text style={styles.actionText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButton, styles.resolveButton, !ready && styles.actionDisabled]}
+                onPress={holdForm.mode === 'place' ? submitHold : confirmRelease}
+                disabled={!ready}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: !ready }}
+              >
+                <Text style={styles.actionText}>{holdForm.mode === 'place' ? 'Place Hold' : 'Release Hold'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      </View>
+    );
   }
 
   async function retryCleanup() {
@@ -222,7 +320,7 @@ export default function AdminReportsScreen({ navigation }) {
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.xl }}
         refreshControl={<PullToRefresh refreshing={loading} onRefresh={load} />}
-        ListHeaderComponent={cases.length || cleanup ? (
+        ListHeaderComponent={cases.length || cleanup || otherHolds.length ? (
           <View>
             {cleanup ? (
               <View style={styles.card}>
@@ -238,6 +336,14 @@ export default function AdminReportsScreen({ navigation }) {
                 ) : null}
               </View>
             ) : null}
+            {otherHolds.length ? <Text style={styles.sectionTitle}>Other legal holds</Text> : null}
+            {otherHolds.map((h) => (
+              <View key={h.hold_id} style={styles.card}>
+                <Text style={styles.reason}>{legalHoldTargetLabel(h.target_type)}</Text>
+                <Text style={styles.meta}>{h.target_id}</Text>
+                {renderHoldControl(h.target_type, h.target_id)}
+              </View>
+            ))}
             {cases.length ? <Text style={styles.sectionTitle}>Account review</Text> : null}
             {cases.map((c) => (
               <View key={c.id} style={styles.card}>
@@ -254,6 +360,7 @@ export default function AdminReportsScreen({ navigation }) {
                     <Text style={styles.actionText}>Close Review</Text>
                   </TouchableOpacity>
                 </View>
+                {renderHoldControl('review_case', c.id)}
               </View>
             ))}
             <Text style={styles.sectionTitle}>Reports</Text>
@@ -348,6 +455,8 @@ export default function AdminReportsScreen({ navigation }) {
                 </View>
               </View>
             ) : null}
+            {/* a hold on a report also keeps its removal record (20270395), so a removed object's evidence is held from here too */}
+            {renderHoldControl('report', item.id)}
           </View>
         )}
       />
@@ -381,6 +490,8 @@ const getStyles = (colors) => StyleSheet.create({
   actionButton: { backgroundColor: colors.surfaceElevated, borderRadius: radius.full, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
   resolveButton: { backgroundColor: colors.primary },
   actionDisabled: { opacity: 0.4 },
+  holdLine: { ...typography.caption, color: colors.textPrimary, fontWeight: '700', marginTop: spacing.sm },
+  referenceInput: { minHeight: 0 },
   reasonInput: { ...typography.caption, color: colors.textPrimary, marginTop: spacing.sm, padding: spacing.sm, minHeight: 64, borderRadius: radius.sm, borderWidth: 1, borderColor: colors.border, textAlignVertical: 'top' },
   actionText: { color: '#fff', fontSize: 12, fontWeight: '700' },
 });
