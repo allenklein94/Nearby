@@ -18,6 +18,10 @@ Branch `post-tier1/removal-followups`. Staged only: nothing merged, deployed, or
 - Also FAILED in that pass: friend-request + screening-single-use (likely knock-on of the missing rules), booking-capacity
   (one deadlock; to recheck).
 
+- CAUSE of all of the above except the crash (13:48): an earlier background run (3 passes) was still running on the SAME
+  database while the second run started, so scripts overlapped (shared phone numbers, one script's emptied rate-limit
+  rules seen by another). Not a code defect. Rerunning alone on a fresh replay, one runner only.
+
 ## Still to do (each step < 15 min)
 1. Concurrency: 22 scripts, run in batches (record each batch here)
 2. Journeys after concurrency
