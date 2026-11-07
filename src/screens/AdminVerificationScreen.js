@@ -9,6 +9,9 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
+// 20270400: ID images are the most sensitive files Nearby holds: a review link lasts 15 minutes (it was 60), like profile photos.
+const ID_IMAGE_LINK_SECONDS = 15 * 60;
+
 export default function AdminVerificationScreen() {
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -37,11 +40,11 @@ export default function AdminVerificationScreen() {
       const urlEntries = await Promise.all(
         (data ?? []).flatMap((s) => [
           (async () => {
-            const { data: url } = await supabase.storage.from('id-verification').createSignedUrl(s.selfie_path, 3600);
+            const { data: url } = await supabase.storage.from('id-verification').createSignedUrl(s.selfie_path, ID_IMAGE_LINK_SECONDS);
             return [`${s.id}-selfie`, url?.signedUrl];
           })(),
           (async () => {
-            const { data: url } = await supabase.storage.from('id-verification').createSignedUrl(s.id_photo_path, 3600);
+            const { data: url } = await supabase.storage.from('id-verification').createSignedUrl(s.id_photo_path, ID_IMAGE_LINK_SECONDS);
             return [`${s.id}-id`, url?.signedUrl];
           })(),
         ])

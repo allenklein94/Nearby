@@ -20,6 +20,7 @@ export default {
       accountSuspended: 'This account is suspended, so it can\'t message, invite, connect or host.',
       accountRestricted: 'Nearby paused this on your account after a review. Available again: {date}. Everything else works as usual.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'This account can\'t sign in right now. It has been suspended, or it is on hold while an account problem is checked.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'ID verification isn\'t available right now. Nothing was uploaded.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: 'Think this is a mistake? Contact support at {email} to request a review. We\'ll help verify your account.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'You\'ve reached the limit for this for now. Please try again later.',
       gatheringLimit: 'You\'ve reached the limit for creating gatherings for now. Please try again later.',
@@ -79,6 +80,7 @@ export default {
       accountSuspended: 'Esta cuenta está suspendida, así que no puede enviar mensajes, invitar, conectar ni organizar.',
       accountRestricted: 'Nearby pausó esto en tu cuenta tras una revisión. Disponible de nuevo: {date}. Todo lo demás funciona con normalidad.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'Esta cuenta no puede iniciar sesión ahora mismo. Fue suspendida o está en espera mientras se revisa un problema con la cuenta.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'La verificación de identidad no está disponible ahora mismo. No se subió nada.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: '¿Crees que es un error? Escribe a soporte en {email} para pedir una revisión. Te ayudaremos a verificar tu cuenta.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Llegaste al límite de esto por ahora. Inténtalo de nuevo más tarde.',
       gatheringLimit: 'Llegaste al límite para crear reuniones por ahora. Inténtalo de nuevo más tarde.',
@@ -138,6 +140,7 @@ export default {
       accountSuspended: 'Dieses Konto ist gesperrt und kann keine Nachrichten senden, einladen, sich verbinden oder etwas veranstalten.',
       accountRestricted: 'Nearby hat das nach einer Prüfung für dein Konto pausiert. Wieder verfügbar: {date}. Alles andere funktioniert wie gewohnt.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'Mit diesem Konto ist die Anmeldung gerade nicht möglich. Es wurde gesperrt oder ist angehalten, während ein Kontoproblem geprüft wird.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Die Identitätsprüfung ist gerade nicht verfügbar. Es wurde nichts hochgeladen.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: 'Glaubst du, dass das ein Fehler ist? Wende dich an den Support unter {email} und bitte um eine Prüfung. Wir helfen dir, dein Konto zu bestätigen.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Du hast dafür vorerst das Limit erreicht. Bitte versuch es später noch einmal.',
       gatheringLimit: 'Du hast vorerst das Limit für neue Treffen erreicht. Bitte versuch es später noch einmal.',
@@ -197,6 +200,7 @@ export default {
       accountSuspended: 'Ce compte est suspendu : il ne peut pas envoyer de messages, inviter, se connecter ni organiser.',
       accountRestricted: 'Nearby a mis cela en pause sur ton compte après un examen. De nouveau disponible : {date}. Tout le reste fonctionne normalement.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'Ce compte ne peut pas se connecter pour le moment. Il a été suspendu ou il est en attente pendant la vérification d\'un problème de compte.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'La vérification d\'identité n\'est pas disponible pour le moment. Rien n\'a été envoyé.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: 'Tu penses que c\'est une erreur ? Contacte l\'assistance à {email} pour demander un réexamen. Nous t\'aiderons à vérifier ton compte.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Tu as atteint la limite pour le moment. Réessaie plus tard.',
       gatheringLimit: 'Tu as atteint la limite de création de rassemblements pour le moment. Réessaie plus tard.',
@@ -256,6 +260,7 @@ export default {
       accountSuspended: 'Esta conta está suspensa, então não pode enviar mensagens, convidar, se conectar nem organizar.',
       accountRestricted: 'O Nearby pausou isso na sua conta após uma análise. Disponível novamente: {date}. Todo o resto funciona normalmente.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'Esta conta não pode entrar agora. Ela foi suspensa ou está em espera enquanto um problema da conta é verificado.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'A verificação de identidade não está disponível agora. Nada foi enviado.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: 'Acha que isso é um erro? Fale com o suporte em {email} para pedir uma análise. Vamos ajudar a verificar sua conta.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Você atingiu o limite disso por enquanto. Tente novamente mais tarde.',
       gatheringLimit: 'Você atingiu o limite para criar encontros por enquanto. Tente novamente mais tarde.',
@@ -315,6 +320,7 @@ export default {
       accountSuspended: 'Kont sa a sispann, kidonk li pa ka voye mesaj, envite, konekte oswa òganize.',
       accountRestricted: 'Nearby mete sa an poz sou kont ou apre yon revizyon. Disponib ankò: {date}. Tout lòt bagay mache nòmalman.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'Kont sa a pa ka konekte kounye a. Yo sispann li, oswa li an atant pandan y ap verifye yon pwoblèm sou kont lan.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Verifikasyon idantite pa disponib kounye a. Anyen pa t voye.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: 'Ou panse se yon erè? Kontakte sipò nan {email} pou mande yon revizyon. N ap ede w verifye kont ou.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Ou rive nan limit pou sa a pou kounye a. Tanpri eseye ankò pita.',
       gatheringLimit: 'Ou rive nan limit pou kreye rasanbleman pou kounye a. Tanpri eseye ankò pita.',
@@ -374,6 +380,7 @@ export default {
       accountSuspended: '此账号已被暂停，无法发消息、邀请、建立联系或发起活动。',
       accountRestricted: '经过审核，Nearby 暂停了你账户的这项操作。恢复时间：{date}。其他功能照常使用。',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: '此账户目前无法登录。它已被停用，或在核查账户问题期间被暂时冻结。',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: '身份验证暂时无法使用。没有上传任何内容。',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: '认为这是误判？请联系客服 {email} 申请复核。我们会协助你验证账户。',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: '你暂时已达到此操作的上限，请稍后再试。',
       gatheringLimit: '你暂时已达到创建聚会的上限，请稍后再试。',
@@ -433,6 +440,7 @@ export default {
       accountSuspended: 'Tài khoản này đang bị tạm ngưng nên không thể nhắn tin, mời, kết nối hoặc tổ chức.',
       accountRestricted: 'Nearby đã tạm dừng thao tác này trên tài khoản của bạn sau khi xem xét. Dùng lại được từ: {date}. Mọi thứ khác vẫn hoạt động bình thường.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'Tài khoản này hiện không thể đăng nhập. Tài khoản đã bị đình chỉ hoặc đang bị tạm giữ trong khi kiểm tra một vấn đề về tài khoản.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Xác minh danh tính hiện không khả dụng. Chưa có gì được tải lên.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: 'Bạn cho rằng đây là nhầm lẫn? Hãy liên hệ bộ phận hỗ trợ qua {email} để yêu cầu xem xét lại. Chúng tôi sẽ giúp bạn xác minh tài khoản.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Bạn đã đạt giới hạn cho việc này trong lúc này. Vui lòng thử lại sau.',
       gatheringLimit: 'Bạn đã đạt giới hạn tạo buổi gặp mặt trong lúc này. Vui lòng thử lại sau.',
@@ -492,6 +500,7 @@ export default {
       accountSuspended: 'Naka-suspend ang account na ito, kaya hindi ito makakapag-message, makakapag-imbita, makakakonekta o makakapag-host.',
       accountRestricted: 'Ipinahinto muna ito ng Nearby sa account mo pagkatapos ng isang pagsusuri. Magagamit ulit: {date}. Gumagana pa rin nang normal ang lahat ng iba pa.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'Hindi makakapag-sign in ang account na ito sa ngayon. Sinuspinde ito, o naka-hold habang sinusuri ang isang problema sa account.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Hindi available ang ID verification ngayon. Walang na-upload.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: 'Sa tingin mo ay pagkakamali ito? Makipag-ugnayan sa support sa {email} para humiling ng pagsusuri. Tutulungan ka naming i-verify ang account mo.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Naabot mo na ang limitasyon dito sa ngayon. Pakisubukan ulit mamaya.',
       gatheringLimit: 'Naabot mo na ang limitasyon sa paggawa ng mga pagtitipon sa ngayon. Pakisubukan ulit mamaya.',
@@ -551,6 +560,7 @@ export default {
       accountSuspended: 'Этот аккаунт заблокирован: он не может писать сообщения, приглашать, знакомиться или проводить встречи.',
       accountRestricted: 'После проверки Nearby приостановил это действие в вашем аккаунте. Снова доступно: {date}. Всё остальное работает как обычно.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: 'Сейчас в этот аккаунт нельзя войти. Он заблокирован или временно приостановлен, пока проверяется проблема с аккаунтом.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Проверка личности сейчас недоступна. Ничего не было загружено.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: 'Считаете, что это ошибка? Напишите в поддержку на {email}, чтобы запросить пересмотр. Мы поможем подтвердить ваш аккаунт.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Вы пока достигли лимита для этого действия. Попробуйте позже.',
       gatheringLimit: 'Вы пока достигли лимита на создание встреч. Попробуйте позже.',
@@ -610,6 +620,7 @@ export default {
       accountSuspended: '이 계정은 정지되어 메시지, 초대, 연결, 모임 주최를 할 수 없어요.',
       accountRestricted: '검토 후 Nearby가 계정에서 이 기능을 일시 중지했어요. 다시 사용 가능: {date}. 다른 기능은 평소처럼 이용할 수 있어요.',  // 20270399: an admin's temporary pause; {date} = when it ends
       signInBlocked: '지금은 이 계정으로 로그인할 수 없어요. 계정이 정지되었거나 계정 문제를 확인하는 동안 보류 중이에요.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: '지금은 신분 확인을 이용할 수 없어요. 아무것도 업로드되지 않았어요.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
       requestReview: '잘못된 조치라고 생각되시나요? {email}(으)로 고객 지원팀에 연락해 검토를 요청하세요. 계정 확인을 도와드릴게요.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: '지금은 이 작업의 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       gatheringLimit: '지금은 모임 만들기 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',

@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ActivityIndicator } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
-import { takeVerificationPhoto, submitVerification, getMyVerificationStatus } from '../services/idVerification';
+import { takeVerificationPhoto, submitVerification, getMyVerificationStatus, idVerificationAvailable, idVerificationPausedError } from '../services/idVerification';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -38,6 +38,7 @@ export default function IdVerificationScreen() {
 
   async function handleTakeSelfie() {
     try {
+      if (!(await idVerificationAvailable())) throw idVerificationPausedError();  // 20270400: say so before any photo
       const asset = await takeVerificationPhoto();
       if (asset) setSelfieAsset(asset);
     } catch (e) {

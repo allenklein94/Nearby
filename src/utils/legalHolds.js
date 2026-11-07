@@ -6,7 +6,7 @@ export const LEGAL_HOLD_REASON_MIN = 10; // = admin_place_legal_hold / admin_rel
 export const LEGAL_HOLD_REASON_MAX = 1000;
 export const LEGAL_HOLD_REFERENCE_MAX = 200;
 
-const TARGET_LABEL = { report: 'Report', content_removal: 'Removal record', review_case: 'Review case' };
+const TARGET_LABEL = { report: 'Report', content_removal: 'Removal record', review_case: 'Review case', id_submission: 'ID submission' };  // id_submission: 20270400
 
 export function legalHoldReasonReady(reason) {
   const length = String(reason || '').trim().length;

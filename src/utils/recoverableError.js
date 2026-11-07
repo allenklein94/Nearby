@@ -40,6 +40,7 @@ export const ACCOUNT_RULE_HINTS = {
   friend_request_daily_limit: 'ui.shared.errors.friendRequestDailyLimit',  // 20270377: the existing 15 friend requests per local day
   offer_contact_info: 'ui.shared.errors.offerContactInfo',  // 20270372: no links, emails or phone numbers in offer text
   held_not_shareable: 'ui.shared.errors.heldNotShareable',  // 20270373: no invitation / business request for held content
+  id_verification_paused: 'ui.shared.errors.idVerificationPaused',  // 20270400: new ID uploads closed until the retention lifecycle is on
 };
 
 // The account decisions a person may ask to have reviewed (owner 2026-11-07): their message carries the review line.

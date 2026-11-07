@@ -54,7 +54,23 @@ async function uploadVerificationImage(userId, asset, label) {
   return path;
 }
 
+// 20270400: new ID uploads are refused by the server until its retention + deletion lifecycle is turned on (an admin migration).
+// false = refused (say so before any photo is taken); true = open; a database without the function (before 20270400) = open,
+// as it is there today. A failed check never blocks: the server still refuses on its own.
+export async function idVerificationAvailable() {
+  const { data, error } = await supabase.rpc('id_verification_open');
+  if (error) return true;
+  return data !== false;
+}
+
+export function idVerificationPausedError() {
+  const e = new Error('ID verification isn\'t available right now');
+  e.hint = 'id_verification_paused';
+  return e;
+}
+
 export async function submitVerification(userId, selfieAsset, idPhotoAsset) {
+  if (!(await idVerificationAvailable())) throw idVerificationPausedError();
   const selfiePath = await uploadVerificationImage(userId, selfieAsset, 'selfie');
   const idPhotoPath = await uploadVerificationImage(userId, idPhotoAsset, 'id');
 

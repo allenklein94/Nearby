@@ -36,42 +36,11 @@ async function deleteEverything(admin: any, userId: string): Promise<number> {
     }
   }
 
-  // ID verification photos live in a SEPARATE, private bucket and
-  // are especially sensitive (government ID + selfie) — database
-  // cascade deletes the row, but never touches the actual file
-  // bytes, so this must be cleaned up explicitly or the images
-  // would remain in storage forever after account deletion.
-  const { data: verificationSubmissions } = await admin
-    .from('id_verification_submissions')
-    .select('selfie_path, id_photo_path')
-    .eq('user_id', userId);
-
-  const verificationPaths: string[] = [];
-  for (const submission of verificationSubmissions ?? []) {
-    if (submission.selfie_path) verificationPaths.push(submission.selfie_path);
-    if (submission.id_photo_path) verificationPaths.push(submission.id_photo_path);
-  }
-  // Trust & safety fix 4 (2026-10-27): also every file in the person's own folder, so an upload that never got a
-  // submission row (the app failed between upload and insert) is deleted too. Uploads can only go into this folder.
-  for (let offset = 0; ; offset += 100) {
-    const { data: files, error: listError } = await admin.storage.from('id-verification').list(userId, { limit: 100, offset });
-    if (listError) {
-      console.error('ID verification folder listing failed (continuing anyway):', listError.message);
-      break;
-    }
-    for (const file of files ?? []) {
-      const path = `${userId}/${file.name}`;
-      if (!verificationPaths.includes(path)) verificationPaths.push(path);
-    }
-    if (!files || files.length < 100) break;
-  }
-
-  if (verificationPaths.length > 0) {
-    const { error: verificationStorageError } = await admin.storage.from('id-verification').remove(verificationPaths);
-    if (verificationStorageError) {
-      console.error('ID verification storage cleanup failed (continuing anyway):', verificationStorageError.message);
-    }
-  }
+  // ID verification photos (20270400): NOT deleted here any more. Deleting the profile below cascades the submission rows, and
+  // the database queues every file in the person's id-verification folder (triggers on id_verification_submissions + profiles).
+  // The hourly id-document-retention job deletes them through Storage and keeps each one queued until Storage confirms it is
+  // gone, with retries and an admin alert; a file whose submission is under an admin's legal hold is kept. Deleting directly here
+  // would skip both. Deploy this version only AFTER 20270400 is live (before it, nothing would delete the files).
 
   const { error: profileError } = await admin.from('profiles').delete().eq('id', userId);
   if (profileError) {
