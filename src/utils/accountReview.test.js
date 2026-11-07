@@ -51,7 +51,7 @@ describe('the support address', () => {
 
 describe('with a configured + verified address', () => {
   beforeEach(() => { mockSupport.email = ADDRESS; mockSupport.verified = true; });
-  const line = `If you think this is a mistake, email ${ADDRESS} with the phone number on your account to ask for a review.`;
+  const line = `Think this is a mistake? Contact support at ${ADDRESS} to request a review. We'll help verify your account.`;
 
   test('suspension says how to ask for a review', () => {
     expect(accountRuleMessage('account_suspended')).toBe(`This account is suspended, so it can't message, invite, connect or host. ${line}`);
@@ -78,12 +78,19 @@ describe('with a configured + verified address', () => {
   });
   test('in the person\'s language, with the address unchanged', () => {
     setCurrentLanguage('es');
-    expect(accountRuleMessage('account_suspended')).toContain(`escribe a ${ADDRESS}`);
+    expect(accountRuleMessage('account_suspended')).toContain(`soporte en ${ADDRESS}`);
   });
   test('every language has both strings with the {email} slot', () => {
     const shared = require('../i18n/ui/shared').default;
     for (const [lang, ui] of Object.entries(shared)) {
       expect([lang, typeof ui.errors.signInBlocked, (ui.errors.requestReview || '').includes('{email}')]).toEqual([lang, 'string', true]);
+    }
+  });
+  test('never asks people to email their phone number (owner, 2026-11-07)', () => {
+    const shared = require('../i18n/ui/shared').default;
+    const phone = /phone|teléfono|Telefon|téléphone|telefone|telefòn|手机|điện thoại|phone number|телефон|전화/i;
+    for (const [lang, ui] of Object.entries(shared)) {
+      expect([lang, phone.test(ui.errors.requestReview)]).toEqual([lang, false]);
     }
   });
 });

@@ -2,7 +2,7 @@
 
 Owner approval 2026-11-07: basic manual appeals now. No new screen, migration, automated restriction or separate appeals system.
 It reuses the suspension and restriction messages, the admin controls that already reverse decisions, and their audit records.
-Status: client wording BUILT + TESTED, STAGED on `post-tier1/admin-restrictions` (NOT merged, NOT deployed, NOT in build 87).
+Status: ACCEPTED AS STAGED (owner, 2026-11-07; wording corrected the same day). Client wording BUILT + TESTED, STAGED on `post-tier1/admin-restrictions` (NOT merged, NOT deployed, NOT in build 87).
 This procedure has NOT been legally reviewed and has never been rehearsed.
 
 ## 1. What can be appealed
@@ -25,7 +25,7 @@ review cases are not penalties and never restrict anyone, so there is nothing to
 - Where the line appears (`utils/accountReview.js`, one helper):
   - **Signed out, at sign-in:** Supabase Auth refuses a suspended or held account (`user_banned`). The Login screen now says
     "This account can't sign in right now. It has been suspended, or it is on hold while an account problem is checked."
-    + "If you think this is a mistake, email {email} with the phone number on your account to ask for a review." There is no
+    + "Think this is a mistake? Contact support at {email} to request a review. We'll help verify your account." There is no
     Try Again, and the raw "User is banned" is never shown. This needs no sign-in, so a suspended person can always see it.
   - **Signed in, a refused action:** the suspension message (`account_suspended`) and an admin's pause (`account_restricted`,
     every path incl. the chat composer) add the same line.
@@ -33,16 +33,23 @@ review cases are not penalties and never restrict anyone, so there is nothing to
 - No turnaround time is promised anywhere (owner: not until staffing can meet one).
 - Website: no page carries the instructions yet. A signed-out person who no longer has the app has no public route. Proposed
   sentence for Terms §9 (NOT added: a legal page needs review and approval, and the address does not exist yet): "If you believe
-  your account was suspended or limited by mistake, email {support address} from any address, with the phone number on your
-  account, to ask for a review."
+  your account was suspended or limited by mistake, contact {support address} to request a review. We'll help verify your
+  account."
+- Never ask people to send their phone number or other personal details by ordinary email (owner, 2026-11-07). The message
+  doesn't ask for it; support replies don't either.
 
 ## 3. Review steps (admin)
 
-1. **Confirm the account.** The email sender proves nothing. Match the phone number given to the account (its `auth.users` row, service role; no admin screen shows numbers today). Never
-   reveal whether a number has an account, or anything about the account, to the sender before that.
-2. **Assign a reviewer.** Whenever possible, a DIFFERENT admin from the one who made the decision (shown on the record:
-   `admin_id` / restriction admin). When only one admin exists (today: the owner), say so in the written decision. Recovery
-   holds keep 0375's rules (allow-listed recovery admin, a second admin for a new incident).
+1. **Confirm the account, separately from the email.** The sender proves nothing, and support never asks for the phone number
+   (or other personal details) by email. Verification is handled separately: the method (e.g. the person signing in to a
+   step that proves control of the account's number, or the recovery runbook's checks) is still to be defined before launch,
+   together with the recovery runbook. Until the account is confirmed, never reveal whether an account exists or anything
+   about it.
+2. **Who reviews.** While the owner is the only admin (today), the owner may review appeals of their own decisions; every
+   decision then has a mandatory written reason, and the record says the review was not independent. Once a second
+   authorized admin exists, an appeal goes to a DIFFERENT admin from the one who made the decision (shown on the record:
+   `admin_id` / restriction admin). Recovery holds keep 0375's rules (allow-listed recovery admin, a second admin for a new
+   incident).
 3. **Re-read the evidence** the decision was based on: the linked report or review case, its server-kept copies (reported
    messages, report snapshots, held photos), and the original written reason. Consider anything new the person sends.
    Evidence under a legal hold stays held whatever the outcome.
@@ -59,8 +66,11 @@ review cases are not penalties and never restrict anyone, so there is nothing to
 1. **The support address** (recommended: `support@<the app's own domain>`, once the domain exists). Then set the mailbox up,
    send and answer a test message, set `SUPPORT_EMAIL` + `SUPPORT_EMAIL_VERIFIED = true`, and ship it in a native build (no
    expo-updates). Until then the line stays hidden.
-2. **Who reviews appeals** while the owner is the only admin (independent review is "whenever possible").
-3. **Terms §9 sentence + Privacy Policy** (appeal emails are personal data): legal review before publishing.
+2. ~~Who reviews while the owner is the only admin~~ DECIDED (owner, 2026-11-07): the owner, with a mandatory written
+   decision; independent review once a second authorized admin exists.
+3. **PRE-LAUNCH REQUIREMENTS:** once the address exists, appeal instructions on a publicly accessible support page or website
+   section (signed-out people who no longer have the app); Terms §9 sentence + Privacy Policy (appeal emails are personal
+   data) reviewed before publishing; the separate account-verification method (step 1).
 4. Native review of the 2 strings in 10 languages.
 
 ## 5. Not verified
