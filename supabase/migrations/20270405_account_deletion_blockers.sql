@@ -157,59 +157,75 @@ alter table public.business_requests drop constraint business_requests_supersede
 
 -- Runs inside the profile delete, after held evidence is copied (a_ sorts first), before the cascades.
 --   Someone else's plan: the person's row and confirmations go. The plan goes on, exactly as if they had left.
---   Their plan, confirmed, someone else accepted: the plan and its shared request pass to the earliest to accept, so the others keep their
---     offers and their booking, and the business keeps its booking. The request stops carrying the person's location and dietary needs.
---   Their plan otherwise: it ends, as the organizer's own cancel would (cancel is all an organizer can do; they can't leave). Nobody's own request changes.
+--   Their plan (owner, 2026-11-08, Option 1): it ends. Nobody is ever handed the organizer role, and nobody is handed a payment.
+--     Each booking goes through the reservation cancellation everyone else uses (_cancel_reservation_by_offer), so capacity returns and its
+--     refusal stands. A booking it refuses (paid or authorized: there is no automatic refund) refuses this whole deletion: nothing changes, the
+--     person is told what to do (hint group_plan_booking_unresolved), and the booking stays with an organizer who still exists.
+--     The business and everyone in the plan are told. Each person's own request comes back as it would on Reopen, so they can book again.
 create or replace function private._account_deletion_release_plans()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare
   v_me constant uuid := old.id;
   v_plan public.group_plan_proposals;
-  v_next uuid;
+  v_offer record;
+  v_result jsonb;
+  v_booked boolean;
+  v_person record;
+  v_owner uuid;
 begin
-  -- every plan the person is in, not just theirs: two people leaving one plan at once take turns here, so the plan never passes to someone already leaving
+  -- every plan the person is in, not just theirs: two people leaving one plan at once take turns here
   for v_plan in select * from public.group_plan_proposals p
       where p.initiator_id = v_me or exists (select 1 from public.group_plan_participants g where g.proposal_id = p.id and g.user_id = v_me)
       order by p.id for update loop
     continue when v_plan.initiator_id <> v_me;
-    v_next := null;
-    if v_plan.status = 'confirmed' and v_plan.resulting_request_id is not null then
-      -- skips anyone whose own deletion already holds their profile: they are leaving too, and waiting for them here would deadlock
-      select g.user_id into v_next from public.group_plan_participants g join public.profiles pr on pr.id = g.user_id
-        where g.proposal_id = v_plan.id and g.user_id <> v_me and g.status = 'accepted'
-        order by g.responded_at nulls last, g.created_at, g.id limit 1
-        for key share of pr skip locked;
-    end if;
-    if v_next is null then
-      if v_plan.status = 'pending' then
-        perform public._record_cancellation('group_plan', v_plan.id, null, 'host');
+    v_booked := false;
+    for v_offer in select o.id, o.partner_id, o.request_id from public.business_request_offers o
+        join public.business_requests r on r.id = o.request_id
+        where o.status = 'accepted' and v_plan.resulting_request_id is not null
+          and (r.id = v_plan.resulting_request_id or r.parent_request_id = v_plan.resulting_request_id)
+        order by o.id loop
+      v_result := public._cancel_reservation_by_offer(v_offer.id);
+      if not coalesce((v_result->>'cancelled')::boolean, false) then
+        raise exception 'A group plan you organize has a booking that can''t be cancelled yet.'
+          using errcode = 'P0001', hint = 'group_plan_booking_unresolved';
       end if;
+      v_booked := true;
+      perform public._record_cancellation('business_reservation', v_offer.id, v_offer.partner_id, 'requester');
+      for v_owner in select pr.id from public.profiles pr where pr.managed_partner_id = v_offer.partner_id and pr.id <> v_me loop
+        perform public._send_push(v_owner, 'A reservation was cancelled',
+          'A customer cancelled their reservation: ' || public.business_safe_request_summary(v_offer.request_id),
+          jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_offer.request_id, 'offer_id', v_offer.id));
+      end loop;
+    end loop;
+
+    -- already over (visit completed, or cancelled or expired before): nobody is told, nothing reopens; only the row goes
+    if v_plan.status not in ('pending', 'confirmed') or exists (select 1 from public.business_request_offers o
+        where o.request_id = v_plan.resulting_request_id and o.status = 'completed') then
       delete from public.group_plan_proposals where id = v_plan.id;
       continue;
     end if;
-    update public.group_plan_proposals set initiator_id = v_next where id = v_plan.id;
+
+    for v_person in select g.user_id, g.source_request_id from public.group_plan_participants g
+        where g.proposal_id = v_plan.id and g.user_id <> v_me and g.status in ('accepted', 'invited') loop
+      continue when not coalesce((select pr.notify_planning from public.profiles pr where pr.id = v_person.user_id), true);
+      perform public._send_push(v_person.user_id, 'Your group plan was cancelled',
+        'The organizer is no longer on Nearby, so your ' || coalesce(v_plan.category, 'group') || ' plan ended'
+          || case when v_booked then ' and its booking was cancelled' else '' end
+          || '. Your own request is still there if you want to book again.',
+        jsonb_build_object('type', 'plan_cancelled', 'request_id', v_person.source_request_id));
+    end loop;
+
+    -- the same reopening as reopen_business_request; past its time it reads expired, where Reopen or Ask again takes over
+    update public.business_request_offers o set status = 'pending'
+      from public.business_requests r
+      where o.request_id = r.id and r.superseded_by_group_plan_id = v_plan.id and r.requester_id <> v_me
+        and r.status = 'merged' and r.expires_at > now() and o.status = 'expired' and o.responded_at is null;
     update public.business_requests r
-      set requester_id = v_next,
-          latitude = s.latitude,
-          longitude = s.longitude,
-          dietary = coalesce((
-            select array_agg(distinct x.d order by x.d) from (
-              select unnest(gpd.dietary) d
-                from public.group_plan_participants g join public.group_plan_participant_dietary gpd on gpd.proposal_id = g.proposal_id and gpd.user_id = g.user_id
-                where g.proposal_id = v_plan.id and g.status = 'accepted' and g.user_id <> v_me
-              union
-              select unnest(sr.dietary)
-                from public.group_plan_participants g join public.business_requests sr on sr.id = g.source_request_id
-                where g.proposal_id = v_plan.id and g.status = 'accepted' and g.user_id <> v_me
-            ) x), '{}')
-      from public.group_plan_participants g join public.business_requests s on s.id = g.source_request_id
-      where r.id = v_plan.resulting_request_id and g.proposal_id = v_plan.id and g.user_id = v_next;
-    update public.plans set created_by = v_next where resulting_business_request_id = v_plan.resulting_request_id and created_by = v_me;
-    if coalesce((select pr.notify_planning from public.profiles pr where pr.id = v_next), true) then
-      perform public._send_push(v_next, 'You''re now organizing this group plan',
-        'The organizer left your ' || v_plan.category || ' group plan. It''s still on, and you''re now its organizer.',
-        jsonb_build_object('type', 'group_plan_confirmed', 'proposal_id', v_plan.id, 'request_id', v_plan.resulting_request_id));
-    end if;
+      set status = case when r.expires_at > now() then 'open' else 'expired' end, superseded_by_group_plan_id = null
+      where r.superseded_by_group_plan_id = v_plan.id and r.requester_id <> v_me and r.status = 'merged';
+
+    perform public._record_cancellation('group_plan', v_plan.id, null, 'host');
+    delete from public.group_plan_proposals where id = v_plan.id;
   end loop;
   delete from public.group_plan_offer_confirmations where user_id = v_me;
   delete from public.group_plan_participants where user_id = v_me;
@@ -225,6 +241,42 @@ $$;
 drop trigger if exists b_account_deletion_release_plans on public.profiles;
 create trigger b_account_deletion_release_plans before delete on public.profiles
   for each row execute function private._account_deletion_release_plans();
+
+-- What deleting would do to the plans a person organizes, for the warning before it and delete-account's answer. A preview only: the trigger above
+-- decides. "unresolved" names what _cancel_reservation_by_offer refuses; journey step preview_matches_refusal keeps the two the same.
+create or replace function private._account_deletion_plan_impact(user_id_param uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  with mine as (
+    select p.id, p.resulting_request_id from public.group_plan_proposals p
+      where p.initiator_id = user_id_param and p.status in ('pending', 'confirmed')
+        and not exists (select 1 from public.business_request_offers o where o.request_id = p.resulting_request_id and o.status = 'completed')
+  ), bookings as (
+    select o.id, res.status as reservation_status, pay.status as payment_status
+      from mine m
+      join public.business_requests r on r.id = m.resulting_request_id or r.parent_request_id = m.resulting_request_id
+      join public.business_request_offers o on o.request_id = r.id and o.status = 'accepted'
+      left join public.business_reservations res on res.offer_id = o.id
+      left join public.business_payments pay on pay.reservation_id = res.id
+  )
+  select jsonb_build_object(
+    'plans', (select count(*) from mine),
+    'bookings', (select count(*) from bookings),
+    'unresolved', (select count(*) from bookings b
+      where b.reservation_status is distinct from 'confirmed' or b.payment_status in ('captured', 'authorized')));
+$$;
+create or replace function public.account_deletion_plan_impact()
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select private._account_deletion_plan_impact(auth.uid());
+$$;
+create or replace function public.account_deletion_plan_check(user_id_param uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select private._account_deletion_plan_impact(user_id_param);
+$$;
+revoke all on function private._account_deletion_plan_impact(uuid) from public, anon, authenticated, service_role;
+revoke all on function public.account_deletion_plan_impact() from public, anon;
+grant execute on function public.account_deletion_plan_impact() to authenticated;
+revoke all on function public.account_deletion_plan_check(uuid) from public, anon, authenticated;
+grant execute on function public.account_deletion_plan_check(uuid) to service_role;
 
 revoke all on function private.business_payment_has_money(public.business_payments) from public, anon, authenticated;
 revoke all on function private._business_payment_partner() from public, anon, authenticated;
