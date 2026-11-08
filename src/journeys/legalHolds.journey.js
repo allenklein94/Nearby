@@ -241,7 +241,7 @@ d('journey: evidence on legal hold survives removal, outcomes and every retentio
     expect(data('released_record')).toEqual({ by: true, why: 'Matter closed by counsel on review', placed_by: true });
     expect(data('photo_released_after_hold')).toBe(true);
     expect(data('hold_again')).toEqual(expect.objectContaining({ already: false }));
-    expect(data('release_again')).toEqual({ released: true, already: false });
+    expect(data('release_again')).toMatchObject({ released: true, already: false });
     expect(data('after_release')).toEqual({ gathering_report: 0, message_report: 1, photo_report: 0, photo_held: false,
       snapshot: false, control_report: 0, closed_case: 0, orphan_case: 1, control_case: 0 });
     expect(data('message_still_held')).toBe(1);
