@@ -37,17 +37,18 @@ still need legal review before outside users.
 4. Released holds stay on record forever (append-only: a hold is never edited or deleted, only released once).
 
 ## When a held account is deleted (20270402, staged, NOT deployed)
-- A hold never stops a deletion and the person is never told about it. The evidence covered by the hold is copied to
-  `private.held_account_evidence` first, in the same transaction as the deletion; if the copy fails, the deletion fails.
-- No screen reads that store. An authorized operator exports it by SQL for the matter (by `hold_id`). The hold row and its
-  reference stay in Admin Reports' "Other legal holds" when the case is gone.
-- Releasing starts the retention period (provisional: 12 months after the latest release on that target). A case that went
-  with its account can't be held again after release: export first if the matter might come back.
-- A hold on a case also keeps its linked reports. A hold on a report does not keep a linked case from its own 12-month purge
-  unless the account is deleted: hold the case too.
+- A hold never stops a deletion and the person is never told about it. What the hold covers is copied to
+  `private.held_account_evidence` first, in the deletion's own transaction; if the copy fails, the deletion fails and is recorded, and admins
+  get one private push a day (counts only).
+- Scope: a hold keeps what it is about. Tick "Also keep this account's whole moderation history" only if the matter requires it; the choice is on the hold.
+- Original files stay in their private bucket, listed in `private.legal_hold_files`, and can't be deleted, moved or overwritten while held. Check the placement answer:
+  `files.kept` = safe; `files.deleting` = removal already under way, can't be recalled; `files.already_deleted` = gone.
+- To open a kept file: `admin_open_held_file` with a reason first (recorded), then a link. There is no screen for the evidence store: an authorized operator exports by SQL, by `hold_id`.
+- Release: nothing is purged while another hold covers the target. After release, kept evidence is purged only under a recorded policy (`private.set_held_evidence_retention`, with
+  a decision + reference). None is set: until counsel decides, it is kept. A case that went with its account can't be held again after release: export first.
+- A hold on a case keeps its linked reports. A hold on a report does not keep a linked case from its own 12-month purge unless the account is deleted: hold the case too.
 - Don't delete an admin's account while holds are active: `admin_id` / `actor` on held records is cleared by the deletion
   (the hold's own `placed_by` / `released_by` stay).
-- Files are not preserved by this: see `ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`.
 
 ## Audit
 - `private.legal_holds`: target, reason, reference, placed_by/at, released_by/at, release_reason; trigger

@@ -1,3 +1,7 @@
+# 2026-11-08: 0402 hardening pass (six legal-hold issues), staged, verified on PG 17.6
+
+Owner reopened the mandatory review items before build 87. Built on `post-tier1/held-deletion-evidence`: original files kept in their private bucket with an audited opening; deletion wording in 11 languages + Privacy Policy draft + push; hold scope follows the hold; files removed after the account under the hold lock; marker for the between-deletes window; failures recorded + admin push; retention policy table starts empty (no 12-month default). Also found: deletion sent voice messages to the wrong bucket, on production too (code reading). A session restart interrupted verification; resumed, 3 stale journey expectations fixed, one tracked `node_modules` symlink removed. Results and limits: `PRODUCT_AUDIT/ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`. Nothing merged, deployed or built.
+
 # 2026-11-08: 0402 accepted as staged; development stopped for build 87
 
 Owner accepted 0402 as staged + locally verified, not approved to merge or deploy; remaining legal-hold issues = mandatory pre-launch review (audit doc,

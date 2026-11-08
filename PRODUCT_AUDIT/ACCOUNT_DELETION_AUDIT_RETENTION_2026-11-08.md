@@ -1,8 +1,6 @@
 # Account deletion vs moderation records under legal hold (2026-11-08)
 
-**Status: PRE-LAUNCH COMPLIANCE REQUIREMENT (owner, 2026-11-08). Correction STAGED as 20270402, LOCALLY VERIFIED, NOT merged, NOT
-deployed, NOT legally reviewed (section "The correction", below).** Before outside users are admitted: suspension, pause and moderation
-records under an active legal hold must not be erasable by account deletion.
+**Status: PRE-LAUNCH COMPLIANCE REQUIREMENT (owner, 2026-11-08). Correction + hardening pass STAGED as 20270402 (sha256 0ef03151ca05650e7ef4a160f1f6e51625335caa82977f8d21f95a9682563ff2), LOCALLY VERIFIED on PostgreSQL 17.6, NOT merged, NOT deployed, NOT legally reviewed, not in build 87.** Nothing here is a claim of legal compliance.
 
 ## How this was verified
 
@@ -39,60 +37,65 @@ cases and ID submissions; there is no account-level hold).
 **Correction to the earlier assessment (same day):** it named suspension and pause records only. Held review cases about a subject
 account are lost too, which is the larger gap: the hold says it preserves the case and it doesn't.
 
-## The correction (20270402, staged; sha256 9fc3a35273dbe6a80ea942d5844d6adf6734bf9e7bcc504247a6f0c7a7dbdbf9)
+## The correction after the hardening pass (20270402, staged)
 
-Owner's rules (2026-11-08): no hold = deletion unchanged; a hold = the account still deletes and only the covered evidence stays; the copy
-must succeed before anything is destroyed; a release starts a retention schedule, never forever.
+The owner's rules: a hold never stops a deletion and nothing reveals it; no hold = ordinary deletion; a failed copy stops the deletion.
+The six issues (owner, 2026-11-08), as built:
 
-- `private.held_account_evidence`: append-only, no client access, one row per (hold, record). Only reachable by SQL (no screen).
-- `delete-account` calls the preservation first, before it removes any file, and stops if that fails. BEFORE DELETE triggers on
-  `public.profiles` AND `auth.users` do the same in the deletion's own transaction, so every path is covered (the Auth admin API, the
-  scheduled deletion, a direct delete) and a failed copy aborts the deletion. The refusal is generic: nothing reveals a hold.
-- Copied when an active hold covers the account: held cases about it (+ members, history, photo references, report links), its rows in other
-  held cases + the hashes of its photos there, a held ID submission's row, and the account's suspension decisions, pauses + history,
-  behaviour signals and security events. Never the profile, messages or a file.
-- Coverage = a hold on a report naming the account or linked to its decisions / pauses, a removal record it owned or was reported in, a case
-  where it is subject or member or that its pause came from, or its ID submission.
-- Two purges fixed, because they would still lose held evidence afterwards: a case hold now keeps its linked reports (`report_on_legal_hold`,
-  also after the case went); `purge_suspended_account_records` skips an expired record whose decision names a held report or whose account is
-  in the store (released = next daily run; not matched against numbers while kept, as for any expired record).
-- Release: kept while any hold on the same target is active, then `held_evidence_retention()` after the latest release (PROVISIONAL 12 months,
-  one function to change), purged daily; the hold's own record stays. Who/when/why is in `private.legal_holds` (20270395).
-- Also fixed in `delete-account`: the staged 0400 version returns `verificationPaths`, a variable 0400 removed, which throws AFTER the account
-  is deleted (the person gets an error; a scheduled deletion is never marked finished). main / production don't have this. DEPLOY GATE: never
-  deploy `delete-account` from the 0400 branch; use this version, which also works before 20270402 is live.
+1. **Original files.** A hold's original files stay in their private bucket, listed in `private.legal_hold_files` (bucket, size, type, hash). While
+   listed and not purgeable, a trigger on `storage.objects` makes delete / move / overwrite do nothing for every role, service role included, quietly.
+   An admin gets a link only after `admin_open_held_file` with a reason: every opening is in `private.legal_hold_file_access`, and the Storage policy
+   needs that record. No new screen.
+2. **Wording.** App dialogs + the scheduled-deletion message (11 languages, 10 machine-authored, need native review), the scheduled-deletion push
+   ("being deleted", "limited records") and the Privacy Policy DRAFT (sections 5 + 6, not published) separate ordinary deletion from what may be kept. Same words for everyone,
+   so they reveal no hold. Guard `src/i18n/accountDeletionWording.test.js`. The wording is a draft for counsel.
+3. **Scope.** A hold keeps what it is about: the held item, linked cases and reports, decisions and pauses naming them, what a case's own signal rests on.
+   The whole moderation history only if the admin says so on that hold (`scope = 'account_history'`, one checkbox in the existing form), only for
+   the account the item is about. A hold on an ID submission keeps that submission. A reporter's identity is still not copied.
+4. **Races.** Files are queued in the transaction that deletes the profile and removed only after the account is gone, each re-checked under the hold lock.
+   A marker keeps the link from a report to its account between the two deletes, closing the earlier known limit. A hold at any point is either honoured, or (the DELETE already
+   handed to Storage) answered `deleting`, never `held`. A failed copy aborts the deletion, is recorded, and admins get one private push a day (counts only).
+5. **Retention.** Nothing is purged under an active hold. After a release, evidence is purged only under a recorded policy: `private.held_evidence_retention_policy` starts EMPTY and
+   empty means NOTHING is purged. The 12-month placeholder is gone. Setting it needs a decision + reference (`private.set_held_evidence_retention`, SQL only).
+6. **Testing.** See below.
 
-### Verified locally (2026-11-08)
+Found and fixed while doing this:
+- **Deletion left files behind.** `delete-account` sent voice-message paths to `profile-photos` (they live in `chat-media`), so voice messages, chat photos, voice intros and replaced photos
+  survived deletion; a removal failure was logged and forgotten. Now the whole folder of the 3 media buckets is queued and retried hourly. **`main`'s function has the same code and its source was
+  recovered verbatim from the live bundle, so production has this defect today (code reading; not tested on production).**
+- `delete-account` on the 0400 branch throws after deleting (`verificationPaths`). DEPLOY GATE: never deploy that copy.
+- Errors returned to the person are generic.
 
-Fresh replay with real Auth v2.197.0 first (525 + 0402 applied last as its own transaction); PG 15, production is 17.6.
-- Journey `heldAccountEvidence` 11/11; fails 11/11 after rollback. Journeys 1219/1219 before the concurrency scripts and on the final run after them.
-- 26 concurrency scripts pass, incl. `held-evidence-concurrency.js` (7 races, both orders where order matters): hold vs deletion, pause vs
-  deletion, two deletions side by side, double preservation, purge vs deletion, hold vs record purge.
-- Real Auth `held-evidence-auth-local.js` 8/8, three runs: held / unheld / copy failing makes Auth's deleteUser return an error with the account
-  intact, retry succeeds. The delete-account ORDER is reproduced by the script; the edge function itself did not run.
-- Rollback = the pristine pre-0402 schema, public + private, `pg_dump` 64,434 lines, 0 diff; re-apply = first apply, 64,794 lines, 0 diff.
-- Jest 553/553 (7463 + 11 todo). No client change.
+Unchanged from the first version: held cases keep members, history, photo references and report links; a case hold keeps linked reports; suspended-account records wait for holds.
 
-While verifying: both scripts first left suspended-account rows that broke `suspendedNumberRetention` when run afterwards (test cleanup, fixed).
-`unsafeReportReason`'s queue-order test fails about 1 run in 7 WITH AND WITHOUT 0402 (2/12, 2/16): not this work, cause not established, open.
-`profileAntiScraping` `mia2_signal` failed once (its known flake).
+### Verified locally (2026-11-08, PostgreSQL 17.6.1.003 from an empty database; real Auth v2.197.0)
+
+- Fresh replay: all migrations applied, 0402 last.
+- Journeys 1224/1224 (113 suites) on the final state, incl. `heldAccountEvidence` 16/16. It fails 16/16 with 0402 rolled back.
+- 26 concurrency scripts pass, incl. `held-evidence-concurrency.js` with 12 races (5 new: hold vs file hand-over, vs own delete, release vs copying, a hold at a random point of a whole deletion, purge vs re-hold).
+- Real `delete-account` under Supabase's edge runtime with real Auth, real Storage API, real PostgREST: `held-evidence-function-local.js` 31/31 (no hold, hold + byte-for-byte file + audited opening, failed copy + alert + retry, Storage down + hourly retry, scheduled path).
+- Real Auth `held-evidence-auth-local.js` 8/8. Storage API scripts pass: photo, story, media report, ID document.
+- Rollback = a separate pristine pre-0402 PG 17.6 replay, public + private, `pg_dump` 64,437 lines, 0 diff; storage policies identical. Re-apply = first apply, 0 diff.
+- Jest 554/554 suites, 7479 tests + 11 todo.
+
+Test defects fixed on the way (product unchanged): 3 stale journey expectations (the new `scope` argument, `retention_set`, a held case's own "opened" event); script cleanup. `media-report-storage-api` failed once when run straight after `story-storage-api`, whose queued files it picked up; alone it passes. Worth fixing the ordering if these are ever chained.
+`unsafeReportReason`'s queue-order flake (with and without 0402) and `profileAntiScraping` `mia2_signal` did not appear in these runs; causes still not established.
 
 ### Not run (deploy gates, `post-deploy.js` 20270402)
 
-Prod journeys with the 0348-0402 prelude, prod aborted rollback, grants vs prod, the real `delete-account` running (no Deno here, not even
-type-checked), PG 17.6, a controlled test with dedicated test accounts. Storage API scripts not rerun (no Storage change).
+Prod journeys with the 0348-0402 prelude, prod aborted rollback, grants vs prod, a controlled test with dedicated test accounts on production. Local images are stand-ins: Storage API v1.11.13 and the edge runtime are not confirmed to be production's versions. No real phone.
 
 ### Known limits (not fixed)
 
-- A hold on a REPORT placed in the moment between `delete-account`'s two deletes: the report's person reference is already gone, so the account's
-  decisions aren't linked unless they name that report. The report itself stays. A case hold in that window is covered (journey step 9).
-- A failed copy blocks the person's deletion with a generic error; it is logged by the function, with no admin alert. Not expected in practice.
-- A case that went with its account can't be held again after its hold is released: export first if the matter might come back.
-- A hold on a report keeps a linked case only through a deletion, not from the case's own 12-month purge: hold the case too.
+- Evidence kept with no retention policy stays INDEFINITELY after release. Safe for a hold, but keeping data with no end date is its own privacy question: counsel must set it before launch.
+- A case that went with its account can't be held again after its hold is released: export first.
+- A hold on a report does not keep a linked case from the case's own 12-month purge unless the account is deleted: hold the case too.
 - After a case hold is released, a linked report's photo that a "No action needed" outcome couldn't release stays until the report's purge.
 - If an ADMIN's account is deleted, `admin_id` / `actor` on held records is cleared (the hold's `placed_by` / `released_by` stay). Procedure: don't.
 - A pause or suspension with no report or case, on an account no hold covers, can't be held (no account-level hold).
-- Rollback destroys preserved evidence: its header says to export first and get the owner's + counsel's decision.
+- A file already handed to Storage for deletion can't be recalled: the hold says `deleting`.
+- A held file is protected at the database. Anyone with direct access to the storage backend or the database superuser can still remove it.
+- Rollback refuses while evidence exists; once it runs, nothing protects kept files. Redeploy the previous `delete-account` FIRST: this version refuses to delete without the migration.
 
 ## Owner decision (2026-11-08)
 
@@ -101,19 +104,20 @@ deletion wording (8), retention scope (4), the deletion/hold race (Known limits,
 The real `delete-account` under Deno and PostgreSQL 17.6 remain unverified. Passing automated tests is not launch readiness: the real-device session,
 production integration checks and legal review are separate gates. Feature development stopped; next = build 87 + Tier 1.
 
+## Hardening pass ordered (owner, 2026-11-08, same day)
+
+The owner reopened the six issues above before build 87: fix them technically, staged, no merge / deploy / build, no claim of legal approval. Built as above; acceptance of the result is the owner's. The "provisional 12 months" and "files are not preserved" statements earlier that day are superseded.
+
 ## Decisions still needed (counsel + owner; nothing here is legally approved)
 
-1. **Files are not preserved.** A held photo case keeps the reference and hashes, but `delete-account` removes the profile photo itself; voice
-   messages too. (Reported Story photos and ID files are already handled by 0391 / 0400.) Does the hold need the image? Building it = a file hold
-   and a later deletion job, a separate change.
-2. Hold stops deletion, or the account goes and covered records stay? Built as the second, per the owner.
-3. Retention after release: 12 months is a placeholder. Same question for reports, pauses, suspended-account records.
-4. Scope: any hold covering an account copies its WHOLE moderation history, including for a hold on one ID submission. Necessary, or narrower?
-5. A REPORTER who deletes: their identity is cleared from a held report and deliberately NOT copied (they may be a victim). Is that right?
-6. Should holds target an account directly (the pause / suspension gap above)?
-7. A held suspended-account record keeps its number key (an HMAC) past its date. Acceptable, given it is no longer matched?
-8. **Disclosure.** Privacy Policy section 5 has a legal-or-safety exception, but section 6 and the app's dialogs say "all associated data", and the
-   scheduled-deletion push says "its data" was "permanently deleted". Wording for counsel; not changed.
+1. Retention after release: how long, for which matters (`set_held_evidence_retention`). Until set, kept indefinitely. Same question for reports, pauses, suspended-account records (12 months today).
+2. A hold lets the account delete and keeps covered records, per the owner. Is that the right rule?
+3. Item-only scope by default, whole history by admin choice: is the default right, and who may choose it?
+4. A REPORTER who deletes: identity cleared from a held report and NOT copied (they may be a victim). Is that right?
+5. Should holds target an account directly (the pause / suspension gap above)?
+6. A held suspended-account record keeps its number key (an HMAC) past its date. Acceptable, given it is no longer matched?
+7. The deletion wording + Privacy Policy draft (counsel), then native review of 10 languages. Not published.
+8. CSAM / mandatory-reporting content still has no procedure (`LEGAL_HOLD_PROCEDURE_2026-11-07.md`, "Not covered").
 
 ## Decided in the same review (owner, 2026-11-08)
 

@@ -296,12 +296,12 @@ const STEPS = {
       'rollback = scripts/rollback/20270401_admin_account_facts.rollback.sql (no data involved)',
       'STOP + report: anything written by the read, an account outside the case returned, a non-admin served, or a score / verdict appearing anywhere'] },
   20270402: { journeys: ['heldAccountEvidence', 'legalHolds', 'suspendedNumberRetention'],
-    edge: ['delete-account (right AFTER 20270402; before it the function has no preserve call to make and carries on). ALSO the version to use for 20270400: the copy on the 0400 branch throws after the account is deleted (verificationPaths)'],
+    edge: ['delete-account (right AFTER 20270402; this version refuses to delete without the migration, so never deploy it first). ALSO the version to use for 20270400: the copy on the 0400 branch throws after the account is deleted (verificationPaths)'],
     manual: ['before deploy: prod journeys with the 0348-0402 prelude, prod aborted rollback, grants vs prod; Auth role can run the auth.users trigger (as 20270374)',
-      'read-only right after: both a_preserve_held_evidence triggers exist; private.held_account_evidence has no client grant; cron purge-held-account-evidence scheduled; EXECUTE on account_deletion_preserve_held_evidence = service_role only',
+      'read-only right after: both a_preserve_held_evidence triggers exist; private.held_account_evidence has no client grant; cron purge-held-account-evidence scheduled; private.held_evidence_retention_policy is EMPTY unless counsel's decision is recorded; the hold-protection trigger on storage.objects exists and Storage API can still delete an unheld file; EXECUTE on account_deletion_preserve_held_evidence = service_role only',
       'read-only right after: report_on_legal_hold + purge_suspended_account_records are the 20270402 versions, and purge-suspended-account-records still runs',
       'controlled test with dedicated test accounts, through the real delete-account function: a held account deletes and its evidence is stored; an unheld account deletes and nothing is stored; the app says the same in both cases',
-      'rollback = scripts/rollback/20270402_held_account_evidence.rollback.sql, which DESTROYS preserved evidence: export it first and get the owner + counsel decision if the table has rows',
+      'controlled test: a held file survives byte for byte and opens only after admin_open_held_file; a failed removal retries; voice messages and chat photos leave with the account','rollback = redeploy the previous delete-account FIRST, then scripts/rollback/20270402_held_account_evidence.rollback.sql, which refuses while evidence exists: export it and get the owner + counsel decision',
       'STOP + report: a held account deleted with no copy, an unheld account refused or copied, or anything revealing a hold to the person'] },
 };
 
