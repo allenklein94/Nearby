@@ -105,7 +105,10 @@ async function main() {
   };
 
   // a fixture has to be a shape the app can make wherever a check names the key under test
-  const SHAPES = { 'public.brand_offers': { unlock_community_id: { unlock_scope: 'community', unlock_min_members: 1 } } };
+  const SHAPES = {
+    'public.brand_offers': { unlock_community_id: { unlock_scope: 'community', unlock_min_members: 1 } },
+    'private.account_review_cases': { subject_user: { signal: 'report', reason: 'reported_profile' } },
+  };
   const results = [];
   const tableKey = (s, t) => `${s}.${t}`;
   for (const fk of edges) {
