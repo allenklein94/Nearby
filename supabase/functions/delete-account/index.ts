@@ -6,9 +6,6 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = secretKey()!;
 
 const GENERIC_FAILURE = 'Failed to delete account';
-// 20270405: a group plan the person organizes has a booking the reservation rules won't cancel (paid or authorized). Nothing is deleted.
-const PLAN_HINT = 'group_plan_booking_unresolved';
-const PLAN_MESSAGE = "A group plan you organize has a booking that's already paid, so your account can't be deleted yet. Ask the business to refund it or confirm the visit, then try again.";
 
 // A failure stops the deletion and reaches an admin (counts only). Recording it must never hide the failure itself.
 // deno-lint-ignore no-explicit-any
@@ -62,26 +59,12 @@ async function deleteEverything(admin: any, userId: string): Promise<number> {
   await preserveHeldEvidence(admin, userId);
 
   const { error: profileError } = await admin.from('profiles').delete().eq('id', userId);
-  if (profileError) {
-    const stopped = await failed(admin, userId, 'profile', profileError.message);
-    throw profileError.hint === PLAN_HINT ? Object.assign(new Error(PLAN_MESSAGE), { hint: PLAN_HINT }) : stopped;
-  }
+  if (profileError) throw await failed(admin, userId, 'profile', profileError.message);
 
   const { error: authDeleteError } = await admin.auth.admin.deleteUser(userId);
   if (authDeleteError) throw await failed(admin, userId, 'auth', authDeleteError.message);
 
   return await removeDueFiles(admin, userId);
-}
-
-// True when a group plan booking must be resolved first. The function missing (20270405 not live yet) reads as nothing to resolve; the delete itself still decides.
-// deno-lint-ignore no-explicit-any
-async function planBookingUnresolved(admin: any, userId: string): Promise<boolean> {
-  const { data, error } = await admin.rpc('account_deletion_plan_check', { user_id_param: userId });
-  if (error) {
-    if (error.code !== 'PGRST202') console.error('plan check failed:', error.message);
-    return false;
-  }
-  return (data?.unresolved ?? 0) > 0;
 }
 
 // The claims of a token getUser() has already verified (session_id + aal; 20270375 decides with them).
@@ -118,11 +101,6 @@ serve(async (req) => {
       let done = 0;
       for (const userId of (due ?? []) as string[]) {
         try {
-          // a paid group booking waits, recorded, with no notice each hour; the person was told when they asked
-          if (await planBookingUnresolved(admin, userId)) {
-            await failed(admin, userId, 'profile', PLAN_HINT);
-            continue;
-          }
           // the copy first: a deletion that can't go ahead sends no notice
           await preserveHeldEvidence(admin, userId);
           await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
@@ -151,9 +129,6 @@ serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    // Before anything happens, including a scheduled deletion ending this person's sessions.
-    if (await planBookingUnresolved(admin, userId)) return json({ error: PLAN_MESSAGE, hint: PLAN_HINT }, 409);
-
     // 20270375 D2: the server decides (switch off = 'legacy' = immediate, exactly as before). Refusals carry their hint.
     const claims = verifiedClaims(token);
     const { data: decision, error: decisionError } = await admin.rpc('account_deletion_authorize', {
@@ -177,8 +152,6 @@ serve(async (req) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (err) {
-    // deno-lint-ignore no-explicit-any
-    if ((err as any)?.hint === PLAN_HINT) return json({ error: (err as Error).message, hint: PLAN_HINT }, 409);
     console.error('delete-account error:', err);
     return new Response(JSON.stringify({ error: GENERIC_FAILURE }), { status: 500 });
   }

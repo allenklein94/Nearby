@@ -5,6 +5,7 @@ do $$
 declare v jsonb;
 begin
   v := jsonb_strip_nulls(jsonb_build_object(
+    'payment_exceptions', nullif((select count(*) from private.payment_exceptions), 0),
     'kept_payments', nullif((select count(*) from public.business_payments where reservation_id is null), 0),
     'submissions_without_submitter', nullif((select count(*) from public.business_offer_submissions where submitted_by is null), 0),
     'organizers_without_adder', nullif((select count(*) from public.plan_organizers where added_by is null), 0),
@@ -12,9 +13,18 @@ begin
   if v <> '{}'::jsonb then raise exception 'Rollback refused: rows depend on 20270405: %', v; end if;
 end $$;
 
-drop function if exists public.account_deletion_plan_check(uuid);
 drop function if exists public.account_deletion_plan_impact();
-drop function if exists private._account_deletion_plan_impact(uuid);
+select cron.unschedule('remind-open-payment-exceptions');
+drop function if exists public.admin_resolve_payment_exception(uuid, text);
+drop function if exists public.admin_list_payment_exceptions();
+drop function if exists private.remind_open_payment_exceptions();
+drop trigger if exists z_business_payment_status_changed on public.business_payments;
+drop function if exists private._business_payment_status_changed();
+drop function if exists private._open_payment_exception(public.business_payments, text, uuid);
+drop function if exists private._money_text(numeric, text);
+drop table if exists private.payment_exception_events;
+drop function if exists private._payment_exception_events_append_only();
+drop table if exists private.payment_exceptions;
 drop trigger if exists b_account_deletion_release_plans on public.profiles;
 drop function if exists private._account_deletion_release_plans();
 drop trigger if exists z_business_payment_detached on public.business_payments;
