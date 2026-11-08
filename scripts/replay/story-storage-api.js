@@ -153,6 +153,8 @@ async function main() {
     await db.query(`delete from storage.objects where (bucket_id = 'stories' and name like any($1)) or (bucket_id = 'gathering-photos' and name like $2)`,
       [all.map((u) => `${u}/%`), `${G}/%`]);
     await db.query('delete from stories where user_id = any($1)', [all]);
+    // Deleting a story queues its file for the expiry job; this script's own rows must not reach the next script's job.
+    await db.query('delete from private.story_file_cleanup where media_path like any($1)', [all.map((u) => `${u}/%`)]);
     await db.query('delete from gathering_interest where gathering_id = $1', [G]);
     await db.query('delete from gatherings where id = $1', [G]);
     await db.query('delete from friendships where user_a = any($1)', [all]);
