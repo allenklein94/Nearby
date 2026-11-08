@@ -51,11 +51,12 @@
 
 Turn on only after external users exist, and in this order: policy published -> secret review -> `device` -> `text` a little later, so a surprise is attributable. Review after 30 days: how many cases, and how many closed "No action needed". If most close that way, raise the number or switch that detector off. Don't turn on before launch for its own sake: with only the owner's accounts there's nothing to detect.
 
-## Decisions for the owner
+## Owner decisions (2026-11-08)
 
-1. Are 4 accounts (device), the suspended-reuse rule, and 5 accounts (text) still your numbers?
-2. Policy wording. Draft, NOT published, for counsel: "To help protect people from repeat abuse, we may compare a protected, one-way form of your notification token, your public bio and your public gathering descriptions with those on other accounts. We don't keep the token or text in this form, and a match only prompts a private review by our team. We keep this for up to 90 days (token) and 30 days (text)." Line 38's "solely" has to go.
-3. Whether the review after 30 days is the right checkpoint.
+1. **Numbers kept as provisional testing thresholds, not evidence of accuracy:** 4 accounts (shared device), the existing suspended-reuse rule, 5 accounts (shared text). They open review cases only, never an automatic restriction.
+2. **Production activation stays disabled until privacy review and validation are complete.** Line 38's "solely" must be corrected and reviewed before any expanded use of the token; the switch refuses until then.
+
+Still open: the policy wording above is a draft for counsel, NOT published ("To help protect people from repeat abuse, we may compare a protected, one-way form of your notification token, your public bio and your public gathering descriptions with those on other accounts. We don't keep the token or text in this form, and a match only prompts a private review by our team. We keep this for up to 90 days (token) and 30 days (text)."). The 30-day review in the recommendation stands unless changed.
 
 ## Not verified
 
