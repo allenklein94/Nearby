@@ -94,7 +94,10 @@ serve(async (req) => {
     if (payload?.purge_due === true) {
       if (token !== SERVICE_ROLE_KEY) return json({ error: 'Not allowed' }, 403);
       const { data: due, error: dueError } = await admin.rpc('account_deletions_due');
-      if (dueError) return json({ error: dueError.message }, 500);
+      if (dueError) {
+        console.error('due deletions read failed:', dueError.message);
+        return json({ error: GENERIC_FAILURE }, 500);
+      }
       let done = 0;
       for (const userId of (due ?? []) as string[]) {
         try {
@@ -135,7 +138,10 @@ serve(async (req) => {
       const known = ['account_on_hold', 'step_up_required', 'mfa_required', 'session_unknown'];
       if (known.includes(decisionError.hint ?? '')) return json({ error: decisionError.message, hint: decisionError.hint }, 403);
       // the function is missing (20270375 not live yet): exactly as before
-      if (decisionError.code !== 'PGRST202') return json({ error: decisionError.message }, 500);
+      if (decisionError.code !== 'PGRST202') {
+        console.error('deletion check failed:', decisionError.message);
+        return json({ error: GENERIC_FAILURE }, 500);
+      }
     }
     if (decision?.mode === 'scheduled') {
       return json({ ok: true, scheduled: true, purge_at: decision.purge_at });

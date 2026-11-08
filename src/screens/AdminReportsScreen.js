@@ -12,7 +12,7 @@ import { reportReasonLabel, sortReportQueue, reportQueueTag, reportedWhatLabel }
 import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
 import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
 import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
-import { LEGAL_HOLD_HISTORY_LABEL, LEGAL_HOLD_REASON_MAX, LEGAL_HOLD_REFERENCE_MAX, activeHoldsByTarget, holdFor, legalHoldPhotoNote, legalHoldReasonReady, legalHoldReferenceReady, legalHoldStatusLine, legalHoldTargetLabel } from '../utils/legalHolds';
+import { LEGAL_HOLD_ACCOUNT_LABEL, LEGAL_HOLD_HISTORY_LABEL, LEGAL_HOLD_REASON_MAX, legalHoldFormIsWider, legalHoldPlaceParams, legalHoldRetentionNotice, LEGAL_HOLD_REFERENCE_MAX, activeHoldsByTarget, holdFor, legalHoldPhotoNote, legalHoldReasonReady, legalHoldReferenceReady, legalHoldStatusLine, legalHoldTargetLabel } from '../utils/legalHolds';
 import { RESTRICTION_CAPABILITIES, RESTRICTION_DAYS, RESTRICTION_DEFAULT_DAYS, RESTRICTION_REASON_MAX, activeRestrictions, restrictionFormReady, restrictionReasonReady, restrictionStatusLine, toggleCapability } from '../utils/accountRestrictions';
 import AccountFactsSection from '../components/AccountFactsSection';
 import { REMOVAL_REASON_MAX, canRemoveReportedObject, removalReasonReady, removeActionLabel, reportObjectIds, reportObjectStatus } from '../utils/reportObjects';
@@ -46,6 +46,7 @@ export default function AdminReportsScreen({ navigation }) {
   const [removing, setRemoving] = useState(null); // { id, reason }: the one report whose Remove form is open
   // 20270395: active legal holds (null = an older database: no hold control at all) and the one open hold form
   const [holds, setHolds] = useState(null);
+  const [retentionNotice, setRetentionNotice] = useState(null);
   const [holdForm, setHoldForm] = useState(null); // { mode: 'place' | 'release', targetType, targetId, holdId, reason, reference }
   // 20270399: each listed person's restrictions (null = an older database: no restriction control) and the one open form
   const [restrictions, setRestrictions] = useState(null); // { [userId]: rows }
@@ -84,6 +85,9 @@ export default function AdminReportsScreen({ navigation }) {
       setCleanup(fileStatus.error ? null : storyFileCleanupNotice(fileStatus.data));
       const held = await supabase.rpc('admin_list_legal_holds', { include_released_param: false });
       setHolds(held.error ? null : held.data || []);
+      // 20270403: an older database simply has nothing to show.
+      const retention = await supabase.rpc('admin_held_evidence_retention_status');
+      setRetentionNotice(retention.error ? null : legalHoldRetentionNotice(retention.data));
       await loadRestrictions(data, listed.error ? [] : listed.data || []);
     } catch (e) {
       setLoadError(true);
@@ -265,7 +269,7 @@ export default function AdminReportsScreen({ navigation }) {
   async function submitHold() {
     const f = holdForm;
     const { data, error } = f.mode === 'place'
-      ? await supabase.rpc('admin_place_legal_hold', { target_type_param: f.targetType, target_id_param: f.targetId, reason_param: f.reason, reference_param: f.reference || null, scope_param: f.wholeHistory ? 'account_history' : 'item' })
+      ? await supabase.rpc('admin_place_legal_hold', legalHoldPlaceParams(f))
       : await supabase.rpc('admin_release_legal_hold', { hold_id_param: f.holdId, reason_param: f.reason });
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: submitHold });
     setHoldForm(null);
@@ -283,19 +287,21 @@ export default function AdminReportsScreen({ navigation }) {
   }
 
   // One control for every holdable item: the status line, Place / Release, and the form when it is open for this item.
-  function renderHoldControl(targetType, targetId) {
+  function renderHoldControl(targetType, targetId, accountId = null) {
     if (holds === null) return null;
     const hold = holdFor(holdsByTarget, targetType, targetId);
     const open = holdForm && holdForm.targetType === targetType && holdForm.targetId === targetId;
-    const ready = open && legalHoldReasonReady(holdForm.reason) && legalHoldReferenceReady(holdForm.reference);
+    const accountHold = accountId ? holdFor(holdsByTarget, 'account', accountId) : null;
+    const ready = open && legalHoldReasonReady(holdForm.reason) && legalHoldReferenceReady(holdForm.reference, legalHoldFormIsWider(holdForm));
     return (
       <View>
         {hold ? <Text style={styles.holdLine}>{legalHoldStatusLine(hold)}</Text> : null}
+        {accountHold ? <Text style={styles.holdLine}>{legalHoldStatusLine(accountHold)}</Text> : null}
         {!open ? (
           <View style={styles.actions}>
             <TouchableOpacity
               style={styles.actionButton}
-              onPress={() => setHoldForm({ mode: hold ? 'release' : 'place', targetType, targetId, holdId: hold?.hold_id, reason: '', reference: '' })}
+              onPress={() => setHoldForm({ mode: hold ? 'release' : 'place', targetType, targetId, holdId: hold?.hold_id, accountId, reason: '', reference: '' })}
               accessibilityRole="button"
             >
               <Text style={styles.actionText}>{hold ? 'Release Legal Hold' : 'Place Legal Hold'}</Text>
@@ -321,10 +327,10 @@ export default function AdminReportsScreen({ navigation }) {
                 style={[styles.reasonInput, styles.referenceInput]}
                 value={holdForm.reference}
                 onChangeText={(reference) => setHoldForm({ ...holdForm, reference })}
-                placeholder="Reference (optional): a ticket or request number"
+                placeholder={legalHoldFormIsWider(holdForm) ? 'Reference (required): what authorized this' : 'Reference (optional): a ticket or request number'}
                 placeholderTextColor={colors.textTertiary}
                 maxLength={LEGAL_HOLD_REFERENCE_MAX}
-                accessibilityLabel="Legal hold reference, optional"
+                accessibilityLabel={legalHoldFormIsWider(holdForm) ? 'Legal hold reference, required' : 'Legal hold reference, optional'}
               />
             ) : null}
             {holdForm.mode === 'place' ? (
@@ -335,6 +341,16 @@ export default function AdminReportsScreen({ navigation }) {
                 accessibilityState={{ checked: !!holdForm.wholeHistory }}
               >
                 <Text style={styles.actionText}>{holdForm.wholeHistory ? '☑' : '☐'} {LEGAL_HOLD_HISTORY_LABEL}</Text>
+              </TouchableOpacity>
+            ) : null}
+            {holdForm.mode === 'place' && holdForm.accountId ? (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => setHoldForm({ ...holdForm, wholeAccount: !holdForm.wholeAccount })}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: !!holdForm.wholeAccount }}
+              >
+                <Text style={styles.actionText}>{holdForm.wholeAccount ? '☑' : '☐'} {LEGAL_HOLD_ACCOUNT_LABEL}</Text>
               </TouchableOpacity>
             ) : null}
             <View style={styles.actions}>
@@ -488,6 +504,7 @@ export default function AdminReportsScreen({ navigation }) {
                 ) : null}
               </View>
             ) : null}
+            {retentionNotice ? <Text style={styles.holdLine}>{retentionNotice}</Text> : null}
             {otherHolds.length ? <Text style={styles.sectionTitle}>Other legal holds</Text> : null}
             {otherHolds.map((h) => (
               <View key={h.hold_id} style={styles.card}>
@@ -516,7 +533,7 @@ export default function AdminReportsScreen({ navigation }) {
                     <Text style={styles.actionText}>Close Review</Text>
                   </TouchableOpacity>
                 </View>
-                {renderHoldControl('review_case', c.id)}
+                {renderHoldControl('review_case', c.id, c.subject_user || null)}
               </View>
             ))}
             <Text style={styles.sectionTitle}>Reports</Text>
@@ -614,7 +631,7 @@ export default function AdminReportsScreen({ navigation }) {
             {/* a temporary pause on the reported person (20270399); a suspended account needs none */}
             {item.reported_id && !item.reported?.suspended_at && !item.resolved ? renderRestrictionControl(item.reported_id, { reportId: item.id }) : null}
             {/* a hold on a report also keeps its removal record (20270395), so a removed object's evidence is held from here too */}
-            {renderHoldControl('report', item.id)}
+            {renderHoldControl('report', item.id, item.reported_id || null)}
           </View>
         )}
       />

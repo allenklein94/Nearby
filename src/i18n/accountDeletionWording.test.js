@@ -30,4 +30,14 @@ describe('account deletion wording', () => {
     const f = repo('supabase/functions/delete-account/index.ts');
     expect(f).not.toMatch(/has been deleted|permanently deleted/);
   });
+  test('both deletion pushes say the same thing about limited records (20270403), and no raw database message reaches the person', () => {
+    const f = repo('supabase/functions/delete-account/index.ts');
+    const limited = 'We may keep limited records where the law or user safety requires it';
+    expect(f).toContain(limited);
+    expect(repo('supabase/migrations/20270403_deletion_hardening.sql')).toContain(limited);
+    expect(f).not.toMatch(/json\(\{ error: \w+Error\.message/);
+  });
+  test('the Terms point at the same rule and promise nothing wider', () => {
+    expect(repo('docs/terms.html')).not.toMatch(/all (associated|your) data/i);
+  });
 });

@@ -3,6 +3,7 @@ const path = require('path');
 const {
   LEGAL_HOLD_REASON_MIN, LEGAL_HOLD_REASON_MAX, LEGAL_HOLD_REFERENCE_MAX, activeHoldsByTarget, holdFor, legalHoldPhotoNote,
   legalHoldReasonReady, legalHoldReferenceReady, legalHoldStatusLine, legalHoldTargetLabel,
+  legalHoldPlaceParams, legalHoldFormIsWider, legalHoldRetentionNotice,
 } = require('./legalHolds');
 
 const ROOT = path.join(__dirname, '../..');
@@ -61,8 +62,8 @@ describe('legal-hold control in Admin Reports (20270395)', () => {
     expect(SCREEN).not.toMatch(/legal_holds['"]\)/);
     expect(SCREEN).not.toMatch(/from\('legal_holds'/);
     // the hold control sits on every report and review case card, and release asks for confirmation
-    expect(SCREEN).toContain("renderHoldControl('report', item.id)");
-    expect(SCREEN).toContain("renderHoldControl('review_case', c.id)");
+    expect(SCREEN).toContain("renderHoldControl('report', item.id, item.reported_id || null)");
+    expect(SCREEN).toContain("renderHoldControl('review_case', c.id, c.subject_user || null)");
     expect(SCREEN).toMatch(/Release this legal hold\?/);
     // an older database (no function) shows no hold control
     expect(SCREEN).toMatch(/setHolds\(held\.error \? null/);
@@ -73,5 +74,34 @@ describe('hold scope (20270402)', () => {
   test('a whole-history hold says so; an ordinary one does not', () => {
     expect(legalHoldStatusLine({ reason: 'Counsel asked', scope: 'account_history' })).toMatch(/Whole account history/);
     expect(legalHoldStatusLine({ reason: 'Counsel asked', scope: 'item' })).not.toMatch(/history/);
+  });
+});
+
+describe('wider holds + retention (20270403)', () => {
+  const base = { targetType: 'report', targetId: 'r1', accountId: 'u1', reason: 'Counsel asked for this', reference: 'REF-9' };
+  test('the item, the item + history, or the account: only what the admin ticked', () => {
+    expect(legalHoldPlaceParams(base)).toEqual({ target_type_param: 'report', target_id_param: 'r1', reason_param: base.reason, reference_param: 'REF-9', scope_param: 'item' });
+    expect(legalHoldPlaceParams({ ...base, wholeHistory: true })).toEqual(expect.objectContaining({ target_type_param: 'report', scope_param: 'account_history' }));
+    expect(legalHoldPlaceParams({ ...base, wholeAccount: true })).toEqual(expect.objectContaining({ target_type_param: 'account', target_id_param: 'u1', scope_param: 'account_history' }));
+    expect(legalHoldPlaceParams({ ...base, accountId: null, wholeAccount: true })).toEqual(expect.objectContaining({ target_type_param: 'report', scope_param: 'item' }));
+  });
+  test('wider than one item needs a reference; an item does not', () => {
+    expect(legalHoldFormIsWider(base)).toBe(false);
+    expect(legalHoldFormIsWider({ ...base, wholeHistory: true })).toBe(true);
+    expect(legalHoldFormIsWider({ ...base, wholeAccount: true })).toBe(true);
+    expect(legalHoldReferenceReady('', false)).toBe(true);
+    expect(legalHoldReferenceReady('', true)).toBe(false);
+    expect(legalHoldReferenceReady('ab', true)).toBe(false);
+    expect(legalHoldReferenceReady('REF', true)).toBe(true);
+    expect(legalHoldReferenceReady('x'.repeat(201), true)).toBe(false);
+  });
+  test('the retention notice only when evidence really waits for a decision', () => {
+    expect(legalHoldRetentionNotice(null)).toBeNull();
+    expect(legalHoldRetentionNotice({ policy_set: true, released_holds_keeping_evidence: 3 })).toBeNull();
+    expect(legalHoldRetentionNotice({ policy_set: false, released_holds_keeping_evidence: 0 })).toBeNull();
+    expect(legalHoldRetentionNotice({ policy_set: false, released_holds_keeping_evidence: 2 })).toMatch(/2 released/);
+  });
+  test('an account hold shows on its target label', () => {
+    expect(legalHoldTargetLabel('account')).toBe('Account');
   });
 });

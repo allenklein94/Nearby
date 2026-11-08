@@ -9,15 +9,42 @@ export const LEGAL_HOLD_REFERENCE_MAX = 200;
 // 20270402: a hold keeps what it is about. The whole moderation history only when the admin says so, recorded on the hold.
 export const LEGAL_HOLD_HISTORY_LABEL = "Also keep this account's whole moderation history if it is deleted (only if the matter requires it)";
 
-const TARGET_LABEL = { report: 'Report', content_removal: 'Removal record', review_case: 'Review case', id_submission: 'ID submission' };  // id_submission: 20270400
+// 20270403: an account hold, for a pause or suspension with no report or case behind it. Its moderation records only, never its messages or media as such.
+export const LEGAL_HOLD_ACCOUNT_LABEL = "Hold this account's moderation records instead, with or without a report (only if the matter requires it)";
+export const LEGAL_HOLD_REFERENCE_MIN_WIDER = 3; // = admin_place_legal_hold: anything wider than one item needs a reference to what authorized it
+
+const TARGET_LABEL = { report: 'Report', content_removal: 'Removal record', review_case: 'Review case', id_submission: 'ID submission', account: 'Account' };  // id_submission: 20270400, account: 20270403
 
 export function legalHoldReasonReady(reason) {
   const length = String(reason || '').trim().length;
   return length >= LEGAL_HOLD_REASON_MIN && length <= LEGAL_HOLD_REASON_MAX;
 }
 
-export function legalHoldReferenceReady(reference) {
-  return String(reference || '').trim().length <= LEGAL_HOLD_REFERENCE_MAX;
+export function legalHoldReferenceReady(reference, wider = false) {
+  const length = String(reference || '').trim().length;
+  return length <= LEGAL_HOLD_REFERENCE_MAX && (!wider || length >= LEGAL_HOLD_REFERENCE_MIN_WIDER);
+}
+
+// What the place call asks for: the item, the item + its account's history, or the account itself (20270403).
+export function legalHoldPlaceParams(form) {
+  const account = !!form.wholeAccount && !!form.accountId;
+  return {
+    target_type_param: account ? 'account' : form.targetType,
+    target_id_param: account ? form.accountId : form.targetId,
+    reason_param: form.reason,
+    reference_param: form.reference || null,
+    scope_param: account || form.wholeHistory ? 'account_history' : 'item',
+  };
+}
+
+export function legalHoldFormIsWider(form) {
+  return !!form?.wholeHistory || (!!form?.wholeAccount && !!form?.accountId);
+}
+
+// Evidence a released hold still keeps because nobody has recorded a retention decision (20270403). Null = nothing to say.
+export function legalHoldRetentionNotice(status) {
+  if (!status || status.policy_set || !(status.released_holds_keeping_evidence > 0)) return null;
+  return `Retention decision needed: ${status.released_holds_keeping_evidence} released legal hold(s) still keep evidence because no retention period is recorded. Nothing is purged until one is.`;
 }
 
 // Active holds only (the server lists active ones unless asked for released), keyed "type:id".

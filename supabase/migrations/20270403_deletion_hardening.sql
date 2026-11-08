@@ -876,3 +876,43 @@ end;
 $function$;
 revoke all on function public.admin_held_evidence_retention_status() from public, anon;
 grant execute on function public.admin_held_evidence_retention_status() to authenticated;
+
+-- ===== wording =====
+-- 20270375's notices, unchanged but for one sentence: the scheduled-deletion push says the same as the dialog and the last push.
+CREATE OR REPLACE FUNCTION private.account_security_notice(p_user uuid, p_kind text, p_detail text DEFAULT NULL::text)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+begin
+  insert into private.account_security_events (user_id, kind) values (p_user, p_kind);
+  if p_kind = 'new_sign_in_elsewhere' then
+    perform public._send_push(p_user, 'New sign-in to your Nearby account',
+      'If this wasn''t you, open Settings and tap Sign Out to end every session, then contact your mobile carrier.',
+      jsonb_build_object('type', 'account_security_notice'),
+      'account_security:sign_in:' || p_user || ':' || to_char(date_trunc('hour', now()), 'YYYYMMDDHH24'));
+  elsif p_kind = 'phone_changed' then
+    perform public._send_push(p_user, 'Your Nearby phone number was changed',
+      'If this wasn''t you, contact Nearby support right away.',
+      jsonb_build_object('type', 'account_security_notice'),
+      'account_security:phone:' || p_user || ':' || to_char(now(), 'YYYYMMDDHH24MISS'));
+  elsif p_kind = 'deletion_scheduled' then
+    perform public._send_push(p_user, 'Your Nearby account will be deleted',
+      'It was signed out everywhere and will be permanently deleted on ' || coalesce(p_detail, 'the date shown') ||
+      '. If this wasn''t you, contact Nearby support before then. We may keep limited records where the law or user safety requires it.',
+      jsonb_build_object('type', 'account_security_notice'),
+      'account_security:deletion:' || p_user || ':' || to_char(now(), 'YYYYMMDDHH24MISS'));
+  elsif p_kind = 'recovery_hold' then
+    perform public._send_push(p_user, 'Your Nearby account is on hold',
+      'We''re checking a security report about this account. Contact Nearby support if you have questions.',
+      jsonb_build_object('type', 'account_security_notice'),
+      'account_security:hold:' || p_user || ':' || to_char(now(), 'YYYYMMDDHH24MISS'));
+  elsif p_kind = 'account_recovered' then
+    perform public._send_push(p_user, 'Your Nearby account was recovered',
+      'Every session was ended. Sign in again with your phone number.',
+      jsonb_build_object('type', 'account_security_notice'),
+      'account_security:recovered:' || p_user || ':' || to_char(now(), 'YYYYMMDDHH24MISS'));
+  end if;
+end;
+$function$;
