@@ -278,6 +278,9 @@ begin
                       where d->>'report_id' is not null and private.report_on_legal_hold((d->>'report_id')::uuid))
      and not exists (select 1 from private.held_account_evidence e join private.legal_holds h on h.id = e.hold_id
                       where e.account_id = r.former_account_id and h.released_at is null);
+  -- unchanged from 20270374
+  delete from private.phone_match_queue where queued_at < now() - interval '1 day';
+  delete from private.suspended_number_failures where at < now() - interval '90 days';
 end;
 $function$;
 revoke all on function private.purge_suspended_account_records() from public, anon, authenticated;
