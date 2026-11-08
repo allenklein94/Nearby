@@ -10,6 +10,10 @@
 //   6. two runs reading the same answers: a failure counts and logs once, a success finishes once, no file is lost.
 //   7. an admin reopening a released report vs the job: reopened first = no DELETE; the job first = its one DELETE, and the reopen
 //      waits for it, never interleaves.
+//   8. an admin's legal hold vs the expiry job deleting an expired reported Story ("No action needed" released its photo) in the
+//      same run: a hold that answers "held" is never followed by a DELETE (that run or any later one); the job first = its one
+//      DELETE and the hold says "deleting" (pg_net can't recall it). Before 20270400 the job sent the file while the hold was
+//      committing and the hold still said "held".
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/media-report-concurrency.js
 const url = process.env.NEARBY_LOCAL_DB_URL;
 if (!url || !/@(localhost|127\.|172\.|10\.|192\.168\.)/.test(url)) {
@@ -206,7 +210,39 @@ async function run(step) {
     }
     check(evidenceSafe, `a report reopened first is never followed by a DELETE (${reopenFirst} rounds), always held after`);
     check(jobFirst > 0, `the other order really happened (${jobFirst} rounds the job got there first)`);
+
+    console.log('8. A legal hold vs the expiry job deleting a released reported Story in the same run');
+    await db.query('update profiles set is_admin = true where id = $1', [H]);
+    let [heldRounds, deletingRounds, holdTruthful] = [0, 0, true];
+    for (let i = 0; i < ROUNDS * 2; i += 1) {
+      const photo = await post(null);
+      await db.query(`insert into storage.objects (bucket_id, name) values ('stories', $1)`, [photo.path]);
+      const rep = await run({ sub: F, sql: reportSql, args: [F, photo.id] });
+      await db.query(`insert into report_actions (report_id, action) values ($1, 'resolved_no_action')`, [rep.rows[0].id]);
+      await db.query(`update stories set expires_at = now() - interval '1 second' where id = $1`, [photo.id]);
+      await clearSends();
+      const holdAhead = i % 2 === 0;
+      const [h, j] = await Promise.all([
+        run({ sub: H, wait: holdAhead ? 0 : 50, sql: `select public.admin_place_legal_hold('report', $1, 'Preservation request from counsel', null) as h`, args: [rep.rows[0].id] }),
+        run({ sql: 'select delete_expired_stories()', wait: holdAhead ? 50 : 0 }),
+      ]);
+      const answer = h.ok ? h.rows[0].h.photo : null;
+      const sendsThen = await queued(photo.path);
+      await db.query('select delete_expired_stories()');  // a later run never sends a held file
+      const sendsLater = await queued(photo.path);
+      const ok = h.ok && j.ok && ((answer === 'held' && sendsThen === 0 && sendsLater === 0) || (answer === 'deleting' && sendsThen === 1 && sendsLater === 1));
+      if (!ok) { holdTruthful = false; console.log(`    round ${i} (${holdAhead ? 'hold first' : 'job first'}): hold "${answer}", DELETEs ${sendsThen} then ${sendsLater}`, h.error || '', j.error || ''); }
+      if (answer === 'held') heldRounds += 1; else if (answer === 'deleting') deletingRounds += 1;
+      await db.query('delete from private.story_file_cleanup where media_path = $1', [photo.path]);
+      await db.query(`delete from storage.objects where bucket_id = 'stories' and name = $1`, [photo.path]);
+    }
+    check(holdTruthful, `a hold that says "held" is never followed by a DELETE; "deleting" only after the job sent one (${heldRounds} held, ${deletingRounds} deleting)`);
+    check(heldRounds > 0 && deletingRounds > 0, 'both orders really happened');
   } finally {
+    await db.query('alter table private.legal_holds disable trigger legal_hold_immutable');
+    await db.query('delete from private.legal_holds where placed_by = any($1)', [people]);
+    await db.query('alter table private.legal_holds enable trigger legal_hold_immutable');
+    await db.query(`delete from storage.objects where bucket_id = 'stories' and name like $1`, [`${P}/%`]);
     await db.query('delete from net.http_request_queue');
     await dropLog();
     await netOwner.end();

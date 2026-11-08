@@ -30,6 +30,50 @@ drop table if exists private.id_document_cleanup_log;
 drop table if exists private.id_document_cleanup;
 
 -- 20270395's function, as it was
+-- 20270391's private._story_file_send, verbatim
+create or replace function private._story_file_send(p_key text)
+returns void
+language plpgsql
+set search_path to 'public'
+as $function$
+declare
+  v_path text;
+  v_url text;
+  v_id bigint;
+begin
+  select storage_url into v_url from private.story_media_settings where id;
+  -- a protected file isn't due: its 24 hours start when nothing protects it
+  update private.story_file_cleanup q set next_attempt_at = now()
+   where q.request_id is null and q.gave_up_at is null and q.next_attempt_at < now()
+     and (exists (select 1 from stories s where s.media_path = q.media_path)
+          or exists (select 1 from private.report_media_evidence e where e.media_path = q.media_path and e.released_at is null));
+  for v_path in
+    select q.media_path from private.story_file_cleanup q
+     where q.request_id is null and q.gave_up_at is null and q.next_attempt_at <= now()
+       and not exists (select 1 from stories s where s.media_path = q.media_path)
+       and not exists (select 1 from private.report_media_evidence e where e.media_path = q.media_path and e.released_at is null)
+     order by q.next_attempt_at, q.queued_at
+     limit 200
+  loop
+    perform 1 from private.story_file_cleanup q
+      where q.media_path = v_path and q.request_id is null and q.gave_up_at is null
+      for update skip locked;
+    continue when not found;
+    continue when exists (select 1 from stories s where s.media_path = v_path)
+               or exists (select 1 from private.report_media_evidence e where e.media_path = v_path and e.released_at is null);
+    if private._story_file_path_unsafe(v_path) then
+      perform private._story_file_failed(v_path, null, 'unsafe_path', 'unsafe_path', true);
+      continue;
+    end if;
+    v_id := net.http_delete(
+      url := v_url || '/object/stories/' || private._storage_url_path(v_path),
+      headers := jsonb_build_object('Authorization', 'Bearer ' || p_key, 'apikey', p_key));
+    update private.story_file_cleanup set request_id = v_id, sent_at = now() where media_path = v_path;
+  end loop;
+end;
+$function$;
+revoke all on function private._story_file_send(text) from public, anon, authenticated;
+
 create or replace function public.admin_place_legal_hold(target_type_param text, target_id_param uuid, reason_param text,
   reference_param text default null)
 returns jsonb
