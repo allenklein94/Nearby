@@ -418,7 +418,7 @@ security definer
 set search_path to 'public'
 as $function$
 begin
-  if tg_op = 'UPDATE' and (new.bucket_id, new.name, new.version) is not distinct from (old.bucket_id, old.name, old.version) then
+  if tg_op = 'UPDATE' and (new.bucket_id, new.name, to_jsonb(new)->>'version') is not distinct from (old.bucket_id, old.name, to_jsonb(old)->>'version') then
     return new;
   end if;
   perform pg_advisory_xact_lock_shared(hashtextextended('nearby:legal_hold', 0));
