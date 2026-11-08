@@ -72,12 +72,13 @@ function onDisk(folder) {
       const r = await upload(who, `${who}/${f}`);
       if (!r.ok) throw new Error(`upload ${f}: ${r.status} ${await r.text()}`);
     }
-    return (await db.query(`insert into id_verification_submissions (user_id, selfie_path, id_photo_path) values ($1, $1 || '/selfie.jpg', $1 || '/id.jpg') returning id`, [who])).rows[0].id;
+    return (await db.query(`insert into id_verification_submissions (user_id, selfie_path, id_photo_path) values ($1::uuid, $1::text || '/selfie.jpg', $1::text || '/id.jpg') returning id`, [who])).rows[0].id;
   };
   const approve = (sub) => db.query(`update id_verification_submissions set status = 'approved', reviewed_at = now(), reviewed_by = $2 where id = $1`, [sub, ADMIN]);
 
   try {
     await db.query('update private.story_media_settings set storage_url = $1', [api]);
+    await setKey(keys.service);  // the replay's vault holds a placeholder; the local Storage API's real service key, restored after
     await db.query('delete from private.id_document_cleanup');
     for (const [i, u] of people.entries()) {
       await db.query(`insert into auth.users (id, aud, role, email, created_at, phone, phone_confirmed_at)
@@ -103,7 +104,7 @@ function onDisk(folder) {
     let r = await row(`${P}/id.jpg`);
     check(r && r.attempts === 1 && r.request_id === null && r.last_status >= 400, 'still queued, one failed attempt', r && { a: r.attempts, s: r.last_status });
     check(await inStorage(`${P}/id.jpg`) && onDisk(P) === 2, 'the bytes are still there');
-    await setKey(key.s);
+    await setKey(keys.service);
 
     console.log('  an address that refuses connections (real pg_net error): nothing deleted, logged');
     const ip = execFileSync('docker', ['inspect', '-f', '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}', 'nearby-storage']).toString().trim();
