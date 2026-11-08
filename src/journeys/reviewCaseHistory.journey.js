@@ -348,7 +348,7 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
     expect(data('delete_account')).toBe('ok');
     expect(data('after_delete')).toEqual({ member: 0, photos: 0, hashes: 0, new_evidence_kept: 1, subject_nulled: 1 });
     expect(data('delete_reported')).toBe('ok');
-    expect(data('report_case_gone')).toBe(0);
+    expect(data('report_case_gone')).toBe(1); // 20270406: an open case stays open without its subject; a closed one goes (journey deletedAccountUnresolved)
   });
 
   test('nothing restricts anyone; clients can read none of it', () => {
