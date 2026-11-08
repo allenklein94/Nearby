@@ -249,7 +249,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
   insert into account_moderation_actions (user_id, action, reason, admin_id) values (v_h, 'suspend', 'Nothing names this decision', v_admin), (v_i, 'suspend', 'Nothing names this decision', v_admin);
   insert into private.behavior_signals (user_id, kind) values (v_h, 'repeated_messages'), (v_i, 'repeated_messages');
   insert into private.account_security_events (user_id, kind) values (v_h, 'step_up_failed'), (v_i, 'step_up_failed');
-  ${as('hold_history', 'v_admin', `v_out := public.admin_place_legal_hold('review_case', v_ch, ${WHY}, null, 'account_history')`, 'v_out')}
+  ${as('hold_history', 'v_admin', `v_out := public.admin_place_legal_hold('review_case', v_ch, ${WHY}, 'REF-1', 'account_history')`, 'v_out')}
   select h.id into v_chh from private.legal_holds h where h.target_id = v_ch and h.released_at is null;
   ${as('scope_rewrite', 'v_e', `update private.legal_holds set scope = 'item' where id = v_chh`, `'ok'::text`, 'postgres')}
   ${as('bad_scope', 'v_admin', `v_out := public.admin_place_legal_hold('review_case', v_cu, ${WHY}, null, 'everything')`, 'v_out')}
@@ -259,7 +259,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
   -- b) a hold reaches a member only for their part of that case, never their history
   insert into private.account_review_cases (signal, sha256, reason) values ('identical_photo', 'scope-402', 'many_accounts') returning id into v_ci;
   insert into private.account_review_case_members (case_id, user_id) values (v_ci, v_i);
-  ${as('hold_member', 'v_admin', `v_out := public.admin_place_legal_hold('review_case', v_ci, ${WHY}, null, 'account_history')`, 'v_out')}
+  ${as('hold_member', 'v_admin', `v_out := public.admin_place_legal_hold('review_case', v_ci, ${WHY}, 'REF-1', 'account_history')`, 'v_out')}
   ${del('v_i')}
   ${rec('member_types', types('v_i'))}
   -- c) a behaviour case keeps its signals, and nothing else of the account's
@@ -328,7 +328,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
   insert into reports (reporter_id, reported_id, reason) values (v_e, v_m, 'Inappropriate photo') returning id into v_rm3;
   delete from profiles where id = v_m;
   ${rec('m_reference', `(select reported_id is null from reports where id = v_rm3)`)}
-  ${as('hold_between_report', 'v_admin', `v_out := public.admin_place_legal_hold('report', v_rm3, ${WHY}, null, 'account_history')`, 'v_out')}
+  ${as('hold_between_report', 'v_admin', `v_out := public.admin_place_legal_hold('report', v_rm3, ${WHY}, 'REF-1', 'account_history')`, 'v_out')}
   select h.id into v_hm from private.legal_holds h where h.target_id = v_rm3 and h.released_at is null;
   insert into account_moderation_actions (user_id, action, reason, admin_id) values (v_m, 'suspend', 'Decided before the deletion', v_admin);
   delete from auth.users where id = v_m;

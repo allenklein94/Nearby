@@ -36,10 +36,10 @@ d('journey: "Unsafe activity or situation" is urgent, shares the urgent cap and 
   let s;
   beforeAll(async () => {
     const log = await runJourney(`
-      ${actorDeclares(['v_admin', 'v_a', 'v_b', 'v_c', 'v_o', 'v_x'])}
+      ${actorDeclares(['v_admin', 'v_a', 'v_b', 'v_c', 'v_o', 'v_x', 'v_q'])}
       v_p uuid := gen_random_uuid(); v_g uuid := gen_random_uuid(); v_cm uuid := gen_random_uuid(); v_msg uuid;
       v_out jsonb; v_hint text; v_reason text; v_push_before bigint;`, `
-  ${actorsSql({ people: ['v_admin', 'v_a', 'v_b', 'v_c', 'v_o', 'v_x'], business: { owner: 'v_o', partner: 'v_p' } })}
+  ${actorsSql({ people: ['v_admin', 'v_a', 'v_b', 'v_c', 'v_o', 'v_x', 'v_q'], business: { owner: 'v_o', partner: 'v_p' } })}
   update profiles set is_admin = true where id = v_admin;
   ${rec('installed', `(select pg_get_constraintdef(oid) like '%unsafe_situation%' from pg_constraint where conname = 'reports_reason_code_check')`)}
   delete from private.rate_limit_rules;
@@ -81,12 +81,14 @@ d('journey: "Unsafe activity or situation" is urgent, shares the urgent cap and 
   ${as('imp', 'v_c', `insert into reports (reporter_id, reported_id, reason, created_at) values (v_c, v_b, 'Impersonation', now() - interval '3 days')`)}
   ${as('spam_old', 'v_c', `insert into reports (reporter_id, reported_id, reason, created_at) values (v_c, v_b, 'Spam or scam', now() - interval '5 days')`)}
   ${rec('priorities', `(select jsonb_object_agg(reason, p) from (select reason, max(review_priority) p from reports where reporter_id in (v_a, v_c, v_x) group by reason) q)`)}
-  -- one transaction = one now(): give the queue rows their own times
-  update reports set created_at = now() - interval '2 days' where reporter_id = v_x and reason = 'harassment';
-  update reports set created_at = now() - interval '1 day' where reporter_id = v_x and reason = 'unsafe_situation';
-  update reports set created_at = now() - interval '12 hours' where reporter_id = v_x and reason = 'underage_user';
+  -- Queue rows with their own times, on INSERT: created_at is frozen on update (20270355), so setting it later is silently ignored and the
+  -- rows tie, which made this test depend on heap order. Inserted youngest first, so it passes only if the order really is by age.
+  ${as('q_underage', 'v_q', `insert into reports (reporter_id, reported_id, reason, created_at) values (v_q, v_b, 'Underage user', now() - interval '12 hours')`)}
+  ${as('q_unsafe', 'v_q', `insert into reports (reporter_id, reported_id, reason, created_at) values (v_q, v_b, 'Unsafe activity or situation', now() - interval '1 day')`)}
+  ${as('q_harassment', 'v_q', `insert into reports (reporter_id, reported_id, reason, created_at) values (v_q, v_b, 'Harassment or abuse', now() - interval '2 days')`)}
+  ${as('q_spam', 'v_q', `insert into reports (reporter_id, reported_id, reason) values (v_q, v_b, 'Spam or scam')`)}
   ${as('admin_queue', 'v_admin', `select jsonb_agg(reason order by rn) into v_out from (select reason, row_number() over (order by resolved, review_priority desc, created_at asc) rn
-        from reports where not resolved and (reporter_id = v_x or (reporter_id = v_c and reason in ('impersonation', 'spam_scam')))) q`, 'authenticated', 'v_out')}
+        from reports where not resolved and (reporter_id = v_q or (reporter_id = v_c and reason in ('impersonation', 'spam_scam')))) q`, 'authenticated', 'v_out')}
   ${as('admin_sets_priority', 'v_admin', `update reports set review_priority = 0 where reporter_id = v_a`)}
   ${as('reporter_changes_reason', 'v_a', `update reports set reason = 'other' where reporter_id = v_a`)}
   ${rec('still_unsafe', `(select bool_and(reason = 'unsafe_situation' and review_priority = 2) from reports where reporter_id = v_a)`)}

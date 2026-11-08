@@ -43,7 +43,7 @@ d('journey: people anti-scraping (20270382)', () => {
   beforeAll(async () => {
     const log = await runJourney(`
       ${actorDeclares(PEOPLE)}
-      v_out jsonb; v_hint text; v_g uuid; v_g2 uuid; v_n integer; v_ids uuid[]; v_phones text[];`, `
+      v_out jsonb; v_hint text; v_g uuid; v_g2 uuid; v_n integer; v_served uuid[]; v_ids uuid[]; v_phones text[];`, `
   ${actorsSql({ people: PEOPLE, friends: [['v_mia', 'v_friend']] })}
   update profiles set is_admin = true where id = v_admin;
   -- strangers: in Dating, in Mia's area, open to friend discovery
@@ -107,6 +107,14 @@ d('journey: people anti-scraping (20270382)', () => {
   ${as('fd_3', 'v_mia2', `select count(*) into v_n from get_friend_discovery_candidates(100000)`, 'v_n')}
   ${as('fd_4', 'v_mia2', `select count(*) into v_n from get_friend_discovery_candidates(100000)`, 'v_n')}
   ${rec('mia2_served', `(select count(*) from private.profile_served where viewer_id = v_mia2 and target_id = any(${strangersArr}))`)}
+  -- friend_discovery_rows breaks ties with random(), so the four pages above may repeat people and never go past the limit: the signal
+  -- below would then be missing by chance. One more call with every stranger counted today and no standing grant always goes past it.
+  v_served := array(select target_id from private.profile_served where viewer_id = v_mia2);
+  insert into private.profile_served (viewer_id, target_id, via) select v_mia2, x, 'friend_discovery' from unnest(${strangersArr}) x on conflict do nothing;
+  update private.profile_served set last_served_at = last_served_at - interval '10 years' where viewer_id = v_mia2;
+  ${as('fd_past_limit', 'v_mia2', `select count(*) into v_n from get_friend_discovery_candidates(100000)`, 'v_n')}
+  delete from private.profile_served where viewer_id = v_mia2 and not (target_id = any(v_served));
+  update private.profile_served set last_served_at = now() where viewer_id = v_mia2;
   ${rec('mia2_one_day_no_case', `(select count(*) from private.account_review_cases where subject_user = v_mia2)`)}
   insert into private.behavior_signals (user_id, kind) values (v_mia2, 'join_burst');
   perform private.behavior_evaluate_case(v_mia2);

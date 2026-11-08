@@ -63,6 +63,9 @@ grant all on auth.sessions to postgres, service_role;
 alter table storage.buckets add column if not exists public boolean default false;
 alter table storage.buckets add column if not exists file_size_limit bigint;
 alter table storage.buckets add column if not exists allowed_mime_types text[];
+-- production's storage.objects: owner_id, and no foreign key from owner to auth.users (checked read-only 2026-11-08)
+alter table storage.objects add column if not exists owner_id text;
+alter table storage.objects drop constraint if exists objects_owner_fkey;
 -- the hosted auth service's current helpers (this image's read only the legacy request.jwt.claim.* settings)
 create or replace function auth.uid() returns uuid language sql stable as $f$
   select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),
