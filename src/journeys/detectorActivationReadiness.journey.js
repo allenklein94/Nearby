@@ -26,7 +26,7 @@ d('journey: detector activation readiness', () => {
   beforeAll(async () => {
     const log = await runJourney(`
       ${actorDeclares(PEOPLE)}
-      v_n int; v_m int; v_j jsonb; v_ok boolean;`, `
+      v_n int; v_m int; v_j jsonb; v_ok boolean; v_t timestamptz;`, `
   ${actorsSql({ people: PEOPLE })}
   update profiles set is_admin = true where id = v_admin;
 
@@ -42,7 +42,7 @@ d('journey: detector activation readiness', () => {
 
   -- stored: a keyed hash + times only
   select jsonb_agg(attname || ':' || format_type(atttypid, null) order by attnum) into v_j from pg_attribute where attrelid = 'private.device_sightings'::regclass and attnum > 0 and not attisdropped;
-  ${rec('device_stores_only_key_and_times', `v_j = '["token_key:bytea","user_id:uuid","first_seen:timestamp with time zone","last_seen:timestamp with time zone"]'::jsonb and not exists (select 1 from private.device_sightings where convert_from(token_key, 'LATIN1') like '%journey-detector%')`, 'v_j')}
+  ${rec('device_stores_only_key_and_times', `v_j = '["token_key:bytea","user_id:uuid","first_seen:timestamp with time zone","last_seen:timestamp with time zone"]'::jsonb and not exists (select 1 from private.device_sightings where length(token_key) <> 32)`, 'v_j')}
   select jsonb_agg(attname || ':' || format_type(atttypid, null) order by attnum) into v_j from pg_attribute where attrelid = 'private.text_sightings'::regclass and attnum > 0 and not attisdropped;
   ${rec('text_stores_only_key_and_times', `v_j = '["text_key:bytea","user_id:uuid","source:text","gathering_id:uuid","first_seen:timestamp with time zone","last_seen:timestamp with time zone"]'::jsonb and not exists (select 1 from private.text_sightings x where x.source !~ '^(bio|gathering)' )`, 'v_j')}
 
@@ -89,8 +89,9 @@ d('journey: detector activation readiness', () => {
 
   -- off again: nothing new; the cases stay for an admin
   ${sw.offUpdate('all')};
+  select count(*), max(last_seen) into v_n, v_t from private.device_sightings;
   ${reg('v_u2', 'after-off')}
-  ${rec('off_again_nothing_new', `not exists (select 1 from private.device_sightings where token_key = decode(md5('x'), 'hex')) and not exists (select 1 from private.device_sightings where user_id = v_u2)`)}
+  ${rec('off_again_nothing_new', `(select count(*) from private.device_sightings) = v_n and (select max(last_seen) from private.device_sightings) is not distinct from v_t`)}
   ${rec('off_keeps_cases', `(select count(*) from private.account_review_cases where signal in ('shared_device', 'shared_text') and status = 'open') = 2`)}
 `);
     s = stepMap(log);
