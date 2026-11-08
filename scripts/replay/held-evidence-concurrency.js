@@ -127,8 +127,11 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
       const u = await person();
       const c = await newCase(u);
       await run({ sub: admin, sql: placeSql('review_case', c) });
-      const [a, b] = orders(i, { sub: admin, sql: `select public.admin_restrict_account('${u}', array['messages'], 7, 'Paused during the review', null, null) as r` }, { sql: delAccount(u) });
-      const res = await Promise.all([run(a), run(b)]);
+      // the pause either comes first, or well after the deletion's second step has the account locked
+      const res = await Promise.all([
+        run({ sub: admin, sql: `select public.admin_restrict_account('${u}', array['messages'], 7, 'Paused during the review', null, null) as r`, wait: i % 2 === 0 ? 0 : 200 }),
+        run({ sql: delAccount(u), wait: i % 2 === 0 ? 30 : 0 }),
+      ]);
       if (deadlock(res)) dl += 1;
       const pauses = await count(u, 'pause');
       if (res[0].ok && pauses !== 1) bad += 1;
@@ -136,6 +139,7 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
       if (res[0].ok) kept += 1; else refused += 1;
     }
     check(bad === 0, `every pause that committed is in the copy (kept ${kept}, refused ${refused})`);
+    check(kept > 0 && refused > 0, 'both orders really happened');
     check(dl === 0, 'no deadlock');
 
     console.log('4. two accounts under one hold, deleted at once');

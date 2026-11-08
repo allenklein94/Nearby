@@ -42,7 +42,7 @@ async function main() {
   };
   const claims = `set_config('request.jwt.claims', '${JSON.stringify({ sub: adminId, role: 'authenticated' })}', false)`;
   const moderated = (u) => {
-    const c = one(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${u}') returning id;`);
+    const c = psql(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${u}') returning id;`).split('\n')[0];
     cases.push(c);
     psql(`insert into private.account_review_case_members (case_id, user_id) values ('${c}', '${u}');
           select ${claims}; select admin_suspend_user('${u}', 'Local test: harassment');

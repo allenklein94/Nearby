@@ -48,6 +48,20 @@ describe('recovered functions keep their behaviour', () => {
     expect(s).toMatch(/Deploy this version only AFTER 20270400 is live/);
   });
 
+  // 20270402: held moderation evidence is copied before anything is removed, and a failure stops the deletion.
+  test('delete-account: preserves held evidence first and stops if that fails', () => {
+    const s = src('delete-account');
+    const preserve = s.indexOf("rpc('account_deletion_preserve_held_evidence'");
+    expect(preserve).toBeGreaterThan(-1);
+    expect(preserve).toBeLessThan(s.indexOf(".remove(storagePaths)"));
+    expect(preserve).toBeLessThan(s.indexOf("from('profiles').delete()"));
+    expect(s.slice(preserve, s.indexOf(".remove(storagePaths)"))).toMatch(/preserveError\.code !== 'PGRST202'[\s\S]*throw new Error/);
+  });
+
+  test('delete-account: every name in its return is declared (0400 left a removed variable there)', () => {
+    expect(src('delete-account')).not.toMatch(/verificationPaths/);
+  });
+
   test('moderate-photo: verifies the caller, only their own photo, and fails closed when the age check fails', () => {
     const s = src('moderate-photo');
     expect(s).toMatch(/auth\.getUser\(token\)/);

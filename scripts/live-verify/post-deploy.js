@@ -295,6 +295,13 @@ const STEPS = {
       'website re-export + browser check (Admin Review case) + a later build for Admin Reports (phone): the Account facts block shows, the case actions below it are unchanged; with the function missing (older database) the block is simply absent',
       'rollback = scripts/rollback/20270401_admin_account_facts.rollback.sql (no data involved)',
       'STOP + report: anything written by the read, an account outside the case returned, a non-admin served, or a score / verdict appearing anywhere'] },
+  20270402: { journeys: ['heldAccountEvidence', 'legalHolds', 'suspendedNumberRetention'],
+    edge: ['delete-account (right AFTER 20270402; before it the function has no preserve call to make and carries on)'],
+    manual: ['before deploy: prod journeys with the 0348-0402 prelude, prod aborted rollback, grants vs prod; Auth role can run the auth.users trigger (as 20270374)',
+      'read-only right after: both a_preserve_held_evidence triggers exist; private.held_account_evidence has no client grant; cron purge-held-account-evidence scheduled; EXECUTE on account_deletion_preserve_held_evidence = service_role only',
+      'controlled test with dedicated test accounts, through the real delete-account function: a held account deletes and its evidence is stored; an unheld account deletes and nothing is stored; the app says the same in both cases',
+      'rollback = scripts/rollback/20270402_held_account_evidence.rollback.sql, which DESTROYS preserved evidence: export it first and get the owner + counsel decision if the table has rows',
+      'STOP + report: a held account deleted with no copy, an unheld account refused or copied, or anything revealing a hold to the person'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
