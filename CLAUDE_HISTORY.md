@@ -1,3 +1,54 @@
+# 2026-11-08: 0400 ID-document retention + deletion (staged, locally verified)
+
+Owner (2026-11-07): build the approved ID-document lifecycle now, staged, so optional ID uploads can reach production users
+only once retention + deletion exist and are verified (the ID-upload gate). Migration 20270400 on
+`post-tier1/id-document-retention` (stacked on `post-tier1/admin-restrictions`), NOT merged, NOT deployed, not in build 87;
+own deploy approval after 0399; sha256 281a5ab79e4f54b1be8ca9f9740c9a6e50d5c3af97d235648e7f47654e54d3fd (commit cda7af6f;
+any later change to the file voids it).
+- Retention = the approved target (owner decision 2, 2026-10-27), unchanged: approved -> images deleted 7 days after the decision,
+  rejected -> 30 days, never reviewed -> auto-rejected (no reviewer) at 60 days and images due at once, uploads no submission names
+  -> 24 hours, account deletion -> the whole folder on the next hourly run. The submission row stays as the record; id_verified is
+  unaffected. ONE trigger rule `private.id_submission_retention` (clients can't set or move the dates).
+- Uploads CLOSED until a separate admin migration opens them (`private.id_document_settings.uploads_enabled` false, no client
+  access): the bucket insert policy and the submission insert both refuse (hint `id_verification_paused`). App (this branch, not
+  build 87): IdVerificationScreen asks `id_verification_open()` before any photo and says "ID verification isn't available right
+  now. Nothing was uploaded." (`ui.shared.errors.idVerificationPaused`, 11 languages, 10 machine-authored, need native review);
+  build 87 against a deployed 0400 gets the server refusal shown as a generic error. Admin review links 15 min (were 60).
+- Deletion confirmed, never assumed (0391's rule): a file leaves `private.id_document_cleanup` only when Storage answers 2xx/404
+  AND no storage.objects row is left; bounded retries (10, then an admin re-arms), a failure log, one private admin push a day
+  (counts only), URL-safe paths only. Never touched: a pending submission's files, files inside their period, a submission under
+  an admin legal hold (target `id_submission` added to 0395's holds; a hold outlives the account's deletion). Audit
+  `private.id_document_deletion_log`: submission id, image, reason, times; never a path, user id or image; NO purge (no period
+  approved: owner decides). Admins read a file only while its submission is pending or held; the owner reads their own folder.
+- `delete-account` no longer removes ID files itself (the database queues them on profile delete); deploy it ONLY AFTER 0400 is
+  live, and on rollback redeploy the previous version first. Guard `edgeFunctionSourcesGuard.test.js` updated.
+- Two defects found and fixed this session (both in 0400 in place):
+  (1) a hold placed after the job SENT a DELETE (pg_net runs it after the job commits; it can't be recalled) answered "held". Now
+  "deleting" (Admin Reports note: "Its deletion from Storage was already under way and can't be stopped, so the file may not be
+  kept."). Fixed for 0395's reported-Story-photo branch too, since 0400 redefines `admin_place_legal_hold`. Journey checks both
+  (fails on the earlier 0400: received "held").
+  (2) RACE, reproduced 8/8 in both orders by the new `scripts/replay/id-document-concurrency.js`: the queue has no link to the
+  submission row, so while a hold was still committing the job queued + sent both DELETEs and the hold answered "held". Fixed: the
+  send step share-locks the submission row first (`for share skip locked`: a hold mid-commit = skipped this run, no wait, no
+  deadlock; a send first = the hold waits and then sees "deleting"). After the fix 24/24 rounds pass (incl. two jobs at once: each
+  file sent once).
+- Residual (reported, not changed: 0391/0395 are accepted as staged): the Story-photo job has a narrower version of race (2) only
+  when a Story is deleted in the same moment as the hold and the job run (its queue rows normally exist already and the hold locks
+  them).
+- `legalHolds` journey counted every hold in the table (holds are append-only, so committed test holds from the Storage API
+  script broke it); it now counts only holds made in its own run.
+- Verified locally 2026-11-07/08: fresh replay 524/524 (real Auth first); journey `idDocumentRetention` 12/12; journeys 1201/1201
+  before and after the scripts; 24 existing concurrency scripts + `id-document-concurrency.js` pass; real Storage API
+  `scripts/replay/id-document-storage-api.js` 16/16 (real pg_net -> real Storage 1.11.13: refused key, refused connection, really
+  deleted, pending kept, held kept then deleted on release, account folder incl. a stray upload); rollback
+  (`scripts/rollback/20270400_id_document_retention.rollback.sql`) = a fresh 523-migration replay's schema except one intended line
+  (the hold-type list keeps `id_submission` while released ID-submission hold records exist; the rollback refuses while one is
+  active), storage policies + buckets identical; re-apply identical (67,389 lines); Jest 551/551 (7433 + 11 todo); iOS export clean.
+- Not run (deploy gates, `post-deploy.js` 20270400): prod prelude journeys 0348-0400, prod aborted rollback, grants vs prod, real
+  API (closed upload refused + the app message), real Storage deletion on prod (same gate as 0391: the job's key accepted by prod
+  Storage), native review, phone. Opening uploads = its own migration + approval, after those pass and the legal review of
+  retention.
+
 # 2026-11-07: 0399 review fixes (owner review: business reply path, paused-action wording, legal holds)
 
 Owner (2026-11-07, after the fixes): ACCEPTED AS STAGED + LOCALLY VERIFIED; not merged, not deployed; no further reporting
