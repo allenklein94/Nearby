@@ -296,7 +296,7 @@ const STEPS = {
       'rollback = scripts/rollback/20270401_admin_account_facts.rollback.sql (no data involved)',
       'STOP + report: anything written by the read, an account outside the case returned, a non-admin served, or a score / verdict appearing anywhere'] },
   20270402: { journeys: ['heldAccountEvidence', 'legalHolds', 'suspendedNumberRetention'],
-    edge: ['delete-account (right AFTER 20270402; before it the function has no preserve call to make and carries on)'],
+    edge: ['delete-account (right AFTER 20270402; before it the function has no preserve call to make and carries on). ALSO the version to use for 20270400: the copy on the 0400 branch throws after the account is deleted (verificationPaths)'],
     manual: ['before deploy: prod journeys with the 0348-0402 prelude, prod aborted rollback, grants vs prod; Auth role can run the auth.users trigger (as 20270374)',
       'read-only right after: both a_preserve_held_evidence triggers exist; private.held_account_evidence has no client grant; cron purge-held-account-evidence scheduled; EXECUTE on account_deletion_preserve_held_evidence = service_role only',
       'read-only right after: report_on_legal_hold + purge_suspended_account_records are the 20270402 versions, and purge-suspended-account-records still runs',

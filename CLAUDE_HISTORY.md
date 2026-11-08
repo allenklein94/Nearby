@@ -1,3 +1,15 @@
+# 2026-11-08: 20270402 held account evidence staged + locally verified (mandatory pre-launch fix)
+
+Owner: design + stage the smallest correction; preservation succeeds before deletion; normal deletion unchanged; only necessary evidence; test
+deletion, release, rollback, races; no merge, deploy, screen or unrelated feature. Migration sha256 9fc3a35273dbe6a80ea942d5844d6adf6734bf9e7bcc504247a6f0c7a7dbdbf9, branch
+`post-tier1/held-deletion-evidence`, stacked on `post-tier1/admin-case-evidence`; own deploy approval after 0401. A codespace restart interrupted the
+first attempt; the WIP was reviewed against the FK graph (every cascade / SET NULL into moderation tables on a replay) before continuing, which added:
+photo hashes + security events to the copy, a case hold keeping linked reports, the suspended-account purge respecting holds. A slip caught in review:
+the first rewrite of that purge dropped 0374's queue + failures retention. Test-only problems found by running the suite afterwards: two scripts' leftovers
+broke `suspendedNumberRetention`; one psql -c put suspend + reinstate in one transaction (same now(), 0374's tie-break is random between them; real
+admin calls are separate transactions, so not a production path). `delete-account`'s stray `verificationPaths` from the 0400 branch fixed (deploy gate).
+Results, limits, decisions for counsel: `PRODUCT_AUDIT/ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`. EAS same day: newest iOS build 86, build 87 not started.
+
 # 2026-11-08: moderation records vs account deletion, verified + recorded as pre-launch (nothing built)
 
 Owner accepted the audit-logging assessment and asked for the deletion behaviour to be verified and documented, with nothing implemented.

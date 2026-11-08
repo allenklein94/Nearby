@@ -44,10 +44,11 @@ async function main() {
   const moderated = (u) => {
     const c = psql(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${u}') returning id;`).split('\n')[0];
     cases.push(c);
-    psql(`insert into private.account_review_case_members (case_id, user_id) values ('${c}', '${u}');
-          select ${claims}; select admin_suspend_user('${u}', 'Local test: harassment');
-          select ${claims}; select admin_reinstate_user('${u}', 'Local test: lifted');
-          select ${claims}; select admin_restrict_account('${u}', array['messages'], 7, 'Local test pause reason', null, '${c}');`);
+    psql(`insert into private.account_review_case_members (case_id, user_id) values ('${c}', '${u}');`);
+    // separate transactions, as the admin screens make them: one psql -c is one transaction, one now()
+    psql(`select ${claims}; select admin_suspend_user('${u}', 'Local test: harassment');`);
+    psql(`select ${claims}; select admin_reinstate_user('${u}', 'Local test: lifted');`);
+    psql(`select ${claims}; select admin_restrict_account('${u}', array['messages'], 7, 'Local test pause reason', null, '${c}');`);
     return c;
   };
   const stored = (u) => one(`select coalesce(string_agg(record_type || '=' || n, ',' order by record_type), '') from (select record_type, count(*) n from private.held_account_evidence where account_id = '${u}' group by 1) t`);
@@ -101,7 +102,10 @@ async function main() {
           delete from private.legal_holds where target_id = any(array[${cases.map((m) => `'${m}'`).join(',') || `'00000000-0000-0000-0000-000000000000'`}]::uuid[]);
           alter table private.legal_holds enable trigger legal_hold_immutable;
           delete from profiles where id = any(array[${made.map((m) => `'${m}'`).join(',')}]::uuid[]);
-          delete from auth.users where id = any(array[${made.map((m) => `'${m}'`).join(',')}]::uuid[]);`);
+          delete from auth.users where id = any(array[${made.map((m) => `'${m}'`).join(',')}]::uuid[]);
+          alter table private.suspended_account_records disable trigger suspended_record_guard;
+          delete from private.suspended_account_records where former_account_id = any(array[${made.map((m) => `'${m}'`).join(',')}]::uuid[]);
+          alter table private.suspended_account_records enable trigger suspended_record_guard;`);
   }
   const failed = results.filter((r) => !r.pass).length;
   console.log(failed ? `FAILED: ${failed}` : `ALL PASS ${results.length}/${results.length}`);
