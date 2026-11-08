@@ -32,8 +32,8 @@ function as(step, sub, stmt, value = `'ok'::text`, role = 'authenticated') {
 }
 const rec = (step, value) => `log := log || jsonb_build_array(jsonb_build_object('step', '${step}', 'ok', true, 'data', to_jsonb(${value})));`;
 const WHY = `'Preservation request from counsel'`;
-const hold = (step, type, id, into) => as(step, 'v_admin',
-  `v_out := public.admin_place_legal_hold('${type}', ${id}, ${WHY}, null); ${into} := (select h.id from private.legal_holds h where h.target_id = ${id} and h.released_at is null)`, 'v_out');
+const hold = (step, type, id, into) => `${as(step, 'v_admin', `v_out := public.admin_place_legal_hold('${type}', ${id}, ${WHY}, null)`, 'v_out')}
+  select h.id into ${into} from private.legal_holds h where h.target_id = ${id} and h.released_at is null;`;
 const del = (v) => `delete from profiles where id = ${v}; delete from auth.users where id = ${v};`;
 const types = (v) => `(select coalesce(jsonb_object_agg(t.record_type, t.n), '{}'::jsonb) from (select record_type, count(*) n from private.held_account_evidence where account_id = ${v} group by 1) t)`;
 
@@ -65,18 +65,18 @@ d('journey: account deletion under a legal hold (20270402)', () => {
   insert into private.account_review_cases (signal, reason, subject_user) values ('behavior', 'behavior_pattern', v_a) returning id into v_cu;
   ${hold('hold_case', 'review_case', 'v_ca', 'v_h1')}
   select to_jsonb(c) into v_case from private.account_review_cases c where c.id = v_ca;
-  select jsonb_agg(to_jsonb(e) order by e.id) into v_events from private.account_review_case_events e where e.case_id = v_ca;
-  select jsonb_agg(to_jsonb(x) order by x.id) into v_decisions from account_moderation_actions x where x.user_id = v_a;
-  select jsonb_agg(to_jsonb(x) order by x.id) into v_pauses from private.account_restrictions x where x.user_id = v_a;
-  select jsonb_agg(to_jsonb(x) order by x.id) into v_pause_events from private.account_restriction_events x where x.user_id = v_a;
+  select jsonb_agg(to_jsonb(e) order by e.id::text) into v_events from private.account_review_case_events e where e.case_id = v_ca;
+  select jsonb_agg(to_jsonb(x) order by x.id::text) into v_decisions from account_moderation_actions x where x.user_id = v_a;
+  select jsonb_agg(to_jsonb(x) order by x.id::text) into v_pauses from private.account_restrictions x where x.user_id = v_a;
+  select jsonb_agg(to_jsonb(x) order by x.id::text) into v_pause_events from private.account_restriction_events x where x.user_id = v_a;
   ${del('v_a')}
   ${rec('a_types', types('v_a'))}
   ${rec('a_same', `jsonb_build_object(
     'case', (select payload from private.held_account_evidence where hold_id = v_h1 and record_type = 'review_case') = v_case,
-    'events', (select jsonb_agg(payload order by (payload->>'id')::uuid) from private.held_account_evidence where hold_id = v_h1 and record_type = 'case_event') = v_events,
-    'decisions', (select jsonb_agg(payload order by (payload->>'id')::uuid) from private.held_account_evidence where hold_id = v_h1 and record_type = 'suspension_decision') = v_decisions,
-    'pauses', (select jsonb_agg(payload order by (payload->>'id')::uuid) from private.held_account_evidence where hold_id = v_h1 and record_type = 'pause') = v_pauses,
-    'pause_events', (select jsonb_agg(payload order by (payload->>'id')::uuid) from private.held_account_evidence where hold_id = v_h1 and record_type = 'pause_event') = v_pause_events)`)}
+    'events', (select jsonb_agg(payload order by payload->>'id') from private.held_account_evidence where hold_id = v_h1 and record_type = 'case_event') = v_events,
+    'decisions', (select jsonb_agg(payload order by payload->>'id') from private.held_account_evidence where hold_id = v_h1 and record_type = 'suspension_decision') = v_decisions,
+    'pauses', (select jsonb_agg(payload order by payload->>'id') from private.held_account_evidence where hold_id = v_h1 and record_type = 'pause') = v_pauses,
+    'pause_events', (select jsonb_agg(payload order by payload->>'id') from private.held_account_evidence where hold_id = v_h1 and record_type = 'pause_event') = v_pause_events)`)}
   ${rec('a_live_gone', `jsonb_build_object(
     'case', (select count(*) from private.account_review_cases where id = v_ca),
     'decisions', (select count(*) from account_moderation_actions where user_id = v_a),
@@ -106,6 +106,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
   ${rec('c_case_live', `(select count(*) from private.account_review_cases where id = v_cp)`)}
 
   -- ===== 4. a held ID submission + a held removal record =====
+  update private.id_document_settings set uploads_enabled = true where id;
   insert into id_verification_submissions (user_id, selfie_path, id_photo_path) values (v_d, v_d || '/s.jpg', v_d || '/i.jpg') returning id into v_sub;
   ${hold('hold_id', 'id_submission', 'v_sub', 'v_h4')}
   ${del('v_d')}
@@ -186,7 +187,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
     expect(data('b_report_kept')).toBe(1);
   });
   test('3. a held case with other members: only this account, and the case stays live', () => {
-    expect(data('c_types')).toEqual({ coverage: 1, case_member: 1, case_photo: 1 });
+    expect(data('c_types')).toEqual({ coverage: 1, case_member: 1, case_photo: 1, case_event: 1 }); // the event about this account
     expect(data('c_other_out')).toBe(true);
     expect(data('c_case_live')).toBe(1);
   });
