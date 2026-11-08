@@ -196,7 +196,8 @@ begin
     if v_sub.id is null then
       raise exception 'That ID submission doesn''t exist' using errcode = 'P0002', hint = 'legal_hold_not_found';
     end if;
-    -- a DELETE already on its way finishes first (the row lock), so the answer below is true
+    -- the job's transaction (which only QUEUES a DELETE) finishes first (the row lock); a DELETE it handed to pg_net can't be
+    -- recalled, so the answer below says 'deleting' for it, never 'held'
     perform 1 from private.id_document_cleanup q where q.object_path in (v_sub.selfie_path, v_sub.id_photo_path) for update of q;
   else
     perform 1 from private.account_review_cases c where c.id = target_id_param for update;
@@ -221,13 +222,17 @@ begin
     if v_path is not null then
       perform 1 from private.story_file_cleanup q where q.media_path = v_path for update of q;
       update private.report_media_evidence set released_at = null where report_id = v_report;
-      v_media := case when exists (select 1 from storage.objects o where o.bucket_id = 'stories' and o.name = v_path)
-                      then 'held' else 'already_deleted' end;
+      -- a DELETE already sent by the job (pg_net runs it after the job commits) can't be recalled: 'deleting', never 'held'
+      v_media := case when not exists (select 1 from storage.objects o where o.bucket_id = 'stories' and o.name = v_path) then 'already_deleted'
+                      when exists (select 1 from private.story_file_cleanup q where q.media_path = v_path and q.request_id is not null) then 'deleting'
+                      else 'held' end;
     end if;
   elsif target_type_param = 'id_submission' then
-    v_media := case when exists (select 1 from storage.objects o where o.bucket_id = 'id-verification'
-                                   and o.name in (v_sub.selfie_path, v_sub.id_photo_path))
-                    then 'held' else 'already_deleted' end;
+    v_media := case when not exists (select 1 from storage.objects o where o.bucket_id = 'id-verification'
+                                       and o.name in (v_sub.selfie_path, v_sub.id_photo_path)) then 'already_deleted'
+                    when exists (select 1 from private.id_document_cleanup q
+                                  where q.object_path in (v_sub.selfie_path, v_sub.id_photo_path) and q.request_id is not null) then 'deleting'
+                    else 'held' end;
   end if;
 
   return jsonb_build_object('hold_id', v_id, 'already', false, 'photo', v_media);

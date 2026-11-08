@@ -44,5 +44,7 @@ export function legalHoldStatusLine(hold) {
 // What the place call said about a held photo, in words (null = nothing to add).
 export function legalHoldPhotoNote(result) {
   if (result?.photo === 'already_deleted') return "The reported photo was already deleted from Storage and can't be kept.";
+  // 20270400: the deletion job had already sent the DELETE (it can't be recalled), so the file is probably gone soon
+  if (result?.photo === 'deleting') return "Its deletion from Storage was already under way and can't be stopped, so the file may not be kept.";
   return null;
 }

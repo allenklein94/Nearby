@@ -39,7 +39,7 @@ d('journey: ID documents are deleted on the approved schedule, and only then (20
   beforeAll(async () => {
     const people = ['v_admin', 'v_a', 'v_r', 'v_u', 'v_h', 'v_d', 'v_dh', 'v_o', 'v_f'];
     const log = await runJourney(`${actorDeclares(people)}
-      v_tmp uuid; v_sa uuid; v_sr uuid; v_su uuid; v_sh uuid; v_sd uuid; v_sdh uuid; v_sf uuid; v_hold jsonb; v_out jsonb; v_hint text; v_val jsonb; v_n bigint;`, `
+      v_tmp uuid; v_sa uuid; v_sr uuid; v_su uuid; v_sh uuid; v_sd uuid; v_sdh uuid; v_sf uuid; v_hold jsonb; v_hold2 jsonb; v_rep uuid; v_out jsonb; v_hint text; v_val jsonb; v_n bigint;`, `
   ${actorsSql({ people })}
   update profiles set is_admin = true where id = v_admin;
   delete from private.id_document_cleanup; delete from private.id_document_cleanup_log; delete from private.id_document_deletion_log;
@@ -119,6 +119,20 @@ d('journey: ID documents are deleted on the approved schedule, and only then (20
   ${as('v_admin')} perform admin_release_legal_hold((v_hold->>'hold_id')::uuid, 'Request closed by the authority'); ${off}
   ${job}
   ${rec('released_goes', `jsonb_build_object('q', ${queued('v_h')}, 'sent', ${sent('v_h')})`)}
+  -- a hold placed after the job SENT the DELETE (pg_net runs it after the job commits; it can't be recalled): never "held"
+  ${as('v_admin')} v_hold2 := admin_place_legal_hold('id_submission', v_sh, 'Second request from the authority'); ${off}
+  ${rec('hold_in_flight', `v_hold2->>'photo'`)}
+  -- the same for a reported Story photo (20270395's branch, redefined here): released, queued, DELETE sent, then held
+  ${age(`insert into storage.objects (bucket_id, name) values ('stories', v_a || '/s.jpg');
+         insert into reports (reporter_id, reported_id, reason, content_type, content_id) values (v_r, v_a, 'inappropriate_photo', 'story', gen_random_uuid()) returning id into v_rep;
+         insert into private.report_media_evidence (report_id, story_id, media_path, media_type, released_at) values (v_rep, gen_random_uuid(), v_a || '/s.jpg', 'image', now());
+         insert into private.story_file_cleanup (media_path, request_id, sent_at) values (v_a || '/s.jpg', 1, now())`)}
+  ${as('v_admin')} v_hold2 := admin_place_legal_hold('report', v_rep, 'Preserve the reported photo'); ${off}
+  ${rec('story_hold_in_flight', `v_hold2->>'photo'`)}
+  ${as('v_admin')} perform admin_release_legal_hold((v_hold2->>'hold_id')::uuid, 'Released for the next check'); ${off}
+  delete from private.story_file_cleanup where media_path = v_a || '/s.jpg';  -- nothing on its way: a new hold keeps it
+  ${as('v_admin')} v_hold2 := admin_place_legal_hold('report', v_rep, 'Preserve the reported photo'); ${off}
+  ${rec('story_hold_unsent', `jsonb_build_object('photo', v_hold2->>'photo', 'already', v_hold2->'already')`)}
 
   -- ===== account deletion: whole folder; a held submission's files outlive the account =====
   ${as('v_d')} ${submit('v_d')}; ${off} v_sd := v_tmp;
@@ -222,6 +236,10 @@ d('journey: ID documents are deleted on the approved schedule, and only then (20
     expect(v('hold_placed')).toEqual({ photo: 'held', already: false });
     expect(v('held_kept')).toEqual({ q: [{ file: 'id.jpg', reason: 'approved_7d' }], sent: 0 });
     expect(v('released_goes').sent).toBe(2);
+    // a DELETE already handed to pg_net can't be recalled, so the hold says so instead of "held" (ID files + a reported Story photo)
+    expect(v('hold_in_flight')).toBe('deleting');
+    expect(v('story_hold_in_flight')).toBe('deleting');
+    expect(v('story_hold_unsent')).toEqual({ photo: 'held', already: false });
   });
   test('account deletion queues the whole folder (incl. a stray upload); a held submission\'s files outlive the account', () => {
     expect(v('deleted_queued').map((x) => x.file)).toEqual(['id.jpg', 'selfie.jpg', 'stray.jpg']);

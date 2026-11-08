@@ -45,6 +45,7 @@ describe('legal-hold control in Admin Reports (20270395)', () => {
 
   test('a photo already gone is said, never claimed held', () => {
     expect(legalHoldPhotoNote({ photo: 'already_deleted' })).toMatch(/already deleted/);
+    expect(legalHoldPhotoNote({ photo: 'deleting' })).toMatch(/already under way/);
     expect(legalHoldPhotoNote({ photo: 'held' })).toBeNull();
     expect(legalHoldPhotoNote({ photo: 'none' })).toBeNull();
   });
