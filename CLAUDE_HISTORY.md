@@ -1,3 +1,12 @@
+# 2026-11-08: moderation records vs account deletion, verified + recorded as pre-launch (nothing built)
+
+Owner accepted the audit-logging assessment and asked for the deletion behaviour to be verified and documented, with nothing implemented.
+Local replay of all 525 staged migrations + a rolled-back deletion of a held account: reports and report_actions survive; held cases with
+`subject_user` (behaviour, report, prior suspension, account recovery) vanish with their history, leaving a dangling hold; pauses and
+account_moderation_actions cascade; 0374's copy ignores holds and skips reinstated accounts. This corrects the earlier same-day statement,
+which named only suspension and pause records. EAS at the same time: newest iOS build still 86, nothing queued. Findings, proposed
+correction, questions for legal: `PRODUCT_AUDIT/ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`.
+
 # 2026-11-08: whole case in Admin Review; 0401 accepted as staged
 
 Owner accepted 0401 as staged and approved consolidating the evidence into Admin Review, then stopping feature work. Client only on
