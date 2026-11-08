@@ -456,7 +456,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
     expect(data('listed_scope')).toBe('account_history');
     expect(data('history_types')).toEqual(expect.objectContaining({ review_case: 1, suspension_decision: 1, behavior_signal: 1, security_event: 1 }));
     expect(data('member_types')).toEqual({ coverage: 1, case_member: 1, case_event: 1 }); // the event about joining the case
-    expect(data('behavior_types')).toEqual({ coverage: 1, review_case: 1, behavior_signal: 1 });
+    expect(data('behavior_types')).toEqual({ coverage: 1, review_case: 1, case_event: 1, behavior_signal: 1 }); // the case's own "opened" event; no security_event
     expect(data('d_types')).toEqual({ coverage: 1, id_submission: 1 });
   });
   test('13. original files: listed with their identity, can\'t be changed, survive the deletion; the rest go only after the account', () => {

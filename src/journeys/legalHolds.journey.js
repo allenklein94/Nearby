@@ -102,7 +102,7 @@ d('journey: evidence on legal hold survives removal, outcomes and every retentio
            (v_case3, 'identical_photo', 'hold-c', 'many_accounts', 'closed', now(), 'no_action');
   insert into private.account_review_case_members (case_id, user_id) values (v_case, v_x), (v_case2, v_m), (v_case3, v_x);
   update private.account_review_cases set opened_at = now() - interval '2 hours' where id = v_case2;
-  ${rec('installed', `to_regprocedure('public.admin_place_legal_hold(text,uuid,text,text)') is not null`)}
+  ${rec('installed', `to_regproc('public.admin_place_legal_hold') is not null`)}
 
   -- ===== 1 + 2. who may, and what =====
   ${place('not_admin', 'v_a', 'report', 'v_rg')}
@@ -236,7 +236,7 @@ d('journey: evidence on legal hold survives removal, outcomes and every retentio
 
   test('release: a written reason, once, recorded; afterwards the ordinary rules purge it; a still-held report stays', () => {
     refused('release_short', 'legal_hold_reason_required');
-    expect(data('release_removal')).toEqual({ released: true, already: false });
+    expect(data('release_removal')).toMatchObject({ released: true, already: false }); // 20270402 adds retention_set
     expect(data('release_twice')).toEqual({ released: false, already: true });
     expect(data('released_record')).toEqual({ by: true, why: 'Matter closed by counsel on review', placed_by: true });
     expect(data('photo_released_after_hold')).toBe(true);
