@@ -318,6 +318,26 @@ const STEPS = {
       'website re-export + browser check (Admin Review case): the line + note show above Linked reports; a case with no reported text shows no line',
       'rollback = scripts/rollback/20270404_admin_case_link_count.rollback.sql (no data involved)',
       'STOP + report: anything written by the read, a link or text returned by the function, a non-admin served, or a score / label appearing anywhere'] },
+  // Account deletion never refused, never takes other people's plans or the money records with it (owner, 2026-11-08)
+  20270405: { journeys: ['accountDeletionBlockers', 'groupBookingLifecycle', 'offer', 'adminAccountRestrictions', 'heldAccountEvidence', 'deletionHardening'],
+    node: ['scripts/replay/account-deletion-sweep.js + account-deletion-concurrency.js + held-evidence-function-local.js section F (replay only, before the deploy)'],
+    edge: [],
+    manual: ['before deploy: prod journeys with the 0348-0404 prelude, prod aborted rollback, grants vs prod; counsel has answered the retention questions in PRODUCT_AUDIT/ACCOUNT_DELETION_BLOCKERS_2026-11-08.md (kept payments are kept with no end date until then)',
+      'read-only right after: no no-action or restrict foreign key from any table a deleted account cascades to (query in journey step no_refusing_keys_left); b_account_deletion_release_plans on profiles; a_business_payment_partner + z_business_payment_detached on business_payments; every payment row has partner_id',
+      'controlled test with dedicated test accounts, through the real delete-account function + real Stripe test mode: a customer with a real captured test payment deletes; the payment row stays, no person on it; a refund in Stripe test mode still lands on it. An organizer of a booked group plan deletes on a phone: the next person gets the push, opens the plan, the booking is there',
+      'rollback = scripts/rollback/20270405_account_deletion_blockers.rollback.sql (refuses while kept payments or cleared rows exist: they record real deletions; export + a decision first)',
+      'STOP + report: an account deletion refused for any reason but a recorded hold-copy failure, a captured payment gone, a person\'s id, location or dietary need left on anything kept, or a plan with nobody organizing it'] },
+  // An account deleted with an unresolved report, open case or active pause keeps one limited record; the number or device coming back opens a private case (owner, 2026-11-08)
+  20270406: { journeys: ['deletedAccountUnresolved', 'suspendedNumberRetention', 'reviewCaseHistory', 'heldAccountEvidence', 'deletionHardening', 'sharedDeviceSignal'],
+    node: ['scripts/replay/deleted-account-concurrency.js + held-evidence-function-local.js section G (replay only, before the deploy)'],
+    edge: [],
+    manual: ['BEFORE final deploy approval: counsel has approved the 90-day period and the Privacy Policy wording (PRODUCT_AUDIT/DELETED_ACCOUNT_RETENTION_2026-11-08.md); a different period = private.set_unresolved_account_retention with the decision\'s reference, right after the deploy and before any deletion',
+      'BEFORE final deploy approval: private.phone_match_secret in the same secret review as 20270374 (this keeps number keys for more accounts)',
+      'website re-export + browser check (Admin Review): a test case about a deleted account shows Deleted account + what was kept; a returned-account case shows the note; an open report about a deleted account offers What was kept',
+      'read-only right after: 0 unresolved_account_records; cron job purge-unresolved-account-records active; no client grant on the 4 private tables; admin_get_deleted_account_record EXECUTE = authenticated (+ service_role per defaults), never anon',
+      'controlled test with dedicated test accounts + a real phone number: an account with an open report deletes through the real function; the deletion looks the same; the number signs up again through real SMS; within 10 minutes one private case; the person sees nothing',
+      'rollback = scripts/rollback/20270406_deleted_account_unresolved_records.rollback.sql (refuses while records or kept cases exist: they record real deletions; export + a decision first)',
+      'STOP + report: a deletion that fails or looks different because of a record; a number, email, name, attendee or message in a record; a returning person restricted, refused or told; a record or key past its date without a hold'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
