@@ -66,7 +66,7 @@ must succeed before anything is destroyed; a release starts a retention schedule
 
 Fresh replay with real Auth v2.197.0 first (525 + 0402 applied last as its own transaction); PG 15, production is 17.6.
 - Journey `heldAccountEvidence` 11/11; fails 11/11 after rollback. Journeys 1219/1219 before the concurrency scripts and on the final run after them.
-- 27 concurrency scripts pass, incl. `held-evidence-concurrency.js` (7 races, both orders where order matters): hold vs deletion, pause vs
+- 26 concurrency scripts pass, incl. `held-evidence-concurrency.js` (7 races, both orders where order matters): hold vs deletion, pause vs
   deletion, two deletions side by side, double preservation, purge vs deletion, hold vs record purge.
 - Real Auth `held-evidence-auth-local.js` 8/8, three runs: held / unheld / copy failing makes Auth's deleteUser return an error with the account
   intact, retry succeeds. The delete-account ORDER is reproduced by the script; the edge function itself did not run.
