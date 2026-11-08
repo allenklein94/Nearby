@@ -3,7 +3,7 @@
 Owner (2026-11-07): build the approved ID-document lifecycle now, staged, so optional ID uploads can reach production users
 only once retention + deletion exist and are verified (the ID-upload gate). Migration 20270400 on
 `post-tier1/id-document-retention` (stacked on `post-tier1/admin-restrictions`), NOT merged, NOT deployed, not in build 87;
-own deploy approval after 0399; sha256 281a5ab79e4f54b1be8ca9f9740c9a6e50d5c3af97d235648e7f47654e54d3fd (commit cda7af6f;
+own deploy approval after 0399; sha256 d3cd463d2f0302104465898ee51dc6181877b49dab4758ecfc245f502b9ee935 (commit 8f0be29b; earlier 281a5ab7…d3fd at cda7af6f VOID;
 any later change to the file voids it).
 - Retention = the approved target (owner decision 2, 2026-10-27), unchanged: approved -> images deleted 7 days after the decision,
   rejected -> 30 days, never reviewed -> auto-rejected (no reviewer) at 60 days and images due at once, uploads no submission names
@@ -32,9 +32,20 @@ any later change to the file voids it).
   send step share-locks the submission row first (`for share skip locked`: a hold mid-commit = skipped this run, no wait, no
   deadlock; a send first = the hold waits and then sees "deleting"). After the fix 24/24 rounds pass (incl. two jobs at once: each
   file sent once).
-- Residual (reported, not changed: 0391/0395 are accepted as staged): the Story-photo job has a narrower version of race (2) only
-  when a Story is deleted in the same moment as the hold and the job run (its queue rows normally exist already and the hold locks
-  them).
+- Residual found larger than recorded, then FIXED (2026-11-08, in 0400 in place): the Story-photo job's version of race (2). New
+  step 8 of `scripts/replay/media-report-concurrency.js` (a hold vs the expiry job deleting an expired reported Story whose photo
+  "No action needed" released) reproduced it 20/20 in BOTH orders: the send step re-checked the evidence row without a lock, read
+  it as released while the hold's update was uncommitted, sent the DELETE, and the hold answered "held". 0400 now redefines
+  `private._story_file_send` (0391's, + the photo's evidence rows share-locked with skip locked before sending: a hold mid-commit =
+  skipped this run; a send first = the hold waits, then answers "deleting"); the rollback restores 0391's verbatim. After: 20/20
+  (10 held with no DELETE then or on a later run, 10 "deleting" after the one real send), steps 1-7 unchanged.
+  Re-verified on the local replay (fix applied in place, not a fresh replay): journeys 1201/1201 before and after the scripts;
+  media-report-concurrency 8/8 steps, gated-perk-legal-hold + id-document concurrency pass; real Storage API (1.11.13)
+  media-report-storage-api, media-cleanup-faults, id-document-storage-api, story-storage-api pass; rate-limit rules fingerprint
+  unchanged; rollback = pre-0400 replay's public + private schema except the known hold-type line, re-apply identical (full dump);
+  Jest 551/551 (7433 + 11 todo). New sha256 d3cd463d…e935.
+  (Interrupted run note: a codespace restart killed the script mid-step-8 and left the local replay without its 32 rate-limit rules
+  and with friends Stories on; restored from the pre-0400 replay, fingerprint identical; leftover test actors deleted.)
 - `legalHolds` journey counted every hold in the table (holds are append-only, so committed test holds from the Storage API
   script broke it); it now counts only holds made in its own run.
 - Verified locally 2026-11-07/08: fresh replay 524/524 (real Auth first); journey `idDocumentRetention` 12/12; journeys 1201/1201
