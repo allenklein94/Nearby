@@ -12,7 +12,7 @@
 --     Kept until a retention period is decided: nothing here purges them (counsel; see the audit doc).
 --   offer_redemptions: a confirmed or invoiced redemption stays without its person (billing counts them); an unconfirmed claim goes.
 --   group plans: see private._account_deletion_release_plans below.
--- Nothing here changes what happens to anything else on a deletion. delete-account itself is unchanged.
+-- Nothing here changes what happens to anything else on a deletion. delete-account answers a refused deletion (hint group_plan_booking_unresolved) and checks before it starts.
 
 
 -- ── guards: the one extra change each allows is a deletion clearing a reference to something already gone ──
