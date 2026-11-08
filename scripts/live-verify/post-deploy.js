@@ -303,6 +303,14 @@ const STEPS = {
       'controlled test with dedicated test accounts, through the real delete-account function: a held account deletes and its evidence is stored; an unheld account deletes and nothing is stored; the app says the same in both cases',
       'controlled test: a held file survives byte for byte and opens only after admin_open_held_file; a failed removal retries; voice messages and chat photos leave with the account','rollback = redeploy the previous delete-account FIRST, then scripts/rollback/20270402_held_account_evidence.rollback.sql, which refuses while evidence exists: export it and get the owner + counsel decision',
       'STOP + report: a held account deleted with no copy, an unheld account refused or copied, or anything revealing a hold to the person'] },
+  20270403: { journeys: ['deletionHardening', 'heldAccountEvidence', 'legalHolds', 'suspendedNumberRetention', 'unsafeReportReason', 'profileAntiScraping'],
+    edge: ['delete-account unchanged from the 20270402 step (this branch\'s copy, with generic errors, is the one to deploy there)'],
+    manual: ['before deploy: prod journeys with the 0348-0403 prelude, prod aborted rollback, grants vs prod; production\'s Storage version really does skip a row the hold guard refuses and keeps the file (controlled test: the local image is a stand-in)',
+      'read-only right after: a_queue_gathering_cover_files + held_evidence_minimize triggers exist; legal_hold_object_guard covers gathering-photos; private.account_deletion_report_files + held_evidence_purge_log have no client grant; held_evidence_retention_policy is EMPTY unless a decision from counsel is recorded',
+      'controlled test with dedicated test accounts, through the real delete-account function: a gathering cover leaves with the gathering (cancel + account deletion); a voice message, chat photo, voice intro and replaced photo all leave; a held file stays byte for byte',
+      'LAUNCH GATE, not a deploy step: a retention decision is recorded with private.set_held_evidence_retention (first run private.held_evidence_purge_preview with the proposed period), or the owner + counsel record why not. "Kept with no decision" is not a final policy',
+      'rollback = scripts/rollback/20270403_deletion_hardening.rollback.sql (refuses while an account hold, a logged purge or a kept/waiting cover exists: export + a decision first); then covers stay behind again',
+      'STOP + report: a file removed under an active hold, an unheld cover or personal file kept past the hourly run, a phone number or reporter id in a copy, or anything revealing a hold to the person'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
