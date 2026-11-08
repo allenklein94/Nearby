@@ -16,7 +16,13 @@
 --   No hold on the account: nothing is written and deletion is unchanged. The refusal is generic: nothing reveals a hold.
 --   Retention: kept while any hold on the same target is active, then held_evidence_retention() after the latest release
 --     (PROVISIONAL 12 months, matching the other moderation records; needs legal review), deleted by a daily job.
--- Not changed: a hold never stops a deletion; no screen; no foreign key or constraint; 20270374's own copy and expiry.
+--   Two purge gaps that would still lose held evidence after a deletion:
+--     - a hold on a review case now also keeps the reports linked to it (the words of the case; the link outlives the case through
+--       the copy). report_on_legal_hold is the one place, so held photos and pauses follow.
+--     - 20270374's suspended-account record is no longer purged at its expiry while a hold covers it (a decision naming a held
+--       report, or the account's evidence in this store). An expired record stays out of number matching as before; once released
+--       it goes on the next daily run. The record's dates are not changed.
+-- Not changed: a hold never stops a deletion; no screen; no foreign key or constraint; 20270374's copy and its matching.
 -- Requires 20270351, 20270357, 20270363, 20270368, 20270369, 20270393, 20270395, 20270399, 20270400.
 
 create table if not exists private.held_account_evidence (
@@ -236,6 +242,45 @@ begin
 end;
 $function$;
 revoke all on function private.purge_held_account_evidence() from public, anon, authenticated;
+
+-- 20270395's rule + a hold on a review case linked to the report, also after that case went with its account.
+create or replace function private.report_on_legal_hold(p_report uuid)
+returns boolean
+language sql
+volatile
+security definer
+set search_path to 'private', 'public'
+as $function$
+  select exists (select 1 from private.legal_holds h
+                  where h.released_at is null
+                    and ((h.target_type = 'report' and h.target_id = p_report)
+                      or (h.target_type = 'content_removal'
+                          and h.target_id in (select c.id from private.content_removals c where c.report_id = p_report))
+                      or (h.target_type = 'review_case'
+                          and h.target_id in (select l.case_id from private.account_review_case_reports l where l.report_id = p_report))))
+      or exists (select 1 from private.held_account_evidence e join private.legal_holds h on h.id = e.hold_id
+                  where h.released_at is null and e.record_type = 'case_report_link' and e.payload->>'report_id' = p_report::text);
+$function$;
+revoke all on function private.report_on_legal_hold(uuid) from public, anon, authenticated;
+
+-- 20270374's purge + the hold. The shared lock: a hold being placed and this purge go one after the other.
+create or replace function private.purge_suspended_account_records()
+returns void
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+begin
+  perform private.legal_hold_lock();
+  delete from private.suspended_account_records r
+   where r.expires_at <= now()
+     and not exists (select 1 from jsonb_array_elements(r.decisions) d
+                      where d->>'report_id' is not null and private.report_on_legal_hold((d->>'report_id')::uuid))
+     and not exists (select 1 from private.held_account_evidence e join private.legal_holds h on h.id = e.hold_id
+                      where e.account_id = r.former_account_id and h.released_at is null);
+end;
+$function$;
+revoke all on function private.purge_suspended_account_records() from public, anon, authenticated;
 
 do $$
 begin

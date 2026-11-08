@@ -11,6 +11,9 @@
 //   6. Fail closed: if the copy fails, the deletion fails and everything is still there.
 //   7. No client can read the store or call the functions; the store is append-only, also for the database owner.
 //   8. Release: kept for the retention period, and past it while the same target is held again; then purged. The hold's record stays.
+//   9. A case hold placed between delete-account's two deletes still covers the account.
+//  10. A case hold keeps its linked report from the 12-month purge, also after the case went with its account; released = purged.
+//  11. A suspended-account record past its expiry stays while a hold covers it (either way); released or unheld = purged.
 // One rolled-back transaction. Not covered: races (scripts/replay/held-evidence-concurrency.js), real Auth + the real order
 // (scripts/replay/held-evidence-auth-local.js), Storage files, the edge function running, the retention period (legal review).
 const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
@@ -37,7 +40,10 @@ const hold = (step, type, id, into) => `${as(step, 'v_admin', `v_out := public.a
 const del = (v) => `delete from profiles where id = ${v}; delete from auth.users where id = ${v};`;
 const types = (v) => `(select coalesce(jsonb_object_agg(t.record_type, t.n), '{}'::jsonb) from (select record_type, count(*) n from private.held_account_evidence where account_id = ${v} group by 1) t)`;
 
-const PEOPLE = ['v_admin', 'v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_n', 'v_f', 'v_r', 'v_g'];
+const PEOPLE = ['v_admin', 'v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_n', 'v_f', 'v_r', 'v_g', 'v_w', 'v_l', 'v_s', 'v_t'];
+const oldReport = (who, into) => `insert into reports (reporter_id, reported_id, reason, resolved, created_at) values (v_r2, ${who}, 'Spam or scam', true, now() - interval '13 months') returning id into ${into};`;
+const expired = (who, decisions, into) => `insert into private.suspended_account_records (former_account_id, released, suspended_at, released_at, expires_at, decisions)
+    values (${who}, 'account_deleted', now() - interval '14 months', now() - interval '13 months', now() - interval '1 month', ${decisions}) returning id into ${into};`;
 
 d('journey: account deletion under a legal hold (20270402)', () => {
   let s;
@@ -46,7 +52,8 @@ d('journey: account deletion under a legal hold (20270402)', () => {
       ${actorDeclares(PEOPLE)}
       v_out jsonb; v_hint text; v_ca uuid; v_cu uuid; v_cp uuid; v_rb uuid; v_ru uuid; v_rm uuid; v_sub uuid; v_rem uuid;
       v_h1 uuid; v_h2 uuid; v_h3 uuid; v_h4 uuid; v_h5 uuid; v_h6 uuid; v_h7 uuid; v_cf uuid; v_cn uuid;
-      v_case jsonb; v_events jsonb; v_decisions jsonb; v_pauses jsonb; v_pause_events jsonb; v_signal uuid; v_failed boolean;`, `
+      v_case jsonb; v_events jsonb; v_decisions jsonb; v_pauses jsonb; v_pause_events jsonb; v_signal uuid; v_failed boolean;
+      v_cw uuid; v_hw uuid; v_cl uuid; v_hl uuid; v_rl uuid; v_rx uuid; v_hx uuid; v_cs uuid; v_hs uuid; v_sr1 uuid; v_sr2 uuid; v_sr3 uuid; v_r2 uuid;`, `
   ${actorsSql({ people: PEOPLE })}
   update profiles set is_admin = true where id = v_admin;
   delete from private.held_account_evidence;
@@ -168,6 +175,50 @@ d('journey: account deletion under a legal hold (20270402)', () => {
     'hold_record', (select count(*) from private.legal_holds where id = v_h1),
     'others_active', (select count(*) > 0 from private.held_account_evidence where hold_id = v_h2))`)}
   ${rec('cron', `(select count(*) from cron.job where jobname = 'purge-held-account-evidence')`)}
+
+  -- ===== 9. a case hold placed between the two deletes (they are separate transactions in delete-account) =====
+  v_r2 := v_e;
+  insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', v_w) returning id into v_cw;
+  insert into account_moderation_actions (user_id, action, reason, admin_id) values (v_w, 'suspend', 'Decided before the deletion', v_admin);
+  delete from profiles where id = v_w;
+  ${hold('hold_between', 'review_case', 'v_cw', 'v_hw')}
+  delete from auth.users where id = v_w;
+  ${rec('w_types', types('v_w'))}
+
+  -- ===== 10. a case hold keeps its linked report from the 12-month purge, also once the case went with its account =====
+  ${oldReport('v_l', 'v_rl')}
+  ${oldReport('null', 'v_rx')}
+  insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', v_l) returning id into v_cl;
+  insert into private.account_review_case_reports (case_id, report_id, linked_by) values (v_cl, v_rl, v_admin);
+  ${hold('hold_linked', 'review_case', 'v_cl', 'v_hl')}
+  perform private.purge_expired_reports();
+  ${rec('linked_live_case', `jsonb_build_object('linked', (select count(*) from reports where id = v_rl), 'unlinked', (select count(*) from reports where id = v_rx))`)}
+  ${del('v_l')}
+  perform private.purge_expired_reports();
+  ${rec('linked_after_delete', `jsonb_build_object('report', (select count(*) from reports where id = v_rl), 'case', (select count(*) from private.account_review_cases where id = v_cl))`)}
+  ${as('release_linked', 'v_admin', `v_out := public.admin_release_legal_hold(v_hl, 'Counsel confirmed the matter is closed')`, 'v_out')}
+  perform private.purge_expired_reports();
+  ${rec('linked_released', `(select count(*) from reports where id = v_rl)`)}
+
+  -- ===== 11. a suspended-account record past its expiry =====
+  -- a) a hold placed AFTER the deletion: the decision names the held report; this record is the only copy
+  ${oldReport('null', 'v_rx')}
+  ${expired('v_s', `jsonb_build_array(jsonb_build_object('action', 'suspend', 'reason', 'Kept', 'report_id', v_rx))`, 'v_sr1')}
+  ${hold('hold_record', 'report', 'v_rx', 'v_hx')}
+  -- b) the account's evidence is in the store under an active hold
+  insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', v_t) returning id into v_cs;
+  ${hold('hold_store', 'review_case', 'v_cs', 'v_hs')}
+  ${del('v_t')}
+  ${expired('v_t', `jsonb_build_array(jsonb_build_object('action', 'suspend', 'reason', 'Kept'))`, 'v_sr2')}
+  -- c) nothing holds it
+  ${expired('gen_random_uuid()', `jsonb_build_array(jsonb_build_object('action', 'suspend', 'reason', 'Not held'))`, 'v_sr3')}
+  perform private.purge_suspended_account_records();
+  ${rec('records_held', `jsonb_build_object('report', (select count(*) from private.suspended_account_records where id = v_sr1),
+    'store', (select count(*) from private.suspended_account_records where id = v_sr2), 'free', (select count(*) from private.suspended_account_records where id = v_sr3))`)}
+  ${as('release_record', 'v_admin', `v_out := public.admin_release_legal_hold(v_hx, 'Counsel confirmed the matter is closed')`, 'v_out')}
+  ${as('release_store', 'v_admin', `v_out := public.admin_release_legal_hold(v_hs, 'Counsel confirmed the matter is closed')`, 'v_out')}
+  perform private.purge_suspended_account_records();
+  ${rec('records_released', `(select count(*) from private.suspended_account_records where id in (v_sr1, v_sr2))`)}
 `);
     s = stepMap(log);
   }, 180000);
@@ -219,5 +270,18 @@ d('journey: account deletion under a legal hold (20270402)', () => {
     expect(data('held_again_kept')).toBe(true);
     expect(data('purged')).toEqual({ evidence: 0, hold_record: 1, others_active: true });
     expect(data('cron')).toBe(1);
+  });
+  test('9. a case hold placed between the two deletes still covers the account', () => {
+    expect(data('w_types')).toEqual(expect.objectContaining({ coverage: 1, review_case: 1, suspension_decision: 1 }));
+  });
+  test('10. a case hold keeps its linked report from the purge, also after the case went; released = purged', () => {
+    expect(data('linked_live_case')).toEqual({ linked: 1, unlinked: 0 });
+    expect(data('linked_after_delete')).toEqual({ report: 1, case: 0 });
+    expect(data('release_linked')).toEqual(expect.objectContaining({ released: true }));
+    expect(data('linked_released')).toBe(0);
+  });
+  test('11. an expired suspended-account record stays under a hold, either way; released or unheld = purged', () => {
+    expect(data('records_held')).toEqual({ report: 1, store: 1, free: 0 });
+    expect(data('records_released')).toBe(0);
   });
 });
