@@ -96,7 +96,8 @@ const deleteAccount = (id) => session(async (c) => {
     const g = await bookedPlan(2);
     const [x, y] = await Promise.all([
       deleteAccount(g.a),
-      session(async (c) => { await asUser(c, g.c); await c.query('select confirm_group_plan_offer($1, $2)', [g.p, g.offer]); }),
+      // odd rounds start late, so the deletion gets there first; both orders must be seen
+      session(async (c) => { if (i % 2) await sleep(40); await asUser(c, g.c); await c.query('select confirm_group_plan_offer($1, $2)', [g.p, g.offer]); }),
     ]);
     if (!x.ok) wrong.push(`deletion: ${x.error}`);
     const [row] = await q(`select (select count(*)::int from group_plan_proposals where id = $1) plans, (select count(*)::int from business_reservations where offer_id = $2) res,
@@ -115,14 +116,14 @@ const deleteAccount = (id) => session(async (c) => {
       select r.id, 'pending', 25, 'usd', $1, 'stripe', $2 from business_reservations r where r.offer_id = $3 returning id`, [g.a, pi, g.offer]);
     const [x, y] = await Promise.all([
       deleteAccount(g.a),
-      session(async (c) => { await c.query(`update business_payments set status = 'captured', stripe_charge_id = 'ch_conc' where stripe_payment_intent_id = $1 and status = 'pending'`, [pi]); }),
+      session(async (c) => { if (i % 2) await sleep(40); await c.query(`update business_payments set status = 'captured', stripe_charge_id = 'ch_conc' where stripe_payment_intent_id = $1 and status = 'pending'`, [pi]); }),
     ]);
     if (!y.ok) wrong.push(`capture: ${y.error}`);
     const [row] = await q(`select (select count(*)::int from profiles where id = $1) person, (select count(*)::int from group_plan_proposals where id = $2) plans, (select count(*)::int from business_reservations where offer_id = $3) res,
       (select status from business_payments where id = $4) pay, (select initiator_id::text from group_plan_proposals where id = $2) initiator`, [g.a, g.p, g.offer, pay]);
     if (x.ok) {
       payOrders.cancelledFirst += 1;
-      if (row.person !== 0 || row.plans !== 0 || row.res !== 0 || !row.pay) wrong.push(`deleted: ${JSON.stringify(row)}`);
+      if (row.person !== 0 || row.plans !== 0 || row.res !== 0 || row.pay !== 'cancelled') wrong.push(`deleted: ${JSON.stringify(row)}`);
     } else {
       payOrders.refused += 1;
       if (!/booking that can.t be cancelled/.test(x.error)) wrong.push(`refusal: ${x.error}`);
