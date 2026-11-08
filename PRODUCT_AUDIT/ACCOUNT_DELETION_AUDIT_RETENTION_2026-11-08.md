@@ -124,3 +124,43 @@ The owner reopened the six issues above before build 87: fix them technically, s
 - Offers refused for contact details stay unlogged: nothing was published.
 - No unified account timeline, screen or new audit feature.
 - 12-month report retention needs legal review before launch.
+
+## Final hardening pass: 20270403 (owner, 2026-11-08, same day; staged)
+
+Branch `post-tier1/deletion-hardening` (stacked on `post-tier1/held-deletion-evidence`). Migration sha256 973e35da…2975. NOT merged, NOT deployed, NOT legally reviewed, not in build 87, owner acceptance pending. Deploy with its own approval, after 0402. `delete-account` stays the one deployed right after 0402, and that deploy uses THIS branch's copy (it only adds generic errors).
+
+What changed:
+
+1. **Orphaned files.** A gathering's cover stayed behind when the gathering went (account deletion, host cancel, admin removal), because 0402's folder sweep never saw that folder. It now leaves through the same queue, unless another gathering uses it or a hold keeps it. Business logos and offer media stay: the business outlives its owner's account.
+2. **Timing gap.** A hold placed on a reported chat message between the profile delete and the file's removal found no message, so the file was removed under a hold. The path is now noted before the cascade. Same place, an over-preservation in 0402: a hold on a report about a profile reached through that window listed ALL the account's waiting photos, replaced ones included. It now keeps only the photos in use at the deletion.
+3. **Account holds.** `target_type = 'account'`, for a pause or suspension with no report or case (answers question 5 above technically; whether to use it is still a decision). It covers the account's moderation records, never its messages or media as such, and needs a written reason + a reference to what authorized it. It also stops the live retention jobs. Anything wider than one item (`account_history`) now needs the reference too.
+4. **Retention.** Still nothing purged without a recorded decision. Added: a purge log (counts, never content; append-only), a dry run for a proposed period, what an admin can see waiting, a monthly reminder. LAUNCH GATE: a decision is recorded, or the owner + counsel record why not. "Kept with no decision" is not a final policy.
+5. **Minimization.** Evidence copies never carry a phone number, phone key, email, reporter id, IP or device token, at any depth, whatever a future column adds. A suspended-account record a hold keeps past its date loses its number key and is never matched again (question 6 above now applies only until that date).
+6. **Also:** `delete-account` returns generic errors; deletion push + wording guard; the admin reports screen places account holds with the reference rule and shows the retention notice; a RESTRICTED draft procedure for suspected CSAM exists outside this public repository (NOT legally reviewed, NOT approved for use; question 8 stays open).
+
+Flaky journeys fixed at their cause, not retried: `reports.created_at` is frozen by a trigger; `friend_discovery_rows` has a random tie-break. Replay's `storage.objects` now matches production's.
+
+Results, local only, PostgreSQL 17.6, from a fresh replay of 527/527 migrations:
+
+| Check | Result |
+|---|---|
+| Journeys, three times (fresh, after the concurrency scripts, after rollback + re-apply) | 1232/1232 each, on the final run (see below) |
+| `deletionHardening` on the rolled-back database | fails 8/8, as it must |
+| Concurrency scripts, incl. `held-evidence-concurrency` races 13-15 | 26/26 pass |
+| Real `delete-account` under the edge runtime with real Auth, Storage, PostgREST | all 35 checks pass, incl. the cover on account deletion + on host cancel |
+| Real Auth (`held-evidence-auth-local`) | 8/8 |
+| Storage API scripts: photo, story, id-document | pass |
+| Storage API script: `media-report` | passes alone, twice; fails when run straight after `story-storage-api` (below) |
+| Rollback, then compare with a pristine 0402 (public + private) | 0 diff of 65,622 lines; storage hold trigger back to 0402's three buckets |
+| Re-apply vs first apply | 0 diff, storage fingerprint equal |
+| Rollback refuses while purge-log entries exist | seen on the real run (exit 3) |
+| Flake loop, `profileAntiScraping` + `unsafeReportReason` | 30/30 |
+| Jest | 554 suites, 7485 tests + 11 todo |
+| iOS bundle from a clean copy of 499734e6 | exports clean |
+| Client grants on the new stores + functions | none, except the two admin-checked RPCs |
+
+What went wrong on the way (test and setup, migration unchanged; recorded so the numbers above aren't read as a first-try pass): a codespace restart interrupted the first run and left test users in the database, so the whole run was restarted from a fresh replay. In that run journey 7 failed because it assumed an empty purge log after the concurrency scripts had really purged (now compares with its own start); the function test had a duplicate variable, so its cover checks had never executed until this pass; the Storage scripts and the bundle had setup errors. The rollback check ran with the local purge log and leftover test rows cleared first, because the concurrency scripts leave rows that (correctly) make it refuse.
+
+Not fixed: `media-report-storage-api` picks up `story-storage-api`'s queued files when chained. A test-order issue, reproduced in the 0402 pass too.
+
+NOT run: anything on production (prod journeys with the 0348-0403 prelude, prod aborted rollback, grants vs prod), a real phone, and the check that PRODUCTION's Storage version really skips a row the hold guard refuses and keeps the file (the local image is a stand-in). These are in `scripts/live-verify/post-deploy.js`. Passing automated tests is not launch readiness or legal approval.
