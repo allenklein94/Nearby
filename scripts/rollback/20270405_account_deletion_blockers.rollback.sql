@@ -12,6 +12,9 @@ begin
   if v <> '{}'::jsonb then raise exception 'Rollback refused: rows depend on 20270405: %', v; end if;
 end $$;
 
+drop function if exists public.account_deletion_plan_check(uuid);
+drop function if exists public.account_deletion_plan_impact();
+drop function if exists private._account_deletion_plan_impact(uuid);
 drop trigger if exists b_account_deletion_release_plans on public.profiles;
 drop function if exists private._account_deletion_release_plans();
 drop trigger if exists z_business_payment_detached on public.business_payments;

@@ -4,6 +4,13 @@ import { supabase, functionUrl } from './supabase';
 // user's profile, uploaded photo, and all associated app data (cascaded
 // via foreign keys), then deletes their actual login/auth record. This
 // cannot be undone — the confirmation UI lives in SettingsScreen.js (with the 20270375 step-up before it).
+// What deleting would do to the group plans the person organizes (20270405). Null when it can't be read (not live yet, offline): the
+// warning is skipped and delete-account still refuses what it must.
+export async function getDeletionPlanImpact() {
+  const { data, error } = await supabase.rpc('account_deletion_plan_impact');
+  return error ? null : data;
+}
+
 export async function deleteAccount() {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;

@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 #!/usr/bin/env node
 // Item 116 under real concurrency, on the LOCAL replay database only (NEARBY_LOCAL_DB_URL; refuses anything else).
 // One journey runs in one transaction, so it cannot race. Here N separate sessions call the app's own
@@ -108,8 +109,32 @@ async function round({ capacity, party, sessions }) {
   await admin.end();
 }
 
+// A freshly replayed database has nobody in it: this script brings its own business and customers and removes them after.
+async function withPeople(fn) {
+  const admin = await connect();
+  const [{ n }] = (await admin.query(`select count(*)::int n from profiles where managed_partner_id is not null`)).rows;
+  const made = [];
+  let partner = null;
+  if (n === 0 || (await admin.query(`select count(*)::int n from profiles where managed_partner_id is null`)).rows[0].n < 5) {
+    partner = (await admin.query(`insert into brand_partners (name, active, latitude, longitude) values ('Capacity Test', true, 26.36, -80.08) returning id`)).rows[0].id;
+    for (let i = 0; i < 6; i += 1) {
+      const id = crypto.randomUUID();
+      made.push(id);
+      await admin.query(`insert into auth.users (id, email, aud, role, instance_id, created_at, updated_at) values ($1, $2, 'authenticated', 'authenticated', '00000000-0000-0000-0000-000000000000', now(), now())`, [id, `capacity-${id}@local.invalid`]);
+      await admin.query(`insert into profiles (id, display_name, birthdate, terms_accepted_at, timezone, photo_verified, profile_hidden, managed_partner_id)
+        values ($1, 'Capacity Person', date '1995-03-01', now(), 'America/New_York', true, false, $2)
+        on conflict (id) do update set display_name = 'Capacity Person', managed_partner_id = $2`, [id, i === 0 ? partner : null]);
+    }
+  }
+  try { await fn(); } finally {
+    for (const id of made) { await admin.query('delete from profiles where id = $1', [id]).catch(() => {}); await admin.query('delete from auth.users where id = $1', [id]).catch(() => {}); }
+    if (partner) await admin.query('delete from brand_partners where id = $1', [partner]).catch(() => {});
+    await admin.end();
+  }
+}
+
 (async () => {
-  for (const r of ROUNDS) await round(r);
+  await withPeople(async () => { for (const r of ROUNDS) await round(r); });
   console.log(failures ? `\n${failures} check(s) FAILED` : '\nbooking-capacity-concurrency: all checks passed');
   process.exit(failures ? 1 : 0);
 })().catch((e) => { console.error(e); process.exit(1); });
