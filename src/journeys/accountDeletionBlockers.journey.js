@@ -209,7 +209,7 @@ d('journey: account deletion (20270405)', () => {
     select r.id, 'captured', 25, 'usd', v_l, 'stripe', 'pi_journey_done', 'ch_journey_done' from business_reservations r where r.offer_id = v_offer4 returning id into v_pay4;
   ${as('v_l')} v_res := complete_business_reservation(v_offer4);
   v_res := account_deletion_plan_impact();
-  ${rec('completed_plan_needs_no_warning', `(v_res->>'plans')::int = 0 and (v_res->>'unresolved')::int = 0`, 'v_res')}
+  ${rec('completed_plan_needs_no_warning', `(v_res->>'plans')::int = 0 and (v_res->>'paid')::int = 0`, 'v_res')}
   delete from push_outbox where recipient_id in (v_q3, v_owner);
   ${del('v_l')}
   ${rec('completed_plan_ends_quietly', `not exists (select 1 from profiles where id = v_l)
