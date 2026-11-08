@@ -122,12 +122,31 @@ async function callFunction(token, body) {
   const aPhoto = await put(a, 'profile-photos', 'main.jpg'); const aOld = await put(a, 'profile-photos', 'old.jpg');
   const aVoice = await put(a, 'chat-media', 'voice-1.m4a'); const aIntro = await put(a, 'profile-audio', 'voice-intro-1.m4a');
   psql(`update profiles set photo_url = '${aPhoto.name}' where id = '${a.id}';`);
+  // 20270403: a gathering cover lives under the gathering's id, not the person's
+  const coverGathering = psql(`insert into gatherings (host_id, title, description, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public)
+    values ('${a.id}', 'Walk', 'Walk', now() + interval '3 days', 26.7, -80.03, 'Coffee', 'abc', 'everyone', true) returning id;`).split('\n')[0];
+  const aCover = { bucket: 'gathering-photos', name: `${coverGathering}/cover.jpg` };
+  await admin.storage.from('gathering-photos').upload(aCover.name, crypto.randomBytes(256), { contentType: 'image/jpeg' });
+  psql(`update gatherings set cover_photo_path = '${aCover.name}' where id = '${coverGathering}';`);
+  rec('the cover is really in Storage', await inStorage(aCover));
   const ra = await callFunction(a.token);
-  rec('the function answers ok, with the number of files Storage confirmed', ra.status === 200 && ra.json?.ok && ra.json?.filesRemoved === 4, ra);
+  rec('the function answers ok, with the number of files Storage confirmed', ra.status === 200 && ra.json?.ok && ra.json?.filesRemoved === 5, ra);
+  rec('the gathering cover left too', !(await inStorage(aCover)));
   rec('the account is gone', gone(a.id));
   rec('every file is gone: photo, replaced photo, voice message, voice intro', !(await inStorage(aPhoto)) && !(await inStorage(aOld)) && !(await inStorage(aVoice)) && !(await inStorage(aIntro)));
   rec('nothing kept, nothing queued', one(`select count(*) from private.held_account_evidence where account_id = '${a.id}'`) === '0' && queue(a.id) === '0');
   rec('no deletion marker left', one(`select count(*) from private.account_deletion_markers where account_id = '${a.id}'`) === '0');
+
+  console.log('A2. a cancelled gathering: the cover leaves on the hourly run, the account stays');
+  const host = await person('host');
+  const g2 = psql(`insert into gatherings (host_id, title, description, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public)
+    values ('${host.id}', 'Walk', 'Walk', now() + interval '3 days', 26.7, -80.03, 'Coffee', 'abc', 'everyone', true) returning id;`).split('\n')[0];
+  const g2Cover = { bucket: 'gathering-photos', name: `${g2}/cover.jpg` };
+  await admin.storage.from('gathering-photos').upload(g2Cover.name, crypto.randomBytes(256), { contentType: 'image/jpeg' });
+  psql(`delete from gatherings where id = '${g2}';`);
+  const rc = await callFunction(SERVICE, { purge_due: true });
+  rec('the cover is gone, the host is not', rc.status === 200 && !(await inStorage(g2Cover)) && !gone(host.id), rc);
+  rec('nothing left in the queue for it', queue(host.id) === '0');
 
   console.log('B. a hold');
   const mod = await person('admin', true); const other = await person('other');

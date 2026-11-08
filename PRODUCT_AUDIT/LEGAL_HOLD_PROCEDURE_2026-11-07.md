@@ -56,4 +56,4 @@ still need legal review before outside users.
 
 ## Not covered
 - Nothing is held automatically; the system never decides that content is legally held.
-- CSAM / mandatory-reporting content needs its own procedure (not written; see `PUBLIC_MEDIA_AUDIT_2026-11-05.md` section 7).
+- CSAM / mandatory-reporting content: a RESTRICTED DRAFT procedure exists outside this public repository (ask the owner). NOT legally reviewed, NOT approved for use.

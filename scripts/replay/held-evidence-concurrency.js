@@ -74,6 +74,7 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
   const { rows: caps } = await db.query('delete from private.rate_limit_rules returning *');
   const cases = [];
   const reports = [];
+  const extraObjects = [];
   const admin = await person(true);
   const reporter = await person();
   const newCase = async (u) => {
@@ -338,6 +339,83 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
     }
     check(bad === 0, 'a hold placed first keeps the copy; the purge never removes under an active hold');
     check(dl === 0, 'no deadlock');
+
+    // 20270403
+    console.log('13. an account hold vs the deletion');
+    bad = 0; dl = 0; let kept13 = 0; let late13 = 0;
+    for (let i = 0; i < ROUNDS; i += 1) {
+      const u = await person();
+      await newCase(u);
+      const [a, b] = orders(i, { sub: admin, sql: `select public.admin_place_legal_hold('account', '${u}', '${WHY}', 'REF-13') as r` }, { sql: delAccount(u) });
+      const res = await Promise.all([run(a), run(b)]);
+      if (deadlock(res)) dl += 1;
+      if (!res[1].ok) { bad += 1; console.log(res[1]); }
+      const n = await count(u, 'suspension_decision');
+      if (n === 1) kept13 += 1; else late13 += 1;
+      if (i % 2 === 0 && n !== 1) bad += 1;   // the hold's session started first and holds its lock until it commits
+      if (!res[0].ok && res[0].hint !== 'legal_hold_not_found') { bad += 1; console.log(res[0]); }
+    }
+    check(bad === 0, `a hold that commits first means a copy (kept ${kept13}, deletion first ${late13})`);
+    check(kept13 > 0, 'the hold landed in time at least once');
+    check(dl === 0, 'no deadlock');
+
+    console.log('14. a reported message: the whole deletion with a hold arriving at a random point');
+    bad = 0; dl = 0; const seen14 = { kept: 0, deleting: 0, late: 0 };
+    for (let i = 0; i < ROUNDS * 3; i += 1) {
+      const u = await person();
+      const { rows: mt } = await db.query(`insert into matches (user_a, user_b) values (least($1::uuid, $2::uuid), greatest($1::uuid, $2::uuid)) returning id`, [u, reporter]);
+      const { rows: ob } = await db.query(`insert into storage.objects (bucket_id, name, metadata) values ('chat-media', $1, '{"size":1}') returning id`, [`${u}/photo-${i}.jpg`]);
+      extraObjects.push(ob[0].id);
+      const { rows: ms } = await db.query(`insert into messages (match_id, sender_id, body, media_url) values ($1, $2, '', $3) returning id`, [mt[0].id, u, `${u}/photo-${i}.jpg`]);
+      const { rows: rp } = await db.query(`insert into reports (reporter_id, reported_id, reason, content_type, content_id) values ($1, $2, 'Spam or scam', 'message', $3) returning id`, [reporter, u, ms[0].id]);
+      reports.push(rp[0].id);
+      const del = (async () => {
+        await run({ sql: `select public.account_deletion_preserve_held_evidence('${u}')` });
+        await run({ sql: `delete from profiles where id = '${u}'` });
+        await run({ sql: `delete from auth.users where id = '${u}'` });
+        return run({ sql: `select count(*) n from public.account_file_cleanup_claim('${u}')` });
+      })();
+      const hold = run({ sub: admin, wait: (i * 67) % 700, sql: placeSql('report', rp[0].id) });
+      const [dres, hres] = await Promise.all([del, hold]);
+      if (deadlock([dres, hres])) dl += 1;
+      if (!hres.ok) { bad += 1; console.log(hres); continue; }
+      const files = hres.rows[0].r.files;
+      const st = (await db.query(`select (select count(*)::int from private.legal_hold_files where object_id = $1) listed,
+                                         (select count(*)::int from private.account_file_cleanup where object_id = $1 and claimed_at is not null) claimed`, [ob[0].id])).rows[0];
+      if (files.kept === 1) { seen14.kept += 1; if (st.claimed !== 0 || st.listed !== 1) bad += 1; }
+      else if (files.deleting === 1) { seen14.deleting += 1; if (st.claimed !== 1) bad += 1; }
+      else { seen14.late += 1; if (st.listed !== 0 || st.claimed !== 1) bad += 1; }
+    }
+    check(bad === 0, `the file's fate always agrees with the answer (${JSON.stringify(seen14)})`);
+    check(seen14.kept > 0, 'the hold landed in time at least once');
+    check(dl === 0, 'no deadlock');
+
+    console.log('15. a gathering cover: its gathering deleted vs a hold on its report vs the file hand-over');
+    bad = 0; dl = 0; const seen15 = { kept: 0, deleting: 0 };
+    for (let i = 0; i < ROUNDS; i += 1) {
+      const u = await person();
+      const { rows: g } = await db.query(`insert into gatherings (host_id, title, description, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public)
+        values ($1, 'Race', 'Race', now() + interval '3 days', 26.7, -80.03, 'Coffee', 'abc', 'everyone', true) returning id`, [u]);
+      const { rows: ob } = await db.query(`insert into storage.objects (bucket_id, name, metadata) values ('gathering-photos', $1, '{"size":1}') returning id`, [`${g[0].id}/cover.jpg`]);
+      extraObjects.push(ob[0].id);
+      const { rows: rp } = await db.query(`insert into reports (reporter_id, reason, content_type, content_id) values ($1, 'Spam or scam', 'gathering', $2) returning id`, [reporter, g[0].id]);
+      reports.push(rp[0].id);
+      const del = (async () => {
+        await run({ sql: `delete from gatherings where id = '${g[0].id}'` });
+        return run({ sql: `select count(*) n from public.account_file_cleanup_claim('${u}')` });
+      })();
+      const hold = run({ sub: admin, wait: (i * 47) % 200, sql: placeSql('report', rp[0].id) });
+      const [dres, hres] = await Promise.all([del, hold]);
+      if (deadlock([dres, hres])) dl += 1;
+      if (!hres.ok) { bad += 1; console.log(hres); continue; }
+      const files = hres.rows[0].r.files;
+      const st = (await db.query(`select (select count(*)::int from private.account_file_cleanup where object_id = $1 and claimed_at is not null) claimed`, [ob[0].id])).rows[0];
+      if (files.kept === 1) { seen15.kept += 1; if (st.claimed !== 0) bad += 1; }
+      else if (files.deleting === 1) { seen15.deleting += 1; if (st.claimed !== 1) bad += 1; }
+      else { bad += 1; console.log(files, st); }
+    }
+    check(bad === 0, `the cover's fate always agrees with the answer (${JSON.stringify(seen15)})`);
+    check(dl === 0, 'no deadlock');
   } finally {
     await db.query('alter table private.held_account_evidence disable trigger held_evidence_guard');
     await db.query('alter table private.legal_hold_files disable trigger legal_hold_files_guard');
@@ -350,9 +428,11 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
     await db.query('alter table private.held_evidence_retention_policy enable trigger held_evidence_policy_guard');
     await db.query('delete from private.account_file_cleanup');
     await db.query('delete from private.account_deletion_markers');
+    await db.query('delete from storage.objects where id = any($1::uuid[])', [extraObjects]);
+    await db.query('delete from private.account_deletion_markers');
     await db.query("delete from storage.objects where bucket_id = 'profile-photos' and (storage.foldername(name))[1] = any($1::text[])", [made]);
     await db.query('alter table private.legal_holds disable trigger legal_hold_immutable');
-    await db.query('delete from private.legal_holds where target_id = any($1::uuid[]) or target_id = any($2::uuid[])', [cases, reports]);
+    await db.query('delete from private.legal_holds where target_id = any($1::uuid[]) or target_id = any($2::uuid[]) or target_id = any($3::uuid[])', [cases, reports, made]);
     await db.query('alter table private.legal_holds enable trigger legal_hold_immutable');
     await db.query('delete from reports where id = any($1::uuid[])', [reports]);
     await db.query('delete from private.account_review_cases where id = any($1::uuid[])', [cases]);
