@@ -10,6 +10,14 @@ const SERVICE_ROLE_KEY = secretKey()!;
 // deno-lint-ignore no-explicit-any
 async function deleteEverything(admin: any, userId: string): Promise<number> {
 
+  // 20270402: moderation evidence under an active legal hold is copied first, before anything is removed; if that fails, nothing
+  // is deleted. The database triggers enforce the same on the deletes below. A database without 20270402 has neither.
+  const { error: preserveError } = await admin.rpc('account_deletion_preserve_held_evidence', { user_id_param: userId });
+  if (preserveError && preserveError.code !== 'PGRST202') {
+    console.error('held evidence preservation failed:', preserveError.message);
+    throw new Error('Failed to delete account');
+  }
+
   const storagePaths: string[] = [];
 
   const { data: profile } = await admin.from('profiles').select('photo_url').eq('id', userId).single();
@@ -52,7 +60,7 @@ async function deleteEverything(admin: any, userId: string): Promise<number> {
     throw new Error(`Failed to delete auth account: ${authDeleteError.message}`);
   }
 
-  return storagePaths.length + verificationPaths.length;
+  return storagePaths.length;
 }
 
 // The claims of a token getUser() has already verified (session_id + aal; 20270375 decides with them).
