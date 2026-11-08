@@ -209,6 +209,10 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
     await db.query('alter table private.held_account_evidence disable trigger held_evidence_guard');
     await db.query('delete from private.held_account_evidence');
     await db.query('alter table private.held_account_evidence enable trigger held_evidence_guard');
+    // 20270374 rightly kept a record for each suspended account deleted here; append-only, so paused for this cleanup too
+    await db.query('alter table private.suspended_account_records disable trigger suspended_record_guard');
+    await db.query('delete from private.suspended_account_records where former_account_id = any($1::uuid[])', [made]);
+    await db.query('alter table private.suspended_account_records enable trigger suspended_record_guard');
     await db.query('alter table private.legal_holds disable trigger legal_hold_immutable');
     await db.query('delete from private.legal_holds where target_id = any($1::uuid[]) or target_id = any($2::uuid[])', [cases, reports]);
     await db.query('alter table private.legal_holds enable trigger legal_hold_immutable');
