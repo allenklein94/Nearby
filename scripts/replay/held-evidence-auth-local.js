@@ -65,7 +65,7 @@ async function main() {
     console.log('1. a held account');
     const held = await mkUser(`held-${crypto.randomUUID().slice(0, 8)}@local.invalid`);
     const c1 = moderated(held);
-    psql(`select ${claims}; select public.admin_place_legal_hold('review_case', '${c1}', 'Preservation request from counsel', null);`);
+    psql(`select ${claims}; select public.admin_place_legal_hold('review_case', '${c1}', 'Preservation request from counsel', null, 'account_history');`);
     const del1 = await deleteInOrder(held);
     rec('Auth deletes the account', !del1.error && one(`select count(*) from auth.users where id = '${held}'`) === '0', del1.error);
     const s1 = stored(held);
@@ -84,7 +84,7 @@ async function main() {
     console.log('3. fail closed');
     const stuck = await mkUser(`stuck-${crypto.randomUUID().slice(0, 8)}@local.invalid`);
     const c3 = moderated(stuck);
-    psql(`select ${claims}; select public.admin_place_legal_hold('review_case', '${c3}', 'Preservation request from counsel', null);`);
+    psql(`select ${claims}; select public.admin_place_legal_hold('review_case', '${c3}', 'Preservation request from counsel', null, 'account_history');`);
     psql(`create or replace function private.test_refuse_copy() returns trigger language plpgsql as 'begin raise exception ''copy failed''; end';
           create trigger test_refuse_copy before insert on private.held_account_evidence for each row execute function private.test_refuse_copy();`);
     const del3 = await admin.deleteUser(stuck);
@@ -97,6 +97,7 @@ async function main() {
     psql(`drop trigger if exists test_refuse_copy on private.held_account_evidence; drop function if exists private.test_refuse_copy();
           alter table private.held_account_evidence disable trigger held_evidence_guard;
           delete from private.held_account_evidence where account_id = any(array[${made.map((m) => `'${m}'`).join(',')}]::uuid[]);
+          delete from private.account_deletion_markers where account_id = any(array[${made.map((m) => `'${m}'`).join(',')}]::uuid[]);
           alter table private.held_account_evidence enable trigger held_evidence_guard;
           alter table private.legal_holds disable trigger legal_hold_immutable;
           delete from private.legal_holds where target_id = any(array[${cases.map((m) => `'${m}'`).join(',') || `'00000000-0000-0000-0000-000000000000'`}]::uuid[]);

@@ -9,6 +9,13 @@
 //   5. the same account preserved twice at once: one row per record.
 //   6. the purge vs a deletion under an active hold: no deadlock, the hold keeps the evidence whichever runs first.
 //   7. a hold on a report vs the purge of an expired suspended-account record naming it: a hold that commits first keeps the record.
+//   8. a hold vs handing a deleted account's file over for removal: a hold first keeps the file; a hand-over first is answered 'deleting',
+//      never 'kept'. Never kept AND handed over.
+//   9. a hold vs the person deleting their own photo: a hold first keeps the file; a delete first is answered 'already deleted'.
+//  10. a release vs a deletion copying under that hold: no deadlock, the copy is complete either way, the file stays listed.
+//  11. the whole deletion (copy, profile, auth, as separate transactions) with a hold arriving at a random point, in a loop: the outcome
+//      always agrees with the answer the hold got.
+//  12. the purge vs a hold placed again on the same target: the hold first keeps everything; never purged under an active hold.
 // Everything it creates is deleted afterwards (the guard triggers are paused for the cleanup only).
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/held-evidence-concurrency.js
 const url = process.env.NEARBY_LOCAL_DB_URL;
@@ -106,8 +113,8 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
     bad = 0; dl = 0; let held = 0; let late = 0;
     for (let i = 0; i < ROUNDS; i += 1) {
       const u = await person();
-      await db.query(`insert into account_moderation_actions (user_id, action, reason, admin_id) values ($1, 'suspend', 'Decision to keep', $2)`, [u, admin]);
       const { rows } = await db.query(`insert into reports (reporter_id, reported_id, reason) values ($1, $2, 'Spam or scam') returning id`, [reporter, u]);
+      await db.query(`insert into account_moderation_actions (user_id, action, reason, report_id, admin_id) values ($1, 'suspend', 'Decision to keep', $3, $2)`, [u, admin, rows[0].id]);
       reports.push(rows[0].id);
       const [a, b] = orders(i, { sub: admin, sql: placeSql('report', rows[0].id) }, { sql: delAccount(u) });
       const started = Date.now();
@@ -130,7 +137,7 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
       await run({ sub: admin, sql: placeSql('review_case', c) });
       // the pause either comes first, or well after the deletion's second step has the account locked
       const res = await Promise.all([
-        run({ sub: admin, sql: `select public.admin_restrict_account('${u}', array['messages'], 7, 'Paused during the review', null, null) as r`, wait: i % 2 === 0 ? 0 : 200 }),
+        run({ sub: admin, sql: `select public.admin_restrict_account('${u}', array['messages'], 7, 'Paused during the review', null, '${c}') as r`, wait: i % 2 === 0 ? 0 : 200 }),
         run({ sql: delAccount(u), wait: i % 2 === 0 ? 30 : 0 }),
       ]);
       if (deadlock(res)) dl += 1;
@@ -168,7 +175,7 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
       await run({ sub: admin, sql: placeSql('review_case', c) });
       const q = `select private.preserve_held_account_evidence('${u}')`;
       const res = await Promise.all([run({ sql: q }), run({ sql: q })]);
-      if (!res.every((r) => r.ok) || await count(u, 'review_case') !== 1 || await count(u, 'suspension_decision') !== 1) bad += 1;
+      if (!res.every((r) => r.ok) || await count(u, 'review_case') !== 1 || await count(u, 'case_member') !== 1) bad += 1;
     }
     check(bad === 0, 'one row per record');
 
@@ -205,10 +212,145 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
     check(bad === 0, `a hold that commits first keeps the record (kept ${kept7}, purged first ${purged7})`);
     check(kept7 > 0 && purged7 > 0, 'both orders really happened');
     check(dl === 0, 'no deadlock');
+
+    const fileFor = async (u, name = 'main.jpg') => {
+      const { rows } = await db.query(`insert into storage.objects (bucket_id, name, metadata) values ('profile-photos', $1, '{"size": 1}') returning id`, [`${u}/${name}`]);
+      await db.query(`update profiles set photo_url = $1 where id = $2`, [`${u}/${name}`, u]);
+      return rows[0].id;
+    };
+    const profileReport = async (u) => {
+      const { rows } = await db.query(`insert into reports (reporter_id, reported_id, reason) values ($1, $2, 'Inappropriate photo') returning id`, [reporter, u]);
+      reports.push(rows[0].id);
+      return rows[0].id;
+    };
+    const fileState = async (o) => (await db.query(`select (select count(*) from private.legal_hold_files where object_id = $1)::int as listed,
+      (select count(*) from private.account_file_cleanup where object_id = $1 and claimed_at is not null)::int as claimed,
+      (select count(*) from storage.objects where id = $1)::int as present`, [o])).rows[0];
+
+    console.log('8. a hold vs handing a file over for removal');
+    bad = 0; dl = 0; let kept8 = 0; let deleting8 = 0;
+    for (let i = 0; i < ROUNDS * 2; i += 1) {
+      const u = await person();
+      const o = await fileFor(u);
+      const r = await profileReport(u);
+      await db.query('delete from profiles where id = $1', [u]);
+      await db.query('delete from auth.users where id = $1', [u]);
+      const [a, b] = orders(i, { sub: admin, sql: placeSql('report', r) }, { sql: `select count(*) n from public.account_file_cleanup_claim('${u}')` });
+      const res = await Promise.all([run(a), run(b)]);
+      if (deadlock(res)) dl += 1;
+      if (!res[0].ok || !res[1].ok) { bad += 1; console.log(res); continue; }
+      const files = res[0].rows[0].r.files;
+      const st = await fileState(o);
+      if (st.claimed === 1) { deleting8 += 1; if (files.kept !== 0 || files.deleting !== 1) bad += 1; }
+      else { kept8 += 1; if (files.kept !== 1 || files.deleting !== 0 || st.listed !== 1) bad += 1; }
+    }
+    check(bad === 0, `the answer always matches: kept ${kept8}, deleting ${deleting8}, never kept AND handed over`);
+    check(kept8 > 0 && deleting8 > 0, 'both orders really happened');
+    check(dl === 0, 'no deadlock');
+
+    console.log('9. a hold vs the person deleting their own photo');
+    bad = 0; dl = 0; let kept9 = 0; let gone9 = 0;
+    for (let i = 0; i < ROUNDS * 2; i += 1) {
+      const u = await person();
+      const o = await fileFor(u);
+      const r = await profileReport(u);
+      const [a, b] = orders(i, { sub: admin, sql: placeSql('report', r) }, { sub: u, sql: `delete from storage.objects where id = '${o}'` });
+      const res = await Promise.all([run(a), run(b)]);
+      if (deadlock(res)) dl += 1;
+      if (!res[0].ok || !res[1].ok) { bad += 1; console.log(res); continue; }
+      const st = await fileState(o);
+      const files = res[0].rows[0].r.files;
+      if (st.present === 1) { kept9 += 1; if (files.kept !== 1 || st.listed !== 1) bad += 1; }
+      else { gone9 += 1; if (files.kept !== 0 || st.listed !== 0) bad += 1; }
+    }
+    check(bad === 0, `a listed file is always there; a deleted one is never listed (kept ${kept9}, deleted first ${gone9})`);
+    check(kept9 > 0 && gone9 > 0, 'both orders really happened');
+    check(dl === 0, 'no deadlock');
+
+    console.log('10. a release vs a deletion copying under that hold');
+    bad = 0; dl = 0;
+    for (let i = 0; i < ROUNDS; i += 1) {
+      const u = await person();
+      const c = await newCase(u);
+      const { rows } = await db.query(`insert into storage.objects (bucket_id, name, metadata) values ('profile-photos', $1, '{"size": 1}') returning id`, [`${u}/case.jpg`]);
+      await db.query(`insert into private.account_review_case_photos (case_id, object_id, user_id) values ($1, $2, $3)`, [c, rows[0].id, u]);
+      const place = await run({ sub: admin, sql: placeSql('review_case', c) });
+      const holdId = place.rows[0].r.hold_id;
+      const [a, b] = orders(i, { sub: admin, sql: `select public.admin_release_legal_hold('${holdId}', 'Counsel confirmed the matter is closed') as r` }, { sql: delAccount(u) });
+      const res = await Promise.all([run(a), run(b)]);
+      if (deadlock(res)) dl += 1;
+      if (!res[0].ok || !res[1].ok) { bad += 1; console.log(res); continue; }
+      const st = await fileState(rows[0].id);
+      if (st.listed !== 1 || st.present !== 1) bad += 1;  // listed at placing, kept: no policy, nothing purges
+    }
+    check(bad === 0, 'the deletion finishes and the file stays listed and present, in both orders');
+    check(dl === 0, 'no deadlock');
+
+    console.log('11. the whole deletion with a hold arriving at a random point');
+    bad = 0; dl = 0; const seen = { kept: 0, deleting: 0, late: 0 };
+    for (let i = 0; i < ROUNDS * 3; i += 1) {
+      const u = await person();
+      const o = await fileFor(u);
+      const r = await profileReport(u);
+      const del = (async () => {
+        await run({ sql: `select public.account_deletion_preserve_held_evidence('${u}')` });
+        await run({ sql: `delete from profiles where id = '${u}'` });
+        await run({ sql: `delete from auth.users where id = '${u}'` });
+        return run({ sql: `select count(*) n from public.account_file_cleanup_claim('${u}')` });
+      })();
+      const hold = run({ sub: admin, wait: (i * 67) % 700, sql: placeSql('report', r) });
+      const [dres, hres] = await Promise.all([del, hold]);
+      if (deadlock([dres, hres])) dl += 1;
+      if (!hres.ok) { bad += 1; console.log(hres); continue; }
+      const files = hres.rows[0].r.files;
+      const st = await fileState(o);
+      // Storage is not running here: 'present' stays 1, so the claim is the fact that decides
+      if (files.kept === 1) { seen.kept += 1; if (st.claimed !== 0 || st.listed !== 1) bad += 1; }
+      else if (files.deleting === 1) { seen.deleting += 1; if (st.claimed !== 1) bad += 1; }
+      else { seen.late += 1; if (st.listed !== 0) bad += 1; }  // after the marker's report list is gone it has nothing to reach
+    }
+    check(bad === 0, `the file's fate always agrees with the answer (${JSON.stringify(seen)})`);
+    check(seen.kept > 0, 'the hold landed in time at least once');
+    check(dl === 0, 'no deadlock');
+
+    console.log('12. the purge vs a hold placed again');
+    bad = 0; dl = 0;
+    await db.query(`select private.set_held_evidence_retention(interval '1 second', 'Concurrency test policy', 'concurrency')`);
+    for (let i = 0; i < ROUNDS; i += 1) {
+      const u = await person();
+      const c = await newCase(u);
+      const first = await run({ sub: admin, sql: placeSql('review_case', c) });
+      await run({ sql: delAccount(u).slice(0, 1) });
+      const { rows: other } = await db.query(`select id from private.legal_holds where id = $1`, [first.rows[0].r.hold_id]);
+      await run({ sub: admin, sql: `select public.admin_release_legal_hold('${other[0].id}', 'Counsel confirmed the matter is closed') as r` });
+      await sleep(1100);
+      const [a, b] = orders(i, { sub: admin, sql: placeSql('review_case', c) }, { sql: 'select private.purge_held_account_evidence()' });
+      const res = await Promise.all([run(a), run(b)]);
+      if (deadlock(res)) dl += 1;
+      const n = await count(u, 'coverage');
+      const active = (await db.query(`select count(*)::int n from private.legal_holds where target_id = $1 and released_at is null`, [c])).rows[0].n;
+      if (res[0].ok && res[0].rows[0].r.hold_id && active === 1) {
+        // the case still exists until the auth delete; the copy stays if the hold came first
+        const purgedFirst = n === 0;
+        if (purgedFirst && i % 2 === 0) bad += 1;
+      }
+      await db.query('delete from auth.users where id = $1', [u]);
+    }
+    check(bad === 0, 'a hold placed first keeps the copy; the purge never removes under an active hold');
+    check(dl === 0, 'no deadlock');
   } finally {
     await db.query('alter table private.held_account_evidence disable trigger held_evidence_guard');
+    await db.query('alter table private.legal_hold_files disable trigger legal_hold_files_guard');
+    await db.query('alter table private.held_evidence_retention_policy disable trigger held_evidence_policy_guard');
     await db.query('delete from private.held_account_evidence');
+    await db.query('delete from private.legal_hold_files');
+    await db.query('delete from private.held_evidence_retention_policy');
     await db.query('alter table private.held_account_evidence enable trigger held_evidence_guard');
+    await db.query('alter table private.legal_hold_files enable trigger legal_hold_files_guard');
+    await db.query('alter table private.held_evidence_retention_policy enable trigger held_evidence_policy_guard');
+    await db.query('delete from private.account_file_cleanup');
+    await db.query('delete from private.account_deletion_markers');
+    await db.query("delete from storage.objects where bucket_id = 'profile-photos' and (storage.foldername(name))[1] = any($1::text[])", [made]);
     await db.query('alter table private.legal_holds disable trigger legal_hold_immutable');
     await db.query('delete from private.legal_holds where target_id = any($1::uuid[]) or target_id = any($2::uuid[])', [cases, reports]);
     await db.query('alter table private.legal_holds enable trigger legal_hold_immutable');
