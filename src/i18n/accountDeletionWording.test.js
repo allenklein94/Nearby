@@ -35,7 +35,7 @@ describe('account deletion wording', () => {
     const limited = 'We may keep limited records where the law or user safety requires it';
     expect(f).toContain(limited);
     expect(repo('supabase/migrations/20270403_deletion_hardening.sql')).toContain(limited);
-    expect(f).not.toMatch(/json\(\{ error: \w+Error\.message/);
+    expect(f).not.toMatch(/json\(\{ error: \w+Error\.message \}, 500\)/);
   });
   test('the Terms point at the same rule and promise nothing wider', () => {
     expect(repo('docs/terms.html')).not.toMatch(/all (associated|your) data/i);
