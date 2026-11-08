@@ -291,8 +291,8 @@ export function caseLinkCountLine(c) {
   if (!Number.isInteger(checked) || checked < 1) return null;
   const links = Number(c?.distinct_links) || 0;
   const texts = plural(checked, 'reported text');
-  if (!links) return `External links detected: 0 · ${texts} checked`;
-  return `External links detected: ${links} · in ${Number(c?.texts_with_links) || 0} of ${texts} checked`;
+  if (!links) return `Possible external links: 0 · ${texts} checked`;
+  return `Possible external links: ${links} · found in ${Number(c?.texts_with_links) || 0} of ${texts} checked`;
 }
 
 export const CASE_LINK_COUNT_NOTE = 'Each different link counts once. Only the reported text stored with this case is checked, and a stored copy can be cut short; the reporter\'s words and anything not reported aren\'t checked. Detection can also match ordinary words like "node.js", so read the text. A link isn\'t a finding.';

@@ -8,11 +8,11 @@ const read = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 describe('the line says only what was counted', () => {
   test('links found', () => {
     expect(caseLinkCountLine({ texts_checked: 3, texts_with_links: 1, distinct_links: 2 }))
-      .toBe('External links detected: 2 · in 1 of 3 reported texts checked');
+      .toBe('Possible external links: 2 · found in 1 of 3 reported texts checked');
   });
   test('zero is shown when text really was checked', () => {
     expect(caseLinkCountLine({ texts_checked: 1, texts_with_links: 0, distinct_links: 0 }))
-      .toBe('External links detected: 0 · 1 reported text checked');
+      .toBe('Possible external links: 0 · 1 reported text checked');
   });
   test('nothing checked or unknown = no line, never a 0', () => {
     [{ texts_checked: 0, texts_with_links: 0, distinct_links: 0 }, {}, null, undefined, { texts_checked: 'x' }]
