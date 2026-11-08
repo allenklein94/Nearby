@@ -174,9 +174,11 @@ begin
     continue when v_plan.initiator_id <> v_me;
     v_next := null;
     if v_plan.status = 'confirmed' and v_plan.resulting_request_id is not null then
-      select g.user_id into v_next from public.group_plan_participants g
+      -- skips anyone whose own deletion already holds their profile: they are leaving too, and waiting for them here would deadlock
+      select g.user_id into v_next from public.group_plan_participants g join public.profiles pr on pr.id = g.user_id
         where g.proposal_id = v_plan.id and g.user_id <> v_me and g.status = 'accepted'
-        order by g.responded_at nulls last, g.created_at, g.id limit 1;
+        order by g.responded_at nulls last, g.created_at, g.id limit 1
+        for key share of pr skip locked;
     end if;
     if v_next is null then
       if v_plan.status = 'pending' then

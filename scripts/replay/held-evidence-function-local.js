@@ -237,11 +237,11 @@ async function callFunction(token, body) {
         update profiles set intent_visibility = 'friends' where id in ('${next.id}', '${third.id}');
         insert into friendships (user_a, user_b, status, requested_by) values ('${orgz.id}', '${next.id}', 'accepted', '${orgz.id}'), ('${orgz.id}', '${third.id}', 'accepted', '${orgz.id}') on conflict do nothing;`);
   const partnerId = psql(`insert into brand_partners (name, active, latitude, longitude) values ('Local Coffee', true, 40.0, -75.0) returning id;`).split('\n')[0];
-  const askFor = async (p) => { const { data, error } = await p.c.rpc('create_business_request', { raw_text_param: 'local deletion test', lat_param: 40.1, lng_param: -75.1, category_param: 'Coffee', party_size_param: 1, date_param: null, budget_max_param: 40, time_window_start_param: null, time_window_end_param: null, dietary_param: null, radius_miles_param: 15, cuisine_param: null }); if (error) throw new Error(`ask: ${error.message}`); return data.requestId; };
+  const askFor = async (p) => { const { data, error } = await p.c.rpc('create_business_request', { raw_text_param: 'local deletion test', latitude_param: 40.1, longitude_param: -75.1, category_param: 'Coffee', party_size_param: 1, budget_max_param: 40, radius_miles_param: 15 }); if (error) throw new Error(`ask: ${error.message}`); return data.requestId; };
   const fRequests = [await askFor(orgz), await askFor(next), await askFor(third)];
   const prop = await orgz.c.rpc('propose_group_plan', { source_request_id_param: fRequests[0], invitee_source_request_ids_param: fRequests.slice(1) });
   if (prop.error) throw new Error(`propose: ${prop.error.message}`);
-  await orgz.c.rpc('set_group_plan_budget', { proposal_id_param: prop.data, budget_max_param: 40 });
+  await orgz.c.rpc('set_group_plan_budget', { proposal_id_param: prop.data, agreed_budget_max_param: 40 });
   await next.c.rpc('respond_to_group_plan', { proposal_id_param: prop.data, accept_param: true });
   await third.c.rpc('respond_to_group_plan', { proposal_id_param: prop.data, accept_param: true });
   const conf = await orgz.c.rpc('confirm_group_plan', { proposal_id_param: prop.data, exclude_user_ids_param: [] });
@@ -253,7 +253,7 @@ async function callFunction(token, body) {
   const ownReq = await askFor(orgz);
   const ownOffer = psql(`insert into business_request_offers (request_id, partner_id, status, offer_type, offer_description) values ('${ownReq}', '${partnerId}', 'offered', 'standard', 'Yes')
     on conflict (request_id, partner_id) do update set status = 'offered', offer_type = 'standard', offer_description = 'Yes', valid_until = null returning id;`).split('\n')[0];
-  const acc = await orgz.c.rpc('accept_business_offer', { offer_id_param: ownOffer, seen_revision_param: null });
+  const acc = await orgz.c.rpc('accept_business_offer', { offer_id_param: ownOffer });
   if (acc.error) throw new Error(`accept: ${acc.error.message}`);
   const payId = psql(`update business_payments p set status = 'captured', amount = 25, stripe_payment_intent_id = 'pi_local_f', stripe_charge_id = 'ch_local_f', failure_reason = 'previous attempt' from business_reservations r where r.id = p.reservation_id and r.offer_id = '${ownOffer}' returning p.id;`).split('\n')[0];
   const offerId = psql(`insert into brand_offers (partner_id, title, reward_type) values ('${partnerId}', 'Free coffee', 'free_item') returning id;`).split('\n')[0];
