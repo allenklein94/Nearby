@@ -214,7 +214,7 @@ async function callFunction(token, body) {
         delete from private.legal_hold_file_access; delete from private.legal_hold_files; delete from private.held_account_evidence; delete from private.legal_holds;
         delete from private.account_file_cleanup; delete from private.account_deletion_markers; delete from private.account_deletion_failures;
         delete from private.suspended_account_records where decisions::text like '%Local test%';
-        delete from reports where reason = 'Inappropriate photo'; delete from push_outbox where dedupe_key like 'account_deletion:%';
+        delete from reports where reason = 'inappropriate_photo' and reporter_id is null and reported_id is null; delete from reports where reporter_id = '${other.id}'; delete from push_outbox where dedupe_key like 'account_deletion:%';
         delete from storage.objects where bucket_id = 'profile-photos' and name = '${bPhoto.name}';
         alter table private.held_account_evidence enable trigger user; alter table private.legal_hold_files enable trigger user; alter table private.legal_hold_file_access enable trigger user;
         alter table private.legal_holds enable trigger legal_hold_immutable; alter table private.suspended_account_records enable trigger suspended_record_guard;`, 'supabase_admin');
