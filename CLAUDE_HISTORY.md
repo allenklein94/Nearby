@@ -1,3 +1,14 @@
+# 2026-11-08: 0401 Account facts in the admin case view (staged, locally verified)
+
+Owner: approve the facts line from idea 23 now, staged, without delaying build 87. Migration 20270401 on `post-tier1/account-facts`
+(not merged, not deployed, not in build 87; own deploy approval after 0400; sha256 0284c5885e7be5f3083cd6b31727c56ec6d0c069a9ad1a1474389a20f44b38c9, commit 537f63ba).
+`admin_get_account_facts(case_id)`: stable, definer, `private.require_admin`, accounts in that case only; created_at, has_verified_phone,
+trust_level, reports received + open / no_action / action_taken / no_outcome from the latest `report_actions` outcome (a reopened report = open; a
+plain resolve = no outcome). Excluded: auto_* rows (moderate-photo files them with reporter = the account), reports about a business (reported_id null,
+0381), purged reports. Never a phone, email, reporter or report text; journey asserts the exact key set. Section self-fetches; function missing = absent;
+other error = a retry line. Verified: replay 525/525, journey 7/7 (7/7 fail rolled back), journeys 1208/1208, rollback/re-apply, Jest 552/552, iOS export.
+Correction to the idea 23 assessment: behaviour evidence lines are on Admin Reports only, device/text/prior-suspension sections on Admin Review only (not unified, recorded).
+
 # 2026-11-08: ideas 18, 19, 21, 22 closed as designed (nothing built)
 
 Owner agreed: keep the invisible trust & safety design. 18 fast reporting: the one sheet already is reason + optional details +
