@@ -1,3 +1,12 @@
+# 2026-11-08: ideas 18, 19, 21, 22 closed as designed (nothing built)
+
+Owner agreed: keep the invisible trust & safety design. 18 fast reporting: the one sheet already is reason + optional details +
+Submit (code reading, not phone-tested; build 87 has 6 reasons, staged 8, no Unsafe or Impersonation until 0381/0398). 19 shadow
+friction: already rejected 2026-11-07; admin pauses (0399) are visible, dated, never automatic; discovery reach not covered
+(known limit, new decision if ever wanted). 21 mandatory ID: already refused; the ID-upload gate is unchanged. 22 what the user
+sees: Phone Verified badge and suspicion-triggered verification DECLINED. Pre-launch requirements recorded: API-level phone-only
+sign-up (0367 + switch) and Turnstile tested before enforcement. Build 87 checked same day: not started (latest iOS = 86).
+
 # 2026-11-08: 0400 ID-document retention + deletion (staged, locally verified)
 
 Owner (2026-11-07): build the approved ID-document lifecycle now, staged, so optional ID uploads can reach production users
