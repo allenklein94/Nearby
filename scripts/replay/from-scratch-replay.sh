@@ -2,6 +2,7 @@
 # From-scratch migration replay on an empty database (Docker, supabase/postgres:15.1.0.147).
 #   bash scripts/replay/from-scratch-replay.sh            # fresh container, every migration, stops at the first error
 #   KEEP=1 bash scripts/replay/from-scratch-replay.sh     # leave the container running for checks afterwards
+#   REPLAY_IMAGE=public.ecr.aws/supabase/postgres:17.6.1.003 ...                # production's engine (PG 17.6) instead of the default
 # Never touches production. Each migration file runs in ONE transaction with ON_ERROR_STOP (production applies each file
 # as one Management API query), as `postgres`, in filename order. Log: $OUT/replay.log (default /tmp/nearby-replay).
 # Then, with KEEP=1 (IP = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nearby-replay):
@@ -44,7 +45,7 @@ SQL
 
 docker rm -f "$NAME" >/dev/null 2>&1
 docker network inspect nearby-replay-internal >/dev/null 2>&1 || docker network create --internal nearby-replay-internal >/dev/null
-docker run -d --name "$NAME" --network nearby-replay-internal -e POSTGRES_PASSWORD=postgres supabase/postgres:15.1.0.147 >/dev/null || exit 1
+docker run -d --name "$NAME" --network nearby-replay-internal -e POSTGRES_PASSWORD=postgres "${REPLAY_IMAGE:-supabase/postgres:15.1.0.147}" >/dev/null || exit 1
 for _ in $(seq 1 90); do [ "$(docker inspect -f '{{.State.Health.Status}}' "$NAME")" = healthy ] && break; sleep 2; done
 # no route out: a real request from inside the container must fail
 if docker exec "$NAME" timeout 5 bash -c 'exec 3<>/dev/tcp/1.1.1.1/443' 2>/dev/null; then echo "container can reach the internet; refusing"; exit 1; fi
