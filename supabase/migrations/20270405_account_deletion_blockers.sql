@@ -167,7 +167,11 @@ declare
   v_plan public.group_plan_proposals;
   v_next uuid;
 begin
-  for v_plan in select * from public.group_plan_proposals p where p.initiator_id = v_me order by p.id for update loop
+  -- every plan the person is in, not just theirs: two people leaving one plan at once take turns here, so the plan never passes to someone already leaving
+  for v_plan in select * from public.group_plan_proposals p
+      where p.initiator_id = v_me or exists (select 1 from public.group_plan_participants g where g.proposal_id = p.id and g.user_id = v_me)
+      order by p.id for update loop
+    continue when v_plan.initiator_id <> v_me;
     v_next := null;
     if v_plan.status = 'confirmed' and v_plan.resulting_request_id is not null then
       select g.user_id into v_next from public.group_plan_participants g
