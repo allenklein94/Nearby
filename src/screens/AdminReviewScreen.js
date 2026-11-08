@@ -9,6 +9,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { reportReasonLabel, sortReportQueue, reportQueueTag } from '../utils/reportReasons';
 import AccountFactsSection from '../components/AccountFactsSection';
 import LinkedReportsSection from '../components/LinkedReportsSection';
+import CaseLinkCount from '../components/CaseLinkCount';
 import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
@@ -255,6 +256,7 @@ export default function AdminReviewScreen() {
           </View>
         ))}
       </ScrollView>
+      <CaseLinkCount caseId={selected.id} styles={styles} />
       <LinkedReportsSection reports={selected.reports} styles={styles} />
       <Text style={styles.subTitle}>History</Text>
       {(selected.events || []).map((e, i) => (

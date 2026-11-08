@@ -311,6 +311,13 @@ const STEPS = {
       'LAUNCH GATE, not a deploy step: a retention decision is recorded with private.set_held_evidence_retention (first run private.held_evidence_purge_preview with the proposed period), or the owner + counsel record why not. "Kept with no decision" is not a final policy',
       'rollback = scripts/rollback/20270403_deletion_hardening.rollback.sql (refuses while an account hold, a logged purge or a kept/waiting cover exists: export + a decision first); then covers stay behind again',
       'STOP + report: a file removed under an active hold, an unheld cover or personal file kept past the hourly run, a phone number or reporter id in a copy, or anything revealing a hold to the person'] },
+  20270404: { journeys: ['adminCaseLinkCount'],
+    edge: [],
+    manual: ['read-only right after: public.admin_get_case_link_count(uuid) exists; EXECUTE = authenticated (+ service_role per defaults), never anon; no other object changed',
+      'through the real API with a dedicated test account + an admin: a non-admin is refused; the admin opens a test review case with a linked reported message and sees the count',
+      'website re-export + browser check (Admin Review case): the line + note show above Linked reports; a case with no reported text shows no line',
+      'rollback = scripts/rollback/20270404_admin_case_link_count.rollback.sql (no data involved)',
+      'STOP + report: anything written by the read, a link or text returned by the function, a non-admin served, or a score / label appearing anywhere'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

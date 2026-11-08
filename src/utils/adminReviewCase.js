@@ -285,6 +285,18 @@ export function accountFactsLines(f, now = Date.now()) {
 
 export const ACCOUNT_FACTS_NOTE = 'A report is an allegation until an admin records an outcome. Reports about a business aren\'t included, and resolved reports are deleted after 12 months.';
 
+// Link count in the case (20270404). Only what the server counted; no text checked = no line, never a 0 that was never looked for.
+export function caseLinkCountLine(c) {
+  const checked = Number(c?.texts_checked);
+  if (!Number.isInteger(checked) || checked < 1) return null;
+  const links = Number(c?.distinct_links) || 0;
+  const texts = plural(checked, 'reported text');
+  if (!links) return `External links detected: 0 · ${texts} checked`;
+  return `External links detected: ${links} · in ${Number(c?.texts_with_links) || 0} of ${texts} checked`;
+}
+
+export const CASE_LINK_COUNT_NOTE = 'Each different link counts once. Only the reported text stored with this case is checked, and a stored copy can be cut short; the reporter\'s words and anything not reported aren\'t checked. Detection can also match ordinary words like "node.js", so read the text. A link isn\'t a finding.';
+
 // The function isn't on this database yet (older database): show nothing rather than an error.
 export function accountFactsMissing(error) {
   return error?.code === 'PGRST202' || error?.code === '42883';
