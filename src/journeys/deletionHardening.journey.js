@@ -172,6 +172,7 @@ d('journey: deletion hardening (20270403)', () => {
   v_before := private.held_evidence_purge_preview(interval '1 year');
   ${rec('preview', 'v_before')}
   ${rec('preview_changed_nothing', `(select count(*) from private.held_account_evidence where hold_id = v_ha) > 0`)}
+  ${rec('log_before', `(select count(*) from private.held_evidence_purge_log)`)}
   perform private.purge_held_account_evidence();
   ${rec('no_decision_no_purge', `jsonb_build_object('kept', (select count(*) from private.held_account_evidence where hold_id = v_ha) > 0, 'log', (select count(*) from private.held_evidence_purge_log))`)}
   ${rec('reminder', `(select count(*) from push_outbox where recipient_id = v_admin and data->>'kind' = 'held_evidence_retention')`)}
@@ -264,7 +265,7 @@ d('journey: deletion hardening (20270403)', () => {
     expect(data('status_admin').released_holds_keeping_evidence).toBeGreaterThanOrEqual(1);
     expect(data('preview').evidence_rows).toBeGreaterThan(0);
     expect(data('preview_changed_nothing')).toBe(true);
-    expect(data('no_decision_no_purge')).toEqual({ kept: true, log: 0 });
+    expect(data('no_decision_no_purge')).toEqual({ kept: true, log: data('log_before') });
     expect(data('reminder')).toBe(1);
     expect(data('purged')).toEqual({ left: 0, log: { policy: true, holds: true, rows: true }, hold_record_stays: 1 });
     expect(data('log_keys')).toEqual(['evidence_rows', 'files', 'holds', 'id', 'policy_id', 'purged_at']);

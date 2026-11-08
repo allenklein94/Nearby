@@ -187,8 +187,8 @@ async function callFunction(token, body) {
   await mod.c.rpc('admin_place_legal_hold', { target_type_param: 'review_case', target_id_param: caseId, reason_param: 'Preservation request from counsel' });
   psql(`create or replace function private.test_refuse_copy() returns trigger language plpgsql as 'begin raise exception ''held evidence copy failed''; end';
         create trigger test_refuse_copy before insert on private.held_account_evidence for each row execute function private.test_refuse_copy();`, 'postgres');
-  const rc = await callFunction(c.token);
-  rec('a generic error, nothing from the database', rc.status === 500 && rc.text === '{"error":"Failed to delete account"}', rc);
+  const rFail = await callFunction(c.token);
+  rec('a generic error, nothing from the database', rFail.status === 500 && rFail.text === '{"error":"Failed to delete account"}', rFail);
   rec('the account and file are untouched', !gone(c.id) && (await inStorage(cPhoto)) && one(`select count(*) from profiles where id = '${c.id}'`) === '1');
   rec('the failure is recorded', one(`select count(*) from private.account_deletion_failures where account_id = '${c.id}' and step = 'preserve'`) === '1');
   rec('an admin was told, with counts only', one(`select count(*) from push_outbox where recipient_id = '${mod.id}' and dedupe_key like 'account_deletion:%' and body not like '%${c.id}%'`) === '1');
