@@ -21,7 +21,8 @@ import { setMyNotificationGroup } from '../services/notificationPrefs';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { deleteAccount } from '../services/account';
+import { deleteAccount, getDeletionPlanImpact } from '../services/account';
+import { deletionPlanNotice, isDeletionPlanRefusal } from '../utils/accountDeletionPlanNotice';
 import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
 import { getMyFriendNearbySharing, setFriendNearbySharing } from '../services/friendNearby';
@@ -535,10 +536,16 @@ export default function SettingsScreen({ navigation, route }) {
     );
   }
 
-  function confirmDeleteAccountFinal() {
+  async function confirmDeleteAccountFinal() {
+    const notice = deletionPlanNotice(await getDeletionPlanImpact().catch(() => null));
+    if (notice === 'unresolved') {
+      Alert.alert(t('ui.settings.deletionBlockedGroupPlanTitle'), t('ui.settings.deletionBlockedGroupPlanBody'));
+      return;
+    }
+    const body = t('ui.settings.yourAccountAndAllAssociated');
     Alert.alert(
       t('ui.settings.areYouAbsolutelySure'),
-      t('ui.settings.yourAccountAndAllAssociated'),
+      notice === 'ends_plans' ? `${t('ui.settings.deletionEndsGroupPlans')}\n\n${body}` : body,
       [
         { text: t('ui.settings.cancel'), style: 'cancel' },
         { text: t('ui.settings.deleteMyAccount'), style: 'destructive', onPress: handleDeleteAccount },
@@ -570,7 +577,8 @@ export default function SettingsScreen({ navigation, route }) {
       }
     } catch (e) {
       setDeleting(false);
-      if (!presentStepUpRefusal(e)) Alert.alert(t('ui.settings.deletionFailed'), e.message);
+      if (isDeletionPlanRefusal(e)) Alert.alert(t('ui.settings.deletionBlockedGroupPlanTitle'), t('ui.settings.deletionBlockedGroupPlanBody'));
+      else if (!presentStepUpRefusal(e)) Alert.alert(t('ui.settings.deletionFailed'), e.message);
     }
   }
 

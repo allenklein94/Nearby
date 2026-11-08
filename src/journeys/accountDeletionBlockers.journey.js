@@ -1,7 +1,8 @@
 // Account deletion never refused, and never takes other people's plans or the money records with it (migration 20270405). Real group-plan
 // and booking functions build the state; deletions run in delete-account's order (profile, then auth user) with every trigger on.
-//   1-3. The organizer of a booked group plan leaves: the plan, its request and the booking pass to the earliest to accept, without the person's location or dietary needs.
-//   4-5. A participant leaves: their rows go, the plan goes on. A plan that can't go on ends; nobody else's request changes.
+//   1-3. The organizer of a booked group plan leaves (owner, Option 1): a paid booking refuses the whole deletion, changing nothing; once resolved the plan ends through the
+//        reservation cancellation, nobody is handed the role or a payment, the business and everyone in it are told, and each person's own request comes back.
+//   4-5. A participant leaves: their rows go, the plan goes on. A plan already over ends quietly: no push, no request reopened.
 //   6-8. A customer leaves: a payment with money behind it stays with no person on it, nobody can read it, a late refund still lands; one with nothing behind it goes.
 //   9.   Confirmed redemptions stay for billing without the person; an unconfirmed claim goes.
 //   10.  A business owner leaves: the business and its records stay, without their id; a late review doesn't fail.
@@ -18,7 +19,7 @@ const del = (v) => `perform set_config('request.jwt.claims', '', true); delete f
 const rec = (step, ok, data = 'null::text') => `log := log || jsonb_build_array(jsonb_build_object('step', '${step}', 'ok', coalesce(${ok}, false), 'data', to_jsonb(${data})));`;
 const ask = (u, into) => `${as(u)} v_res := create_business_request('journey del', 40.1, -75.1, 'Coffee', 1, null, 40, null, null, null, 15, null); ${into} := (v_res->>'requestId')::uuid;`;
 
-const PEOPLE = ['v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_f', 'v_g', 'v_h', 'v_i', 'v_j', 'v_k', 'v_cu', 'v_cv', 'v_owner', 'v_admin', 'v_held'];
+const PEOPLE = ['v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_f', 'v_g', 'v_h', 'v_i', 'v_j', 'v_k', 'v_l', 'v_q3', 'v_o3', 'v_cu', 'v_cv', 'v_owner', 'v_admin', 'v_held'];
 
 d('journey: account deletion (20270405)', () => {
   let s;
@@ -27,14 +28,15 @@ d('journey: account deletion (20270405)', () => {
       ${actorDeclares([...PEOPLE, 'v_partner'])}
       v_owner2 uuid;
       v_res jsonb; v_msg text; v_n int; v_m int; v_ok boolean; v_t text; v_id uuid; v_plan uuid;
+      v_hint text; v_rl uuid; v_rm uuid; v_rn uuid; v_p4 uuid; v_req4 uuid; v_offer4 uuid; v_pay4 uuid;
       v_ra uuid; v_rb uuid; v_rc uuid; v_p uuid; v_req uuid; v_offer uuid; v_reserv uuid;
       v_p2 uuid; v_re uuid; v_rf uuid; v_p3 uuid; v_rg uuid; v_rh uuid; v_rg_new uuid;
       v_q uuid; v_q2 uuid; v_o uuid; v_o2 uuid; v_pay uuid; v_pay2 uuid; v_res1 uuid;
       v_bo uuid; v_red1 uuid; v_red2 uuid; v_sub uuid; v_scr uuid; v_note uuid; v_bpr uuid;
       v_rest uuid; v_ogp uuid; v_win uuid; v_lose uuid; v_row jsonb;`, `
-  ${actorsSql({ people: PEOPLE, friends: [['v_a', 'v_b'], ['v_a', 'v_c'], ['v_d', 'v_e'], ['v_d', 'v_f'], ['v_g', 'v_h']], business: { owner: 'v_owner', partner: 'v_partner' } })}
+  ${actorsSql({ people: PEOPLE, friends: [['v_a', 'v_b'], ['v_a', 'v_c'], ['v_d', 'v_e'], ['v_d', 'v_f'], ['v_g', 'v_h'], ['v_l', 'v_q3'], ['v_l', 'v_o3']], business: { owner: 'v_owner', partner: 'v_partner' } })}
   update brand_partners set active = true, latitude = 40.0, longitude = -75.0 where id = v_partner;
-  update profiles set intent_visibility = 'friends' where id in (v_a, v_b, v_c, v_d, v_e, v_f, v_g, v_h);
+  update profiles set intent_visibility = 'friends' where id in (v_a, v_b, v_c, v_d, v_e, v_f, v_g, v_h, v_l, v_q3, v_o3);
 
   -- a booked group plan: a organizes, b accepts first, c second; a's request carries a's location and a dietary need
   ${ask('v_a', 'v_ra')} ${ask('v_b', 'v_rb')} ${ask('v_c', 'v_rc')}
@@ -57,46 +59,113 @@ d('journey: account deletion (20270405)', () => {
   insert into plans (plan_type, created_by, resulting_business_request_id) values ('business_request', v_a, v_req) returning id into v_plan;
   ${rec('fixture_booked', "v_reserv is not null and (select status from business_request_offers where id = v_offer) = 'accepted'")}
 
-  delete from push_outbox where recipient_id in (v_b, v_c);
+  -- the booking is paid: the same refusal as a customer cancelling. Nothing changes and the answer says why.
+  -- a group booking makes no payment row today (only a solo accept does; an add-on on the plan can), so the row is made here
+  insert into business_payments (reservation_id, status, amount, currency, payer_id, provider, stripe_payment_intent_id, stripe_charge_id)
+    values (v_reserv, 'captured', 25, 'usd', v_a, 'stripe', 'pi_journey_group', 'ch_journey_group') returning id into v_pay;
+  ${as('v_a')} v_res := account_deletion_plan_impact();
+  ${rec('preview_says_unresolved', `(v_res->>'plans')::int = 1 and (v_res->>'bookings')::int = 1 and (v_res->>'unresolved')::int = 1`, 'v_res')}
+  delete from push_outbox where recipient_id in (v_b, v_c, v_owner);
+  v_hint := null;
+  begin
+    ${del('v_a')}
+  exception when others then get stacked diagnostics v_hint = pg_exception_hint;
+  end;
+  ${rec('preview_matches_refusal', `v_hint = 'group_plan_booking_unresolved'`, 'v_hint')}
+  ${rec('paid_refusal_changes_nothing', `exists (select 1 from profiles where id = v_a)
+      and (select initiator_id from group_plan_proposals where id = v_p) = v_a
+      and (select status from business_request_offers where id = v_offer) = 'accepted'
+      and (select status from business_reservations where id = v_reserv) = 'confirmed'
+      and (select status from business_payments where id = v_pay) = 'captured'
+      and (select status from business_requests where id = v_rb) = 'merged'
+      and not exists (select 1 from push_outbox where recipient_id in (v_b, v_c, v_owner))`)}
+  update business_payments set status = 'authorized' where id = v_pay;
+  v_hint := null;
+  begin
+    ${del('v_a')}
+  exception when others then get stacked diagnostics v_hint = pg_exception_hint;
+  end;
+  ${rec('authorized_also_refused', `v_hint = 'group_plan_booking_unresolved' and exists (select 1 from profiles where id = v_a)`, 'v_hint')}
+
+  -- the business refunds it (the webhook sets this): now it can go. c has muted planning pushes and their request's time has passed.
+  update business_payments set status = 'refunded' where id = v_pay;
+  ${as('v_a')} v_res := account_deletion_plan_impact();
+  ${rec('preview_after_refund', `(v_res->>'plans')::int = 1 and (v_res->>'unresolved')::int = 0`, 'v_res')}
+  ${as('v_b')} v_res := account_deletion_plan_impact();
+  ${rec('preview_is_own_plans_only', `(v_res->>'plans')::int = 0`, 'v_res')}
+  perform set_config('request.jwt.claims', '', true); update profiles set notification_mutes = array['plans_invitations', 'plans_changes', 'plans_reminders'] where id = v_c;
+  ${rec('muted_fixture', '(select not notify_planning from profiles where id = v_c)')}
+  update business_requests set expires_at = now() - interval '1 hour' where id = v_rc;
   ${del('v_a')}
-  ${rec('organizer_passes_plan', `(select initiator_id from group_plan_proposals where id = v_p) = v_b
-      and (select requester_id from business_requests where id = v_req) = v_b
-      and (select created_by from plans where id = v_plan) = v_b
+  ${rec('organizer_ends_plan', `not exists (select 1 from group_plan_proposals where id = v_p)
+      and not exists (select 1 from business_requests where id = v_req)
       and not exists (select 1 from group_plan_participants where user_id = v_a)
       and not exists (select 1 from group_plan_offer_confirmations where user_id = v_a)
       and not exists (select 1 from business_requests where id = v_ra)
-      and exists (select 1 from group_plan_participants where proposal_id = v_p and user_id = v_c and status = 'accepted')`,
-    `(select jsonb_build_object('initiator', initiator_id = v_b, 'status', status) from group_plan_proposals where id = v_p)`)}
-  ${rec('booking_survives', `(select status from business_request_offers where id = v_offer) = 'accepted'
-      and (select status from business_reservations where id = v_reserv) = 'confirmed'`)}
-  ${rec('person_removed_from_request', `(select latitude = 40.2 and longitude = -75.2 from business_requests where id = v_req)
-      and (select dietary = '{vegan}' from business_requests where id = v_req)`,
-    `(select jsonb_build_object('lat', latitude, 'dietary', dietary) from business_requests where id = v_req)`)}
-  ${rec('new_organizer_told_once', `(select count(*) from push_outbox where recipient_id = v_b and data->>'type' = 'group_plan_confirmed' and data->>'proposal_id' = v_p::text) = 1
-      and not exists (select 1 from push_outbox where recipient_id = v_c and data->>'proposal_id' = v_p::text)`)}
-  ${as('v_b')} v_res := complete_business_reservation(v_offer);
-  ${rec('new_organizer_can_act', `(v_res->>'success')::boolean`, 'v_res')}
+      and not exists (select 1 from plans where id = v_plan)`)}
+  ${rec('nobody_handed_the_role', `not exists (select 1 from push_outbox where recipient_id in (v_b, v_c) and title = 'You''re now organizing this group plan')
+      and not exists (select 1 from business_requests where requester_id in (v_b, v_c) and id = v_req)`)}
+  ${rec('booking_cancelled_through_the_rules', `exists (select 1 from cancellation_events where entity_type = 'business_reservation' and entity_id = v_offer and partner_id = v_partner and actor_role = 'requester')
+      and exists (select 1 from cancellation_events where entity_type = 'group_plan' and entity_id = v_p)`)}
+  ${rec('business_told', `(select count(*) from push_outbox where recipient_id = v_owner and data->>'type' = 'reservation_cancelled_by_customer' and data->>'offer_id' = v_offer::text) = 1`)}
+  ${rec('business_push_is_safe', `not exists (select 1 from push_outbox where recipient_id = v_owner and data->>'offer_id' = v_offer::text and (body ilike '%journey del%' or data ? 'proposal_id'))`)}
+  ${rec('participant_told_opens_own_request', `(select count(*) from push_outbox where recipient_id = v_b and data->>'type' = 'plan_cancelled' and data->>'request_id' = v_rb::text and body like '%booking was cancelled%') = 1`)}
+  ${rec('muted_participant_not_pushed', `not exists (select 1 from push_outbox where recipient_id = v_c and data->>'type' = 'plan_cancelled')`)}
+  ${rec('own_request_comes_back', `(select status = 'open' and superseded_by_group_plan_id is null from business_requests where id = v_rb)`,
+    `(select jsonb_build_object('status', status) from business_requests where id = v_rb)`)}
+  ${rec('past_request_reads_expired', `(select status = 'expired' and superseded_by_group_plan_id is null from business_requests where id = v_rc)`)}
+  ${rec('refunded_record_stays_without_the_person', `(select status = 'refunded' and payer_id is null and reservation_id is null from business_payments where id = v_pay)`)}
+  ${as('v_b')} v_res := create_business_request('journey del again', 40.1, -75.1, 'Coffee', 1, null, 40, null, null, null, 15, null);
+  ${rec('participant_can_ask_again', `(v_res->>'requestId') is not null`, 'v_res')}
 
-  -- a participant leaves: the plan goes on
-  ${del('v_c')}
-  ${rec('participant_leaves', `not exists (select 1 from group_plan_participants where user_id = v_c)
-      and not exists (select 1 from group_plan_offer_confirmations where user_id = v_c)
-      and not exists (select 1 from business_requests where id = v_rc)
-      and (select initiator_id from group_plan_proposals where id = v_p) = v_b
-      and (select status from business_request_offers where id = v_offer) = 'completed'`)}
+  -- a participant leaves: the plan goes on. Then the visit happens and the organizer leaves: a paid, completed booking is not an open obligation.
+  ${ask('v_l', 'v_rl')} ${ask('v_q3', 'v_rm')} ${ask('v_o3', 'v_rn')}
+  ${as('v_l')} v_p4 := propose_group_plan(v_rl, array[v_rm, v_rn]); perform set_group_plan_budget(v_p4, 40);
+  ${as('v_q3')} perform respond_to_group_plan(v_p4, true);
+  ${as('v_o3')} perform respond_to_group_plan(v_p4, true);
+  ${as('v_l')} perform confirm_group_plan(v_p4);
+  select resulting_request_id into v_req4 from group_plan_proposals where id = v_p4;
+  insert into business_request_offers (request_id, partner_id, status, offer_type, offer_description)
+    values (v_req4, v_partner, 'offered', 'standard', 'We can do this.')
+    on conflict (request_id, partner_id) do update set status = 'offered', offer_type = 'standard', offer_description = 'We can do this.', valid_until = null
+    returning id into v_offer4;
+  ${as('v_l')} perform confirm_group_plan_offer(v_p4, v_offer4);
+  ${as('v_q3')} perform confirm_group_plan_offer(v_p4, v_offer4);
+  ${as('v_o3')} perform confirm_group_plan_offer(v_p4, v_offer4);
+  ${del('v_o3')}
+  ${rec('participant_leaves', `not exists (select 1 from group_plan_participants where user_id = v_o3)
+      and not exists (select 1 from group_plan_offer_confirmations where user_id = v_o3)
+      and not exists (select 1 from business_requests where id = v_rn)
+      and (select initiator_id from group_plan_proposals where id = v_p4) = v_l
+      and (select status from business_request_offers where id = v_offer4) = 'accepted'`)}
+  insert into business_payments (reservation_id, status, amount, currency, payer_id, provider, stripe_payment_intent_id, stripe_charge_id)
+    select r.id, 'captured', 25, 'usd', v_l, 'stripe', 'pi_journey_done', 'ch_journey_done' from business_reservations r where r.offer_id = v_offer4 returning id into v_pay4;
+  ${as('v_l')} v_res := complete_business_reservation(v_offer4);
+  v_res := account_deletion_plan_impact();
+  ${rec('completed_plan_needs_no_warning', `(v_res->>'plans')::int = 0 and (v_res->>'unresolved')::int = 0`, 'v_res')}
+  delete from push_outbox where recipient_id in (v_q3, v_owner);
+  ${del('v_l')}
+  ${rec('completed_plan_ends_quietly', `not exists (select 1 from profiles where id = v_l)
+      and not exists (select 1 from group_plan_proposals where id = v_p4)
+      and not exists (select 1 from push_outbox where recipient_id in (v_q3, v_owner) and data->>'type' in ('plan_cancelled', 'reservation_cancelled_by_customer'))
+      and (select status from business_requests where id = v_rm) = 'merged'`)}
+  ${rec('completed_paid_record_stays', `(select status = 'captured' and payer_id is null from business_payments where id = v_pay4)`)}
 
   -- a pending plan's organizer leaves: it ends; the others' own requests are as they were
   ${ask('v_d', 'v_id')} ${ask('v_e', 'v_re')} ${ask('v_f', 'v_rf')}
   ${as('v_d')} v_p2 := propose_group_plan(v_id, array[v_re, v_rf]);
   ${as('v_e')} perform respond_to_group_plan(v_p2, true);
+  delete from push_outbox where recipient_id in (v_e, v_f);
   ${del('v_d')}
+  ${rec('pending_plan_participants_told', `(select count(*) from push_outbox where recipient_id = v_e and data->>'type' = 'plan_cancelled' and data->>'request_id' = v_re::text and body not like '%booking%') = 1
+      and (select count(*) from push_outbox where recipient_id = v_f and data->>'type' = 'plan_cancelled' and data->>'request_id' = v_rf::text) = 1`)}
   ${rec('pending_plan_ends', `not exists (select 1 from group_plan_proposals where id = v_p2)
       and not exists (select 1 from group_plan_participants where proposal_id = v_p2)
       and (select status from business_requests where id = v_re) = 'open'
       and (select status from business_requests where id = v_rf) = 'open'
       and exists (select 1 from cancellation_events where entity_type = 'group_plan' and entity_id = v_p2 and cancelled_by is null)`)}
 
-  -- a confirmed plan everyone else left: nothing to pass on; the person who left keeps their own request
+  -- a confirmed plan everyone else left: it ends; the person who left gets their own request back
   ${ask('v_g', 'v_rg')} ${ask('v_h', 'v_rh')}
   ${as('v_g')} v_p3 := propose_group_plan(v_rg, array[v_rh]); perform set_group_plan_budget(v_p3, 40);
   ${as('v_h')} perform respond_to_group_plan(v_p3, true);
@@ -106,7 +175,7 @@ d('journey: account deletion (20270405)', () => {
   ${del('v_g')}
   ${rec('confirmed_alone_ends', `not exists (select 1 from group_plan_proposals where id = v_p3)
       and not exists (select 1 from business_requests where id = v_rg_new)
-      and exists (select 1 from business_requests where id = v_rh and superseded_by_group_plan_id is null)`)}
+      and (select status = 'open' and superseded_by_group_plan_id is null from business_requests where id = v_rh)`)}
 
   -- a customer's payments
   ${as('v_i')} v_res := create_business_request('journey pay', 40.0, -75.0, 'Coffee', 2, null, 40, null, null, null, 15, null); v_q := (v_res->>'requestId')::uuid;
@@ -201,8 +270,10 @@ d('journey: account deletion (20270405)', () => {
   }, 120000);
 
   test.each([
-    'fixture_booked', 'organizer_passes_plan', 'booking_survives', 'person_removed_from_request', 'new_organizer_told_once', 'new_organizer_can_act',
-    'participant_leaves', 'pending_plan_ends', 'confirmed_alone_ends', 'payment_knows_its_business', 'money_outlives_the_person', 'no_money_no_row',
+    'fixture_booked', 'preview_says_unresolved', 'preview_matches_refusal', 'paid_refusal_changes_nothing', 'authorized_also_refused', 'preview_after_refund', 'preview_is_own_plans_only', 'muted_fixture',
+    'organizer_ends_plan', 'nobody_handed_the_role', 'booking_cancelled_through_the_rules', 'business_told', 'business_push_is_safe', 'participant_told_opens_own_request', 'muted_participant_not_pushed',
+    'own_request_comes_back', 'past_request_reads_expired', 'refunded_record_stays_without_the_person', 'participant_can_ask_again',
+    'participant_leaves', 'completed_plan_needs_no_warning', 'completed_plan_ends_quietly', 'completed_paid_record_stays', 'pending_plan_participants_told', 'pending_plan_ends', 'confirmed_alone_ends', 'payment_knows_its_business', 'money_outlives_the_person', 'no_money_no_row',
     'nobody_reads_it', 'late_refund_lands', 'confirmed_redemption_stays', 'business_records_stay', 'late_review_no_failure',
     'live_admin_id_cant_be_cleared', 'admin_leaves_pause_stays', 'pause_still_lift_only', 'pause_still_lifts', 'winning_option_stays', 'no_refusing_keys_left',
   ])('step %s', (n) => {
