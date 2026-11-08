@@ -13,6 +13,7 @@ export const CASE_SIGNAL_LABEL = {
   behavior: 'Activity pattern',
   report: 'From a report',
   prior_suspension: 'Phone number of a suspended account',
+  prior_unresolved: 'Earlier account left with something unresolved',
   shared_device: 'Same phone notification token',
   shared_text: 'Same public text',
 };
@@ -23,6 +24,7 @@ export const CASE_REASON_LABEL = {
   behavior_pattern: 'Unusual activity pattern',
   reported_profile: 'Opened by an admin from a report',
   suspended_number_reused: 'Signed up with a number a suspended account used',
+  unresolved_account_returned: 'Same number or phone as a deleted account',
   suspended_device: 'Also used by a suspended account',
 };
 
@@ -146,6 +148,26 @@ export function priorSuspensionLines(records) {
     for (const d of Array.isArray(r.decisions) ? r.decisions : []) {
       const by = d.admin_name || (d.admin_id ? `Admin ${String(d.admin_id).slice(0, 8)}` : 'an admin');
       out.push(`${new Date(d.at).toLocaleString()} · ${DECISION_LABEL[d.action] || d.action} by ${by}${d.reason ? `: ${d.reason}` : ''}`);
+    }
+  }
+  return out;
+}
+
+// What a deleted account left behind (20270406), from admin_get_deleted_account_record: a record exists only if a report, case or pause was
+// unresolved when it was deleted. Never the number, device, former id or anything about other people (the server never returns them).
+export const DELETED_ACCOUNT_NOTE = 'A matching phone number or device is a reason to look, not proof it is the same person: carriers reassign numbers and families share phones. Nothing here restricted anyone, and the person hasn\'t been told.';
+const UNRESOLVED_LABEL = { open_report: 'open reports', open_case: 'an open review case', active_pause: 'an active pause' };
+
+export function deletedAccountLines(records) {
+  const out = [];
+  for (const r of Array.isArray(records) ? records : []) {
+    if (!r || !r.still_kept) { out.push('The record of the deleted account is no longer kept'); continue; }
+    const what = (r.reasons || []).map((x) => UNRESOLVED_LABEL[x] || x).join(', ');
+    out.push(`Deleted ${new Date(r.released_at).toLocaleDateString()} with ${what} · record kept until ${new Date(r.expires_at).toLocaleDateString()}`);
+    if (r.open_reports) out.push(`${r.open_reports} report${r.open_reports === 1 ? '' : 's'} open when it was deleted`);
+    if (r.open_cases) out.push(`${r.open_cases} review case${r.open_cases === 1 ? '' : 's'} open when it was deleted`);
+    for (const p of Array.isArray(r.pauses) ? r.pauses : []) {
+      out.push(`Paused (${p.capability}) until ${new Date(p.expires_at).toLocaleDateString()}: ${p.reason}`);
     }
   }
   return out;

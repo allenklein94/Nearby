@@ -10,19 +10,19 @@
 //   8. Append-only until expiry; 90 days on, the keys go, the record and case go; a legal hold keeps the record but not the keys; the log has no account id.
 //   9. A failure never blocks the deletion.
 // Not covered here: the real function + real Auth (held-evidence-function-local.js section G), races (deleted-account-concurrency.js).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
 const del = (v) => `perform set_config('request.jwt.claims', '', true); delete from profiles where id = ${v}; delete from auth.users where id = ${v};`;
 const rec = (step, ok, data = 'null::text') => `log := log || jsonb_build_array(jsonb_build_object('step', '${step}', 'ok', coalesce(${ok}, false), 'data', to_jsonb(${data})));`;
-const phone = (v, n) => `update auth.users set phone = '${n}', phone_confirmed_at = now() where id = ${v};`;
+const phone = (v, n) => fixturePhoneWrite(`update auth.users set phone = '${n}', phone_confirmed_at = now() where id = ${v};`);
 const asRole = (u, stmt) => `perform set_config('request.jwt.claims', json_build_object('sub', ${u}, 'role', 'authenticated')::text, true); set local role authenticated;
   begin ${stmt}; exception when others then v_msg := sqlerrm; v_hint := (select null::text); end; reset role; perform set_config('request.jwt.claims', '', true);`;
 const report = (who, by, into, extra = '') => `insert into reports (reporter_id, reported_id, reason${extra ? ', resolved' : ''}) values (${by}, ${who}, 'spam_scam'${extra ? `, ${extra}` : ''}) returning id into ${into};`;
 const recordOf = (v) => `(select to_jsonb(a) from private.unresolved_account_records a where former_account_id = ${v})`;
 
-const PEOPLE = ['v_admin', 'v_rep', 'v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_f', 'v_g', 'v_h', 'v_i', 'v_j', 'v_k', 'v_new', 'v_new2', 'v_new3', 'v_other'];
+const PEOPLE = ['v_admin', 'v_rep', 'v_a', 'v_b', 'v_c', 'v_d', 'v_e', 'v_f', 'v_g', 'v_h', 'v_i', 'v_k', 'v_new', 'v_new2', 'v_new3', 'v_other'];
 
 d('journey: unresolved account records (20270406)', () => {
   let s;
@@ -103,7 +103,7 @@ d('journey: unresolved account records (20270406)', () => {
       and exists (select 1 from private.unresolved_account_events where record_id = v_rec and kind = 'returned_number')`)}
   ${rec('never_blocks_or_tells', `not exists (select 1 from private.account_restrictions where user_id = v_new) and (select suspended_at is null from profiles where id = v_new)
       and not exists (select 1 from push_outbox where recipient_id = v_new) and exists (select 1 from auth.users where id = v_new and phone_confirmed_at is not null)`)}
-  update auth.users set phone = '15615550499' where id = v_new;
+  ${phone('v_new', '15615550499')}
   ${phone('v_new', '15615550412')}
   perform private.match_suspended_numbers();
   ${rec('no_second_case', `(select count(*) from private.account_review_cases where signal = 'prior_unresolved' and subject_user = v_new) = 1
@@ -145,12 +145,11 @@ d('journey: unresolved account records (20270406)', () => {
   ${rec('nothing_expires_early', `exists (select 1 from private.unresolved_account_records where id = v_rec)`)}
 
   -- expiry: an expired record + its kept case + its device key
-  insert into private.unresolved_account_records (former_account_id, phone_key, reasons, case_ids, released_at, expires_at)
-    values (v_k, private.phone_number_key('15615550497'), '{open_case}', '{}', now() - interval '91 days', now() - interval '1 day') returning id into v_rec3;
-  insert into private.unresolved_account_device_keys (token_key, record_id) values (decode(repeat('cd', 32), 'hex'), v_rec3);
   insert into private.account_review_cases (signal, reason, former_subject_id, subject_deleted_at) values ('report', 'reported_profile', v_k, now() - interval '91 days') returning id into v_c1;
+  insert into private.unresolved_account_records (former_account_id, phone_key, reasons, case_ids, released_at, expires_at)
+    values (v_k, private.phone_number_key('15615550497'), '{open_case}', array[v_c1], now() - interval '91 days', now() - interval '1 day') returning id into v_rec3;
+  insert into private.unresolved_account_device_keys (token_key, record_id) values (decode(repeat('cd', 32), 'hex'), v_rec3);
   -- a hold on an expired record's case: the keys go, the rest stays
-  update private.unresolved_account_records set case_ids = case_ids where false;
   perform set_config('request.jwt.claims', json_build_object('sub', v_admin, 'role', 'authenticated')::text, true); set local role authenticated;
   v_hold := admin_place_legal_hold('review_case', v_c1, 'Preservation request from counsel', 'REF-406');
   reset role; perform set_config('request.jwt.claims', '', true);

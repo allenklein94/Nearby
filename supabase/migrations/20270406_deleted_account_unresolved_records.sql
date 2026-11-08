@@ -370,7 +370,8 @@ begin
     end if;
     continue when private.account_on_legal_hold(r.former_account_id)
       or exists (select 1 from unnest(r.report_ids) x where private.report_on_legal_hold(x))
-      or exists (select 1 from unnest(r.case_ids) x where private.case_on_legal_hold(x));
+      or exists (select 1 from unnest(r.case_ids) x where private.case_on_legal_hold(x))
+      or exists (select 1 from private.account_review_cases c where c.former_subject_id = r.former_account_id and private.case_on_legal_hold(c.id));
     delete from private.account_review_cases c where c.former_subject_id = r.former_account_id and not private.case_on_legal_hold(c.id);
     get diagnostics v_cases = row_count;
     delete from private.unresolved_account_records where id = r.id;

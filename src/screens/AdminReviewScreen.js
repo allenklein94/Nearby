@@ -13,7 +13,7 @@ import CaseLinkCount from '../components/CaseLinkCount';
 import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
-  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
+  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, deletedAccountLines, DELETED_ACCOUNT_NOTE, OUTCOME_LABEL, CHECK_RESULT_LABEL,
   priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE, sharedTextLines, SHARED_TEXT_NOTE,
   sharedCaseGroups, SHARED_CASES_NOTE,
 } from '../utils/adminReviewCase';
@@ -37,6 +37,8 @@ export default function AdminReviewScreen() {
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState(null); // full case from admin_get_account_review_case
   const [prior, setPrior] = useState(null); // a prior-suspension case's earlier decisions (20270374), else null
+  const [kept, setKept] = useState(null); // what a deleted account left behind (20270406), else null
+  const [reportKept, setReportKept] = useState({}); // the same, per open report the admin asked about
   const [shared, setShared] = useState(null); // other review cases its accounts are in (20270379, read-only), else null
   const openId = useRef(null); // the case on screen: a late answer for an earlier case is dropped
   const [links, setLinks] = useState({ at: 0, urls: {} });
@@ -52,7 +54,7 @@ export default function AdminReviewScreen() {
       if (byPriority) query = query.order('review_priority', { ascending: false });
       return query.order('created_at', { ascending: byPriority }).limit(100);
     };
-    let rep = await openReports(`${REPORT_COLUMNS}, content_type, content_excerpt`, true);
+    let rep = await openReports(`${REPORT_COLUMNS}, content_type, content_excerpt, reported_deleted_at`, true);
     if (isMissingColumn(rep.error)) rep = await openReports(REPORT_COLUMNS, false);
     if (listed.error || rep.error) { setLoadError(true); return; }
     setLoadError(false);
@@ -74,6 +76,7 @@ export default function AdminReviewScreen() {
     if (error) return presentRecoverableError(Alert, { what: 'open that case', error, onRetry: () => openCase(id) });
     setSelected(data);
     setPrior(null);
+    setKept(null);
     setShared(null);
     openId.current = id;
     supabase.rpc('admin_get_shared_review_cases', { case_id_param: id }).then(
@@ -82,6 +85,10 @@ export default function AdminReviewScreen() {
     if (data?.signal === 'prior_suspension') {
       const earlier = await supabase.rpc('admin_get_prior_suspension', { case_id_param: id });
       setPrior(earlier.error ? { error: true } : (earlier.data || []));
+    }
+    if (data?.signal === 'prior_unresolved' || data?.subject_deleted_at) {
+      const record = await supabase.rpc('admin_get_deleted_account_record', { case_id_param: id });
+      if (openId.current === id) setKept(record.error ? { error: true } : (record.data || []));
     }
     setNote(''); setReason(''); setCheck({ source: '', result: 'no_match', link: '' });
     signPhotos(data);
@@ -175,6 +182,22 @@ export default function AdminReviewScreen() {
           <Text style={styles.meta}>{r.content_type === 'business' ? 'About a business (nobody named)' : `About ${r.reported?.display_name || 'an account'}`} · {new Date(r.created_at).toLocaleString()}</Text>
           {['business', 'story', 'gathering', 'community'].includes(r.content_type) && r.content_excerpt ? <Text style={styles.details}>{r.content_excerpt}</Text> : null}
           {r.details ? <Text style={styles.details}>{r.details}</Text> : null}
+          {r.reported_deleted_at && !r.reported_id ? (
+            <>
+              <Text style={styles.meta}>The account has been deleted.</Text>
+              {reportKept[r.id] ? (reportKept[r.id].error
+                ? <Text style={styles.meta}>Couldn't load what was kept.</Text>
+                : deletedAccountLines(reportKept[r.id]).map((line, i) => <Text key={`k${i}`} style={styles.event}>{line}</Text>))
+                : (
+                  <TouchableOpacity style={styles.button} accessibilityRole="button" onPress={async () => {
+                    const record = await supabase.rpc('admin_get_deleted_account_record', { report_id_param: r.id });
+                    setReportKept((all) => ({ ...all, [r.id]: record.error ? { error: true } : (record.data || []) }));
+                  }}>
+                    <Text style={styles.buttonText}>What was kept</Text>
+                  </TouchableOpacity>
+                )}
+            </>
+          ) : null}
           {canOpenInvestigation(r) ? (
             <TouchableOpacity style={styles.button} onPress={() => openFromReport(r)} accessibilityRole="button">
               <Text style={styles.buttonText}>Open investigation</Text>
@@ -198,6 +221,14 @@ export default function AdminReviewScreen() {
           <Text style={styles.meta}>{PRIOR_SUSPENSION_NOTE}</Text>
           {prior?.error ? <Text style={styles.meta}>Couldn't load the earlier decisions. Open the case again to retry.</Text> : null}
           {Array.isArray(prior) ? priorSuspensionLines(prior).map((line, i) => <Text key={`p${i}`} style={styles.event}>{line}</Text>) : null}
+        </>
+      ) : null}
+      {kept ? (
+        <>
+          <Text style={styles.subTitle}>Deleted account</Text>
+          <Text style={styles.meta}>{DELETED_ACCOUNT_NOTE}</Text>
+          {kept.error ? <Text style={styles.meta}>Couldn't load what was kept. Open the case again to retry.</Text> : null}
+          {Array.isArray(kept) ? deletedAccountLines(kept).map((line, i) => <Text key={`k${i}`} style={styles.event}>{line}</Text>) : null}
         </>
       ) : null}
       {selected.signal === 'shared_device' ? (

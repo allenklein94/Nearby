@@ -150,7 +150,27 @@ describe('admin review screen boundaries', () => {
   test('every action is an admin-only server function; nothing suspends, bans or restricts from here', () => {
     const rpcs = [...screen.matchAll(/rpc\('(\w+)'/g)].map((m) => m[1]).sort();
     expect([...new Set(rpcs)]).toEqual(['admin_add_account_review_note', 'admin_close_account_review_case', 'admin_get_account_review_case',
-      'admin_get_prior_suspension', 'admin_get_shared_review_cases', 'admin_list_account_review_cases', 'admin_open_case_from_report', 'admin_record_case_external_check', 'admin_reopen_account_review_case']);
+      'admin_get_deleted_account_record', 'admin_get_prior_suspension', 'admin_get_shared_review_cases', 'admin_list_account_review_cases', 'admin_open_case_from_report', 'admin_record_case_external_check', 'admin_reopen_account_review_case']);
     expect(screen).not.toMatch(/admin_suspend_user|\.update\(|\.delete\(/);
+  });
+});
+
+describe('a deleted account (20270406)', () => {
+  const { deletedAccountLines, DELETED_ACCOUNT_NOTE, caseTitle: title } = require('./adminReviewCase');
+
+  test('says what was unresolved and when the record goes; never a number, device or id', () => {
+    const lines = deletedAccountLines([{ still_kept: true, record_id: 'r1', released_at: '2026-11-01T12:00:00Z', expires_at: '2027-01-30T12:00:00Z', reasons: ['open_report', 'active_pause'], open_reports: 2, open_cases: 0,
+      report_ids: ['a', 'b'], number_kept: true, pauses: [{ capability: 'links', reason: 'Repeated unsafe links', expires_at: '2026-11-08T12:00:00Z' }] }]);
+    expect(lines[0]).toMatch(/open reports, an active pause/);
+    expect(lines[1]).toBe('2 reports open when it was deleted');
+    expect(lines[2]).toMatch(/Paused \(links\).*Repeated unsafe links/);
+    expect(lines.join(' ')).not.toMatch(/r1|number|device/i);
+  });
+
+  test('an expired record says so; a match is never called proof', () => {
+    expect(deletedAccountLines([{ still_kept: false }])).toEqual(['The record of the deleted account is no longer kept']);
+    expect(deletedAccountLines(null)).toEqual([]);
+    expect(DELETED_ACCOUNT_NOTE).toMatch(/not proof/);
+    expect(title({ signal: 'prior_unresolved', reason: 'unresolved_account_returned' })).toBe('Earlier account left with something unresolved · Same number or phone as a deleted account');
   });
 });
