@@ -44,6 +44,15 @@ any later change to the file voids it).
   media-report-storage-api, media-cleanup-faults, id-document-storage-api, story-storage-api pass; rate-limit rules fingerprint
   unchanged; rollback = pre-0400 replay's public + private schema except the known hold-type line, re-apply identical (full dump);
   Jest 551/551 (7433 + 11 todo). New sha256 d3cd463d…e935.
+- Owner (2026-11-08): ACCEPTED 0400 AS STAGED incl. this fix; required one final fresh rebuild first. DONE 2026-11-08: fresh replay
+  with the final 0400 (sha256 d3cd463d2f0302104465898ee51dc6181877b49dab4758ecfc245f502b9ee935, commit 8f0be29b; real Auth first)
+  524/524; journeys 1201/1201 before and after the scripts; media-report-concurrency all steps (step 8: 10 held, 10 deleting),
+  gated-perk-legal-hold-concurrency, id-document-concurrency pass; real Storage API 1.11.13: media-report-storage-api,
+  media-cleanup-faults, id-document-storage-api, story-storage-api, photo-storage-api pass; rate-limit rules fingerprint unchanged
+  after every script; rollback = the pre-0400 fresh replay's public + private schema except the one intended hold-type line;
+  re-apply identical (full schema dump). post-deploy.js 20270400 gains the reported-Story-photo hold check. CLOSED. Not merged,
+  not deployed, uploads not opened, build 87 untouched. EAS (read-only, 2026-11-08): no build 87 exists; latest iOS = 86 (7d72d615,
+  2026-10-18); main 3f82f58a contains 98e8d118; build numbers remote + auto-increment.
   (Interrupted run note: a codespace restart killed the script mid-step-8 and left the local replay without its 32 rate-limit rules
   and with friends Stories on; restored from the pre-0400 replay, fingerprint identical; leftover test actors deleted.)
 - `legalHolds` journey counted every hold in the table (holds are append-only, so committed test holds from the Storage API
