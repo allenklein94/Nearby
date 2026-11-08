@@ -1,40 +1,37 @@
 const fs = require('fs');
 const path = require('path');
-const { deletionPlanNotice, isDeletionPlanRefusal, DELETION_PLAN_HINT } = require('./accountDeletionPlanNotice');
+const { deletionPlanNotice } = require('./accountDeletionPlanNotice');
 const settings = require('../i18n/ui/settings').default;
 
 const repo = (p) => fs.readFileSync(path.join(__dirname, '../..', p), 'utf8');
 const LANGS = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
+const SQL = 'supabase/migrations/20270405_account_deletion_blockers.sql';
 
-describe('account deletion: group plans the person organizes (20270405)', () => {
-  test('a booking to resolve comes first', () => {
-    expect(deletionPlanNotice({ plans: 2, bookings: 1, unresolved: 1 })).toBe('unresolved');
+describe('account deletion: group plans and paid bookings (20270405)', () => {
+  test('each line shows only for what is true', () => {
+    expect(deletionPlanNotice({ plans: 1, bookings: 1, paid: 0 })).toEqual({ endsPlans: true, paidBooking: false });
+    expect(deletionPlanNotice({ plans: 0, bookings: 0, paid: 2 })).toEqual({ endsPlans: false, paidBooking: true });
+    expect(deletionPlanNotice({ plans: 1, bookings: 1, paid: 1 })).toEqual({ endsPlans: true, paidBooking: true });
+    expect(deletionPlanNotice({ plans: 0, bookings: 0, paid: 0 })).toEqual({ endsPlans: false, paidBooking: false });
   });
-  test('plans that will end get the warning, booked or not', () => {
-    expect(deletionPlanNotice({ plans: 1, bookings: 1, unresolved: 0 })).toBe('ends_plans');
-    expect(deletionPlanNotice({ plans: 1, bookings: 0, unresolved: 0 })).toBe('ends_plans');
+  test('nothing readable: no extra line, and the deletion still offered', () => {
+    expect(deletionPlanNotice(null)).toEqual({ endsPlans: false, paidBooking: false });
   });
-  test('nothing to say: no plans, or the read failed', () => {
-    expect(deletionPlanNotice({ plans: 0, bookings: 0, unresolved: 0 })).toBeNull();
-    expect(deletionPlanNotice(null)).toBeNull();
-  });
-  test('the refusal is recognised by its hint alone', () => {
-    expect(isDeletionPlanRefusal({ hint: DELETION_PLAN_HINT })).toBe(true);
-    expect(isDeletionPlanRefusal({ hint: 'step_up_required' })).toBe(false);
-    expect(isDeletionPlanRefusal(new Error('x'))).toBe(false);
-  });
-  test.each(LANGS)('%s has all three strings', (l) => {
-    for (const k of ['deletionEndsGroupPlans', 'deletionBlockedGroupPlanTitle', 'deletionBlockedGroupPlanBody']) {
-      expect(settings[l][k]).toBeTruthy();
-    }
-  });
-  test('the app, the function and the database use the same hint', () => {
-    expect(repo('supabase/functions/delete-account/index.ts')).toContain(`'${DELETION_PLAN_HINT}'`);
-    expect(repo('supabase/migrations/20270405_account_deletion_blockers.sql')).toContain(`hint = '${DELETION_PLAN_HINT}'`);
+  test.each(LANGS)('%s has both lines', (l) => {
+    expect(settings[l].deletionEndsGroupPlans).toBeTruthy();
+    expect(settings[l].deletionPaidBooking).toBeTruthy();
+    expect(settings[l].deletionBlockedGroupPlanBody).toBeUndefined();
   });
   test('nobody is handed the role: the deletion never reassigns a plan or a request', () => {
-    const sql = repo('supabase/migrations/20270405_account_deletion_blockers.sql');
-    expect(sql).not.toMatch(/set initiator_id/i);
-    expect(sql).not.toMatch(/set requester_id/i);
+    expect(repo(SQL)).not.toMatch(/set initiator_id/i);
+    expect(repo(SQL)).not.toMatch(/set requester_id/i);
+  });
+  test('a deletion is never refused for a booking, and delete-account is untouched by it', () => {
+    expect(repo(SQL)).not.toMatch(/group_plan_booking_unresolved/);
+    expect(repo('supabase/functions/delete-account/index.ts')).not.toMatch(/plan_check|group_plan/);
+  });
+  test('the webhook writes statuses only: the exception is the database\'s job, so no path can miss it', () => {
+    expect(repo('supabase/functions/stripe-connect-webhook/index.ts')).not.toMatch(/payment_exception/);
+    expect(repo(SQL)).toMatch(/create trigger z_business_payment_status_changed after update of status/);
   });
 });
