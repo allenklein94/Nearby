@@ -48,6 +48,9 @@ describe('legal-hold control in Admin Reports (20270395)', () => {
     expect(legalHoldPhotoNote({ photo: 'deleting' })).toMatch(/already under way/);
     expect(legalHoldPhotoNote({ photo: 'held' })).toBeNull();
     expect(legalHoldPhotoNote({ photo: 'none' })).toBeNull();
+    expect(legalHoldPhotoNote({ photo: 'none', files: { kept: 2, deleting: 0, already_deleted: 0 } })).toBeNull();
+    expect(legalHoldPhotoNote({ files: { kept: 1, deleting: 1, already_deleted: 0 } })).toMatch(/1 original file\(s\) were already being deleted/);
+    expect(legalHoldPhotoNote({ files: { kept: 0, deleting: 0, already_deleted: 2 } })).toMatch(/2 original file\(s\) were already deleted/);
   });
 
   test('the screen uses only the three existing admin functions; no table access, no new screen', () => {
@@ -63,5 +66,12 @@ describe('legal-hold control in Admin Reports (20270395)', () => {
     expect(SCREEN).toMatch(/Release this legal hold\?/);
     // an older database (no function) shows no hold control
     expect(SCREEN).toMatch(/setHolds\(held\.error \? null/);
+  });
+});
+
+describe('hold scope (20270402)', () => {
+  test('a whole-history hold says so; an ordinary one does not', () => {
+    expect(legalHoldStatusLine({ reason: 'Counsel asked', scope: 'account_history' })).toMatch(/Whole account history/);
+    expect(legalHoldStatusLine({ reason: 'Counsel asked', scope: 'item' })).not.toMatch(/history/);
   });
 });

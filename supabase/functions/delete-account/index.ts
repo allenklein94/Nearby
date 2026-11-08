@@ -5,62 +5,66 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = secretKey()!;
 
-// Everything a deletion removes, in this order: the person's files (incl. ID verification), then the profile, then the auth
-// user (guard: edgeFunctionSourcesGuard.test.js). Returns how many files were removed.
+const GENERIC_FAILURE = 'Failed to delete account';
+
+// A failure stops the deletion and reaches an admin (counts only). Recording it must never hide the failure itself.
+// deno-lint-ignore no-explicit-any
+async function failed(admin: any, userId: string, step: string, detail: string): Promise<Error> {
+  console.error(`account deletion stopped at ${step}:`, detail);
+  try {
+    await admin.rpc('account_deletion_record_failure', { user_id_param: userId, step_param: step });
+  } catch (e) {
+    console.error('recording the failure failed:', String(e));
+  }
+  return new Error(GENERIC_FAILURE); // the person never sees why: a database message could reveal a legal hold
+}
+
+// 20270402: evidence under an active legal hold is copied first; if that fails, nothing is deleted. The triggers on the two deletes
+// below do the same in their own transactions, so a hold placed at any point is still honoured. Needs 20270402 live: without it this
+// refuses, so deploy the migration first.
+// deno-lint-ignore no-explicit-any
+async function preserveHeldEvidence(admin: any, userId: string): Promise<void> {
+  const { error } = await admin.rpc('account_deletion_preserve_held_evidence', { user_id_param: userId });
+  if (error) throw await failed(admin, userId, 'preserve', error.message);
+}
+
+// Removes the files the database says are due, and returns how many Storage confirmed. The database queued them with the profile delete
+// and re-checks each one for a hold at the moment it hands it over. Anything not confirmed stays queued for the hourly run.
+// deno-lint-ignore no-explicit-any
+async function removeDueFiles(admin: any, userId: string | null): Promise<number> {
+  const { data: files, error } = await admin.rpc('account_file_cleanup_claim', { user_id_param: userId });
+  if (error) {
+    console.error('file cleanup claim failed (kept for the next run):', error.message);
+    return 0;
+  }
+  const byBucket = new Map<string, string[]>();
+  for (const f of (files ?? []) as { bucket_id: string; object_name: string }[]) {
+    byBucket.set(f.bucket_id, [...(byBucket.get(f.bucket_id) ?? []), f.object_name]);
+  }
+  for (const [bucket, names] of byBucket) {
+    const { error: storageError } = await admin.storage.from(bucket).remove(names);
+    if (storageError) console.error('Storage cleanup failed (kept for the next run):', storageError.message);
+  }
+  const { data: confirmed, error: confirmError } = await admin.rpc('account_file_cleanup_confirm', { files_param: files ?? [] });
+  if (confirmError) console.error('file cleanup confirm failed (kept for the next run):', confirmError.message);
+  return confirmed ?? 0;
+}
+
+// A deletion, in this order: copy held evidence, delete the profile, delete the auth user, then remove the files. The files come last so
+// a hold placed during the deletion can still keep them, and so a failed deletion hasn't already lost them.
+// ID verification files aren't here: deleting the profile queues them for the hourly id-document-retention job (20270400).
+// Deploy this version only AFTER 20270400 is live (before it, nothing would delete those files).
 // deno-lint-ignore no-explicit-any
 async function deleteEverything(admin: any, userId: string): Promise<number> {
-
-  // 20270402: moderation evidence under an active legal hold is copied first, before anything is removed; if that fails, nothing
-  // is deleted. The database triggers enforce the same on the deletes below. A database without 20270402 has neither.
-  const { error: preserveError } = await admin.rpc('account_deletion_preserve_held_evidence', { user_id_param: userId });
-  if (preserveError && preserveError.code !== 'PGRST202') {
-    console.error('held evidence preservation failed:', preserveError.message);
-    throw new Error('Failed to delete account');
-  }
-
-  const storagePaths: string[] = [];
-
-  const { data: profile } = await admin.from('profiles').select('photo_url').eq('id', userId).single();
-  if (profile?.photo_url) storagePaths.push(profile.photo_url);
-
-  const { data: extraPhotos } = await admin.from('profile_photos').select('photo_url').eq('user_id', userId);
-  for (const photo of extraPhotos ?? []) {
-    if (photo.photo_url) storagePaths.push(photo.photo_url);
-  }
-
-  const { data: voiceMessages } = await admin
-    .from('messages')
-    .select('audio_url')
-    .eq('sender_id', userId)
-    .not('audio_url', 'is', null);
-  for (const msg of voiceMessages ?? []) {
-    if (msg.audio_url) storagePaths.push(msg.audio_url);
-  }
-
-  if (storagePaths.length > 0) {
-    const { error: storageError } = await admin.storage.from('profile-photos').remove(storagePaths);
-    if (storageError) {
-      console.error('Storage cleanup failed (continuing anyway):', storageError.message);
-    }
-  }
-
-  // ID verification photos (20270400): NOT deleted here any more. Deleting the profile below cascades the submission rows, and
-  // the database queues every file in the person's id-verification folder (triggers on id_verification_submissions + profiles).
-  // The hourly id-document-retention job deletes them through Storage and keeps each one queued until Storage confirms it is
-  // gone, with retries and an admin alert; a file whose submission is under an admin's legal hold is kept. Deleting directly here
-  // would skip both. Deploy this version only AFTER 20270400 is live (before it, nothing would delete the files).
+  await preserveHeldEvidence(admin, userId);
 
   const { error: profileError } = await admin.from('profiles').delete().eq('id', userId);
-  if (profileError) {
-    throw new Error(`Failed to delete profile: ${profileError.message}`);
-  }
+  if (profileError) throw await failed(admin, userId, 'profile', profileError.message);
 
   const { error: authDeleteError } = await admin.auth.admin.deleteUser(userId);
-  if (authDeleteError) {
-    throw new Error(`Failed to delete auth account: ${authDeleteError.message}`);
-  }
+  if (authDeleteError) throw await failed(admin, userId, 'auth', authDeleteError.message);
 
-  return storagePaths.length;
+  return await removeDueFiles(admin, userId);
 }
 
 // The claims of a token getUser() has already verified (session_id + aal; 20270375 decides with them).
@@ -94,11 +98,14 @@ serve(async (req) => {
       let done = 0;
       for (const userId of (due ?? []) as string[]) {
         try {
+          // the copy first: a deletion that can't go ahead sends no notice
+          await preserveHeldEvidence(admin, userId);
           await fetch(`${SUPABASE_URL}/functions/v1/send-push`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${SERVICE_ROLE_KEY}` },
-            body: JSON.stringify({ recipient_id: userId, title: 'Your Nearby account has been deleted',
-              body: 'Your account and its data were permanently deleted.', data: { type: 'account_security_notice' } }),
+            body: JSON.stringify({ recipient_id: userId, title: 'Your Nearby account is being deleted',
+              body: 'Your account and personal data are being deleted. We may keep limited records where the law or user safety requires it.',
+              data: { type: 'account_security_notice' } }),
           }).catch(() => null);
           await deleteEverything(admin, userId);
           await admin.rpc('account_deletion_finished', { user_id_param: userId });
@@ -107,7 +114,9 @@ serve(async (req) => {
           console.error('scheduled deletion failed (kept for the next run):', String(e));
         }
       }
-      return json({ ok: true, deleted: done });
+      // files still waiting: a removal that failed earlier, or a held file whose retention has passed
+      const filesRemoved = await removeDueFiles(admin, null);
+      return json({ ok: true, deleted: done, filesRemoved });
     }
 
     const supabaseAuth = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
@@ -138,6 +147,6 @@ serve(async (req) => {
     });
   } catch (err) {
     console.error('delete-account error:', err);
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+    return new Response(JSON.stringify({ error: GENERIC_FAILURE }), { status: 500 });
   }
 });

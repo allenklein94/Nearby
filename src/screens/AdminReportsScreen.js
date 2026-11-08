@@ -12,7 +12,7 @@ import { reportReasonLabel, sortReportQueue, reportQueueTag, reportedWhatLabel }
 import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
 import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
 import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
-import { LEGAL_HOLD_REASON_MAX, LEGAL_HOLD_REFERENCE_MAX, activeHoldsByTarget, holdFor, legalHoldPhotoNote, legalHoldReasonReady, legalHoldReferenceReady, legalHoldStatusLine, legalHoldTargetLabel } from '../utils/legalHolds';
+import { LEGAL_HOLD_HISTORY_LABEL, LEGAL_HOLD_REASON_MAX, LEGAL_HOLD_REFERENCE_MAX, activeHoldsByTarget, holdFor, legalHoldPhotoNote, legalHoldReasonReady, legalHoldReferenceReady, legalHoldStatusLine, legalHoldTargetLabel } from '../utils/legalHolds';
 import { RESTRICTION_CAPABILITIES, RESTRICTION_DAYS, RESTRICTION_DEFAULT_DAYS, RESTRICTION_REASON_MAX, activeRestrictions, restrictionFormReady, restrictionReasonReady, restrictionStatusLine, toggleCapability } from '../utils/accountRestrictions';
 import AccountFactsSection from '../components/AccountFactsSection';
 import { REMOVAL_REASON_MAX, canRemoveReportedObject, removalReasonReady, removeActionLabel, reportObjectIds, reportObjectStatus } from '../utils/reportObjects';
@@ -265,7 +265,7 @@ export default function AdminReportsScreen({ navigation }) {
   async function submitHold() {
     const f = holdForm;
     const { data, error } = f.mode === 'place'
-      ? await supabase.rpc('admin_place_legal_hold', { target_type_param: f.targetType, target_id_param: f.targetId, reason_param: f.reason, reference_param: f.reference || null })
+      ? await supabase.rpc('admin_place_legal_hold', { target_type_param: f.targetType, target_id_param: f.targetId, reason_param: f.reason, reference_param: f.reference || null, scope_param: f.wholeHistory ? 'account_history' : 'item' })
       : await supabase.rpc('admin_release_legal_hold', { hold_id_param: f.holdId, reason_param: f.reason });
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error, onRetry: submitHold });
     setHoldForm(null);
@@ -276,7 +276,7 @@ export default function AdminReportsScreen({ navigation }) {
   }
 
   function confirmRelease() {
-    Alert.alert('Release this legal hold?', 'Nothing is deleted now. The evidence goes back to its ordinary retention; another active hold still keeps it. Recorded with your account.', [
+    Alert.alert('Release this legal hold?', 'Nothing is deleted now. Live records go back to their ordinary retention. Copies and original files kept from a deleted account stay until a recorded retention policy allows their removal; another active hold still keeps them. Recorded with your account.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Release', style: 'destructive', onPress: submitHold },
     ]);
@@ -326,6 +326,16 @@ export default function AdminReportsScreen({ navigation }) {
                 maxLength={LEGAL_HOLD_REFERENCE_MAX}
                 accessibilityLabel="Legal hold reference, optional"
               />
+            ) : null}
+            {holdForm.mode === 'place' ? (
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={() => setHoldForm({ ...holdForm, wholeHistory: !holdForm.wholeHistory })}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: !!holdForm.wholeHistory }}
+              >
+                <Text style={styles.actionText}>{holdForm.wholeHistory ? '☑' : '☐'} {LEGAL_HOLD_HISTORY_LABEL}</Text>
+              </TouchableOpacity>
             ) : null}
             <View style={styles.actions}>
               <TouchableOpacity style={styles.actionButton} onPress={() => setHoldForm(null)} accessibilityRole="button">

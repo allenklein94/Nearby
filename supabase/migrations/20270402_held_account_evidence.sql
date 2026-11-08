@@ -425,7 +425,10 @@ begin
   if private.object_under_hold(old.id) then
     return null;
   end if;
-  return case when tg_op = 'DELETE' then old else new end;
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+  return new;
 end;
 $function$;
 revoke all on function private._storage_object_hold_guard() from public, anon, authenticated;
