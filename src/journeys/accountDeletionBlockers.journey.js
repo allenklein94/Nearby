@@ -93,7 +93,8 @@ d('journey: account deletion (20270405)', () => {
   ${rec('preview_after_refund', `(v_res->>'plans')::int = 1 and (v_res->>'unresolved')::int = 0`, 'v_res')}
   ${as('v_b')} v_res := account_deletion_plan_impact();
   ${rec('preview_is_own_plans_only', `(v_res->>'plans')::int = 0`, 'v_res')}
-  update profiles set notify_planning = false where id = v_c;
+  perform set_config('request.jwt.claims', '', true); update profiles set notification_mutes = array['plans_invitations', 'plans_changes', 'plans_reminders'] where id = v_c;
+  ${rec('muted_fixture', '(select not notify_planning from profiles where id = v_c)')}
   update business_requests set expires_at = now() - interval '1 hour' where id = v_rc;
   ${del('v_a')}
   ${rec('organizer_ends_plan', `not exists (select 1 from group_plan_proposals where id = v_p)
@@ -102,7 +103,7 @@ d('journey: account deletion (20270405)', () => {
       and not exists (select 1 from group_plan_offer_confirmations where user_id = v_a)
       and not exists (select 1 from business_requests where id = v_ra)
       and not exists (select 1 from plans where id = v_plan)`)}
-  ${rec('nobody_handed_the_role', `not exists (select 1 from push_outbox where title = 'You''re now organizing this group plan')
+  ${rec('nobody_handed_the_role', `not exists (select 1 from push_outbox where recipient_id in (v_b, v_c) and title = 'You''re now organizing this group plan')
       and not exists (select 1 from business_requests where requester_id in (v_b, v_c) and id = v_req)`)}
   ${rec('booking_cancelled_through_the_rules', `exists (select 1 from cancellation_events where entity_type = 'business_reservation' and entity_id = v_offer and partner_id = v_partner and actor_role = 'requester')
       and exists (select 1 from cancellation_events where entity_type = 'group_plan' and entity_id = v_p)`)}
@@ -269,7 +270,7 @@ d('journey: account deletion (20270405)', () => {
   }, 120000);
 
   test.each([
-    'fixture_booked', 'preview_says_unresolved', 'preview_matches_refusal', 'paid_refusal_changes_nothing', 'authorized_also_refused', 'preview_after_refund', 'preview_is_own_plans_only',
+    'fixture_booked', 'preview_says_unresolved', 'preview_matches_refusal', 'paid_refusal_changes_nothing', 'authorized_also_refused', 'preview_after_refund', 'preview_is_own_plans_only', 'muted_fixture',
     'organizer_ends_plan', 'nobody_handed_the_role', 'booking_cancelled_through_the_rules', 'business_told', 'business_push_is_safe', 'participant_told_opens_own_request', 'muted_participant_not_pushed',
     'own_request_comes_back', 'past_request_reads_expired', 'refunded_record_stays_without_the_person', 'participant_can_ask_again',
     'participant_leaves', 'completed_plan_needs_no_warning', 'completed_plan_ends_quietly', 'completed_paid_record_stays', 'pending_plan_participants_told', 'pending_plan_ends', 'confirmed_alone_ends', 'payment_knows_its_business', 'money_outlives_the_person', 'no_money_no_row',

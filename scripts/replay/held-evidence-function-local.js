@@ -13,7 +13,8 @@
 //   C. a failed copy: a generic error with no database text; the account + files untouched; the failure recorded + an admin push; the retry works.
 //   D. Storage down: the account still goes; the files wait, and the hourly run removes them when Storage is back.
 //   E. the scheduled path: no notice when the copy fails; otherwise the notice says what happens, and the account goes.
-//   F. (20270405) an organizer with a booked group plan + a captured payment + every who-did-it column: the function deletes them, the others keep the plan.
+//   F. (20270405) an organizer with a booked group plan + a paid booking: the function refuses with the actionable answer and changes nothing; once refunded it deletes them,
+//      the plan ends, nobody takes it over, the business and participants are told, their requests return; every who-did-it column and the solo captured payment stay right.
 const { execFileSync } = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs');
@@ -260,16 +261,38 @@ async function callFunction(token, body) {
   const redId = psql(`insert into offer_redemptions (offer_id, user_id, confirmed_at, confirmed_by) values ('${offerId}', '${next.id}', now(), '${orgz.id}') returning id;`).split('\n')[0];
   const scrId = psql(`insert into business_content_screening_results (partner_id, target_type, submitted_by, reviewed_by, content_snapshot, risk_tier) values ('${partnerId}', 'offer', '${orgz.id}', '${orgz.id}', '{}', 'low') returning id;`).split('\n')[0];
   const restId = psql(`insert into private.account_restrictions (user_id, capability, reason, admin_id, starts_at, expires_at) values ('${next.id}', 'messages', 'Local test: repeated messages', '${orgz.id}', now(), now() + interval '7 days') returning id;`).split('\n')[0];
+  // a paid booking on the plan (a group booking makes no payment row today; an add-on can): the same refusal the reservation rules give
+  const groupRes = one(`select id from business_reservations where offer_id = '${fOffer}'`);
+  const groupPay = psql(`insert into business_payments (reservation_id, status, amount, currency, payer_id, provider, stripe_payment_intent_id, stripe_charge_id) values ('${groupRes}', 'captured', 30, 'usd', '${orgz.id}', 'stripe', 'pi_local_group', 'ch_local_group') returning id;`).split('\n')[0];
+  psql(`delete from push_outbox where recipient_id in ('${next.id}', '${third.id}') or data->>'offer_id' = '${fOffer}';`);
+  const impact = await orgz.c.rpc('account_deletion_plan_impact');
+  rec('the app can read the warning before deleting', impact.data?.plans === 1 && impact.data?.bookings === 1 && impact.data?.unresolved === 1, impact);
+  const othersImpact = await next.c.rpc('account_deletion_plan_impact');
+  rec('a participant has nothing to be warned about', othersImpact.data?.plans === 0, othersImpact);
+  const checkAsClient = await orgz.c.rpc('account_deletion_plan_check', { user_id_param: next.id });
+  rec('nobody can read another account\'s plans', !!checkAsClient.error, checkAsClient);
+  const rRefused = await callFunction(orgz.token);
+  rec('a paid booking: a clear answer, not a failure', rRefused.status === 409 && rRefused.json?.hint === 'group_plan_booking_unresolved' && /refund/.test(rRefused.json?.error || ''), rRefused);
+  rec('nothing changed: account, plan, booking, payment, files', !gone(orgz.id) && one(`select count(*) from profiles where id = '${orgz.id}'`) === '1'
+    && one(`select initiator_id from group_plan_proposals where id = '${prop.data}'`) === orgz.id
+    && one(`select status from business_request_offers where id = '${fOffer}'`) === 'accepted'
+    && one(`select status from business_payments where id = '${groupPay}'`) === 'captured'
+    && (await inStorage(fPhoto)) && one(`select count(*) from push_outbox where recipient_id in ('${next.id}', '${third.id}')`) === '0');
+  psql(`update business_payments set status = 'refunded' where id = '${groupPay}';`);
   const rF = await callFunction(orgz.token);
   rec('the function answers ok', rF.status === 200 && rF.json?.ok === true, rF);
   rec('the account is gone from Auth and profiles', gone(orgz.id) && one(`select count(*) from profiles where id = '${orgz.id}'`) === '0');
   rec('their files are gone', !(await inStorage(fPhoto)) && !(await inStorage(fVoice)));
-  rec('the group plan and booking passed to the next person', one(`select initiator_id from group_plan_proposals where id = '${prop.data}'`) === next.id
-    && one(`select requester_id from business_requests where id = '${conf.data.requestId}'`) === next.id
-    && one(`select status from business_request_offers where id = '${fOffer}'`) === 'accepted'
-    && one(`select count(*) from business_reservations where offer_id = '${fOffer}'`) === '1');
-  const plan = await next.c.from('group_plan_proposals').select('id, initiator_id').eq('id', prop.data).maybeSingle();
-  rec('the new organizer reads it through the real API', plan.data?.initiator_id === next.id, plan);
+  rec('the plan and booking ended, nobody took them over', one(`select count(*) from group_plan_proposals where id = '${prop.data}'`) === '0'
+    && one(`select count(*) from business_requests where id = '${conf.data.requestId}'`) === '0'
+    && one(`select count(*) from business_reservations where offer_id = '${fOffer}'`) === '0');
+  rec('everyone in it is told, opening their own request', one(`select count(*) from push_outbox where recipient_id = '${next.id}' and data->>'type' = 'plan_cancelled' and data->>'request_id' = '${fRequests[1]}'`) === '1'
+    && one(`select count(*) from push_outbox where recipient_id = '${third.id}' and data->>'type' = 'plan_cancelled' and data->>'request_id' = '${fRequests[2]}'`) === '1');
+  rec('the cancellation is on record', one(`select count(*) from cancellation_events where entity_type = 'business_reservation' and entity_id = '${fOffer}'`) === '1');
+  rec('their own requests came back', one(`select status from business_requests where id = '${fRequests[1]}'`) === 'open' && one(`select status from business_requests where id = '${fRequests[2]}'`) === 'open');
+  const nextReq = await next.c.from('business_requests').select('id, status').eq('id', fRequests[1]).maybeSingle();
+  rec('the participant reads it through the real API', nextReq.data?.status === 'open', nextReq);
+  rec('the refunded record stays with no person on it', one(`select count(*) from business_payments where id = '${groupPay}' and payer_id is null and reservation_id is null and status = 'refunded'`) === '1');
   rec('the captured payment stayed with no person on it', one(`select count(*) from business_payments where id = '${payId}' and reservation_id is null and payer_id is null and failure_reason is null and status = 'captured' and amount = 25 and stripe_charge_id = 'ch_local_f' and partner_id = '${partnerId}'`) === '1');
   const paidRow = await next.c.from('business_payments').select('id').eq('id', payId);
   rec('nobody reads it through the real API', (paidRow.data || []).length === 0, paidRow);
@@ -278,11 +301,11 @@ async function callFunction(token, body) {
   rec('a pause they placed stays, without their id', one(`select count(*) from private.account_restrictions where id = '${restId}' and admin_id is null`) === '1');
   rec('no database text in the answer', !/foreign key|violates|constraint/i.test(rF.text));
   const rNext = await callFunction(next.token);
-  rec('the next person can leave too: the plan passes on again', rNext.status === 200 && gone(next.id) && one(`select initiator_id from group_plan_proposals where id = '${prop.data}'`) === third.id, rNext);
+  rec('the next person can leave too', rNext.status === 200 && gone(next.id), rNext);
   rec('their redemption stays for billing, without them', one(`select count(*) from offer_redemptions where id = '${redId}' and user_id is null and confirmed_at is not null`) === '1');
   const rThird = await callFunction(third.token);
-  rec('the last person leaves: the plan ends, the kept money record does not', rThird.status === 200 && gone(third.id) && one(`select count(*) from group_plan_proposals where id = '${prop.data}'`) === '0' && one(`select count(*) from business_payments where id = '${payId}'`) === '1', rThird);
-  psql(`delete from business_payments where id = '${payId}'; delete from offer_redemptions where id = '${redId}'; delete from brand_offers where id = '${offerId}';
+  rec('the last person leaves; the kept money records do not', rThird.status === 200 && gone(third.id) && one(`select count(*) from business_payments where id in ('${payId}', '${groupPay}')`) === '2', rThird);
+  psql(`delete from cancellation_events where entity_id = '${fOffer}'; delete from business_payments where id in ('${payId}', '${groupPay}'); delete from offer_redemptions where id = '${redId}'; delete from brand_offers where id = '${offerId}';
         delete from business_content_screening_results where id = '${scrId}'; delete from business_request_offers where partner_id = '${partnerId}'; delete from brand_partners where id = '${partnerId}';`);
   psql(`alter table private.account_restrictions disable trigger user; delete from private.account_restrictions where id = '${restId}'; alter table private.account_restrictions enable trigger user;`, 'supabase_admin');
 
