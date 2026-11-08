@@ -1,6 +1,6 @@
 # Deleting an account with something unresolved (2026-11-08)
 
-**Status: 20270406 BUILT + LOCALLY VERIFIED, STAGED on `post-tier1/deletion-review-retention` (stacked on 0405's branch). NOT merged, NOT deployed, NOT legally approved, not in build 87.** Own deploy approval, after 0405. **90 days is a proposed default; deploying needs counsel's answer.** Website re-export needed for the admin lines.
+**Status: 20270406 BUILT + LOCALLY VERIFIED, STAGED on `post-tier1/deletion-review-retention` (stacked on 0405's branch). NOT merged, NOT deployed, NOT legally approved, not in build 87.** Own deploy approval, after 0405. **Owner decision (2026-11-08): stays staged. The 90-day period, the Privacy Policy wording and payment-record retention (0405's doc) must have legal review before deployment.** Website re-export needed for the admin lines.
 
 ## The gap
 
