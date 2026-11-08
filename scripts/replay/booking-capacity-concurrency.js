@@ -1,6 +1,6 @@
-const crypto = require('crypto');
 #!/usr/bin/env node
 // Item 116 under real concurrency, on the LOCAL replay database only (NEARBY_LOCAL_DB_URL; refuses anything else).
+const crypto = require('crypto');
 // One journey runs in one transaction, so it cannot race. Here N separate sessions call the app's own
 // accept_business_offer at the same moment, each as its requester, each holding its transaction open after the call so
 // the others really wait on the row lock; then the winners cancel at the same moment with cancel_business_reservation.
