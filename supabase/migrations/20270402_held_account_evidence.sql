@@ -7,8 +7,8 @@
 --   private.held_account_evidence   append-only copy, one row per (hold, record), no client access.
 --   private.preserve_held_account_evidence(user)  copies what deletion would destroy, only when an active hold covers the account:
 --     the hold's cases with this account as subject (+ members, history, photo references, report links), this account's rows in
---     its other held cases, a held ID submission's row, and all of the account's suspension decisions, pauses + history, and
---     behaviour signals. Never the profile, messages or anything else.
+--     its other held cases + the hashes of its photos in them, a held ID submission's row, and all of the account's suspension
+--     decisions, pauses + history, behaviour signals and security events. Never the profile, messages, or a file.
 --   BEFORE DELETE triggers on public.profiles AND auth.users: the copy commits with the deletion or not at all, and a failure
 --     aborts the deletion (no exception handler, on purpose). Both, because delete-account deletes the profile first, which clears
 --     a report's person reference. Idempotent.
@@ -23,14 +23,15 @@
 --       report, or the account's evidence in this store). An expired record stays out of number matching as before; once released
 --       it goes on the next daily run. The record's dates are not changed.
 -- Not changed: a hold never stops a deletion; no screen; no foreign key or constraint; 20270374's copy and its matching.
--- Requires 20270351, 20270357, 20270363, 20270368, 20270369, 20270393, 20270395, 20270399, 20270400.
+-- Requires 20270351, 20270357, 20270363, 20270368, 20270369, 20270374, 20270375, 20270393, 20270395, 20270399, 20270400.
 
 create table if not exists private.held_account_evidence (
   id uuid primary key default gen_random_uuid(),
   hold_id uuid not null references private.legal_holds(id),   -- a hold is never deleted (20270395)
   account_id uuid not null,                                   -- the deleted account's former id; no foreign key, it must outlive it
   record_type text not null check (record_type in ('coverage', 'review_case', 'case_member', 'case_event', 'case_photo',
-    'case_report_link', 'suspension_decision', 'pause', 'pause_event', 'behavior_signal', 'id_submission')),
+    'case_report_link', 'photo_fingerprint', 'photo_hash', 'suspension_decision', 'pause', 'pause_event', 'behavior_signal',
+    'security_event', 'id_submission')),
   source_id text not null,
   payload jsonb not null,
   preserved_at timestamptz not null default now(),
@@ -168,6 +169,20 @@ begin
      where c.id = any(v_cases) and c.subject_user = p_user
     on conflict (hold_id, record_type, source_id) do nothing;
 
+    -- the hashes behind a held photo case: they go with the account and delete-account removes the file, so nothing else shows the match
+    insert into private.held_account_evidence (hold_id, account_id, record_type, source_id, payload)
+    select h.id, p_user, 'photo_fingerprint', f.object_id::text, to_jsonb(f)
+      from private.photo_fingerprints f
+     where f.user_id = p_user
+       and f.object_id in (select p.object_id from private.account_review_case_photos p where p.case_id = any(v_cases) and p.user_id = p_user)
+    on conflict (hold_id, record_type, source_id) do nothing;
+    insert into private.held_account_evidence (hold_id, account_id, record_type, source_id, payload)
+    select h.id, p_user, 'photo_hash', f.object_id || ':' || f.variant, to_jsonb(f)
+      from private.photo_perceptual_hashes f
+     where f.user_id = p_user
+       and f.object_id in (select p.object_id from private.account_review_case_photos p where p.case_id = any(v_cases) and p.user_id = p_user)
+    on conflict (hold_id, record_type, source_id) do nothing;
+
     -- the account's own moderation history
     insert into private.held_account_evidence (hold_id, account_id, record_type, source_id, payload)
     select h.id, p_user, 'suspension_decision', a.id::text, to_jsonb(a) from account_moderation_actions a where a.user_id = p_user
@@ -180,6 +195,10 @@ begin
     on conflict (hold_id, record_type, source_id) do nothing;
     insert into private.held_account_evidence (hold_id, account_id, record_type, source_id, payload)
     select h.id, p_user, 'behavior_signal', b.id::text, to_jsonb(b) from private.behavior_signals b where b.user_id = p_user
+    on conflict (hold_id, record_type, source_id) do nothing;
+
+    insert into private.held_account_evidence (hold_id, account_id, record_type, source_id, payload)
+    select h.id, p_user, 'security_event', e.id::text, to_jsonb(e) from private.account_security_events e where e.user_id = p_user
     on conflict (hold_id, record_type, source_id) do nothing;
 
     if h.target_type = 'id_submission' then

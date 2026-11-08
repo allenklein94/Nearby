@@ -7,7 +7,8 @@
 //   3. a pause being created vs the deletion: a pause that commits is in the copy; otherwise it's refused. Never committed and lost.
 //   4. two accounts under one hold deleted at once: both finish (deletions don't queue behind each other), both copied, no deadlock.
 //   5. the same account preserved twice at once: one row per record.
-//   6. the purge vs a deletion under a hold released past retention: no deadlock, a new active hold keeps the evidence.
+//   6. the purge vs a deletion under an active hold: no deadlock, the hold keeps the evidence whichever runs first.
+//   7. a hold on a report vs the purge of an expired suspended-account record naming it: a hold that commits first keeps the record.
 // Everything it creates is deleted afterwards (the guard triggers are paused for the cleanup only).
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg node scripts/replay/held-evidence-concurrency.js
 const url = process.env.NEARBY_LOCAL_DB_URL;
@@ -182,6 +183,27 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
       if (!res.every((r) => r.ok) || await count(u, 'review_case') !== 1) bad += 1;
     }
     check(bad === 0, 'an active hold keeps its copy whichever runs first');
+    check(dl === 0, 'no deadlock');
+
+    console.log('7. a hold on a report vs the purge of an expired suspended-account record');
+    bad = 0; dl = 0; let kept7 = 0; let purged7 = 0;
+    for (let i = 0; i < ROUNDS; i += 1) {
+      const { rows } = await db.query(`insert into reports (reporter_id, reason) values ($1, 'Spam or scam') returning id`, [reporter]);
+      reports.push(rows[0].id);
+      const { rows: rec } = await db.query(`insert into private.suspended_account_records (former_account_id, released, suspended_at, released_at, expires_at, decisions)
+        values (gen_random_uuid(), 'account_deleted', now() - interval '14 months', now() - interval '13 months', now() - interval '1 month',
+                jsonb_build_array(jsonb_build_object('action', 'suspend', 'report_id', $1::uuid))) returning id`, [rows[0].id]);
+      const [a, b] = orders(i, { sub: admin, sql: placeSql('report', rows[0].id) }, { sql: 'select private.purge_suspended_account_records()' });
+      const res = await Promise.all([run(a), run(b)]);
+      if (deadlock(res)) dl += 1;
+      const left = Number((await db.query('select count(*) n from private.suspended_account_records where id = $1', [rec[0].id])).rows[0].n);
+      if (!res.every((r) => r.ok)) bad += 1;
+      if (i % 2 === 0 && left !== 1) bad += 1; // the hold's session started first and holds the lock until it commits
+      if (left === 1) kept7 += 1; else purged7 += 1;
+      await db.query('delete from private.suspended_account_records where id = $1', [rec[0].id]);
+    }
+    check(bad === 0, `a hold that commits first keeps the record (kept ${kept7}, purged first ${purged7})`);
+    check(kept7 > 0 && purged7 > 0, 'both orders really happened');
     check(dl === 0, 'no deadlock');
   } finally {
     await db.query('alter table private.held_account_evidence disable trigger held_evidence_guard');

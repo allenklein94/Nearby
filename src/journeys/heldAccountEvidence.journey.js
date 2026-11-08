@@ -53,7 +53,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
       v_out jsonb; v_hint text; v_ca uuid; v_cu uuid; v_cp uuid; v_rb uuid; v_ru uuid; v_rm uuid; v_sub uuid; v_rem uuid;
       v_h1 uuid; v_h2 uuid; v_h3 uuid; v_h4 uuid; v_h5 uuid; v_h6 uuid; v_h7 uuid; v_cf uuid; v_cn uuid;
       v_case jsonb; v_events jsonb; v_decisions jsonb; v_pauses jsonb; v_pause_events jsonb; v_signal uuid; v_failed boolean;
-      v_cw uuid; v_hw uuid; v_cl uuid; v_hl uuid; v_rl uuid; v_rx uuid; v_hx uuid; v_cs uuid; v_hs uuid; v_sr1 uuid; v_sr2 uuid; v_sr3 uuid; v_r2 uuid;`, `
+      v_cw uuid; v_hw uuid; v_cl uuid; v_hl uuid; v_rl uuid; v_rx uuid; v_hx uuid; v_cs uuid; v_hs uuid; v_sr1 uuid; v_sr2 uuid; v_sr3 uuid; v_r2 uuid; v_obj uuid;`, `
   ${actorsSql({ people: PEOPLE })}
   update profiles set is_admin = true where id = v_admin;
   delete from private.held_account_evidence;
@@ -105,7 +105,11 @@ d('journey: account deletion under a legal hold (20270402)', () => {
   -- ===== 3. a held photo case with another member survives; only this account's rows are copied =====
   insert into private.account_review_cases (signal, sha256, reason) values ('identical_photo', 'held-402', 'many_accounts') returning id into v_cp;
   insert into private.account_review_case_members (case_id, user_id) values (v_cp, v_c), (v_cp, v_e);
-  insert into private.account_review_case_photos (case_id, object_id, user_id) values (v_cp, gen_random_uuid(), v_c), (v_cp, gen_random_uuid(), v_e);
+  v_obj := gen_random_uuid();
+  insert into private.account_review_case_photos (case_id, object_id, user_id) values (v_cp, v_obj, v_c), (v_cp, gen_random_uuid(), v_e);
+  insert into private.photo_fingerprints (object_id, user_id, sha256) values (v_obj, v_c, repeat('a', 64));
+  insert into private.photo_perceptual_hashes (object_id, user_id, variant, dhash, phash, hash_version) values (v_obj, v_c, 'full', 1, 2, 1);
+  insert into private.account_security_events (user_id, kind) values (v_c, 'step_up_failed');
   ${hold('hold_photo', 'review_case', 'v_cp', 'v_h3')}
   ${del('v_c')}
   ${rec('c_types', types('v_c'))}
@@ -238,7 +242,8 @@ d('journey: account deletion under a legal hold (20270402)', () => {
     expect(data('b_report_kept')).toBe(1);
   });
   test('3. a held case with other members: only this account, and the case stays live', () => {
-    expect(data('c_types')).toEqual({ coverage: 1, case_member: 1, case_photo: 1, case_event: 1 }); // the event about this account
+    expect(data('c_types')).toEqual({ coverage: 1, case_member: 1, case_photo: 1, case_event: 1, // the event about this account
+      photo_fingerprint: 1, photo_hash: 1, security_event: 1 });
     expect(data('c_other_out')).toBe(true);
     expect(data('c_case_live')).toBe(1);
   });
