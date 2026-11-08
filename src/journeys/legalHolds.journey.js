@@ -69,7 +69,8 @@ d('journey: evidence on legal hold survives removal, outcomes and every retentio
       v_mem uuid; v_mem2 uuid; v_mem3 uuid; v_rg uuid; v_rmsg uuid; v_rphoto uuid; v_rphoto2 uuid; v_rgone uuid; v_rctl uuid; v_rg2 uuid;
       v_case uuid := gen_random_uuid(); v_case2 uuid := gen_random_uuid(); v_case3 uuid := gen_random_uuid();
       v_removal uuid; v_h1 uuid; v_h2 uuid; v_h3 uuid; v_h4 uuid; v_hphoto2 uuid;
-      v_out jsonb; v_hint text; v_res jsonb; v_n bigint;`, `
+      v_out jsonb; v_hint text; v_res jsonb; v_n bigint;
+      v_pre uuid[] := array(select id from private.legal_holds);  -- holds committed before this run (append-only, can't be cleared)`, `
   ${actorsSql({ people })}
   update profiles set is_admin = true where id in (v_admin, v_admin2);
   delete from private.rate_limit_rules;
@@ -116,7 +117,7 @@ d('journey: evidence on legal hold survives removal, outcomes and every retentio
 
   -- ===== 3. the admin removes the gathering; nothing is held by itself =====
   ${as('remove', 'v_admin', `v_res := public.admin_remove_reported_content(v_rg, 'Fraudulent event taking payments')`, 'v_res')}
-  ${rec('no_auto_hold', `(select count(*) from private.legal_holds)`)}
+  ${rec('no_auto_hold', `(select count(*) from private.legal_holds where not (id = any(v_pre)))`)}
   v_removal := (select id from private.content_removals where content_id = v_g);
   ${rec('after_removal', `jsonb_build_object('gathering', (select count(*) from gatherings where id = v_g), 'messages', (select count(*) from gathering_messages where gathering_id = v_g),
        'memories', (select count(*) from stories where gathering_id = v_g), 'report_copy', (select content_excerpt is not null from reports where id = v_rg),
@@ -175,7 +176,7 @@ d('journey: evidence on legal hold survives removal, outcomes and every retentio
   ${age}
   ${rec('after_release', state)}
   ${rec('message_still_held', `(select count(*) from reports where id = v_rmsg)`)}
-  ${rec('history_kept', `(select jsonb_build_object('n', count(*), 'released', count(*) filter (where released_at is not null)) from private.legal_holds)`)}
+  ${rec('history_kept', `(select jsonb_build_object('n', count(*), 'released', count(*) filter (where released_at is not null)) from private.legal_holds where not (id = any(v_pre)))`)}
 `);
     s = stepMap(log);
   });
