@@ -389,7 +389,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
     expect(data('a_types')).toEqual({ coverage: 1, review_case: 1, case_member: 2, case_event: expect.any(Number), case_report_link: 1,
       suspension_decision: 1, pause: 1, pause_event: 1 });
     expect(data('a_same')).toEqual({ case: true, events: true, decisions: true, pauses: true, pause_events: true });
-    expect(data('a_live_gone')).toEqual({ case: 0, decisions: 0, pauses: 0, signals: 0, hold_active: true });
+    expect(data('a_live_gone')).toEqual({ case: 1 /* 20270406: an open case stays open without its subject */, decisions: 0, pauses: 0, signals: 0, hold_active: true });
     expect(data('a_unnamed_out')).toBe(true);
   });
   test('2. a held report: reference cleared, later decision still copied at the auth delete', () => {
@@ -409,7 +409,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
   });
   test('5. only what is necessary: unlinked case out, no hold unchanged, reporter not covered', () => {
     expect(data('a_unlinked_out')).toBe(true);
-    expect(data('n_result')).toEqual({ store: 0, case: 0, decisions: 0 });
+    expect(data('n_result')).toEqual({ store: 0, case: 1 /* 20270406: an open case stays open without its subject */, decisions: 0 });
     expect(data('r_store')).toBe(0);
   });
   test('6. fail closed: a failed copy stops the deletion at either step', () => {
@@ -442,7 +442,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
   });
   test('10. a case hold keeps its linked report from the purge, also after the case went; released = purged', () => {
     expect(data('linked_live_case')).toEqual({ linked: 1, unlinked: 0 });
-    expect(data('linked_after_delete')).toEqual({ report: 1, case: 0 });
+    expect(data('linked_after_delete')).toEqual({ report: 1, case: 1 /* 20270406: an open case stays open without its subject */ });
     expect(data('release_linked')).toEqual(expect.objectContaining({ released: true }));
     expect(data('linked_released')).toBe(0);
   });
@@ -455,7 +455,7 @@ d('journey: account deletion under a legal hold (20270402)', () => {
     expect(data('bad_scope').hint).toBe('legal_hold_scope');
     expect(data('listed_scope')).toBe('account_history');
     expect(data('history_types')).toEqual(expect.objectContaining({ review_case: 1, suspension_decision: 1, behavior_signal: 1, security_event: 1 }));
-    expect(data('member_types')).toEqual({ coverage: 1, case_member: 1, case_event: 1 }); // the event about joining the case
+    expect(data('member_types')).toEqual({ coverage: 2, case_member: 1, case_event: 1 }); // the event about joining the case; 20270406: the first case outlives its subject, so this member's part of it is covered too
     expect(data('behavior_types')).toEqual({ coverage: 1, review_case: 1, case_event: 1, behavior_signal: 1 }); // the case's own "opened" event; no security_event
     expect(data('d_types')).toEqual({ coverage: 1, id_submission: 1 });
   });
