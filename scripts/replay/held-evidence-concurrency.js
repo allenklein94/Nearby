@@ -102,11 +102,14 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
       const copied = await count(u, 'review_case');
       const gone = (await db.query('select count(*) n from auth.users where id = $1', [u])).rows[0].n === '0';
       if (!res[1].ok || !gone) bad += 1;
-      if (hold.ok && copied !== 1) bad += 1;
-      if (!hold.ok && (hold.hint !== 'legal_hold_not_found' || copied !== 0)) bad += 1;
-      if (hold.ok) roundsResults.first += 1; else roundsResults.second += 1;
+      // 20270406: an open case outlives its subject, so a hold arriving after the deletion finds the case and holds it. There's no account left to copy, and the hold must really be on that case.
+      const kept = (await db.query(`select count(*) n from private.account_review_cases where id = $1 and status = 'open' and subject_user is null`, [c])).rows[0].n === '1';
+      const heldCase = hold.ok && (await db.query(`select count(*) n from private.legal_holds where target_id::text = $1 and released_at is null`, [c])).rows[0].n !== '0';
+      if (!hold.ok || !kept || !heldCase) bad += 1;
+      if (copied > 1) bad += 1;
+      if (copied === 1) roundsResults.first += 1; else roundsResults.second += 1;
     }
-    check(bad === 0, `every hold that committed has its copy; every other was refused as not found (held ${roundsResults.first}, not found ${roundsResults.second})`);
+    check(bad === 0, `every hold committed and is on the surviving case; a hold first also has its copy (copied ${roundsResults.first}, deletion first ${roundsResults.second})`);
     check(roundsResults.first > 0 && roundsResults.second > 0, 'both orders really happened');
     check(dl === 0, 'no deadlock');
 
