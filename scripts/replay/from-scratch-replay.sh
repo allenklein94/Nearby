@@ -37,6 +37,7 @@ psql_as() { local u=$1; shift; docker exec -i -e PGPASSWORD=postgres "$NAME" psq
 sync_inventory() { # $1 = git revision whose code-dependencies.json is synced
   git -C "$ROOT" show "$1:scripts/taxonomy/code-dependencies.json" > "$OUT/inventory.json" || return 1
   docker cp "$OUT/inventory.json" "$NAME:/tmp/inventory.json" >/dev/null || return 1
+  psql_as supabase_admin -c 'grant execute on function pg_read_file(text) to postgres' || return 1  # the PG 17 image's postgres isn't a superuser
   psql_as postgres -1 <<SQL
 select pg_catalog.set_config('replay.inv', pg_read_file('/tmp/inventory.json'), true);
 select 'inventory sync @ $1: ' || sync_category_code_dependencies(current_setting('replay.inv')::jsonb, 'replay:$1')::text;
