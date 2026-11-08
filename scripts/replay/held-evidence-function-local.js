@@ -5,7 +5,7 @@
 //   REPLAY_IMAGE=public.ecr.aws/supabase/postgres:17.6.1.003 NAME=nearby-replay17 OUT=... KEEP=1 \
 //     BEFORE_MIGRATIONS='node scripts/replay/suspended-number-auth-local.js prepare' bash scripts/replay/from-scratch-replay.sh
 //   NAME=nearby-replay17 OUT=... node scripts/replay/held-evidence-function-local.js
-// Run it last: it leaves its accounts' evidence on the scratch database.
+// Everything it created is removed at the end (the guards are paused for that cleanup only).
 // Proves, with real bytes in real Storage:
 //   A. no hold: every file in all three media buckets goes (voice messages too), the account goes, nothing is kept.
 //   B. a hold: the held original survives byte for byte, also when the person and the service role try to delete it; unrelated files go.
@@ -134,7 +134,7 @@ async function callFunction(token, body) {
   const b = await person('held');
   const bPhoto = await put(b, 'profile-photos', 'main.jpg', JPEG); const bVoice = await put(b, 'chat-media', 'voice-1.m4a');
   psql(`update profiles set photo_url = '${bPhoto.name}' where id = '${b.id}';`);
-  const reportId = one(`insert into reports (reporter_id, reported_id, reason) values ('${other.id}', '${b.id}', 'Inappropriate photo') returning id;`).split('\n')[0];
+  const reportId = psql(`insert into reports (reporter_id, reported_id, reason) values ('${other.id}', '${b.id}', 'Inappropriate photo') returning id;`).split('\n')[0];
   const hold = await mod.c.rpc('admin_place_legal_hold', { target_type_param: 'report', target_id_param: reportId, reason_param: 'Preservation request from counsel', reference_param: 'REF-1' });
   rec('the hold reports one file kept', hold.data?.files?.kept === 1, hold);
   await b.c.storage.from('profile-photos').remove([bPhoto.name]);
@@ -164,7 +164,7 @@ async function callFunction(token, body) {
   const c = await person('stuck');
   const cPhoto = await put(c, 'profile-photos', 'main.jpg');
   psql(`update profiles set photo_url = '${cPhoto.name}' where id = '${c.id}';`);
-  const caseId = one(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${c.id}') returning id;`).split('\n')[0];
+  const caseId = psql(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${c.id}') returning id;`).split('\n')[0];
   await mod.c.rpc('admin_place_legal_hold', { target_type_param: 'review_case', target_id_param: caseId, reason_param: 'Preservation request from counsel' });
   psql(`create or replace function private.test_refuse_copy() returns trigger language plpgsql as 'begin raise exception ''held evidence copy failed''; end';
         create trigger test_refuse_copy before insert on private.held_account_evidence for each row execute function private.test_refuse_copy();`, 'postgres');
@@ -194,7 +194,7 @@ async function callFunction(token, body) {
   console.log('E. the scheduled path');
   const pushes = async () => JSON.parse(await (await fetch(`${URL_}/_pushes`)).text());
   const e = await person('scheduled');
-  const eCase = one(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${e.id}') returning id;`).split('\n')[0];
+  const eCase = psql(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${e.id}') returning id;`).split('\n')[0];
   await mod.c.rpc('admin_place_legal_hold', { target_type_param: 'review_case', target_id_param: eCase, reason_param: 'Preservation request from counsel' });
   psql(`insert into private.account_deletion_requests (user_id, requested_at, purge_at, status) values ('${e.id}', now() - interval '8 days', now() - interval '1 day', 'pending');`);
   psql(`create or replace function private.test_refuse_copy() returns trigger language plpgsql as 'begin raise exception ''copy failed''; end';
@@ -209,6 +209,16 @@ async function callFunction(token, body) {
   rec('the notice says what is happening and what may be kept', notice?.title === 'Your Nearby account is being deleted' && /limited records/.test(notice?.body || ''), notice);
   rec('no refusal or failure text anywhere in the answers', ![ra, rb, rd, rh, re1, re2].some((r) => /held|hold|evidence/i.test(r.text)));
 
+  psql(`alter table private.held_account_evidence disable trigger user; alter table private.legal_hold_files disable trigger user; alter table private.legal_hold_file_access disable trigger user;
+        alter table private.legal_holds disable trigger legal_hold_immutable; alter table private.suspended_account_records disable trigger suspended_record_guard;
+        delete from private.legal_hold_file_access; delete from private.legal_hold_files; delete from private.held_account_evidence; delete from private.legal_holds;
+        delete from private.account_file_cleanup; delete from private.account_deletion_markers; delete from private.account_deletion_failures;
+        delete from private.suspended_account_records where decisions::text like '%Local test%';
+        delete from reports where reason = 'Inappropriate photo'; delete from push_outbox where dedupe_key like 'account_deletion:%';
+        delete from storage.objects where bucket_id = 'profile-photos' and name = '${bPhoto.name}';
+        alter table private.held_account_evidence enable trigger user; alter table private.legal_hold_files enable trigger user; alter table private.legal_hold_file_access enable trigger user;
+        alter table private.legal_holds enable trigger legal_hold_immutable; alter table private.suspended_account_records enable trigger suspended_record_guard;`, 'supabase_admin');
+  for (const p of [mod, other]) { psql(`delete from profiles where id = '${p.id}'; delete from auth.users where id = '${p.id}';`); }
   if (process.env.KEEP !== '1') for (const x of [GW, REST, EDGE]) quiet(['rm', '-f', x]);
   console.log(failures ? `FAILED: ${failures}` : 'ALL PASS');
   fs.writeFileSync(path.join(OUT, 'function-result.txt'), failures ? `FAILED ${failures}\n` : 'ALL PASS\n');
