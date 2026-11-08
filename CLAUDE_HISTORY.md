@@ -1,3 +1,8 @@
+# 2026-11-08: 0402 accepted as staged; development stopped for build 87
+
+Owner accepted 0402 as staged + locally verified, not approved to merge or deploy; remaining legal-hold issues = mandatory pre-launch review (audit doc,
+"Owner decision"); 12 months not legally approved. Next: build 87 from main (owner runs it), then Tier 1. No session starts the build.
+
 # 2026-11-08: 20270402 held account evidence staged + locally verified (mandatory pre-launch fix)
 
 Owner: design + stage the smallest correction; preservation succeeds before deletion; normal deletion unchanged; only necessary evidence; test

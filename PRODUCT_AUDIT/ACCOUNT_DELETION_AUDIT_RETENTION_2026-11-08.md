@@ -94,6 +94,13 @@ type-checked), PG 17.6, a controlled test with dedicated test accounts. Storage 
 - A pause or suspension with no report or case, on an account no hold covers, can't be held (no account-level hold).
 - Rollback destroys preserved evidence: its header says to export first and get the owner's + counsel's decision.
 
+## Owner decision (2026-11-08)
+
+0402 ACCEPTED as staged and locally verified. NOT approved to merge or deploy. MANDATORY PRE-LAUNCH REVIEW ITEMS: actual image preservation (decision 1),
+deletion wording (8), retention scope (4), the deletion/hold race (Known limits, first item). The provisional 12 months (3) is NOT legally approved.
+The real `delete-account` under Deno and PostgreSQL 17.6 remain unverified. Passing automated tests is not launch readiness: the real-device session,
+production integration checks and legal review are separate gates. Feature development stopped; next = build 87 + Tier 1.
+
 ## Decisions still needed (counsel + owner; nothing here is legally approved)
 
 1. **Files are not preserved.** A held photo case keeps the reference and hashes, but `delete-account` removes the profile photo itself; voice
