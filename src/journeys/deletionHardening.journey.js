@@ -35,7 +35,7 @@ const gathering = (host, into) => `insert into gatherings (host_id, title, descr
 const queued = (id) => `(select count(*) from private.account_file_cleanup where object_id = ${id})`;
 const due = (id) => `(select coalesce(bool_or(private.account_file_due(q)), false) from private.account_file_cleanup q where q.object_id = ${id})`;
 
-const PEOPLE = ['v_admin', 'v_h', 'v_h2', 'v_r', 'v_m', 'v_a', 'v_x', 'v_p', 'v_q', 'v_t', 'v_u'];
+const PEOPLE = ['v_admin', 'v_h', 'v_h2', 'v_r', 'v_m', 'v_a', 'v_x', 'v_p', 'v_q', 'v_t', 'v_u', 'v_c', 'v_w'];
 
 d('journey: deletion hardening (20270403)', () => {
   let s;
@@ -100,10 +100,27 @@ d('journey: deletion hardening (20270403)', () => {
   delete from auth.users where id = v_m;
   ${rec('message_file_kept', `jsonb_build_object('listed', (select count(*) from private.legal_hold_files f where f.object_id = v_o8), 'due', ${due('v_o8')})`)}
 
+  -- a hold on a report about a profile keeps the photo in use, never one the person replaced: placed before the deletion and in its window
+  ${obj('v_p::text', 'profile-photos', 'current.jpg', 'v_o1')}
+  ${obj('v_p::text', 'profile-photos', 'replaced.jpg', 'v_o2')}
+  update profiles set photo_url = v_p || '/current.jpg' where id = v_p;
+  insert into reports (reporter_id, reported_id, reason) values (v_r, v_p, 'Spam or scam') returning id into v_rx;
+  ${as('hold_profile_report', 'v_admin', `v_out := public.admin_place_legal_hold('report', v_rx, ${WHY}, null)`, 'v_out')}
+  ${del('v_p')}
+  ${rec('profile_report_before', `jsonb_build_object('current_listed', (select count(*) from private.legal_hold_files f where f.object_id = v_o1), 'replaced_listed', (select count(*) from private.legal_hold_files f where f.object_id = v_o2), 'replaced_due', ${due('v_o2')})`)}
+  ${obj('v_u::text', 'profile-photos', 'current.jpg', 'v_o3')}
+  ${obj('v_u::text', 'profile-photos', 'replaced.jpg', 'v_o4')}
+  update profiles set photo_url = v_u || '/current.jpg' where id = v_u;
+  insert into reports (reporter_id, reported_id, reason) values (v_r, v_u, 'Spam or scam') returning id into v_cu;
+  delete from profiles where id = v_u;
+  ${as('hold_profile_window', 'v_admin', `v_out := public.admin_place_legal_hold('report', v_cu, ${WHY}, null)`, 'v_out')}
+  delete from auth.users where id = v_u;
+  ${rec('profile_report_window', `jsonb_build_object('current_listed', (select count(*) from private.legal_hold_files f where f.object_id = v_o3), 'replaced_listed', (select count(*) from private.legal_hold_files f where f.object_id = v_o4), 'replaced_due', ${due('v_o4')})`)}
+
   -- ===== 4. an account hold =====
   ${as('account_no_reference', 'v_admin', `v_out := public.admin_place_legal_hold('account', v_x, ${WHY}, null)`, 'v_out')}
   ${as('account_no_reason', 'v_admin', `v_out := public.admin_place_legal_hold('account', v_x, 'short', 'REF-1')`, 'v_out')}
-  ${as('account_client', 'v_u', `v_out := public.admin_place_legal_hold('account', v_x, ${WHY}, 'REF-1')`, 'v_out')}
+  ${as('account_client', 'v_c', `v_out := public.admin_place_legal_hold('account', v_x, ${WHY}, 'REF-1')`, 'v_out')}
   ${as('account_unknown', 'v_admin', `v_out := public.admin_place_legal_hold('account', gen_random_uuid(), ${WHY}, 'REF-1')`, 'v_out')}
   insert into private.account_restrictions (user_id, capability, reason, admin_id, starts_at, expires_at)
     values (v_x, 'messages', 'A pause with no report or case behind it', v_admin, now() - interval '20 months', now() - interval '20 months' + interval '10 days');
@@ -140,14 +157,14 @@ d('journey: deletion hardening (20270403)', () => {
   ${rec('after_release_pause', `(select count(*) from private.account_restrictions where user_id = v_x)`)}
 
   -- ===== 6. wider than one item needs a reference =====
-  insert into reports (reporter_id, reported_id, reason) values (v_r, v_u, 'Spam or scam') returning id into v_rs;
+  insert into reports (reporter_id, reported_id, reason) values (v_r, v_w, 'Spam or scam') returning id into v_rs;
   ${as('history_no_reference', 'v_admin', `v_out := public.admin_place_legal_hold('report', v_rs, ${WHY}, null, 'account_history')`, 'v_out')}
   ${as('history_short_reference', 'v_admin', `v_out := public.admin_place_legal_hold('report', v_rs, ${WHY}, 'ab', 'account_history')`, 'v_out')}
   ${as('item_no_reference', 'v_admin', `v_out := public.admin_place_legal_hold('report', v_rs, ${WHY}, null)`, 'v_out')}
 
   -- ===== 7. retention =====
   ${rec('policy_none', `private.held_evidence_retention() is null`)}
-  ${as('status_client', 'v_u', `v_out := public.admin_held_evidence_retention_status()`, 'v_out')}
+  ${as('status_client', 'v_c', `v_out := public.admin_held_evidence_retention_status()`, 'v_out')}
   ${as('status_admin', 'v_admin', `v_out := public.admin_held_evidence_retention_status()`, 'v_out')}
   alter table private.legal_holds disable trigger legal_hold_immutable;
   update private.legal_holds set released_at = now() - interval '3 years' where id = v_ha;
@@ -187,10 +204,10 @@ d('journey: deletion hardening (20270403)', () => {
   exception when others then get stacked diagnostics v_hint = pg_exception_hint; v_out := jsonb_build_object('hint', v_hint); end;
   ${rec('expired_other_change', 'v_out')}
   insert into private.suspended_account_records (phone_key, former_account_id, released, suspended_at, released_at, expires_at, decisions)
-    values (decode(repeat('cd', 32), 'hex'), v_u, 'account_deleted', now() - interval '1 month', now(), now() + interval '12 months', '[{"action":"suspend"}]') returning id into v_rec;
+    values (decode(repeat('cd', 32), 'hex'), v_c, 'account_deleted', now() - interval '1 month', now(), now() + interval '12 months', '[{"action":"suspend"}]') returning id into v_rec;
   perform private.purge_suspended_account_records();
   ${rec('live_key_stays', `(select phone_key is not null from private.suspended_account_records where id = v_rec)`)}
-  ${as('min_fn_client', 'v_u', `v_out := to_jsonb(private.held_payload_minimized('{}'::jsonb))`, 'v_out')}
+  ${as('min_fn_client', 'v_c', `v_out := to_jsonb(private.held_payload_minimized('{}'::jsonb))`, 'v_out')}
 `);
     s = stepMap(log);
   }, 120000);
@@ -211,6 +228,10 @@ d('journey: deletion hardening (20270403)', () => {
     expect(data('message_gone')).toBe(0);
     expect(data('hold_between_message').files.kept).toBe(1);
     expect(data('message_file_kept')).toEqual({ listed: 1, due: false });
+    expect(data('hold_profile_report').files.kept).toBe(1);
+    expect(data('profile_report_before')).toEqual({ current_listed: 1, replaced_listed: 0, replaced_due: true });
+    expect(data('hold_profile_window').files.kept).toBe(1);
+    expect(data('profile_report_window')).toEqual({ current_listed: 1, replaced_listed: 0, replaced_due: true });
   });
   test('4. an account hold: admin, reason, reference; moderation history only; audited', () => {
     expect(data('account_no_reference').hint).toBe('legal_hold_reference_required');
@@ -222,8 +243,7 @@ d('journey: deletion hardening (20270403)', () => {
     expect(data('account_recorded')).toEqual({ scope: 'account_history', reference: 'REF-1', by_admin: true, reason: 'Preservation request from counsel' });
     expect(data('account_listed')).toEqual(['account']);
     expect(data('account_copied')).toEqual(expect.objectContaining({ coverage: 1, pause: 1, suspension_decision: 1, behavior_signal: 1, security_event: 1, review_case: 1 }));
-    // the profile report it covers names the photos in use; everything else of the person's still goes
-    expect(data('account_media_goes')).toEqual({ photo_due: false, chat_due: true, listed: 1 });
+    expect(data('account_media_goes')).toEqual({ photo_due: true, chat_due: true, listed: 0 });
     expect(data('account_release').released).toBe(true);
     expect(data('account_release_recorded')).toEqual({ by_admin: true, reason: 'The matter has closed, counsel confirmed' });
     expect(data('after_release_kept')).toBe(true);

@@ -7,6 +7,8 @@
 --                       unless another gathering still uses it or a hold keeps it. Business logos + offer media stay: the business outlives its owner's account.
 --   2. Timing gap.      A hold placed on a reported chat message between the profile delete and the file's removal found no message, so no file: the
 --                       file was removed under a hold. The path is now noted before the cascade.
+--                       Same place: a hold on a report about a profile reached through that window listed ALL the account's waiting photos, replaced ones included.
+--                       It now keeps only the photos in use at the deletion: a hold keeps what it is about.
 --   3. Account holds.   target_type 'account', for a pause or suspension with no report or case. Always the account's MODERATION records, never its
 --                       messages or media as such; a written reason + a reference to what authorized it. Also stops the live retention jobs. Audited like any hold.
 --                       Anything wider than one item (scope 'account_history') now needs that reference too.
@@ -25,7 +27,7 @@ alter table private.account_file_cleanup drop constraint if exists account_file_
 alter table private.account_file_cleanup add constraint account_file_cleanup_reason_check
   check (reason in ('account_deleted', 'hold_ended', 'gathering_deleted'));
 
--- Which file a reported message pointed at, for the short time between the profile delete and the file's removal. Leaves with the marker.
+-- Which file a reported message or profile pointed at, for the short time between the profile delete and the file's removal. Leaves with the marker.
 create table if not exists private.account_deletion_report_files (
   report_id uuid not null,
   object_id uuid not null,
@@ -541,18 +543,15 @@ begin
     if r.content_type is null and r.reported_id is not null then
       perform private._list_hold_file(p_hold, o.id, r.reported_id)
          from storage.objects o where o.bucket_id = 'profile-photos' and private.photo_object_in_use(r.reported_id, o.id);
-    elsif r.content_type is null and r.gone is not null then
-      -- the profile is already gone, the file waiting: this hold still reaches it
-      perform private._list_hold_file(p_hold, q.object_id, r.gone)
-         from private.account_file_cleanup q where q.account_id = r.gone and q.bucket_id = 'profile-photos';
     elsif r.content_type = 'message' then
       perform private._list_hold_file(p_hold, o.id, m.sender_id)
          from messages m join storage.objects o on o.bucket_id = 'chat-media' and o.name in (m.media_url, m.audio_url)
         where m.id = r.content_id;
-      -- the message went with its sender's profile, the file is waiting (20270403): the path was noted before the delete
-      perform private._list_hold_file(p_hold, f.object_id, f.account_id)
-         from private.account_deletion_report_files f where f.report_id = r.id;
     end if;
+    -- the profile or message already went, the file is waiting (20270403): only the files noted for this report before the delete. Listing
+    -- all of the account's waiting photos here also kept photos it had replaced, which the report isn't about.
+    perform private._list_hold_file(p_hold, f.object_id, f.account_id)
+       from private.account_deletion_report_files f where f.report_id = r.id;
   end loop;
 
   return jsonb_build_object(
@@ -609,6 +608,13 @@ begin
       join messages m on m.id = r.content_id
       join storage.objects o on o.bucket_id = 'chat-media' and o.name in (m.media_url, m.audio_url)
      where r.reported_id = old.id and r.content_type = 'message'
+    on conflict (report_id, object_id) do nothing;
+    -- and which photos were in use for each report about the profile
+    insert into private.account_deletion_report_files (report_id, object_id, account_id)
+    select r.id, o.id, old.id
+      from reports r
+      join storage.objects o on o.bucket_id = 'profile-photos' and private.photo_object_in_use(old.id, o.id)
+     where r.reported_id = old.id and r.content_type is null
     on conflict (report_id, object_id) do nothing;
     -- a gathering cover this person uploaded for a gathering that is already gone (20270403). Live gatherings' covers are queued by
     -- their own delete trigger below, in this same transaction.
