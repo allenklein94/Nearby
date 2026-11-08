@@ -319,7 +319,7 @@ const STEPS = {
       'rollback = scripts/rollback/20270404_admin_case_link_count.rollback.sql (no data involved)',
       'STOP + report: anything written by the read, a link or text returned by the function, a non-admin served, or a score / label appearing anywhere'] },
   // Account deletion never refused, never takes other people's plans or the money records with it (owner, 2026-11-08)
-  20270405: { journeys: ['accountDeletionBlockers', 'groupBookingLifecycle', 'offer', 'adminAccountRestrictions', 'heldAccountEvidence', 'deletionHardening'],
+  20270405: { journeys: ['accountDeletionBlockers', 'groupBookingLifecycle', 'offerJourney', 'adminAccountRestrictions', 'heldAccountEvidence', 'deletionHardening'],
     node: ['scripts/replay/account-deletion-sweep.js + account-deletion-concurrency.js + held-evidence-function-local.js section F (replay only, before the deploy)'],
     edge: [],
     manual: ['before deploy: prod journeys with the 0348-0404 prelude, prod aborted rollback, grants vs prod; counsel has answered the retention questions in PRODUCT_AUDIT/ACCOUNT_DELETION_BLOCKERS_2026-11-08.md (kept payments are kept with no end date until then)',
