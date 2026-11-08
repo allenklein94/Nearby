@@ -61,6 +61,9 @@ Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one
    verification (owner 2026-10-29: required before Session B, never replaced by the seed's fixture phones): sign out, sign
    up with a real phone number not already on an account, receive the text, enter the code, finish onboarding (C2); also
    enter one wrong code first and confirm it is refused. Note the account for later cleanup (it writes real rows).
+   New-user path, same controlled test (owner 2026-11-08, one account, no seed): on that new account create a gathering, invite someone, then block
+   a test account and open Report on it (submit only between two test accounts: a submitted report is kept). Record any confusing step or
+   unexpected restriction. Repeat after the staged gates and limits deploy: on production at 0347 they aren't active, so a clean pass here says nothing about them.
 1. Your Progress on Profile checks 1-4.
 2. Screen-reduction checks 4-6 (Emergency contacts incl. the keyboard, the date check-in link, Subscription).
 3. Screen-reduction checks 1-3 (business application; 2-3 need the admin account; see P3).
