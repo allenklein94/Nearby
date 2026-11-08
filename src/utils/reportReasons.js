@@ -89,3 +89,9 @@ export function isUrgentReportReason(stored) {
   const code = reportReasonCode(stored);
   return REPORT_REASONS.some((x) => x.code === code && x.urgent);
 }
+
+// What a report's server copy is a copy of, in the admin's words (one table: Admin Reports + Admin Review's linked reports).
+const REPORTED_WHAT = { match_chat: 'chat (their last messages)', business_offer: 'offer', business: 'business (as it showed then)', story: 'photo', gathering: 'gathering (as it showed then)', community: 'community (as it showed then)' };
+export function reportedWhatLabel(contentType) {
+  return REPORTED_WHAT[contentType] || 'message';
+}

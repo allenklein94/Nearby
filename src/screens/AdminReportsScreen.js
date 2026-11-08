@@ -8,7 +8,7 @@ import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { PullToRefresh } from '../motion';
 import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
-import { reportReasonLabel, sortReportQueue, reportQueueTag } from '../utils/reportReasons';
+import { reportReasonLabel, sortReportQueue, reportQueueTag, reportedWhatLabel } from '../utils/reportReasons';
 import { ADMIN_PHOTO_LINK_SECONDS } from '../utils/adminReviewCase';
 import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../utils/reportMedia';
 import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
@@ -23,7 +23,6 @@ import { REMOVAL_REASON_MAX, canRemoveReportedObject, removalReasonReady, remove
 const REPORT_COLUMNS = 'id, reason, details, created_at, resolved, reporter_id, reported_id, reported:profiles!reports_reported_id_fkey(display_name, suspended_at)';
 const CONTENT_COLUMNS = ', content_type, content_excerpt, content_sent_at';
 const isMissing = (error) => !!error && ['PGRST202', 'PGRST204', '42703', '42883'].includes(error.code);
-const REPORTED_WHAT = { match_chat: 'chat (their last messages)', business_offer: 'offer', business: 'business (as it showed then)', story: 'photo', gathering: 'gathering (as it showed then)', community: 'community (as it showed then)' };
 const CASE_REASON = {
   many_accounts: 'Same photo on several accounts',
   similar_names: 'Same photo + similar names',
@@ -532,7 +531,7 @@ export default function AdminReportsScreen({ navigation }) {
             {item.details ? <Text style={styles.details}>{item.details}</Text> : null}
             {item.content_excerpt ? (
               <View style={styles.evidence}>
-                <Text style={styles.meta}>Reported {REPORTED_WHAT[item.content_type] || 'message'}{item.content_sent_at ? ` · sent ${new Date(item.content_sent_at).toLocaleString()}` : ''}</Text>
+                <Text style={styles.meta}>Reported {reportedWhatLabel(item.content_type)}{item.content_sent_at ? ` · sent ${new Date(item.content_sent_at).toLocaleString()}` : ''}</Text>
                 <Text style={styles.details}>{item.content_excerpt}</Text>
                 {media[item.id]?.url && media[item.id].media_type === 'image' ? (
                   <Image source={{ uri: media[item.id].url }} style={styles.reportPhoto} resizeMode="contain" accessibilityLabel="Reported photo" />

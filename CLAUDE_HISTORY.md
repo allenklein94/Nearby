@@ -1,3 +1,11 @@
+# 2026-11-08: whole case in Admin Review; 0401 accepted as staged
+
+Owner accepted 0401 as staged and approved consolidating the evidence into Admin Review, then stopping feature work. Client only on
+`post-tier1/admin-case-evidence`. Added to the case: counted activity lines; for each linked report its details, the server copy
+(content_excerpt, sent time) and a held reported photo. Reused admin reads (reports policy, admin_get_report_media, 15-minute Storage links);
+REPORTED_WHAT moved to `reportReasons.js` as one table. Admin Reports keeps queue, actions and its evidence lines. Deliberately not moved:
+Pause Actions + legal holds (actions, not evidence). Not rendered in a browser or with real data.
+
 # 2026-11-08: 0401 Account facts in the admin case view (staged, locally verified)
 
 Owner: approve the facts line from idea 23 now, staged, without delaying build 87. Migration 20270401 on `post-tier1/account-facts`

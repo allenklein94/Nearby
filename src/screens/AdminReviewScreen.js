@@ -8,6 +8,8 @@ import LoadErrorState from '../components/LoadErrorState';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { reportReasonLabel, sortReportQueue, reportQueueTag } from '../utils/reportReasons';
 import AccountFactsSection from '../components/AccountFactsSection';
+import LinkedReportsSection from '../components/LinkedReportsSection';
+import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
   linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
@@ -211,6 +213,12 @@ export default function AdminReviewScreen() {
           {sharedTextLines(selected.evidence).map((line, i) => <Text key={`t${i}`} style={styles.event}>{line}</Text>)}
         </>
       ) : null}
+      {behaviorEvidenceLines(selected.evidence).length ? (
+        <>
+          <Text style={styles.subTitle}>Activity counted</Text>
+          {behaviorEvidenceLines(selected.evidence).map((line, i) => <Text key={`b${i}`} style={styles.event}>{line}</Text>)}
+        </>
+      ) : null}
       <AccountFactsSection caseId={selected.id} styles={styles} />
       <Text style={styles.subTitle}>Shared review cases</Text>
       <Text style={styles.meta}>{SHARED_CASES_NOTE}</Text>
@@ -247,14 +255,7 @@ export default function AdminReviewScreen() {
           </View>
         ))}
       </ScrollView>
-      {selected.reports?.length ? (
-        <>
-          <Text style={styles.subTitle}>Linked reports</Text>
-          {selected.reports.map((r) => (
-            <Text key={r.report_id} style={styles.meta}>{r.still_kept ? `${reportReasonLabel(r.reason)} · ${new Date(r.created_at).toLocaleString()}${r.resolved ? ' · resolved' : ''}` : 'Report no longer kept (retention)'}</Text>
-          ))}
-        </>
-      ) : null}
+      <LinkedReportsSection reports={selected.reports} styles={styles} />
       <Text style={styles.subTitle}>History</Text>
       {(selected.events || []).map((e, i) => (
         <Text key={`${e.at}-${i}`} style={styles.event}>{new Date(e.at).toLocaleString()} · {eventLine(e)}</Text>
