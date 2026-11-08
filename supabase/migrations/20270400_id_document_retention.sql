@@ -17,7 +17,8 @@
 -- Never touched by the job: a file named by a PENDING submission, or one still inside its retention period, or one whose
 -- submission is under a legal hold (target 'id_submission', placed by an admin with a written reason through
 -- admin_place_legal_hold; nothing is ever held automatically; a hold outlives the account's deletion). Rechecked per file at send
--- time under the row lock, so a hold that lands after the list was read still stops the DELETE.
+-- time under the submission's row lock, so a hold that lands after the list was read still stops the DELETE; a DELETE already
+-- handed to pg_net can't be recalled, and a hold placed then says 'deleting', never 'held'.
 --
 -- New uploads are REFUSED until an admin migration turns them on (private.id_document_settings.uploads_enabled, default false,
 -- no client access): the bucket's insert policy and the submission insert both check it. Turning it on needs its own approval.
@@ -443,11 +444,19 @@ begin
      order by q.next_attempt_at, q.queued_at
      limit 200
   loop
+    -- The submission row first (share lock): a legal hold takes it FOR UPDATE, so a hold and a send never interleave. A hold
+    -- still committing = skipped this run (no wait, no deadlock); a send first = the hold waits for this commit and then sees
+    -- the request id ("deleting"). The queue has no link to the submission row, so without this the hold answered "held" while
+    -- the DELETE went out (scripts/replay/id-document-concurrency.js, both orders). A submission already deleted has no row.
+    if v_sub is not null and exists (select 1 from public.id_verification_submissions s where s.id = v_sub) then
+      perform 1 from public.id_verification_submissions s where s.id = v_sub for share skip locked;
+      continue when not found;
+    end if;
     perform 1 from private.id_document_cleanup q
       where q.object_path = v_path and q.request_id is null and q.gave_up_at is null
       for update skip locked;
     continue when not found;
-    -- rechecked here, under the row lock: a hold or a new pending submission that landed after the list was read wins
+    -- rechecked here, under both locks: a hold or a new pending submission that landed after the list was read wins
     continue when private.id_document_protected(v_path, v_sub);
     if private._story_file_path_unsafe(v_path) then
       perform private._id_document_failed(v_path, null, 'unsafe_path', 'unsafe_path', true);
