@@ -13,6 +13,7 @@
 //   C. a failed copy: a generic error with no database text; the account + files untouched; the failure recorded + an admin push; the retry works.
 //   D. Storage down: the account still goes; the files wait, and the hourly run removes them when Storage is back.
 //   E. the scheduled path: no notice when the copy fails; otherwise the notice says what happens, and the account goes.
+//   G. (20270406) leaving with an open report + case: a record, an open case; the number coming back through real Auth opens one private case and nothing else.
 //   F. (20270405) an organizer with a booked group plan + a captured payment + every who-did-it column: the function deletes them, the others keep the plan.
 const { execFileSync } = require('child_process');
 const crypto = require('crypto');
@@ -285,6 +286,35 @@ async function callFunction(token, body) {
   psql(`delete from business_payments where id = '${payId}'; delete from offer_redemptions where id = '${redId}'; delete from brand_offers where id = '${offerId}';
         delete from business_content_screening_results where id = '${scrId}'; delete from business_request_offers where partner_id = '${partnerId}'; delete from brand_partners where id = '${partnerId}';`);
   psql(`alter table private.account_restrictions disable trigger user; delete from private.account_restrictions where id = '${restId}'; alter table private.account_restrictions enable trigger user;`, 'supabase_admin');
+
+  // Migration 20270406: an account leaving with something unresolved, then its number coming back through real Auth.
+  console.log('G. leaving with something unresolved');
+  const left = await person('unresolved'); const reporter = await person('reporter');
+  const num = `1561555${crypto.randomInt(1000, 9999)}`;
+  psql(`alter table auth.users disable trigger aa_account_takeover_guard; update auth.users set phone = '${num}', phone_confirmed_at = now() where id = '${left.id}'; alter table auth.users enable trigger aa_account_takeover_guard;`, 'supabase_admin');
+  const gPhoto = await put(left, 'profile-photos', 'main.jpg');
+  const gReport = psql(`insert into reports (reporter_id, reported_id, reason) values ('${reporter.id}', '${left.id}', 'spam_scam') returning id;`).split('\n')[0];
+  const gCase = psql(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${left.id}') returning id;`).split('\n')[0];
+  const rG = await callFunction(left.token);
+  rec('the deletion goes through, indistinguishably', rG.status === 200 && rG.json?.ok === true && !/record|report|case|kept/i.test(rG.text.replace('filesRemoved', '')), rG);
+  rec('the account and its files are gone', gone(left.id) && !(await inStorage(gPhoto)));
+  rec('the record links the report and case, 90 days', one(`select count(*) from private.unresolved_account_records where former_account_id = '${left.id}' and report_ids = array['${gReport}']::uuid[] and case_ids = array['${gCase}']::uuid[] and phone_key is not null and expires_at - released_at = interval '90 days'`) === '1');
+  rec('the case is still open, without its subject', one(`select count(*) from private.account_review_cases where id = '${gCase}' and status = 'open' and subject_user is null`) === '1');
+  const adminRead = await mod.c.rpc('admin_get_deleted_account_record', { case_id_param: gCase });
+  rec('an admin reads what was kept through the real API, without the number or the id', adminRead.data?.[0]?.open_reports === 1 && !JSON.stringify(adminRead.data).includes(num) && !JSON.stringify(adminRead.data).includes(left.id), adminRead);
+  const notAdmin = await reporter.c.rpc('admin_get_deleted_account_record', { case_id_param: gCase });
+  rec('anyone else is refused', !!notAdmin.error, notAdmin);
+  const back = await admin.auth.admin.createUser({ phone: num, phone_confirm: true });
+  rec('the number signs up again through real Auth, nothing in the way', !back.error && !!back.data?.user?.id, back.error);
+  const backId = back.data.user.id;
+  psql('select private.match_suspended_numbers();', 'postgres');
+  rec('one private case about the new account', one(`select count(*) from private.account_review_cases where signal = 'prior_unresolved' and subject_user = '${backId}' and status = 'open'`) === '1');
+  rec('no restriction, no suspension, no notice', one(`select count(*) from private.account_restrictions where user_id = '${backId}'`) === '0' && one(`select count(*) from push_outbox where recipient_id = '${backId}'`) === '0');
+  psql(`alter table private.unresolved_account_records disable trigger user; alter table private.unresolved_account_events disable trigger user;
+        delete from private.account_review_cases where id = '${gCase}' or subject_user = '${backId}'; delete from private.unresolved_account_events where record_id in (select id from private.unresolved_account_records where former_account_id = '${left.id}');
+        delete from private.unresolved_account_records where former_account_id = '${left.id}';
+        alter table private.unresolved_account_records enable trigger user; alter table private.unresolved_account_events enable trigger user;
+        delete from reports where id = '${gReport}'; delete from reports where reporter_id = '${reporter.id}'; delete from profiles where id = '${backId}'; delete from auth.users where id = '${backId}'; delete from profiles where id = '${reporter.id}'; delete from auth.users where id = '${reporter.id}';`, 'supabase_admin');
 
   psql(`alter table private.held_account_evidence disable trigger user; alter table private.legal_hold_files disable trigger user; alter table private.legal_hold_file_access disable trigger user;
         alter table private.legal_holds disable trigger legal_hold_immutable; alter table private.suspended_account_records disable trigger suspended_record_guard;

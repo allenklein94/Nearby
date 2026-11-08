@@ -86,10 +86,10 @@ export default function AdminReviewScreen() {
       const earlier = await supabase.rpc('admin_get_prior_suspension', { case_id_param: id });
       setPrior(earlier.error ? { error: true } : (earlier.data || []));
     }
-    if (data?.signal === 'prior_unresolved' || data?.subject_deleted_at) {
-      const record = await supabase.rpc('admin_get_deleted_account_record', { case_id_param: id });
-      if (openId.current === id) setKept(record.error ? { error: true } : (record.data || []));
-    }
+    // only the server knows whether this case touches a deleted account: an empty answer shows nothing
+    supabase.rpc('admin_get_deleted_account_record', { case_id_param: id }).then(
+      (r) => { if (openId.current === id) setKept(r.error ? { error: true } : (r.data?.length ? r.data : null)); },
+      () => { if (openId.current === id) setKept({ error: true }); });
     setNote(''); setReason(''); setCheck({ source: '', result: 'no_match', link: '' });
     signPhotos(data);
   }, [signPhotos]);
