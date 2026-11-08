@@ -4,8 +4,8 @@
 //   1. The organizer and another participant delete at the same moment, 8 rounds: the plan always ends, nobody takes it over, the booking is gone, the
 //      third person's request is open again, no deadlock.
 //   2. The organizer deletes while the last participant confirms the offer, 8 rounds: either order ends with no plan, no reservation left, and the third person's request open.
-//   2b. The organizer deletes while a payment on their booking is captured, 8 rounds: either the deletion is refused and the booking stays whole, or the booking was
-//      cancelled first; a captured payment is never lost, and no booking is left without an organizer.
+//   2b. The organizer deletes while a payment on their booking is captured, the way the webhook writes it, 8 rounds, both orders: the deletion always goes through,
+//      the charge is never lost, and exactly one exception owes the refund.
 //   3. A customer deletes while the Stripe webhook marks their payment captured, 8 rounds: the money record survives with the captured status, no person on it.
 // Row cleanup: everything it creates is deleted afterwards.
 const url = process.env.NEARBY_LOCAL_DB_URL;
@@ -108,7 +108,7 @@ const deleteAccount = (id) => session(async (c) => {
   check(wrong.length === 0, `8 rounds: no plan, no reservation, the third person's request open (confirm first ${orders.booked}, deletion first ${orders.notBooked}) ${wrong.slice(0, 3).join(' | ')}`);
 
   console.log('2b. the organizer deletes while a payment on the booking is captured');
-  wrong = []; const payOrders = { refused: 0, cancelledFirst: 0 };
+  wrong = []; const payOrders = { paid_booking_ended: 0, captured_after_cancellation: 0 };
   for (let i = 0; i < 8; i += 1) {
     const g = await bookedPlan(3);
     const pi = `pi_conc_${crypto.randomUUID()}`;
@@ -116,23 +116,19 @@ const deleteAccount = (id) => session(async (c) => {
       select r.id, 'pending', 25, 'usd', $1, 'stripe', $2 from business_reservations r where r.offer_id = $3 returning id`, [g.a, pi, g.offer]);
     const [x, y] = await Promise.all([
       deleteAccount(g.a),
-      session(async (c) => { if (i % 2) await sleep(40); await c.query(`update business_payments set status = 'captured', stripe_charge_id = 'ch_conc' where stripe_payment_intent_id = $1 and status = 'pending'`, [pi]); }),
+      // odd rounds start late, so the deletion gets there first
+      session(async (c) => { if (i % 2) await sleep(40); await c.query(`update business_payments set status = 'captured', stripe_charge_id = 'ch_conc' where stripe_payment_intent_id = $1`, [pi]); }),
     ]);
+    if (!x.ok) wrong.push(`deletion: ${x.error}`);
     if (!y.ok) wrong.push(`capture: ${y.error}`);
     const [row] = await q(`select (select count(*)::int from profiles where id = $1) person, (select count(*)::int from group_plan_proposals where id = $2) plans, (select count(*)::int from business_reservations where offer_id = $3) res,
-      (select status from business_payments where id = $4) pay, (select initiator_id::text from group_plan_proposals where id = $2) initiator`, [g.a, g.p, g.offer, pay]);
-    if (x.ok) {
-      payOrders.cancelledFirst += 1;
-      if (row.person !== 0 || row.plans !== 0 || row.res !== 0 || row.pay !== 'cancelled') wrong.push(`deleted: ${JSON.stringify(row)}`);
-    } else {
-      payOrders.refused += 1;
-      if (!/booking that can.t be cancelled/.test(x.error)) wrong.push(`refusal: ${x.error}`);
-      if (row.person !== 1 || row.plans !== 1 || row.res !== 1 || row.pay !== 'captured' || row.initiator !== g.a) wrong.push(`refused: ${JSON.stringify(row)}`);
-      await q(`update business_payments set status = 'refunded' where id = $1`, [pay]);
-      await deleteAccount(g.a);
-    }
+      (select status from business_payments where id = $4) pay, (select payer_id from business_payments where id = $4) payer`, [g.a, g.p, g.offer, pay]);
+    const open = await q(`select kind from private.payment_exceptions where payment_id = $1 and status = 'open'`, [pay]);
+    if (row.person !== 0 || row.plans !== 0 || row.res !== 0 || row.pay !== 'captured' || row.payer) wrong.push(JSON.stringify(row));
+    if (open.length !== 1) wrong.push(`exceptions: ${JSON.stringify(open)}`); else payOrders[open[0].kind] += 1;
   }
-  check(wrong.length === 0, `8 rounds: no money or booking lost either way (refused ${payOrders.refused}, cancelled first ${payOrders.cancelledFirst}) ${wrong.slice(0, 3).join(' | ')}`);
+  check(wrong.length === 0, `8 rounds: deleted, charge kept, exactly one exception (paid first ${payOrders.paid_booking_ended}, late ${payOrders.captured_after_cancellation}) ${wrong.slice(0, 3).join(' | ')}`);
+  check(payOrders.paid_booking_ended > 0 && payOrders.captured_after_cancellation > 0, 'both orders were really seen');
 
   console.log('3. a customer deletes while the webhook captures');
   wrong = [];

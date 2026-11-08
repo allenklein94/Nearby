@@ -12,7 +12,8 @@
 --     Kept until a retention period is decided: nothing here purges them (counsel; see the audit doc).
 --   offer_redemptions: a confirmed or invoiced redemption stays without its person (billing counts them); an unconfirmed claim goes.
 --   group plans: see private._account_deletion_release_plans below.
--- Nothing here changes what happens to anything else on a deletion. delete-account answers a refused deletion (hint group_plan_booking_unresolved) and checks before it starts.
+-- Payment exceptions: money that needs a person (see below). The app's warning before deleting must be on phones before this is deployed.
+-- Nothing here changes what happens to anything else on a deletion. delete-account itself is unchanged.
 
 
 -- ── guards: the one extra change each allows is a deletion clearing a reference to something already gone ──
@@ -137,6 +138,148 @@ drop trigger if exists z_business_payment_detached on public.business_payments;
 create trigger z_business_payment_detached after update of reservation_id on public.business_payments
   for each row when (new.reservation_id is null and old.reservation_id is not null) execute function private._business_payment_detached();
 
+-- ── payment exceptions ──
+-- Money that needs a person to act on it: a paid booking ended because its customer left, or a payment that landed after its booking was cancelled.
+-- No person on it, only the money facts a refund needs. Opened by the database, so nothing can miss it: the webhook is unchanged. A refund closes it by itself.
+-- How long these are kept is counsel's answer (PRODUCT_AUDIT/ACCOUNT_DELETION_BLOCKERS_2026-11-08.md): nothing purges them.
+create table private.payment_exceptions (
+  id uuid primary key default gen_random_uuid(),
+  payment_id uuid not null,
+  partner_id uuid,
+  kind text not null check (kind in ('paid_booking_ended', 'captured_after_cancellation')),
+  amount numeric,
+  currency text,
+  stripe_payment_intent_id text,
+  status text not null default 'open' check (status in ('open', 'resolved')),
+  resolution text check (resolution in ('refunded', 'admin')),
+  note text,
+  opened_at timestamptz not null default now(),
+  resolved_at timestamptz,
+  last_reminded_at timestamptz
+);
+create unique index payment_exceptions_one_open on private.payment_exceptions (payment_id) where status = 'open';
+create table private.payment_exception_events (
+  id bigserial primary key,
+  exception_id uuid not null references private.payment_exceptions(id),
+  event text not null check (event in ('opened', 'reminded', 'resolved')),
+  actor uuid,
+  at timestamptz not null default now()
+);
+create or replace function private._payment_exception_events_append_only()
+returns trigger language plpgsql set search_path = '' as $$
+begin
+  raise exception 'Payment exception events are append-only.';
+end;
+$$;
+create trigger payment_exception_events_append_only before update or delete on private.payment_exception_events
+  for each row execute function private._payment_exception_events_append_only();
+
+create or replace function private._money_text(amount_param numeric, currency_param text)
+returns text language sql immutable set search_path = '' as $$
+  select coalesce(upper(currency_param) || ' ' || to_char(amount_param, 'FM999999990.00'), 'the amount paid');
+$$;
+
+-- Opens at most one per payment, tells the business's owners and the admins. An already open one stays as it is.
+create or replace function private._open_payment_exception(payment_param public.business_payments, kind_param text, leaving_param uuid default null)
+returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_id uuid;
+  v_money text := private._money_text(payment_param.amount, payment_param.currency);
+  v_ref text := coalesce(' Stripe payment ' || payment_param.stripe_payment_intent_id || '.', '');
+  v_partner uuid := coalesce(payment_param.partner_id, (select o.partner_id from public.business_reservations r
+    join public.business_request_offers o on o.id = r.offer_id where r.id = payment_param.reservation_id));
+  v_person uuid;
+begin
+  insert into private.payment_exceptions (payment_id, partner_id, kind, amount, currency, stripe_payment_intent_id)
+    values (payment_param.id, v_partner, kind_param, payment_param.amount, payment_param.currency, payment_param.stripe_payment_intent_id)
+    on conflict (payment_id) where status = 'open' do nothing returning id into v_id;
+  if v_id is null then return; end if;
+  insert into private.payment_exception_events (exception_id, event) values (v_id, 'opened');
+  for v_person in select pr.id from public.profiles pr where pr.managed_partner_id = v_partner and pr.id is distinct from leaving_param loop
+    perform public._send_push(v_person, 'A refund is needed',
+      case kind_param when 'paid_booking_ended' then 'A paid reservation ended because the customer left Nearby. Please refund ' || v_money || ' in Stripe; it goes back to their payment method.'
+        else 'A payment of ' || v_money || ' arrived after its reservation was cancelled. Please refund it in Stripe; it goes back to their payment method.' end || v_ref,
+      jsonb_build_object('type', 'reservation_cancelled_by_customer'), 'payment_exception:' || v_id || ':' || v_person);
+  end loop;
+  for v_person in select pr.id from public.profiles pr where pr.is_admin is true and pr.suspended_at is null and pr.id is distinct from leaving_param loop
+    perform public._send_push(v_person, 'A payment needs attention', 'A refund is owed: ' || v_money || '.',
+      jsonb_build_object('type', 'admin_report_received'), 'payment_exception:' || v_id || ':' || v_person);
+  end loop;
+end;
+$$;
+
+-- The webhook writes the status; this reads it. A charge landing on a booking that's gone or cancelled opens an exception; a refund closes one.
+create or replace function private._business_payment_status_changed()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare v_id uuid;
+begin
+  if new.status in ('captured', 'authorized') and old.status not in ('captured', 'authorized')
+     and (new.reservation_id is null or exists (select 1 from public.business_reservations r where r.id = new.reservation_id and r.status = 'cancelled')) then
+    perform private._open_payment_exception(new, 'captured_after_cancellation');
+  elsif new.status = 'refunded' then
+    update private.payment_exceptions set status = 'resolved', resolution = 'refunded', resolved_at = now()
+      where payment_id = new.id and status = 'open' returning id into v_id;
+    if v_id is not null then
+      insert into private.payment_exception_events (exception_id, event) values (v_id, 'resolved');
+    end if;
+  end if;
+  return null;
+end;
+$$;
+drop trigger if exists z_business_payment_status_changed on public.business_payments;
+create trigger z_business_payment_status_changed after update of status on public.business_payments
+  for each row when (new.status is distinct from old.status) execute function private._business_payment_status_changed();
+
+-- An open exception nobody has refunded reminds the admins after 3 days, then weekly. No screen: admins read and close these with the two functions below.
+create or replace function private.remind_open_payment_exceptions()
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_row record; v_person uuid;
+begin
+  for v_row in update private.payment_exceptions set last_reminded_at = now()
+      where status = 'open' and opened_at < now() - interval '3 days'
+        and (last_reminded_at is null or last_reminded_at < now() - interval '7 days')
+      returning id, amount, currency loop
+    insert into private.payment_exception_events (exception_id, event) values (v_row.id, 'reminded');
+    for v_person in select pr.id from public.profiles pr where pr.is_admin is true and pr.suspended_at is null loop
+      perform public._send_push(v_person, 'A refund is still owed', 'Not refunded yet: ' || private._money_text(v_row.amount, v_row.currency) || '.',
+        jsonb_build_object('type', 'admin_report_received'), 'payment_exception_reminder:' || v_row.id || ':' || v_person || ':' || current_date);
+    end loop;
+  end loop;
+end;
+$$;
+select cron.schedule('remind-open-payment-exceptions', '20 14 * * *', 'select private.remind_open_payment_exceptions()');
+
+create or replace function public.admin_list_payment_exceptions()
+returns setof jsonb language plpgsql stable security definer set search_path = '' as $$
+begin
+  if not public.check_is_admin(auth.uid()) then raise exception 'Not allowed.'; end if;
+  return query select to_jsonb(e) from private.payment_exceptions e where e.status = 'open' order by e.opened_at;
+end;
+$$;
+-- For what the refund can't show (handled outside Stripe, a dispute). The reason is required: it is the record.
+create or replace function public.admin_resolve_payment_exception(exception_id_param uuid, note_param text)
+returns void language plpgsql security definer set search_path = '' as $$
+begin
+  if not public.check_is_admin(auth.uid()) then raise exception 'Not allowed.'; end if;
+  if nullif(btrim(note_param), '') is null then raise exception 'A reason is required.'; end if;
+  update private.payment_exceptions set status = 'resolved', resolution = 'admin', note = note_param, resolved_at = now()
+    where id = exception_id_param and status = 'open';
+  if not found then raise exception 'Not open.'; end if;
+  insert into private.payment_exception_events (exception_id, event, actor) values (exception_id_param, 'resolved', auth.uid());
+end;
+$$;
+
+revoke all on table private.payment_exceptions, private.payment_exception_events from public, anon, authenticated, service_role;
+revoke all on function private._payment_exception_events_append_only() from public, anon, authenticated;
+revoke all on function private._money_text(numeric, text) from public, anon, authenticated;
+revoke all on function private._open_payment_exception(public.business_payments, text, uuid) from public, anon, authenticated;
+revoke all on function private._business_payment_status_changed() from public, anon, authenticated;
+revoke all on function private.remind_open_payment_exceptions() from public, anon, authenticated;
+revoke all on function public.admin_list_payment_exceptions() from public, anon;
+grant execute on function public.admin_list_payment_exceptions() to authenticated;
+revoke all on function public.admin_resolve_payment_exception(uuid, text) from public, anon;
+grant execute on function public.admin_resolve_payment_exception(uuid, text) to authenticated;
+
 -- ── group plans ──
 alter table public.group_plan_proposals drop constraint group_plan_proposals_initiator_id_fkey,
   add constraint group_plan_proposals_initiator_id_fkey foreign key (initiator_id) references public.profiles(id) on delete cascade;
@@ -158,10 +301,10 @@ alter table public.business_requests drop constraint business_requests_supersede
 -- Runs inside the profile delete, after held evidence is copied (a_ sorts first), before the cascades.
 --   Someone else's plan: the person's row and confirmations go. The plan goes on, exactly as if they had left.
 --   Their plan (owner, 2026-11-08, Option 1): it ends. Nobody is ever handed the organizer role, and nobody is handed a payment.
---     Each booking goes through the reservation cancellation everyone else uses (_cancel_reservation_by_offer), so capacity returns and its
---     refusal stands. A booking it refuses (paid or authorized: there is no automatic refund) refuses this whole deletion: nothing changes, the
---     person is told what to do (hint group_plan_booking_unresolved), and the booking stays with an organizer who still exists.
+--     Each booking goes through the reservation cancellation everyone else uses (_cancel_reservation_by_offer), so capacity returns.
 --     The business and everyone in the plan are told. Each person's own request comes back as it would on Reopen, so they can book again.
+--   A paid booking (owner, 2026-11-08) never holds a deletion, and is never silently cancelled: the account goes, the money record stays with no person on it,
+--     and a payment exception tells the business a refund is owed and tells the admins. Solo bookings the same: they already end with the customer's request.
 create or replace function private._account_deletion_release_plans()
 returns trigger language plpgsql security definer set search_path = '' as $$
 declare
@@ -172,6 +315,8 @@ declare
   v_booked boolean;
   v_person record;
   v_owner uuid;
+  v_paid boolean;
+  v_payment public.business_payments;
 begin
   -- every plan the person is in, not just theirs: two people leaving one plan at once take turns here
   for v_plan in select * from public.group_plan_proposals p
@@ -184,13 +329,20 @@ begin
         where o.status = 'accepted' and v_plan.resulting_request_id is not null
           and (r.id = v_plan.resulting_request_id or r.parent_request_id = v_plan.resulting_request_id)
         order by o.id loop
+      -- the money comes off the booking first: an exception owes the refund, then the booking cancels like any unpaid one
+      v_paid := false;
+      for v_payment in select pay.* from public.business_payments pay join public.business_reservations res on res.id = pay.reservation_id
+          where res.offer_id = v_offer.id and pay.status in ('captured', 'authorized') for update of pay loop
+        perform private._open_payment_exception(v_payment, 'paid_booking_ended', v_me);
+        update public.business_payments set reservation_id = null where id = v_payment.id;
+        v_paid := true;
+      end loop;
       v_result := public._cancel_reservation_by_offer(v_offer.id);
-      if not coalesce((v_result->>'cancelled')::boolean, false) then
-        raise exception 'A group plan you organize has a booking that can''t be cancelled yet.'
-          using errcode = 'P0001', hint = 'group_plan_booking_unresolved';
-      end if;
+      -- not a live reservation (requested or failed): nothing to cancel, it goes with the request
+      continue when not coalesce((v_result->>'cancelled')::boolean, false);
       v_booked := true;
       perform public._record_cancellation('business_reservation', v_offer.id, v_offer.partner_id, 'requester');
+      continue when v_paid; -- the exception already told the business
       for v_owner in select pr.id from public.profiles pr where pr.managed_partner_id = v_offer.partner_id and pr.id <> v_me loop
         perform public._send_push(v_owner, 'A reservation was cancelled',
           'A customer cancelled their reservation: ' || public.business_safe_request_summary(v_offer.request_id),
@@ -227,6 +379,15 @@ begin
     perform public._record_cancellation('group_plan', v_plan.id, null, 'host');
     delete from public.group_plan_proposals where id = v_plan.id;
   end loop;
+  -- their other paid bookings, still to happen: these end with their request, as they always have, and the refund is now on record
+  for v_payment in select pay.* from public.business_payments pay
+      join public.business_reservations res on res.id = pay.reservation_id
+      join public.business_request_offers o on o.id = res.offer_id and o.status = 'accepted'
+      join public.business_requests r on r.id = o.request_id and r.requester_id = v_me
+      where pay.status in ('captured', 'authorized') for update of pay loop
+    perform private._open_payment_exception(v_payment, 'paid_booking_ended', v_me);
+  end loop;
+
   delete from public.group_plan_offer_confirmations where user_id = v_me;
   delete from public.group_plan_participants where user_id = v_me;
 
@@ -242,41 +403,27 @@ drop trigger if exists b_account_deletion_release_plans on public.profiles;
 create trigger b_account_deletion_release_plans before delete on public.profiles
   for each row execute function private._account_deletion_release_plans();
 
--- What deleting would do to the plans a person organizes, for the warning before it and delete-account's answer. A preview only: the trigger above
--- decides. "unresolved" names what _cancel_reservation_by_offer refuses; journey step preview_matches_refusal keeps the two the same.
-create or replace function private._account_deletion_plan_impact(user_id_param uuid)
+-- What deleting would do, for the warning before it. A preview only: the trigger above decides. Own account only.
+create or replace function public.account_deletion_plan_impact()
 returns jsonb language sql stable security definer set search_path = '' as $$
   with mine as (
     select p.id, p.resulting_request_id from public.group_plan_proposals p
-      where p.initiator_id = user_id_param and p.status in ('pending', 'confirmed')
+      where p.initiator_id = auth.uid() and p.status in ('pending', 'confirmed')
         and not exists (select 1 from public.business_request_offers o where o.request_id = p.resulting_request_id and o.status = 'completed')
-  ), bookings as (
-    select o.id, res.status as reservation_status, pay.status as payment_status
-      from mine m
-      join public.business_requests r on r.id = m.resulting_request_id or r.parent_request_id = m.resulting_request_id
-      join public.business_request_offers o on o.request_id = r.id and o.status = 'accepted'
-      left join public.business_reservations res on res.offer_id = o.id
-      left join public.business_payments pay on pay.reservation_id = res.id
   )
   select jsonb_build_object(
     'plans', (select count(*) from mine),
-    'bookings', (select count(*) from bookings),
-    'unresolved', (select count(*) from bookings b
-      where b.reservation_status is distinct from 'confirmed' or b.payment_status in ('captured', 'authorized')));
+    'bookings', (select count(*) from mine m
+      join public.business_requests r on r.id = m.resulting_request_id or r.parent_request_id = m.resulting_request_id
+      join public.business_request_offers o on o.request_id = r.id and o.status = 'accepted'),
+    'paid', (select count(*) from public.business_requests r
+      join public.business_request_offers o on o.request_id = r.id and o.status = 'accepted'
+      join public.business_reservations res on res.offer_id = o.id
+      join public.business_payments pay on pay.reservation_id = res.id and pay.status in ('captured', 'authorized')
+      where r.requester_id = auth.uid()));
 $$;
-create or replace function public.account_deletion_plan_impact()
-returns jsonb language sql stable security definer set search_path = '' as $$
-  select private._account_deletion_plan_impact(auth.uid());
-$$;
-create or replace function public.account_deletion_plan_check(user_id_param uuid)
-returns jsonb language sql stable security definer set search_path = '' as $$
-  select private._account_deletion_plan_impact(user_id_param);
-$$;
-revoke all on function private._account_deletion_plan_impact(uuid) from public, anon, authenticated, service_role;
 revoke all on function public.account_deletion_plan_impact() from public, anon;
 grant execute on function public.account_deletion_plan_impact() to authenticated;
-revoke all on function public.account_deletion_plan_check(uuid) from public, anon, authenticated;
-grant execute on function public.account_deletion_plan_check(uuid) to service_role;
 
 revoke all on function private.business_payment_has_money(public.business_payments) from public, anon, authenticated;
 revoke all on function private._business_payment_partner() from public, anon, authenticated;
