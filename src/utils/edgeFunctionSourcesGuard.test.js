@@ -27,24 +27,25 @@ describe('edge function sources are never empty', () => {
 });
 
 describe('recovered functions keep their behaviour', () => {
-  test('delete-account: verifies the caller, removes their files (incl. ID verification), then profile, then auth user', () => {
+  test('delete-account: verifies the caller, removes their photos, then profile, then auth user', () => {
     const s = src('delete-account');
     expect(s).toMatch(/auth\.getUser\(token\)/);
     const files = s.indexOf("storage.from('profile-photos').remove(");
-    const idFiles = s.indexOf("storage.from('id-verification').remove(");
     const profile = s.indexOf("from('profiles').delete().eq('id', userId)");
     const authUser = s.indexOf('auth.admin.deleteUser(userId)');
     expect(files).toBeGreaterThan(-1);
-    expect(idFiles).toBeGreaterThan(files);
-    expect(profile).toBeGreaterThan(idFiles);
+    expect(profile).toBeGreaterThan(files);
     expect(authUser).toBeGreaterThan(profile);
   });
 
-  test('delete-account: removes the whole ID folder, incl. uploads that never got a submission row (2026-10-27)', () => {
+  // 20270400: ID files are no longer removed here. Deleting the profile makes the database queue the whole id-verification folder
+  // (incl. uploads that never got a submission row); the hourly job deletes them and keeps each queued until Storage confirms it,
+  // and never deletes a file under a legal hold. A direct remove here would skip both.
+  test('delete-account: leaves ID files to the database\'s confirmed-deletion queue (20270400)', () => {
     const s = src('delete-account');
-    const list = s.indexOf("storage.from('id-verification').list(userId");
-    expect(list).toBeGreaterThan(-1);
-    expect(list).toBeLessThan(s.indexOf("storage.from('id-verification').remove("));
+    expect(s).not.toMatch(/storage\.from\('id-verification'\)\.remove\(/);
+    expect(s).toMatch(/20270400/);
+    expect(s).toMatch(/Deploy this version only AFTER 20270400 is live/);
   });
 
   test('moderate-photo: verifies the caller, only their own photo, and fails closed when the age check fails', () => {
