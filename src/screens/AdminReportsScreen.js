@@ -14,6 +14,7 @@ import { reportMediaByReport, reportMediaPaths, reportMediaStatus } from '../uti
 import { storyFileCleanupNotice } from '../utils/storyFileCleanup';
 import { LEGAL_HOLD_REASON_MAX, LEGAL_HOLD_REFERENCE_MAX, activeHoldsByTarget, holdFor, legalHoldPhotoNote, legalHoldReasonReady, legalHoldReferenceReady, legalHoldStatusLine, legalHoldTargetLabel } from '../utils/legalHolds';
 import { RESTRICTION_CAPABILITIES, RESTRICTION_DAYS, RESTRICTION_DEFAULT_DAYS, RESTRICTION_REASON_MAX, activeRestrictions, restrictionFormReady, restrictionReasonReady, restrictionStatusLine, toggleCapability } from '../utils/accountRestrictions';
+import AccountFactsSection from '../components/AccountFactsSection';
 import { REMOVAL_REASON_MAX, canRemoveReportedObject, removalReasonReady, removeActionLabel, reportObjectIds, reportObjectStatus } from '../utils/reportObjects';
 
 // I3 (20270355): reports carry a server copy of the reported content; resolving records an outcome. I1 (20270357): account
@@ -499,6 +500,7 @@ export default function AdminReportsScreen({ navigation }) {
                     {!m.suspended ? renderRestrictionControl(m.user_id, { caseId: c.id }) : null}
                   </View>
                 ))}
+                <AccountFactsSection caseId={c.id} styles={styles} />
                 <Text style={styles.date}>Opened {new Date(c.opened_at).toLocaleString()}</Text>
                 <View style={styles.actions}>
                   <TouchableOpacity style={[styles.actionButton, styles.resolveButton]} onPress={() => closeCase(c)} accessibilityRole="button">

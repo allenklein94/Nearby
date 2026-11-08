@@ -245,3 +245,47 @@ export function sharedCaseGroups(result) {
   }
   return out;
 }
+
+// Account facts (20270401): one account's facts for a review case. Plain facts only: never a score, a verdict or a
+// recommendation. Reports are allegations until an admin records an outcome, so the two are never one number.
+// Unknown stays out (no invented 0 and no guessed age).
+const DAY_MS = 86400000;
+export function accountAgeLabel(createdAt, now = Date.now()) {
+  const at = createdAt ? new Date(createdAt).getTime() : NaN;
+  if (!Number.isFinite(at) || at > now) return null;
+  const days = Math.floor((now - at) / DAY_MS);
+  if (days < 1) return 'Less than 1 day';
+  if (days < 60) return `${days} day${days === 1 ? '' : 's'}`;
+  if (days < 730) return `${Math.floor(days / 30)} months`;
+  return `${Math.floor(days / 365)} years`;
+}
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+export function accountFactsLines(f, now = Date.now()) {
+  const age = accountAgeLabel(f?.account_created_at, now);
+  const account = [
+    age ? `Account age: ${age}` : null,
+    typeof f?.phone_verified === 'boolean' ? (f.phone_verified ? 'Phone verified' : 'Phone not verified') : null,
+    f?.level === 'established' ? 'Established' : f?.level === 'new' ? 'New' : null,
+  ].filter(Boolean).join(' · ');
+  const received = Number(f?.reports_received) || 0;
+  const breakdown = [
+    f?.reports_open ? `${f.reports_open} open` : null,
+    f?.reports_no_action ? `${f.reports_no_action} closed, no action` : null,
+    f?.reports_action_taken ? `${f.reports_action_taken} closed, action taken` : null,
+    f?.reports_no_outcome ? `${f.reports_no_outcome} closed, no outcome recorded` : null,
+  ].filter(Boolean).join(' · ');
+  return {
+    name: f?.display_name || f?.user_id || '',
+    account,
+    reports: received ? `${plural(received, 'report')} received: ${breakdown}` : 'No reports received',
+  };
+}
+
+export const ACCOUNT_FACTS_NOTE = 'A report is an allegation until an admin records an outcome. Reports about a business aren\'t included, and resolved reports are deleted after 12 months.';
+
+// The function isn't on this database yet (older database): show nothing rather than an error.
+export function accountFactsMissing(error) {
+  return error?.code === 'PGRST202' || error?.code === '42883';
+}

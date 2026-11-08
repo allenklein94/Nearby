@@ -7,6 +7,7 @@ import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { reportReasonLabel, sortReportQueue, reportQueueTag } from '../utils/reportReasons';
+import AccountFactsSection from '../components/AccountFactsSection';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
   linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
@@ -210,6 +211,7 @@ export default function AdminReviewScreen() {
           {sharedTextLines(selected.evidence).map((line, i) => <Text key={`t${i}`} style={styles.event}>{line}</Text>)}
         </>
       ) : null}
+      <AccountFactsSection caseId={selected.id} styles={styles} />
       <Text style={styles.subTitle}>Shared review cases</Text>
       <Text style={styles.meta}>{SHARED_CASES_NOTE}</Text>
       {shared?.error ? <Text style={styles.meta}>Couldn't load the shared review cases. Open the case again to retry.</Text> : null}

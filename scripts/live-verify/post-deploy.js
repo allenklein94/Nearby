@@ -288,6 +288,13 @@ const STEPS = {
       'reported Story photo (0391 path, send step redefined by 0400): a legal hold on a released reported photo answers "held" with no DELETE then or on a later run, or "deleting" only after the job really sent one; proven locally by scripts/replay/media-report-concurrency.js step 8 (20/20 both orders on a fresh replay), never run on prod; a "held" answer followed by a DELETE = defect: STOP, report',
       'rollback = scripts/rollback/20270400_id_document_retention.rollback.sql (refuses while an id_submission hold is active; released hold records stay); redeploy the previous delete-account first; queued deletions stop with it',
       'a file deleted while pending, held or inside its period, a queue row removed without Storage confirming, or an upload accepted while closed = defect: STOP, report'] },
+  20270401: { journeys: ['adminAccountFacts', 'sharedReviewCases'],
+    edge: [],
+    manual: ['read-only right after: public.admin_get_account_facts(uuid) exists; EXECUTE = authenticated (+ service_role per defaults), never anon; no other object changed',
+      'through the real API with a dedicated test account + an admin: a non-admin is refused (admin only); the admin opens a test review case and sees, per account, age + phone verified + New/Established + reports split by state; never a phone number, reporter or report text',
+      'website re-export + browser check (Admin Review case) + a later build for Admin Reports (phone): the Account facts block shows, the case actions below it are unchanged; with the function missing (older database) the block is simply absent',
+      'rollback = scripts/rollback/20270401_admin_account_facts.rollback.sql (no data involved)',
+      'STOP + report: anything written by the read, an account outside the case returned, a non-admin served, or a score / verdict appearing anywhere'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
