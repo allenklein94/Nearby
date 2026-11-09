@@ -109,8 +109,7 @@ export default {
       },
     },
     verifiedBusiness: "Verified Business",
-    verifiedBusinessA11y: "Verified Business: Nearby checked that {name} exists and that the person running it on Nearby represents it.",
-    verifiedBusinessMeaning: "Nearby checked that this business exists and that the person running it here represents it. It isn't a rating of its quality or safety.",
+    verifiedBusinessExplanation: "Nearby has confirmed this business's identity and authorization to operate its account. Verification does not guarantee service quality, safety, or individual transactions.",
   },
   es: {
     videoAttached: "🎬 Video adjunto",
@@ -220,8 +219,7 @@ export default {
       },
     },
     verifiedBusiness: "Negocio verificado",
-    verifiedBusinessA11y: "Negocio verificado: Nearby comprobó que {name} existe y que quien lo gestiona en Nearby lo representa.",
-    verifiedBusinessMeaning: "Nearby comprobó que este negocio existe y que quien lo gestiona aquí lo representa. No es una valoración de su calidad ni de su seguridad.",
+    verifiedBusinessExplanation: "Nearby ha confirmado la identidad de este negocio y su autorización para gestionar su cuenta. La verificación no garantiza la calidad del servicio, la seguridad ni las transacciones individuales.",
   },
   de: {
     videoAttached: "🎬 Video angehängt",
@@ -331,8 +329,7 @@ export default {
       },
     },
     verifiedBusiness: "Verifiziertes Geschäft",
-    verifiedBusinessA11y: "Verifiziertes Geschäft: Nearby hat geprüft, dass es {name} gibt und dass die Person, die es auf Nearby führt, es vertritt.",
-    verifiedBusinessMeaning: "Nearby hat geprüft, dass es dieses Geschäft gibt und dass die Person, die es hier führt, es vertritt. Das ist keine Bewertung seiner Qualität oder Sicherheit.",
+    verifiedBusinessExplanation: "Nearby hat die Identität dieses Geschäfts und seine Berechtigung, dieses Konto zu führen, bestätigt. Die Verifizierung garantiert weder die Servicequalität noch die Sicherheit noch einzelne Transaktionen.",
   },
   fr: {
     videoAttached: "🎬 Vidéo jointe",
@@ -442,8 +439,7 @@ export default {
       },
     },
     verifiedBusiness: "Commerce vérifié",
-    verifiedBusinessA11y: "Commerce vérifié : Nearby a vérifié que {name} existe et que la personne qui le gère sur Nearby le représente.",
-    verifiedBusinessMeaning: "Nearby a vérifié que ce commerce existe et que la personne qui le gère ici le représente. Ce n'est pas une évaluation de sa qualité ni de sa sécurité.",
+    verifiedBusinessExplanation: "Nearby a confirmé l'identité de ce commerce et son autorisation à gérer son compte. La vérification ne garantit ni la qualité du service, ni la sécurité, ni les transactions individuelles.",
   },
   pt: {
     videoAttached: "🎬 Vídeo anexado",
@@ -553,8 +549,7 @@ export default {
       },
     },
     verifiedBusiness: "Estabelecimento verificado",
-    verifiedBusinessA11y: "Estabelecimento verificado: o Nearby confirmou que {name} existe e que quem o gerencia no Nearby o representa.",
-    verifiedBusinessMeaning: "O Nearby confirmou que este estabelecimento existe e que quem o gerencia aqui o representa. Não é uma avaliação da qualidade nem da segurança dele.",
+    verifiedBusinessExplanation: "O Nearby confirmou a identidade deste estabelecimento e a autorização para gerenciar a conta. A verificação não garante a qualidade do serviço, a segurança nem transações individuais.",
   },
   ht: {
     videoAttached: "🎬 Videyo tache",
@@ -664,8 +659,7 @@ export default {
       },
     },
     verifiedBusiness: "Biznis verifye",
-    verifiedBusinessA11y: "Biznis verifye: Nearby tcheke {name} egziste e moun ki jere l sou Nearby reprezante l.",
-    verifiedBusinessMeaning: "Nearby tcheke biznis sa a egziste e moun ki jere l isit la reprezante l. Se pa yon nòt sou kalite oswa sekirite l.",
+    verifiedBusinessExplanation: "Nearby konfime idantite biznis sa a ak otorizasyon li pou jere kont li. Verifikasyon an pa garanti kalite sèvis, sekirite, oswa chak tranzaksyon.",
   },
   zh: {
     videoAttached: "🎬 已附视频",
@@ -775,8 +769,7 @@ export default {
       },
     },
     verifiedBusiness: "已验证商家",
-    verifiedBusinessA11y: "已验证商家：Nearby 已核实{name}确实存在，且在 Nearby 上管理它的人有权代表它。",
-    verifiedBusinessMeaning: "Nearby 已核实这家商家确实存在，且在这里管理它的人有权代表它。这不是对其质量或安全性的评价。",
+    verifiedBusinessExplanation: "Nearby 已确认这家商家的身份及其管理此账户的授权。验证不保证服务质量、安全性或任何单笔交易。",
   },
   vi: {
     videoAttached: "🎬 Đã đính kèm video",
@@ -886,8 +879,7 @@ export default {
       },
     },
     verifiedBusiness: "Doanh nghiệp đã xác minh",
-    verifiedBusinessA11y: "Doanh nghiệp đã xác minh: Nearby đã kiểm tra rằng {name} có thật và người quản lý trên Nearby đại diện cho doanh nghiệp.",
-    verifiedBusinessMeaning: "Nearby đã kiểm tra rằng doanh nghiệp này có thật và người quản lý ở đây đại diện cho doanh nghiệp. Đây không phải là đánh giá chất lượng hay độ an toàn.",
+    verifiedBusinessExplanation: "Nearby đã xác nhận danh tính của doanh nghiệp này và quyền quản lý tài khoản của họ. Việc xác minh không đảm bảo chất lượng dịch vụ, sự an toàn hay từng giao dịch riêng lẻ.",
   },
   tl: {
     videoAttached: "🎬 May nakalakip na video",
@@ -997,8 +989,7 @@ export default {
       },
     },
     verifiedBusiness: "Verified na negosyo",
-    verifiedBusinessA11y: "Verified na negosyo: tiningnan ng Nearby na totoo ang {name} at na kinakatawan ito ng taong nagpapatakbo nito sa Nearby.",
-    verifiedBusinessMeaning: "Tiningnan ng Nearby na totoo ang negosyong ito at na kinakatawan ito ng taong nagpapatakbo nito dito. Hindi ito rating ng kalidad o kaligtasan nito.",
+    verifiedBusinessExplanation: "Kinumpirma ng Nearby ang pagkakakilanlan ng negosyong ito at ang pahintulot nitong pamahalaan ang account nito. Hindi ginagarantiya ng beripikasyon ang kalidad ng serbisyo, kaligtasan, o bawat transaksyon.",
   },
   ru: {
     videoAttached: "🎬 Видео прикреплено",
@@ -1108,8 +1099,7 @@ export default {
       },
     },
     verifiedBusiness: "Проверенное заведение",
-    verifiedBusinessA11y: "Проверенное заведение: Nearby проверил, что {name} существует и что человек, который ведёт его в Nearby, представляет его.",
-    verifiedBusinessMeaning: "Nearby проверил, что это заведение существует и что человек, который ведёт его здесь, его представляет. Это не оценка его качества или безопасности.",
+    verifiedBusinessExplanation: "Nearby подтвердил личность этого бизнеса и его право управлять своим аккаунтом. Проверка не гарантирует качество обслуживания, безопасность или отдельные сделки.",
   },
   ko: {
     videoAttached: "🎬 동영상 첨부됨",
@@ -1219,7 +1209,6 @@ export default {
       },
     },
     verifiedBusiness: "인증된 업체",
-    verifiedBusinessA11y: "인증된 업체: Nearby가 {name}이(가) 실제로 있고 Nearby에서 운영하는 사람이 업체를 대표한다는 것을 확인했어요.",
-    verifiedBusinessMeaning: "Nearby가 이 업체가 실제로 있고 여기서 운영하는 사람이 업체를 대표한다는 것을 확인했어요. 품질이나 안전에 대한 평가는 아니에요.",
+    verifiedBusinessExplanation: "Nearby가 이 업체의 신원과 계정 운영 권한을 확인했습니다. 인증은 서비스 품질, 안전 또는 개별 거래를 보장하지 않습니다.",
   },
 };
