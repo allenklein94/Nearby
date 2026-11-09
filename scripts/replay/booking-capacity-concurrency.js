@@ -31,7 +31,7 @@ async function round({ capacity, party, sessions }) {
   console.log(`round: capacity ${capacity}, ${sessions} parties of ${party} accept at once`);
   const admin = await connect();
   const [{ owner, partner }] = (await admin.query(
-    `select id as owner, managed_partner_id as partner from profiles where managed_partner_id is not null limit 1`)).rows;
+    `select p.id as owner, p.managed_partner_id as partner from profiles p join brand_partners b on b.id = p.managed_partner_id where b.latitude is not null limit 1`)).rows;
   const people = (await admin.query(
     `select id from profiles where managed_partner_id is null order by created_at limit 5`)).rows.map((r) => r.id);
   const { rows: [{ id: av }] } = await admin.query(
