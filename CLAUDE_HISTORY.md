@@ -1,3 +1,15 @@
+# 2026-11-09: 20270407 fake-credibility removals, staged, verified locally
+
+Owner ordered, after idea 26's audit: remove the public host reputation line and the referral reward incl. wording and unused logic; stop rating before a gathering happens; keep Trending, attendance, invitations, business demand counts and privacy; audit Trending's wording; no scoring, reach suppression, surveillance or new screens; staged only.
+
+Built on `post-tier1/fake-credibility-removals`: migration 20270407 + rollback, client removals (GatheringDetail, ViewProfile, BusinessProfile, InviteFriends, services, 11-language strings), journey `fakeCredibilityRemovals` 7/7, guard `fakeCredibilityRemovals.test.js`, post-deploy plan. Build <= 87 compatibility kept: both functions keep their signatures; `get_host_reputation` returns no rows, `grant_referral_bonus` refuses (hint `referrals_ended`). Deploy gate: a released build with the client side first, or installed builds keep promising a bonus the server refuses; build <= 87's business profile reads the rating straight from the table and can still show it until replaced.
+
+Results (local replay, never prod): apply OK; journeys 1366/1366; rollback vs before 0 diff lines, re-apply 0; Jest 559 suites / 7545 tests at fc0c6511 (an earlier run's 3 failures were the missing post-deploy step + strings, fixed); iOS and web exports exit 0 with real modules (the earlier exit 1 = Metro cannot follow a worktree's symlinked `node_modules`). Logs: /workspaces/.nearby-verify/v408.
+
+Trending audit: English wording = "🔥 Trending", "Trending Near You", "most popular gatherings nearby right now", "Trending nearby · N going"; popularity only, no copy change needed, ranking untouched, threshold 5.
+
+Found at the end, reported, not changed: "💛 What people loved" (getHostLovedTags / getBusinessLovedTags) still public from the same rows with no minimum; policy "Anyone can view feedback" (live on prod, 2 rows) lets any signed-in user read every rating with its reviewer_id.
+
 # 2026-11-08: 20270403 final deletion + legal-hold hardening, staged, verified on PG 17.6
 
 Owner ordered the final technical pass. Built on `post-tier1/deletion-hardening`: gathering covers no longer orphaned; hold timing gap between the profile delete and the file's removal closed; 0402's over-preservation of replaced photos fixed; account-level holds (moderation records only, reason + reference); purge log, dry run, monthly reminder; identifiers stripped from evidence copies at any depth; generic function errors. Flaky journeys fixed at their cause. A restart interrupted verification; rerun from a fresh replay. Test defects found and fixed on the way: journey 7's empty-log assumption, a duplicate variable that had kept the function test's cover checks from ever running, setup errors in the Storage + bundle steps. Results and limits: `PRODUCT_AUDIT/ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`, last section. Nothing merged, deployed or built.
