@@ -105,3 +105,7 @@ Run 2026-11-09 on an isolated local stack (Supabase Postgres 17.6.1.003, never p
 The first runs failed twice in the concurrency scripts: they picked a business with no location, left behind by another script. The fix was in the scripts (`78fe0269`, `335bafc2`), not in 0405.
 
 **Not verified:** production (no prod journeys, grants comparison or aborted rollback; these stay deploy gates). The rollback ran on a clean database only, so it has not been tried with real kept payment rows or open exceptions. No real Stripe refund, no real Connect account, no real push, no phone: the warning lines in Settings have never been rendered. The questions for counsel above are unanswered.
+
+## Owner acceptance (2026-11-09)
+
+Local verification accepted; 0405 stays staged, not merged, not deployed. All gates above stand. Local verification doesn't show that real Stripe, push or account deletion work in production.
