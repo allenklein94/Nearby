@@ -338,6 +338,17 @@ const STEPS = {
       'controlled test with dedicated test accounts + a real phone number: an account with an open report deletes through the real function; the deletion looks the same; the number signs up again through real SMS; within 10 minutes one private case; the person sees nothing',
       'rollback = scripts/rollback/20270406_deleted_account_unresolved_records.rollback.sql (refuses while records or kept cases exist: they record real deletions; export + a decision first)',
       'STOP + report: a deletion that fails or looks different because of a record; a number, email, name, attendee or message in a record; a returning person restricted, refused or told; a record or key past its date without a hold'] },
+  // Public rating line + referral reward retired; a gathering is rated only after it ends
+  20270407: { journeys: ['fakeCredibilityRemovals', 'coordinatedCredibility', 'plansThisMonth', 'planComplete', 'notInterested'],
+    node: [],
+    edge: [],
+    manual: ['BEFORE deploy: a build carrying the client side of this change is released; until then installed builds still promise the bonus and the redeem box would be refused',
+      'website re-export from the same commit (business profile no longer shows the rating line); owner approves publication separately',
+      'real phone: gathering detail, profile and business profile show no rating line; Invite Friends shows a plain share with no code; How was it? on a finished gathering still saves',
+      'build 86/87 on this database: no rating line on gathering detail or profile; the business profile can still show it (read straight from the table) until that build is replaced; Redeem shows the refusal',
+      'rollback = scripts/rollback/20270407_fake_credibility_removals.rollback.sql (no rows changed)',
+      'STOP + report: a How was it? on a finished gathering refused; any other feedback write refused; a screen error where the line was'],
+  },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
