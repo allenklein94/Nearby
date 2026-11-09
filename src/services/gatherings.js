@@ -747,15 +747,6 @@ export async function hasSubmittedFeedback(gatheringId) {
   return !!data;
 }
 
-export async function getHostReputation(hostId) {
-  const { data, error } = await supabase.rpc('get_host_reputation', { host_id_param: hostId });
-  if (error) {
-    console.error('getHostReputation error', error);
-    return null;
-  }
-  return data?.[0] ?? null;
-}
-
 export async function getHostStats(hostId) {
   const { data, error } = await supabase.rpc('get_host_stats', { host_id_param: hostId });
   if (error) {
@@ -1291,7 +1282,7 @@ export async function getHostLovedTags(hostId) {
     .map(([tag]) => (GREAT_BECAUSE_LABELS[tag] ? tr(`ui.businessProfile.v.loved.${tag}`) : tag));
 }
 
-// Business-hosted equivalent of getHostLovedTags/getHostReputation — same
+// Business-hosted equivalent of getHostLovedTags — same
 // honest-aggregate approach, keyed on hosting_partner_id instead of
 // host_id since a business isn't a profiles row. No new RPC/migration:
 // gathering_feedback is already publicly SELECTable, same as the per-host
@@ -1318,28 +1309,6 @@ export async function getBusinessLovedTags(partnerId) {
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
     .map(([tag]) => (GREAT_BECAUSE_LABELS[tag] ? tr(`ui.businessProfile.v.loved.${tag}`) : tag));
-}
-
-export async function getBusinessReputation(partnerId) {
-  const { data, error } = await supabase
-    .from('gathering_feedback')
-    .select('felt_welcoming, would_attend_again, gatherings!inner(hosting_partner_id)')
-    .eq('gatherings.hosting_partner_id', partnerId);
-
-  if (error) {
-    console.error('getBusinessReputation error', error);
-    return null;
-  }
-
-  const rows = data ?? [];
-  const welcomingRated = rows.filter((r) => r.felt_welcoming !== null);
-  const returnRated = rows.filter((r) => r.would_attend_again !== null);
-
-  return {
-    welcomingPct: welcomingRated.length ? Math.round((100 * welcomingRated.filter((r) => r.felt_welcoming).length) / welcomingRated.length) : null,
-    wouldReturnPct: returnRated.length ? Math.round((100 * returnRated.filter((r) => r.would_attend_again).length) / returnRated.length) : null,
-    feedbackCount: rows.length,
-  };
 }
 
 export async function stopRecurringSeries(gatheringId) {

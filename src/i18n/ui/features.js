@@ -100,7 +100,7 @@ export default {
       },
       inviteFriends: {
         name: "Invite Friends",
-        desc: "Share your referral code — when a friend joins with it, you both get 3 bonus Notices.",
+        desc: "Share Nearby with a friend from the app.",
       },
       offersPerks: {
         name: "Offers & Perks",
@@ -215,7 +215,7 @@ export default {
       },
       inviteFriends: {
         name: "Invitar amigos",
-        desc: "Comparte tu código de invitación: cuando un amigo se una con él, ambos reciben 3 avisos extra.",
+        desc: "Comparte Nearby con un amigo desde la app.",
       },
       offersPerks: {
         name: "Ofertas y ventajas",
@@ -330,7 +330,7 @@ export default {
       },
       inviteFriends: {
         name: "Freunde einladen",
-        desc: "Teile deinen Einladungscode: Wenn sich jemand damit anmeldet, bekommt ihr beide 3 zusätzliche Hinweise.",
+        desc: "Teile Nearby direkt aus der App mit Freunden.",
       },
       offersPerks: {
         name: "Angebote & Vorteile",
@@ -445,7 +445,7 @@ export default {
       },
       inviteFriends: {
         name: "Inviter des amis",
-        desc: "Partagez votre code de parrainage : quand un ami s'inscrit avec, vous recevez tous les deux 3 avis bonus.",
+        desc: "Partagez Nearby avec un ami depuis l'application.",
       },
       offersPerks: {
         name: "Offres et avantages",
@@ -560,7 +560,7 @@ export default {
       },
       inviteFriends: {
         name: "Convidar amigos",
-        desc: "Compartilhe seu código de indicação: quando um amigo entrar com ele, vocês dois ganham 3 avisos extras.",
+        desc: "Compartilhe o Nearby com um amigo pelo app.",
       },
       offersPerks: {
         name: "Ofertas e vantagens",
@@ -675,7 +675,7 @@ export default {
       },
       inviteFriends: {
         name: "Envite zanmi",
-        desc: "Pataje kòd referans ou: lè yon zanmi antre avè l, nou tou de jwenn 3 avi bonis.",
+        desc: "Pataje Nearby ak yon zanmi nan aplikasyon an.",
       },
       offersPerks: {
         name: "Òf ak avantaj",
@@ -790,7 +790,7 @@ export default {
       },
       inviteFriends: {
         name: "邀请好友",
-        desc: "分享你的邀请码：好友用它加入后，你们都能获得 3 次额外提醒。",
+        desc: "在应用内把 Nearby 分享给朋友。",
       },
       offersPerks: {
         name: "优惠与福利",
@@ -905,7 +905,7 @@ export default {
       },
       inviteFriends: {
         name: "Mời bạn bè",
-        desc: "Chia sẻ mã giới thiệu: khi bạn bè tham gia bằng mã đó, cả hai đều nhận thêm 3 lượt thông báo.",
+        desc: "Chia sẻ Nearby với bạn bè ngay trong ứng dụng.",
       },
       offersPerks: {
         name: "Ưu đãi & quyền lợi",
@@ -1020,7 +1020,7 @@ export default {
       },
       inviteFriends: {
         name: "Mag-imbita ng kaibigan",
-        desc: "Ibahagi ang referral code mo: kapag sumali ang kaibigan gamit ito, pareho kayong makakakuha ng 3 bonus na abiso.",
+        desc: "Ibahagi ang Nearby sa kaibigan mula sa app.",
       },
       offersPerks: {
         name: "Mga alok at perk",
@@ -1135,7 +1135,7 @@ export default {
       },
       inviteFriends: {
         name: "Пригласить друзей",
-        desc: "Поделитесь реферальным кодом: когда друг зарегистрируется с ним, вы оба получите 3 бонусных уведомления.",
+        desc: "Поделитесь Nearby с другом прямо из приложения.",
       },
       offersPerks: {
         name: "Предложения и бонусы",
@@ -1250,7 +1250,7 @@ export default {
       },
       inviteFriends: {
         name: "친구 초대",
-        desc: "추천 코드를 공유하세요. 친구가 그 코드로 가입하면 둘 다 알림 3개를 추가로 받아요.",
+        desc: "앱에서 친구에게 Nearby를 공유하세요.",
       },
       offersPerks: {
         name: "혜택 & 특전",

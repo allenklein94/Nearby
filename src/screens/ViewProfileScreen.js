@@ -16,7 +16,7 @@ import ReportBlockModal from '../components/ReportBlockModal';
 import PhotoLightbox from '../components/PhotoLightbox';
 import LoadErrorState from '../components/LoadErrorState';
 import { sendFriendRequest, respondToFriendRequest, getMutualFriends, getRelationshipStatus } from '../services/friends';
-import { getHostStats, getHostReputation } from '../services/gatherings';
+import { getHostStats } from '../services/gatherings';
 import { getUpcomingOccasions } from '../services/occasions';
 import { occasionIcon, occasionLabel } from '../constants/businessAttributes';
 import { buildOccasionWhoForParams } from '../utils/createHubWhoFor';
@@ -111,7 +111,6 @@ export default function ViewProfileScreen({ route, navigation }) {
   // surfaced in a more useful place than a flat list.
   const [upcomingOccasionsForPerson, setUpcomingOccasionsForPerson] = useState([]);
   const [hostStats, setHostStats] = useState(null);
-  const [hostReputation, setHostReputation] = useState(null);
   // Item 3 (external UX critique reply, 2026-09-10): a real bug, not just a
   // duplicate-fetch nit. This used to be a plain `useEffect(load, [])` --
   // fine on first mount, but this screen is a single shared route
@@ -150,7 +149,6 @@ export default function ViewProfileScreen({ route, navigation }) {
       if (myId && myId !== userId) {
         getMutualFriends(userId).then(setMutualFriends);
         getHostStats(userId).then(setHostStats);
-        getHostReputation(userId).then(setHostReputation);
         // A generous 365-day window -- these are mostly annually-recurring
         // occasions (get_upcoming_occasions() already computes each one's
         // *next* real occurrence), so a short "actionable soon" window like
@@ -647,12 +645,6 @@ export default function ViewProfileScreen({ route, navigation }) {
           {hostStats && hostStats.gatherings_hosted > 0 && (
             <Text style={styles.mutualFriendsText}>
               {t(hostStats.gatherings_hosted === 1 ? 'ui.viewProfile.hostedOne' : 'ui.viewProfile.hostedMany', { hosted: hostStats.gatherings_hosted, count: Math.round(hostStats.avg_attendance) })}
-            </Text>
-          )}
-
-          {hostReputation && hostReputation.feedback_count > 0 && (
-            <Text style={styles.mutualFriendsText}>
-              {t('ui.viewProfile.reputation', { welcoming: hostReputation.welcoming_pct, again: hostReputation.would_return_pct, count: hostReputation.feedback_count })}
             </Text>
           )}
 

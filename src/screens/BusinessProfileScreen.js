@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { perkRedemptionState, perkCodeMessage, redemptionsByOffer } from '../utils/perkRedemptionState';
 import PerkCodeBox from '../components/PerkCodeBox';
 import { getBusinessProfile, getBusinessFollowerCount, getBusinessPublicGatherings, getBusinessActiveOffers, isFollowingBusiness, followBusiness, unfollowBusiness, getRedemptionCounts, getMyRedemptionRows, getMyRedemptionFor, redeemOffer, getMyManagedPartner, logBusinessProfileView, getBusinessExperiences, getBusinessMessagesPage } from '../services/brandOffers';
-import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
+import { getBusinessLovedTags, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
 import { businessPrimaryAction } from '../utils/primaryAction';
 import { LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
@@ -93,12 +93,9 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [unlockProgress, setUnlockProgress] = useState({});
   const [redeemingId, setRedeemingId] = useState(null);
   const [lovedTags, setLovedTags] = useState([]);
-  const [reputation, setReputation] = useState(null);
   const [photoUrls, setPhotoUrls] = useState([]);
   // 10/10 roadmap Part 5 (see CLAUDE.md's "10/10 roadmap" plan) -- the
-  // business-fulfillment request/offer reliability line, distinct from
-  // `reputation` above (which is the gathering-hosting welcoming/would-
-  // attend-again reputation, a different signal entirely).
+  // business-fulfillment request/offer reliability line.
   const [fulfillmentReputation, setFulfillmentReputation] = useState(null);
   const [fulfillmentResponseTime, setFulfillmentResponseTime] = useState(null);
   // "Business Story" plan, Phase 6 -- Signature Experiences.
@@ -114,14 +111,13 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
   const load = useCallback(async () => {
     try {
-      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep, fulfillRep, fulfillResponseTime, myPartner, signatureExperiences] = await Promise.all([
+      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, fulfillRep, fulfillResponseTime, myPartner, signatureExperiences] = await Promise.all([
         getBusinessProfile(partnerId),
         getBusinessFollowerCount(partnerId),
         isFollowingBusiness(partnerId),
         getBusinessPublicGatherings(partnerId),
         getBusinessActiveOffers(partnerId),
         getBusinessLovedTags(partnerId),
-        getBusinessReputation(partnerId),
         getPartnerOfferReputation(partnerId),
         getPartnerAvgResponseTime(partnerId),
         getMyManagedPartner(),
@@ -144,7 +140,6 @@ export default function BusinessProfileScreen({ route, navigation }) {
       setGatherings(upcomingGatherings);
       setOffers(activeOffers);
       setLovedTags(tags);
-      setReputation(rep);
       setFulfillmentReputation(fulfillRep);
       setFulfillmentResponseTime(fulfillResponseTime);
       // Filtered client-side too, on top of RLS -- so the business's own
@@ -561,15 +556,10 @@ export default function BusinessProfileScreen({ route, navigation }) {
           </View>
         )}
 
-        {reputation && reputation.feedbackCount > 0 && (
+        {lovedTags.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>{t('ui.businessProfile.whatPeopleSay')}</Text>
-            {reputation.welcomingPct != null && reputation.wouldReturnPct != null && (
-              <Text style={styles.repLine}>
-                ⭐ {t('ui.businessProfile.reputationLine', { welcoming: reputation.welcomingPct, again: reputation.wouldReturnPct, count: reputation.feedbackCount })}
-              </Text>
-            )}
-            {lovedTags.length > 0 && <Text style={styles.repLine}>{t('ui.businessProfile.whatPeopleLoved')}{' '}{lovedTags.join(' · ')}</Text>}
+            <Text style={styles.repLine}>{t('ui.businessProfile.whatPeopleLoved')}{' '}{lovedTags.join(' · ')}</Text>
           </View>
         )}
 

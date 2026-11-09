@@ -39,10 +39,6 @@
   "notAccommodatedA11y": "Not accommodated, {list}",
   "dietaryOptionsA11y": "Dietary options, {list}",
   "alsoList": "Also: {list}",
-  "reputationLine": {
-   "one": "{welcoming}% said welcoming · {again}% would attend again ({count} review)",
-   "other": "{welcoming}% said welcoming · {again}% would attend again ({count} reviews)"
-  },
   "v.followers": {
    "one": "{count} follower",
    "other": "{count} followers"
@@ -144,10 +140,6 @@
   "notAccommodatedA11y": "No admite: {list}",
   "dietaryOptionsA11y": "Opciones alimentarias: {list}",
   "alsoList": "También: {list}",
-  "reputationLine": {
-   "one": "{welcoming}% dijo que se sintió bienvenido · {again}% volvería ({count} opinión)",
-   "other": "{welcoming}% dijo que se sintió bienvenido · {again}% volvería ({count} opiniones)"
-  },
   "v.followers": {
    "one": "{count} seguidor",
    "other": "{count} seguidores"
@@ -249,10 +241,6 @@
   "notAccommodatedA11y": "Nicht möglich: {list}",
   "dietaryOptionsA11y": "Ernährungsoptionen: {list}",
   "alsoList": "Außerdem: {list}",
-  "reputationLine": {
-   "one": "{welcoming}% fühlten sich willkommen · {again}% würden wiederkommen ({count} Bewertung)",
-   "other": "{welcoming}% fühlten sich willkommen · {again}% würden wiederkommen ({count} Bewertungen)"
-  },
   "v.followers": {
    "one": "{count} Follower",
    "other": "{count} Follower"
@@ -354,10 +342,6 @@
   "notAccommodatedA11y": "Non accepté : {list}",
   "dietaryOptionsA11y": "Options alimentaires : {list}",
   "alsoList": "Aussi : {list}",
-  "reputationLine": {
-   "one": "{welcoming} % se sont sentis bienvenus · {again} % reviendraient ({count} avis)",
-   "other": "{welcoming} % se sont sentis bienvenus · {again} % reviendraient ({count} avis)"
-  },
   "v.followers": {
    "one": "{count} abonné",
    "other": "{count} abonnés"
@@ -459,10 +443,6 @@
   "notAccommodatedA11y": "Não aceita: {list}",
   "dietaryOptionsA11y": "Opções alimentares: {list}",
   "alsoList": "Também: {list}",
-  "reputationLine": {
-   "one": "{welcoming}% se sentiram bem-vindos · {again}% voltariam ({count} avaliação)",
-   "other": "{welcoming}% se sentiram bem-vindos · {again}% voltariam ({count} avaliações)"
-  },
   "v.followers": {
    "one": "{count} seguidor",
    "other": "{count} seguidores"
@@ -564,10 +544,6 @@
   "notAccommodatedA11y": "Pa aksepte: {list}",
   "dietaryOptionsA11y": "Opsyon manje: {list}",
   "alsoList": "Epitou: {list}",
-  "reputationLine": {
-   "one": "{welcoming}% te santi yo byen resevwa · {again}% ta tounen ({count} avi)",
-   "other": "{welcoming}% te santi yo byen resevwa · {again}% ta tounen ({count} avi)"
-  },
   "v.followers": {
    "one": "{count} moun ki swiv",
    "other": "{count} moun ki swiv"
@@ -669,9 +645,6 @@
   "notAccommodatedA11y": "不接待：{list}",
   "dietaryOptionsA11y": "饮食选择：{list}",
   "alsoList": "还有：{list}",
-  "reputationLine": {
-   "other": "{welcoming}% 觉得受欢迎 · {again}% 愿意再来（{count} 条评价）"
-  },
   "v.followers": {
    "other": "{count} 位关注者"
   },
@@ -771,9 +744,6 @@
   "notAccommodatedA11y": "Không tiếp nhận: {list}",
   "dietaryOptionsA11y": "Lựa chọn ăn kiêng: {list}",
   "alsoList": "Ngoài ra: {list}",
-  "reputationLine": {
-   "other": "{welcoming}% thấy được chào đón · {again}% sẽ tham gia lại ({count} đánh giá)"
-  },
   "v.followers": {
    "other": "{count} người theo dõi"
   },
@@ -873,10 +843,6 @@
   "notAccommodatedA11y": "Hindi tinatanggap: {list}",
   "dietaryOptionsA11y": "Mga opsyon sa pagkain: {list}",
   "alsoList": "Gayundin: {list}",
-  "reputationLine": {
-   "one": "{welcoming}% ang naramdamang welcome · {again}% ang babalik ({count} review)",
-   "other": "{welcoming}% ang naramdamang welcome · {again}% ang babalik ({count} review)"
-  },
   "v.followers": {
    "one": "{count} follower",
    "other": "{count} follower"
@@ -978,12 +944,6 @@
   "notAccommodatedA11y": "Не принимают: {list}",
   "dietaryOptionsA11y": "Варианты питания: {list}",
   "alsoList": "А также: {list}",
-  "reputationLine": {
-   "one": "{welcoming}% почувствовали себя желанными гостями · {again}% пришли бы снова ({count} отзыв)",
-   "few": "{welcoming}% почувствовали себя желанными гостями · {again}% пришли бы снова ({count} отзыва)",
-   "many": "{welcoming}% почувствовали себя желанными гостями · {again}% пришли бы снова ({count} отзывов)",
-   "other": "{welcoming}% почувствовали себя желанными гостями · {again}% пришли бы снова ({count} отзыва)"
-  },
   "v.followers": {
    "one": "{count} подписчик",
    "few": "{count} подписчика",
@@ -1089,9 +1049,6 @@
   "notAccommodatedA11y": "받지 않음: {list}",
   "dietaryOptionsA11y": "식단 옵션: {list}",
   "alsoList": "그 밖에: {list}",
-  "reputationLine": {
-   "other": "{welcoming}%가 환영받는다고 느꼈어요 · {again}%가 다시 오고 싶어 해요 (후기 {count}개)"
-  },
   "v.followers": {
    "other": "팔로워 {count}명"
   },

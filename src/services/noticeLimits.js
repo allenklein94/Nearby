@@ -10,14 +10,6 @@ export async function checkNoticeLimit() {
 
   if (await isPremiumOnServer(userId)) return { allowed: true };
 
-  // Referral bonus notices are consumed first, before counting
-  // against the daily free limit — a real, immediate benefit rather
-  // than something abstract.
-  const { data: usedBonus, error: spendError } = await supabase.rpc('spend_bonus_notice');
-  if (!spendError && usedBonus) {
-    return { allowed: true, usedBonus: true };
-  }
-
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
 
@@ -34,7 +26,7 @@ export async function checkNoticeLimit() {
   }
 
   if ((count ?? 0) >= FREE_NOTICE_DAILY_LIMIT) {
-    return { allowed: false, reason: `You've used today's free Notices — they'll refresh tomorrow. Invite a friend for 3 bonus Notices right now, or Premium removes the daily cap entirely.` };
+    return { allowed: false, reason: `You've used today's free Notices — they'll refresh tomorrow. Premium removes the daily cap entirely.` };
   }
 
   return { allowed: true };

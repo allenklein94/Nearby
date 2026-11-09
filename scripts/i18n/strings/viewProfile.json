@@ -54,10 +54,6 @@
       "one": "🎉 Hosted {hosted} gatherings, averaging {count} attendee",
       "other": "🎉 Hosted {hosted} gatherings, averaging {count} attendees"
     },
-    "reputation": {
-      "one": "⭐ {welcoming}% said welcoming · {again}% would attend again ({count} review)",
-      "other": "⭐ {welcoming}% said welcoming · {again}% would attend again ({count} reviews)"
-    },
     "hopingToFind": "Hoping to find: {goal}",
     "lookingFor": "Looking for: {value}",
     "changedTimes": {
@@ -119,10 +115,6 @@
     "hostedMany": {
       "one": "🎉 Organizó {hosted} reuniones, con un promedio de {count} asistente",
       "other": "🎉 Organizó {hosted} reuniones, con un promedio de {count} asistentes"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming}% dijo que fue acogedor · {again}% volvería ({count} reseña)",
-      "other": "⭐ {welcoming}% dijo que fue acogedor · {again}% volvería ({count} reseñas)"
     },
     "hopingToFind": "Espera encontrar: {goal}",
     "lookingFor": "Busca: {value}",
@@ -186,10 +178,6 @@
       "one": "🎉 {hosted} Treffen veranstaltet, im Schnitt {count} Teilnehmer",
       "other": "🎉 {hosted} Treffen veranstaltet, im Schnitt {count} Teilnehmende"
     },
-    "reputation": {
-      "one": "⭐ {welcoming}% fanden es einladend · {again}% würden wiederkommen ({count} Bewertung)",
-      "other": "⭐ {welcoming}% fanden es einladend · {again}% würden wiederkommen ({count} Bewertungen)"
-    },
     "hopingToFind": "Möchte finden: {goal}",
     "lookingFor": "Sucht: {value}",
     "changedTimes": {
@@ -251,10 +239,6 @@
     "hostedMany": {
       "one": "🎉 A organisé {hosted} rencontres, avec en moyenne {count} participant",
       "other": "🎉 A organisé {hosted} rencontres, avec en moyenne {count} participants"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming} % l’ont trouvé accueillant · {again} % reviendraient ({count} avis)",
-      "other": "⭐ {welcoming} % l’ont trouvé accueillant · {again} % reviendraient ({count} avis)"
     },
     "hopingToFind": "Espère trouver : {goal}",
     "lookingFor": "Recherche : {value}",
@@ -318,10 +302,6 @@
       "one": "🎉 Organizou {hosted} encontros, com média de {count} participante",
       "other": "🎉 Organizou {hosted} encontros, com média de {count} participantes"
     },
-    "reputation": {
-      "one": "⭐ {welcoming}% acharam acolhedor · {again}% voltariam ({count} avaliação)",
-      "other": "⭐ {welcoming}% acharam acolhedor · {again}% voltariam ({count} avaliações)"
-    },
     "hopingToFind": "Quer encontrar: {goal}",
     "lookingFor": "Procura: {value}",
     "changedTimes": {
@@ -381,9 +361,6 @@
     "hostedMany": {
       "other": "🎉 Òganize {hosted} rankont, an mwayèn {count} patisipan"
     },
-    "reputation": {
-      "other": "⭐ {welcoming}% di li te akeyan · {again}% ta retounen ({count} avi)"
-    },
     "hopingToFind": "Espere jwenn: {goal}",
     "lookingFor": "Ap chèche: {value}",
     "changedTimes": {
@@ -442,9 +419,6 @@
     "hostedMany": {
       "other": "🎉 组织过 {hosted} 次聚会，平均 {count} 人参加"
     },
-    "reputation": {
-      "other": "⭐ {welcoming}% 认为很友好 · {again}% 愿意再来（{count} 条评价）"
-    },
     "hopingToFind": "希望找到：{goal}",
     "lookingFor": "寻找：{value}",
     "changedTimes": {
@@ -502,9 +476,6 @@
     },
     "hostedMany": {
       "other": "🎉 Đã tổ chức {hosted} buổi gặp, trung bình {count} người tham gia"
-    },
-    "reputation": {
-      "other": "⭐ {welcoming}% thấy thân thiện · {again}% sẽ tham gia lại ({count} đánh giá)"
     },
     "hopingToFind": "Mong tìm: {goal}",
     "lookingFor": "Đang tìm: {value}",
@@ -566,10 +537,6 @@
     "hostedMany": {
       "one": "🎉 Nag-host ng {hosted} gathering, karaniwang {count} dumalo",
       "other": "🎉 Nag-host ng {hosted} gathering, karaniwang {count} dumalo"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming}% ang nagsabing magiliw · {again}% ang dadalo ulit ({count} review)",
-      "other": "⭐ {welcoming}% ang nagsabing magiliw · {again}% ang dadalo ulit ({count} review)"
     },
     "hopingToFind": "Umaasang makahanap ng: {goal}",
     "lookingFor": "Naghahanap ng: {value}",
@@ -639,12 +606,6 @@
       "many": "🎉 Встреч проведено: {hosted}, в среднем {count} участников",
       "other": "🎉 Встреч проведено: {hosted}, в среднем {count} участников"
     },
-    "reputation": {
-      "one": "⭐ {welcoming}% отметили радушие · {again}% пришли бы снова ({count} отзыв)",
-      "few": "⭐ {welcoming}% отметили радушие · {again}% пришли бы снова ({count} отзыва)",
-      "many": "⭐ {welcoming}% отметили радушие · {again}% пришли бы снова ({count} отзывов)",
-      "other": "⭐ {welcoming}% отметили радушие · {again}% пришли бы снова ({count} отзывов)"
-    },
     "hopingToFind": "Надеется найти: {goal}",
     "lookingFor": "Ищет: {value}",
     "changedTimes": {
@@ -705,9 +666,6 @@
     },
     "hostedMany": {
       "other": "🎉 모임 {hosted}회 주최, 평균 {count}명 참석"
-    },
-    "reputation": {
-      "other": "⭐ {welcoming}%가 환영받았다고 답함 · {again}%가 다시 참석 의향 (후기 {count}개)"
     },
     "hopingToFind": "찾고 싶은 것: {goal}",
     "lookingFor": "찾는 것: {value}",

@@ -41,7 +41,6 @@ export default {
     notAccommodatedA11y: "Not accommodated, {list}",
     dietaryOptionsA11y: "Dietary options, {list}",
     alsoList: "Also: {list}",
-    reputationLine: { one: "{welcoming}% said welcoming · {again}% would attend again ({count} review)", other: "{welcoming}% said welcoming · {again}% would attend again ({count} reviews)" },
     v: {
       followers: { one: "{count} follower", other: "{count} followers" },
       respondsMinutes: "usually responds in ~{count} min",
@@ -110,7 +109,8 @@ export default {
       },
     },
     verifiedBusiness: "Verified Business",
-    verifiedBusinessExplanation: "Nearby has confirmed this business's identity and authorization to operate its account. Verification does not guarantee service quality, safety, or individual transactions.",
+    verifiedBusinessA11y: "Verified Business: Nearby checked that {name} exists and that the person running it on Nearby represents it.",
+    verifiedBusinessMeaning: "Nearby checked that this business exists and that the person running it here represents it. It isn't a rating of its quality or safety.",
   },
   es: {
     videoAttached: "🎬 Video adjunto",
@@ -152,7 +152,6 @@ export default {
     notAccommodatedA11y: "No admite: {list}",
     dietaryOptionsA11y: "Opciones alimentarias: {list}",
     alsoList: "También: {list}",
-    reputationLine: { one: "{welcoming}% dijo que se sintió bienvenido · {again}% volvería ({count} opinión)", other: "{welcoming}% dijo que se sintió bienvenido · {again}% volvería ({count} opiniones)" },
     v: {
       followers: { one: "{count} seguidor", other: "{count} seguidores" },
       respondsMinutes: "suele responder en ~{count} min",
@@ -221,7 +220,8 @@ export default {
       },
     },
     verifiedBusiness: "Negocio verificado",
-    verifiedBusinessExplanation: "Nearby ha confirmado la identidad de este negocio y su autorización para gestionar su cuenta. La verificación no garantiza la calidad del servicio, la seguridad ni las transacciones individuales.",
+    verifiedBusinessA11y: "Negocio verificado: Nearby comprobó que {name} existe y que quien lo gestiona en Nearby lo representa.",
+    verifiedBusinessMeaning: "Nearby comprobó que este negocio existe y que quien lo gestiona aquí lo representa. No es una valoración de su calidad ni de su seguridad.",
   },
   de: {
     videoAttached: "🎬 Video angehängt",
@@ -263,7 +263,6 @@ export default {
     notAccommodatedA11y: "Nicht möglich: {list}",
     dietaryOptionsA11y: "Ernährungsoptionen: {list}",
     alsoList: "Außerdem: {list}",
-    reputationLine: { one: "{welcoming}% fühlten sich willkommen · {again}% würden wiederkommen ({count} Bewertung)", other: "{welcoming}% fühlten sich willkommen · {again}% würden wiederkommen ({count} Bewertungen)" },
     v: {
       followers: { one: "{count} Follower", other: "{count} Follower" },
       respondsMinutes: "antwortet meist in ~{count} Min.",
@@ -332,7 +331,8 @@ export default {
       },
     },
     verifiedBusiness: "Verifiziertes Geschäft",
-    verifiedBusinessExplanation: "Nearby hat die Identität dieses Geschäfts und seine Berechtigung, dieses Konto zu führen, bestätigt. Die Verifizierung garantiert weder die Servicequalität noch die Sicherheit noch einzelne Transaktionen.",
+    verifiedBusinessA11y: "Verifiziertes Geschäft: Nearby hat geprüft, dass es {name} gibt und dass die Person, die es auf Nearby führt, es vertritt.",
+    verifiedBusinessMeaning: "Nearby hat geprüft, dass es dieses Geschäft gibt und dass die Person, die es hier führt, es vertritt. Das ist keine Bewertung seiner Qualität oder Sicherheit.",
   },
   fr: {
     videoAttached: "🎬 Vidéo jointe",
@@ -374,7 +374,6 @@ export default {
     notAccommodatedA11y: "Non accepté : {list}",
     dietaryOptionsA11y: "Options alimentaires : {list}",
     alsoList: "Aussi : {list}",
-    reputationLine: { one: "{welcoming} % se sont sentis bienvenus · {again} % reviendraient ({count} avis)", other: "{welcoming} % se sont sentis bienvenus · {again} % reviendraient ({count} avis)" },
     v: {
       followers: { one: "{count} abonné", other: "{count} abonnés" },
       respondsMinutes: "répond en général en ~{count} min",
@@ -443,7 +442,8 @@ export default {
       },
     },
     verifiedBusiness: "Commerce vérifié",
-    verifiedBusinessExplanation: "Nearby a confirmé l'identité de ce commerce et son autorisation à gérer son compte. La vérification ne garantit ni la qualité du service, ni la sécurité, ni les transactions individuelles.",
+    verifiedBusinessA11y: "Commerce vérifié : Nearby a vérifié que {name} existe et que la personne qui le gère sur Nearby le représente.",
+    verifiedBusinessMeaning: "Nearby a vérifié que ce commerce existe et que la personne qui le gère ici le représente. Ce n'est pas une évaluation de sa qualité ni de sa sécurité.",
   },
   pt: {
     videoAttached: "🎬 Vídeo anexado",
@@ -485,7 +485,6 @@ export default {
     notAccommodatedA11y: "Não aceita: {list}",
     dietaryOptionsA11y: "Opções alimentares: {list}",
     alsoList: "Também: {list}",
-    reputationLine: { one: "{welcoming}% se sentiram bem-vindos · {again}% voltariam ({count} avaliação)", other: "{welcoming}% se sentiram bem-vindos · {again}% voltariam ({count} avaliações)" },
     v: {
       followers: { one: "{count} seguidor", other: "{count} seguidores" },
       respondsMinutes: "costuma responder em ~{count} min",
@@ -554,7 +553,8 @@ export default {
       },
     },
     verifiedBusiness: "Estabelecimento verificado",
-    verifiedBusinessExplanation: "O Nearby confirmou a identidade deste estabelecimento e a autorização para gerenciar a conta. A verificação não garante a qualidade do serviço, a segurança nem transações individuais.",
+    verifiedBusinessA11y: "Estabelecimento verificado: o Nearby confirmou que {name} existe e que quem o gerencia no Nearby o representa.",
+    verifiedBusinessMeaning: "O Nearby confirmou que este estabelecimento existe e que quem o gerencia aqui o representa. Não é uma avaliação da qualidade nem da segurança dele.",
   },
   ht: {
     videoAttached: "🎬 Videyo tache",
@@ -596,7 +596,6 @@ export default {
     notAccommodatedA11y: "Pa aksepte: {list}",
     dietaryOptionsA11y: "Opsyon manje: {list}",
     alsoList: "Epitou: {list}",
-    reputationLine: { one: "{welcoming}% te santi yo byen resevwa · {again}% ta tounen ({count} avi)", other: "{welcoming}% te santi yo byen resevwa · {again}% ta tounen ({count} avi)" },
     v: {
       followers: { one: "{count} moun ki swiv", other: "{count} moun ki swiv" },
       respondsMinutes: "anjeneral reponn nan ~{count} min",
@@ -665,7 +664,8 @@ export default {
       },
     },
     verifiedBusiness: "Biznis verifye",
-    verifiedBusinessExplanation: "Nearby konfime idantite biznis sa a ak otorizasyon li pou jere kont li. Verifikasyon an pa garanti kalite sèvis, sekirite, oswa chak tranzaksyon.",
+    verifiedBusinessA11y: "Biznis verifye: Nearby tcheke {name} egziste e moun ki jere l sou Nearby reprezante l.",
+    verifiedBusinessMeaning: "Nearby tcheke biznis sa a egziste e moun ki jere l isit la reprezante l. Se pa yon nòt sou kalite oswa sekirite l.",
   },
   zh: {
     videoAttached: "🎬 已附视频",
@@ -707,7 +707,6 @@ export default {
     notAccommodatedA11y: "不接待：{list}",
     dietaryOptionsA11y: "饮食选择：{list}",
     alsoList: "还有：{list}",
-    reputationLine: { other: "{welcoming}% 觉得受欢迎 · {again}% 愿意再来（{count} 条评价）" },
     v: {
       followers: { other: "{count} 位关注者" },
       respondsMinutes: "通常约 {count} 分钟内回复",
@@ -776,7 +775,8 @@ export default {
       },
     },
     verifiedBusiness: "已验证商家",
-    verifiedBusinessExplanation: "Nearby 已确认这家商家的身份及其管理此账户的授权。验证不保证服务质量、安全性或任何单笔交易。",
+    verifiedBusinessA11y: "已验证商家：Nearby 已核实{name}确实存在，且在 Nearby 上管理它的人有权代表它。",
+    verifiedBusinessMeaning: "Nearby 已核实这家商家确实存在，且在这里管理它的人有权代表它。这不是对其质量或安全性的评价。",
   },
   vi: {
     videoAttached: "🎬 Đã đính kèm video",
@@ -818,7 +818,6 @@ export default {
     notAccommodatedA11y: "Không tiếp nhận: {list}",
     dietaryOptionsA11y: "Lựa chọn ăn kiêng: {list}",
     alsoList: "Ngoài ra: {list}",
-    reputationLine: { other: "{welcoming}% thấy được chào đón · {again}% sẽ tham gia lại ({count} đánh giá)" },
     v: {
       followers: { other: "{count} người theo dõi" },
       respondsMinutes: "thường phản hồi trong ~{count} phút",
@@ -887,7 +886,8 @@ export default {
       },
     },
     verifiedBusiness: "Doanh nghiệp đã xác minh",
-    verifiedBusinessExplanation: "Nearby đã xác nhận danh tính của doanh nghiệp này và quyền quản lý tài khoản của họ. Việc xác minh không đảm bảo chất lượng dịch vụ, sự an toàn hay từng giao dịch riêng lẻ.",
+    verifiedBusinessA11y: "Doanh nghiệp đã xác minh: Nearby đã kiểm tra rằng {name} có thật và người quản lý trên Nearby đại diện cho doanh nghiệp.",
+    verifiedBusinessMeaning: "Nearby đã kiểm tra rằng doanh nghiệp này có thật và người quản lý ở đây đại diện cho doanh nghiệp. Đây không phải là đánh giá chất lượng hay độ an toàn.",
   },
   tl: {
     videoAttached: "🎬 May nakalakip na video",
@@ -929,7 +929,6 @@ export default {
     notAccommodatedA11y: "Hindi tinatanggap: {list}",
     dietaryOptionsA11y: "Mga opsyon sa pagkain: {list}",
     alsoList: "Gayundin: {list}",
-    reputationLine: { one: "{welcoming}% ang naramdamang welcome · {again}% ang babalik ({count} review)", other: "{welcoming}% ang naramdamang welcome · {again}% ang babalik ({count} review)" },
     v: {
       followers: { one: "{count} follower", other: "{count} follower" },
       respondsMinutes: "kadalasang tumutugon sa ~{count} min",
@@ -998,7 +997,8 @@ export default {
       },
     },
     verifiedBusiness: "Verified na negosyo",
-    verifiedBusinessExplanation: "Kinumpirma ng Nearby ang pagkakakilanlan ng negosyong ito at ang pahintulot nitong pamahalaan ang account nito. Hindi ginagarantiya ng beripikasyon ang kalidad ng serbisyo, kaligtasan, o bawat transaksyon.",
+    verifiedBusinessA11y: "Verified na negosyo: tiningnan ng Nearby na totoo ang {name} at na kinakatawan ito ng taong nagpapatakbo nito sa Nearby.",
+    verifiedBusinessMeaning: "Tiningnan ng Nearby na totoo ang negosyong ito at na kinakatawan ito ng taong nagpapatakbo nito dito. Hindi ito rating ng kalidad o kaligtasan nito.",
   },
   ru: {
     videoAttached: "🎬 Видео прикреплено",
@@ -1040,7 +1040,6 @@ export default {
     notAccommodatedA11y: "Не принимают: {list}",
     dietaryOptionsA11y: "Варианты питания: {list}",
     alsoList: "А также: {list}",
-    reputationLine: { one: "{welcoming}% почувствовали себя желанными гостями · {again}% пришли бы снова ({count} отзыв)", few: "{welcoming}% почувствовали себя желанными гостями · {again}% пришли бы снова ({count} отзыва)", many: "{welcoming}% почувствовали себя желанными гостями · {again}% пришли бы снова ({count} отзывов)", other: "{welcoming}% почувствовали себя желанными гостями · {again}% пришли бы снова ({count} отзыва)" },
     v: {
       followers: { one: "{count} подписчик", few: "{count} подписчика", many: "{count} подписчиков", other: "{count} подписчика" },
       respondsMinutes: "обычно отвечает за ~{count} мин",
@@ -1109,7 +1108,8 @@ export default {
       },
     },
     verifiedBusiness: "Проверенное заведение",
-    verifiedBusinessExplanation: "Nearby подтвердил личность этого бизнеса и его право управлять своим аккаунтом. Проверка не гарантирует качество обслуживания, безопасность или отдельные сделки.",
+    verifiedBusinessA11y: "Проверенное заведение: Nearby проверил, что {name} существует и что человек, который ведёт его в Nearby, представляет его.",
+    verifiedBusinessMeaning: "Nearby проверил, что это заведение существует и что человек, который ведёт его здесь, его представляет. Это не оценка его качества или безопасности.",
   },
   ko: {
     videoAttached: "🎬 동영상 첨부됨",
@@ -1151,7 +1151,6 @@ export default {
     notAccommodatedA11y: "받지 않음: {list}",
     dietaryOptionsA11y: "식단 옵션: {list}",
     alsoList: "그 밖에: {list}",
-    reputationLine: { other: "{welcoming}%가 환영받는다고 느꼈어요 · {again}%가 다시 오고 싶어 해요 (후기 {count}개)" },
     v: {
       followers: { other: "팔로워 {count}명" },
       respondsMinutes: "보통 ~{count}분 안에 답해요",
@@ -1220,6 +1219,7 @@ export default {
       },
     },
     verifiedBusiness: "인증된 업체",
-    verifiedBusinessExplanation: "Nearby가 이 업체의 신원과 계정 운영 권한을 확인했습니다. 인증은 서비스 품질, 안전 또는 개별 거래를 보장하지 않습니다.",
+    verifiedBusinessA11y: "인증된 업체: Nearby가 {name}이(가) 실제로 있고 Nearby에서 운영하는 사람이 업체를 대표한다는 것을 확인했어요.",
+    verifiedBusinessMeaning: "Nearby가 이 업체가 실제로 있고 여기서 운영하는 사람이 업체를 대표한다는 것을 확인했어요. 품질이나 안전에 대한 평가는 아니에요.",
   },
 };

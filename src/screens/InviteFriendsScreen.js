@@ -1,149 +1,41 @@
-import React, { useEffect, useState } from 'react';
-import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Share, ActivityIndicator, TextInput } from 'react-native';
-import { NLoader, showSuccessToast } from '../motion';
-import { getMyReferralCode, getMyReferralStats, redeemReferralCode } from '../services/referrals';
-import { supabase } from '../services/supabase';
-import { readMyProfile } from '../services/myProfile';
+import React from 'react';
+import { Text, TouchableOpacity, StyleSheet, SafeAreaView, Share, View } from 'react-native';
 import { usePostHog } from 'posthog-react-native';
-import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+
+// A plain invitation (owner, 2026-11-09): no referral code, no count, no reward. Inviting never earns anything.
+const APP_URL = 'https://apps.apple.com/app/nearby-crossed-paths/id6792143175';
 
 export default function InviteFriendsScreen() {
   const { colors, shadow } = useTheme();
   const { t } = useLanguage();
   const posthog = usePostHog();
   const styles = getStyles(colors, shadow);
-  const [userId, setUserId] = useState(null);
-  const [code, setCode] = useState(null);
-  const [referralCount, setReferralCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
-  const [redeemInput, setRedeemInput] = useState('');
-  const [redeeming, setRedeeming] = useState(false);
-  const [alreadyReferred, setAlreadyReferred] = useState(false);
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  async function load() {
-    try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const id = sessionData?.session?.user?.id;
-      setUserId(id);
-      if (!id) return;
-
-      const [myCode, stats, profile] = await Promise.all([
-        getMyReferralCode(id),
-        getMyReferralStats(id),
-        readMyProfile('referred_by'),
-      ]);
-      setCode(myCode);
-      setReferralCount(stats.referralCount);
-      setAlreadyReferred(!!profile.data?.referred_by);
-      setLoadError(false);
-    } catch (e) {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleShare() {
     try {
       const result = await Share.share({
-        message: t('ui.inviteFriends.joinMeOnNearbyUse', { code, url: 'https://apps.apple.com/app/nearby-crossed-paths/id6792143175' }),
+        message: t('ui.inviteFriends.joinMeOnNearbyUse', { url: APP_URL }),
       });
       if (result.action === Share.sharedAction) {
-        posthog.capture('referral_code_shared');
+        posthog.capture('invite_shared');
       }
     } catch (e) {
       // User cancelled the share sheet — not an error
     }
   }
 
-  async function handleRedeem() {
-    if (!redeemInput.trim()) return;
-    setRedeeming(true);
-    try {
-      await redeemReferralCode(redeemInput);
-      posthog.capture('referral_code_redeemed');
-      showSuccessToast(t('ui.inviteFriends.bonusNoticesAdded'), t('ui.inviteFriends.youveBothReceived3Bonus'));
-      setRedeemInput('');
-      load();
-    } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRedeem() });
-    }
-    setRedeeming(false);
-  }
-
-  if (loading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <NLoader fullScreen={false} />
-        <Text style={{ marginTop: spacing.sm, color: colors.textSecondary, fontSize: 13, textAlign: 'center' }}>{t('ui.inviteFriends.loadingYourFriends')}</Text>
-      </SafeAreaView>
-    );
-  }
-
-  if (loadError) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <LoadErrorState message={t('ui.inviteFriends.couldntLoadYourInviteInfo')} onRetry={load} />
-      </SafeAreaView>
-    );
-  }
-
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+      <View style={{ padding: spacing.lg }}>
         <Text style={styles.headerTitle} accessibilityRole="header">{t('inviteFriends.title')}</Text>
-        <Text style={styles.headerSubtitle}>
-          {t('inviteFriends.subtitle')}
-        </Text>
-
-        <View style={styles.codeCard}>
-          <Text style={styles.codeLabel}>{t('inviteFriends.yourCode')}</Text>
-          <Text style={styles.codeText}>{code}</Text>
-          <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.85} accessibilityLabel={t('inviteFriends.shareCode')} accessibilityRole="button">
-            <Text style={styles.shareButtonText}>{t('inviteFriends.shareCode')}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.statCard}>
-          <Text style={styles.statNumber}>{referralCount}</Text>
-          <Text style={styles.statLabel}>{t('inviteFriends.friendsJoined')}</Text>
-        </View>
-
-        {!alreadyReferred && (
-          <View style={styles.redeemCard}>
-            <Text style={styles.redeemLabel}>{t('inviteFriends.haveCode')}</Text>
-            <View style={styles.redeemRow}>
-              <TextInput
-                style={styles.redeemInput}
-                placeholder={t('inviteFriends.enterCode')}
-                placeholderTextColor={colors.textTertiary}
-                value={redeemInput}
-                onChangeText={setRedeemInput}
-                autoCapitalize="characters"
-                accessibilityLabel={t('ui.inviteFriends.referralCodeA11y')}
-              />
-              <TouchableOpacity
-                style={styles.redeemButton}
-                onPress={handleRedeem}
-                disabled={redeeming || !redeemInput.trim()}
-                accessibilityLabel={t('inviteFriends.redeem')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.redeemButtonText}>{redeeming ? '...' : t('inviteFriends.redeem')}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </ScrollView>
+        <Text style={styles.headerSubtitle}>{t('inviteFriends.subtitle')}</Text>
+        <TouchableOpacity style={styles.shareButton} onPress={handleShare} activeOpacity={0.85} accessibilityLabel={t('inviteFriends.shareInvite')} accessibilityRole="button">
+          <Text style={styles.shareButtonText}>{t('inviteFriends.shareInvite')}</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -152,24 +44,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   headerTitle: { ...typography.title, color: colors.textPrimary },
   headerSubtitle: { ...typography.caption, color: colors.textTertiary, marginTop: spacing.xs, marginBottom: spacing.lg, lineHeight: 18 },
-  codeCard: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.xl,
-    alignItems: 'center', marginBottom: spacing.lg, borderWidth: 1, borderColor: colors.border,
-  },
-  codeLabel: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
-  codeText: { fontSize: 32, fontWeight: '800', letterSpacing: 4, color: colors.textPrimary, marginBottom: spacing.lg },
   shareButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.xl, paddingVertical: spacing.md, ...shadow.button },
   shareButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  statCard: {
-    backgroundColor: colors.surfaceElevated, borderRadius: radius.lg, padding: spacing.lg,
-    alignItems: 'center', marginBottom: spacing.lg,
-  },
-  statNumber: { fontSize: 28, fontWeight: '800', color: colors.textPrimary },
-  statLabel: { color: colors.textTertiary, fontSize: 13, marginTop: 2 },
-  redeemCard: { backgroundColor: colors.surface, borderRadius: radius.lg, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
-  redeemLabel: { ...typography.bodyBold, color: colors.textPrimary, marginBottom: spacing.sm },
-  redeemRow: { flexDirection: 'row', gap: spacing.sm },
-  redeemInput: { flex: 1, backgroundColor: colors.surfaceElevated, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, borderWidth: 1, borderColor: colors.border },
-  redeemButton: { backgroundColor: colors.primary, borderRadius: radius.md, paddingHorizontal: spacing.lg, justifyContent: 'center' },
-  redeemButtonText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 });

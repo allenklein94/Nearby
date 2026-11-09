@@ -4,8 +4,9 @@
 // feedback, invite each other and redeem each other's referral codes. Then the leader is compared with a control account that
 // did none of that: same trust level, same powers, same refusal at every limit. Only phone + account age moves the level.
 // Every limited action runs as the signed-in person under the real client role, in ONE rolled-back transaction.
-// Not covered, deliberately (appearance, not privilege; reported to the owner, not changed here): the host reputation line,
-// "Hosted N", Trending / popularity ranking and perk unlock counts all still read the same activity.
+// Not covered, deliberately (appearance, not privilege; reported to the owner, not changed here): "Hosted N", the loved-for
+// tags, Trending / popularity ranking and perk unlock counts all still read the same activity. 20270407 retired the reputation
+// line and the referral reward; a legacy bonus balance is seeded here to prove it still buys nothing.
 const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
@@ -87,8 +88,10 @@ d('journey: coordinated accounts earn no trust, reach or limits from interacting
   insert into social_invites (inviter_id, invitee_id, invite_type, target_id, status) values (${v}, v_a, 'gathering', v_g, 'accepted');`).join('')}
   ${['v_b', 'v_c', 'v_d', 'v_e'].map((v) => as(`referral_${v}`, v, `perform grant_referral_bonus(v_code)`)).join('')}
   ${rec('ring_activity', `jsonb_build_object('friends', (select count(*) from friendships where status = 'accepted' and (user_a = v_a or user_b = v_a)),
-    'feedback_for_a', (select feedback_count from get_host_reputation(v_a)), 'welcoming', (select welcoming_pct from get_host_reputation(v_a)),
-    'bonus_a', (select bonus_notices from profiles where id = v_a))`)}
+    'feedback_for_a', (select count(*) from gathering_feedback f join gatherings g on g.id = f.gathering_id where g.host_id = v_a),
+    'reputation_rows', (select count(*) from get_host_reputation(v_a)),
+    'bonus_a', (select bonus_notices from profiles where id = v_a), 'redemptions', (select count(*) from referral_redemptions where referrer_id = v_a))`)}
+  update profiles set bonus_notices = 12 where id = v_a;  -- a legacy balance from before 20270407
 
   -- ===== none of it moved anything =====
   perform set_config('app.trusted_update', '', true);
@@ -133,12 +136,13 @@ d('journey: coordinated accounts earn no trust, reach or limits from interacting
 
   const data = (n) => s[n].data;
 
-  it('the ring really did all of it: friends, glowing feedback, referral bonus', () => {
+  it('the ring really did all of it, and no public rating or referral reward came of it', () => {
     expect(data('ring_activity').friends).toBe(5);
     expect(Number(data('ring_activity').feedback_for_a)).toBe(5);
-    expect(Number(data('ring_activity').welcoming)).toBe(100);
-    expect(data('ring_activity').bonus_a).toBe(12);
-    expect(['referral_v_b', 'referral_v_c', 'referral_v_d', 'referral_v_e'].map(data)).toEqual(['ok', 'ok', 'ok', 'ok']);
+    expect(Number(data('ring_activity').reputation_rows)).toBe(0);
+    expect(Number(data('ring_activity').bonus_a)).toBe(0);
+    expect(Number(data('ring_activity').redemptions)).toBe(0);
+    ['referral_v_b', 'referral_v_c', 'referral_v_d', 'referral_v_e'].forEach((step) => expect(data(step).hint).toBe('referrals_ended'));
   });
 
   it('trust levels are identical before and after', () => {
@@ -162,7 +166,7 @@ d('journey: coordinated accounts earn no trust, reach or limits from interacting
     expect(data(`leader_${action}`).error).toBe(data(`control_${action}`).error);
   });
 
-  it('referral bonus Notices never get past the server cap', () => {
+  it('a leftover bonus balance never gets past the server cap', () => {
     expect(data('leader_spends_bonus')).toBe(true);
     expect(data('leader_notice_over_cap').error).toMatch(/up to 5 Notices/);
     expect(data('bonus_left')).toBe(11);

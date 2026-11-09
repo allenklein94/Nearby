@@ -20,7 +20,6 @@ import {
   acknowledgeInterestedDisclosure,
   leaveGathering,
   getHostStats,
-  getHostReputation,
   getHostLovedTags,
   getApprovedAttendeeCount,
   getPendingInterestCount,
@@ -121,7 +120,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [groupInsights, setGroupInsights] = useState(null);
   const [offer, setOffer] = useState(null);
   const [hostStats, setHostStats] = useState(null);
-  const [hostReputation, setHostReputation] = useState(null);
   const [lovedTags, setLovedTags] = useState([]);
   const [intentModalVisible, setIntentModalVisible] = useState(false);
   const [joining, setJoining] = useState(false);
@@ -235,18 +233,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
     setLoading(false);
 
     try {
-      const [cover, hostPhoto, offerResult, stats, reputation] = await Promise.all([
+      const [cover, hostPhoto, offerResult, stats] = await Promise.all([
         g.cover_photo_path ? getSignedGatheringPhotoUrl(g.cover_photo_path) : Promise.resolve(null),
         g.host?.photo_url ? getSignedPhotoUrl(g.host.photo_url) : Promise.resolve(null),
         getGatheringOffer(gatheringId),
         getHostStats(g.host_id),
-        getHostReputation(g.host_id),
       ]);
       setCoverUrl(cover);
       setHostPhotoUrl(hostPhoto);
       setOffer(offerResult);
       setHostStats(stats);
-      setHostReputation(reputation);
 
       if (g.host_id) {
         getHostLovedTags(g.host_id).then(setLovedTags);
@@ -408,7 +404,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       // gets back 'none' rather than this screen guessing.
       setGroupInsights(await getGatheringGroupInsights(gatheringId));
     } catch (e) {
-      // Enrichment data (cover photo, host stats/reputation, offer, attendee
+      // Enrichment data (cover photo, host stats, offer, attendee
       // photos/first-timer count) failed to load — the core gathering
       // content above already rendered successfully, so this fails quietly
       // rather than replacing a working screen with an error state.
@@ -1101,11 +1097,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
             {hostStats && hostStats.gatherings_hosted > 0 && (
               <Text style={styles.organizerStatLine}>
                 {t('ui.gatheringDetail.hostedStats', { hosted: t('ui.gatheringDetail.hostedCount', { count: hostStats.gatherings_hosted }), avg: t('ui.gatheringDetail.avgAttendees', { count: Math.round(hostStats.avg_attendance) }) })}
-              </Text>
-            )}
-            {hostReputation && hostReputation.feedback_count > 0 && (
-              <Text style={styles.organizerStatLine}>
-                {t('ui.gatheringDetail.reputation', { welcoming: hostReputation.welcoming_pct, again: hostReputation.would_return_pct, reviews: t('ui.gatheringDetail.reviews', { count: hostReputation.feedback_count }) })}
               </Text>
             )}
             {lovedTags.length > 0 && (
