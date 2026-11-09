@@ -1,3 +1,19 @@
+## Coordinated fake credibility + idea 26 (2026-11-09, owner)
+
+Idea 26 (composite trust history) closed as covered; scoring declined. Follow-up audit: can coordinated fake accounts earn trust, reach, limits or powers by interacting?
+
+Audited: main + all 37 `post-tier1/*` branches (migrations through 20270406). Result: no path.
+- `private.trust_level`: one definition (20270356), reads suspension, verified phone, account age. Readers: `enforce_rate_limit`, `_gathering_signal_join` (a review signal's count), `admin_get_account_facts` (display).
+- `private.rate_limit_rules`: primary key action + level + window; no function rewrites rules or settings at runtime.
+- Referrals: `grant_referral_bonus` adds 3 `bonus_notices` to both sides with no ceiling for the referrer, but `enforce_notice_daily_limit` never reads the bonus (checked on prod too), so a sixth Notice in 24 h is refused. Prod: 1 redemption, 2 accounts with a bonus, max 3.
+- Premium: paid/admin only.
+
+Fix: none needed. Tests on branch `post-tier1/coordinated-credibility-guard` (943fa75e), based on the staged tip: journey `coordinatedCredibility` 11/11 on a local replay of the stack (leader of a 5-account ring vs a no-friends control: same level, powers and refusals for message, invitation, gathering, friend request; bonus never passes the Notice cap; age + phone moves the level both ways); mutation (trust_level rewards friends, cap honours bonus, in a rolled-back prelude) fails 7/11; static guard 8/8; Jest 558 suites / 7535 tests.
+
+Not covered by that scope, reported for an owner decision, nothing changed: the host reputation line (RLS needs only an approved attendee; checked under real roles in a rolled-back transaction, feedback on a gathering 10 days away accepted, one review = 100%; no floor; prod 2 rows); Trending at 5 attendees and the popularity tier; perk unlock counts (prod 0 gated perks); invited joins skip both join signals; "Hosted N"; "Our pick" record; demand floors. The "3 bonus Notices" copy promises something the server cap refuses, and the bonus is spent first.
+
+Limit: this stops activity earning credibility. It doesn't stop fake accounts existing or coordinating. Everything above is staged except the live friend-request limit; prod is on 0347.
+
 # 2026-10-31: account state model approved as built
 
 Owner approved the six-state model (Unverified / Verified / Established / Restricted / Suspended / Under Review) as built, no changes. Checked: no user-facing "Trusted"/"Established" badge or string exists (only "trusted contact" in date check-in, unrelated). Added to the post-Tier-1 consolidated deployment checklist: a real-API proof on prod, with a dedicated test account, that a suspended account cannot write through direct API calls or server functions and cannot sign in (0351), since today that is proven only by journeys in rolled-back transactions. Migrations 0348-0369 stay staged; Build 87 next.
