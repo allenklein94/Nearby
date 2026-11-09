@@ -77,7 +77,7 @@ async function race(first, second) {
 (async () => {
   const admin = await connect();
   const [{ owner, partner }] = (await admin.query(
-    `select id as owner, managed_partner_id as partner from profiles where managed_partner_id is not null limit 1`)).rows;
+    `select p.id as owner, p.managed_partner_id as partner from profiles p join brand_partners b on b.id = p.managed_partner_id where b.latitude is not null limit 1`)).rows;
   const [{ host }] = (await admin.query(`select id as host from profiles where managed_partner_id is null order by created_at limit 1`)).rows;
   await admin.query(`update profiles set timezone = 'America/New_York' where id = $1`, [host]);
 
