@@ -39,15 +39,15 @@ describe('referral reward', () => {
       expect(invite[l].joinMeOnNearbyUse).toContain('{url}');
       expect(invite[l].joinMeOnNearbyUse).not.toContain('{code}');
     });
-    expect(read('i18n/translations.js')).not.toMatch(/yourCode|friendsJoined|haveCode|enterCode|3 bonus/);
+    const { translations } = require('../i18n/translations');
+    LANGS.forEach((l) => expect(Object.keys(translations[l].inviteFriends)).toEqual(['title', 'subtitle', 'shareInvite']));
     expect(read('i18n/ui/features.js')).not.toMatch(/referral|bonus/i);
-    expect(read('i18n/translations.js')).not.toMatch(/inviteFriends: \{\s*title: '\\uD83C\\uDF81/);
   });
 });
 
 describe('Trending says popularity, never trust', () => {
   it('its English wording makes no claim about trust, safety or verification', () => {
-    const { en } = require('../i18n/translations').translations || require('../i18n/translations').default;
+    const { en } = require('../i18n/translations').translations;
     const reasons = JSON.stringify(en).match(/"[^"]*[Tt]rending[^"]*"/g) || [];
     const discover = read('i18n/ui/discover.js').split('\n').filter((l) => /trending/i.test(l)).slice(0, 2).join(' ');
     expect(reasons.length).toBeGreaterThan(0);

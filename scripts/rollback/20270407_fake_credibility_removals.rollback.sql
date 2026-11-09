@@ -46,3 +46,5 @@ begin
   update profiles set bonus_notices = coalesce(bonus_notices, 0) + 3 where id = v_referrer_id;
   update profiles set bonus_notices = coalesce(bonus_notices, 0) + 3 where id = auth.uid();
   perform set_config('app.trusted_update', coalesce(v_caller_trusted, 'false'), true); -- 20270359: trust ends here
+end;
+$function$;
