@@ -1,3 +1,7 @@
+# 2026-11-09: 20270408 "What people loved" removed + gathering ratings private, staged, verified locally
+
+Owner approved both narrow fixes after the 0407 report. Reader audit (main/build 87, build 86 commit 7d72d615, DB functions, edge functions): own-row = submitGatheringFeedback (upsert), getUnrated, hasSubmittedFeedback; others' rows = getHostLovedTags, getBusinessLovedTags, getBusinessReputation only; definer = get_my_experience_feedback, get_my_plans_this_month; no edge function; no admin reader exists. Column grants rejected: upsert's ON CONFLICT reads excluded columns and needs SELECT on them, which would break How was it? on build <= 87. Results: replay 532/532, journeys 1374/1374, real PostgREST 28/28 (12 fail on the rolled-back DB), rollback = 0407's schema, re-apply 0 diff, Jest 560 / 7555, exports clean. Logs /workspaces/.nearby-verify/v409. Exposure stays live on prod until the stack deploys in order; blocker before external users.
+
 # 2026-11-09: 20270407 fake-credibility removals, staged, verified locally
 
 Owner ordered, after idea 26's audit: remove the public host reputation line and the referral reward incl. wording and unused logic; stop rating before a gathering happens; keep Trending, attendance, invitations, business demand counts and privacy; audit Trending's wording; no scoring, reach suppression, surveillance or new screens; staged only.
