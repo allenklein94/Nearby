@@ -65,3 +65,9 @@ Run 2026-11-09 on an isolated local stack (Supabase Postgres 17.6.1.003, never p
 **The rollback refuses by design once records exist,** so after real deletions it can't be used until those records have been dealt with. That path has not been written or tested.
 
 **Not verified:** production; a real phone; a real reassigned number. The legal review is still required before deployment and has not happened; the 90 days and the wording remain unapproved drafts.
+
+## Owner acceptance + new deploy gate (2026-11-09)
+
+Local verification accepted; 0406 stays staged, not merged, not deployed. All gates above stand.
+
+**New gate: before 0406 deploys, write the forward-fix and recovery procedure.** Its rollback refuses once records exist, so 0406 can't be assumed reversible in production. The procedure doesn't exist yet.
