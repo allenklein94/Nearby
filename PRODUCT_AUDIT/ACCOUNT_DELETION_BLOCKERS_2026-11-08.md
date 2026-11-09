@@ -84,3 +84,24 @@ Columns naming an account with no foreign key, so a deletion doesn't touch them 
 ## Strings
 
 `ui.settings.deletionEndsGroupPlans`, `deletionPaidBooking`: 10 languages machine-authored, native review needed. Server pushes are English, like the others.
+
+## Verification results (local only)
+
+Run 2026-11-09 on an isolated local stack (Supabase Postgres 17.6.1.003, never production), top of the stack at `f5447880`. Log: `/workspaces/.nearby-verify/v407/progress.log` (not in Git).
+
+| Check | Result |
+|---|---|
+| From-scratch replay | 530/530 migrations apply |
+| All journeys | 1348/1348, twice (once after the rollback + re-apply), incl. `accountDeletionBlockers` 58/58 |
+| Deletion sweep, real deletion with every trigger and key on | 264 relationships tried, 264 fine, 0 blocked, 0 refused |
+| Real `delete-account` function + real Auth + Storage (`held-evidence-function-local.js`) | 68 checks pass |
+| Concurrency scripts | 28/28 exit 0, incl. the organizer deleting while the next in line deletes, while the last participant confirms, and while a payment is captured |
+| 0405 rollback, on a fresh replay with 0406 already rolled back | applies; schema dump identical to the pristine 0404 dump (0 diff lines) |
+| After that rollback | `accountDeletionBlockers` fails 58/58 and the sweep is back to 14 blocked, 4 refused: the journey does detect the old behaviour |
+| Re-apply | schema dump identical to the original (0 diff lines) |
+| Jest | 557 suites, 7527 passed, 11 todo |
+| iOS + web bundles | both export cleanly |
+
+The first runs failed twice in the concurrency scripts: they picked a business with no location, left behind by another script. The fix was in the scripts (`78fe0269`, `335bafc2`), not in 0405.
+
+**Not verified:** production (no prod journeys, grants comparison or aborted rollback; these stay deploy gates). The rollback ran on a clean database only, so it has not been tried with real kept payment rows or open exceptions. No real Stripe refund, no real Connect account, no real push, no phone: the warning lines in Settings have never been rendered. The questions for counsel above are unanswered.
