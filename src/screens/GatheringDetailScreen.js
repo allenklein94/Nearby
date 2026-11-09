@@ -20,7 +20,6 @@ import {
   acknowledgeInterestedDisclosure,
   leaveGathering,
   getHostStats,
-  getHostLovedTags,
   getApprovedAttendeeCount,
   getPendingInterestCount,
   getHostSentInvitations,
@@ -120,7 +119,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [groupInsights, setGroupInsights] = useState(null);
   const [offer, setOffer] = useState(null);
   const [hostStats, setHostStats] = useState(null);
-  const [lovedTags, setLovedTags] = useState([]);
   const [intentModalVisible, setIntentModalVisible] = useState(false);
   const [joining, setJoining] = useState(false);
   // Set by an auto-approved join on THIS screen: the attending section shows "You're in" then "bring someone" (audit B1).
@@ -243,10 +241,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
       setHostPhotoUrl(hostPhoto);
       setOffer(offerResult);
       setHostStats(stats);
-
-      if (g.host_id) {
-        getHostLovedTags(g.host_id).then(setLovedTags);
-      }
 
       if (g.isHost) {
         // requests = pending JOIN requests (they need the host's decision); Interested is the separate private count
@@ -1098,9 +1092,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
               <Text style={styles.organizerStatLine}>
                 {t('ui.gatheringDetail.hostedStats', { hosted: t('ui.gatheringDetail.hostedCount', { count: hostStats.gatherings_hosted }), avg: t('ui.gatheringDetail.avgAttendees', { count: Math.round(hostStats.avg_attendance) }) })}
               </Text>
-            )}
-            {lovedTags.length > 0 && (
-              <Text style={styles.organizerStatLine}>{t('ui.gatheringDetail.lovedList', { list: lovedTags.join(' · ') })}</Text>
             )}
           </View>
 

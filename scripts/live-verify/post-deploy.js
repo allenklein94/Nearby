@@ -349,6 +349,14 @@ const STEPS = {
       'rollback = scripts/rollback/20270407_fake_credibility_removals.rollback.sql (no rows changed)',
       'STOP + report: a How was it? on a finished gathering refused; any other feedback write refused; a screen error where the line was'],
   },
+  20270408: { journeys: ['gatheringFeedbackPrivacy', 'fakeCredibilityRemovals', 'plansThisMonth', 'planComplete', 'notInterested'],
+    node: ['scripts/replay/gathering-feedback-api-local.js (replay only, before the deploy)', 'src/qa/gatheringFeedbackPrivacy.live.js (dedicated test account, real API, read-only; FAILS before this migration while another person\'s rating exists)'],
+    edge: [],
+    manual: ['BEFORE deploy: a build without "What people loved" and the business rating line is released (same gate as 20270407); on a build up to 87 those lines then read only the viewer\'s own rating',
+      'real phone: How was it? on a finished gathering saves; it is not asked again; Home still ranks by your own word',
+      'rollback = scripts/rollback/20270408_gathering_feedback_private.rollback.sql (reopens every rating to every signed-in person; no rows changed)',
+      'STOP + report: another person\'s rating readable; How was it? refused; the private ranking word empty for someone who has rated'],
+  },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

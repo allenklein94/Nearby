@@ -7,7 +7,6 @@ import { formatApproxDistanceAway } from '../utils/formatDistance';
 import { gatheringLocationProvenance } from '../utils/locationProvenance';
 import { supabase } from './supabase';
 import { readMyProfile } from './myProfile';
-import { tr } from '../i18n/translate';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -1243,72 +1242,6 @@ export function pickBestGathering(pool, { friendIds = null, myUserId = null } = 
     .filter((x) => x.parts.some((p) => BEST_PICK_PERSONAL_CODES.includes(p.code)) || (!!x.gathering?.host_id && x.gathering.host_id !== myUserId && friends.has(x.gathering.host_id)));
   const top = scored.sort(compareRanked)[0];
   return top ? { ...top.gathering, reasons: top.reasons } : null;
-}
-
-const GREAT_BECAUSE_LABELS = {
-  people: 'The people',
-  location: 'The location',
-  activity: 'The activity',
-  conversation: 'Great conversations',
-  host: 'The host',
-};
-
-// Real aggregate of past attendees' own categorical feedback for this
-// host's gatherings — no free-text testimonial exists in the schema,
-// so this is the honest equivalent of "what people loved" rather than
-// a fabricated quote. `gathering_feedback` is publicly SELECTable
-// (see its RLS), so no new RPC is needed.
-export async function getHostLovedTags(hostId) {
-  const { data, error } = await supabase
-    .from('gathering_feedback')
-    .select('great_because, gatherings!inner(host_id)')
-    .eq('gatherings.host_id', hostId);
-
-  if (error) {
-    console.error('getHostLovedTags error', error);
-    return [];
-  }
-
-  const counts = {};
-  for (const row of data ?? []) {
-    for (const tag of row.great_because ?? []) {
-      counts[tag] = (counts[tag] ?? 0) + 1;
-    }
-  }
-
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([tag]) => (GREAT_BECAUSE_LABELS[tag] ? tr(`ui.businessProfile.v.loved.${tag}`) : tag));
-}
-
-// Business-hosted equivalent of getHostLovedTags — same
-// honest-aggregate approach, keyed on hosting_partner_id instead of
-// host_id since a business isn't a profiles row. No new RPC/migration:
-// gathering_feedback is already publicly SELECTable, same as the per-host
-// version above.
-export async function getBusinessLovedTags(partnerId) {
-  const { data, error } = await supabase
-    .from('gathering_feedback')
-    .select('great_because, gatherings!inner(hosting_partner_id)')
-    .eq('gatherings.hosting_partner_id', partnerId);
-
-  if (error) {
-    console.error('getBusinessLovedTags error', error);
-    return [];
-  }
-
-  const counts = {};
-  for (const row of data ?? []) {
-    for (const tag of row.great_because ?? []) {
-      counts[tag] = (counts[tag] ?? 0) + 1;
-    }
-  }
-
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([tag]) => (GREAT_BECAUSE_LABELS[tag] ? tr(`ui.businessProfile.v.loved.${tag}`) : tag));
 }
 
 export async function stopRecurringSeries(gatheringId) {

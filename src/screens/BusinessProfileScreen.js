@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { perkRedemptionState, perkCodeMessage, redemptionsByOffer } from '../utils/perkRedemptionState';
 import PerkCodeBox from '../components/PerkCodeBox';
 import { getBusinessProfile, getBusinessFollowerCount, getBusinessPublicGatherings, getBusinessActiveOffers, isFollowingBusiness, followBusiness, unfollowBusiness, getRedemptionCounts, getMyRedemptionRows, getMyRedemptionFor, redeemOffer, getMyManagedPartner, logBusinessProfileView, getBusinessExperiences, getBusinessMessagesPage } from '../services/brandOffers';
-import { getBusinessLovedTags, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
+import { getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
 import { businessPrimaryAction } from '../utils/primaryAction';
 import { LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
@@ -92,7 +92,6 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [myRedemptions, setMyRedemptions] = useState({});
   const [unlockProgress, setUnlockProgress] = useState({});
   const [redeemingId, setRedeemingId] = useState(null);
-  const [lovedTags, setLovedTags] = useState([]);
   const [photoUrls, setPhotoUrls] = useState([]);
   // 10/10 roadmap Part 5 (see CLAUDE.md's "10/10 roadmap" plan) -- the
   // business-fulfillment request/offer reliability line.
@@ -111,13 +110,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
   const load = useCallback(async () => {
     try {
-      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, fulfillRep, fulfillResponseTime, myPartner, signatureExperiences] = await Promise.all([
+      const [profile, count, isFollowing, upcomingGatherings, activeOffers, fulfillRep, fulfillResponseTime, myPartner, signatureExperiences] = await Promise.all([
         getBusinessProfile(partnerId),
         getBusinessFollowerCount(partnerId),
         isFollowingBusiness(partnerId),
         getBusinessPublicGatherings(partnerId),
         getBusinessActiveOffers(partnerId),
-        getBusinessLovedTags(partnerId),
         getPartnerOfferReputation(partnerId),
         getPartnerAvgResponseTime(partnerId),
         getMyManagedPartner(),
@@ -139,7 +137,6 @@ export default function BusinessProfileScreen({ route, navigation }) {
       setFollowing(isFollowing);
       setGatherings(upcomingGatherings);
       setOffers(activeOffers);
-      setLovedTags(tags);
       setFulfillmentReputation(fulfillRep);
       setFulfillmentResponseTime(fulfillResponseTime);
       // Filtered client-side too, on top of RLS -- so the business's own
@@ -556,13 +553,6 @@ export default function BusinessProfileScreen({ route, navigation }) {
           </View>
         )}
 
-        {lovedTags.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>{t('ui.businessProfile.whatPeopleSay')}</Text>
-            <Text style={styles.repLine}>{t('ui.businessProfile.whatPeopleLoved')}{' '}{lovedTags.join(' · ')}</Text>
-          </View>
-        )}
-
         {photoUrls.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>{t('ui.businessProfile.photos')}</Text>
@@ -702,7 +692,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   planHereButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   section: { marginBottom: spacing.lg },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
-  repLine: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs },
   photo: { width: 140, height: 100, borderRadius: radius.md, marginRight: spacing.sm },
   offerCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   offerTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },
