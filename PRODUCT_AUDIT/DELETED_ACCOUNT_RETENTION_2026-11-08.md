@@ -49,3 +49,19 @@ The same confirmed number (matching job, every 10 minutes) or a stored device ke
 4. Wording. Draft, NOT published, for section 5: "If your account has an unresolved report, an open review or an active restriction when you delete it, we keep a limited record for up to 90 days so the matter isn't lost: a protected, one-way form of your phone number, the references to those reports and reviews, and what the restriction was. If that number is used again during that time, it may be reviewed privately by our team. It doesn't stop you signing up." The current branch draft's "with your account reference removed" stays true of the report itself, but not of the link in this record: counsel should read both together.
 5. The deletion dialogs (11 languages, 0402) say limited records may be kept where user safety requires. Is that enough, or does this need its own line?
 
+## Verification results (local only)
+
+Run 2026-11-09 on an isolated local stack (Supabase Postgres 17.6.1.003, never production), top of the stack at `f5447880`. Log: `/workspaces/.nearby-verify/v407/progress.log` (not in Git).
+
+| Check | Result |
+|---|---|
+| Journeys | `deletedAccountUnresolved` 32/32; all journeys 1348/1348 before and after the rollback + re-apply |
+| Real function + real Auth (`held-evidence-function-local.js`) | 68 checks pass, incl. the number signing up again with nothing in the way, one private case about the new account, no restriction, suspension or notice |
+| Concurrency scripts | 28/28 exit 0, incl. `deleted-account-concurrency` |
+| 0406 rollback on a database holding records | **refused, exit 3** (144 records, 7 cases without a subject); schema unchanged (0 diff lines) |
+| 0406 rollback on a clean database | applies; 0405's journey still passes 58/58 at that state; `deletedAccountUnresolved` fails 32/32, so it does detect the change |
+| Re-apply | schema dump identical to the original (0 diff lines) |
+
+**The rollback refuses by design once records exist,** so after real deletions it can't be used until those records have been dealt with. That path has not been written or tested.
+
+**Not verified:** production; a real phone; a real reassigned number. The legal review is still required before deployment and has not happened; the 90 days and the wording remain unapproved drafts.
