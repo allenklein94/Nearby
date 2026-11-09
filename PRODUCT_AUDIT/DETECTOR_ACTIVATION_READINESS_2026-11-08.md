@@ -61,3 +61,10 @@ Still open: the policy wording above is a draft for counsel, NOT published ("To 
 ## Not verified
 
 No production run; no real push token; no real phone; prod journeys, grants vs prod and the prod aborted rollback remain deploy gates for 0376 and 0378.
+
+## Verification results (local only)
+
+Run 2026-11-09 on an isolated local stack (Supabase Postgres 17.6.1.003, never production), top of the stack at `f5447880`. Log: `/workspaces/.nearby-verify/v407/progress.log` (not in Git).
+
+- Journey `detectorActivationReadiness` 20/20, running the switch's own statements through the scenario matrix above. All journeys 1348/1348; `shared-device-concurrency` and `shared-text-concurrency` pass; Jest 557 suites, 7527 passed, 11 todo; iOS + web bundles export cleanly.
+- The false-positive table above is these scenarios at the provisional numbers. **It shows what the rules do, not how often they'd be wrong on real people.** Neither detector was turned on anywhere outside these tests.
