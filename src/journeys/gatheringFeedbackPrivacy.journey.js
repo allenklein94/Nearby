@@ -13,7 +13,7 @@ function as(step, sub, stmt, role = 'authenticated') {
   execute 'set local role ${role}';
   begin ${stmt};
   exception when others then
-    get stacked diagnostics v_hint = pg_exception_state;
+    get stacked diagnostics v_hint = returned_sqlstate;
     v_out := jsonb_build_object('error', v_hint);
   end;
   reset role;
@@ -53,9 +53,9 @@ d('journey: gathering ratings are private to their writer', () => {
   ${as('stranger_deletes_rating', 'v_stranger', `delete from gathering_feedback where reviewer_id = v_rater; get diagnostics v_n = row_count; v_out := to_jsonb(v_n)`)}
   ${as('anon_reads', 'null', rows(), 'anon')}
 
-  ${as('private_word_rater', 'v_rater', `select count(*)::int into v_n from get_my_experience_feedback(); v_out := to_jsonb(v_n)`)}
+  ${as('private_word_rater', 'v_rater', `select jsonb_build_object('loved_host', v_host = any(t.loved_host_ids), 'not_for_me_partner', v_partner = any(t.not_for_me_partner_ids)) into v_out from get_my_experience_feedback() t`)}
   ${as('plans_this_month_rater', 'v_rater', `select count(*)::int into v_n from get_my_plans_this_month(now() - interval '1 day', now() + interval '1 day'); v_out := to_jsonb(v_n)`)}
-  ${as('private_word_stranger', 'v_stranger', `select to_jsonb(t) into v_out from get_my_experience_feedback() t limit 1; v_out := coalesce(v_out, to_jsonb(0))`)}
+  ${as('private_word_stranger', 'v_stranger', `select jsonb_build_object('loved_host', v_host = any(t.loved_host_ids), 'not_for_me_partner', v_partner = any(t.not_for_me_partner_ids)) into v_out from get_my_experience_feedback() t`)}
 
   log := log || jsonb_build_array(jsonb_build_object('step', 'all_rows_kept', 'ok', true, 'data', (select count(*) from gathering_feedback where gathering_id in (v_g, v_bg))));
   log := log || jsonb_build_array(jsonb_build_object('step', 'catalog', 'ok', true, 'data', jsonb_build_object(
@@ -104,9 +104,9 @@ d('journey: gathering ratings are private to their writer', () => {
   });
 
   it('private ranking and the plans count still read the person\'s own feedback, and only theirs', () => {
-    expect(data('private_word_rater')).toBeGreaterThan(0);
+    expect(data('private_word_rater')).toEqual({ loved_host: true, not_for_me_partner: true });
     expect(data('plans_this_month_rater')).toBeGreaterThan(0);
-    expect(JSON.stringify(data('private_word_stranger'))).not.toMatch(/loved|not_for_me/);
+    expect(data('private_word_stranger')).toEqual({ loved_host: false, not_for_me_partner: false });
   });
 
   it('the open policy is gone; row security stays on; server-side access is unchanged', () => {

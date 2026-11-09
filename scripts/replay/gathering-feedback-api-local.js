@@ -58,12 +58,12 @@ const check = (name, ok, detail) => { if (ok) { passed += 1; console.log(`  ok  
 
     await db.query(`select set_config('app.trusted_update', 'on', false)`);
     for (const id of people) {
-      await db.query(`insert into auth.users (id, aud, role, email, phone, phone_confirmed_at, created_at) values ($1, 'authenticated', 'authenticated', $1 || '@feedback.invalid', '1555' || lpad((('x0' || substr(md5($1::text), 1, 7))::bit(32)::int % 100000000)::text, 8, '0'), now(), now() - interval '30 days')`, [id]);
+      await db.query(`insert into auth.users (id, aud, role, email, phone, phone_confirmed_at, created_at) values ($1::uuid, 'authenticated', 'authenticated', $1::text || '@feedback.invalid', '1555' || lpad((('x0' || substr(md5($1::text), 1, 7))::bit(32)::int % 100000000)::text, 8, '0'), now(), now() - interval '30 days')`, [id]);
       await db.query(`insert into profiles (id, display_name, birthdate, created_at, terms_accepted_at, timezone, photo_verified, profile_hidden) values ($1, 'Feedback Test', date '1994-05-01', now() - interval '30 days', now(), 'America/New_York', true, false) on conflict (id) do update set display_name = 'Feedback Test'`, [id]);
     }
     await db.query(`insert into brand_partners (id, name, active, latitude, longitude, address, category, subcategory, categories, max_group_size) values ($1, 'Feedback Cafe', true, 40, -75, '1 Test St', 'food_drink', 'Coffee', '{}', 40)`, [PARTNER]);
     await db.query(`update profiles set managed_partner_id = $1 where id = $2`, [PARTNER, BIZ]);
-    const mk = async (host, title, partner) => (await db.query(`insert into gatherings (host_id, title, scheduled_at, duration_minutes, precise_lat, precise_lng, interest_tag, area, visibility, is_public, hosting_partner_id) values ($1, $2, now() - interval '3 hours', 60, 10.02, -10.03, 'Pickleball', 'j', 'everyone', true, $3) returning id`, [host, title, partner])).rows[0].id;
+    const mk = async (host, title, partner) => (await db.query(`insert into gatherings (host_id, title, scheduled_at, duration_minutes, precise_lat, precise_lng, interest_tag, area, visibility, is_public, hosting_partner_id) values ($1::uuid, $2, now() - interval '3 hours', 60, 10.02, -10.03, 'Pickleball', 'j', 'everyone', true, $3::uuid) returning id`, [host, title, partner])).rows[0].id;
     G = await mk(H, 'Over', null); BG = await mk(BIZ, 'Business hosted', PARTNER);
     await db.query(`insert into gathering_interest (gathering_id, user_id, status) values ($1, $3, 'approved'), ($1, $4, 'approved'), ($2, $3, 'approved'), ($2, $4, 'approved')`, [G, BG, R, O]);
     await db.query(`insert into gathering_feedback (gathering_id, reviewer_id, felt_welcoming, would_attend_again, satisfaction_rating, great_because) values ($1, $3, true, true, 'loved_it', array['people']), ($2, $3, true, true, 'loved_it', array['host'])`, [G, BG, O]);
@@ -116,10 +116,10 @@ const check = (name, ok, detail) => { if (ok) { passed += 1; console.log(`  ok  
     check('get_host_reputation: no error, no row', none(r), r);
 
     console.log('== server functions and server-side access');
-    r = await R_.rpc('get_my_experience_feedback'); check('private ranking word still reads the person\'s own rating', !r.error && JSON.stringify(r.data).includes('loved_it'), r);
+    r = await R_.rpc('get_my_experience_feedback'); check('private ranking word still reads the person\'s own rating', !r.error && (r.data?.[0]?.loved_host_ids ?? []).includes(H), r);
     r = await R_.rpc('get_my_plans_this_month', { p_since: new Date(Date.now() - 864e5).toISOString(), p_until: new Date(Date.now() + 864e5).toISOString() });
     check('plans this month still counts a rated gathering', !r.error && (Array.isArray(r.data) ? r.data.length > 0 : r.data > 0), r);
-    r = await S_.rpc('get_my_experience_feedback'); check('private ranking word holds nothing for a stranger', !r.error && !JSON.stringify(r.data).includes('loved_it'), r);
+    r = await S_.rpc('get_my_experience_feedback'); check('private ranking word holds nothing for a stranger', !r.error && (r.data?.[0]?.loved_host_ids ?? []).length === 0, r);
     r = await service.from('gathering_feedback').select('reviewer_id').eq('gathering_id', G);
     check('service role (moderation) still reads every row', !r.error && r.data.length === 2, r);
   } finally {
