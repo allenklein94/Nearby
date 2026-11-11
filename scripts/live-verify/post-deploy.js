@@ -376,6 +376,15 @@ const STEPS = {
       'rollback = scripts/rollback/20270410_familiar_hosts.rollback.sql (drops the function; nothing was stored)',
       'STOP + report: another person\'s familiarity readable; an upcoming or in-progress gathering counted; a count above 3; anon able to call it; any trust level, limit or moderation result changed'],
   },
+  // A host's attendance reads respect blocks both ways (+ a hosting business's member lists)
+  20270411: { journeys: ['blockedAttendeePrivacy', 'hostFamiliarity', 'gatheringRowPrivacy', 'inviteSheetStates', 'bookingCapacity', 'appVersionCompatibility'],
+    node: [],
+    edge: [],
+    manual: ['BEFORE deploy: nothing in the app changes (the host list already hid blocked people client-side, builds 86/87 included); only direct API reads, realtime and the host\'s Activity pending list lose blocked people',
+      'real phone (two accounts: one hosts, the other joins then blocks the host): the host no longer sees that person in requests or Who\'s going; the attending count stays the same; the person still sees their own plan; unblocked attendees unchanged',
+      'rollback = scripts/rollback/20270411_host_attendance_respects_blocks.rollback.sql (host reads every row again; no rows were changed)',
+      'STOP + report: a host reads a blocked person\'s row by any query; an attendance or approved count changes; a person loses their own row; service role / moderation reads fewer rows'],
+  },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
