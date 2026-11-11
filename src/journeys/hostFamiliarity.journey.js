@@ -99,7 +99,8 @@ d('journey: host familiarity from ended shared gatherings (20270410)', () => {
   });
 
   it('each person sees only their own familiarity', () => {
-    expect(named('guest')).toEqual({ viewer: 1 });
+    // the guest was at the viewer's gathering with v_blocked (that block is between the viewer and v_blocked only) and v_susp (suspended: left out)
+    expect(named('guest')).toEqual({ viewer: 1, blocked: 1 });
     expect(named('upcoming_host')).toEqual({});
   });
 

@@ -367,6 +367,15 @@ const STEPS = {
       'rollback = scripts/rollback/20270409_trending_established_attendees.rollback.sql (count-only function again; no rows changed)',
       'STOP + report: approved_count changed for any gathering; an established-attendee count returned; joining or the attending figure affected; anon able to call it'],
   },
+  // Host familiarity: who the viewer was at ended gatherings with (capped 3), read only as a ranking tie-breaker
+  20270410: { journeys: ['hostFamiliarity', 'appVersionCompatibility'],
+    node: [],
+    edge: [],
+    manual: ['BEFORE deploy: nothing in the app changes (build <= 87 never calls the function); a newer build on a database WITHOUT it ranks exactly as before (missing function = no tie-break, no error shown)',
+      'real phone (new build, two accounts that shared an ended gathering): two otherwise-equal gatherings within the same mile list the familiar host first on Discover; no new reason line, badge or count anywhere; a farther-band or better-fitting gathering still comes first',
+      'rollback = scripts/rollback/20270410_familiar_hosts.rollback.sql (drops the function; nothing was stored)',
+      'STOP + report: another person\'s familiarity readable; an upcoming or in-progress gathering counted; a count above 3; anon able to call it; any trust level, limit or moderation result changed'],
+  },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
