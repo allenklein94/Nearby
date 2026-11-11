@@ -220,7 +220,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
   }
 
   const maxMiles = tierMaxMiles(tier);
-  const approvedCounts = await getApprovedCounts(gatheringIds);
+  const { counts: approvedCounts, trending: trendingById } = await getApprovedCountsAndTrending(gatheringIds);
 
   return filtered
     .map((gathering) => {
@@ -242,6 +242,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
         longitude: gathering.show_on_map ? (dist?.fuzzed_lng ?? null) : null,
         approvedAttendees,
         approvedCount: approvedCounts[gathering.id] ?? null,
+        isTrending: trendingById[gathering.id] === true,
       };
     })
     .filter((gathering) => gathering.is_public || gathering.distanceMiles === null || gathering.distanceMiles <= maxMiles)
@@ -433,8 +434,8 @@ async function attachApprovedAttendees(gatheringList) {
     byGathering[row.gathering_id].push(row);
   }
 
-  const approvedCounts = await getApprovedCounts(gatheringList.map((g) => g.id));
-  return gatheringList.map((g) => ({ ...g, approvedAttendees: byGathering[g.id] ?? [], approvedCount: approvedCounts[g.id] ?? null }));
+  const { counts: approvedCounts, trending: trendingById } = await getApprovedCountsAndTrending(gatheringList.map((g) => g.id));
+  return gatheringList.map((g) => ({ ...g, approvedAttendees: byGathering[g.id] ?? [], approvedCount: approvedCounts[g.id] ?? null, isTrending: trendingById[g.id] === true }));
 }
 
 // "Interested" (I might go): private, non-committal, separate from attendance (gathering_interest). It never counts
@@ -1320,17 +1321,27 @@ export async function getGatheringGroupInsights(gatheringId) {
 // taken from the visible rows can be short; join_gathering counts every
 // approved row. A failed lookup returns {} -- callers then fall back to the
 // visible rows (see utils/gatheringFullness.js `attendeeTotal`).
-export async function getApprovedCounts(gatheringIds) {
+// The same read also carries the server's Trending answer (20270409): `trending` = 5+ established approved attendees, a yes/no
+// only. `trending[id]` is true only when the server said so; a missing column (older database) or a failed read = not trending.
+export async function getApprovedCountsAndTrending(gatheringIds) {
   const ids = [...new Set((gatheringIds ?? []).filter(Boolean))];
-  if (ids.length === 0) return {};
+  if (ids.length === 0) return { counts: {}, trending: {} };
   const { data, error } = await supabase.rpc('get_gathering_approved_counts', { gathering_ids: ids });
   if (error) {
     console.error('get_gathering_approved_counts error', error);
-    return {};
+    return { counts: {}, trending: {} };
   }
   const counts = Object.fromEntries((data ?? []).map((r) => [r.gathering_id, r.approved_count]));
+  const trending = Object.fromEntries((data ?? []).map((r) => [r.gathering_id, r.trending === true]));
   // A gathering with no approved rows is simply absent from the RPC result.
-  return Object.fromEntries(ids.map((id) => [id, counts[id] ?? 0]));
+  return {
+    counts: Object.fromEntries(ids.map((id) => [id, counts[id] ?? 0])),
+    trending: Object.fromEntries(ids.map((id) => [id, trending[id] === true])),
+  };
+}
+
+export async function getApprovedCounts(gatheringIds) {
+  return (await getApprovedCountsAndTrending(gatheringIds)).counts;
 }
 
 // null (unknown) when the lookup fails, never a fabricated 0.

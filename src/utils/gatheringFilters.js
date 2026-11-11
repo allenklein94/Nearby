@@ -4,7 +4,7 @@
 // so the same criteria never rank differently by entry point.
 //   when      = the shared date filter (utils/gatheringDateFilter.js), incl. tonight / morning / afternoon from Home
 //   category  = one canonical tag, or For You = the person's For You categories (they replace each other)
-//   trending  = at least TRENDING_ATTENDANCE_MIN people going (the SAME rule as Discover's Trending Near You section; the old
+//   trending  = the server's Trending answer (isTrendingGathering, 20270409: the SAME rule as Discover's Trending Near You section; the old
 //               feed's extra "top 20 in your stored profile area" cut is gone, so Trending means one measurable thing)
 //   price     = the host's declared price level (free / $ / $$ / $$$); undeclared is left out while a price is chosen
 //   planKind  = the host's declared party_type; undeclared is left out while a kind is chosen
@@ -16,8 +16,7 @@
 // Outdoor / Indoor stays Discover's own environment filter (one rule, constants/environmentMatch.js), not a copy here.
 import { EXPERIENCE_PARTY_TYPE_OPTIONS } from '../constants/businessAttributes';
 import { matchesDateFilter, DATE_OPTIONS } from './gatheringDateFilter';
-import { attendeeTotal } from './gatheringFullness';
-import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import { isTrendingGathering } from '../constants/trending';
 import { quickPickForActivity } from './timeContext';
 
 export const LOCAL_FILTER_MILES = 1;
@@ -89,7 +88,7 @@ export function applyGatheringFilters(list, f, { forYouCategories = [] } = {}) {
   return (list ?? []).filter((g) => {
     if (!g) return false;
     if (filters.forYou ? !forYouCategories.includes(g.interest_tag) : (filters.category && g.interest_tag !== filters.category)) return false;
-    if (filters.trending && attendeeTotal(g) < TRENDING_ATTENDANCE_MIN) return false;
+    if (filters.trending && !isTrendingGathering(g)) return false;
     if (!matchesDateFilter(g.scheduled_at, filters.when)) return false;
     if (filters.term && !matchesTerm(g, filters.term)) return false;
     if (filters.price && g.price_level !== filters.price) return false;

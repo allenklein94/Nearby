@@ -2,7 +2,7 @@ import { tr } from '../i18n/translate';
 import { supabase } from './supabase';
 import { readMyProfile } from './myProfile';
 import { getNearbyMatches } from './proximity';
-import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import { isTrendingGathering } from '../constants/trending';
 import { getNearbyGatherings, getMyInterestedGatherings, getApprovedCounts, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
 import { gatheringEnvironment } from '../constants/environmentMatch';
 import { createWeatherLoader } from './weatherLoader';
@@ -444,7 +444,7 @@ export async function getHomeDashboard() {
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 4);
   let trendingGatherings = nearbyGatherings
-    .filter((g) => attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN)
+    .filter(isTrendingGathering)
     .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
     .slice(0, 3);
 
@@ -587,7 +587,7 @@ export async function getHomeDashboard() {
     const notMine = (g) => !upcomingPlanIds.has(g.id);
     const pool = nearbyGatherings.filter(notMine);
     trendingGatherings = pool
-      .filter((g) => attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN)
+      .filter(isTrendingGathering)
       .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
       .slice(0, 3);
     happeningNow = happeningNow.filter(notMine);

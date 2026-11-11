@@ -2,7 +2,7 @@ import { isWithinRightNowWindow } from './rightNowWindow';
 import { matchesDateFilter, TONIGHT_START_HOUR } from './gatheringDateFilter';
 import { gatheringTimeBadge } from './gatheringTimeLabel';
 import { attendeeTotal, attendingFigure } from './gatheringFullness';
-import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import { isTrendingGathering } from '../constants/trending';
 import { friendsInterestReason } from './friendInterests';
 import { compareTierVectors } from '../constants/signalPriority';
 import { becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
@@ -16,7 +16,7 @@ export function sectionLeadReason(sectionKey, g, { friendInterestByTag = {} } = 
   if (sectionKey === 'friends') return g.interest_tag ? friendsInterestReason(g.interest_tag, friendInterestByTag?.[g.interest_tag]) : null;
   if (sectionKey === 'trending') {
     const n = attendeeTotal(g);
-    return n >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: attendingFigure(g, n) }) : null;
+    return isTrendingGathering(g) ? reasonText('attendingCount', { count: attendingFigure(g, n) }) : null;
   }
   return null;
 }
@@ -51,7 +51,7 @@ export function sectionHeroEyebrowCode(sectionKey, g, now = new Date()) {
 // backed by a real signal and is omitted when empty (no placeholder):
 //   now       = inside the canonical Right Now window (matchesDateFilter 'now')
 //   tonight   = still to start today; titled "Tonight" only when every item carries the TONIGHT badge, else "Today"
-//   trending  = at least TRENDING_ATTENDANCE_MIN approved attendees (the one shared floor)
+//   trending  = the server's Trending answer (isTrendingGathering: 5+ established approved attendees, 20270409)
 //   because   = the person's DECLARED interest with the most nearby gatherings (never behavior-only: item 60)
 //   friends   = a tag accepted friends declared (get_friends_interested_in), worded by friendsInterestReason
 //   weekend   = this weekend
@@ -126,7 +126,7 @@ export function buildDiscoverSections({
     }
   }
 
-  const trendingList = remaining().filter((g) => attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN).map(score)
+  const trendingList = remaining().filter(isTrendingGathering).map(score)
     .sort(compareDiscover);
   const trendingTaken = take(trendingList, SECTION_CAP);
   if (trendingTaken.items.length) sections.push({ key: 'trending', title: '🔥 Trending Near You', ...trendingTaken });

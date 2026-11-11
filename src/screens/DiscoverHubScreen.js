@@ -10,7 +10,7 @@ import { contextHasCuisines, offerInContext, applyCuisine, cuisineChips, cuisine
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import { isTrendingGathering } from '../constants/trending';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import PerkTierLine from '../components/PerkTierLine';
@@ -2094,7 +2094,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       friendGoingReason(g, myFriendIds, myUserId),
       g.matchesYourInterests && g.interest_tag ? becauseYouLikeReason(g.interest_tag) : null,
       friendsInterestReason(g.interest_tag, friendInterestByTag[g.interest_tag]),
-      attendeeCount >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: attendingFigure(g, attendeeCount) }) : null,
+      isTrendingGathering(g) ? reasonText('attendingCount', { count: attendingFigure(g, attendeeCount) }) : null,
       ...(g.fit?.reasons ?? []),
     ].filter(Boolean);
   }
@@ -2224,7 +2224,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   function heroEyebrow(g) {
     // Codes are fixed English; shown as ui.discover.badge.<code> in the person's language.
-    const code = g.matchesYourInterests ? 'PERSONALIZED' : attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN ? 'TRENDING' : (gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED');
+    const code = g.matchesYourInterests ? 'PERSONALIZED' : isTrendingGathering(g) ? 'TRENDING' : (gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED');
     return t(`ui.discover.badge.${code.replace(/ /g, '_')}`);
   }
 
