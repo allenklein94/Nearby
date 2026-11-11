@@ -9,6 +9,9 @@
 //   approving PO works; removing OK works.
 //   Capacity (g3, 3 incl. host = 2 guests): HB's seat still counts, the next joiner is approved, the one after waitlisted.
 //   Invitations and cancellation work; familiarity (20270410) still leaves the blocked person out and the familiar one in.
+//   Waitlist promotion never moves up someone blocked either way with the host (they keep their place): g4 (open, 1 guest)
+//   promotes W1 past WB + HB when X leaves; raising to "No limit" seats nobody blocked; g5 (approval) moves W2, not HB, to
+//   pending; no host match is re-created for a blocked person.
 //   Business-hosted gathering: top members and member history leave out a member who blocked the business account.
 //   Every row is still there for the database owner (service / moderation): nothing is deleted or changed by a block.
 // Not covered here: realtime delivery (follows the same policy; no realtime server in the replay), the phone.
@@ -16,7 +19,7 @@ const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, LIFT_GATHERING_
 
 const d = hasToken ? describe : describe.skip;
 
-const PEOPLE = ['v_h', 'v_ok', 'v_hb', 'v_ab', 'v_pb', 'v_wb', 'v_po', 'v_c1', 'v_c2', 'v_friend', 'v_biz', 'v_bm', 'v_bm2'];
+const PEOPLE = ['v_h', 'v_ok', 'v_hb', 'v_ab', 'v_pb', 'v_wb', 'v_po', 'v_c1', 'v_c2', 'v_friend', 'v_biz', 'v_bm', 'v_bm2', 'v_x', 'v_w1', 'v_y', 'v_w2'];
 const LABELS = PEOPLE.map((p) => `when ${p} then '${p.slice(2)}'`).join(' ');
 const who = (col) => `(case ${col} ${LABELS} end)`;
 
@@ -41,7 +44,7 @@ d('journey: a host never reads a blocked person\'s attendance row, either direct
   beforeAll(async () => {
     const log = await runJourney(`
       ${actorDeclares(PEOPLE)}
-      g1 uuid; g2 uuid; g3 uuid; g_old uuid; gb uuid; v_partner uuid := gen_random_uuid(); v_out jsonb; v_n int; v_id uuid;`, `
+      g1 uuid; g2 uuid; g3 uuid; g4 uuid; g5 uuid; g_old uuid; gb uuid; v_partner uuid := gen_random_uuid(); v_out jsonb; v_n int; v_id uuid;`, `
   ${actorsSql({ people: PEOPLE, friends: [['v_h', 'v_friend']], business: { owner: 'v_biz', partner: 'v_partner' } })}
   ${LIFT_GATHERING_CREATION_LIMIT}
   ${gathering('g1', 'v_h')}
@@ -99,6 +102,25 @@ d('journey: a host never reads a blocked person\'s attendance row, either direct
   ${as('cap_c2', 'v_c2', `select j->'status' into v_out from join_gathering(g3) j`, 'v_out')}
   ${as('cap_host_sees', 'v_h', 'v_n := 0', labels('gi.gathering_id = g3'))}
   ${as('cap_count', 'v_h', 'select c.approved_count into v_n from get_gathering_approved_counts(array[g3]) c', 'v_n')}
+
+  -- waitlist promotion (owner: a block never ADDS access)
+  ${gathering('g4', 'v_h', '2')}
+  ${gathering('g5', 'v_h', '2')}
+  update gatherings set requires_approval = true where id = g5;
+  insert into gathering_interest (gathering_id, user_id, status, created_at) values
+    (g4, v_x, 'approved', now() - interval '5 min'), (g4, v_wb, 'waitlisted', now() - interval '4 min'),
+    (g4, v_hb, 'waitlisted', now() - interval '3 min'), (g4, v_w1, 'waitlisted', now() - interval '2 min'),
+    (g5, v_y, 'approved', now() - interval '5 min'), (g5, v_hb, 'waitlisted', now() - interval '4 min'),
+    (g5, v_w2, 'waitlisted', now() - interval '3 min');
+  ${as('leave_x', 'v_x', 'perform leave_gathering(g4)')}
+  ${as('leave_y', 'v_y', 'perform leave_gathering(g5)')}
+  select jsonb_build_object('g4', (select jsonb_object_agg(${who('user_id')}, status) from gathering_interest where gathering_id = g4),
+    'g5', (select jsonb_object_agg(${who('user_id')}, status) from gathering_interest where gathering_id = g5)) into v_out;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'after_leave', 'ok', true, 'data', v_out));
+  ${as('no_limit', 'v_h', `select c->'promoted' into v_out from set_gathering_capacity(g4, null) c`, 'v_out')}
+  select jsonb_build_object('g4', (select jsonb_object_agg(${who('user_id')}, status) from gathering_interest where gathering_id = g4),
+    'host_matches', (select count(*) from matches where (user_a = v_h or user_b = v_h) and (user_a in (v_wb, v_hb) or user_b in (v_wb, v_hb)))) into v_out;
+  log := log || jsonb_build_array(jsonb_build_object('step', 'after_no_limit', 'ok', true, 'data', v_out));
 
   -- invitations and cancellation
   ${as('invite_friend', 'v_h', 'perform invite_friend_to_gathering(g1, v_friend)')}
@@ -165,6 +187,14 @@ d('journey: a host never reads a blocked person\'s attendance row, either direct
     expect(s.remove_ok.data).toBe(true);
     expect(s.invite_friend.data).toBe('ok');
     expect(s.cancel_g1.data).toBe('ok');
+  });
+
+  test('a block never adds access: waitlist promotion skips a blocked person both ways, who keeps their place', () => {
+    expect(s.leave_x.data).toBe('ok');
+    expect(s.leave_y.data).toBe('ok');
+    expect(s.after_leave.data).toEqual({ g4: { wb: 'waitlisted', hb: 'waitlisted', w1: 'approved' }, g5: { hb: 'waitlisted', w2: 'pending' } });
+    expect(s.no_limit.data).toBe(0);
+    expect(s.after_no_limit.data).toEqual({ g4: { wb: 'waitlisted', hb: 'waitlisted', w1: 'approved' }, host_matches: 0 });
   });
 
   test('familiarity (20270410) is unchanged: the familiar attendee in, the blocked host out (both sides)', () => {

@@ -114,9 +114,13 @@ describe('host attendance reads respect blocks (migration 20270411)', () => {
     expect(sql).toMatch(/get_business_top_members[\s\S]*and not public\.viewer_blocked_either_way\(gi\.user_id\)/);
     expect(sql).toMatch(/get_business_member_gathering_history[\s\S]*if public\.viewer_blocked_either_way\(member_id_param\) then\s+return;/);
   });
-  test('no row is written, deleted or regranted; no inline blocks read; no other policy touched', () => {
-    expect(sql).not.toMatch(/\b(delete from|update public\.gathering_interest|insert into|grant |revoke |drop policy|create policy)\b/i);
-    expect(sql).not.toMatch(/from blocks/i);
-    expect(sql.match(/alter policy/gi)).toHaveLength(1);
+  test('waitlist promotion skips anyone blocked either way with the host', () => {
+    expect(sql).toMatch(/_promote_from_waitlist[\s\S]*status = 'waitlisted'\s+and not exists \(select 1 from blocks b\s+where \(b\.blocker_id = v_host and b\.blocked_id = gi\.user_id\)\s+or \(b\.blocker_id = gi\.user_id and b\.blocked_id = v_host\)\)/);
+  });
+  test('outside the function bodies: no row is written, deleted or regranted; one policy changed, without an inline blocks read', () => {
+    const top = sql.replace(/\$function\$[\s\S]*?\$function\$/g, '');
+    expect(top).not.toMatch(/\b(delete from|update |insert into|grant |revoke |drop policy|create policy)\b/i);
+    expect(top).not.toMatch(/from blocks/i);
+    expect(top.match(/alter policy/gi)).toHaveLength(1);
   });
 });

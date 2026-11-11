@@ -102,7 +102,7 @@ describe('host familiarity: one source, one rule', () => {
     };
     walk('src');
     expect(readers.sort()).toEqual([
-      'src/hooks/usePersonalization.js', 'src/journeys/hostFamiliarity.journey.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/HomeScreen.js',
+      'src/hooks/usePersonalization.js', 'src/journeys/blockedAttendeePrivacy.journey.js', 'src/journeys/hostFamiliarity.journey.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/HomeScreen.js',
       'src/services/familiarHosts.js', 'src/services/gatherings.js', 'src/services/homeDashboard.js', 'src/services/homeRecommendations.js',
       'src/services/intentResolver.js', 'src/utils/discoverSections.js', 'src/utils/homeAttention.js', 'src/utils/hostFamiliarity.js',
     ].sort());
