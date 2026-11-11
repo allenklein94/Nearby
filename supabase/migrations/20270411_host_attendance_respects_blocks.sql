@@ -9,10 +9,7 @@
 -- This migration (the smallest server-side fix):
 --  1. Host SELECT branch: a host reads rows on their own gathering only when NOT viewer_blocked_either_way(user_id). The
 --     person's own row stays readable to themselves. Realtime postgres_changes follows the same policy.
---  2. Direct INSERT (the API path the app never uses; join_gathering already refuses a blocked pair): the pending row may
---     only be inserted when the person and the gathering's host are not blocked either way. Before this, a blocked person
---     could insert a pending row directly and the host got "{Name} asked to join" by push.
---  3. A business that hosts gatherings: get_business_top_members (names + counts) and get_business_member_gathering_history
+--  2. A business that hosts gatherings: get_business_top_members (names + counts) and get_business_member_gathering_history
 --     (one member's attendance at that business's gatherings) leave out anyone blocked either way with the business account
 --     reading them (the same "host" reading attendance, through a SECURITY DEFINER function).
 --
@@ -23,6 +20,9 @@
 --    (get_gathering_approved_counts), aggregate insights with their floors, check-in, reports and admin case capture
 --    (_capture_report_object), host_remove_gathering_attendee, get_my_familiar_hosts (already block-filtered).
 --  - Service role and admin/moderation paths bypass RLS and see every row.
+--  - Inserting a row is unchanged: a blocked pair is already refused both ways, whatever the path (join_gathering's own
+--    check; a direct insert by item 147's trigger own_join_needs_visibility, since the gathering isn't visible to them),
+--    so no "{Name} asked to join" push can reach the host from someone blocked either way.
 --  - The approved-attendee policy for members and friends (20270138/20270172) already respects blocks.
 -- Trade-offs (reported to the owner): the host cannot see, decline or remove a blocked person's request or attendance from
 -- the app (already true in the app today: its host list hid them); that person's seat still counts toward capacity; a
@@ -35,19 +35,6 @@ alter policy "Users see own interest or gatherings they host" on public.gatherin
       auth.uid() = (select gatherings.host_id from public.gatherings where gatherings.id = gathering_interest.gathering_id)
       and not public.viewer_blocked_either_way(user_id)
     )
-  );
-
-alter policy "Users can express interest, respecting women-only gatherings" on public.gathering_interest
-  with check (
-    auth.uid() = user_id
-    and status = 'pending'
-    and not exists (
-      select 1 from gatherings g
-      where g.id = gathering_interest.gathering_id and g.women_only = true
-        and not exists (select 1 from profiles p where p.id = auth.uid()
-                          and lower(coalesce(p.gender, '')) = any (array['female', 'woman'])))
-    and exists (select 1 from gatherings g where g.id = gathering_interest.gathering_id and g.scheduled_at >= now())
-    and not public.viewer_blocked_either_way((select g.host_id from public.gatherings g where g.id = gathering_interest.gathering_id))
   );
 
 create or replace function public.get_business_top_members(partner_id_param uuid)

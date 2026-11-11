@@ -64,8 +64,7 @@ d('journey: host familiarity from ended shared gatherings (20270410)', () => {
     'not_readable', (select count(*) from get_my_familiar_hosts() f
        where f.person_id not in (select g.host_id from gatherings g where g.host_id <> v_viewer and exists (select 1 from gathering_interest gi where gi.gathering_id = g.id and gi.user_id = v_viewer and gi.status = 'approved'))
          and not exists (select 1 from gathering_interest gi where gi.user_id = f.person_id and gi.status = 'approved')),
-    -- existing table behaviour (20270172's host policy): a host reads every row on their own gathering, a blocker's too;
-    -- the function is stricter and leaves the blocker out
+    -- the table (host policy, since 20270411) and the function both leave the blocker out
     'host_reads_blocker_row', exists (select 1 from gathering_interest gi where gi.user_id = v_blocked),
     'blocker_returned', exists (select 1 from get_my_familiar_hosts() f where f.person_id = v_blocked)) into v_out;
   reset role;
@@ -122,7 +121,7 @@ d('journey: host familiarity from ended shared gatherings (20270410)', () => {
   });
 
   it('privacy: returns only people whose attendance the viewer can already read (or the host of a gathering they attended); a blocker is never returned', () => {
-    expect(s.subset.data).toEqual({ returned: 5, not_readable: 0, host_reads_blocker_row: true, blocker_returned: false });
+    expect(s.subset.data).toEqual({ returned: 5, not_readable: 0, host_reads_blocker_row: false, blocker_returned: false });
   });
 
   it('signed-in only: signed out refused, no anon or public EXECUTE; read-only definer function', () => {

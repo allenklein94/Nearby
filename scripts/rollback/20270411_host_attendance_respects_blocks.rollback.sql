@@ -1,20 +1,8 @@
--- Rollback for 20270411: restores the host read branch, the direct-insert check and the two business functions exactly as
+-- Rollback for 20270411: restores the host read branch and the two business functions exactly as
 -- before (the host again reads every row on their own gathering, a blocked person's too). No row was changed by 0411, so
 -- nothing else to undo.
 alter policy "Users see own interest or gatherings they host" on public.gathering_interest
   using ((auth.uid() = user_id) or (auth.uid() = (select gatherings.host_id from gatherings where gatherings.id = gathering_interest.gathering_id)));
-
-alter policy "Users can express interest, respecting women-only gatherings" on public.gathering_interest
-  with check (
-    auth.uid() = user_id
-    and status = 'pending'
-    and not exists (
-      select 1 from gatherings g
-      where g.id = gathering_interest.gathering_id and g.women_only = true
-        and not exists (select 1 from profiles p where p.id = auth.uid()
-                          and lower(coalesce(p.gender, '')) = any (array['female', 'woman'])))
-    and exists (select 1 from gatherings g where g.id = gathering_interest.gathering_id and g.scheduled_at >= now())
-  );
 
 create or replace function public.get_business_top_members(partner_id_param uuid)
  returns table(user_id uuid, display_name text, gatherings_attended bigint)
