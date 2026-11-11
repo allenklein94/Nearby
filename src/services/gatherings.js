@@ -22,6 +22,7 @@ import { cleanFeatures } from '../utils/gatheringPractical';
 import { cleanAgeRange } from '../utils/suitedAges';
 import { isValidCoordinate } from '../utils/planLogisticsActions';
 import { resetExperienceFeedbackCache } from './experienceFeedback';
+import { compareFamiliarity } from '../utils/hostFamiliarity';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -1234,14 +1235,16 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
 // "Happening today" (3 + 2) alone reach 5 but never make a Best Pick. Score, threshold, reasons and ranking are unchanged.
 export const BEST_PICK_MIN_SCORE = 5;
 export const BEST_PICK_PERSONAL_CODES = Object.freeze(['interest_match', 'friends_attending']);
-export function pickBestGathering(pool, { friendIds = null, myUserId = null } = {}) {
+export function pickBestGathering(pool, { friendIds = null, myUserId = null, familiarHosts = null } = {}) {
   const friends = friendIds instanceof Set ? friendIds : new Set(friendIds ?? []);
   const scored = (pool ?? []).map((g) => {
     const friendAttendeeCount = (g?.approvedAttendees ?? []).filter((a) => a?.user_id && a.user_id !== myUserId && friends.has(a.user_id)).length;
     return { gathering: g, ...getGatheringFitReasons(g, { friendAttendeeCount }) };
   }).filter((x) => x.score >= BEST_PICK_MIN_SCORE)
     .filter((x) => x.parts.some((p) => BEST_PICK_PERSONAL_CODES.includes(p.code)) || (!!x.gathering?.host_id && x.gathering.host_id !== myUserId && friends.has(x.gathering.host_id)));
-  const top = scored.sort(compareRanked)[0];
+  // Host familiarity (owner, 2026-11-11, utils/hostFamiliarity.js): only between picks that tie on the whole ladder; it never
+  // makes a gathering eligible (score + personal reason above are unchanged).
+  const top = scored.sort((a, b) => compareRanked(a, b) || compareFamiliarity(a, b, familiarHosts, (x) => x.gathering?.host_id))[0];
   return top ? { ...top.gathering, reasons: top.reasons } : null;
 }
 

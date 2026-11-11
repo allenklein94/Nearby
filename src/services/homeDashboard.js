@@ -21,6 +21,7 @@ import { isGatheringPast } from '../utils/objectState';
 import { attendeeTotal, attendingFigure } from '../utils/gatheringFullness';
 import { SIGNAL_TEXT } from '../utils/homeSignalMerge';
 import { intentResultDestination } from '../utils/recommendationContext';
+import { getMyFamiliarHosts } from './familiarHosts';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -618,7 +619,9 @@ export async function getHomeDashboard() {
 
   const friendIds = (myFriendships ?? []).map((f) => (f.user_a === myId ? f.user_b : f.user_a));
   // Best Pick by the one ranking ladder (services/gatherings.js pickBestGathering): friends attending count, then room, time, interest.
-  bestPick = pickBestGathering(bestPickPool, { friendIds, myUserId: myId });
+  // Host familiarity (20270410, utils/hostFamiliarity.js): breaks a tie on the whole ladder only; a failure = no tie-break.
+  const familiarHosts = await getMyFamiliarHosts().catch(() => null);
+  bestPick = pickBestGathering(bestPickPool, { friendIds, myUserId: myId, familiarHosts });
 
   let friendsActivity = [];
   let friendsActivityMore = [];

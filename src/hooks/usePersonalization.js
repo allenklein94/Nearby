@@ -8,13 +8,15 @@ import { computeAccountMaturity } from '../constants/signalSourceMaturity';
 import { getMyLearnedProximity } from '../services/learnedProximity';
 import { getMyExperienceFeedback } from '../services/experienceFeedback';
 import { EMPTY_EXPERIENCE_FEEDBACK } from '../utils/experienceFeedback';
+import { getMyFamiliarHosts } from '../services/familiarHosts';
+import { EMPTY_FAMILIAR_HOSTS } from '../utils/hostFamiliarity';
 
 // Everything blended ranking needs, once: declared interests, the learned behavior weights (get_my_behavior_categories only:
 // item 158 removed a second, all-time join count that bypassed the item-157 evidence bar and Forget/Clear, and counted each
 // join twice since joins are already learned events), and the caller's
-// real account maturity, and (item 35) the person's latest "How was it?" word (utils/experienceFeedback.js). Neutral until loaded (no declared, no behavior, maturity null = unchanged behavior).
+// real account maturity, and (item 35) the person's latest "How was it?" word (utils/experienceFeedback.js), and (20270410) host familiarity (utils/hostFamiliarity.js, a tie-breaker only). Neutral until loaded (no declared, no behavior, maturity null = unchanged behavior).
 export default function usePersonalization() {
-  const [state, setState] = useState({ declared: [], declaredGroups: [], behavior: {}, maturity: null, socialComfort: null, learnedProximity: {}, feedback: EMPTY_EXPERIENCE_FEEDBACK });
+  const [state, setState] = useState({ declared: [], declaredGroups: [], behavior: {}, maturity: null, socialComfort: null, learnedProximity: {}, feedback: EMPTY_EXPERIENCE_FEEDBACK, familiarHosts: EMPTY_FAMILIAR_HOSTS });
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -22,16 +24,17 @@ export default function usePersonalization() {
         const { data: sessionData } = await supabase.auth.getSession();
         const uid = sessionData?.session?.user?.id;
         if (!uid) return;
-        const [{ data: profile }, events, learnedProximity, feedback] = await Promise.all([
+        const [{ data: profile }, events, learnedProximity, feedback, familiarHosts] = await Promise.all([
           readMyProfile('interests, interest_groups, created_at, social_comfort_level'),
           getMyBehaviorCategories().catch(() => []),
           getMyLearnedProximity().catch(() => ({})), // item 137: usual trip per category (nothing learned = {})
           getMyExperienceFeedback().catch(() => EMPTY_EXPERIENCE_FEEDBACK), // item 35: latest "How was it?" word, both ways
+          getMyFamiliarHosts().catch(() => EMPTY_FAMILIAR_HOSTS), // 20270410: hosts really met at ended gatherings (tie-break only)
         ]);
         const behavior = behaviorWeightMap(events);
         const ageDays = profile?.created_at ? (Date.now() - new Date(profile.created_at).getTime()) / 86400000 : null;
         const maturity = computeAccountMaturity({ accountAgeDays: ageDays, hasBehavioralHistory: Object.keys(behavior).length > 0 });
-        if (!cancelled) setState({ declared: canonicalizeInterests(profile?.interests), declaredGroups: profile?.interest_groups ?? [], behavior, maturity, socialComfort: profile?.social_comfort_level ?? null, learnedProximity, feedback });
+        if (!cancelled) setState({ declared: canonicalizeInterests(profile?.interests), declaredGroups: profile?.interest_groups ?? [], behavior, maturity, socialComfort: profile?.social_comfort_level ?? null, learnedProximity, feedback, familiarHosts });
       } catch {
         // supplementary -- ranking stays neutral
       }

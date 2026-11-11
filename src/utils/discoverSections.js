@@ -5,6 +5,7 @@ import { attendeeTotal, attendingFigure } from './gatheringFullness';
 import { isTrendingGathering } from '../constants/trending';
 import { friendsInterestReason } from './friendInterests';
 import { compareTierVectors } from '../constants/signalPriority';
+import { distanceBand } from './hostFamiliarity';
 import { becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
 
 // The reason a section itself stands for (owner, 2026-10-04): it leads the card's two shown reasons in that section.
@@ -62,11 +63,15 @@ export const SECTION_CAP = 4;
 
 const byDistance = (a, b) => (a.distanceMiles ?? Infinity) - (b.distanceMiles ?? Infinity);
 // The one in-section order (constants/signalPriority.js): the tier vector when the screen supplies one, then nearest.
+// Host familiarity (owner, 2026-11-11, utils/hostFamiliarity.js): a tie-breaker only, inside the same one-mile distance band, so a
+// familiar host never puts a farther gathering ahead of a nearer one across bands. `fit.familiarity` is set by the screen's
+// scoreGathering (0 when unknown = exactly the old nearest-first order).
+const byFamiliarityInBand = (a, b) => (distanceBand(a.distanceMiles) - distanceBand(b.distanceMiles)) || ((b.fit?.familiarity ?? 0) - (a.fit?.familiarity ?? 0));
 export function compareDiscover(a, b) {
   if (Array.isArray(a?.fit?.rankVector) && Array.isArray(b?.fit?.rankVector)) {
-    return compareTierVectors(a.fit.rankVector, b.fit.rankVector) || byDistance(a, b);
+    return compareTierVectors(a.fit.rankVector, b.fit.rankVector) || byFamiliarityInBand(a, b) || byDistance(a, b);
   }
-  return (b.fit?.score ?? 0) - (a.fit?.score ?? 0) || byDistance(a, b);
+  return (b.fit?.score ?? 0) - (a.fit?.score ?? 0) || byFamiliarityInBand(a, b) || byDistance(a, b);
 }
 
 function pickTag(tags, remaining) {

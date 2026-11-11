@@ -34,6 +34,7 @@ import { REASON_TEXT, becauseYouLikeReason, reasonText } from '../constants/reco
 // behavior lever.
 import { SIGNAL_SOURCES, computeAccountMaturity, weightSignal } from '../constants/signalSourceMaturity';
 import { feedbackFor, feedbackDelta } from '../utils/experienceFeedback';
+import { compareFamiliarity } from '../utils/hostFamiliarity';
 
 // Item 131 audit: this is the CANDIDATE pool, not what Home shows. Home's attention list (utils/homeAttention.js) picks and
 // caps at MAX_HOME_ATTENTION by the shared tier ladder; a cut here at 5 let this file's point total decide which candidates the
@@ -216,6 +217,7 @@ export function buildHomeRecommendations({
   interestGroups = [],
   accountAgeDays = null,
   hasBehavioralHistory = false,
+  familiarHosts = null,
 } = {}) {
   const candidates = [];
   const maturity = computeAccountMaturity({ accountAgeDays, hasBehavioralHistory });
@@ -234,5 +236,8 @@ export function buildHomeRecommendations({
     candidates.push({ type: 'perk', id: offer.id, title: offer.title, reasons, score, personal, data: offer });
   }
 
-  return candidates.sort((a, b) => b.score - a.score).slice(0, MAX_HOME_RECOMMENDATIONS);
+  // Host familiarity (owner, 2026-11-11, utils/hostFamiliarity.js): breaks an exact score tie only; never a score point or reason.
+  return candidates
+    .sort((a, b) => b.score - a.score || compareFamiliarity(a, b, familiarHosts, (c) => (c.type === 'gathering' ? c.data?.host_id : null)))
+    .slice(0, MAX_HOME_RECOMMENDATIONS);
 }

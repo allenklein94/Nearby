@@ -33,6 +33,8 @@ import { getHomeDashboard, getSocialForecast, getContinueYourCommunities, getUnl
 import { getMostRecentUnratedGathering, getMyGatheringsNeedingVenue, getMyGatheringsWithOutstandingRsvps, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { getMyExperienceFeedback } from '../services/experienceFeedback';
 import { EMPTY_EXPERIENCE_FEEDBACK } from '../utils/experienceFeedback';
+import { getMyFamiliarHosts } from '../services/familiarHosts';
+import { EMPTY_FAMILIAR_HOSTS } from '../utils/hostFamiliarity';
 import { computeAccountMaturity } from '../constants/signalSourceMaturity';
 import { classifyCreateRequest, routeClassifiedIntentToCreation } from '../services/createAssistant';
 import { askBusinessFromAsk } from '../services/askToBusiness';
@@ -387,6 +389,7 @@ export default function HomeScreen({ navigation }) {
   // getActiveOffers() call, scored on the shared intent-resolver axis.
   const [homeRecommendations, setHomeRecommendations] = useState([]);
   const [experienceFeedback, setExperienceFeedback] = useState(EMPTY_EXPERIENCE_FEEDBACK); // item 35
+  const [familiarHosts, setFamiliarHosts] = useState(EMPTY_FAMILIAR_HOSTS); // 20270410: tie-break only
   const [experienceMaturity, setExperienceMaturity] = useState(null);
   // Idea "202" follow-up: a re-render at the real noon / 6 PM / midnight change, so the greeting, subtitle and quick picks
   // below (all read at render from getTimePeriod / getGreeting) never stay on the previous period while Home is open.
@@ -500,6 +503,7 @@ export default function HomeScreen({ navigation }) {
     soon: (dashboard?.happeningNow ?? []).filter((g) => !shownInMergeIds.has(g.id)),
     feedback: experienceFeedback, // item 35: loved ranks up, Not for me ranks down (personal-interest tier)
     maturity: experienceMaturity, // scaled down for a new account, like every feedback weight
+    familiarHosts, // 20270410: host familiarity breaks a tie on the whole ladder only
   });
   // Item 40: the ONE card (Best Pick, then Picked For You, in display order) where a nearby friend (item 39) and you both
   // declared its interest says "You + {Name} might like this". Explains only; nothing reorders on it.
@@ -1004,6 +1008,9 @@ export default function HomeScreen({ navigation }) {
         // Supplementary, non-fatal: a failure = no feedback (ranking unchanged).
         const feedback = await getMyExperienceFeedback().catch(() => EMPTY_EXPERIENCE_FEEDBACK);
         setExperienceFeedback(feedback);
+        // 20270410: hosts really met at ended gatherings, a tie-breaker only (utils/hostFamiliarity.js); a failure = none.
+        const familiarHosts = await getMyFamiliarHosts().catch(() => EMPTY_FAMILIAR_HOSTS);
+        setFamiliarHosts(familiarHosts);
         // Phase J (CLAUDE.md) -- both real, zero-new-query: accountAgeDays
         // from profile.created_at (this same load() call's own already-
         // fetched profile row); hasBehavioralHistory from
@@ -1036,6 +1043,7 @@ export default function HomeScreen({ navigation }) {
             interestGroups: profile?.interest_groups ?? [],
             accountAgeDays,
             hasBehavioralHistory,
+            familiarHosts,
           })
         );
       } catch (e) {

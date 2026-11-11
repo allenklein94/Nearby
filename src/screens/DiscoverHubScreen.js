@@ -21,6 +21,7 @@ import { askBusinessesFits } from '../utils/placesToGo';
 import { learnedProximityFor } from '../utils/learnedProximity';
 import { behaviorNudge, broadGroupNudge, relatedHobbyNudge, forYouBlend, COMFORT_POINTS } from '../constants/blendedRanking';
 import { feedbackFor, feedbackDelta } from '../utils/experienceFeedback';
+import { familiarityOf } from '../utils/hostFamiliarity';
 import { comfortFits } from '../constants/socialComfort';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
@@ -1283,6 +1284,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
       // item 137: this person's usual trip for the gathering's category (rank-only, weakest tier; no reason line)
       { tier: SIGNAL_TIERS.discovery, delta: learnedProximityFor(personalization.learnedProximity, g.interest_tag, g.distanceMiles) },
     ]);
+    // Host familiarity (owner, 2026-11-11): a tie-breaker in compareDiscover only, never a reason or a score point.
+    fit.familiarity = familiarityOf(g.host_id, personalization.familiarHosts);
     return { ...g, fit };
   }
 
