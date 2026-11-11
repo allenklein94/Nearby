@@ -91,7 +91,7 @@ describe('Best Pick follows the one ranking ladder', () => {
 
   it('Home picks through pickBestGathering only, after its own plans are excluded and friends are known', () => {
     const src = fs.readFileSync(path.join(__dirname, 'homeDashboard.js'), 'utf8');
-    expect(src).toMatch(/bestPick = pickBestGathering\(bestPickPool, \{ friendIds, myUserId: myId \}\)/);
+    expect(src).toMatch(/bestPick = pickBestGathering\(bestPickPool, \{ friendIds, myUserId: myId, familiarHosts \}\)/); // + 20270410 tie-break
     expect(src).not.toMatch(/getGatheringFitReasons/);
   });
 });
