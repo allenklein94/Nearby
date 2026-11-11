@@ -22,7 +22,7 @@ describe('Discover contextual sections (item 91)', () => {
     const s = run([
       g('now', { scheduled_at: at(20) }),
       g('tonight', { scheduled_at: at(23) }),
-      g('hot', { approvedCount: 9 }),
+      g('hot', { approvedCount: 9, isTrending: true }),
       g('yoga', { interest_tag: 'Yoga' }),
       g('jazz', { interest_tag: 'Jazz' }),
       g('sat', { scheduled_at: at(12, 1), interest_tag: 'Hiking' }),
@@ -33,7 +33,7 @@ describe('Discover contextual sections (item 91)', () => {
     expect(s.find((x) => x.key === 'friends').title).toBe('🤝 Sam and Alex are into Jazz');
   });
   it('a gathering never appears twice, and excluded ids never appear', () => {
-    const list = [g('a', { scheduled_at: at(22), approvedCount: 9 }), g('b', { approvedCount: 9 }), g('c')];
+    const list = [g('a', { scheduled_at: at(22), approvedCount: 9, isTrending: true }), g('b', { approvedCount: 9, isTrending: true }), g('c')];
     const s = run(list, { declared: ['Coffee'], excludeIds: new Set(['c']) });
     const all = ids(s);
     expect(new Set(all).size).toBe(all.length);
@@ -46,9 +46,12 @@ describe('Discover contextual sections (item 91)', () => {
     expect(run([])).toEqual([]);
     expect(keys(run([g('x')]))).toEqual([]); // no time window, no attendance, no declared, no friends
   });
-  it('Trending needs the shared attendance floor', () => {
+  it('Trending is the server answer (20270409), never the count alone', () => {
     expect(keys(run([g('x', { approvedCount: 4 })]))).not.toContain('trending');
-    expect(keys(run([g('x', { approvedCount: 5 })]))).toContain('trending');
+    expect(keys(run([g('x', { approvedCount: 5, isTrending: true })]))).toContain('trending');
+    // nine joined, all new accounts: the server says no, so no Trending section; a missing answer is no too
+    expect(keys(run([g('x', { approvedCount: 9, isTrending: false })]))).not.toContain('trending');
+    expect(keys(run([g('x', { approvedCount: 9 })]))).not.toContain('trending');
   });
   it('Because you like only uses declared interests; picks the one with the most nearby', () => {
     const s = run([g('1', { interest_tag: 'Yoga' }), g('2', { interest_tag: 'Tennis' }), g('3', { interest_tag: 'Tennis' })], { declared: ['Yoga', 'Tennis'] });
@@ -67,7 +70,7 @@ describe('Discover contextual sections (item 91)', () => {
     expect(s[0].title).toBe('🌅 Today');
   });
   it('caps each section and reports more', () => {
-    const many = Array.from({ length: SECTION_CAP + 2 }, (_, i) => g(`t${i}`, { approvedCount: 9 }));
+    const many = Array.from({ length: SECTION_CAP + 2 }, (_, i) => g(`t${i}`, { approvedCount: 9, isTrending: true }));
     const t = run(many).find((x) => x.key === 'trending');
     expect(t.items).toHaveLength(SECTION_CAP);
     expect(t.hasMore).toBe(true);
@@ -83,7 +86,7 @@ describe('Discover contextual sections (item 91)', () => {
   });
 
   it('a gathering that qualifies for every section lands only in the first (Happening Now)', () => {
-    const s = run([g('all', { scheduled_at: at(20), approvedCount: 9, interest_tag: 'Jazz' })],
+    const s = run([g('all', { scheduled_at: at(20), approvedCount: 9, isTrending: true, interest_tag: 'Jazz' })],
       { declared: ['Jazz'], friendInterestByTag: { Jazz: { friend_count: 3, sample_names: [] } } });
     expect(keys(s)).toEqual(['now']);
   });
@@ -93,7 +96,7 @@ describe('Discover contextual sections (item 91)', () => {
     expect(today.title).toBe('🌅 Today');
   });
   it('Trending reads the server attendee count, so no hidden identities are needed', () => {
-    const s = run([g('x', { approvedCount: 6, attendees: [{ user_id: 'friend' }] })]);
+    const s = run([g('x', { approvedCount: 6, isTrending: true, attendees: [{ user_id: 'friend' }] })]);
     expect(keys(s)).toEqual(['trending']);
   });
   it('Because you like has no behavior input: an undeclared tag never gets the section', () => {

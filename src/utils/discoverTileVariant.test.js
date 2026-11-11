@@ -33,8 +33,8 @@ function sample() {
       g('now', { scheduled_at: at(20) }),
       g('tonight1', { scheduled_at: at(22) }),
       g('tonight2', { scheduled_at: at(23) }),
-      g('hot1', { approvedCount: 12, interest_tag: 'Live Music' }),
-      g('hot2', { approvedCount: 9, interest_tag: 'Live Music' }),
+      g('hot1', { approvedCount: 12, isTrending: true, interest_tag: 'Live Music' }),
+      g('hot2', { approvedCount: 9, isTrending: true, interest_tag: 'Live Music' }),
       g('yoga1', { interest_tag: 'Yoga' }),
       g('yoga2', { interest_tag: 'Yoga' }),
       g('jazz', { interest_tag: 'Jazz' }),
@@ -105,7 +105,7 @@ describe('hero reasons and actions stay real', () => {
   });
 
   it('a Trending hero leads with the real attendance count (host included: 12 joined + host = 13)', () => {
-    const item = g('hot1', { approvedCount: 12 });
+    const item = g('hot1', { approvedCount: 12, isTrending: true });
     expect(sectionLeadReason('trending', item)).toBe(reasonText('attendingCount', { count: 13 }));
   });
 

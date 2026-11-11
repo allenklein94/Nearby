@@ -36,7 +36,7 @@ describe('strongestReasons with a section lead', () => {
 });
 
 describe('sectionLeadReason', () => {
-  const g = { id: 'g1', interest_tag: 'Coffee', approvedCount: 12 };
+  const g = { id: 'g1', interest_tag: 'Coffee', approvedCount: 12, isTrending: true };
   it('each reason-section names its own reason, built like the card reasons', () => {
     expect(sectionLeadReason('because', g)).toBe(because);
     expect(sectionLeadReason('trending', g)).toBe(attending);
@@ -44,7 +44,9 @@ describe('sectionLeadReason', () => {
   });
   it('timing sections have none (the when line carries them); below the trending floor = none', () => {
     for (const k of ['now', 'tonight', 'weekend', null]) expect(sectionLeadReason(k, g)).toBeNull();
-    expect(sectionLeadReason('trending', { ...g, approvedCount: 2 })).toBeNull();
+    expect(sectionLeadReason('trending', { ...g, approvedCount: 2, isTrending: false })).toBeNull();
+    // 20270409: twelve joined but the server did not say Trending (new accounts) = no Trending reason
+    expect(sectionLeadReason('trending', { ...g, isTrending: undefined })).toBeNull();
   });
 });
 
@@ -60,7 +62,7 @@ describe('card model', () => {
 
 describe('once per surface still holds', () => {
   it('a gathering that qualifies for several sections is placed once', () => {
-    const g = { id: 'g1', interest_tag: 'Coffee', approvedCount: 12, scheduled_at: new Date(Date.now() + 5 * 864e5).toISOString() };
+    const g = { id: 'g1', interest_tag: 'Coffee', approvedCount: 12, isTrending: true, scheduled_at: new Date(Date.now() + 5 * 864e5).toISOString() };
     const sections = buildDiscoverSections({ gatherings: [g], declared: ['Coffee'], friendInterestByTag: { Coffee: { friend_count: 2 } } });
     expect(sections.flatMap((s) => s.items).filter((x) => x.id === 'g1')).toHaveLength(1);
   });

@@ -43,7 +43,7 @@ export function attendingFigure(gathering, guests = attendeeTotal(gathering)) {
   return Number.isFinite(guests) ? peopleGoing(gathering, guests) : null;
 }
 // Discover attendee count (owner, 2026-10-25): "N attending" is a FACT, shown on Home and Discover gathering cards alike from
-// this ONE rule, never a reason slot and never gated by Trending (TRENDING_ATTENDANCE_MIN stays a reason/badge threshold only).
+// this ONE rule, never a reason slot and never gated by Trending (Trending is the server's own yes/no, isTrendingGathering, 20270409).
 // Shown only when the guest count was really fetched (server count or the attendee rows); unknown = nothing, never a guess.
 export function attendingCountLabel(gathering, language = 'en') {
   const known = typeof gathering?.approvedCount === 'number' || Array.isArray(gathering?.approvedAttendees);

@@ -78,9 +78,9 @@ describe('Home and Discover read the one rule', () => {
     expect((discover.match(/\{tileFactsLine\(g(, reasonLine)?\)\}/g) || []).length).toBe(3);
     expect(discover).not.toMatch(/\[gatheringSignalLine\(g\), gatheringFullnessLabel\(g\)\]\.filter\(Boolean\)\.join/);
   });
-  test('Trending stays at five guests: the reason and badge keep their own gate', () => {
+  test('Trending keeps its own gate: the reason and badge read the server answer (20270409), never the count', () => {
     expect(TRENDING_ATTENDANCE_MIN).toBe(5);
-    expect(discover).toMatch(/attendeeCount >= TRENDING_ATTENDANCE_MIN \? reasonText\('attendingCount'/);
-    expect(discover).toMatch(/attendeeTotal\(g\) >= TRENDING_ATTENDANCE_MIN \? 'TRENDING'/);
+    expect(discover).toMatch(/isTrendingGathering\(g\) \? reasonText\('attendingCount'/);
+    expect(discover).toMatch(/isTrendingGathering\(g\) \? 'TRENDING'/);
   });
 });

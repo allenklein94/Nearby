@@ -30,7 +30,7 @@ export const SURFACES = {
   },
   trendingNearYou: {
     label: 'Trending',
-    means: 'Things gaining real engagement locally: gatherings with at least TRENDING_ATTENDANCE_MIN (5) approved attendees whose accounts are Established (verified phone + account age, not suspended; the server's yes/no answer, isTrendingGathering, 20270409). The "N attending" count stays every approved attendee. No established attendance, no "trending".',
+    means: 'Things gaining real engagement locally: gatherings with at least TRENDING_ATTENDANCE_MIN (5) approved attendees whose accounts are Established (verified phone + account age, not suspended; the server\'s yes/no answer, isTrendingGathering, 20270409). The "N attending" count stays every approved attendee. No established attendance, no "trending".',
     where: 'Gatherings "Trending" chip, Discover "Trending Near You" section, Home as a reason on a card.',
   },
   thingsToDo: {
