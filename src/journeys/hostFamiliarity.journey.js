@@ -55,6 +55,23 @@ d('journey: host familiarity from ended shared gatherings (20270410)', () => {
   update profiles set suspended_at = now() where id = v_susp;
 
   ${as('v_viewer', 'viewer')}
+  -- privacy: every person returned is already readable by the viewer as an approved attendee row under the real RLS
+  -- (members + friends, blocked either way hidden); the function never reveals participation the table would not
+  perform set_config('request.jwt.claims', json_build_object('sub', v_viewer, 'role', 'authenticated')::text, true);
+  set local role authenticated;
+  select jsonb_build_object(
+    'returned', (select count(*) from get_my_familiar_hosts()),
+    'not_readable', (select count(*) from get_my_familiar_hosts() f
+       where f.person_id not in (select g.host_id from gatherings g where g.host_id <> v_viewer and exists (select 1 from gathering_interest gi where gi.gathering_id = g.id and gi.user_id = v_viewer and gi.status = 'approved'))
+         and not exists (select 1 from gathering_interest gi where gi.user_id = f.person_id and gi.status = 'approved')),
+    -- existing table behaviour (20270172's host policy): a host reads every row on their own gathering, a blocker's too;
+    -- the function is stricter and leaves the blocker out
+    'host_reads_blocker_row', exists (select 1 from gathering_interest gi where gi.user_id = v_blocked),
+    'blocker_returned', exists (select 1 from get_my_familiar_hosts() f where f.person_id = v_blocked)) into v_out;
+  reset role;
+  perform set_config('request.jwt.claims', '', true);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'subset', 'ok', true, 'data', v_out));
+
   ${as('v_guest', 'guest')}
   ${as('v_up', 'upcoming_host')}
 
@@ -102,6 +119,10 @@ d('journey: host familiarity from ended shared gatherings (20270410)', () => {
     // the guest was at the viewer's gathering with v_blocked (that block is between the viewer and v_blocked only) and v_susp (suspended: left out)
     expect(named('guest')).toEqual({ viewer: 1, blocked: 1 });
     expect(named('upcoming_host')).toEqual({});
+  });
+
+  it('privacy: returns only people whose attendance the viewer can already read (or the host of a gathering they attended); a blocker is never returned', () => {
+    expect(s.subset.data).toEqual({ returned: 5, not_readable: 0, host_reads_blocker_row: true, blocker_returned: false });
   });
 
   it('signed-in only: signed out refused, no anon or public EXECUTE; read-only definer function', () => {
