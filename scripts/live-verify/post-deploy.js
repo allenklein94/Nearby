@@ -382,8 +382,10 @@ const STEPS = {
     edge: [],
     manual: ['BEFORE deploy: nothing in the app changes (the host list already hid blocked people client-side, builds 86/87 included); only direct API reads, realtime and the host\'s Activity pending list lose blocked people',
       'real phone (two accounts: one hosts, the other joins then blocks the host): the host no longer sees that person in requests or Who\'s going; the attending count stays the same; the person still sees their own plan; unblocked attendees unchanged',
-      'rollback = scripts/rollback/20270411_host_attendance_respects_blocks.rollback.sql (host reads every row again; no rows were changed)',
-      'STOP + report: a host reads a blocked person\'s row by any query; an attendance or approved count changes; a person loses their own row; service role / moderation reads fewer rows'],
+      'REALTIME (never tested before deploy: no realtime server in the local replay): with the host signed in and subscribed to gathering_interest for their gathering (the app\'s host live-join channel, utils/hostLiveJoins.js), a person who blocked the host and a person the host blocked each join or change status on another device or through the API: the host receives NO event for either; an unblocked join still arrives live (face + count roll)',
+      'waitlist (two accounts + a third): a waitlisted person who blocked the host stays waitlisted when a spot opens; the next unblocked person is seated; nothing for the blocked person changes',
+      'rollback = scripts/rollback/20270411_host_attendance_respects_blocks.rollback.sql (host reads every row again, promotion as before; no rows were changed)',
+      'STOP + report: a host reads a blocked person\'s row by any query or receives a realtime event for it; a blocked waitlisted person is promoted; an attendance or approved count changes; a person loses their own row; service role / moderation reads fewer rows'],
   },
 };
 
