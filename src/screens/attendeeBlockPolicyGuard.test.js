@@ -102,3 +102,21 @@ describe('column-level UPDATE grants match prod (migration 20270144)', () => {
     expect(sql).toMatch(/revoke select on public\.live_tracking_sessions from anon;/);
   });
 });
+
+// 20270411 (owner, 2026-11-11): the host branch now respects blocks both ways too; nothing else about the table changes.
+describe('host attendance reads respect blocks (migration 20270411)', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270411_host_attendance_respects_blocks.sql'), 'utf8').replace(/--.*$/gm, '');
+  test('the host branch requires no block either way; the own-row branch is kept', () => {
+    expect(sql).toMatch(/alter policy "Users see own interest or gatherings they host" on public\.gathering_interest\s+using \(\s+auth\.uid\(\) = user_id\s+or \(/);
+    expect(sql).toMatch(/and not public\.viewer_blocked_either_way\(user_id\)/);
+  });
+  test('the hosting-business member reads are block-filtered', () => {
+    expect(sql).toMatch(/get_business_top_members[\s\S]*and not public\.viewer_blocked_either_way\(gi\.user_id\)/);
+    expect(sql).toMatch(/get_business_member_gathering_history[\s\S]*if public\.viewer_blocked_either_way\(member_id_param\) then\s+return;/);
+  });
+  test('no row is written, deleted or regranted; no inline blocks read; no other policy touched', () => {
+    expect(sql).not.toMatch(/\b(delete from|update public\.gathering_interest|insert into|grant |revoke |drop policy|create policy)\b/i);
+    expect(sql).not.toMatch(/from blocks/i);
+    expect(sql.match(/alter policy/gi)).toHaveLength(1);
+  });
+});
