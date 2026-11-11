@@ -186,7 +186,9 @@ d('journey: coordinated accounts earn no trust, reach or limits from interacting
     expect(data('rule_columns')).toBe('action,max_count,trust_level,window_seconds');
     expect(data('gate_bodies')).toBeNull();
     expect(data('runtime_rule_writers')).toBeNull();
-    const allowed = ['enforce_rate_limit', '_gathering_signal_join', 'admin_get_account_facts']; // limits, a review signal's count, the admin's facts
+    // limits, a review signal's count, the admin's facts, and Trending's yes/no (20270409: counts attendees' OWN level, so friends
+    // earn nothing there either; reviewed 2026-11-11, and an attendee's level still comes only from phone + age + suspension)
+    const allowed = ['enforce_rate_limit', '_gathering_signal_join', 'admin_get_account_facts', 'get_gathering_approved_counts'];
     const readers = data('trust_level_readers') || [];
     expect(readers).toEqual(expect.arrayContaining(['enforce_rate_limit']));
     expect({ readers, unexpected: readers.filter((r) => !allowed.includes(r)) }).toMatchObject({ unexpected: [] });
