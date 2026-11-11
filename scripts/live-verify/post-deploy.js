@@ -357,6 +357,16 @@ const STEPS = {
       'rollback = scripts/rollback/20270408_gathering_feedback_private.rollback.sql (reopens every rating to every signed-in person; no rows changed)',
       'STOP + report: another person\'s rating readable; How was it? refused; the private ranking word empty for someone who has rated'],
   },
+  // Trending = 5+ established approved attendees (server yes/no); the attending count is unchanged
+  20270409: { journeys: ['trendingEstablished', 'coordinatedCredibility', 'gatheringRowPrivacy', 'appVersionCompatibility'],
+    node: [],
+    edge: [],
+    manual: ['BEFORE deploy: nothing in the app breaks (build <= 87 ignores the new column and keeps its own Trending check from the count); the fix only reaches people once a build reading `trending` is released',
+      'a build reading `trending` on a database WITHOUT this migration shows Trending nowhere (missing = not trending): release that build after this deploy, or accept no Trending until it lands',
+      'real phone (new build): a gathering with 5+ established attendees shows Trending in Discover (badge, section, filter) and on Home; one with new accounts shows the attending count and no Trending; joining and inviting unchanged',
+      'rollback = scripts/rollback/20270409_trending_established_attendees.rollback.sql (count-only function again; no rows changed)',
+      'STOP + report: approved_count changed for any gathering; an established-attendee count returned; joining or the attending figure affected; anon able to call it'],
+  },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
