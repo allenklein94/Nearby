@@ -104,7 +104,7 @@ expected (C23 (0)), not a defect.
 
 ## Session A: your own run (the journey, in order)
 
-1. **Get in**: C1 (cold start), C2 (onboarding incl. location), C21 (a) then (b).
+1. **Get in**: C1 (cold start), C2 (onboarding incl. location), C21 (a) then (b). Sign-in watch (owner idea 50, 2026-11-12; record, no new check): did sign-in + onboarding feel simple and welcoming, and did anyone show confusion or concern about safety or who is real? Only that evidence reopens reassurance wording; then, once signed in, could they find Report, Block and support without help?
 2. **Search understands me**, Home AND Discover: item 45 checks 1-13; chip checklist (`UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md`)
    checks 1-17; check 18j's search, date-chip, weekday-to-weekday and year bullets; item 86 checks 1-6, 8, 13-15; item 84 check 14.
 3. **Create from the ask**: item 82 checks 1-11; chip checklist check 10 (Create half); check 18 (a-i) + 18j's Create bullets;
