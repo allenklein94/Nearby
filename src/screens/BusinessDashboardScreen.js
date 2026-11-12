@@ -1723,7 +1723,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSavingPulse(true);
     try {
       const note = pulseNoteInput.trim() || null;
-      await setBusinessAvailabilityPulse(selectedPartner.id, pulse, note);
+      // 20270415: a new note is checked first; a flagged one saves nothing (status unchanged, the note stays typed).
+      const result = await setBusinessAvailabilityPulse(selectedPartner.id, pulse, note, selectedPartner.availability_pulse_note);
+      if (!result?.published) {
+        Alert.alert(t('ui.bizDash1.couldntSend'), t('ui.bizDash1.thisContentCouldntBeSent'));
+        setSavingPulse(false);
+        return;
+      }
       setSelectedPartner((prev) => ({
         ...prev,
         availability_pulse: pulse,
@@ -2696,11 +2702,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     if (!declineReasonInput) return;
     setRespondingOpportunityId(declineModalRequestId);
     try {
-      await declineBusinessOpportunity(
+      const result = await declineBusinessOpportunity(
         declineModalRequestId,
         declineReasonInput,
-        declineReasonInput === 'other' ? declineNoteInput.trim() || null : null
+        declineReasonInput === 'other' ? declineNoteInput.trim() || null : null,
+        selectedPartner.id
       );
+      // 20270415: a flagged note declines nothing; the modal stays open with the note so it can be changed or removed.
+      if (!result?.published) {
+        Alert.alert(t('ui.bizDash1.couldntSend'), t('ui.bizDash1.thisContentCouldntBeSent'));
+        setRespondingOpportunityId(null);
+        return;
+      }
       setDeclineModalRequestId(null);
       await loadOpportunities(selectedPartner.id);
       loadDeclinePatterns(selectedPartner.id);

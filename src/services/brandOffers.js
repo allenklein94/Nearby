@@ -1,3 +1,4 @@
+import { pulseNoteNeedsScreening, cleanNote } from '../utils/businessNoteScreening';
 import { supabase, functionUrl } from './supabase';
 import { readMyProfile } from './myProfile';
 import { expandSearchTerms } from '../constants/categorySynonyms';
@@ -1066,13 +1067,34 @@ export async function getPartnerWeatherSettings(partnerIds) {
 // not the deeper capacity-rules business_fulfillment_policies mechanism.
 // updated_at is stamped server-side inside the RPC, never client-
 // supplied, so a business can't forge freshness.
-export async function setBusinessAvailabilityPulse(partnerId, pulse, note = null) {
+//
+// 20270415: a new or changed note goes through Nearby's content check (the server refuses it otherwise) and returns the
+// check's result ({ published, blocked }); a status tap with the same note, or no note, saves directly ({ published: true }).
+export async function setBusinessAvailabilityPulse(partnerId, pulse, note = null, previousNote = null) {
+  if (pulseNoteNeedsScreening(note, previousNote)) {
+    return callNoteScreening({ partnerId, targetType: 'availability_note', pulse, note: cleanNote(note) }, "Couldn't save your status right now.");
+  }
   const { error } = await supabase.rpc('set_business_availability_pulse', {
     partner_id_param: partnerId,
     pulse_param: pulse,
-    note_param: note,
+    note_param: cleanNote(note),
   });
   if (error) throw error;
+  return { published: true, blocked: false };
+}
+
+export async function callNoteScreening(payload, fallbackMessage) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok && !result?.riskTier) throw serviceError(response, result, fallbackMessage);
+  return result;
 }
 
 // "Business Story" plan, Phase 6 -- Signature Experiences. One shared

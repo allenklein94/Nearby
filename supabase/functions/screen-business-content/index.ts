@@ -122,7 +122,8 @@ const OFFER_TYPE_OPTIONS = ['standard', 'discount', 'perk', 'upgrade', 'alt_time
 // vocabulary above is.
 const BUNDLE_OCCASION_OPTIONS = ['date_night', 'anniversary', 'birthday', 'celebration', 'family_gathering'];
 const BUNDLE_COMPONENT_OPTIONS = ['dinner', 'something_to_do', 'finish_the_night', 'something_fun', 'sweet_treat', 'food', 'family_fun'];
-const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response', 'creative', 'package'];
+const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response', 'creative', 'package',
+  'availability_note', 'decline_note'];
 
 // Offer safety (20270372, gap 2): offers never carry website links, email addresses or phone numbers. ONE rule in the
 // database (private.offer_contact_kind, also enforced by triggers on every offer table); asked here first, so contact
@@ -1133,6 +1134,68 @@ Body: ${updateBody || '(none)'}`;
       }
 
       return json({ riskTier, published: false, blocked: false, screeningId });
+    }
+
+    // 20270415 (owner, 2026-11-12): the two short business notes customers can read. Same classifier as profile text; the
+    // database refuses either note without this call's result (or, for a decline, leaves the note out). Unlike profile text
+    // a medium/uncertain note is NOT held for review: a "right now" note is stale by then, so medium and high are both
+    // refused (nothing written) and the row is closed at once (auto_blocked) so it never waits in the review queue.
+    if (targetType === 'availability_note' || targetType === 'decline_note') {
+      const isPulse = targetType === 'availability_note';
+      const note = typeof body.note === 'string' ? body.note.trim() : '';
+      if (!note) return json({ error: 'Add a note, or save without one.' }, 400);
+      if (note.length > (isPulse ? 140 : 500)) return json({ error: 'Note is too long' }, 400);
+      const pulse = isPulse ? body.pulse : null;
+      if (isPulse && !['open', 'limited', 'full'].includes(pulse)) return json({ error: 'Invalid availability pulse' }, 400);
+      const requestId = !isPulse && typeof body.requestId === 'string' && body.requestId ? body.requestId : null;
+      const reason = !isPulse ? body.reason : null;
+      if (!isPulse && (!requestId || reason !== 'other')) return json({ error: 'A note goes with the reason "Other".' }, 400);
+
+      const { data: contactKind, error: contactError } = await admin.rpc('offer_contact_info_kind', { texts_param: [note] });
+      if (!contactError && contactKind) {
+        return json({ error: "Notes can't include website links, email addresses or phone numbers. Customers reach you through Nearby.",
+          code: 'offer_contact_info', kind: contactKind }, 400);
+      }
+
+      const result = await classifyContent(`${isPulse ? 'Availability note' : 'Decline note'}: ${note}`);
+      if (!result) return screeningUnavailable();
+      const { riskTier, matchedCategories, reasoning } = result;
+      const contentSnapshot = isPulse ? { note } : { requestId, note };
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: targetType,
+        target_id_param: requestId,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
+      });
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return screeningUnavailable();
+      }
+
+      if (riskTier !== 'low') {
+        if (riskTier !== 'high') {
+          await admin.from('business_content_screening_results')
+            .update({ review_outcome: 'auto_blocked', reviewed_at: new Date().toISOString() })
+            .eq('id', screeningId);
+        }
+        return json({
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be sent — it was flagged during a routine content check.",
+        }, 200);
+      }
+
+      const { data: writeResult, error: writeError } = isPulse
+        ? await supabaseAsUser.rpc('set_business_availability_pulse', { partner_id_param: partnerId, pulse_param: pulse, note_param: note })
+        : await supabaseAsUser.rpc('decline_business_offer', { request_id_param: requestId, reason_param: reason, note_param: note });
+      if (writeError) {
+        console.error('screen-business-content: low-tier note write failed', writeError);
+        return writeRefusal(writeError);
+      }
+      return json({ riskTier, published: true, blocked: false, screeningId, result: writeResult ?? null });
     }
 
     // targetType === 'offer_response' -- a business's response to a

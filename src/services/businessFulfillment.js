@@ -1,3 +1,5 @@
+import { declineNoteNeedsScreening, cleanNote } from '../utils/businessNoteScreening';
+import { callNoteScreening } from './brandOffers';
 import { translate } from '../i18n/translate';
 import { requestRefusal } from '../utils/requestRefusal';
 import { displayMoney } from '../i18n/display';
@@ -968,14 +970,21 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
 // were shown, not why a request was never shown at all. reason must be
 // one of DECLINE_REASON_OPTIONS' own keys; noteParam is only ever
 // meaningful (and only ever stored) alongside reason === 'other'.
-export async function declineBusinessOpportunity(requestId, reason, note = null) {
+//
+// 20270415: a note goes through Nearby's content check first ({ published, blocked, result }); without a note the decline
+// is sent directly. The server never stores an unchecked note.
+export async function declineBusinessOpportunity(requestId, reason, note = null, partnerId = null) {
+  if (declineNoteNeedsScreening(reason, note)) {
+    if (!partnerId) throw new Error('Missing business');
+    return callNoteScreening({ partnerId, targetType: 'decline_note', requestId, reason, note: cleanNote(note) }, "Couldn't send that right now.");
+  }
   const { data, error } = await supabase.rpc('decline_business_offer', {
     request_id_param: requestId,
     reason_param: reason,
-    note_param: note,
+    note_param: reason === 'other' ? cleanNote(note) : null,
   });
   if (error) throw new Error(error.message);
-  return data;
+  return { published: true, blocked: false, result: data };
 }
 
 // The real, curated decline-reason vocabulary -- a human owner's own
