@@ -32,7 +32,33 @@ function migrationFacts(file, repoRoot) {
   try { facts.headSha256 = sha256(git(repoRoot, ['show', `HEAD:${rel}`])); } catch { facts.headSha256 = null; }
   const c = git(repoRoot, ['log', '-1', '--format=%H', '--', rel]).toString().trim();
   facts.commit = /^[0-9a-f]{40}$/.test(c) ? c : null;
+  facts.gateFailures = predeployGateFailures(facts.version, repoRoot);
   return facts;
+}
+
+// Owner-required checks a migration must have passed BEFORE it may be deployed (not after). Each is evidence committed in
+// the repo, so the refusal is the same one Jest proves. A version not listed has no extra gate.
+//   20270414 (owner, 2026-11-12): the business-comparison disclosure published in docs/privacy.html (marker), and a committed
+//   evidence file recording a passing `deno check` of screen-business-content and a passing real two-business identical-
+//   image upload (that needs 0414 + the edge function on a NON-production project first: no staging project exists yet).
+const PREDEPLOY_GATES = {
+  20270414: {
+    marker: { file: 'docs/privacy.html', text: 'business-disclosure:duplicate-check' },
+    evidence: { file: 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', lines: [/^deno-check: PASS \S+/m, /^real-upload-test: PASS \S+/m] },
+  },
+};
+function predeployGateFailures(version, repoRoot) {
+  const g = PREDEPLOY_GATES[version];
+  if (!g) return [];
+  const read = (f) => { try { return fs.readFileSync(path.join(repoRoot, f), 'utf8'); } catch { return null; } };
+  const r = [];
+  const page = read(g.marker.file);
+  if (!page || !page.includes(g.marker.text)) r.push(`pre-deploy gate: ${g.marker.file} does not carry the approved disclosure (marker ${g.marker.text})`);
+  const ev = read(g.evidence.file);
+  g.evidence.lines.forEach((re) => {
+    if (!ev || !re.test(ev)) r.push(`pre-deploy gate: ${g.evidence.file} has no passing line ${String(re).replace(/^\/\^|\\S\+\/m$/g, '')}<where/when>`);
+  });
+  return r;
 }
 
 // Statements that would break the single-transaction guarantee (or can't run inside one). plpgsql `end;` is fine; a
@@ -66,6 +92,7 @@ function preflight({ facts, env, ledger }) {
     if (!facts.commit) r.push('no commit found for the file');
   }
   forbiddenStatements(facts.content).forEach((w) => r.push(`migration contains ${w}`));
+  (facts.gateFailures || []).forEach((w) => r.push(w));
   const approval = (env.NEARBY_PROD_APPROVAL || '').trim();
   if (!approval) r.push(`missing approval: set NEARBY_PROD_APPROVAL=${approvalToken(facts)} (the owner's approval of this version + hash)`);
   else if (approval !== approvalToken(facts)) r.push(`approval "${approval}" does not match this migration (${approvalToken(facts)})`);
@@ -165,6 +192,7 @@ async function readLedger(run) {
 }
 
 module.exports = {
+  PREDEPLOY_GATES, predeployGateFailures,
   LEDGER_MIGRATION, BASELINE_MAX, DRY_RUN_MARK, LEDGER_EXISTS_SQL, LEDGER_ROWS_SQL,
   migrationFacts, forbiddenStatements, approvalToken, preflight, deploySql, dryRunSql, statusReport, repoMigrations, runner, readLedger,
 };

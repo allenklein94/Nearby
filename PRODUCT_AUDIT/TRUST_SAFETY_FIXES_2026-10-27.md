@@ -1277,7 +1277,7 @@ Exact copies only; videos and near-duplicates are NOT detected and stay out of s
 - Retention line for Privacy Policy section 5: "Business image fingerprints are deleted when the image is no longer used or
   the business is deleted."
 
-**Mandatory before deployment (owner, 2026-11-12; recorded in `scripts/live-verify/post-deploy.js`):**
+**Mandatory before deployment (owner, 2026-11-12), ENFORCED: `npm run migration:deploy` refuses 20270414 until all three have committed evidence (`PREDEPLOY_GATES` in `scripts/migrations/ledger.js`, proven in `ledger.test.js`): the marker `business-disclosure:duplicate-check` in the published `docs/privacy.html`, and `deno-check: PASS <where/when>` + `real-upload-test: PASS <where/when>` lines in `PRODUCT_AUDIT/evidence/20270414_predeploy.md`. Check 3 needs 0414 + the edge function on a NON-production Supabase project first; none exists today (owner decision: create one, or 0414 stays undeployed).**
 1. The disclosure above reviewed, approved and published.
 2. `deno check supabase/functions/screen-business-content/index.ts` passes in an environment with Deno (not available in the
    codespace; not run).

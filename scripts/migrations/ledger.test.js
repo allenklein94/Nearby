@@ -167,3 +167,35 @@ describe('20270345 ledger migration', () => {
     expect(sql).not.toMatch(/'20270345'/); // its own row is written by deploy.js, never by the file
   });
 });
+
+// 20270414 (owner, 2026-11-12): its three checks are enforced BEFORE deploy, by the same preflight that refuses everything else.
+describe('pre-deploy gate: 20270414', () => {
+  const F14 = 'supabase/migrations/20270414_business_duplicate_warnings.sql';
+  const put = (dir, rel, text) => { fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); fs.writeFileSync(path.join(dir, rel), text); };
+  const refusals = (repo) => { const facts = L.migrationFacts(F14, repo.dir); return L.preflight({ facts, env: envFor(facts), ledger: okLedger }); };
+  let repo;
+  beforeEach(() => { repo = tempRepo(); repo.write('20270414_business_duplicate_warnings.sql', 'select 1;\n'); repo.commit(); });
+
+  test('refused while the disclosure, the deno check and the real upload test are all missing', () => {
+    const r = refusals(repo);
+    expect(r).toHaveLength(3);
+    expect(r.join('\n')).toMatch(/business-disclosure:duplicate-check/);
+    expect(r.join('\n')).toMatch(/deno-check: PASS/);
+    expect(r.join('\n')).toMatch(/real-upload-test: PASS/);
+  });
+  test('each check alone is not enough; a FAIL or a bare PASS line never counts', () => {
+    put(repo.dir, 'docs/privacy.html', '<!-- business-disclosure:duplicate-check -->');
+    put(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', 'deno-check: PASS 2026-11-20 laptop deno 2.1\nreal-upload-test: FAIL staging\n');
+    expect(refusals(repo)).toEqual([expect.stringMatching(/real-upload-test: PASS/)]);
+    put(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', 'deno-check: PASS\nreal-upload-test: PASS\n');
+    expect(refusals(repo)).toHaveLength(2);
+  });
+  test('passes once all three are recorded', () => {
+    put(repo.dir, 'docs/privacy.html', '<!-- business-disclosure:duplicate-check -->');
+    put(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', 'deno-check: PASS 2026-11-20 laptop deno 2.1\nreal-upload-test: PASS 2026-11-21 staging project\n');
+    expect(refusals(repo)).toEqual([]);
+  });
+  test('other versions have no extra gate', () => {
+    expect(L.predeployGateFailures('20270413', repo.dir)).toEqual([]);
+  });
+});
