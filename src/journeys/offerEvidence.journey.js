@@ -130,9 +130,9 @@ d('journey: offer evidence under report / investigation / hold + admin offer his
   -- ===== 5. a failing evidence write never blocks the deletion (logged, no content) =====
   create or replace function private.offer_evidence_reasons(p_offer uuid, p_partner uuid, out report_ids uuid[], out case_ids uuid[], out hold_ids uuid[])
     language plpgsql as $f$ begin raise exception 'simulated failure' using errcode = 'XX000'; end $f$;
-  delete from business_request_offers where id = o9;
-  ${note('failure', `jsonb_build_object('offer_deleted', (select count(*) from business_request_offers where id = o9) = 0,
-     'logged', (select jsonb_agg(sqlstate) from private.offer_evidence_failures where offer_id = o9))`)}
+  delete from business_request_offers where id = o10;
+  ${note('failure', `jsonb_build_object('offer_deleted', (select count(*) from business_request_offers where id = o10) = 0,
+     'logged', (select jsonb_agg(sqlstate) from private.offer_evidence_failures where offer_id = o10))`)}
 `);
     s = stepMap(log);
   });
