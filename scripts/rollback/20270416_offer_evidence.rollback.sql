@@ -7,10 +7,13 @@
 --   set local nearby.offer_evidence_rollback_approved = '<owner approval reference>';
 -- Never set it to get past the check without that approval and the verified export.
 do $$
+declare v_rows boolean := false;
 begin
-  if to_regclass('private.offer_evidence') is not null
-     and exists (select 1 from private.offer_evidence)
-     and coalesce(current_setting('nearby.offer_evidence_rollback_approved', true), '') = '' then
+  -- Checked in two steps: plpgsql does not short-circuit AND, so a direct read would fail when the table is absent.
+  if to_regclass('private.offer_evidence') is not null then
+    execute 'select exists (select 1 from private.offer_evidence)' into v_rows;
+  end if;
+  if v_rows and coalesce(current_setting('nearby.offer_evidence_rollback_approved', true), '') = '' then
     raise exception 'offer evidence present: rollback refused'
       using hint = 'evidence_present: inspect private.offer_evidence, get the owner''s separate approval + a verified export, then set nearby.offer_evidence_rollback_approved';
   end if;
