@@ -223,3 +223,31 @@ These substantially improve screening but cannot guarantee detection of every ha
 frames can miss what happens between them. Reports and human review stay part of the design.
 
 Build 87 and Tier 1 are unaffected: nothing in this checklist changes main or the build.
+
+## 9. One activation sequence for 0372, 0414 and 0415 (owner, 2026-11-12; checked by code reading on `post-tier1/business-note-screening`)
+
+All three share ONE edge function, `screen-business-content`. Production is on 0347, so the whole chain waits on
+build 87 -> Tier 1 -> 0348 ... 0371 in order (section 2). `deploy.js` refuses out-of-order versions.
+
+| Step | What | Why this order is safe |
+|---|---|---|
+| S0 | Phase A passes: Anthropic credit restored and a real screening call returns a risk level | without it every screened business write is refused once 0372 is live (below) |
+| S1 | 0372 via `deploy.js` (own approval), then IMMEDIATELY `screen-business-content` from `post-tier1/business-note-screening` or later (Phase C) | that code works against a 0372-only database: 0388's video check and 0414's fingerprint call each ignore a missing function (PGRST202), and the 0415 note targets are only sent by a build that carries 0415's client code |
+| S2 | 0373 ... 0413 in order, each with its own approval and checks | no `screen-business-content` change needed in between |
+| S3 | 0414 (own approval; PREDEPLOY_GATES evidence committed first) | the function deployed at S1 already records fingerprints; no redeploy needed if S1 used this branch or later |
+| S4 | 0415 (own approval) | the function from S1 already has the note targets; no redeploy needed if S1 used this branch or later |
+| S5 | The first native build / website export carrying 0415's client code, only AFTER S4 | before S4, that client sends new notes to screening, the database refuses the new target types and the note isn't saved (fails closed, status taps and declines without a note still work) |
+
+If `screen-business-content` was deployed at S1 from an OLDER branch, redeploy it from this branch right after S3 (or
+S4); between 0415 and that redeploy, new notes can't be saved by the new app (fails closed, nothing unscreened stored).
+
+**When Anthropic screening is unavailable** (credit, key, model, timeout: the edge function answers 503
+`screening_unavailable`; nothing is ever published unscreened):
+- before 0372: nothing changes (today's behaviour; the bypass exists, mitigated only by the interim business-approval gate);
+- after 0372: hand-written offers, postings, profile text, experiences and packages are refused with "try again";
+  automatic replies (server writes) keep working; 0387's admin alert fires only once deployed with its functions;
+- after 0414: no extra effect (a fingerprint is recorded only after a successful screen; a recording failure never
+  changes an answer);
+- after 0415: a NEW or CHANGED availability note can't be saved; status taps with the same note and clearing it still
+  work. In a build with 0415's client, a decline WITH a note shows "try again"; removing the note declines at once.
+  Build <= 87 declines with a note go through without the note.
