@@ -16,6 +16,8 @@ import { adminAddCategoryTag } from '../services/categoryTags';
 import { applyRemoteCategoryTags } from '../constants/categoryRegistry';
 import { existingCategoryMatches, emergingResolveCopy } from '../utils/emergingCategoryHint';
 import AdminBusinessVerificationSection from '../components/AdminBusinessVerificationSection';
+import AdminDuplicateWarnings from '../components/AdminDuplicateWarnings';
+import { warningsFor, approvalNeedsConfirm, mediaMatchPairs, dismissArgs } from '../utils/businessDuplicateWarnings';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -40,6 +42,8 @@ export default function AdminBusinessRequestsScreen() {
   const [emerging, setEmerging] = useState([]);
   const [emGroup, setEmGroup] = useState({});
   const [emName, setEmName] = useState({});
+  // 20270414: shared contact details / identical images, admin evidence only (never blocks approval).
+  const [duplicates, setDuplicates] = useState([]);
 
   const load = useCallback(async () => {
     const { data } = await supabase
@@ -52,7 +56,20 @@ export default function AdminBusinessRequestsScreen() {
     setRequests(data ?? []);
     const { data: flagged } = await supabase.rpc('admin_get_emerging_categories');
     setEmerging(Array.isArray(flagged) ? flagged : []);
+    // Before 20270414 is live the function doesn't exist (PGRST202): no warnings, nothing shown.
+    const { data: dup } = await supabase.rpc('admin_business_duplicate_warnings');
+    setDuplicates(Array.isArray(dup) ? dup : []);
   }, []);
+
+  async function handleDismissDuplicate(row, reason) {
+    const { error } = await supabase.rpc('admin_dismiss_business_duplicate', dismissArgs(row, reason));
+    if (error) {
+      presentRecoverableError(Alert, { what: 'save that', error, onRetry: () => handleDismissDuplicate(row, reason) });
+      return false;
+    }
+    load();
+    return true;
+  }
 
   function handleResolveEmerging(flag) {
     const group = emGroup[flag.phrase_key];
@@ -151,6 +168,15 @@ export default function AdminBusinessRequestsScreen() {
     load();
   }
 
+  function confirmApprove(request) {
+    if (!approvalNeedsConfirm(duplicates, request.id)) return handleApprove(request);
+    Alert.alert(
+      'Check the matches first',
+      `${request.business_name} shares details with another application or business (shown on the card). A match isn't proof of anything; approve once you've checked.`,
+      [{ text: 'Cancel', style: 'cancel' }, { text: 'Approve anyway', onPress: () => handleApprove(request) }]
+    );
+  }
+
   async function handleApprove(request) {
     setProcessingIds((prev) => ({ ...prev, [request.id]: true }));
     try {
@@ -201,6 +227,12 @@ export default function AdminBusinessRequestsScreen() {
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={<>
         <AdminBusinessVerificationSection refreshKey={refreshing} />
+        {mediaMatchPairs(duplicates).length ? (
+          <View style={styles.card}>
+            <Text style={styles.businessName}>Identical images on different businesses</Text>
+            <AdminDuplicateWarnings rows={mediaMatchPairs(duplicates)} onDismiss={handleDismissDuplicate} title="Same logo or offer photo" />
+          </View>
+        ) : null}
         {emerging.length ? (
           <View style={styles.card}>
             <Text style={styles.businessName}>Business wording no category covers</Text>
@@ -358,6 +390,12 @@ export default function AdminBusinessRequestsScreen() {
             {item.website ? <Text style={styles.contact}>🔗 {item.website}</Text> : null}
             {item.phone ? <Text style={styles.contact}>📱 {item.phone}</Text> : null}
             {item.address ? <Text style={styles.contact}>📍 {item.address}</Text> : null}
+            <AdminDuplicateWarnings
+              rows={[...warningsFor(duplicates, 'application', item.id),
+                ...(item.resulting_partner_id ? warningsFor(duplicates, 'business', item.resulting_partner_id) : [])]}
+              onDismiss={handleDismissDuplicate}
+              title={item.status === 'pending' ? 'Check before approving' : 'Shared details'}
+            />
             {item.attributes?.length ? (
               <Text style={styles.contact}>✨ {item.attributes.map((a) => businessAttributeLabel(a)).join(', ')}</Text>
             ) : null}
@@ -376,7 +414,7 @@ export default function AdminBusinessRequestsScreen() {
                 <View style={styles.actionsRow}>
                   <TouchableOpacity
                     style={styles.approveButton}
-                    onPress={() => handleApprove(item)}
+                    onPress={() => confirmApprove(item)}
                     disabled={processingIds[item.id]}
                     accessibilityLabel={`Approve ${item.business_name}`}
                     accessibilityRole="button"
