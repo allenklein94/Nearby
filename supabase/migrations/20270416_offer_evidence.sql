@@ -107,8 +107,9 @@ begin
 end;
 $function$;
 
-create or replace function private._keep_offer_evidence()
-returns trigger
+-- Keeps one offer's business side if something covers it right now. Never raises: a failure is logged and the deletion goes on.
+create or replace function private.keep_offer_evidence(o public.business_request_offers)
+returns void
 language plpgsql
 security definer
 set search_path to 'public'
@@ -120,36 +121,68 @@ declare
   v_screened timestamptz;
   v_state text;
 begin
-  if old.status = 'pending' then
-    return old; -- a routed request the business never answered: nothing the business sent
+  if o.status = 'pending' then
+    return; -- a routed request the business never answered: nothing the business sent
   end if;
   begin
-    select * into v_reasons from private.offer_evidence_reasons(old.id, old.partner_id);
-    if cardinality(v_reasons.report_ids) + cardinality(v_reasons.case_ids) + cardinality(v_reasons.hold_ids) = 0 then
-      return old;
+    if exists (select 1 from private.offer_evidence e where e.offer_id = o.id) then
+      return;
     end if;
-    select bp.name into v_name from brand_partners bp where bp.id = old.partner_id;
+    select * into v_reasons from private.offer_evidence_reasons(o.id, o.partner_id);
+    if cardinality(v_reasons.report_ids) + cardinality(v_reasons.case_ids) + cardinality(v_reasons.hold_ids) = 0 then
+      return;
+    end if;
+    select bp.name into v_name from brand_partners bp where bp.id = o.partner_id;
     select s.risk_tier, s.created_at into v_tier, v_screened
       from business_content_screening_results s
-     where s.partner_id = old.partner_id and s.target_type = 'offer_response' and s.target_id = old.request_id
+     where s.partner_id = o.partner_id and s.target_type = 'offer_response' and s.target_id = o.request_id
      order by s.created_at desc limit 1;
     insert into private.offer_evidence (offer_id, partner_id, partner_name, request_id, offer_type, offer_title, offer_description,
         included_items, redemption_instructions, offer_price, price_is_per_person, discount_pct, proposed_time, proposed_time_alt,
         auto_reply, status, created_at, responded_at, viewed_at, accepted_at, completed_at, cancelled_at,
         screening_risk_tier, screened_at, kept_for_reports, kept_for_cases, kept_for_holds)
-      values (old.id, old.partner_id, v_name, old.request_id, old.offer_type, old.offer_title, old.offer_description,
-        old.included_items, old.redemption_instructions, old.offer_price, old.price_is_per_person, old.discount_pct,
-        old.proposed_time, old.proposed_time_alt, old.auto_reply, old.status, old.created_at, old.responded_at, old.viewed_at,
-        old.accepted_at, old.completed_at, old.cancelled_at, v_tier, v_screened,
+      values (o.id, o.partner_id, v_name, o.request_id, o.offer_type, o.offer_title, o.offer_description,
+        o.included_items, o.redemption_instructions, o.offer_price, o.price_is_per_person, o.discount_pct,
+        o.proposed_time, o.proposed_time_alt, o.auto_reply, o.status, o.created_at, o.responded_at, o.viewed_at,
+        o.accepted_at, o.completed_at, o.cancelled_at, v_tier, v_screened,
         v_reasons.report_ids, v_reasons.case_ids, v_reasons.hold_ids)
       on conflict (offer_id) do nothing;
   exception when others then
     get stacked diagnostics v_state = returned_sqlstate;
     begin
-      insert into private.offer_evidence_failures (offer_id, sqlstate) values (old.id, v_state);
+      insert into private.offer_evidence_failures (offer_id, sqlstate) values (o.id, v_state);
     exception when others then null;
     end;
   end;
+end;
+$function$;
+
+create or replace function private._keep_offer_evidence()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+begin
+  perform private.keep_offer_evidence(old);
+  return old;
+end;
+$function$;
+
+-- A business deleted by the server: keep its covered offers while its row, name and screening results still exist (the offer
+-- rows' own trigger runs after the business row is already gone, and then finds them kept).
+create or replace function private._keep_partner_offer_evidence()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  o public.business_request_offers;
+begin
+  for o in select * from business_request_offers where partner_id = old.id and status <> 'pending' loop
+    perform private.keep_offer_evidence(o);
+  end loop;
   return old;
 end;
 $function$;
@@ -157,6 +190,9 @@ $function$;
 drop trigger if exists keep_offer_evidence on public.business_request_offers;
 create trigger keep_offer_evidence before delete on public.business_request_offers
   for each row execute function private._keep_offer_evidence();
+drop trigger if exists keep_partner_offer_evidence on public.brand_partners;
+create trigger keep_partner_offer_evidence before delete on public.brand_partners
+  for each row execute function private._keep_partner_offer_evidence();
 
 create or replace function private.purge_offer_evidence()
 returns integer
@@ -180,6 +216,8 @@ $function$;
 
 revoke all on function private.offer_evidence_reasons(uuid, uuid) from public, anon, authenticated;
 revoke all on function private._keep_offer_evidence() from public, anon, authenticated;
+revoke all on function private._keep_partner_offer_evidence() from public, anon, authenticated;
+revoke all on function private.keep_offer_evidence(public.business_request_offers) from public, anon, authenticated;
 revoke all on function private.purge_offer_evidence() from public, anon, authenticated;
 
 select cron.unschedule('purge-offer-evidence') where exists (select 1 from cron.job where jobname = 'purge-offer-evidence');
