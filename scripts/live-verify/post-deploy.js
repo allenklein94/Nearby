@@ -437,7 +437,8 @@ const STEPS = {
       'read-only right after: private.offer_evidence / offer_evidence_failures / offer_evidence_purge_log exist with no anon / authenticated / service_role access; triggers keep_offer_evidence (business_request_offers) + keep_partner_offer_evidence (brand_partners); cron purge-offer-evidence present; admin_business_offer_history executable by authenticated only and refuses a non-admin (hint admin_only); 0 evidence rows',
       'website (owner admin account): the approved business card shows a collapsed "Offer history"; opening it lists its offers with screening + viewed / accepted / redeemed steps; nothing shown on a non-approved application',
       'deletion check (dedicated test accounts, owner approval, after 0402-0406 are live): a test customer reports a test offer, then deletes their account: the account is gone, one evidence row, business side only; an unreported offer of that customer leaves nothing',
-      'rollback = scripts/rollback/20270416_offer_evidence.rollback.sql (drops the evidence with its table: export it first if non-empty; owner decides)',
+      'BEFORE ANY rollback (mandatory, owner 2026-11-12): read-only count of private.offer_evidence; non-empty = do NOT roll back without the owner\'s SEPARATE approval AND a verified preservation / export of every row (count + offer ids match); the rollback script itself refuses while rows exist unless nearby.offer_evidence_rollback_approved is set in its transaction (hint evidence_present)',
+      'rollback = scripts/rollback/20270416_offer_evidence.rollback.sql (destructive once evidence exists: drops it with its table; owner decides)',
       'any client reading evidence, a deletion refused or slowed by this trigger, or customer data in an evidence row = defect: STOP, report'] },
 };
 
