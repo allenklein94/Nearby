@@ -1255,3 +1255,32 @@ Blocks outside users, not build 87 or the owner's own Tier 1 testing. NOT BUILT.
 - Access: works without joining, only if the reporter is authorized to view the content. Privacy rules unchanged.
 - Tests: direct-API bypasses, including a fabricated id and content the reporter can't see.
 - Delivery: a separate post-Tier-1 migration + app build, each with its own approval.
+
+## Duplicate business details + identical business images (owner idea 36, 2026-11-12; BUILT + STAGED as 20270414, ACCEPTED AS STAGED, CLOSED, NOT DEPLOYED)
+
+Branch `post-tier1/business-duplicate-signals` (after 0413); not in build 87; own deploy approval, in number order, together
+with `screen-business-content`. Admin evidence only: never rejects, blocks, delays, restricts, scores or notifies. Contact
+matches (normalized phone / email / website) are read at review time from the applications themselves (nothing new stored);
+image matches use the SHA-256 of a logo / offer photo taken after a successful screen, kept only while that image is in use.
+Exact copies only; videos and near-duplicates are NOT detected and stay out of scope (owner, 2026-11-12).
+
+**Disclosure (DRAFT, NOT PUBLISHED; final wording reviewed before publication; publish before 0414 deploys).**
+- Privacy Policy, section 3 (How We Use Your Information), new bullet: "Business applications and business images: to
+  prevent fraud and duplicate registrations, our team may compare the contact details in a business application (phone
+  number, email address, website) with other business applications and businesses on Nearby, and compare business logos and
+  offer photos with those of other businesses. For images we keep a one-way fingerprint (not the image) only while the image
+  is in use. A match is only a reason for our team to look more closely; it never rejects an application or limits a
+  business by itself, and no applicant or business is shown another's details."
+- Business sign-up page (`docs/business.html`) and the in-app Apply screen, one line under the submit button: "We check
+  applications by hand. To prevent fraud and duplicate sign-ups, we may compare your contact details and business images
+  with other businesses on Nearby."
+- Retention line for Privacy Policy section 5: "Business image fingerprints are deleted when the image is no longer used or
+  the business is deleted."
+
+**Mandatory before deployment (owner, 2026-11-12; recorded in `scripts/live-verify/post-deploy.js`):**
+1. The disclosure above reviewed, approved and published.
+2. `deno check supabase/functions/screen-business-content/index.ts` passes in an environment with Deno (not available in the
+   codespace; not run).
+3. Real-upload test once Anthropic screening works: two test businesses upload the identical image (one as a logo, one as an
+   offer photo); both publish exactly as before, one fingerprint row each, and the admin card shows the match; a different
+   image shows nothing. Local tests alone don't establish this.
