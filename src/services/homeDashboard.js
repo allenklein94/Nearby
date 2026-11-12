@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 import { readMyProfile } from './myProfile';
 import { getNearbyMatches } from './proximity';
 import { isTrendingGathering } from '../constants/trending';
-import { getNearbyGatherings, getMyInterestedGatherings, getApprovedCounts, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
+import { getNearbyGatherings, getMyInterestedGatherings, getApprovedCounts, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters, compareTrendingOrder } from './gatherings';
 import { gatheringEnvironment } from '../constants/environmentMatch';
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
@@ -18,7 +18,7 @@ import { getMyLearnedAffinity } from './behaviorSignals';
 import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from './friendInterests';
 import { isGatheringPast } from '../utils/objectState';
-import { attendeeTotal, attendingFigure } from '../utils/gatheringFullness';
+import { attendingFigure } from '../utils/gatheringFullness';
 import { SIGNAL_TEXT } from '../utils/homeSignalMerge';
 import { intentResultDestination } from '../utils/recommendationContext';
 import { getMyFamiliarHosts } from './familiarHosts';
@@ -446,7 +446,7 @@ export async function getHomeDashboard() {
     .slice(0, 4);
   let trendingGatherings = nearbyGatherings
     .filter(isTrendingGathering)
-    .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
+    .sort(compareTrendingOrder)
     .slice(0, 3);
 
   // Starting within the next 30 minutes. Gatherings that already started are
@@ -589,7 +589,7 @@ export async function getHomeDashboard() {
     const pool = nearbyGatherings.filter(notMine);
     trendingGatherings = pool
       .filter(isTrendingGathering)
-      .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
+      .sort(compareTrendingOrder)
       .slice(0, 3);
     happeningNow = happeningNow.filter(notMine);
     bestPickPool = pool;

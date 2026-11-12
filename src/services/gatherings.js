@@ -15,6 +15,7 @@ import { getMyFriends } from './friends';
 import { getMyCommunities } from './communities';
 import { REASON_TEXT, becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
 import { SIGNAL_TIERS, tierVector, compareRanked } from '../constants/signalPriority';
+import { isTrendingGathering } from '../constants/trending';
 import { getUserLocation, requireUserLocation } from './userLocation';
 import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
 import { attendeeTotal, attendingFigure, isGatheringFull } from '../utils/gatheringFullness';
@@ -1180,6 +1181,8 @@ export const GATHERING_FIT_TIER = {
   close_distance: SIGNAL_TIERS.discovery,
   first_timers: SIGNAL_TIERS.discovery,
 };
+// Idea 42: the old attendance cap (min(count, 10)), now given whole only when the server says Trending.
+export const POPULARITY_POINTS = 10;
 const HAS_ROOM_POINTS = 4; // rank-only; the same availability credit typed search gives a gathering with room
 
 export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendAttendeeCount = 0 } = {}) {
@@ -1192,8 +1195,13 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
   const attendeeCount = attendeeTotal(gathering);
 
   if (attendeeCount > 0) {
-    // The points stay on guests; the words count the host too (item 28 follow-up), so never "1 person" once someone joined.
-    add('attendance', Math.min(attendeeCount, 10), reasonText('peopleAttending', { count: attendingFigure(gathering, attendeeCount) }));
+    // The words count the host too (item 28 follow-up), so never "1 person" once someone joined; the reason line still shows
+    // the real "N attending" figure.
+    // Popularity needs established attendees (owner idea 42, 2026-11-12, option 1): the POINTS are the server's Trending
+    // yes/no (20270409: 5+ established approved attendees, never the host), full credit or none, never the raw count. New
+    // accounts joining can't raise a gathering's popularity rank, fit score or Discover tile size; the server never sends how
+    // many attendees are established, so no new data leaves it. A missing answer = not trending = no points.
+    add('attendance', isTrendingGathering(gathering) ? POPULARITY_POINTS : 0, reasonText('peopleAttending', { count: attendingFigure(gathering, attendeeCount) }));
   }
   if (gathering.matchesYourInterests) {
     // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared,
@@ -1225,6 +1233,13 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
 
   const score = parts.filter((p) => !p.rankOnly).reduce((n, p) => n + p.delta, 0);
   return { score, reasons, parts, rankVector: tierVector(parts) };
+}
+
+// Home's Trending list order (owner idea 42): every gathering in it is already Trending (equal popularity), so it is ordered by
+// the same fit ladder as everything else, never by the raw attendee count (new accounts joining can't move it up). Ties keep
+// their incoming order (stable sort).
+export function compareTrendingOrder(a, b) {
+  return compareRanked(getGatheringFitReasons(a), getGatheringFitReasons(b));
 }
 
 // Home's Best Pick: ONE gathering. Eligibility is the surface's own rule (a pick must clear a fit score of 5, so an ordinary
