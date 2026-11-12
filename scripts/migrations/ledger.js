@@ -44,19 +44,30 @@ function migrationFacts(file, repoRoot) {
 const PREDEPLOY_GATES = {
   20270414: {
     marker: { file: 'docs/privacy.html', text: 'business-disclosure:duplicate-check' },
-    evidence: { file: 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', lines: [/^deno-check: PASS \S+/m, /^real-upload-test: PASS \S+/m] },
+    evidence: { file: 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', checks: ['deno-check', 'real-upload-test'] },
   },
 };
 function predeployGateFailures(version, repoRoot) {
   const g = PREDEPLOY_GATES[version];
   if (!g) return [];
-  const read = (f) => { try { return fs.readFileSync(path.join(repoRoot, f), 'utf8'); } catch { return null; } };
+  // Evidence counts only as COMMITTED at HEAD: an uncommitted or edited copy on disk never passes (and says so).
+  const read = (f) => { try { return git(repoRoot, ['show', `HEAD:${f}`]).toString('utf8'); } catch { return null; } };
+  const dirty = (f) => { try { return git(repoRoot, ['status', '--porcelain', '--', f]).toString().trim() !== ''; } catch { return true; } };
   const r = [];
+  [g.marker.file, g.evidence.file].forEach((f) => { if (dirty(f)) r.push(`pre-deploy gate: ${f} has uncommitted changes; only the committed copy counts`); });
   const page = read(g.marker.file);
   if (!page || !page.includes(g.marker.text)) r.push(`pre-deploy gate: ${g.marker.file} does not carry the approved disclosure (marker ${g.marker.text})`);
   const ev = read(g.evidence.file);
-  g.evidence.lines.forEach((re) => {
-    if (!ev || !re.test(ev)) r.push(`pre-deploy gate: ${g.evidence.file} has no passing line ${String(re).replace(/^\/\^|\\S\+\/m$/g, '')}<where/when>`);
+  // Fail closed: only a line "<check>: PASS <where/when>" passes. A recorded FAIL, a missing line, two answers for one check,
+  // or anything malformed refuses, each with its own reason.
+  g.evidence.checks.forEach((c) => {
+    const lines = (ev || '').split(/\r?\n/).filter((l) => l.trim().toLowerCase().startsWith(`${c}:`));
+    const want = `${g.evidence.file}: "${c}: PASS <where/when>"`;
+    if (!ev) r.push(`pre-deploy gate: no evidence file (${want} required)`);
+    else if (!lines.length) r.push(`pre-deploy gate: ${c} has no result recorded (${want} required)`);
+    else if (lines.length > 1) r.push(`pre-deploy gate: ${c} is recorded ${lines.length} times; keep exactly one result`);
+    else if (/^\S+:\s*FAIL\b/i.test(lines[0].trim())) r.push(`pre-deploy gate: ${c} is recorded as FAILED: "${lines[0].trim().slice(0, 120)}"`);
+    else if (!new RegExp(`^${c}: PASS \\S+`).test(lines[0].trim())) r.push(`pre-deploy gate: ${c} result is malformed: "${lines[0].trim().slice(0, 120)}" (${want} required)`);
   });
   return r;
 }
@@ -81,7 +92,9 @@ function forbiddenStatements(sql) {
 const approvalToken = (facts) => `${facts.version}:${facts.sha256}`;
 
 // Every reason to refuse, before anything is sent. `ledger` = { exists, rows: [{ version, ... }] } read by status SQL.
-function preflight({ facts, env, ledger }) {
+// target: the pre-deploy gates guard PRODUCTION only (their evidence comes from non-production runs); anything but an
+// explicit 'local' counts as production, so a missing target fails closed.
+function preflight({ facts, env, ledger, target }) {
   const r = [];
   if (!facts.exists) return [`file not found: ${facts.rel}`];
   if (!facts.inMigrationsDir) r.push(`not a migration file under ${MIGRATIONS_DIR}/ named <8 digits>_<name>.sql: ${facts.rel}`);
@@ -92,7 +105,7 @@ function preflight({ facts, env, ledger }) {
     if (!facts.commit) r.push('no commit found for the file');
   }
   forbiddenStatements(facts.content).forEach((w) => r.push(`migration contains ${w}`));
-  (facts.gateFailures || []).forEach((w) => r.push(w));
+  if (target !== 'local') (facts.gateFailures || []).forEach((w) => r.push(w));
   const approval = (env.NEARBY_PROD_APPROVAL || '').trim();
   if (!approval) r.push(`missing approval: set NEARBY_PROD_APPROVAL=${approvalToken(facts)} (the owner's approval of this version + hash)`);
   else if (approval !== approvalToken(facts)) r.push(`approval "${approval}" does not match this migration (${approvalToken(facts)})`);

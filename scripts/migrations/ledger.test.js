@@ -171,7 +171,8 @@ describe('20270345 ledger migration', () => {
 // 20270414 (owner, 2026-11-12): its three checks are enforced BEFORE deploy, by the same preflight that refuses everything else.
 describe('pre-deploy gate: 20270414', () => {
   const F14 = 'supabase/migrations/20270414_business_duplicate_warnings.sql';
-  const put = (dir, rel, text) => { fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); fs.writeFileSync(path.join(dir, rel), text); };
+  const write = (dir, rel, text) => { fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true }); fs.writeFileSync(path.join(dir, rel), text); };
+  const put = (dir, rel, text) => { write(dir, rel, text); execFileSync('git', ['add', '-A'], { cwd: dir }); execFileSync('git', ['commit', '-qm', 'e', '--allow-empty'], { cwd: dir }); };
   const refusals = (repo) => { const facts = L.migrationFacts(F14, repo.dir); return L.preflight({ facts, env: envFor(facts), ledger: okLedger }); };
   let repo;
   beforeEach(() => { repo = tempRepo(); repo.write('20270414_business_duplicate_warnings.sql', 'select 1;\n'); repo.commit(); });
@@ -186,9 +187,37 @@ describe('pre-deploy gate: 20270414', () => {
   test('each check alone is not enough; a FAIL or a bare PASS line never counts', () => {
     put(repo.dir, 'docs/privacy.html', '<!-- business-disclosure:duplicate-check -->');
     put(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', 'deno-check: PASS 2026-11-20 laptop deno 2.1\nreal-upload-test: FAIL staging\n');
-    expect(refusals(repo)).toEqual([expect.stringMatching(/real-upload-test: PASS/)]);
+    expect(refusals(repo)).toEqual([expect.stringMatching(/real-upload-test is recorded as FAILED/)]);
     put(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', 'deno-check: PASS\nreal-upload-test: PASS\n');
     expect(refusals(repo)).toHaveLength(2);
+  });
+  test('a recorded failure, a missing result, a duplicate and a malformed line are each refused with their own reason', () => {
+    put(repo.dir, 'docs/privacy.html', '<!-- business-disclosure:duplicate-check -->');
+    const ev = (text) => { put(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', text); return refusals(repo).join('\n'); };
+    expect(ev('deno-check: FAIL 2026-11-20 type error\nreal-upload-test: PASS 2026-11-21 staging\n')).toMatch(/deno-check is recorded as FAILED/);
+    expect(ev('real-upload-test: PASS 2026-11-21 staging\n')).toMatch(/deno-check has no result recorded/);
+    expect(ev('deno-check: PASS a\ndeno-check: FAIL b\nreal-upload-test: PASS c\n')).toMatch(/deno-check is recorded 2 times/);
+    expect(ev('deno-check: passed yesterday\nreal-upload-test: PASS c\n')).toMatch(/deno-check result is malformed/);
+    expect(ev('')).toMatch(/no evidence file|has no result recorded/);
+  });
+  test('the gate guards production only; a missing target counts as production', () => {
+    const facts = L.migrationFacts(F14, repo.dir);
+    expect(L.preflight({ facts, env: envFor(facts), ledger: okLedger, target: 'local' })).toEqual([]);
+    expect(L.preflight({ facts, env: envFor(facts), ledger: okLedger, target: 'prod' })).toHaveLength(3);
+    expect(L.preflight({ facts, env: envFor(facts), ledger: okLedger })).toHaveLength(3);
+  });
+  test('only the committed evidence counts: uncommitted or edited copies on disk are refused', () => {
+    write(repo.dir, 'docs/privacy.html', '<!-- business-disclosure:duplicate-check -->');
+    write(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', 'deno-check: PASS 2026-11-20 x\nreal-upload-test: PASS 2026-11-21 y\n');
+    const r = refusals(repo).join('\n');
+    expect(r).toMatch(/docs\/privacy.html has uncommitted changes/);
+    expect(r).toMatch(/20270414_predeploy.md has uncommitted changes/);
+    expect(r).toMatch(/does not carry the approved disclosure/);
+    put(repo.dir, 'docs/privacy.html', '<!-- business-disclosure:duplicate-check -->');
+    put(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', 'deno-check: PASS 2026-11-20 x\nreal-upload-test: PASS 2026-11-21 y\n');
+    expect(refusals(repo)).toEqual([]);
+    write(repo.dir, 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', 'deno-check: PASS 2026-11-20 x\nreal-upload-test: FAIL 2026-11-22 y\n');
+    expect(refusals(repo).join('\n')).toMatch(/uncommitted changes/);
   });
   test('passes once all three are recorded', () => {
     put(repo.dir, 'docs/privacy.html', '<!-- business-disclosure:duplicate-check -->');

@@ -20,7 +20,7 @@ async function main(argv, env = process.env, repoRoot = REPO) {
   const { name, run } = L.runner(target);
   const facts = L.migrationFacts(file, repoRoot);
   const ledger = await L.readLedger(run);
-  const refusals = L.preflight({ facts, env, ledger });
+  const refusals = L.preflight({ facts, env, ledger, target });
   console.log(`target: ${name}\nmigration: ${facts.rel}\nversion: ${facts.version}\nsha256: ${facts.sha256}\ncommit: ${facts.commit}`);
   if (refusals.length) {
     console.error(`REFUSED (nothing sent):\n- ${refusals.join('\n- ')}`);
