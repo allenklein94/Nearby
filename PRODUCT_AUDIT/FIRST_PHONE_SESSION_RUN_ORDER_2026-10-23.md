@@ -221,6 +221,13 @@ how many filters inside it are active ("More filters (2)"). No new screens, shee
 inferred interests or context, no filtering-logic change. Needs owner approval of the build + its new strings (11 languages). (d) On Gatherings, turn on Local (~1 mi): can they say what changed versus the
 normal list (15 mi)? Confusion = wording / discoverability of the existing Local filter first, never more distance options.
 
+Discover dedupe check (owner idea 43, 2026-11-12; PASS/FAIL; build 87+, seeded gatherings + a friend attending one that matches
+a declared interest): scroll the whole Discover Things to Do screen once. PASS = each gathering appears ONCE on that screen even when
+it qualifies for several sections (Because you like X, Friends are into, Trending, Tonight/Today/This Weekend), and its card shows at
+most its two strongest reasons. FAIL = the same gathering on two or more cards on one screen: screenshot each, note the sections. A
+fail is fixed in the shared Discover dedupe chain, never per section. Not a failure: the same gathering on Home AND Discover (each
+surface has its own once-per-surface rule).
+
 Quick pick watch (owner, 2026-10-25; PASS/FAIL, seeded gatherings, phone on its real local time): tap two Home quick picks:
 (a) Discover opens on Gatherings with that pick's category and the CURRENT period's time filter (evening = Tonight), cards at once,
 never another screen; (b) the results fit the pick (category + time; an unrelated gathering shown = FAIL, shared filter); (c) Back
