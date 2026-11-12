@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
-  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE, sharedTextLines, SHARED_TEXT_NOTE,
+  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE, sharedTextLines, SHARED_TEXT_NOTE, sharedLinkLines, SHARED_LINK_NOTE,
 } = require('./adminReviewCase');
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', '..', p), 'utf8');
@@ -172,5 +172,22 @@ describe('a deleted account (20270406)', () => {
     expect(deletedAccountLines(null)).toEqual([]);
     expect(DELETED_ACCOUNT_NOTE).toMatch(/not proof/);
     expect(title({ signal: 'prior_unresolved', reason: 'unresolved_account_returned' })).toBe('Earlier account left with something unresolved · Same number or phone as a deleted account');
+  });
+});
+
+describe('shared-link cases (20270413)', () => {
+  test('title + note say what was seen, never that accounts are the same person or a scam', () => {
+    expect(caseTitle({ signal: 'shared_link', reason: 'many_accounts' })).toBe('Same website in public gatherings · On several accounts');
+    expect(SHARED_LINK_NOTE).toMatch(/not proof/);
+    expect(SHARED_LINK_NOTE).not.toMatch(/fake|certain|confirmed|malicious/i);
+  });
+  test('evidence lines: counts and short gathering ids; never a link or site', () => {
+    expect(sharedLinkLines({ accounts: 6, window_days: 30, links: 2,
+      gathering_ids: ['abcdef12-0000-0000-0000-000000000000', '12345678-0000-0000-0000-000000000000'] }))
+      .toEqual(['6 accounts in this case linked the same website in public gatherings in the last 30 days',
+        '2 different websites shared by the same accounts', 'Gatherings: abcdef12, 12345678']);
+    expect(sharedLinkLines({ accounts: 5, window_days: 30, links: 1, gathering_ids: [] }))
+      .toEqual(['5 accounts in this case linked the same website in public gatherings in the last 30 days']);
+    expect(sharedLinkLines(null)).toEqual([]);
   });
 });

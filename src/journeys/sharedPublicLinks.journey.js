@@ -123,7 +123,7 @@ d('journey: the same website in public gatherings on several accounts (20270413)
       'cases', ${linkCases})`)}
 
   -- ===== one host's recurring gatherings are one account; friends-only and held are never read =====
-  ${[1, 2, 3, 4, 5].map((n) => gathering(`r_g${n}`, 'v_r', `Weekly run ${n}`, 'Route at runroute.net', 'everyone', n + 1)).join('\n')}
+  ${[1, 2, 3].map((n) => gathering(`r_g${n}`, 'v_r', `Weekly run ${n}`, 'Route at runroute.net', 'everyone', n + 1)).join('\n')}
   ${rec('one_host', `jsonb_build_object('accounts', ${sightings('runroute.net')}, 'case', ${caseOf('runroute.net')} is not null)`)}
   ${H5.map((v, i) => gathering(`h${i + 1}_friends`, v, `Game night ${i}`, 'Rules at boardgame-hub.org', 'friends')).join('\n')}
   ${rec('friends_only', `jsonb_build_object('accounts', ${sightings('boardgame-hub.org')}, 'case', ${caseOf('boardgame-hub.org')} is not null)`)}
@@ -288,8 +288,8 @@ d('journey: the same website in public gatherings on several accounts (20270413)
     expect(s.own_sites.data).toEqual({ destinations: 10, cases: 1 });
   });
 
-  test('one host posting recurring gatherings is one account; friends-only and held gatherings are never read', () => {
-    [1, 2, 3, 4, 5].forEach((n) => expect(s[`r_g${n}`].data).toBe('ok'));
+  test('one host posting several gatherings is one account (3 = the 0358 daily cap for public posts with a link); friends-only and held gatherings are never read', () => {
+    [1, 2, 3].forEach((n) => expect(s[`r_g${n}`].data).toBe('ok'));
     expect(s.one_host.data).toEqual({ accounts: 1, case: false });
     expect(s.friends_only.data).toEqual({ accounts: 0, case: false });
     expect(s.held.data).toBe(0);

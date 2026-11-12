@@ -5,24 +5,25 @@ const sw = require('./detector-switch');
 
 const ROOT = path.resolve(__dirname, '../..');
 const ready = { installed: true, secret_ok: true, client_access: false, purge_job: true };
-const GOOD_POLICY = '<!-- detector-disclosure:shared-device --><!-- detector-disclosure:shared-text -->';
+const GOOD_POLICY = '<!-- detector-disclosure:shared-device --><!-- detector-disclosure:shared-text --><!-- detector-disclosure:shared-link -->';
 
 describe('nothing else turns them on', () => {
   const migrations = fs.readdirSync(path.join(ROOT, 'supabase/migrations'));
   test('no migration sets a detector number', () => {
-    const setters = migrations.filter((f) => /(shared_device_min_accounts|shared_text_min_accounts)\s*=\s*\d|shared_device_suspended_enabled\s*=\s*true/.test(fs.readFileSync(path.join(ROOT, 'supabase/migrations', f), 'utf8')));
+    const setters = migrations.filter((f) => /(shared_device_min_accounts|shared_text_min_accounts|shared_link_min_accounts)\s*=\s*\d|shared_device_suspended_enabled\s*=\s*true/.test(fs.readFileSync(path.join(ROOT, 'supabase/migrations', f), 'utf8')));
     expect(setters).toEqual([]);
   });
   test('the numbers are the owner\'s recorded preferences', () => {
     expect(sw.DETECTORS.device.numbers).toEqual({ shared_device_min_accounts: 4, shared_device_suspended_enabled: true });
     expect(sw.DETECTORS.text.numbers).toEqual({ shared_text_min_accounts: 5 });
+    expect(sw.DETECTORS.link.numbers).toEqual({ shared_link_min_accounts: 5 });
     expect(sw.onUpdate('device')).toMatch(/shared_device_min_accounts = 4, shared_device_suspended_enabled = true/);
-    expect(sw.offUpdate('all')).toMatch(/shared_device_min_accounts = null, shared_device_suspended_enabled = false, shared_text_min_accounts = null/);
+    expect(sw.offUpdate('all')).toMatch(/shared_device_min_accounts = null, shared_device_suspended_enabled = false, shared_text_min_accounts = null, shared_link_min_accounts = null/);
   });
 });
 
 describe('`on` refuses until every gate is met', () => {
-  test.each(['device', 'text'])('%s: ready + disclosed = nothing to refuse', (d) => {
+  test.each(['device', 'text', 'link'])('%s: ready + disclosed = nothing to refuse', (d) => {
     expect(sw.onRefusals(d, { [d]: ready }, GOOD_POLICY)).toEqual([]);
   });
   test.each([
@@ -51,7 +52,7 @@ describe('main', () => {
   jest.spyOn(console, 'log').mockImplementation(() => {});
   jest.spyOn(console, 'error').mockImplementation(() => {});
   const sent = [];
-  const status = { device: ready, text: ready };
+  const status = { device: ready, text: ready, link: ready };
   jest.doMock('../migrations/ledger', () => ({ runner: () => ({ name: 'test', run: async (sql) => { sent.push(sql); return [{ status, result: {}, done: 1 }]; } }) }));
   beforeEach(() => { sent.length = 0; });
   const writes = () => sent.filter((s) => /update private\.account_signal_settings|backfill/.test(s));
@@ -67,5 +68,12 @@ describe('main', () => {
     expect(await sw.main(['off', '--detector=all', '--target=local'], { NEARBY_DETECTOR_APPROVAL: sw.OFF_CODE })).toBe(0);
     expect(writes().length).toBe(1);
     expect(writes()[0]).toMatch(/shared_text_min_accounts = null/);
+  });
+  test('link: on without its own disclosure sends nothing; off --detector=link changes only its number', async () => {
+    expect(sw.onRefusals('link', { link: ready }, '<!-- detector-disclosure:shared-text -->').join()).toMatch(/shared-link/);
+    expect(await sw.main(['on', '--detector=link', '--target=local'], { NEARBY_DETECTOR_APPROVAL: sw.approvalCode('link') })).toBe(2);
+    expect(writes()).toEqual([]);
+    expect(await sw.main(['off', '--detector=link', '--target=local'], { NEARBY_DETECTOR_APPROVAL: sw.OFF_CODE })).toBe(0);
+    expect(writes()).toEqual([expect.stringMatching(/set shared_link_min_accounts = null, updated_at/)]);
   });
 });

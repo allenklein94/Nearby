@@ -14,7 +14,7 @@ import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
   linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, deletedAccountLines, DELETED_ACCOUNT_NOTE, OUTCOME_LABEL, CHECK_RESULT_LABEL,
-  priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE, sharedTextLines, SHARED_TEXT_NOTE,
+  priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE, sharedTextLines, SHARED_TEXT_NOTE, sharedLinkLines, SHARED_LINK_NOTE,
   sharedCaseGroups, SHARED_CASES_NOTE,
 } from '../utils/adminReviewCase';
 
@@ -243,6 +243,13 @@ export default function AdminReviewScreen() {
           <Text style={styles.subTitle}>Same public text</Text>
           <Text style={styles.meta}>{SHARED_TEXT_NOTE}</Text>
           {sharedTextLines(selected.evidence).map((line, i) => <Text key={`t${i}`} style={styles.event}>{line}</Text>)}
+        </>
+      ) : null}
+      {selected.signal === 'shared_link' ? (
+        <>
+          <Text style={styles.subTitle}>Same website in public gatherings</Text>
+          <Text style={styles.meta}>{SHARED_LINK_NOTE}</Text>
+          {sharedLinkLines(selected.evidence).map((line, i) => <Text key={`l${i}`} style={styles.event}>{line}</Text>)}
         </>
       ) : null}
       {behaviorEvidenceLines(selected.evidence).length ? (
