@@ -17,6 +17,7 @@ import { applyRemoteCategoryTags } from '../constants/categoryRegistry';
 import { existingCategoryMatches, emergingResolveCopy } from '../utils/emergingCategoryHint';
 import AdminBusinessVerificationSection from '../components/AdminBusinessVerificationSection';
 import AdminDuplicateWarnings from '../components/AdminDuplicateWarnings';
+import AdminOfferHistory from '../components/AdminOfferHistory';
 import { warningsFor, approvalNeedsConfirm, mediaMatchPairs, dismissArgs } from '../utils/businessDuplicateWarnings';
 
 export default function AdminBusinessRequestsScreen() {
@@ -396,6 +397,8 @@ export default function AdminBusinessRequestsScreen() {
               onDismiss={handleDismissDuplicate}
               title={item.status === 'pending' ? 'Check before approving' : 'Shared details'}
             />
+            {/* 20270416: the approved business's offers, collapsed; read only when opened (admins only) */}
+            {item.resulting_partner_id ? <AdminOfferHistory partnerId={item.resulting_partner_id} /> : null}
             {item.attributes?.length ? (
               <Text style={styles.contact}>✨ {item.attributes.map((a) => businessAttributeLabel(a)).join(', ')}</Text>
             ) : null}

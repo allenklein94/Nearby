@@ -429,6 +429,16 @@ const STEPS = {
       'real screening (needs Anthropic credit): a clean pulse note through the app saves and shows on the business profile; a clean decline note saves; a flagged note saves nothing (pulse status unchanged, decline not sent); a reused screening result is refused',
       'rollback = scripts/rollback/20270415_business_note_screening.rollback.sql (restores 0372\'s definitions; no row touched)',
       'any unscreened note stored by a client, any anon access, or a decline refused without a note = defect: STOP, report'] },
+  // Offer evidence kept under report / open case / legal hold when an offer row is deleted + admin offer history (idea 39)
+  20270416: { journeys: ['offerEvidence', 'accountDeletionBlockers', 'deletionHardening', 'heldAccountEvidence', 'legalHolds', 'offerJourney'],
+    node: [],
+    edge: [],
+    manual: ['BEFORE deploy: 0415 live; own approval; the Privacy Policy retention wording reviewed (kept offers = business content, no customer data; kept as long as the report / case / hold that kept it): no new period, but say so if counsel asks',
+      'read-only right after: private.offer_evidence / offer_evidence_failures / offer_evidence_purge_log exist with no anon / authenticated / service_role access; triggers keep_offer_evidence (business_request_offers) + keep_partner_offer_evidence (brand_partners); cron purge-offer-evidence present; admin_business_offer_history executable by authenticated only and refuses a non-admin (hint admin_only); 0 evidence rows',
+      'website (owner admin account): the approved business card shows a collapsed "Offer history"; opening it lists its offers with screening + viewed / accepted / redeemed steps; nothing shown on a non-approved application',
+      'deletion check (dedicated test accounts, owner approval, after 0402-0406 are live): a test customer reports a test offer, then deletes their account: the account is gone, one evidence row, business side only; an unreported offer of that customer leaves nothing',
+      'rollback = scripts/rollback/20270416_offer_evidence.rollback.sql (drops the evidence with its table: export it first if non-empty; owner decides)',
+      'any client reading evidence, a deletion refused or slowed by this trigger, or customer data in an evidence row = defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
