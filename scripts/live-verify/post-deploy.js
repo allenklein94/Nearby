@@ -418,6 +418,17 @@ const STEPS = {
       'on a real business account: uploading a logo and a photo offer still publishes exactly as before (needs Anthropic credit); then one fingerprint row per file',
       'rollback = scripts/rollback/20270414_business_duplicate_warnings.rollback.sql (drops its two tables + functions + cron; no application, business or media row touched)',
       'any applicant or business reading a warning or fingerprint, any refused or changed approval, or a screening answer changed by the fingerprint call = defect: STOP, report'] },
+  // Availability pulse note + decline note screened like business text (0372 audit gaps 1 + 2, owner 2026-11-12)
+  20270415: { journeys: ['businessNoteScreening', 'offerSafety', 'offerJourney', 'appVersionCompatibility'],
+    node: [],
+    edge: ['screen-business-content right after the migration (adds the availability_note / decline_note targets; before 0415 the database refuses those target types, after 0415 without the edge redeploy the new app cannot save a NEW note: both fail closed, nothing unscreened is stored)'],
+    manual: ['BEFORE deploy: 0414 live; own approval; deno check supabase/functions/screen-business-content/index.ts (never run: no Deno in the codespace)',
+      'compatibility (expected, not a defect): build <= 87 saving a NEW or CHANGED pulse note gets "needs Nearby\'s content check" (hint screening_required) and saves nothing; status taps with the same note and clearing the note still work; build <= 87 declining with reason Other + a note declines WITHOUT the note (never stored unscreened)',
+      'read-only right after: public.set_business_availability_pulse + public.decline_business_offer executable by authenticated only (not anon); private.*_unscreened + private.consume_business_screening no client EXECUTE; trigger business_note_contact_guard on brand_partners; existing availability_pulse_note / decline_note rows unchanged',
+      'real API (dedicated test business, signed in, no edge function): a new pulse note = refused screening_required, nothing written; a note with a phone / link / spelled-out contact = refused offer_contact_info; decline with an unscreened note = declined, decline_note null',
+      'real screening (needs Anthropic credit): a clean pulse note through the app saves and shows on the business profile; a clean decline note saves; a flagged note saves nothing (pulse status unchanged, decline not sent); a reused screening result is refused',
+      'rollback = scripts/rollback/20270415_business_note_screening.rollback.sql (restores 0372\'s definitions; no row touched)',
+      'any unscreened note stored by a client, any anon access, or a decline refused without a note = defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
