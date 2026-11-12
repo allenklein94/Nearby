@@ -407,6 +407,16 @@ const STEPS = {
       'on the phone: publishing a public gathering with a link in its description still works exactly as before (the trigger runs after every such write)',
       'rollback = scripts/rollback/20270413_shared_link_signals.rollback.sql (deletes its keys, secret and shared-link cases; gatherings untouched)',
       'any failure row with step gathering_link, any restricted / hidden account, or a client read that answers = security defect: STOP, report'] },
+  // Duplicate business contact details + identical business logos / offer photos: admin evidence only, never blocks approval (idea 36)
+  20270414: { journeys: ['businessDuplicateWarnings', 'businessApplication', 'sharedPublicLinks', 'offer', 'appVersionCompatibility'],
+    node: [],
+    edge: ['screen-business-content right after the migration (records logo / offer-photo SHA-256 after a successful screen; before 0414 is live the call is a swallowed PGRST202, so either order is safe; a recording failure never changes a screening answer)'],
+    manual: ['BEFORE deploy: 0369 and 0413 live (in order); own approval; server + edge only; the admin card warnings ship with the next native build / website re-export (builds 86/87 call nothing new)',
+      'read-only right after: 0 business_media_fingerprints, 0 business_duplicate_dismissals; cron purge-business-duplicate-records present; record_business_media_fingerprint executable by service_role only; no anon / authenticated access to the two tables; admin_business_duplicate_warnings refuses a non-admin (hint admin_only)',
+      'admin check (owner account): the warnings list on prod reviewed once by hand: every match is a real shared phone / email / website, none from a shared platform; existing in-use logos have no fingerprint until re-screened (no backfill)',
+      'on a real business account: uploading a logo and a photo offer still publishes exactly as before (needs Anthropic credit); then one fingerprint row per file',
+      'rollback = scripts/rollback/20270414_business_duplicate_warnings.rollback.sql (drops its two tables + functions + cron; no application, business or media row touched)',
+      'any applicant or business reading a warning or fingerprint, any refused or changed approval, or a screening answer changed by the fingerprint call = defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
