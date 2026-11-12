@@ -224,7 +224,14 @@ async function videoPausedRefusal(admin: any, mediaType: string) {
   return data === true ? null : { status: 400, error: VIDEO_PAUSED_MESSAGE, code: 'business_video_paused' };
 }
 async function screenUnlessVideoPaused(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
-  return (await videoPausedRefusal(admin, mediaType)) ?? screenOfferMedia(admin, partnerId, mediaPath, mediaType, framePaths);
+  const paused = await videoPausedRefusal(admin, mediaType);
+  if (paused) return paused;
+  const result: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType, framePaths);
+  // photos only (video fingerprinting is deferred); a refused or failed screen records nothing
+  if (result && !result.error && !result.service && result.sha256) {
+    await recordMediaFingerprint(admin, partnerId, 'offer_photo', mediaPath, result.sha256);
+  }
+  return result;
 }
 
 function screenOfferMedia(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
@@ -280,6 +287,9 @@ async function classifyImage(imageUrl: string) {
   }
 
   const bytes = new Uint8Array(buffer);
+  // 20270414: the SHA-256 of these exact bytes, so an identical logo / offer photo on a DIFFERENT business can be shown to
+  // an admin (never decides anything; recorded only after a successful screen, by recordMediaFingerprint below).
+  const sha256 = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (b) => b.toString(16).padStart(2, '0')).join('');
   let binary = '';
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   const base64Data = btoa(binary);
@@ -351,7 +361,21 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
     ? parsed.reasoning.trim().slice(0, 1000)
     : 'No reasoning returned by the classifier.';
 
-  return { riskTier, matchedCategories, reasoning };
+  return { riskTier, matchedCategories, reasoning, sha256 };
+}
+
+// 20270414: identical business media across businesses, for admin review only. Service role; best effort: a failure is
+// logged and never blocks, delays or changes screening. kind 'logo' (ref = the logo URL) or 'offer_photo' (ref = the path).
+async function recordMediaFingerprint(admin: any, partnerId: string, kind: string, ref: string, sha256: unknown) {
+  if (typeof sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(sha256)) return;
+  try {
+    const { error } = await admin.rpc('record_business_media_fingerprint', {
+      p_partner: partnerId, p_kind: kind, p_ref: ref, p_sha256: sha256,
+    });
+    if (error && error.code !== 'PGRST202') console.error('screen-business-content: media fingerprint not recorded', error.code);
+  } catch (_e) {
+    console.error('screen-business-content: media fingerprint not recorded');
+  }
 }
 
 // Combines two independent tier results into one overall decision, real
@@ -574,6 +598,7 @@ What makes them different: ${differentiator || '(none)'}`;
       if (logoChanged) {
         const imageResult = await classifyImage(logoUrl);
         if ('error' in imageResult) return json({ error: imageResult.error }, 400);
+        await recordMediaFingerprint(admin, partnerId, 'logo', logoUrl!, imageResult.sha256);
         riskTier = worseTier(textResult.riskTier, imageResult.riskTier);
         matchedCategories = Array.from(new Set([...textResult.matchedCategories, ...imageResult.matchedCategories]));
         reasoning = `Text: ${textResult.reasoning} Logo image: ${imageResult.reasoning}`;
