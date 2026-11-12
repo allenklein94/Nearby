@@ -30,6 +30,8 @@ d('journey: gathering signal thresholds (20270386)', () => {
       surge_min_joiners: 15, surge_window_minutes: 60, surge_new_share: 0.5,
       cancel_min_count: 3, cancel_window_days: 7, cancel_max_age_hours: 48,
       large_min_capacity: 50, large_min_attendees: 25, large_repeat_quiet_days: 90,
+      // 20270412 (repeated host cancellations) shares this row
+      repeat_cancel_min_count: 3, repeat_cancel_window_days: 30, repeat_cancel_min_attendees: 2,
     });
   });
 

@@ -282,7 +282,8 @@ d('journey: gathering review signals (20270385)', () => {
 
   test('create-then-cancel: series once, empty draft + old gathering ignored; minimal log; the 3rd = a case; cancellations go through', () => {
     expect(s.cancel_2.data).toEqual({ signals: 0, log: 5,
-      log_columns: ['cancelled_at', 'created_at', 'host_id', 'id', 'others_involved', 'scheduled_at', 'series_ref'] });
+      // approved_others = 20270412's one count (repeated host cancellations)
+      log_columns: ['approved_others', 'cancelled_at', 'created_at', 'host_id', 'id', 'others_involved', 'scheduled_at', 'series_ref'] });
     expect(s.cancel_3rd.data).toBe(0);
     expect(s.cancel_signal.data).toEqual({ evidence: { cancellations: 3, window_days: 7, within_hours: 48 }, cases: 1, gatherings_left: 0 });
   });

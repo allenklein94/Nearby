@@ -35,6 +35,10 @@ export function behaviorEvidenceLines(evidence) {
       case 'create_cancel':
         return `Cancelled ${sig.cancellations} gatherings others had joined or been invited to, within ${sig.window_days} days`
           + (Number.isFinite(sig.within_hours) ? ` (each within ${sig.within_hours} h of creating it)` : '');
+      // 20270412: later cancellations of gatherings people had really joined (counts only)
+      case 'repeated_cancellations':
+        return `Cancelled ${sig.cancellations} gatherings within ${sig.window_days} days`
+          + (Number.isFinite(sig.min_attendees) ? `, each with at least ${sig.min_attendees} people attending besides the host` : '');
       case 'large_public_gathering':
         return sig.trigger === 'attendees'
           ? `Public gathering reached ${sig.attendees} attendees`
