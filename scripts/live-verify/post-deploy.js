@@ -386,6 +386,15 @@ const STEPS = {
       'waitlist (two accounts + a third): a waitlisted person who blocked the host stays waitlisted when a spot opens; the next unblocked person is seated; nothing for the blocked person changes',
       'rollback = scripts/rollback/20270411_host_attendance_respects_blocks.rollback.sql (host reads every row again, promotion as before; no rows were changed)',
       'STOP + report: a host reads a blocked person\'s row by any query or receives a realtime event for it; a blocked waitlisted person is promoted; an attendance or approved count changes; a person loses their own row; service role / moderation reads fewer rows'],
+  },  // Repeated host cancellations: one advisory review signal (3 cancellations in 30 days, each with >= 2 approved guests)
+  20270412: { journeys: ['repeatedHostCancellations', 'gatheringReviewSignals', 'gatheringSignalThresholds', 'appVersionCompatibility'],
+    node: [],
+    edge: [],
+    manual: ['BEFORE deploy: 0385 + 0386 live (in order), 0365 live (review cases on); own approval; server only, nothing in the app changes (builds 86/87 included)',
+      'read-only right after: gathering_signal_settings repeat_cancel_* = 3 / 30 / 2; case_alone_kinds ends with repeated_cancellations (earlier order kept); gathering_cancel_log.approved_others exists, no client role; private.behavior_evaluate_case = 0385\'s plus the one family line',
+      'real phone (host + two guests): cancelling one gathering with two guests goes through and opens nothing; the guests get the usual cancellation push',
+      'rollback = scripts/rollback/20270412_repeated_host_cancellations.rollback.sql (back to 0385/0386; its signals removed, cases kept)',
+      'STOP + report: a cancellation refused or failing; a case from an admin removal, an account deletion, a guest leaving, a series counted more than once, or a gathering with fewer than 2 approved guests; any suspension or restriction'],
   },
 };
 
