@@ -93,7 +93,8 @@ describe('privacy boundary', () => {
     expect(sql).toMatch(/revoke all on private\.business_duplicate_dismissals from public, anon, authenticated;/);
   });
   test('nothing new stores contact details; no customer, profile, chat or story media is read', () => {
-    expect(sql).not.toMatch(/create table[^;]*(phone|email|website)/i);
+    // no column that could hold a phone, email, website or contact text (the dismissal 'kind' only names which field matched)
+    expect(sql).not.toMatch(/\n\s*(\w*phone\w*|\w*email\w*|\w*website\w*|contact\w*|key)\s+(text|bytea|citext)/i);
     expect(sql).not.toMatch(/profile_photos|photo_fingerprints|stories|messages|chat/);
   });
   test('only admin code calls the admin functions; nothing in the app calls the recorder', () => {
