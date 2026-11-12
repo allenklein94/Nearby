@@ -124,7 +124,7 @@ begin
         private.screening_content_availability_note(v_note));
     end if;
   end if;
-  perform private.set_business_availability_pulse_unscreened($1, $2, $3);
+  perform private.set_business_availability_pulse_unscreened(partner_id_param, pulse_param, v_note); -- stored as checked: trimmed, blank = none
 end;
 $function$;
 
