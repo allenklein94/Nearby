@@ -1204,6 +1204,46 @@ the 0348-0378 prelude + an aborted rollback round trip on prod; (3) grants vs pr
 published; (5) threshold validated against legitimate shared text. The one-word-change evasion is ACCEPTED for this version:
 no fuzzy text matching, no cross-account behavioural clustering, no further security features (owner).
 
+## The same website in public gatherings on several accounts (owner 2026-11-12, idea 35 follow-up; BUILT + STAGED as 20270413, NOT DEPLOYED, detection OFF)
+
+Branch `post-tier1/shared-link-signal` (stacked on `post-tier1/host-cancellation-signal`, after 0412); not in build 87; own
+deploy approval, in number order; server only (builds 86/87 unaffected); the admin website line ships with a re-export.
+
+**Gap.** 20 accounts post public gatherings with different wording that all send people to one website. 0378 matches whole
+long texts only; 0396 refuses a link only when Google Web Risk already lists it and stores nothing about links.
+
+**Rule (owner numbers).** One admin review case (signal `shared_link`, reason `many_accounts`) when one destination appears in
+public, visible gatherings (title or description) from 5 distinct accounts within a rolling 30 days. One host's several
+gatherings = one account. One cluster = one case (as 0378); a closed case stays closed, new accounts = new evidence. Never
+reads messages, chats, profiles, friendships or non-public gatherings. Never restricts, ranks, scores or tells anyone.
+Installed OFF; on/off only through `scripts/trust-safety/detector-switch.js --detector=link` (refuses until the disclosure
+below is published, marker `detector-disclosure:shared-link`).
+
+**Destination.** From 0396's one link detector (hxxp, [.], " dot ", full-width dots already undone): host only (scheme, user@,
+port, path, query dropped; %XX decoded; trailing dots; punycode decoded, so a look-alike written either way matches; decimal,
+hex and zero-padded IPv4 = one address). Ordinary sites = registrable domain (a new subdomain per account doesn't split the
+count; `co.uk`-style suffixes handled). Server-only list `private.shared_link_platforms`: `ignore` (YouTube, Eventbrite,
+Meetup, maps, ticketing, reservations, payments, Nearby's own site: never recorded), `per_site` (github.io, wixsite.com, ...:
+each person's subdomain is its own destination), `per_path` (t.me, WhatsApp, Discord, Instagram, Facebook, ...: the account or
+group in the path is the destination; a bare platform address isn't recorded). Without "http(s)://" or "www." only a known
+ending counts (so "Port St.Lucie" isn't a website). Short links can't be posted at all (0396). 0358 already caps public posts
+with a link at 3 a day per account.
+
+**Stored.** Keyed one-way hash (HMAC-SHA256, own server-only secret `private.link_signal_secret`) per account and gathering,
+first/last seen. Never the URL, host or text. 30 days after last seen, purged daily (`purge-link-sightings`); deleted with the
+account; `private.exclude_shared_link(link)` lists a legitimate destination and drops what was recorded. Case evidence =
+counts + up to 20 public gathering ids. No anon / authenticated / service_role access to any table or function.
+
+**Privacy Policy sentence (DRAFT, publish with activation):** "To help our team find coordinated misuse, when public
+gatherings from several accounts link to the same website, we keep a scrambled, one-way code of that website (never the link
+itself) for 30 days. It is only used to let our team review possible misuse; it never blocks or limits an account by itself."
+
+**Known gaps (left as is).** An unusual ending written without "http(s)://" or "www." isn't read; a platform on the `ignore`
+list can carry a campaign (e.g. one Eventbrite page) unseen; per-path platforms with many generic first segments may merge or
+miss; not every multi-part public suffix is known (an unknown one merges, never splits); the 5 / 30 numbers are a proposed
+starting point, not calibrated. A popular local venue linked by 5 hosts in a month opens a case: an admin closes it as
+"No action needed" and lists it with `exclude_shared_link`.
+
 ## Launch requirement: direct reporting of gatherings and communities (owner, 2026-11-06)
 
 Blocks outside users, not build 87 or the owner's own Tier 1 testing. NOT BUILT. Include it in the consolidated deployment checklist.

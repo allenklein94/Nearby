@@ -396,6 +396,17 @@ const STEPS = {
       'rollback = scripts/rollback/20270412_repeated_host_cancellations.rollback.sql (back to 0385/0386; its signals removed, cases kept)',
       'STOP + report: a cancellation refused or failing; a case from an admin removal, an account deletion, a guest leaving, a series counted more than once, or a gathering with fewer than 2 approved guests; any suspension or restriction'],
   },
+  // The same website in public gatherings on several accounts: keyed hash of the destination only, private admin-review case, never restricts; OFF until detector-switch on --detector=link
+  20270413: { journeys: ['sharedPublicLinks', 'sharedPublicText', 'linkSafety', 'reviewCaseHistory', 'appVersionCompatibility'],
+    node: ['scripts/replay/shared-link-concurrency.js (replay only, before the deploy)'],
+    edge: [],
+    manual: ['BEFORE deploy: 0378, 0396 and 0406 live (in order); own approval; server only, nothing in the app changes (builds 86/87 included); the admin website line ships with the website re-export',
+      'BEFORE final deploy approval: private.link_signal_secret in the same secret review as 20270374 / 20270376 / 20270378; prod journeys with the 0348-0413 prelude + an aborted rollback round trip on prod; grants vs prod',
+      'BEFORE activation (detector-switch.js on --detector=link, owner approval per run, runs private.backfill_link_sightings() once): the 5-accounts / 30-days starting point checked against legitimate shared links in the market (a popular venue, club or promoter; list them with private.exclude_shared_link); the platform list (private.shared_link_platforms) reviewed; the Privacy Policy sentence (PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md, shared-link section) approved + published with marker detector-disclosure:shared-link',
+      'read-only right after: link_signal_secret 1 row of 32 bytes; settings shared_link_min_accounts null; 0 link_sightings, 0 shared_link_excluded_keys, 0 account_review_case_link_keys; shared_link_platforms seeded (ignore / per_site / per_path rows); cron purge-link-sightings present; trigger zz_gathering_link_sighting (gatherings); no anon / authenticated / service_role access to the five tables or the functions',
+      'on the phone: publishing a public gathering with a link in its description still works exactly as before (the trigger runs after every such write)',
+      'rollback = scripts/rollback/20270413_shared_link_signals.rollback.sql (deletes its keys, secret and shared-link cases; gatherings untouched)',
+      'any failure row with step gathering_link, any restricted / hidden account, or a client read that answers = security defect: STOP, report'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
@@ -405,7 +416,7 @@ const OTHERS = {
   'report-presence': { rollback: 'redeploy the live bundle as recovered (git show 582c727e^:supabase/functions/report-presence/index.ts)',
     check: 'a normal presence report still 200; behaviorReviewSignals location block on prod' },
   'moderate-photo': { rollback: 'redeploy the live bundle recovered 2026-10-28 (or the 0349 version)', check: 'journey photoScreeningBinding; a real photo upload on the phone is screened; with 0368 live, private.photo_perceptual_hashes gets 6 rows for that photo (read-only count)' },
-  'detector-switch': { rollback: 'NEARBY_DETECTOR_APPROVAL=detector-off node scripts/trust-safety/detector-switch.js off --detector=all --target=prod (instant; cases stay for an admin; kept keys age out: device 90 days, text 30)',
+  'detector-switch': { rollback: 'NEARBY_DETECTOR_APPROVAL=detector-off node scripts/trust-safety/detector-switch.js off --detector=all --target=prod (instant; cases stay for an admin; kept keys age out: device 90 days, text + link 30)',
     check: 'status first: its gates are read from the thing itself (installed, secret, no client access, purge job, published Privacy Policy). After on: device_sightings / text_sightings rows appear only as keys; one real test push still arrives; no case without the rule; journey detectorActivationReadiness. Owner approval per run; never run before the readiness questions in PRODUCT_AUDIT/DETECTOR_ACTIVATION_READINESS_2026-11-08.md are answered' },
   'photo-detection-switch': { rollback: 'NEARBY_PHOTO_DETECTION_APPROVAL=photo-detection-off node scripts/trust-safety/photo-detection-switch.js off --target=prod (instant; near-duplicates only; add --all to stop exact copies too; open cases stay for review)',
     check: 'status --target=prod shows the numbers off; a new test photo copy opens nothing; back on only with the code from status (own approval), which re-judges existing photos in a separate transaction' },
