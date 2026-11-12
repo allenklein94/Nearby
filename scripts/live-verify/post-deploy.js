@@ -408,7 +408,7 @@ const STEPS = {
       'rollback = scripts/rollback/20270413_shared_link_signals.rollback.sql (deletes its keys, secret and shared-link cases; gatherings untouched)',
       'any failure row with step gathering_link, any restricted / hidden account, or a client read that answers = security defect: STOP, report'] },
   // Duplicate business contact details + identical business logos / offer photos: admin evidence only, never blocks approval (idea 36)
-  20270414: { journeys: ['businessDuplicateWarnings', 'businessApplication', 'sharedPublicLinks', 'offer', 'appVersionCompatibility'],
+  20270414: { journeys: ['businessDuplicateWarnings', 'businessApplication', 'sharedPublicLinks', 'offerJourney', 'appVersionCompatibility'],
     node: [],
     edge: ['screen-business-content right after the migration (records logo / offer-photo SHA-256 after a successful screen; before 0414 is live the call is a swallowed PGRST202, so either order is safe; a recording failure never changes a screening answer)'],
     manual: ['BEFORE deploy: 0369 and 0413 live (in order); own approval; server + edge only; the admin card warnings ship with the next native build / website re-export (builds 86/87 call nothing new)',
