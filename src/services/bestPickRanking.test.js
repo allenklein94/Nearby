@@ -25,7 +25,7 @@ describe('Best Pick follows the one ranking ladder', () => {
   afterAll(() => { jest.useRealTimers(); });
 
   it('a declared interest (6) beats a crowd (9), though the crowd has the higher score', () => {
-    const crowd = g('crowd', { approvedCount: 10, approvedAttendees: attendees(10) });
+    const crowd = g('crowd', { approvedCount: 10, approvedAttendees: attendees(10), isTrending: true }); // idea 42: crowd points need Trending
     const mine = g('mine', { matchesYourInterests: true });
     expect(getGatheringFitReasons(crowd).score).toBeGreaterThan(getGatheringFitReasons(mine).score);
     expect(pickBestGathering([crowd, mine]).id).toBe('mine');
@@ -48,7 +48,7 @@ describe('Best Pick follows the one ranking ladder', () => {
   it('eligibility is unchanged: nothing under a fit score of 5 is a pick; room never counts toward it', () => {
     expect(BEST_PICK_MIN_SCORE).toBe(5);
     const plain = g('plain', { approvedCount: 2, approvedAttendees: attendees(2) });
-    expect(getGatheringFitReasons(plain).score).toBe(2);
+    expect(getGatheringFitReasons(plain).score).toBe(0); // idea 42: attendance earns points only when the server says Trending
     expect(pickBestGathering([plain])).toBeNull();
   });
 
@@ -56,7 +56,7 @@ describe('Best Pick follows the one ranking ladder', () => {
     const nearToday = g('near', { scheduled_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), distanceMiles: 0.5, distanceLabel: '0.5 mi away' });
     expect(getGatheringFitReasons(nearToday).score).toBeGreaterThanOrEqual(BEST_PICK_MIN_SCORE);
     expect(pickBestGathering([nearToday])).toBeNull();
-    const crowd = g('crowd', { approvedCount: 10, approvedAttendees: attendees(10) });
+    const crowd = g('crowd', { approvedCount: 10, approvedAttendees: attendees(10), isTrending: true }); // idea 42: crowd points need Trending
     expect(pickBestGathering([crowd])).toBeNull(); // popularity alone, however high
   });
 
@@ -85,7 +85,7 @@ describe('Best Pick follows the one ranking ladder', () => {
     const fit = getGatheringFitReasons(g('r', { matchesYourInterests: true, approvedCount: 3, approvedAttendees: attendees(3) }), { friendAttendeeCount: 1 });
     expect(fit.reasons).toEqual(['4 people attending', // 3 joined + the host (item 28 follow-up)
       'Because you like Coffee', '1 of your friends is attending']);
-    expect(fit.score).toBe(3 + 5 + 4);
+    expect(fit.score).toBe(0 + 5 + 4); // idea 42: 3 joined, not Trending = no attendance points; the reason line is unchanged
     expect(fit.rankVector).toHaveLength(10);
   });
 

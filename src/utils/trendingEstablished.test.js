@@ -1,6 +1,7 @@
 // Trending needs established attendees (owner, 2026-11-11; migration 20270409, staged). The server alone decides Trending and
 // returns only a yes/no; the phone never compares the attendee count against 5 for Trending; a missing answer = not trending;
-// "N attending", capacity and the popularity ranking keep the full approved count (option (a): ranking unchanged).
+// "N attending" and capacity keep the full approved count. The popularity ranking followed later (owner idea 42, 2026-11-12):
+// its points now read this same yes/no (utils/popularityEstablished.test.js).
 jest.mock('expo-location', () => ({}));
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn() }));
 jest.mock('expo-image-picker', () => ({}));
@@ -53,10 +54,10 @@ describe('the attendance facts stay the full approved count', () => {
     expect(attendingCountLabel({ approvedCount: 9, isTrending: true })).toBe('10 attending');
     expect(attendeeTotal({ approvedCount: 9, isTrending: false })).toBe(9);
   });
-  test('option (a): popularity ranking + fit-score attendance points still read the full count', () => {
+  test('idea 42: popularity ranking + fit-score attendance points read the Trending answer, never the full count', () => {
     const home = read('services/homeDashboard.js');
-    expect((home.match(/\.filter\(isTrendingGathering\)\n\s*\.sort\(\(a, b\) => attendeeTotal\(b\) - attendeeTotal\(a\)\)/g) || []).length).toBe(2);
-    expect(read('services/gatherings.js')).toMatch(/add\('attendance', Math\.min\(attendeeCount, 10\)/);
+    expect((home.match(/\.filter\(isTrendingGathering\)\n\s*\.sort\(compareTrendingOrder\)/g) || []).length).toBe(2);
+    expect(read('services/gatherings.js')).toMatch(/add\('attendance', isTrendingGathering\(gathering\) \? POPULARITY_POINTS : 0/);
   });
 });
 
