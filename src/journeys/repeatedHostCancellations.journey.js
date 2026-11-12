@@ -65,7 +65,7 @@ d('journey: repeated host cancellations (20270412)', () => {
   beforeAll(async () => {
     const log = await runJourney(`
       ${actorDeclares(ACTORS)}
-      v_out jsonb; v_hint text; v_res jsonb; v_g uuid; v_series uuid := gen_random_uuid(); v_case uuid; i int;`, `
+      v_out jsonb; v_hint text; v_res jsonb; v_g uuid; v_series uuid := gen_random_uuid(); v_case uuid; v_rep uuid; i int;`, `
   ${actorsSql({ people: ACTORS })}
   ${LIFT_GATHERING_CREATION_LIMIT}
   update profiles set is_admin = true where id = v_admin;
@@ -82,8 +82,10 @@ d('journey: repeated host cancellations (20270412)', () => {
   ${APPROVED}
 
   -- 1. the threshold: 2 = nothing, the 3rd = one signal + one case; create_cancel never saw them (posted days ahead)
-  ${cancelled('h1_cancel_1', 'v_h1')}
-  ${rec('h1_joined_status', `(select array_agg(distinct status) from gathering_interest where user_id in (v_a1, v_a2))`)}
+  ${gathering('v_g', 'v_h1')};
+  ${joinAll(['v_a1', 'v_a2'], 'v_g')}
+  ${rec('h1_joined_status', `(select array_agg(distinct status) from gathering_interest where gathering_id = v_g and user_id in (v_a1, v_a2))`)}
+  ${as('h1_cancel_1', 'v_h1', `v_res := cancel_gathering(v_g)`, 'v_res')}
   ${cancelled('h1_cancel_2', 'v_h1')}
   ${rec('h1_two', `jsonb_build_object('signals', ${sig('v_h1')}, 'cases', ${allCases('v_h1')},
       'log', (select array_agg(approved_others) from private.gathering_cancel_log where host_id = v_h1))`)}
@@ -154,9 +156,8 @@ d('journey: repeated host cancellations (20270412)', () => {
   for i in 1..3 loop
     ${gathering('v_g', 'v_h4')};
     ${joinAll(['v_a1', 'v_a2'], 'v_g')}
-    ${claims('v_admin')}
-    perform private.content_remove_gathering((select g from gatherings g where g.id = v_g), null, v_admin, 'Test removal');
-    perform set_config('request.jwt.claims', '', true);
+    ${as('h4_report', 'v_a3', `insert into reports (reporter_id, reason, content_type, content_id) values (v_a3, 'Spam or scam', 'gathering', v_g) returning id into v_rep`)}
+    ${as('h4_admin_remove', 'v_admin', `perform public.admin_remove_reported_content(v_rep, 'Misleading listing')`)}
   end loop;
   ${rec('h4_admin_removed', `(select count(*) from gatherings where host_id = v_h4)`)}
   for i in 1..3 loop

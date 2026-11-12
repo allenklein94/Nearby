@@ -68,6 +68,12 @@ d('journey: gathering review signals (20270385)', () => {
   update private.gathering_signal_settings set surge_min_joiners = null, surge_window_minutes = null, surge_new_share = null,
     cancel_min_count = null, cancel_window_days = null, cancel_max_age_hours = null,
     large_min_capacity = null, large_min_attendees = null, large_repeat_quiet_days = null where id;
+  -- 20270412's detector shares the log: off here too, so this journey proves 20270385 alone
+  if exists (select 1 from information_schema.columns where table_schema = 'private' and table_name = 'gathering_signal_settings'
+               and column_name = 'repeat_cancel_min_count') then
+    execute 'update private.gathering_signal_settings set repeat_cancel_min_count = null, repeat_cancel_window_days = null,
+             repeat_cancel_min_attendees = null where id';
+  end if;
   ${gathering('v_g', 'v_x')};
   ${joinAll(NEW, 'v_g')}
   ${gathering('v_g', 'v_x', { cap: 100 })};
