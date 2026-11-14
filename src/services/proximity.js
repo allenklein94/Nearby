@@ -28,6 +28,7 @@ import { mergeCrossedPathsSignals } from './crossedPathsSignals';
 import { isDatingOptedIn } from '../utils/datingCountConsent';
 import { appearancePreferencesOf, rankDatingCandidates } from '../utils/datingAppearance';
 import { createBrowsePool, BROWSE_PAGE_SIZE } from '../utils/browsePool';
+import { readWithOptionalColumns } from '../utils/optionalProfileColumns';
 
 // Unified Crossed Paths, step 3 (CLAUDE.md, 2026-09-10): the shared-
 // gathering-attendance half of the signal union -- see
@@ -444,7 +445,9 @@ async function buildBrowsePool(userId, myProfile) {
   });
 }
 
-const BROWSE_PROFILE_COLUMNS = 'wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders';
+// dating_pref_tattoos / dating_pref_piercings arrive with staged 20270417; read through readWithOptionalColumns so Browse
+// works the same before it is live (no preference).
+const BROWSE_PROFILE_COLUMNS = 'wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, dating_pref_tattoos, dating_pref_piercings, interests, basics, gender_identity, interested_in_genders';
 
 // Everything the pool's membership or order depends on; a change means a new pool.
 function browsePoolKey(userId, myProfile) {
@@ -455,7 +458,7 @@ async function readBrowseInputs() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
   if (!userId) return null;
-  const { data: myProfile, error } = await readMyProfile(BROWSE_PROFILE_COLUMNS);
+  const { data: myProfile, error } = await readWithOptionalColumns(readMyProfile, BROWSE_PROFILE_COLUMNS);
   if (error) throw error;
   if (!myProfile?.wide_area) return null;
   return { userId, myProfile, key: browsePoolKey(userId, myProfile) };

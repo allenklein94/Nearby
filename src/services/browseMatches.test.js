@@ -179,3 +179,26 @@ test('within 5 minutes page 1 reuses the pool (no window read); pages past 1 nev
   await getBrowseMatches(0);
   expect(kinds()).not.toContain('window');
 });
+
+test('before 20270417 is live: the own-profile read without the new columns still builds Browse (no preference)', async () => {
+  const { readMyProfile } = require('./myProfile');
+  readMyProfile.mockImplementation(async (cols) => (cols.includes('dating_pref_tattoos')
+    ? { data: null, error: { code: '42703', message: 'column profiles.dating_pref_tattoos does not exist' } }
+    : { data: state.profile, error: null }));
+  const r = await getBrowseMatches(0);
+  expect(r).toMatchObject({ failed: false });
+  expect(r.items).toHaveLength(20);
+  readMyProfile.mockImplementation(async () => ({ data: state.profile, error: null }));
+});
+
+test('a tattoo preference reorders Browse but removes nobody', async () => {
+  state.people = state.people.slice(0, 40).map((p, i) => ({ ...p, basics: { ...p.basics, tattoos: i % 2 ? 'Has tattoos' : 'No tattoos' } }));
+  const base = await getBrowseMatches(0);
+  resetBrowsePool();
+  state.profile = { ...state.profile, dating_pref_tattoos: 'with' };
+  const withPref = await getBrowseMatches(0);
+  const rest = await getBrowseMatches(20);
+  expect(withPref.items[0].profiles.basics.tattoos).toBe('Has tattoos');
+  expect(new Set([...withPref.items, ...rest.items].map((c) => c.id)).size).toBe(40);
+  expect(base.items.map((c) => c.id)).not.toEqual(withPref.items.map((c) => c.id));
+});

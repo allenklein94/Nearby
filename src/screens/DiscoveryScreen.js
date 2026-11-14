@@ -46,7 +46,8 @@ import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 const UNDO_WINDOW_SECONDS = 5;
 
 const DISCOVERY_FILTER_FIELDS = [
-  ...BASICS_FIELDS.filter((f) => f.type === 'select'),
+  // Appearance-only fields (tattoos, piercings) are never a filter: they only rank Browse (owner, 2026-11-14).
+  ...BASICS_FIELDS.filter((f) => f.type === 'select' && !f.appearanceOnly),
   { key: 'ethnicity', label: 'Ethnicity', icon: '🌍', options: ETHNICITY_OPTIONS, topLevel: true },
 ];
 

@@ -42,6 +42,9 @@ function withRelationshipIntention(basics, profile) {
 }
 
 export const NEVER_COMPARED_BASICS = Object.freeze(['job_title']);
+// Tattoos + piercings are soft appearance preferences only (owner, 2026-11-14): their influence is the capped appearance
+// adjustment in utils/datingAppearance.js, never also a compatibility match/mismatch.
+export const APPEARANCE_ONLY_BASICS = Object.freeze(['tattoos', 'piercings']);
 
 export function generateCompatibilityReport(myProfile, theirProfile) {
   const myInterests = myProfile?.interests ?? [];
@@ -68,7 +71,7 @@ export function generateCompatibilityReport(myProfile, theirProfile) {
   }
 
   // Item 184 (owner, LOCKED, not LinkedIn): Job Title is a profile fact only; it is never compared, matched or scored.
-  const comparableKeys = Object.keys(myBasics).filter((key) => !NEVER_COMPARED_BASICS.includes(key) && theirBasics[key] !== undefined);
+  const comparableKeys = Object.keys(myBasics).filter((key) => !NEVER_COMPARED_BASICS.includes(key) && !APPEARANCE_ONLY_BASICS.includes(key) && theirBasics[key] !== undefined);
   const matchingFields = [];
   const differingFields = [];
 
