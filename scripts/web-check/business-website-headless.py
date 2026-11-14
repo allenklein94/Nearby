@@ -166,7 +166,7 @@ with sync_playwright() as p:
     try:
         pg.get_by_text('Bookings', exact=True).first.click(); pg.wait_for_timeout(1500)
         t = pg.inner_text('body'); pg.screenshot(path='/out/h_booking.png', full_page=True)
-        nv, ng = t.find('Upcoming Nearby Visits'), t.find('No gatherings hosted yet')
+        nv, ng = t.lower().find('upcoming nearby visits'), t.find('No gatherings hosted yet')  # section headers render uppercased
         check('[booking] a confirmed visit is listed first on Bookings', nv >= 0 and (ng < 0 or nv < ng), f'visits@{nv} gatherings@{ng}')
         check('[booking] no "No bookings yet" beside a real booking', 'No bookings yet' not in t)
         check('[booking] party size uses the localized wording ("2 people")', '2 people' in t, t[nv:nv + 200].replace('\n', ' | ') if nv >= 0 else '')
