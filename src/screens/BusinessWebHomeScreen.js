@@ -5,6 +5,8 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { typography, spacing } from '../theme';
 import NearbyMark from '../components/brand/NearbyMark';
+import { supabase } from '../services/supabase';
+import { adminReviewAvailable, probeAdminReview } from '../utils/adminReviewAvailability';
 
 import { NLoader } from '../motion';
 // Phase 7 (Business Web, CLAUDE.md) -- the entire gate for Business Web:
@@ -14,19 +16,23 @@ import { NLoader } from '../motion';
 // reused verbatim rather than a second ownership check). A visitor who
 // doesn't gets a real, honest message -- never a fabricated dashboard.
 // Admins (profiles.is_admin, set only server-side) also get a link to Admin review (20270368 + 20270369); the link is a
-// convenience: every admin read and action is refused by the server for anyone else.
+// convenience: every admin read and action is refused by the server for anyone else. Shown only once that backend
+// answers (utils/adminReviewAvailability.js); until then an admin goes straight to their dashboard like any owner.
 export default function BusinessWebHomeScreen({ navigation }) {
   const { colors } = useTheme();
   const { isAdmin } = useAuth();
   const styles = getStyles(colors);
   const [checking, setChecking] = useState(true);
   const [hasBusiness, setHasBusiness] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    getMyManagedPartner().then((partner) => {
+    Promise.all([getMyManagedPartner(), isAdmin ? probeAdminReview(supabase) : null]).then(([partner, probe]) => {
       if (cancelled) return;
-      if (partner && !isAdmin) {
+      const admin = adminReviewAvailable(isAdmin, probe);
+      setShowAdmin(admin);
+      if (partner && !admin) {
         navigation.replace('BusinessDashboard');
       } else if (partner) {
         setHasBusiness(true);
@@ -49,7 +55,7 @@ export default function BusinessWebHomeScreen({ navigation }) {
     );
   }
 
-  const adminLinks = isAdmin ? (
+  const adminLinks = showAdmin ? (
     <View style={styles.links}>
       {hasBusiness ? (
         <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('BusinessDashboard')} accessibilityRole="button">
