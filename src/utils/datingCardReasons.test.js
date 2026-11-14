@@ -132,6 +132,11 @@ describe('Dating Browse reasons (owner, 2026-11-14)', () => {
     expect(say('family_plans', "Have children, don't want more")).toBe("You both have children and don't want more");
     expect(say('workout', 'Often')).toBe('You both work out often');
     expect(say('pets', 'Pet-free')).toBe("You're both pet-free");
+    // The Pets field asks no question ("Pets: Dog"), so an animal answer is never read as owning or liking one.
+    for (const v of ['Dog', 'Cat', 'Reptile', 'Bird', 'Fish']) {
+      expect(say('pets', v)).toMatch(/^You both picked \w+ as pets$/);
+      for (const lang of LANGS) expect(translate(lang, lifestyleReasonKey('pets', v))).not.toMatch(/\bhave\b|\blike\b|\blove\b/i);
+    }
     expect(say('love_style', 'Quality time')).toBe('You share a love language: quality time');
   });
   test('two shared goals show one sentence, in the options\' order', () => {
