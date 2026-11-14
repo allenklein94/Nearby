@@ -114,7 +114,8 @@ describe('wiring guard', () => {
   });
 
   test('Browse orders through the one shared rule; age + ethnicity filters stay', () => {
-    expect(src).toMatch(/rankDatingCandidates\(candidates, appearancePreferencesOf\(myProfile\)\)/);
+    expect(src).toMatch(/rankWindow: \(rows\) => rankDatingCandidates\(/);
+    expect(src).toMatch(/const appearance = appearancePreferencesOf\(myProfile\);/);
     expect(src).toMatch(/age < minAge \|\| age > maxAge/);
     expect(src).toMatch(/ethnicityPreferences\.includes/);
   });

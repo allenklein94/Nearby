@@ -27,6 +27,7 @@ import { getMyActiveLiveTrackingSession } from './liveTracking';
 import { mergeCrossedPathsSignals } from './crossedPathsSignals';
 import { isDatingOptedIn } from '../utils/datingCountConsent';
 import { appearancePreferencesOf, rankDatingCandidates } from '../utils/datingAppearance';
+import { createBrowsePool, BROWSE_PAGE_SIZE } from '../utils/browsePool';
 
 // Unified Crossed Paths, step 3 (CLAUDE.md, 2026-09-10): the shared-
 // gathering-attendance half of the signal union -- see
@@ -327,122 +328,116 @@ export async function getNearbyMatches() {
     });
 }
 
-const BROWSE_BATCH_SIZE = 20;
+// Dating Browse (owner, 2026-11-14, Option A): a second, optional discovery mode, NOT proximity-bound like Crossed
+// Paths. The candidates are anyone in the same coarse wide_area bucket (~6-7 mile grid) or its 8 neighbours who chose
+// Dating (dating_candidates_visible_to_me), minus friends, matches and the person's hard filters. They are read in
+// windows of BROWSE_POOL_WINDOW, filtered and ranked as one set (compatibility + the approved appearance adjustment,
+// utils/datingAppearance.js), and revealed BROWSE_PAGE_SIZE at a time (utils/browsePool.js); the pool is reused while
+// fresh. Returns { items, hasMore }: hasMore comes from the pool, never from an empty page. Crossed Paths stays the
+// default, primary experience.
+let browsePoolCache = null;
 
-// A second, optional discovery mode — NOT proximity-bound like
-// Crossed Paths. Pulls from anyone in the same coarse wide_area
-// bucket (~6-7 mile grid) matching the person's existing filters,
-// returned in batches. This exists alongside Crossed Paths as an
-// additional way to browse, not a replacement for it — Crossed Paths
-// remains the default, primary experience.
-export async function getBrowseMatches(offset = 0) {
-  const { data: sessionData } = await supabase.auth.getSession();
-  const userId = sessionData?.session?.user?.id;
-  if (!userId) return [];
+// Drops the reused pool (pull to refresh, sign out).
+export function resetBrowsePool() {
+  browsePoolCache = null;
+}
 
-  // People in a block with me, either way, never come back from people_visible_to_me (server rule, 20270265); the
+function neighborBucketsOf(wideArea) {
+  // The current bucket plus its 8 neighbours: two people in the same broad area can round into different buckets.
+  const [bucketLat, bucketLng] = wideArea.split(',').map(Number);
+  const buckets = [];
+  for (const dLat of [-0.1, 0, 0.1]) {
+    for (const dLng of [-0.1, 0, 0.1]) {
+      buckets.push(`${Math.round((bucketLat + dLat) * 10) / 10},${Math.round((bucketLng + dLng) * 10) / 10}`);
+    }
+  }
+  return buckets;
+}
+
+async function buildBrowsePool(userId, myProfile) {
+  // People in a block with me, either way, never come back from dating_candidates_visible_to_me (server rule); the
   // client never reads `blocks`.
-  const { data: acceptedFriends } = await supabase
-    .from('friendships')
-    .select('user_a, user_b')
-    .eq('status', 'accepted')
-    .or(`user_a.eq.${userId},user_b.eq.${userId}`);
-
-  const excludedUserIds = new Set([
-    userId,
-    // Once a friendship is confirmed, that person shouldn't keep
-    // showing up here to Notice/Wave — it risks creating a
-    // duplicate match on top of the friendship.
-    ...(acceptedFriends ?? []).map((f) => (f.user_a === userId ? f.user_b : f.user_a)),
+  const [{ data: acceptedFriends }, { data: existingMatches }] = await Promise.all([
+    supabase.from('friendships').select('user_a, user_b').eq('status', 'accepted').or(`user_a.eq.${userId},user_b.eq.${userId}`),
+    supabase.from('matches').select('user_a, user_b').or(`user_a.eq.${userId},user_b.eq.${userId}`),
   ]);
-
-  const { data: myProfile } = await readMyProfile('wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders');
-
-  if (!myProfile?.wide_area) return [];
+  const other = (row) => (row.user_a === userId ? row.user_b : row.user_a);
+  // A confirmed friend or an existing match is never re-surfaced as a dating prospect.
+  const excludedUserIds = new Set([userId, ...(acceptedFriends ?? []).map(other), ...(existingMatches ?? []).map(other)]);
 
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
+  const buckets = neighborBucketsOf(myProfile.wide_area);
+  const appearance = appearancePreferencesOf(myProfile);
 
-  const { data: existingMatches } = await supabase
-    .from('matches')
-    .select('user_a, user_b')
-    .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+  return createBrowsePool({
+    // Keyset paging by id (stable order, required for windows: no skips or repeats when rows change between reads).
+    fetchWindow: async (afterId, size) => {
+      const { data, error } = await selectPeople((columns) => {
+        let query = supabase.from('dating_candidates_visible_to_me').select(columns).in('wide_area', buckets);
+        if (afterId != null) query = query.gt('id', afterId);
+        return query.order('id', { ascending: true }).limit(size);
+      }, DATING_CANDIDATE_COLUMNS);
+      if (error) throw error;
+      return data ?? [];
+    },
+    rankWindow: (rows) => rankDatingCandidates(
+      rows
+        .filter((p) => !excludedUserIds.has(p.id) && isDatingOptedIn({ profiles: p }))
+        .filter((p) => passesGenderMatch(myProfile, p))
+        .filter((p) => {
+          const age = p.age ?? null;
+          if (age !== null && (age < minAge || age > maxAge)) return false;
+          if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
+          // Appearance preferences rank (rankDatingCandidates), never exclude (owner, 2026-11-14).
+          return true;
+        })
+        .map((p) => ({
+          id: p.id,
+          otherUserId: p.id,
+          profiles: p,
+          sharedInterests: (p.interests ?? []).filter((i) => (myProfile?.interests ?? []).includes(i)),
+          compatibilityScore: calculateCompatibility(myProfile, p),
+        })),
+      appearance,
+    ),
+    // Before a page shows, the server re-decides who is still visible (blocks either way, Dating consent, area).
+    confirmVisible: async (ids) => {
+      const { data, error } = await supabase.from('dating_candidates_visible_to_me').select('id').in('id', ids).in('wide_area', buckets);
+      if (error) throw error;
+      return new Set((data ?? []).map((row) => row.id));
+    },
+  });
+}
 
-  const matchedUserIds = new Set(
-    (existingMatches ?? []).map((m) => (m.user_a === userId ? m.user_b : m.user_a))
-  );
+// Everything the pool's membership or order depends on; a change means a new pool.
+function browsePoolKey(userId, myProfile) {
+  return JSON.stringify([userId, BROWSE_PROFILE_COLUMNS, BROWSE_PROFILE_COLUMNS.split(', ').map((c) => myProfile?.[c] ?? null)]);
+}
 
-  // Check the current bucket plus its 8 immediate neighbors, not
-  // just an exact match — two people genuinely in the same broad
-  // area can still land in different rounded buckets if their last
-  // location updates happened to round differently near a boundary.
-  const [bucketLat, bucketLng] = myProfile.wide_area.split(',').map(Number);
-  const neighborBuckets = [];
-  for (const dLat of [-0.1, 0, 0.1]) {
-    for (const dLng of [-0.1, 0, 0.1]) {
-      const lat = Math.round((bucketLat + dLat) * 10) / 10;
-      const lng = Math.round((bucketLng + dLng) * 10) / 10;
-      neighborBuckets.push(`${lat},${lng}`);
-    }
-  }
+const BROWSE_PROFILE_COLUMNS = 'wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders';
 
-  // Item 121 follow-up: only people who chose Dating (server-side, dating_candidates_visible_to_me, 20270314).
-  const { data: profiles, error } = await selectPeople((columns) => supabase
-    .from('dating_candidates_visible_to_me')
-    .select(columns)
-    .in('wide_area', neighborBuckets)
-    // A stable order is required for paging: without one, Postgres may return rows in any order per request, so
-    // consecutive pages could repeat or skip people (item 131 audit). The batch is then ordered by compatibility below.
-    .order('id', { ascending: true })
-    .range(offset, offset + BROWSE_BATCH_SIZE - 1), DATING_CANDIDATE_COLUMNS);
+export async function getBrowseMatches(offset = 0) {
+  const none = { items: [], hasMore: false };
+  const { data: sessionData } = await supabase.auth.getSession();
+  const userId = sessionData?.session?.user?.id;
+  if (!userId) return none;
 
-  if (error) {
+  const { data: myProfile } = await readMyProfile(BROWSE_PROFILE_COLUMNS);
+  if (!myProfile?.wide_area) return none;
+
+  const key = browsePoolKey(userId, myProfile);
+  // Later pages always continue the pool the first page came from; a first page reuses it only while fresh.
+  const reusable = browsePoolCache && browsePoolCache.key === key && (offset > 0 || browsePoolCache.pool.isFresh());
+  if (!reusable) browsePoolCache = { key, pool: await buildBrowsePool(userId, myProfile) };
+
+  try {
+    return await browsePoolCache.pool.page(offset, BROWSE_PAGE_SIZE);
+  } catch (error) {
     console.error('getBrowseMatches error', error);
-    return [];
+    // Never keep a half-read pool; a failed read is reported as nothing to show, as before.
+    browsePoolCache = null;
+    return none;
   }
-
-  const candidates = (profiles ?? [])
-    .filter((p) => !excludedUserIds.has(p.id) && !matchedUserIds.has(p.id) && isDatingOptedIn({ profiles: p }))
-    .filter((p) => passesGenderMatch(myProfile, p))
-    .filter((p) => {
-      const age = p.age ?? null;
-      if (age !== null && (age < minAge || age > maxAge)) return false;
-      if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
-      // Appearance preferences rank below, never exclude (owner, 2026-11-14).
-      return true;
-    })
-    .map((p) => {
-      const sharedInterests = (p.interests ?? []).filter((i) => (myProfile?.interests ?? []).includes(i));
-      const compatibilityScore = calculateCompatibility(myProfile, p);
-      return {
-        id: p.id,
-        otherUserId: p.id,
-        profiles: p,
-        sharedInterests,
-        compatibilityScore,
-      };
-    })
-    // Universal Signal Remediation Pass, P1 item 4 (CLAUDE.md, Aug 28
-    // 2026): compatibilityScore is real, already computed for every
-    // candidate above, already shown as a badge, already usable as an
-    // optional filter -- but this query previously had no ORDER BY at
-    // all, so it never actually influenced who a user saw first. Sorted
-    // here (within this fetched page, descending) rather than the
-    // fuller compatibility+recency+distance+activity blend discussed --
-    // this function's own real, fetched row shape has no recency/
-    // distance/activity signal to blend in today (confirmed: `profiles`
-    // has no last-active/last-seen column at all, and Browse is
-    // deliberately not proximity-bound, see this function's own header
-    // comment), so blending in a fabricated one would violate this
-    // app's own standing "no invented numbers" convention. Compatibility
-    // alone is the one real signal genuinely available here, and now
-    // genuinely drives order -- closing the actual bug the audit found.
-    // A real multi-signal blend, if ever built, needs new data this
-    // query doesn't collect yet, and real weights "tested rather than
-    // guessed" per the user's own words -- not invented in this pass.
-    // Owner 2026-11-14: compatibility score + a fixed +/-2 per appearance preference, ordering only, never removes anyone
-    // (utils/datingAppearance.js); the shown compatibility score is unchanged.
-    .filter(Boolean);
-  return rankDatingCandidates(candidates, appearancePreferencesOf(myProfile));
 }

@@ -5,7 +5,7 @@ import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView
 import { PullToRefresh, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
+import { getNearbyMatches, getBrowseMatches, resetBrowsePool, reportPresence } from '../services/proximity';
 import { getUserLocation } from '../services/userLocation';
 import { formatCrossedPathsTime, gatheringReasonText } from '../services/crossedPathsSignals';
 import { checkAndCountBrowseView } from '../services/browseLimits';
@@ -191,7 +191,8 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   }
 
   const loadBrowseBatch = useCallback(async (offset) => {
-    const results = await getBrowseMatches(offset);
+    // Owner 2026-11-14: hasMore comes from the ranked pool (an empty filtered window is never "no more people").
+    const { items: results, hasMore } = await getBrowseMatches(offset);
 
     if (myUserId) {
       const limitCheck = await checkAndCountBrowseView(myUserId, results.length);
@@ -209,7 +210,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
       }
     }
 
-    setBrowseHasMore(results.length > 0);
+    setBrowseHasMore(hasMore);
 
     const urlEntries = await Promise.all(
       results.map(async (item) => {
@@ -496,7 +497,15 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   async function onRefresh() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    await load();
+    if (discoveryMode === 'browse') {
+      // Pull to refresh in Browse re-reads Browse (a fresh pool from the first page), never Crossed Paths.
+      resetBrowsePool();
+      setBrowseOffset(0);
+      setBrowseHasMore(true);
+      await loadBrowseBatch(0);
+    } else {
+      await load();
+    }
     setRefreshing(false);
   }
 

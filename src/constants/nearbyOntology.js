@@ -104,7 +104,7 @@ export const SURFACE_PIPELINE = {
     never: { temporary_intent: 'feed, not an ask (item 114)' } },
   people: {
     population: 'OPT-IN people discovery, never connected friends: Dating = people you crossed paths with (proximity sightings + shared past gatherings) or, in Browse, profiles in your ~7-mile area buckets, minus matches/blocks/friends, filtered by your dating preferences; Friends = people who opted into friend discovery (get_friend_discovery_candidates, server-side exclusions)',
-    ordering: 'Dating Crossed Paths: most recent sighting first, gathering-only people after (merge order, getNearbyMatches); Dating Browse: stable id paging, each batch by compatibility score (getBrowseMatches); Friends: shared interests + shared communities + mutual friends desc, then distance, then random (server)',
+    ordering: 'Dating Crossed Paths: most recent sighting first, gathering-only people after (merge order, getNearbyMatches); Dating Browse: the eligible pool read in id-keyset windows (300), each window ranked by compatibility + the appearance adjustment and revealed 20 at a time (getBrowseMatches, utils/browsePool.js); Friends: shared interests + shared communities + mutual friends desc, then distance, then random (server)',
     why: 'a person is not supply: the ladder\'s tiers (intent, availability, business, weather, trending) do not describe a person, and the no-stranger-discovery rule forbids surfacing people from an ask; so People keeps its own opt-in pool and order',
     uses: ['group', 'persistent_interests', 'hard_constraints', 'eligibility', 'action'],
     never: { temporary_intent: 'no stranger discovery via intent (hard privacy rule)' }, note: 'deck order is not on the ten-tier ladder' },
