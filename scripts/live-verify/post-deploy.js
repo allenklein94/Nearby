@@ -44,6 +44,8 @@ const STEPS = {
   20270368: { journeys: ['reviewCaseHistory', 'trustSafetyI123'], edge: ['moderate-photo (right after; safe in either order: it skips the hashes while the function is missing)'] },
   20270369: { journeys: ['reviewCaseHistory', 'trustSafetyI123', 'behaviorReviewSignals'], live: ['reviewCaseAdminSignedIn.live.js (NEARBY_POST_DEPLOY_0369=1)'],
     manual: ['website (unpublished build, owner approval to publish): admin signs in, Admin review lists the queue; a non-admin account sees "Admins only" and every call refused'] },
+  20270417: { journeys: ['appVersionCompatibility'],
+    manual: ['read-only: profiles has dating_pref_tattoos + dating_pref_piercings, nullable, check (null | with | without), all NULL; under 0348 neither is in the authenticated column grant (no other person reads them); on a build carrying the client: Dating Preferences shows the two choices, saving With/Without/No preference round-trips, Browse reorders and hides nobody'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
