@@ -1,7 +1,7 @@
-import { tr, getCurrentLanguage } from '../i18n/translate';
+import { tr, hasOwnTranslation } from '../i18n/translate';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
-import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
+import { optionSlug } from '../i18n/basicsVocab';
 // Item 77: a Dating candidate is explained the same way every other recommendation is -- why, where, when -- from real
 // fields only, never a bare "Suggested Match". WHY = the interests you both really have; with none, Browse says the one
 // true thing (they fit the person's own dating preferences) and Crossed Paths lets the crossing itself be the reason.
@@ -17,6 +17,8 @@ import { basicsLabel, basicsOption } from '../i18n/basicsVocab';
 // answer ("Prefer not to say", "Not sure yet", "Somewhere in between", ...); only values from the field's own option
 // list (legacy or free-text values never count). Never a percentage, score or "strong match" (items 37/38). Nothing
 // shared = the existing "Fits your dating preferences" (Browse) or no reason (Crossed Paths, unchanged).
+// Wording (owner, 2026-11-14): one natural sentence per allowed answer, saying exactly what both selected
+// (`ui.crossedPaths.reason.<field>.<answer slug>`, `reason.intention.<value>`); an answer with no sentence is never a reason.
 
 export const MAX_DATING_REASONS = 2;
 
@@ -32,6 +34,8 @@ const NONCOMMITTAL = /^(prefer not to say|other|not sure|figuring out|depends on
 const REASON_INTENTIONS = INTENTION_OPTIONS.map((o) => o.value).filter((v) => v !== 'unsure');
 
 const asList = (v) => [].concat(v ?? []).filter(Boolean);
+export const lifestyleReasonKey = (key, value) => `ui.crossedPaths.reason.${key}.${optionSlug(value)}`;
+export const intentionReasonKey = (value) => `ui.crossedPaths.reason.intention.${value}`;
 
 // The facts two profiles really share, computed from the rows themselves (never cached elsewhere).
 export function sharedDatingFacts(mine, theirs) {
@@ -45,7 +49,7 @@ export function sharedDatingFacts(mine, theirs) {
     const a = mine?.basics?.[key];
     const b = theirs?.basics?.[key];
     if (!field?.options || typeof a !== 'string' || a !== b) continue;
-    if (!field.options.includes(a) || NONCOMMITTAL.test(a)) continue;
+    if (!field.options.includes(a) || NONCOMMITTAL.test(a) || !hasOwnTranslation('en', lifestyleReasonKey(key, a))) continue;
     sharedLifestyle.push({ key, value: a });
   }
   return { sharedInterests, sharedIntentions, sharedLifestyle };
@@ -57,7 +61,7 @@ export function datingCardFacts(item, { mode = 'crossedPaths', gatheringText = n
   if (shared.length > 0) reasons.push({ kind: 'shared_interests', tags: shared });
   if (mode === 'browse') {
     const intentions = asList(item?.sharedIntentions).filter((v) => REASON_INTENTIONS.includes(v));
-    if (intentions.length > 0) reasons.push({ kind: 'shared_intention', values: intentions });
+    if (intentions.length > 0) reasons.push({ kind: 'shared_intention', value: intentions[0] });
     const lifestyle = asList(item?.sharedLifestyle).find((l) => DATING_REASON_BASICS.includes(l?.key));
     if (lifestyle) reasons.push({ kind: 'shared_lifestyle', key: lifestyle.key, value: lifestyle.value });
     if (reasons.length === 0) reasons.push({ kind: 'preferences', text: tr('ui.crossedPaths.fitsDatingPreferences') });
@@ -72,23 +76,19 @@ export function datingCardFacts(item, { mode = 'crossedPaths', gatheringText = n
 }
 
 // The one wording of a reason, in the person's language; `t` is the screen's translator.
-export function datingReasonText(reason, t = tr, language = getCurrentLanguage()) {
+export function datingReasonText(reason, t = tr) {
   if (!reason) return null;
   if (reason.kind === 'shared_interests') {
     const { tags } = reason;
     return `✨ ${t('discovery.youBothLike')} ${tags.slice(0, 3).join(', ')}${tags.length > 3 ? ` +${tags.length - 3} ${t('discovery.moreCount')}` : ''}`;
   }
   if (reason.kind === 'shared_intention') {
-    const what = reason.values
-      .map((v) => INTENTION_OPTIONS.find((o) => o.value === v))
-      .filter(Boolean)
-      .map((o) => `${o.icon} ${t(`ui.viewProfile.intention.${o.value}`)}`)
-      .join(', ');
-    return `✨ ${t('ui.crossedPaths.bothLookingFor', { what })}`;
+    const option = INTENTION_OPTIONS.find((o) => o.value === reason.value);
+    return `${option?.icon ?? '✨'} ${t(intentionReasonKey(reason.value))}`;
   }
   if (reason.kind === 'shared_lifestyle') {
     const field = BASICS_FIELDS.find((f) => f.key === reason.key);
-    return `${field?.icon ?? '✨'} ${t('ui.crossedPaths.bothChose', { value: basicsOption(reason.key, reason.value, language), field: basicsLabel(field, language) })}`;
+    return `${field?.icon ?? '✨'} ${t(lifestyleReasonKey(reason.key, reason.value))}`;
   }
   return `✨ ${reason.text}`;
 }

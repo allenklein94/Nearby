@@ -17,8 +17,81 @@ export default {
     within35Feet: "📍 Within about 35 feet",
     within35FeetWhen: "📍 Within about 35 feet · {time}",
     bothFreeTonight: "🌙 Both free tonight",
-    bothLookingFor: "You're both looking for: {what}",
-    bothChose: "You both chose “{value}” for {field}",
+    reason: {
+      intention: {
+        serious: "You're both looking for something serious",
+        casual: "You're both looking for casual dating",
+        friends: "You're both looking for new friends",
+        marriage: "You're both marriage-minded",
+      },
+      family_plans: {
+        want_children: "You both want children",
+        don_t_want_children: "Neither of you wants children",
+        have_children_want_more: "You both have children and want more",
+        have_children_don_t_want_more: "You both have children and don't want more",
+      },
+      relationship_type: {
+        monogamy: "You both prefer monogamy",
+        non_monogamy: "You both prefer non-monogamy",
+      },
+      relocation_openness: {
+        want_to_stay_local: "You both want to stay local",
+        open_to_relocating: "You're both open to relocating",
+        would_love_to_live_abroad: "You'd both love to live abroad",
+      },
+      weekend_style: {
+        homebody: "You're both homebodies",
+        always_out_and_about: "You're both always out and about",
+      },
+      social_energy: {
+        recharge_alone: "You both recharge alone",
+        recharge_with_people: "You both recharge with people",
+      },
+      morning_person: {
+        up_with_the_sun: "You're both up with the sun",
+        snooze_a_few_times: "You both hit snooze a few times",
+        not_a_morning_person_at_all: "Neither of you is a morning person",
+      },
+      cooking_habits: {
+        cook_most_nights: "You both cook most nights",
+        order_in_most_nights: "You both order in most nights",
+      },
+      workout: {
+        everyday: "You both work out every day",
+        often: "You both work out often",
+        never: "Neither of you works out",
+      },
+      communication_style: {
+        big_texter: "You're both big texters",
+        phone_caller: "You both prefer phone calls",
+        video_chatter: "You both prefer video chats",
+        slow_to_reply: "You're both slow to reply",
+      },
+      love_style: {
+        thoughtful_gestures: "You share a love language: thoughtful gestures",
+        physical_touch: "You share a love language: physical touch",
+        quality_time: "You share a love language: quality time",
+        deep_talks: "You share a love language: deep talks",
+        gift_giving: "You share a love language: gift giving",
+      },
+      independence_preference: {
+        need_lots_of_space: "You both need lots of space",
+        love_togetherness: "You both love togetherness",
+      },
+      family_closeness: {
+        very_close_knit: "You're both very close-knit with family",
+        independent_from_family: "You're both independent from family",
+      },
+      pets: {
+        dog: "You both have a dog",
+        cat: "You both have a cat",
+        reptile: "You both have a reptile",
+        bird: "You both have a bird",
+        fish: "You both have fish",
+        pet_free: "You're both pet-free",
+        want_a_pet: "You both want a pet",
+      },
+    },
   },
   es: {
     justNow: "Hace un momento",
@@ -36,8 +109,81 @@ export default {
     within35Feet: "📍 A unos 10 metros",
     within35FeetWhen: "📍 A unos 10 metros · {time}",
     bothFreeTonight: "🌙 Ambos libres esta noche",
-    bothLookingFor: "Ambos buscan: {what}",
-    bothChose: "Ambos eligieron «{value}» en {field}",
+    reason: {
+      intention: {
+        serious: "Ambos buscan algo serio",
+        casual: "Ambos buscan citas casuales",
+        friends: "Ambos buscan nuevos amigos",
+        marriage: "Ambos piensan en casarse",
+      },
+      family_plans: {
+        want_children: "Ambos quieren tener hijos",
+        don_t_want_children: "Ninguno de los dos quiere tener hijos",
+        have_children_want_more: "Ambos tienen hijos y quieren más",
+        have_children_don_t_want_more: "Ambos tienen hijos y no quieren más",
+      },
+      relationship_type: {
+        monogamy: "Ambos prefieren la monogamia",
+        non_monogamy: "Ambos prefieren la no monogamia",
+      },
+      relocation_openness: {
+        want_to_stay_local: "Ambos quieren quedarse en la zona",
+        open_to_relocating: "Ambos están abiertos a mudarse",
+        would_love_to_live_abroad: "A ambos les encantaría vivir en el extranjero",
+      },
+      weekend_style: {
+        homebody: "Ambos son caseros",
+        always_out_and_about: "Ambos siempre andan fuera de casa",
+      },
+      social_energy: {
+        recharge_alone: "Ambos recargan energía a solas",
+        recharge_with_people: "Ambos recargan energía con gente",
+      },
+      morning_person: {
+        up_with_the_sun: "Ambos madrugan con el sol",
+        snooze_a_few_times: "Ambos posponen la alarma unas cuantas veces",
+        not_a_morning_person_at_all: "Ninguno de los dos es madrugador",
+      },
+      cooking_habits: {
+        cook_most_nights: "Ambos cocinan casi todas las noches",
+        order_in_most_nights: "Ambos piden comida casi todas las noches",
+      },
+      workout: {
+        everyday: "Ambos hacen ejercicio todos los días",
+        often: "Ambos hacen ejercicio a menudo",
+        never: "Ninguno de los dos hace ejercicio",
+      },
+      communication_style: {
+        big_texter: "Ambos escriben muchos mensajes",
+        phone_caller: "Ambos prefieren las llamadas",
+        video_chatter: "Ambos prefieren las videollamadas",
+        slow_to_reply: "Ambos tardan en responder",
+      },
+      love_style: {
+        thoughtful_gestures: "Comparten lenguaje del amor: los detalles",
+        physical_touch: "Comparten lenguaje del amor: el contacto físico",
+        quality_time: "Comparten lenguaje del amor: el tiempo de calidad",
+        deep_talks: "Comparten lenguaje del amor: las conversaciones profundas",
+        gift_giving: "Comparten lenguaje del amor: los regalos",
+      },
+      independence_preference: {
+        need_lots_of_space: "Ambos necesitan mucho espacio",
+        love_togetherness: "A ambos les encanta estar juntos",
+      },
+      family_closeness: {
+        very_close_knit: "Ambos son muy unidos a su familia",
+        independent_from_family: "Ambos son independientes de su familia",
+      },
+      pets: {
+        dog: "Ambos tienen perro",
+        cat: "Ambos tienen gato",
+        reptile: "Ambos tienen un reptil",
+        bird: "Ambos tienen un pájaro",
+        fish: "Ambos tienen peces",
+        pet_free: "Ninguno de los dos tiene mascotas",
+        want_a_pet: "Ambos quieren una mascota",
+      },
+    },
   },
   de: {
     justNow: "Gerade eben",
@@ -55,8 +201,81 @@ export default {
     within35Feet: "📍 Etwa 10 Meter entfernt",
     within35FeetWhen: "📍 Etwa 10 Meter entfernt · {time}",
     bothFreeTonight: "🌙 Beide heute Abend frei",
-    bothLookingFor: "Ihr sucht beide: {what}",
-    bothChose: "Ihr habt beide „{value}“ bei {field} gewählt",
+    reason: {
+      intention: {
+        serious: "Ihr sucht beide etwas Ernstes",
+        casual: "Ihr sucht beide lockeres Dating",
+        friends: "Ihr sucht beide neue Freunde",
+        marriage: "Ihr denkt beide ans Heiraten",
+      },
+      family_plans: {
+        want_children: "Ihr wünscht euch beide Kinder",
+        don_t_want_children: "Keiner von euch möchte Kinder",
+        have_children_want_more: "Ihr habt beide Kinder und wünscht euch mehr",
+        have_children_don_t_want_more: "Ihr habt beide Kinder und wollt keine weiteren",
+      },
+      relationship_type: {
+        monogamy: "Ihr bevorzugt beide Monogamie",
+        non_monogamy: "Ihr bevorzugt beide Nicht-Monogamie",
+      },
+      relocation_openness: {
+        want_to_stay_local: "Ihr wollt beide in der Gegend bleiben",
+        open_to_relocating: "Ihr seid beide offen für einen Umzug",
+        would_love_to_live_abroad: "Ihr würdet beide gern im Ausland leben",
+      },
+      weekend_style: {
+        homebody: "Ihr seid beide gern zu Hause",
+        always_out_and_about: "Ihr seid beide immer unterwegs",
+      },
+      social_energy: {
+        recharge_alone: "Ihr tankt beide allein auf",
+        recharge_with_people: "Ihr tankt beide unter Menschen auf",
+      },
+      morning_person: {
+        up_with_the_sun: "Ihr steht beide mit der Sonne auf",
+        snooze_a_few_times: "Ihr drückt beide ein paarmal auf Schlummern",
+        not_a_morning_person_at_all: "Keiner von euch ist ein Morgenmensch",
+      },
+      cooking_habits: {
+        cook_most_nights: "Ihr kocht beide an den meisten Abenden",
+        order_in_most_nights: "Ihr bestellt beide an den meisten Abenden Essen",
+      },
+      workout: {
+        everyday: "Ihr trainiert beide jeden Tag",
+        often: "Ihr trainiert beide oft",
+        never: "Keiner von euch trainiert",
+      },
+      communication_style: {
+        big_texter: "Ihr schreibt beide gern viele Nachrichten",
+        phone_caller: "Ihr telefoniert beide lieber",
+        video_chatter: "Ihr bevorzugt beide Videochats",
+        slow_to_reply: "Ihr antwortet beide eher langsam",
+      },
+      love_style: {
+        thoughtful_gestures: "Ihr teilt eine Liebessprache: aufmerksame Gesten",
+        physical_touch: "Ihr teilt eine Liebessprache: Berührungen",
+        quality_time: "Ihr teilt eine Liebessprache: gemeinsame Zeit",
+        deep_talks: "Ihr teilt eine Liebessprache: tiefe Gespräche",
+        gift_giving: "Ihr teilt eine Liebessprache: Geschenke",
+      },
+      independence_preference: {
+        need_lots_of_space: "Ihr braucht beide viel Freiraum",
+        love_togetherness: "Ihr liebt beide die Zweisamkeit",
+      },
+      family_closeness: {
+        very_close_knit: "Ihr steht beide eurer Familie sehr nahe",
+        independent_from_family: "Ihr seid beide unabhängig von eurer Familie",
+      },
+      pets: {
+        dog: "Ihr habt beide einen Hund",
+        cat: "Ihr habt beide eine Katze",
+        reptile: "Ihr habt beide ein Reptil",
+        bird: "Ihr habt beide einen Vogel",
+        fish: "Ihr habt beide Fische",
+        pet_free: "Ihr habt beide keine Haustiere",
+        want_a_pet: "Ihr wünscht euch beide ein Haustier",
+      },
+    },
   },
   fr: {
     justNow: "À l’instant",
@@ -74,8 +293,81 @@ export default {
     within35Feet: "📍 À environ 10 mètres",
     within35FeetWhen: "📍 À environ 10 mètres · {time}",
     bothFreeTonight: "🌙 Libres tous les deux ce soir",
-    bothLookingFor: "Vous cherchez tous les deux : {what}",
-    bothChose: "Vous avez tous les deux choisi « {value} » pour {field}",
+    reason: {
+      intention: {
+        serious: "Vous cherchez tous les deux une relation sérieuse",
+        casual: "Vous cherchez tous les deux des rencontres décontractées",
+        friends: "Vous cherchez tous les deux de nouveaux amis",
+        marriage: "Vous pensez tous les deux au mariage",
+      },
+      family_plans: {
+        want_children: "Vous voulez tous les deux des enfants",
+        don_t_want_children: "Aucun de vous deux ne veut d'enfants",
+        have_children_want_more: "Vous avez tous les deux des enfants et en voulez d'autres",
+        have_children_don_t_want_more: "Vous avez tous les deux des enfants et n'en voulez pas d'autres",
+      },
+      relationship_type: {
+        monogamy: "Vous préférez tous les deux la monogamie",
+        non_monogamy: "Vous préférez tous les deux la non-monogamie",
+      },
+      relocation_openness: {
+        want_to_stay_local: "Vous voulez tous les deux rester dans le coin",
+        open_to_relocating: "Vous êtes tous les deux ouverts à déménager",
+        would_love_to_live_abroad: "Vous aimeriez tous les deux vivre à l'étranger",
+      },
+      weekend_style: {
+        homebody: "Vous êtes tous les deux casaniers",
+        always_out_and_about: "Vous êtes tous les deux toujours dehors",
+      },
+      social_energy: {
+        recharge_alone: "Vous rechargez tous les deux vos batteries seuls",
+        recharge_with_people: "Vous rechargez tous les deux vos batteries avec les autres",
+      },
+      morning_person: {
+        up_with_the_sun: "Vous vous levez tous les deux avec le soleil",
+        snooze_a_few_times: "Vous appuyez tous les deux sur snooze plusieurs fois",
+        not_a_morning_person_at_all: "Aucun de vous deux n'est du matin",
+      },
+      cooking_habits: {
+        cook_most_nights: "Vous cuisinez tous les deux presque tous les soirs",
+        order_in_most_nights: "Vous commandez tous les deux presque tous les soirs",
+      },
+      workout: {
+        everyday: "Vous faites tous les deux du sport tous les jours",
+        often: "Vous faites tous les deux souvent du sport",
+        never: "Aucun de vous deux ne fait de sport",
+      },
+      communication_style: {
+        big_texter: "Vous envoyez tous les deux beaucoup de messages",
+        phone_caller: "Vous préférez tous les deux les appels",
+        video_chatter: "Vous préférez tous les deux les appels vidéo",
+        slow_to_reply: "Vous êtes tous les deux lents à répondre",
+      },
+      love_style: {
+        thoughtful_gestures: "Vous partagez un langage de l'amour : les attentions",
+        physical_touch: "Vous partagez un langage de l'amour : le contact physique",
+        quality_time: "Vous partagez un langage de l'amour : les moments de qualité",
+        deep_talks: "Vous partagez un langage de l'amour : les conversations profondes",
+        gift_giving: "Vous partagez un langage de l'amour : les cadeaux",
+      },
+      independence_preference: {
+        need_lots_of_space: "Vous avez tous les deux besoin de beaucoup d'espace",
+        love_togetherness: "Vous aimez tous les deux être ensemble",
+      },
+      family_closeness: {
+        very_close_knit: "Vous êtes tous les deux très proches de votre famille",
+        independent_from_family: "Vous êtes tous les deux indépendants de votre famille",
+      },
+      pets: {
+        dog: "Vous avez tous les deux un chien",
+        cat: "Vous avez tous les deux un chat",
+        reptile: "Vous avez tous les deux un reptile",
+        bird: "Vous avez tous les deux un oiseau",
+        fish: "Vous avez tous les deux des poissons",
+        pet_free: "Vous n'avez ni l'un ni l'autre d'animal",
+        want_a_pet: "Vous voulez tous les deux un animal",
+      },
+    },
   },
   pt: {
     justNow: "Agora mesmo",
@@ -93,8 +385,81 @@ export default {
     within35Feet: "📍 A cerca de 10 metros",
     within35FeetWhen: "📍 A cerca de 10 metros · {time}",
     bothFreeTonight: "🌙 Os dois livres hoje à noite",
-    bothLookingFor: "Vocês dois procuram: {what}",
-    bothChose: "Vocês dois escolheram “{value}” em {field}",
+    reason: {
+      intention: {
+        serious: "Vocês dois procuram algo sério",
+        casual: "Vocês dois procuram encontros casuais",
+        friends: "Vocês dois procuram novos amigos",
+        marriage: "Vocês dois pensam em casamento",
+      },
+      family_plans: {
+        want_children: "Vocês dois querem ter filhos",
+        don_t_want_children: "Nenhum de vocês quer ter filhos",
+        have_children_want_more: "Vocês dois têm filhos e querem mais",
+        have_children_don_t_want_more: "Vocês dois têm filhos e não querem mais",
+      },
+      relationship_type: {
+        monogamy: "Vocês dois preferem monogamia",
+        non_monogamy: "Vocês dois preferem não monogamia",
+      },
+      relocation_openness: {
+        want_to_stay_local: "Vocês dois querem ficar na região",
+        open_to_relocating: "Vocês dois estão abertos a se mudar",
+        would_love_to_live_abroad: "Vocês dois adorariam morar no exterior",
+      },
+      weekend_style: {
+        homebody: "Vocês dois são caseiros",
+        always_out_and_about: "Vocês dois estão sempre na rua",
+      },
+      social_energy: {
+        recharge_alone: "Vocês dois recarregam as energias sozinhos",
+        recharge_with_people: "Vocês dois recarregam as energias com outras pessoas",
+      },
+      morning_person: {
+        up_with_the_sun: "Vocês dois acordam com o sol",
+        snooze_a_few_times: "Vocês dois apertam o soneca algumas vezes",
+        not_a_morning_person_at_all: "Nenhum de vocês é uma pessoa matinal",
+      },
+      cooking_habits: {
+        cook_most_nights: "Vocês dois cozinham quase todas as noites",
+        order_in_most_nights: "Vocês dois pedem comida quase todas as noites",
+      },
+      workout: {
+        everyday: "Vocês dois malham todos os dias",
+        often: "Vocês dois malham com frequência",
+        never: "Nenhum de vocês malha",
+      },
+      communication_style: {
+        big_texter: "Vocês dois mandam muitas mensagens",
+        phone_caller: "Vocês dois preferem ligações",
+        video_chatter: "Vocês dois preferem chamadas de vídeo",
+        slow_to_reply: "Vocês dois demoram para responder",
+      },
+      love_style: {
+        thoughtful_gestures: "Vocês têm a mesma linguagem do amor: gestos atenciosos",
+        physical_touch: "Vocês têm a mesma linguagem do amor: toque físico",
+        quality_time: "Vocês têm a mesma linguagem do amor: tempo de qualidade",
+        deep_talks: "Vocês têm a mesma linguagem do amor: conversas profundas",
+        gift_giving: "Vocês têm a mesma linguagem do amor: presentes",
+      },
+      independence_preference: {
+        need_lots_of_space: "Vocês dois precisam de muito espaço",
+        love_togetherness: "Vocês dois adoram estar juntos",
+      },
+      family_closeness: {
+        very_close_knit: "Vocês dois são muito unidos à família",
+        independent_from_family: "Vocês dois são independentes da família",
+      },
+      pets: {
+        dog: "Vocês dois têm cachorro",
+        cat: "Vocês dois têm gato",
+        reptile: "Vocês dois têm um réptil",
+        bird: "Vocês dois têm um pássaro",
+        fish: "Vocês dois têm peixes",
+        pet_free: "Nenhum de vocês tem animal de estimação",
+        want_a_pet: "Vocês dois querem um animal de estimação",
+      },
+    },
   },
   ht: {
     justNow: "Kounye a la",
@@ -112,8 +477,81 @@ export default {
     within35Feet: "📍 Apeprè 10 mèt",
     within35FeetWhen: "📍 Apeprè 10 mèt · {time}",
     bothFreeTonight: "🌙 Nou tou de lib aswè a",
-    bothLookingFor: "Nou toude ap chèche: {what}",
-    bothChose: "Nou toude chwazi “{value}” pou {field}",
+    reason: {
+      intention: {
+        serious: "Nou toude ap chèche yon bagay serye",
+        casual: "Nou toude ap chèche randevou san angajman",
+        friends: "Nou toude ap chèche nouvo zanmi",
+        marriage: "Nou toude ap panse maryaj",
+      },
+      family_plans: {
+        want_children: "Nou toude vle gen pitit",
+        don_t_want_children: "Ni youn nan nou pa vle gen pitit",
+        have_children_want_more: "Nou toude gen pitit epi nou vle plis",
+        have_children_don_t_want_more: "Nou toude gen pitit epi nou pa vle plis",
+      },
+      relationship_type: {
+        monogamy: "Nou toude pito monogami",
+        non_monogamy: "Nou toude pito non-monogami",
+      },
+      relocation_openness: {
+        want_to_stay_local: "Nou toude vle rete nan zòn nan",
+        open_to_relocating: "Nou toude ouvè pou nou demenaje",
+        would_love_to_live_abroad: "Nou toude ta renmen viv lòt bò dlo",
+      },
+      weekend_style: {
+        homebody: "Nou toude renmen rete lakay",
+        always_out_and_about: "Nou toude toujou deyò",
+      },
+      social_energy: {
+        recharge_alone: "Nou toude rechaje pou kont nou",
+        recharge_with_people: "Nou toude rechaje ak moun",
+      },
+      morning_person: {
+        up_with_the_sun: "Nou toude leve ak solèy la",
+        snooze_a_few_times: "Nou toude repete revèy la kèk fwa",
+        not_a_morning_person_at_all: "Ni youn nan nou pa moun maten",
+      },
+      cooking_habits: {
+        cook_most_nights: "Nou toude kwit manje prèske chak swa",
+        order_in_most_nights: "Nou toude kòmande manje prèske chak swa",
+      },
+      workout: {
+        everyday: "Nou toude fè egzèsis chak jou",
+        often: "Nou toude fè egzèsis souvan",
+        never: "Ni youn nan nou pa fè egzèsis",
+      },
+      communication_style: {
+        big_texter: "Nou toude voye anpil mesaj",
+        phone_caller: "Nou toude pito rele nan telefòn",
+        video_chatter: "Nou toude pito apèl videyo",
+        slow_to_reply: "Nou toude pran tan pou reponn",
+      },
+      love_style: {
+        thoughtful_gestures: "Nou pataje menm lang lanmou: ti atansyon",
+        physical_touch: "Nou pataje menm lang lanmou: manyen",
+        quality_time: "Nou pataje menm lang lanmou: bon tan ansanm",
+        deep_talks: "Nou pataje menm lang lanmou: bon konvèsasyon pwofon",
+        gift_giving: "Nou pataje menm lang lanmou: bay kado",
+      },
+      independence_preference: {
+        need_lots_of_space: "Nou toude bezwen anpil espas",
+        love_togetherness: "Nou toude renmen rete ansanm",
+      },
+      family_closeness: {
+        very_close_knit: "Nou toude trè pwòch ak fanmi nou",
+        independent_from_family: "Nou toude endepandan de fanmi nou",
+      },
+      pets: {
+        dog: "Nou toude gen yon chen",
+        cat: "Nou toude gen yon chat",
+        reptile: "Nou toude gen yon reptil",
+        bird: "Nou toude gen yon zwazo",
+        fish: "Nou toude gen pwason",
+        pet_free: "Ni youn nan nou pa gen bèt",
+        want_a_pet: "Nou toude vle yon bèt",
+      },
+    },
   },
   zh: {
     justNow: "刚刚",
@@ -131,8 +569,81 @@ export default {
     within35Feet: "📍 约 10 米内",
     within35FeetWhen: "📍 约 10 米内 · {time}",
     bothFreeTonight: "🌙 今晚都有空",
-    bothLookingFor: "你们都在寻找：{what}",
-    bothChose: "你们在{field}都选择了“{value}”",
+    reason: {
+      intention: {
+        serious: "你们都在寻找认真的关系",
+        casual: "你们都在寻找轻松的约会",
+        friends: "你们都在寻找新朋友",
+        marriage: "你们都以结婚为目标",
+      },
+      family_plans: {
+        want_children: "你们都想要孩子",
+        don_t_want_children: "你们都不想要孩子",
+        have_children_want_more: "你们都有孩子，并且还想要更多",
+        have_children_don_t_want_more: "你们都有孩子，并且不想再要了",
+      },
+      relationship_type: {
+        monogamy: "你们都倾向一夫一妻制",
+        non_monogamy: "你们都倾向非一对一关系",
+      },
+      relocation_openness: {
+        want_to_stay_local: "你们都想留在本地",
+        open_to_relocating: "你们都愿意搬家",
+        would_love_to_live_abroad: "你们都很想去国外生活",
+      },
+      weekend_style: {
+        homebody: "你们都是宅家型",
+        always_out_and_about: "你们都总是在外面活动",
+      },
+      social_energy: {
+        recharge_alone: "你们都靠独处充电",
+        recharge_with_people: "你们都靠和人相处充电",
+      },
+      morning_person: {
+        up_with_the_sun: "你们都早起",
+        snooze_a_few_times: "你们都会按几次贪睡",
+        not_a_morning_person_at_all: "你们都不是早起的人",
+      },
+      cooking_habits: {
+        cook_most_nights: "你们大多数晚上都自己做饭",
+        order_in_most_nights: "你们大多数晚上都点外卖",
+      },
+      workout: {
+        everyday: "你们都每天锻炼",
+        often: "你们都经常锻炼",
+        never: "你们都不锻炼",
+      },
+      communication_style: {
+        big_texter: "你们都爱发消息",
+        phone_caller: "你们都更喜欢打电话",
+        video_chatter: "你们都更喜欢视频聊天",
+        slow_to_reply: "你们回消息都比较慢",
+      },
+      love_style: {
+        thoughtful_gestures: "你们的爱的语言相同：贴心举动",
+        physical_touch: "你们的爱的语言相同：身体接触",
+        quality_time: "你们的爱的语言相同：精心时刻",
+        deep_talks: "你们的爱的语言相同：深入交谈",
+        gift_giving: "你们的爱的语言相同：送礼物",
+      },
+      independence_preference: {
+        need_lots_of_space: "你们都需要很多个人空间",
+        love_togetherness: "你们都喜欢形影不离",
+      },
+      family_closeness: {
+        very_close_knit: "你们都和家人非常亲密",
+        independent_from_family: "你们都独立于家庭",
+      },
+      pets: {
+        dog: "你们都养狗",
+        cat: "你们都养猫",
+        reptile: "你们都养爬宠",
+        bird: "你们都养鸟",
+        fish: "你们都养鱼",
+        pet_free: "你们都不养宠物",
+        want_a_pet: "你们都想养宠物",
+      },
+    },
   },
   vi: {
     justNow: "Vừa xong",
@@ -150,8 +661,81 @@ export default {
     within35Feet: "📍 Trong khoảng 10 mét",
     within35FeetWhen: "📍 Trong khoảng 10 mét · {time}",
     bothFreeTonight: "🌙 Cả hai đều rảnh tối nay",
-    bothLookingFor: "Cả hai bạn đều đang tìm: {what}",
-    bothChose: "Cả hai bạn đều chọn “{value}” cho {field}",
+    reason: {
+      intention: {
+        serious: "Cả hai bạn đều tìm một mối quan hệ nghiêm túc",
+        casual: "Cả hai bạn đều tìm hẹn hò thoải mái",
+        friends: "Cả hai bạn đều tìm bạn mới",
+        marriage: "Cả hai bạn đều hướng tới hôn nhân",
+      },
+      family_plans: {
+        want_children: "Cả hai bạn đều muốn có con",
+        don_t_want_children: "Cả hai bạn đều không muốn có con",
+        have_children_want_more: "Cả hai bạn đều đã có con và muốn có thêm",
+        have_children_don_t_want_more: "Cả hai bạn đều đã có con và không muốn thêm",
+      },
+      relationship_type: {
+        monogamy: "Cả hai bạn đều chọn chung thủy một vợ một chồng",
+        non_monogamy: "Cả hai bạn đều chọn quan hệ không một vợ một chồng",
+      },
+      relocation_openness: {
+        want_to_stay_local: "Cả hai bạn đều muốn ở lại địa phương",
+        open_to_relocating: "Cả hai bạn đều sẵn sàng chuyển nơi ở",
+        would_love_to_live_abroad: "Cả hai bạn đều rất muốn sống ở nước ngoài",
+      },
+      weekend_style: {
+        homebody: "Cả hai bạn đều thích ở nhà",
+        always_out_and_about: "Cả hai bạn đều luôn ra ngoài",
+      },
+      social_energy: {
+        recharge_alone: "Cả hai bạn đều nạp năng lượng khi ở một mình",
+        recharge_with_people: "Cả hai bạn đều nạp năng lượng khi ở bên mọi người",
+      },
+      morning_person: {
+        up_with_the_sun: "Cả hai bạn đều dậy cùng mặt trời",
+        snooze_a_few_times: "Cả hai bạn đều bấm báo lại vài lần",
+        not_a_morning_person_at_all: "Cả hai bạn đều không phải người dậy sớm",
+      },
+      cooking_habits: {
+        cook_most_nights: "Cả hai bạn đều nấu ăn hầu hết các tối",
+        order_in_most_nights: "Cả hai bạn đều gọi đồ ăn hầu hết các tối",
+      },
+      workout: {
+        everyday: "Cả hai bạn đều tập thể dục mỗi ngày",
+        often: "Cả hai bạn đều thường xuyên tập thể dục",
+        never: "Cả hai bạn đều không tập thể dục",
+      },
+      communication_style: {
+        big_texter: "Cả hai bạn đều nhắn tin nhiều",
+        phone_caller: "Cả hai bạn đều thích gọi điện hơn",
+        video_chatter: "Cả hai bạn đều thích gọi video hơn",
+        slow_to_reply: "Cả hai bạn đều trả lời chậm",
+      },
+      love_style: {
+        thoughtful_gestures: "Hai bạn có chung ngôn ngữ tình yêu: những cử chỉ chu đáo",
+        physical_touch: "Hai bạn có chung ngôn ngữ tình yêu: sự đụng chạm",
+        quality_time: "Hai bạn có chung ngôn ngữ tình yêu: thời gian chất lượng",
+        deep_talks: "Hai bạn có chung ngôn ngữ tình yêu: những cuộc trò chuyện sâu sắc",
+        gift_giving: "Hai bạn có chung ngôn ngữ tình yêu: tặng quà",
+      },
+      independence_preference: {
+        need_lots_of_space: "Cả hai bạn đều cần nhiều không gian riêng",
+        love_togetherness: "Cả hai bạn đều thích gắn bó bên nhau",
+      },
+      family_closeness: {
+        very_close_knit: "Cả hai bạn đều rất gắn bó với gia đình",
+        independent_from_family: "Cả hai bạn đều độc lập với gia đình",
+      },
+      pets: {
+        dog: "Cả hai bạn đều nuôi chó",
+        cat: "Cả hai bạn đều nuôi mèo",
+        reptile: "Cả hai bạn đều nuôi bò sát",
+        bird: "Cả hai bạn đều nuôi chim",
+        fish: "Cả hai bạn đều nuôi cá",
+        pet_free: "Cả hai bạn đều không nuôi thú cưng",
+        want_a_pet: "Cả hai bạn đều muốn nuôi thú cưng",
+      },
+    },
   },
   tl: {
     justNow: "Ngayon lang",
@@ -169,8 +753,81 @@ export default {
     within35Feet: "📍 Mga 10 metro ang layo",
     within35FeetWhen: "📍 Mga 10 metro ang layo · {time}",
     bothFreeTonight: "🌙 Pareho kayong libre ngayong gabi",
-    bothLookingFor: "Pareho kayong naghahanap ng: {what}",
-    bothChose: "Pareho ninyong pinili ang “{value}” para sa {field}",
+    reason: {
+      intention: {
+        serious: "Pareho kayong naghahanap ng seryosong relasyon",
+        casual: "Pareho kayong naghahanap ng casual na pakikipag-date",
+        friends: "Pareho kayong naghahanap ng bagong kaibigan",
+        marriage: "Pareho kayong may balak magpakasal",
+      },
+      family_plans: {
+        want_children: "Pareho kayong gustong magkaanak",
+        don_t_want_children: "Pareho kayong ayaw magkaanak",
+        have_children_want_more: "Pareho kayong may anak at gusto pa ng dagdag",
+        have_children_don_t_want_more: "Pareho kayong may anak at ayaw nang magdagdag",
+      },
+      relationship_type: {
+        monogamy: "Pareho kayong mas gusto ang monogamy",
+        non_monogamy: "Pareho kayong mas gusto ang non-monogamy",
+      },
+      relocation_openness: {
+        want_to_stay_local: "Pareho kayong gustong manatili rito",
+        open_to_relocating: "Pareho kayong bukas sa paglipat",
+        would_love_to_live_abroad: "Pareho ninyong gustong tumira sa ibang bansa",
+      },
+      weekend_style: {
+        homebody: "Pareho kayong mahilig sa bahay",
+        always_out_and_about: "Pareho kayong laging nasa labas",
+      },
+      social_energy: {
+        recharge_alone: "Pareho kayong nagre-recharge nang mag-isa",
+        recharge_with_people: "Pareho kayong nagre-recharge kasama ang ibang tao",
+      },
+      morning_person: {
+        up_with_the_sun: "Pareho kayong gumigising kasabay ng araw",
+        snooze_a_few_times: "Pareho kayong pumipindot ng snooze nang ilang beses",
+        not_a_morning_person_at_all: "Pareho kayong hindi morning person",
+      },
+      cooking_habits: {
+        cook_most_nights: "Pareho kayong nagluluto halos gabi-gabi",
+        order_in_most_nights: "Pareho kayong umo-order ng pagkain halos gabi-gabi",
+      },
+      workout: {
+        everyday: "Pareho kayong nag-eehersisyo araw-araw",
+        often: "Pareho kayong madalas mag-ehersisyo",
+        never: "Pareho kayong hindi nag-eehersisyo",
+      },
+      communication_style: {
+        big_texter: "Pareho kayong mahilig mag-text",
+        phone_caller: "Pareho kayong mas gusto ang tawag sa telepono",
+        video_chatter: "Pareho kayong mas gusto ang video call",
+        slow_to_reply: "Pareho kayong mabagal sumagot",
+      },
+      love_style: {
+        thoughtful_gestures: "Pareho ang love language ninyo: maalalahaning kilos",
+        physical_touch: "Pareho ang love language ninyo: physical touch",
+        quality_time: "Pareho ang love language ninyo: quality time",
+        deep_talks: "Pareho ang love language ninyo: malalim na usapan",
+        gift_giving: "Pareho ang love language ninyo: pagbibigay ng regalo",
+      },
+      independence_preference: {
+        need_lots_of_space: "Pareho kayong kailangan ng maraming espasyo",
+        love_togetherness: "Pareho ninyong gustong laging magkasama",
+      },
+      family_closeness: {
+        very_close_knit: "Pareho kayong napakalapit sa pamilya",
+        independent_from_family: "Pareho kayong independyente sa pamilya",
+      },
+      pets: {
+        dog: "Pareho kayong may aso",
+        cat: "Pareho kayong may pusa",
+        reptile: "Pareho kayong may reptile",
+        bird: "Pareho kayong may ibon",
+        fish: "Pareho kayong may isda",
+        pet_free: "Pareho kayong walang alagang hayop",
+        want_a_pet: "Pareho kayong gustong mag-alaga ng hayop",
+      },
+    },
   },
   ru: {
     justNow: "Только что",
@@ -188,8 +845,81 @@ export default {
     within35Feet: "📍 Примерно в 10 метрах",
     within35FeetWhen: "📍 Примерно в 10 метрах · {time}",
     bothFreeTonight: "🌙 Оба свободны сегодня вечером",
-    bothLookingFor: "Вы оба ищете: {what}",
-    bothChose: "Вы оба выбрали «{value}» в разделе «{field}»",
+    reason: {
+      intention: {
+        serious: "Вы оба ищете серьёзные отношения",
+        casual: "Вы оба ищете лёгкие свидания",
+        friends: "Вы оба ищете новых друзей",
+        marriage: "Вы оба настроены на брак",
+      },
+      family_plans: {
+        want_children: "Вы оба хотите детей",
+        don_t_want_children: "Вы оба не хотите детей",
+        have_children_want_more: "У вас обоих есть дети, и вы хотите ещё",
+        have_children_don_t_want_more: "У вас обоих есть дети, и больше вы не хотите",
+      },
+      relationship_type: {
+        monogamy: "Вы оба предпочитаете моногамию",
+        non_monogamy: "Вы оба предпочитаете немоногамию",
+      },
+      relocation_openness: {
+        want_to_stay_local: "Вы оба хотите остаться здесь",
+        open_to_relocating: "Вы оба готовы к переезду",
+        would_love_to_live_abroad: "Вы оба мечтаете жить за границей",
+      },
+      weekend_style: {
+        homebody: "Вы оба домоседы",
+        always_out_and_about: "Вы оба всегда в движении",
+      },
+      social_energy: {
+        recharge_alone: "Вы оба восстанавливаетесь в одиночестве",
+        recharge_with_people: "Вы оба восстанавливаетесь в компании",
+      },
+      morning_person: {
+        up_with_the_sun: "Вы оба встаёте с рассветом",
+        snooze_a_few_times: "Вы оба несколько раз откладываете будильник",
+        not_a_morning_person_at_all: "Вы оба совсем не жаворонки",
+      },
+      cooking_habits: {
+        cook_most_nights: "Вы оба готовите почти каждый вечер",
+        order_in_most_nights: "Вы оба почти каждый вечер заказываете еду",
+      },
+      workout: {
+        everyday: "Вы оба тренируетесь каждый день",
+        often: "Вы оба часто тренируетесь",
+        never: "Вы оба не тренируетесь",
+      },
+      communication_style: {
+        big_texter: "Вы оба любите переписываться",
+        phone_caller: "Вы оба предпочитаете звонки",
+        video_chatter: "Вы оба предпочитаете видеозвонки",
+        slow_to_reply: "Вы оба отвечаете не сразу",
+      },
+      love_style: {
+        thoughtful_gestures: "У вас общий язык любви: знаки внимания",
+        physical_touch: "У вас общий язык любви: прикосновения",
+        quality_time: "У вас общий язык любви: время вместе",
+        deep_talks: "У вас общий язык любви: глубокие разговоры",
+        gift_giving: "У вас общий язык любви: подарки",
+      },
+      independence_preference: {
+        need_lots_of_space: "Вам обоим нужно много личного пространства",
+        love_togetherness: "Вы оба любите быть вместе",
+      },
+      family_closeness: {
+        very_close_knit: "Вы оба очень близки с семьёй",
+        independent_from_family: "Вы оба независимы от семьи",
+      },
+      pets: {
+        dog: "У вас обоих есть собака",
+        cat: "У вас обоих есть кошка",
+        reptile: "У вас обоих есть рептилия",
+        bird: "У вас обоих есть птица",
+        fish: "У вас обоих есть рыбки",
+        pet_free: "У вас обоих нет питомцев",
+        want_a_pet: "Вы оба хотите питомца",
+      },
+    },
   },
   ko: {
     justNow: "방금",
@@ -207,7 +937,80 @@ export default {
     within35Feet: "📍 약 10미터 거리",
     within35FeetWhen: "📍 약 10미터 거리 · {time}",
     bothFreeTonight: "🌙 오늘 밤 둘 다 시간 있음",
-    bothLookingFor: "두 분 모두 찾는 것: {what}",
-    bothChose: "두 분 모두 {field}에서 “{value}”을(를) 선택했어요",
+    reason: {
+      intention: {
+        serious: "두 분 모두 진지한 관계를 찾고 있어요",
+        casual: "두 분 모두 가벼운 만남을 찾고 있어요",
+        friends: "두 분 모두 새 친구를 찾고 있어요",
+        marriage: "두 분 모두 결혼을 생각하고 있어요",
+      },
+      family_plans: {
+        want_children: "두 분 모두 아이를 원해요",
+        don_t_want_children: "두 분 모두 아이를 원하지 않아요",
+        have_children_want_more: "두 분 모두 아이가 있고 더 원해요",
+        have_children_don_t_want_more: "두 분 모두 아이가 있고 더는 원하지 않아요",
+      },
+      relationship_type: {
+        monogamy: "두 분 모두 일대일 관계를 선호해요",
+        non_monogamy: "두 분 모두 비독점 관계를 선호해요",
+      },
+      relocation_openness: {
+        want_to_stay_local: "두 분 모두 지금 사는 곳에 머물고 싶어 해요",
+        open_to_relocating: "두 분 모두 이사할 의향이 있어요",
+        would_love_to_live_abroad: "두 분 모두 해외에서 살고 싶어 해요",
+      },
+      weekend_style: {
+        homebody: "두 분 모두 집순이·집돌이예요",
+        always_out_and_about: "두 분 모두 늘 밖에서 활동해요",
+      },
+      social_energy: {
+        recharge_alone: "두 분 모두 혼자 있을 때 충전돼요",
+        recharge_with_people: "두 분 모두 사람들과 있을 때 충전돼요",
+      },
+      morning_person: {
+        up_with_the_sun: "두 분 모두 해 뜨면 일어나요",
+        snooze_a_few_times: "두 분 모두 알람을 몇 번 미뤄요",
+        not_a_morning_person_at_all: "두 분 모두 아침형 인간이 아니에요",
+      },
+      cooking_habits: {
+        cook_most_nights: "두 분 모두 거의 매일 저녁 요리해요",
+        order_in_most_nights: "두 분 모두 거의 매일 저녁 배달을 시켜요",
+      },
+      workout: {
+        everyday: "두 분 모두 매일 운동해요",
+        often: "두 분 모두 자주 운동해요",
+        never: "두 분 모두 운동을 하지 않아요",
+      },
+      communication_style: {
+        big_texter: "두 분 모두 메시지를 많이 보내요",
+        phone_caller: "두 분 모두 전화 통화를 더 좋아해요",
+        video_chatter: "두 분 모두 영상 통화를 더 좋아해요",
+        slow_to_reply: "두 분 모두 답장이 느린 편이에요",
+      },
+      love_style: {
+        thoughtful_gestures: "두 분의 사랑의 언어가 같아요: 세심한 배려",
+        physical_touch: "두 분의 사랑의 언어가 같아요: 스킨십",
+        quality_time: "두 분의 사랑의 언어가 같아요: 함께하는 시간",
+        deep_talks: "두 분의 사랑의 언어가 같아요: 깊은 대화",
+        gift_giving: "두 분의 사랑의 언어가 같아요: 선물",
+      },
+      independence_preference: {
+        need_lots_of_space: "두 분 모두 개인 공간이 많이 필요해요",
+        love_togetherness: "두 분 모두 함께하는 시간을 좋아해요",
+      },
+      family_closeness: {
+        very_close_knit: "두 분 모두 가족과 아주 가까워요",
+        independent_from_family: "두 분 모두 가족으로부터 독립적이에요",
+      },
+      pets: {
+        dog: "두 분 모두 강아지를 키워요",
+        cat: "두 분 모두 고양이를 키워요",
+        reptile: "두 분 모두 파충류를 키워요",
+        bird: "두 분 모두 새를 키워요",
+        fish: "두 분 모두 물고기를 키워요",
+        pet_free: "두 분 모두 반려동물이 없어요",
+        want_a_pet: "두 분 모두 반려동물을 원해요",
+      },
+    },
   },
 };
