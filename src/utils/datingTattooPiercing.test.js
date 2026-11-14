@@ -94,7 +94,7 @@ describe('profile fields', () => {
   });
 
   test('never compared for compatibility (their influence is only the capped appearance adjustment)', () => {
-    expect(APPEARANCE_ONLY_BASICS).toEqual(['tattoos', 'piercings']);
+    expect(APPEARANCE_ONLY_BASICS).toEqual(expect.arrayContaining(['tattoos', 'piercings']));
     const me = { basics: { tattoos: 'Has tattoos', piercings: 'No piercings', drinking: 'Socially' } };
     const them = { basics: { tattoos: 'Has tattoos', piercings: 'No piercings', drinking: 'Socially' } };
     const report = generateCompatibilityReport(me, them);

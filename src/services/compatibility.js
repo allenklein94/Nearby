@@ -42,9 +42,12 @@ function withRelationshipIntention(basics, profile) {
 }
 
 export const NEVER_COMPARED_BASICS = Object.freeze(['job_title']);
-// Tattoos + piercings are soft appearance preferences only (owner, 2026-11-14): their influence is the capped appearance
-// adjustment in utils/datingAppearance.js, never also a compatibility match/mismatch.
-export const APPEARANCE_ONLY_BASICS = Object.freeze(['tattoos', 'piercings']);
+// Appearance is never compatibility (owner, 2026-11-14): hair color, eye color, height, tattoos and piercings influence
+// Dating only through the capped appearance adjustment in utils/datingAppearance.js (+/- 6), never also as a
+// compatibility match/mismatch (that counted appearance twice, and rewarded looking like the viewer). The 35% profile
+// part is computed from the remaining, non-appearance answers. Every BASICS_FIELDS entry describing how someone looks
+// must be listed here (guard: services/compatibilityAppearance.test.js).
+export const APPEARANCE_ONLY_BASICS = Object.freeze(['hair_color', 'eye_color', 'height', 'tattoos', 'piercings']);
 
 export function generateCompatibilityReport(myProfile, theirProfile) {
   const myInterests = myProfile?.interests ?? [];
