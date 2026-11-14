@@ -8,7 +8,38 @@ import { isPremiumOnServer } from './purchases';
 // Premium-style daily viewing cap.
 const FREE_DAILY_BROWSE_VIEW_LIMIT = 30;
 
-export async function checkAndCountBrowseView(userId, newProfilesCount) {
+// Owner, 2026-11-14 (Browse optimization pass): the free cap counts PEOPLE SHOWN, once each per local day. Showing the
+// same person again (pull to refresh, coming back to Browse, a retried page) never counts twice. Remembered for the
+// app session only: after a restart a re-shown person may count once more (conservative, never under-counts new people).
+const countedToday = { day: null, ids: new Set() };
+
+function localDayKey(now = new Date()) {
+  return `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+}
+
+// The ids of `shownIds` not yet counted today (pure apart from the session memory; exported for tests).
+export function uncountedBrowseIds(shownIds, now = new Date()) {
+  const day = localDayKey(now);
+  if (countedToday.day !== day) { countedToday.day = day; countedToday.ids = new Set(); }
+  return [...new Set(shownIds ?? [])].filter((id) => !countedToday.ids.has(id));
+}
+
+function rememberCounted(ids, now = new Date()) {
+  const day = localDayKey(now);
+  if (countedToday.day !== day) { countedToday.day = day; countedToday.ids = new Set(); }
+  for (const id of ids) countedToday.ids.add(id);
+}
+
+// For tests only.
+export function __resetBrowseCountMemory() {
+  countedToday.day = null;
+  countedToday.ids = new Set();
+}
+
+// shownIds = the ids of the profiles about to be displayed (never the pool, never a window).
+export async function checkAndCountBrowseView(userId, shownIds) {
+  const fresh = uncountedBrowseIds(shownIds);
+  const newProfilesCount = fresh.length;
   if (newProfilesCount === 0 || await isPremiumOnServer(userId)) {
     return { allowed: true };
   }
@@ -25,6 +56,7 @@ export async function checkAndCountBrowseView(userId, newProfilesCount) {
   }
 
   const result = data?.[0];
+  if (result?.allowed) rememberCounted(fresh);
   if (!result?.allowed) {
     return {
       allowed: false,

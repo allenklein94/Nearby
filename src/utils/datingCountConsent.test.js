@@ -84,7 +84,7 @@ describe('every Dating card source reads the server opt-in view (cards, not only
   };
   // Browse's read lives in buildBrowsePool (owner 2026-11-14, Option A); getBrowseMatches only pages through it.
   test('getBrowseMatches reads only through buildBrowsePool', () => {
-    expect(body('getBrowseMatches')).toMatch(/await buildBrowsePool\(userId, myProfile\)/);
+    expect(body('getBrowseMatches')).toMatch(/await buildBrowsePool\(inputs\.userId, inputs\.myProfile\)/);
     expect(body('getBrowseMatches')).not.toMatch(/\.from\(/);
   });
   test.each(['getNearbyMatches', 'buildBrowsePool'])('%s reads dating_candidates_visible_to_me, never people_visible_to_me, and re-checks the verdict', (name) => {

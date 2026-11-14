@@ -333,11 +333,17 @@ export async function getNearbyMatches() {
 // Dating (dating_candidates_visible_to_me), minus friends, matches and the person's hard filters. They are read in
 // windows of BROWSE_POOL_WINDOW, filtered and ranked as one set (compatibility + the approved appearance adjustment,
 // utils/datingAppearance.js), and revealed BROWSE_PAGE_SIZE at a time (utils/browsePool.js); the pool is reused while
-// fresh. Returns { items, hasMore }: hasMore comes from the pool, never from an empty page. Crossed Paths stays the
-// default, primary experience.
+// fresh. Global order is within each window of 300, not across the whole Dating pool. Crossed Paths stays the default,
+// primary experience.
+//
+// Returns { items, hasMore, failed, reset }:
+//   hasMore comes from the pool, never from an empty page;
+//   failed = a read failed (network, server): nothing changed, the same offset can be asked again; never "no more";
+//   reset  = a NEW pool had to be built while the screen was past page 1 (inputs changed, or the pool was dropped):
+//            items are page 1 of the new pool and the screen replaces its list (never mixes two pools' positions).
 let browsePoolCache = null;
 
-// Drops the reused pool (pull to refresh, sign out).
+// Drops the reused pool (pull to refresh, Dating preferences saved, sign out). The next read builds a new one.
 export function resetBrowsePool() {
   browsePoolCache = null;
 }
@@ -354,22 +360,45 @@ function neighborBucketsOf(wideArea) {
   return buckets;
 }
 
-async function buildBrowsePool(userId, myProfile) {
-  // People in a block with me, either way, never come back from dating_candidates_visible_to_me (server rule); the
-  // client never reads `blocks`.
-  const [{ data: acceptedFriends }, { data: existingMatches }] = await Promise.all([
+// Narrow window read (optimization pass, 2026-11-14): only what the hard filters (consent, gender, age, ethnicity) and
+// ranking (compatibility: interests, basics, relationship_intention; appearance: basics hair/eye, height_inches) read.
+// Card details (name, photo path, bio, badges) come only for the 20 shown, in DATING_CANDIDATE_COLUMNS (hydrate).
+export const BROWSE_RANK_COLUMNS = 'id, discovery_gender, age, ethnicity, interests, basics, height_inches, relationship_intention, gender_identity, interested_in_genders, show_me, dating_opted_in';
+
+// PostgREST takes ids in the URL; keep each `in` list well under URL limits.
+const HYDRATE_CHUNK = 100;
+
+async function readBrowseExclusions(userId) {
+  // A confirmed friend or an existing match is never re-surfaced as a dating prospect. Re-read on every page, so a new
+  // friend or match leaves Browse at once. A failed read throws: Browse never shows people it couldn't check.
+  const [friends, matches] = await Promise.all([
     supabase.from('friendships').select('user_a, user_b').eq('status', 'accepted').or(`user_a.eq.${userId},user_b.eq.${userId}`),
     supabase.from('matches').select('user_a, user_b').or(`user_a.eq.${userId},user_b.eq.${userId}`),
   ]);
+  if (friends.error) throw friends.error;
+  if (matches.error) throw matches.error;
   const other = (row) => (row.user_a === userId ? row.user_b : row.user_a);
-  // A confirmed friend or an existing match is never re-surfaced as a dating prospect.
-  const excludedUserIds = new Set([userId, ...(acceptedFriends ?? []).map(other), ...(existingMatches ?? []).map(other)]);
+  return new Set([userId, ...(friends.data ?? []).map(other), ...(matches.data ?? []).map(other)]);
+}
 
+async function buildBrowsePool(userId, myProfile) {
+  // People in a block with me, either way, never come back from dating_candidates_visible_to_me (server rule); the
+  // client never reads `blocks`.
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
   const buckets = neighborBucketsOf(myProfile.wide_area);
   const appearance = appearancePreferencesOf(myProfile);
+
+  // The hard filters, one rule for the window and for the fresh row of a page about to show.
+  const eligible = (p) => {
+    if (!isDatingOptedIn({ profiles: p }) || !passesGenderMatch(myProfile, p)) return false;
+    const age = p.age ?? null;
+    if (age !== null && (age < minAge || age > maxAge)) return false;
+    if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
+    // Appearance preferences rank (rankDatingCandidates), never exclude (owner, 2026-11-14).
+    return true;
+  };
 
   return createBrowsePool({
     // Keyset paging by id (stable order, required for windows: no skips or repeats when rows change between reads).
@@ -378,21 +407,13 @@ async function buildBrowsePool(userId, myProfile) {
         let query = supabase.from('dating_candidates_visible_to_me').select(columns).in('wide_area', buckets);
         if (afterId != null) query = query.gt('id', afterId);
         return query.order('id', { ascending: true }).limit(size);
-      }, DATING_CANDIDATE_COLUMNS);
+      }, BROWSE_RANK_COLUMNS);
       if (error) throw error;
       return data ?? [];
     },
     rankWindow: (rows) => rankDatingCandidates(
       rows
-        .filter((p) => !excludedUserIds.has(p.id) && isDatingOptedIn({ profiles: p }))
-        .filter((p) => passesGenderMatch(myProfile, p))
-        .filter((p) => {
-          const age = p.age ?? null;
-          if (age !== null && (age < minAge || age > maxAge)) return false;
-          if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
-          // Appearance preferences rank (rankDatingCandidates), never exclude (owner, 2026-11-14).
-          return true;
-        })
+        .filter(eligible)
         .map((p) => ({
           id: p.id,
           otherUserId: p.id,
@@ -402,42 +423,81 @@ async function buildBrowsePool(userId, myProfile) {
         })),
       appearance,
     ),
-    // Before a page shows, the server re-decides who is still visible (blocks either way, Dating consent, area).
-    confirmVisible: async (ids) => {
-      const { data, error } = await supabase.from('dating_candidates_visible_to_me').select('id').in('id', ids).in('wide_area', buckets);
-      if (error) throw error;
-      return new Set((data ?? []).map((row) => row.id));
+    loadExcluded: () => readBrowseExclusions(userId),
+    // Before a page shows, the server re-decides who is still visible (blocks either way, Dating consent, area) and
+    // returns the card details for those people only; a fresh row that no longer passes the hard filters is dropped.
+    hydrate: async (ids) => {
+      const rows = new Map();
+      for (let i = 0; i < ids.length; i += HYDRATE_CHUNK) {
+        const chunk = ids.slice(i, i + HYDRATE_CHUNK);
+        // eslint-disable-next-line no-await-in-loop
+        const { data, error } = await selectPeople((columns) => supabase
+          .from('dating_candidates_visible_to_me')
+          .select(columns)
+          .in('id', chunk)
+          .in('wide_area', buckets), DATING_CANDIDATE_COLUMNS);
+        if (error) throw error;
+        for (const row of data ?? []) if (eligible(row)) rows.set(row.id, row);
+      }
+      return rows;
     },
   });
 }
+
+const BROWSE_PROFILE_COLUMNS = 'wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders';
 
 // Everything the pool's membership or order depends on; a change means a new pool.
 function browsePoolKey(userId, myProfile) {
   return JSON.stringify([userId, BROWSE_PROFILE_COLUMNS, BROWSE_PROFILE_COLUMNS.split(', ').map((c) => myProfile?.[c] ?? null)]);
 }
 
-const BROWSE_PROFILE_COLUMNS = 'wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, basics, gender_identity, interested_in_genders';
-
-export async function getBrowseMatches(offset = 0) {
-  const none = { items: [], hasMore: false };
+async function readBrowseInputs() {
   const { data: sessionData } = await supabase.auth.getSession();
   const userId = sessionData?.session?.user?.id;
-  if (!userId) return none;
+  if (!userId) return null;
+  const { data: myProfile, error } = await readMyProfile(BROWSE_PROFILE_COLUMNS);
+  if (error) throw error;
+  if (!myProfile?.wide_area) return null;
+  return { userId, myProfile, key: browsePoolKey(userId, myProfile) };
+}
 
-  const { data: myProfile } = await readMyProfile(BROWSE_PROFILE_COLUMNS);
-  if (!myProfile?.wide_area) return none;
-
-  const key = browsePoolKey(userId, myProfile);
-  // Later pages always continue the pool the first page came from; a first page reuses it only while fresh.
-  const reusable = browsePoolCache && browsePoolCache.key === key && (offset > 0 || browsePoolCache.pool.isFresh());
-  if (!reusable) browsePoolCache = { key, pool: await buildBrowsePool(userId, myProfile) };
-
+export async function getBrowseMatches(offset = 0) {
+  const none = { items: [], hasMore: false, failed: false, reset: false };
   try {
-    return await browsePoolCache.pool.page(offset, BROWSE_PAGE_SIZE);
+    const inputs = await readBrowseInputs();
+    if (!inputs) return none;
+
+    // Later pages always continue the pool the first page came from (stable positions, no reshuffle); a first page
+    // reuses it only while fresh. A new pool (inputs changed, dropped, or expired at page 1) always starts at page 1.
+    const sameInputs = browsePoolCache && browsePoolCache.key === inputs.key;
+    const reusable = sameInputs && (offset > 0 || browsePoolCache.pool.isFresh());
+    let reset = false;
+    let at = offset;
+    if (!reusable) {
+      browsePoolCache = { key: inputs.key, pool: await buildBrowsePool(inputs.userId, inputs.myProfile) };
+      if (offset > 0) { reset = true; at = 0; }
+    }
+    const { items, hasMore } = await browsePoolCache.pool.page(at, BROWSE_PAGE_SIZE);
+    return { items, hasMore, failed: false, reset };
   } catch (error) {
     console.error('getBrowseMatches error', error);
-    // Never keep a half-read pool; a failed read is reported as nothing to show, as before.
-    browsePoolCache = null;
-    return none;
+    // The pool is left as it was (utils/browsePool.js: a failed read moves nothing), so a retry of the same offset
+    // continues exactly where it stopped. Never reported as an exhausted pool.
+    return { items: [], hasMore: true, failed: true, reset: false };
+  }
+}
+
+// Coming back to Browse (owner, 2026-11-14): which of the people already on screen must leave now (a new friend or
+// match, a block either way, left Dating), and whether the inputs changed (preferences saved) so the list must start
+// over. { remove: Set, restart: bool, failed: bool }. A failed check changes nothing on screen.
+export async function recheckBrowseOnReturn(shownIds) {
+  try {
+    const inputs = await readBrowseInputs();
+    if (!inputs) return { remove: new Set(), restart: false, failed: false };
+    if (!browsePoolCache || browsePoolCache.key !== inputs.key) return { remove: new Set(), restart: true, failed: false };
+    return { remove: await browsePoolCache.pool.recheckShown(shownIds), restart: false, failed: false };
+  } catch (error) {
+    console.error('recheckBrowseOnReturn error', error);
+    return { remove: new Set(), restart: false, failed: true };
   }
 }

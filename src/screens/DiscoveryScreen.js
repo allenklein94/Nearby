@@ -5,7 +5,8 @@ import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView
 import { PullToRefresh, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyMatches, getBrowseMatches, resetBrowsePool, reportPresence } from '../services/proximity';
+import { getNearbyMatches, getBrowseMatches, resetBrowsePool, recheckBrowseOnReturn, reportPresence } from '../services/proximity';
+import LoadErrorState from '../components/LoadErrorState';
 import { getUserLocation } from '../services/userLocation';
 import { formatCrossedPathsTime, gatheringReasonText } from '../services/crossedPathsSignals';
 import { checkAndCountBrowseView } from '../services/browseLimits';
@@ -68,6 +69,12 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   const [nearby, setNearby] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  // Read by the Browse return check (focus effect) without re-running it on every list change.
+  const nearbyRef = useRef(nearby);
+  nearbyRef.current = nearby;
+  const initialLoadingRef = useRef(initialLoading);
+  initialLoadingRef.current = initialLoading;
+  const loadBrowseBatchRef = useRef(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [onlineStatuses, setOnlineStatuses] = useState({});
@@ -100,6 +107,9 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   const [browseOffset, setBrowseOffset] = useState(0);
   const [browseHasMore, setBrowseHasMore] = useState(true);
   const [loadingMoreBrowse, setLoadingMoreBrowse] = useState(false);
+  // A Browse read that failed (network, server): never shown as "no more people"; the list stays and Try Again re-asks
+  // the same page (owner, 2026-11-14).
+  const [browseLoadFailed, setBrowseLoadFailed] = useState(false);
   const [sightingMapTarget, setSightingMapTarget] = useState(null);
   const [showSightingsOverview, setShowSightingsOverview] = useState(false);
   const [showDatingPrefsPrompt, setShowDatingPrefsPrompt] = useState(false);
@@ -190,12 +200,20 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     }
   }
 
+  // Loads one Browse page. Returns 'shown' | 'failed' | 'limited' | 'empty' and the offset actually shown (0 when a new
+  // pool had to start over, `reset`). Nothing on screen changes unless the page was really shown.
   const loadBrowseBatch = useCallback(async (offset) => {
     // Owner 2026-11-14: hasMore comes from the ranked pool (an empty filtered window is never "no more people").
-    const { items: results, hasMore } = await getBrowseMatches(offset);
+    const { items: results, hasMore, failed, reset } = await getBrowseMatches(offset);
+    if (failed) {
+      setBrowseLoadFailed(true);
+      return { status: 'failed', offset };
+    }
+    const shownOffset = reset ? 0 : offset;
 
     if (myUserId) {
-      const limitCheck = await checkAndCountBrowseView(myUserId, results.length);
+      // Counts only the profiles about to be displayed, each once per day.
+      const limitCheck = await checkAndCountBrowseView(myUserId, results.map((item) => item.id));
       if (!limitCheck.allowed) {
         setBrowseHasMore(false);
         Alert.alert(
@@ -206,12 +224,14 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
             { text: t('ui.dating.upgradeToPremium'), onPress: () => navigation.navigate('Paywall') },
           ]
         );
-        return;
+        return { status: 'limited', offset };
       }
     }
 
+    setBrowseLoadFailed(false);
     setBrowseHasMore(hasMore);
 
+    // Photo links only for the profiles shown (the pool's windows carry no photo path at all).
     const urlEntries = await Promise.all(
       results.map(async (item) => {
         const path = item.profiles?.photo_url;
@@ -224,14 +244,20 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
 
     const otherUserIds = results.map((item) => item.otherUserId);
     const storyPresence = await getStoryPresenceForUsers(otherUserIds);
-    setStoryByUserId((prev) => (offset === 0 ? storyPresence : { ...prev, ...storyPresence }));
+    setStoryByUserId((prev) => (shownOffset === 0 ? storyPresence : { ...prev, ...storyPresence }));
 
-    if (offset === 0) {
+    if (shownOffset === 0) {
       setNearby(results);
     } else {
-      setNearby((prev) => [...prev, ...results]);
+      // The pool never repeats anyone; the id check only guards against a page asked twice by overlapping callers.
+      setNearby((prev) => {
+        const have = new Set(prev.map((p) => p.id));
+        return [...prev, ...results.filter((r) => !have.has(r.id))];
+      });
     }
+    return { status: results.length > 0 ? 'shown' : 'empty', offset: shownOffset };
   }, [myUserId, isUserPremium]);
+  loadBrowseBatchRef.current = loadBrowseBatch;
 
   async function switchDiscoveryMode(mode) {
     if (mode === discoveryMode) return;
@@ -239,6 +265,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     setNearby([]);
     setBrowseOffset(0);
     setBrowseHasMore(true);
+    setBrowseLoadFailed(false);
     setInitialLoading(true);
     if (mode === 'browse') {
       await loadBrowseBatch(0);
@@ -248,18 +275,51 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     }
   }
 
-  async function loadMoreBrowse() {
+  // `auto` = the list's own end-reached call: it never retries a failed page by itself (no retry loop); Try Again and
+  // the card deck's explicit request do.
+  async function loadMoreBrowse({ auto = false } = {}) {
     if (loadingMoreBrowse || !browseHasMore) return;
+    if (auto && browseLoadFailed) return;
     setLoadingMoreBrowse(true);
-    const nextOffset = browseOffset + 20;
-    await loadBrowseBatch(nextOffset);
-    setBrowseOffset(nextOffset);
+    const result = await loadBrowseBatch(browseOffset + 20);
+    // The offset moves only when a page was really shown (a failure or the daily limit keeps it, so nothing is skipped).
+    if (result.status === 'shown' || result.status === 'empty') setBrowseOffset(result.offset);
     setLoadingMoreBrowse(false);
+  }
+
+  async function retryBrowse() {
+    if (nearby.length === 0) {
+      setInitialLoading(true);
+      const result = await loadBrowseBatch(0);
+      if (result.status !== 'failed') setBrowseOffset(0);
+      setInitialLoading(false);
+    } else {
+      await loadMoreBrowse();
+    }
   }
 
   useFocusEffect(
     useCallback(() => {
       if (discoveryMode === 'crossedPaths') load();
+      // Coming back to Browse (from a profile, Dating preferences, a chat): anyone who became a friend or match, blocked
+      // or was blocked, or left Dating leaves the list now; saved preferences start the list over. A failed check
+      // changes nothing (owner, 2026-11-14).
+      if (discoveryMode === 'browse' && !initialLoadingRef.current && nearbyRef.current.length > 0) {
+        let cancelled = false;
+        (async () => {
+          const shownIds = nearbyRef.current.map((item) => item.id);
+          const { remove, restart } = await recheckBrowseOnReturn(shownIds);
+          if (cancelled) return;
+          if (restart) {
+            const result = await loadBrowseBatchRef.current(0);
+            if (!cancelled && result.status !== 'failed') setBrowseOffset(0);
+          } else if (remove.size > 0) {
+            setNearby((prev) => prev.filter((item) => !remove.has(item.id)));
+          }
+        })();
+        return () => { cancelled = true; };
+      }
+      return undefined;
     }, [load, discoveryMode])
   );
 
@@ -313,6 +373,10 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   // section already on Settings), not a vague suggestion with nothing to
   // tap.
   function renderPeopleEmptyState() {
+    // A failed Browse read is never "no one matches" (owner, 2026-11-14).
+    if (discoveryMode === 'browse' && browseLoadFailed) {
+      return <LoadErrorState onRetry={retryBrowse} />;
+    }
     if (locationOff) {
       return (
         <FadeInState opportunity style={styles.emptyState}>
@@ -498,11 +562,11 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
     if (discoveryMode === 'browse') {
-      // Pull to refresh in Browse re-reads Browse (a fresh pool from the first page), never Crossed Paths.
+      // Pull to refresh in Browse re-reads Browse (a fresh pool from the first page), never Crossed Paths. A failed
+      // refresh keeps the list on screen (the next page then starts the new pool over, `reset`).
       resetBrowsePool();
-      setBrowseOffset(0);
-      setBrowseHasMore(true);
-      await loadBrowseBatch(0);
+      const result = await loadBrowseBatch(0);
+      if (result.status !== 'failed') setBrowseOffset(0);
     } else {
       await load();
     }
@@ -674,7 +738,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
             onViewProfile={(userId) => navigation.navigate('ViewProfile', { userId, viewContext: 'dating' })}
             onReport={(id, name) => setReportTarget({ id, name })}
             compatibilityColor={compatibilityColor}
-            onNeedMore={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
+            onNeedMore={discoveryMode === 'browse' ? () => loadMoreBrowse() : undefined}
             discoveryMode={discoveryMode}
             onShowCompatibility={showCompatibilityReport}
             freeTonightIds={freeTonightIds}
@@ -688,14 +752,16 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: spacing.xl }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
-        onEndReached={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
+        onEndReached={discoveryMode === 'browse' ? () => loadMoreBrowse({ auto: true }) : undefined}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           discoveryMode === 'browse' && loadingMoreBrowse ? (
             <View style={{ paddingVertical: spacing.lg }}>
               <SkeletonFeed count={1} />
             </View>
-          ) : null
+          ) : (discoveryMode === 'browse' && browseLoadFailed && filteredNearby.length > 0 ? (
+            <LoadErrorState onRetry={retryBrowse} />
+          ) : null)
         }
         ListEmptyComponent={renderPeopleEmptyState()}
         renderItem={({ item }) => {
