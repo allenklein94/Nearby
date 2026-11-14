@@ -102,7 +102,7 @@ import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import CreativeLibrarySection from '../components/CreativeLibrarySection';
 import { pickerCreatives } from '../utils/creativeLibrary';
 import { describeDemandSignals } from '../utils/demandSignals';
-import { matchRadarRows } from '../utils/matchRadarRows';
+import { matchRadarRows, isUnofferedGap, bestUnofferedGap } from '../utils/matchRadarRows';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { NOT_ACCOMMODATED_OPTIONS, ADULT_AGE_RULES, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
@@ -3845,12 +3845,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   // (request_count + unmet_intent_count), never blended
                   // into totalDemand/bestDemand above -- those still
                   // reflect every category regardless of served status.
-                  const demandGaps = aggregatedDemand.filter(
-                    (d) => d.is_demand_gap && (Number(d.request_count) > 0 || Number(d.unmet_intent_count) > 0)
-                  );
-                  const bestGap = [...demandGaps].sort(
-                    (a, b) => (Number(b.request_count) + Number(b.unmet_intent_count)) - (Number(a.request_count) + Number(a.unmet_intent_count))
-                  )[0];
+                  // Owner audit 2026-11-14: only a category the business really doesn't offer (utils/matchRadarRows.js).
+                  const bestGap = bestUnofferedGap(aggregatedDemand);
                   let suggestion = null;
                   if (!selectedPartner.differentiator) {
                     suggestion = { text: t('ui.bizDash1.addWhatMakesYouDifferent'), onPress: () => setEditProfileModalVisible(true) };
@@ -4451,7 +4447,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           {t('ui.bizDash2.recentSearchesFoundNothing', { count: d.unmetCount, category: categoryName(d.category, language) })}
                         </Text>
                       )}
-                      {d.is_demand_gap && (
+                      {isUnofferedGap(d) && (
                         // Business Intelligence Phase 5 (Intelligence): a
                         // genuinely different concept from the 🟡 marker
                         // above -- that one is about confidence of the
@@ -5600,17 +5596,67 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   {t('ui.bizDash2.helpNearbySendYouRequests')}
                 </Text>
-                <View style={styles.gatheringRow}>
-                  <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{t('ui.bizDash2.groupSize')}</Text>
-                  <Text style={styles.breakdownText}>
-                    {fulfillmentPolicy?.party_size_min != null || fulfillmentPolicy?.party_size_max != null
-                      ? t('ui.bizDash2.groupsOf', { partySizeMin: fulfillmentPolicy.party_size_min ?? '1', partySizeMax: fulfillmentPolicy.party_size_max ?? '∞' })
-                      : t('ui.bizDash2.notSetYet')}
-                  </Text>
-                  <TouchableOpacity onPress={openPolicyModal} accessibilityLabel={t('ui.bizDash2.editGroupSizeA11y')} accessibilityRole="button">
-                    <Text style={styles.messageMemberLink}>✏️ {fulfillmentPolicy ? t('ui.bizDash2.edit') : t('ui.bizDash2.setYourGroupSize')}</Text>
-                  </TouchableOpacity>
+                {/* Owner audit 2026-11-14: the ONE group size here is the value routing reads (brand_partners.max_group_size,
+                    _business_request_fanout). The automatic-reply party range is a different rule and stays under Settings. */}
+                {/* Item 80: largest group (total people), owner-declared; used only to decide which requests reach you. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.largestGroupYouCanHost')}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
+                  <TextInput
+                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                    placeholder={t('ui.bizDash2.notSet')}
+                    placeholderTextColor={colors.textTertiary}
+                    value={maxGroupDraft ?? (selectedPartner?.max_group_size != null ? String(selectedPartner.max_group_size) : '')}
+                    onChangeText={(t) => setMaxGroupDraft(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    accessibilityLabel={t('ui.bizDash2.largestGroupYouCanHostA11y')}
+                  />
+                  {maxGroupDraft !== null && (
+                    <TouchableOpacity
+                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                      onPress={handleSaveMaxGroupSize}
+                      disabled={savingMaxGroup}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('ui.bizDash2.saveGroupSizeA11y')}
+                    >
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingMaxGroup ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.totalPeopleCountingEveryoneRequests')}
+                </Text>
+                {SPACES.filter((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)).map((sp) => (
+                  <View key={sp.key} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
+                    <Text style={[styles.helperText, { width: 110, marginTop: 0 }]}>{sp.label}</Text>
+                    <TextInput
+                      style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                      placeholder={t('ui.bizDash2.notSet')}
+                      placeholderTextColor={colors.textTertiary}
+                      value={spaceDrafts[sp.key] ?? (selectedPartner?.[sp.column] != null ? String(selectedPartner[sp.column]) : '')}
+                      onChangeText={(t) => setSpaceDrafts((prev) => ({ ...prev, [sp.key]: t.replace(/[^0-9]/g, '') }))}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      accessibilityLabel={t('ui.bizDash2.largestGroupTotalPeopleA11y', { label: sp.label })}
+                    />
+                    {spaceDrafts[sp.key] !== undefined && (
+                      <TouchableOpacity
+                        style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                        onPress={() => handleSaveSpaceCapacity(sp)}
+                        disabled={savingSpace === sp.key}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('ui.bizDash2.saveSizeA11y', { label: sp.label })}
+                      >
+                        <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpace === sp.key ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+                {SPACES.some((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)) && (
+                  <Text style={styles.helperText}>
+                    {t('ui.bizDash2.theMostPeopleEachSpace')}
+                  </Text>
+                )}
                 <View style={[styles.gatheringRow, { marginTop: spacing.sm }]}>
                   <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>{t('ui.bizDash2.experiencesUses')}</Text>
                   <View style={styles.chipRow}>
@@ -6081,65 +6127,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 <Text style={styles.helperText}>
                   {t('ui.bizDash2.aRoughIdeaIsEnough')}
                 </Text>
-                {/* Item 80: largest group (total people), owner-declared; used only to decide which requests reach you. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.largestGroupYouCanHost')}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
-                  <TextInput
-                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                    placeholder={t('ui.bizDash2.notSet')}
-                    placeholderTextColor={colors.textTertiary}
-                    value={maxGroupDraft ?? (selectedPartner?.max_group_size != null ? String(selectedPartner.max_group_size) : '')}
-                    onChangeText={(t) => setMaxGroupDraft(t.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    accessibilityLabel={t('ui.bizDash2.largestGroupYouCanHostA11y')}
-                  />
-                  {maxGroupDraft !== null && (
-                    <TouchableOpacity
-                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
-                      onPress={handleSaveMaxGroupSize}
-                      disabled={savingMaxGroup}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('ui.bizDash2.saveGroupSizeA11y')}
-                    >
-                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingMaxGroup ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.totalPeopleCountingEveryoneRequests')}
-                </Text>
-                {SPACES.filter((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)).map((sp) => (
-                  <View key={sp.key} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
-                    <Text style={[styles.helperText, { width: 110, marginTop: 0 }]}>{sp.label}</Text>
-                    <TextInput
-                      style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                      placeholder={t('ui.bizDash2.notSet')}
-                      placeholderTextColor={colors.textTertiary}
-                      value={spaceDrafts[sp.key] ?? (selectedPartner?.[sp.column] != null ? String(selectedPartner[sp.column]) : '')}
-                      onChangeText={(t) => setSpaceDrafts((prev) => ({ ...prev, [sp.key]: t.replace(/[^0-9]/g, '') }))}
-                      keyboardType="number-pad"
-                      maxLength={4}
-                      accessibilityLabel={t('ui.bizDash2.largestGroupTotalPeopleA11y', { label: sp.label })}
-                    />
-                    {spaceDrafts[sp.key] !== undefined && (
-                      <TouchableOpacity
-                        style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
-                        onPress={() => handleSaveSpaceCapacity(sp)}
-                        disabled={savingSpace === sp.key}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('ui.bizDash2.saveSizeA11y', { label: sp.label })}
-                      >
-                        <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpace === sp.key ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-                {SPACES.some((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)) && (
-                  <Text style={styles.helperText}>
-                    {t('ui.bizDash2.theMostPeopleEachSpace')}
-                  </Text>
-                )}
                 {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
                 <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatAgesIsItSuited')}</Text>
                 <AgeRangePicker

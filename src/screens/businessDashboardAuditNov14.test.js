@@ -57,7 +57,7 @@ describe('Match Radar trimmed (owner 2026-11-14, option 1)', () => {
     expect(radar).toMatch(/hasEntitlement\(entitlements, 'advanced_match_radar'\)/);
     expect(radar).toMatch(/recentSearchesFoundNothing/);
     expect(radar).toMatch(/alsoMoreSearchesFoundNothing/);
-    expect(radar).toMatch(/d\.is_demand_gap &&/);
+    expect(radar).toMatch(/isUnofferedGap\(d\) &&/); // 🆕 only when the server says the category isn't offered (audit 2026-11-14)
   });
   test('the empty state no longer says demand for what you offer appears here', () => {
     expect(emptyCopy('business_demand').title).toBe('Nothing outside your categories yet');
@@ -67,5 +67,24 @@ describe('Match Radar trimmed (owner 2026-11-14, option 1)', () => {
     const all = JSON.stringify(bizDash2);
     expect((all.match(/peopleLookingOutsideYourCategories/g) || []).length).toBe(11);
     expect(all).not.toMatch(/Real open requests within reach of your business right now, grouped by category/);
+  });
+});
+
+describe('cross-platform business audit (owner 2026-11-14)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'BusinessDashboardScreen.js'), 'utf8');
+  test('"What You Can Accommodate" shows the group size routing reads (max_group_size), never the auto-reply range', () => {
+    const start = src.indexOf("t('ui.bizDash2.whatYouCanAccommodate')");
+    const end = src.indexOf("t('ui.bizDash2.experiencesUses')", start);
+    const block = src.slice(start, end);
+    expect(block).toMatch(/largestGroupYouCanHost/);
+    expect(block).toMatch(/max_group_size/);
+    expect(block).not.toMatch(/party_size_min|party_size_max|groupsOf/);
+    expect(src.match(/t\('ui\.bizDash2\.largestGroupYouCanHost'\)/g)).toHaveLength(1); // one field, never two
+  });
+  test('Home never tells a business it does not offer a category it declared (is_demand_gap = never served)', () => {
+    expect(src).toMatch(/const bestGap = bestUnofferedGap\(aggregatedDemand\)/);
+    expect(src).not.toMatch(/d\.is_demand_gap &&/);
   });
 });

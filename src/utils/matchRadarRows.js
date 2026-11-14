@@ -20,3 +20,20 @@ export function matchRadarRows(categories) {
   }
   return rows;
 }
+
+// get_aggregated_demand_for_partner's is_demand_gap means "never SERVED here" (no availability posted, no offer accepted), not
+// "not offered": a new business that declared Coffee but has no Coffee bookings yet is a gap too. Wording that says "something
+// you don't currently offer" is only true when the server ALSO says is_offered === false (a missing flag = not claimed).
+// Owner audit, 2026-11-14: Home's suggestion and Radar's 🆕 line both read this one rule.
+export function isUnofferedGap(d) {
+  return !!d && d.is_demand_gap === true && d.is_offered === false;
+}
+
+// Home's one suggestion: the strongest unoffered gap (real open requests + recent unmet searches, never blended in the text).
+export function bestUnofferedGap(categories) {
+  const list = (Array.isArray(categories) ? categories : []).filter(
+    (d) => isUnofferedGap(d) && (Number(d.request_count) > 0 || Number(d.unmet_intent_count) > 0)
+  );
+  const total = (d) => (Number(d.request_count) || 0) + (Number(d.unmet_intent_count) || 0);
+  return list.sort((a, b) => total(b) - total(a))[0] ?? null;
+}

@@ -31,3 +31,24 @@ describe('Match Radar rows (owner 2026-11-14: trim to what Opportunities does no
     expect(matchRadarRows(undefined)).toEqual([]);
   });
 });
+
+describe('unoffered demand gap (owner audit 2026-11-14)', () => {
+  const { isUnofferedGap, bestUnofferedGap } = require('./matchRadarRows');
+  test('a declared-but-never-served category is never called "something you don\'t offer"', () => {
+    expect(isUnofferedGap({ category: 'Coffee', is_demand_gap: true, is_offered: true })).toBe(false);
+    expect(isUnofferedGap({ category: 'Coffee', is_demand_gap: true })).toBe(false); // missing flag = not claimed
+    expect(isUnofferedGap({ category: 'Bowling', is_demand_gap: true, is_offered: false })).toBe(true);
+    expect(isUnofferedGap({ category: 'Bowling', is_demand_gap: false, is_offered: false })).toBe(false);
+  });
+  test('Home picks the strongest unoffered gap only', () => {
+    const rows = [
+      { category: 'Coffee', is_demand_gap: true, is_offered: true, request_count: 40, unmet_intent_count: 0 },
+      { category: 'Bowling', is_demand_gap: true, is_offered: false, request_count: 6, unmet_intent_count: 0 },
+      { category: 'Karaoke', is_demand_gap: true, is_offered: false, request_count: 0, unmet_intent_count: 9 },
+      { category: 'Pottery', is_demand_gap: true, is_offered: false, request_count: 0, unmet_intent_count: 0 },
+    ];
+    expect(bestUnofferedGap(rows).category).toBe('Karaoke');
+    expect(bestUnofferedGap(rows.slice(0, 1))).toBeNull();
+    expect(bestUnofferedGap(null)).toBeNull();
+  });
+});
