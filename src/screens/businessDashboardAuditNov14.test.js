@@ -44,3 +44,28 @@ describe('copy that contradicted the screen or a locked rule', () => {
     expect(JSON.stringify(bizDash2)).not.toMatch(/same real signal below/);
   });
 });
+
+describe('Match Radar trimmed (owner 2026-11-14, option 1)', () => {
+  const start = src.indexOf("{tool('demand') && (");
+  const radar = src.slice(start, src.indexOf("{on('opportunities') && (", start));
+  test('rows come only from matchRadarRows (own categories left to Opportunities)', () => {
+    expect(radar).toMatch(/matchRadarRows\(aggregatedDemand\)\.length === 0/);
+    expect(radar).toMatch(/matchRadarRows\(aggregatedDemand\)\.map/);
+    expect(radar).not.toMatch(/peopleLookingForCategory/); // Home's best-opportunity preview keeps it, Radar never
+  });
+  test('premium functionality kept: locked-feature prompt, 🟡 unmet searches, 🆕 gap line', () => {
+    expect(radar).toMatch(/hasEntitlement\(entitlements, 'advanced_match_radar'\)/);
+    expect(radar).toMatch(/recentSearchesFoundNothing/);
+    expect(radar).toMatch(/alsoMoreSearchesFoundNothing/);
+    expect(radar).toMatch(/d\.is_demand_gap &&/);
+  });
+  test('the empty state no longer says demand for what you offer appears here', () => {
+    expect(emptyCopy('business_demand').title).toBe('Nothing outside your categories yet');
+    expect(emptyCopy('business_demand').body).toMatch(/at least 5 people/);
+  });
+  test('Radar headline and description exist in every language', () => {
+    const all = JSON.stringify(bizDash2);
+    expect((all.match(/peopleLookingOutsideYourCategories/g) || []).length).toBe(11);
+    expect(all).not.toMatch(/Real open requests within reach of your business right now, grouped by category/);
+  });
+});

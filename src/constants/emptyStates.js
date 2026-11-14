@@ -25,7 +25,7 @@ export const EMPTY_STATES = {
   ai_activity: { title: "No automation activity yet", body: "When automation responds to a request, you'll see it here." },
   business_gatherings: { title: "No gatherings hosted yet", body: "Host one and it will show up here." },
   business_communities: { title: "No communities yet", body: "Start a community to bring your regulars together." },
-  business_demand: { title: "No demand to show yet", body: "Demand appears here once enough people nearby are looking for what you offer." },
+  business_demand: { title: "Nothing outside your categories yet", body: "Demand nearby for things you don't offer appears here once at least 5 people are behind it. Demand for what you offer is in Opportunities." },
   business_occasion_demand: { title: "No occasion demand yet", body: "It appears here once enough people nearby are planning an occasion you offer." },
   business_postings: { title: "Nothing posted yet", body: "Post when you have room and Nearby will match it to requests." },
   business_packages: { title: "No packages yet", body: "Create an occasion package and Nearby can offer it to matching requests." },

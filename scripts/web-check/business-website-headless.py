@@ -17,6 +17,7 @@ REF = 'enmosvippabmuqslzrox'
 UID = '11111111-1111-4111-8111-111111111111'
 PARTNER = '22222222-2222-4222-8222-222222222222'
 REQ = '33333333-3333-4333-8333-333333333333'
+RADAR = {'on': False}  # a mocked get_aggregated_demand_for_partner (Match Radar scenario)
 OPP = {'on': False, 'status': 'pending'}  # a mocked opportunity: 'pending' = the offer-form scenario, 'accepted' = a booking
 # Writes the website is meant to send (mocked here): fire-and-forget business acquisition analytics (services/businessAcquisitionEvents.js).
 EXPECTED_WRITES = ('/rest/v1/business_acquisition_events',)
@@ -68,6 +69,12 @@ def run(browser, name, kind, query=''):
             return body([{'id': '44444444-4444-4444-8444-444444444444', 'request_id': REQ, 'status': OPP['status'], 'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                           'business_requests': {'id': REQ, 'status': 'open', 'category': 'Coffee', 'interest_tag': 'Coffee', 'party_size': 2,
                                                 'date': day, 'expires_at': exp, 'attributes': [], 'summary': 'Coffee for 2 (mock)'}}])
+        if path.endswith('/rpc/get_aggregated_demand_for_partner') and kind == 'linked' and RADAR['on']:
+            base = {'total_party_size': None, 'soonest_date': None, 'dominant_period': None, 'dominant_period_count': None,
+                    'dominant_occasion': None, 'dominant_occasion_count': None, 'is_demand_gap': False, 'offered_people': None}
+            return body([dict(base, category='Coffee', request_count=7, unmet_intent_count=5, is_offered=True),   # own category
+                         dict(base, category='Bowling', request_count=6, unmet_intent_count=0, is_offered=False),  # outside it
+                         dict(base, category=None, request_count=None, unmet_intent_count=None, is_offered=None, offered_people=7)])
         if path.endswith('/rest/v1/brand_partners'):
             return body([{'id': PARTNER, 'name': 'Test Cafe (mock)', 'category': 'food_drink', 'is_active': True}] if kind == 'linked' else [])
         return body([])
@@ -175,6 +182,25 @@ with sync_playwright() as p:
     check('[booking] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
     r['ctx'].close()
     OPP['on'] = False; OPP['status'] = 'pending'
+
+    RADAR['on'] = True
+    r = run(b, 'i_match_radar', 'linked')
+    pg = r['page']; before = len(r['errors'])
+    try:
+        pg.get_by_text('More tools', exact=False).first.click(); pg.wait_for_timeout(800)
+        pg.get_by_text('📈 Demand Signals', exact=True).first.click(); pg.wait_for_timeout(1200)
+        t = pg.inner_text('body'); pg.screenshot(path='/out/i_match_radar.png', full_page=True)
+        i = t.lower().find('match radar'); radar = t[i:] if i >= 0 else ''
+        check('[match radar] opens from Home > More tools', i >= 0, t[-200:].replace('\n', ' | '))
+        check('[match radar] lists demand outside the business\'s categories', '6 people nearby are looking for Bowling' in radar, radar[:300].replace('\n', ' | '))
+        check('[match radar] never repeats its own-category request count (that lives in Opportunities)', '7 people' not in radar)
+        check('[match radar] keeps the premium unmet searches for its own category', '5 recent searches near you for Coffee found nothing' in radar)
+        check('[match radar] Home keeps its one-line preview of the own category', '7 people are looking for Coffee' in t[:i] if i >= 0 else False)
+    except Exception as e:
+        check('[match radar] opens from Home > More tools', False, str(e)[:160])
+    check('[match radar] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+    r['ctx'].close()
+    RADAR['on'] = False
 
     r = run(b, 'f_bad_link', 'linked', '?n=DROP%20TABLE&r=not-a-uuid')
     check('[tampered link] dashboard still opens, no errors', 'Opportunities' in r['text'] and not r['errors'], '; '.join(r['errors'][:3]))

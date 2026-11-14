@@ -282,8 +282,8 @@ export default {
         body: "You haven't declined any opportunities in the last 30 days.",
       },
       business_demand: {
-        title: "No demand to show yet",
-        body: "Demand appears here once enough people nearby are looking for what you offer.",
+        title: "Nothing outside your categories yet",
+        body: "Demand nearby for things you don't offer appears here once at least 5 people are behind it. Demand for what you offer is in Opportunities.",
       },
       business_gatherings: {
         title: "No gatherings hosted yet",
@@ -667,8 +667,8 @@ export default {
         body: "No rechazaste ninguna oportunidad en los últimos 30 días.",
       },
       business_demand: {
-        title: "Aún no hay demanda que mostrar",
-        body: "La demanda aparece aquí cuando suficientes personas cerca buscan lo que ofreces.",
+        title: "Nada fuera de tus categorías todavía",
+        body: "La demanda cercana de cosas que no ofreces aparece aquí cuando al menos 5 personas la respaldan. La demanda de lo que ofreces está en Oportunidades.",
       },
       business_gatherings: {
         title: "Aún no organizaste reuniones",
@@ -1052,8 +1052,8 @@ export default {
         body: "Du hast in den letzten 30 Tagen keine Gelegenheit abgelehnt.",
       },
       business_demand: {
-        title: "Noch keine Nachfrage",
-        body: "Nachfrage erscheint hier, sobald genug Leute in der Nähe suchen, was du anbietest.",
+        title: "Noch nichts außerhalb deiner Kategorien",
+        body: "Nachfrage in der Nähe nach Dingen, die du nicht anbietest, erscheint hier, sobald mindestens 5 Personen dahinterstehen. Nachfrage nach deinem Angebot findest du unter Gelegenheiten.",
       },
       business_gatherings: {
         title: "Noch keine Treffen veranstaltet",
@@ -1437,8 +1437,8 @@ export default {
         body: "Vous n'avez refusé aucune opportunité ces 30 derniers jours.",
       },
       business_demand: {
-        title: "Pas encore de demande à afficher",
-        body: "La demande apparaît ici dès que suffisamment de personnes à proximité cherchent ce que vous proposez.",
+        title: "Rien en dehors de vos catégories pour l'instant",
+        body: "La demande à proximité pour ce que vous ne proposez pas apparaît ici dès qu'au moins 5 personnes sont derrière. La demande pour ce que vous proposez est dans Opportunités.",
       },
       business_gatherings: {
         title: "Aucune rencontre organisée",
@@ -1822,8 +1822,8 @@ export default {
         body: "Você não recusou nenhuma oportunidade nos últimos 30 dias.",
       },
       business_demand: {
-        title: "Ainda não há demanda para mostrar",
-        body: "A demanda aparece aqui quando pessoas suficientes por perto procuram o que você oferece.",
+        title: "Ainda nada fora das suas categorias",
+        body: "A demanda por perto por coisas que você não oferece aparece aqui quando há pelo menos 5 pessoas por trás dela. A demanda pelo que você oferece está em Oportunidades.",
       },
       business_gatherings: {
         title: "Nenhum encontro organizado ainda",
@@ -2207,8 +2207,8 @@ export default {
         body: "Ou pa t refize okenn opòtinite nan dènye 30 jou yo.",
       },
       business_demand: {
-        title: "Poko gen demann pou montre",
-        body: "Demann ap parèt isit la lè ase moun toupre ap chèche sa ou ofri.",
+        title: "Poko gen anyen andeyò kategori ou yo",
+        body: "Demann toupre pou bagay ou pa ofri ap parèt isit la lè omwen 5 moun dèyè l. Demann pou sa ou ofri nan Opòtinite.",
       },
       business_gatherings: {
         title: "Poko òganize rasanbleman",
@@ -2592,8 +2592,8 @@ export default {
         body: "最近 30 天你没有拒绝任何机会。",
       },
       business_demand: {
-        title: "暂无需求可显示",
-        body: "当附近有足够多的人在找你提供的东西时，需求会显示在这里。",
+        title: "暂时没有你类别之外的需求",
+        body: "当至少 5 人提出需求时，附近对你未提供之物的需求会显示在这里。对你所提供内容的需求在“机会”中。",
       },
       business_gatherings: {
         title: "还没有举办过聚会",
@@ -2977,8 +2977,8 @@ export default {
         body: "Bạn không từ chối cơ hội nào trong 30 ngày qua.",
       },
       business_demand: {
-        title: "Chưa có nhu cầu để hiển thị",
-        body: "Nhu cầu sẽ xuất hiện ở đây khi đủ người quanh đây tìm thứ bạn cung cấp.",
+        title: "Chưa có gì ngoài danh mục của bạn",
+        body: "Nhu cầu quanh đây cho những thứ bạn chưa cung cấp sẽ hiện ở đây khi có ít nhất 5 người. Nhu cầu cho những gì bạn cung cấp nằm ở Cơ hội.",
       },
       business_gatherings: {
         title: "Chưa tổ chức buổi gặp nào",
@@ -3362,8 +3362,8 @@ export default {
         body: "Wala kang tinanggihang oportunidad sa nakaraang 30 araw.",
       },
       business_demand: {
-        title: "Wala pang demand na maipapakita",
-        body: "Lalabas dito ang demand kapag sapat na tao sa malapit ang naghahanap ng iniaalok mo.",
+        title: "Wala pa sa labas ng mga kategorya mo",
+        body: "Lalabas dito ang demand sa malapit para sa mga bagay na hindi mo inaalok kapag may hindi bababa sa 5 tao sa likod nito. Nasa Mga oportunidad ang demand para sa iniaalok mo.",
       },
       business_gatherings: {
         title: "Wala ka pang na-host na pagtitipon",
@@ -3747,8 +3747,8 @@ export default {
         body: "За последние 30 дней вы не отклонили ни одной возможности.",
       },
       business_demand: {
-        title: "Спроса пока нет",
-        body: "Спрос появится здесь, когда достаточно людей поблизости будут искать то, что вы предлагаете.",
+        title: "Пока ничего вне ваших категорий",
+        body: "Спрос поблизости на то, чего вы не предлагаете, появится здесь, когда за ним будут стоять минимум 5 человек. Спрос на то, что вы предлагаете, — в разделе «Возможности».",
       },
       business_gatherings: {
         title: "Вы ещё не проводили встреч",
@@ -4132,8 +4132,8 @@ export default {
         body: "최근 30일 동안 거절한 기회가 없습니다.",
       },
       business_demand: {
-        title: "아직 표시할 수요가 없습니다",
-        body: "근처에서 충분한 사람이 회원님이 제공하는 것을 찾으면 여기에 수요가 표시됩니다.",
+        title: "아직 회원님 카테고리 밖의 수요가 없습니다",
+        body: "제공하지 않는 것에 대한 근처 수요는 최소 5명이 있을 때 여기에 표시됩니다. 제공하는 것에 대한 수요는 기회에 있습니다.",
       },
       business_gatherings: {
         title: "아직 주최한 모임이 없습니다",

@@ -102,6 +102,7 @@ import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import CreativeLibrarySection from '../components/CreativeLibrarySection';
 import { pickerCreatives } from '../utils/creativeLibrary';
 import { describeDemandSignals } from '../utils/demandSignals';
+import { matchRadarRows } from '../utils/matchRadarRows';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { NOT_ACCOMMODATED_OPTIONS, ADULT_AGE_RULES, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
@@ -4429,14 +4430,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {entitlements && !hasEntitlement(entitlements, 'advanced_match_radar') && (
                   renderLockedFeature('advanced_match_radar', t('ui.bizDash2.unlockTheUnmetIntentSignal'))
                 )}
-                {aggregatedDemand.length === 0 ? (
+                {/* Owner, 2026-11-14 (option 1): demand in the categories you offer lives in Opportunities' "Demand near
+                    you"; Match Radar keeps only demand outside them + the premium unmet searches (utils/matchRadarRows.js). */}
+                {matchRadarRows(aggregatedDemand).length === 0 ? (
                   <EmptyCopy id="business_demand" />
                 ) : (
-                  aggregatedDemand.map((d) => (
+                  matchRadarRows(aggregatedDemand).map((d) => (
                     <View key={d.category} style={styles.gatheringRow}>
-                      {d.request_count > 0 ? (
+                      {d.showRequests ? (
                         <Text style={styles.offerTitle}>
-                          {t('ui.bizDash2.peopleLookingForCategory', { count: d.request_count, category: categoryName(d.category, language) })}
+                          {t('ui.bizDash2.peopleLookingOutsideYourCategories', { count: d.request_count, category: categoryName(d.category, language) })}
                         </Text>
                       ) : (
                         // Gap 1 (see CLAUDE.md's "Aug 18 2026" connectivity-audit
@@ -4445,7 +4448,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         // intent nearby -- was previously invisible here entirely.
                         // Deliberately never phrased like a confirmed count.
                         <Text style={styles.offerTitle}>
-                          {t('ui.bizDash2.recentSearchesFoundNothing', { count: d.unmet_intent_count, category: categoryName(d.category, language) })}
+                          {t('ui.bizDash2.recentSearchesFoundNothing', { count: d.unmetCount, category: categoryName(d.category, language) })}
                         </Text>
                       )}
                       {d.is_demand_gap && (
@@ -4458,7 +4461,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         // conflate.
                         <Text style={styles.helperText}>{t('ui.bizDash2.youDontCurrentlyOfferThis')}</Text>
                       )}
-                      {d.request_count > 0 && (
+                      {d.showRequests && (
                         <Text style={styles.breakdownText}>
                           {[
                             d.total_party_size ? t('ui.bizDash2.totalGuests', { count: Number(d.total_party_size) }) : null,
@@ -4471,7 +4474,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           ].filter(Boolean).join(' · ')}
                         </Text>
                       )}
-                      {d.request_count > 0 && d.dominant_occasion && (
+                      {d.showRequests && d.dominant_occasion && (
                         // "Intelligent demand inbox" plan, Phase 4(d): a real
                         // occasion-based bucket alongside category/party-size/
                         // time-window -- same "no new signal, just surface
@@ -4482,12 +4485,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           {t('ui.bizDash2.mostlyOccasion', { occasion: language === 'en' ? occasionLabel(d.dominant_occasion).toLowerCase() : categoryName(occasionLabel(d.dominant_occasion), language), n: d.dominant_occasion_count, total: d.request_count })}
                         </Text>
                       )}
-                      {d.request_count > 0 && d.unmet_intent_count > 0 && (
+                      {d.showRequests && d.unmetCount > 0 && (
                         // Gap 1's own "never blended" requirement -- a real,
                         // separate softer signal on top of the real request
                         // count above, never summed into it.
                         <Text style={styles.helperText}>
-                          {t('ui.bizDash2.alsoMoreSearchesFoundNothing', { count: d.unmet_intent_count })}
+                          {t('ui.bizDash2.alsoMoreSearchesFoundNothing', { count: d.unmetCount })}
                         </Text>
                       )}
                       {/* "Nearby V3/V4" plan, Phase B: no new backend mechanism --
