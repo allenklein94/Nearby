@@ -49,15 +49,15 @@ describe('Match Radar trimmed (owner 2026-11-14, option 1)', () => {
   const start = src.indexOf("{tool('demand') && (");
   const radar = src.slice(start, src.indexOf("{on('opportunities') && (", start));
   test('rows come only from matchRadarRows (own categories left to Opportunities)', () => {
-    expect(radar).toMatch(/matchRadarRows\(aggregatedDemand\)\.length === 0/);
-    expect(radar).toMatch(/matchRadarRows\(aggregatedDemand\)\.map/);
+    expect(radar).toMatch(/matchRadarRows\(aggregatedDemand, \{ offeredKnown: hasDeclaredOfferedCategory\(selectedPartner\) \}\)\.length === 0/);
+    expect(radar).toMatch(/matchRadarRows\(aggregatedDemand, \{ offeredKnown: hasDeclaredOfferedCategory\(selectedPartner\) \}\)\.map/);
     expect(radar).not.toMatch(/peopleLookingForCategory/); // Home's best-opportunity preview keeps it, Radar never
   });
   test('premium functionality kept: locked-feature prompt, 🟡 unmet searches, 🆕 gap line', () => {
     expect(radar).toMatch(/hasEntitlement\(entitlements, 'advanced_match_radar'\)/);
     expect(radar).toMatch(/recentSearchesFoundNothing/);
     expect(radar).toMatch(/alsoMoreSearchesFoundNothing/);
-    expect(radar).toMatch(/isUnofferedGap\(d\) &&/); // 🆕 only when the server says the category isn't offered (audit 2026-11-14)
+    expect(radar).toMatch(/isUnofferedGap\(d, \{ offeredKnown: hasDeclaredOfferedCategory\(selectedPartner\) \}\) &&/); // 🆕 only when the server says the category isn't offered (audit 2026-11-14)
   });
   test('the empty state no longer says demand for what you offer appears here', () => {
     expect(emptyCopy('business_demand').title).toBe('Nothing outside your categories yet');
@@ -84,7 +84,7 @@ describe('cross-platform business audit (owner 2026-11-14)', () => {
     expect(src.match(/t\('ui\.bizDash2\.largestGroupYouCanHost'\)/g)).toHaveLength(1); // one field, never two
   });
   test('Home never tells a business it does not offer a category it declared (is_demand_gap = never served)', () => {
-    expect(src).toMatch(/const bestGap = bestUnofferedGap\(aggregatedDemand\)/);
+    expect(src).toMatch(/const bestGap = bestUnofferedGap\(aggregatedDemand, \{ offeredKnown: hasDeclaredOfferedCategory\(selectedPartner\) \}\)/);
     expect(src).not.toMatch(/d\.is_demand_gap &&/);
   });
 });

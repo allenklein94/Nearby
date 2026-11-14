@@ -7,8 +7,8 @@
 // never arrive; unmet counts are 0 unless the plan has the entitlement). "Outside" only when the server says
 // is_offered === false: a missing flag never labels the business's own category as outside (it is hidden instead).
 // The server's offered set = subcategory + secondary categories (business_offered_tags); a business that declared only a
-// group (e.g. Coastal Coffee: food_drink, no "More specifically") has an EMPTY set, so every row arrives is_offered=false,
-// its own coffee requests included, though routing (business_served_tags) still sends them. Then "not one of your
+// group (e.g. the test cafe: a food_drink group, nothing under "More specifically") has an EMPTY set, so every row arrives is_offered=false,
+// its own requests included, though routing (business_served_tags) still sends them. Then "not one of your
 // categories" would be false: with no declared specific category, is_offered is unknown and never claimed (owner audit
 // 2026-11-14). Mirrors business_offered_tags exactly.
 export function hasDeclaredOfferedCategory(partner) {

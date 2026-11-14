@@ -77,7 +77,7 @@ def run(browser, name, kind, query=''):
                          dict(base, category='Bowling', request_count=6, unmet_intent_count=0, is_offered=False, is_demand_gap=True),  # outside it
                          dict(base, category=None, request_count=None, unmet_intent_count=None, is_offered=None, offered_people=7)])
         if path.endswith('/rest/v1/brand_partners'):
-            return body([{'id': PARTNER, 'name': 'Test Cafe (mock)', 'category': 'food_drink', 'is_active': True}] if kind == 'linked' else [])
+            return body([{'id': PARTNER, 'name': 'Test Cafe (mock)', 'category': 'food_drink', 'subcategory': 'Coffee', 'is_active': True}] if kind == 'linked' else [])
         return body([])
     # Everything that is neither the local site nor Supabase (mocked below) is refused, so results never depend on the
     # outside network (e.g. Cloudflare Turnstile answers 400 for the 127.0.0.1 host; fonts/CDN). Registered first:
