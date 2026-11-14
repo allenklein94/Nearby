@@ -288,11 +288,13 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   }
 
   async function retryBrowse() {
-    if (nearby.length === 0) {
-      setInitialLoading(true);
+    // Nothing on screen, or a failed refresh at the end of the list: ask page 1 again; otherwise the page that failed.
+    if (nearby.length === 0 || !browseHasMore) {
+      const empty = nearby.length === 0;
+      if (empty) setInitialLoading(true);
       const result = await loadBrowseBatch(0);
       if (result.status !== 'failed') setBrowseOffset(0);
-      setInitialLoading(false);
+      if (empty) setInitialLoading(false);
     } else {
       await loadMoreBrowse();
     }
