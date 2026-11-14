@@ -104,6 +104,7 @@ import { pickerCreatives } from '../utils/creativeLibrary';
 import { describeDemandSignals } from '../utils/demandSignals';
 import { matchRadarRows, isUnofferedGap, bestUnofferedGap, hasDeclaredOfferedCategory } from '../utils/matchRadarRows';
 import { toggleProfileGroup, profileGroupFor } from '../utils/profileGroups';
+import { profileSummaryLine } from '../utils/profileSummary';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { NOT_ACCOMMODATED_OPTIONS, ADULT_AGE_RULES, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
@@ -114,7 +115,6 @@ import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../constants/experienceTemplates';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
-import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
 import { INTEREST_OPTIONS, subcategoryOptionsFor, businessTagOptions, toggleSecondaryCategory, isCustomerOnlyTag } from '../constants/gatheringCategories';
 import SponsoredPromotionsPanel from '../components/SponsoredPromotionsPanel';
 import LoadErrorState from '../components/LoadErrorState';
@@ -326,17 +326,28 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const on = (...tabs) => tabs.includes(section);
   const tool = (key) => section === 'home' && openTool === key;
   // One Profile group header (owner audit 2026-11-14): its existing title + an open/closed mark; tap toggles it in place.
-  const renderProfileGroupHeader = (key, title) => (
-    <TouchableOpacity
-      onPress={() => setProfileGroup((g) => toggleProfileGroup(g, key))}
-      style={[styles.gatheringRow, { marginTop: spacing.md }]}
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      accessibilityState={{ expanded: profileGroup === key }}
-    >
-      <Text style={styles.offerTitle}>{title}{' '}{profileGroup === key ? '⌄' : '›'}</Text>
-    </TouchableOpacity>
-  );
+  // Owner, 2026-11-14 (later): + one line of what is SAVED for it (utils/profileSummary.js), so the headers together are
+  // the reviewable summary of what Nearby knows; tapping one opens its existing controls to change it.
+  const renderProfileGroupHeader = (key, title) => {
+    const summary = profileSummaryLine(key, selectedPartner, {
+      categoryLabel: (k) => BUSINESS_CATEGORIES.find((c) => c.key === k)?.label ?? k,
+      subcategoryLabel: (k) => categoryName(k, language),
+      upToPeople: (n) => t('ui.businessProfile.v.upToPeople', { count: n }),
+      notSet: t('ui.bizDash2.notSet'),
+    });
+    return (
+      <TouchableOpacity
+        onPress={() => setProfileGroup((g) => toggleProfileGroup(g, key))}
+        style={[styles.gatheringRow, { marginTop: spacing.md }]}
+        accessibilityRole="button"
+        accessibilityLabel={summary ? `${title}, ${summary}` : title}
+        accessibilityState={{ expanded: profileGroup === key }}
+      >
+        <Text style={styles.offerTitle}>{title}{' '}{profileGroup === key ? '⌄' : '›'}</Text>
+        {summary ? <Text style={[styles.breakdownText, { marginTop: 2 }]} numberOfLines={2}>{summary}</Text> : null}
+      </TouchableOpacity>
+    );
+  };
   // Item 36: the Performance tile opens Offer Performance (More tools -> Analytics) and scrolls to it once it has laid out.
   const mainScrollRef = useRef(null);
   const scrollToPerformanceRef = useRef(false);
@@ -442,16 +453,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // the record call itself failed -- callers must not call respond-to
   // with a null id.
   const [categorySuggestionId, setCategorySuggestionId] = useState(null);
-  // Same addendum -- "Teach Nearby." Never auto-applies -- the extracted
-  // chips are always shown for explicit confirm/edit/discard first.
-  const [teachNearbyInput, setTeachNearbyInput] = useState('');
-  const [teachNearbyExtracted, setTeachNearbyExtracted] = useState(null);
-  const [savingTeachNearby, setSavingTeachNearby] = useState(false);
-  // Business Intelligence & Opportunity Engine, Phase 1 -- one suggestion
-  // id per currently-extracted attribute, keyed by attribute name, so
-  // removing/confirming/discarding a specific chip can mark that exact
-  // suggestion's own provenance row, not a blanket batch action.
-  const [teachNearbySuggestionIds, setTeachNearbySuggestionIds] = useState({});
   // Real, durable AI Suggestion / Audit log (Phase 1) -- the last 10
   // suggestion attempts for this business, whatever their source/status.
   const [recentSuggestions, setRecentSuggestions] = useState([]);
@@ -1626,111 +1627,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setCategorySuggestionId(null);
       getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
     }
-  }
-
-  // Same addendum -- "Teach Nearby." Never auto-applies: extraction is
-  // purely local, and nothing writes anywhere until the owner explicitly
-  // confirms the real extracted chips.
-  function handleInterpretTeachNearby() {
-    const extracted = extractAttributesFromText(teachNearbyInput);
-    setTeachNearbyExtracted(extracted);
-    // Business Intelligence & Opportunity Engine, Phase 1 -- log each real
-    // extracted attribute into the durable provenance table, fire-and-
-    // forget, non-blocking. One suggestion row per attribute, matching
-    // this flow's own per-chip confirm/edit/discard shape.
-    if (selectedPartner) {
-      extracted.forEach((attribute) => {
-        recordBusinessAttributeSuggestion(
-          selectedPartner.id,
-          'attribute',
-          attribute,
-          'ai_inferred',
-          t('ui.bizDash1.extractedFromWhatYouTyped')
-        ).then((id) => {
-          if (id) setTeachNearbySuggestionIds((prev) => ({ ...prev, [attribute]: id }));
-        });
-      });
-    }
-  }
-
-  function handleDiscardTeachNearby() {
-    Object.values(teachNearbySuggestionIds).forEach((id) => {
-      respondToBusinessAttributeSuggestion(id, false).catch((err) =>
-        console.error('respondToBusinessAttributeSuggestion failed', err)
-      );
-    });
-    setTeachNearbySuggestionIds({});
-    setTeachNearbyInput('');
-    setTeachNearbyExtracted(null);
-    if (selectedPartner) {
-      getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
-    }
-  }
-
-  function handleRemoveTeachNearbyChip(attribute) {
-    const id = teachNearbySuggestionIds[attribute];
-    if (id) {
-      respondToBusinessAttributeSuggestion(id, false).catch((err) =>
-        console.error('respondToBusinessAttributeSuggestion failed', err)
-      );
-      setTeachNearbySuggestionIds((prev) => {
-        const next = { ...prev };
-        delete next[attribute];
-        return next;
-      });
-    }
-    setTeachNearbyExtracted((prev) => (prev ?? []).filter((a) => a !== attribute));
-  }
-
-  // Confirming merges the extracted attributes into the business's own
-  // real attributes array (union, never a duplicate, never removing an
-  // attribute already confirmed elsewhere) and writes through the same
-  // real update_business_profile RPC every other profile edit already
-  // uses -- this never invents a new write path for attributes.
-  async function handleConfirmTeachNearby() {
-    if (!selectedPartner || !teachNearbyExtracted || teachNearbyExtracted.length === 0) return;
-    setSavingTeachNearby(true);
-    try {
-      const merged = Array.from(new Set([...(selectedPartner.attributes ?? []), ...teachNearbyExtracted]));
-      await updateBusinessProfile(selectedPartner.id, {
-        name: selectedPartner.name,
-        description: selectedPartner.description,
-        address: selectedPartner.address,
-        logoUrl: selectedPartner.logo_url,
-        category: selectedPartner.category,
-        attributes: merged,
-        cuisine: selectedPartner.cuisine,
-        differentiator: selectedPartner.differentiator,
-        // Category is unchanged here -- must re-pass the current
-        // subcategory/categories or updateBusinessProfile's non-coalesce
-        // contract would silently null them out on this unrelated
-        // attributes-only write.
-        subcategory: selectedPartner.subcategory,
-        categories: selectedPartner.categories ?? [],
-      });
-      setSelectedPartner((prev) => ({ ...prev, attributes: merged }));
-      // Business Intelligence & Opportunity Engine, Phase 1 -- close out
-      // the real provenance record for every attribute that survived to
-      // this confirm (any explicitly removed chip was already rejected in
-      // handleRemoveTeachNearbyChip). Fire-and-forget -- the canonical
-      // merge write above already succeeded.
-      teachNearbyExtracted.forEach((attribute) => {
-        const id = teachNearbySuggestionIds[attribute];
-        if (id) {
-          respondToBusinessAttributeSuggestion(id, true).catch((err) =>
-            console.error('respondToBusinessAttributeSuggestion failed', err)
-          );
-        }
-      });
-      setTeachNearbySuggestionIds({});
-      setTeachNearbyInput('');
-      setTeachNearbyExtracted(null);
-      getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
-      showSuccessToast(t('ui.bizDash1.addedToYourProfile'), t('ui.bizDash1.theseNowShowUpUnder'));
-    } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmTeachNearby() });
-    }
-    setSavingTeachNearby(false);
   }
 
   // Phase 3 -- one tap sets and saves the pulse (matches the vision doc's
@@ -5486,9 +5382,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       partner={selectedPartner}
                       onApplied={(applied) => setSelectedPartner((prev) => ({ ...prev, ...applied }))}
                       onOpenProfileEditor={openEditProfileModal}
+                      onSuggestionsChanged={() => getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {})}
                     />
                   </View>
                 )}
+<Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.whatNearbyKnowsAboutYou')}</Text>
 {renderProfileGroupHeader('basics', t('ui.bizDash2.businessProfile'))}
 {profileGroup === 'basics' && (
 <>
@@ -6289,115 +6187,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('profile') && (
 <>
-{renderProfileGroupHeader('teach', t('ui.bizDash2.teachNearby'))}
-{profileGroup === 'teach' && (
-<>
-                {/* "Business Profile Phase 1" addendum -- "Teach Nearby."
-                    A real, deterministic keyword extraction against the
-                    existing attributes vocabulary, never an LLM call and
-                    never auto-applied -- the extracted chips are always
-                    shown for an explicit confirm/edit/discard first. */}
-                <Text style={styles.helperText}>{t('ui.bizDash2.anythingElseWeShouldKnow')}</Text>
-                {!teachNearbyExtracted ? (
-                  <>
-                    <TextInput
-                      style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
-                      placeholder={t('ui.bizDash2.ourRooftopPatioIsOur')}
-                      placeholderTextColor={colors.textTertiary}
-                      value={teachNearbyInput}
-                      onChangeText={setTeachNearbyInput}
-                      multiline
-                      maxLength={300}
-                      accessibilityLabel={t('ui.bizDash2.tellNearbyAboutYourBusinessA11y')}
-                    />
-                    <TouchableOpacity
-                      style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
-                      onPress={handleInterpretTeachNearby}
-                      disabled={!teachNearbyInput.trim()}
-                      accessibilityLabel={t('ui.bizDash2.submitA11y')}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.postUpdateButtonText}>{t('ui.bizDash2.submit')}</Text>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <View style={styles.gatheringRow}>
-                    {teachNearbyExtracted.length === 0 ? (
-                      <Text style={styles.emptyText}>
-                        {t('ui.bizDash2.nearbyDidntRecognizeAnythingSpecific')}
-                      </Text>
-                    ) : (
-                      <>
-                        <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>{t('ui.bizDash2.nearbyUnderstood')}</Text>
-                        <View style={styles.chipRow}>
-                          {teachNearbyExtracted.map((attribute) => (
-                            <TouchableOpacity
-                              key={attribute}
-                              style={styles.chip}
-                              onPress={() => handleRemoveTeachNearbyChip(attribute)}
-                              accessibilityLabel={t('ui.bizDash2.removeA11y2', { businessAttributeLabel: businessAttributeLabel(attribute) })}
-                              accessibilityRole="button"
-                            >
-                              <Text style={styles.chipText}>{businessAttributeLabel(attribute)} ✕</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </>
-                    )}
-                    <View style={{ flexDirection: 'row', marginTop: spacing.sm, gap: spacing.sm }}>
-                      {teachNearbyExtracted.length > 0 && (
-                        <TouchableOpacity
-                          style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
-                          onPress={handleConfirmTeachNearby}
-                          disabled={savingTeachNearby}
-                          accessibilityLabel={t('ui.bizDash2.addToProfileA11y')}
-                          accessibilityRole="button"
-                        >
-                          <Text style={styles.smallActionButtonText}>{savingTeachNearby ? t('ui.bizDash2.adding') : t('ui.bizDash2.addToProfile')}</Text>
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
-                        onPress={handleDiscardTeachNearby}
-                        accessibilityLabel={t('ui.bizDash2.discardA11y')}
-                        accessibilityRole="button"
-                      >
-                        <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.discard')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {/* Business Intelligence & Opportunity Engine, Phase 1 --
-                    the real AI Suggestion / Audit log: every category-
-                    classification and Teach Nearby suggestion this
-                    business has ever seen, whatever it was resolved to.
-                    Read-only -- act on a real suggestion via the category
-                    banner or Teach Nearby above, not from here. */}
-                {recentSuggestions.length > 0 && (
-                  <>
-                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.recentAiSuggestions')}</Text>
-                    <Text style={styles.helperText}>
-                      {t('ui.bizDash2.everyRealDeterministicSuggestionNearby')}
-                    </Text>
-                    {recentSuggestions.map((s) => (
-                      <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
-                        <Text style={styles.breakdownText}>
-                          {s.attribute_key === 'category'
-                            ? t('ui.bizDash2.category', { label: BUSINESS_CATEGORIES.find((c) => c.key === s.attribute_value)?.label ?? s.attribute_value })
-                            : t('ui.bizDash2.attribute', { businessAttributeLabel: businessAttributeLabel(s.attribute_value) ?? s.attribute_value })}
-                        </Text>
-                        <Text style={[styles.helperText, { marginTop: 2 }]}>
-                          {s.status === 'confirmed' ? t('ui.bizDash2.added') : s.status === 'rejected' ? t('ui.bizDash2.keptAsIs') : t('ui.bizDash2.awaitingYourReview')}
-                          {s.reason ? ` — ${s.reason}` : ''}
-                        </Text>
-                      </View>
-                    ))}
-                  </>
-                )}
-
-</>
-)}
                 <TouchableOpacity onPress={() => setProfileGroup((g) => toggleProfileGroup(g, 'settings'))} style={[styles.gatheringRow, { marginTop: spacing.md }]} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.settingsA11y')} accessibilityState={{ expanded: profileGroup === 'settings' }}>
                   <Text style={styles.offerTitle}>{t('ui.bizDash2.settings')}{' '}{profileGroup === 'settings' ? '⌄' : '›'}</Text>
                   {profileGroup !== 'settings' && <Text style={styles.breakdownText}>{t('ui.bizDash2.termsNotificationsPaymentsAiAutomation')}</Text>}
@@ -6622,6 +6411,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </>
                   )}
                 </View>
+                {/* Business Intelligence & Opportunity Engine, Phase 1 --
+                    the real AI Suggestion / Audit log: every category-
+                    classification and Teach Nearby suggestion this
+                    business has ever seen, whatever it was resolved to.
+                    Read-only -- act on a real suggestion via the category
+                    banner or Tell Nearby (owner 2026-11-14: Teach Nearby merged into it; this
+                    history moved here under Settings), not from here. */}
+                {recentSuggestions.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.recentAiSuggestions')}</Text>
+                    <Text style={styles.helperText}>
+                      {t('ui.bizDash2.everyRealDeterministicSuggestionNearby')}
+                    </Text>
+                    {recentSuggestions.map((s) => (
+                      <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
+                        <Text style={styles.breakdownText}>
+                          {s.attribute_key === 'category'
+                            ? t('ui.bizDash2.category', { label: BUSINESS_CATEGORIES.find((c) => c.key === s.attribute_value)?.label ?? s.attribute_value })
+                            : t('ui.bizDash2.attribute', { businessAttributeLabel: businessAttributeLabel(s.attribute_value) ?? s.attribute_value })}
+                        </Text>
+                        <Text style={[styles.helperText, { marginTop: 2 }]}>
+                          {s.status === 'confirmed' ? t('ui.bizDash2.added') : s.status === 'rejected' ? t('ui.bizDash2.keptAsIs') : t('ui.bizDash2.awaitingYourReview')}
+                          {s.reason ? ` — ${s.reason}` : ''}
+                        </Text>
+                      </View>
+                    ))}
+                  </>
+                )}
                 </>
                 )}
 </>

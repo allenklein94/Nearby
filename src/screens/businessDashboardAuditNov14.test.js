@@ -105,7 +105,6 @@ describe('Profile folded into groups (owner audit 2026-11-14)', () => {
       accommodate: ["t('ui.bizDash2.largestGroupYouCanHost')", 'experiencesUses', 'occasionsWeOffer', 'isYourExperienceAffectedBy', 'howDoCustomersComeIn', 'whatDoesItUsuallyCost', 'weCreatedExperiences'],
       who: ['whatAgesIsItSuited', 'whatDontYouAccommodate', 'whatDietaryOptionsDoYou'],
       grow: ['tellNearbyOnceAndIt', 'temporaryBoostOptional', 'howsBusinessRightNow'],
-      teach: ['anythingElseWeShouldKnow', 'recentAiSuggestions'],
     };
     for (const [key, needles] of Object.entries(where)) {
       const body = groupBody(key);
@@ -115,6 +114,9 @@ describe('Profile folded into groups (owner audit 2026-11-14)', () => {
       }
     }
     expect(src).toMatch(/\{profileGroup === 'settings' && \(/);
+    // Teach Nearby merged into Tell Nearby (owner 2026-11-14): no second entry point; its history lives under Settings.
+    expect(src).not.toMatch(/profileGroup === 'teach'|anythingElseWeShouldKnow/);
+    expect(src.indexOf('recentAiSuggestions')).toBeGreaterThan(src.indexOf("{profileGroup === 'settings' && ("));
   });
   test('Tell Nearby stays above the groups, always visible; one open at a time via the shared rule', () => {
     expect(src.indexOf('<TellNearbyBusinessCard')).toBeLessThan(src.indexOf("renderProfileGroupHeader('basics'"));

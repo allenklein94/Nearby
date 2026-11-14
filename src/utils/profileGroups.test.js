@@ -7,11 +7,12 @@ describe('Business Profile groups (owner audit 2026-11-14)', () => {
     expect(toggleProfileGroup(null, 'settings')).toBe('settings');
     expect(toggleProfileGroup('grow', 'nope')).toBe('grow');
   });
-  test('links land on a real group, unknown = Business Profile', () => {
-    expect(DEFAULT_PROFILE_GROUP).toBe('basics');
+  test('Profile opens on the summary (all closed); links land on a real group; Teach Nearby is merged into Tell Nearby', () => {
+    expect(DEFAULT_PROFILE_GROUP).toBeNull();
     expect(profileGroupFor('grow')).toBe('grow');
-    expect(profileGroupFor(undefined)).toBe('basics');
-    expect(profileGroupFor('xyz')).toBe('basics');
-    expect(PROFILE_GROUPS).toEqual(['basics', 'accommodate', 'who', 'grow', 'teach', 'settings']);
+    expect(profileGroupFor(undefined)).toBeNull();
+    expect(profileGroupFor('xyz')).toBeNull();
+    expect(profileGroupFor('teach')).toBeNull();
+    expect(PROFILE_GROUPS).toEqual(['basics', 'accommodate', 'who', 'grow', 'settings']);
   });
 });

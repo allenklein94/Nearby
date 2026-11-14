@@ -82,3 +82,14 @@ export function buildSetupPlan(partner, result, exclude = []) {
     understood: chips.length > 0,
   };
 }
+
+// "Teach Nearby" merged into "Tell Nearby" (owner, 2026-11-14): one entry point. The owner's words are ALSO read by the
+// deterministic keyword reader (constants/businessAttributeExtraction.js, no AI), and its attributes join the AI's answer;
+// when the AI reader is unavailable (e.g. no credit) the keyword reading alone still gives something to confirm. Nothing
+// is saved before "Yes, continue", and the save stays additive (buildSetupPlan). Returns null when neither understood
+// anything usable (the card then shows its existing "couldn't pick out specifics" / error path).
+export function mergeKeywordReading(aiResult, keywordAttributes) {
+  const kw = Array.isArray(keywordAttributes) ? keywordAttributes.filter(Boolean) : [];
+  if (!aiResult) return kw.length ? { attributes: uniq(kw) } : null;
+  return { ...aiResult, attributes: uniq([...(aiResult.attributes ?? []), ...kw]) };
+}

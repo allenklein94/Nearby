@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
@@ -6,7 +6,9 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { classifyBusinessDescription } from '../services/businessOnboardingAssistant';
 import { updateBusinessProfile, setBusinessOfferedOccasions, setBusinessAccommodations } from '../services/brandOffers';
-import { buildSetupPlan } from '../utils/businessSetupPlan';
+import { buildSetupPlan, mergeKeywordReading } from '../utils/businessSetupPlan';
+import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
+import { recordBusinessAttributeSuggestion, respondToBusinessAttributeSuggestion } from '../services/businessIntelligence';
 import SettingConflictNotice from './SettingConflictNotice';
 import { useSettingConflicts } from '../hooks/useSettingConflicts';
 import { checkBusinessSettingConflicts } from '../services/brandOffers';
@@ -16,7 +18,10 @@ import { conflictMessages } from '../utils/settingConflicts';
 // chips, and "Yes, continue" saves it through the existing setters. AI suggests, the owner confirms; nothing is saved
 // before that tap, and the save only ADDS (see utils/businessSetupPlan.js). Availability and price are deliberately never
 // read from text -- there is no per-business hours data, and a price would be a guess.
-export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfileEditor }) {
+// Owner, 2026-11-14: "Teach Nearby" is merged in here (one entry point): the same words also go through the deterministic
+// keyword reader, whose attributes join the AI's answer (or stand alone when the AI reader is down); each keyword-found
+// attribute keeps Teach Nearby's provenance record (suggested -> confirmed on save / rejected when un-ticked or discarded).
+export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfileEditor, onSuggestionsChanged }) {
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -27,6 +32,22 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
   const [exclude, setExclude] = useState([]);
   const plan = result ? buildSetupPlan(partner, result, exclude) : null;
   const [saved, setSaved] = useState(false);
+  // Provenance rows for keyword-found attributes, keyed by attribute (Teach Nearby's record, kept as it was).
+  // A ref, not state: confirm() then reset() run in the same render, and each id must be answered exactly once.
+  const suggestionIds = useRef({});
+
+  function resolveSuggestions(confirmedAttributes) {
+    const ids = suggestionIds.current;
+    suggestionIds.current = {};
+    const entries = Object.entries(ids);
+    if (!entries.length) return;
+    for (const [attribute, id] of entries) {
+      respondToBusinessAttributeSuggestion(id, confirmedAttributes.includes(attribute)).catch((err) =>
+        console.error('respondToBusinessAttributeSuggestion failed', err)
+      );
+    }
+    onSuggestionsChanged?.();
+  }
   // Item 86: a contradiction with what is already set (e.g. "No children" vs a Family group) is the server's to decide; shown here.
   const conflicts = useSettingConflicts(partner?.id ?? null);
   const conflictCheck = plan ? {
@@ -44,6 +65,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
   }, [conflictKey]);
 
   function reset() {
+    resolveSuggestions([]);
     conflicts.clear('tell');
     setResult(null);
     setExclude([]);
@@ -58,12 +80,30 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
     if (!text.trim() || busy) return;
     setBusy(true);
     setSaved(false);
+    const words = text.trim();
+    const keywordAttributes = extractAttributesFromText(words);
+    let ai = null;
     try {
-      setResult(await classifyBusinessDescription(text.trim()));
-      setExclude([]);
-      setEditing(false);
+      ai = await classifyBusinessDescription(words);
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => understand() });
+      // The AI reader is unavailable: the keyword reading alone is still shown for confirmation; nothing at all = the error.
+      if (keywordAttributes.length === 0) {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => understand() });
+        setBusy(false);
+        return;
+      }
+    }
+    resolveSuggestions([]);
+    setResult(mergeKeywordReading(ai, keywordAttributes) ?? {});
+    setExclude([]);
+    setEditing(false);
+    const fresh = keywordAttributes.filter((a) => !(partner?.attributes ?? []).includes(a));
+    if (partner?.id && fresh.length) {
+      fresh.forEach((attribute) => {
+        recordBusinessAttributeSuggestion(partner.id, 'attribute', attribute, 'ai_inferred', t('ui.bizDash1.extractedFromWhatYouTyped'))
+          .then((id) => { if (id) suggestionIds.current = { ...suggestionIds.current, [attribute]: id }; })
+          .catch(() => {});
+      });
     }
     setBusy(false);
   }
@@ -104,6 +144,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
         applied.accommodates_party_types = plan.patch.partyTypes;
       }
       onApplied?.(applied);
+      resolveSuggestions((plan.patch.profile?.attributes ?? []).filter((a) => !(partner.attributes ?? []).includes(a)));
       setSaved(true);
       reset();
       setText('');
