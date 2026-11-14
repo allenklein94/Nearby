@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, Platform, Linking, ScrollView } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
 import { supabase } from '../services/supabase';
 import { saveMyNewProfile } from '../services/myProfile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -317,6 +318,17 @@ export default function CompleteProfileScreen() {
             />
 
             <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
+            {/* Business website (owner, 2026-11-14): the browser's own date field; the native picker has no web version. */}
+            {Platform.OS === 'web' ? (
+              <PlatformDateTimeInput
+                value={birthdate}
+                mode="date"
+                maximumDate={maxSelectableDate}
+                accessibilityLabel={birthdate ? t('ui.onboarding.dateOfBirthA11y', { date: birthdate.toLocaleDateString() }) : t('ui.onboarding.dateOfBirthNotSetA11y')}
+                onChange={(_event, selectedDate) => { if (selectedDate) setBirthdate(selectedDate); }}
+              />
+            ) : (
+            <>
             <TouchableOpacity
               style={styles.input}
               onPress={() => setShowPicker(true)}
@@ -339,6 +351,8 @@ export default function CompleteProfileScreen() {
                   if (selectedDate) setBirthdate(selectedDate);
                 }}
               />
+            )}
+            </>
             )}
           </>
         )}

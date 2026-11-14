@@ -204,6 +204,13 @@ const NOTIFICATION_ACTION_BY_TYPE = {
 // _send_push, before anything reaches this function; nothing here mutes.
 // The opportunity digest is low priority (quiet push) but it is THE summary a web-only owner needs, so it is also emailed.
 const EMAIL_EXTRA_TYPES = new Set(['business_opportunity_received', 'business_opportunities_digest']);
+const LINK_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const LINK_TYPE = /^[a-z_]{1,64}$/;
+function businessWebLinkUrl(baseUrl, type, requestId) {
+  if (!baseUrl) return null;
+  if (!type || !LINK_TYPE.test(type) || !requestId || !LINK_UUID.test(requestId)) return baseUrl;
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}n=${encodeURIComponent(type)}&r=${requestId}`;
+}
 function notificationPriority(type) {
   return NOTIFICATION_PRIORITY_BY_TYPE[type] ?? 'medium';
 }
@@ -263,7 +270,11 @@ serve(async (req)=>{
         const { data: es } = await admin.from('business_email_settings').select('email, verified_at, enabled').eq('user_id', recipient_id).maybeSingle();
         if (es?.email && es.verified_at && es.enabled) {
           const webUrl = Deno.env.get('BUSINESS_WEB_URL');
-          const sent = await sendEmail(es.email, title, `${body ?? ''}${webUrl ? `\n\nOpen your Nearby business dashboard: ${webUrl}` : ''}`);
+          // Owner, 2026-11-14: an alert about ONE request links to it (the website opens the push's own destination,
+          // src/utils/businessWebLink.js; same `?n=<type>&r=<request id>` shape, guard keeps them equal). No personal data.
+          const linked = businessWebLinkUrl(webUrl, data?.type, data?.request_id);
+          const linkLine = !webUrl ? '' : linked !== webUrl ? `\n\nOpen this request: ${linked}` : `\n\nOpen your Nearby business dashboard: ${webUrl}`;
+          const sent = await sendEmail(es.email, title, `${body ?? ''}${linkLine}`);
           emailed = sent.sent;
           emailReason = sent.reason;
           // Never a silent failure: a verified owner is waiting on this alert, so an unconfigured/failed provider shows up in the function logs.
