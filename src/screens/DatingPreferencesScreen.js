@@ -315,7 +315,7 @@ export default function DatingPreferencesScreen({ navigation }) {
               );
             })}
           </View>
-          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust')}</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.appearanceRanksNotHides')}</Text>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrefs.eyeColorPreferences')}</Text>
           <View style={styles.chipsWrap}>
@@ -336,7 +336,7 @@ export default function DatingPreferencesScreen({ navigation }) {
               );
             })}
           </View>
-          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust')}</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.appearanceRanksNotHides')}</Text>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrefs.heightPreference')}</Text>
           <View style={styles.heightRangeRow}>
@@ -395,7 +395,7 @@ export default function DatingPreferencesScreen({ navigation }) {
               </View>
             </View>
           </View>
-          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust2')}</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.appearanceRanksNotHides2')}</Text>
 
           <TouchableOpacity
             style={styles.button}
