@@ -186,7 +186,9 @@ describe('item 131 audit guards', () => {
 
   it('Browse paging has a stable order', () => {
     const t = fs.readFileSync(path.join(SRC, 'services/proximity.js'), 'utf8');
-    expect(t).toMatch(/\.order\('id', \{ ascending: true \}\)\s*\n\s*\.range\(offset/);
+    // Owner 2026-11-14: keyset windows by id (no skips or repeats), replacing offset ranges.
+    expect(t).toMatch(/query\.gt\('id', afterId\)/);
+    expect(t).toMatch(/\.order\('id', \{ ascending: true \}\)\.limit\(size\)/);
   });
 });
 
