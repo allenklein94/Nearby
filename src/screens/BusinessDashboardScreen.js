@@ -4920,10 +4920,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.postAvailability2')}</Text>
                   </TouchableOpacity>
                 </View>
+                {/* One accurate line (owner, 2026-11-14): a posting reaches only matching OPEN requests (item 114). The second
+                    line ("...no need to wait for someone to ask") implied it reaches people who never asked; removed. */}
                 <Text style={styles.helperText}>{t('ui.bizDash2.tellUsWhenYouHave')}</Text>
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.haveOpenSeatsOrA')}
-                </Text>
                 {myAvailability.length === 0 ? (
                   <EmptyCopy id="business_postings" />
                 ) : (
