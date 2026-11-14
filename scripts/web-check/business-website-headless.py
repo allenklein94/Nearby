@@ -17,7 +17,7 @@ REF = 'enmosvippabmuqslzrox'
 UID = '11111111-1111-4111-8111-111111111111'
 PARTNER = '22222222-2222-4222-8222-222222222222'
 REQ = '33333333-3333-4333-8333-333333333333'
-OPP = {'on': False}  # a mocked open opportunity (only for the offer-form scenario)
+OPP = {'on': False, 'status': 'pending'}  # a mocked opportunity: 'pending' = the offer-form scenario, 'accepted' = a booking
 # Writes the website is meant to send (mocked here): fire-and-forget business acquisition analytics (services/businessAcquisitionEvents.js).
 EXPECTED_WRITES = ('/rest/v1/business_acquisition_events',)
 results = []
@@ -65,11 +65,11 @@ def run(browser, name, kind, query=''):
         if path.endswith('/rpc/get_business_opportunities') and kind == 'linked' and OPP['on']:
             exp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(time.time() + 86400))
             day = time.strftime('%Y-%m-%d', time.gmtime(time.time() + 86400))
-            return body([{'id': '44444444-4444-4444-8444-444444444444', 'request_id': REQ, 'status': 'pending', 'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+            return body([{'id': '44444444-4444-4444-8444-444444444444', 'request_id': REQ, 'status': OPP['status'], 'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                           'business_requests': {'id': REQ, 'status': 'open', 'category': 'Coffee', 'interest_tag': 'Coffee', 'party_size': 2,
                                                 'date': day, 'expires_at': exp, 'attributes': [], 'summary': 'Coffee for 2 (mock)'}}])
         if path.endswith('/rest/v1/brand_partners'):
-            return body([{'id': PARTNER, 'name': 'Test Cafe (mock)', 'category': 'Coffee', 'is_active': True}] if kind == 'linked' else [])
+            return body([{'id': PARTNER, 'name': 'Test Cafe (mock)', 'category': 'food_drink', 'is_active': True}] if kind == 'linked' else [])
         return body([])
     # Everything that is neither the local site nor Supabase (mocked below) is refused, so results never depend on the
     # outside network (e.g. Cloudflare Turnstile answers 400 for the 127.0.0.1 host; fonts/CDN). Registered first:
@@ -127,6 +127,10 @@ with sync_playwright() as p:
             ok = False; r['errors'].append('click: ' + str(e)[:120])
         check(f'[linked] {tab} tab opens without an error', ok, '; '.join(r['errors'][before:][:2]))
     r['page'].screenshot(path='/out/d_linked_after_tabs.png', full_page=True)
+    # Bookings (owner, 2026-11-14): with no bookings the tab says so FIRST, before hosted gatherings / communities.
+    bt = open('/out/tab_Bookings.txt').read()
+    nb, ng = bt.find('No bookings yet'), bt.find('No gatherings hosted yet')
+    check('[linked] Bookings tab opens on "No bookings yet", before gatherings', nb >= 0 and (ng < 0 or nb < ng), f'bookings@{nb} gatherings@{ng}')
     check('[linked] no page errors', not r['errors'], '; '.join(r['errors'][:3]))
     check('[linked] no unexpected table writes sent', not r['writes'], ', '.join(r['writes'][:5]))
     r['ctx'].close()
@@ -155,6 +159,22 @@ with sync_playwright() as p:
     check('[offer form] nothing submitted (no offer sent)', not any('submit_business_offer' in x for x in r['seen']), '')
     r['ctx'].close()
     OPP['on'] = False
+
+    OPP['on'] = True; OPP['status'] = 'accepted'
+    r = run(b, 'h_booking', 'linked')
+    pg = r['page']; before = len(r['errors'])
+    try:
+        pg.get_by_text('Bookings', exact=True).first.click(); pg.wait_for_timeout(1500)
+        t = pg.inner_text('body'); pg.screenshot(path='/out/h_booking.png', full_page=True)
+        nv, ng = t.find('Upcoming Nearby Visits'), t.find('No gatherings hosted yet')
+        check('[booking] a confirmed visit is listed first on Bookings', nv >= 0 and (ng < 0 or nv < ng), f'visits@{nv} gatherings@{ng}')
+        check('[booking] no "No bookings yet" beside a real booking', 'No bookings yet' not in t)
+        check('[booking] party size uses the localized wording ("2 people")', '2 people' in t, t[nv:nv + 200].replace('\n', ' | ') if nv >= 0 else '')
+    except Exception as e:
+        check('[booking] a confirmed visit is listed first on Bookings', False, str(e)[:160])
+    check('[booking] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+    r['ctx'].close()
+    OPP['on'] = False; OPP['status'] = 'pending'
 
     r = run(b, 'f_bad_link', 'linked', '?n=DROP%20TABLE&r=not-a-uuid')
     check('[tampered link] dashboard still opens, no errors', 'Opportunities' in r['text'] and not r['errors'], '; '.join(r['errors'][:3]))

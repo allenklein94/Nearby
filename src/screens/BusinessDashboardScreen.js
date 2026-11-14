@@ -4110,6 +4110,80 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               </>
             )}
 
+{on('bookings') && (
+<>
+                {/* Bookings (owner, 2026-11-14): confirmed visits are this tab's namesake, so they come first, and an
+                    empty tab says so (only once they really loaded) instead of opening on hosted gatherings. */}
+                {opportunitiesLoaded === true && opportunities.filter((o) => isPipelineWon(o, noShowIds)).length === 0 && (
+                  <EmptyCopy id="business_bookings" style={{ marginBottom: spacing.lg }} />
+                )}
+                {opportunities.filter((o) => isPipelineWon(o, noShowIds)).length > 0 && (
+                  <View style={{ marginBottom: spacing.lg }}>
+                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.upcomingNearbyVisits')}</Text>
+                    <Text style={styles.helperText}>
+                      {t('ui.bizDash2.realConfirmedVisitsHeadedYour')}
+                    </Text>
+                    {opportunities.filter((o) => isPipelineWon(o, noShowIds)).map((o) => {
+                      const visit = describeVisit(o);
+                      return (
+                        <View key={o.id} style={styles.gatheringRow}>
+                          <Text style={styles.breakdownText}>{visit.kicker}</Text>
+                          <Text style={styles.offerTitle}>{visit.title}</Text>
+                          <Text style={styles.breakdownText}>
+                            {[
+                              visit.when,
+                              o.business_requests?.party_size ? t('ui.bizHelp.opportunity.people', { count: o.business_requests.party_size }) : null,
+                              formatOfferSummary(o),
+                            ].filter(Boolean).join(' · ')}
+                          </Text>
+                          {/* Item 69 (CLAUDE.md): the ONE place a real name
+                              ever reaches a business -- once this is a
+                              genuine confirmed reservation, get_business_
+                              opportunities() reveals the primary
+                              requester's real display name (never for a
+                              dating-sourced request, which stays "Two
+                              people planning to visit" above). */}
+                          {o.business_requests?.requester_display_name && (
+                            <Text style={[styles.breakdownText, { fontWeight: '600' }]}>
+                              👤 {o.business_requests.requester_display_name}
+                            </Text>
+                          )}
+                          <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
+                          <TouchableOpacity
+                            style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.danger, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                            onPress={() => handleCancelReservation(o.id)}
+                            disabled={cancellingReservationOfferId === o.id}
+                            accessibilityLabel={t('ui.bizDash2.cancelThisReservationA11y')}
+                            accessibilityRole="button"
+                          >
+                            {cancellingReservationOfferId === o.id ? (
+                              <ActivityIndicator color={colors.danger} size="small" />
+                            ) : (
+                              <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>{t('ui.bizDash2.cancelReservation')}</Text>
+                            )}
+                          </TouchableOpacity>
+                          {visitHasPassed(o) && (
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.border, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                              onPress={() => handleMarkNoShow(o.id)}
+                              disabled={markingNoShowId === o.id}
+                              accessibilityLabel={t('ui.bizDash2.markThatTheCustomerDidntA11y')}
+                              accessibilityRole="button"
+                            >
+                              {markingNoShowId === o.id ? (
+                                <ActivityIndicator color={colors.textSecondary} size="small" />
+                              ) : (
+                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.didntShowUp')}</Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+</>
+)}
             {section === 'bookings' && (
               gatherings.length === 0 ? (
                 <View style={{ alignItems: 'center' }}>
@@ -4328,75 +4402,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
             {section !== 'inbox_modal' && (
               <>
-{on('bookings') && (
-<>
-                {opportunities.filter((o) => isPipelineWon(o, noShowIds)).length > 0 && (
-                  <View style={{ marginBottom: spacing.lg }}>
-                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.upcomingNearbyVisits')}</Text>
-                    <Text style={styles.helperText}>
-                      {t('ui.bizDash2.realConfirmedVisitsHeadedYour')}
-                    </Text>
-                    {opportunities.filter((o) => isPipelineWon(o, noShowIds)).map((o) => {
-                      const visit = describeVisit(o);
-                      return (
-                        <View key={o.id} style={styles.gatheringRow}>
-                          <Text style={styles.breakdownText}>{visit.kicker}</Text>
-                          <Text style={styles.offerTitle}>{visit.title}</Text>
-                          <Text style={styles.breakdownText}>
-                            {[
-                              visit.when,
-                              o.business_requests?.party_size ? `${o.business_requests.party_size} ${o.business_requests.party_size === 1 ? 'person' : 'people'}` : null,
-                              formatOfferSummary(o),
-                            ].filter(Boolean).join(' · ')}
-                          </Text>
-                          {/* Item 69 (CLAUDE.md): the ONE place a real name
-                              ever reaches a business -- once this is a
-                              genuine confirmed reservation, get_business_
-                              opportunities() reveals the primary
-                              requester's real display name (never for a
-                              dating-sourced request, which stays "Two
-                              people planning to visit" above). */}
-                          {o.business_requests?.requester_display_name && (
-                            <Text style={[styles.breakdownText, { fontWeight: '600' }]}>
-                              👤 {o.business_requests.requester_display_name}
-                            </Text>
-                          )}
-                          <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
-                          <TouchableOpacity
-                            style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.danger, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
-                            onPress={() => handleCancelReservation(o.id)}
-                            disabled={cancellingReservationOfferId === o.id}
-                            accessibilityLabel={t('ui.bizDash2.cancelThisReservationA11y')}
-                            accessibilityRole="button"
-                          >
-                            {cancellingReservationOfferId === o.id ? (
-                              <ActivityIndicator color={colors.danger} size="small" />
-                            ) : (
-                              <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>{t('ui.bizDash2.cancelReservation')}</Text>
-                            )}
-                          </TouchableOpacity>
-                          {visitHasPassed(o) && (
-                            <TouchableOpacity
-                              style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.border, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
-                              onPress={() => handleMarkNoShow(o.id)}
-                              disabled={markingNoShowId === o.id}
-                              accessibilityLabel={t('ui.bizDash2.markThatTheCustomerDidntA11y')}
-                              accessibilityRole="button"
-                            >
-                              {markingNoShowId === o.id ? (
-                                <ActivityIndicator color={colors.textSecondary} size="small" />
-                              ) : (
-                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.didntShowUp')}</Text>
-                              )}
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
-</>
-)}
 
                 {/* Item 79 (CLAUDE.md, "businesses get a new demand
                     signal"): the occasion-primary sibling of Match Radar

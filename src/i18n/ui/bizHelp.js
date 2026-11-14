@@ -329,6 +329,10 @@ export default {
         title: "Nothing posted yet",
         body: "Post when you have room and Nearby will match it to requests.",
       },
+      business_bookings: {
+        title: "No bookings yet",
+        body: "When a customer takes one of your offers, the visit shows here.",
+      },
       business_returning: {
         title: "No returning customers yet",
         body: "Customers who come back will be counted here.",
@@ -709,6 +713,10 @@ export default {
       business_postings: {
         title: "Aún no publicaste nada",
         body: "Publica cuando tengas espacio y Nearby lo emparejará con solicitudes.",
+      },
+      business_bookings: {
+        title: "Aún no hay reservas",
+        body: "Cuando un cliente acepte una de tus ofertas, la visita aparecerá aquí.",
       },
       business_returning: {
         title: "Aún no hay clientes que regresen",
@@ -1091,6 +1099,10 @@ export default {
         title: "Noch nichts eingestellt",
         body: "Stelle etwas ein, wenn du Platz hast, und Nearby ordnet es Anfragen zu.",
       },
+      business_bookings: {
+        title: "Noch keine Buchungen",
+        body: "Wenn ein Kunde eines deiner Angebote annimmt, erscheint der Besuch hier.",
+      },
       business_returning: {
         title: "Noch keine Stammkunden",
         body: "Kunden, die wiederkommen, werden hier gezählt.",
@@ -1471,6 +1483,10 @@ export default {
       business_postings: {
         title: "Rien de publié",
         body: "Publiez quand vous avez de la place et Nearby la proposera aux demandes.",
+      },
+      business_bookings: {
+        title: "Pas encore de réservations",
+        body: "Quand un client accepte l'une de vos offres, la visite apparaît ici.",
       },
       business_returning: {
         title: "Pas encore de clients fidèles",
@@ -1853,6 +1869,10 @@ export default {
         title: "Nada publicado ainda",
         body: "Publique quando tiver espaço e o Nearby vai combiná-lo com pedidos.",
       },
+      business_bookings: {
+        title: "Ainda não há reservas",
+        body: "Quando um cliente aceitar uma das suas ofertas, a visita aparece aqui.",
+      },
       business_returning: {
         title: "Ainda não há clientes que voltaram",
         body: "Os clientes que voltarem serão contados aqui.",
@@ -2233,6 +2253,10 @@ export default {
       business_postings: {
         title: "Poko pibliye anyen",
         body: "Pibliye lè ou gen plas epi Nearby ap konekte l ak demann yo.",
+      },
+      business_bookings: {
+        title: "Poko gen rezèvasyon",
+        body: "Lè yon kliyan pran youn nan òf ou yo, vizit la ap parèt isit la.",
       },
       business_returning: {
         title: "Poko gen kliyan ki tounen",
@@ -2615,6 +2639,10 @@ export default {
         title: "还没有发布内容",
         body: "有空位时发布，Nearby 会为它匹配请求。",
       },
+      business_bookings: {
+        title: "还没有预订",
+        body: "顾客接受你的某个优惠后，这次到访会显示在这里。",
+      },
       business_returning: {
         title: "还没有回头客",
         body: "回头的顾客会在这里统计。",
@@ -2995,6 +3023,10 @@ export default {
       business_postings: {
         title: "Chưa đăng gì",
         body: "Đăng khi bạn còn chỗ và Nearby sẽ ghép nó với các yêu cầu.",
+      },
+      business_bookings: {
+        title: "Chưa có lượt đặt chỗ",
+        body: "Khi khách nhận một ưu đãi của bạn, lượt ghé thăm sẽ hiện ở đây.",
       },
       business_returning: {
         title: "Chưa có khách quay lại",
@@ -3377,6 +3409,10 @@ export default {
         title: "Wala pang naka-post",
         body: "Mag-post kapag may puwesto ka at itutugma ito ng Nearby sa mga request.",
       },
+      business_bookings: {
+        title: "Wala pang booking",
+        body: "Kapag tinanggap ng customer ang isa sa mga alok mo, dito lalabas ang pagbisita.",
+      },
       business_returning: {
         title: "Wala pang bumabalik na customer",
         body: "Dito bibilangin ang mga customer na bumabalik.",
@@ -3758,6 +3794,10 @@ export default {
         title: "Пока ничего не опубликовано",
         body: "Публикуйте, когда есть места, и Nearby подберёт под них запросы.",
       },
+      business_bookings: {
+        title: "Бронирований пока нет",
+        body: "Когда клиент примет одно из ваших предложений, визит появится здесь.",
+      },
       business_returning: {
         title: "Вернувшихся клиентов пока нет",
         body: "Здесь будут учитываться клиенты, которые возвращаются.",
@@ -4138,6 +4178,10 @@ export default {
       business_postings: {
         title: "아직 게시한 항목이 없습니다",
         body: "자리가 있을 때 게시하면 Nearby가 요청과 연결해 드립니다.",
+      },
+      business_bookings: {
+        title: "아직 예약이 없습니다",
+        body: "고객이 내 제안 중 하나를 수락하면 방문이 여기에 표시됩니다.",
       },
       business_returning: {
         title: "아직 재방문 고객이 없습니다",

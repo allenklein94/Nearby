@@ -29,6 +29,7 @@ export const EMPTY_STATES = {
   business_occasion_demand: { title: "No occasion demand yet", body: "It appears here once enough people nearby are planning an occasion you offer." },
   business_postings: { title: "Nothing posted yet", body: "Post when you have room and Nearby will match it to requests." },
   business_packages: { title: "No packages yet", body: "Create an occasion package and Nearby can offer it to matching requests." },
+  business_bookings: { title: "No bookings yet", body: "When a customer takes one of your offers, the visit shows here." },
   business_returning: { title: "No returning customers yet", body: "Customers who come back will be counted here." },
   business_insights: { title: "Not enough activity yet", body: "Insights appear once there's enough real activity to be meaningful." },
   business_missed: { title: "Nothing missed", body: "No opportunities went unanswered in the last 30 days." },
