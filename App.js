@@ -54,6 +54,10 @@ function App() {
     <PostHogProvider
       apiKey="phc_kEv3UMR6bbSC9Er9aVRarCxjiBVvW8ye2Gae2msUpjem"
       options={{ host: 'https://us.i.posthog.com' }}
+      // The provider sits outside RootNavigator's NavigationContainer, so its built-in screen tracker could never find a
+      // navigation object: it logged "Couldn't find a navigation object" on every render and recorded no screen. Turning
+      // off only that hook keeps every event actually sent (captures, app lifecycle) exactly as before.
+      autocapture={{ captureScreens: false }}
     >
       <ThemeProvider>
         <LanguageProvider>

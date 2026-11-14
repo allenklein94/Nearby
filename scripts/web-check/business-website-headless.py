@@ -40,11 +40,10 @@ def run(browser, name, kind, query=''):
     errors, writes, seen, noise = [], [], [], []
     page = ctx.new_page()
     page.on('pageerror', lambda e: (errors.append('pageerror: ' + str(e)[:200]), print('STACK', name, (e.stack or '')[:900], flush=True)))
-    # Known noise (reported separately): the website's deliberately disabled PostHogProvider still runs its screen
-    # autocapture, whose useNavigation call sits outside the NavigationContainer and logs an error. Nothing breaks.
+    # The PostHog screen-autocapture error ("Couldn't find a navigation object") was fixed 2026-11-14 (App.web.js
+    # autocapture={false}); it now counts as an error on every page, like any other console error.
     def on_console(m):
         if m.type != 'error': return
-        if 'Couldn\'t find a navigation object' in m.text: noise.append(m.text[:80]); return
         if 'ERR_INTERNET_DISCONNECTED' in m.text: return  # fonts/CDN: the check runs with no network
         errors.append('console: ' + m.text[:200])
     page.on('console', on_console)
@@ -155,7 +154,6 @@ with sync_playwright() as p:
     r['ctx'].close()
     b.close()
 
-print('NOISE (not counted): disabled PostHogProvider logs "Couldn\'t find a navigation object" on every page')
 srv.terminate()
 json.dump(results, open('/out/results.json', 'w'), indent=1)
 print(f"SUMMARY {sum(x['ok'] for x in results)}/{len(results)} passed")
