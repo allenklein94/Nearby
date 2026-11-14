@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { appearanceFit, appearancePreferencesOf, rankDatingCandidates, COMPATIBILITY_BAND } from './datingAppearance';
+import { appearanceFit, appearancePreferencesOf, browseRankScore, rankDatingCandidates, APPEARANCE_POINTS } from './datingAppearance';
 
 const person = (id, compatibilityScore, { hair, eye, height } = {}) => ({
   id,
@@ -35,47 +35,73 @@ describe('appearanceFit', () => {
   });
 });
 
-describe('rankDatingCandidates', () => {
+describe('rankDatingCandidates (fixed +/-2 per dimension, no bands)', () => {
   const blonde = { hairColors: ['Blonde'] };
+  const all3 = { hairColors: ['Blonde'], eyeColors: ['Blue'], minHeightInches: 66 };
+  const match3 = { hair: 'Blonde', eye: 'Blue', height: 70 };
+  const miss3 = { hair: 'Brown', eye: 'Brown', height: 60 };
+
+  test('points per dimension', () => {
+    expect(APPEARANCE_POINTS).toBe(2);
+    expect(browseRankScore(all3, person('m', 75, match3))).toBe(81);
+    expect(browseRankScore(all3, person('x', 80, miss3))).toBe(74);
+    expect(browseRankScore(all3, person('u', 90))).toBe(90); // missing data = 0
+  });
+
+  test("owner's example: 75% all-match > 80% all-mismatch, 90% unknown stays first", () => {
+    const list = [person('A', 80, miss3), person('B', 75, match3), person('C', 90)];
+    expect(ids(rankDatingCandidates(list, all3))).toEqual(['C', 'B', 'A']);
+  });
 
   test('a mismatch is never removed', () => {
     const list = [person('brown', 80, { hair: 'Brown' }), person('blonde', 80, { hair: 'Blonde' })];
-    const ranked = rankDatingCandidates(list, blonde);
-    expect(ranked).toHaveLength(2);
-    expect(ids(ranked)).toEqual(['blonde', 'brown']);
+    expect(ids(rankDatingCandidates(list, blonde))).toEqual(['blonde', 'brown']);
   });
 
-  test('missing info sits between a match and a mismatch, never below a mismatch', () => {
+  test('no band edges: the same gap behaves the same at 79/70 and at 70/69', () => {
+    // 9-point gap: full match (+6) vs full mismatch (-6) = 12 swing, so the match passes, at any score.
+    expect(ids(rankDatingCandidates([person('hi', 79, miss3), person('lo', 70, match3)], all3))).toEqual(['lo', 'hi']);
+    expect(ids(rankDatingCandidates([person('hi', 70, miss3), person('lo', 61, match3)], all3))).toEqual(['lo', 'hi']);
+    // 1-point gap across the old 80 edge: full match passes too (was blocked by the band).
+    expect(ids(rankDatingCandidates([person('hi', 80, miss3), person('lo', 79, match3)], all3))).toEqual(['lo', 'hi']);
+  });
+
+  test('maximum swing is 12: a 13-point gap always holds, even all-match vs all-mismatch', () => {
+    expect(ids(rankDatingCandidates([person('hi', 83, miss3), person('lo', 70, match3)], all3))).toEqual(['hi', 'lo']);
+  });
+
+  test('a 12-point gap ties on rank and the exact compatibility breaks it', () => {
+    expect(ids(rankDatingCandidates([person('lo', 70, match3), person('hi', 82, miss3)], all3))).toEqual(['hi', 'lo']);
+  });
+
+  test('missing data vs full match: the match passes a gap under 6; at 6 the higher real score wins the tie', () => {
+    expect(ids(rankDatingCandidates([person('unk', 75), person('m', 70, match3)], all3))).toEqual(['m', 'unk']);
+    expect(ids(rankDatingCandidates([person('unk', 76), person('m', 70, match3)], all3))).toEqual(['unk', 'm']);
+  });
+
+  test('missing info sits between a match and a mismatch', () => {
     const list = [person('brown', 82, { hair: 'Brown' }), person('unknown', 82), person('blonde', 82, { hair: 'Blonde' })];
     expect(ids(rankDatingCandidates(list, blonde))).toEqual(['blonde', 'unknown', 'brown']);
   });
 
-  test('appearance never outweighs a clearly higher compatibility (a different band)', () => {
-    const list = [person('blondeLow', 61, { hair: 'Blonde', eye: 'Blue', height: 70 }), person('brownHigh', 75, { hair: 'Brown', eye: 'Brown', height: 60 })];
-    const prefs = { hairColors: ['Blonde'], eyeColors: ['Blue'], minHeightInches: 66 };
-    expect(ids(rankDatingCandidates(list, prefs))).toEqual(['brownHigh', 'blondeLow']);
+  test('several selected colors: any counts as a match', () => {
+    const prefs = { hairColors: ['Blonde', 'Red'], eyeColors: ['Blue', 'Green'] };
+    const list = [person('black', 70, { hair: 'Black', eye: 'Brown' }), person('red', 70, { hair: 'Red', eye: 'Green' })];
+    expect(ids(rankDatingCandidates(list, prefs))).toEqual(['red', 'black']);
   });
 
-  test('within one band, appearance moves a match ahead modestly', () => {
-    const list = [person('brown', 79, { hair: 'Brown' }), person('blonde', 71, { hair: 'Blonde' })];
-    expect(Math.floor(79 / COMPATIBILITY_BAND)).toBe(Math.floor(71 / COMPATIBILITY_BAND));
-    expect(ids(rankDatingCandidates(list, blonde))).toEqual(['blonde', 'brown']);
+  test('no preference = the previous Browse order exactly (compatibility desc, null as 0, ties in incoming order)', () => {
+    const list = [person('a', 40, match3), person('b', 90, miss3), person('c', 40), person('n', null), person('z', 0), person('d', 55)];
+    const previous = [...list].sort((x, y) => (y.compatibilityScore ?? 0) - (x.compatibilityScore ?? 0));
+    expect(ids(rankDatingCandidates(list, appearancePreferencesOf({})))).toEqual(ids(previous));
+    expect(ids(rankDatingCandidates(list, appearancePreferencesOf({})))).toEqual(['b', 'd', 'a', 'c', 'n', 'z']);
   });
 
-  test('no preference = plain compatibility order, ties keep incoming order', () => {
-    const list = [person('a', 40), person('b', 90), person('c', 40), person('d', 55)];
-    expect(ids(rankDatingCandidates(list, appearancePreferencesOf({})))).toEqual(['b', 'd', 'a', 'c']);
-  });
-
-  test('unknown compatibility sorts after every known one', () => {
-    const list = [person('none', null, { hair: 'Blonde' }), person('low', 3, { hair: 'Brown' })];
-    expect(ids(rankDatingCandidates(list, blonde))).toEqual(['low', 'none']);
-  });
-
-  test('does not mutate the input', () => {
-    const list = [person('a', 10), person('b', 90)];
-    rankDatingCandidates(list, blonde);
+  test('does not mutate the input or the shown score', () => {
+    const list = [person('a', 10, match3), person('b', 90)];
+    rankDatingCandidates(list, all3);
     expect(ids(list)).toEqual(['a', 'b']);
+    expect(list[0].compatibilityScore).toBe(10);
   });
 });
 

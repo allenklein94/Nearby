@@ -1,19 +1,19 @@
 // Dating appearance preferences rank, never exclude (owner, 2026-11-14).
 //
-// Hair color, eye color and height are SOFT preferences: a profile that matches one the person chose ranks a little
-// higher, one that clearly doesn't ranks a little lower, and nobody is removed for it. Missing information (the
-// candidate never said) is neutral: it neither helps nor hurts. Age range, distance, gender/show-me and ethnicity stay
-// hard filters where they are (services/proximity.js); this file only orders.
+// Hair color, eye color and height are SOFT preferences in Dating Browse: a profile that matches one the person chose
+// ranks a little higher, one that clearly doesn't ranks a little lower, and nobody is removed for it. Missing
+// information (the candidate never said, or the person set no preference) is 0: it neither helps nor hurts. Age range,
+// distance, gender/show-me and ethnicity stay hard filters where they are (services/proximity.js); Crossed Paths keeps
+// its chronological order and Friends is untouched. This file only orders Browse.
 //
-// "Modest" and "never outweighs compatibility": candidates are compared first by their compatibility BAND
-// (COMPATIBILITY_BAND points wide; unknown compatibility sorts after every known band), then by appearance fit, then by
-// exact compatibility, then by their incoming order (stable). So appearance can only reorder people whose compatibility
-// is already close; a clearly more compatible person always stays ahead of a better appearance fit.
+// Ranking score = compatibility score + APPEARANCE_POINTS per dimension (+ for a match, - for a mismatch, 0 unknown),
+// so at most +/- 3 * APPEARANCE_POINTS. No bands: the same small adjustment applies everywhere, so there are no ranking
+// jumps at arbitrary boundaries. The adjustment is used only for ORDER; the compatibility percentage shown is unchanged.
+// Ties: exact compatibility, then incoming order. Unknown compatibility counts as 0, as Browse always sorted it.
 
-export const COMPATIBILITY_BAND = 10;
+export const APPEARANCE_POINTS = 2;
 
-// One preference dimension: +1 known match, -1 known mismatch, 0 when the person set no preference or the candidate
-// gave no value.
+// One preference dimension: +1 known match, -1 known mismatch, 0 when no preference is set or the candidate gave no value.
 function colorFit(preferences, value) {
   if (!Array.isArray(preferences) || preferences.length === 0) return 0;
   if (value == null || value === '') return 0;
@@ -38,7 +38,7 @@ export function appearancePreferencesOf(myProfile) {
   };
 }
 
-// Sum over the three dimensions: -3..+3. Reads the candidate's own self-description only.
+// Net matches over the three dimensions: -3..+3. Reads the candidate's own self-description only.
 export function appearanceFit(preferences, candidateProfile) {
   const prefs = preferences ?? {};
   return (
@@ -48,20 +48,19 @@ export function appearanceFit(preferences, candidateProfile) {
   );
 }
 
-function band(score) {
-  return score == null ? -1 : Math.floor(score / COMPATIBILITY_BAND);
+// The ordering score for one candidate. Never shown.
+export function browseRankScore(preferences, item) {
+  return (item?.compatibilityScore ?? 0) + APPEARANCE_POINTS * appearanceFit(preferences, item?.profiles);
 }
 
-// Orders Dating candidates ({ profiles, compatibilityScore }) by band -> appearance fit -> exact score -> incoming
-// order. Returns a new array; never drops anyone. With no appearance preference set, the result is the plain
-// compatibility order (band then exact score), with ties kept in incoming order.
+// Orders Dating Browse candidates ({ profiles, compatibilityScore }). Returns a new array; never drops anyone. With no
+// appearance preference set, the result is exactly the previous compatibility order (descending, ties in incoming order).
 export function rankDatingCandidates(items, preferences) {
   return (items ?? [])
-    .map((item, index) => ({ item, index, fit: appearanceFit(preferences, item?.profiles) }))
+    .map((item, index) => ({ item, index, rank: browseRankScore(preferences, item) }))
     .sort((a, b) => (
-      band(b.item?.compatibilityScore) - band(a.item?.compatibilityScore)
-      || b.fit - a.fit
-      || (b.item?.compatibilityScore ?? -1) - (a.item?.compatibilityScore ?? -1)
+      b.rank - a.rank
+      || (b.item?.compatibilityScore ?? 0) - (a.item?.compatibilityScore ?? 0)
       || a.index - b.index
     ))
     .map((entry) => entry.item);

@@ -441,8 +441,8 @@ export async function getBrowseMatches(offset = 0) {
     // A real multi-signal blend, if ever built, needs new data this
     // query doesn't collect yet, and real weights "tested rather than
     // guessed" per the user's own words -- not invented in this pass.
-    // Owner 2026-11-14: compatibility band first, then the person's soft appearance preferences, then exact score
-    // (utils/datingAppearance.js); appearance never outweighs a clearly higher compatibility and never removes anyone.
+    // Owner 2026-11-14: compatibility score + a fixed +/-2 per appearance preference, ordering only, never removes anyone
+    // (utils/datingAppearance.js); the shown compatibility score is unchanged.
     .filter(Boolean);
   return rankDatingCandidates(candidates, appearancePreferencesOf(myProfile));
 }
