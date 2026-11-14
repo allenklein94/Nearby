@@ -29,6 +29,7 @@ import { isDatingOptedIn } from '../utils/datingCountConsent';
 import { appearancePreferencesOf, rankDatingCandidates } from '../utils/datingAppearance';
 import { createBrowsePool, BROWSE_PAGE_SIZE } from '../utils/browsePool';
 import { readWithOptionalColumns } from '../utils/optionalProfileColumns';
+import { sharedDatingFacts } from '../utils/datingCardReasons';
 
 // Unified Crossed Paths, step 3 (CLAUDE.md, 2026-09-10): the shared-
 // gathering-attendance half of the signal union -- see
@@ -419,12 +420,17 @@ async function buildBrowsePool(userId, myProfile) {
           id: p.id,
           otherUserId: p.id,
           profiles: p,
-          sharedInterests: (p.interests ?? []).filter((i) => (myProfile?.interests ?? []).includes(i)),
+          ...sharedDatingFacts(myProfile, p),
           compatibilityScore: calculateCompatibility(myProfile, p),
         })),
       appearance,
     ),
     loadExcluded: () => readBrowseExclusions(userId),
+    // The card's reasons are re-read from the fresh row the card shows (sharedDatingFacts), never the window's copy.
+    merge: (candidate, row) => {
+      const profiles = { ...(candidate.profiles ?? {}), ...row };
+      return { ...candidate, profiles, ...sharedDatingFacts(myProfile, profiles) };
+    },
     // Before a page shows, the server re-decides who is still visible (blocks either way, Dating consent, area) and
     // returns the card details for those people only; a fresh row that no longer passes the hard filters is dropped.
     hydrate: async (ids) => {
@@ -447,7 +453,7 @@ async function buildBrowsePool(userId, myProfile) {
 
 // dating_pref_tattoos / dating_pref_piercings arrive with staged 20270417; read through readWithOptionalColumns so Browse
 // works the same before it is live (no preference).
-const BROWSE_PROFILE_COLUMNS = 'wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, dating_pref_tattoos, dating_pref_piercings, interests, basics, gender_identity, interested_in_genders';
+const BROWSE_PROFILE_COLUMNS = 'wide_area, show_me, preferred_min_age, preferred_max_age, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, dating_pref_tattoos, dating_pref_piercings, interests, basics, relationship_intention, gender_identity, interested_in_genders';
 
 // Everything the pool's membership or order depends on; a change means a new pool.
 function browsePoolKey(userId, myProfile) {

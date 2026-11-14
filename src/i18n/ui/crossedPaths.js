@@ -17,6 +17,8 @@ export default {
     within35Feet: "📍 Within about 35 feet",
     within35FeetWhen: "📍 Within about 35 feet · {time}",
     bothFreeTonight: "🌙 Both free tonight",
+    bothLookingFor: "You're both looking for: {what}",
+    bothChose: "You both chose “{value}” for {field}",
   },
   es: {
     justNow: "Hace un momento",
@@ -34,6 +36,8 @@ export default {
     within35Feet: "📍 A unos 10 metros",
     within35FeetWhen: "📍 A unos 10 metros · {time}",
     bothFreeTonight: "🌙 Ambos libres esta noche",
+    bothLookingFor: "Ambos buscan: {what}",
+    bothChose: "Ambos eligieron «{value}» en {field}",
   },
   de: {
     justNow: "Gerade eben",
@@ -51,6 +55,8 @@ export default {
     within35Feet: "📍 Etwa 10 Meter entfernt",
     within35FeetWhen: "📍 Etwa 10 Meter entfernt · {time}",
     bothFreeTonight: "🌙 Beide heute Abend frei",
+    bothLookingFor: "Ihr sucht beide: {what}",
+    bothChose: "Ihr habt beide „{value}“ bei {field} gewählt",
   },
   fr: {
     justNow: "À l’instant",
@@ -68,6 +74,8 @@ export default {
     within35Feet: "📍 À environ 10 mètres",
     within35FeetWhen: "📍 À environ 10 mètres · {time}",
     bothFreeTonight: "🌙 Libres tous les deux ce soir",
+    bothLookingFor: "Vous cherchez tous les deux : {what}",
+    bothChose: "Vous avez tous les deux choisi « {value} » pour {field}",
   },
   pt: {
     justNow: "Agora mesmo",
@@ -85,6 +93,8 @@ export default {
     within35Feet: "📍 A cerca de 10 metros",
     within35FeetWhen: "📍 A cerca de 10 metros · {time}",
     bothFreeTonight: "🌙 Os dois livres hoje à noite",
+    bothLookingFor: "Vocês dois procuram: {what}",
+    bothChose: "Vocês dois escolheram “{value}” em {field}",
   },
   ht: {
     justNow: "Kounye a la",
@@ -102,6 +112,8 @@ export default {
     within35Feet: "📍 Apeprè 10 mèt",
     within35FeetWhen: "📍 Apeprè 10 mèt · {time}",
     bothFreeTonight: "🌙 Nou tou de lib aswè a",
+    bothLookingFor: "Nou toude ap chèche: {what}",
+    bothChose: "Nou toude chwazi “{value}” pou {field}",
   },
   zh: {
     justNow: "刚刚",
@@ -119,6 +131,8 @@ export default {
     within35Feet: "📍 约 10 米内",
     within35FeetWhen: "📍 约 10 米内 · {time}",
     bothFreeTonight: "🌙 今晚都有空",
+    bothLookingFor: "你们都在寻找：{what}",
+    bothChose: "你们在{field}都选择了“{value}”",
   },
   vi: {
     justNow: "Vừa xong",
@@ -136,6 +150,8 @@ export default {
     within35Feet: "📍 Trong khoảng 10 mét",
     within35FeetWhen: "📍 Trong khoảng 10 mét · {time}",
     bothFreeTonight: "🌙 Cả hai đều rảnh tối nay",
+    bothLookingFor: "Cả hai bạn đều đang tìm: {what}",
+    bothChose: "Cả hai bạn đều chọn “{value}” cho {field}",
   },
   tl: {
     justNow: "Ngayon lang",
@@ -153,6 +169,8 @@ export default {
     within35Feet: "📍 Mga 10 metro ang layo",
     within35FeetWhen: "📍 Mga 10 metro ang layo · {time}",
     bothFreeTonight: "🌙 Pareho kayong libre ngayong gabi",
+    bothLookingFor: "Pareho kayong naghahanap ng: {what}",
+    bothChose: "Pareho ninyong pinili ang “{value}” para sa {field}",
   },
   ru: {
     justNow: "Только что",
@@ -170,6 +188,8 @@ export default {
     within35Feet: "📍 Примерно в 10 метрах",
     within35FeetWhen: "📍 Примерно в 10 метрах · {time}",
     bothFreeTonight: "🌙 Оба свободны сегодня вечером",
+    bothLookingFor: "Вы оба ищете: {what}",
+    bothChose: "Вы оба выбрали «{value}» в разделе «{field}»",
   },
   ko: {
     justNow: "방금",
@@ -187,5 +207,7 @@ export default {
     within35Feet: "📍 약 10미터 거리",
     within35FeetWhen: "📍 약 10미터 거리 · {time}",
     bothFreeTonight: "🌙 오늘 밤 둘 다 시간 있음",
+    bothLookingFor: "두 분 모두 찾는 것: {what}",
+    bothChose: "두 분 모두 {field}에서 “{value}”을(를) 선택했어요",
   },
 };

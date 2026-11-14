@@ -1,4 +1,4 @@
-import { datingCardFacts } from '../utils/datingCardReasons';
+import { datingCardFacts, datingReasonText } from '../utils/datingCardReasons';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView, Switch } from 'react-native';
@@ -832,13 +832,9 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
                   </TouchableOpacity>
                 )}
               </View>
-              {facts.reason && (
-                <Text style={styles.sharedText}>
-                  {facts.reason.kind === 'shared_interests'
-                    ? `✨ ${t('discovery.youBothLike')} ${facts.reason.tags.slice(0, 3).join(', ')}${facts.reason.tags.length > 3 ? ` +${facts.reason.tags.length - 3} ${t('discovery.moreCount')}` : ''}`
-                    : `✨ ${facts.reason.text}`}
-                </Text>
-              )}
+              {facts.reason && facts.reasons.map((reason) => (
+                <Text key={reason.kind} style={styles.sharedText}>{datingReasonText(reason, t)}</Text>
+              ))}
               {facts.availability && <Text style={styles.sharedText}>{facts.availability}</Text>}
               <View style={styles.proximityRow}>
                 <Text style={styles.proximityText}>{facts.where}</Text>

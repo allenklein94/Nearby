@@ -1,4 +1,4 @@
-import { datingCardFacts } from '../utils/datingCardReasons';
+import { datingCardFacts, datingReasonText } from '../utils/datingCardReasons';
 import EmptyCopy from './EmptyCopy';
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, Image, TouchableOpacity, StyleSheet, PanResponder, Animated, Dimensions } from 'react-native';
@@ -184,13 +184,9 @@ export default function SwipeableDiscoveryCards({
               )
             )}
           </View>
-          {facts.reason && (
-            <Text style={styles.sharedText}>
-              {facts.reason.kind === 'shared_interests'
-                ? `✨ ${t('discovery.youBothLike')} ${facts.reason.tags.slice(0, 3).join(', ')}${facts.reason.tags.length > 3 ? ` +${facts.reason.tags.length - 3} ${t('discovery.moreCount')}` : ''}`
-                : `✨ ${facts.reason.text}`}
-            </Text>
-          )}
+          {facts.reason && facts.reasons.map((reason) => (
+            <Text key={reason.kind} style={styles.sharedText}>{datingReasonText(reason, t)}</Text>
+          ))}
           <Text style={styles.proximityText}>{facts.where}</Text>
           {facts.availability && <Text style={styles.sharedText}>{facts.availability}</Text>}
           <Text style={styles.bio} numberOfLines={2}>{item.profiles?.bio}</Text>
