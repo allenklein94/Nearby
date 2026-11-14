@@ -52,3 +52,23 @@ describe('unoffered demand gap (owner audit 2026-11-14)', () => {
     expect(bestUnofferedGap(null)).toBeNull();
   });
 });
+
+describe('business with only a group category (owner audit 2026-11-14: Coastal Coffee, no "More specifically")', () => {
+  const { hasDeclaredOfferedCategory, isUnofferedGap, bestUnofferedGap } = require('./matchRadarRows');
+  test('mirrors business_offered_tags: subcategory or a secondary category counts, a group alone does not', () => {
+    expect(hasDeclaredOfferedCategory({ category: 'food_drink', subcategory: null, categories: [] })).toBe(false);
+    expect(hasDeclaredOfferedCategory({ category: 'food_drink', subcategory: 'Coffee' })).toBe(true);
+    expect(hasDeclaredOfferedCategory({ category: 'food_drink', categories: [null, 'Brunch'] })).toBe(true);
+    expect(hasDeclaredOfferedCategory(null)).toBe(false);
+  });
+  test('its own coffee requests (server: is_offered=false, offered set empty) are never called outside its categories', () => {
+    const coffee = row({ request_count: 8, is_offered: false, is_demand_gap: true });
+    expect(matchRadarRows([coffee], { offeredKnown: false })).toEqual([]);
+    expect(isUnofferedGap(coffee, { offeredKnown: false })).toBe(false);
+    expect(bestUnofferedGap([coffee], { offeredKnown: false })).toBeNull();
+  });
+  test('premium unmet searches still show for it; a declared business keeps today\'s behaviour', () => {
+    expect(matchRadarRows([row({ unmet_intent_count: 6 })], { offeredKnown: false })[0]).toMatchObject({ showRequests: false, unmetCount: 6 });
+    expect(matchRadarRows([row({ category: 'Bowling', request_count: 6 })], { offeredKnown: true })[0].showRequests).toBe(true);
+  });
+});

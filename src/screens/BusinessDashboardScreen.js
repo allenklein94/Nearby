@@ -102,7 +102,7 @@ import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import CreativeLibrarySection from '../components/CreativeLibrarySection';
 import { pickerCreatives } from '../utils/creativeLibrary';
 import { describeDemandSignals } from '../utils/demandSignals';
-import { matchRadarRows, isUnofferedGap, bestUnofferedGap } from '../utils/matchRadarRows';
+import { matchRadarRows, isUnofferedGap, bestUnofferedGap, hasDeclaredOfferedCategory } from '../utils/matchRadarRows';
 import { toggleProfileGroup, profileGroupFor } from '../utils/profileGroups';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
@@ -3861,7 +3861,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   // into totalDemand/bestDemand above -- those still
                   // reflect every category regardless of served status.
                   // Owner audit 2026-11-14: only a category the business really doesn't offer (utils/matchRadarRows.js).
-                  const bestGap = bestUnofferedGap(aggregatedDemand);
+                  const bestGap = bestUnofferedGap(aggregatedDemand, { offeredKnown: hasDeclaredOfferedCategory(selectedPartner) });
                   let suggestion = null;
                   if (!selectedPartner.differentiator) {
                     suggestion = { text: t('ui.bizDash1.addWhatMakesYouDifferent'), onPress: () => setEditProfileModalVisible(true) };
@@ -4443,10 +4443,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 )}
                 {/* Owner, 2026-11-14 (option 1): demand in the categories you offer lives in Opportunities' "Demand near
                     you"; Match Radar keeps only demand outside them + the premium unmet searches (utils/matchRadarRows.js). */}
-                {matchRadarRows(aggregatedDemand).length === 0 ? (
+                {matchRadarRows(aggregatedDemand, { offeredKnown: hasDeclaredOfferedCategory(selectedPartner) }).length === 0 ? (
                   <EmptyCopy id="business_demand" />
                 ) : (
-                  matchRadarRows(aggregatedDemand).map((d) => (
+                  matchRadarRows(aggregatedDemand, { offeredKnown: hasDeclaredOfferedCategory(selectedPartner) }).map((d) => (
                     <View key={d.category} style={styles.gatheringRow}>
                       {d.showRequests ? (
                         <Text style={styles.offerTitle}>
@@ -4462,7 +4462,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           {t('ui.bizDash2.recentSearchesFoundNothing', { count: d.unmetCount, category: categoryName(d.category, language) })}
                         </Text>
                       )}
-                      {isUnofferedGap(d) && (
+                      {isUnofferedGap(d, { offeredKnown: hasDeclaredOfferedCategory(selectedPartner) }) && (
                         // Business Intelligence Phase 5 (Intelligence): a
                         // genuinely different concept from the 🟡 marker
                         // above -- that one is about confidence of the

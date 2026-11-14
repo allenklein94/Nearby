@@ -623,7 +623,7 @@ export default {
   },
   de: {
     peopleLookingForCategory: { one: "{count} Person sucht {category}", other: "{count} Personen suchen {category}" },
-    peopleLookingOutsideYourCategories: { one: "{count} Person in der Nähe sucht {category}, das gehört nicht zu deinen Kategorien", other: "{count} Personen in der Nähe suchen {category}, das gehört nicht zu deinen Kategorien" },
+    peopleLookingOutsideYourCategories: { one: "{count} Person in der Nähe sucht {category}, eine Kategorie, die du nicht anbietest", other: "{count} Personen in der Nähe suchen {category}, eine Kategorie, die du nicht anbietest" },
     recentSearchesFoundNothing: { one: "🟡 {count} aktuelle Suche in deiner Nähe nach {category} hat nichts gefunden", other: "🟡 {count} aktuelle Suchen in deiner Nähe nach {category} haben nichts gefunden" },
     totalGuests: { one: "{count} Gast insgesamt", other: "{count} Gäste insgesamt" },
     soonest: "frühestens {date}",
@@ -2793,7 +2793,7 @@ export default {
   },
   ru: {
     peopleLookingForCategory: { one: "{count} человек ищет: {category}", few: "{count} человека ищут: {category}", many: "{count} человек ищут: {category}", other: "{count} человека ищут: {category}" },
-    peopleLookingOutsideYourCategories: { one: "{count} человек поблизости ищет: {category}, это не ваша категория", few: "{count} человека поблизости ищут: {category}, это не ваша категория", many: "{count} человек поблизости ищут: {category}, это не ваша категория", other: "{count} человека поблизости ищут: {category}, это не ваша категория" },
+    peopleLookingOutsideYourCategories: { one: "{count} человек поблизости ищет: {category} — не из ваших категорий", few: "{count} человека поблизости ищут: {category} — не из ваших категорий", many: "{count} человек поблизости ищут: {category} — не из ваших категорий", other: "{count} человека поблизости ищут: {category} — не из ваших категорий" },
     recentSearchesFoundNothing: { one: "🟡 {count} недавний поиск рядом с вами по запросу «{category}» ничего не нашёл", few: "🟡 {count} недавних поиска рядом с вами по запросу «{category}» ничего не нашли", many: "🟡 {count} недавних поисков рядом с вами по запросу «{category}» ничего не нашли", other: "🟡 {count} недавних поиска рядом с вами по запросу «{category}» ничего не нашли" },
     totalGuests: { one: "всего {count} гость", few: "всего {count} гостя", many: "всего {count} гостей", other: "всего {count} гостя" },
     soonest: "ближайшая дата {date}",
