@@ -546,14 +546,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [busySubmissionId, setBusySubmissionId] = useState(null);
   // The owner's own logo as the customer would see it: only once it has passed screening (utils/businessLogo.js).
   const [previewLogo, setPreviewLogo] = useState(null);
-  useEffect(() => {
-    setPreviewLogo(null);
-    const id = offerModalRequestId ? selectedPartner?.id : null; // item 49: the preview is live while the offer form is open
-    if (!id) return undefined;
-    let live = true;
-    getScreenedLogos([id]).then((map) => { if (live) setPreviewLogo(logoFor(map, id)); });
-    return () => { live = false; };
-  }, [offerModalRequestId, selectedPartner?.id, selectedPartner?.logo_url]);
   const offerInFlight = useMemo(() => inFlightRequestIds(offerSubmissions), [offerSubmissions]);
   const [aggregatedDemand, setAggregatedDemand] = useState([]);
   // Item 128: the server's floored count of distinct people asking for what this business offers (null = no line).
@@ -652,6 +644,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }, []);
   const [markingNoShowId, setMarkingNoShowId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
+  // After offerModalRequestId's declaration: reading it earlier is a ReferenceError in browsers (blank web dashboard, 2026-11-14).
+  useEffect(() => {
+    setPreviewLogo(null);
+    const id = offerModalRequestId ? selectedPartner?.id : null; // item 49: the preview is live while the offer form is open
+    if (!id) return undefined;
+    let live = true;
+    getScreenedLogos([id]).then((map) => { if (live) setPreviewLogo(logoFor(map, id)); });
+    return () => { live = false; };
+  }, [offerModalRequestId, selectedPartner?.id, selectedPartner?.logo_url]);
   // Phase 3 -- which real Signature Experience (if any) the currently-open
   // offer was built from, so it's actually recorded on submit and can feed
   // the per-template performance funnel. Null when typed from scratch or
