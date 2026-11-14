@@ -71,6 +71,10 @@ def run(browser, name, kind, query=''):
         if path.endswith('/rest/v1/brand_partners'):
             return body([{'id': PARTNER, 'name': 'Test Cafe (mock)', 'category': 'Coffee', 'is_active': True}] if kind == 'linked' else [])
         return body([])
+    # Everything that is neither the local site nor Supabase (mocked below) is refused, so results never depend on the
+    # outside network (e.g. Cloudflare Turnstile answers 400 for the 127.0.0.1 host; fonts/CDN). Registered first:
+    # Playwright gives the later Supabase routes precedence.
+    page.route('**/*', lambda route: route.continue_() if route.request.url.startswith('http://127.0.0.1:8766/') else route.abort('internetdisconnected'))
     page.route('**/*supabase.co/**', handle)
     page.route('**/*.supabase.co/**', handle)
     if kind != 'signedout':
@@ -115,7 +119,10 @@ with sync_playwright() as p:
         before = len(r['errors'])
         try:
             r['page'].get_by_text(tab, exact=True).first.click(); r['page'].wait_for_timeout(1200)
-            ok = len(r['errors']) == before and len(r['page'].inner_text('body')) > 50
+            body_text = r['page'].inner_text('body')
+            ok = len(r['errors']) == before and len(body_text) > 50
+            open(f'/out/tab_{tab}.txt', 'w').write(body_text)  # for review only (no check reads it)
+            r['page'].screenshot(path=f'/out/tab_{tab}.png', full_page=True)
         except Exception as e:
             ok = False; r['errors'].append('click: ' + str(e)[:120])
         check(f'[linked] {tab} tab opens without an error', ok, '; '.join(r['errors'][before:][:2]))
