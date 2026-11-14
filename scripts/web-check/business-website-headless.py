@@ -72,8 +72,9 @@ def run(browser, name, kind, query=''):
         if path.endswith('/rpc/get_aggregated_demand_for_partner') and kind == 'linked' and RADAR['on']:
             base = {'total_party_size': None, 'soonest_date': None, 'dominant_period': None, 'dominant_period_count': None,
                     'dominant_occasion': None, 'dominant_occasion_count': None, 'is_demand_gap': False, 'offered_people': None}
-            return body([dict(base, category='Coffee', request_count=7, unmet_intent_count=5, is_offered=True),   # own category
-                         dict(base, category='Bowling', request_count=6, unmet_intent_count=0, is_offered=False),  # outside it
+            # is_demand_gap = never SERVED (audit 2026-11-14): true for the own, never-booked Coffee too; 🆕 only for Bowling
+            return body([dict(base, category='Coffee', request_count=7, unmet_intent_count=5, is_offered=True, is_demand_gap=True),   # own category
+                         dict(base, category='Bowling', request_count=6, unmet_intent_count=0, is_offered=False, is_demand_gap=True),  # outside it
                          dict(base, category=None, request_count=None, unmet_intent_count=None, is_offered=None, offered_people=7)])
         if path.endswith('/rest/v1/brand_partners'):
             return body([{'id': PARTNER, 'name': 'Test Cafe (mock)', 'category': 'food_drink', 'is_active': True}] if kind == 'linked' else [])
@@ -198,9 +199,37 @@ with sync_playwright() as p:
         check('[match radar] Home keeps its one-line preview of the own category', '7 people are looking for Coffee' in t[:i] if i >= 0 else False)
     except Exception as e:
         check('[match radar] opens from Home > More tools', False, str(e)[:160])
+    try:
+        check('[match radar] 🆕 "you don\'t currently offer this" only on the category it really doesn\'t offer', radar.count("You don't currently offer this") == 1, str(radar.count("You don't currently offer this")))
+        check('[match radar] Home never says it doesn\'t offer its own category', 'Coffee — something you don' not in t)
+    except Exception as e:
+        check('[match radar] 🆕 "you don\'t currently offer this" only on the category it really doesn\'t offer', False, str(e)[:160])
     check('[match radar] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
     r['ctx'].close()
     RADAR['on'] = False
+
+    # Profile folded into groups (owner audit 2026-11-14): one open at a time, existing titles, nothing removed.
+    r = run(b, 'j_profile_groups', 'linked')
+    pg = r['page']; before = len(r['errors'])
+    try:
+        pg.get_by_text('Profile', exact=True).first.click(); pg.wait_for_timeout(1500)
+        t = pg.inner_text('body'); pg.screenshot(path='/out/j_profile_groups.png', full_page=True)
+        titles = ['Business Profile', 'What You Can Accommodate', "Who's this for?", 'What do you want more of?', 'Teach Nearby', 'Settings']
+        check('[profile groups] the six group titles show', all(x in t for x in titles), ' / '.join(x for x in titles if x not in t))
+        check('[profile groups] Business Profile open by default, the others closed', 'Edit Profile' in t and 'What ages is it suited to?' not in t and 'Largest group you can host' not in t)
+        pg.get_by_text("Who's this for?", exact=False).first.click(); pg.wait_for_timeout(800)
+        t2 = pg.inner_text('body')
+        check('[profile groups] opening "Who\'s this for?" shows its settings and closes Business Profile', 'What ages is it suited to?' in t2 and 'Edit Profile' not in t2)
+        pg.get_by_text('What You Can Accommodate', exact=False).first.click(); pg.wait_for_timeout(800)
+        t3 = pg.inner_text('body')
+        check('[profile groups] group size there is the routing value ("Largest group"), never the auto-reply range', 'Largest group you can host' in t3 and 'Groups of' not in t3 and 'What ages is it suited to?' not in t3)
+        pg.get_by_text('What You Can Accommodate', exact=False).first.click(); pg.wait_for_timeout(800)
+        t4 = pg.inner_text('body')
+        check('[profile groups] tapping the open group closes it', 'Largest group you can host' not in t4)
+    except Exception as e:
+        check('[profile groups] the six group titles show', False, str(e)[:160])
+    check('[profile groups] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+    r['ctx'].close()
 
     r = run(b, 'f_bad_link', 'linked', '?n=DROP%20TABLE&r=not-a-uuid')
     check('[tampered link] dashboard still opens, no errors', 'Opportunities' in r['text'] and not r['errors'], '; '.join(r['errors'][:3]))

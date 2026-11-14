@@ -103,6 +103,7 @@ import CreativeLibrarySection from '../components/CreativeLibrarySection';
 import { pickerCreatives } from '../utils/creativeLibrary';
 import { describeDemandSignals } from '../utils/demandSignals';
 import { matchRadarRows, isUnofferedGap, bestUnofferedGap } from '../utils/matchRadarRows';
+import { toggleProfileGroup, profileGroupFor } from '../utils/profileGroups';
 import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { NOT_ACCOMMODATED_OPTIONS, ADULT_AGE_RULES, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
@@ -324,6 +325,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   };
   const on = (...tabs) => tabs.includes(section);
   const tool = (key) => section === 'home' && openTool === key;
+  // One Profile group header (owner audit 2026-11-14): its existing title + an open/closed mark; tap toggles it in place.
+  const renderProfileGroupHeader = (key, title) => (
+    <TouchableOpacity
+      onPress={() => setProfileGroup((g) => toggleProfileGroup(g, key))}
+      style={[styles.gatheringRow, { marginTop: spacing.md }]}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ expanded: profileGroup === key }}
+    >
+      <Text style={styles.offerTitle}>{title}{' '}{profileGroup === key ? '⌄' : '›'}</Text>
+    </TouchableOpacity>
+  );
   // Item 36: the Performance tile opens Offer Performance (More tools -> Analytics) and scrolls to it once it has laid out.
   const mainScrollRef = useRef(null);
   const scrollToPerformanceRef = useRef(false);
@@ -332,10 +345,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const libraryYRef = useRef(null);
   const scrollToLibraryRef = useRef(false);
   function openCreativeLibrary() {
-    if (section === 'profile' && libraryYRef.current != null) {
+    if (section === 'profile' && profileGroup === 'basics' && libraryYRef.current != null) {
       mainScrollRef.current?.scrollTo({ y: libraryYRef.current, animated: true });
     } else {
       scrollToLibraryRef.current = true;
+      setProfileGroup('basics'); // the library lives in Business Profile
       setSection('profile');
     }
   }
@@ -351,7 +365,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
   // Secondary areas stay collapsed: Availability leads with "tell us when you have room", Profile with "tell us what you offer".
   const [moreOffersOpen, setMoreOffersOpen] = useState(false);
-  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
+  // Owner audit 2026-11-14: Profile's groups, one open at a time (utils/profileGroups.js).
+  const [profileGroup, setProfileGroup] = useState(() => profileGroupFor(route?.params?.initialProfileGroup));
   const [selectedPartner, setSelectedPartner] = useState(null);
   // Item 86: contradictory settings are refused by the server and shown inline under the control (never an alert, never a
   // silent change). One entry per editing surface; see hooks/useSettingConflicts.js.
@@ -3856,9 +3871,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // before the softer signals below it.
                     suggestion = { text: t('ui.bizDash1.tellUsWhyPeopleChoose'), onPress: () => setEditProfileModalVisible(true) };
                   } else if ((selectedPartner.accommodates_party_types ?? []).length === 0 && !fulfillmentPolicy) {
-                    suggestion = { text: t('ui.bizDash1.tellNearbyWhatYouCan'), onPress: () => setSection('business') };
+                    suggestion = { text: t('ui.bizDash1.tellNearbyWhatYouCan'), onPress: () => { setProfileGroup('accommodate'); setSection('business'); } };
                   } else if (!isAvailabilityPulseFresh(selectedPartner.availability_pulse_updated_at)) {
-                    suggestion = { text: t('ui.bizDash1.setYourAvailabilitySoPeople'), onPress: () => setSection('business') };
+                    suggestion = { text: t('ui.bizDash1.setYourAvailabilitySoPeople'), onPress: () => { setProfileGroup('grow'); setSection('business'); } };
                   } else if (pendingCount > 0) {
                     suggestion = { text: t('ui.bizDash1.newOpportunitYourBusinessView', { count: pendingCount }), onPress: () => setSection('requests') };
                   } else if (bestGap) {
@@ -5474,7 +5489,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     />
                   </View>
                 )}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.businessProfile')}</Text>
+{renderProfileGroupHeader('basics', t('ui.bizDash2.businessProfile'))}
+{profileGroup === 'basics' && (
+<>
                 <View style={styles.gatheringRow}>
                   <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
                   <Text style={styles.breakdownText}>
@@ -5581,6 +5598,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </View>
                 )}
 
+</>
+)}
+{renderProfileGroupHeader('accommodate', t('ui.bizDash2.whatYouCanAccommodate'))}
+{profileGroup === 'accommodate' && (
+<>
                 {/* "Business Profile Phase 1" addendum -- "What You Can
                     Accommodate." Group size is read-only here (reflecting
                     the real business_fulfillment_policies row already
@@ -5592,7 +5614,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     Wi-Fi/pet-friendly/private-room have no real taxonomy
                     anywhere in this app and are deliberately not fabricated
                     here. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.whatYouCanAccommodate')}</Text>
                 <Text style={styles.helperText}>
                   {t('ui.bizDash2.helpNearbySendYouRequests')}
                 </Text>
@@ -5703,10 +5724,286 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
 
+                {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
+                    tap (no Save button); Nearby then routes matching occasion requests here first, and a
+                    package (if any) is still what gets offered -- nothing is invented for this list alone. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.occasionsWeOffer')}</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {OFFERED_OCCASION_OPTIONS.map((o) => {
+                    const selected = shownValue(settingConflicts.entries, 'offered_occasions', selectedPartner?.offered_occasions ?? []).includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handleToggleOfferedOccasion(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.offeredA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'offered_occasions')}
+                  onSave={pendingSaveFor('offered_occasions', (v) => saveOfferedOccasions(v))}
+                  saving={savingPendingSetting === 'offered_occasions'}
+                />
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.requestsForTheseOccasionsReach')}
+                </Text>
+                {/* Hours (item 71): one optional row, expands in place. Feeds the consumer "Open now" filter; never inferred. */}
+                {selectedPartner ? (
+                  <BusinessHoursEditor
+                    partner={selectedPartner}
+                    onSaved={(hours) => setSelectedPartner((prev) => ({ ...prev, operating_hours: hours }))}
+                  />
+                ) : null}
+                {/* Weather sensitivity (item 63): say it once; Nearby ranks your offers with the weather (never hides them). */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.isYourExperienceAffectedBy')}</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {WEATHER_SETTING_OPTIONS.map((o) => {
+                    const selected = shownValue(settingConflicts.entries, 'weather_setting', selectedPartner?.weather_setting ?? null) === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickWeatherSetting(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'weather_setting')}
+                  onSave={pendingSaveFor('weather_setting', (v) => saveWeatherSetting(v))}
+                  saving={savingPendingSetting === 'weather_setting'}
+                />
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.outdoorOnlyShownLessWhen')}
+                </Text>
+                {/* Booking mode (item 72): one owner-declared answer that sets the customer's button. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.howDoCustomersComeIn')}</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {BOOKING_MODE_OPTIONS.map((o) => {
+                    const selected = bookingModeOf(selectedPartner) === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickBookingMode(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.setsTheButtonCustomersSee')}
+                </Text>
+                {/* Price (items 40 + 82): one coarse tier, $ to $$$$, plus an optional typical spend per person. Owner-declared, never inferred. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDoesItUsuallyCost')}</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {BUSINESS_PRICE_LEVELS.map((key) => {
+                    const selected = (selectedPartner?.price_level ?? null) === key;
+                    return (
+                      <TouchableOpacity
+                        key={key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickPriceLevel(key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${key}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{key}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
+                  <TextInput
+                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                    placeholder={t('ui.bizDash2.typicalSpendPerPersonOptional')}
+                    placeholderTextColor={colors.textTertiary}
+                    value={spendDraft ?? (selectedPartner?.typical_spend_per_person != null ? String(selectedPartner.typical_spend_per_person) : '')}
+                    onChangeText={(t) => setSpendDraft(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    accessibilityLabel={t('ui.bizDash2.typicalSpendPerPersonInA11y')}
+                  />
+                  {spendDraft !== null && (
+                    <TouchableOpacity
+                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                      onPress={handleSaveTypicalSpend}
+                      disabled={savingSpend}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('ui.bizDash2.saveTypicalSpendA11y')}
+                    >
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpend ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.aRoughIdeaIsEnough')}
+                </Text>
+                {/* "Business Story" plan, Phase 6 -- Signature Experiences.
+                    Suggestions are derived purely from attributes the
+                    owner has already confirmed (Phase 1) -- never an LLM
+                    call, never fabricated. A suggestion drops out of this
+                    review list the moment it's addressed (kept, edited +
+                    saved, or explicitly removed) -- see
+                    dismissedSuggestionAttrs. */}
+                {(() => {
+                  const suggestions = deriveSignatureExperienceSuggestions({
+                    category: selectedPartner?.category,
+                    attributes: selectedPartner?.attributes ?? [],
+                    cuisine: selectedPartner?.cuisine,
+                    cuisineLabel: selectedPartner?.cuisine ? cuisineLabel(selectedPartner.cuisine) : null,
+                  });
+                  const covered = new Set([
+                    ...experiences.flatMap((e) => e.attributes ?? []),
+                    ...dismissedSuggestionAttrs,
+                  ]);
+                  const pending = suggestions.filter((s) => !covered.has(s.attribute));
+                  if (pending.length === 0) return null;
+                  return (
+                    <>
+                      <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.weCreatedExperiences', { count: pending.length })}</Text>
+                      <Text style={styles.helperText}>
+                        {t('ui.bizDash2.basedOnWhatYouTold')}
+                      </Text>
+                      {pending.map((s) => (
+                        <View key={s.attribute} style={styles.gatheringRow}>
+                          <Text style={styles.offerTitle}>{s.icon} {s.title}</Text>
+                          <Text style={styles.breakdownText}>{s.description}</Text>
+                          <Text style={[styles.breakdownText, { color: colors.textTertiary, fontStyle: 'italic' }]}>
+                            {t('ui.bizDash2.basedOn')}{' '}{businessAttributeLabel(s.attribute)}
+                          </Text>
+                          <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                              onPress={() => handleKeepSuggestion(s)}
+                              accessibilityLabel={t('ui.bizDash2.keepA11y', { title: s.title })}
+                              accessibilityRole="button"
+                            >
+                              <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.keep')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                              onPress={() => openExperienceModal(s, { fromSuggestionId: s.attribute })}
+                              accessibilityLabel={t('ui.bizDash2.editA11y2', { title: s.title })}
+                              accessibilityRole="button"
+                            >
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.edit')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                              onPress={() => handleRemoveSuggestion(s)}
+                              accessibilityLabel={t('ui.bizDash2.removeA11y', { title: s.title })}
+                              accessibilityRole="button"
+                            >
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.remove')}</Text>
+                            </TouchableOpacity>
+                          </View>
+                          <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, `experience_suggestion:${s.attribute}`)} />
+                        </View>
+                      ))}
+                    </>
+                  );
+                })()}
+
+</>
+)}
+{renderProfileGroupHeader('who', t('ui.bizDash3.whosThisFor'))}
+{profileGroup === 'who' && (
+<>
+                {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatAgesIsItSuited')}</Text>
+                <AgeRangePicker
+                  label={t('ui.bizDash2.ages')}
+                  min={shownValue(settingConflicts.entries, 'suited_ages', { min: selectedPartner?.suited_age_min ?? null }).min ?? null}
+                  max={shownValue(settingConflicts.entries, 'suited_ages', { max: selectedPartner?.suited_age_max ?? null }).max ?? null}
+                  onChange={handlePickSuitedAges}
+                />
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'suited_ages')}
+                  onSave={pendingSaveFor('suited_ages', (v) => saveSuitedAges(v))}
+                  saving={savingPendingSetting === 'suited_ages'}
+                />
+                {/* Item 86: what you don't accommodate. Requests that conflict are never sent to you or shown with your business. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDontYouAccommodate')}</Text>
+                {[NOT_ACCOMMODATED_OPTIONS.filter((o) => !ADULT_AGE_RULES.includes(o.key)), NOT_ACCOMMODATED_OPTIONS.filter((o) => ADULT_AGE_RULES.includes(o.key))].map((group, gi) => (
+                <View key={gi}>
+                {gi === 1 && <Text style={[styles.helperText, { marginTop: spacing.sm }]}>{t('ui.bizDash2.ageRestrictionPickOne')}</Text>}
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {group.map((o) => {
+                    const selected = shownValue(settingConflicts.entries, 'not_accommodated', notAccommodatedOf(selectedPartner)).includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handleToggleNotAccommodated(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                </View>
+                ))}
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'not_accommodated')}
+                  onSave={pendingSaveFor('not_accommodated', (v) => saveNotAccommodated(v))}
+                  saving={savingPendingSetting === 'not_accommodated'}
+                />
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.requestsThatConflictArentSent')}
+                </Text>
+                {/* Item 88: dietary options, asked only of a food business (or one that already declared some). */}
+                {dietaryRelevantFor(selectedPartner) && (
+                  <>
+                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDietaryOptionsDoYou')}</Text>
+                    <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                      {BUSINESS_DIETARY_OPTIONS.map((o) => {
+                        const selected = shownValue(settingConflicts.entries, 'dietary_options', dietaryOptionsOf(selectedPartner)).includes(o.key);
+                        return (
+                          <TouchableOpacity
+                            key={o.key}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => handleToggleDietaryOption(o.key)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    <Text style={styles.helperText}>
+                      {t('ui.bizDash2.customersWhoAskForThese')}
+                    </Text>
+                  </>
+                )}
+</>
+)}
+{renderProfileGroupHeader('grow', t('ui.bizDash2.whatDoYouWantMore'))}
+{profileGroup === 'grow' && (
+<>
                 {/* "Business Story" plan, Phase 2 -- Business Goals. A real,
                     small, dedicated save distinct from the full profile
                     edit above -- meant to be revisited often. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.whatDoYouWantMore')}</Text>
                 <Text style={styles.helperText}>
                   {t('ui.bizDash2.tellNearbyOnceAndIt')}
                 </Text>
@@ -5927,277 +6224,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </Text>
                 )}
 
-                {/* "Business Story" plan, Phase 6 -- Signature Experiences.
-                    Suggestions are derived purely from attributes the
-                    owner has already confirmed (Phase 1) -- never an LLM
-                    call, never fabricated. A suggestion drops out of this
-                    review list the moment it's addressed (kept, edited +
-                    saved, or explicitly removed) -- see
-                    dismissedSuggestionAttrs. */}
-                {(() => {
-                  const suggestions = deriveSignatureExperienceSuggestions({
-                    category: selectedPartner?.category,
-                    attributes: selectedPartner?.attributes ?? [],
-                    cuisine: selectedPartner?.cuisine,
-                    cuisineLabel: selectedPartner?.cuisine ? cuisineLabel(selectedPartner.cuisine) : null,
-                  });
-                  const covered = new Set([
-                    ...experiences.flatMap((e) => e.attributes ?? []),
-                    ...dismissedSuggestionAttrs,
-                  ]);
-                  const pending = suggestions.filter((s) => !covered.has(s.attribute));
-                  if (pending.length === 0) return null;
-                  return (
-                    <>
-                      <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.weCreatedExperiences', { count: pending.length })}</Text>
-                      <Text style={styles.helperText}>
-                        {t('ui.bizDash2.basedOnWhatYouTold')}
-                      </Text>
-                      {pending.map((s) => (
-                        <View key={s.attribute} style={styles.gatheringRow}>
-                          <Text style={styles.offerTitle}>{s.icon} {s.title}</Text>
-                          <Text style={styles.breakdownText}>{s.description}</Text>
-                          <Text style={[styles.breakdownText, { color: colors.textTertiary, fontStyle: 'italic' }]}>
-                            {t('ui.bizDash2.basedOn')}{' '}{businessAttributeLabel(s.attribute)}
-                          </Text>
-                          <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
-                            <TouchableOpacity
-                              style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
-                              onPress={() => handleKeepSuggestion(s)}
-                              accessibilityLabel={t('ui.bizDash2.keepA11y', { title: s.title })}
-                              accessibilityRole="button"
-                            >
-                              <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.keep')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
-                              onPress={() => openExperienceModal(s, { fromSuggestionId: s.attribute })}
-                              accessibilityLabel={t('ui.bizDash2.editA11y2', { title: s.title })}
-                              accessibilityRole="button"
-                            >
-                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.edit')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
-                              onPress={() => handleRemoveSuggestion(s)}
-                              accessibilityLabel={t('ui.bizDash2.removeA11y', { title: s.title })}
-                              accessibilityRole="button"
-                            >
-                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.remove')}</Text>
-                            </TouchableOpacity>
-                          </View>
-                          <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, `experience_suggestion:${s.attribute}`)} />
-                        </View>
-                      ))}
-                    </>
-                  );
-                })()}
-
 </>
 )}
-{on('profile') && (
-<>
-                {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
-                    tap (no Save button); Nearby then routes matching occasion requests here first, and a
-                    package (if any) is still what gets offered -- nothing is invented for this list alone. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.occasionsWeOffer')}</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {OFFERED_OCCASION_OPTIONS.map((o) => {
-                    const selected = shownValue(settingConflicts.entries, 'offered_occasions', selectedPartner?.offered_occasions ?? []).includes(o.key);
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handleToggleOfferedOccasion(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.offeredA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <SettingConflictNotice
-                  messages={conflictMessages(settingConflicts.entries, 'offered_occasions')}
-                  onSave={pendingSaveFor('offered_occasions', (v) => saveOfferedOccasions(v))}
-                  saving={savingPendingSetting === 'offered_occasions'}
-                />
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.requestsForTheseOccasionsReach')}
-                </Text>
-                {/* Hours (item 71): one optional row, expands in place. Feeds the consumer "Open now" filter; never inferred. */}
-                {selectedPartner ? (
-                  <BusinessHoursEditor
-                    partner={selectedPartner}
-                    onSaved={(hours) => setSelectedPartner((prev) => ({ ...prev, operating_hours: hours }))}
-                  />
-                ) : null}
-                {/* Weather sensitivity (item 63): say it once; Nearby ranks your offers with the weather (never hides them). */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.isYourExperienceAffectedBy')}</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {WEATHER_SETTING_OPTIONS.map((o) => {
-                    const selected = shownValue(settingConflicts.entries, 'weather_setting', selectedPartner?.weather_setting ?? null) === o.key;
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handlePickWeatherSetting(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <SettingConflictNotice
-                  messages={conflictMessages(settingConflicts.entries, 'weather_setting')}
-                  onSave={pendingSaveFor('weather_setting', (v) => saveWeatherSetting(v))}
-                  saving={savingPendingSetting === 'weather_setting'}
-                />
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.outdoorOnlyShownLessWhen')}
-                </Text>
-                {/* Booking mode (item 72): one owner-declared answer that sets the customer's button. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.howDoCustomersComeIn')}</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {BOOKING_MODE_OPTIONS.map((o) => {
-                    const selected = bookingModeOf(selectedPartner) === o.key;
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handlePickBookingMode(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.setsTheButtonCustomersSee')}
-                </Text>
-                {/* Price (items 40 + 82): one coarse tier, $ to $$$$, plus an optional typical spend per person. Owner-declared, never inferred. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDoesItUsuallyCost')}</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {BUSINESS_PRICE_LEVELS.map((key) => {
-                    const selected = (selectedPartner?.price_level ?? null) === key;
-                    return (
-                      <TouchableOpacity
-                        key={key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handlePickPriceLevel(key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${key}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{key}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
-                  <TextInput
-                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                    placeholder={t('ui.bizDash2.typicalSpendPerPersonOptional')}
-                    placeholderTextColor={colors.textTertiary}
-                    value={spendDraft ?? (selectedPartner?.typical_spend_per_person != null ? String(selectedPartner.typical_spend_per_person) : '')}
-                    onChangeText={(t) => setSpendDraft(t.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    accessibilityLabel={t('ui.bizDash2.typicalSpendPerPersonInA11y')}
-                  />
-                  {spendDraft !== null && (
-                    <TouchableOpacity
-                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
-                      onPress={handleSaveTypicalSpend}
-                      disabled={savingSpend}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('ui.bizDash2.saveTypicalSpendA11y')}
-                    >
-                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpend ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.aRoughIdeaIsEnough')}
-                </Text>
-                {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatAgesIsItSuited')}</Text>
-                <AgeRangePicker
-                  label={t('ui.bizDash2.ages')}
-                  min={shownValue(settingConflicts.entries, 'suited_ages', { min: selectedPartner?.suited_age_min ?? null }).min ?? null}
-                  max={shownValue(settingConflicts.entries, 'suited_ages', { max: selectedPartner?.suited_age_max ?? null }).max ?? null}
-                  onChange={handlePickSuitedAges}
-                />
-                <SettingConflictNotice
-                  messages={conflictMessages(settingConflicts.entries, 'suited_ages')}
-                  onSave={pendingSaveFor('suited_ages', (v) => saveSuitedAges(v))}
-                  saving={savingPendingSetting === 'suited_ages'}
-                />
-                {/* Item 86: what you don't accommodate. Requests that conflict are never sent to you or shown with your business. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDontYouAccommodate')}</Text>
-                {[NOT_ACCOMMODATED_OPTIONS.filter((o) => !ADULT_AGE_RULES.includes(o.key)), NOT_ACCOMMODATED_OPTIONS.filter((o) => ADULT_AGE_RULES.includes(o.key))].map((group, gi) => (
-                <View key={gi}>
-                {gi === 1 && <Text style={[styles.helperText, { marginTop: spacing.sm }]}>{t('ui.bizDash2.ageRestrictionPickOne')}</Text>}
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {group.map((o) => {
-                    const selected = shownValue(settingConflicts.entries, 'not_accommodated', notAccommodatedOf(selectedPartner)).includes(o.key);
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handleToggleNotAccommodated(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                </View>
-                ))}
-                <SettingConflictNotice
-                  messages={conflictMessages(settingConflicts.entries, 'not_accommodated')}
-                  onSave={pendingSaveFor('not_accommodated', (v) => saveNotAccommodated(v))}
-                  saving={savingPendingSetting === 'not_accommodated'}
-                />
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.requestsThatConflictArentSent')}
-                </Text>
-                {/* Item 88: dietary options, asked only of a food business (or one that already declared some). */}
-                {dietaryRelevantFor(selectedPartner) && (
-                  <>
-                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDietaryOptionsDoYou')}</Text>
-                    <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                      {BUSINESS_DIETARY_OPTIONS.map((o) => {
-                        const selected = shownValue(settingConflicts.entries, 'dietary_options', dietaryOptionsOf(selectedPartner)).includes(o.key);
-                        return (
-                          <TouchableOpacity
-                            key={o.key}
-                            style={[styles.chip, selected && styles.chipSelected]}
-                            onPress={() => handleToggleDietaryOption(o.key)}
-                            accessibilityRole="button"
-                            accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                            accessibilityState={{ selected }}
-                          >
-                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                    <Text style={styles.helperText}>
-                      {t('ui.bizDash2.customersWhoAskForThese')}
-                    </Text>
-                  </>
-                )}
 </>
 )}
 {on('offers') && moreOffersOpen && (
@@ -6261,12 +6289,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('profile') && (
 <>
+{renderProfileGroupHeader('teach', t('ui.bizDash2.teachNearby'))}
+{profileGroup === 'teach' && (
+<>
                 {/* "Business Profile Phase 1" addendum -- "Teach Nearby."
                     A real, deterministic keyword extraction against the
                     existing attributes vocabulary, never an LLM call and
                     never auto-applied -- the extracted chips are always
                     shown for an explicit confirm/edit/discard first. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.teachNearby')}</Text>
                 <Text style={styles.helperText}>{t('ui.bizDash2.anythingElseWeShouldKnow')}</Text>
                 {!teachNearbyExtracted ? (
                   <>
@@ -6366,11 +6396,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </>
                 )}
 
-                <TouchableOpacity onPress={() => setProfileSettingsOpen((v) => !v)} style={[styles.gatheringRow, { marginTop: spacing.xl }]} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.settingsA11y')} accessibilityState={{ expanded: profileSettingsOpen }}>
-                  <Text style={styles.offerTitle}>{t('ui.bizDash2.settings')}{' '}{profileSettingsOpen ? '⌄' : '›'}</Text>
-                  {!profileSettingsOpen && <Text style={styles.breakdownText}>{t('ui.bizDash2.termsNotificationsPaymentsAiAutomation')}</Text>}
+</>
+)}
+                <TouchableOpacity onPress={() => setProfileGroup((g) => toggleProfileGroup(g, 'settings'))} style={[styles.gatheringRow, { marginTop: spacing.md }]} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.settingsA11y')} accessibilityState={{ expanded: profileGroup === 'settings' }}>
+                  <Text style={styles.offerTitle}>{t('ui.bizDash2.settings')}{' '}{profileGroup === 'settings' ? '⌄' : '›'}</Text>
+                  {profileGroup !== 'settings' && <Text style={styles.breakdownText}>{t('ui.bizDash2.termsNotificationsPaymentsAiAutomation')}</Text>}
                 </TouchableOpacity>
-                {profileSettingsOpen && (
+                {profileGroup === 'settings' && (
                 <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
                   <Text style={styles.sectionHeader}>{t('ui.bizDash2.fulfillmentPolicy')}</Text>

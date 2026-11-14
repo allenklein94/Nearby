@@ -88,3 +88,38 @@ describe('cross-platform business audit (owner 2026-11-14)', () => {
     expect(src).not.toMatch(/d\.is_demand_gap &&/);
   });
 });
+
+describe('Profile folded into groups (owner audit 2026-11-14)', () => {
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(path.join(__dirname, 'BusinessDashboardScreen.js'), 'utf8');
+  const groupBody = (key) => {
+    const start = src.indexOf(`{profileGroup === '${key}' && (`);
+    expect(start).toBeGreaterThan(-1);
+    const end = src.indexOf('\n</>\n)}\n', start);
+    return src.slice(start, end);
+  };
+  test('every former Profile section lives inside exactly one group (nothing dropped, nothing duplicated)', () => {
+    const where = {
+      basics: ['editBusinessProfileA11y', '<CreativeLibrarySection', 'weThinkMightBe'],
+      accommodate: ["t('ui.bizDash2.largestGroupYouCanHost')", 'experiencesUses', 'occasionsWeOffer', 'isYourExperienceAffectedBy', 'howDoCustomersComeIn', 'whatDoesItUsuallyCost', 'weCreatedExperiences'],
+      who: ['whatAgesIsItSuited', 'whatDontYouAccommodate', 'whatDietaryOptionsDoYou'],
+      grow: ['tellNearbyOnceAndIt', 'temporaryBoostOptional', 'howsBusinessRightNow'],
+      teach: ['anythingElseWeShouldKnow', 'recentAiSuggestions'],
+    };
+    for (const [key, needles] of Object.entries(where)) {
+      const body = groupBody(key);
+      for (const n of needles) {
+        expect([key, n, body.includes(n)]).toEqual([key, n, true]);
+        expect([n, src.split(n).length - 1]).toEqual([n, 1]);
+      }
+    }
+    expect(src).toMatch(/\{profileGroup === 'settings' && \(/);
+  });
+  test('Tell Nearby stays above the groups, always visible; one open at a time via the shared rule', () => {
+    expect(src.indexOf('<TellNearbyBusinessCard')).toBeLessThan(src.indexOf("renderProfileGroupHeader('basics'"));
+    expect(src).not.toMatch(/profileSettingsOpen/);
+    expect(src.match(/toggleProfileGroup\(g, /g).length).toBeGreaterThanOrEqual(2);
+    expect(src).toMatch(/accessibilityState=\{\{ expanded: profileGroup === key \}\}/);
+  });
+});
