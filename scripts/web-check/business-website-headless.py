@@ -208,26 +208,37 @@ with sync_playwright() as p:
     r['ctx'].close()
     RADAR['on'] = False
 
-    # Profile folded into groups (owner audit 2026-11-14): one open at a time, existing titles, nothing removed.
+    # Profile = Tell Nearby -> one reviewable summary -> tap a section to edit (owner, 2026-11-14); Teach Nearby merged.
     r = run(b, 'j_profile_groups', 'linked')
     pg = r['page']; before = len(r['errors'])
+    import re as _re
+    def grp(title):
+        return pg.get_by_role('button', name=_re.compile('^' + _re.escape(title))).first
     try:
         pg.get_by_text('Profile', exact=True).first.click(); pg.wait_for_timeout(1500)
         t = pg.inner_text('body'); pg.screenshot(path='/out/j_profile_groups.png', full_page=True); tl = t.lower()
-        titles = ['Business Profile', 'What You Can Accommodate', "Who's this for?", 'What do you want more of?', 'Teach Nearby', 'Settings']
-        check('[profile groups] the six group titles show', all(x in t for x in titles), ' / '.join(x for x in titles if x not in t))
-        check('[profile groups] Business Profile open by default, the others closed', '✏️ Edit Profile' in t and 'what ages is it suited to?' not in tl and 'largest group you can host' not in tl)
-        pg.get_by_role('button', name="Who's this for?", exact=True).first.click(); pg.wait_for_timeout(800)
+        titles = ['What Nearby knows about your business', 'Business Profile', 'What You Can Accommodate', "Who's this for?", 'What do you want more of?', 'Settings']
+        check('[profile summary] summary heading + the five section titles show', all(x in t for x in titles), ' / '.join(x for x in titles if x not in t))
+        check('[profile summary] Teach Nearby merged into Tell Nearby (no second entry point)', 'Teach Nearby' not in t)
+        check('[profile summary] Tell Nearby comes before the summary', 0 <= tl.find('tell nearby') < tl.find('what nearby knows about your business'), str(tl.find('tell nearby')))
+        check('[profile summary] every section starts closed', '✏️ Edit Profile' not in t and 'what ages is it suited to?' not in tl and 'largest group you can host' not in tl)
+        basics = grp('Business Profile').get_attribute('aria-label') or ''
+        check('[profile summary] Business Profile header shows what is saved (Coffee)', 'Coffee' in basics, basics)
+        acc = grp('👥 What You Can Accommodate').get_attribute('aria-label') or ''
+        check('[profile summary] nothing saved for group size = "Not set", never the auto-reply range', 'Not set' in acc and 'Groups of' not in acc, acc)
+        grp('Business Profile').click(); pg.wait_for_timeout(800)
+        check('[profile summary] tapping Business Profile opens its existing controls', '✏️ Edit Profile' in pg.inner_text('body'))
+        grp("Who's this for?").click(); pg.wait_for_timeout(800)
         t2 = pg.inner_text('body'); t2l = t2.lower()
-        check('[profile groups] opening "Who\'s this for?" shows its settings and closes Business Profile', 'what ages is it suited to?' in t2l and '✏️ Edit Profile' not in t2, t2[t2.find('Teach Nearby')-600:t2.find('Teach Nearby')].replace('\n', ' | '))
-        pg.get_by_role('button', name='👥 What You Can Accommodate', exact=True).first.click(); pg.wait_for_timeout(800)
+        check('[profile groups] opening "Who\'s this for?" shows its settings and closes Business Profile', 'what ages is it suited to?' in t2l and '✏️ Edit Profile' not in t2)
+        grp('👥 What You Can Accommodate').click(); pg.wait_for_timeout(800)
         t3 = pg.inner_text('body'); t3l = t3.lower()
         check('[profile groups] group size there is the routing value ("Largest group"), never the auto-reply range', 'largest group you can host' in t3l and 'groups of' not in t3l and 'what ages is it suited to?' not in t3l, f"largest={'largest group you can host' in t3l} groupsOf={'groups of' in t3l} ages={'what ages is it suited to?' in t3l}")
-        pg.get_by_role('button', name='👥 What You Can Accommodate', exact=True).first.click(); pg.wait_for_timeout(800)
+        grp('👥 What You Can Accommodate').click(); pg.wait_for_timeout(800)
         t4 = pg.inner_text('body').lower()
-        check('[profile groups] tapping the open group closes it', 'largest group you can host' not in t4)
+        check('[profile groups] tapping the open section closes it', 'largest group you can host' not in t4)
     except Exception as e:
-        check('[profile groups] the six group titles show', False, str(e)[:160])
+        check('[profile summary] summary heading + the five section titles show', False, str(e)[:160])
     check('[profile groups] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
     r['ctx'].close()
 
