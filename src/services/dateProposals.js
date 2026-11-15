@@ -147,7 +147,7 @@ export async function getMyActivePlansByMatch(matchIds) {
   if (requestIds.length > 0) {
     const { data: offers, error: oErr } = await supabase
       .from('business_request_offers')
-      .select('id, request_id, status, proposed_time, offer_type, offer_price, offer_description, valid_until, offer_title, discount_pct, included_items, brand_partners(name, latitude, longitude, address)')
+      .select('id, request_id, status, proposed_time, offer_type, offer_price, offer_description, valid_until, offer_title, discount_pct, included_items, brand_partners(name, latitude, longitude, address, location_source)')
       .in('request_id', requestIds)
       .in('status', ['pending', 'offered', 'accepted', 'completed']);
     if (oErr) throw new Error(oErr.message);

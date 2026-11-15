@@ -2,8 +2,9 @@ import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { loadCategoryVocab } from '../_shared/categoryTags.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
-import { classifyContent, RISK_CATEGORIES, reportClassifierHealth } from '../_shared/contentClassifier.ts';
-import { screeningFailureKind } from '../_shared/screeningHealth.js';
+import { classifyContent, classifyContentDetailed, RISK_CATEGORIES, reportClassifierHealth } from '../_shared/contentClassifier.ts';
+import { screeningFailureKind as healthFailureKind } from '../_shared/screeningHealth.js';
+import { screeningFailureKind } from '../_shared/screeningFailure.js';
 import { screenOfferMedia as screenOfferMediaShared, OFFER_MEDIA_BUCKET } from '../_shared/offerMediaScreening.js';
 
 // Aug 27 2026 plan (CLAUDE.md), Decision 6 -- the real Business Trust &
@@ -305,8 +306,8 @@ Reply with ONLY valid JSON in this exact shape, nothing else:
 Guidance: "low" means this reads as an ordinary, legitimate business logo with no concerning signal -- this should be the overwhelming majority of real submissions, never a de facto bottleneck for normal content. "high" means a clear, unambiguous match to one or more prohibited categories -- reserve this for genuinely obvious cases. "medium" means a real but ambiguous or partial signal a human should look at. "uncertain" means you genuinely cannot tell either way from the image given -- treat this the same as medium, never as low.`;
 
   if (!ANTHROPIC_API_KEY) {
-    await reportClassifierHealth(false, screeningFailureKind({ keyMissing: true }));
-    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
+    await reportClassifierHealth(false, healthFailureKind({ keyMissing: true }));
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true, failure: 'permanent' };
   }
   let anthropicResponse: Response;
   try {
@@ -332,16 +333,17 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
     });
   } catch (e) {
     console.error('screen-business-content: SERVICE_FAILURE vision request failed', String(e));
-    await reportClassifierHealth(false, screeningFailureKind({ error: e }));
-    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
+    await reportClassifierHealth(false, healthFailureKind({ error: e }));
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true, failure: 'transient' };
   }
 
   const anthropicData = await anthropicResponse.json().catch(() => null);
   const raw = anthropicData?.content?.[0]?.text?.trim();
   if (!raw) {
     console.error('screen-business-content: SERVICE_FAILURE unexpected Anthropic vision response', anthropicResponse.status, JSON.stringify(anthropicData));
-    await reportClassifierHealth(false, screeningFailureKind({ status: anthropicResponse.status, body: anthropicData }), anthropicResponse.status);
-    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
+    const healthKind = healthFailureKind({ status: anthropicResponse.status, body: anthropicData });
+    await reportClassifierHealth(false, healthKind, anthropicResponse.status);
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true, failure: screeningFailureKind({ status: anthropicResponse.status, healthKind }) };
   }
 
   let parsed: any;
@@ -350,7 +352,7 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
   } catch (_e) {
     console.error('screen-business-content: SERVICE_FAILURE model did not return valid JSON for image', raw.length);
     await reportClassifierHealth(false, 'bad_reply', anthropicResponse.status);
-    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true, failure: 'transient' };
   }
   await reportClassifierHealth(true);
 
@@ -388,18 +390,58 @@ function worseTier(a: string, b: string): string {
   return TIER_SEVERITY[a] >= TIER_SEVERITY[b] ? a : b;
 }
 
+// Automatic retry (owner, 2026-11-15; migration 20270420): the once-a-minute job (dispatch_offer_screening_retries)
+// calls this function with the service key and a submission it has already claimed ('reviewing'). The run then acts
+// for the person who submitted it, on their saved offer, through the same validation and screening as Try again.
+// Any answer other than "started" settles the claimed row here, so a claimed row is never left hanging.
 serve(async (req) => {
+  let workerSubmissionId: string | null = null;
+  const res = await handleRequest(req, (id) => { workerSubmissionId = id; });
+  if (workerSubmissionId && res.status !== 202) await settleWorkerRun(workerSubmissionId, res.clone());
+  return res;
+});
+
+async function settleWorkerRun(submissionId: string, res: Response) {
+  try {
+    const admin = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
+    const b: any = await res.json().catch(() => ({}));
+    if (res.status === 503 || res.status >= 500) {
+      await admin.rpc('_record_offer_screening_unavailable', { submission_id_param: submissionId, failure_param: b?.failure === 'permanent' ? 'permanent' : 'transient' });
+      return;
+    }
+    const patch = res.status === 400
+      ? { status: 'needs_changes', reason: String(b?.error ?? 'Please review your offer and send it again.').slice(0, 300) }
+      : { status: 'not_sent', reason: String(b?.error ?? 'It could not be sent.').slice(0, 300) };
+    await admin.from('business_offer_submissions').update({ ...patch, next_retry_at: null, updated_at: new Date().toISOString() })
+      .eq('id', submissionId).eq('status', 'reviewing');
+  } catch (e) {
+    console.error('screen-business-content: could not settle an automatic retry', e);
+  }
+}
+
+async function handleRequest(req: Request, markWorker: (id: string) => void): Promise<Response> {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Missing auth' }, 401);
 
     const supabaseAuth = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
     const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
-    if (userError || !userData?.user) return json({ error: 'Invalid session' }, 401);
-    const myId = userData.user.id;
-
     let body = await req.json();
+    let myId: string;
+    // The automatic-retry job: only with the service key, only for a submission the job claimed ('reviewing').
+    let autoRetry: any = null;
+    if (SERVICE_ROLE_KEY && token === SERVICE_ROLE_KEY && typeof body?.autoRetrySubmissionId === 'string' && body.autoRetrySubmissionId) {
+      const { data: sub } = await supabaseAuth.from('business_offer_submissions').select('*').eq('id', body.autoRetrySubmissionId).maybeSingle();
+      if (!sub || sub.status !== 'reviewing' || sub.dismissed_at) return json({ skipped: true }, 200);
+      autoRetry = sub;
+      markWorker(sub.id);
+      myId = sub.submitted_by;
+      body = { ...sub.payload, partnerId: sub.partner_id, targetType: 'offer_response', async: true };
+    } else {
+      const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+      if (userError || !userData?.user) return json({ error: 'Invalid session' }, 401);
+      myId = userData.user.id;
+    }
     const { partnerId, targetType } = body;
     if (!partnerId || typeof partnerId !== 'string') return json({ error: 'Missing partnerId' }, 400);
     if (!TARGET_TYPES.includes(targetType)) {
@@ -421,7 +463,8 @@ serve(async (req) => {
     // app's offer path queues and screens in the background, so a refusal at write time would first say "sent for
     // review"). The write itself is still refused by the database if a pause starts in between. Before 20270399 the
     // reader doesn't exist: nothing is paused.
-    if (RESTRICTED_TARGETS.includes(targetType)) {
+    // An automatic retry has no signed-in owner to tell; the database still refuses a paused manager's write.
+    if (!autoRetry && RESTRICTED_TARGETS.includes(targetType)) {
       const asCaller = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, { global: { headers: { Authorization: authHeader } } });
       const { data: pausedUntil, error: pausedError } = await asCaller.rpc('get_my_account_restriction', { capability_param: 'offers' });
       if (!pausedError && pausedUntil) {
@@ -430,7 +473,8 @@ serve(async (req) => {
       }
     }
 
-    const { data: withinLimit } = await admin.rpc('check_and_increment_ai_use', {
+    // An automatic retry never uses the owner's daily allowance (at most three, and only after a failure).
+    const { data: withinLimit } = autoRetry ? { data: true } : await admin.rpc('check_and_increment_ai_use', {
       user_id_param: myId,
       daily_limit: DAILY_AI_LIMIT,
     });
@@ -1206,13 +1250,13 @@ Body: ${updateBody || '(none)'}`;
     // classification here, not left as the narrower check.
     // Item 83: "Try again" on a submission whose screening could not finish. The saved payload is re-run through the
     // exact same validation and screening below; the claim is atomic so two taps cannot run it twice.
-    let submissionId: string | null = null;
-    if (typeof body.retrySubmissionId === 'string' && body.retrySubmissionId) {
+    let submissionId: string | null = autoRetry ? autoRetry.id : null;
+    if (!autoRetry && typeof body.retrySubmissionId === 'string' && body.retrySubmissionId) {
       const { data: sub } = await admin.from('business_offer_submissions').select('*').eq('id', body.retrySubmissionId).eq('partner_id', partnerId).maybeSingle();
       if (!sub) return json({ error: 'That offer is not available anymore.' }, 404);
       const stale = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const { data: claimed } = await admin.from('business_offer_submissions')
-        .update({ status: 'reviewing', reason: null, matched_categories: [], attempts: (sub.attempts ?? 1) + 1, updated_at: new Date().toISOString() })
+        .update({ status: 'reviewing', reason: null, matched_categories: [], attempts: (sub.attempts ?? 1) + 1, next_retry_at: null, updated_at: new Date().toISOString() })
         .eq('id', sub.id)
         .or(`status.eq.unavailable,and(status.eq.reviewing,updated_at.lt.${stale})`)
         .select('id').maybeSingle();
@@ -1320,6 +1364,8 @@ Body: ${updateBody || '(none)'}`;
     }
 
     const UNAVAILABLE = { status: 503, body: { error: "We couldn't review this right now. Please try again in a bit.", code: 'screening_unavailable' } };
+    // the same answer, saying whether the server should retry it by itself (screeningFailure.js)
+    const unavailable = (failure?: string) => ({ status: 503, body: { ...UNAVAILABLE.body, failure: failure === 'permanent' ? 'permanent' : 'transient' } });
     const runOfferScreening = async (): Promise<{ status: number; body: any }> => {
       const contentBlock = [
         offerTitle ? `Offer title: ${offerTitle}` : null,
@@ -1348,8 +1394,11 @@ Body: ${updateBody || '(none)'}`;
           result = { riskTier: 'low', matchedCategories: [], reasoning: 'Fixed Nearby-authored response text; no owner-written content to classify.' };
         }
       }
-      if (!result) result = await classifyContent(contentBlock);
-      if (!result) return UNAVAILABLE;
+      if (!result) {
+        const c = await classifyContentDetailed(contentBlock);
+        if ('failure' in c) return unavailable(c.failure);
+        result = c;
+      }
 
       // Rich offers, Phase 2: screen the attached media too; the worst tier across text and media wins.
       let posterPath: string | null = null;
@@ -1357,7 +1406,7 @@ Body: ${updateBody || '(none)'}`;
         posterPath = creativeRow.poster_path; // already screened when saved: reused without re-screening
       } else if (mediaPath) {
         const m: any = await screenUnlessVideoPaused(admin, partnerId, mediaPath, mediaType!, framePaths);
-        if (m.service) return UNAVAILABLE;
+        if (m.service) return unavailable(m.failure);
         if (m.error) return { status: m.status, body: { error: m.error, ...(m.code ? { code: m.code } : {}) } };
         result = {
           riskTier: worseTier(result.riskTier, m.tier),
@@ -1389,11 +1438,11 @@ Body: ${updateBody || '(none)'}`;
       });
       if (logError) {
         console.error('screen-business-content: failed to log screening result', logError);
-        return UNAVAILABLE;
+        return unavailable('transient');
       }
 
       if (riskTier === 'low') {
-        const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('submit_business_offer', {
+        const offerArgs = {
           request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
           offer_price_param: offerPrice, proposed_time_param: proposedTime, proposed_time_alt_param: proposedTimeAlt, proposed_party_size_alt_param: proposedPartySizeAlt, experience_id_param: experienceId,
           media_path_param: mediaPath, media_type_param: mediaType,
@@ -1406,7 +1455,12 @@ Body: ${updateBody || '(none)'}`;
           valid_until_param: validUntil,
           available_from_param: availableFrom,
           available_until_param: availableUntil,
-        });
+        };
+        // An automatic retry has no signed-in owner: it sends as the submitter and marks the submission published in one
+        // transaction (_submit_business_offer_for_submission, server only), so the same submission can't be sent twice.
+        const { data: writeResult, error: writeError } = autoRetry
+          ? await admin.rpc('_submit_business_offer_for_submission', { submission_id_param: autoRetry.id, args_param: offerArgs, screening_id_param: screeningId })
+          : await supabaseAsUser.rpc('submit_business_offer', offerArgs);
         if (writeError) {
           console.error('screen-business-content: low-tier offer_response write failed', writeError);
           if (writeError.hint === 'offer_contact_info') return { status: 400, body: { error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info' } };
@@ -1451,7 +1505,13 @@ Body: ${updateBody || '(none)'}`;
         try {
           const o = await runOfferScreening();
           const b = o.body ?? {};
-          if (o.status === 503) patch = { status: 'unavailable', reason: null };
+          if (o.status === 503) {
+            // Records the failure and, for a temporary one with automatic tries left, when the server tries again.
+            const { error: recErr } = await admin.rpc('_record_offer_screening_unavailable', { submission_id_param: id, failure_param: b.failure ?? 'transient' });
+            if (!recErr) return;
+            console.error('screen-business-content: could not schedule the automatic retry', recErr);
+            patch = { status: 'unavailable', reason: null };
+          }
           else if (b.published) patch = { status: 'published', offer_id: b.offerId ?? null, screening_id: b.screeningId ?? null };
           else if (b.blocked) patch = { status: 'needs_changes', matched_categories: b.matchedCategories ?? [], screening_id: b.screeningId ?? null };
           else if (o.status === 200) patch = { status: 'in_review', screening_id: b.screeningId ?? null };
@@ -1460,6 +1520,8 @@ Body: ${updateBody || '(none)'}`;
           else patch = { status: 'not_sent', reason: String(b.error ?? 'It could not be sent.').slice(0, 300) };
         } catch (e) {
           console.error('screen-business-content: background screening crashed', e);
+          const { error: recErr } = await admin.rpc('_record_offer_screening_unavailable', { submission_id_param: id, failure_param: 'transient' });
+          if (!recErr) return;
           patch = { status: 'unavailable', reason: null };
         }
         const { error: upErr } = await admin.from('business_offer_submissions').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
@@ -1477,4 +1539,4 @@ Body: ${updateBody || '(none)'}`;
     console.error('screen-business-content error:', err);
     return json({ error: String(err) }, 500);
   }
-});
+}

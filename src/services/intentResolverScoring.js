@@ -219,13 +219,14 @@ export function occasionBonus(row, occasion) {
   return businessFitsOccasion(row, occasion) ? SCORE_HAPPENING_NOW : 0;
 }
 
-// A business fits an occasion if it EXPLICITLY offers it (offered_occasions, "Occasions we offer") or
-// says it wants more of it (priority_occasions). Either is a real declared signal; never both stacked.
+// A business fits an occasion only if it EXPLICITLY offers it (offered_occasions, "Occasions we offer"). Wanting more of an
+// occasion (priority_occasions, "What do you want more of?") is a wish, not a capability (owner audit 2026-11-14): it never
+// earns the occasion bonus here. Server routing already keeps the two apart (_business_request_fanout: offered_occasions =
+// match key, _business_wants_request = rank-only tie-break), and no occasion reason is ever shown for a wish alone.
 export function businessFitsOccasion(row, occasion) {
   if (!occasion) return false;
   const offered = Array.isArray(row.offered_occasions) ? row.offered_occasions : [];
-  const priority = Array.isArray(row.priority_occasions) ? row.priority_occasions : [];
-  return offered.includes(occasion) || priority.includes(occasion);
+  return offered.includes(occasion);
 }
 
 // The weak "explicitly offers this occasion" tier (no package, no live posting): it may never outrank

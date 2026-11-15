@@ -169,7 +169,7 @@ function repoMigrations(repoRoot) {
 
 // Targets. 'prod' = the Management API (scripts/live-verify/lib/db.js); 'local' = a disposable database by URL, refused if it
 // looks like a hosted Supabase address. Every query goes over one connection per call, like the Management API.
-function runner(target) {
+function runner(target, env = process.env) {
   if (target === 'prod') {
     const url = process.env.NEARBY_LOCAL_DB_URL;
     if (url) throw new Error('NEARBY_LOCAL_DB_URL is set: refusing --target=prod (unset it to make the target unambiguous)');
@@ -194,7 +194,41 @@ function runner(target) {
       },
     };
   }
-  throw new Error('--target=prod or --target=local is required');
+  if (target === 'staging') return stagingRunner(env);
+  throw new Error('--target=prod, --target=staging or --target=local is required');
+}
+
+// 'staging' (owner, 2026-11-15; PRODUCT_AUDIT/STAGING_PROJECT_PLAN_2026-11-15.md): the separate staging project through the
+// Management API, never production. Its ref and token come ONLY from NEARBY_STAGING_REF / NEARBY_STAGING_ACCESS_TOKEN (never
+// SUPABASE_ACCESS_TOKEN or SUPABASE_PROJECT_REF). Refused: the production ref, a malformed ref, a missing token, the same token
+// as SUPABASE_ACCESS_TOKEN (a Supabase access token can reach every project in the account, so the REF is what isolates;
+// a separate token keeps a production session from ever being the one that touches staging), or NEARBY_LOCAL_DB_URL set.
+const PRODUCTION_REF = 'enmosvippabmuqslzrox';
+function stagingRunner(env, fetchImpl = (...a) => fetch(...a)) {
+  if (env.NEARBY_LOCAL_DB_URL) throw new Error('NEARBY_LOCAL_DB_URL is set: refusing --target=staging (unset it to make the target unambiguous)');
+  const ref = String(env.NEARBY_STAGING_REF || '').trim();
+  const token = String(env.NEARBY_STAGING_ACCESS_TOKEN || '').trim();
+  if (!ref) throw new Error('--target=staging needs NEARBY_STAGING_REF (the staging project ref)');
+  if (ref === PRODUCTION_REF) throw new Error('NEARBY_STAGING_REF is the PRODUCTION project: refused');
+  if (!/^[a-z0-9]{20}$/.test(ref)) throw new Error('NEARBY_STAGING_REF does not look like a project ref: refused');
+  if (!token) throw new Error('--target=staging needs NEARBY_STAGING_ACCESS_TOKEN');
+  if (env.SUPABASE_ACCESS_TOKEN && token === String(env.SUPABASE_ACCESS_TOKEN).trim()) {
+    throw new Error('NEARBY_STAGING_ACCESS_TOKEN is the same token as SUPABASE_ACCESS_TOKEN: use a separate staging token');
+  }
+  return {
+    name: `staging (${ref}, Management API)`,
+    ref,
+    run: async (sql) => {
+      const res = await fetchImpl(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: sql }),
+      });
+      const text = await res.text();
+      if (!res.ok) throw new Error(`staging query failed (${res.status}): ${text.slice(0, 500)}`);
+      return text ? JSON.parse(text) : [];
+    },
+  };
 }
 
 async function readLedger(run) {
@@ -207,5 +241,5 @@ async function readLedger(run) {
 module.exports = {
   PREDEPLOY_GATES, predeployGateFailures,
   LEDGER_MIGRATION, BASELINE_MAX, DRY_RUN_MARK, LEDGER_EXISTS_SQL, LEDGER_ROWS_SQL,
-  migrationFacts, forbiddenStatements, approvalToken, preflight, deploySql, dryRunSql, statusReport, repoMigrations, runner, readLedger,
+  migrationFacts, forbiddenStatements, approvalToken, preflight, deploySql, dryRunSql, statusReport, repoMigrations, runner, stagingRunner, readLedger,
 };

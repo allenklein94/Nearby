@@ -29,6 +29,7 @@
 //   dating recommendation-> Meet People
 //   business opportunity -> View Offer
 //   business (item 72)   -> Go now / Reserve / Book / Request, from its declared booking mode (businessPrimaryAction)
+import { hasPublicPlace } from './businessLocationMode';
 import { attendeeTotal, isGatheringFull } from './gatheringFullness';
 import { needsApproval } from './gatheringJoinMode';
 import { gatheringViewerState } from './objectState';
@@ -150,7 +151,7 @@ export function offerPrimaryAction(offer) {
 export function businessPrimaryAction(partner, { posting = null, at = new Date() } = {}) {
   const mode = bookingModeOf(partner);
   if (!mode) return null;
-  const hasPlace = (partner?.latitude != null && partner?.longitude != null) || Boolean(partner?.address);
+  const hasPlace = hasPublicPlace(partner); // a business that goes to its customers has no place to go to (utils/businessLocationMode.js)
   const tier = usableNowTier(businessEntity(partner, { posting }), at);
   const usableNow = tier === 'available' || tier === 'open';
   const goNow = { kind: 'go_now', label: A('goNow') };

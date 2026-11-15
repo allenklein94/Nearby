@@ -31,7 +31,8 @@ export default function App() {
   return (
     // The shared gathering screens call usePostHog(); outside a provider its client is undefined and capture() would throw.
     // A disabled client keeps them working without sending any analytics from the business website.
-    <PostHogProvider apiKey="disabled" options={{ disabled: true }}>
+    // autocapture off: its screen tracker runs outside the NavigationContainer and logged an error on every page.
+    <PostHogProvider apiKey="disabled" options={{ disabled: true }} autocapture={false}>
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>

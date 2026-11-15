@@ -123,7 +123,10 @@ serve(async (req) => {
   // category; an admin maps it later (admin_map_business_category).
   const subcategoryRaw = typeof body.subcategory === 'string' ? body.subcategory.trim() : '';
   const categoryText = typeof body.categoryText === 'string' ? body.categoryText.trim() : '';
-  const address = typeof body.address === 'string' ? body.address.trim() : '';
+  // Owner, 2026-11-15: a business that goes to its customers ('service_area') gives no address: brand_partners.address is
+  // readable by every signed-in person. It marks a rounded area in its dashboard after approval (migration 20270419).
+  const goesToCustomers = body.locationMode === 'service_area';
+  const address = goesToCustomers ? '' : typeof body.address === 'string' ? body.address.trim() : '';
   const website = typeof body.website === 'string' ? body.website.trim() : '';
   const businessPhone = typeof body.businessPhone === 'string' ? body.businessPhone.trim() : '';
   const description = typeof body.description === 'string' ? body.description.trim() : '';
@@ -141,7 +144,7 @@ serve(async (req) => {
   if (!category && (categoryText.length < 3 || categoryText.length > 200)) {
     return jsonResponse({ error: 'Pick a category, or tell us what kind of business it is.' }, 400);
   }
-  if (!address || address.length > 300) {
+  if (!goesToCustomers && (!address || address.length > 300)) {
     return jsonResponse({ error: "Tell us your business's address." }, 400);
   }
   if (!applicantName || applicantName.length > 100) {
@@ -213,9 +216,7 @@ serve(async (req) => {
     categories = wanted.filter((t) => real.has(t) && t !== subcategory).slice(0, MAX_SECONDARY_CATEGORIES);
   }
 
-  const { data: inserted, error } = await supabase
-    .from('business_partner_requests')
-    .insert({
+  const row: Record<string, unknown> = {
       business_name: businessName,
       business_description: description || null,
       category: category || null,
@@ -223,7 +224,9 @@ serve(async (req) => {
       categories,
       attributes: category ? attributes : [],
       unlisted_category_text: category ? null : categoryText,
-      address,
+      address: address || null,
+      // The label alone (no point yet): the dashboard then asks for a service area, never an address (migration 20270419).
+      ...(goesToCustomers ? { location_source: 'service_area' } : {}),
       website: website || null,
       phone: businessPhone || null,
       source: 'web',
@@ -231,9 +234,15 @@ serve(async (req) => {
       applicant_email: applicantEmail,
       applicant_phone: applicantPhone,
       submitter_ip_hash: submitterIpHash,
-    })
-    .select('id')
-    .single();
+    };
+  const insertRow = (r: Record<string, unknown>) =>
+    supabase.from('business_partner_requests').insert(r).select('id').single();
+  let { data: inserted, error } = await insertRow(row);
+  // Deployed before migration 20270419 (the label is not allowed yet): send the application without it rather than fail.
+  if (error?.code === '23514' && row.location_source) {
+    const { location_source: _label, ...withoutLabel } = row;
+    ({ data: inserted, error } = await insertRow(withoutLabel));
+  }
 
   if (error) {
     if (error.code === '23505') {

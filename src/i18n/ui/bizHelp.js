@@ -38,7 +38,14 @@ export default {
     },
     location: {
       addAddress: "📍 Add your address — until you do, nearby requests can’t reach your business",
+      markServiceArea: "🚗 Mark your service area — until you do, nearby requests can’t reach your business",
       cantPlace: "📍 Place your business on the map — tap so nearby requests can reach you",
+      serviceAreaBanner: "🚗 You go to your customers · your area is set · Change",
+      pinnedNoAddress: "📍 Your business is on the map · Add your address",
+      modeStorefront: "Customers come to us",
+      modeServiceArea: "We go to customers",
+      serviceAreaHint: "Mark roughly where you're based. Only an area about half a mile across is kept, never your address, and customers don't see a map pin for you.",
+      markArea: "Mark your area on the map",
     },
     discount: {
       range: "Discount percent must be between 0 and 100.",
@@ -282,8 +289,8 @@ export default {
         body: "You haven't declined any opportunities in the last 30 days.",
       },
       business_demand: {
-        title: "No demand to show yet",
-        body: "Demand appears here once enough people nearby are looking for what you offer.",
+        title: "Nothing outside your categories yet",
+        body: "Demand nearby for things you don't offer appears here once at least 5 people are behind it. Demand for what you offer is in Opportunities.",
       },
       business_gatherings: {
         title: "No gatherings hosted yet",
@@ -328,6 +335,10 @@ export default {
       business_postings: {
         title: "Nothing posted yet",
         body: "Post when you have room and Nearby will match it to requests.",
+      },
+      business_bookings: {
+        title: "No bookings yet",
+        body: "When a customer takes one of your offers, the visit shows here.",
       },
       business_returning: {
         title: "No returning customers yet",
@@ -419,7 +430,14 @@ export default {
     },
     location: {
       addAddress: "📍 Agrega tu dirección: hasta que lo hagas, las solicitudes cercanas no pueden llegar a tu negocio",
+      markServiceArea: "🚗 Marca tu zona de servicio: hasta que lo hagas, las solicitudes cercanas no pueden llegar a tu negocio",
       cantPlace: "📍 Ubica tu negocio en el mapa: toca para que las solicitudes cercanas te lleguen",
+      serviceAreaBanner: "🚗 Vas a donde están tus clientes · tu zona está guardada · Cambiar",
+      pinnedNoAddress: "📍 Tu negocio está en el mapa · Agrega tu dirección",
+      modeStorefront: "Los clientes vienen a nosotros",
+      modeServiceArea: "Vamos a donde están los clientes",
+      serviceAreaHint: "Marca más o menos dónde te ubicas. Solo se guarda una zona de aproximadamente un kilómetro, nunca tu dirección, y los clientes no ven un marcador tuyo en el mapa.",
+      markArea: "Marca tu zona en el mapa",
     },
     discount: {
       range: "El porcentaje de descuento debe estar entre 0 y 100.",
@@ -663,8 +681,8 @@ export default {
         body: "No rechazaste ninguna oportunidad en los últimos 30 días.",
       },
       business_demand: {
-        title: "Aún no hay demanda que mostrar",
-        body: "La demanda aparece aquí cuando suficientes personas cerca buscan lo que ofreces.",
+        title: "Nada fuera de tus categorías todavía",
+        body: "La demanda cercana de cosas que no ofreces aparece aquí cuando al menos 5 personas la respaldan. La demanda de lo que ofreces está en Oportunidades.",
       },
       business_gatherings: {
         title: "Aún no organizaste reuniones",
@@ -709,6 +727,10 @@ export default {
       business_postings: {
         title: "Aún no publicaste nada",
         body: "Publica cuando tengas espacio y Nearby lo emparejará con solicitudes.",
+      },
+      business_bookings: {
+        title: "Aún no hay reservas",
+        body: "Cuando un cliente acepte una de tus ofertas, la visita aparecerá aquí.",
       },
       business_returning: {
         title: "Aún no hay clientes que regresen",
@@ -800,7 +822,14 @@ export default {
     },
     location: {
       addAddress: "📍 Füge deine Adresse hinzu – bis dahin können Anfragen aus der Nähe dein Geschäft nicht erreichen",
+      markServiceArea: "🚗 Markiere dein Einsatzgebiet – bis dahin können Anfragen aus der Nähe dein Geschäft nicht erreichen",
       cantPlace: "📍 Setze dein Geschäft auf die Karte – tippe, damit Anfragen aus der Nähe dich erreichen",
+      serviceAreaBanner: "🚗 Du kommst zu deinen Kund:innen · dein Gebiet ist gespeichert · Ändern",
+      pinnedNoAddress: "📍 Dein Geschäft ist auf der Karte · Füge deine Adresse hinzu",
+      modeStorefront: "Kund:innen kommen zu uns",
+      modeServiceArea: "Wir kommen zu den Kund:innen",
+      serviceAreaHint: "Markiere ungefähr, wo du ansässig bist. Gespeichert wird nur ein Gebiet von etwa einem Kilometer, nie deine Adresse, und Kund:innen sehen keine Markierung von dir auf der Karte.",
+      markArea: "Markiere dein Gebiet auf der Karte",
     },
     discount: {
       range: "Der Rabatt in Prozent muss zwischen 0 und 100 liegen.",
@@ -1044,8 +1073,8 @@ export default {
         body: "Du hast in den letzten 30 Tagen keine Gelegenheit abgelehnt.",
       },
       business_demand: {
-        title: "Noch keine Nachfrage",
-        body: "Nachfrage erscheint hier, sobald genug Leute in der Nähe suchen, was du anbietest.",
+        title: "Noch nichts außerhalb deiner Kategorien",
+        body: "Nachfrage in der Nähe nach Dingen, die du nicht anbietest, erscheint hier, sobald mindestens 5 Personen dahinterstehen. Nachfrage nach deinem Angebot findest du unter Gelegenheiten.",
       },
       business_gatherings: {
         title: "Noch keine Treffen veranstaltet",
@@ -1090,6 +1119,10 @@ export default {
       business_postings: {
         title: "Noch nichts eingestellt",
         body: "Stelle etwas ein, wenn du Platz hast, und Nearby ordnet es Anfragen zu.",
+      },
+      business_bookings: {
+        title: "Noch keine Buchungen",
+        body: "Wenn ein Kunde eines deiner Angebote annimmt, erscheint der Besuch hier.",
       },
       business_returning: {
         title: "Noch keine Stammkunden",
@@ -1181,7 +1214,14 @@ export default {
     },
     location: {
       addAddress: "📍 Ajoutez votre adresse : sans elle, les demandes à proximité ne peuvent pas atteindre votre établissement",
+      markServiceArea: "🚗 Indiquez votre zone d’intervention : sans elle, les demandes à proximité ne peuvent pas atteindre votre établissement",
       cantPlace: "📍 Placez votre commerce sur la carte — touchez pour que les demandes à proximité vous parviennent",
+      serviceAreaBanner: "🚗 Vous vous déplacez chez vos clients · votre zone est enregistrée · Modifier",
+      pinnedNoAddress: "📍 Votre établissement est sur la carte · Ajoutez votre adresse",
+      modeStorefront: "Les clients viennent chez nous",
+      modeServiceArea: "Nous allons chez les clients",
+      serviceAreaHint: "Indiquez à peu près où vous êtes basé. Seule une zone d'environ un kilomètre est conservée, jamais votre adresse, et les clients ne voient pas de repère pour vous sur la carte.",
+      markArea: "Indiquez votre zone sur la carte",
     },
     discount: {
       range: "Le pourcentage de réduction doit être compris entre 0 et 100.",
@@ -1425,8 +1465,8 @@ export default {
         body: "Vous n'avez refusé aucune opportunité ces 30 derniers jours.",
       },
       business_demand: {
-        title: "Pas encore de demande à afficher",
-        body: "La demande apparaît ici dès que suffisamment de personnes à proximité cherchent ce que vous proposez.",
+        title: "Rien en dehors de vos catégories pour l'instant",
+        body: "La demande à proximité pour ce que vous ne proposez pas apparaît ici dès qu'au moins 5 personnes sont derrière. La demande pour ce que vous proposez est dans Opportunités.",
       },
       business_gatherings: {
         title: "Aucune rencontre organisée",
@@ -1471,6 +1511,10 @@ export default {
       business_postings: {
         title: "Rien de publié",
         body: "Publiez quand vous avez de la place et Nearby la proposera aux demandes.",
+      },
+      business_bookings: {
+        title: "Pas encore de réservations",
+        body: "Quand un client accepte l'une de vos offres, la visite apparaît ici.",
       },
       business_returning: {
         title: "Pas encore de clients fidèles",
@@ -1562,7 +1606,14 @@ export default {
     },
     location: {
       addAddress: "📍 Adicione seu endereço — até lá, pedidos por perto não conseguem chegar ao seu negócio",
+      markServiceArea: "🚗 Marque sua área de atendimento — até lá, pedidos por perto não conseguem chegar ao seu negócio",
       cantPlace: "📍 Coloque seu negócio no mapa — toque para que pedidos próximos cheguem até você",
+      serviceAreaBanner: "🚗 Você vai até seus clientes · sua área está salva · Alterar",
+      pinnedNoAddress: "📍 Seu negócio está no mapa · Adicione seu endereço",
+      modeStorefront: "Os clientes vêm até nós",
+      modeServiceArea: "Nós vamos até os clientes",
+      serviceAreaHint: "Marque mais ou menos onde você fica. Só guardamos uma área de cerca de um quilômetro, nunca o seu endereço, e os clientes não veem um marcador seu no mapa.",
+      markArea: "Marque sua área no mapa",
     },
     discount: {
       range: "O percentual de desconto deve estar entre 0 e 100.",
@@ -1806,8 +1857,8 @@ export default {
         body: "Você não recusou nenhuma oportunidade nos últimos 30 dias.",
       },
       business_demand: {
-        title: "Ainda não há demanda para mostrar",
-        body: "A demanda aparece aqui quando pessoas suficientes por perto procuram o que você oferece.",
+        title: "Ainda nada fora das suas categorias",
+        body: "A demanda por perto por coisas que você não oferece aparece aqui quando há pelo menos 5 pessoas por trás dela. A demanda pelo que você oferece está em Oportunidades.",
       },
       business_gatherings: {
         title: "Nenhum encontro organizado ainda",
@@ -1852,6 +1903,10 @@ export default {
       business_postings: {
         title: "Nada publicado ainda",
         body: "Publique quando tiver espaço e o Nearby vai combiná-lo com pedidos.",
+      },
+      business_bookings: {
+        title: "Ainda não há reservas",
+        body: "Quando um cliente aceitar uma das suas ofertas, a visita aparece aqui.",
       },
       business_returning: {
         title: "Ainda não há clientes que voltaram",
@@ -1943,7 +1998,14 @@ export default {
     },
     location: {
       addAddress: "📍 Ajoute adrès ou — jiskaske ou fè sa, demann ki toupre pa ka rive jwenn biznis ou",
+      markServiceArea: "🚗 Make zòn sèvis ou — jiskaske ou fè sa, demann ki toupre pa ka rive jwenn biznis ou",
       cantPlace: "📍 Mete biznis ou sou kat la — tape pou demann ki toupre yo ka rive jwenn ou",
+      serviceAreaBanner: "🚗 Ou ale kote kliyan ou yo · zòn ou anrejistre · Chanje",
+      pinnedNoAddress: "📍 Biznis ou sou kat la · Ajoute adrès ou",
+      modeStorefront: "Kliyan yo vin jwenn nou",
+      modeServiceArea: "Nou ale kote kliyan yo",
+      serviceAreaHint: "Make apeprè kote ou baze. Se sèlman yon zòn anviwon yon kilomèt yo kenbe, janm adrès ou, epi kliyan pa wè yon mak pou ou sou kat la.",
+      markArea: "Make zòn ou sou kat la",
     },
     discount: {
       range: "Pousantaj rabè a dwe ant 0 ak 100.",
@@ -2187,8 +2249,8 @@ export default {
         body: "Ou pa t refize okenn opòtinite nan dènye 30 jou yo.",
       },
       business_demand: {
-        title: "Poko gen demann pou montre",
-        body: "Demann ap parèt isit la lè ase moun toupre ap chèche sa ou ofri.",
+        title: "Poko gen anyen andeyò kategori ou yo",
+        body: "Demann toupre pou bagay ou pa ofri ap parèt isit la lè omwen 5 moun dèyè l. Demann pou sa ou ofri nan Opòtinite.",
       },
       business_gatherings: {
         title: "Poko òganize rasanbleman",
@@ -2233,6 +2295,10 @@ export default {
       business_postings: {
         title: "Poko pibliye anyen",
         body: "Pibliye lè ou gen plas epi Nearby ap konekte l ak demann yo.",
+      },
+      business_bookings: {
+        title: "Poko gen rezèvasyon",
+        body: "Lè yon kliyan pran youn nan òf ou yo, vizit la ap parèt isit la.",
       },
       business_returning: {
         title: "Poko gen kliyan ki tounen",
@@ -2324,7 +2390,14 @@ export default {
     },
     location: {
       addAddress: "📍 添加你的地址——在添加之前，附近的请求无法到达你的商家",
+      markServiceArea: "🚗 标出你的服务区域——在标出之前，附近的请求无法到达你的商家",
       cantPlace: "📍 在地图上标出你的商家——点按，附近的请求才能找到你",
+      serviceAreaBanner: "🚗 你上门服务客户 · 已设置服务区域 · 更改",
+      pinnedNoAddress: "📍 你的商家已在地图上 · 添加地址",
+      modeStorefront: "顾客到店",
+      modeServiceArea: "我们上门服务",
+      serviceAreaHint: "大致标出你所在的位置。只保存约一公里范围的区域，绝不保存你的地址，顾客也看不到你在地图上的标记。",
+      markArea: "在地图上标出你的区域",
     },
     discount: {
       range: "折扣百分比必须在 0 到 100 之间。",
@@ -2568,8 +2641,8 @@ export default {
         body: "最近 30 天你没有拒绝任何机会。",
       },
       business_demand: {
-        title: "暂无需求可显示",
-        body: "当附近有足够多的人在找你提供的东西时，需求会显示在这里。",
+        title: "暂时没有你类别之外的需求",
+        body: "当至少 5 人提出需求时，附近对你未提供之物的需求会显示在这里。对你所提供内容的需求在“机会”中。",
       },
       business_gatherings: {
         title: "还没有举办过聚会",
@@ -2614,6 +2687,10 @@ export default {
       business_postings: {
         title: "还没有发布内容",
         body: "有空位时发布，Nearby 会为它匹配请求。",
+      },
+      business_bookings: {
+        title: "还没有预订",
+        body: "顾客接受你的某个优惠后，这次到访会显示在这里。",
       },
       business_returning: {
         title: "还没有回头客",
@@ -2705,7 +2782,14 @@ export default {
     },
     location: {
       addAddress: "📍 Thêm địa chỉ của bạn — khi chưa có, các yêu cầu gần đây không thể đến doanh nghiệp của bạn",
+      markServiceArea: "🚗 Đánh dấu khu vực phục vụ của bạn — khi chưa có, các yêu cầu gần đây không thể đến doanh nghiệp của bạn",
       cantPlace: "📍 Đặt doanh nghiệp của bạn trên bản đồ — chạm để các yêu cầu gần đó đến được với bạn",
+      serviceAreaBanner: "🚗 Bạn đến chỗ khách hàng · đã lưu khu vực · Thay đổi",
+      pinnedNoAddress: "📍 Doanh nghiệp của bạn đã có trên bản đồ · Thêm địa chỉ",
+      modeStorefront: "Khách đến chỗ chúng tôi",
+      modeServiceArea: "Chúng tôi đến chỗ khách",
+      serviceAreaHint: "Đánh dấu khoảng nơi bạn hoạt động. Chỉ lưu một khu vực rộng khoảng một cây số, không bao giờ lưu địa chỉ của bạn, và khách không thấy điểm đánh dấu của bạn trên bản đồ.",
+      markArea: "Đánh dấu khu vực của bạn trên bản đồ",
     },
     discount: {
       range: "Phần trăm giảm giá phải từ 0 đến 100.",
@@ -2949,8 +3033,8 @@ export default {
         body: "Bạn không từ chối cơ hội nào trong 30 ngày qua.",
       },
       business_demand: {
-        title: "Chưa có nhu cầu để hiển thị",
-        body: "Nhu cầu sẽ xuất hiện ở đây khi đủ người quanh đây tìm thứ bạn cung cấp.",
+        title: "Chưa có gì ngoài danh mục của bạn",
+        body: "Nhu cầu quanh đây cho những thứ bạn chưa cung cấp sẽ hiện ở đây khi có ít nhất 5 người. Nhu cầu cho những gì bạn cung cấp nằm ở Cơ hội.",
       },
       business_gatherings: {
         title: "Chưa tổ chức buổi gặp nào",
@@ -2995,6 +3079,10 @@ export default {
       business_postings: {
         title: "Chưa đăng gì",
         body: "Đăng khi bạn còn chỗ và Nearby sẽ ghép nó với các yêu cầu.",
+      },
+      business_bookings: {
+        title: "Chưa có lượt đặt chỗ",
+        body: "Khi khách nhận một ưu đãi của bạn, lượt ghé thăm sẽ hiện ở đây.",
       },
       business_returning: {
         title: "Chưa có khách quay lại",
@@ -3086,7 +3174,14 @@ export default {
     },
     location: {
       addAddress: "📍 Idagdag ang iyong address — hangga't wala ito, hindi maaabot ng mga request sa malapit ang negosyo mo",
+      markServiceArea: "🚗 Markahan ang iyong service area — hangga't wala ito, hindi maaabot ng mga request sa malapit ang negosyo mo",
       cantPlace: "📍 Ilagay ang iyong negosyo sa mapa — i-tap para maabot ka ng mga kahilingan sa malapit",
+      serviceAreaBanner: "🚗 Ikaw ang pumupunta sa mga customer · naka-set na ang lugar mo · Palitan",
+      pinnedNoAddress: "📍 Nasa mapa na ang negosyo mo · Idagdag ang address mo",
+      modeStorefront: "Pumupunta sa amin ang mga customer",
+      modeServiceArea: "Kami ang pumupunta sa mga customer",
+      serviceAreaHint: "Markahan kung saan ka halos nakabase. Isang lugar na mga isang kilometro lang ang itinatago, hindi kailanman ang address mo, at hindi makikita ng mga customer ang marka mo sa mapa.",
+      markArea: "Markahan ang lugar mo sa mapa",
     },
     discount: {
       range: "Dapat nasa pagitan ng 0 at 100 ang porsiyento ng diskwento.",
@@ -3330,8 +3425,8 @@ export default {
         body: "Wala kang tinanggihang oportunidad sa nakaraang 30 araw.",
       },
       business_demand: {
-        title: "Wala pang demand na maipapakita",
-        body: "Lalabas dito ang demand kapag sapat na tao sa malapit ang naghahanap ng iniaalok mo.",
+        title: "Wala pa sa labas ng mga kategorya mo",
+        body: "Lalabas dito ang demand sa malapit para sa mga bagay na hindi mo inaalok kapag may hindi bababa sa 5 tao sa likod nito. Nasa Mga oportunidad ang demand para sa iniaalok mo.",
       },
       business_gatherings: {
         title: "Wala ka pang na-host na pagtitipon",
@@ -3376,6 +3471,10 @@ export default {
       business_postings: {
         title: "Wala pang naka-post",
         body: "Mag-post kapag may puwesto ka at itutugma ito ng Nearby sa mga request.",
+      },
+      business_bookings: {
+        title: "Wala pang booking",
+        body: "Kapag tinanggap ng customer ang isa sa mga alok mo, dito lalabas ang pagbisita.",
       },
       business_returning: {
         title: "Wala pang bumabalik na customer",
@@ -3467,7 +3566,14 @@ export default {
     },
     location: {
       addAddress: "📍 Добавьте адрес — пока его нет, запросы поблизости не смогут дойти до вашего бизнеса",
+      markServiceArea: "🚗 Отметьте зону обслуживания — пока её нет, запросы поблизости не смогут дойти до вашего бизнеса",
       cantPlace: "📍 Отметьте свой бизнес на карте — нажмите, чтобы запросы поблизости доходили до вас",
+      serviceAreaBanner: "🚗 Вы приезжаете к клиентам · район сохранён · Изменить",
+      pinnedNoAddress: "📍 Ваш бизнес на карте · Добавьте адрес",
+      modeStorefront: "Клиенты приходят к нам",
+      modeServiceArea: "Мы выезжаем к клиентам",
+      serviceAreaHint: "Отметьте примерно, где вы находитесь. Сохраняется только район около километра, никогда не ваш адрес, и клиенты не видят вашу метку на карте.",
+      markArea: "Отметьте свой район на карте",
     },
     discount: {
       range: "Процент скидки должен быть от 0 до 100.",
@@ -3711,8 +3817,8 @@ export default {
         body: "За последние 30 дней вы не отклонили ни одной возможности.",
       },
       business_demand: {
-        title: "Спроса пока нет",
-        body: "Спрос появится здесь, когда достаточно людей поблизости будут искать то, что вы предлагаете.",
+        title: "Пока ничего вне ваших категорий",
+        body: "Спрос поблизости на то, чего вы не предлагаете, появится здесь, когда за ним будут стоять минимум 5 человек. Спрос на то, что вы предлагаете, — в разделе «Возможности».",
       },
       business_gatherings: {
         title: "Вы ещё не проводили встреч",
@@ -3757,6 +3863,10 @@ export default {
       business_postings: {
         title: "Пока ничего не опубликовано",
         body: "Публикуйте, когда есть места, и Nearby подберёт под них запросы.",
+      },
+      business_bookings: {
+        title: "Бронирований пока нет",
+        body: "Когда клиент примет одно из ваших предложений, визит появится здесь.",
       },
       business_returning: {
         title: "Вернувшихся клиентов пока нет",
@@ -3848,7 +3958,14 @@ export default {
     },
     location: {
       addAddress: "📍 주소를 추가하세요 — 추가하기 전까지는 근처 요청이 비즈니스에 도달할 수 없습니다",
+      markServiceArea: "🚗 서비스 지역을 표시하세요 — 표시하기 전까지는 근처 요청이 비즈니스에 도달할 수 없습니다",
       cantPlace: "📍 지도에 내 비즈니스를 표시하세요 — 탭하면 근처 요청이 도달할 수 있어요",
+      serviceAreaBanner: "🚗 고객에게 찾아가는 업체 · 지역 설정됨 · 변경",
+      pinnedNoAddress: "📍 업체가 지도에 표시돼요 · 주소를 추가하세요",
+      modeStorefront: "고객이 매장으로 와요",
+      modeServiceArea: "저희가 고객에게 가요",
+      serviceAreaHint: "대략 어디에 계신지 표시해 주세요. 약 1km 범위의 지역만 저장되고 주소는 절대 저장되지 않으며, 고객에게 지도 표시가 보이지 않아요.",
+      markArea: "지도에서 지역 표시하기",
     },
     discount: {
       range: "할인율은 0에서 100 사이여야 합니다.",
@@ -4092,8 +4209,8 @@ export default {
         body: "최근 30일 동안 거절한 기회가 없습니다.",
       },
       business_demand: {
-        title: "아직 표시할 수요가 없습니다",
-        body: "근처에서 충분한 사람이 회원님이 제공하는 것을 찾으면 여기에 수요가 표시됩니다.",
+        title: "아직 회원님 카테고리 밖의 수요가 없습니다",
+        body: "제공하지 않는 것에 대한 근처 수요는 최소 5명이 있을 때 여기에 표시됩니다. 제공하는 것에 대한 수요는 기회에 있습니다.",
       },
       business_gatherings: {
         title: "아직 주최한 모임이 없습니다",
@@ -4138,6 +4255,10 @@ export default {
       business_postings: {
         title: "아직 게시한 항목이 없습니다",
         body: "자리가 있을 때 게시하면 Nearby가 요청과 연결해 드립니다.",
+      },
+      business_bookings: {
+        title: "아직 예약이 없습니다",
+        body: "고객이 내 제안 중 하나를 수락하면 방문이 여기에 표시됩니다.",
       },
       business_returning: {
         title: "아직 재방문 고객이 없습니다",

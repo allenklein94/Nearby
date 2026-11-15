@@ -100,6 +100,37 @@ describe('business opportunity digest: email fallback (send-push)', () => {
     expect(t.emails).toHaveLength(0);
   });
 
+  // Owner, 2026-11-15 (launch-blocker audit): the business address gets ONLY business alerts. Before, any high/medium push
+  // to an owner with no push token (a wave, a message, their own request's reply) was emailed there too.
+  it('a personal push is never emailed to the business address, whatever its priority', async () => {
+    for (const type of ['message', 'wave', 'friend_request', 'business_offer_received', 'gathering_interest', 'match']) {
+      const t = load({ emailSettings: VERIFIED, webUrl: 'https://example.com/Nearby/business/' });
+      const { json } = await t.call({ type });
+      expect([type, json.emailed]).toEqual([type, false]);
+      expect(t.emails).toHaveLength(0);
+    }
+  });
+
+  it('every owner business alert is emailed, and the emailed set = the owner notification groups exactly', async () => {
+    const { NOTIFICATION_GROUP_BY_TYPE, OWNER_GROUPS } = require('./notificationPreferences');
+    const ownerTypes = Object.entries(NOTIFICATION_GROUP_BY_TYPE).filter(([, g]) => OWNER_GROUPS.includes(g)).map(([k]) => k).sort();
+    const raw = fs.readFileSync(path.join(__dirname, '../../supabase/functions/send-push/index.ts'), 'utf8');
+    const block = raw.slice(raw.indexOf('const EMAIL_TYPES = new Set(['), raw.indexOf(']);', raw.indexOf('const EMAIL_TYPES')));
+    const emailTypes = [...block.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort();
+    expect(emailTypes).toEqual(ownerTypes);
+    for (const type of ownerTypes) {
+      const t = load({ emailSettings: VERIFIED });
+      const { json } = await t.call({ type, request_id: '33333333-3333-4333-8333-333333333333' });
+      expect([type, json.emailed]).toEqual([type, true]);
+    }
+  });
+
+  it('the email provider call has a time limit and never throws (shared/email.ts)', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../../supabase/functions/_shared/email.ts'), 'utf8');
+    expect(src).toContain('AbortSignal.timeout(10_000)');
+    expect(src).toContain("reason: 'provider_unreachable'");
+  });
+
   it('rejects a caller without the service key', async () => {
     const t = load({ emailSettings: VERIFIED });
     const { status } = await t.call(DIGEST, 'Bearer anon-key');

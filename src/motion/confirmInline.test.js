@@ -1,5 +1,6 @@
 // Owner idea "274" (2026-10-18): a pure success confirmation is the shared self-clearing toast, never a blocking OK-dialog.
 // The ten residual dialogs became `showSuccessToast` with their existing words (no new strings, motion or component).
+// (2026-11-15: Teach Nearby's "Added to your profile" toast left with Teach Nearby; the merged Tell Nearby card confirms inline with its Saved line.)
 // Three stay dialogs because they explain, not confirm: item 118's changed-offer stop, nobody reached, Welcome to Premium.
 const fs = require('fs');
 const path = require('path');
@@ -12,7 +13,6 @@ const TOASTS = [
   ['components/HostAttendeeManager.js', 'ui.gatheringParts.approved', 'ui.gatheringParts.youCanNowChatWithThem'],
   ['screens/ChatScreen.js', 'ui.chat.updated', null],
   ['components/ReviseOfferSheet.js', 'ui.bizDash3.updatedOfferOnItsWay', null],
-  ['screens/BusinessDashboardScreen.js', 'ui.bizDash1.addedToYourProfile', 'ui.bizDash1.theseNowShowUpUnder'],
   ['screens/BusinessDashboardScreen.js', 'ui.bizDash1.submittedForReview', 'ui.bizDash1.yourResponseIsBeingReviewed'],
   ['screens/RelationshipLegacyScreen.js', 'ui.relationshipLegacy.thankYou', 'ui.relationshipLegacy.yourWisdomIsNowPart'],
   ['components/ReportBlockModal.js', 'ui.reportBlock.reportSubmitted', 'ui.reportBlock.thankYouOurTeamWill'],

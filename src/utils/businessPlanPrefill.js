@@ -10,6 +10,7 @@
 //   description = the perk's own description, else empty
 //   place       = the perk's own coordinates, else the business's, named after the business; none = no place
 import { groupForTag, isBusinessOnlyTag } from '../constants/gatheringCategories';
+import { isServiceArea } from './businessLocationMode';
 
 function consumerTag(tag) {
   return typeof tag === 'string' && !!groupForTag(tag) && !isBusinessOnlyTag(tag) ? tag : null;
@@ -31,8 +32,10 @@ export function businessPlanPrefill({ offer = null, partner = null, title = null
   const candidates = [offer?.target_interest_tag, business?.subcategory, ...(Array.isArray(business?.categories) ? business.categories : [])];
   const category = candidates.map(consumerTag).find(Boolean) ?? null;
 
-  const lat = coord(offer?.latitude) ?? coord(business?.latitude);
-  const lng = coord(offer?.latitude) != null ? coord(offer?.longitude) : coord(business?.longitude);
+  // A business that goes to its customers has only a rounded area, never a place to meet (utils/businessLocationMode.js).
+  const businessPoint = isServiceArea(business) ? null : business;
+  const lat = coord(offer?.latitude) ?? coord(businessPoint?.latitude);
+  const lng = coord(offer?.latitude) != null ? coord(offer?.longitude) : coord(businessPoint?.longitude);
   const place = lat != null && lng != null ? { latitude: lat, longitude: lng, name } : null;
 
   const description = typeof offer?.description === 'string' && offer.description.trim() ? offer.description.trim() : null;
