@@ -34,9 +34,9 @@ const NEW_LIVE = 'id, request_id, partner_id, status, viewed_at, offer_type, off
 (async () => {
   const db = new Client({ connectionString: dbUrl });
   await db.connect();
-  const R = crypto.randomUUID(); const BIZ = crypto.randomUUID(); const STAFF = crypto.randomUUID(); const OTHER = crypto.randomUUID(); const S = crypto.randomUUID();
+  const R = crypto.randomUUID(); const BIZ = crypto.randomUUID(); const STAFF = crypto.randomUUID(); const OTHER = crypto.randomUUID(); const S = crypto.randomUUID(); const PUP = crypto.randomUUID();
   const P1 = crypto.randomUUID(); const P2 = crypto.randomUUID();
-  const people = [R, BIZ, STAFF, OTHER, S];
+  const people = [R, BIZ, STAFF, OTHER, S, PUP];
   const open = process.env.EXPECT === 'open';
   let G; let REQ; let O;
   const clean = async () => {
@@ -89,6 +89,8 @@ const NEW_LIVE = 'id, request_id, partner_id, status, viewed_at, offer_type, off
     // alternate relationship: the business owner is ALSO an approved attendee of the gathering the request came from
     await db.query(`select set_config('request.jwt.claims', '', false)`);
     await db.query(`insert into gathering_interest (gathering_id, user_id, status) values ($1, $2, 'approved')`, [G, BIZ]);
+    // ... and a second, personal account of the business (no manager link) that joined the same gathering
+    await db.query(`insert into gathering_interest (gathering_id, user_id, status) values ($1, $2, 'approved')`, [G, PUP]);
     check('fixtures: request + one offer', !!O, O);
 
     const C = as(R); const B = as(BIZ);
@@ -165,6 +167,14 @@ const NEW_LIVE = 'id, request_id, partner_id, status, viewed_at, offer_type, off
     await db.query(`select set_config('request.jwt.claims', '', false)`);
     check('booked', (await db.query(`select status from business_request_offers where id = $1`, [O])).rows[0].status === 'accepted');
     await businessSees('business owner + attendee, booked', B);
+    // An attendee account with no manager link (e.g. the business's own second account): it may see the offer, never
+    // the requester's receipt.
+    r = await as(PUP).from('business_request_offers').select('id').eq('id', O);
+    check('attendee account (no manager link): sees the booked offer (the relationship is real)', !r.error && r.data.length === 1, r.error ?? r.data);
+    r = await as(PUP).from('business_offer_views').select('*');
+    check('attendee account (no manager link): no receipt', !r.error && r.data.length === 0, r.error ?? r.data);
+    r = await as(PUP).from('business_request_offers').select('id, business_offer_views(viewed_at)').eq('id', O);
+    check('attendee account (no manager link): no receipt through the embed', !r.error && !(r.data?.[0]?.business_offer_views ?? []).length, r.error ?? r.data);
 
     console.log('== everyone else');
     r = await as(OTHER).from('business_offer_views').select('*'); if (!open) check('another business: nothing', !r.error && r.data.length === 0, r);
