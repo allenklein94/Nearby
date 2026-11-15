@@ -5,8 +5,8 @@
 -- per-offer viewed_at, (3) a direct SELECT of its own offer rows (policy "Business owners can view their own offer rows",
 -- no column limit), plus (4) the realtime UPDATE event its dashboard receives the moment a customer opens a reply.
 -- Column grants can't tell a customer from a business (same role), so the receipt moves out of the offer row:
---   * business_offer_views (offer_id, viewed_at): one row per opened reply, readable by anyone who can see the offer
---     EXCEPT the business that sent it; no client write (only mark_business_offer_viewed, definer).
+--   * business_offer_views (offer_id, viewed_at): one row per opened reply, readable only by the request's requester,
+--     never by the business that sent it; no client write (only mark_business_offer_viewed, definer).
 --   * business_request_offers.viewed_at is emptied and kept NULL by a check constraint (builds <= 87 still select the
 --     column by name, so it stays until no build reads it; they read NULL = "not viewed", which only affects their
 --     first-reply wording, never a business). Opening a reply no longer updates the offer row (no realtime signal).
@@ -27,14 +27,17 @@ revoke all on public.business_offer_views from public, anon, authenticated;
 grant select on public.business_offer_views to authenticated;
 grant all on public.business_offer_views to service_role;
 
--- Visible to whoever can see the offer row (the subquery runs under business_request_offers' own RLS: requester,
--- plan organizers, gathering attendees, match partners), never to the business that sent it.
-create policy "Offer viewers other than its business can see the receipt"
+-- Visible only to the request's own requester (the one person the receipt is about and the only reader the app has),
+-- and never to the business that sent the reply, even when the requester manages it. Not to attendees, organizers or
+-- match partners: any of them could be a second account of the business (owner check, 2026-11-15).
+create policy "The requester can see their own receipt"
 on public.business_offer_views for select to authenticated
 using (
   exists (
     select 1 from public.business_request_offers bro
+    join public.business_requests br on br.id = bro.request_id
     where bro.id = business_offer_views.offer_id
+      and br.requester_id = auth.uid()
       and bro.partner_id is distinct from public.my_managed_partner_id()
   )
 );
