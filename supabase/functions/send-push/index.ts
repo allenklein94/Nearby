@@ -202,8 +202,15 @@ const NOTIFICATION_ACTION_BY_TYPE = {
 };
 // Item 143: a person's notification choices (customer and business-owner alike) are applied once, in the database's
 // _send_push, before anything reaches this function; nothing here mutes.
-// The opportunity digest is low priority (quiet push) but it is THE summary a web-only owner needs, so it is also emailed.
-const EMAIL_EXTRA_TYPES = new Set(['business_opportunity_received', 'business_opportunities_digest']);
+// The email fallback carries ONLY the owner's business alerts: exactly the types in the owner_* notification groups
+// (src/constants/notificationPreferences.js; guard src/constants/sendPushDigestEmail.test.js keeps the two lists equal).
+// A person's own social/customer pushes (waves, messages, their own requests) are never emailed to the business address,
+// whatever their priority. The low-priority digest is included: it is THE summary a web-only owner needs.
+const EMAIL_TYPES = new Set([
+  'business_opportunity_received', 'business_opportunities_digest', 'business_request_cancelled', 'business_request_expiring',
+  'business_offer_accepted', 'business_offer_review_result', 'reservation_cancelled_by_customer',
+  'aggregated_demand_growing', 'occasion_demand_growing',
+]);
 const LINK_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LINK_TYPE = /^[a-z_]{1,64}$/;
 function businessWebLinkUrl(baseUrl, type, requestId) {
@@ -262,11 +269,11 @@ serve(async (req)=>{
     const notifPriority = notificationPriority(data?.type);
     if (!pushToken) {
       // Business Web parity: an owner who only uses the website has no push token. If they have a verified, enabled
-      // email address (business_email_settings) send the same alert there -- high and medium priority plus new requests, so a
-      // web-only owner isn't flooded with low-priority discovery. No-op (and never an error) until the email provider is configured.
+      // email address (business_email_settings) send the same BUSINESS alert there (EMAIL_TYPES only).
+      // No-op (and never an error) until the email provider is configured.
       let emailed = false;
       let emailReason;
-      if (notifPriority !== 'low' || EMAIL_EXTRA_TYPES.has(data?.type)) {
+      if (EMAIL_TYPES.has(data?.type)) {
         const { data: es } = await admin.from('business_email_settings').select('email, verified_at, enabled').eq('user_id', recipient_id).maybeSingle();
         if (es?.email && es.verified_at && es.enabled) {
           const webUrl = Deno.env.get('BUSINESS_WEB_URL');
