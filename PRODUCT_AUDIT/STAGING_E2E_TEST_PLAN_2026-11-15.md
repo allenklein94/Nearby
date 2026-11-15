@@ -90,3 +90,27 @@ application path is tested):
 
 See CLAUDE.md "Business website launch blockers" for the run results (from-scratch replay of the combined migrations,
 all journeys, Jest, `deno check`). A staging pass is evidence only, never production approval.
+
+## 7. Business Profile editing (read-only code audit, 2026-11-15; owner asked: record gaps, build nothing)
+
+Confirmed from code (not run in a browser or on a phone):
+- **Phone number and website URL are NOT editable anywhere after approval.** They exist only on the application
+  (`submit-business-application` -> `business_partner_requests`: website, phone, contact info, used for admin review and
+  0414's duplicate warnings). `brand_partners` has no phone or website column and approval does not copy them, so the
+  Business Profile tab (app and website) has no such field and customers never see them. Not a bug in the current design
+  (customers finish in the app; contact details are kept off offers, 0372); recorded as a gap for the owner to decide
+  after real owners test. No change before then.
+- Name, description, address, logo, category, secondary categories, subcategory, attributes, cuisine and differentiator save
+  through ONE server function `update_business_profile` (definer), which refuses anyone who doesn't manage that business
+  ("You do not manage this business") and validates name, category, subcategory, secondary categories, attributes and
+  cuisine. The pin saves through `set_business_location` (refuses another business, journey `locationProvenance`); hours
+  through the hours editor (`operating_hours`).
+- Journeys cover `update_business_profile` only incidentally (location provenance, service area); no journey checks that a
+  non-manager's profile save is refused, and none checks the hours editor's write path under real roles.
+
+Staging website checks (signed in as the approved owner, then as a second account that does NOT manage the business):
+1. Edit name, description, category + secondary categories, subcategory, attributes, hours, address + pin, logo; Save;
+   refresh the browser tab; every value still shown as saved (the "What Nearby knows" summary and the form agree).
+2. Same edits on the iPhone build against staging; the website shows them after refresh, and the reverse.
+3. Second account: the business's profile can't be saved (direct `update_business_profile` call refused; no edit UI reachable).
+4. Record whether owners look for a phone/website field (evidence for the gap above, not a reason to build it now).

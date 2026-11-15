@@ -32,6 +32,7 @@ import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Act
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
 import BusinessHoursEditor from '../components/BusinessHoursEditor';
+import BusinessContactDetails from '../components/BusinessContactDetails';
 import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
@@ -5583,6 +5584,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                   </View>
                 )}
+                {/* Phone + website (owner, 2026-11-15; 20270423): private to the business, opens in place like Hours. */}
+                {selectedPartner ? <BusinessContactDetails partnerId={selectedPartner.id} /> : null}
 
 </>
 )}
