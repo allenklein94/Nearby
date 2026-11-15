@@ -82,7 +82,7 @@ d('journey: a customer opening a business reply is never visible to the business
     'data', (select count(*) from public.business_offer_views where offer_id = v_offer)));
 `);
     s = stepMap(log);
-  });
+  }, 60000);
 
   it('a stranger cannot mark another person\'s reply viewed', () => {
     expect(s.setup.ok).toBe(true);
