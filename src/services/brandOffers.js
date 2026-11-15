@@ -1037,6 +1037,26 @@ export async function setBusinessOperatingHours(partnerId, hours) {
   if (error) throw error;
 }
 
+// Business phone + website (migration 20270423): private to the business's managers (and admins), never on brand_partners.
+// null = none saved yet. Throws on refusal (not a manager) or a network failure.
+export async function getBusinessContactDetails(partnerId) {
+  const { data, error } = await supabase.rpc('get_business_contact_details', { partner_id_param: partnerId });
+  if (error) throw error;
+  return (Array.isArray(data) ? data[0] : data) ?? null;
+}
+
+// Saves both (empty = cleared); returns what the server stored (normalised). Refusals carry hint invalid_phone /
+// invalid_website / not_business_manager / account_suspended.
+export async function setBusinessContactDetails(partnerId, { phone, website }) {
+  const { data, error } = await supabase.rpc('set_business_contact_details', {
+    partner_id_param: partnerId,
+    phone_param: phone ?? null,
+    website_param: website ?? null,
+  });
+  if (error) throw error;
+  return (Array.isArray(data) ? data[0] : data) ?? null;
+}
+
 // partnerId -> the partner row (name, place, attributes, hours, pulse, booking_mode) for the open-now resolver and the item-72 action on typed-ask
 // business results. Best-effort: a failure is an empty map, which makes every business "unknown" (never "closed").
 export async function getPartnerOperatingInfo(partnerIds) {
