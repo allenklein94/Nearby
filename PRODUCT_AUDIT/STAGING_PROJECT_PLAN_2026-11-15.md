@@ -45,7 +45,14 @@ Don't apply the production phone-session seed either (see section 7).
 6. **Payments:** Stripe test keys only, or none. RevenueCat: none (no app record for the staging bundle).
 7. **AI:** a separate Anthropic key with a small credit cap (only if hand-written offers are tested); otherwise screening fails closed, as on prod.
 8. **Google, AWS, PostHog, Sentry:** not configured in staging (Google discovery stays off; analytics/crash reporting disabled in the staging build) so test activity never mixes with production data.
-9. **Staging passing ≠ production approval** (owner rule, 0414): each production migration keeps its own approval; final production smoke tests with real, authorized business accounts are still required.
+9. **Fail closed (owner, 2026-11-15, required in step B):** the staging build and every staging script refuse to start
+   if any configured value points at production: Supabase URL/ref and publishable key (database, Auth, Storage, realtime,
+   edge-function URLs all derive from the ONE URL, which is checked), push (staging bundle id + staging Expo project
+   credentials; staging `send-push` refuses a token registered to the prod project), payments (Stripe key must start
+   `pk_test_`/`sk_test_`; a live key = refuse), server functions (staging secrets checked to hold no prod ref or prod
+   service key). A refusal shows an error screen and makes no request. Guard tests cover each, plus the reverse (a
+   production build never carries a staging value).
+10. **Staging passing ≠ production approval** (owner rule, 0414): each production migration keeps its own approval; final production smoke tests with real, authorized business accounts are still required.
 
 ## 4. What a staging-connected iOS build + business website need
 
