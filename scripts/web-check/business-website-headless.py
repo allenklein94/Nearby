@@ -20,6 +20,7 @@ REQ = '33333333-3333-4333-8333-333333333333'
 RADAR = {'on': False}  # a mocked get_aggregated_demand_for_partner (Match Radar scenario)
 OPP = {'on': False, 'status': 'pending'}  # a mocked opportunity: 'pending' = the offer-form scenario, 'accepted' = a booking
 # Writes the website is meant to send (mocked here): fire-and-forget business acquisition analytics (services/businessAcquisitionEvents.js).
+PREVIEW_PLACEHOLDER = "What are you offering? e.g. Table for 4 at 7:30, 15% off the check"  # ui.bizDash3.whatAreYouOfferingE (en)
 EXPECTED_WRITES = ('/rest/v1/business_acquisition_events',)
 results = []
 def check(name, ok, detail=''):
@@ -164,6 +165,19 @@ with sync_playwright() as p:
     except Exception as e:
         check('[offer form] a linked request opens Make an Offer (where the fixed effect runs)', False, str(e)[:160])
     check('[offer form] no page errors while opening it', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+    # The live Customer Preview (item 49, 2026-11-15 shared card styles): typing a description builds the customer's card
+    # with its real button, shown but never live: clicking it sends nothing.
+    try:
+        pg.get_by_placeholder(PREVIEW_PLACEHOLDER).first.fill('Two lattes for the price of one (test)'); pg.wait_for_timeout(800)
+        t = pg.inner_text('body')
+        pg.screenshot(path='/out/g_offer_preview.png', full_page=True)
+        check('[offer preview] typing a description builds the customer card', 'Customer preview' in t and 'Two lattes for the price of one (test)' in t, '')
+        check("[offer preview] shows the customer's button words", "I'll take this one" in t, '')
+        pg.get_by_text("I'll take this one", exact=True).first.click(force=True); pg.wait_for_timeout(600)
+        check('[offer preview] clicking the preview button sends nothing', not any(('submit_business_offer' in x) or ('accept_business_offer' in x) for x in r['seen']), '')
+    except Exception as e:
+        check('[offer preview] typing a description builds the customer card', False, str(e)[:160])
+    check('[offer preview] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
     check('[offer form] nothing submitted (no offer sent)', not any('submit_business_offer' in x for x in r['seen']), '')
     r['ctx'].close()
     OPP['on'] = False
