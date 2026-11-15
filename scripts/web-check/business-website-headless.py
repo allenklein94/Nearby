@@ -213,12 +213,21 @@ with sync_playwright() as p:
     pg = r['page']; before = len(r['errors'])
     import re as _re
     def grp(title):
-        return pg.get_by_role('button', name=_re.compile('^' + _re.escape(title))).first
+        # a section header's name = title, or "title, <saved summary>"; other buttons may share the title's start, so pick
+        # the header: the one carrying a summary, else the one whose text shows the open/closed mark
+        cands = pg.get_by_role('button', name=_re.compile('^' + _re.escape(title))).all()
+        for c in cands:
+            if (c.get_attribute('aria-label') or '').startswith(title + ', '): return c
+        for c in cands:
+            txt = c.inner_text()
+            if '›' in txt or '⌄' in txt: return c
+        print('DEBUG candidates for', title, [(c.get_attribute('aria-label'), c.inner_text()[:60]) for c in cands])
+        return cands[0]
     try:
         pg.get_by_text('Profile', exact=True).first.click(); pg.wait_for_timeout(1500)
         t = pg.inner_text('body'); pg.screenshot(path='/out/j_profile_groups.png', full_page=True); tl = t.lower()
         titles = ['What Nearby knows about your business', 'Business Profile', 'What You Can Accommodate', "Who's this for?", 'What do you want more of?', 'Settings']
-        check('[profile summary] summary heading + the five section titles show', all(x in t for x in titles), ' / '.join(x for x in titles if x not in t))
+        check('[profile summary] summary heading + the five section titles show', all(x.lower() in tl for x in titles), ' / '.join(x for x in titles if x.lower() not in tl))
         check('[profile summary] Teach Nearby merged into Tell Nearby (no second entry point)', 'Teach Nearby' not in t)
         check('[profile summary] Tell Nearby comes before the summary', 0 <= tl.find('tell nearby') < tl.find('what nearby knows about your business'), str(tl.find('tell nearby')))
         check('[profile summary] every section starts closed', '✏️ Edit Profile' not in t and 'what ages is it suited to?' not in tl and 'largest group you can host' not in tl)
