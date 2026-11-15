@@ -85,7 +85,7 @@ export async function screenOfferMedia(deps, partnerId, mediaPath, mediaType, fr
     if (!url) return { status: 400, error: 'We could not read that photo or video. Please attach it again.' };
     const r = await deps.classifyImage(url);
     if ('error' in r) {
-      if (r.service) return { status: 503, service: true };
+      if (r.service) return { status: 503, service: true, ...(r.failure ? { failure: r.failure } : {}) };
       return { status: 400, error: "That photo or video preview couldn't be read. Try a different one." };
     }
     tier = deps.worseTier(tier, r.riskTier);
