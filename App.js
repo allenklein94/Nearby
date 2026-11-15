@@ -14,6 +14,10 @@ import OfferArrivalHost from './src/components/OfferArrivalSignal';
 import OfferTravelOverlay from './src/motion/OfferTravelOverlay';
 import { setupNotificationTapHandling } from './src/services/notifications';
 import { STRIPE_PUBLISHABLE_KEY, isStripeConfigured } from './src/services/stripeConnect';
+import { BACKEND_VARIANT } from './src/services/supabase';
+
+// Staging (owner, 2026-11-15): test activity never reaches production analytics or crash reporting.
+const IS_STAGING = BACKEND_VARIANT === 'staging';
 
 // StripeProvider requires a real, non-empty publishableKey to initialize —
 // no live key exists yet (see CLAUDE.md's Stripe Connect section), so this
@@ -35,7 +39,7 @@ installReducedMotionPolicy(Animated);
 
 Sentry.init({
   dsn: 'https://4abcadc6172e8798db6dbb4ac609a3f8@o4511759611461632.ingest.us.sentry.io/4511759617163264',
-  enabled: !__DEV__,
+  enabled: !__DEV__ && !IS_STAGING,
   tracesSampleRate: 0.2,
 });
 
@@ -53,7 +57,7 @@ function App() {
   return (
     <PostHogProvider
       apiKey="phc_kEv3UMR6bbSC9Er9aVRarCxjiBVvW8ye2Gae2msUpjem"
-      options={{ host: 'https://us.i.posthog.com' }}
+      options={{ host: 'https://us.i.posthog.com', disabled: IS_STAGING }}
       // The provider sits outside RootNavigator's NavigationContainer, so its built-in screen tracker could never find a
       // navigation object: it logged "Couldn't find a navigation object" on every render and recorded no screen. Turning
       // off only that hook keeps every event actually sent (captures, app lifecycle) exactly as before.

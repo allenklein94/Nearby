@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // The ONE production migration apply path (owner, 2026-10-24). See scripts/migrations/ledger.js.
-//   node scripts/migrations/deploy.js <migration file> --target=prod|local [--check]
+//   node scripts/migrations/deploy.js <migration file> --target=prod|staging|local [--check]   (staging: NEARBY_STAGING_APPROVAL)
 // Needs (both targets, so the gate is the same one the tests prove):
 //   NEARBY_PROD_APPROVAL=<version>:<sha256 of the committed file>   the owner's approval of exactly this file
 //   NEARBY_APPROVAL_REF="owner, 2026-10-24, chat: ..."              where/when it was approved (stored in the ledger)
@@ -16,8 +16,13 @@ async function main(argv, env = process.env, repoRoot = REPO) {
   const file = argv.find((a) => !a.startsWith('--'));
   const target = (argv.find((a) => a.startsWith('--target=')) || '').split('=')[1];
   const check = argv.includes('--check');
-  if (!file) throw new Error('usage: deploy.js <migration file> --target=prod|local [--check]');
+  if (!file) throw new Error('usage: deploy.js <migration file> --target=prod|staging|local [--check]');
   const { name, run } = L.runner(target);
+  // Staging (owner, 2026-11-15): its own approval variable, so a production approval can never be reused there or vice versa.
+  if (target === 'staging') {
+    if ((env.NEARBY_PROD_APPROVAL || '').trim()) throw new Error('NEARBY_PROD_APPROVAL is set: refusing --target=staging (use NEARBY_STAGING_APPROVAL)');
+    env = { ...env, NEARBY_PROD_APPROVAL: env.NEARBY_STAGING_APPROVAL };
+  }
   const facts = L.migrationFacts(file, repoRoot);
   const ledger = await L.readLedger(run);
   const refusals = L.preflight({ facts, env, ledger });
