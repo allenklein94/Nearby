@@ -18,6 +18,21 @@ Trending audit: English wording = "🔥 Trending", "Trending Near You", "most po
 
 Found at the end, reported, not changed: "💛 What people loved" (getHostLovedTags / getBusinessLovedTags) still public from the same rows with no minimum; policy "Anyone can view feedback" (live on prod, 2 rows) lets any signed-in user read every rating with its reviewer_id.
 
+## Business location at sign-up (owner, 2026-11-15; branch post-tier1/business-web-only)
+
+Owner revised the address decision: location belongs in business onboarding. Built in the existing app sign-up form
+(`BusinessPartnerApplyScreen`) and the website form (`docs/business.html` + `submit-business-application`), no new screen.
+Commits 86a1ecba (migration 20270419, rule `utils/businessLocationMode.js`, sign-up + dashboard, journey), 249f913f (guards),
+then this session: booked-plan Get Directions / Uber and both per-offer ride links skip a service-area business
+(`planAddonReadiness`, `hasMapPin`; every booked-offer `brand_partners(...)` read selects `location_source`), typed-ask
+business info selects it (so "Go now" never appears for one), "plan a gathering at this business" never uses its area as the
+meeting point (`businessPlanPrefill`), the business's own web map default skips it, Profile's Basics summary shows "We go to
+customers" instead of an address, and the website form asks the same two-way question (service area = no address sent or
+stored; the edge function still requires one for a storefront). Guard `utils/businessLocationOnboarding.test.js`.
+Verification: replay 495/495 + journeys 837/837 + rollback/re-apply (v419, at 86a1ecba; migration unchanged since); Jest
+543/543 suites, 7322 tests; web + iOS exports clean (v425). Not done: deno check (not installed), headless/real browser,
+phone, staging, native review. Nothing merged, deployed or published.
+
 ## Coordinated fake credibility + idea 26 (2026-11-09, owner)
 
 Idea 26 (composite trust history) closed as covered; scoring declined. Follow-up audit: can coordinated fake accounts earn trust, reach, limits or powers by interacting?
