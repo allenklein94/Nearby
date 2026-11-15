@@ -338,6 +338,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       categoryLabel: (k) => BUSINESS_CATEGORIES.find((c) => c.key === k)?.label ?? k,
       subcategoryLabel: (k) => categoryName(k, language),
       upToPeople: (n) => t('ui.businessProfile.v.upToPeople', { count: n }),
+      serviceArea: t('ui.bizHelp.location.modeServiceArea'),
       notSet: t('ui.bizDash2.notSet'),
     });
     return (

@@ -5,6 +5,7 @@
 // Settings (automation, notifications, payments) is advanced and shows no summary line.
 import { occasionLabel, experiencePartyTypeLabel, businessAttributeLabel, OCCASION_OPTIONS } from '../constants/businessAttributes';
 import { BUSINESS_DIETARY_OPTIONS, dietaryOptionsOf } from '../constants/dietaryOptions';
+import { isServiceArea } from './businessLocationMode';
 
 export const SUMMARY_MAX_PIECES = 3;
 
@@ -18,7 +19,9 @@ export function profileSummaryPieces(key, partner, fmt = {}) {
       const out = [];
       if (nonEmpty(p.category)) out.push(fmt.categoryLabel ? fmt.categoryLabel(p.category) : p.category);
       if (nonEmpty(p.subcategory)) out.push(fmt.subcategoryLabel ? fmt.subcategoryLabel(p.subcategory) : p.subcategory);
-      if (nonEmpty(p.address)) out.push(String(p.address).trim());
+      // Where it is (utils/businessLocationMode.js): a business that goes to its customers has no address, only its mode.
+      if (isServiceArea(p)) out.push(fmt.serviceArea ?? 'We go to customers');
+      else if (nonEmpty(p.address)) out.push(String(p.address).trim());
       return out;
     }
     case 'accommodate': {

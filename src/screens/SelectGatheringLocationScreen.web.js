@@ -34,8 +34,9 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
       if (!uid) return;
       const { data: profile } = await readMyProfile('managed_partner_id');
       if (!profile?.managed_partner_id) return;
-      const { data: partner } = await supabase.from('brand_partners').select('name, address, latitude, longitude').eq('id', profile.managed_partner_id).single();
-      if (partner?.latitude != null && partner?.longitude != null) {
+      const { data: partner } = await supabase.from('brand_partners').select('name, address, latitude, longitude, location_source').eq('id', profile.managed_partner_id).single();
+      // A business that goes to its customers has only a rounded area: never offered as a meeting point.
+      if (partner?.latitude != null && partner?.longitude != null && partner.location_source !== 'service_area') {
         const point = { latitude: partner.latitude, longitude: partner.longitude };
         const spot = { ...point, label: partner.address || partner.name, origin: { kind: 'business_profile', point } };
         setBusinessSpot(spot);

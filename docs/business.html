@@ -860,9 +860,16 @@
       </div>
 
       <div class="apply-field">
+        <label>Where is your business?</label>
+        <label class="apply-checkbox-row"><input type="radio" name="locationMode" value="storefront" checked> Customers come to us</label>
+        <label class="apply-checkbox-row"><input type="radio" name="locationMode" value="service_area"> We go to customers</label>
+      </div>
+
+      <div class="apply-field" id="apply-address-field">
         <label for="apply-address">Business Address</label>
         <input type="text" id="apply-address" name="address" placeholder="Street, city, state" maxlength="300" required>
       </div>
+      <div class="apply-field" id="apply-area-hint" hidden><p class="hint">No address needed. After approval you'll mark roughly where you're based on a map in your dashboard. Only an area about half a mile across is kept, never your address, and customers don't see a map pin for you.</p></div>
 
       <div class="apply-field">
         <label for="apply-website">Website <span class="hint">(optional)</span></label>
@@ -1329,12 +1336,27 @@
     applyErrorBox.appendChild(p);
   }
 
+  // Owner, 2026-11-15: a business that goes to its customers gives no address (it would be shown to customers).
+  function applyLocationMode() {
+    var checked = document.querySelector('input[name="locationMode"]:checked');
+    return checked && checked.value === 'service_area' ? 'service_area' : 'storefront';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('input[name="locationMode"]'), function (r) {
+    r.addEventListener('change', function () {
+      var area = applyLocationMode() === 'service_area';
+      document.getElementById('apply-address-field').hidden = area;
+      document.getElementById('apply-address').required = !area;
+      document.getElementById('apply-area-hint').hidden = !area;
+    });
+  });
+
   applyForm.addEventListener('submit', function (e) {
     e.preventDefault();
     applyErrorBox.innerHTML = '';
 
     var businessName = document.getElementById('apply-business-name').value.trim();
-    var address = document.getElementById('apply-address').value.trim();
+    var locationMode = applyLocationMode();
+    var address = locationMode === 'service_area' ? '' : document.getElementById('apply-address').value.trim();
     var website = document.getElementById('apply-website').value.trim();
     var businessPhone = document.getElementById('apply-business-phone').value.trim();
     var description = document.getElementById('apply-description').value.trim();
@@ -1347,7 +1369,7 @@
     if (!businessName) return showApplyError("Tell us your business's name.");
     var categoryText = document.getElementById('apply-category-text').value.trim();
     if (!selectedApplyCategory && categoryText.length < 3) return showApplyError("Pick a category, or tell us what kind of business it is.");
-    if (!address) return showApplyError("Tell us your business's address.");
+    if (locationMode === 'storefront' && !address) return showApplyError("Tell us your business's address.");
     if (!applicantName) return showApplyError('Tell us your name.');
     if (!applicantEmail) return showApplyError('Enter your email address.');
     if (!applicantPhone) return showApplyError('Enter your phone number.');
@@ -1367,6 +1389,7 @@
         categories: selectedApplyCategory ? applyExtraTags.concat(applyAlsoTags.filter(function (t) { return applyExtraTags.indexOf(t) < 0; })) : [],
         categoryText: categoryText,
         address: address,
+        locationMode: locationMode,
         website: website,
         businessPhone: businessPhone,
         description: description,

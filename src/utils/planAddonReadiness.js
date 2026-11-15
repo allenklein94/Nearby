@@ -18,6 +18,7 @@ import { localClock, localWeekday, localDate } from '../i18n/format';
 import { categoryName } from '../i18n/categoryNames';
 import { displayWhen } from '../i18n/display';
 import { bookedPartySize } from './acceptedBooking';
+import { hasPublicPlace } from './businessLocationMode';
 
 // Display words in the person's language (localization pass 5); English output is unchanged.
 const isEnglish = () => { const l = getCurrentLanguage(); return !l || l === 'en'; };
@@ -463,8 +464,9 @@ export function buildPlanSummary({ primary, primaryOffers = [], planTitle = null
     whenLine,
     location: mergedTitle ? (acceptedOffer?.brand_partners?.address ?? null) : bookedName,
     businessAddress: acceptedOffer?.brand_partners?.address ?? null,
-    businessLatitude: acceptedOffer?.brand_partners?.latitude ?? null,
-    businessLongitude: acceptedOffer?.brand_partners?.longitude ?? null,
+    // A business that goes to its customers has only a rounded area (utils/businessLocationMode.js): no directions or ride to it.
+    businessLatitude: hasPublicPlace(acceptedOffer?.brand_partners) ? acceptedOffer.brand_partners.latitude ?? null : null,
+    businessLongitude: hasPublicPlace(acceptedOffer?.brand_partners) ? acceptedOffer.brand_partners.longitude ?? null : null,
     partySize: bookedPartySize(primary, acceptedOffer), // item 119b: the headcount booked (a smaller-party time), else the request's
     statusLabel,
     statusKind,

@@ -318,7 +318,7 @@ export async function getAllActivePartners() {
 export async function getOfferById(offerId) {
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, address, latitude, longitude, subcategory, categories)')
+    .select('*, brand_partners(name, address, latitude, longitude, location_source, subcategory, categories)')
     .eq('id', offerId)
     .maybeSingle();
 
@@ -1044,7 +1044,7 @@ export async function getPartnerOperatingInfo(partnerIds) {
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, dietary_options, cuisine, accommodates_party_types, weather_setting')
+    .select('id, name, latitude, longitude, location_source, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, dietary_options, cuisine, accommodates_party_types, weather_setting')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));

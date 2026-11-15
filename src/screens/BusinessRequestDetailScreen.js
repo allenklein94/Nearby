@@ -1,4 +1,5 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
+import { hasMapPin } from '../utils/businessLocationMode';
 import { rankReplies, fittingTime } from '../utils/replyFit';
 import { hasTwoTimes, canBookWith, timeToBook } from '../utils/offerTimes';
 import { offerAcceptButtonState } from '../utils/offerAcceptLock';
@@ -1814,7 +1815,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       <Text style={styles.redeemCalloutText}>{shown.redemption}</Text>
                     </View>
                   ) : null}
-                  {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (
+                  {hasMapPin(o.brand_partners) && (
                     <TouchableOpacity
                       onPress={() => openUberToDestination({
                         latitude: o.brand_partners.latitude,
