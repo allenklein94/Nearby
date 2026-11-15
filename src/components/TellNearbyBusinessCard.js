@@ -32,6 +32,8 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
   const [exclude, setExclude] = useState([]);
   const plan = result ? buildSetupPlan(partner, result, exclude) : null;
   const [saved, setSaved] = useState(false);
+  // true when only the keyword reader answered (AI unavailable): the result is words picked out, never 'understood'.
+  const [keywordOnly, setKeywordOnly] = useState(false);
   // Provenance rows for keyword-found attributes, keyed by attribute (Teach Nearby's record, kept as it was).
   // A ref, not state: confirm() then reset() run in the same render, and each id must be answered exactly once.
   const suggestionIds = useRef({});
@@ -95,6 +97,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
     }
     resolveSuggestions([]);
     setResult(mergeKeywordReading(ai, keywordAttributes) ?? {});
+    setKeywordOnly(!ai);
     setExclude([]);
     setEditing(false);
     const fresh = keywordAttributes.filter((a) => !(partner?.attributes ?? []).includes(a));
@@ -182,7 +185,8 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
         </TouchableOpacity>
       ) : plan.understood ? (
         <View style={styles.result}>
-          <Text style={styles.resultTitle}>{t('ui.bizComp.weUnderstoodYourBusiness')}</Text>
+          <Text style={styles.resultTitle}>{keywordOnly ? t('ui.bizComp.pickedOutOfYourWords') : t('ui.bizComp.weUnderstoodYourBusiness')}</Text>
+          {keywordOnly ? <Text style={styles.helper}>{t('ui.bizComp.pickedOutOfYourWordsBody')}</Text> : null}
           <View style={styles.chips}>
             {plan.chips.map((c) => (
               <TouchableOpacity
