@@ -17,13 +17,18 @@ async function main(argv, env = process.env, repoRoot = REPO) {
   const target = (argv.find((a) => a.startsWith('--target=')) || '').split('=')[1];
   const check = argv.includes('--check');
   if (!file) throw new Error('usage: deploy.js <migration file> --target=prod|staging|local [--check]');
-  const { name, run } = L.runner(target);
+  const { name, run, ref: stagingRef } = L.runner(target, env);
   // Staging (owner, 2026-11-15): its own approval variable, so a production approval can never be reused there or vice versa.
   if (target === 'staging') {
     if ((env.NEARBY_PROD_APPROVAL || '').trim()) throw new Error('NEARBY_PROD_APPROVAL is set: refusing --target=staging (use NEARBY_STAGING_APPROVAL)');
     env = { ...env, NEARBY_PROD_APPROVAL: env.NEARBY_STAGING_APPROVAL };
   }
-  const facts = L.migrationFacts(file, repoRoot);
+  const fileFacts = L.migrationFacts(file, repoRoot);
+  // Staging: a migration naming production's edge-function URLs is re-pointed to staging's inside the SAME transaction,
+  // before its ledger row (scripts/staging/bootstrap.js repointSql); approval and hash stay those of the committed file.
+  const facts = target === 'staging' && fileFacts.exists
+    ? { ...fileFacts, content: `${fileFacts.content}\n;\n${require('../staging/bootstrap').repointSql(stagingRef)}` }
+    : fileFacts;
   const ledger = await L.readLedger(run);
   const refusals = L.preflight({ facts, env, ledger });
   console.log(`target: ${name}\nmigration: ${facts.rel}\nversion: ${facts.version}\nsha256: ${facts.sha256}\ncommit: ${facts.commit}`);

@@ -129,7 +129,7 @@ function repoMigrations(repoRoot) {
 
 // Targets. 'prod' = the Management API (scripts/live-verify/lib/db.js); 'local' = a disposable database by URL, refused if it
 // looks like a hosted Supabase address. Every query goes over one connection per call, like the Management API.
-function runner(target) {
+function runner(target, env = process.env) {
   if (target === 'prod') {
     const url = process.env.NEARBY_LOCAL_DB_URL;
     if (url) throw new Error('NEARBY_LOCAL_DB_URL is set: refusing --target=prod (unset it to make the target unambiguous)');
@@ -154,7 +154,7 @@ function runner(target) {
       },
     };
   }
-  if (target === 'staging') return stagingRunner(process.env);
+  if (target === 'staging') return stagingRunner(env);
   throw new Error('--target=prod, --target=staging or --target=local is required');
 }
 
