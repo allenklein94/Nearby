@@ -1,3 +1,26 @@
+## 2026-11-15: Business website launch blockers prepared (four audits + integration gate 2)
+
+Owner: resolve the remaining business website blockers now; deploy, publish or merge nothing. Results:
+- Blank dashboard: already fixed on main (708b7600, f6c50f96; main now 990fe5f9). Exported main to /tmp (never docs/) and ran
+  the headless check: 27/53 with the offer-form step opened via the Opportunities tab (the stock checker reaches it through the
+  email link, which main lacks). Dashboard, five tabs, Make an Offer and its preview render; no ReferenceError; every console
+  error = PostHog's useNavigation noise (fixed on this branch only). Remaining fails = this branch's later features.
+- Email fallback: audited, code complete. Limitation recorded, not changed: email only when the owner has no push token.
+- Screening: deno 2.1.4 (npm, in /tmp) `deno check`: screen-business-content, submit-business-application clean; business-email
+  fixed (non-null env); send-push clean with strict off (its tests run the source as plain JS, so no annotations). Failure
+  handling fail-closed; credit/key/model never retried. Gate 3 (security of `_submit_business_offer_for_submission` + worker
+  entry) passed by code reading.
+- Gate 2: integration tree `integ/business-web-x-trust` (pushed; test vehicle only, docs = trust stack's). Resolved: two
+  `screeningFailureKind` functions (0387 health cause vs 0420 retry kind) -> the health cause feeds the retry rule
+  (`healthKind`, ported to this branch); 0399 paused-manager check skipped for automatic tries (the DB refuses the write);
+  0372 offer report-button styles kept. Found + fixed: post-deploy.js on rate-limit-api-checks didn't parse (30381b0d);
+  screeningHealth.js default-null params failed deno check (d397295b); notificationTier guard stale on this branch (dd62ce1e);
+  retry journey lacked 0372's per-try screening result (stand-in, d8596dd6). Combined: replay 543/543 (with the Auth prepare
+  step), journeys 1475/1475, Jest 583/583 suites, deno clean. Logs /workspaces/.nearby-verify/v428, /tmp/claude-1000/web429.
+- Staging: bootstrap already validated locally (v427). New plan `PRODUCT_AUDIT/STAGING_E2E_TEST_PLAN_2026-11-15.md`
+  (storefront + service-area through redemption, failure cases, staging secrets). Staging must deploy the combined tree.
+- Disk was full (47 MB): removed 11 exited local replay containers from earlier sessions and the npm cache.
+
 ## 2026-11-15: Make an Offer preview matches the customer card
 
 Owner asked the live preview to reflect the final customer card exactly. Inspection: content already shared (draftPreviewOffer -> presentOffer(owner_preview) -> OfferCustomerBody), button already disabled with the customer's label. Genuine drift = dashboard-local styles for the card frame (gatheringRow), business name (offerTitle 14 px), heard/status lines (breakdownText 11 px bold), title, button (submitButton, paddingVertical 14, 15 px). Fix: components/offerCardStyles.js holds the customer card's styles, spread into BusinessRequestDetailScreen and used by the preview; previewAcceptAction() in offerDraftPreview.js; unused consumerOfferAction import + previewPartner* styles removed. Tests: utils/offerPreviewParity.test.js 8 (price, discount + cap, one/two times + no pick, photo/video/video_label/none, live edits, same status/heard lines + never confirmation/redemption, disabled button words, source guard incl. no press handler + no customer identity). Jest 545/545, 7359; iOS export clean. Not verified: phone, browser, real screened media. Commit 226d484c.
