@@ -11,13 +11,16 @@
 //    RESEND_API_KEY edge-function secret (the business email fallback stays inert).
 //  * Payments: no Stripe or RevenueCat secret. Stripe TEST keys are allowed only with NEARBY_STAGING_STRIPE_TEST_KEY_CONFIRMED=1,
 //    because the API never shows a secret's value (the owner confirms it starts sk_test_).
-//  * Production's outside services: no AWS keys (production's photo moderation account), no Twilio, no Expo access token.
-//  * Database: no function or cron job naming production's project (bootstrap.js re-points them), and the vault key the
-//    push/screening crons send is not a legacy JWT for production's project.
+//  * Production's outside services: no AWS keys (production's photo moderation account), no Twilio, no Expo access token,
+//    no App Store reviewer login (REVIEWER_EMAIL / REVIEW_LOGIN_PIN), no live-payment approval flags.
+//  * Database: no function or cron job naming production's project (bootstrap.js re-points them), the vault key the
+//    push/screening crons send is not a legacy JWT for production's project, and the independent outbound audit
+//    (outboundAudit.js: code, triggers/webhooks, cron, pg_net queue, servers, settings, vault, stored data) finds nothing.
 // Push: staging holds only push tokens registered by staging builds (separate bundle id + Expo project; a production build can
 // only ever talk to production, src/config/environments.js), and no production data is ever copied in (plan section 3.2).
 const { stagingRunner } = require('../migrations/ledger');
 const { LEFTOVER_SQL, PRODUCTION_REF } = require('./bootstrap');
+const { runAudit } = require('./outboundAudit');
 
 // Auth config fields whose being set means a real SMS / email can go out. Values are reduced to booleans before leaving fetch.
 const SMS_CREDENTIAL_FIELDS = [
@@ -34,6 +37,9 @@ const FORBIDDEN_SECRETS = [
   [/^EXPO_ACCESS_TOKEN$/, 'EXPO_ACCESS_TOKEN (production Expo account push credentials)'],
   [/^AWS_/, 'an AWS key (production\'s moderation account)'],
   [/^REVENUECAT/, 'a RevenueCat secret (real purchases)'],
+  [/^STRIPE_LIVE_APPROVED$/, 'STRIPE_LIVE_APPROVED (live payments)'],
+  [/^SPONSORED_LEGAL_REVIEW_COMPLETE$/, 'SPONSORED_LEGAL_REVIEW_COMPLETE (live sponsored payments)'],
+  [/^REVIEWER_EMAIL$|^REVIEW_LOGIN_PIN$/, 'the App Store reviewer login (a real person\'s address, production only)'],
 ];
 const STRIPE_SECRET = /^STRIPE_/;
 
@@ -54,8 +60,11 @@ function channelProblems({ auth, secretNames, db, env = {} }) {
   if (stripe.length && env.NEARBY_STAGING_STRIPE_TEST_KEY_CONFIRMED !== '1') {
     p.push(`Stripe secret(s) set (${stripe.join(', ')}): allowed only as TEST keys, confirmed with NEARBY_STAGING_STRIPE_TEST_KEY_CONFIRMED=1`);
   }
+  // Stripe's return links fall back to the PRODUCTION business website when BUSINESS_WEB_URL is unset.
+  if (stripe.length && !secretNames.includes('BUSINESS_WEB_URL')) p.push('Stripe secret(s) set without BUSINESS_WEB_URL: Stripe would return people to the production website');
   if (db.functions || db.cron_jobs) p.push(`${db.functions} function(s) / ${db.cron_jobs} cron job(s) still name production's project`);
   if (db.vault_names_production) p.push('the vault service_role_key is a token for PRODUCTION\'s project');
+  for (const f of db.auditFindings || []) p.push(`outbound audit: ${f}`);
   return p;
 }
 
@@ -79,7 +88,8 @@ async function readStaging(env, fetchImpl = (...a) => fetch(...a)) {
   const [left] = await r.run(LEFTOVER_SQL);
   let vault = { vault_names_production: false };
   try { [vault] = await r.run(VAULT_SQL); } catch { /* no vault secret yet on an empty project */ }
-  return { ref: r.ref, auth, secretNames, db: { ...left, ...vault } };
+  const audit = await runAudit(r.run, r.ref);
+  return { ref: r.ref, auth, secretNames, db: { ...left, ...vault, auditFindings: audit.findings } };
 }
 
 async function main(env = process.env) {

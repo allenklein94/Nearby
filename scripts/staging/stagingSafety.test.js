@@ -122,6 +122,9 @@ describe('deploy.js --target=staging', () => {
     expect(tx.indexOf('do $repoint$')).toBeLessThan(tx.indexOf('insert into private.migration_ledger'));
     expect(tx.trim().endsWith('commit;')).toBe(true);
     expect(tx).toContain(`'${facts.sha256}'`); // the ledger records the committed file's hash
+    const audit = tx.indexOf('do $nearby_audit$');
+    expect(audit).toBeGreaterThan(tx.indexOf('do $repoint$'));
+    expect(audit).toBeLessThan(tx.indexOf('insert into private.migration_ledger'));
   });
 
   test('without the staging approval nothing beyond the ledger reads is sent', async () => {
@@ -188,7 +191,7 @@ describe('bootstrap.js', () => {
 describe('preflight: staging can\'t reach a real person or real money', () => {
   const clean = () => ({
     auth: Object.fromEntries([...P.SMS_CREDENTIAL_FIELDS, ...P.SMTP_FIELDS].map((f) => [f, false])),
-    secretNames: ['ANTHROPIC_API_KEY', 'REVIEW_LOGIN_PIN'],
+    secretNames: ['ANTHROPIC_API_KEY'],
     db: { functions: 0, cron_jobs: 0, vault_names_production: false },
   });
   test('a clean staging project passes', () => expect(P.channelProblems(clean())).toEqual([]));
@@ -202,6 +205,11 @@ describe('preflight: staging can\'t reach a real person or real money', () => {
     ['AWS key', (c) => { c.secretNames.push('AWS_ACCESS_KEY_ID'); }, /moderation account/],
     ['RevenueCat secret', (c) => { c.secretNames.push('REVENUECAT_WEBHOOK_SECRET'); }, /real purchases/],
     ['unconfirmed Stripe secret', (c) => { c.secretNames.push('STRIPE_SECRET_KEY'); }, /TEST keys/],
+    ['Stripe without a staging website URL', (c) => { c.secretNames.push('STRIPE_SECRET_KEY'); }, /production website/],
+    ['live Stripe approval flag', (c) => { c.secretNames.push('STRIPE_LIVE_APPROVED'); }, /live payments/],
+    ['sponsored live flag', (c) => { c.secretNames.push('SPONSORED_LEGAL_REVIEW_COMPLETE'); }, /live sponsored/],
+    ['App Store reviewer email', (c) => { c.secretNames.push('REVIEWER_EMAIL'); }, /reviewer login/],
+    ['App Store reviewer PIN', (c) => { c.secretNames.push('REVIEW_LOGIN_PIN'); }, /reviewer login/],
     ['a function still naming production', (c) => { c.db.functions = 1; }, /still name production/],
     ['vault key for production', (c) => { c.db.vault_names_production = true; }, /PRODUCTION's project/],
   ])('refused: %s', (_, mutate, msg) => {
@@ -211,7 +219,7 @@ describe('preflight: staging can\'t reach a real person or real money', () => {
   });
   test('a Stripe secret passes only with the owner\'s test-key confirmation', () => {
     const c = clean();
-    c.secretNames.push('STRIPE_SECRET_KEY');
+    c.secretNames.push('STRIPE_SECRET_KEY', 'BUSINESS_WEB_URL');
     expect(P.channelProblems({ ...c, env: { NEARBY_STAGING_STRIPE_TEST_KEY_CONFIRMED: '1' } })).toEqual([]);
   });
   test('readStaging reduces Auth secrets to booleans and talks only to the staging project', async () => {
@@ -239,5 +247,72 @@ describe('functions-deploy.sh refuses before calling the Supabase CLI', () => {
   test('missing or malformed ref', () => {
     expect(runScript('')).toEqual({ code: 1, out: expect.stringMatching(/missing or malformed/) });
     expect(runScript('abc')).toEqual({ code: 1, out: expect.stringMatching(/missing or malformed/) });
+  });
+});
+
+describe('independent outbound audit (owner condition on approval B)', () => {
+  const A = require('./outboundAudit');
+  test('refuses production\'s ref and anything malformed', () => {
+    expect(() => A.auditSql(PRODUCTION_REF)).toThrow(/not a staging ref/);
+    expect(() => A.auditSql('x')).toThrow(/not a staging ref/);
+  });
+  test('its base64 fragments find the ref inside a legacy JWT payload at every alignment (base64 and base64url)', () => {
+    for (const prefix of ['{"ref":"', '{"iss":"supabase","ref":"', '{"a":1,"ref":"']) {
+      const payload = Buffer.from(`${prefix}${PRODUCTION_REF}","role":"service_role"}`).toString('base64');
+      const url = payload.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      expect([prefix, A.base64Fragments(PRODUCTION_REF).some((f) => payload.includes(f))]).toEqual([prefix, true]);
+      expect([prefix, A.base64Fragments(PRODUCTION_REF).some((f) => url.includes(f))]).toEqual([prefix, true]);
+    }
+  });
+  test('scans every kind of outbound reference, allows only staging + the weather host, and only SELECTs', () => {
+    const sql = A.auditSql(REF);
+    for (const src of ['from pg_proc', 'from pg_trigger', 'pg_get_viewdef', 'from pg_attrdef', 'from pg_policy', 'from pg_constraint',
+      'from pg_foreign_server', 'from pg_db_role_setting', 'from cron.job', 'from net.http_request_queue', 'from vault.decrypted_secrets',
+      'from information_schema.columns']) expect([src, sql.includes(src)]).toEqual([src, true]);
+    expect(sql).toContain(`'${REF}.supabase.co', 'api.openweathermap.org'`);
+    const code = sql.replace(/'[^']*'/g, "''");
+    expect(code).not.toMatch(/\b(insert|update|delete|alter|drop|create|grant|revoke|truncate)\b/i);
+  });
+  test('runAudit returns the findings from the database\'s refusal; other errors are rethrown', async () => {
+    const fail = async () => { throw new Error('staging query failed (400): {"message":"ERROR:  STAGING_AUDIT_FAILED (2 finding(s)):\\nfunction f(): production reference\\ncron job 3: outbound host x.com"}'); };
+    expect(await A.runAudit(fail, REF)).toEqual({ ok: false, findings: ['function f(): production reference', 'cron job 3: outbound host x.com'] });
+    expect(await A.runAudit(async () => [], REF)).toEqual({ ok: true, findings: [] });
+    await expect(A.runAudit(async () => { throw new Error('network down'); }, REF)).rejects.toThrow(/network down/);
+  });
+  test('placement: inside each staging migration transaction, after the re-point, before the ledger row and COMMIT', async () => {
+    const sent = [];
+    const through = '20260702';
+    const list = B.migrationList(through);
+    const run = async (q) => {
+      sent.push(q);
+      if (/relnamespace = 'public'::regnamespace/.test(q)) return [{ n: 0 }];
+      if (/as functions/.test(q)) return [{ functions: 0, cron_jobs: 0 }];
+      return [];
+    };
+    await B.apply({ run, ref: REF, through, env: { NEARBY_STAGING_BOOTSTRAP_APPROVAL: B.approvalCode(REF, list), NEARBY_SESSION_ID: 'jest' }, log: () => {} });
+    const txs = sent.filter((q) => q.startsWith('begin;'));
+    expect(txs.length).toBe(list.length);
+    for (const tx of txs) {
+      const a = tx.lastIndexOf('do $nearby_audit$');
+      expect(a).toBeGreaterThan(tx.lastIndexOf('do $repoint$'));
+      expect(a).toBeLessThan(tx.lastIndexOf('commit;'));
+    }
+    expect(sent[sent.length - 1]).toBe(A.auditSql(REF)); // and once more on the finished database
+  });
+  test('a bootstrap whose final audit finds something fails', async () => {
+    const through = '20260702';
+    const list = B.migrationList(through);
+    const run = async (q) => {
+      if (/relnamespace = 'public'::regnamespace/.test(q)) return [{ n: 0 }];
+      if (/as functions/.test(q)) return [{ functions: 0, cron_jobs: 0 }];
+      if (q === A.auditSql(REF)) throw new Error('ERROR: STAGING_AUDIT_FAILED (1 finding(s)):\ntrigger t.h: outbound host hooks.example.com');
+      return [];
+    };
+    await expect(B.apply({ run, ref: REF, through, env: { NEARBY_STAGING_BOOTSTRAP_APPROVAL: B.approvalCode(REF, list), NEARBY_SESSION_ID: 'jest' }, log: () => {} }))
+      .rejects.toThrow(/outbound audit FAILED[\s\S]*hooks\.example\.com/);
+  });
+  test('preflight refuses on any audit finding', () => {
+    const c = { auth: {}, secretNames: [], db: { functions: 0, cron_jobs: 0, vault_names_production: false, auditFindings: ['data public.x.v: 1 row(s) with a production reference'] } };
+    expect(P.channelProblems(c).join()).toMatch(/outbound audit: data public\.x\.v/);
   });
 });

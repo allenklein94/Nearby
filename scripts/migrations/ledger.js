@@ -194,7 +194,7 @@ function stagingRunner(env = process.env, fetchImpl = (...a) => fetch(...a), opt
         body: JSON.stringify({ query: sql }),
       });
       const text = await res.text();
-      if (!res.ok) throw new Error(`staging query failed (${res.status}): ${text.slice(0, 500)}`);
+      if (!res.ok) throw new Error(`staging query failed (${res.status}): ${text.slice(0, 8000)}`);
       return text ? JSON.parse(text) : [];
     },
   };

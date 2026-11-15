@@ -23,9 +23,11 @@ async function main(argv, env = process.env, repoRoot = REPO) {
   const fileFacts = L.migrationFacts(file, repoRoot);
   // Staging only: a migration naming production's edge-function URLs (send-push, screen-business-content, ...) is re-pointed to
   // staging's inside the SAME transaction, before its ledger row (scripts/staging/bootstrap.js repointSql), so the staging
-  // database never holds a production URL, not even between two statements. Approval + hash stay the committed file's.
+  // database never holds a production URL, not even between two statements. Then the independent outbound audit
+  // (scripts/staging/outboundAudit.js), also before the ledger row + COMMIT: any production reference or unexpected outbound
+  // host anywhere in the database raises, so the deploy fails and nothing commits. Approval + hash stay the committed file's.
   const facts = target === 'staging' && fileFacts.exists
-    ? { ...fileFacts, content: `${fileFacts.content}\n;\n${require('../staging/bootstrap').repointSql(ref)}` }
+    ? { ...fileFacts, content: `${fileFacts.content}\n;\n${require('../staging/bootstrap').repointSql(ref)}\n${require('../staging/outboundAudit').auditSql(ref)}` }
     : fileFacts;
   const ledger = await L.readLedger(run);
   const refusals = L.preflight({ facts, env, ledger, target });
