@@ -20,6 +20,7 @@ export const SCREENING_FAILURE_KINDS = Object.freeze([
 // Kinds that open an outage on the FIRST failure (they don't fix themselves); the others need repeats (20270387).
 export const DEFINITIVE_FAILURE_KINDS = Object.freeze(['credit', 'credentials', 'model']);
 
+/** @param {{ status?: number | null, body?: any, error?: any, keyMissing?: boolean }} [input] */
 export function screeningFailureKind({ status = null, body = null, error = null, keyMissing = false } = {}) {
   if (keyMissing) return 'credentials';
   if (error) {
@@ -37,6 +38,11 @@ export function screeningFailureKind({ status = null, body = null, error = null,
 
 // Fire-and-wait (max 3 s) report; returns nothing and never throws. `url` = SUPABASE_URL, `key` = the secret key
 // (supabaseKeys.ts secretKey(); service role, server-side only, never in the report itself).
+/**
+ * @param {{ ok: boolean, kind?: string | null, status?: number | null, source?: string }} report
+ * @param {{ url?: string, key?: string }} [target]
+ * @param {typeof fetch} [fetchImpl]
+ */
 export async function reportScreeningHealth({ ok, kind = null, status = null, source = 'business-content' }, { url, key } = {}, fetchImpl = fetch) {
   try {
     if (!url || !key) return;
