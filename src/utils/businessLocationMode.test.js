@@ -74,6 +74,11 @@ describe('business location at sign-up (owner, 2026-11-15)', () => {
     expect(businessLocationNotice({ address: null, latitude: null, longitude: null })?.needsAction).toBe(true);
     expect(businessLocationNotice({ address: '12 Ocean Ave', latitude: null, longitude: null })?.needsAction).toBe(true);
     expect(businessLocationNotice({ location_source: SERVICE_AREA_SOURCE, latitude: 26.59, longitude: -80.04 })).toBeNull();
+    // a website application that said "We go to customers" and hasn't marked its area: asked for its area, never an address
+    expect(businessLocationNotice({ location_source: SERVICE_AREA_SOURCE, address: null, latitude: null, longitude: null }))
+      .toEqual({ needsAction: true, text: translate('en', 'ui.bizHelp.location.markServiceArea') });
+    expect(translate('en', 'ui.bizHelp.location.markServiceArea')).toMatch(/^🚗 Mark your service area/);
+    expect(translate('en', 'ui.bizHelp.location.markServiceArea')).not.toMatch(/address/i);
   });
 
   test('the dashboard line says what is saved, never "📍 null"', () => {

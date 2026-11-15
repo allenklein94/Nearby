@@ -70,5 +70,8 @@ describe('website sign-up asks the same question', () => {
     expect(fn).toMatch(/const address = goesToCustomers \? '' :/);
     expect(fn).toMatch(/if \(!goesToCustomers && \(!address \|\| address\.length > 300\)\)/);
     expect(fn).toMatch(/address: address \|\| null,/);
+    // the label alone is stored, so the dashboard asks for a service area; before 20270419 is live the insert retries without it
+    expect(fn).toMatch(/\.\.\.\(goesToCustomers \? \{ location_source: 'service_area' \} : \{\}\)/);
+    expect(fn).toMatch(/error\?\.code === '23514' && row\.location_source/);
   });
 });

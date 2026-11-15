@@ -108,3 +108,56 @@ d('journey: service-area businesses are stored as an area, storefronts as their 
     expect(s.other_owner.data.result).toBe('refused');
   });
 });
+
+// Website path + routing (owner, 2026-11-15): a "We go to customers" website application has no point and no address; its
+// label survives approval so the dashboard asks for a service area. Once it marks its area, requests reach it across the
+// CUSTOMER's search radius, measured from the rounded point: the ~1 km rounding is a privacy representation, never a 1 km
+// service limit. An empty patch of the map (0.9 N, 0.9 E); 1 degree of latitude = ~69 mi.
+d('journey: a website service-area application, then real routing across miles', () => {
+  let s2;
+  beforeAll(async () => {
+    const log = await runJourney(`${actorDeclares(['v_admin', 'v_mobile', 'v_near', 'v_far'])} v_req uuid; v_p uuid; v_res jsonb;`, `
+  ${actorsSql({ people: ['v_admin', 'v_mobile', 'v_near', 'v_far'] })}
+  perform set_config('app.push_handoff_test_failure', 'on', true);
+  update profiles set is_admin = true where id = v_admin;
+  -- as submit-business-application writes it (service role): the label only, no point, no address
+  insert into business_partner_requests (requester_id, business_name, category, subcategory, address, location_source, source)
+    values (v_mobile, 'J419 Coffee Cart', 'food_drink', 'Coffee', null, 'service_area', 'web') returning id into v_req;
+  ${row('web_req', 'business_partner_requests', 'v_req')}
+  ${as('v_admin')}
+  v_p := approve_business_partner_request(v_req);
+  reset role;
+  ${row('web_partner', 'brand_partners', 'v_p')}
+  -- the cart marks its area in the dashboard (an exact pin; stored rounded to 0.91, 0.91)
+  ${as('v_mobile')}
+  perform set_business_location(v_p, 0.912345, 0.912345, 'service_area', null);
+  reset role;
+  ${row('web_area', 'brand_partners', 'v_p')}
+  -- a customer ~8 mi north asks within 10 mi: reached; one ~12 mi north asks within 10 mi: not reached
+  ${as('v_near')}
+  v_res := create_business_request(raw_text_param := 'J419 coffee near', latitude_param := 0.91 + 8 / 69.0, longitude_param := 0.91,
+     category_param := 'Coffee', party_size_param := 2, date_param := current_date, radius_miles_param := 10);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'eight_miles', 'ok', true, 'data', jsonb_build_object(
+     'reached', exists (select 1 from business_request_offers where request_id = (v_res->>'requestId')::uuid and partner_id = v_p))));
+  reset role;
+  ${as('v_far')}
+  v_res := create_business_request(raw_text_param := 'J419 coffee far', latitude_param := 0.91 + 12 / 69.0, longitude_param := 0.91,
+     category_param := 'Coffee', party_size_param := 2, date_param := current_date, radius_miles_param := 10);
+  log := log || jsonb_build_array(jsonb_build_object('step', 'twelve_miles', 'ok', true, 'data', jsonb_build_object(
+     'reached', exists (select 1 from business_request_offers where request_id = (v_res->>'requestId')::uuid and partner_id = v_p))));
+  reset role;`);
+    s2 = stepMap(log);
+  }, 60000);
+
+  test('the label survives with no point and no address, and approval carries it', () => {
+    expect(s2.web_req.data).toEqual({ lat: null, lng: null, address: null, source: 'service_area', place: null });
+    expect(s2.web_partner.data).toEqual({ lat: null, lng: null, address: null, source: 'service_area', place: null });
+  });
+  test('marking the area stores it rounded', () => {
+    expect(s2.web_area.data).toEqual({ lat: 0.91, lng: 0.91, address: null, source: 'service_area', place: null });
+  });
+  test("routing uses the customer's radius from the rounded point, not a 1 km limit", () => {
+    expect(s2.eight_miles.data.reached).toBe(true);
+    expect(s2.twelve_miles.data.reached).toBe(false);
+  });
+});

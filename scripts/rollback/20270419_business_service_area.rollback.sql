@@ -8,6 +8,8 @@ begin
   end if;
 end $$;
 
+drop trigger if exists bpr_carry_service_area_on_approval on public.business_partner_requests;
+drop function if exists public._carry_service_area_on_approval();
 drop trigger if exists brand_partner_service_area_guard on public.brand_partners;
 drop trigger if exists bpr_service_area_guard on public.business_partner_requests;
 drop function if exists public._service_area_location_guard();

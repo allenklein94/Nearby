@@ -216,9 +216,7 @@ serve(async (req) => {
     categories = wanted.filter((t) => real.has(t) && t !== subcategory).slice(0, MAX_SECONDARY_CATEGORIES);
   }
 
-  const { data: inserted, error } = await supabase
-    .from('business_partner_requests')
-    .insert({
+  const row: Record<string, unknown> = {
       business_name: businessName,
       business_description: description || null,
       category: category || null,
@@ -227,6 +225,8 @@ serve(async (req) => {
       attributes: category ? attributes : [],
       unlisted_category_text: category ? null : categoryText,
       address: address || null,
+      // The label alone (no point yet): the dashboard then asks for a service area, never an address (migration 20270419).
+      ...(goesToCustomers ? { location_source: 'service_area' } : {}),
       website: website || null,
       phone: businessPhone || null,
       source: 'web',
@@ -234,9 +234,15 @@ serve(async (req) => {
       applicant_email: applicantEmail,
       applicant_phone: applicantPhone,
       submitter_ip_hash: submitterIpHash,
-    })
-    .select('id')
-    .single();
+    };
+  const insertRow = (r: Record<string, unknown>) =>
+    supabase.from('business_partner_requests').insert(r).select('id').single();
+  let { data: inserted, error } = await insertRow(row);
+  // Deployed before migration 20270419 (the label is not allowed yet): send the application without it rather than fail.
+  if (error?.code === '23514' && row.location_source) {
+    const { location_source: _label, ...withoutLabel } = row;
+    ({ data: inserted, error } = await insertRow(withoutLabel));
+  }
 
   if (error) {
     if (error.code === '23505') {

@@ -3660,6 +3660,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
           onPress={() => {
             // An address with no pin yet goes straight to the map; otherwise the address sheet (storefront or service area).
             if (selectedPartner.address && businessLocationNotice(selectedPartner)) { openBusinessPin(selectedPartner.address); return; }
+            // A service-area business with no area yet goes straight to marking it.
+            if (isServiceArea(selectedPartner) && businessLocationNotice(selectedPartner)) { handleMarkServiceArea(); return; }
             setAddressInput(selectedPartner.address ?? '');
             setLocationModeInput(locationModeOf(selectedPartner) ?? LOCATION_MODES.storefront);
             setAddressModalVisible(true);

@@ -20,7 +20,8 @@ alter table public.brand_partners add constraint brand_partners_location_source_
 );
 
 -- 2. The guard: whatever writes a service-area row (sign-up insert, approval's copy, set_business_location, a direct write),
---    the stored row is rounded, address-free and place-ID-free. Never raises: it makes the row safe.
+--    the stored row is rounded, address-free and place-ID-free. Never raises: it makes the row safe. A label with no point
+--    is kept (the business has said it goes to its customers but has not marked its area yet).
 --    On brand_partners it runs after brand_partner_location_provenance (triggers fire in name order), so a moved point that
 --    the provenance trigger relabels 'host_pin' is a storefront pin and left alone.
 create or replace function public._service_area_location_guard()
@@ -30,11 +31,14 @@ create or replace function public._service_area_location_guard()
 as $function$
 begin
   if new.location_source = 'service_area' then
-    if new.latitude is null or new.longitude is null then
-      new.location_source := null;
-    else
+    -- No point yet (a website application: the area is marked in the dashboard after approval) keeps the label, so the
+    -- dashboard asks for a service area, never an address. Only a point is rounded.
+    if new.latitude is not null and new.longitude is not null then
       new.latitude := round(new.latitude::numeric, 2)::double precision;
       new.longitude := round(new.longitude::numeric, 2)::double precision;
+    else
+      new.latitude := null;
+      new.longitude := null;
     end if;
     new.address := null;
     new.google_place_id := null;
@@ -53,6 +57,30 @@ drop trigger if exists bpr_service_area_guard on public.business_partner_request
 create trigger bpr_service_area_guard
   before insert or update on public.business_partner_requests
   for each row execute function public._service_area_location_guard();
+
+-- 2b. Approval (approve_business_partner_request, unchanged) copies location_source only when the application has a point,
+--     so a website application that said "We go to customers" (no point, no address) would lose its label. This copies the
+--     label onto the new business at the moment the application is approved, only while that business still has no point.
+create or replace function public._carry_service_area_on_approval()
+ returns trigger
+ language plpgsql
+ set search_path to 'public'
+as $function$
+begin
+  if new.status = 'approved' and old.status is distinct from 'approved' and new.resulting_partner_id is not null
+     and new.location_source = 'service_area' then
+    update brand_partners set location_source = 'service_area', address = null, google_place_id = null
+    where id = new.resulting_partner_id and latitude is null and longitude is null;
+  end if;
+  return new;
+end;
+$function$;
+revoke all on function public._carry_service_area_on_approval() from public, anon, authenticated;
+
+drop trigger if exists bpr_carry_service_area_on_approval on public.business_partner_requests;
+create trigger bpr_carry_service_area_on_approval
+  after update of status on public.business_partner_requests
+  for each row execute function public._carry_service_area_on_approval();
 
 -- 3. The owner's own location write (Business Mode > Business address) accepts the new label. Same signature, same grants;
 --    a service-area write also clears the stored address (the guard does it; stated here so the intent is in one place).

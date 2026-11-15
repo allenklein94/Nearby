@@ -8,6 +8,8 @@ export function businessLocationNotice(partner) {
   if (!partner) return null;
   const hasCoords = partner.latitude != null && partner.longitude != null;
   if (hasCoords) return null;
+  // It said it goes to its customers (e.g. a website application) but hasn't marked its area: never ask for an address.
+  if (isServiceArea(partner)) return { needsAction: true, text: tr('ui.bizHelp.location.markServiceArea') };
   if (!partner.address) {
     return { needsAction: true, text: tr('ui.bizHelp.location.addAddress') };
   }

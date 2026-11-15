@@ -38,6 +38,7 @@ export default {
     },
     location: {
       addAddress: "📍 Add your address — until you do, nearby requests can’t reach your business",
+      markServiceArea: "🚗 Mark your service area — until you do, nearby requests can’t reach your business",
       cantPlace: "📍 Place your business on the map — tap so nearby requests can reach you",
       serviceAreaBanner: "🚗 You go to your customers · your area is set · Change",
       pinnedNoAddress: "📍 Your business is on the map · Add your address",
@@ -429,6 +430,7 @@ export default {
     },
     location: {
       addAddress: "📍 Agrega tu dirección: hasta que lo hagas, las solicitudes cercanas no pueden llegar a tu negocio",
+      markServiceArea: "🚗 Marca tu zona de servicio: hasta que lo hagas, las solicitudes cercanas no pueden llegar a tu negocio",
       cantPlace: "📍 Ubica tu negocio en el mapa: toca para que las solicitudes cercanas te lleguen",
       serviceAreaBanner: "🚗 Vas a donde están tus clientes · tu zona está guardada · Cambiar",
       pinnedNoAddress: "📍 Tu negocio está en el mapa · Agrega tu dirección",
@@ -820,6 +822,7 @@ export default {
     },
     location: {
       addAddress: "📍 Füge deine Adresse hinzu – bis dahin können Anfragen aus der Nähe dein Geschäft nicht erreichen",
+      markServiceArea: "🚗 Markiere dein Einsatzgebiet – bis dahin können Anfragen aus der Nähe dein Geschäft nicht erreichen",
       cantPlace: "📍 Setze dein Geschäft auf die Karte – tippe, damit Anfragen aus der Nähe dich erreichen",
       serviceAreaBanner: "🚗 Du kommst zu deinen Kund:innen · dein Gebiet ist gespeichert · Ändern",
       pinnedNoAddress: "📍 Dein Geschäft ist auf der Karte · Füge deine Adresse hinzu",
@@ -1211,6 +1214,7 @@ export default {
     },
     location: {
       addAddress: "📍 Ajoutez votre adresse : sans elle, les demandes à proximité ne peuvent pas atteindre votre établissement",
+      markServiceArea: "🚗 Indiquez votre zone d’intervention : sans elle, les demandes à proximité ne peuvent pas atteindre votre établissement",
       cantPlace: "📍 Placez votre commerce sur la carte — touchez pour que les demandes à proximité vous parviennent",
       serviceAreaBanner: "🚗 Vous vous déplacez chez vos clients · votre zone est enregistrée · Modifier",
       pinnedNoAddress: "📍 Votre établissement est sur la carte · Ajoutez votre adresse",
@@ -1602,6 +1606,7 @@ export default {
     },
     location: {
       addAddress: "📍 Adicione seu endereço — até lá, pedidos por perto não conseguem chegar ao seu negócio",
+      markServiceArea: "🚗 Marque sua área de atendimento — até lá, pedidos por perto não conseguem chegar ao seu negócio",
       cantPlace: "📍 Coloque seu negócio no mapa — toque para que pedidos próximos cheguem até você",
       serviceAreaBanner: "🚗 Você vai até seus clientes · sua área está salva · Alterar",
       pinnedNoAddress: "📍 Seu negócio está no mapa · Adicione seu endereço",
@@ -1993,6 +1998,7 @@ export default {
     },
     location: {
       addAddress: "📍 Ajoute adrès ou — jiskaske ou fè sa, demann ki toupre pa ka rive jwenn biznis ou",
+      markServiceArea: "🚗 Make zòn sèvis ou — jiskaske ou fè sa, demann ki toupre pa ka rive jwenn biznis ou",
       cantPlace: "📍 Mete biznis ou sou kat la — tape pou demann ki toupre yo ka rive jwenn ou",
       serviceAreaBanner: "🚗 Ou ale kote kliyan ou yo · zòn ou anrejistre · Chanje",
       pinnedNoAddress: "📍 Biznis ou sou kat la · Ajoute adrès ou",
@@ -2384,6 +2390,7 @@ export default {
     },
     location: {
       addAddress: "📍 添加你的地址——在添加之前，附近的请求无法到达你的商家",
+      markServiceArea: "🚗 标出你的服务区域——在标出之前，附近的请求无法到达你的商家",
       cantPlace: "📍 在地图上标出你的商家——点按，附近的请求才能找到你",
       serviceAreaBanner: "🚗 你上门服务客户 · 已设置服务区域 · 更改",
       pinnedNoAddress: "📍 你的商家已在地图上 · 添加地址",
@@ -2775,6 +2782,7 @@ export default {
     },
     location: {
       addAddress: "📍 Thêm địa chỉ của bạn — khi chưa có, các yêu cầu gần đây không thể đến doanh nghiệp của bạn",
+      markServiceArea: "🚗 Đánh dấu khu vực phục vụ của bạn — khi chưa có, các yêu cầu gần đây không thể đến doanh nghiệp của bạn",
       cantPlace: "📍 Đặt doanh nghiệp của bạn trên bản đồ — chạm để các yêu cầu gần đó đến được với bạn",
       serviceAreaBanner: "🚗 Bạn đến chỗ khách hàng · đã lưu khu vực · Thay đổi",
       pinnedNoAddress: "📍 Doanh nghiệp của bạn đã có trên bản đồ · Thêm địa chỉ",
@@ -3166,6 +3174,7 @@ export default {
     },
     location: {
       addAddress: "📍 Idagdag ang iyong address — hangga't wala ito, hindi maaabot ng mga request sa malapit ang negosyo mo",
+      markServiceArea: "🚗 Markahan ang iyong service area — hangga't wala ito, hindi maaabot ng mga request sa malapit ang negosyo mo",
       cantPlace: "📍 Ilagay ang iyong negosyo sa mapa — i-tap para maabot ka ng mga kahilingan sa malapit",
       serviceAreaBanner: "🚗 Ikaw ang pumupunta sa mga customer · naka-set na ang lugar mo · Palitan",
       pinnedNoAddress: "📍 Nasa mapa na ang negosyo mo · Idagdag ang address mo",
@@ -3557,6 +3566,7 @@ export default {
     },
     location: {
       addAddress: "📍 Добавьте адрес — пока его нет, запросы поблизости не смогут дойти до вашего бизнеса",
+      markServiceArea: "🚗 Отметьте зону обслуживания — пока её нет, запросы поблизости не смогут дойти до вашего бизнеса",
       cantPlace: "📍 Отметьте свой бизнес на карте — нажмите, чтобы запросы поблизости доходили до вас",
       serviceAreaBanner: "🚗 Вы приезжаете к клиентам · район сохранён · Изменить",
       pinnedNoAddress: "📍 Ваш бизнес на карте · Добавьте адрес",
@@ -3948,6 +3958,7 @@ export default {
     },
     location: {
       addAddress: "📍 주소를 추가하세요 — 추가하기 전까지는 근처 요청이 비즈니스에 도달할 수 없습니다",
+      markServiceArea: "🚗 서비스 지역을 표시하세요 — 표시하기 전까지는 근처 요청이 비즈니스에 도달할 수 없습니다",
       cantPlace: "📍 지도에 내 비즈니스를 표시하세요 — 탭하면 근처 요청이 도달할 수 있어요",
       serviceAreaBanner: "🚗 고객에게 찾아가는 업체 · 지역 설정됨 · 변경",
       pinnedNoAddress: "📍 업체가 지도에 표시돼요 · 주소를 추가하세요",
