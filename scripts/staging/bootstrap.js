@@ -36,8 +36,14 @@ const DEFAULT_THROUGH = '20270347';
 const lit = (s) => `'${String(s).replace(/'/g, "''")}'`;
 const sha256 = (b) => crypto.createHash('sha256').update(b).digest('hex');
 
+// Every .sql file in filename order, like scripts/replay/from-scratch-replay.sh: the 14-digit baseline
+// (00000000000000_baseline.sql) first, then the 8-digit versions up to --through. (The ledger's own list holds only 8-digit
+// versions; the baseline predates it.)
 function migrationList(through, repoRoot = REPO) {
-  return L.repoMigrations(repoRoot).filter((m) => m.version <= through);
+  const dir = path.join(repoRoot, 'supabase/migrations');
+  return fs.readdirSync(dir).filter((f) => f.endsWith('.sql')).sort().map((f) => ({
+    version: f.slice(0, 8), rel: `supabase/migrations/${f}`, sha256: sha256(fs.readFileSync(path.join(dir, f))),
+  })).filter((m) => m.version <= through);
 }
 
 function approvalCode(ref, list) {
