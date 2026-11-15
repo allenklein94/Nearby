@@ -21,6 +21,22 @@ Owner: resolve the remaining business website blockers now; deploy, publish or m
   (storefront + service-area through redemption, failure cases, staging secrets). Staging must deploy the combined tree.
 - Disk was full (47 MB): removed 11 exited local replay containers from earlier sessions and the npm cache.
 
+## 2026-11-15: Dead push tokens (20270421, staged)
+
+Owner (pasted assessment, 2026-11-15): fix the gap where a business owner who deleted the app keeps a stored push token and so
+gets neither push nor email. Built: migration `20270421_push_token_invalidation.sql` (private `push_receipt_checks`: ticket id,
+token SHA-256 only, alert words only for EMAIL_TYPES; service-role-only `_record_push_ticket`, `_invalidate_push_token`,
+`_push_receipts_due`, `_settle_push_receipt`; cron `check-push-receipts` */5 -> send-push `check_receipts`), send-push
+(`emailBusinessAlert` shared by the no-token and dead-token paths; ticket bookkeeping never affects the push), rollback
+script, post-deploy step. Rules: only DeviceNotRegistered counts; a token is cleared only while still the failed one (reinstall
+kept); each recorded send settles once (no duplicate email); no receipt = asked again, dropped after 24 h; never-settled rows
+dropped after 2 days. Verified locally only (logs /workspaces/.nearby-verify/v430): from-scratch replay 497/497, journeys
+858/858 incl. `pushTokenInvalidation` 8/8 (fails 8/8 after rollback), re-apply schema diff 0, Jest 548 suites / 7403 tests
+incl. `sendPushDeadToken.test.js` (real handler). Guard `domainEvents.test.js` now allows `dispatch_push_receipt_checks` as a
+non-push send-push caller. Not run: `deno check` (no deno here), a real Expo receipt, a deleted-app device test (staging).
+Also fixed d8596dd6's regression: `offerScreeningRetry` used `pg_temp._journey_screened`, defined only in the trust branch's
+harness; the journey now defines it itself (no-op before 0372).
+
 ## 2026-11-15: Make an Offer preview matches the customer card
 
 Owner asked the live preview to reflect the final customer card exactly. Inspection: content already shared (draftPreviewOffer -> presentOffer(owner_preview) -> OfferCustomerBody), button already disabled with the customer's label. Genuine drift = dashboard-local styles for the card frame (gatheringRow), business name (offerTitle 14 px), heard/status lines (breakdownText 11 px bold), title, button (submitButton, paddingVertical 14, 15 px). Fix: components/offerCardStyles.js holds the customer card's styles, spread into BusinessRequestDetailScreen and used by the preview; previewAcceptAction() in offerDraftPreview.js; unused consumerOfferAction import + previewPartner* styles removed. Tests: utils/offerPreviewParity.test.js 8 (price, discount + cap, one/two times + no pick, photo/video/video_label/none, live edits, same status/heard lines + never confirmation/redemption, disabled button words, source guard incl. no press handler + no customer identity). Jest 545/545, 7359; iOS export clean. Not verified: phone, browser, real screened media. Commit 226d484c.
