@@ -78,6 +78,12 @@ const NEW_LIVE = 'id, request_id, partner_id, status, viewed_at, offer_type, off
     G = (await db.query(`insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility) values ($1, 'Offer view API test', now() + interval '3 days', 40.0, -75.0, 'Coffee', 'j', 8, 'everyone') returning id`, [R])).rows[0].id;
     REQ = (await db.query(`select (create_business_request_for_gathering($1, 'Coffee for the group', 'Coffee', 20, 15, null, null, $2, null)->>'requestId')::uuid id`, [G, P1])).rows[0].id;
     await claims(BIZ);
+    // 20270372 (combined trust tree): the offer needs the screening result screen-business-content would record; the same
+    // low-risk stand-in the journey harness uses. Skipped where 0372 isn't installed.
+    if ((await db.query(`select to_regprocedure('private.require_business_screening(uuid,text,uuid,jsonb)') is not null x`)).rows[0].x) {
+      await db.query(`insert into business_content_screening_results (partner_id, target_type, target_id, submitted_by, content_snapshot, risk_tier, model_reasoning, source)
+        values ($1, 'offer_response', null, $2, private.screening_content_offer_response($3::text, 'We can accommodate this as requested.', null, '{}', null, null, null, null, null), 'low', 'api check stand-in for screen-business-content', 'submission')`, [P1, BIZ, REQ]);
+    }
     await db.query(`select submit_business_offer(request_id_param := $1, offer_type_param := 'standard', offer_description_param := 'We can accommodate this as requested.', offer_price_param := 12.5)`, [REQ]);
     O = (await db.query(`select id from business_request_offers where request_id = $1 and partner_id = $2`, [REQ, P1])).rows[0].id;
     // alternate relationship: the business owner is ALSO an approved attendee of the gathering the request came from
