@@ -31,6 +31,24 @@ const screened = (req) => `perform set_config('request.jwt.claims', json_build_o
   perform pg_temp._journey_screened('offer_response', 'screening_content_offer_response', array[${req}::text, 'J420 test offer', null, '{}', null, null, null, null, null]);
   perform set_config('request.jwt.claims', '', true);`;
 
+// The stand-in itself (the same body the combined branch's journeyHarness defines; defining it here too keeps this journey
+// runnable on this branch, whose harness has no 0372 stand-ins). Before 0372 it returns at once.
+const STAND_IN = `execute $sd$
+create or replace function pg_temp._journey_screened(p_target text, p_builder text, p_args text[]) returns void
+language plpgsql security definer set search_path = public as $f$
+declare p_content jsonb;
+begin
+  if to_regprocedure('private.require_business_screening(uuid,text,uuid,jsonb)') is null then return; end if;
+  execute format('select private.%I(%s)', p_builder,
+    (select string_agg(case when a is null then 'null' else quote_literal(a) end, ', ' order by o)
+       from unnest(p_args) with ordinality u(a, o))) into p_content;
+  insert into business_content_screening_results (partner_id, target_type, target_id, submitted_by, content_snapshot,
+                                                  risk_tier, model_reasoning, source)
+  select p.managed_partner_id, p_target, null, auth.uid(), p_content, 'low', 'journey stand-in for screen-business-content', 'submission'
+    from profiles p where p.id = auth.uid() and p.managed_partner_id is not null;
+end $f$;
+$sd$;`;
+
 d('journey: offer screening retries temporary failures by itself (20270420)', () => {
   let s;
   beforeAll(async () => {
@@ -40,6 +58,7 @@ d('journey: offer screening retries temporary failures by itself (20270420)', ()
       v_t timestamptz; v_n int; v_delays jsonb := '[]'; v_claims jsonb := '[]'; v_err text; v_pub jsonb; i int;`, `
   perform set_config('app.push_handoff_test_failure', 'on', true);
   perform set_config('app.offer_retry_dispatch_dry_run', 'on', true);
+  ${STAND_IN}
   ${actorsSql({ people: ['v_owner', 'v_cust', 'v_cust2', 'v_other'], business: { owner: 'v_owner', partner: 'v_partner' } })}
   ${as('v_cust')}
   ${ask('v_r1', 'J420 coffee one')} ${ask('v_r2', 'J420 coffee two')} ${ask('v_r3', 'J420 coffee three')} ${ask('v_r4', 'J420 coffee four')}

@@ -1,4 +1,44 @@
 # 2026-11-12: 20270413 shared website across accounts, staged, verified locally
+## 2026-11-15: Business website launch blockers prepared (four audits + integration gate 2)
+
+Owner: resolve the remaining business website blockers now; deploy, publish or merge nothing. Results:
+- Blank dashboard: already fixed on main (708b7600, f6c50f96; main now 990fe5f9). Exported main to /tmp (never docs/) and ran
+  the headless check: 27/53 with the offer-form step opened via the Opportunities tab (the stock checker reaches it through the
+  email link, which main lacks). Dashboard, five tabs, Make an Offer and its preview render; no ReferenceError; every console
+  error = PostHog's useNavigation noise (fixed on this branch only). Remaining fails = this branch's later features.
+- Email fallback: audited, code complete. Limitation recorded, not changed: email only when the owner has no push token.
+- Screening: deno 2.1.4 (npm, in /tmp) `deno check`: screen-business-content, submit-business-application clean; business-email
+  fixed (non-null env); send-push clean with strict off (its tests run the source as plain JS, so no annotations). Failure
+  handling fail-closed; credit/key/model never retried. Gate 3 (security of `_submit_business_offer_for_submission` + worker
+  entry) passed by code reading.
+- Gate 2: integration tree `integ/business-web-x-trust` (pushed; test vehicle only, docs = trust stack's). Resolved: two
+  `screeningFailureKind` functions (0387 health cause vs 0420 retry kind) -> the health cause feeds the retry rule
+  (`healthKind`, ported to this branch); 0399 paused-manager check skipped for automatic tries (the DB refuses the write);
+  0372 offer report-button styles kept. Found + fixed: post-deploy.js on rate-limit-api-checks didn't parse (30381b0d);
+  screeningHealth.js default-null params failed deno check (d397295b); notificationTier guard stale on this branch (dd62ce1e);
+  retry journey lacked 0372's per-try screening result (stand-in, d8596dd6). Combined: replay 543/543 (with the Auth prepare
+  step), journeys 1475/1475, Jest 583/583 suites, deno clean. Logs /workspaces/.nearby-verify/v428, /tmp/claude-1000/web429.
+- Staging: bootstrap already validated locally (v427). New plan `PRODUCT_AUDIT/STAGING_E2E_TEST_PLAN_2026-11-15.md`
+  (storefront + service-area through redemption, failure cases, staging secrets). Staging must deploy the combined tree.
+- Disk was full (47 MB): removed 11 exited local replay containers from earlier sessions and the npm cache.
+
+## 2026-11-15: Dead push tokens (20270421, staged)
+
+Owner (pasted assessment, 2026-11-15): fix the gap where a business owner who deleted the app keeps a stored push token and so
+gets neither push nor email. Built: migration `20270421_push_token_invalidation.sql` (private `push_receipt_checks`: ticket id,
+token SHA-256 only, alert words only for EMAIL_TYPES; service-role-only `_record_push_ticket`, `_invalidate_push_token`,
+`_push_receipts_due`, `_settle_push_receipt`; cron `check-push-receipts` */5 -> send-push `check_receipts`), send-push
+(`emailBusinessAlert` shared by the no-token and dead-token paths; ticket bookkeeping never affects the push), rollback
+script, post-deploy step. Rules: only DeviceNotRegistered counts; a token is cleared only while still the failed one (reinstall
+kept); each recorded send settles once (no duplicate email); no receipt = asked again, dropped after 24 h; never-settled rows
+dropped after 2 days. Verified locally only (logs /workspaces/.nearby-verify/v430): from-scratch replay 497/497, journeys
+858/858 incl. `pushTokenInvalidation` 8/8 (fails 8/8 after rollback), re-apply schema diff 0, Jest 548 suites / 7403 tests
+incl. `sendPushDeadToken.test.js` (real handler). Guard `domainEvents.test.js` now allows `dispatch_push_receipt_checks` as a
+non-push send-push caller. Not run: `deno check` (no deno here), a real Expo receipt, a deleted-app device test (staging).
+Also fixed d8596dd6's regression: `offerScreeningRetry` used `pg_temp._journey_screened`, defined only in the trust branch's
+harness; the journey now defines it itself (no-op before 0372).
+
+## 2026-11-15: Make an Offer preview matches the customer card
 
 Owner approved the narrow fix for idea 35's gap (different wording, same website, not yet on Google's list). Built on 0378's pattern and 0396's link detector: private.shared_link_destination (host only; punycode decoder in plpgsql, %XX, IPv4 forms; registrable domain with common ccTLD second levels; platform list ignore / per_site / per_path in private.shared_link_platforms; bare names need a known ending so "Port St.Lucie" isn't a site), HMAC under private.link_signal_secret, private.link_sightings (key, account, gathering, first/last seen), case signal shared_link (0406's list + one), cluster + closed-case rules as 0378, trigger zz_gathering_link_sighting (public visible gatherings, title + description), backfill + purge job, detector-switch entry `link` (numbers 5) + disclosure marker, admin website line + note. Found while testing: 0358 already caps public posts with a link at 3/day per account, and 0362 at 5 gatherings/day. Results (local only): replay 537/537, journeys 1426/1426, sharedPublicLinks 17/17 (17/17 fail without 0413; a naive host mutation fails 10/17), rollback = 0412 schema 0 diff, re-apply 0 diff, Jest 563 / 7587, concurrency shared-link + shared-text + behavior-signal + gathering-signal pass. sha256 1cc457ac4f6bb46ca6422f0954aaa6dd8ee1eea7d5282f7d9bf3157ec0ca1666. Not run: production, phone, website.
 

@@ -233,6 +233,63 @@ function replaceInPlace(data) {
   const k = data?.collapse_key;
   return typeof k === 'string' && REPLACE_KEY.test(k) ? { collapseId: k, tag: k } : {};
 }
+// The email fallback for ONE business alert (EMAIL_TYPES only, a verified + enabled address only). Used when the owner has
+// no push token, and when Expo says the stored token is dead (DeviceNotRegistered: the app was deleted). Never throws.
+async function emailBusinessAlert(admin, recipientId, title, body, data) {
+  if (!EMAIL_TYPES.has(data?.type)) return { emailed: false, emailReason: undefined };
+  const { data: es } = await admin.from('business_email_settings').select('email, verified_at, enabled').eq('user_id', recipientId).maybeSingle();
+  if (!(es?.email && es.verified_at && es.enabled)) return { emailed: false, emailReason: undefined };
+  const webUrl = Deno.env.get('BUSINESS_WEB_URL');
+  // Owner, 2026-11-14: an alert about ONE request links to it (the website opens the push's own destination,
+  // src/utils/businessWebLink.js; same `?n=<type>&r=<request id>` shape, guard keeps them equal). No personal data.
+  const linked = businessWebLinkUrl(webUrl, data?.type, data?.request_id);
+  const linkLine = !webUrl ? '' : linked !== webUrl ? `\n\nOpen this request: ${linked}` : `\n\nOpen your Nearby business dashboard: ${webUrl}`;
+  const sent = await sendEmail(es.email, title, `${body ?? ''}${linkLine}`);
+  // Never a silent failure: a verified owner is waiting on this alert, so an unconfigured/failed provider shows up in the function logs.
+  if (!sent.sent) console.warn(`business email alert NOT sent (${sent.reason}) for ${data?.type}; set RESEND_API_KEY and EMAIL_FROM secrets`);
+  return { emailed: sent.sent, emailReason: sent.reason };
+}
+// Dead tokens (20270421): only Expo's DeviceNotRegistered means the app is gone; every other error is left alone.
+const DEAD_TOKEN_ERROR = 'DeviceNotRegistered';
+function expoHeaders() {
+  return {
+    Accept: 'application/json',
+    'Content-Type': 'application/json',
+    // Expo enhanced push security: once the owner turns it on and sets EXPO_ACCESS_TOKEN, Expo accepts only signed sends.
+    ...(Deno.env.get('EXPO_ACCESS_TOKEN') ? { Authorization: `Bearer ${Deno.env.get('EXPO_ACCESS_TOKEN')}` } : {})
+  };
+}
+// The receipt check (cron, 20270421): sends older than 15 minutes; a dead device clears its token and its business alert is
+// emailed once (the database hands each recorded send out once). An Expo/network failure changes nothing (asked again later).
+async function checkReceipts(admin) {
+  const { data: due, error: dueError } = await admin.rpc('_push_receipts_due', { limit_param: 300 });
+  if (dueError) return { checked: 0, error: 'not_installed' };
+  const ids = (due ?? []).map((r) => r.ticket_id).filter(Boolean);
+  if (!ids.length) return { checked: 0 };
+  let receipts;
+  try {
+    const res = await fetch('https://exp.host/--/api/v2/push/getReceipts', { method: 'POST', headers: expoHeaders(), body: JSON.stringify({ ids }), signal: AbortSignal.timeout(15000) });
+    if (!res.ok) return { checked: 0, error: `expo_${res.status}` };
+    receipts = (await res.json())?.data;
+  } catch (_e) {
+    return { checked: 0, error: 'expo_unreachable' };
+  }
+  if (!receipts || typeof receipts !== 'object') return { checked: 0, error: 'expo_bad_reply' };
+  let invalidated = 0;
+  let emailed = 0;
+  for (const id of ids) {
+    const r = receipts[id];
+    const outcome = !r ? 'pending' : r.status === 'ok' ? 'ok' : r.details?.error === DEAD_TOKEN_ERROR ? 'device_not_registered' : 'other_error';
+    const { data: settled, error: settleError } = await admin.rpc('_settle_push_receipt', { ticket_id_param: id, outcome_param: outcome });
+    if (settleError || !settled) continue;
+    if (settled.invalidated) invalidated += 1;
+    if (settled.email) {
+      const e = await emailBusinessAlert(admin, settled.recipient_id, settled.email.title, settled.email.body, settled.email.data);
+      if (e.emailed) emailed += 1;
+    }
+  }
+  return { checked: ids.length, invalidated, emailed };
+}
 serve(async (req)=>{
   try {
     // Critical: this function was previously callable by anyone
@@ -251,7 +308,12 @@ serve(async (req)=>{
         status: 401
       });
     }
-    const { recipient_id, title, body, data } = await req.json();
+    const payload = await req.json();
+    if (payload?.action === 'check_receipts') {
+      const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+      return new Response(JSON.stringify({ ok: true, ...(await checkReceipts(admin)) }), { headers: { 'Content-Type': 'application/json' } });
+    }
+    const { recipient_id, title, body, data } = payload;
     if (!recipient_id || !title) {
       return new Response(JSON.stringify({
         error: 'recipient_id and title are required'
@@ -275,23 +337,7 @@ serve(async (req)=>{
       // Business Web parity: an owner who only uses the website has no push token. If they have a verified, enabled
       // email address (business_email_settings) send the same BUSINESS alert there (EMAIL_TYPES only).
       // No-op (and never an error) until the email provider is configured.
-      let emailed = false;
-      let emailReason;
-      if (EMAIL_TYPES.has(data?.type)) {
-        const { data: es } = await admin.from('business_email_settings').select('email, verified_at, enabled').eq('user_id', recipient_id).maybeSingle();
-        if (es?.email && es.verified_at && es.enabled) {
-          const webUrl = Deno.env.get('BUSINESS_WEB_URL');
-          // Owner, 2026-11-14: an alert about ONE request links to it (the website opens the push's own destination,
-          // src/utils/businessWebLink.js; same `?n=<type>&r=<request id>` shape, guard keeps them equal). No personal data.
-          const linked = businessWebLinkUrl(webUrl, data?.type, data?.request_id);
-          const linkLine = !webUrl ? '' : linked !== webUrl ? `\n\nOpen this request: ${linked}` : `\n\nOpen your Nearby business dashboard: ${webUrl}`;
-          const sent = await sendEmail(es.email, title, `${body ?? ''}${linkLine}`);
-          emailed = sent.sent;
-          emailReason = sent.reason;
-          // Never a silent failure: a verified owner is waiting on this alert, so an unconfigured/failed provider shows up in the function logs.
-          if (!sent.sent) console.warn(`business email alert NOT sent (${sent.reason}) for ${data?.type}; set RESEND_API_KEY and EMAIL_FROM secrets`);
-        }
-      }
+      const { emailed, emailReason } = await emailBusinessAlert(admin, recipient_id, title, body, data);
       return new Response(JSON.stringify({
         ok: true,
         skipped: 'no_token',
@@ -304,12 +350,7 @@ serve(async (req)=>{
     const delivery = PRIORITY_DELIVERY[notifPriority];
     const pushResponse = await fetch('https://exp.host/--/api/v2/push/send', {
       method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        // Expo enhanced push security: once the owner turns it on and sets EXPO_ACCESS_TOKEN, Expo accepts only signed sends.
-        ...(Deno.env.get('EXPO_ACCESS_TOKEN') ? { Authorization: `Bearer ${Deno.env.get('EXPO_ACCESS_TOKEN')}` } : {})
-      },
+      headers: expoHeaders(),
       body: JSON.stringify({
         to: pushToken,
         title,
@@ -321,9 +362,33 @@ serve(async (req)=>{
       })
     });
     const result = await pushResponse.json();
+    // 20270421: one message = one ticket. Accepted -> recorded for the receipt check (a business alert with its words, so a
+    // dead device can still be emailed once). Refused as DeviceNotRegistered -> the token is cleared and the alert emailed now.
+    // Before 20270421 is live the calls fail quietly; nothing here changes the push itself or the response's shape.
+    const ticket = Array.isArray(result?.data) ? result.data[0] : result?.data;
+    let tokenCleared = false;
+    let emailed = false;
+    try {
+      if (ticket?.status === 'ok' && ticket.id) {
+        const isAlert = EMAIL_TYPES.has(data?.type);
+        await admin.rpc('_record_push_ticket', {
+          ticket_id_param: String(ticket.id), recipient_id_param: recipient_id, token_param: pushToken,
+          email_title_param: isAlert ? title : null, email_body_param: isAlert ? (body ?? '') : null,
+          email_data_param: isAlert ? { type: data?.type, request_id: data?.request_id ?? null } : null,
+        });
+      } else if (ticket?.status === 'error' && ticket.details?.error === DEAD_TOKEN_ERROR) {
+        const { data: cleared } = await admin.rpc('_invalidate_push_token', { recipient_id_param: recipient_id, token_param: pushToken });
+        tokenCleared = cleared === true;
+        emailed = (await emailBusinessAlert(admin, recipient_id, title, body, data)).emailed;
+      }
+    } catch (e) {
+      console.warn('send-push: ticket bookkeeping failed (push unaffected)', String(e));
+    }
     return new Response(JSON.stringify({
       ok: true,
-      result
+      result,
+      ...(tokenCleared ? { tokenCleared } : {}),
+      ...(emailed ? { emailed } : {})
     }), {
       headers: {
         'Content-Type': 'application/json'

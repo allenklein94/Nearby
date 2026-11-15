@@ -453,6 +453,12 @@ const STEPS = {
       'on a NON-production project only (a real provider outage cannot be produced on demand): a dedicated test business sends an offer; set that submission to unavailable with next_retry_at in the past; within ~1 min the job publishes it (one result push to the business, one reply push to the customer, one offer row)',
       'with Anthropic credit at 0 (a 400): the submission stays unavailable with Try again, next_retry_at null (never retried)',
       'rollback: unschedules the job; pending tries become plain Try again; redeploy the previous screen-business-content with it'] },
+  20270421: { journeys: ['pushTokenInvalidation'],
+    edge: ['send-push from this commit or later, right after 0421 (before it the ticket bookkeeping fails quietly and the push is unaffected)'],
+    manual: ['read-only: cron job check-push-receipts exists, schedule */5 * * * *; private.push_receipt_checks has no anon/authenticated grant',
+      'a normal push to the owner\'s iPhone still arrives; one push_receipt_checks row appears, and is gone ~15-20 min later with the token kept (receipt ok)',
+      'on a NON-production project only: a test business owner with a verified email, app deleted from a test phone (Expo reports DeviceNotRegistered only after Apple/Google do, can take minutes to hours); send a business alert: token cleared + exactly ONE email for that alert; the next alert goes straight to email (skipped: no_token)',
+      'rollback: unschedules the job, drops the table; cleared tokens stay cleared (re-registered when the app is opened); redeploy the previous send-push with it'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

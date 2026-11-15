@@ -36,7 +36,10 @@ describe('one push sender (item 125 completion)', () => {
   it('only _push_outbox_deliver calls send-push; every other push goes through _send_push', () => {
     const defs = liveDefinitionsFromMigrations();
     const direct = Object.keys(defs).filter((n) => /functions\/v1\/send-push/.test(defs[n]));
-    expect(direct).toEqual(['_push_outbox_deliver']);
+    // dispatch_push_receipt_checks (20270421) calls send-push's check_receipts action: it fetches Expo receipts and sends
+    // no push (a dead device's alert goes to email), so pushes still have one sender.
+    expect(direct).toEqual(['_push_outbox_deliver', 'dispatch_push_receipt_checks']);
+    expect(defs.dispatch_push_receipt_checks).toMatch(/'action', 'check_receipts'/);
     const viaSender = Object.keys(defs).filter((n) => /_send_push\(/.test(defs[n]) && n !== '_send_push');
     expect(viaSender.length).toBeGreaterThanOrEqual(80);
   });
