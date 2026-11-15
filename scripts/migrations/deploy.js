@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // The ONE production migration apply path (owner, 2026-10-24). See scripts/migrations/ledger.js.
-//   node scripts/migrations/deploy.js <migration file> --target=prod|local [--check]
+//   node scripts/migrations/deploy.js <migration file> --target=prod|staging|local [--check]
+// staging (approval B): NEARBY_STAGING_APPROVAL=staging:<version>:<sha256> instead of NEARBY_PROD_APPROVAL; the project
+// ref only from NEARBY_STAGING_REF or .claude/staging.json, PRODUCTION's ref refused (scripts/lib/stagingTarget.js).
 // Needs (both targets, so the gate is the same one the tests prove):
 //   NEARBY_PROD_APPROVAL=<version>:<sha256 of the committed file>   the owner's approval of exactly this file
 //   NEARBY_APPROVAL_REF="owner, 2026-10-24, chat: ..."              where/when it was approved (stored in the ledger)
@@ -16,11 +18,17 @@ async function main(argv, env = process.env, repoRoot = REPO) {
   const file = argv.find((a) => !a.startsWith('--'));
   const target = (argv.find((a) => a.startsWith('--target=')) || '').split('=')[1];
   const check = argv.includes('--check');
-  if (!file) throw new Error('usage: deploy.js <migration file> --target=prod|local [--check]');
-  const { name, run } = L.runner(target);
-  const facts = L.migrationFacts(file, repoRoot);
+  if (!file) throw new Error('usage: deploy.js <migration file> --target=prod|staging|local [--check]');
+  const { name, run, ref } = L.runner(target, env);
+  const fileFacts = L.migrationFacts(file, repoRoot);
+  // Staging only: a migration naming production's edge-function URLs (send-push, screen-business-content, ...) is re-pointed to
+  // staging's inside the SAME transaction, before its ledger row (scripts/staging/bootstrap.js repointSql), so the staging
+  // database never holds a production URL, not even between two statements. Approval + hash stay the committed file's.
+  const facts = target === 'staging' && fileFacts.exists
+    ? { ...fileFacts, content: `${fileFacts.content}\n;\n${require('../staging/bootstrap').repointSql(ref)}` }
+    : fileFacts;
   const ledger = await L.readLedger(run);
-  const refusals = L.preflight({ facts, env, ledger });
+  const refusals = L.preflight({ facts, env, ledger, target });
   console.log(`target: ${name}\nmigration: ${facts.rel}\nversion: ${facts.version}\nsha256: ${facts.sha256}\ncommit: ${facts.commit}`);
   if (refusals.length) {
     console.error(`REFUSED (nothing sent):\n- ${refusals.join('\n- ')}`);

@@ -143,7 +143,7 @@ describe('targets', () => {
   const saved = { ...process.env };
   afterEach(() => { process.env = { ...saved }; });
   test('no target, a hosted URL as local, or prod with a local URL set: refused', () => {
-    expect(() => L.runner(undefined)).toThrow(/--target=prod or --target=local/);
+    expect(() => L.runner(undefined)).toThrow(/--target=prod, --target=staging or --target=local/);
     process.env.NEARBY_LOCAL_DB_URL = 'postgres://u:p@db.enmosvippabmuqslzrox.supabase.co:5432/postgres';
     expect(() => L.runner('local')).toThrow(/hosted Supabase/);
     expect(() => L.runner('prod')).toThrow(/refusing --target=prod/);

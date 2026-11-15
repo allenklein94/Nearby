@@ -1,5 +1,5 @@
 import { Platform, Linking } from 'react-native';
-import { supabase } from './supabase';
+import { supabase, SERVICES } from './supabase';
 
 let Purchases = null;
 try {
@@ -11,18 +11,19 @@ try {
 const REVENUECAT_IOS_API_KEY = 'appl_jOyJTTCDpRjErXfxqRrkpXScSwo';
 
 export function initPurchases(appUserId) {
-  if (!Purchases) return;
+  // In-app purchases only in production: the staging app has no App Store / RevenueCat record and never buys anything.
+  if (!Purchases || !SERVICES.inAppPurchases) return;
   Purchases.configure({ apiKey: REVENUECAT_IOS_API_KEY, appUserID: appUserId });
 }
 
 export async function getOfferings() {
-  if (!Purchases) return null;
+  if (!Purchases || !SERVICES.inAppPurchases) return null;
   const offerings = await Purchases.getOfferings();
   return offerings.current;
 }
 
 export async function purchasePackage(pkg) {
-  if (!Purchases) throw new Error('Purchases not available in this environment.');
+  if (!Purchases || !SERVICES.inAppPurchases) throw new Error('Purchases not available in this environment.');
   const { customerInfo } = await Purchases.purchasePackage(pkg);
   return customerInfo.entitlements.active['premium'] !== undefined;
 }

@@ -10,15 +10,44 @@
 // Only the docs/business regeneration step needs this, so it's opted in via
 // an env var that native builds never set:
 //   NEARBY_WEB_EXPORT_BASE_URL=/Nearby/business npx expo export -p web
-module.exports = ({ config }) => {
-  if (process.env.NEARBY_WEB_EXPORT_BASE_URL) {
+//
+// Environment (owner approval B, 2026-11-15): APP_VARIANT=staging builds "Nearby Staging" against the staging Supabase
+// project (separate bundle id, scheme and Expo project); unset = production, exactly as before plus extra.nearbyEnv.
+// Every rule and refusal lives in src/config/environments.js; a bad combination stops the build here.
+const { resolveBuildEnvironment, embeddedEnvironment, STAGING_DROPPED_EXTRA } = require('./src/config/environments');
+
+function withEnvironment(config, env) {
+  const resolved = resolveBuildEnvironment(env);
+  const extra = { ...config.extra, nearbyEnv: embeddedEnvironment(resolved) };
+  if (resolved.variant === 'production') return { ...config, extra };
+  // Staging carries none of production's outside-service settings: no Turnstile widget (staging Auth has CAPTCHA off; the
+  // production site key is tied to production's hostname) and no Spotify client (its redirect is production's scheme).
+  for (const k of STAGING_DROPPED_EXTRA) delete extra[k];
+  return {
+    ...config,
+    name: resolved.appName,
+    slug: resolved.slug,
+    scheme: resolved.scheme,
+    ios: { ...config.ios, bundleIdentifier: resolved.bundleId },
+    android: { ...config.android, package: resolved.bundleId },
+    extra: {
+      ...extra,
+      eas: { ...(config.extra && config.extra.eas), projectId: resolved.easProjectId },
+      stripePublishableKey: resolved.stripePublishableKey || '',
+    },
+  };
+}
+
+module.exports = ({ config }, env = process.env) => {
+  const withEnv = withEnvironment(config, env);
+  if (env.NEARBY_WEB_EXPORT_BASE_URL) {
     return {
-      ...config,
+      ...withEnv,
       experiments: {
-        ...config.experiments,
-        baseUrl: process.env.NEARBY_WEB_EXPORT_BASE_URL,
+        ...withEnv.experiments,
+        baseUrl: env.NEARBY_WEB_EXPORT_BASE_URL,
       },
     };
   }
-  return config;
+  return withEnv;
 };

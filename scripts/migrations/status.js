@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // Read-only migration status (owner, 2026-10-24): repo migrations vs private.migration_ledger.
-//   node scripts/migrations/status.js --target=prod|local [--all]
+//   node scripts/migrations/status.js --target=prod|staging|local [--all]
 // Sends only ledger.js's two single SELECTs; never writes. Default lists versions after the pre-ledger baseline; --all lists every file.
 const path = require('path');
 const L = require('./ledger');
 
 async function main(argv, repoRoot = path.resolve(__dirname, '../..')) {
   const target = (argv.find((a) => a.startsWith('--target=')) || '').split('=')[1];
-  const { name, run } = L.runner(target);
+  const { name, run } = L.runner(target, process.env);
   const ledger = await L.readLedger(run);
   const report = L.statusReport(L.repoMigrations(repoRoot), ledger)
     .filter((r) => argv.includes('--all') || r.version > L.BASELINE_MAX);
