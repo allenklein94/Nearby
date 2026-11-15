@@ -79,7 +79,8 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
 import { budgetMeetsMinSpend } from '../utils/budgetTier';
-import { businessLocationNotice } from '../utils/businessLocationNotice';
+import { businessLocationNotice, businessLocationBanner } from '../utils/businessLocationNotice';
+import { LOCATION_MODES, locationModeOf, isServiceArea, businessLocationWrite } from '../utils/businessLocationMode';
 import { dashboardGlance, visitHasPassed } from '../utils/dashboardGlance';
 import { businessHomeTiles } from '../utils/businessHomeTiles';
 import { businessPipeline, PIPELINE_STAGES, isPipelineWon } from '../utils/businessPipeline';
@@ -402,6 +403,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0, billingModel: null, includedUnits: 0, billableCount: 0 });
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
+  // Storefront vs "We go to customers" (utils/businessLocationMode.js), chosen in the address sheet. The pin screen returns here;
+  // pendingLocation says which mode that pin is for (and, when a service-area business becomes a storefront, the address to save
+  // once its pin is placed: an address is never stored while the business is still a service area).
+  const [locationModeInput, setLocationModeInput] = useState(LOCATION_MODES.storefront);
+  const pendingLocation = useRef(null);
   const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
   const [editNameInput, setEditNameInput] = useState('');
   const [editDescriptionInput, setEditDescriptionInput] = useState('');
@@ -1103,9 +1109,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   // Owner decisions 2026-10-22 (final, Option B): saving the address saves the words only; the map then opens on that
   // address (Google only centres it) and the business taps its own door. Only that pin is stored (setBusinessLocation).
-  function openBusinessPin(address) {
+  function openBusinessPin(address, pending = { mode: LOCATION_MODES.storefront }) {
     const p = selectedPartner;
-    const own = p?.latitude != null && p?.longitude != null && (address ?? p.address) === p.address;
+    pendingLocation.current = pending;
+    const own = p?.latitude != null && p?.longitude != null && !isServiceArea(p) && (address ?? p.address) === p.address;
     navigation.navigate('SelectGatheringLocation', {
       returnTo: 'BusinessDashboard',
       ...(own ? { initialLat: p.latitude, initialLng: p.longitude } : { searchText: address ?? p?.address ?? '' }),
@@ -1116,6 +1123,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     if (!addressInput.trim()) return;
     const address = addressInput.trim();
     const moved = address !== (selectedPartner.address ?? '');
+    if (isServiceArea(selectedPartner)) {
+      // Becoming a storefront: the address is saved after its pin, in the return handler below.
+      setAddressModalVisible(false);
+      openBusinessPin(address, { mode: LOCATION_MODES.storefront, address });
+      return;
+    }
     setSavingAddress(true);
     try {
       await updateBusinessAddress(selectedPartner.id, address);
@@ -1129,19 +1142,43 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSavingAddress(false);
   }
 
-  // The pin the business placed comes back here with its provenance (utils/locationProvenance.js).
+  // A service-area business marks roughly where it is based; only a rounded area is stored (migration 20270419).
+  function handleMarkServiceArea() {
+    setAddressModalVisible(false);
+    const p = selectedPartner;
+    pendingLocation.current = { mode: LOCATION_MODES.serviceArea };
+    navigation.navigate('SelectGatheringLocation', {
+      returnTo: 'BusinessDashboard',
+      ...(p?.latitude != null && p?.longitude != null ? { initialLat: p.latitude, initialLng: p.longitude } : {}),
+    });
+  }
+
+  // The pin the business placed comes back here with its provenance (utils/locationProvenance.js), written in the mode the owner
+  // chose (businessLocationWrite: a service-area point is rounded, its address cleared).
   useEffect(() => {
     const p = route?.params;
     if (!selectedPartner?.id || typeof p?.selectedLat !== 'number' || typeof p?.selectedLng !== 'number') return;
-    const pin = { latitude: p.selectedLat, longitude: p.selectedLng, locationSource: p.selectedLocationSource === 'device' ? 'device' : 'host_pin', googlePlaceId: p.selectedPlaceId ?? null };
+    const pending = pendingLocation.current ?? { mode: LOCATION_MODES.storefront };
+    pendingLocation.current = null;
+    const write = businessLocationWrite(pending.mode, { latitude: p.selectedLat, longitude: p.selectedLng, locationSource: p.selectedLocationSource, googlePlaceId: p.selectedPlaceId ?? null });
     navigation.setParams({ selectedLat: undefined, selectedLng: undefined, selectedLocationSource: undefined, selectedPlaceId: undefined, selectedPlaceName: undefined });
+    const save = async () => {
+      await setBusinessLocation(selectedPartner.id, write);
+      if (pending.address) await updateBusinessAddress(selectedPartner.id, pending.address);
+    };
     (async () => {
       try {
-        await setBusinessLocation(selectedPartner.id, pin);
-        setSelectedPartner((prev) => ({ ...prev, latitude: pin.latitude, longitude: pin.longitude }));
-        showSuccessToast(t('ui.bizDash1.saved'), t('ui.bizDash1.yourBusinessAddressIsNow'));
+        await save();
+        setSelectedPartner((prev) => ({
+          ...prev,
+          latitude: write.latitude,
+          longitude: write.longitude,
+          location_source: write.locationSource,
+          address: pending.mode === LOCATION_MODES.serviceArea ? null : pending.address ?? prev.address,
+        }));
+        showSuccessToast(t('ui.bizDash1.saved'), pending.mode === LOCATION_MODES.serviceArea ? undefined : t('ui.bizDash1.yourBusinessAddressIsNow'));
       } catch (e) {
-        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => setBusinessLocation(selectedPartner.id, pin) });
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => save() });
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3620,17 +3657,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <TouchableOpacity
           style={[styles.addressBanner, businessLocationNotice(selectedPartner) && { borderColor: colors.primary }]}
           onPress={() => {
-            // An address with no pin yet goes straight to the map; otherwise the address editor.
+            // An address with no pin yet goes straight to the map; otherwise the address sheet (storefront or service area).
             if (selectedPartner.address && businessLocationNotice(selectedPartner)) { openBusinessPin(selectedPartner.address); return; }
             setAddressInput(selectedPartner.address ?? '');
+            setLocationModeInput(locationModeOf(selectedPartner) ?? LOCATION_MODES.storefront);
             setAddressModalVisible(true);
           }}
           activeOpacity={0.85}
-          accessibilityLabel={businessLocationNotice(selectedPartner)?.text ?? t('ui.bizDash1.addressTapToEditA11y', { address: selectedPartner.address })}
+          accessibilityLabel={businessLocationNotice(selectedPartner)?.text ?? (selectedPartner.address ? t('ui.bizDash1.addressTapToEditA11y', { address: selectedPartner.address }) : businessLocationBanner(selectedPartner)?.text)}
           accessibilityRole="button"
         >
           <Text style={[styles.addressBannerText, businessLocationNotice(selectedPartner) && { color: colors.textPrimary }]}>
-            {businessLocationNotice(selectedPartner)?.text ?? `📍 ${selectedPartner.address}`}
+            {businessLocationBanner(selectedPartner)?.text}
           </Text>
         </TouchableOpacity>
       )}
@@ -6618,23 +6656,46 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
                 {t('ui.bizDash3.thisDeterminesWhoSeesYour')}
               </Text>
-              <TextInput
-                style={styles.input}
-                placeholder={t('ui.bizDash3.eG123MainSt')}
-                placeholderTextColor={colors.textTertiary}
-                value={addressInput}
-                onChangeText={setAddressInput}
-                accessibilityLabel={t('ui.bizDash3.businessAddressA11y')}
-              />
-              <TouchableOpacity
-                style={styles.submitButton}
-                onPress={handleUpdateAddress}
-                disabled={savingAddress || !addressInput.trim()}
-                accessibilityLabel={savingAddress ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveAddressA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.submitButtonText}>{savingAddress ? t('ui.bizDash3.saving') : t('ui.bizDash3.saveAddress')}</Text>
-              </TouchableOpacity>
+              <View style={[styles.chipRow, { marginTop: 0, marginBottom: spacing.md }]}>
+                {[LOCATION_MODES.storefront, LOCATION_MODES.serviceArea].map((m) => {
+                  const on = locationModeInput === m;
+                  const label = t(m === LOCATION_MODES.storefront ? 'ui.bizHelp.location.modeStorefront' : 'ui.bizHelp.location.modeServiceArea');
+                  return (
+                    <TouchableOpacity key={m} style={[styles.chip, on && styles.chipSelected]} onPress={() => setLocationModeInput(m)}
+                      accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: on }}>
+                      <Text style={[styles.chipText, on && styles.chipTextSelected]}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {locationModeInput === LOCATION_MODES.serviceArea ? (
+                <>
+                  <Text style={styles.helperText}>{t('ui.bizHelp.location.serviceAreaHint')}</Text>
+                  <TouchableOpacity style={styles.submitButton} onPress={handleMarkServiceArea} accessibilityRole="button" accessibilityLabel={t('ui.bizHelp.location.markArea')}>
+                    <Text style={styles.submitButtonText}>{t('ui.bizHelp.location.markArea')}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t('ui.bizDash3.eG123MainSt')}
+                    placeholderTextColor={colors.textTertiary}
+                    value={addressInput}
+                    onChangeText={setAddressInput}
+                    accessibilityLabel={t('ui.bizDash3.businessAddressA11y')}
+                  />
+                  <TouchableOpacity
+                    style={styles.submitButton}
+                    onPress={handleUpdateAddress}
+                    disabled={savingAddress || !addressInput.trim()}
+                    accessibilityLabel={savingAddress ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveAddressA11y')}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.submitButtonText}>{savingAddress ? t('ui.bizDash3.saving') : t('ui.bizDash3.saveAddress')}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
               <TouchableOpacity onPress={() => setAddressModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
                 <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>

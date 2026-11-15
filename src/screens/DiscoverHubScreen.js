@@ -106,6 +106,7 @@ import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, friendsLineForTopic } from '../utils/unifiedSearch';
 import { discoverBusinesses } from '../utils/discoverBusinesses';
+import { hasMapPin } from '../utils/businessLocationMode';
 import { mapSearchContext, rememberMapRegion, mapRegionToRestore } from '../utils/mapRegionMemory';
 import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
 import { foundBlockShownIds, withoutFoundBlock } from '../utils/searchTopDedupe';
@@ -2065,7 +2066,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }
 
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
-  const mapBusinesses = showPerks ? shownBusinesses : [];
+  // A business that goes to its customers has no pin (only a rounded area is stored; utils/businessLocationMode.js); it stays in the list.
+  const mapBusinesses = showPerks ? shownBusinesses.filter(hasMapPin) : [];
 
   const activeModeInfo = DISCOVER_MODES.find((m) => m.key === mode);
 

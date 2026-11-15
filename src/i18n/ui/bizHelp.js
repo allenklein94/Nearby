@@ -39,6 +39,12 @@ export default {
     location: {
       addAddress: "📍 Add your address — until you do, nearby requests can’t reach your business",
       cantPlace: "📍 Place your business on the map — tap so nearby requests can reach you",
+      serviceAreaBanner: "🚗 You go to your customers · your area is set · Change",
+      pinnedNoAddress: "📍 Your business is on the map · Add your address",
+      modeStorefront: "Customers come to us",
+      modeServiceArea: "We go to customers",
+      serviceAreaHint: "Mark roughly where you're based. Only an area about half a mile across is kept, never your address, and customers don't see a map pin for you.",
+      markArea: "Mark your area on the map",
     },
     discount: {
       range: "Discount percent must be between 0 and 100.",
@@ -424,6 +430,12 @@ export default {
     location: {
       addAddress: "📍 Agrega tu dirección: hasta que lo hagas, las solicitudes cercanas no pueden llegar a tu negocio",
       cantPlace: "📍 Ubica tu negocio en el mapa: toca para que las solicitudes cercanas te lleguen",
+      serviceAreaBanner: "🚗 Vas a donde están tus clientes · tu zona está guardada · Cambiar",
+      pinnedNoAddress: "📍 Tu negocio está en el mapa · Agrega tu dirección",
+      modeStorefront: "Los clientes vienen a nosotros",
+      modeServiceArea: "Vamos a donde están los clientes",
+      serviceAreaHint: "Marca más o menos dónde te ubicas. Solo se guarda una zona de aproximadamente un kilómetro, nunca tu dirección, y los clientes no ven un marcador tuyo en el mapa.",
+      markArea: "Marca tu zona en el mapa",
     },
     discount: {
       range: "El porcentaje de descuento debe estar entre 0 y 100.",
@@ -809,6 +821,12 @@ export default {
     location: {
       addAddress: "📍 Füge deine Adresse hinzu – bis dahin können Anfragen aus der Nähe dein Geschäft nicht erreichen",
       cantPlace: "📍 Setze dein Geschäft auf die Karte – tippe, damit Anfragen aus der Nähe dich erreichen",
+      serviceAreaBanner: "🚗 Du kommst zu deinen Kund:innen · dein Gebiet ist gespeichert · Ändern",
+      pinnedNoAddress: "📍 Dein Geschäft ist auf der Karte · Füge deine Adresse hinzu",
+      modeStorefront: "Kund:innen kommen zu uns",
+      modeServiceArea: "Wir kommen zu den Kund:innen",
+      serviceAreaHint: "Markiere ungefähr, wo du ansässig bist. Gespeichert wird nur ein Gebiet von etwa einem Kilometer, nie deine Adresse, und Kund:innen sehen keine Markierung von dir auf der Karte.",
+      markArea: "Markiere dein Gebiet auf der Karte",
     },
     discount: {
       range: "Der Rabatt in Prozent muss zwischen 0 und 100 liegen.",
@@ -1194,6 +1212,12 @@ export default {
     location: {
       addAddress: "📍 Ajoutez votre adresse : sans elle, les demandes à proximité ne peuvent pas atteindre votre établissement",
       cantPlace: "📍 Placez votre commerce sur la carte — touchez pour que les demandes à proximité vous parviennent",
+      serviceAreaBanner: "🚗 Vous vous déplacez chez vos clients · votre zone est enregistrée · Modifier",
+      pinnedNoAddress: "📍 Votre établissement est sur la carte · Ajoutez votre adresse",
+      modeStorefront: "Les clients viennent chez nous",
+      modeServiceArea: "Nous allons chez les clients",
+      serviceAreaHint: "Indiquez à peu près où vous êtes basé. Seule une zone d'environ un kilomètre est conservée, jamais votre adresse, et les clients ne voient pas de repère pour vous sur la carte.",
+      markArea: "Indiquez votre zone sur la carte",
     },
     discount: {
       range: "Le pourcentage de réduction doit être compris entre 0 et 100.",
@@ -1579,6 +1603,12 @@ export default {
     location: {
       addAddress: "📍 Adicione seu endereço — até lá, pedidos por perto não conseguem chegar ao seu negócio",
       cantPlace: "📍 Coloque seu negócio no mapa — toque para que pedidos próximos cheguem até você",
+      serviceAreaBanner: "🚗 Você vai até seus clientes · sua área está salva · Alterar",
+      pinnedNoAddress: "📍 Seu negócio está no mapa · Adicione seu endereço",
+      modeStorefront: "Os clientes vêm até nós",
+      modeServiceArea: "Nós vamos até os clientes",
+      serviceAreaHint: "Marque mais ou menos onde você fica. Só guardamos uma área de cerca de um quilômetro, nunca o seu endereço, e os clientes não veem um marcador seu no mapa.",
+      markArea: "Marque sua área no mapa",
     },
     discount: {
       range: "O percentual de desconto deve estar entre 0 e 100.",
@@ -1964,6 +1994,12 @@ export default {
     location: {
       addAddress: "📍 Ajoute adrès ou — jiskaske ou fè sa, demann ki toupre pa ka rive jwenn biznis ou",
       cantPlace: "📍 Mete biznis ou sou kat la — tape pou demann ki toupre yo ka rive jwenn ou",
+      serviceAreaBanner: "🚗 Ou ale kote kliyan ou yo · zòn ou anrejistre · Chanje",
+      pinnedNoAddress: "📍 Biznis ou sou kat la · Ajoute adrès ou",
+      modeStorefront: "Kliyan yo vin jwenn nou",
+      modeServiceArea: "Nou ale kote kliyan yo",
+      serviceAreaHint: "Make apeprè kote ou baze. Se sèlman yon zòn anviwon yon kilomèt yo kenbe, janm adrès ou, epi kliyan pa wè yon mak pou ou sou kat la.",
+      markArea: "Make zòn ou sou kat la",
     },
     discount: {
       range: "Pousantaj rabè a dwe ant 0 ak 100.",
@@ -2349,6 +2385,12 @@ export default {
     location: {
       addAddress: "📍 添加你的地址——在添加之前，附近的请求无法到达你的商家",
       cantPlace: "📍 在地图上标出你的商家——点按，附近的请求才能找到你",
+      serviceAreaBanner: "🚗 你上门服务客户 · 已设置服务区域 · 更改",
+      pinnedNoAddress: "📍 你的商家已在地图上 · 添加地址",
+      modeStorefront: "顾客到店",
+      modeServiceArea: "我们上门服务",
+      serviceAreaHint: "大致标出你所在的位置。只保存约一公里范围的区域，绝不保存你的地址，顾客也看不到你在地图上的标记。",
+      markArea: "在地图上标出你的区域",
     },
     discount: {
       range: "折扣百分比必须在 0 到 100 之间。",
@@ -2734,6 +2776,12 @@ export default {
     location: {
       addAddress: "📍 Thêm địa chỉ của bạn — khi chưa có, các yêu cầu gần đây không thể đến doanh nghiệp của bạn",
       cantPlace: "📍 Đặt doanh nghiệp của bạn trên bản đồ — chạm để các yêu cầu gần đó đến được với bạn",
+      serviceAreaBanner: "🚗 Bạn đến chỗ khách hàng · đã lưu khu vực · Thay đổi",
+      pinnedNoAddress: "📍 Doanh nghiệp của bạn đã có trên bản đồ · Thêm địa chỉ",
+      modeStorefront: "Khách đến chỗ chúng tôi",
+      modeServiceArea: "Chúng tôi đến chỗ khách",
+      serviceAreaHint: "Đánh dấu khoảng nơi bạn hoạt động. Chỉ lưu một khu vực rộng khoảng một cây số, không bao giờ lưu địa chỉ của bạn, và khách không thấy điểm đánh dấu của bạn trên bản đồ.",
+      markArea: "Đánh dấu khu vực của bạn trên bản đồ",
     },
     discount: {
       range: "Phần trăm giảm giá phải từ 0 đến 100.",
@@ -3119,6 +3167,12 @@ export default {
     location: {
       addAddress: "📍 Idagdag ang iyong address — hangga't wala ito, hindi maaabot ng mga request sa malapit ang negosyo mo",
       cantPlace: "📍 Ilagay ang iyong negosyo sa mapa — i-tap para maabot ka ng mga kahilingan sa malapit",
+      serviceAreaBanner: "🚗 Ikaw ang pumupunta sa mga customer · naka-set na ang lugar mo · Palitan",
+      pinnedNoAddress: "📍 Nasa mapa na ang negosyo mo · Idagdag ang address mo",
+      modeStorefront: "Pumupunta sa amin ang mga customer",
+      modeServiceArea: "Kami ang pumupunta sa mga customer",
+      serviceAreaHint: "Markahan kung saan ka halos nakabase. Isang lugar na mga isang kilometro lang ang itinatago, hindi kailanman ang address mo, at hindi makikita ng mga customer ang marka mo sa mapa.",
+      markArea: "Markahan ang lugar mo sa mapa",
     },
     discount: {
       range: "Dapat nasa pagitan ng 0 at 100 ang porsiyento ng diskwento.",
@@ -3504,6 +3558,12 @@ export default {
     location: {
       addAddress: "📍 Добавьте адрес — пока его нет, запросы поблизости не смогут дойти до вашего бизнеса",
       cantPlace: "📍 Отметьте свой бизнес на карте — нажмите, чтобы запросы поблизости доходили до вас",
+      serviceAreaBanner: "🚗 Вы приезжаете к клиентам · район сохранён · Изменить",
+      pinnedNoAddress: "📍 Ваш бизнес на карте · Добавьте адрес",
+      modeStorefront: "Клиенты приходят к нам",
+      modeServiceArea: "Мы выезжаем к клиентам",
+      serviceAreaHint: "Отметьте примерно, где вы находитесь. Сохраняется только район около километра, никогда не ваш адрес, и клиенты не видят вашу метку на карте.",
+      markArea: "Отметьте свой район на карте",
     },
     discount: {
       range: "Процент скидки должен быть от 0 до 100.",
@@ -3889,6 +3949,12 @@ export default {
     location: {
       addAddress: "📍 주소를 추가하세요 — 추가하기 전까지는 근처 요청이 비즈니스에 도달할 수 없습니다",
       cantPlace: "📍 지도에 내 비즈니스를 표시하세요 — 탭하면 근처 요청이 도달할 수 있어요",
+      serviceAreaBanner: "🚗 고객에게 찾아가는 업체 · 지역 설정됨 · 변경",
+      pinnedNoAddress: "📍 업체가 지도에 표시돼요 · 주소를 추가하세요",
+      modeStorefront: "고객이 매장으로 와요",
+      modeServiceArea: "저희가 고객에게 가요",
+      serviceAreaHint: "대략 어디에 계신지 표시해 주세요. 약 1km 범위의 지역만 저장되고 주소는 절대 저장되지 않으며, 고객에게 지도 표시가 보이지 않아요.",
+      markArea: "지도에서 지역 표시하기",
     },
     discount: {
       range: "할인율은 0에서 100 사이여야 합니다.",
