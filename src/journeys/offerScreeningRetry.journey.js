@@ -31,7 +31,7 @@ d('journey: offer screening retries temporary failures by itself (20270420)', ()
     const rows = await runJourney(`${actorDeclares(['v_owner', 'v_cust', 'v_cust2', 'v_partner', 'v_other'])}
       v_res jsonb; v_r1 uuid; v_r2 uuid; v_r3 uuid; v_r4 uuid; v_r5 uuid; v_r6 uuid; v_r7 uuid;
       v_s1 uuid; v_s2 uuid; v_s3 uuid; v_s4 uuid; v_s5 uuid; v_s6 uuid; v_s7 uuid;
-      v_t timestamptz; v_delays jsonb := '[]'; v_claims jsonb := '[]'; v_err text; v_pub jsonb; i int;`, `
+      v_t timestamptz; v_n int; v_delays jsonb := '[]'; v_claims jsonb := '[]'; v_err text; v_pub jsonb; i int;`, `
   perform set_config('app.push_handoff_test_failure', 'on', true);
   perform set_config('app.offer_retry_dispatch_dry_run', 'on', true);
   ${actorsSql({ people: ['v_owner', 'v_cust', 'v_cust2', 'v_other'], business: { owner: 'v_owner', partner: 'v_partner' } })}
@@ -50,7 +50,8 @@ d('journey: offer screening retries temporary failures by itself (20270420)', ()
   perform set_config('request.jwt.claims', '', true);
   ${log('a_not_yet_due', `jsonb_build_object('claimed', ${claimed('v_s1')})`)}
   ${due('v_s1')}
-  ${log('a_claimed', `jsonb_build_object('claimed', ${claimed('v_s1')}, 'row', ${row('v_s1')})`)}
+  v_n := ${claimed('v_s1')};
+  ${log('a_claimed', `jsonb_build_object('claimed', v_n, 'row', ${row('v_s1')})`)}
   ${due('v_s1')}
   ${log('a_claimed_again', `jsonb_build_object('claimed', ${claimed('v_s1')})`)}
   v_pub := _submit_business_offer_for_submission(v_s1, ${args('v_r1')}, null);
@@ -96,13 +97,15 @@ d('journey: offer screening retries temporary failures by itself (20270420)', ()
   perform _record_offer_screening_unavailable(v_s5, 'transient');
   update business_requests set status = 'cancelled' where id = v_r5;
   ${due('v_s5')}
-  ${log('e_closed', `jsonb_build_object('claimed', ${claimed('v_s5')}, 'row', ${row('v_s5')})`)}
+  v_n := ${claimed('v_s5')};
+  ${log('e_closed', `jsonb_build_object('claimed', v_n, 'row', ${row('v_s5')})`)}
   update business_requests set status = 'cancelled' where id = v_r7;
   ${log('e_record_after_close', `jsonb_build_object('next', _record_offer_screening_unavailable(v_s7, 'transient'))`)}
 
   -- F. a run that died (still 'reviewing' after 3 minutes) is picked up while tries are left, never after
   update business_offer_submissions set updated_at = now() - interval '4 minutes' where id = v_s6;
-  ${log('f_stalled', `jsonb_build_object('claimed', ${claimed('v_s6')}, 'row', ${row('v_s6')})`)}
+  v_n := ${claimed('v_s6')};
+  ${log('f_stalled', `jsonb_build_object('claimed', v_n, 'row', ${row('v_s6')})`)}
   update business_offer_submissions set updated_at = now() - interval '4 minutes', auto_retries = 3 where id = v_s6;
   ${log('f_stalled_no_tries_left', `jsonb_build_object('claimed', ${claimed('v_s6')})`)}
 
@@ -112,16 +115,17 @@ d('journey: offer screening retries temporary failures by itself (20270420)', ()
     perform _submit_business_offer_for_submission(v_s6, ${args('v_r1')}, null); v_err := 'allowed';
   exception when others then get stacked diagnostics v_err = pg_exception_hint; end;
   ${log('g_other_request', `jsonb_build_object('result', v_err)`)}
-  update profiles set managed_partner_id = null where id = v_owner;
+  update business_offer_submissions set submitted_by = v_other where id = v_s6;  -- someone who manages no business
   begin
     perform _submit_business_offer_for_submission(v_s6, ${args('v_r6')}, null); v_err := 'allowed';
   exception when others then v_err := 'refused'; end;
   ${log('g_no_longer_manager', `jsonb_build_object('result', v_err, 'offer_status', (select status from business_request_offers where request_id = v_r6 and partner_id = v_partner))`)}
-  update profiles set managed_partner_id = v_partner where id = v_owner;
+  update business_offer_submissions set submitted_by = v_owner where id = v_s6;
 
   -- H. the job, and who may call what
   update business_offer_submissions set status = 'unavailable', next_retry_at = now() - interval '1 second', auto_retries = 0 where id = v_s6;
-  ${log('h_dispatch', `jsonb_build_object('handed_off_at_least', dispatch_offer_screening_retries() >= 1, 'row', ${row('v_s6')})`)}
+  v_n := dispatch_offer_screening_retries();
+  ${log('h_dispatch', `jsonb_build_object('handed_off_at_least', v_n >= 1, 'row', ${row('v_s6')})`)}
   ${log('h_grants', `(select jsonb_object_agg(f, jsonb_build_object('authenticated', has_function_privilege('authenticated', f, 'execute'), 'anon', has_function_privilege('anon', f, 'execute')))
      from unnest(array['public._record_offer_screening_unavailable(uuid,text)', 'public.claim_due_offer_screening_retries(integer)',
                        'public._submit_business_offer_for_submission(uuid,jsonb,uuid)', 'public.dispatch_offer_screening_retries()']) f)`)}
@@ -183,7 +187,7 @@ d('journey: offer screening retries temporary failures by itself (20270420)', ()
     expect(s.f_stalled_no_tries_left.data.claimed).toBe(0);
   });
 
-  test('the wrapper sends only for its own request and only while the submitter still manages the business', () => {
+  test('the wrapper sends only for its own request and only for a submitter who manages the business', () => {
     expect(s.g_other_request.data.result).toBe('submission_request_mismatch');
     expect(s.g_no_longer_manager.data.result).toBe('refused');
     expect(s.g_no_longer_manager.data.offer_status).toBe('pending');

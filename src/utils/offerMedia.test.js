@@ -33,7 +33,7 @@ test('the server screens media before a customer sees it and refuses a video wit
   const shared = read('supabase/functions/_shared/offerMediaScreening.js');
   expect(shared).toMatch(/A video needs preview images/);
   expect(shared).toMatch(/MAX_OFFER_VIDEO_BYTES/);
-  expect(fn).toMatch(/if \(m\.service\) return (screeningUnavailable\(\)|UNAVAILABLE)/);
+  expect(fn).toMatch(/if \(m\.service\) return (screeningUnavailable\(\)|UNAVAILABLE|unavailable\(m\.failure\))/);
   expect(fn).toMatch(/\(!mediaPath \|\| creativeRow\) && !redemptionInstructions/); // owner-typed instructions are never fast-pathed
   const sql = read('supabase/migrations/20270134_rich_offer_media_redemption.sql');
   expect(sql).toMatch(/A video needs a preview image/);

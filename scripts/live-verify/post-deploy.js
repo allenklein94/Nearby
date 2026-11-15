@@ -48,6 +48,12 @@ const STEPS = {
     manual: ['website (unpublished build, owner approval to publish): a new phone account with an approved web application signs in, finishes its profile on the website, and lands on that business; an account without an approved application is linked to nothing'] },
   20270419: { journeys: ['businessServiceArea', 'locationProvenance'],
     manual: ['read-only: 0 rows with location_source = service_area before the first new build; after a test sign-up as "We go to customers": its request + business rows have a 2-decimal point, address null, place ID null; it is absent from the Discover map but listed; no Go now / directions on its preview', 'rollback refuses while any service_area row exists (hint service_area_present): relabel with the owner first'] },
+  20270420: { journeys: ['offerScreeningRetry', 'offerJourney'],
+    manual: ['deploy screen-business-content from this commit or later together with 0420 (the new code needs _record_offer_screening_unavailable; without it it falls back to plain unavailable = Try again only)',
+      'read-only: cron job retry-offer-screening exists, schedule * * * * *; vault service_role_key present (same key the push outbox uses)',
+      'on a NON-production project only (a real provider outage cannot be produced on demand): a dedicated test business sends an offer; set that submission to unavailable with next_retry_at in the past; within ~1 min the job publishes it (one result push to the business, one reply push to the customer, one offer row)',
+      'with Anthropic credit at 0 (a 400): the submission stays unavailable with Try again, next_retry_at null (never retried)',
+      'rollback: unschedules the job; pending tries become plain Try again; redeploy the previous screen-business-content with it'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
