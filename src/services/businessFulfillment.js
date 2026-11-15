@@ -1,4 +1,5 @@
 import { translate } from '../i18n/translate';
+import { withViewReceipts } from './offerViewReceipts';
 import { requestRefusal } from '../utils/requestRefusal';
 import { displayMoney } from '../i18n/display';
 import { localWhenParts } from '../utils/gatheringStructure';
@@ -625,7 +626,8 @@ export async function getBusinessRequestWithOffers(requestId) {
 
   // Item 119b: a group plan's request never shows a reply's smaller-party time (the group books its whole party; the
   // server refuses the other), so every reader of this request gets the whole-party view.
-  const rows = offers ?? [];
+  // 20270422: the requester's read receipt comes from business_offer_views (never the offer row a business reads).
+  const rows = await withViewReceipts(offers ?? []);
   return { request, offers: request?.group_plan_id ? rows.map(wholePartyView) : rows };
 }
 
