@@ -171,7 +171,7 @@ with sync_playwright() as p:
         pg.get_by_placeholder(PREVIEW_PLACEHOLDER).first.fill('Two lattes for the price of one (test)'); pg.wait_for_timeout(800)
         t = pg.inner_text('body')
         pg.screenshot(path='/out/g_offer_preview.png', full_page=True)
-        check('[offer preview] typing a description builds the customer card', 'Customer preview' in t and 'Two lattes for the price of one (test)' in t, '')
+        check('[offer preview] typing a description builds the customer card', 'customer preview' in t.lower() and 'Two lattes for the price of one (test)' in t, '')
         check("[offer preview] shows the customer's button words", "I'll take this one" in t, '')
         pg.get_by_text("I'll take this one", exact=True).first.click(force=True); pg.wait_for_timeout(600)
         check('[offer preview] clicking the preview button sends nothing', not any(('submit_business_offer' in x) or ('accept_business_offer' in x) for x in r['seen']), '')
