@@ -46,6 +46,8 @@ const STEPS = {
     manual: ['website (unpublished build, owner approval to publish): admin signs in, Admin review lists the queue; a non-admin account sees "Admins only" and every call refused'] },
   20270418: { journeys: ['webBusinessClaim', 'trustSafety'],
     manual: ['website (unpublished build, owner approval to publish): a new phone account with an approved web application signs in, finishes its profile on the website, and lands on that business; an account without an approved application is linked to nothing'] },
+  20270419: { journeys: ['businessServiceArea', 'locationProvenance'],
+    manual: ['read-only: 0 rows with location_source = service_area before the first new build; after a test sign-up as "We go to customers": its request + business rows have a 2-decimal point, address null, place ID null; it is absent from the Discover map but listed; no Go now / directions on its preview', 'rollback refuses while any service_area row exists (hint service_area_present): relabel with the owner first'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

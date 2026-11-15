@@ -66,7 +66,8 @@ describe('1. one application, one screen', () => {
     expect(apply).toMatch(/accessibilityLabel="Resend application"/);
     // fields resubmit can't save are not offered while resending
     expect(apply).toMatch(/\{!resending && \(<>\s*\{subcategoryOptionsFor/);
-    expect(apply).toMatch(/\{!resending && \(<>\s*<Text style=\{styles\.label\}>Location on the map/);
+    expect(apply).toMatch(/\{!resending && locationMode === LOCATION_MODES\.storefront && \(<>\s*<Text style=\{styles\.label\}>Location on the map/);
+    expect(apply).toMatch(/\{!resending && \(<>\s*<Text style=\{styles\.label\}>Where is your business\?/);
   });
 
   test('approved keeps its way to the dashboard; the map pin return never resets the form (loaded once, not on focus)', () => {
