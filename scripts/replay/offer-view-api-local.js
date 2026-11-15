@@ -47,6 +47,7 @@ const NEW_LIVE = 'id, request_id, partner_id, status, viewed_at, offer_type, off
     await db.query(`delete from profiles where id = any($1::uuid[])`, [people]);
     await db.query(`delete from auth.users where id = any($1::uuid[])`, [people]);
     await db.query(`delete from brand_partners where id = any($1::uuid[])`, [[P1, P2]]);
+    if ((await db.query(`select to_regclass('private.ugc_screenings') is not null x`)).rows[0].x) await db.query(`delete from private.ugc_screenings where user_id = any($1::uuid[])`, [people]);
   };
   try {
     sh(['exec', '-e', 'PGPASSWORD=postgres', DB, 'psql', '-h', 'localhost', '-U', 'supabase_admin', '-d', 'postgres', '-c', `alter role authenticator with password 'postgres';`]);
@@ -74,6 +75,13 @@ const NEW_LIVE = 'id, request_id, partner_id, status, viewed_at, offer_type, off
     await db.query(`update profiles set managed_partner_id = $1 where id = any($2::uuid[])`, [P1, [BIZ, STAFF]]);
     await db.query(`update profiles set managed_partner_id = $1 where id = $2`, [P2, OTHER]);
     const claims = (id) => db.query(`select set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ sub: id, role: 'authenticated' })]);
+    // 20270373 (combined trust tree): the gathering title needs the screening screen-user-content would record; a
+    // 'publish' row for the host and that exact text, deleted in cleanup. Skipped where 0373 isn't installed.
+    if ((await db.query(`select to_regclass('private.ugc_screenings') is not null x`)).rows[0].x) {
+      await db.query(`insert into private.ugc_screenings (user_id, text_sha256, is_name, kind, source, risk_tier, outcome, reasoning, valid_until)
+        select $1, private.ugc_text_sha(t), false, 'gathering', 'classifier', 'low', 'publish', 'api check stand-in for screen-user-content', now() + interval '1 hour'
+        from unnest(array['Offer view API test']) t`, [R]);
+    }
     await claims(R);
     G = (await db.query(`insert into gatherings (host_id, title, scheduled_at, precise_lat, precise_lng, interest_tag, area, capacity, visibility) values ($1, 'Offer view API test', now() + interval '3 days', 40.0, -75.0, 'Coffee', 'j', 8, 'everyone') returning id`, [R])).rows[0].id;
     REQ = (await db.query(`select (create_business_request_for_gathering($1, 'Coffee for the group', 'Coffee', 20, 15, null, null, $2, null)->>'requestId')::uuid id`, [G, P1])).rows[0].id;
@@ -82,7 +90,7 @@ const NEW_LIVE = 'id, request_id, partner_id, status, viewed_at, offer_type, off
     // low-risk stand-in the journey harness uses. Skipped where 0372 isn't installed.
     if ((await db.query(`select to_regprocedure('private.require_business_screening(uuid,text,uuid,jsonb)') is not null x`)).rows[0].x) {
       await db.query(`insert into business_content_screening_results (partner_id, target_type, target_id, submitted_by, content_snapshot, risk_tier, model_reasoning, source)
-        values ($1, 'offer_response', null, $2, private.screening_content_offer_response($3::text, 'We can accommodate this as requested.', null, '{}', null, null, null, null, null), 'low', 'api check stand-in for screen-business-content', 'submission')`, [P1, BIZ, REQ]);
+        values ($1, 'offer_response', null, $2, private.screening_content_offer_response($3::uuid, 'We can accommodate this as requested.', null, '{}', null, null, null, null, null), 'low', 'api check stand-in for screen-business-content', 'submission')`, [P1, BIZ, REQ]);
     }
     await db.query(`select submit_business_offer(request_id_param := $1, offer_type_param := 'standard', offer_description_param := 'We can accommodate this as requested.', offer_price_param := 12.5)`, [REQ]);
     O = (await db.query(`select id from business_request_offers where request_id = $1 and partner_id = $2`, [REQ, P1])).rows[0].id;
@@ -174,7 +182,7 @@ const NEW_LIVE = 'id, request_id, partner_id, status, viewed_at, offer_type, off
     r = await as(PUP).from('business_offer_views').select('*');
     check('attendee account (no manager link): no receipt', !r.error && r.data.length === 0, r.error ?? r.data);
     r = await as(PUP).from('business_request_offers').select('id, business_offer_views(viewed_at)').eq('id', O);
-    check('attendee account (no manager link): no receipt through the embed', !r.error && !(r.data?.[0]?.business_offer_views ?? []).length, r.error ?? r.data);
+    check('attendee account (no manager link): no receipt through the embed', !r.error && r.data.length === 1 && (() => { const v = r.data[0].business_offer_views; return !v || (Array.isArray(v) && v.length === 0); })(), r.error ?? r.data);
 
     console.log('== everyone else');
     r = await as(OTHER).from('business_offer_views').select('*'); if (!open) check('another business: nothing', !r.error && r.data.length === 0, r);
