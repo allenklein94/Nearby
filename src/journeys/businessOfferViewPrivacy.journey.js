@@ -105,8 +105,9 @@ d('journey: a customer opening a business reply is never visible to the business
   it('no client can write a receipt or a viewed_at, and signed out reads nothing', () => {
     expect(s.client_inserts_receipt.data.code).toBe('42501');
     expect(s.requester_inserts_receipt.data.code).toBe('42501');
+    // refused outright, or (no client UPDATE policy) changes nothing: the offer row's viewed_at stays NULL either way
     const upd = s.client_sets_offer_viewed_at.data;
-    expect(upd && (upd.code || Number(upd) === 0)).toBeTruthy();
+    expect(upd?.code ? true : Number(upd) === 0).toBe(true);
     expect(s.anon_reads_receipts.data.code).toBe('42501');
     expect(Number(s.service_role_still_sees.data)).toBe(1);
   });
