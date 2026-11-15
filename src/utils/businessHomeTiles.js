@@ -32,6 +32,8 @@ export function businessHomeTiles({ opportunities, submissions = [], loaded, fun
       title: tr('ui.bizDash1.tiles.performance'),
       line: tr('ui.bizDash1.tiles.funnelLine', { sent: by.offersSent, accepted: by.accepted, redeemed: by.redemptions }),
       valueLine: f.valueRow ? `${f.valueRow.label}: ${f.valueRow.amount}` : null,
+      // Idea "343": a money figure always carries its disclosure, on Home too (the same note as Offer Performance).
+      valueNote: f.valueRow ? f.note : null,
       target: 'performance',
       highlight: false,
     });

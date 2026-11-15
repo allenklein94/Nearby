@@ -51,10 +51,13 @@ describe('the decision: server history only', () => {
     expect(isFirstEverReply(null, { seenAny: false, earliestReplyId: null })).toBe(false);
   });
 
-  test('the history is read from the server (viewed_at + earliest responded reply, declines excluded), not from the device', () => {
+  test('the history is read from the server (read receipt + earliest responded reply, declines excluded), not from the device', () => {
     const src = read('services/offerArrivalSource.js');
     const fn = src.split('export async function fetchFirstReplyState')[1].split('\n}\n')[0];
-    expect(fn).toMatch(/\.not\('viewed_at', 'is', null\)/);
+    // 20270422: the receipt lives in business_offer_views (offerViewReceipts.hasOpenedAnyReply; the offer row's viewed_at
+    // is only the old-database fallback there).
+    expect(fn).toMatch(/hasOpenedAnyReply\(userId\)/);
+    expect(read('services/offerViewReceipts.js')).toMatch(/\.not\('viewed_at', 'is', null\)/);
     expect(fn).toMatch(/\.eq\('business_requests\.requester_id', userId\)/);
     expect(fn).toMatch(/\.order\('responded_at', \{ ascending: true \}\)/);
     expect(fn).toMatch(/\.neq\('status', 'declined'\)/);

@@ -459,6 +459,12 @@ const STEPS = {
       'a normal push to the owner\'s iPhone still arrives; one push_receipt_checks row appears, and is gone ~15-20 min later with the token kept (receipt ok)',
       'on a NON-production project only: a test business owner with a verified email, app deleted from a test phone (Expo reports DeviceNotRegistered only after Apple/Google do, can take minutes to hours); send a business alert: token cleared + exactly ONE email for that alert; the next alert goes straight to email (skipped: no_token)',
       'rollback: unschedules the job, drops the table; cleared tokens stay cleared (re-registered when the app is opened); redeploy the previous send-push with it'] },
+  20270422: { journeys: ['businessOfferViewPrivacy', 'offerJourney'],
+    manual: ['GATE before deploy: every installed build is newer than 87 (build 87 prints "{viewedCount} viewed" on Offer Performance without the field) AND the business website is re-exported + published from this branch or later',
+      'read-only: count(*) from business_request_offers where viewed_at is not null = 0; business_offer_views rows = the receipts moved; constraint business_request_offers_viewed_at_moved present; business_offer_views has no insert/update/delete grant for anon/authenticated',
+      'real API (dedicated test accounts): the test business reads its offer row via REST = viewed_at null, business_offer_views = [], get_business_opportunities has no viewed_at key, get_partner_offer_performance has no viewed_count; the test customer reads their own receipt',
+      'phone: the customer opens a reply, the business dashboard open on the website shows nothing change (no realtime reload); the customer\'s arrival pill + first-reply wording still behave',
+      'rollback: puts every receipt back on the offer row (businesses can read it again) and restores the three functions; build 87-era clients keep working either way'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

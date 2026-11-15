@@ -18,7 +18,8 @@ UID = '11111111-1111-4111-8111-111111111111'
 PARTNER = '22222222-2222-4222-8222-222222222222'
 REQ = '33333333-3333-4333-8333-333333333333'
 RADAR = {'on': False}  # a mocked get_aggregated_demand_for_partner (Match Radar scenario)
-OPP = {'on': False, 'status': 'pending'}  # a mocked opportunity: 'pending' = the offer-form scenario, 'accepted' = a booking
+OPP = {'on': False, 'status': 'pending'}
+PERF = {'on': False}  # mocked month figures (Offer Performance scenario); viewed_count is sent to prove it is never shown  # a mocked opportunity: 'pending' = the offer-form scenario, 'accepted' = a booking
 # Writes the website is meant to send (mocked here): fire-and-forget business acquisition analytics (services/businessAcquisitionEvents.js).
 PREVIEW_PLACEHOLDER = "What are you offering? e.g. Table for 4 at 7:30, 15% off the check"  # ui.bizDash3.whatAreYouOfferingE (en)
 EXPECTED_WRITES = ('/rest/v1/business_acquisition_events',)
@@ -37,8 +38,8 @@ def profile_for(kind):
          'managed_partner_id': PARTNER if kind == 'linked' else None}
     return p
 
-def run(browser, name, kind, query=''):
-    ctx = browser.new_context(viewport={'width': 1280, 'height': 900})
+def run(browser, name, kind, query='', width=1280):
+    ctx = browser.new_context(viewport={'width': width, 'height': 900})
     errors, writes, seen, noise = [], [], [], []
     page = ctx.new_page()
     page.on('pageerror', lambda e: (errors.append('pageerror: ' + str(e)[:200]), print('STACK', name, (e.stack or '')[:900], flush=True)))
@@ -77,6 +78,11 @@ def run(browser, name, kind, query=''):
             return body([dict(base, category='Coffee', request_count=7, unmet_intent_count=5, is_offered=True, is_demand_gap=True),   # own category
                          dict(base, category='Bowling', request_count=6, unmet_intent_count=0, is_offered=False, is_demand_gap=True),  # outside it
                          dict(base, category=None, request_count=None, unmet_intent_count=None, is_offered=None, offered_people=7)])
+        if kind == 'linked' and PERF['on']:
+            if path.endswith('/rpc/get_partner_offer_funnel'): return body([{'opportunities': 24, 'offers_sent': 12, 'accepted': 5, 'redemptions': 4}])
+            if path.endswith('/rpc/get_partner_offer_value'): return body([{'month_redemptions': 4, 'month_value': 120, 'month_unpriced': 0}])
+            if path.endswith('/rpc/get_partner_offer_performance'):
+                return body([{'group_key': 'g1', 'group_label': 'Coffee for two (mock)', 'offer_count': 3, 'viewed_count': 9, 'accepted_count': 2, 'completed_count': 1}])
         if path.endswith('/rest/v1/brand_partners'):
             return body([{'id': PARTNER, 'name': 'Test Cafe (mock)', 'category': 'food_drink', 'subcategory': 'Coffee', 'is_active': True}] if kind == 'linked' else [])
         return body([])
@@ -264,6 +270,34 @@ with sync_playwright() as p:
         check('[profile summary] summary heading + the five section titles show', False, str(e)[:160])
     check('[profile groups] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
     r['ctx'].close()
+
+    # Offer Performance (owner, 2026-11-15): four real counts as cells (2 x 2 on a phone, one row when wide), the value of
+    # offers redeemed apart with its disclosure, the same disclosure on the Home tile, and no viewed count anywhere.
+    PERF['on'] = True
+    for width in (390, 1280):
+        tag = f'[performance {width}px]'
+        r = run(b, f'j_performance_{width}', 'linked', width=width)
+        pg = r['page']; before = len(r['errors'])
+        try:
+            home = pg.inner_text('body')
+            check(f'{tag} Home tile shows the value with its disclosure', 'Value of offers redeemed: $120' in home and 'Not a measure of what customers spent.' in home)
+            pg.get_by_text('This month: 12 sent · 5 accepted · 4 redeemed', exact=True).first.click(); pg.wait_for_timeout(1500)
+            t = pg.inner_text('body'); i = t.lower().find('offer performance'); perf = t[i:] if i >= 0 else ''
+            pg.screenshot(path=f'/out/j_performance_{width}.png', full_page=True)
+            check(f'{tag} the tile opens Offer Performance', i >= 0, t[-200:].replace('\n', ' | '))
+            for label, n in (('Opportunities', 24), ('Offers sent', 12), ('Offers accepted', 5), ('Redemptions', 4)):
+                check(f'{tag} cell {label} = {n}', f'{n}\n{label}' in perf, perf[:200].replace('\n', ' | '))
+            check(f'{tag} value of offers redeemed + disclosure under the cells', perf.find('Value of offers redeemed') > perf.find('Redemptions') and '$120' in perf and 'Not a measure of what customers spent.' in perf)
+            check(f'{tag} per-group line without a viewed count', '3 offered · 2 accepted · 1 redeemed' in perf and 'viewed' not in perf.lower() and '9' not in perf.split('Coffee for two (mock)')[-1][:60])
+            boxes = [pg.get_by_text(lbl, exact=True).last.bounding_box() for lbl in ('Opportunities', 'Offers sent', 'Offers accepted', 'Redemptions')]
+            rows = len({round(bx['y']) for bx in boxes if bx})
+            check(f'{tag} cells laid out in {2 if width < 600 else 1} row(s)', rows == (2 if width < 600 else 1), str([bx and round(bx['y']) for bx in boxes]))
+            check(f'{tag} no horizontal page scroll', pg.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'))
+        except Exception as e:
+            check(f'{tag} the tile opens Offer Performance', False, str(e)[:160])
+        check(f'{tag} no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+        r['ctx'].close()
+    PERF['on'] = False
 
     r = run(b, 'f_bad_link', 'linked', '?n=DROP%20TABLE&r=not-a-uuid')
     check('[tampered link] dashboard still opens, no errors', 'Opportunities' in r['text'] and not r['errors'], '; '.join(r['errors'][:3]))
