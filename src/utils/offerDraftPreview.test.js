@@ -71,6 +71,7 @@ describe('item 49: live Customer Preview from the offer draft', () => {
     expect(helper.match(/^import .*$/gm)).toEqual([
       "import { validUntilFromChoice, availableWindowFromChoice } from './offerMedia';",
       "import { parseDiscountPct, discountCapProblem } from './discountCap';",
+      "import { consumerOfferAction } from './primaryAction';",
     ]);
   });
 });

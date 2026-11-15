@@ -91,7 +91,8 @@ import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardA
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
-import { draftPreviewOffer, draftSecondTime, draftSecondPartySize } from '../utils/offerDraftPreview';
+import { draftPreviewOffer, draftSecondTime, draftSecondPartySize, previewAcceptAction } from '../utils/offerDraftPreview';
+import { getOfferCardStyles } from '../components/offerCardStyles';
 import ReviseOfferSheet from '../components/ReviseOfferSheet';
 import { canReviseOffer, isRevisedOffer } from '../utils/offerRevision';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
@@ -108,7 +109,7 @@ import { describeDemandSignals } from '../utils/demandSignals';
 import { matchRadarRows, isUnofferedGap, bestUnofferedGap, hasDeclaredOfferedCategory } from '../utils/matchRadarRows';
 import { toggleProfileGroup, profileGroupFor } from '../utils/profileGroups';
 import { profileSummaryLine } from '../utils/profileSummary';
-import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
+import { opportunityPrimaryAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { NOT_ACCOMMODATED_OPTIONS, ADULT_AGE_RULES, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
 import { BUSINESS_DIETARY_OPTIONS, dietaryOptionsOf, dietaryRelevantFor } from '../constants/dietaryOptions';
@@ -7591,22 +7592,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 if (!previewOffer) return null;
                 const localMedia = !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
                 const shown = presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } });
+                const previewAction = previewAcceptAction();
+                const cardStyles = getOfferCardStyles(colors);
                 return (
                   <View style={{ marginTop: spacing.md }}>
                     <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
                     <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
-                    <View style={styles.gatheringRow}>
-                      <View style={styles.previewPartnerRow}>
+                    {/* Item 49: the same frame, header, title and button styles as the customer's card (components/offerCardStyles.js). */}
+                    <View style={cardStyles.offerCard}>
+                      <View style={cardStyles.offerPartnerRow}>
                         <BusinessLogoMark uri={previewLogo} />
-                        <Text style={[styles.offerTitle, styles.previewPartnerName]}>{selectedPartner?.name}</Text>
+                        <Text style={[cardStyles.offerPartnerName, cardStyles.offerPartnerNameFlex]}>{selectedPartner?.name}</Text>
                       </View>
                       {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
-                      <Text style={styles.breakdownText}>{shown.heard}</Text>
-                      <Text style={styles.breakdownText}>{shown.statusLine}</Text>
-                      {!!previewOffer.offer_title && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{previewOffer.offer_title}</Text>}
+                      {shown.heard ? <Text style={cardStyles.offerReputationLine}>{shown.heard}</Text> : null}
+                      {shown.statusLine ? <Text style={cardStyles.offerStatus}>{shown.statusLine}</Text> : null}
+                      {!!previewOffer.offer_title && <Text style={cardStyles.offerTitleHeadline}>{previewOffer.offer_title}</Text>}
                       <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} partySize={partyOfRequest(offerModalRequestId)} />
-                      <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
-                        <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
+                      {/* The customer's button, shown but never live here (previewAcceptAction): nothing is screened, sent or booked yet. */}
+                      <View style={[cardStyles.acceptButton, cardStyles.acceptButtonWaiting]} pointerEvents="none" accessible accessibilityRole="button" accessibilityState={{ disabled: previewAction.disabled }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
+                        <Text style={cardStyles.acceptButtonText}>{previewAction.label}</Text>
                       </View>
                     </View>
                     {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
@@ -8578,8 +8583,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   replyRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   sendReplyButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, justifyContent: 'center' },
   sendReplyButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  previewPartnerRow: { flexDirection: 'row', alignItems: 'center' },
-  previewPartnerName: { flexShrink: 1 },
   gatheringRow: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,

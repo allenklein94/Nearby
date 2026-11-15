@@ -78,6 +78,7 @@ import BusinessLogoMark from '../components/BusinessLogoMark';
 import { getScreenedLogos } from '../services/businessLogos';
 import { logoFor } from '../utils/businessLogo';
 import { SOUND_CUES } from '../utils/soundCues';
+import { offerCardStyleSpec } from '../components/offerCardStyles';
 
 // Wording lives in ui.requestDetail.status.<status> / offerStatus.<status> / offerType.<type>; these list the known keys.
 const STATUS_COPY = {
@@ -2335,23 +2336,10 @@ const getStyles = (colors) => StyleSheet.create({
   comparisonHeaderRow: { marginBottom: spacing.md },
   comparisonHeaderText: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   comparisonHeaderSubtext: { ...typography.caption, color: colors.textSecondary },
-  offerCard: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.md, marginBottom: spacing.md,
-  },
+  // The reply card's frame, header lines and button: one shared look with the owner's preview (components/offerCardStyles.js).
+  ...offerCardStyleSpec(colors),
   // the offer this screen was opened on (destination contract): selected state, so coral per the colour rule
   offerCardFocused: { borderColor: colors.primary, borderWidth: 2 },
-  offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
-  offerPartnerRow: { flexDirection: 'row', alignItems: 'center' },
-  offerPartnerNameFlex: { flexShrink: 1 },
-  // Item 92 ("Businesses should be able to respond specifically to the
-  // occasion", CLAUDE.md): a real, named offer reads as its own headline
-  // -- "Special Birthday Offer" -- distinct from the plain business-name
-  // line above it, so the compelling structured response the item asks
-  // for actually looks like one, not just more prose.
-  offerTitleHeadline: { ...typography.headline, color: colors.textPrimary, marginTop: 2 },
-  offerReputationLine: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-  offerStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 2, marginBottom: spacing.xs },
   offerTypeLabel: { ...typography.caption, color: colors.info, fontWeight: '700', marginBottom: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerIncludedItem: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
@@ -2361,9 +2349,6 @@ const getStyles = (colors) => StyleSheet.create({
   redeemCalloutText: { ...typography.body, color: colors.textPrimary },
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
   offerViewedIndicator: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
-  acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
-  acceptButtonWaiting: { opacity: 0.5 },
-  acceptButtonText: { color: '#fff', fontWeight: '700' },
   completeButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   completeButtonText: { color: colors.primary, fontWeight: '700' },
   cancelReservationButton: { borderWidth: 1, borderColor: colors.danger, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
