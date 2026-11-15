@@ -59,8 +59,10 @@ describe('Performance never claims revenue (item 205)', () => {
     expect(byKey(tiles({ value: { month_redemptions: 1, month_unpriced: 1, month_value: 0 } })).performance.valueLine).toBeNull();
     const priced = byKey(tiles({ value: { month_redemptions: 1, month_unpriced: 0, month_value: 12.5 } })).performance;
     expect(priced.valueLine).toMatch(/^Value of offers redeemed: \$12\.50$/);
-    for (const t of tiles({ value: { month_redemptions: 1, month_unpriced: 0, month_value: 12.5 } })) {
+    for (const { valueNote, ...t } of tiles({ value: { month_redemptions: 1, month_unpriced: 0, month_value: 12.5 } })) {
       expect(JSON.stringify(t)).not.toMatch(/revenue|earn|income|profit|spent/i);
+      // the disclosure is the one place "spent" appears, and only to say the value is NOT customer spend (idea "343")
+      if (valueNote) expect(valueNote).toMatch(/Not a measure of what customers spent\.$/);
     }
   });
   test('the tile strings carry no revenue/earnings words in any language', () => {

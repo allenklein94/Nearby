@@ -3399,7 +3399,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   // "Business Web as an Operating System" Phase 3 -- the real per-template
-  // offer-performance funnel (Offer / Viewed / Accepted / Redeemed), built
+  // offer-performance funnel (Offered / Accepted / Redeemed; the viewed count is never shown: views are private
+  // behaviour signals, item 77), built
   // entirely over already-tracked data via the new experience_id column on
   // business_request_offers. Owner-only, same non-fatal loader shape as
   // every other Insights-tab section on this screen.
@@ -3848,12 +3849,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                                     key={tile.key}
                                     style={[styles.homeTile, tile.highlight && { borderColor: colors.primary }]}
                                     onPress={() => openHomeTile(tile.target)}
-                                    accessibilityLabel={[tile.title, tile.line, tile.valueLine].filter(Boolean).join(', ')}
+                                    accessibilityLabel={[tile.title, tile.line, tile.valueLine, tile.valueNote].filter(Boolean).join(', ')}
                                     accessibilityRole="button"
                                   >
                                     <Text style={styles.notesLabel}>{tile.title}</Text>
                                     <Text style={styles.homeTileLine}>{tile.line}</Text>
                                     {!!tile.valueLine && <Text style={styles.breakdownText}>{tile.valueLine}</Text>}
+                                    {!!tile.valueNote && <Text style={styles.funnelNote}>{tile.valueNote}</Text>}
                                   </TouchableOpacity>
                                 ))}
                               </View>
@@ -5292,8 +5294,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               )}
 
               {/* "Business Web as an Operating System" Phase 3 -- a real
-                  per-template offer-performance funnel: viewed/accepted/
-                  completed counts grouped by which real Signature
+                  per-template offer-performance funnel: offered/accepted/
+                  completed counts (never viewed: item 77) grouped by which real Signature
                   Experience actually generated the offer (or by offer
                   type, for an offer with no linked template) -- built
                   entirely over already-tracked data, no new signal
@@ -5310,16 +5312,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               {/* Item 150: one row per funnel stage this month, then the value of the offers redeemed (never "revenue"). */}
               {(() => {
                 const f = offerFunnelView(offerFunnel, offerValue);
+                // The four counts as equal cells (2 x 2 on a phone, one row when wide); the value of offers redeemed sits
+                // apart underneath with its disclosure, so money never reads as a fifth stage.
                 return f ? (
-                  <View style={{ marginBottom: spacing.sm }} accessibilityRole="summary">
+                  <View style={styles.funnelBlock} accessibilityRole="summary">
                     <Text style={styles.offerTitle}>{f.title}</Text>
-                    {[...f.stages, ...(f.valueRow ? [f.valueRow] : [])].map((row) => (
-                      <View key={row.key} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                        <Text style={styles.breakdownText}>{row.label}</Text>
-                        <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{row.amount ?? row.count}</Text>
+                    <View style={styles.funnelGrid}>
+                      {f.stages.map((stage) => (
+                        <View key={stage.key} style={styles.funnelStage} accessible accessibilityLabel={`${stage.label}: ${stage.count}`}>
+                          <Text style={styles.funnelCount}>{stage.count}</Text>
+                          <Text style={styles.funnelLabel}>{stage.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    {!!f.valueRow && (
+                      <View style={styles.funnelValue} accessible accessibilityLabel={[`${f.valueRow.label}: ${f.valueRow.amount}`, f.note].filter(Boolean).join('. ')}>
+                        <Text style={styles.funnelLabel}>{f.valueRow.label}</Text>
+                        <Text style={styles.funnelCount}>{f.valueRow.amount}</Text>
+                        {!!f.note && <Text style={styles.funnelNote}>{f.note}</Text>}
                       </View>
-                    ))}
-                    {!!f.note && <Text style={styles.breakdownText}>{f.note}</Text>}
+                    )}
                   </View>
                 ) : null;
               })()}
@@ -5331,7 +5343,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <View key={row.group_key} style={styles.offerCard}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.offerTitle}>{row.group_label}</Text>
-                      <Text style={styles.offerDescription}>{t('ui.bizDash1.offeredViewedAcceptedRedeemed', { offerCount: row.offer_count, viewedCount: row.viewed_count, acceptedCount: row.accepted_count, completedCount: row.completed_count })}</Text>
+                      <Text style={styles.offerDescription}>{t('ui.bizDash1.offeredAcceptedRedeemed', { offerCount: row.offer_count, acceptedCount: row.accepted_count, completedCount: row.completed_count })}</Text>
                     </View>
                   </View>
                 ))
@@ -8516,6 +8528,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   homeTileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   homeTile: { flexGrow: 1, flexBasis: '30%', minWidth: 140, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   homeTileLine: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 2 },
+  // Item 150's month block (Offer Performance): equal cells, wrap to 2 x 2 on a phone; value + disclosure apart below.
+  funnelBlock: { marginBottom: spacing.md },
+  funnelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
+  funnelStage: { flexGrow: 1, flexBasis: '22%', minWidth: 120, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  funnelCount: { color: colors.textPrimary, fontSize: 22, fontWeight: '700' },
+  funnelLabel: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  funnelValue: { marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  funnelNote: { color: colors.textSecondary, fontSize: 12, marginTop: spacing.xs },
   pipelineRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
   pipelineStage: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   helperText: { color: colors.textTertiary, fontSize: 12, lineHeight: 18, marginTop: spacing.lg, fontStyle: 'italic' },
