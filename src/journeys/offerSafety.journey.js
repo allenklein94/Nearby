@@ -170,8 +170,9 @@ d('journey: offer safety: screening bound to the write, no contact details, repo
   exception when others then get stacked diagnostics v_hint = pg_exception_hint; v_out := jsonb_build_object('error', sqlerrm, 'hint', v_hint);
   end;
   ${note('server_perk_with_link', 'v_out')}
-  -- an unrelated change to an offer row is never refused by the rule
-  update business_request_offers set viewed_at = now() where request_id = r1 and partner_id = v_p;
+  -- an unrelated change to an offer row is never refused by the rule (a non-text column; never viewed_at, which
+  -- 20270422 keeps NULL by constraint once it is installed)
+  update business_request_offers set responded_at = responded_at where request_id = r1 and partner_id = v_p;
   ${note('unrelated_update_ok', `to_jsonb(true)`)}
 
   -- ===== 3. report this offer =====
