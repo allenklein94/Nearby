@@ -67,8 +67,11 @@ begin
             where n.nspname in ('public', 'private') and p.prokind = 'f' and p.prosrc like '%${PRODUCTION_REF}%' loop
     execute replace(pg_get_functiondef(r.oid), '${PRODUCTION_REF}', '${stagingRef}');
   end loop;
+  -- cron.job is owned by the extension: change jobs through pg_cron's own cron.alter_job (a direct UPDATE is refused).
   if to_regclass('cron.job') is not null then
-    update cron.job set command = replace(command, '${PRODUCTION_REF}', '${stagingRef}') where command like '%${PRODUCTION_REF}%';
+    for r in select jobid, command from cron.job where command like '%${PRODUCTION_REF}%' loop
+      perform cron.alter_job(r.jobid, command := replace(r.command, '${PRODUCTION_REF}', '${stagingRef}'));
+    end loop;
   end if;
 end $repoint$;`;
 }
