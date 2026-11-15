@@ -24,6 +24,8 @@ import { useTheme } from '../context/ThemeContext';
 import { formatAgo } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import CategorySearchField from './CategorySearchField';
+import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
 import { getBusinessExperiences } from '../services/brandOffers';
 import { withdrawBusinessOffer } from '../services/businessFulfillment';
 import { getBusinessEntitlements, hasEntitlement } from '../services/entitlements';
@@ -96,6 +98,7 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
   const [nameInput, setNameInput] = useState('');
   const [policyLevelInput, setPolicyLevelInput] = useState(2);
   const [categoryInput, setCategoryInput] = useState(null);
+  const [categoryQuery, setCategoryQuery] = useState('');
   const [experienceIdInput, setExperienceIdInput] = useState(null);
   const [partySizeMaxInput, setPartySizeMaxInput] = useState('');
   const [hoursStartInput, setHoursStartInput] = useState('');
@@ -531,9 +534,15 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
                 </View>
 
                 <Text style={styles.fieldLabel}>Category</Text>
+                <CategorySearchField
+                  value={categoryQuery}
+                  onChangeText={setCategoryQuery}
+                  noMatch={noCategoryMatch(INTEREST_OPTIONS, categoryQuery, { selected: categoryInput })}
+                  style={{ marginBottom: spacing.sm }}
+                />
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
                   <View style={styles.chipRow}>
-                    {INTEREST_OPTIONS.map((c) => (
+                    {filterCategoryOptions(INTEREST_OPTIONS, categoryQuery, { selected: categoryInput }).map((c) => (
                       <TouchableOpacity
                         key={c}
                         style={[styles.chip, categoryInput === c && styles.chipSelected]}

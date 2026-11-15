@@ -10,6 +10,8 @@ import { bizWindowPhrase } from '../i18n/bizFormat';
 import { attributeLabel, experienceOptionLabel } from '../i18n/optionLabels';
 import { cuisineName } from '../i18n/businessProfileDisplay';
 import { categoryName } from '../i18n/categoryNames';
+import CategorySearchField from '../components/CategorySearchField';
+import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
 import DraftBanner from '../components/DraftBanner';
 import AgeRangePicker from '../components/AgeRangePicker';
 import SettingConflictNotice from '../components/SettingConflictNotice';
@@ -309,6 +311,8 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
 
 export default function BusinessDashboardScreen({ navigation, route }) {
   const { t, language } = useLanguage();
+  // Category search matches the owner's language as well as the stored tag the chip shows.
+  const categorySearchLabel = (c) => categoryName(c, language);
   const offerTypeLabel = (key) => (OFFER_TYPE_OPTIONS.some((o) => o.key === key) ? t(`ui.bizDash3.offerType.${key}`) : key);
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -413,6 +417,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // 2026-09-10) -- secondary, cross-major self-classification, distinct
   // from editSubcategoryInput (one leaf tag under the primary major).
   const [editCategoriesInput, setEditCategoriesInput] = useState([]);
+  const [profileCategoryQuery, setProfileCategoryQuery] = useState(''); // search inside the picker only (utils/categorySearch.js)
   const [editDifferentiatorInput, setEditDifferentiatorInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   // "Business Story" plan, Phase 2 -- Business Goals ("what we want more
@@ -461,6 +466,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // priority_attributes/priority_time_windows chips above.
   const [activePrioritySignals, setActivePrioritySignals] = useState([]);
   const [boostCategoryInput, setBoostCategoryInput] = useState(null);
+  const [boostCategoryQuery, setBoostCategoryQuery] = useState('');
   const [boostDurationInput, setBoostDurationInput] = useState('today');
   const [savingBoost, setSavingBoost] = useState(false);
   // Phase 6 -- Signature Experiences.
@@ -708,6 +714,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [availabilityTitleInput, setAvailabilityTitleInput] = useState('');
   const [availabilityDescriptionInput, setAvailabilityDescriptionInput] = useState('');
   const [availabilityCategoryInput, setAvailabilityCategoryInput] = useState(null);
+  const [availabilityCategoryQuery, setAvailabilityCategoryQuery] = useState('');
   const [availabilityOfferTypeInput, setAvailabilityOfferTypeInput] = useState('standard');
   const [availabilityPriceInput, setAvailabilityPriceInput] = useState('');
   const [availabilityDiscountInput, setAvailabilityDiscountInput] = useState('');
@@ -6033,8 +6040,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     ))}
                   </View>
                 )}
+                <CategorySearchField
+                  value={boostCategoryQuery}
+                  onChangeText={setBoostCategoryQuery}
+                  noMatch={noCategoryMatch(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput })}
+                />
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {AVAILABILITY_CATEGORY_OPTIONS.map((c) => {
+                  {filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput }).map((c) => {
                     const selected = boostCategoryInput === c;
                     return (
                       <TouchableOpacity
@@ -6728,8 +6740,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <Text style={styles.helperText}>
                 {t('ui.bizDash3.alsoShowUpUnderAny')} {t('ui.bizDash3.upToFiveCategories')}
               </Text>
+              <CategorySearchField
+                value={profileCategoryQuery}
+                onChangeText={setProfileCategoryQuery}
+                noMatch={noCategoryMatch(businessTagOptions(), profileCategoryQuery, { labelFor: categorySearchLabel, selected: editCategoriesInput })}
+              />
               <View style={styles.chipRow}>
-                {businessTagOptions().map((c) => {
+                {filterCategoryOptions(businessTagOptions(), profileCategoryQuery, { labelFor: categorySearchLabel, selected: editCategoriesInput }).map((c) => {
                   const selected = editCategoriesInput.includes(c);
                   return (
                     <TouchableOpacity
@@ -7797,8 +7814,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 accessibilityLabel={t('ui.bizDash3.availabilityDescriptionOptionalA11y')}
               />
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.categoryOptional')}</Text>
+              <CategorySearchField
+                value={availabilityCategoryQuery}
+                onChangeText={setAvailabilityCategoryQuery}
+                noMatch={noCategoryMatch(AVAILABILITY_CATEGORY_OPTIONS, availabilityCategoryQuery, { labelFor: categorySearchLabel, selected: availabilityCategoryInput })}
+              />
               <View style={styles.chipRow}>
-                {AVAILABILITY_CATEGORY_OPTIONS.map((c) => (
+                {filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, availabilityCategoryQuery, { labelFor: categorySearchLabel, selected: availabilityCategoryInput }).map((c) => (
                   <TouchableOpacity
                     key={c}
                     style={[styles.chip, availabilityCategoryInput === c && styles.chipSelected]}
