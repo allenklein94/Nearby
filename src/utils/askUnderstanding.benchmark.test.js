@@ -7,6 +7,15 @@
 import { resolveAsk } from './askResolver';
 import { planAsk } from './planAsk';
 
+// Frozen clock (test debt, owner 2026-10-25/2026-11-15): a named "Saturday" is the "This weekend" window only when it falls
+// this weekend (namedDayFromText), so these rows depended on the run date. Pinned to a Wednesday, local wall-clock (never a UTC
+// "Z" string), so "Saturday" is always this weekend's. Only the test clock changes; the resolver is untouched.
+beforeAll(() => {
+  jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'] });
+  jest.setSystemTime(new Date(2026, 9, 21, 12, 0, 0)); // Wed 2026-10-21 12:00 local
+});
+afterAll(() => jest.useRealTimers());
+
 // expected: tag | parts (sorted plan part keys) | when | who | size | occasion | price | budget | pricey | cuisine
 const C = [
  ["I want to grab dinner, maybe see some live music, nothing too expensive, tonight.", {parts:['activity','food'], when:'tonight', pricey:true}],
