@@ -25,6 +25,12 @@ const delay = (ts) => `round(extract(epoch from (${ts} - now())))`;
 const log = (step, data) => `log := log || jsonb_build_array(jsonb_build_object('step', '${step}', 'ok', true, 'data', ${data}));`;
 const args = (req) => `jsonb_build_object('request_id_param', ${req}, 'offer_type_param', 'standard', 'offer_description_param', 'J420 test offer', 'offer_price_param', 12)`;
 
+// 0372 (when present): an automatic try re-screens before it publishes (screen-business-content records a low-risk result
+// for the submitter); this stands in for that result. A no-op before 0372 (the stand-in returns at once).
+const screened = (req) => `perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  perform pg_temp._journey_screened('offer_response', 'screening_content_offer_response', array[${req}::text, 'J420 test offer', null, '{}', null, null, null, null, null]);
+  perform set_config('request.jwt.claims', '', true);`;
+
 d('journey: offer screening retries temporary failures by itself (20270420)', () => {
   let s;
   beforeAll(async () => {
@@ -54,11 +60,13 @@ d('journey: offer screening retries temporary failures by itself (20270420)', ()
   ${log('a_claimed', `jsonb_build_object('claimed', v_n, 'row', ${row('v_s1')})`)}
   ${due('v_s1')}
   ${log('a_claimed_again', `jsonb_build_object('claimed', ${claimed('v_s1')})`)}
+  ${screened('v_r1')}
   v_pub := _submit_business_offer_for_submission(v_s1, ${args('v_r1')}, null);
   ${log('a_published', `jsonb_build_object('offer_id_returned', v_pub ? 'offerId', 'row', ${row('v_s1')},
      'offer_status', (select status from business_request_offers where request_id = v_r1 and partner_id = v_partner))`)}
   begin
-    perform _submit_business_offer_for_submission(v_s1, ${args('v_r1')}, null); v_err := 'allowed';
+    ${screened('v_r1')}
+  perform _submit_business_offer_for_submission(v_s1, ${args('v_r1')}, null); v_err := 'allowed';
   exception when others then get stacked diagnostics v_err = pg_exception_hint; end;
   ${log('a_second_publish', `jsonb_build_object('result', v_err,
      'result_pushes', (select count(*) from push_outbox where data->>'submission_id' = v_s1::text),
@@ -112,12 +120,14 @@ d('journey: offer screening retries temporary failures by itself (20270420)', ()
   -- G. the wrapper's own guards
   update business_offer_submissions set status = 'reviewing', updated_at = now() where id = v_s6;
   begin
-    perform _submit_business_offer_for_submission(v_s6, ${args('v_r1')}, null); v_err := 'allowed';
+    ${screened('v_r1')}
+  perform _submit_business_offer_for_submission(v_s6, ${args('v_r1')}, null); v_err := 'allowed';
   exception when others then get stacked diagnostics v_err = pg_exception_hint; end;
   ${log('g_other_request', `jsonb_build_object('result', v_err)`)}
   update business_offer_submissions set submitted_by = v_other where id = v_s6;  -- someone who manages no business
   begin
-    perform _submit_business_offer_for_submission(v_s6, ${args('v_r6')}, null); v_err := 'allowed';
+    ${screened('v_r6')}
+  perform _submit_business_offer_for_submission(v_s6, ${args('v_r6')}, null); v_err := 'allowed';
   exception when others then v_err := 'refused'; end;
   ${log('g_no_longer_manager', `jsonb_build_object('result', v_err, 'offer_status', (select status from business_request_offers where request_id = v_r6 and partner_id = v_partner))`)}
   update business_offer_submissions set submitted_by = v_owner where id = v_s6;
