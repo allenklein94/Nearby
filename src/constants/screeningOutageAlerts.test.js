@@ -60,13 +60,13 @@ describe('reportScreeningHealth: only ok / kind / status / source leave, and it 
 describe('wiring: every Anthropic screening call reports, fail-closed unchanged, nothing sensitive logged or sent', () => {
   test('text classifier: missing key, network/timeout, bad response, unreadable JSON and success all report', () => {
     expect(cls).toMatch(/keyMissing: true/);
-    expect(cls).toMatch(/SERVICE_FAILURE request failed[\s\S]{0,120}reportClassifierHealth\(false, screeningFailureKind\(\{ error: e \}\)\)[\s\S]{0,40}return null/);
-    expect(cls).toMatch(/unexpected Anthropic response[\s\S]{0,200}reportClassifierHealth\(false, screeningFailureKind\(\{ status: anthropicResponse\.status, body: anthropicData \}\)/);
+    expect(cls).toMatch(/SERVICE_FAILURE request failed[\s\S]{0,120}reportClassifierHealth\(false, healthFailureKind\(\{ error: e \}\)\)[\s\S]{0,40}return \{ failure: 'transient' \}/);
+    expect(cls).toMatch(/unexpected Anthropic response[\s\S]{0,200}healthFailureKind\(\{ status: anthropicResponse\.status, body: anthropicData \}\)[\s\S]{0,40}reportClassifierHealth\(false, healthKind/);
     expect(cls).toMatch(/reportClassifierHealth\(false, 'bad_reply'/);
     expect(cls).toMatch(/await reportClassifierHealth\(true\);\n\n  const riskTier/);
   });
   test('logo (vision) classifier reports the same way and now times out', () => {
-    expect(fn).toMatch(/vision request failed[\s\S]{0,120}reportClassifierHealth\(false, screeningFailureKind\(\{ error: e \}\)\)/);
+    expect(fn).toMatch(/vision request failed[\s\S]{0,120}reportClassifierHealth\(false, healthFailureKind\(\{ error: e \}\)\)/);
     expect(fn).toMatch(/vision response[\s\S]{0,200}reportClassifierHealth\(false/);
     expect((fn.match(/AbortSignal\.timeout\(20000\)/g) ?? []).length).toBeGreaterThanOrEqual(1);
   });

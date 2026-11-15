@@ -30,7 +30,8 @@ describe('the classifier says what kind of failure it was, and stays fail-closed
   test('every failure path of the detailed call returns a failure, never a tier', () => {
     const body = classifier.slice(classifier.indexOf('export async function classifyContentDetailed'));
     expect(body).not.toMatch(/return null/);
-    expect((body.match(/return \{ failure:/g) || []).length).toBe(3);
+    // 4 with 0387's missing-key path (integration), 3 without it
+    expect((body.match(/return \{ failure:/g) || []).length).toBe(4);
   });
   test('the old classifyContent keeps its null-on-failure contract for its other callers', () => {
     expect(classifier).toMatch(/return 'failure' in r \? null : r;/);
@@ -85,5 +86,15 @@ describe('what the owner sees (existing wording, unchanged)', () => {
   });
   test('a request with a pending try still counts as in flight (no second send)', () => {
     expect(inFlightRequestIds([{ status: 'reviewing', request_id: 'r1' }]).has('r1')).toBe(true);
+  });
+});
+
+describe('integration with 0387 screening health (one classification)', () => {
+  const { screeningFailureKind: retryKind } = require('../../supabase/functions/_shared/screeningFailure');
+  test('credit, key and retired-model causes are never retried, whatever the status', () => {
+    for (const healthKind of ['credit', 'credentials', 'model']) expect(retryKind({ status: 500, healthKind })).toBe('permanent');
+  });
+  test('rate limits, timeouts and provider errors still retry', () => {
+    for (const [status, healthKind] of [[429, 'rate_limit'], [undefined, 'timeout'], [529, 'provider_error']]) expect(retryKind({ status, healthKind })).toBe('transient');
   });
 });
