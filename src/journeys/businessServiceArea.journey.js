@@ -121,8 +121,11 @@ d('journey: a website service-area application, then real routing across miles',
   perform set_config('app.push_handoff_test_failure', 'on', true);
   update profiles set is_admin = true where id = v_admin;
   -- as submit-business-application writes it (service role): the label only, no point, no address
-  insert into business_partner_requests (requester_id, business_name, category, subcategory, address, location_source, source)
-    values (v_mobile, 'J419 Coffee Cart', 'food_drink', 'Coffee', null, 'service_area', 'web') returning id into v_req;
+  -- (requester set so this journey can act as the owner; a real web application links on sign-up)
+  insert into business_partner_requests (requester_id, business_name, category, subcategory, address, location_source, source,
+      applicant_name, applicant_email, applicant_phone)
+    values (v_mobile, 'J419 Coffee Cart', 'food_drink', 'Coffee', null, 'service_area', 'web',
+      'J419 Owner', 'j419-owner@journey.invalid', (select phone from auth.users where id = v_mobile)) returning id into v_req;
   ${row('web_req', 'business_partner_requests', 'v_req')}
   ${as('v_admin')}
   v_p := approve_business_partner_request(v_req);

@@ -32,6 +32,12 @@ stored; the edge function still requires one for a storefront). Guard `utils/bus
 Verification: replay 495/495 + journeys 837/837 + rollback/re-apply (v419, at 86a1ecba; migration unchanged since); Jest
 543/543 suites, 7322 tests; web + iOS exports clean (v425). Not done: deno check (not installed), headless/real browser,
 phone, staging, native review. Nothing merged, deployed or published.
+Follow-up (owner, same day, approved for staging): a "We go to customers" label with no point is kept and copied through
+approval (trigger `_carry_service_area_on_approval`; approve function unchanged), the website stores the label (retries
+without it on 23514 if deployed before 0419), and the dashboard banner says "🚗 Mark your service area" (11 languages, 10
+machine-authored) and opens the area map. Verified the ~1 km rounding is privacy-only: routing radius = customer's radius /
+business `max_distance_miles` from the rounded point; journey: 8 mi reached, 12 mi not (radius 10). Replay 495/495, journeys
+840/840 (businessServiceArea 9/9, 9/9 fail rolled back), re-apply diff 0, Jest 543/7322. Feature work stopped.
 
 ## Coordinated fake credibility + idea 26 (2026-11-09, owner)
 
