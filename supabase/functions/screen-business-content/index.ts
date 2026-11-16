@@ -391,7 +391,9 @@ async function handleRequest(req: Request, markWorker: (id: string) => void): Pr
     }
 
     const supabaseAsUser = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-      global: { headers: { Authorization: authHeader } },
+      // Multi-location (20270426): the user-scoped calls name the location this request was checked for, so a switch made
+      // on another device while this runs (screening takes seconds) refuses them instead of writing to the new location.
+      global: { headers: { Authorization: authHeader, 'x-nearby-business': partnerId } },
     });
 
     // "Your photos & videos" (owner, 2026-10-10): the business adds media it already has to its creative library without

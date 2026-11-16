@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import Constants from 'expo-constants';
 import { resolveBackend } from '../config/backend';
+import { withActingBusiness } from './actingBusiness';
 
 // Production by default (no override in the build). A staging build (APP_VARIANT=staging, app.config.js) carries its own
 // URL + key; if anything in it points at production, no client is created and nothing is sent (fail closed).
@@ -19,6 +20,9 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     persistSession: true,
     detectSessionInUrl: false,
   },
+  // Multi-location (20270426): REST calls name the location Business Mode shows; the server refuses them once another
+  // device switched the account to a different location (services/actingBusiness.js).
+  global: { fetch: withActingBusiness((...args) => fetch(...args)) },
 });
 
 export function functionUrl(name) {
