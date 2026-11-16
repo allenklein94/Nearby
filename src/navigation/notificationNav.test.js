@@ -70,7 +70,7 @@ describe('item 139 guards', () => {
     expect(src).not.toMatch(/navigationRef\.navigate\(/);
     const body = src.slice(src.indexOf('export async function routeNotificationTap'), src.indexOf('export async function consumePendingNotificationTap'));
     expect(body).toMatch(/notificationDestination\(/);
-    expect(body).toMatch(/openOnTop\(ref, dest\.name, dest\.params\)/);
+    expect(body).toMatch(/openOnTop\(ref, dest\.name, (switchedTo \? \{ \.\.\.dest\.params, locationSwitchedTo: switchedTo \} : )?dest\.params\)/);
     // The destination table only decides; it never navigates.
     expect(read('navigation/notificationDestinations.js')).not.toMatch(/(navigationRef|openOnTop|\.navigate|dispatch)\(/);
   });

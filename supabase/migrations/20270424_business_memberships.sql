@@ -101,7 +101,7 @@ security definer
 set search_path to 'public'
 as $function$
 declare
-  v_caller text := current_setting('app.trusted_update', true);
+  v_caller_trusted text := current_setting('app.trusted_update', true);
   v_next uuid;
 begin
   if exists (select 1 from public.profiles p where p.id = old.user_id and p.managed_partner_id = old.partner_id) then
@@ -109,7 +109,7 @@ begin
       where m.user_id = old.user_id and m.partner_id <> old.partner_id order by m.created_at, m.partner_id limit 1;
     perform set_config('app.trusted_update', 'true', true);
     update public.profiles set managed_partner_id = v_next where id = old.user_id;
-    perform set_config('app.trusted_update', coalesce(v_caller, 'false'), true);
+    perform set_config('app.trusted_update', coalesce(v_caller_trusted, 'false'), true);
   end if;
   return null;
 end;
@@ -147,7 +147,7 @@ set search_path to 'public'
 as $function$
 declare
   v_me uuid := auth.uid();
-  v_caller text := current_setting('app.trusted_update', true);
+  v_caller_trusted text := current_setting('app.trusted_update', true);
 begin
   if v_me is null then
     raise exception 'Not signed in' using hint = 'not_signed_in';
@@ -161,7 +161,7 @@ begin
   perform set_config('app.trusted_update', 'true', true);
   update public.profiles set managed_partner_id = partner_id_param
     where id = v_me and managed_partner_id is distinct from partner_id_param;
-  perform set_config('app.trusted_update', coalesce(v_caller, 'false'), true);
+  perform set_config('app.trusted_update', coalesce(v_caller_trusted, 'false'), true);
   return partner_id_param;
 end;
 $function$;

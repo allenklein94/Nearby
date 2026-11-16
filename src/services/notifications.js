@@ -1,3 +1,4 @@
+import { ensureBusinessLocationForPush } from './businessLocations';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
@@ -146,8 +147,10 @@ export async function routeNotificationTap(data, ref = navigationRef) {
     await keepEntry(AsyncStorage, PENDING_NOTIFICATION_TAP_KEY, data);
     return;
   }
+  // 20270424: a business push for another of the account's locations switches to it first (server-checked).
+  const switchedTo = await ensureBusinessLocationForPush(data);
   const dest = await notificationDestination(data, { lookupAvailability: getBusinessAvailabilityById });
-  if (dest) openOnTop(ref, dest.name, dest.params);
+  if (dest) openOnTop(ref, dest.name, switchedTo ? { ...dest.params, locationSwitchedTo: switchedTo } : dest.params);
 }
 
 // Called from RootNavigator once session && profileComplete, so a tap that arrived before the authenticated stack existed
