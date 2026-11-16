@@ -10,7 +10,7 @@
 export const ACTING_BUSINESS_HEADER = 'x-nearby-business';
 export const SELECTION_CHANGED_HINT = 'business_selection_changed';
 // Switching and listing must work from a stale screen (that is how it recovers): never sent there.
-const UNSCOPED_RPCS = ['/rpc/select_managed_business', '/rpc/get_my_businesses'];
+const UNSCOPED_RPCS = ['/rpc/select_managed_business', '/rpc/get_my_businesses', '/rpc/note_location_aware_session'];
 
 let current = null;
 let generation = 0;

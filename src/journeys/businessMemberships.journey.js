@@ -13,7 +13,7 @@
 //   * removing a membership moves the account to its remaining business, never leaves it acting for the removed one.
 // One rolled-back transaction. Not covered (later build): the location selector, push taps switching location.
 jest.mock('../services/supabase', () => ({ supabase: {} }));
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { locationAwareSessionSql, runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 const as = (sub) => `perform set_config('request.jwt.claims', json_build_object('sub', ${sub}, 'role', 'authenticated')::text, true);
@@ -41,7 +41,7 @@ d('journey: one account manages several locations, each kept separate', () => {
   let s;
   beforeAll(async () => {
     const people = ['v_admin', 'v_owner', 'v_staff', 'v_out', 'v_cust', 'v_susp'];
-    const log = await runJourney(`${actorDeclares(people)} v_req uuid; v_pa uuid; v_pb uuid; v_r uuid; v_o uuid; v_n int;`, `
+    const log = await runJourney(`${actorDeclares(people)} v_req uuid; v_pa uuid; v_pb uuid; v_sess uuid; v_r uuid; v_o uuid; v_n int;`, `
   ${actorsSql({ people })}
   update profiles set is_admin = true where id = v_admin;
 
@@ -49,6 +49,7 @@ d('journey: one account manages several locations, each kept separate', () => {
   ${app('v_owner', 'Journey Loc A', 40.0)}
   v_pa := approve_business_partner_request(v_req);
   ${asServer}
+  ${locationAwareSessionSql('v_owner')}
   ${app('v_owner', 'Journey Loc B', 40.3)}
   v_pb := approve_business_partner_request(v_req);
   ${asServer}

@@ -9,6 +9,13 @@ export async function getMyBusinessLocations() {
   return data ?? [];
 }
 
+// Rollout gate (20270426): this sign-in session runs a location-aware client (it names the location it shows). The server
+// adds a second location to an account only while every live session of it has said so. Fire and forget; before 0426 is
+// live the function doesn't exist and nothing happens.
+export async function noteLocationAwareSession() {
+  try { await supabase.rpc('note_location_aware_session'); } catch { /* best effort */ }
+}
+
 // Throws on refusal / failure; the caller shows Try again and keeps the current location.
 export async function selectBusinessLocation(partnerId) {
   const { error } = await supabase.rpc('select_managed_business', { partner_id_param: partnerId });

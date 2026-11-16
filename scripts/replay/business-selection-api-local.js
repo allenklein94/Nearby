@@ -50,6 +50,8 @@ const HINT = 'business_selection_changed';
       await db.query(`delete from ${sc}.${t} where partner_id = any($1::uuid[])`, [[A, B]]);
     }
     await db.query(`delete from private.business_memberships where user_id = any($1::uuid[])`, [people]);
+    if ((await db.query(`select to_regclass('private.location_aware_sessions') is not null x`)).rows[0].x) await db.query(`delete from private.location_aware_sessions where user_id = any($1::uuid[])`, [people]);
+    await db.query(`delete from auth.sessions where user_id = any($1::uuid[])`, [people]);
     await db.query(`delete from brand_partners where id = any($1::uuid[])`, [[A, B]]);
     await db.query(`delete from profiles where id = any($1::uuid[])`, [people]);
     await db.query(`delete from auth.users where id = any($1::uuid[])`, [people]);
@@ -97,7 +99,18 @@ const HINT = 'business_selection_changed';
     for (const [p, n] of [[A, 'Selection Loc A'], [B, 'Selection Loc B']]) {
       await db.query(`insert into brand_partners (id, name, active, latitude, longitude, address, category, subcategory, categories, max_group_size) values ($1, $2, true, 40, -75, '1 Test St', 'food_drink', 'Coffee', '{}', 20)`, [p, n]);
     }
-    await trusted(`update profiles set managed_partner_id = $1 where id = $2`, [B, OWNER]); // membership B
+    // rollout gate (0426): the owner's one live session is location-aware before a second location can be added
+    const SESSION = crypto.randomUUID();
+    await db.query(`insert into auth.sessions (id, user_id, created_at, updated_at) values ($1, $2, now(), now())`, [SESSION, OWNER]);
+    await trusted(`update profiles set managed_partner_id = $1 where id = $2`, [B, OWNER]); // membership B (the first)
+    let gateRefused = false;
+    try { await trusted(`update profiles set managed_partner_id = $1 where id = $2`, [A, OWNER]); } catch (e) { gateRefused = /multi_location_not_ready|several locations/.test(`${e.hint} ${e.message}`); }
+    if (!open) check('rollout gate: second location refused while the session is not location-aware', gateRefused);
+    {
+      const headers = { Authorization: `Bearer ${jwt({ role: 'authenticated', sub: OWNER, session_id: SESSION })}`, 'Content-Type': 'application/json', 'x-nearby-business': crypto.randomUUID() };
+      const r0 = await fetch(`${url}/rpc/note_location_aware_session`, { method: 'POST', headers, body: '{}' });
+      check('the session records itself (allowed even with a stale header)', r0.status < 300, r0.status);
+    }
     await trusted(`update profiles set managed_partner_id = $1 where id = any($2::uuid[])`, [A, people]); // A (owner + staff)
     await db.query(`select set_config('app.trusted_update', 'false', false)`);
     check('fixtures: owner holds A and B, selected A', (await db.query(`select count(*)::int n from private.business_memberships where user_id = $1`, [OWNER])).rows[0].n === 2);

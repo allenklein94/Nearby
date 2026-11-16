@@ -205,4 +205,15 @@ function crossingReady(people, area = CROSSING_AREA) {
     on conflict (user_id) do update set area = excluded.area, reported_at = excluded.reported_at;`;
 }
 
-module.exports = { crossingReady, CROSSING_AREA, runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, fixturePhoneWrite, LIFT_GATHERING_CREATION_LIMIT, storedReason, profileReadGrant };
+
+// Rollout gate (20270426): a second location needs every live sign-in session of the account to have recorded that it
+// runs a location-aware client. A journey giving an account two locations first signs it in once (a stub auth.sessions
+// row) and records that session through the real function, as Business Mode does. Needs `v_sess uuid` declared.
+const locationAwareSessionSql = (who) => `insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), ${who}, now(), now()) returning id into v_sess;
+  perform set_config('request.jwt.claims', json_build_object('sub', ${who}, 'role', 'authenticated', 'session_id', v_sess)::text, true);
+  set local role authenticated;
+  perform public.note_location_aware_session();
+  reset role;
+  perform set_config('request.jwt.claims', '', true);`;
+
+module.exports = { locationAwareSessionSql, crossingReady, CROSSING_AREA, runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, fixturePhoneWrite, LIFT_GATHERING_CREATION_LIMIT, storedReason, profileReadGrant };
