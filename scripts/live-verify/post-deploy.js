@@ -89,6 +89,12 @@ const STEPS = {
       'rollout gate (owner option a, server-enforced): an account with one live session that has NOT recorded itself (a build <= 87 or the current website signed in) cannot get a second location (approval refused, hint multi_location_not_ready); after every live session ran Business Mode from this branch (note_location_aware_session) or signed out, it can; hosted auth.sessions has not_after: an expired session no longer counts',
       'fail closed: no production way to force the check to error; covered by the journey (unreadable headers refuse a write, recovery passes)',
       'rollback: scripts/rollback/20270426 resets the setting only when it still names this check, then notify pgrst; drops the gate + location_aware_sessions (rows are only session ids, nothing to keep)'] },
+  20270427: { journeys: ['locationAwareClientRequired', 'businessSelectionGuard', 'businessMemberships', 'multiLocationCrossPrivacy'],
+    manual: ['deploy right after 20270426 (it replaces public.nearby_pre_request); smoke at once: signed-out GET, a signed-in consumer write (join a gathering), a single-location owner saving hours without the header, a service-role call: all succeed; any 5xx = roll back 0427 at once',
+      'real API (dedicated test accounts, two test locations, an extra session that never ran Business Mode = the old build): every location-specific write without x-nearby-business refused with location_aware_client_required (hours, pin, availability, contact details, a package, brand_offers / business_updates writes, a story or reply as the business), A and B byte-identical; the same account still joins a gathering, saves a person-level setting, reads, switches',
+      'a gathering created by the two-location account without the header has hosting_partner_id null; with the header naming the selection it is credited to that location',
+      'Stripe onboarding (redeployed from this branch, deno check first): no partnerId for a two-location account = 409 location_aware_client_required; single-location account without partnerId = unchanged',
+      'rollback: scripts/rollback/20270427 restores the 20270426 check and the original crediting triggers (0-line schema round trip proven locally); stores nothing'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
