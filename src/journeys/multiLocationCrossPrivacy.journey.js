@@ -123,7 +123,7 @@ d('journey: several locations under one account stay separate for private detail
   ${rec('cancel_alerts', `(select coalesce(jsonb_agg(jsonb_build_object('to', recipient_id, 'partner', data->>'partner_id', 'request', data->>'request_id') order by data->>'partner_id', recipient_id), '[]'::jsonb)
       from push_outbox where data->>'type' = 'business_request_cancelled' and data->>'request_id' = v_r::text)`)}
   insert into business_offer_submissions (partner_id, request_id, submitted_by, status, payload)
-    values (v_pb, null, v_owner, 'reviewing', jsonb_build_object('offerDescription', 'J cross-location review')) returning id into v_sub;
+    values (v_pb, v_r, v_owner, 'reviewing', jsonb_build_object('requestId', v_r, 'offerDescription', 'J cross-location review')) returning id into v_sub;
   perform public._push_offer_submission_result(v_owner, 'needs_changes', v_sub);
   ${rec('review_alert', `(select jsonb_build_object('partner', data->>'partner_id', 'submission', data->>'submission_id') from push_outbox
       where recipient_id = v_owner and data->>'type' = 'business_offer_review_result' and data->>'submission_id' = v_sub::text limit 1)`)}`);
