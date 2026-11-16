@@ -126,13 +126,14 @@ d('journey: Verified Business is separate from approval, admin-only, evidence-ba
   ${badge('after_address_change')}
   update brand_partners set address = '1 Journey St' where id = v_p;
   perform set_config('app.trusted_update', 'on', true);
-  update profiles set managed_partner_id = null where id = v_owner;
+  -- 20270424/0425: leaving a business = losing its membership (deselecting it is only switching location)
+  delete from private.business_memberships where user_id = v_owner and partner_id = v_p;
   update profiles set managed_partner_id = v_p where id = v_new_mgr;
   perform set_config('app.trusted_update', '', true);
   ${badge('after_manager_change')}
   ${as('lapse_manager', 'v_admin', `v_res := (select x -> 'lapse' from jsonb_array_elements(admin_list_business_verifications()) x where (x ->> 'partner_id')::uuid = v_p)`, 'authenticated', 'v_res')}
   perform set_config('app.trusted_update', 'on', true);
-  update profiles set managed_partner_id = null where id = v_new_mgr;
+  delete from private.business_memberships where user_id = v_new_mgr and partner_id = v_p;
   update profiles set managed_partner_id = v_p where id = v_owner;
   perform set_config('app.trusted_update', '', true);
   update brand_partners set active = false where id = v_p;
