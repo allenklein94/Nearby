@@ -1,3 +1,64 @@
+## 2026-11-16: Stale-location guard 20270426 (owner: finish the cross-device risk now)
+
+Owner (pasted): don't carry a known wrong-location save into production; bind each location-specific write to the
+location the screen intended, server-side; keep older builds working; stop and explain any break or broad rewrite; test
+two simultaneous sessions, unauthorized / suspended / stale / cross-location / single-location; rerun everything; report
+remaining risks; no merge / deploy / publish / production / build 87 change.
+
+Audit (dev replay DB, read-only): 97 client-callable public functions read the selected location (64 of them write: the
+set_business_* family, update_business_profile, post/cancel availability, submit/withdraw/revise/decline offers,
+reservations, redemptions, packages, experiences, AI policies, customer notes, fulfillment policy, sponsored, Stripe);
+3 direct-write RLS policies (brand_offers insert/update/delete, business_messages insert, business_updates insert) + 2
+storage policies (logo, offer media) + stories; 6 edge functions. Already bound before this change: every set_business_*
+/ update_business_profile / contact / pin setter takes partner_id_param and refuses a mismatch with the selection; the 5
+edge functions that act for a location (screen-business-content, business-ai-assistant, read-offer-creative,
+rewrite-offer-plain-language) compare the client's partnerId with the selection; storage paths must match the selection
+(fail closed); business_messages must match the conversation's business (fail closed). EXPOSED (wrote to the location
+selected NOW): every write with no location argument (post_business_availability, create_occasion_package,
+submit_business_offer / decline_business_offer on a request routed to BOTH locations, confirm_offer_redemption by code,
+cancel/complete/no-show by id when both locations hold it, brand_offers / business_updates inserts, Stripe onboarding)
+and the check-then-write gap inside screen-business-content (screening takes seconds).
+
+Fix (one place, no function or policy rewritten): migration 20270426 = PostgREST pre-request check
+public.nearby_pre_request (alter role authenticator set pgrst.db_pre_request; refuses to install over another hook, hint
+pre_request_in_use). Client (services/actingBusiness.js, wired as the Supabase client's fetch): Business Mode claims the
+location once its partner loads, releases on unmount (a late release never clears a newer claim), and sends it as
+x-nearby-business on REST calls only (never select_managed_business / get_my_businesses, edge functions, storage, auth).
+Server: header present + signed in + not one of those two paths -> compare with profiles.managed_partner_id (FOR SHARE on a
+write, so a racing switch waits until the write commits); different / malformed / unknown / lock timeout = the whole
+request refused before it runs (400, P0001, hint business_selection_changed); client then clears the claim and Business
+Mode reloads for the selected location. Header only refuses, never grants. No header = unchanged. An unexpected internal
+error inside the check returns without refusing (never takes the whole API down). Edge functions: screen-business-content
+and business-ai-assistant forward the checked partnerId as the header on their user-scoped calls; Stripe onboarding takes
+partnerId from the client and answers 409 when stale. Rollback resets the setting only when it still names this check.
+Post-deploy step 20270426 in scripts/live-verify/post-deploy.js (API smoke first: the check runs on every request).
+
+Verified (local only): journey businessSelectionGuard 9/9 (stale screen refused for writes + reads, matching screen works,
+recovery paths allowed, no/empty header unchanged, malformed/unknown refused, A-only staff naming B refused, signed out +
+service role unaffected, removed membership refused); 9/9 fail with 0426 rolled back. Real PostgREST v13 two-device test
+(scripts/replay/business-selection-api-local.js) 28/28: phone shows A, website switches to B, then all 97 client-callable
+business functions, 6 direct writes, a GET of B and a real create_occasion_package are refused; B byte-identical across
+40 tables; recovery (list, switch back, reload on B) works; A-only staff naming B refused; a switch racing a checked write
+waits and the write lands on A; with 0426 rolled back 97/97 are not refused and the stale package lands on B. Unit test
+services/actingBusiness.test.js 8. Full both-tree run = v453 (results line below when done).
+
+Remaining risks (reported, not fixed):
+1. OWNER DECISION: a client that sends no header (build <= 87, the current website) on an account holding SEVERAL
+   locations still writes to the location selected now (shown by the API test's residual check). Today no account holds
+   two memberships (0424 not live) and build <= 87 has no location selector. Options: (a) procedural gate: no account gets
+   a second location until all its devices run a build after 0426 and the website is re-exported (no code); (b) server:
+   refuse header-less requests to the 97 business functions + 3 direct-write tables for accounts with 2+ memberships (old
+   builds' Business Mode stops working for those accounts until updated; consumer use unaffected; list derived from
+   pg_proc at request time so new functions are covered). Recommended: (a) for the first multi-location accounts, (b) only
+   if external multi-location owners arrive before old builds are gone.
+2. Fails open on an unexpected internal error in the check (deliberate: a bug must not take the API down).
+3. Requests sent before Business Mode's first load finishes carry no header (reads at mount); every write after the
+   location is shown is checked.
+4. Not checked here: Supabase hosted lets postgres ALTER ROLE authenticator (documented by Supabase; staging), the gateway's
+   CORS allows the header from the website (staging), deno check of the 3 edge functions (no deno in this codespace), the
+   edge functions themselves (not redeployed), a phone.
+5. A refused save shows the screen's existing error, then Business Mode reloads (no new string).
+
 ## 2026-11-16: Multi-location readiness pass (owner review, points 1-5)
 
 Owner (pasted review): keep the foundation isolated; investigate per-device selection, fix email links to the right location,
