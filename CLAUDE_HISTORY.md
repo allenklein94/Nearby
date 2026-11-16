@@ -1,3 +1,30 @@
+## 2026-11-16: Multi-location foundation (20270424 + integration 20270425), staged
+
+Owner chose Option B (build now, isolated) after the audit: one account = one business through `profiles.managed_partner_id`
+(480 references / 192 migration files; 115 live functions, 27 policies, 6 triggers on the business-web tree, 127 functions on
+the combined trust tree). Design: keep the column as "the ONE location the account acts for now" (no existing function
+rewritten, builds <= 87 unchanged) + `private.business_memberships` (owner|staff, no client grant) + `select_managed_business`
+(the only client switch; membership + not suspended; same "Business not found" for non-member and missing) +
+`get_my_businesses` + trigger recording the membership whenever a trusted path sets the column + removal trigger moving the
+account to a remaining membership. 12 recipient lookups moved to memberships (bodies = live definitions, only the lookup
+changed; partner_id added to business_opportunity_received / business_offer_accepted pushes); digest = one per account across
+its locations. Existing defect fixed: a second approved application moved the owner off the first business.
+Client: `utils/businessLocations.js` (rule), `services/businessLocations.js`, `components/BusinessLocationSelector.js` in
+place of the header name box only when > 1 location; BusinessDashboard remounts per location (switch or push
+`locationSwitchedTo`); `routeNotificationTap` switches first for a push naming another membership (best effort).
+Integration (`integ/multi-location-x-trust`): the 12 functions are byte-identical on the trust tree (0424 reverts nothing);
+8 trust functions used "acting for" as "member of": 20270425 moves them to membership (report-own-business guard, admin
+verify conflict of interest, verification lapse on a mere switch, payment-exception / content-removal / evidence recipients).
+Verification (local only; logs /workspaces/.nearby-verify/v450 + v451): business-web tree replay 499/499 + 0424, journeys
+884/884 (two real failures fixed first: push-key privacy test, trusted-flag save/restore naming), `businessMemberships` 8/8
+(8/8 fail without 0424), rollback (guard refuses while an account has 2+ memberships unless approved in the transaction;
+approved path runs) + re-apply schema diff 0; Jest 552 suites / 7462 + 6 new (post-deploy step added); iOS export clean.
+Combined tree: replay 546/546 (PG 17.6), 0424 + 0425 applied, `trustMembershipLookups` 5/5 (4/5 fail without 0425),
+re-apply diff 0; full combined journeys 1513/1514, the one failure = `businessVerification` modelling "manager left" by clearing managed_partner_id (now = switching location); updated on the integration branch to remove the membership, 14/14.
+Remaining risks: selection per account not per device; email fallback links carry no location; roles grant nothing yet;
+staff can see their location's billing as today; no UI to add staff/locations beyond the application flow; not device- or
+browser-verified; 3 strings need native review.
+
 ## 2026-11-15: Business phone + website editable (20270423) + Business Profile authorization journey
 
 Owner reversed "defer" to "fix it now": persist phone + website from the application, editable by managers, private.
