@@ -80,6 +80,13 @@ const STEPS = {
       'email links (send-push redeployed from this branch, Resend secrets set): an alert about the NOT-selected location carries &b=<that location>; opening it on the website switches to that location before the request opens; a link naming a location the account is not a member of opens plain Opportunities',
       'two devices (phone + website, same account, two test locations): switch on the website, return the phone to the foreground = Business Mode reloads on the newly selected location before any edit',
       'rollback refuses while any account holds more than one membership (hint memberships_present): export private.business_memberships and get the owner\'s approval first; rollback keeps each account on its selected location only'] },
+  20270426: { journeys: ['businessSelectionGuard', 'businessMemberships', 'multiLocationCrossPrivacy'],
+    manual: ['BEFORE: read-only, authenticator has no pgrst.db_pre_request (the migration refuses to replace another hook, hint pre_request_in_use); AFTER: it names public.nearby_pre_request and PostgREST reloaded (a request with a stale x-nearby-business gets 400 P0001 business_selection_changed)',
+      'smoke right after deploy: signed-out anon GET of a public table, a signed-in consumer request and a service-role call all still 200 (the check runs on EVERY request; a broken check would take the API down: run first, roll back at once on any 5xx)',
+      'CORS: from the business website origin, a REST call carrying x-nearby-business passes the browser preflight (Supabase gateway allows the header); edge functions never receive it from the browser',
+      'real API (dedicated test accounts, two test locations): phone shows A, website switches to B, the phone saves hours / pin / availability / contact details / an offer = each refused with business_selection_changed, B byte-identical; Business Mode then reloads on B; a request WITHOUT the header (build <= 87) still acts for the selected location (the recorded residual)',
+      'edge functions (redeployed from this branch: screen-business-content, business-ai-assistant, business-stripe-connect-onboarding; deno check first): a screening started while A was selected, with a switch to B during it, ends refused (no write to B); Stripe onboarding with a stale partnerId = 409',
+      'rollback: scripts/rollback/20270426 resets the setting only when it still names this check, then notify pgrst; no data'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
