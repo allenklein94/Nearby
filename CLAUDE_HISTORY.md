@@ -1,3 +1,27 @@
+## 2026-11-16: Multi-location readiness pass (owner review, points 1-5)
+
+Owner (pasted review): keep the foundation isolated; investigate per-device selection, fix email links to the right location,
+rerun the complete combined suites, prove 0424/0425 with 0422/0423, document limits; no merge/deploy/publish/production.
+1. Per-device selection: investigated, not built. Options: (a) a session-scoped helper keyed on the JWT session replacing every
+   reader of managed_partner_id (115 functions, 27 policies, 6 edge functions): large rewrite, high regression risk; (b) a
+   PostgREST db_pre_request hook setting the column per request from a header: GET requests run read-only (can't write/lock),
+   edge functions don't forward the header, per-account locking. Found instead: non-request writes (profile, hours, pin,
+   availability, contact) follow the CURRENT selection, so a phone still showing A after the website switched to B would save to
+   B; the 0424 header wrongly said such actions fail closed (corrected). Fix: Business Mode re-reads the selection on focus and on
+   return to the foreground and reloads for the server's location (`selectionChangedElsewhere`, wrapper in BusinessDashboardScreen).
+2. Location in alerts + email links: partner_id added to business_request_cancelled, reservation_cancelled_by_customer (5 sites)
+   and _push_offer_submission_result (0424; rollback restores 0248's body); email link `?n&r&b` (send-push + client, guard keeps
+   them equal; a location-only link for review results / demand alerts); website + push tap share `locationPlanForLink`
+   (owner_* alert types only, so a perk/business-profile push never switches or falls back): switch first, foreign location =
+   plain Opportunities.
+3+4. Journey `multiLocationCrossPrivacy` (8 tests; first run failed on its own setup: review submission needs request_id; fixed).
+   Results (v452): ml tree replay 500/500, full journeys 892/892, rollback 16/16 fail, re-apply diff 0, Jest 552/552 (7471), iOS
+   export clean (main checkout; worktree export fails with symlinked node_modules, known). Combined tree replay 548/548, full
+   journeys 1522/1522, rollback 0425+0424 16/16 fail, re-apply diff 0, Jest first 586/588 (two integration guards: 0425 had no
+   post-deploy step; Verified Business guard didn't allow 0425, which only redefines 0371's own functions) then 588/588 (7880),
+   iOS export clean. Disk was 96% full: removed six finished detached worktrees + stopped replay containers.
+5. EAS (read-only build:list): latest iOS = 86 (7d72d615, 2026-10-18); build 87 not made.
+
 ## 2026-11-16: Multi-location foundation (20270424 + integration 20270425), staged
 
 Owner chose Option B (build now, isolated) after the audit: one account = one business through `profiles.managed_partner_id`
