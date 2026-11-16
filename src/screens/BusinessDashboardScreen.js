@@ -29,7 +29,7 @@ import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionC
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
 import BusinessHoursEditor from '../components/BusinessHoursEditor';
@@ -37,6 +37,8 @@ import BusinessContactDetails from '../components/BusinessContactDetails';
 import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
+import { getMyBusinessLocations } from '../services/businessLocations';
+import { currentLocation, selectionChangedElsewhere } from '../utils/businessLocations';
 import OfferProgressSteps, { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { businessCardStatus, offerProgress, offersToAnimate, progressKey } from '../utils/offerProgress';
 import { loadShownProgress, saveShownProgress, loadArrivedOpportunities, saveArrivedOpportunities } from '../services/offerProgressShown';
@@ -315,11 +317,39 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
 
 // Multi-location (20270424, STAGED): switching location remounts Business Mode from scratch, so no state from the previous
 // location (drafts, open forms, loaded lists, realtime channels) can carry into the next one.
+// The selection is per account: when another device or the website switched it, Business Mode reloads on focus / on return
+// to the foreground for the location the server now has selected, so this screen never shows one location while its
+// profile, hours and availability writes land on another (utils/businessLocations.js `selectionChangedElsewhere`).
 export default function BusinessDashboardScreen(props) {
   const [locationKey, setLocationKey] = useState(0);
   // A business push for another location switches first (services/notifications.js) and says so in locationSwitchedTo.
-  const key = `${locationKey}:${props.route?.params?.locationSwitchedTo ?? ''}`;
-  return <BusinessDashboardForLocation key={key} {...props} onLocationSwitched={() => setLocationKey((k) => k + 1)} />;
+  const switchedTo = props.route?.params?.locationSwitchedTo;
+  const key = `${locationKey}:${switchedTo ?? ''}`;
+  const shown = useRef(undefined); // the location this screen shows; undefined = not known yet
+  useEffect(() => { if (switchedTo) shown.current = switchedTo; }, [switchedTo]);
+  const recheck = useCallback(async () => {
+    const list = await getMyBusinessLocations();
+    if (!list.length) return; // single location / 0424 not live / failed read: nothing to compare
+    if (shown.current === undefined) {
+      shown.current = currentLocation(list)?.partner_id ?? null;
+      return;
+    }
+    const now = selectionChangedElsewhere(shown.current, list);
+    if (now === undefined) return;
+    shown.current = now;
+    setLocationKey((k) => k + 1);
+  }, []);
+  useFocusEffect(useCallback(() => { recheck(); }, [recheck]));
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') recheck(); });
+    return () => sub.remove();
+  }, [recheck]);
+  const onLocationSwitched = useCallback(() => {
+    shown.current = undefined; // this device switched: re-seed from the server on the next check
+    setLocationKey((k) => k + 1);
+    recheck();
+  }, [recheck]);
+  return <BusinessDashboardForLocation key={key} {...props} onLocationSwitched={onLocationSwitched} />;
 }
 
 function BusinessDashboardForLocation({ navigation, route, onLocationSwitched }) {

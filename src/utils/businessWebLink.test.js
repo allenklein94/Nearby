@@ -11,6 +11,7 @@ jest.mock('../services/celebrateSomething', () => ({ extractNameFromBirthdayTitl
 
 const read = (rel) => fs.readFileSync(path.join(__dirname, '..', '..', rel), 'utf8');
 const RID = '3f1c2b9a-1d2e-4f5a-8b9c-0d1e2f3a4b5c';
+const BID = '9a8b7c6d-5e4f-4a3b-9c2d-1e0f9a8b7c6d';
 
 function fakeWindow(search) {
   const store = new Map();
@@ -24,10 +25,15 @@ function fakeWindow(search) {
 
 describe('parse', () => {
   test('a well-formed link', () => {
-    expect(parseBusinessWebLink(`?n=business_opportunity_received&r=${RID}`)).toEqual({ type: 'business_opportunity_received', requestId: RID });
-    expect(parseBusinessWebLink(`?n=business_request_expiring&r=${RID.toUpperCase()}`)).toEqual({ type: 'business_request_expiring', requestId: RID });
+    expect(parseBusinessWebLink(`?n=business_opportunity_received&r=${RID}`)).toEqual({ type: 'business_opportunity_received', requestId: RID, businessId: null });
+    expect(parseBusinessWebLink(`?n=business_request_expiring&r=${RID.toUpperCase()}`)).toEqual({ type: 'business_request_expiring', requestId: RID, businessId: null });
   });
-  test.each(['', '?n=x', `?r=${RID}`, '?n=Bad-Type&r=' + RID, '?n=business_offer_accepted&r=not-a-uuid', `?n=${'a'.repeat(65)}&r=${RID}`, null])(
+  test('a link naming its location (20270424), with or without a request', () => {
+    expect(parseBusinessWebLink(`?n=business_offer_accepted&r=${RID}&b=${BID.toUpperCase()}`)).toEqual({ type: 'business_offer_accepted', requestId: RID, businessId: BID });
+    expect(parseBusinessWebLink(`?n=business_offer_review_result&b=${BID}`)).toEqual({ type: 'business_offer_review_result', requestId: null, businessId: BID });
+    expect(parseBusinessWebLink(`?n=business_offer_accepted&r=${RID}&b=nope`)).toBeNull();
+  });
+  test.each(['', '?n=x', `?r=${RID}`, '?n=Bad-Type&r=' + RID, '?n=business_offer_accepted&r=not-a-uuid', `?b=${BID}`, `?n=${'a'.repeat(65)}&r=${RID}`, null])(
     'malformed %p = null (plain dashboard)', (search) => expect(parseBusinessWebLink(search)).toBeNull(),
   );
 });
@@ -41,6 +47,13 @@ describe('the email link', () => {
     expect(businessWebLinkUrl(base, 'business_opportunity_received', 'nope')).toBe(base);
     expect(businessWebLinkUrl(undefined, 'business_opportunity_received', RID)).toBeNull();
   });
+  test('the location the alert is about rides along (20270424); a location alone still links', () => {
+    const base = 'https://example.org/Nearby/business/';
+    expect(businessWebLinkUrl(base, 'business_offer_accepted', RID, BID)).toBe(`${base}?n=business_offer_accepted&r=${RID}&b=${BID}`);
+    expect(businessWebLinkUrl(base, 'business_offer_review_result', undefined, BID)).toBe(`${base}?n=business_offer_review_result&b=${BID}`);
+    expect(businessWebLinkUrl(base, 'business_offer_accepted', RID, 'nope')).toBe(`${base}?n=business_offer_accepted&r=${RID}`);
+    expect(parseBusinessWebLink(new URL(businessWebLinkUrl(base, 'business_offer_accepted', RID, BID)).search)).toEqual({ type: 'business_offer_accepted', requestId: RID, businessId: BID });
+  });
 
   test('send-push builds exactly the same link and puts it in the email', () => {
     const src = read('supabase/functions/send-push/index.ts');
@@ -48,25 +61,25 @@ describe('the email link', () => {
     // eslint-disable-next-line no-new-func
     const denoBuilder = new Function(`${block}; return businessWebLinkUrl;`)();
     const base = 'https://example.org/Nearby/business/';
-    for (const [type, id] of [['business_opportunity_received', RID], ['business_request_expiring', RID], ['business_opportunities_digest', undefined], ['x', 'bad'], [undefined, RID]]) {
-      expect(denoBuilder(base, type, id)).toBe(businessWebLinkUrl(base, type, id));
+    for (const [type, id, b] of [['business_opportunity_received', RID], ['business_request_expiring', RID, BID], ['business_opportunities_digest', undefined], ['business_opportunities_digest', undefined, BID], ['x', 'bad', 'bad'], [undefined, RID, BID]]) {
+      expect(denoBuilder(base, type, id, b)).toBe(businessWebLinkUrl(base, type, id, b));
     }
-    expect(src).toMatch(/businessWebLinkUrl\(webUrl, data\?\.type, data\?\.request_id\)/);
+    expect(src).toMatch(/businessWebLinkUrl\(webUrl, data\?\.type, data\?\.request_id, data\?\.partner_id\)/);
     expect(src).toMatch(/Open this request: \$\{linked\}/);
   });
 
-  test('the link carries no personal data: only the type and the request id', () => {
-    const url = new URL(businessWebLinkUrl('https://example.org/b/', 'business_opportunity_received', RID));
-    expect([...url.searchParams.keys()].sort()).toEqual(['n', 'r']);
+  test('the link carries no personal data: only the type, the request id and the business id', () => {
+    const url = new URL(businessWebLinkUrl('https://example.org/b/', 'business_opportunity_received', RID, BID));
+    expect([...url.searchParams.keys()].sort()).toEqual(['b', 'n', 'r']);
   });
 });
 
 describe('kept across sign-in, opened once', () => {
   test('captured at start, removed from the address bar, read once', () => {
     const win = fakeWindow(`?n=business_opportunity_received&r=${RID}&utm=x`);
-    expect(captureBusinessWebLink(win)).toEqual({ type: 'business_opportunity_received', requestId: RID });
+    expect(captureBusinessWebLink(win)).toEqual({ type: 'business_opportunity_received', requestId: RID, businessId: null });
     expect(win.history.replaceState).toHaveBeenCalledWith(null, '', '/Nearby/business/?utm=x');
-    expect(takeBusinessWebLink(win)).toEqual({ type: 'business_opportunity_received', requestId: RID });
+    expect(takeBusinessWebLink(win)).toEqual({ type: 'business_opportunity_received', requestId: RID, businessId: null });
     expect(takeBusinessWebLink(win)).toBeNull(); // a later visit never reopens it
   });
 

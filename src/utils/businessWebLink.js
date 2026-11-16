@@ -17,21 +17,33 @@ export const BUSINESS_WEB_ROUTES = Object.freeze([
 ]);
 const FALLBACK = { name: 'BusinessDashboard', params: { initialSection: 'requests' } };
 
-// `?n=...&r=...` -> { type, requestId } or null. Anything malformed = null (the plain dashboard).
+// Multi-location (20270424, STAGED): the link also names the location the alert is about (`b=<business id>`), so the
+// website switches to it first (server-checked membership; utils/businessLocations.js `locationPlanForLink`). Links
+// without `b` (sent before) open exactly as before. A link may name only a location (an offer review result, a demand
+// alert: no request).
+const clean = (v) => (v && UUID.test(v) ? v.toLowerCase() : null);
+
+// `?n=...&r=...&b=...` -> { type, requestId, businessId } or null. Anything malformed = null (the plain dashboard).
 export function parseBusinessWebLink(search) {
   let q;
   try { q = new URLSearchParams(String(search || '')); } catch (_e) { return null; }
   const type = q.get('n');
   const requestId = q.get('r');
-  if (!type || !TYPE.test(type) || !requestId || !UUID.test(requestId)) return null;
-  return { type, requestId: requestId.toLowerCase() };
+  const businessId = q.get('b');
+  if (!type || !TYPE.test(type)) return null;
+  if (requestId && !UUID.test(requestId)) return null;
+  if (businessId && !UUID.test(businessId)) return null;
+  if (!requestId && !businessId) return null;
+  return { type, requestId: clean(requestId), businessId: clean(businessId) };
 }
 
 // Mirror of the link send-push builds (supabase/functions/send-push/index.ts, guard keeps them equal).
-export function businessWebLinkUrl(baseUrl, type, requestId) {
+export function businessWebLinkUrl(baseUrl, type, requestId, businessId) {
   if (!baseUrl) return null;
-  if (!type || !TYPE.test(type) || !requestId || !UUID.test(requestId)) return baseUrl;
-  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}n=${encodeURIComponent(type)}&r=${requestId}`;
+  const r = requestId && UUID.test(requestId) ? requestId : null;
+  const b = businessId && UUID.test(businessId) ? businessId : null;
+  if (!type || !TYPE.test(type) || (!r && !b)) return baseUrl;
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}n=${encodeURIComponent(type)}${r ? `&r=${r}` : ''}${b ? `&b=${b}` : ''}`;
 }
 
 // At website start: keep the link for after sign-in and take it out of the address bar. Never throws.
@@ -42,7 +54,7 @@ export function captureBusinessWebLink(win = typeof window !== 'undefined' ? win
   try { win.sessionStorage?.setItem(KEY, JSON.stringify(link)); } catch (_e) { /* private mode: the link is lost, the dashboard still opens */ }
   try {
     const q = new URLSearchParams(win.location.search);
-    q.delete('n'); q.delete('r');
+    q.delete('n'); q.delete('r'); q.delete('b');
     const rest = q.toString();
     win.history?.replaceState?.(null, '', `${win.location.pathname}${rest ? `?${rest}` : ''}${win.location.hash || ''}`);
   } catch (_e) { /* address bar keeps it; harmless */ }
@@ -57,16 +69,25 @@ export function takeBusinessWebLink(win = typeof window !== 'undefined' ? window
     win.sessionStorage?.removeItem(KEY);
     if (!raw) return null;
     const v = JSON.parse(raw);
-    return v && TYPE.test(v.type) && UUID.test(v.requestId) ? v : null;
+    if (!v || !TYPE.test(v.type)) return null;
+    const requestId = v.requestId && UUID.test(v.requestId) ? v.requestId : null;
+    const businessId = v.businessId && UUID.test(v.businessId) ? v.businessId : null;
+    return requestId || businessId ? { type: v.type, requestId, businessId } : null;
   } catch (_e) {
     return null;
   }
 }
 
 // Where the website opens for a link: the push's own destination when the website has that screen, else Opportunities.
+// The push data a link stands for (the same shape the push carries, so one destination table and one location rule).
+export function linkPushData(link) {
+  if (!link) return null;
+  return { type: link.type, ...(link.requestId ? { request_id: link.requestId } : {}), ...(link.businessId ? { partner_id: link.businessId } : {}) };
+}
+
 export async function businessWebDestination(link) {
   if (!link) return { name: 'BusinessDashboard' };
   let dest = null;
-  try { dest = await notificationDestination({ type: link.type, request_id: link.requestId }); } catch (_e) { dest = null; }
+  try { dest = await notificationDestination(linkPushData(link)); } catch (_e) { dest = null; }
   return dest && BUSINESS_WEB_ROUTES.includes(dest.name) ? dest : FALLBACK;
 }
