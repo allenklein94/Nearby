@@ -10,6 +10,7 @@ import { bizWindowPhrase } from '../i18n/bizFormat';
 import { attributeLabel, experienceOptionLabel } from '../i18n/optionLabels';
 import { cuisineName } from '../i18n/businessProfileDisplay';
 import { categoryName } from '../i18n/categoryNames';
+import BusinessLocationSelector from '../components/BusinessLocationSelector';
 import CategorySearchField from '../components/CategorySearchField';
 import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
 import DraftBanner from '../components/DraftBanner';
@@ -312,7 +313,16 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
   );
 }
 
-export default function BusinessDashboardScreen({ navigation, route }) {
+// Multi-location (20270424, STAGED): switching location remounts Business Mode from scratch, so no state from the previous
+// location (drafts, open forms, loaded lists, realtime channels) can carry into the next one.
+export default function BusinessDashboardScreen(props) {
+  const [locationKey, setLocationKey] = useState(0);
+  // A business push for another location switches first (services/notifications.js) and says so in locationSwitchedTo.
+  const key = `${locationKey}:${props.route?.params?.locationSwitchedTo ?? ''}`;
+  return <BusinessDashboardForLocation key={key} {...props} onLocationSwitched={() => setLocationKey((k) => k + 1)} />;
+}
+
+function BusinessDashboardForLocation({ navigation, route, onLocationSwitched }) {
   const { t, language } = useLanguage();
   // Category search matches the owner's language as well as the stored tag the chip shows.
   const categorySearchLabel = (c) => categoryName(c, language);
@@ -3680,9 +3690,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             <Text style={{ fontSize: 22 }}>💬</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.partnerSelector} accessibilityLabel={selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThisA11y')}>
-          <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThis')}</Text>
-        </View>
+        {/* 20270424: an account with several locations switches here (server-checked); one location = the plain name. */}
+        <BusinessLocationSelector onSwitched={onLocationSwitched}>
+          <View style={styles.partnerSelector} accessibilityLabel={selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThisA11y')}>
+            <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThis')}</Text>
+          </View>
+        </BusinessLocationSelector>
       </View>
       {selectedPartner && (
         <TouchableOpacity

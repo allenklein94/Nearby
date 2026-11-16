@@ -2,6 +2,8 @@
 // wording; the other ten languages are machine-authored and need native-speaker review. Edit the JSON, then rebuild.
 export default {
   en: {
+    managingLocations: "Managing {count} locations",
+    switchLocationA11y: "Switch location. Now: {name}",
     searchCategories: "Search categories",
     noCategoriesMatch: "No categories match “{query}”.",
     clearCategorySearch: "Clear search",
@@ -165,6 +167,8 @@ export default {
     },
   },
   es: {
+    managingLocations: "Gestionas {count} ubicaciones",
+    switchLocationA11y: "Cambiar de ubicación. Ahora: {name}",
     searchCategories: "Buscar categorías",
     noCategoriesMatch: "Ninguna categoría coincide con “{query}”.",
     clearCategorySearch: "Borrar búsqueda",
@@ -328,6 +332,8 @@ export default {
     },
   },
   de: {
+    managingLocations: "Du verwaltest {count} Standorte",
+    switchLocationA11y: "Standort wechseln. Jetzt: {name}",
     searchCategories: "Kategorien suchen",
     noCategoriesMatch: "Keine Kategorie passt zu „{query}“.",
     clearCategorySearch: "Suche löschen",
@@ -491,6 +497,8 @@ export default {
     },
   },
   fr: {
+    managingLocations: "Vous gérez {count} établissements",
+    switchLocationA11y: "Changer d'établissement. Actuel : {name}",
     searchCategories: "Rechercher des catégories",
     noCategoriesMatch: "Aucune catégorie ne correspond à « {query} ».",
     clearCategorySearch: "Effacer la recherche",
@@ -654,6 +662,8 @@ export default {
     },
   },
   pt: {
+    managingLocations: "Gerenciando {count} locais",
+    switchLocationA11y: "Trocar de local. Agora: {name}",
     searchCategories: "Buscar categorias",
     noCategoriesMatch: "Nenhuma categoria corresponde a “{query}”.",
     clearCategorySearch: "Limpar busca",
@@ -817,6 +827,8 @@ export default {
     },
   },
   ht: {
+    managingLocations: "W ap jere {count} kote",
+    switchLocationA11y: "Chanje kote. Kounye a: {name}",
     searchCategories: "Chèche kategori",
     noCategoriesMatch: "Pa gen okenn kategori ki koresponn ak “{query}”.",
     clearCategorySearch: "Efase rechèch la",
@@ -980,6 +992,8 @@ export default {
     },
   },
   zh: {
+    managingLocations: "正在管理 {count} 个门店",
+    switchLocationA11y: "切换门店。当前：{name}",
     searchCategories: "搜索类别",
     noCategoriesMatch: "没有与“{query}”匹配的类别。",
     clearCategorySearch: "清除搜索",
@@ -1143,6 +1157,8 @@ export default {
     },
   },
   vi: {
+    managingLocations: "Đang quản lý {count} địa điểm",
+    switchLocationA11y: "Chuyển địa điểm. Hiện tại: {name}",
     searchCategories: "Tìm danh mục",
     noCategoriesMatch: "Không có danh mục nào khớp với “{query}”.",
     clearCategorySearch: "Xóa tìm kiếm",
@@ -1306,6 +1322,8 @@ export default {
     },
   },
   tl: {
+    managingLocations: "Namamahala ng {count} lokasyon",
+    switchLocationA11y: "Lumipat ng lokasyon. Ngayon: {name}",
     searchCategories: "Maghanap ng kategorya",
     noCategoriesMatch: "Walang kategoryang tugma sa “{query}”.",
     clearCategorySearch: "I-clear ang paghahanap",
@@ -1469,6 +1487,8 @@ export default {
     },
   },
   ru: {
+    managingLocations: "Вы управляете точками: {count}",
+    switchLocationA11y: "Сменить точку. Сейчас: {name}",
     searchCategories: "Поиск категорий",
     noCategoriesMatch: "Нет категорий, подходящих под «{query}».",
     clearCategorySearch: "Очистить поиск",
@@ -1632,6 +1652,8 @@ export default {
     },
   },
   ko: {
+    managingLocations: "{count}개 지점 관리 중",
+    switchLocationA11y: "지점 전환. 현재: {name}",
     searchCategories: "카테고리 검색",
     noCategoriesMatch: "“{query}”와(과) 일치하는 카테고리가 없어요.",
     clearCategorySearch: "검색 지우기",

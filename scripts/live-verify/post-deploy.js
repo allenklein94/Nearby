@@ -471,6 +471,12 @@ const STEPS = {
       'real API (dedicated test accounts): the test business manager saves + re-reads phone/website via get/set_business_contact_details; another signed-in account gets 42501 not_business_manager on both and on update_business_profile / set_business_operating_hours / set_business_location for that business; a direct REST PATCH of brand_partners changes 0 rows; the business rows are byte-identical after the refused calls',
       'website + phone: Profile > Business Profile > Phone + website saves, survives a reload, and shows the same values on the other client',
       'rollback refuses while any contact row exists (hint contact_details_present): export the rows and get the owner\'s approval first (the application copies stay on business_partner_requests)'] },
+  20270424: { journeys: ['businessMemberships', 'notificationAction', 'trustedWriteScope', 'businessProfileAuthorization', 'offerJourney'],
+    manual: ['no build gate: builds <= 87 never call the new functions and keep acting for the one business they have; the location selector needs a build after 0424 (or the re-exported website)',
+      'read-only: private.business_memberships has no anon/authenticated grant; row count = profiles with managed_partner_id (prod today: Coastal Coffee\'s manager = 1 owner row); every profile with managed_partner_id has a matching row',
+      'real API (dedicated test accounts, test businesses only): an account with two test locations lists both via get_my_businesses and switches with select_managed_business; another account gets "Business not found" for both locations and for a random id; a direct REST PATCH of profiles.managed_partner_id is reverted; the switched location\'s Opportunities / Bookings show only its own rows',
+      'pushes: a request routed to the location NOT selected still reaches the owner (outbox row with partner_id); on a build after 0424 the tap switches to that location and opens the request',
+      'rollback refuses while any account holds more than one membership (hint memberships_present): export private.business_memberships and get the owner\'s approval first; rollback keeps each account on its selected location only'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
