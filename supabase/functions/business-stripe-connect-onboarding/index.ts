@@ -97,6 +97,14 @@ serve(async (req) => {
     if (shownPartnerId && shownPartnerId !== partnerId) {
       return new Response(JSON.stringify({ error: 'This screen is for another of your locations. Reload Business Mode.', hint: 'business_selection_changed' }), { status: 409 });
     }
+    // 20270427: an account with 2+ locations must say which one (older clients send none); never fall back to the
+    // selection. Fails closed if the count can't be read.
+    if (!shownPartnerId) {
+      const { data: locations, error: countError } = await admin.rpc('_account_location_count', { uid_param: myId });
+      if (countError || typeof locations !== 'number' || locations >= 2) {
+        return new Response(JSON.stringify({ error: "This version of Nearby can't manage several locations. Update the app (or reload the website) to continue.", hint: 'location_aware_client_required' }), { status: 409 });
+      }
+    }
 
     const { data: partner } = await admin
       .from('brand_partners')

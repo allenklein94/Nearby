@@ -27,8 +27,14 @@
 --   * Unchanged: accounts with 0 or 1 location (every account today), customer-side functions and tables, signed-out
 --     requests, the service role (no user), edge functions' service-role writes, recovery (select_managed_business,
 --     get_my_businesses, note_location_aware_session: checked first), sign-in / sign-out (Auth API, never PostgREST).
---   * Person-level exceptions (they read managed_partner_id only to check "is this person a business owner", and
---     write the person's own row): set_my_notification_group, set_my_business_email_enabled.
+--   * Not location-specific, so never refused here:
+--       - person-level functions: every reference to the selection is only "is this person a business owner?"
+--         (managed_partner_id is [not] null), decided from the catalog (set_my_notification_group,
+--         set_my_business_email_enabled, get_gathering_group_insights today);
+--       - object-bound functions customers also call: complete_business_reservation, cancel_business_reservation act
+--         as the business only when the selection equals THAT offer's own location (else as the requester, or refused),
+--         so they can never write to another location;
+--       - approve_business_partner_request (an admin action on someone else's application).
 --   * Fail closed: if the check itself can't complete for a signed-in write (catalog / membership lookup error), the write
 --     is refused; recovery paths were already let through before anything that can fail.
 -- Edge functions: business-stripe-connect-onboarding refuses (409) when no partnerId is sent for a 2+-location account
@@ -72,13 +78,16 @@ begin
   if p_path like '/rpc/%' then
     v_name := substr(p_path, 6);
     if v_name in ('select_managed_business', 'get_my_businesses', 'note_location_aware_session', 'nearby_pre_request',
-                  'my_managed_partner_id', 'set_my_notification_group', 'set_my_business_email_enabled') then
+                  'my_managed_partner_id', 'complete_business_reservation', 'cancel_business_reservation',
+                  'approve_business_partner_request') then
       return false;
     end if;
+    -- reads the selection for more than "is this person a business owner?" (a null check)
     return exists (
       select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
       where n.nspname = 'public' and p.proname = v_name and p.prokind = 'f'
-        and p.prosrc ~ '(managed_partner_id|my_managed_partner_id)');
+        and (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))', 'g'))
+          > (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))\s+is\s+(not\s+)?null', 'gi')));
   end if;
   v_name := split_part(substr(p_path, 2), '/', 1);
   if v_name = '' or v_name in ('stories', 'business_messages') then
