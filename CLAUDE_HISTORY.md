@@ -1,4 +1,27 @@
 # 2026-11-12: 20270413 shared website across accounts, staged, verified locally
+## 2026-11-16 (later): 0426 fail-closed + server-enforced rollout gate (owner review)
+
+Owner: option (a), but enforced by the server if feasible; no fail-open for location-specific writes; hosted staging
+checks (ask approval first); finish both trees; freeze after.
+- Fail closed: the check now runs the recovery paths (select_managed_business, get_my_businesses,
+  note_location_aware_session) first, before anything that can fail; then, for a request that names a location, any
+  failure to complete (lock timeout, unexpected error, unreadable headers) refuses a WRITE and lets a read pass. Requests
+  without the header never reach that branch (builds <= 87 / single-location use can't be taken down by a fault).
+  Journey: unreadable headers refuse a write, recovery still passes.
+- Rollout gate (server-enforced): BEFORE INSERT trigger on private.business_memberships refuses a membership of a SECOND
+  business (hint multi_location_not_ready) unless private.multi_location_ready: the account has >= 1 live auth session
+  (not past not_after where Auth has it) and EVERY live session has a row in private.location_aware_sessions (written only
+  by note_location_aware_session from the session's own JWT session_id; Business Mode calls it on mount; no client grant
+  on the table). Covers every path (approval, web claim, service role). Never gated: the first location, re-recording an
+  existing membership (switching). Journey: no session / old session only / old + new session = refused; old signed out
+  = allowed; an old phone signing in later can still switch between existing locations; anon can't record; clients
+  can't read the table. Real API: gate refuses, a stale screen can still record its session.
+- Known gap: an old build that signs in AFTER the account already has two locations is not stopped (it sends no header and
+  can't be told apart from any other request). Closing it = refuse header-less business requests for accounts with 2+
+  locations (option b), which the owner did not choose. Reported, not built.
+- Hosted staging (authenticator ALTER ROLE, gateway CORS for the header, edge-function forwarding, concurrent switch)
+  needs approval B (staging project nearby-staging, empty today): requested, not done.
+
 ## 2026-11-16: Stale-location guard 20270426 (owner: finish the cross-device risk now)
 
 Owner (pasted): don't carry a known wrong-location save into production; bind each location-specific write to the

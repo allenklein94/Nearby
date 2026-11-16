@@ -214,7 +214,11 @@ const HINT = 'business_selection_changed';
     // selection is B after the race; an old build still showing A creates a package with no location argument
     r = await call({ sub: OWNER, shows: null }, 'POST', '/rpc/create_occasion_package', { occasion_type_param: 'birthday', name_param: 'Residual demo', description_param: null, included_items_param: null, min_guests_param: null, price_per_person_param: null, available_days_param: null });
     const pkg = (await db.query(`select partner_id from business_occasion_packages where name = 'Residual demo' and partner_id = any($1::uuid[])`, [[A, B]])).rows;
-    check('no header: not refused, and lands on the location selected now (B): the build <= 87 window, shown', r.status < 300 && pkg.length === 1 && pkg[0].partner_id === B, { r, pkg });
+    // On the combined trust tree (20270372) the package needs a content-screening result first, so it stops there instead;
+    // what matters here is that the guard did not stop it (no header = not checked).
+    const screened = r.status === 403 && r.json?.hint === 'screening_required';
+    check('no header: not refused by the guard (builds <= 87 keep working); lands on the location selected now (B) unless screening stops it first: the build <= 87 window, shown',
+      r.json?.hint !== HINT && ((r.status < 300 && pkg.length === 1 && pkg[0].partner_id === B) || (screened && pkg.length === 0)), { r, pkg });
   } catch (e) {
     failed += 1; console.log(`FAIL  unexpected ${e.message}`);
   } finally {
