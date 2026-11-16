@@ -1,3 +1,22 @@
+## 2026-11-15: Business phone + website editable (20270423) + Business Profile authorization journey
+
+Owner reversed "defer" to "fix it now": persist phone + website from the application, editable by managers, private.
+Built: migration 20270423 (private table, two definer functions, approval trigger, unambiguous backfill, rollback that
+refuses while rows exist), Profile > Business Profile "Phone + website" row (shared app + website), client rules mirroring
+the server normalisation (`utils/businessContactDetails.js`, test). Journey `businessProfileAuthorization` (13 tests):
+managers save update_business_profile, operating hours, location pin, 19 other setters and contact; refused for an ordinary
+account, another business's manager, anon (no execute), an account that set itself manager (guard reverts), admins
+(contact write), a suspended manager (contact), invalid values, and direct REST-style table writes (0 rows / permission
+denied); both businesses + contact rows byte-identical after every refusal; backfill statement taken from the migration
+file. Mutation: removing the hours manager check fails 3 tests. Found + fixed on the way: businessOfferViewPrivacy had no
+beforeAll timeout (flaky under load), dietary-writer guard counted journeys as writers, post-deploy plan lacked 0423.
+Results: business-web tree replay 499/499, journeys 876/876 (after the timeout fix), rollback -> 13/13 fail, re-apply diff 0;
+combined trust tree replay 546/546, journeys 1501/1501, same rollback result; Jest 551/551 (7457) and 587/587 (7866);
+iOS export clean. Prod read-only: 1 business, its approved application not linked to it, no contact values -> backfill 0.
+Not verified: phone/browser rendering, save + reload across app and website, a real-API run (post-deploy step), native
+review. Compatibility: new objects only; builds <= 87 unaffected. EAS: latest iOS build is 86 (7d72d615, 2026-10-18);
+build 87 has not been made.
+
 ## 2026-11-15: Business website launch blockers prepared (four audits + integration gate 2)
 
 Owner: resolve the remaining business website blockers now; deploy, publish or merge nothing. Results:
