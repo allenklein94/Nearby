@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { locationToSelectForPush } from '../utils/businessLocations';
+import { locationPlanForLink } from '../utils/businessLocations';
 
 // Multi-location Business Mode (migration 20270424, STAGED). Until 0424 is live the function doesn't exist: the read
 // returns [] (no selector), exactly today's single-location experience.
@@ -16,17 +16,26 @@ export async function selectBusinessLocation(partnerId) {
   return partnerId;
 }
 
-// A tapped business push names its location (partner_id, 20270424). Switch to it first when it is another of the
-// account's locations, so the push opens on the right business. Best effort: any failure keeps the current location
-// (the destination then says "no longer available", exactly as today). Returns the id switched to, else null.
+// A tapped business push or an alert email link names its location (partner_id, 20270424). Switch to it first when it is
+// another of the account's locations, so it opens on the right business. Returns { switchedTo, open }:
+//   open = true  -> open the destination (switchedTo = the id switched to, else null: already there / nothing to compare);
+//   open = false -> the named location is not one this account can switch to now (not a member, refused, network failure):
+//                   the caller opens plain Opportunities, never that request under the location currently selected.
 export async function ensureBusinessLocationForPush(data) {
-  if (typeof data?.partner_id !== 'string') return null;
+  if (typeof data?.partner_id !== 'string') return { switchedTo: null, open: true };
+  let plan;
+  // (locationPlanForLink also returns 'open' for pushes that aren't the owner's business alerts.)
   try {
-    const target = locationToSelectForPush(data, await getMyBusinessLocations());
-    if (!target) return null;
-    await selectBusinessLocation(target);
-    return target;
+    plan = locationPlanForLink(data, await getMyBusinessLocations());
   } catch {
-    return null;
+    return { switchedTo: null, open: true };
+  }
+  if (plan.action === 'open') return { switchedTo: null, open: true };
+  if (plan.action === 'fallback') return { switchedTo: null, open: false };
+  try {
+    await selectBusinessLocation(plan.partnerId);
+    return { switchedTo: plan.partnerId, open: true };
+  } catch {
+    return { switchedTo: null, open: false };
   }
 }

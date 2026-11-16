@@ -1,4 +1,4 @@
--- Rollback of 20270424 (business memberships). Restores the 12 recipient functions byte-identical to before 0424, drops the
+-- Rollback of 20270424 (business memberships). Restores the 12 recipient functions + _push_offer_submission_result byte-identical to before 0424, drops the
 -- switch / list functions, triggers and the membership table. managed_partner_id is untouched: every account keeps the
 -- location it currently has selected; its OTHER memberships are lost (an owner of several locations then reaches only the
 -- selected one, exactly as before 0424). Refuses while any account holds more than one membership unless
@@ -749,3 +749,28 @@ end;
 $function$
 
 ;
+
+-- _push_offer_submission_result (as before 0424, from 20270248)
+CREATE OR REPLACE FUNCTION public._push_offer_submission_result(user_id_param uuid, outcome_param text, submission_id_param uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_title text;
+  v_body text;
+begin
+  v_title := case outcome_param
+    when 'published' then 'Your offer was sent'
+    when 'needs_changes' then 'Your offer needs changes'
+    else 'Your offer couldn''t be sent' end;
+  v_body := case outcome_param
+    when 'published' then 'It cleared review and the customer can see it now.'
+    when 'needs_changes' then 'Open Nearby to see what to change and resend.'
+    else 'Open Nearby to see why.' end;
+  perform public._send_push(user_id_param, v_title, v_body, jsonb_build_object('type', 'business_offer_review_result', 'submission_id', submission_id_param, 'outcome', outcome_param));
+exception when others then
+  null; -- a failed push must never fail the write that caused it
+end;
+$function$;

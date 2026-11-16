@@ -1,4 +1,5 @@
 import { ensureBusinessLocationForPush } from './businessLocations';
+import { LOCATION_FALLBACK_DESTINATION } from '../utils/businessLocations';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
@@ -148,8 +149,9 @@ export async function routeNotificationTap(data, ref = navigationRef) {
     return;
   }
   // 20270424: a business push for another of the account's locations switches to it first (server-checked).
-  const switchedTo = await ensureBusinessLocationForPush(data);
-  const dest = await notificationDestination(data, { lookupAvailability: getBusinessAvailabilityById });
+  // A push naming a location this account can't switch to opens plain Opportunities, never that request elsewhere.
+  const { switchedTo, open } = await ensureBusinessLocationForPush(data);
+  const dest = open ? await notificationDestination(data, { lookupAvailability: getBusinessAvailabilityById }) : LOCATION_FALLBACK_DESTINATION;
   if (dest) openOnTop(ref, dest.name, switchedTo ? { ...dest.params, locationSwitchedTo: switchedTo } : dest.params);
 }
 

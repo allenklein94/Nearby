@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { getMyManagedPartner } from '../services/brandOffers';
-import { businessWebDestination, takeBusinessWebLink } from '../utils/businessWebLink';
+import { businessWebDestination, linkPushData, takeBusinessWebLink } from '../utils/businessWebLink';
+import { ensureBusinessLocationForPush } from '../services/businessLocations';
+import { LOCATION_FALLBACK_DESTINATION } from '../utils/businessLocations';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { typography, spacing } from '../theme';
@@ -34,7 +36,11 @@ export default function BusinessWebHomeScreen({ navigation }) {
           navigation.replace('BusinessDashboard');
           return;
         }
-        businessWebDestination(link).then((dest) => {
+        // Multi-location (20270424): the link's location first (server-checked membership); a location this account can't
+        // switch to = plain Opportunities, never that request under the location currently selected.
+        ensureBusinessLocationForPush(linkPushData(link))
+          .then(({ open }) => (open ? businessWebDestination(link) : LOCATION_FALLBACK_DESTINATION))
+          .then((dest) => {
           if (cancelled) return;
           if (dest.name === 'BusinessDashboard') {
             navigation.replace('BusinessDashboard', dest.params);

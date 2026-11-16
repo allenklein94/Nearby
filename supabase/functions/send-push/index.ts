@@ -217,10 +217,12 @@ const EMAIL_TYPES = new Set([
 ]);
 const LINK_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LINK_TYPE = /^[a-z_]{1,64}$/;
-function businessWebLinkUrl(baseUrl, type, requestId) {
+function businessWebLinkUrl(baseUrl, type, requestId, businessId) {
   if (!baseUrl) return null;
-  if (!type || !LINK_TYPE.test(type) || !requestId || !LINK_UUID.test(requestId)) return baseUrl;
-  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}n=${encodeURIComponent(type)}&r=${requestId}`;
+  const r = requestId && LINK_UUID.test(requestId) ? requestId : null;
+  const b = businessId && LINK_UUID.test(businessId) ? businessId : null;
+  if (!type || !LINK_TYPE.test(type) || (!r && !b)) return baseUrl;
+  return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}n=${encodeURIComponent(type)}${r ? `&r=${r}` : ''}${b ? `&b=${b}` : ''}`;
 }
 function notificationPriority(type) {
   return NOTIFICATION_PRIORITY_BY_TYPE[type] ?? 'medium';
@@ -241,9 +243,11 @@ async function emailBusinessAlert(admin, recipientId, title, body, data) {
   if (!(es?.email && es.verified_at && es.enabled)) return { emailed: false, emailReason: undefined };
   const webUrl = Deno.env.get('BUSINESS_WEB_URL');
   // Owner, 2026-11-14: an alert about ONE request links to it (the website opens the push's own destination,
-  // src/utils/businessWebLink.js; same `?n=<type>&r=<request id>` shape, guard keeps them equal). No personal data.
-  const linked = businessWebLinkUrl(webUrl, data?.type, data?.request_id);
-  const linkLine = !webUrl ? '' : linked !== webUrl ? `\n\nOpen this request: ${linked}` : `\n\nOpen your Nearby business dashboard: ${webUrl}`;
+  // src/utils/businessWebLink.js; same `?n=<type>&r=<request id>&b=<business id>` shape, guard keeps them equal). No personal
+  // data. Multi-location (20270424): `b` = the location the alert is about; the website switches to it (membership checked).
+  const linked = businessWebLinkUrl(webUrl, data?.type, data?.request_id, data?.partner_id);
+  const linkLine = !webUrl ? '' : linked === webUrl ? `\n\nOpen your Nearby business dashboard: ${webUrl}`
+    : data?.request_id ? `\n\nOpen this request: ${linked}` : `\n\nOpen your Nearby business dashboard: ${linked}`;
   const sent = await sendEmail(es.email, title, `${body ?? ''}${linkLine}`);
   // Never a silent failure: a verified owner is waiting on this alert, so an unconfigured/failed provider shows up in the function logs.
   if (!sent.sent) console.warn(`business email alert NOT sent (${sent.reason}) for ${data?.type}; set RESEND_API_KEY and EMAIL_FROM secrets`);

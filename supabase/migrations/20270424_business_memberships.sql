@@ -20,7 +20,8 @@
 --   * Everyone who must HEAR about a business now = its members, not only whoever has it selected (the 12 recipient
 --     lookups below): new request / urgent opportunity, offer sent / accepted, cancellations, demand thresholds,
 --     expiry warnings, digests, and the block check between a customer and a business's people.
---     Business pushes now carry partner_id, so a later app build can switch to that location before opening it.
+--     Business pushes now carry partner_id (also cancellations and offer review results, below), so a later app build and
+--     the email link can switch to that location before opening it.
 --   * Kept as is (selected location, deliberately): _submit_business_offer_for_submission (an automatic retry posts only
 --     while the submitter still has THAT business selected, else it falls back to Try again: never posts as another
 --     location), the hosting-partner triggers (a gathering is tagged with the location the host is acting for),
@@ -28,8 +29,13 @@
 -- Role: recorded now; grants nothing extra yet (today every manager of a business is equal; owner-only actions such as
 -- adding staff are a later, separate decision). Staff are limited to their own memberships by construction.
 -- Not built (owner): shared campaigns, chain-wide offers or reporting, new screens. Known limit: the selection is per
--- ACCOUNT, not per device: switching on the website also switches the phone's scope; an action the phone then takes on
--- the other location's request is refused by the existing checks (fails closed), never written to the wrong location.
+-- ACCOUNT, not per device: switching on the website also switches the phone's scope. An action on the other location's
+-- REQUEST is refused by the existing checks (fails closed), but writes that take no request (profile, hours, pin,
+-- availability, contact details) go to whichever location is selected NOW: the app therefore re-reads the selection on
+-- focus and on return to the foreground and reloads Business Mode for it (a switch made while a screen is open in the
+-- foreground on another device is the remaining window). A per-device selection would need every reader of the column
+-- (115 functions, 27 policies, 6 edge functions) moved to a session-scoped helper: not done here.
+-- Business alerts name their location (partner_id) so a push tap or an alert email link switches to it first.
 
 create table private.business_memberships (
   user_id uuid not null references public.profiles(id) on delete cascade,
@@ -415,7 +421,7 @@ begin
       for v_managing_id in
         select m.user_id from private.business_memberships m where m.partner_id = v_cancelled_partner_ids[i]
       loop
-        perform public._send_push(v_managing_id, 'A request was cancelled', 'A request you were considering was cancelled by the requester.', jsonb_build_object('type', 'business_request_cancelled', 'request_id', request_id_param));
+        perform public._send_push(v_managing_id, 'A request was cancelled', 'A request you were considering was cancelled by the requester.', jsonb_build_object('type', 'business_request_cancelled', 'request_id', request_id_param, 'partner_id', v_cancelled_partner_ids[i]));
       end loop;
     end loop;
   end if;
@@ -490,7 +496,7 @@ begin
     select array_agg(m.user_id) into v_managing_profiles from private.business_memberships m where m.partner_id = v_offer.partner_id;
     if v_managing_profiles is not null then
       for i in 1 .. array_length(v_managing_profiles, 1) loop
-        perform public._send_push(v_managing_profiles[i], 'A reservation was cancelled', 'A customer cancelled their reservation: ' || public.business_safe_request_summary(v_request.id), jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', offer_id_param));
+        perform public._send_push(v_managing_profiles[i], 'A reservation was cancelled', 'A customer cancelled their reservation: ' || public.business_safe_request_summary(v_request.id), jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', offer_id_param, 'partner_id', v_offer.partner_id));
       end loop;
     end if;
 
@@ -555,7 +561,7 @@ begin
       end if;
       if v_managing_profiles is not null then
         for i in 1 .. array_length(v_managing_profiles, 1) loop
-          perform public._send_push(v_managing_profiles[i], 'A reservation was cancelled', 'The community "' || v_name || '" was cancelled, so the reservation for "' || left(v_request.raw_text, 60) || '" was cancelled too.', jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', v_accepted_offer.offer_id));
+          perform public._send_push(v_managing_profiles[i], 'A reservation was cancelled', 'The community "' || v_name || '" was cancelled, so the reservation for "' || left(v_request.raw_text, 60) || '" was cancelled too.', jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', v_accepted_offer.offer_id, 'partner_id', v_accepted_offer.partner_id));
         end loop;
       end if;
     elsif v_cancel_result->>'reason' = 'payment_captured' then
@@ -564,7 +570,7 @@ begin
       end if;
       if v_managing_profiles is not null then
         for i in 1 .. array_length(v_managing_profiles, 1) loop
-          perform public._send_push(v_managing_profiles[i], 'A community was cancelled', 'The community behind an already-paid reservation for "' || left(v_request.raw_text, 60) || '" was cancelled -- the customer may reach out about a refund.', jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', v_accepted_offer.offer_id));
+          perform public._send_push(v_managing_profiles[i], 'A community was cancelled', 'The community behind an already-paid reservation for "' || left(v_request.raw_text, 60) || '" was cancelled -- the customer may reach out about a refund.', jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', v_accepted_offer.offer_id, 'partner_id', v_accepted_offer.partner_id));
         end loop;
       end if;
     end if;
@@ -630,7 +636,7 @@ begin
       end if;
       if v_managing_profiles is not null then
         for i in 1 .. array_length(v_managing_profiles, 1) loop
-          perform public._send_push(v_managing_profiles[i], 'A reservation was cancelled', 'The gathering "' || v_title || '" was cancelled, so the reservation for "' || left(v_request.raw_text, 60) || '" was cancelled too.', jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', v_accepted_offer.offer_id));
+          perform public._send_push(v_managing_profiles[i], 'A reservation was cancelled', 'The gathering "' || v_title || '" was cancelled, so the reservation for "' || left(v_request.raw_text, 60) || '" was cancelled too.', jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', v_accepted_offer.offer_id, 'partner_id', v_accepted_offer.partner_id));
         end loop;
       end if;
     elsif v_cancel_result->>'reason' = 'payment_captured' then
@@ -639,7 +645,7 @@ begin
       end if;
       if v_managing_profiles is not null then
         for i in 1 .. array_length(v_managing_profiles, 1) loop
-          perform public._send_push(v_managing_profiles[i], 'A customer''s gathering was cancelled', 'The gathering behind an already-paid reservation for "' || left(v_request.raw_text, 60) || '" was cancelled -- the customer may reach out about a refund.', jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', v_accepted_offer.offer_id));
+          perform public._send_push(v_managing_profiles[i], 'A customer''s gathering was cancelled', 'The gathering behind an already-paid reservation for "' || left(v_request.raw_text, 60) || '" was cancelled -- the customer may reach out about a refund.', jsonb_build_object('type', 'reservation_cancelled_by_customer', 'request_id', v_request.id, 'offer_id', v_accepted_offer.offer_id, 'partner_id', v_accepted_offer.partner_id));
         end loop;
       end if;
     end if;
@@ -882,5 +888,33 @@ begin
     v_sent := v_sent + 1;
   end loop;
   return v_sent;
+end;
+$function$;
+
+-- _push_offer_submission_result: the offer review result names the location it was written for (the live definition
+-- from 20270248 with ONLY partner_id added), so a push tap or the email link opens that location's offers.
+CREATE OR REPLACE FUNCTION public._push_offer_submission_result(user_id_param uuid, outcome_param text, submission_id_param uuid)
+ RETURNS void
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_title text;
+  v_body text;
+  v_partner_id uuid;
+begin
+  select partner_id into v_partner_id from public.business_offer_submissions where id = submission_id_param;
+  v_title := case outcome_param
+    when 'published' then 'Your offer was sent'
+    when 'needs_changes' then 'Your offer needs changes'
+    else 'Your offer couldn''t be sent' end;
+  v_body := case outcome_param
+    when 'published' then 'It cleared review and the customer can see it now.'
+    when 'needs_changes' then 'Open Nearby to see what to change and resend.'
+    else 'Open Nearby to see why.' end;
+  perform public._send_push(user_id_param, v_title, v_body, jsonb_build_object('type', 'business_offer_review_result', 'submission_id', submission_id_param, 'outcome', outcome_param, 'partner_id', v_partner_id));
+exception when others then
+  null; -- a failed push must never fail the write that caused it
 end;
 $function$;
