@@ -47,7 +47,9 @@ describe('Verified Business: where it may appear (decision A, LOCKED)', () => {
       };
       walk(path.join(ROOT, d));
     }
-    expect(hits).toEqual(['supabase/migrations/20270371_business_verification.sql']);
+    // 20270425 (integration only) redefines 0371's OWN functions (admin list, admin decision, status) to follow business
+    // membership: still the verification system itself, never routing or ranking.
+    expect(hits).toEqual(['supabase/migrations/20270371_business_verification.sql', 'supabase/migrations/20270425_trust_functions_membership.sql']);
   });
 
   test('the wording names what was checked, says what it does NOT promise, and never claims quality, safety or trust', () => {

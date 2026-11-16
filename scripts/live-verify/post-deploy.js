@@ -479,6 +479,10 @@ const STEPS = {
       'email links (send-push redeployed from this branch, Resend secrets set): an alert about the NOT-selected location carries &b=<that location>; opening it on the website switches to that location before the request opens; a link naming a location the account is not a member of opens plain Opportunities',
       'two devices (phone + website, same account, two test locations): switch on the website, return the phone to the foreground = Business Mode reloads on the newly selected location before any edit',
       'rollback refuses while any account holds more than one membership (hint memberships_present): export private.business_memberships and get the owner\'s approval first; rollback keeps each account on its selected location only'] },
+  20270425: { journeys: ['trustMembershipLookups', 'businessVerification', 'businessMemberships', 'multiLocationCrossPrivacy'],
+    manual: ['deploy right after 0424 (combined tree only): without it an admin acting for location A could verify their own location B, and a mere location switch would lapse a verification',
+      'real API (dedicated test accounts, test businesses only): an admin who is a member of B but acting for A is refused verifying B (hint verification_conflict_of_interest); switching location never changes business_verification_status',
+      'rollback = scripts/rollback/20270425_trust_functions_membership.rollback.sql BEFORE rolling back 0424 (restores the acting-for checks byte-identical)'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
