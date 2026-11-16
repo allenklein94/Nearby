@@ -20,7 +20,8 @@
 --   * Everyone who must HEAR about a business now = its members, not only whoever has it selected (the 12 recipient
 --     lookups below): new request / urgent opportunity, offer sent / accepted, cancellations, demand thresholds,
 --     expiry warnings, digests, and the block check between a customer and a business's people.
---     Business pushes now carry partner_id, so a later app build can switch to that location before opening it.
+--     Business pushes now carry partner_id (also cancellations and offer review results, below), so a later app build and
+--     the email link can switch to that location before opening it.
 --   * Kept as is (selected location, deliberately): _submit_business_offer_for_submission (an automatic retry posts only
 --     while the submitter still has THAT business selected, else it falls back to Try again: never posts as another
 --     location), the hosting-partner triggers (a gathering is tagged with the location the host is acting for),
@@ -28,8 +29,13 @@
 -- Role: recorded now; grants nothing extra yet (today every manager of a business is equal; owner-only actions such as
 -- adding staff are a later, separate decision). Staff are limited to their own memberships by construction.
 -- Not built (owner): shared campaigns, chain-wide offers or reporting, new screens. Known limit: the selection is per
--- ACCOUNT, not per device: switching on the website also switches the phone's scope; an action the phone then takes on
--- the other location's request is refused by the existing checks (fails closed), never written to the wrong location.
+-- ACCOUNT, not per device: switching on the website also switches the phone's scope. An action on the other location's
+-- REQUEST is refused by the existing checks (fails closed), but writes that take no request (profile, hours, pin,
+-- availability, contact details) go to whichever location is selected NOW: the app therefore re-reads the selection on
+-- focus and on return to the foreground and reloads Business Mode for it (a switch made while a screen is open in the
+-- foreground on another device is the remaining window). A per-device selection would need every reader of the column
+-- (115 functions, 27 policies, 6 edge functions) moved to a session-scoped helper: not done here.
+-- Business alerts name their location (partner_id) so a push tap or an alert email link switches to it first.
 
 create table private.business_memberships (
   user_id uuid not null references public.profiles(id) on delete cascade,

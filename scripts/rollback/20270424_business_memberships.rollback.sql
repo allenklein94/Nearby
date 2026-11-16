@@ -1,4 +1,4 @@
--- Rollback of 20270424 (business memberships). Restores the 12 recipient functions byte-identical to before 0424, drops the
+-- Rollback of 20270424 (business memberships). Restores the 12 recipient functions + _push_offer_submission_result byte-identical to before 0424, drops the
 -- switch / list functions, triggers and the membership table. managed_partner_id is untouched: every account keeps the
 -- location it currently has selected; its OTHER memberships are lost (an owner of several locations then reaches only the
 -- selected one, exactly as before 0424). Refuses while any account holds more than one membership unless
