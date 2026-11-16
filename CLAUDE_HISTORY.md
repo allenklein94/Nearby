@@ -63,7 +63,7 @@ service role unaffected, removed membership refused); 9/9 fail with 0426 rolled 
 business functions, 6 direct writes, a GET of B and a real create_occasion_package are refused; B byte-identical across
 40 tables; recovery (list, switch back, reload on B) works; A-only staff naming B refused; a switch racing a checked write
 waits and the write lands on A; with 0426 rolled back 97/97 are not refused and the stale package lands on B. Unit test
-services/actingBusiness.test.js 8. Full both-tree run = v453 (results line below when done).
+services/actingBusiness.test.js 8. Full both-tree run = v453, DONE 2026-11-16 (logs /workspaces/.nearby-verify/v453): ml aaf7904e replay 501/501, journeys 904/904, real API 30/30, rollback 0426 -> guard journeys 28/28 fail + 97/97 functions not refused + stale package lands on B, re-apply diff 0, Jest 553/7479, iOS export clean (from the main checkout); mx a3dd3ebc replay 549/549, journeys 1534/1534, real API 30/30 (first run 29/30: the no-header residual demo was stopped by the trust tree's screening check before reaching B; test fixed 2e0b1c41 to accept that stop, guard not involved), rollback -> 28/28 fail, re-apply diff 0, Jest 589/7888, iOS export clean (from the real checkout at a3dd3ebc).
 
 Remaining risks (reported, not fixed):
 1. OWNER DECISION: a client that sends no header (build <= 87, the current website) on an account holding SEVERAL
