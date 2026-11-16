@@ -4,7 +4,7 @@
 //   - an admin who belongs to B can't verify B while acting for A (conflict of interest);
 //   - B's verification doesn't lapse because its verified manager switched to A, and does lapse once they leave B.
 // One rolled-back transaction, real roles.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { locationAwareSessionSql, runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 function as(step, sub, stmt, value = `'ok'::text`) {
@@ -32,12 +32,14 @@ d('journey: trust checks follow business membership, not the selected location (
   beforeAll(async () => {
     const people = ['v_owner', 'v_admin', 'v_admin2', 'v_cust'];
     const log = await runJourney(`${actorDeclares(people)} v_a uuid := gen_random_uuid(); v_b uuid := gen_random_uuid();
-      v_r uuid; v_o uuid; v_out jsonb; v_hint text; v_rep uuid; v_res jsonb;`, `
+      v_r uuid; v_o uuid; v_out jsonb; v_hint text; v_rep uuid; v_res jsonb; v_sess uuid;`, `
   ${actorsSql({ people })}
   insert into brand_partners (id, name, active, address, category, categories) values
     (v_a, 'Journey Loc A', true, '1 A St', 'food_drink', '{}'), (v_b, 'Journey Loc B', true, '2 B St', 'food_drink', '{}');
   update profiles set is_admin = true where id in (v_admin, v_admin2);
   -- the owner belongs to A and B (B first, so B's earliest member is the owner); the admin belongs to B too
+  ${locationAwareSessionSql('v_owner')}
+  ${locationAwareSessionSql('v_admin2')}
   ${trusted(`update profiles set managed_partner_id = v_b where id = v_owner;
     update profiles set managed_partner_id = v_a where id = v_owner;
     update profiles set managed_partner_id = v_b where id = v_admin2;
