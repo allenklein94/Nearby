@@ -465,6 +465,12 @@ const STEPS = {
       'real API (dedicated test accounts): the test business reads its offer row via REST = viewed_at null, business_offer_views = [], get_business_opportunities has no viewed_at key, get_partner_offer_performance has no viewed_count; the test customer reads their own receipt',
       'phone: the customer opens a reply, the business dashboard open on the website shows nothing change (no realtime reload); the customer\'s arrival pill + first-reply wording still behave',
       'rollback: puts every receipt back on the offer row (businesses can read it again) and restores the three functions; build 87-era clients keep working either way'] },
+  20270423: { journeys: ['businessProfileAuthorization', 'businessApplication', 'businessServiceArea'],
+    manual: ['no build gate: builds <= 87 never read or write the new table or functions; the Phone + website row needs a build after 0423 (or the re-exported website)',
+      'read-only: private.business_contact_details has no anon/authenticated grant; count of backfilled rows = businesses with exactly ONE approved application carrying a usable phone/website (Coastal Coffee today: check its application first); brand_partners has no phone/website column',
+      'real API (dedicated test accounts): the test business manager saves + re-reads phone/website via get/set_business_contact_details; another signed-in account gets 42501 not_business_manager on both and on update_business_profile / set_business_operating_hours / set_business_location for that business; a direct REST PATCH of brand_partners changes 0 rows; the business rows are byte-identical after the refused calls',
+      'website + phone: Profile > Business Profile > Phone + website saves, survives a reload, and shows the same values on the other client',
+      'rollback refuses while any contact row exists (hint contact_details_present): export the rows and get the owner\'s approval first (the application copies stay on business_partner_requests)'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
