@@ -4,6 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { supabase, functionUrl } from './supabase';
 
 import { readMyProfile } from './myProfile';
+import { actingBusiness } from './actingBusiness';
 // Real Stripe Connect client wiring — closes step 1 of the 2026-08-27
 // locked Decision 2 in CLAUDE.md (direct charges, business is merchant of
 // record, Nearby never custodies consumer funds). Every function here is
@@ -83,7 +84,7 @@ export async function getMyStripeConnectStatus() {
 // already signed in and already on their own dashboard (see the
 // business-stripe-connect-onboarding function's own comment).
 export async function startStripeOnboarding() {
-  const { url } = await callFunction('business-stripe-connect-onboarding', { platform: Platform.OS === 'web' ? 'web' : 'native' });
+  const { url } = await callFunction('business-stripe-connect-onboarding', { platform: Platform.OS === 'web' ? 'web' : 'native', partnerId: actingBusiness() });
   if (Platform.OS === 'web') {
     // Stripe-hosted onboarding (the owner completes identity, terms and bank details there themselves). Stripe sends
     // them back to the business site, which re-reads real account status on load. Nothing is submitted by Nearby.

@@ -38,6 +38,7 @@ import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
 import { getMyBusinessLocations } from '../services/businessLocations';
+import { claimActingBusiness, releaseActingBusiness, onSelectionChanged } from '../services/actingBusiness';
 import { currentLocation, selectionChangedElsewhere } from '../utils/businessLocations';
 import OfferProgressSteps, { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { businessCardStatus, offerProgress, offersToAnimate, progressKey } from '../utils/offerProgress';
@@ -320,6 +321,9 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
 // The selection is per account: when another device or the website switched it, Business Mode reloads on focus / on return
 // to the foreground for the location the server now has selected, so this screen never shows one location while its
 // profile, hours and availability writes land on another (utils/businessLocations.js `selectionChangedElsewhere`).
+// That reload is a convenience; the protection is the server's (20270426): every REST request names the location this
+// screen shows (services/actingBusiness.js) and is refused once the selection differs, so a stale screen never writes
+// to (or reads) the other location even inside the window before the reload.
 export default function BusinessDashboardScreen(props) {
   const [locationKey, setLocationKey] = useState(0);
   // A business push for another location switches first (services/notifications.js) and says so in locationSwitchedTo.
@@ -349,6 +353,8 @@ export default function BusinessDashboardScreen(props) {
     setLocationKey((k) => k + 1);
     recheck();
   }, [recheck]);
+  // The server refused a request because the account's location changed elsewhere (20270426): reload for the new one.
+  useEffect(() => onSelectionChanged(onLocationSwitched), [onLocationSwitched]);
   return <BusinessDashboardForLocation key={key} {...props} onLocationSwitched={onLocationSwitched} />;
 }
 
@@ -981,8 +987,15 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
   // dismissible, never blocking anything below it.
   const [showWelcomeCard, setShowWelcomeCard] = useState(false);
 
+  // Multi-location (20270426): every REST request from this Business Mode names the location it shows (claimed once the
+  // partner has loaded, released when this location's Business Mode goes away); the server refuses them if the account
+  // has since been switched to another location, and the wrapper above reloads for it.
+  const actingClaim = useRef({ mounted: true, token: null, id: undefined });
   useEffect(() => {
+    const claim = actingClaim.current;
+    claim.mounted = true;
     loadMyPartner();
+    return () => { claim.mounted = false; releaseActingBusiness(claim.token); };
   }, []);
 
   // Fires once real coordinates exist on the loaded partner -- never
@@ -1002,6 +1015,13 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
     let loadedPartnerId = null;
     try {
       const partner = await getMyManagedPartner();
+      const claim = actingClaim.current;
+      if (!claim.mounted) return;
+      // One location per mount: a later reload that returns another location (only possible before the first claim
+      // reaches the server) reloads Business Mode instead of mixing two locations on one screen.
+      if (claim.id !== undefined && claim.id !== (partner?.id ?? null)) { onLocationSwitched?.(); return; }
+      claim.id = partner?.id ?? null;
+      claim.token = claimActingBusiness(claim.id);
       setSelectedPartner(partner);
       setLoadError(false);
       if (partner) {

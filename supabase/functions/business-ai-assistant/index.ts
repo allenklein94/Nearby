@@ -69,7 +69,9 @@ serve(async (req) => {
     // above via the service-role profiles read, so this isn't the only gate --
     // just the one that makes the RPCs' own internal check resolve correctly.
     const supabaseAsUser = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { Authorization: authHeader } },
+      // Multi-location (20270426): the user-scoped calls name the location this request was checked for, so a switch made
+      // on another device while this runs (screening takes seconds) refuses them instead of writing to the new location.
+      global: { headers: { Authorization: authHeader, 'x-nearby-business': partnerId } },
     });
 
     const [{ data: statsRows }, { data: growthRows }, { data: insightsRows }, { data: visitFreq }] = await Promise.all([

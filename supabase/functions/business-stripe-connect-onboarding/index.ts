@@ -62,7 +62,12 @@ serve(async (req) => {
     // The website can't use the native deep link. The return page is server-decided (never taken from the client, so
     // there is no open redirect): only the business web app URL, overridable by the BUSINESS_WEB_URL secret.
     let isWeb = false;
-    try { isWeb = (await req.clone().json())?.platform === 'web'; } catch (_e) { /* no body = native */ }
+    let shownPartnerId: string | null = null;
+    try {
+      const body = await req.clone().json();
+      isWeb = body?.platform === 'web';
+      shownPartnerId = typeof body?.partnerId === 'string' && body.partnerId ? body.partnerId : null;
+    } catch (_e) { /* no body = native */ }
     const webBase = (Deno.env.get('BUSINESS_WEB_URL') || 'https://allenklein94.github.io/Nearby/business/').replace(/\/?$/, '/');
 
     const authHeader = req.headers.get('Authorization');
@@ -86,6 +91,11 @@ serve(async (req) => {
     const partnerId = profile?.managed_partner_id;
     if (!partnerId) {
       return new Response(JSON.stringify({ error: 'You do not manage a business.' }), { status: 403 });
+    }
+    // Multi-location (20270426): a screen that names the location it shows is refused once the account has been switched
+    // to another location elsewhere (older clients send none and keep today's behaviour).
+    if (shownPartnerId && shownPartnerId !== partnerId) {
+      return new Response(JSON.stringify({ error: 'This screen is for another of your locations. Reload Business Mode.', hint: 'business_selection_changed' }), { status: 409 });
     }
 
     const { data: partner } = await admin

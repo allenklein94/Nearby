@@ -1,4 +1,74 @@
 # 2026-11-12: 20270413 shared website across accounts, staged, verified locally
+## 2026-11-16: Multi-location readiness pass (owner review, points 1-5)
+
+Owner (pasted review): keep the foundation isolated; investigate per-device selection, fix email links to the right location,
+rerun the complete combined suites, prove 0424/0425 with 0422/0423, document limits; no merge/deploy/publish/production.
+1. Per-device selection: investigated, not built. Options: (a) a session-scoped helper keyed on the JWT session replacing every
+   reader of managed_partner_id (115 functions, 27 policies, 6 edge functions): large rewrite, high regression risk; (b) a
+   PostgREST db_pre_request hook setting the column per request from a header: GET requests run read-only (can't write/lock),
+   edge functions don't forward the header, per-account locking. Found instead: non-request writes (profile, hours, pin,
+   availability, contact) follow the CURRENT selection, so a phone still showing A after the website switched to B would save to
+   B; the 0424 header wrongly said such actions fail closed (corrected). Fix: Business Mode re-reads the selection on focus and on
+   return to the foreground and reloads for the server's location (`selectionChangedElsewhere`, wrapper in BusinessDashboardScreen).
+2. Location in alerts + email links: partner_id added to business_request_cancelled, reservation_cancelled_by_customer (5 sites)
+   and _push_offer_submission_result (0424; rollback restores 0248's body); email link `?n&r&b` (send-push + client, guard keeps
+   them equal; a location-only link for review results / demand alerts); website + push tap share `locationPlanForLink`
+   (owner_* alert types only, so a perk/business-profile push never switches or falls back): switch first, foreign location =
+   plain Opportunities.
+3+4. Journey `multiLocationCrossPrivacy` (8 tests; first run failed on its own setup: review submission needs request_id; fixed).
+   Results (v452): ml tree replay 500/500, full journeys 892/892, rollback 16/16 fail, re-apply diff 0, Jest 552/552 (7471), iOS
+   export clean (main checkout; worktree export fails with symlinked node_modules, known). Combined tree replay 548/548, full
+   journeys 1522/1522, rollback 0425+0424 16/16 fail, re-apply diff 0, Jest first 586/588 (two integration guards: 0425 had no
+   post-deploy step; Verified Business guard didn't allow 0425, which only redefines 0371's own functions) then 588/588 (7880),
+   iOS export clean. Disk was 96% full: removed six finished detached worktrees + stopped replay containers.
+5. EAS (read-only build:list): latest iOS = 86 (7d72d615, 2026-10-18); build 87 not made.
+
+## 2026-11-16: Multi-location foundation (20270424 + integration 20270425), staged
+
+Owner chose Option B (build now, isolated) after the audit: one account = one business through `profiles.managed_partner_id`
+(480 references / 192 migration files; 115 live functions, 27 policies, 6 triggers on the business-web tree, 127 functions on
+the combined trust tree). Design: keep the column as "the ONE location the account acts for now" (no existing function
+rewritten, builds <= 87 unchanged) + `private.business_memberships` (owner|staff, no client grant) + `select_managed_business`
+(the only client switch; membership + not suspended; same "Business not found" for non-member and missing) +
+`get_my_businesses` + trigger recording the membership whenever a trusted path sets the column + removal trigger moving the
+account to a remaining membership. 12 recipient lookups moved to memberships (bodies = live definitions, only the lookup
+changed; partner_id added to business_opportunity_received / business_offer_accepted pushes); digest = one per account across
+its locations. Existing defect fixed: a second approved application moved the owner off the first business.
+Client: `utils/businessLocations.js` (rule), `services/businessLocations.js`, `components/BusinessLocationSelector.js` in
+place of the header name box only when > 1 location; BusinessDashboard remounts per location (switch or push
+`locationSwitchedTo`); `routeNotificationTap` switches first for a push naming another membership (best effort).
+Integration (`integ/multi-location-x-trust`): the 12 functions are byte-identical on the trust tree (0424 reverts nothing);
+8 trust functions used "acting for" as "member of": 20270425 moves them to membership (report-own-business guard, admin
+verify conflict of interest, verification lapse on a mere switch, payment-exception / content-removal / evidence recipients).
+Verification (local only; logs /workspaces/.nearby-verify/v450 + v451): business-web tree replay 499/499 + 0424, journeys
+884/884 (two real failures fixed first: push-key privacy test, trusted-flag save/restore naming), `businessMemberships` 8/8
+(8/8 fail without 0424), rollback (guard refuses while an account has 2+ memberships unless approved in the transaction;
+approved path runs) + re-apply schema diff 0; Jest 552 suites / 7462 + 6 new (post-deploy step added); iOS export clean.
+Combined tree: replay 546/546 (PG 17.6), 0424 + 0425 applied, `trustMembershipLookups` 5/5 (4/5 fail without 0425),
+re-apply diff 0; full combined journeys 1513/1514, the one failure = `businessVerification` modelling "manager left" by clearing managed_partner_id (now = switching location); updated on the integration branch to remove the membership, 14/14.
+Remaining risks: selection per account not per device; email fallback links carry no location; roles grant nothing yet;
+staff can see their location's billing as today; no UI to add staff/locations beyond the application flow; not device- or
+browser-verified; 3 strings need native review.
+
+## 2026-11-15: Business phone + website editable (20270423) + Business Profile authorization journey
+
+Owner reversed "defer" to "fix it now": persist phone + website from the application, editable by managers, private.
+Built: migration 20270423 (private table, two definer functions, approval trigger, unambiguous backfill, rollback that
+refuses while rows exist), Profile > Business Profile "Phone + website" row (shared app + website), client rules mirroring
+the server normalisation (`utils/businessContactDetails.js`, test). Journey `businessProfileAuthorization` (13 tests):
+managers save update_business_profile, operating hours, location pin, 19 other setters and contact; refused for an ordinary
+account, another business's manager, anon (no execute), an account that set itself manager (guard reverts), admins
+(contact write), a suspended manager (contact), invalid values, and direct REST-style table writes (0 rows / permission
+denied); both businesses + contact rows byte-identical after every refusal; backfill statement taken from the migration
+file. Mutation: removing the hours manager check fails 3 tests. Found + fixed on the way: businessOfferViewPrivacy had no
+beforeAll timeout (flaky under load), dietary-writer guard counted journeys as writers, post-deploy plan lacked 0423.
+Results: business-web tree replay 499/499, journeys 876/876 (after the timeout fix), rollback -> 13/13 fail, re-apply diff 0;
+combined trust tree replay 546/546, journeys 1501/1501, same rollback result; Jest 551/551 (7457) and 587/587 (7866);
+iOS export clean. Prod read-only: 1 business, its approved application not linked to it, no contact values -> backfill 0.
+Not verified: phone/browser rendering, save + reload across app and website, a real-API run (post-deploy step), native
+review. Compatibility: new objects only; builds <= 87 unaffected. EAS: latest iOS build is 86 (7d72d615, 2026-10-18);
+build 87 has not been made.
+
 ## 2026-11-15: Business website launch blockers prepared (four audits + integration gate 2)
 
 Owner: resolve the remaining business website blockers now; deploy, publish or merge nothing. Results:
