@@ -7,10 +7,12 @@
 // hint business_selection_changed), and B (every row of every table with a partner_id column, its brand_partners row and
 // its private contact details) must be byte-identical afterwards. Also: the matching screen works, switching / listing
 // still work from the stale screen, a GET (read-only transaction) is checked too, A-only staff naming B are refused, a
-// switch racing a write waits for it (the write lands on the location the screen named), and a request WITHOUT the
-// header (build <= 87) still lands on the location selected now (the documented residual, shown, not hidden).
+// switch racing a write waits for it (the write lands on the location the screen named), and (20270427) an old build that
+// sends NO header and signed in after the second location was added: every location-specific write refused, A and B
+// byte-identical, while its person-level settings, reads, switching and personal story still work; single-location
+// staff unchanged; a revoked membership brings the account back to one location.
 //   NEARBY_LOCAL_DB_URL=postgres://... NEARBY_PG_MODULE=/path/to/pg NAME=<db container> node scripts/replay/business-selection-api-local.js
-// EXPECT=open: run with 0426 rolled back; the stale-screen checks must then fail (proves the checks can fail).
+// EXPECT=open: run with 0427 + 0426 rolled back; the stale-screen and old-build checks must then fail (proves they can).
 const dbUrl = process.env.NEARBY_LOCAL_DB_URL;
 const local = /^postgres:\/\/[^@]+@(localhost|127\.|172\.|10\.|192\.168\.)/;
 if (!dbUrl || !local.test(dbUrl)) { console.error('NEARBY_LOCAL_DB_URL must point at the local replay database.'); process.exit(2); }
@@ -210,15 +212,65 @@ const HINT = 'business_selection_changed';
       } finally { try { await c1.query('rollback'); } catch { /* done */ } await c1.end(); await c2.end(); }
     }
 
-    console.log('== the documented residual: no header (build <= 87) acts for the location selected NOW');
-    // selection is B after the race; an old build still showing A creates a package with no location argument
-    r = await call({ sub: OWNER, shows: null }, 'POST', '/rpc/create_occasion_package', { occasion_type_param: 'birthday', name_param: 'Residual demo', description_param: null, included_items_param: null, min_guests_param: null, price_per_person_param: null, available_days_param: null });
-    const pkg = (await db.query(`select partner_id from business_occasion_packages where name = 'Residual demo' and partner_id = any($1::uuid[])`, [[A, B]])).rows;
-    // On the combined trust tree (20270372) the package needs a content-screening result first, so it stops there instead;
-    // what matters here is that the guard did not stop it (no header = not checked).
-    const screened = r.status === 403 && r.json?.hint === 'screening_required';
-    check('no header: not refused by the guard (builds <= 87 keep working); lands on the location selected now (B) unless screening stops it first: the build <= 87 window, shown',
-      r.json?.hint !== HINT && ((r.status < 300 && pkg.length === 1 && pkg[0].partner_id === B) || (screened && pkg.length === 0)), { r, pkg });
+    console.log('== an old build (no header) signed in AFTER the second location was added (20270427)');
+    // A fresh session that never recorded itself (the 0426 gate can't see it coming). Selection is B after the race.
+    const oldBuild = { sub: OWNER, shows: null };
+    const HINT_OLD = 'location_aware_client_required';
+    const isOld = (x) => x.status === 400 && x.json?.code === 'P0001' && x.json?.hint === HINT_OLD;
+    const has0427 = (await db.query(`select to_regprocedure('private._location_scoped_path(text)') is not null x`)).rows[0].x;
+    const beforeA = await snapshot(A); const beforeB = await snapshot(B);
+    const scopedFns = has0427 ? (await db.query(`select p.proname, case when p.proargnames is null then '[]'::json else coalesce((select json_agg(n) from unnest(p.proargnames, coalesce(p.proargmodes, array_fill('i'::"char", array[cardinality(p.proargnames)]))) u(n, m) where m in ('i', 'b', 'v') and n <> ''), '[]') end args
+        from pg_proc p join pg_namespace s on s.oid = p.pronamespace
+        where s.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute') and p.prokind = 'f'
+          and p.provolatile = 'v' and p.prorettype <> 'trigger'::regtype and private._location_scoped_path('/rpc/' || p.proname) order by 1`)).rows : fns.filter((f) => !['set_my_notification_group', 'set_my_business_email_enabled', 'get_gathering_group_insights', 'complete_business_reservation', 'cancel_business_reservation', 'approve_business_partner_request', 'my_managed_partner_id'].includes(f.proname));
+    const oldNotRefused = []; const oldSeen = new Set();
+    for (const f of scopedFns) {
+      if (oldSeen.has(f.proname)) continue; oldSeen.add(f.proname);
+      const res = await call(oldBuild, 'POST', `/rpc/${f.proname}`, Object.fromEntries((f.args || []).map((n) => [n, null])));
+      if (!isOld(res)) oldNotRefused.push([f.proname, res.status, res.json?.code, res.json?.hint]);
+    }
+    if (open) console.log(`  (EXPECT=open) old build: ${oldNotRefused.length} of ${oldSeen.size} write functions not refused`);
+    else check(`old build: all ${oldSeen.size} location-specific write functions refused`, oldSeen.size > 50 && oldNotRefused.length === 0, oldNotRefused);
+    for (const [m, p, b] of [
+      ['POST', '/brand_offers', { partner_id: B, title: 'old', description: 'old' }],
+      ['PATCH', `/brand_offers?partner_id=eq.${B}`, { title: 'old' }],
+      ['DELETE', `/brand_offers?partner_id=eq.${B}`, undefined],
+      ['POST', '/business_updates', { partner_id: B, body: 'old' }],
+      ['POST', '/business_messages', { partner_id: B, sender_id: OWNER, conversation_with_id: STAFF, from_business: true, body: 'old reply' }],
+      ['POST', '/stories', { user_id: OWNER, partner_id: B, media_path: `${B}/old.jpg`, media_type: 'image' }],
+    ]) {
+      r = await call(oldBuild, m, p, b);
+      if (!open) check(`old build ${m} ${p.split('?')[0]}${b?.from_business || b?.partner_id && p === '/stories' ? ' (as the business)' : ''}: refused`, isOld(r), r);
+    }
+    r = await call(oldBuild, 'POST', '/rpc/create_occasion_package', { occasion_type_param: 'birthday', name_param: 'Old build package', description_param: null, included_items_param: null, min_guests_param: null, price_per_person_param: null, available_days_param: null });
+    const oldPkg = (await db.query(`select partner_id from business_occasion_packages where name = 'Old build package' and partner_id = any($1::uuid[])`, [[A, B]])).rows;
+    if (open) console.log(`  (EXPECT=open) old build package landed on: ${oldPkg.map((x) => (x.partner_id === B ? 'B' : 'A')).join(',') || 'nowhere'} (status ${r.status} ${r.json?.hint || ''})`);
+    else check('old build creating a package (no location argument): refused, nothing created', isOld(r) && oldPkg.length === 0, { r, oldPkg });
+    const afterA = await snapshot(A); const afterB = await snapshot(B);
+    const changedAB = [...Object.keys(beforeA).filter((k) => JSON.stringify(beforeA[k]) !== JSON.stringify(afterA[k])).map((k) => `A:${k}`),
+      ...Object.keys(beforeB).filter((k) => JSON.stringify(beforeB[k]) !== JSON.stringify(afterB[k])).map((k) => `B:${k}`)];
+    if (!open) check('old build: A and B byte-identical', changedAB.length === 0, changedAB);
+    else console.log(`  (EXPECT=open) old build changed: ${changedAB.join(', ') || 'none'}`);
+    // the same old build still works as a person / customer, reads, and can recover
+    r = await call(oldBuild, 'POST', '/rpc/set_my_notification_group', { group_param: 'messages', enabled_param: true });
+    check('old build: person-level setting still saves', r.status < 300, r);
+    r = await call(oldBuild, 'GET', `/brand_partners?id=eq.${B}&select=id`);
+    check('old build: reads still work (GET)', r.status === 200, r);
+    r = await call(oldBuild, 'POST', '/rpc/get_business_opportunities', { partner_id_param: B });
+    check('old build: a read-only business function still answers', r.status === 200 || (r.json?.hint !== HINT_OLD && r.json?.hint !== HINT), r);
+    r = await call(oldBuild, 'POST', '/rpc/select_managed_business', { partner_id_param: A });
+    check('old build: switching still works', r.status < 300, r);
+    r = await call(oldBuild, 'POST', '/stories', { user_id: OWNER, media_path: `${OWNER}/personal.jpg`, media_type: 'image' });
+    check('old build: a personal story is not touched by the location check', r.json?.hint !== HINT_OLD, r);
+    // single-location staff: no header still works
+    r = await call({ sub: STAFF, shows: null }, 'POST', '/rpc/set_business_max_group_size', { partner_id_param: A, max_group_size_param: 8 });
+    check('single-location staff, no header: saves (unchanged)', r.status < 300, r);
+    // revoked membership: B removed, the account is back to one location, so the old build works again (A only)
+    await db.query(`delete from private.business_memberships where user_id = $1 and partner_id = $2`, [OWNER, B]);
+    r = await call(oldBuild, 'POST', '/rpc/set_business_max_group_size', { partner_id_param: A, max_group_size_param: 7 });
+    check('membership B revoked, back to one location: old build saves to A', r.status < 300 && (await db.query(`select max_group_size from brand_partners where id = $1`, [A])).rows[0].max_group_size === 7, r);
+    r = await call({ sub: OWNER, shows: B }, 'POST', '/rpc/set_business_max_group_size', { partner_id_param: B, max_group_size_param: 6 });
+    if (!open) check('naming the revoked location B: refused', r.status === 400 && r.json?.code === 'P0001', r);
   } catch (e) {
     failed += 1; console.log(`FAIL  unexpected ${e.message}`);
   } finally {
