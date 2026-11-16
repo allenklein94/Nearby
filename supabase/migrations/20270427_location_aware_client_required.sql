@@ -215,6 +215,7 @@ grant execute on function public.nearby_pre_request() to anon, authenticated, se
 notify pgrst, 'reload config';
 
 -- ===== Shared tables: refuse only the business-side row from an old client of a 2+-location account =====
+-- Named a_* so they run before the tables' other BEFORE triggers (alphabetical): the location answer comes first.
 create or replace function private._business_row_needs_location()
 returns trigger
 language plpgsql
@@ -222,8 +223,9 @@ security definer
 set search_path = public, pg_temp
 as $$
 begin
-  if (tg_table_name = 'stories' and new.partner_id is not null)
-     or (tg_table_name = 'business_messages' and coalesce(new.from_business, false)) then
+  -- to_jsonb: one function for both tables (each lacks the other's column)
+  if (tg_table_name = 'stories' and to_jsonb(new) ->> 'partner_id' is not null)
+     or (tg_table_name = 'business_messages' and coalesce((to_jsonb(new) ->> 'from_business')::boolean, false)) then
     if private._unnamed_multi_location_request() then
       raise exception 'This version of Nearby can''t manage several locations. Update the app (or reload the website) to continue.'
         using errcode = 'P0001', hint = 'location_aware_client_required';
@@ -233,10 +235,10 @@ begin
 end;
 $$;
 revoke all on function private._business_row_needs_location() from public, anon, authenticated;
-create trigger stories_business_row_needs_location
+create trigger a_stories_business_row_needs_location
   before insert on public.stories
   for each row execute function private._business_row_needs_location();
-create trigger business_messages_business_row_needs_location
+create trigger a_business_messages_business_row_needs_location
   before insert on public.business_messages
   for each row execute function private._business_row_needs_location();
 

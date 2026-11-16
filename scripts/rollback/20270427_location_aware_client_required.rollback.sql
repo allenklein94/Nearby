@@ -2,8 +2,8 @@
 -- verbatim (the old-build window returns: a client that names no location acts for the selection), the original
 -- gathering / community crediting triggers (search_path = public, as before), and drops the shared-table row triggers
 -- and helpers. No data to keep (0427 stores nothing).
-drop trigger if exists stories_business_row_needs_location on public.stories;
-drop trigger if exists business_messages_business_row_needs_location on public.business_messages;
+drop trigger if exists a_stories_business_row_needs_location on public.stories;
+drop trigger if exists a_business_messages_business_row_needs_location on public.business_messages;
 drop function if exists private._business_row_needs_location();
 
 create or replace function public.nearby_pre_request()

@@ -1,7 +1,8 @@
 // Stale-location guard (20270426, STAGED; owner 2026-11-16). The PostgREST pre-request check, through the real roles:
 // one account owns locations A and B. A screen that names the location it shows (x-nearby-business) is refused as soon
 // as the account's selection is another one (switched on another device, or a membership removed); switching / listing
-// stay allowed so the screen can recover; no header (builds <= 87), signed out and the service role are unaffected; the
+// stay allowed so the screen can recover; no header (builds <= 87) on this two-location account = refused as an old client
+// (20270427; single-location cases in locationAwareClientRequired.journey.js), signed out and the service role are unaffected; the
 // header can only refuse, never grant (A-only staff naming B is refused, never let in). The whole-request refusal through
 // a real PostgREST (nothing runs, B byte-identical, every write path) is scripts/replay/business-selection-api-local.js.
 // One rolled-back transaction.
@@ -188,11 +189,11 @@ d('journey: a screen showing one location can never act after the account switch
     allowed('stale_may_list');
   });
 
-  test('a malformed or unknown location refuses; no header (builds <= 87) or an empty one changes nothing', () => {
+  test('a malformed or unknown location refuses; no header (builds <= 87) or an empty one from this two-location account: refused as an old client (20270427)', () => {
     refused('malformed');
     refused('unknown_location');
-    allowed('no_header');
-    allowed('empty_header');
+    expect(s.no_header.data).toEqual({ result: 'refused', hint: 'location_aware_client_required', state: 'P0001' });
+    expect(s.empty_header.data).toEqual({ result: 'refused', hint: 'location_aware_client_required', state: 'P0001' });
   });
 
   test('rollout gate: no second location while any live session of the account is not location-aware', () => {
