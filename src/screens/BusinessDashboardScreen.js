@@ -37,7 +37,7 @@ import BusinessContactDetails from '../components/BusinessContactDetails';
 import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
-import { getMyBusinessLocations } from '../services/businessLocations';
+import { getMyBusinessLocations, noteLocationAwareSession } from '../services/businessLocations';
 import { claimActingBusiness, releaseActingBusiness, onSelectionChanged } from '../services/actingBusiness';
 import { currentLocation, selectionChangedElsewhere } from '../utils/businessLocations';
 import OfferProgressSteps, { OfferProgressGlow } from '../motion/OfferProgressSteps';
@@ -343,6 +343,7 @@ export default function BusinessDashboardScreen(props) {
     shown.current = now;
     setLocationKey((k) => k + 1);
   }, []);
+  useEffect(() => { noteLocationAwareSession(); }, []); // rollout gate: this session names its location (20270426)
   useFocusEffect(useCallback(() => { recheck(); }, [recheck]));
   useEffect(() => {
     const sub = AppState.addEventListener('change', (s) => { if (s === 'active') recheck(); });

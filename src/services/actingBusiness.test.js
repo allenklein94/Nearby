@@ -27,6 +27,7 @@ test('never on switching or listing locations (how a stale screen recovers)', ()
   claimActingBusiness(A);
   expect(actingBusinessHeaderFor(`${REST}/rpc/select_managed_business`)).toBeNull();
   expect(actingBusinessHeaderFor(`${REST}/rpc/get_my_businesses?x=1`)).toBeNull();
+  expect(actingBusinessHeaderFor(`${REST}/rpc/note_location_aware_session`)).toBeNull();
 });
 
 test('a late release from an older claim never clears a newer one', () => {

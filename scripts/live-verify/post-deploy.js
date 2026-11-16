@@ -86,7 +86,9 @@ const STEPS = {
       'CORS: from the business website origin, a REST call carrying x-nearby-business passes the browser preflight (Supabase gateway allows the header); edge functions never receive it from the browser',
       'real API (dedicated test accounts, two test locations): phone shows A, website switches to B, the phone saves hours / pin / availability / contact details / an offer = each refused with business_selection_changed, B byte-identical; Business Mode then reloads on B; a request WITHOUT the header (build <= 87) still acts for the selected location (the recorded residual)',
       'edge functions (redeployed from this branch: screen-business-content, business-ai-assistant, business-stripe-connect-onboarding; deno check first): a screening started while A was selected, with a switch to B during it, ends refused (no write to B); Stripe onboarding with a stale partnerId = 409',
-      'rollback: scripts/rollback/20270426 resets the setting only when it still names this check, then notify pgrst; no data'] },
+      'rollout gate (owner option a, server-enforced): an account with one live session that has NOT recorded itself (a build <= 87 or the current website signed in) cannot get a second location (approval refused, hint multi_location_not_ready); after every live session ran Business Mode from this branch (note_location_aware_session) or signed out, it can; hosted auth.sessions has not_after: an expired session no longer counts',
+      'fail closed: no production way to force the check to error; covered by the journey (unreadable headers refuse a write, recovery passes)',
+      'rollback: scripts/rollback/20270426 resets the setting only when it still names this check, then notify pgrst; drops the gate + location_aware_sessions (rows are only session ids, nothing to keep)'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

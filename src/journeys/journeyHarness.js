@@ -85,4 +85,15 @@ const LIFT_GATHERING_CREATION_LIMIT = `if to_regclass('private.rate_limit_rules'
     execute 'delete from private.rate_limit_rules where action = ''gathering_create''';
   end if;`;
 
-module.exports = { runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, LIFT_GATHERING_CREATION_LIMIT };
+
+// Rollout gate (20270426): a second location needs every live sign-in session of the account to have recorded that it
+// runs a location-aware client. A journey giving an account two locations first signs it in once (a stub auth.sessions
+// row) and records that session through the real function, as Business Mode does. Needs `v_sess uuid` declared.
+const locationAwareSessionSql = (who) => `insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), ${who}, now(), now()) returning id into v_sess;
+  perform set_config('request.jwt.claims', json_build_object('sub', ${who}, 'role', 'authenticated', 'session_id', v_sess)::text, true);
+  set local role authenticated;
+  perform public.note_location_aware_session();
+  reset role;
+  perform set_config('request.jwt.claims', '', true);`;
+
+module.exports = { locationAwareSessionSql, runJourney, stepMap, hasToken, actorDeclares, actorsSql, journeyPeople, journeyOwner, JOURNEY_PHONE_SET, LIFT_GATHERING_CREATION_LIMIT };

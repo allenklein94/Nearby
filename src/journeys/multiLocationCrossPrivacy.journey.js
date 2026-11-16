@@ -10,7 +10,7 @@
 //     a cancelled request = one alert per location, each naming its own; an offer review result names its location.
 // One rolled-back transaction.
 jest.mock('../services/supabase', () => ({ supabase: {} }));
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { locationAwareSessionSql, runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 const as = (sub) => `perform set_config('request.jwt.claims', json_build_object('sub', ${sub}, 'role', 'authenticated')::text, true);
@@ -43,12 +43,13 @@ d('journey: several locations under one account stay separate for private detail
   let s;
   beforeAll(async () => {
     const people = ['v_admin', 'v_owner', 'v_staff', 'v_cust'];
-    const log = await runJourney(`${actorDeclares(people)} v_req uuid; v_pa uuid; v_pb uuid; v_r uuid; v_oa uuid; v_ob uuid; v_sub uuid; v_j jsonb;`, `
+    const log = await runJourney(`${actorDeclares(people)} v_req uuid; v_pa uuid; v_pb uuid; v_sess uuid; v_r uuid; v_oa uuid; v_ob uuid; v_sub uuid; v_j jsonb;`, `
   ${actorsSql({ people })}
   update profiles set is_admin = true where id = v_admin;
   ${app('v_owner', 'Journey X Loc A', 40.0)}
   v_pa := approve_business_partner_request(v_req);
   ${asServer}
+  ${locationAwareSessionSql('v_owner')}
   ${app('v_owner', 'Journey X Loc B', 40.001)}
   v_pb := approve_business_partner_request(v_req);
   ${asServer}

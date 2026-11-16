@@ -6,7 +6,7 @@
 // a real PostgREST (nothing runs, B byte-identical, every write path) is scripts/replay/business-selection-api-local.js.
 // One rolled-back transaction.
 jest.mock('../services/supabase', () => ({ supabase: {} }));
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { locationAwareSessionSql, runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 const as = (sub) => `perform set_config('request.jwt.claims', json_build_object('sub', ${sub}, 'role', 'authenticated')::text, true);
@@ -34,14 +34,77 @@ d('journey: a screen showing one location can never act after the account switch
   let s;
   beforeAll(async () => {
     const people = ['v_admin', 'v_owner', 'v_staff'];
-    const log = await runJourney(`${actorDeclares(people)} v_req uuid; v_pa uuid; v_pb uuid; v_hint text;`, `
+    const log = await runJourney(`${actorDeclares(people)} v_req uuid; v_pa uuid; v_pb uuid; v_hint text; v_sess uuid; v_old uuid; v_n int;`, `
   ${actorsSql({ people })}
   update profiles set is_admin = true where id = v_admin;
   ${app('v_owner', 'Journey G Loc A', 40.0)}
   v_pa := approve_business_partner_request(v_req);
   ${asServer}
+  -- rollout gate: a second location only while every live session of the account is location-aware
   ${app('v_owner', 'Journey G Loc B', 40.001)}
-  v_pb := approve_business_partner_request(v_req);
+  begin
+    v_pb := approve_business_partner_request(v_req);
+    ${rec('gate_no_session', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then
+    get stacked diagnostics v_hint = pg_exception_hint;
+    v_pb := null;
+    ${rec('gate_no_session', `jsonb_build_object('result', 'refused', 'hint', v_hint)`)}
+  end;
+  ${asServer}
+  insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), v_owner, now(), now()) returning id into v_old;
+  ${as('v_admin')}
+  begin
+    v_pb := approve_business_partner_request(v_req);
+    ${rec('gate_old_session_only', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then
+    get stacked diagnostics v_hint = pg_exception_hint;
+    v_pb := null;
+    ${rec('gate_old_session_only', `jsonb_build_object('result', 'refused', 'hint', v_hint)`)}
+  end;
+  ${asServer}
+  ${locationAwareSessionSql('v_owner')}
+  ${as('v_admin')}
+  begin
+    v_pb := approve_business_partner_request(v_req);
+    ${rec('gate_old_plus_new_session', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then
+    get stacked diagnostics v_hint = pg_exception_hint;
+    v_pb := null;
+    ${rec('gate_old_plus_new_session', `jsonb_build_object('result', 'refused', 'hint', v_hint)`)}
+  end;
+  ${asServer}
+  delete from auth.sessions where id = v_old; -- the old phone signs out
+  ${as('v_admin')}
+  begin
+    v_pb := approve_business_partner_request(v_req);
+    ${rec('gate_all_sessions_aware', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then
+    get stacked diagnostics v_hint = pg_exception_hint;
+    v_pb := null;
+    ${rec('gate_all_sessions_aware', `jsonb_build_object('result', 'refused', 'hint', v_hint)`)}
+  end;
+  ${asServer}
+  ${rec('memberships_after_gate', `(select count(*) from private.business_memberships where user_id = v_owner)`)}
+  -- an old phone signs in again later: switching between the account's existing locations is never gated
+  insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), v_owner, now(), now());
+  ${as('v_owner')}
+  begin
+    perform select_managed_business(v_pa); perform select_managed_business(v_pb); perform select_managed_business(v_pa);
+    ${rec('switch_existing_with_old_session', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then
+    ${rec('switch_existing_with_old_session', `jsonb_build_object('result', 'refused', 'msg', sqlerrm)`)}
+  end;
+  reset role;
+  ${asServer}
+  -- recording needs a signed-in session of one's own; anon can't call it; the table has no client access
+  set local role anon;
+  begin perform public.note_location_aware_session(); ${rec('anon_note', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then ${rec('anon_note', `jsonb_build_object('result', 'refused')`)} end;
+  reset role;
+  ${as('v_staff')}
+  begin perform count(*) from private.location_aware_sessions; ${rec('client_reads_sessions', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then ${rec('client_reads_sessions', `jsonb_build_object('result', 'refused')`)} end;
+  reset role;
   ${asServer}
   perform set_config('app.trusted_update', 'true', true);
   update profiles set managed_partner_id = v_pa where id = v_staff;
@@ -67,6 +130,14 @@ d('journey: a screen showing one location can never act after the account switch
   ${hook('stale_may_switch', 'v_pa::text', '/rpc/select_managed_business')}
   ${hook('stale_may_list', 'v_pa::text', '/rpc/get_my_businesses')}
   ${hook('unknown_location', 'gen_random_uuid()::text')}
+  -- the check can't read the request's headers (never produced by PostgREST): a write is refused, recovery still works
+  perform set_config('request.headers', '{not json', true);
+  perform set_config('request.path', '/rpc/set_business_operating_hours', true);
+  begin perform public.nearby_pre_request(); ${rec('unreadable_write', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then get stacked diagnostics v_hint = pg_exception_hint; ${rec('unreadable_write', `jsonb_build_object('result', 'refused', 'hint', v_hint, 'state', sqlstate)`)} end;
+  perform set_config('request.path', '/rpc/select_managed_business', true);
+  begin perform public.nearby_pre_request(); ${rec('unreadable_recovery', `jsonb_build_object('result', 'allowed')`)}
+  exception when others then ${rec('unreadable_recovery', `jsonb_build_object('result', 'refused')`)} end;
   reset role;
 
   -- A-only staff naming B: refused (the header never grants)
@@ -122,6 +193,26 @@ d('journey: a screen showing one location can never act after the account switch
     refused('unknown_location');
     allowed('no_header');
     allowed('empty_header');
+  });
+
+  test('rollout gate: no second location while any live session of the account is not location-aware', () => {
+    expect(s.gate_no_session.data).toEqual({ result: 'refused', hint: 'multi_location_not_ready' });
+    expect(s.gate_old_session_only.data).toEqual({ result: 'refused', hint: 'multi_location_not_ready' });
+    expect(s.gate_old_plus_new_session.data).toEqual({ result: 'refused', hint: 'multi_location_not_ready' });
+    expect(s.gate_all_sessions_aware.data).toEqual({ result: 'allowed' });
+    expect(s.memberships_after_gate.data).toBe(2);
+  });
+
+  test('rollout gate never blocks the first location or switching between existing ones; recording is self-only', () => {
+    expect(s.ids.data.a).toBeTruthy(); // first location approved with no session at all
+    expect(s.switch_existing_with_old_session.data).toEqual({ result: 'allowed' });
+    expect(s.anon_note.data.result).toBe('refused');
+    expect(s.client_reads_sessions.data.result).toBe('refused');
+  });
+
+  test('fail closed: a check that cannot read the request refuses a write; recovery paths still pass', () => {
+    refused('unreadable_write');
+    allowed('unreadable_recovery');
   });
 
   test('the header never grants: A-only staff naming B is refused, naming A works', () => {
