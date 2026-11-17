@@ -123,6 +123,7 @@ export const NOTIFICATION_GROUP_BY_TYPE = {
   // Your business (to the business OWNER: managed_partner_id)
   business_opportunity_received: 'owner_requests', business_opportunities_digest: 'owner_requests',
   business_request_cancelled: 'owner_requests', business_request_expiring: 'owner_requests',
+  business_message_received: 'owner_requests',
   business_offer_accepted: 'owner_offers', business_offer_review_result: 'owner_offers',
   reservation_cancelled_by_customer: 'owner_reservations',
   aggregated_demand_growing: 'owner_demand', occasion_demand_growing: 'owner_demand',

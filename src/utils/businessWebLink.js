@@ -67,6 +67,7 @@ export function takeBusinessWebLink(win = typeof window !== 'undefined' ? window
 export async function businessWebDestination(link) {
   if (!link) return { name: 'BusinessDashboard' };
   let dest = null;
-  try { dest = await notificationDestination({ type: link.type, request_id: link.requestId }); } catch (_e) { dest = null; }
+  // `r` = the alert's one object id: a request, or for a customer-message alert (20270428) that message.
+  try { dest = await notificationDestination({ type: link.type, request_id: link.requestId, message_id: link.requestId }); } catch (_e) { dest = null; }
   return dest && BUSINESS_WEB_ROUTES.includes(dest.name) ? dest : FALLBACK;
 }

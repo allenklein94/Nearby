@@ -392,12 +392,12 @@ describe('the audit: every push type has one registered destination', () => {
   const types = [...dest.matchAll(/case '(\w+)':/g)].map((m) => m[1]);
   const root = fs.readFileSync(path.join(__dirname, 'RootNavigator.js'), 'utf8');
   const registered = new Set([...root.matchAll(/<Stack\.Screen\s+name="(\w+)"/g)].map((m) => m[1]));
-  test('91 push types, each handled once', () => {
-    expect(types).toHaveLength(91);
+  test('92 push types, each handled once', () => {
+    expect(types).toHaveLength(92);
     expect(new Set(types).size).toBe(types.length);
   });
   test('every destination a push can produce is a registered signed-in screen', async () => {
-    const full = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o', proposal_id: 'p', plan_id: 'pl', partner_id: 'b',
+    const full = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o', proposal_id: 'p', plan_id: 'pl', partner_id: 'b', message_id: 'msg',
       community_id: 'c', birthday_user_id: 'u', other_user_id: 'u', story_user_id: 'u', owner_id: 'u', target_type: 'gathering', target_id: 't',
       occasion_type: 'birthday', who_for_name: 'Sam', has_recall: false };
     const seen = new Set();
@@ -479,7 +479,7 @@ describe('idea "242": every push type opens its object through real navigation, 
   // A screen no push ever opens, so the destination can never be "already on top" and refreshed in place.
   const ORIGIN = 'PushTestOrigin';
   const routeNames = ['MainTabs', ...registered.filter((n) => n !== 'MainTabs'), ORIGIN];
-  const full = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o', proposal_id: 'p', plan_id: 'pl', partner_id: 'b',
+  const full = { gathering_id: 'g', match_id: 'm', request_id: 'r', offer_id: 'o', proposal_id: 'p', plan_id: 'pl', partner_id: 'b', message_id: 'msg',
     community_id: 'c', birthday_user_id: 'u', other_user_id: 'u', story_user_id: 'u', user_id: 'u', owner_id: 'u', target_type: 'gathering',
     target_id: 't', occasion_type: 'birthday', who_for_name: 'Sam', has_recall: false, business_request_id: 'br', body: 'Why' };
 

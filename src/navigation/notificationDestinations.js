@@ -397,6 +397,11 @@ export async function notificationDestination(data, { lookupAvailability = async
       break;
     // Owner item 13: opens the Opportunities tab ON the accepted offer's card (outlined, first), which re-reads its
     // current state (Accepted, or Redeemed if the visit was already confirmed). Nothing is trusted from the push.
+    // 20270428: a customer wrote to the business. Opens the inbox ON that conversation (the dashboard re-reads the message
+    // under the owner's own access; another business's or a deleted message = the plain inbox). No id = the inbox.
+    case 'business_message_received':
+      if (data.message_id) return to('BusinessDashboard', { initialSection: 'inbox_modal', focusMessageId: data.message_id });
+      return to('BusinessDashboard', { initialSection: 'inbox_modal' });
     case 'business_offer_accepted':
       if (data.request_id) return to('BusinessDashboard', { initialSection: 'requests', focusRequestId: data.request_id });
       return to('BusinessDashboard', { initialSection: 'requests' });

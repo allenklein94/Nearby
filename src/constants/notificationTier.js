@@ -26,6 +26,8 @@ const HIGH = [
   'message', 'plan_message', 'video_call',
   // business owner: a same-day/next-day request (only urgent requests push individually), a booking, a customer cancelling
   'business_opportunity_received', 'business_offer_accepted', 'reservation_cancelled_by_customer',
+  // business owner: a customer wrote to you (at most one per conversation per 5 minutes, 20270428)
+  'business_message_received',
 ];
 
 const LOW = [
