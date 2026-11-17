@@ -64,7 +64,7 @@ describe('the email link', () => {
     for (const [type, id, b] of [['business_opportunity_received', RID], ['business_request_expiring', RID, BID], ['business_opportunities_digest', undefined], ['business_opportunities_digest', undefined, BID], ['x', 'bad', 'bad'], [undefined, RID, BID]]) {
       expect(denoBuilder(base, type, id, b)).toBe(businessWebLinkUrl(base, type, id, b));
     }
-    expect(src).toMatch(/businessWebLinkUrl\(webUrl, data\?\.type, data\?\.request_id, data\?\.partner_id\)/);
+    expect(src).toMatch(/businessWebLinkUrl\(webUrl, data\?\.type, isMessage \? data\?\.message_id : data\?\.request_id, data\?\.partner_id\)/);
     expect(src).toMatch(/Open this request: \$\{linked\}/);
   });
 

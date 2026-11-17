@@ -571,6 +571,14 @@ export async function getBusinessMessagesPage(partnerId, conversationWithId = nu
   return data ?? [];
 }
 
+// 20270428: the one message a customer-message alert names, read under the owner's own access (RLS), so the dashboard can
+// open its conversation. Anything unreadable = null (never an error the owner sees).
+export async function getBusinessMessageConversation(messageId) {
+  const { data, error } = await supabase.from('business_messages').select('partner_id, conversation_with_id').eq('id', messageId).maybeSingle();
+  if (error) return null;
+  return data ?? null;
+}
+
 export async function sendMessageToBusiness(partnerId, body) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;

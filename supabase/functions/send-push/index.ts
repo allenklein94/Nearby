@@ -28,6 +28,7 @@ const NOTIFICATION_PRIORITY_BY_TYPE = {
   business_opportunity_received: 'high',
   business_offer_accepted: 'high',
   reservation_cancelled_by_customer: 'high',
+  business_message_received: 'high',
   match: 'medium',
   new_match: 'medium',
   friend_discovery_match: 'medium',
@@ -202,7 +203,8 @@ const NOTIFICATION_ACTION_BY_TYPE = {
   business_request_expiring: 'review_request',
   business_offer_review_result: 'view_your_offers',
   business_offer_accepted: 'view_booking',
-  reservation_cancelled_by_customer: 'view_booking'
+  reservation_cancelled_by_customer: 'view_booking',
+  business_message_received: 'reply'
 };
 // Item 143: a person's notification choices (customer and business-owner alike) are applied once, in the database's
 // _send_push, before anything reaches this function; nothing here mutes.
@@ -213,7 +215,7 @@ const NOTIFICATION_ACTION_BY_TYPE = {
 const EMAIL_TYPES = new Set([
   'business_opportunity_received', 'business_opportunities_digest', 'business_request_cancelled', 'business_request_expiring',
   'business_offer_accepted', 'business_offer_review_result', 'reservation_cancelled_by_customer',
-  'aggregated_demand_growing', 'occasion_demand_growing',
+  'aggregated_demand_growing', 'occasion_demand_growing', 'business_message_received',
 ]);
 const LINK_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LINK_TYPE = /^[a-z_]{1,64}$/;
@@ -245,8 +247,12 @@ async function emailBusinessAlert(admin, recipientId, title, body, data) {
   // Owner, 2026-11-14: an alert about ONE request links to it (the website opens the push's own destination,
   // src/utils/businessWebLink.js; same `?n=<type>&r=<request id>&b=<business id>` shape, guard keeps them equal). No personal
   // data. Multi-location (20270424): `b` = the location the alert is about; the website switches to it (membership checked).
-  const linked = businessWebLinkUrl(webUrl, data?.type, data?.request_id, data?.partner_id);
+  // 20270428: a customer-message alert links to that message (the website opens its conversation); same `r` slot = the
+  // alert's one object id. Never the customer's id or the message text.
+  const isMessage = data?.type === 'business_message_received';
+  const linked = businessWebLinkUrl(webUrl, data?.type, isMessage ? data?.message_id : data?.request_id, data?.partner_id);
   const linkLine = !webUrl ? '' : linked === webUrl ? `\n\nOpen your Nearby business dashboard: ${webUrl}`
+    : isMessage && data?.message_id ? `\n\nOpen this conversation: ${linked}`
     : data?.request_id ? `\n\nOpen this request: ${linked}` : `\n\nOpen your Nearby business dashboard: ${linked}`;
   const sent = await sendEmail(es.email, title, `${body ?? ''}${linkLine}`);
   // Never a silent failure: a verified owner is waiting on this alert, so an unconfigured/failed provider shows up in the function logs.

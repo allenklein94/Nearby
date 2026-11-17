@@ -28,6 +28,8 @@ const HIGH = [
   'business_opportunity_received', 'business_offer_accepted', 'reservation_cancelled_by_customer',
   // your account: a new sign-in elsewhere, or your number changed (20270375); if it wasn't you, act now
   'account_security_notice',
+  // business owner: a customer wrote to you (at most one per conversation per 5 minutes, 20270428)
+  'business_message_received',
 ];
 
 const LOW = [

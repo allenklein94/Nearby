@@ -70,6 +70,7 @@ export const NOTIFICATION_ACTION_BY_TYPE = {
   business_request_cancelled: 'view_opportunities', business_offer_review_result: 'view_your_offers',
   business_request_expiring: 'review_request',
   business_offer_accepted: 'view_booking', reservation_cancelled_by_customer: 'view_booking',
+  business_message_received: 'reply',
 };
 
 export const CATEGORY_PREFIX = 'nearby_';

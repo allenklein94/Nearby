@@ -52,7 +52,8 @@ import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBus
 import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
 import { BUSINESS_PRICE_LEVELS, typicalSpendProblem } from '../constants/businessPrice';
 import { getBusinessCommunities } from '../services/communities';
-import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
+import { messageFocusPlan } from '../utils/businessMessageFocus';
+import { getBusinessConversations, getBusinessMessageConversation, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
@@ -943,6 +944,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
   const [growth, setGrowth] = useState(null);
   const [gatheringBreakdowns, setGatheringBreakdowns] = useState({});
   const [conversations, setConversations] = useState([]);
+  const [conversationsLoadedFor, setConversationsLoadedFor] = useState(null); // business id the inbox list last loaded for
   const [activeConversation, setActiveConversation] = useState(null);
   const [conversationMessages, setConversationMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
@@ -2165,6 +2167,32 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
     setSection('opportunities');
     if (selectedPartner) loadOpportunities(selectedPartner.id);
   }, [focusRequestId]);
+  // 20270428: a customer-message alert opens the inbox ON that conversation, once per message. The message is re-read
+  // under the owner's own access; another location's, a deleted or an unreadable message leaves the plain inbox.
+  const focusMessageId = route?.params?.focusMessageId ?? null;
+  const messageFocusDoneRef = useRef(null);
+  const messageFocusRowRef = useRef({ id: null, row: undefined });
+  useEffect(() => {
+    if (!focusMessageId) return;
+    setSection('inbox_modal');
+    setActiveConversation(null);
+  }, [focusMessageId]);
+  useEffect(() => {
+    if (!focusMessageId || !selectedPartner || messageFocusDoneRef.current === focusMessageId) return undefined;
+    let live = true;
+    (async () => {
+      if (messageFocusRowRef.current.id !== focusMessageId) {
+        messageFocusRowRef.current = { id: focusMessageId, row: await getBusinessMessageConversation(focusMessageId) };
+      }
+      if (!live) return;
+      const plan = messageFocusPlan(messageFocusRowRef.current.row, selectedPartner.id, conversations,
+        { conversationsLoaded: conversationsLoadedFor === selectedPartner.id });
+      if (plan.kind === 'wait') return;
+      messageFocusDoneRef.current = focusMessageId;
+      if (plan.kind === 'open') openConversation(plan.convo);
+    })();
+    return () => { live = false; };
+  }, [focusMessageId, selectedPartner?.id, conversations, conversationsLoadedFor]);
   // Idea "187": once the list has loaded, bring the focus line (and the outlined card right under it) into view, once per
   // request. A stale or unknown request scrolls to the same line saying it is no longer available; no card is outlined.
   const focusPanelRef = useRef(null);
@@ -3272,6 +3300,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
     try {
       const results = await getBusinessConversations(partnerId);
       setConversations(results);
+      setConversationsLoadedFor(partnerId);
       return results;
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.

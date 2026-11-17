@@ -82,7 +82,9 @@ export function takeBusinessWebLink(win = typeof window !== 'undefined' ? window
 // The push data a link stands for (the same shape the push carries, so one destination table and one location rule).
 export function linkPushData(link) {
   if (!link) return null;
-  return { type: link.type, ...(link.requestId ? { request_id: link.requestId } : {}), ...(link.businessId ? { partner_id: link.businessId } : {}) };
+  // `r` = the alert's one object id: a request, or for a customer-message alert (20270428) that message.
+  const id = link.requestId ? (link.type === 'business_message_received' ? { message_id: link.requestId } : { request_id: link.requestId }) : {};
+  return { type: link.type, ...id, ...(link.businessId ? { partner_id: link.businessId } : {}) };
 }
 
 export async function businessWebDestination(link) {
