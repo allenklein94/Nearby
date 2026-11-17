@@ -21,6 +21,29 @@ checks (ask approval first); finish both trees; freeze after.
 - Hosted staging (authenticator ALTER ROLE, gateway CORS for the header, edge-function forwarding, concurrent switch)
   needs approval B (staging project nearby-staging, empty today): requested, not done.
 
+## 2026-11-17: 20270427 old-build loophole closed (multi-location, STAGED, not deployed)
+
+Owner 2026-11-16/17: close the old-build sign-in loophole server-side, no rewrite of the 115 functions / 27 policies.
+20270427: for an account with 2+ memberships, a signed-in write without x-nearby-business is refused before it runs
+(P0001, hint location_aware_client_required) when the path is location-specific: an RPC that reads the selection itself or
+through what it calls (private._selection_reaching_function: walk by name over public/private sql/plpgsql functions, max 16
+levels, fail closed beyond, cycles never trip it; never followed: recovery, complete/cancel_business_reservation,
+approve_business_partner_request, read-only yes/no checks such as viewer_may_read_profile / _gathering_row_visible), or a
+direct write to a table whose write policy reads the selection; stories + business_messages refuse only business-side rows
+(row triggers); gatherings/communities credited only to a named location; Stripe onboarding refuses a missing partnerId.
+Found 2026-11-17 by the combined-tree run (v454): the first version read only each function's own body and missed the trust
+stack's screening wrappers (via private._caller_partner() / *_unscreened: 9 on the combined tree) + set_business_want_more
+(both trees); the real API test had shared the blind spot (took its list from the rule). Fixed: the API test now computes
+its list independently, requires every *_unscreened wrapper + set_business_want_more, checks the rule agrees both ways, and
+fails if any real function reaches the cap. Deepest real chain = 9 (event + push plumbing); a fail-closed cap of 8 would have
+refused customer requests, hence 16 (cap 16 = cap 40 = the same 67 functions). Journey locationAwareClientRequired adds
+in-transaction wrappers: 2-level wrapper refused, 18-level chain refused, cycle + visibility-only customer function allowed.
+v456 (local, logs /workspaces/.nearby-verify/v456): ml 3b6f434c replay 502/502, journeys 916/916, real API 49/49, rollback
+0427+0426 = 40/40 guard journeys fail (old build's package lands on A), re-apply diff 0, 40/40 pass, Jest 553/7479; combined
+b212e15d replay 550/550, journeys 1546/1546, real API 49/49, rollback 40/40 fail, diff 0, Jest 589/7888. iOS exports clean
+(v454; no app code changed since). Still required before deploy: hosted staging (approval B: hook on authenticator, CORS for
+the header, edge functions forwarding it, concurrent switch); each of 0424-0427 its own approval, number order.
+
 ## 2026-11-16: Stale-location guard 20270426 (owner: finish the cross-device risk now)
 
 Owner (pasted): don't carry a known wrong-location save into production; bind each location-specific write to the
