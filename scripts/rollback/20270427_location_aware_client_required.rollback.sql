@@ -99,6 +99,7 @@ $$;
 drop function if exists private._unnamed_multi_location_request();
 drop function if exists private._request_named_business();
 drop function if exists private._location_scoped_path(text);
+drop function if exists private._selection_reaching_function(text);
 drop function if exists public._account_location_count(uuid);
 drop function if exists private._location_count(uuid);
 notify pgrst, 'reload config';
