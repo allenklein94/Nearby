@@ -69,8 +69,8 @@ grant execute on function public._account_location_count(uuid) to service_role;
 -- wraps business functions, e.g. create_occasion_package = screening + private.create_occasion_package_unscreened, and gets
 -- the location from private._caller_partner(); a rule reading only the function's own body missed 8 of them.)
 -- Walks from this one function into the public/private SQL + plpgsql functions its body calls (by name, every overload,
--- max 8 levels). A function in the walk counts when it reads the selection for more than "is this person a business
--- owner?" (a null check). Not followed: recovery functions, the object-bound customer functions (they act only for the
+-- max 16 levels; the deepest real chain is 9, through the event + push plumbing). A function in the walk counts when it reads the selection for more than "is this person a business
+-- owner?" (a null check). A chain deeper than 16 levels fails closed (counts). Not followed: recovery functions, the object-bound customer functions (they act only for the
 -- offer's own location) and read-only yes/no checks (stable boolean: visibility gates such as viewer_may_read_profile,
 -- _gathering_row_visible: they decide what may be seen, never act for a location). Cost: only for a signed-in write
 -- without a named location from a 2+-location account (a few ms).
@@ -90,7 +90,7 @@ as $$
     join pg_namespace n on n.oid = p.pronamespace
     join pg_language l on l.oid = p.prolang,
     regexp_matches(p.prosrc, '\m([a-z_][a-z0-9_]*)\s*\(', 'g') m
-    where n.nspname in ('public', 'private') and p.prokind = 'f' and l.lanname in ('sql', 'plpgsql') and w.depth < 8
+    where n.nspname in ('public', 'private') and p.prokind = 'f' and l.lanname in ('sql', 'plpgsql') and w.depth < 16
       and (w.depth = 0 or not (p.prorettype = 'boolean'::regtype and p.provolatile <> 'v'))
       and (m)[1] not in ('select_managed_business', 'get_my_businesses', 'note_location_aware_session', 'nearby_pre_request',
                          'my_managed_partner_id', 'complete_business_reservation', 'cancel_business_reservation',
@@ -103,7 +103,19 @@ as $$
     where n.nspname in ('public', 'private') and p.prokind = 'f'
       and (w.depth = 0 or not (p.prorettype = 'boolean'::regtype and p.provolatile <> 'v'))
       and (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))', 'g'))
-        > (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))\s+is\s+(not\s+)?null', 'gi')));
+        > (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))\s+is\s+(not\s+)?null', 'gi'))
+  ) or exists (
+    -- fail closed at the depth cap: a function first reached at level 16 that would be followed further (its own calls
+    -- were never read) counts as acting for the selection. A cycle never trips this: a name already seen at a
+    -- shallower level is not new.
+    select 1 from w
+    join pg_proc p on p.proname = w.name
+    join pg_namespace n on n.oid = p.pronamespace
+    join pg_language l on l.oid = p.prolang
+    where w.depth = 16 and not exists (select 1 from w w2 where w2.name = w.name and w2.depth < 16)
+      and n.nspname in ('public', 'private') and p.prokind = 'f' and l.lanname in ('sql', 'plpgsql')
+      and not (p.prorettype = 'boolean'::regtype and p.provolatile <> 'v')
+  );
 $$;
 revoke all on function private._selection_reaching_function(text) from public, anon, authenticated;
 
