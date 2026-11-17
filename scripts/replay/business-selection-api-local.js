@@ -219,10 +219,52 @@ const HINT = 'business_selection_changed';
     const isOld = (x) => x.status === 400 && x.json?.code === 'P0001' && x.json?.hint === HINT_OLD;
     const has0427 = (await db.query(`select to_regprocedure('private._location_scoped_path(text)') is not null x`)).rows[0].x;
     const beforeA = await snapshot(A); const beforeB = await snapshot(B);
-    const scopedFns = has0427 ? (await db.query(`select p.proname, case when p.proargnames is null then '[]'::json else coalesce((select json_agg(n) from unnest(p.proargnames, coalesce(p.proargmodes, array_fill('i'::"char", array[cardinality(p.proargnames)]))) u(n, m) where m in ('i', 'b', 'v') and n <> ''), '[]') end args
+    // Which functions act for the selection, computed HERE, independently of the rule under test (20270427's
+    // private._selection_reaching_function): itself or through any public/private function it calls, never through
+    // recovery, the object-bound customer functions, or a read-only yes/no check (owner 2026-11-17: the trust stack's
+    // screening wrappers reach the selection only through private._caller_partner() / *_unscreened).
+    const EXEMPT = ['select_managed_business', 'get_my_businesses', 'note_location_aware_session', 'nearby_pre_request', 'my_managed_partner_id',
+      'complete_business_reservation', 'cancel_business_reservation', 'approve_business_partner_request'];
+    const allFns = (await db.query(`select n.nspname, p.proname, p.prosrc, p.prorettype = 'boolean'::regtype and p.provolatile <> 'v' as ro_bool,
+        l.lanname in ('sql', 'plpgsql') as walkable
+        from pg_proc p join pg_namespace n on n.oid = p.pronamespace join pg_language l on l.oid = p.prolang
+        where n.nspname in ('public', 'private') and p.prokind = 'f'`)).rows;
+    const byName = new Map(); for (const f of allFns) { if (!byName.has(f.proname)) byName.set(f.proname, []); byName.get(f.proname).push(f); }
+    const readsSel = (src) => ((src || '').match(/(managed_partner_id|my_managed_partner_id\(\))/g) || []).length
+      > ((src || '').match(/(managed_partner_id|my_managed_partner_id\(\))\s+is\s+(not\s+)?null/gi) || []).length;
+    const reaches = (root) => {
+      const seen = new Set([root]); let frontier = [root];
+      for (let depth = 0; depth <= 8 && frontier.length; depth += 1) {
+        const next = [];
+        for (const name of frontier) {
+          for (const f of byName.get(name) || []) {
+            if (depth > 0 && f.ro_bool) continue;
+            if (readsSel(f.prosrc)) return true;
+            if (!f.walkable || depth === 8) continue;
+            for (const m of (f.prosrc || '').matchAll(/\b([a-z_][a-z0-9_]*)\s*\(/g)) {
+              if (!EXEMPT.includes(m[1]) && !seen.has(m[1])) { seen.add(m[1]); next.push(m[1]); }
+            }
+          }
+        }
+        frontier = next;
+      }
+      return false;
+    };
+    const callable = (await db.query(`select p.proname, case when p.proargnames is null then '[]'::json else coalesce((select json_agg(n) from unnest(p.proargnames, coalesce(p.proargmodes, array_fill('i'::"char", array[cardinality(p.proargnames)]))) u(n, m) where m in ('i', 'b', 'v') and n <> ''), '[]') end args,
+        ${has0427 ? "private._location_scoped_path('/rpc/' || p.proname)" : 'null'} as rule_says
         from pg_proc p join pg_namespace s on s.oid = p.pronamespace
         where s.nspname = 'public' and has_function_privilege('authenticated', p.oid, 'execute') and p.prokind = 'f'
-          and p.provolatile = 'v' and p.prorettype <> 'trigger'::regtype and private._location_scoped_path('/rpc/' || p.proname) order by 1`)).rows : fns.filter((f) => !['set_my_notification_group', 'set_my_business_email_enabled', 'get_gathering_group_insights', 'complete_business_reservation', 'cancel_business_reservation', 'approve_business_partner_request', 'my_managed_partner_id'].includes(f.proname));
+          and p.provolatile = 'v' and p.prorettype <> 'trigger'::regtype order by 1`)).rows;
+    const scopedFns = callable.filter((f) => !EXEMPT.includes(f.proname) && reaches(f.proname));
+    const scopedNames = new Set(scopedFns.map((f) => f.proname));
+    const mustInclude = ['set_business_want_more', ...callable.map((f) => f.proname).filter((n) => byName.has(`${n}_unscreened`))];
+    if (!open) {
+      check(`old build: the independent list holds every wrapper (${[...new Set(mustInclude)].length}: set_business_want_more + every *_unscreened screening wrapper)`,
+        mustInclude.every((n) => scopedNames.has(n)), mustInclude.filter((n) => !scopedNames.has(n)));
+      const ruleYes = new Set(callable.filter((f) => f.rule_says).map((f) => f.proname));
+      const missed = [...scopedNames].filter((n) => !ruleYes.has(n)); const extra = [...ruleYes].filter((n) => !scopedNames.has(n) && !EXEMPT.includes(n));
+      check(`old build: the database rule agrees with the independent list (${scopedNames.size} functions)`, missed.length === 0 && extra.length === 0, { missed, extra });
+    }
     const oldNotRefused = []; const oldSeen = new Set();
     for (const f of scopedFns) {
       if (oldSeen.has(f.proname)) continue; oldSeen.add(f.proname);

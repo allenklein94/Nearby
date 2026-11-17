@@ -65,6 +65,48 @@ $$;
 revoke all on function public._account_location_count(uuid) from public, anon, authenticated;
 grant execute on function public._account_location_count(uuid) to service_role;
 
+-- Does this function act for "the selected location", itself OR through what it calls? (owner 2026-11-17: the trust stack
+-- wraps business functions, e.g. create_occasion_package = screening + private.create_occasion_package_unscreened, and gets
+-- the location from private._caller_partner(); a rule reading only the function's own body missed 8 of them.)
+-- Walks from this one function into the public/private SQL + plpgsql functions its body calls (by name, every overload,
+-- max 8 levels). A function in the walk counts when it reads the selection for more than "is this person a business
+-- owner?" (a null check). Not followed: recovery functions, the object-bound customer functions (they act only for the
+-- offer's own location) and read-only yes/no checks (stable boolean: visibility gates such as viewer_may_read_profile,
+-- _gathering_row_visible: they decide what may be seen, never act for a location). Cost: only for a signed-in write
+-- without a named location from a 2+-location account (a few ms).
+create or replace function private._selection_reaching_function(p_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+  with recursive w(name, depth) as (
+    select p_name collate "C", 0
+    union
+    select (m)[1]::text collate "C", w.depth + 1
+    from w
+    join pg_proc p on p.proname = w.name
+    join pg_namespace n on n.oid = p.pronamespace
+    join pg_language l on l.oid = p.prolang,
+    regexp_matches(p.prosrc, '\m([a-z_][a-z0-9_]*)\s*\(', 'g') m
+    where n.nspname in ('public', 'private') and p.prokind = 'f' and l.lanname in ('sql', 'plpgsql') and w.depth < 8
+      and (w.depth = 0 or not (p.prorettype = 'boolean'::regtype and p.provolatile <> 'v'))
+      and (m)[1] not in ('select_managed_business', 'get_my_businesses', 'note_location_aware_session', 'nearby_pre_request',
+                         'my_managed_partner_id', 'complete_business_reservation', 'cancel_business_reservation',
+                         'approve_business_partner_request')
+  )
+  select exists (
+    select 1 from w
+    join pg_proc p on p.proname = w.name
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname in ('public', 'private') and p.prokind = 'f'
+      and (w.depth = 0 or not (p.prorettype = 'boolean'::regtype and p.provolatile <> 'v'))
+      and (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))', 'g'))
+        > (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))\s+is\s+(not\s+)?null', 'gi')));
+$$;
+revoke all on function private._selection_reaching_function(text) from public, anon, authenticated;
+
 -- Does this PostgREST path act for "the selected location"? Catalog rule (see the header).
 create or replace function private._location_scoped_path(p_path text)
 returns boolean
@@ -82,12 +124,9 @@ begin
                   'approve_business_partner_request') then
       return false;
     end if;
-    -- reads the selection for more than "is this person a business owner?" (a null check)
-    return exists (
-      select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-      where n.nspname = 'public' and p.proname = v_name and p.prokind = 'f'
-        and (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))', 'g'))
-          > (select count(*) from regexp_matches(p.prosrc, '(managed_partner_id|my_managed_partner_id\(\))\s+is\s+(not\s+)?null', 'gi')));
+    -- acts for the selection itself or through a function it calls (private._selection_reaching_function)
+    return exists (select 1 from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = v_name and p.prokind = 'f')
+      and private._selection_reaching_function(v_name);
   end if;
   v_name := split_part(substr(p_path, 2), '/', 1);
   if v_name = '' or v_name in ('stories', 'business_messages') then

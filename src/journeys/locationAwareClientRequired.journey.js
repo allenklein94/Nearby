@@ -69,6 +69,14 @@ d('journey: an old client of a two-location account can never write for "the sel
   -- AFTER the second location exists, an old build signs in on another phone (a new session that never records itself)
   insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), v_owner, now(), now());
   ${rec('owner_locations', `(select count(*) from private.business_memberships where user_id = v_owner)`)}
+  -- functions that act for the selection only THROUGH what they call (the trust stack's screening wrappers, e.g.
+  -- create_occasion_package -> private._caller_partner() / *_unscreened), and a customer function whose only use of the
+  -- selection is a read-only yes/no visibility check: defined here, inside the rolled-back transaction
+  create function private.zz_jl_reader() returns uuid language sql stable as $w$ select managed_partner_id from public.profiles where id = auth.uid() $w$;
+  create function private.zz_jl_mid() returns uuid language plpgsql as $w$ begin return private.zz_jl_reader(); end $w$;
+  create function public.zz_jl_wrapper() returns void language plpgsql as $w$ begin perform private.zz_jl_mid(); end $w$;
+  create function private.zz_jl_visible() returns boolean language sql stable as $w$ select (select managed_partner_id from public.profiles where id = auth.uid()) = '00000000-0000-0000-0000-000000000000'::uuid $w$;
+  create function public.zz_jl_customer() returns void language plpgsql as $w$ begin perform private.zz_jl_visible(); end $w$;
 
   ${as('v_owner')}
   perform select_managed_business(v_pa);
@@ -79,6 +87,12 @@ d('journey: an old client of a two-location account can never write for "the sel
   ${hook('old_table_brand_offers', 'null', '/brand_offers')}
   ${hook('old_table_business_updates', 'null', '/business_updates')}
   ${hook('old_empty_header', "''", '/rpc/create_occasion_package')}
+  ${hook('old_wrapper_two_levels', 'null', '/rpc/zz_jl_wrapper')}
+  ${hook('old_want_more_wrapper', 'null', '/rpc/set_business_want_more')}
+  ${hook('old_customer_visibility_gate', 'null', '/rpc/zz_jl_customer')}
+  ${hook('old_customer_night_stop', 'null', '/rpc/remove_experience_stop')}
+  ${hook('old_customer_browse', 'null', '/rpc/browse_dating_candidates')}
+  ${hook('named_wrapper', 'v_pa::text', '/rpc/zz_jl_wrapper')}
   -- the same old build: customer actions, person-level settings, object-bound customer functions, recovery
   ${hook('old_customer_join', 'null', '/rpc/join_gathering')}
   ${hook('old_customer_profile', 'null', '/profiles')}
@@ -185,6 +199,11 @@ d('journey: an old client of a two-location account can never write for "the sel
       'old_table_business_updates', 'old_empty_header'].forEach(refusedOld);
   });
 
+  test('old build: a function acting for the location only through what it calls is refused; a visibility check alone is not', () => {
+    ['old_wrapper_two_levels', 'old_want_more_wrapper'].forEach(refusedOld);
+    ['old_customer_visibility_gate', 'old_customer_night_stop', 'old_customer_browse', 'named_wrapper'].forEach(allowed);
+  });
+
   test('old build: the same account can still act as a customer and change person-level settings', () => {
     ['old_customer_join', 'old_customer_profile', 'old_customer_gatherings', 'old_customer_story_path',
       'old_customer_message_path', 'old_person_notifications', 'old_person_email', 'old_person_group_insights',
@@ -209,7 +228,9 @@ d('journey: an old client of a two-location account can never write for "the sel
   test('shared tables: a story / reply as the business needs a named location; the customer rows are untouched', () => {
     rowRefusedOld('story_as_business_old');
     rowRefusedOld('reply_as_business_old');
-    allowed('story_personal_old');
+    // the customer's own story is never refused for a missing location (the trust stack may still pause stories: unrelated)
+    expect(['story_personal_old', s.story_personal_old.data.hint]).not.toEqual(['story_personal_old', 'location_aware_client_required']);
+    if (s.story_personal_old.data.result !== 'allowed') expect(s.story_personal_old.data.hint).toBe('stories_paused');
     allowed('message_as_customer_old');
     // named: past the location check (a story as the business still needs the business-moments entitlement, unrelated)
     ['story_as_business_named', 'reply_as_business_named'].forEach((k) => expect([k, s[k].data.hint]).not.toEqual([k, 'location_aware_client_required']));
