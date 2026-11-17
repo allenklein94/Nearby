@@ -72,6 +72,16 @@ const STEPS = {
       'real API (dedicated test accounts): the test business manager saves + re-reads phone/website via get/set_business_contact_details; another signed-in account gets 42501 not_business_manager on both and on update_business_profile / set_business_operating_hours / set_business_location for that business; a direct REST PATCH of brand_partners changes 0 rows; the business rows are byte-identical after the refused calls',
       'website + phone: Profile > Business Profile > Phone + website saves, survives a reload, and shows the same values on the other client',
       'rollback refuses while any contact row exists (hint contact_details_present): export the rows and get the owner\'s approval first (the application copies stay on business_partner_requests)'] },
+  20270428: { journeys: ['businessMessageAlerts', 'planMessagePush', 'notificationAction'],
+    manual: ['order: number order (after 0427 on the combined tree); redeploy send-push from that tree RIGHT AFTER (new EMAIL_TYPES entry, priority + Reply button, conversation link); without the redeploy the push still goes out (priority medium, no Reply button) but no email is sent for it',
+      'no build gate: builds <= 87 show the push and a tap stays where the owner is (unknown type); opening the exact conversation needs a build after 0428 (or the re-exported website)',
+      'read-only: trigger zz_alert_business_message on public.business_messages; private.business_message_alert_windows has no anon/authenticated grant; notification_type_groups has business_message_received -> owner_requests',
+      'real API (dedicated test customer + test business with two managers, one muted): the customer sends 3 messages in a row through REST -> push_outbox has exactly ONE business_message_received row per unmuted manager, none for the muted one or the customer, data = type + message_id + partner_id only, no text; all 3 messages readable by the business',
+      'push on the phone: the manager\'s phone shows "New message from a customer"; the tap (build after 0428) opens Business Mode > Messages on that conversation; Back returns',
+      'email WITH Resend configured: a manager with no app (or the website-only test owner) with a verified address gets the email once, link = BUSINESS_WEB_URL?n=business_message_received&r=<message id>&b=<location>; it opens that conversation after sign-in; another account opening the same link sees the plain inbox',
+      'email WITHOUT Resend (secrets unset): the push is still queued and delivered; send-push logs "business email alert NOT sent (not_configured)"; the customer\'s message is unaffected',
+      'second message within 5 minutes: no new push/email; after 5 minutes: one again',
+      'cleanup by recorded ids (messages, followers, outbox rows, test accounts); rollback = scripts/rollback/20270428 (drops trigger + windows table, messages untouched)'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

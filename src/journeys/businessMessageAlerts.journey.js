@@ -31,6 +31,10 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
     const log = await runJourney(`${actorDeclares(people)} v_pa uuid := gen_random_uuid(); v_pb uuid := gen_random_uuid(); v_start bigint; v_n int; v_multi boolean;`, `
   ${actorsSql({ people, business: { owner: 'v_oa', partner: 'v_pa' } })}
   ${actorsSql({ people: [], business: { owner: 'v_ob', partner: 'v_pb', lat: 40.01 } })}
+  -- the 5-per-minute business message limit (0356/0358) is lifted for this story only (journey about alerts, not limits)
+  if to_regclass('private.rate_limit_rules') is not null then
+    execute 'delete from private.rate_limit_rules where action = ''business_message''';
+  end if;
   perform set_config('app.push_handoff_test_failure', 'on', true);  -- kept in the outbox as 'retry', never handed to send-push
   perform set_config('app.trusted_update', 'true', true);
   -- location A: owner OA + four more managers (OM ordinary, OS suspended, OMUTE muted "New requests", OBLK, whom customer C3 blocked)
