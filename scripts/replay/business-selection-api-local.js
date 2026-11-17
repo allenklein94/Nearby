@@ -232,15 +232,17 @@ const HINT = 'business_selection_changed';
     const byName = new Map(); for (const f of allFns) { if (!byName.has(f.proname)) byName.set(f.proname, []); byName.get(f.proname).push(f); }
     const readsSel = (src) => ((src || '').match(/(managed_partner_id|my_managed_partner_id\(\))/g) || []).length
       > ((src || '').match(/(managed_partner_id|my_managed_partner_id\(\))\s+is\s+(not\s+)?null/gi) || []).length;
+    const CAP = 16; const atCap = new Set();
     const reaches = (root) => {
       const seen = new Set([root]); let frontier = [root];
-      for (let depth = 0; depth <= 8 && frontier.length; depth += 1) {
+      for (let depth = 0; depth <= CAP && frontier.length; depth += 1) {
         const next = [];
         for (const name of frontier) {
           for (const f of byName.get(name) || []) {
             if (depth > 0 && f.ro_bool) continue;
             if (readsSel(f.prosrc)) return true;
-            if (!f.walkable || depth === 8) continue;
+            if (!f.walkable) continue;
+            if (depth === CAP) { atCap.add(root); return true; } // fail closed: deeper than CAP counts (its calls were never read)
             for (const m of (f.prosrc || '').matchAll(/\b([a-z_][a-z0-9_]*)\s*\(/g)) {
               if (!EXEMPT.includes(m[1]) && !seen.has(m[1])) { seen.add(m[1]); next.push(m[1]); }
             }
@@ -263,6 +265,7 @@ const HINT = 'business_selection_changed';
         mustInclude.every((n) => scopedNames.has(n)), mustInclude.filter((n) => !scopedNames.has(n)));
       const ruleYes = new Set(callable.filter((f) => f.rule_says).map((f) => f.proname));
       const missed = [...scopedNames].filter((n) => !ruleYes.has(n)); const extra = [...ruleYes].filter((n) => !scopedNames.has(n) && !EXEMPT.includes(n));
+      check(`old build: no real function reaches the ${CAP}-level cap (one that did would be refused for a 2+-location account: visible here, never silent)`, atCap.size === 0, [...atCap]);
       check(`old build: the database rule agrees with the independent list (${scopedNames.size} functions)`, missed.length === 0 && extra.length === 0, { missed, extra });
     }
     const oldNotRefused = []; const oldSeen = new Set();

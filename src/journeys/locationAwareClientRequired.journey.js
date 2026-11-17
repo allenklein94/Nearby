@@ -77,6 +77,30 @@ d('journey: an old client of a two-location account can never write for "the sel
   create function public.zz_jl_wrapper() returns void language plpgsql as $w$ begin perform private.zz_jl_mid(); end $w$;
   create function private.zz_jl_visible() returns boolean language sql stable as $w$ select (select managed_partner_id from public.profiles where id = auth.uid()) = '00000000-0000-0000-0000-000000000000'::uuid $w$;
   create function public.zz_jl_customer() returns void language plpgsql as $w$ begin perform private.zz_jl_visible(); end $w$;
+  -- a chain deeper than the walk's 16 levels (public.zz_jl_deep -> zz_jl_d1 .. zz_jl_d18 -> the reader): fails closed;
+  -- a cycle with no selection anywhere (zz_jl_loop_a <-> zz_jl_loop_b): never refused
+  create function private.zz_jl_d18() returns uuid language plpgsql as $w$ begin return private.zz_jl_reader(); end $w$;
+  create function private.zz_jl_d17() returns uuid language plpgsql as $w$ begin return private.zz_jl_d18(); end $w$;
+  create function private.zz_jl_d16() returns uuid language plpgsql as $w$ begin return private.zz_jl_d17(); end $w$;
+  create function private.zz_jl_d15() returns uuid language plpgsql as $w$ begin return private.zz_jl_d16(); end $w$;
+  create function private.zz_jl_d14() returns uuid language plpgsql as $w$ begin return private.zz_jl_d15(); end $w$;
+  create function private.zz_jl_d13() returns uuid language plpgsql as $w$ begin return private.zz_jl_d14(); end $w$;
+  create function private.zz_jl_d12() returns uuid language plpgsql as $w$ begin return private.zz_jl_d13(); end $w$;
+  create function private.zz_jl_d11() returns uuid language plpgsql as $w$ begin return private.zz_jl_d12(); end $w$;
+  create function private.zz_jl_d10() returns uuid language plpgsql as $w$ begin return private.zz_jl_d11(); end $w$;
+  create function private.zz_jl_d9() returns uuid language plpgsql as $w$ begin return private.zz_jl_d10(); end $w$;
+  create function private.zz_jl_d8() returns uuid language plpgsql as $w$ begin return private.zz_jl_d9(); end $w$;
+  create function private.zz_jl_d7() returns uuid language plpgsql as $w$ begin return private.zz_jl_d8(); end $w$;
+  create function private.zz_jl_d6() returns uuid language plpgsql as $w$ begin return private.zz_jl_d7(); end $w$;
+  create function private.zz_jl_d5() returns uuid language plpgsql as $w$ begin return private.zz_jl_d6(); end $w$;
+  create function private.zz_jl_d4() returns uuid language plpgsql as $w$ begin return private.zz_jl_d5(); end $w$;
+  create function private.zz_jl_d3() returns uuid language plpgsql as $w$ begin return private.zz_jl_d4(); end $w$;
+  create function private.zz_jl_d2() returns uuid language plpgsql as $w$ begin return private.zz_jl_d3(); end $w$;
+  create function private.zz_jl_d1() returns uuid language plpgsql as $w$ begin return private.zz_jl_d2(); end $w$;
+  create function public.zz_jl_deep() returns void language plpgsql as $w$ begin perform private.zz_jl_d1(); end $w$;
+  create function private.zz_jl_loop_a(n int) returns int language plpgsql as $w$ begin if n <= 0 then return 0; end if; return private.zz_jl_loop_b(n - 1); end $w$;
+  create function private.zz_jl_loop_b(n int) returns int language plpgsql as $w$ begin return private.zz_jl_loop_a(n); end $w$;
+  create function public.zz_jl_cycle() returns void language plpgsql as $w$ begin perform private.zz_jl_loop_a(3); end $w$;
 
   ${as('v_owner')}
   perform select_managed_business(v_pa);
@@ -88,6 +112,8 @@ d('journey: an old client of a two-location account can never write for "the sel
   ${hook('old_table_business_updates', 'null', '/business_updates')}
   ${hook('old_empty_header', "''", '/rpc/create_occasion_package')}
   ${hook('old_wrapper_two_levels', 'null', '/rpc/zz_jl_wrapper')}
+  ${hook('old_chain_beyond_cap', 'null', '/rpc/zz_jl_deep')}
+  ${hook('old_customer_cycle', 'null', '/rpc/zz_jl_cycle')}
   ${hook('old_want_more_wrapper', 'null', '/rpc/set_business_want_more')}
   ${hook('old_customer_visibility_gate', 'null', '/rpc/zz_jl_customer')}
   ${hook('old_customer_night_stop', 'null', '/rpc/remove_experience_stop')}
@@ -199,9 +225,9 @@ d('journey: an old client of a two-location account can never write for "the sel
       'old_table_business_updates', 'old_empty_header'].forEach(refusedOld);
   });
 
-  test('old build: a function acting for the location only through what it calls is refused; a visibility check alone is not', () => {
-    ['old_wrapper_two_levels', 'old_want_more_wrapper'].forEach(refusedOld);
-    ['old_customer_visibility_gate', 'old_customer_night_stop', 'old_customer_browse', 'named_wrapper'].forEach(allowed);
+  test('old build: a function acting for the location only through what it calls is refused; a visibility check alone is not; deeper than 8 levels fails closed; a cycle is not refused', () => {
+    ['old_wrapper_two_levels', 'old_want_more_wrapper', 'old_chain_beyond_cap'].forEach(refusedOld);
+    ['old_customer_visibility_gate', 'old_customer_night_stop', 'old_customer_browse', 'named_wrapper', 'old_customer_cycle'].forEach(allowed);
   });
 
   test('old build: the same account can still act as a customer and change person-level settings', () => {
