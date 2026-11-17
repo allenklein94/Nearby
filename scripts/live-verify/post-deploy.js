@@ -471,7 +471,6 @@ const STEPS = {
       'real API (dedicated test accounts): the test business manager saves + re-reads phone/website via get/set_business_contact_details; another signed-in account gets 42501 not_business_manager on both and on update_business_profile / set_business_operating_hours / set_business_location for that business; a direct REST PATCH of brand_partners changes 0 rows; the business rows are byte-identical after the refused calls',
       'website + phone: Profile > Business Profile > Phone + website saves, survives a reload, and shows the same values on the other client',
       'rollback refuses while any contact row exists (hint contact_details_present): export the rows and get the owner\'s approval first (the application copies stay on business_partner_requests)'] },
-<<<<<<< ours
   20270424: { journeys: ['businessMemberships', 'multiLocationCrossPrivacy', 'notificationAction', 'trustedWriteScope', 'businessProfileAuthorization', 'offerJourney'],
     manual: ['no build gate: builds <= 87 never call the new functions and keep acting for the one business they have; the location selector needs a build after 0424 (or the re-exported website)',
       'read-only: private.business_memberships has no anon/authenticated grant; row count = profiles with managed_partner_id (prod today: Coastal Coffee\'s manager = 1 owner row); every profile with managed_partner_id has a matching row',
@@ -499,7 +498,6 @@ const STEPS = {
       'a gathering created by the two-location account without the header has hosting_partner_id null; with the header naming the selection it is credited to that location',
       'Stripe onboarding (redeployed from this branch, deno check first): no partnerId for a two-location account = 409 location_aware_client_required; single-location account without partnerId = unchanged',
       'rollback: scripts/rollback/20270427 restores the 20270426 check and the original crediting triggers (0-line schema round trip proven locally); stores nothing'] },
-=======
   20270428: { journeys: ['businessMessageAlerts', 'planMessagePush', 'notificationAction'],
     manual: ['order: number order (after 0427 on the combined tree); redeploy send-push from that tree RIGHT AFTER (new EMAIL_TYPES entry, priority + Reply button, conversation link); without the redeploy the push still goes out (priority medium, no Reply button) but no email is sent for it',
       'no build gate: builds <= 87 show the push and a tap stays where the owner is (unknown type); opening the exact conversation needs a build after 0428 (or the re-exported website)',
@@ -510,7 +508,6 @@ const STEPS = {
       'email WITHOUT Resend (secrets unset): the push is still queued and delivered; send-push logs "business email alert NOT sent (not_configured)"; the customer\'s message is unaffected',
       'second message within 5 minutes: no new push/email; after 5 minutes: one again',
       'cleanup by recorded ids (messages, followers, outbox rows, test accounts); rollback = scripts/rollback/20270428 (drops trigger + windows table, messages untouched)'] },
->>>>>>> theirs
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
