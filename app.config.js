@@ -11,39 +11,43 @@
 // an env var that native builds never set:
 //   NEARBY_WEB_EXPORT_BASE_URL=/Nearby/business npx expo export -p web
 //
-// Staging (owner, 2026-11-15; PRODUCT_AUDIT/STAGING_PROJECT_PLAN_2026-11-15.md): APP_VARIANT=staging builds "Nearby Staging"
-// with its own bundle id (installs beside the real app, never gets production pushes) and the staging backend from
-// NEARBY_STAGING_SUPABASE_URL + NEARBY_STAGING_PUBLISHABLE_KEY (+ optional NEARBY_STAGING_STRIPE_PUBLISHABLE_KEY, pk_test_
-// only). The build FAILS if any of them points at production (src/config/backend.js). Without APP_VARIANT the config is
-// exactly app.json, as before.
-const { stagingProblems } = require('./src/config/backend');
+// Environment (owner approval B, 2026-11-15): APP_VARIANT=staging builds "Nearby Staging" against the staging Supabase
+// project (separate bundle id, scheme and Expo project); unset = production, exactly as before plus extra.nearbyEnv.
+// Every rule and refusal lives in src/config/environments.js; a bad combination stops the build here.
+const { resolveBuildEnvironment, embeddedEnvironment, STAGING_DROPPED_EXTRA } = require('./src/config/environments');
 
-function withStaging(config, env) {
-  const backend = { url: (env.NEARBY_STAGING_SUPABASE_URL || '').trim(), key: (env.NEARBY_STAGING_PUBLISHABLE_KEY || '').trim() };
-  const stripe = (env.NEARBY_STAGING_STRIPE_PUBLISHABLE_KEY || '').trim() || null;
-  const problems = stagingProblems({ ...backend, stripePublishableKey: stripe });
-  if (problems.length) throw new Error(`APP_VARIANT=staging refused: ${problems.join('; ')}`);
-  const extra = { ...config.extra, nearbyVariant: 'staging', nearbyBackend: backend };
-  delete extra.stripePublishableKey;
-  if (stripe) extra.stripePublishableKey = stripe;
+function withEnvironment(config, env) {
+  const resolved = resolveBuildEnvironment(env);
+  const extra = { ...config.extra, nearbyEnv: embeddedEnvironment(resolved) };
+  if (resolved.variant === 'production') return { ...config, extra };
+  // Staging carries none of production's outside-service settings: no Turnstile widget (staging Auth has CAPTCHA off; the
+  // production site key is tied to production's hostname) and no Spotify client (its redirect is production's scheme).
+  for (const k of STAGING_DROPPED_EXTRA) delete extra[k];
   return {
     ...config,
-    name: 'Nearby Staging',
-    ios: { ...config.ios, bundleIdentifier: `${config.ios.bundleIdentifier}.staging` },
-    android: { ...config.android, package: `${config.android.package}.staging` },
-    extra,
+    name: resolved.appName,
+    slug: resolved.slug,
+    scheme: resolved.scheme,
+    ios: { ...config.ios, bundleIdentifier: resolved.bundleId },
+    android: { ...config.android, package: resolved.bundleId },
+    extra: {
+      ...extra,
+      eas: { ...(config.extra && config.extra.eas), projectId: resolved.easProjectId },
+      stripePublishableKey: resolved.stripePublishableKey || '',
+    },
   };
 }
 
-function nearbyConfig({ config }, env = process.env) {
-  let out = config;
-  const variant = env.APP_VARIANT || '';
-  if (variant === 'staging') out = withStaging(out, env);
-  else if (variant) throw new Error(`Unknown APP_VARIANT "${variant}" (only "staging" exists)`);
+module.exports = ({ config }, env = process.env) => {
+  const withEnv = withEnvironment(config, env);
   if (env.NEARBY_WEB_EXPORT_BASE_URL) {
-    out = { ...out, experiments: { ...out.experiments, baseUrl: env.NEARBY_WEB_EXPORT_BASE_URL } };
+    return {
+      ...withEnv,
+      experiments: {
+        ...withEnv.experiments,
+        baseUrl: env.NEARBY_WEB_EXPORT_BASE_URL,
+      },
+    };
   }
-  return out;
-}
-
-module.exports = nearbyConfig;
+  return withEnv;
+};

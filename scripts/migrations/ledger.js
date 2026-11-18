@@ -89,11 +89,14 @@ function forbiddenStatements(sql) {
 }
 
 // The approval must name THIS version and THIS exact file hash: `<version>:<sha256>`. Nothing generic ("true", "yes") passes.
-const approvalToken = (facts) => `${facts.version}:${facts.sha256}`;
+// Staging (owner approval B, 2026-11-15) has its own approval variable and token, so a production approval can never be
+// replayed on staging or the reverse; each database keeps its own private.migration_ledger.
+const approvalVar = (target) => (target === 'staging' ? 'NEARBY_STAGING_APPROVAL' : 'NEARBY_PROD_APPROVAL');
+const approvalToken = (facts, target) => `${target === 'staging' ? 'staging:' : ''}${facts.version}:${facts.sha256}`;
 
 // Every reason to refuse, before anything is sent. `ledger` = { exists, rows: [{ version, ... }] } read by status SQL.
-// target: the pre-deploy gates guard PRODUCTION only (their evidence comes from non-production runs); anything but an
-// explicit 'local' counts as production, so a missing target fails closed.
+// target: the pre-deploy gates guard PRODUCTION only (their evidence comes from non-production runs: staging + local); a
+// missing target counts as production, so it fails closed.
 function preflight({ facts, env, ledger, target }) {
   const r = [];
   if (!facts.exists) return [`file not found: ${facts.rel}`];
@@ -105,10 +108,13 @@ function preflight({ facts, env, ledger, target }) {
     if (!facts.commit) r.push('no commit found for the file');
   }
   forbiddenStatements(facts.content).forEach((w) => r.push(`migration contains ${w}`));
-  if (target !== 'local') (facts.gateFailures || []).forEach((w) => r.push(w));
-  const approval = (env.NEARBY_PROD_APPROVAL || '').trim();
-  if (!approval) r.push(`missing approval: set NEARBY_PROD_APPROVAL=${approvalToken(facts)} (the owner's approval of this version + hash)`);
-  else if (approval !== approvalToken(facts)) r.push(`approval "${approval}" does not match this migration (${approvalToken(facts)})`);
+  if (target !== 'local' && target !== 'staging') (facts.gateFailures || []).forEach((w) => r.push(w));
+  const varName = approvalVar(target);
+  const otherVar = approvalVar(target === 'staging' ? 'prod' : 'staging');
+  if ((env[otherVar] || '').trim()) r.push(`${otherVar} is set during a ${target === 'staging' ? 'staging' : 'production'} deploy: unset it (approvals never cross environments)`);
+  const approval = (env[varName] || '').trim();
+  if (!approval) r.push(`missing approval: set ${varName}=${approvalToken(facts, target)} (the owner's approval of this version + hash)`);
+  else if (approval !== approvalToken(facts, target)) r.push(`approval "${approval}" does not match this migration (${approvalToken(facts, target)})`);
   if (!(env.NEARBY_APPROVAL_REF || '').trim()) r.push('missing NEARBY_APPROVAL_REF (where/when the owner approved it)');
   if (!(env.NEARBY_SESSION_ID || '').trim()) r.push('missing NEARBY_SESSION_ID (the deploying session)');
   if (facts.version) {
@@ -170,12 +176,17 @@ function repoMigrations(repoRoot) {
 // Targets. 'prod' = the Management API (scripts/live-verify/lib/db.js); 'local' = a disposable database by URL, refused if it
 // looks like a hosted Supabase address. Every query goes over one connection per call, like the Management API.
 function runner(target, env = process.env) {
+  const { PRODUCTION_REF } = require('../lib/stagingTarget');
   if (target === 'prod') {
-    const url = process.env.NEARBY_LOCAL_DB_URL;
+    const url = env.NEARBY_LOCAL_DB_URL;
     if (url) throw new Error('NEARBY_LOCAL_DB_URL is set: refusing --target=prod (unset it to make the target unambiguous)');
-    const { runSql } = require('../live-verify/lib/db');
-    return { name: 'production (Management API)', run: (sql) => runSql(sql) };
+    if (env.SUPABASE_PROJECT_REF && env.SUPABASE_PROJECT_REF !== PRODUCTION_REF) throw new Error('SUPABASE_PROJECT_REF names another project: refusing --target=prod (unset it)');
+    if (env.NEARBY_STAGING_REF) throw new Error('NEARBY_STAGING_REF is set: refusing --target=prod (unset it to make the target unambiguous)');
+    if (env.NEARBY_STAGING_ACCESS_TOKEN) throw new Error('NEARBY_STAGING_ACCESS_TOKEN is set: refusing --target=prod (unset it to make the target unambiguous)');
+    const { runSqlOnRef } = require('../live-verify/lib/db');
+    return { name: 'production (Management API)', ref: PRODUCTION_REF, run: (sql) => runSqlOnRef(PRODUCTION_REF, sql) };
   }
+  if (target === 'staging') return stagingRunner(env);
   if (target === 'local') {
     const url = process.env.NEARBY_LOCAL_DB_URL;
     if (!url) throw new Error('--target=local needs NEARBY_LOCAL_DB_URL (a disposable database)');
@@ -194,29 +205,27 @@ function runner(target, env = process.env) {
       },
     };
   }
-  if (target === 'staging') return stagingRunner(env);
   throw new Error('--target=prod, --target=staging or --target=local is required');
 }
 
-// 'staging' (owner, 2026-11-15; PRODUCT_AUDIT/STAGING_PROJECT_PLAN_2026-11-15.md): the separate staging project through the
-// Management API, never production. Its ref and token come ONLY from NEARBY_STAGING_REF / NEARBY_STAGING_ACCESS_TOKEN (never
-// SUPABASE_ACCESS_TOKEN or SUPABASE_PROJECT_REF). Refused: the production ref, a malformed ref, a missing token, the same token
-// as SUPABASE_ACCESS_TOKEN (a Supabase access token can reach every project in the account, so the REF is what isolates;
-// a separate token keeps a production session from ever being the one that touches staging), or NEARBY_LOCAL_DB_URL set.
-const PRODUCTION_REF = 'enmosvippabmuqslzrox';
-function stagingRunner(env, fetchImpl = (...a) => fetch(...a)) {
-  if (env.NEARBY_LOCAL_DB_URL) throw new Error('NEARBY_LOCAL_DB_URL is set: refusing --target=staging (unset it to make the target unambiguous)');
-  const ref = String(env.NEARBY_STAGING_REF || '').trim();
+// 'staging' (owner approval B, 2026-11-15; PRODUCT_AUDIT/STAGING_PROJECT_PLAN_2026-11-15.md): the separate staging project
+// through the Management API, never production. The ref comes ONLY from scripts/lib/stagingTarget.js (NEARBY_STAGING_REF or
+// the gitignored .claude/staging.json; production's ref refused in any form); the token ONLY from NEARBY_STAGING_ACCESS_TOKEN,
+// which must differ from SUPABASE_ACCESS_TOKEN (an access token reaches every project in the account, so the REF isolates;
+// a separate token keeps a production session's token from ever being the one that touches staging, and the reverse).
+// Refused too: NEARBY_LOCAL_DB_URL or SUPABASE_PROJECT_REF set (the target must be unambiguous).
+function stagingRunner(env = process.env, fetchImpl = (...a) => fetch(...a), opts = {}) {
+  if (env.NEARBY_LOCAL_DB_URL) throw new Error('NEARBY_LOCAL_DB_URL is set: refusing --target=staging (unset it)');
+  if (env.SUPABASE_PROJECT_REF) throw new Error('SUPABASE_PROJECT_REF is set: refusing --target=staging (the ref comes only from NEARBY_STAGING_REF or .claude/staging.json)');
+  const { stagingRef } = require('../lib/stagingTarget');
+  const { ref } = stagingRef({ env, ...(opts.file ? { file: opts.file } : {}) });
   const token = String(env.NEARBY_STAGING_ACCESS_TOKEN || '').trim();
-  if (!ref) throw new Error('--target=staging needs NEARBY_STAGING_REF (the staging project ref)');
-  if (ref === PRODUCTION_REF) throw new Error('NEARBY_STAGING_REF is the PRODUCTION project: refused');
-  if (!/^[a-z0-9]{20}$/.test(ref)) throw new Error('NEARBY_STAGING_REF does not look like a project ref: refused');
-  if (!token) throw new Error('--target=staging needs NEARBY_STAGING_ACCESS_TOKEN');
+  if (!token) throw new Error('--target=staging needs NEARBY_STAGING_ACCESS_TOKEN (a separate token, never SUPABASE_ACCESS_TOKEN)');
   if (env.SUPABASE_ACCESS_TOKEN && token === String(env.SUPABASE_ACCESS_TOKEN).trim()) {
     throw new Error('NEARBY_STAGING_ACCESS_TOKEN is the same token as SUPABASE_ACCESS_TOKEN: use a separate staging token');
   }
   return {
-    name: `staging (${ref}, Management API)`,
+    name: `staging ${ref} (Management API)`,
     ref,
     run: async (sql) => {
       const res = await fetchImpl(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
@@ -225,7 +234,7 @@ function stagingRunner(env, fetchImpl = (...a) => fetch(...a)) {
         body: JSON.stringify({ query: sql }),
       });
       const text = await res.text();
-      if (!res.ok) throw new Error(`staging query failed (${res.status}): ${text.slice(0, 500)}`);
+      if (!res.ok) throw new Error(`staging query failed (${res.status}): ${text.slice(0, 8000)}`);
       return text ? JSON.parse(text) : [];
     },
   };
@@ -241,5 +250,5 @@ async function readLedger(run) {
 module.exports = {
   PREDEPLOY_GATES, predeployGateFailures,
   LEDGER_MIGRATION, BASELINE_MAX, DRY_RUN_MARK, LEDGER_EXISTS_SQL, LEDGER_ROWS_SQL,
-  migrationFacts, forbiddenStatements, approvalToken, preflight, deploySql, dryRunSql, statusReport, repoMigrations, runner, stagingRunner, readLedger,
+  migrationFacts, forbiddenStatements, approvalVar, approvalToken, preflight, deploySql, dryRunSql, statusReport, repoMigrations, runner, stagingRunner, readLedger,
 };

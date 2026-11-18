@@ -31,7 +31,7 @@ const report = (step, who, story, reported = 'null', extra = '', vals = '') => a
 const file = (path) => `insert into storage.objects (bucket_id, name) values ('stories', ${path});`;
 const held = (path) => `exists (select 1 from private.report_media_evidence e where e.media_path = ${path} and e.released_at is null)`;
 const job = `delete from net.http_request_queue; perform delete_expired_stories();`;
-const deletes = `(select coalesce(jsonb_agg(replace(q.url, 'https://enmosvippabmuqslzrox.supabase.co/storage/v1/object/stories/', '') order by q.url), '[]'::jsonb)
+const deletes = `(select coalesce(jsonb_agg(regexp_replace(q.url, '^https://[a-z0-9]+[.]supabase[.]co/storage/v1/object/stories/', '') order by q.url), '[]'::jsonb)
                     from net.http_request_queue q where q.method = 'DELETE' and q.url like '%/object/stories/' || v_p || '/%')`;
 const posts = `(select count(*) from net.http_request_queue q where q.method = 'POST' and q.url like '%/object/stories%')`;
 const media = (rep) => `(select jsonb_agg(jsonb_build_object('held', m.file_held, 'live', m.still_live)) from admin_get_report_media(array[${rep}]) m)`;

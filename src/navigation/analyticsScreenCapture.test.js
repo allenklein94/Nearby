@@ -18,7 +18,10 @@ describe('PostHog screen autocapture stays off outside the NavigationContainer',
     const tag = providerTag(read('App.js'));
     expect(tag).toMatch(/autocapture=\{\{\s*captureScreens:\s*false\s*\}\}/);
     expect(tag).not.toMatch(/autocapture=\{false\}/); // would also switch off app lifecycle events
-    expect(tag).toMatch(/apiKey="phc_/);
+    // The key comes from the one production-only analytics switch (src/config/environments.js serviceSwitches): staging
+    // builds get a disabled client, production keeps the same project key.
+    expect(tag).toMatch(/apiKey=\{posthog\.apiKey\}/);
+    expect(read('App.js')).toMatch(/SERVICES\.analytics\s*\?\s*\{\s*apiKey: 'phc_/);
   });
 
   test('business website: disabled client, autocapture off', () => {

@@ -7,10 +7,14 @@
 import { resolveAsk } from './askResolver';
 import { planAsk } from './planAsk';
 
-// Frozen clock (convention: tests that depend on "now" freeze it). A Wednesday noon, local time: a named "Saturday" is then this
-// weekend's Saturday, as the benchmark rows expect; the test only reads Date (no production code changes).
-const FIXED_NOW = new Date(2026, 9, 28, 12, 0);
-jest.useFakeTimers({ now: FIXED_NOW, doNotFake: ['nextTick', 'setImmediate', 'clearImmediate', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'queueMicrotask', 'hrtime', 'performance', 'requestAnimationFrame', 'cancelAnimationFrame', 'requestIdleCallback', 'cancelIdleCallback'] });
+// Frozen clock (test debt, owner 2026-10-25/2026-11-15): a named "Saturday" is the "This weekend" window only when it falls
+// this weekend (namedDayFromText), so these rows depended on the run date. Pinned to a Wednesday, local wall-clock (never a UTC
+// "Z" string), so "Saturday" is always this weekend's. Only the test clock changes; the resolver is untouched.
+beforeAll(() => {
+  jest.useFakeTimers({ doNotFake: ['nextTick', 'setImmediate', 'queueMicrotask'] });
+  jest.setSystemTime(new Date(2026, 9, 21, 12, 0, 0)); // Wed 2026-10-21 12:00 local
+});
+afterAll(() => jest.useRealTimers());
 
 // expected: tag | parts (sorted plan part keys) | when | who | size | occasion | price | budget | pricey | cuisine
 const C = [

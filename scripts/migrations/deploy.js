@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 // The ONE production migration apply path (owner, 2026-10-24). See scripts/migrations/ledger.js.
-//   node scripts/migrations/deploy.js <migration file> --target=prod|staging|local [--check]   (staging: NEARBY_STAGING_APPROVAL)
+//   node scripts/migrations/deploy.js <migration file> --target=prod|staging|local [--check]
+// staging (approval B): NEARBY_STAGING_APPROVAL=staging:<version>:<sha256> instead of NEARBY_PROD_APPROVAL; the project
+// ref only from NEARBY_STAGING_REF or .claude/staging.json, PRODUCTION's ref refused (scripts/lib/stagingTarget.js).
 // Needs (both targets, so the gate is the same one the tests prove):
 //   NEARBY_PROD_APPROVAL=<version>:<sha256 of the committed file>   the owner's approval of exactly this file
 //   NEARBY_APPROVAL_REF="owner, 2026-10-24, chat: ..."              where/when it was approved (stored in the ledger)
@@ -17,17 +19,15 @@ async function main(argv, env = process.env, repoRoot = REPO) {
   const target = (argv.find((a) => a.startsWith('--target=')) || '').split('=')[1];
   const check = argv.includes('--check');
   if (!file) throw new Error('usage: deploy.js <migration file> --target=prod|staging|local [--check]');
-  const { name, run, ref: stagingRef } = L.runner(target, env);
-  // Staging (owner, 2026-11-15): its own approval variable, so a production approval can never be reused there or vice versa.
-  if (target === 'staging') {
-    if ((env.NEARBY_PROD_APPROVAL || '').trim()) throw new Error('NEARBY_PROD_APPROVAL is set: refusing --target=staging (use NEARBY_STAGING_APPROVAL)');
-    env = { ...env, NEARBY_PROD_APPROVAL: env.NEARBY_STAGING_APPROVAL };
-  }
+  const { name, run, ref } = L.runner(target, env);
   const fileFacts = L.migrationFacts(file, repoRoot);
-  // Staging: a migration naming production's edge-function URLs is re-pointed to staging's inside the SAME transaction,
-  // before its ledger row (scripts/staging/bootstrap.js repointSql); approval and hash stay those of the committed file.
+  // Staging only: a migration naming production's edge-function URLs (send-push, screen-business-content, ...) is re-pointed to
+  // staging's inside the SAME transaction, before its ledger row (scripts/staging/bootstrap.js repointSql), so the staging
+  // database never holds a production URL, not even between two statements. Then the independent outbound audit
+  // (scripts/staging/outboundAudit.js), also before the ledger row + COMMIT: any production reference or unexpected outbound
+  // host anywhere in the database raises, so the deploy fails and nothing commits. Approval + hash stay the committed file's.
   const facts = target === 'staging' && fileFacts.exists
-    ? { ...fileFacts, content: `${fileFacts.content}\n;\n${require('../staging/bootstrap').repointSql(stagingRef)}` }
+    ? { ...fileFacts, content: `${fileFacts.content}\n;\n${require('../staging/bootstrap').repointSql(ref)}\n${require('../staging/outboundAudit').auditSql(ref)}` }
     : fileFacts;
   const ledger = await L.readLedger(run);
   const refusals = L.preflight({ facts, env, ledger, target });

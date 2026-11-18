@@ -66,8 +66,14 @@ async function runSqlLocal(query) {
 
 async function runSql(query) {
   if (process.env.NEARBY_LOCAL_DB_URL) return runSqlLocal(query);
+  return runSqlOnRef(PROJECT_REF, query);
+}
+
+// An explicit project (the staging target passes the ref from scripts/lib/stagingTarget.js; never a default).
+async function runSqlOnRef(ref, query) {
+  if (!/^[a-z0-9]{20}$/.test(String(ref || ''))) throw new Error('runSqlOnRef needs a 20-character project ref');
   const token = requireToken();
-  const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`, {
+  const res = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -132,4 +138,4 @@ function summarize(scriptName) {
   }
 }
 
-module.exports = { runSql, runSqlAs, runSqlAsRls, assert, summarize, PROJECT_REF };
+module.exports = { runSql, runSqlOnRef, runSqlAs, runSqlAsRls, assert, summarize, PROJECT_REF };
