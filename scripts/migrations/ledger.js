@@ -227,15 +227,21 @@ function stagingRunner(env = process.env, fetchImpl = (...a) => fetch(...a), opt
   return {
     name: `staging ${ref} (Management API)`,
     ref,
+    // 429 = the Management API's throttler refused the request before any SQL ran (no transaction started), so it is the
+    // ONE status retried, with backoff (found on the hosted bootstrap 2026-11-18). Every other failure surfaces at once.
     run: async (sql) => {
-      const res = await fetchImpl(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: sql }),
-      });
-      const text = await res.text();
-      if (!res.ok) throw new Error(`staging query failed (${res.status}): ${text.slice(0, 8000)}`);
-      return text ? JSON.parse(text) : [];
+      const waits = opts.retryWaitsMs || [5000, 10000, 20000, 40000, 60000, 60000, 60000];
+      for (let attempt = 0; ; attempt += 1) {
+        const res = await fetchImpl(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: sql }),
+        });
+        const text = await res.text();
+        if (res.status === 429 && attempt < waits.length) { await new Promise((r) => setTimeout(r, waits[attempt])); continue; }
+        if (!res.ok) throw new Error(`staging query failed (${res.status}): ${text.slice(0, 8000)}`);
+        return text ? JSON.parse(text) : [];
+      }
     },
   };
 }

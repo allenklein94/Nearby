@@ -7,6 +7,7 @@
 //   node scripts/staging/bootstrap.js plan  [--through=20270347]   read-only: checks the project is empty, lists what apply sends,
 //                                                                 prints the approval code for exactly that list + ref
 //   NEARBY_STAGING_BOOTSTRAP_APPROVAL=<code> NEARBY_SESSION_ID=<id> node scripts/staging/bootstrap.js apply [--through=...]
+//     [--resume-after=<last ok file>]   continue after a stop part-way (same code; refused on an empty project)
 // Env: NEARBY_STAGING_ACCESS_TOKEN (never SUPABASE_ACCESS_TOKEN); ref from NEARBY_STAGING_REF or .claude/staging.json.
 //
 // What apply does, in order (everything besides running the migration files is listed here):
@@ -114,14 +115,27 @@ async function plan({ run, ref, through }) {
   return { ref, through, files: list.length, first: list[0]?.rel, last: list[list.length - 1]?.rel, publicObjects: n, empty: n === 0, code };
 }
 
-async function apply({ run, ref, through, env, log = console.log }) {
+// resumeAfter (2026-11-18): continue a bootstrap that stopped part-way (each file is its own transaction, so everything up to
+// and including the last "ok" file is committed and the failed one rolled back). Same approval code (same list + ref); refuses
+// an EMPTY project, a file not in the approved list, or one that isn't followed by any file.
+async function apply({ run, ref, through, env, log = console.log, resumeAfter = null }) {
   const p = await plan({ run, ref, through });
-  if (!p.empty) throw new Error(`staging public schema is not empty (${p.publicObjects} objects): bootstrap is for a fresh project only`);
+  if (resumeAfter) {
+    if (p.empty) throw new Error('--resume-after given but the staging public schema is empty: run a fresh apply instead');
+  } else if (!p.empty) throw new Error(`staging public schema is not empty (${p.publicObjects} objects): bootstrap is for a fresh project only`);
   if ((env.NEARBY_STAGING_BOOTSTRAP_APPROVAL || '').trim() !== p.code) throw new Error(`approval missing or wrong: NEARBY_STAGING_BOOTSTRAP_APPROVAL must be ${p.code} (from plan)`);
   const session = (env.NEARBY_SESSION_ID || '').trim();
   if (!session) throw new Error('missing NEARBY_SESSION_ID');
   const commit = execFileSync('git', ['-C', REPO, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
-  for (const m of migrationList(through)) {
+  let list = migrationList(through);
+  if (resumeAfter) {
+    const i = list.findIndex((m) => path.basename(m.rel) === resumeAfter);
+    if (i < 0) throw new Error(`--resume-after ${resumeAfter} is not in the approved list`);
+    if (i === list.length - 1) throw new Error(`--resume-after ${resumeAfter} is the last file: nothing to resume`);
+    list = list.slice(i + 1);
+    log(`resuming after ${resumeAfter}: ${list.length} files left`);
+  }
+  for (const m of list) {
     const base = path.basename(m.rel);
     if (base === INVENTORY_MIGRATION) await run(inventorySql('f62ff7e9^1'));
     const sql = fs.readFileSync(path.join(REPO, m.rel), 'utf8');
@@ -151,7 +165,8 @@ async function main(argv, env = process.env) {
   if (!/^\d{8}$/.test(through)) throw new Error('--through must be an 8-digit version');
   const r = L.stagingRunner(env);
   if (mode === 'plan') { console.log(JSON.stringify(await plan({ run: r.run, ref: r.ref, through }), null, 2)); return 0; }
-  if (mode === 'apply') { console.log(JSON.stringify(await apply({ run: r.run, ref: r.ref, through, env }), null, 2)); return 0; }
+  const resumeAfter = ((argv.find((a) => a.startsWith('--resume-after=')) || '').split('=')[1]) || null;
+  if (mode === 'apply') { console.log(JSON.stringify(await apply({ run: r.run, ref: r.ref, through, env, resumeAfter }), null, 2)); return 0; }
   throw new Error('usage: bootstrap.js plan|apply [--through=YYYYMMDD]');
 }
 
