@@ -76,3 +76,30 @@ the URL digest is missing or differs).
   project listing 403. Consequence: the preflight reads `config/auth` and will refuse (fails closed) until the token has
   `auth_config_read`. Write permissions (functions deploy, secrets set, Auth config) not tested (testing = writing).
   STOPPED here for owner review; no preflight, migration or deploy run.
+- 2026-11-18 ~12:20-13:10 UTC, token v2 (owner, `.claude/staging-access-token`, 600, gitignored, `sbp_` + 40, != the
+  production token). Read-only scope check: PRODUCTION refused 403 on project metadata, `config/auth`, secrets, functions,
+  `database/query`; project + organization listing 403. STAGING: all five answer (200/201), incl. `config/auth` (v1 lacked it).
+- Bootstrap (approval C, code 50f8921b1b91 = 551 files through 20270428, ref hxsioiiulubavhogzipo): first run stopped after
+  144 files on a Management API 429 (ThrottlerException; that file rolled back). Tooling fixed (ceeccb36: retry ONLY 429,
+  backoff; `--resume-after=<last ok file>` under the same code, refused on an empty project / a file outside the list; 79/79
+  staging tests) and resumed after 20261005_notification_categories.sql: 407 more, exit 0. Re-point 0 left, final outbound
+  audit clean. Independent read: ledger 84 rows, 0 functions + 0 of 52 cron jobs name production, 0 users.
+  Logs /workspaces/.nearby-verify/stg/hosted-boot.log + hosted-boot2.log.
+- Functions (approval C): all 35 deployed with the staging token, `--use-api`, explicit ref (ed62a13f: production's 5
+  verify_jwt-off functions kept off: stripe-connect-webhook, sponsored-stripe-webhook, revenuecat-webhook,
+  submit-business-application, resweep-business-content). API check: 35 ACTIVE, 0 verify_jwt mismatches. CLI 2.58.5 from a
+  scratch folder (the repo's `npx supabase` has no linux-x64 binary). Log /workspaces/.nearby-verify/stg/fn-deploy.log.
+- Preflight (read-only): exit 0, "no real SMS, email, payment or production credentials; nothing names production"
+  (0 custom secrets). Log preflight1.log.
+- Website server restarted (port 8787, same staging export, 200).
+- Test account (synthetic, for the E checks; cleanup by id): owner W = auth user 7bfdc2ed-fce2-42e5-963f-19a545d21873
+  (`owner-w.e-tests@staging.nearby.invalid`, password sign-in, no phone), profile same id, business
+  f570296c-ee03-4eb5-85ef-dc9406e1a7bd "Staging Test Business W (not real)" (no location, so never routed).
+- **E2 PASS (server):** no email secrets set -> `business-email` start = 200 `{ok:false, reason:'email_not_configured'}`;
+  `business_email_settings` 0 rows (nothing stored or verified); invalid address 400; no auth 401. Client maps the reason to
+  "Email alerts aren't switched on for Nearby yet. Phone notifications still work." (`src/services/businessEmail.js:59`);
+  on-screen display NOT checked in a browser.
+- Not run, and why: E1, E3-E5, E7, E9-E12, E16-E18, E22 need the STAGING Resend key (owner step 2) + an inbox the owner
+  reads; E4-E8/E17-E21 also need staging website sign-in (phone code = Auth test OTP numbers, a staging Auth change not
+  yet made) and DB->send-push delivery (vault `service_role_key` on staging, not yet set); E13-E15 need a staging phone
+  build (SETUP-BLOCKED); E23 only after the custom-domain cutover (NOT TESTED). Nothing in production touched.
