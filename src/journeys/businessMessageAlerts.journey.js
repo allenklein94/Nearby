@@ -1,7 +1,7 @@
 // Business message alerts (owner, 2026-11-17; migration 20270428): a customer writes to a business -> the people who manage
 // THAT location get one alert through _send_push (the outbox; send-push emails it only when they have no app). Never the
 // sender, never the customer, never a suspended manager, never a manager blocked either way with the customer, never a
-// muted one ("New requests"), never another business's managers. A burst is ONE alert per conversation per 5 minutes; every
+// manager who switched Customer messages off (its own "Customer messages" switch, 20270428; muting "New requests" never mutes it), never another business's managers. A burst is ONE alert per conversation per 5 minutes; every
 // message is still stored. A business reply alerts nobody. The alert names no text, no customer. A failing alert never
 // refuses the message. On the multi-location tree (20270424), a member of the location who is acting for another one still
 // gets it, naming the location the message is about.
@@ -27,7 +27,7 @@ const send = (who, partner, body) => `${as(who)}
 d('journey: a customer writes to a business -> its managers get one alert, opening that conversation', () => {
   let s;
   beforeAll(async () => {
-    const people = ['v_oa', 'v_om', 'v_os', 'v_omute', 'v_oblk', 'v_ob', 'v_c', 'v_c2', 'v_c3'];
+    const people = ['v_oa', 'v_om', 'v_os', 'v_omute', 'v_oreq', 'v_oblk', 'v_ob', 'v_c', 'v_c2', 'v_c3'];
     const log = await runJourney(`${actorDeclares(people)} v_pa uuid := gen_random_uuid(); v_pb uuid := gen_random_uuid(); v_start bigint; v_n int; v_multi boolean;`, `
   ${actorsSql({ people, business: { owner: 'v_oa', partner: 'v_pa' } })}
   ${actorsSql({ people: [], business: { owner: 'v_ob', partner: 'v_pb', lat: 40.01 } })}
@@ -37,10 +37,12 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
   end if;
   perform set_config('app.push_handoff_test_failure', 'on', true);  -- kept in the outbox as 'retry', never handed to send-push
   perform set_config('app.trusted_update', 'true', true);
-  -- location A: owner OA + four more managers (OM ordinary, OS suspended, OMUTE muted "New requests", OBLK, whom customer C3 blocked)
-  update profiles set managed_partner_id = v_pa where id in (v_om, v_os, v_omute, v_oblk);
+  -- location A: owner OA + five more managers (OM ordinary, OS suspended, OMUTE switched Customer messages off, OREQ switched only
+  -- "New requests" off, OBLK, whom customer C3 blocked)
+  update profiles set managed_partner_id = v_pa where id in (v_om, v_os, v_omute, v_oreq, v_oblk);
   update profiles set suspended_at = now() where id = v_os;
-  update profiles set notification_mutes = array['owner_requests'] where id = v_omute;
+  update profiles set notification_mutes = array['owner_messages'] where id = v_omute;
+  update profiles set notification_mutes = array['owner_requests'] where id = v_oreq;
   insert into blocks (blocker_id, blocked_id) values (v_c3, v_oblk);
   insert into business_followers (brand_partner_id, user_id) values (v_pa, v_c), (v_pa, v_c2), (v_pa, v_c3), (v_pb, v_c), (v_pa, v_oa);
   v_multi := to_regclass('private.business_memberships') is not null;
@@ -51,7 +53,21 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
     execute 'alter table private.business_memberships enable trigger gate_second_location';
   end if;
   perform set_config('app.trusted_update', 'false', true);
-  ${rec('meta', `jsonb_build_object('multi', v_multi, 'pa', v_pa, 'pb', v_pb, 'ids', jsonb_build_object('oa', v_oa, 'om', v_om, 'os', v_os, 'omute', v_omute, 'oblk', v_oblk, 'ob', v_ob, 'c', v_c, 'c2', v_c2, 'c3', v_c3))`)}
+  ${rec('meta', `jsonb_build_object('multi', v_multi, 'pa', v_pa, 'pb', v_pb, 'ids', jsonb_build_object('oa', v_oa, 'om', v_om, 'os', v_os, 'omute', v_omute, 'oreq', v_oreq, 'oblk', v_oblk, 'ob', v_ob, 'c', v_c, 'c2', v_c2, 'c3', v_c3))`)}
+
+  -- 0. the Customer messages switch through the app's one writer: an owner turns it off and on; a customer can't touch it
+  ${as('v_om')}
+  ${rec('switch_off', `to_jsonb(public.set_my_notification_group('owner_messages', false))`)}
+  ${rec('switch_on', `to_jsonb(public.set_my_notification_group('owner_messages', true))`)}
+  reset role;
+  ${as('v_c')}
+  begin
+    perform public.set_my_notification_group('owner_messages', false);
+    ${rec('switch_customer', `'allowed'`)}
+  exception when others then ${rec('switch_customer', `'refused'`)}
+  end;
+  reset role;
+  ${rec('switch_known', `(select array_agg(group_key) from notification_type_groups where type = 'business_message_received')`)}
 
   -- 1. C's first message to A
   ${mark}
@@ -141,9 +157,17 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
   const to = (step) => s[step].data.map((a) => a.to).sort();
   const ids = () => s.meta.data.ids;
 
-  test('first message: A\'s managers (and on multi-location, A\'s staff acting for B); never the suspended or muted manager, the customer or B', () => {
-    const { oa, om, oblk, ob } = ids();
-    expect(to('first')).toEqual((s.meta.data.multi ? [oa, om, oblk, ob] : [oa, om, oblk]).sort());
+  test('first message: A\'s managers (and on multi-location, A\'s staff acting for B); never the suspended manager, the one who switched Customer messages off, the customer or B', () => {
+    const { oa, om, oreq, oblk, ob } = ids();
+    expect(to('first')).toEqual((s.meta.data.multi ? [oa, om, oreq, oblk, ob] : [oa, om, oreq, oblk]).sort());
+  });
+  test('Customer messages is its own switch: muting "New requests" never silences a message; owners switch it off and on, a customer can\'t', () => {
+    expect(s.switch_known.data).toEqual(['owner_messages']);
+    expect(to('first')).toContain(ids().oreq);
+    expect(to('first')).not.toContain(ids().omute);
+    expect(s.switch_off.data).toEqual(['owner_messages']);
+    expect(s.switch_on.data).toEqual([]);
+    expect(s.switch_customer.data).toBe('refused');
   });
   test('a manager blocked either way with the customer is never alerted (and the policy refuses that customer already)', () => {
     expect(s.blocked_policy.data).toBe('refused');

@@ -10,7 +10,9 @@
 --   * At most ONE alert per conversation (business location + customer) per 5 minutes:
 --     private.business_message_alert_windows, claimed atomically (insert ... on conflict ... where older than 5 min), so
 --     concurrent messages can't both alert. Every message is still stored and shown; only the alert is held back.
---   * Through _send_push (outbox, retry), so the owner's own mutes apply ('owner_requests' = "New requests"), and a dedupe
+--   * Through _send_push (outbox, retry), so the owner's own mutes apply: its OWN switch 'owner_messages' ("Messages",
+--     owner, 2026-11-18: never coupled to "New requests"), on by default for everyone (no one's saved choices change:
+--     nobody has it muted, and muting New requests never mutes it); a dedupe
 --     key per message + recipient. send-push emails the same alert to a verified address only when the owner has no app
 --     (or a dead token): email stays the fallback, never a second copy.
 --   * The alert carries NO message text and NO customer name or id (lock screens + email inboxes): title "New message
@@ -18,9 +20,63 @@
 --     re-reads the message under the owner's own access to find the conversation.
 --   * Any failure inside the alert is caught: the customer's message is never refused because of a notification.
 --
--- Builds <= 87 know nothing of the type: a tap opens the app's default destination, nothing breaks.
+-- Builds <= 87 know nothing of the type or the switch: the push shows as a normal banner, a tap (or its button) leaves the
+-- person where they are (driven through build 87's own handler, 2026-11-18), and their Settings simply don't list Messages
+-- (each switch is written through set_my_notification_group one group at a time, so an old build never clears it).
 
-insert into public.notification_type_groups (type, group_key) values ('business_message_received', 'owner_requests')
+-- The new owner switch 'owner_messages' joins the one store (profiles.notification_mutes) exactly like 20270262's group:
+-- the canonical list, the known-groups check and set_my_notification_group (owner groups stay owner-only; body otherwise
+-- identical to 20270262, the latest definition on every tree). No profile row is updated.
+alter table public.profiles drop constraint if exists profiles_notification_mutes_known;
+
+create or replace function public._canonical_notification_mutes(m text[])
+returns text[] language sql immutable set search_path to 'public' as $$
+  select coalesce(array(select g from unnest(array[
+    'plans_invitations', 'plans_changes', 'plans_reminders', 'friends_activity', 'friends_occasions', 'dating', 'messages', 'video_calls', 'shared_playlists_trips',
+    'business_offers', 'business_responses', 'discover_recommendations', 'discover_nearby_people', 'communities',
+    'owner_requests', 'owner_messages', 'owner_offers', 'owner_reservations', 'owner_demand']) with ordinality u(g, i)
+    where g = any (m) order by i), '{}');
+$$;
+revoke all on function public._canonical_notification_mutes(text[]) from public, anon, authenticated;
+
+alter table public.profiles add constraint profiles_notification_mutes_known check (notification_mutes <@ array[
+  'plans_invitations', 'plans_changes', 'plans_reminders', 'friends_activity', 'friends_occasions', 'dating', 'messages', 'video_calls', 'shared_playlists_trips',
+  'business_offers', 'business_responses', 'discover_recommendations', 'discover_nearby_people', 'communities',
+  'owner_requests', 'owner_messages', 'owner_offers', 'owner_reservations', 'owner_demand']::text[]);
+
+create or replace function public.set_my_notification_group(group_param text, enabled_param boolean)
+returns text[]
+language plpgsql
+security definer
+set search_path to 'public'
+as $fn$
+declare
+  v text[];
+begin
+  if auth.uid() is null then
+    raise exception 'Not signed in';
+  end if;
+  if group_param not in ('plans_invitations', 'plans_changes', 'plans_reminders', 'friends_activity', 'friends_occasions',
+      'dating', 'messages', 'video_calls', 'shared_playlists_trips', 'business_offers', 'business_responses', 'discover_recommendations', 'discover_nearby_people', 'communities',
+      'owner_requests', 'owner_messages', 'owner_offers', 'owner_reservations', 'owner_demand') then
+    raise exception 'Unknown notification type';
+  end if;
+  -- Owner groups are a business owner's own setting (same rule as before item 143).
+  if group_param like 'owner\_%' and not exists (select 1 from profiles where id = auth.uid() and managed_partner_id is not null) then
+    raise exception 'Only a business owner can change this.';
+  end if;
+  update profiles set notification_mutes = case
+      when enabled_param then array_remove(notification_mutes, group_param)
+      else public._canonical_notification_mutes(notification_mutes || group_param) end
+    where id = auth.uid()
+    returning notification_mutes into v;
+  return v;
+end;
+$fn$;
+revoke all on function public.set_my_notification_group(text, boolean) from public, anon;
+grant execute on function public.set_my_notification_group(text, boolean) to authenticated;
+
+insert into public.notification_type_groups (type, group_key) values ('business_message_received', 'owner_messages')
 on conflict (type) do update set group_key = excluded.group_key;
 
 create table if not exists private.business_message_alert_windows (
