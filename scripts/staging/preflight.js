@@ -10,8 +10,9 @@
 //  * Email: no custom SMTP in Auth (Supabase's built-in mailer only delivers to the org's own team addresses). The business
 //    email fallback (RESEND_API_KEY) stays inert unless the owner sets the STAGING Resend key (sending access, restricted to
 //    mail.thisisnearby.com; never the production key) and confirms it with NEARBY_STAGING_RESEND_KEY_CONFIRMED=1 (the API
-//    never shows a secret's value). Then EMAIL_FROM and BUSINESS_WEB_URL must be set too, and BUSINESS_WEB_URL must not be
-//    a PRODUCTION website address (checked by the secret's SHA-256 digest; links would open production's website).
+//    never shows a secret's value). Then EMAIL_FROM and BUSINESS_WEB_URL must be set too. BUSINESS_WEB_URL (with or without
+//    Resend) passes only when the API's SHA-256 digest of it equals NEARBY_STAGING_EXPECTED_WEB_URL, which may not be a
+//    production website address; a missing digest refuses (fail closed).
 //  * Payments: no Stripe or RevenueCat secret. Stripe TEST keys are allowed only with NEARBY_STAGING_STRIPE_TEST_KEY_CONFIRMED=1,
 //    because the API never shows a secret's value (the owner confirms it starts sk_test_).
 //  * Production's outside services: no AWS keys (production's photo moderation account), no Twilio, no Expo access token,
@@ -81,8 +82,19 @@ function channelProblems({ auth, secretNames, secretDigests = {}, db, env = {} }
     if (!secretNames.includes('EMAIL_FROM')) p.push('RESEND_API_KEY set without EMAIL_FROM: no email can be sent (set the staging sender)');
     if (!secretNames.includes('BUSINESS_WEB_URL')) p.push('RESEND_API_KEY set without BUSINESS_WEB_URL: alert emails would carry no link to the staging website');
   }
-  const webDigest = String(secretDigests.BUSINESS_WEB_URL || '').toLowerCase();
-  if (webDigest && PRODUCTION_WEB_URL_DIGESTS.has(webDigest)) p.push('BUSINESS_WEB_URL is a PRODUCTION website address: staging links and Stripe returns would open production');
+  // Fail closed (owner, 2026-11-18): BUSINESS_WEB_URL passes only when its digest is known AND equals the address the run
+  // expects (NEARBY_STAGING_EXPECTED_WEB_URL, itself never a production address). No digest, no expectation or a different
+  // value = refused, never a warning.
+  if (secretNames.includes('BUSINESS_WEB_URL')) {
+    const webDigest = String(secretDigests.BUSINESS_WEB_URL || '').toLowerCase();
+    const expected = String(env.NEARBY_STAGING_EXPECTED_WEB_URL || '').trim();
+    const sha = (v) => require('crypto').createHash('sha256').update(v).digest('hex');
+    if (webDigest && PRODUCTION_WEB_URL_DIGESTS.has(webDigest)) p.push('BUSINESS_WEB_URL is a PRODUCTION website address: staging links and Stripe returns would open production');
+    else if (!webDigest) p.push('BUSINESS_WEB_URL has no digest from the API, so its value cannot be checked: refused until it can be');
+    else if (!expected) p.push('BUSINESS_WEB_URL is set but NEARBY_STAGING_EXPECTED_WEB_URL is not: set it to the staging website address the secret must hold');
+    else if (PRODUCTION_WEB_URL_DIGESTS.has(sha(expected)) || /thisisnearby\.com|allenklein94\.github\.io/i.test(expected)) p.push('NEARBY_STAGING_EXPECTED_WEB_URL is a production website address: refused');
+    else if (sha(expected) !== webDigest) p.push('BUSINESS_WEB_URL does not hold NEARBY_STAGING_EXPECTED_WEB_URL (digest mismatch)');
+  }
   if (db.functions || db.cron_jobs) p.push(`${db.functions} function(s) / ${db.cron_jobs} cron job(s) still name production's project`);
   if (db.vault_names_production) p.push('the vault service_role_key is a token for PRODUCTION\'s project');
   for (const f of db.auditFindings || []) p.push(`outbound audit: ${f}`);
@@ -121,9 +133,6 @@ async function main(env = process.env) {
   const facts = await readStaging(env);
   const problems = channelProblems({ ...facts, env });
   console.log(`staging ${facts.ref}: ${facts.secretNames.length} edge-function secret name(s) checked`);
-  if (facts.secretNames.includes('BUSINESS_WEB_URL') && !facts.secretDigests.BUSINESS_WEB_URL) {
-    console.warn('WARNING: the API returned no digest for BUSINESS_WEB_URL, so it could not be compared with the production website addresses; check its value yourself');
-  }
   if (problems.length) { console.error(`REFUSED:\n- ${problems.join('\n- ')}`); return 2; }
   console.log('OK: no real SMS, email, payment or production credentials; nothing names production');
   return 0;

@@ -221,14 +221,28 @@ describe('preflight: staging can\'t reach a real person or real money', () => {
   });
   test('a Stripe secret passes only with the owner\'s test-key confirmation', () => {
     const c = clean();
+    const url = 'https://example-staging-8787.app.github.dev/business/';
     c.secretNames.push('STRIPE_SECRET_KEY', 'BUSINESS_WEB_URL');
-    expect(P.channelProblems({ ...c, env: { NEARBY_STAGING_STRIPE_TEST_KEY_CONFIRMED: '1' } })).toEqual([]);
+    c.secretDigests = { BUSINESS_WEB_URL: require('crypto').createHash('sha256').update(url).digest('hex') };
+    expect(P.channelProblems({ ...c, env: { NEARBY_STAGING_STRIPE_TEST_KEY_CONFIRMED: '1', NEARBY_STAGING_EXPECTED_WEB_URL: url } })).toEqual([]);
   });
   test('the staging Resend key passes only confirmed, with a sender and a staging website URL', () => {
     const c = clean();
+    const url = 'https://example-staging-8787.app.github.dev/business/';
     c.secretNames.push('RESEND_API_KEY', 'EMAIL_FROM', 'BUSINESS_WEB_URL');
-    c.secretDigests = { BUSINESS_WEB_URL: require('crypto').createHash('sha256').update('https://example-staging.app.github.dev/').digest('hex') };
-    expect(P.channelProblems({ ...c, env: { NEARBY_STAGING_RESEND_KEY_CONFIRMED: '1' } })).toEqual([]);
+    c.secretDigests = { BUSINESS_WEB_URL: require('crypto').createHash('sha256').update(url).digest('hex') };
+    expect(P.channelProblems({ ...c, env: { NEARBY_STAGING_RESEND_KEY_CONFIRMED: '1', NEARBY_STAGING_EXPECTED_WEB_URL: url } })).toEqual([]);
+  });
+  test.each([
+    ['no digest from the API', {}, { NEARBY_STAGING_EXPECTED_WEB_URL: 'https://x-8787.app.github.dev/business/' }, /no digest/],
+    ['no expected address', { BUSINESS_WEB_URL: 'a'.repeat(64) }, {}, /NEARBY_STAGING_EXPECTED_WEB_URL is not/],
+    ['a different value', { BUSINESS_WEB_URL: 'a'.repeat(64) }, { NEARBY_STAGING_EXPECTED_WEB_URL: 'https://x-8787.app.github.dev/business/' }, /digest mismatch/],
+    ['a production expectation', { BUSINESS_WEB_URL: require('crypto').createHash('sha256').update('https://thisisnearby.com/business/x').digest('hex') }, { NEARBY_STAGING_EXPECTED_WEB_URL: 'https://thisisnearby.com/business/x' }, /is a production website address/],
+  ])('BUSINESS_WEB_URL refused: %s (fail closed)', (_, digests, env, msg) => {
+    const c = clean();
+    c.secretNames.push('BUSINESS_WEB_URL');
+    c.secretDigests = digests;
+    expect(P.channelProblems({ ...c, env }).join('\n')).toMatch(msg);
   });
   test.each(P.PRODUCTION_WEB_URLS)('refused: BUSINESS_WEB_URL = production website %s (even when confirmed)', (url) => {
     const c = clean();
