@@ -10,8 +10,14 @@ REF=${NEARBY_STAGING_REF:-}
 [ "$REF" != enmosvippabmuqslzrox ] || { echo "NEARBY_STAGING_REF is PRODUCTION: refused"; exit 1; }
 cd "$(dirname "$0")/../.."
 if [ $# -gt 0 ]; then FNS=("$@"); else mapfile -t FNS < <(ls -d supabase/functions/*/ | xargs -n1 basename | grep -v '^_'); fi
+# The 5 functions production runs with verify_jwt OFF (no signed-in caller: Stripe / RevenueCat webhooks, the public web
+# application form, the cron re-sweep; each checks its caller itself). Every other function keeps the CLI default (on).
+NO_VERIFY_JWT=" stripe-connect-webhook sponsored-stripe-webhook revenuecat-webhook submit-business-application resweep-business-content "
+SUPABASE_BIN=${SUPABASE_BIN:-npx supabase}
 for f in "${FNS[@]}"; do
   [ -f "supabase/functions/$f/index.ts" ] || { echo "no function $f"; exit 1; }
-  echo "== $f -> $REF"
-  npx supabase functions deploy "$f" --project-ref "$REF"
+  flags=(--project-ref "$REF" --use-api)
+  [[ "$NO_VERIFY_JWT" == *" $f "* ]] && flags+=(--no-verify-jwt)
+  echo "== $f -> $REF ${flags[*]:2}"
+  $SUPABASE_BIN functions deploy "$f" "${flags[@]}"
 done
