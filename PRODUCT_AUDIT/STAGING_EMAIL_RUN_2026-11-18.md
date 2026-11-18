@@ -14,7 +14,7 @@ Tree deployed: `integ/staging-run` (never merged) = `integ/ml-x-trust-x-business
 |---|---|
 | Isolation (local facts) | PASS: staging ref `hxsioiiulubavhogzipo` != production; staging URL names only that ref; the staging website bundle embeds only the staging URL + publishable key (production appears only as the constants a staging build compares against and refuses) |
 | Tree assembled + Jest | PASS: 593/593 suites, 7998 tests (cb3c924b) |
-| Local bootstrap rehearsal (all 551 files, re-point + outbound audit per transaction) | see below |
+| Local bootstrap rehearsal (all 551 files, re-point + outbound audit per transaction) | PASS 2026-11-18 (log /workspaces/.nearby-verify/stg/boot-local7.log; real Auth v2.197.0 schema first, as on a hosted project): 551 applied in 152 s, final audit 0 findings, 0 functions / cron jobs name production, 6 functions call STAGING edge functions, an unfixable production webhook argument and a stored production URL each refused their transaction. Found + fixed on the way (3613c5cd / staging/environment-config): 20270391's `private.story_media_settings.storage_url` defaulted to production's Storage API (the photo-cleanup job's DELETE target); the re-point now also rewrites column defaults and `private.*_settings` rows, the audit still checks independently |
 | Private staging website | built (APP_VARIANT=staging, base /business), served from this codespace on port 8787 (private: only your GitHub login opens it): `https://automatic-space-robot-vppgg79q56j7cxj7j-8787.app.github.dev/business/`. A codespace restart stops the server; the session restarts it (same address). |
 | Hosted staging bootstrap, functions, Auth, secrets | WAITING on the two owner steps below |
 
