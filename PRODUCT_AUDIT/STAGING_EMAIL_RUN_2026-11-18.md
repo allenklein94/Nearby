@@ -57,3 +57,14 @@ the URL digest is missing or differs).
 ## Results
 
 (filled in as the run proceeds)
+
+- 2026-11-18 (session re-check, read-only, nothing written to staging): staging Auth answers (GoTrue v2.198.0; the local
+  rehearsal used v2.197.0 = prod, so the hosted bootstrap's first transaction is the real check), `public.profiles` absent
+  (PGRST205) = staging still EMPTY; `.claude/staging.json` ref != production and its URL names only the staging ref.
+  Website bundle: runtime `nearbyEnv` = variant staging + the staging URL + the staging publishable key; production's ref,
+  URL and PUBLIC publishable key appear only in `src/config/environments.js`'s comparison constants. Website server
+  restarted after a codespace restart (same address, 200). Preflight fail-closed on BUSINESS_WEB_URL confirmed in code
+  (missing digest / missing expectation / mismatch / production address = refused), `stagingSafety.test.js` 71/71.
+  Noted, not changed: this tree lacks main's Maps-key fix (f9f64988); irrelevant to the staging website (web exports
+  never carry the key) and no staging native build is in scope.
+- BLOCKED on owner step 1: `.claude/staging-access-token` does not exist, so no hosted staging change has been made.
