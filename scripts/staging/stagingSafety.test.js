@@ -156,6 +156,12 @@ describe('bootstrap.js', () => {
     expect(() => B.repointSql(PRODUCTION_REF)).toThrow(/not a staging ref/);
     expect(() => B.repointSql('nope')).toThrow(/not a staging ref/);
     expect(B.repointSql(REF)).toContain(`replace(pg_get_functiondef(r.oid), '${PRODUCTION_REF}', '${REF}')`);
+    // 20270391: a column default (private.story_media_settings.storage_url) and its seeded row named production's Storage API
+    const sql = B.repointSql(REF);
+    expect(sql).toContain('from pg_attrdef d');
+    expect(sql).toContain("alter table %I.%I alter column %I set default %s");
+    expect(sql).toContain("c.relname like '%\\_settings'");
+    expect(sql).toMatch(/n\.nspname = 'private' and c\.relkind = 'r'/);
   });
 
   test('apply re-points inside EVERY migration transaction (no committed state ever names production)', async () => {
