@@ -6,6 +6,47 @@ customer requests and messages. This file is the exact setup and the checks to r
 (`STAGING_PROJECT_PLAN_2026-11-15.md`). Production stays a separate approval. Never paste a key into chat, Git or a log.
 Set secrets yourself with the commands below.
 
+## 0. Infrastructure status (owner, 2026-11-17/18; DNS re-checked from public resolvers 2026-11-18)
+
+DONE by the owner, nothing left to do in Resend or Cloudflare for email:
+- Domain `thisisnearby.com` (Cloudflare, auto-renew). Sending domain **`mail.thisisnearby.com` verified in Resend**.
+- Public DNS seen 2026-11-18: DKIM `resend._domainkey.mail` present; `send.mail` = Resend's MX + SPF; apex SPF =
+  Cloudflare Email Routing; `_dmarc` = `v=DMARC1; p=none; rua=mailto:support@thisisnearby.com`. From
+  `alerts@mail.thisisnearby.com`, DKIM (d=mail.thisisnearby.com) and SPF (send.mail.thisisnearby.com) both align with
+  DMARC's relaxed rule, so the existing apex DMARC record covers alert email. No change needed.
+- `support@thisisnearby.com` forwards to the owner's inbox (Cloudflare Email Routing).
+- Two API keys, **Sending access, restricted to mail.thisisnearby.com**: one staging, one production, kept in the owner's
+  password manager (Bitwarden, "Nearby — Infrastructure"). Never in chat, Git or a log.
+- Standalone test (staging key): `Nearby for Business <alerts@mail.thisisnearby.com>` -> support@ = Resend "Delivered" and
+  arrived in the owner's inbox via forwarding. This proves the key, domain and both mail directions; it does NOT prove
+  Nearby's own send path (send-push / business-email), which is what section 3 checks.
+- `alerts@mail.thisisnearby.com` receives NO mail (no MX on `mail.`). Hence `EMAIL_REPLY_TO` (below): an owner who
+  replies to an alert reaches support@ instead of a bounce.
+
+### Exact values (replaces the "no domain yet" guidance in section 2)
+
+| Secret | Staging (`hxsioiiulubavhogzipo`) | Production (`enmosvippabmuqslzrox`, own approval) |
+|---|---|---|
+| `RESEND_API_KEY` | the STAGING key | the PRODUCTION key |
+| `EMAIL_FROM` | `Nearby Staging <alerts@mail.thisisnearby.com>` | `Nearby for Business <alerts@mail.thisisnearby.com>` |
+| `EMAIL_REPLY_TO` (new, optional) | `support@thisisnearby.com` | `support@thisisnearby.com` |
+| `BUSINESS_WEB_URL` | the private staging website address, trailing `/` (NEVER a production address: the staging preflight refuses it) | before the cutover `https://allenklein94.github.io/Nearby/business/`; after it `https://thisisnearby.com/business/` |
+
+Set them yourself, one at a time, so no key lands in shell history (the prompt hides what you type):
+
+```
+read -rs RESEND_API_KEY && supabase secrets set --project-ref hxsioiiulubavhogzipo RESEND_API_KEY="$RESEND_API_KEY"; unset RESEND_API_KEY
+supabase secrets set --project-ref hxsioiiulubavhogzipo EMAIL_FROM='Nearby Staging <alerts@mail.thisisnearby.com>' EMAIL_REPLY_TO=support@thisisnearby.com BUSINESS_WEB_URL='<staging website URL>/'
+supabase secrets list --project-ref hxsioiiulubavhogzipo    # names + digests only
+NEARBY_STAGING_RESEND_KEY_CONFIRMED=1 NEARBY_STAGING_ACCESS_TOKEN=... node scripts/staging/preflight.js
+```
+
+The staging preflight (branch `staging/environment-config`, fa25c9d6) refused any Resend key before 2026-11-18; it now
+allows the staging key only with `NEARBY_STAGING_RESEND_KEY_CONFIRMED=1` (you confirm it is the STAGING key), and then
+requires `EMAIL_FROM` + `BUSINESS_WEB_URL` and refuses a production website address (compared by SHA-256 digest).
+Staging test businesses verify their alert address through the code email, so staging can only email an inbox someone
+proved they control; use support@ or a plus-address of your own inbox (if your provider supports it) as test inboxes.
+
 ## 1. How the email works today (code facts, both trees)
 
 - **Sender:** `supabase/functions/_shared/email.ts` makes one Resend call: `POST https://api.resend.com/emails`,
@@ -112,6 +153,24 @@ account and the evidence (inbox screenshot, `push_outbox` row id, function log l
   conversation (build after 0428). On a build 87 phone, the push shows and the tap leaves P where they were.
 - **E16. Provider failure:** with a wrong `RESEND_API_KEY`, the alert is still recorded and the push still works. The
   function log shows `business email alert NOT sent (provider_error_401)`. The customer's message is unaffected.
+
+### Links, access and privacy (added 2026-11-18)
+- **E17. Full chain:** C submits a request -> W (no app) gets ONE branded email from `EMAIL_FROM` -> the link opens the
+  staging website -> W signs in (phone code) -> that exact request opens in Opportunities -> W sends an offer -> C sees it.
+  Record the email's arrival time vs the request time.
+- **E18. Signed out at click:** the same link while signed out -> sign-in -> lands on the same request (the website keeps
+  `n`/`r`/`b` across sign-in).
+- **E19. Expired / answered request:** open an alert link after the request expired (or was cancelled) -> "no longer
+  available", nothing else of the request shown.
+- **E20. Invalid links:** `r=` a random uuid, `r=not-a-uuid`, `n=` unknown type, no query -> each lands on the plain
+  dashboard or "no longer available", never an error page or another business's data.
+- **E21. Wrong business:** a second staging business owner opens W's link -> nothing from W's request (as E6).
+- **E22. Email privacy:** the email's full source (Gmail "Show original") holds no customer name, phone, email, message
+  text or customer id; only the type, request/message id and location id in the link; headers show SPF=pass,
+  DKIM=pass, DMARC=pass for `mail.thisisnearby.com`; `Reply-To: support@thisisnearby.com`.
+- **E23. Redirect hop (after the cutover only):** the same link via `https://business.thisisnearby.com/?n=..&r=..&b=..`
+  and via the old `https://allenklein94.github.io/Nearby/business/?n=..` keeps every parameter. (business. -> /business
+  keeps the query today, checked 2026-11-18 with dummy ids; the github.io -> thisisnearby.com hop exists only after the cutover.)
 
 ### Cleanup
 - Delete the staging test messages, followers, outbox rows and email settings rows by their recorded ids. Remove the
