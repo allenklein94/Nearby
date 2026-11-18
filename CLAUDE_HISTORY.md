@@ -1,3 +1,7 @@
+## 2026-11-18: Email -> exact opportunity, recorded MET + CLOSED for development
+
+Owner confirmed the staged flow is what they want; no new functionality. Kept as built: no requester name before acceptance, direct link to the exact request (`?n=<type>&r=<request id>&b=<location>`, one shape in `src/utils/businessWebLink.js` and send-push, guarded), link kept across sign-in, correct location switched to (server-checked, multi-location branch), unknown/expired/other-business request = "no longer available", push and email open the same destination. Declined: extra screens, a visible request number. Still required before production (staging): a real email delivered via Resend and the full signed-in browser journey ending in a sent offer. Owner may prepare the Resend account + sending domain now (DNS only, no production change). Secrets on prod, send-push redeploy and the website publish each keep their own approval.
+
 ## 2026-11-16 (later): 0426 fail-closed + server-enforced rollout gate (owner review)
 
 Owner: option (a), but enforced by the server if feasible; no fail-open for location-specific writes; hosted staging
