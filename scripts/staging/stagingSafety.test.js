@@ -199,7 +199,9 @@ describe('preflight: staging can\'t reach a real person or real money', () => {
     ['Twilio SMS credentials in Auth', (c) => { c.auth.sms_twilio_auth_token = true; }, /SMS provider credentials/],
     ['phone sign-in with no test OTP', (c) => { c.auth.external_phone_enabled = true; }, /no test OTP/],
     ['custom SMTP', (c) => { c.auth.smtp_host = true; }, /custom SMTP/],
-    ['Resend key', (c) => { c.secretNames.push('RESEND_API_KEY'); }, /real email/],
+    ['unconfirmed Resend key', (c) => { c.secretNames.push('RESEND_API_KEY', 'EMAIL_FROM', 'BUSINESS_WEB_URL'); }, /STAGING Resend key/],
+    ['Resend key without a sender', (c) => { c.secretNames.push('RESEND_API_KEY', 'BUSINESS_WEB_URL'); }, /without EMAIL_FROM/],
+    ['Resend key without a staging website URL', (c) => { c.secretNames.push('RESEND_API_KEY', 'EMAIL_FROM'); }, /without BUSINESS_WEB_URL/],
     ['Twilio secret', (c) => { c.secretNames.push('TWILIO_AUTH_TOKEN'); }, /real SMS/],
     ['Expo access token', (c) => { c.secretNames.push('EXPO_ACCESS_TOKEN'); }, /push credentials/],
     ['AWS key', (c) => { c.secretNames.push('AWS_ACCESS_KEY_ID'); }, /moderation account/],
@@ -222,6 +224,18 @@ describe('preflight: staging can\'t reach a real person or real money', () => {
     c.secretNames.push('STRIPE_SECRET_KEY', 'BUSINESS_WEB_URL');
     expect(P.channelProblems({ ...c, env: { NEARBY_STAGING_STRIPE_TEST_KEY_CONFIRMED: '1' } })).toEqual([]);
   });
+  test('the staging Resend key passes only confirmed, with a sender and a staging website URL', () => {
+    const c = clean();
+    c.secretNames.push('RESEND_API_KEY', 'EMAIL_FROM', 'BUSINESS_WEB_URL');
+    c.secretDigests = { BUSINESS_WEB_URL: require('crypto').createHash('sha256').update('https://example-staging.app.github.dev/').digest('hex') };
+    expect(P.channelProblems({ ...c, env: { NEARBY_STAGING_RESEND_KEY_CONFIRMED: '1' } })).toEqual([]);
+  });
+  test.each(P.PRODUCTION_WEB_URLS)('refused: BUSINESS_WEB_URL = production website %s (even when confirmed)', (url) => {
+    const c = clean();
+    c.secretNames.push('RESEND_API_KEY', 'EMAIL_FROM', 'BUSINESS_WEB_URL');
+    c.secretDigests = { BUSINESS_WEB_URL: require('crypto').createHash('sha256').update(url).digest('hex') };
+    expect(P.channelProblems({ ...c, env: { NEARBY_STAGING_RESEND_KEY_CONFIRMED: '1' } }).join('\n')).toMatch(/PRODUCTION website/);
+  });
   test('readStaging reduces Auth secrets to booleans and talks only to the staging project', async () => {
     const urls = [];
     const fetchImpl = async (url) => {
@@ -234,6 +248,7 @@ describe('preflight: staging can\'t reach a real person or real money', () => {
     expect(JSON.stringify(facts)).not.toContain('SECRETVALUE');
     expect(facts.auth.sms_twilio_auth_token).toBe(true);
     expect(facts.secretNames).toEqual(['ANTHROPIC_API_KEY']);
+    expect(facts.secretDigests).toEqual({});
     expect(urls.every((u) => u.includes(`/projects/${REF}/`))).toBe(true);
   });
 });
