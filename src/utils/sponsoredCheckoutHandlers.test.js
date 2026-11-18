@@ -240,7 +240,7 @@ describe('create-sponsored-checkout', () => {
     expect(form).toContain('line_items[0][price_data][currency]=usd');
     expect(form).toContain('client_reference_id=pay_1');
     expect(form).not.toContain('evil.example');
-    expect(form).toMatch(/success_url=https:\/\/allenklein94\.github\.io\/Nearby\/business\/\?sponsored=success/);
+    expect(form).toMatch(/success_url=https:\/\/thisisnearby\.com\/business\/\?sponsored=success/);
     expect(call.opts.headers['Idempotency-Key']).toBe('sponsored-pay_1');
     const exp = Number(/expires_at=(\d+)/.exec(form)[1]);
     expect(exp - Math.floor(Date.now() / 1000)).toBeGreaterThanOrEqual(30 * 60); // Stripe's minimum
