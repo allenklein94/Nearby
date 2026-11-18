@@ -45,8 +45,8 @@ describe('the alert itself', () => {
     expect(await notificationDestination({ type: 'business_message_received' }))
       .toEqual({ name: 'BusinessDashboard', params: { initialSection: 'inbox_modal' } });
   });
-  test('"New requests" owner switch, high priority, Reply button', () => {
-    expect(notificationGroupOf('business_message_received')).toBe('owner_requests');
+  test('its own "Customer messages" owner switch, high priority, Reply button', () => {
+    expect(notificationGroupOf('business_message_received')).toBe('owner_messages');
     expect(notificationPriority('business_message_received')).toBe('high');
     expect(NOTIFICATION_ACTION_BY_TYPE.business_message_received).toBe('reply');
   });
@@ -56,10 +56,26 @@ describe('the alert itself', () => {
     const link = parseBusinessWebLink(new URL(url).search);
     expect(await businessWebDestination(link)).toEqual({ name: 'BusinessDashboard', params: { initialSection: 'inbox_modal', focusMessageId: MID } });
   });
-  test('the "New requests" switch says it covers messages (all 11 languages carry the reworded line)', () => {
+  test('Customer messages is its own owner switch in Business Notifications (on by default), separate from New requests', () => {
+    const { BUSINESS_NOTIFICATION_GROUPS } = require('../constants/businessNotificationGroups');
+    const { OWNER_GROUPS, isMuted, typesForGroup } = require('../constants/notificationPreferences');
+    expect(OWNER_GROUPS).toContain('owner_messages');
+    expect(BUSINESS_NOTIFICATION_GROUPS.map((g) => g.key)).toEqual(['requests', 'messages', 'offers', 'reservations', 'demand']);
+    expect(typesForGroup('owner_messages')).toEqual(['business_message_received']);
+    expect(typesForGroup('owner_requests')).not.toContain('business_message_received');
+    expect(isMuted('business_message_received', [])).toBe(false);
+    expect(isMuted('business_message_received', ['owner_requests'])).toBe(false);
+    expect(isMuted('business_message_received', ['owner_messages'])).toBe(true);
     const src = fs.readFileSync(path.join(__dirname, '../i18n/ui/bizComp.js'), 'utf8');
-    expect(src).toContain('A customer asks for something you could offer or sends you a message, a request is about to expire, or a customer cancels one.');
-    expect(src).not.toContain('A customer asks for something you could offer, a request is about to expire');
+    expect(src.match(/      messages: \{\n        label: /g)).toHaveLength(11);
+    expect(src).toContain('A customer asks for something you could offer, a request is about to expire, or a customer cancels one.');
+    expect(src).not.toContain('or sends you a message, a request');
+  });
+  test('the migration adds the switch to the one store without changing anyone\'s saved choices', () => {
+    const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270428_business_message_alerts.sql'), 'utf8');
+    expect(sql).toMatch(/values \('business_message_received', 'owner_messages'\)/);
+    expect((sql.match(/'owner_requests', 'owner_messages', 'owner_offers'/g) || []).length).toBe(3);
+    expect(sql).not.toMatch(/update public\.profiles/);
   });
   test('the migration: customer messages only, no text/name/customer id in the payload, 5-minute window, never fails the message', () => {
     const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270428_business_message_alerts.sql'), 'utf8');

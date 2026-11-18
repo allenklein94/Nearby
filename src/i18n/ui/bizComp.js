@@ -148,7 +148,11 @@ export default {
     notifGroup: {
       requests: {
         label: "New requests",
-        detail: "A customer asks for something you could offer or sends you a message, a request is about to expire, or a customer cancels one.",
+        detail: "A customer asks for something you could offer, a request is about to expire, or a customer cancels one.",
+      },
+      messages: {
+        label: "Customer messages",
+        detail: "A customer sends you a message.",
       },
       offers: {
         label: "Your offers",
@@ -311,7 +315,11 @@ export default {
     notifGroup: {
       requests: {
         label: "Nuevas solicitudes",
-        detail: "Un cliente pide algo que podrías ofrecer o te envía un mensaje, una solicitud está por vencer o un cliente cancela una.",
+        detail: "Un cliente pide algo que podrías ofrecer, una solicitud está por vencer o un cliente cancela una.",
+      },
+      messages: {
+        label: "Mensajes de clientes",
+        detail: "Un cliente te envía un mensaje.",
       },
       offers: {
         label: "Tus ofertas",
@@ -474,7 +482,11 @@ export default {
     notifGroup: {
       requests: {
         label: "Neue Anfragen",
-        detail: "Ein Kunde fragt nach etwas, das du anbieten könntest, oder schreibt dir eine Nachricht, eine Anfrage läuft bald ab oder ein Kunde storniert eine.",
+        detail: "Ein Kunde fragt nach etwas, das du anbieten könntest, eine Anfrage läuft bald ab oder ein Kunde storniert eine.",
+      },
+      messages: {
+        label: "Kundennachrichten",
+        detail: "Ein Kunde schreibt dir eine Nachricht.",
       },
       offers: {
         label: "Deine Angebote",
@@ -637,7 +649,11 @@ export default {
     notifGroup: {
       requests: {
         label: "Nouvelles demandes",
-        detail: "Un client demande quelque chose que vous pourriez proposer ou vous envoie un message, une demande va bientôt expirer ou un client en annule une.",
+        detail: "Un client demande quelque chose que vous pourriez proposer, une demande va bientôt expirer ou un client en annule une.",
+      },
+      messages: {
+        label: "Messages de clients",
+        detail: "Un client vous envoie un message.",
       },
       offers: {
         label: "Vos offres",
@@ -800,7 +816,11 @@ export default {
     notifGroup: {
       requests: {
         label: "Novos pedidos",
-        detail: "Um cliente pede algo que você poderia oferecer ou te envia uma mensagem, um pedido está prestes a expirar ou um cliente cancela um.",
+        detail: "Um cliente pede algo que você poderia oferecer, um pedido está prestes a expirar ou um cliente cancela um.",
+      },
+      messages: {
+        label: "Mensagens de clientes",
+        detail: "Um cliente envia uma mensagem para você.",
       },
       offers: {
         label: "Suas ofertas",
@@ -963,7 +983,11 @@ export default {
     notifGroup: {
       requests: {
         label: "Nouvo demann",
-        detail: "Yon kliyan mande yon bagay ou ta ka ofri oswa voye yon mesaj ba ou, yon demann pral ekspire, oswa yon kliyan anile youn.",
+        detail: "Yon kliyan mande yon bagay ou ta ka ofri, yon demann pral ekspire, oswa yon kliyan anile youn.",
+      },
+      messages: {
+        label: "Mesaj kliyan",
+        detail: "Yon kliyan voye yon mesaj ba ou.",
       },
       offers: {
         label: "Òf ou yo",
@@ -1126,7 +1150,11 @@ export default {
     notifGroup: {
       requests: {
         label: "新请求",
-        detail: "顾客请求了你可以提供的东西或给你发了消息、某个请求即将过期，或顾客取消了请求。",
+        detail: "顾客请求了你可以提供的东西、某个请求即将过期，或顾客取消了请求。",
+      },
+      messages: {
+        label: "顾客消息",
+        detail: "有顾客给你发送了消息。",
       },
       offers: {
         label: "你的优惠",
@@ -1289,7 +1317,11 @@ export default {
     notifGroup: {
       requests: {
         label: "Yêu cầu mới",
-        detail: "Khách hỏi điều bạn có thể đáp ứng hoặc gửi tin nhắn cho bạn, một yêu cầu sắp hết hạn, hoặc khách hủy một yêu cầu.",
+        detail: "Khách hỏi điều bạn có thể đáp ứng, một yêu cầu sắp hết hạn, hoặc khách hủy một yêu cầu.",
+      },
+      messages: {
+        label: "Tin nhắn của khách hàng",
+        detail: "Một khách hàng gửi tin nhắn cho bạn.",
       },
       offers: {
         label: "Ưu đãi của bạn",
@@ -1452,7 +1484,11 @@ export default {
     notifGroup: {
       requests: {
         label: "Mga bagong request",
-        detail: "May customer na humihingi ng puwede mong ialok o nagpadala sa iyo ng mensahe, may request na malapit nang mag-expire, o may customer na nagkansela.",
+        detail: "May customer na humihingi ng puwede mong ialok, may request na malapit nang mag-expire, o may customer na nagkansela.",
+      },
+      messages: {
+        label: "Mga mensahe ng customer",
+        detail: "May customer na nagpadala sa iyo ng mensahe.",
       },
       offers: {
         label: "Mga alok mo",
@@ -1615,7 +1651,11 @@ export default {
     notifGroup: {
       requests: {
         label: "Новые заявки",
-        detail: "Клиент просит то, что вы могли бы предложить, или пишет вам сообщение, срок заявки скоро истекает, или клиент отменяет заявку.",
+        detail: "Клиент просит то, что вы могли бы предложить, срок заявки скоро истекает, или клиент отменяет заявку.",
+      },
+      messages: {
+        label: "Сообщения клиентов",
+        detail: "Клиент отправил вам сообщение.",
       },
       offers: {
         label: "Ваши предложения",
@@ -1778,7 +1818,11 @@ export default {
     notifGroup: {
       requests: {
         label: "새 요청",
-        detail: "고객이 내가 제공할 수 있는 것을 요청하거나 메시지를 보내거나, 요청이 곧 만료되거나, 고객이 요청을 취소할 때.",
+        detail: "고객이 내가 제공할 수 있는 것을 요청하거나, 요청이 곧 만료되거나, 고객이 요청을 취소할 때.",
+      },
+      messages: {
+        label: "고객 메시지",
+        detail: "고객이 메시지를 보냈습니다.",
       },
       offers: {
         label: "내 혜택",

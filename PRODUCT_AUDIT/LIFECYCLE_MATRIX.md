@@ -131,7 +131,7 @@ The business's view of the same offer row: Allowed actions and Animation are tha
 | Push type | Opens | Priority | Mute group |
 |---|---|---|---|
 | aggregated_demand_growing | BusinessDashboard | low | owner_demand |
-| business_message_received | BusinessDashboard | high | owner_requests |
+| business_message_received | BusinessDashboard | high | owner_messages |
 | business_offer_accepted | BusinessDashboard | high | owner_offers |
 | business_offer_review_result | BusinessDashboard | medium | owner_offers |
 | business_opportunities_digest | BusinessDashboard | low | owner_requests |
