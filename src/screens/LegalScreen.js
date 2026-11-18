@@ -3,9 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Linking, Scroll
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { PRIVACY_URL, TERMS_URL } from '../constants/webAddresses';
 
-const PRIVACY_URL = 'https://allenklein94.github.io/Nearby/privacy.html';
-const TERMS_URL = 'https://allenklein94.github.io/Nearby/terms.html';
 
 const OPEN_SOURCE_LIBRARIES = [
   { name: 'React Native', license: 'MIT' },

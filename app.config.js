@@ -9,7 +9,7 @@
 //
 // Only the docs/business regeneration step needs this, so it's opted in via
 // an env var that native builds never set:
-//   NEARBY_WEB_EXPORT_BASE_URL=/Nearby/business npx expo export -p web
+//   NEARBY_WEB_EXPORT_BASE_URL=/business npx expo export -p web
 //
 // Google Maps key (2026-11-15): app.json holds the placeholder "$GOOGLE_MAPS_API_KEY" in three places (iOS + Android native
 // map config, extra.googleMapsApiKey for src/services/places.js). Expo never expands variables inside app.json, so every build

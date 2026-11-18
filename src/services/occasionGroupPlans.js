@@ -10,6 +10,7 @@
 // on a lifecycle table" convention this schema always uses.
 import { supabase } from './supabase';
 import { notFoundError } from '../utils/notFound';
+import { SITE_BASE } from '../constants/webAddresses';
 
 export async function createOccasionGroupPlan({
   occasionType,
@@ -252,7 +253,7 @@ export async function inviteGuestToOccasionGroupPlan(planId, guestName) {
   return data;
 }
 
-const GITHUB_PAGES_BASE = 'https://allenklein94.github.io/Nearby';
+const GITHUB_PAGES_BASE = SITE_BASE;
 
 export function occasionGroupPlanGuestInviteShareUrl(guestToken) {
   return `${GITHUB_PAGES_BASE}/occasion-invite.html?t=${guestToken}`;

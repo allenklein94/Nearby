@@ -63,7 +63,7 @@ serve(async (req) => {
     // there is no open redirect): only the business web app URL, overridable by the BUSINESS_WEB_URL secret.
     let isWeb = false;
     try { isWeb = (await req.clone().json())?.platform === 'web'; } catch (_e) { /* no body = native */ }
-    const webBase = (Deno.env.get('BUSINESS_WEB_URL') || 'https://allenklein94.github.io/Nearby/business/').replace(/\/?$/, '/');
+    const webBase = (Deno.env.get('BUSINESS_WEB_URL') || 'https://thisisnearby.com/business/').replace(/\/?$/, '/');
 
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {

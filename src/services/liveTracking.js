@@ -1,6 +1,7 @@
 import { supabase } from './supabase';
+import { SITE_BASE } from '../constants/webAddresses';
 
-const GITHUB_PAGES_BASE = 'https://allenklein94.github.io/Nearby';
+const GITHUB_PAGES_BASE = SITE_BASE;
 
 // A time-limited, revocable live location share for a specific date
 // or meetup — genuinely different from Crossed Paths' coarse,

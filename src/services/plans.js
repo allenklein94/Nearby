@@ -3,6 +3,7 @@ import { multiObjectParent } from '../utils/planDestination';
 import { stopDatePrefill } from '../utils/nightDate';
 import { tr } from '../i18n/translate';
 import { experienceStopDestination } from '../utils/primaryAction';
+import { SITE_BASE } from '../constants/webAddresses';
 
 // Item 52 ("Build a universal Plan object", CLAUDE.md) -- the first real
 // client consumer of the `plans` table (Phase G,
@@ -311,7 +312,7 @@ export async function removeExperienceStop(stopId) {
 // ---- Sharing a night (view-only; migration 20270132) ----
 // Owner: share with a friend/match (server refuses anyone not already connected), or make a named, expiring, revocable
 // guest link for someone not on Nearby. Viewers and guests can only READ a narrow projection of the night.
-const SHARE_PAGES_BASE = 'https://allenklein94.github.io/Nearby';
+const SHARE_PAGES_BASE = SITE_BASE;
 export function sharedNightGuestUrl(guestToken) {
   return `${SHARE_PAGES_BASE}/shared-night.html?t=${guestToken}`;
 }

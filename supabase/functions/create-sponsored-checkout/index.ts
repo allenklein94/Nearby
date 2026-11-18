@@ -102,7 +102,7 @@ serve(async (req) => {
     }
     const purchase = Array.isArray(begun) ? begun[0] : begun;
 
-    const webBase = (Deno.env.get('BUSINESS_WEB_URL') || 'https://allenklein94.github.io/Nearby/business/').replace(/\/?$/, '/');
+    const webBase = (Deno.env.get('BUSINESS_WEB_URL') || 'https://thisisnearby.com/business/').replace(/\/?$/, '/');
     const params = {
       mode: 'payment',
       client_reference_id: purchase.payment_id,

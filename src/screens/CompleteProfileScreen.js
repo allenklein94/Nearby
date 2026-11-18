@@ -16,10 +16,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { QUICK_INTEREST_TAGS } from '../constants/onboardingInterests';
 import { categoryName } from '../i18n/categoryNames';
 import { typography, spacing, radius } from '../theme';
+import { PRIVACY_URL, TERMS_URL } from '../constants/webAddresses';
 
 const MIN_AGE = 18;
-const TERMS_URL = 'https://allenklein94.github.io/Nearby/terms.html';
-const PRIVACY_URL = 'https://allenklein94.github.io/Nearby/privacy.html';
 // Scoped per signed-in account (not a single global key) so a sign-out and
 // a different real account signing in on the same device never inherits a
 // stranger's typed name/birthdate/interests — the whole point of

@@ -23,6 +23,7 @@ import { cleanFeatures } from '../utils/gatheringPractical';
 import { cleanAgeRange } from '../utils/suitedAges';
 import { isValidCoordinate } from '../utils/planLogisticsActions';
 import { resetExperienceFeedbackCache } from './experienceFeedback';
+import { SITE_BASE } from '../constants/webAddresses';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -49,7 +50,7 @@ function wideArea(latitude, longitude) {
 // already installed) or "Get Nearby" for the full experience. Mirrors
 // liveTracking.js's own identical `${GITHUB_PAGES_BASE}/track.html?...`
 // pattern for the same reason ("the viewing link works for anyone").
-const GITHUB_PAGES_BASE = 'https://allenklein94.github.io/Nearby';
+const GITHUB_PAGES_BASE = SITE_BASE;
 export function gatheringInviteShareUrl(gatheringId) {
   return `${GITHUB_PAGES_BASE}/invite.html?g=${gatheringId}`;
 }
