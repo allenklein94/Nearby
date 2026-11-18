@@ -1,3 +1,18 @@
+## 2026-11-18: Customer messages alert the business (20270428), staged + verified on three trees
+
+Owner (Gap 1): a customer message to a business notified nobody. Built 2026-11-17 (e5a38ce5..ba05a3bf): trigger on
+`business_messages` (customer messages only) -> `_send_push` to the location's managers (memberships if present), skipping
+sender, customer, suspended and blocked-either-way accounts; one alert per conversation per 5 minutes via an atomic window
+claim; mute group owner_requests; send-push email fallback only (verified address, no app/dead token); content-free alert;
+exception-safe. Client: destination + `messageFocusPlan`, Reply action, high tier, web link `r=<message id>` (+ `b=` on
+multi-location). Journey `businessMessageAlerts` 12/12 (first message, mutes, suspension, blocks, payload, burst, other
+customer, business reply, other location, 5-minute re-alert, sender is owner, customer can't read windows/alerts, failing
+alert stores the message, queued payload opens the inbox); `scripts/replay/business-message-alert-concurrency.js`.
+Verification v457 + v457b (interrupted by a restart, finished 2026-11-18): first concurrency pass failed only because the
+replay DB had no fixtures (scripts pick existing actors), re-run seeded = all pass; bw Jest's lifecycleMatrix failure was
+fixed by ba05a3bf; worktree iOS exports fail on symlinked node_modules, so all three exported from the real checkout
+(deno.lock moved aside for the combined tree, restored). Results in CLAUDE.md's open-work line. NOT deployed, NOT merged.
+
 ## 2026-11-15: Business phone + website editable (20270423) + Business Profile authorization journey
 
 Owner reversed "defer" to "fix it now": persist phone + website from the application, editable by managers, private.
