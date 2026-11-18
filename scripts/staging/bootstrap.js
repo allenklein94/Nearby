@@ -81,6 +81,24 @@ begin
       perform cron.alter_job(r.jobid, command := replace(r.command, '${PRODUCTION_REF}', '${stagingRef}'));
     end loop;
   end if;
+  -- Column defaults naming production (20270391: private.story_media_settings.storage_url defaults to production's
+  -- Storage API, where its cleanup job sends DELETE requests).
+  for r in select n.nspname, c.relname, a.attname, pg_get_expr(d.adbin, d.adrelid) as expr
+             from pg_attrdef d join pg_class c on c.oid = d.adrelid join pg_namespace n on n.oid = c.relnamespace
+             join pg_attribute a on a.attrelid = d.adrelid and a.attnum = d.adnum
+            where n.nspname in ('public', 'private') and pg_get_expr(d.adbin, d.adrelid) like '%${PRODUCTION_REF}%' loop
+    execute format('alter table %I.%I alter column %I set default %s', r.nspname, r.relname, r.attname,
+                   replace(r.expr, '${PRODUCTION_REF}', '${stagingRef}'));
+  end loop;
+  -- Stored values naming production, ONLY in private configuration tables (private.*_settings: single rows written by
+  -- migrations, never by people). A production reference anywhere else is left for the audit to refuse.
+  for r in select n.nspname, c.relname, a.attname
+             from pg_attribute a join pg_class c on c.oid = a.attrelid join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname = 'private' and c.relkind = 'r' and c.relname like '%\\_settings' and a.attnum > 0
+              and not a.attisdropped and a.atttypid in ('text'::regtype, 'varchar'::regtype) loop
+    execute format('update %I.%I set %I = replace(%I, %L, %L) where %I like %L', r.nspname, r.relname, r.attname, r.attname,
+                   '${PRODUCTION_REF}', '${stagingRef}', r.attname, '%${PRODUCTION_REF}%');
+  end loop;
 end $repoint$;`;
 }
 
