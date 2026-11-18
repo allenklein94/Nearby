@@ -4,6 +4,26 @@ Branch `post-tier1/custom-domain` (from main f9f64988 = build 87 source). NOT me
 website cutover (GitHub Pages publishes main `/docs`; `docs/CNAME` sets the domain), so the merge needs
 its own approval and must carry a `/business` re-export of the business website in the same push.
 
+## Status (owner, night of 2026-11-17/18; public DNS + redirect re-checked from a session 2026-11-18)
+
+Cutover step 1 ("now") is COMPLETE. None of it changes the live site.
+
+| Item | State | Checked how |
+|---|---|---|
+| `thisisnearby.com` bought (Cloudflare, auto-renew) | done | owner |
+| GitHub domain verification (TXT `_github-pages-challenge-allenklein94`) | done | owner; TXT visible in public DNS |
+| Apex A x4 + AAAA x4 -> GitHub Pages | done | public DNS = the 8 GitHub addresses |
+| `www` CNAME -> allenklein94.github.io | done | public DNS |
+| `business` AAAA 100:: proxied + redirect rule (302, query kept) | done | `business.thisisnearby.com/?n=..&r=..&b=..` -> 302 `https://thisisnearby.com/business/?n=..&r=..&b=..` (dummy ids) |
+| support@ -> owner's inbox (Email Routing) | done | owner test; apex MX = Cloudflare, SPF `include:_spf.mx.cloudflare.net` |
+| DMARC `p=none; rua=mailto:support@thisisnearby.com` | done | public DNS |
+| Turnstile widget: + thisisnearby.com + www, github.io KEPT | done | owner (keys unchanged) |
+| Resend `mail.thisisnearby.com` verified; staging + prod keys (sending only, that domain) in Bitwarden | done | owner; DKIM + send.mail SPF/MX in public DNS; standalone send Delivered + received |
+| `https://thisisnearby.com` | 404 from GitHub, no certificate yet | expected until docs/CNAME is merged |
+| Privacy Policy / Terms contact = support@ | condition met (the address receives mail) | ships with the cutover merge |
+
+Still waiting for the cutover itself (after Tier 1, each its own approval): steps 2-5 below.
+
 ## Audit (2026-11-18)
 
 | Dependency | Today | Finding |
@@ -75,6 +95,37 @@ These sit under `mail.`, so they don't conflict with Email Routing on the apex.
    the same page + query on the new domain; business website signs in and Turnstile renders.
 4. Enforce HTTPS; set `BUSINESS_WEB_URL`; redeploy the two Stripe functions; update App Store Connect URLs.
 5. The next build after 87 carries the new app links + Turnstile host.
+
+## Final cutover checklist (run in this order, record each line PASS / FAIL with the time)
+
+Before (no live effect):
+- [ ] Branch rebased on the main approved for the website publish; `/business` re-export into `docs/business/` from the
+      source approved for the website publish (`NEARBY_WEB_EXPORT_BASE_URL=/business npx expo export -p web`); no
+      `/Nearby/` left in `docs/business/index.html`; Jest (incl. `webAddresses.test.js`) passes.
+- [ ] `docs/CNAME` = `thisisnearby.com` (one line).
+
+Cutover (= the approved merge to main):
+- [ ] Repo Settings > Pages shows `thisisnearby.com`, "DNS check successful".
+- [ ] Certificate issued (Pages shows it; can take up to ~1 h), then tick **Enforce HTTPS**.
+- [ ] `curl -sI https://thisisnearby.com/` = 200; `http://` -> 301 https; `https://www.thisisnearby.com/` -> apex.
+- [ ] Old addresses keep path + query: `https://allenklein94.github.io/Nearby/privacy.html`,
+      `.../Nearby/invite.html?g=<id>`, `.../Nearby/business/?n=x&r=<uuid>&b=<uuid>` -> same page + query on thisisnearby.com.
+- [ ] `https://business.thisisnearby.com/?n=x&r=<uuid>` -> `https://thisisnearby.com/business/?n=x&r=<uuid>` and the
+      page loads over HTTPS (it 302s today, but the destination has no certificate before the cutover).
+- [ ] Business website at `https://thisisnearby.com/business/`: assets load (no 404 in the console), phone sign-in
+      works, the Turnstile widget renders, Opportunities loads (the owner's signed-in pass).
+- [ ] privacy.html / terms.html show support@thisisnearby.com.
+
+After it passes:
+- [ ] Cloudflare redirect rule: 302 -> **301** (only after every line above passed; 301s are cached by browsers, so a
+      later change of destination is slow to take effect).
+- [ ] `BUSINESS_WEB_URL=https://thisisnearby.com/business/` on production (own approval, with the Resend secrets).
+- [ ] Redeploy `business-stripe-connect-onboarding` + `create-sponsored-checkout` (new fallback; own approval).
+- [ ] App Store Connect: Privacy Policy URL `https://thisisnearby.com/privacy.html`, Support URL (a page with a way to
+      reach support, e.g. `https://thisisnearby.com/` if it shows support@, else a contact page), Marketing URL optional.
+      Old URLs keep redirecting, so this has no deadline.
+- [ ] Keep `allenklein94.github.io` on the Turnstile widget while any build <= 87 is installed.
+- [ ] Later (not needed now): DMARC `p=none` -> `p=quarantine` after a few weeks of clean aggregate reports.
 
 Rollback: delete `docs/CNAME` on main (and restore the `/Nearby/business` export); GitHub serves the
 github.io address again.
