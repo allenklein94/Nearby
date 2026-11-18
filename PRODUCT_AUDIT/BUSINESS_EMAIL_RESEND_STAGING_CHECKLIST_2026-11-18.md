@@ -38,6 +38,30 @@ Set secrets yourself with the commands below.
 | `EMAIL_FROM` | `Nearby Staging <onboarding@resend.dev>` | e.g. `Nearby <alerts@your-domain>` (must be on the verified domain) |
 | `BUSINESS_WEB_URL` | the private staging website address, with a trailing `/` | `https://allenklein94.github.io/Nearby/business/` (trailing `/`) |
 
+### Which domain (2026-11-18)
+
+Nearby has no domain of its own today: the repo uses a Gmail address and `allenklein94.github.io`, and Resend can send
+from neither. So:
+
+1. **Buy one domain for Nearby** at any registrar (the name is your choice). Call it `<domain>` below.
+2. **Verify a sending subdomain, not the root:** `notify.<domain>`. That keeps alert email's reputation separate and
+   leaves the root free for a website and a support mailbox later. Sender: `Nearby <alerts@notify.<domain>>`.
+3. **Until then, staging needs no domain:** use `onboarding@resend.dev` and the Resend account's own address as the test inbox.
+
+Exact steps in Resend (owner):
+
+1. Resend > **Domains** > **Add domain** > `notify.<domain>`, region **us-east-1**.
+2. Resend shows the DNS records to add, typically an **MX** and a **TXT (SPF)** record on `send.notify.<domain>` and a
+   **TXT (DKIM)** record at `resend._domainkey.notify.<domain>`. Copy each one exactly as Resend shows it into the
+   registrar's DNS. Don't change any existing records on the root.
+3. If the root has no DMARC record yet, add a TXT at `_dmarc.<domain>`: `v=DMARC1; p=none;`.
+4. Click **Verify** and wait for "Verified" (usually minutes, up to 48 h).
+5. Resend > **API keys** > create one key per environment, permission **Sending access**, domain = `notify.<domain>`.
+   Keep it in a password manager. Set it yourself with `supabase secrets set` (table above), never in chat or Git.
+   The production key + secrets wait for their own approval.
+
+The alert email has no reply handling: it says to open Nearby, and the link does that.
+
 Edge functions read secrets when they run. After setting them, the code email in check E1 shows they're live.
 Check names only: `supabase secrets list --project-ref <ref>` (shows digests, never values).
 
