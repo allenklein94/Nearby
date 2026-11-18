@@ -93,6 +93,20 @@ describe('an accepted send is recorded for the receipt check', () => {
     expect(p.rpcs.find((r) => r.name === '_record_push_ticket').args).toMatchObject({ email_title_param: null, email_body_param: null, email_data_param: null });
     expect(a.emails).toHaveLength(0);
   });
+  it('a customer-message alert keeps its message (and location) id, so the later dead-device email opens that conversation', async () => {
+    const MID = '99999999-8888-4777-8666-555555555555';
+    const PID = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+    const MSG = { type: 'business_message_received', message_id: MID, partner_id: PID };
+    const a = load();
+    await a.push(MSG, { title: 'New message for Coastal Coffee', body: 'Open Nearby to read and reply.' });
+    const stored = a.rpcs.find((r) => r.name === '_record_push_ticket').args.email_data_param;
+    expect(stored).toEqual({ type: 'business_message_received', request_id: null, message_id: MID, partner_id: PID });
+    const t = load({ due: ['t-dead'], receipts: { 't-dead': { status: 'error', details: { error: 'DeviceNotRegistered' } } },
+      settle: () => ({ invalidated: true, recipient_id: 'owner-1', email: { title: 'New message for Coastal Coffee', body: 'Open Nearby to read and reply.', data: stored } }) });
+    await t.call({ action: 'check_receipts' });
+    expect(t.emails).toHaveLength(1);
+    expect(t.emails[0].text).toContain(`Open this conversation: https://example.com/Nearby/business/?n=business_message_received&r=${MID}`);
+  });
   it('before 20270421 is live the push still answers as before', async () => {
     const t = load({ installed: false });
     const { status, json } = await t.push(ALERT);

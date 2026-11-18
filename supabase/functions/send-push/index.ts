@@ -376,7 +376,13 @@ serve(async (req)=>{
         await admin.rpc('_record_push_ticket', {
           ticket_id_param: String(ticket.id), recipient_id_param: recipient_id, token_param: pushToken,
           email_title_param: isAlert ? title : null, email_body_param: isAlert ? (body ?? '') : null,
-          email_data_param: isAlert ? { type: data?.type, request_id: data?.request_id ?? null } : null,
+          // Only the ids the email link needs (request, or a customer-message alert's message, and the location on
+          // multi-location), never text or a customer: the later dead-device email links to the same object as the push.
+          email_data_param: isAlert ? {
+            type: data?.type, request_id: data?.request_id ?? null,
+            ...(typeof data?.message_id === 'string' ? { message_id: data.message_id } : {}),
+            ...(typeof data?.partner_id === 'string' ? { partner_id: data.partner_id } : {}),
+          } : null,
         });
       } else if (ticket?.status === 'error' && ticket.details?.error === DEAD_TOKEN_ERROR) {
         const { data: cleared } = await admin.rpc('_invalidate_push_token', { recipient_id_param: recipient_id, token_param: pushToken });
