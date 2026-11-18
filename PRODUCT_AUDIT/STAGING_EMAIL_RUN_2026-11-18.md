@@ -68,3 +68,11 @@ the URL digest is missing or differs).
   Noted, not changed: this tree lacks main's Maps-key fix (f9f64988); irrelevant to the staging website (web exports
   never carry the key) and no staging native build is in scope.
 - BLOCKED on owner step 1: `.claude/staging-access-token` does not exist, so no hosted staging change has been made.
+- 2026-11-18 staging access token (owner, `.claude/staging-access-token`, 600, gitignored, untracked, `sbp_` + 40 hex,
+  != the production token). Read-only scope check, nothing written anywhere: it is a FINE-GRAINED token. PRODUCTION: every
+  call refused 403 "Your account does not have the necessary privileges" (project metadata, secrets, functions,
+  database/query `select 1`). Staging: database/query `select 1` 201, secrets GET 200 (0), functions GET 200 (0);
+  refused: project metadata (missing `project_admin_read`), `config/auth` GET (missing `auth_config_read`); organization +
+  project listing 403. Consequence: the preflight reads `config/auth` and will refuse (fails closed) until the token has
+  `auth_config_read`. Write permissions (functions deploy, secrets set, Auth config) not tested (testing = writing).
+  STOPPED here for owner review; no preflight, migration or deploy run.
