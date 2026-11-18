@@ -105,7 +105,7 @@ describe('an accepted send is recorded for the receipt check', () => {
       settle: () => ({ invalidated: true, recipient_id: 'owner-1', email: { title: 'New message for Coastal Coffee', body: 'Open Nearby to read and reply.', data: stored } }) });
     await t.call({ action: 'check_receipts' });
     expect(t.emails).toHaveLength(1);
-    expect(t.emails[0].text).toContain(`Open this conversation: https://example.com/Nearby/business/?n=business_message_received&r=${MID}`);
+    expect(t.emails[0].text).toContain(`Open this conversation: https://example.com/Nearby/business/?n=business_message_received&r=${MID}&b=${PID}`);
   });
   it('before 20270421 is live the push still answers as before', async () => {
     const t = load({ installed: false });
