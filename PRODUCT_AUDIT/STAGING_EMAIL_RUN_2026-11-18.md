@@ -103,3 +103,19 @@ the URL digest is missing or differs).
   reads; E4-E8/E17-E21 also need staging website sign-in (phone code = Auth test OTP numbers, a staging Auth change not
   yet made) and DB->send-push delivery (vault `service_role_key` on staging, not yet set); E13-E15 need a staging phone
   build (SETUP-BLOCKED); E23 only after the custom-domain cutover (NOT TESTED). Nothing in production touched.
+- 2026-11-18 ~12:30-12:40 UTC (recorded after a codespace restart, from the logs; the headless link script lived in the
+  session scratchpad and was lost): non-secret email values set on staging (`EMAIL_FROM`, `EMAIL_REPLY_TO`,
+  `BUSINESS_WEB_URL`); preflight exit 0 with 3 custom secrets (preflight2.log). Extra synthetic accounts: owner W2
+  (`owner-w2.e-tests@staging.nearby.invalid`, second business), customers C + C2 (`customer-c*.e-tests@staging.nearby.invalid`);
+  5 business_messages rows, 0 requests. Headless browser on the private staging website, link landing only (no email sent):
+  run 1 (links1.log) 11/13: E21 (other owner W2 sees nothing from C), E6 (non-owner C2 sees nothing), E20 x5 (random uuid,
+  not a uuid, unknown type, no query, request type + random id: no page error, nothing shown), address-bar query removed,
+  only staging hosts contacted = PASS; E5 + E18 FAIL because W landed on Complete your profile (W's profile was incomplete:
+  a setup gap, not a product defect). Run 2 (links2.log) after that: E5 (`?n=business_message_received&r=&b=` opens W's
+  conversation with C, query removed, no page error, only staging hosts) + E18 approx (signed out at click -> after sign-in
+  lands on the conversation) PASS. Not yet a real email: the link was opened directly.
+- 2026-11-19 (session, after a codespace restart): owner step 2 DONE: staging secrets now `EMAIL_FROM`, `EMAIL_REPLY_TO`,
+  `BUSINESS_WEB_URL`, `RESEND_API_KEY` (names only read). Preflight with `NEARBY_STAGING_RESEND_KEY_CONFIRMED=1` +
+  `NEARBY_STAGING_EXPECTED_WEB_URL=<private address>`: exit 0, 4 custom secrets, URL digest matches (preflight3.log).
+  Website server restarted (port 8787, 200). Next: E1 (code email to an inbox the owner reads) -> E3 -> E4/E5/E9-E12/E16-E18/E22;
+  needs the owner to name the receiving address.
