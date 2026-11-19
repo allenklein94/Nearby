@@ -133,3 +133,14 @@ the URL digest is missing or differs).
   page error, only 127.0.0.1 + the staging host; as W2 = W2's own Opportunities, nothing from C (E6 PASS); signed out =
   Sign in screen (E18's after-sign-in leg passed 2026-11-18, links2.log). Owner still to confirm: sender, subject, one copy,
   no customer name / message text in the email.
+  **E7 PASS (server):** C's 3 messages 01:58:30 / 01:58:45 / 01:59:00 -> ONE outbox row (12, first message) -> emailed:true;
+  after the window a new message alerts again (row 13 below). Owner to confirm one email, not three.
+  **E10 message leg PASS (server):** W had `owner_requests` muted (left from 2026-11-18) during E5 + E7; messages still
+  emailed. Request leg needs E4 (routing needs a located business).
+  **E9 FAIL (Sev 3, staged 20270428, not deployed):** W muted `owner_messages` (`set_my_notification_group`); C2's message
+  01:59:42 -> no outbox row (correct); unmuted at once; C2's next message 01:59:51 -> NO alert, also at 02:01:51; only
+  02:04:55 (row 13, emailed:true) alerted. Cause (code): `private._alert_business_message` claims the conversation's
+  5-minute window (`business_message_alert_windows`, last_alerted_at = 01:59:42, the MUTED message) before `_send_push`
+  applies the mute, so a muted message suppresses the next 5 minutes of alerts after the switch goes back on. Same for a
+  conversation whose only recipients are suspended or blocked. Not fixed (owner decision): smallest fix = claim the window
+  only when at least one recipient will actually be sent the alert (mute/suspension/block checked before the claim).
