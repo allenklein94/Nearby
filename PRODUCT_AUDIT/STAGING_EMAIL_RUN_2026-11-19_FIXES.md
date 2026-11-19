@@ -50,3 +50,18 @@ Branch: `integ/staging-run` (never merged). Logs: /workspaces/.nearby-verify/v46
 - 20270429 and the link fix exist ONLY on `integ/staging-run`; before any production plan they must be carried to the source
   branches (business messages / business-web-only) with their own review. Number 20270429 may clash with another branch's
   next migration: re-number when carried.
+
+## Follow-up (2026-11-19 ~11:50 UTC)
+
+- **Token: still the old one.** `.claude/staging-access-token` unchanged since 10:13 UTC (same fingerprint as the token refused
+  `database_read`; 0600, gitignored, not the production token). 0429 + the E9 staging retest wait for a NEW staging-only token
+  (7 days, nearby-staging only: database read + write for the migration; secrets read + functions read + Auth config read so
+  the full preflight can run). Prepared, not run: scratchpad `after-token.sh` = new fingerprint + 0600 check -> production
+  refused on project / secrets / functions / Auth config / database query -> staging allows database query + the three
+  preflight reads -> preflight -> 0429 hash = c0e32938… -> `deploy.js --check` (rolled back) -> apply -> `e9-retest.sh`. Token
+  only in environment variables / a process-substitution header, never on a command line or in a log.
+- **E11, website half PASS** (headless, W, rebuilt private site): Profile > Settings shows five separate switches; "New
+  requests" and "Customer messages" are two different lines, both ON = the stored choices (W switched New requests on during
+  E4); 0 page errors, no token in console/URL, only 127.0.0.1 + the staging host. The personal "Messages" switch lives in the
+  app's Settings only (the website has no personal settings), so the app half (both lines on a phone) is SETUP-BLOCKED until a
+  staging phone build. Session revoked (logout 204, refresh 400) and shredded.
