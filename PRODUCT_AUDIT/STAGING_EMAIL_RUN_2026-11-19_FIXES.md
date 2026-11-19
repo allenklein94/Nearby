@@ -65,3 +65,24 @@ Branch: `integ/staging-run` (never merged). Logs: /workspaces/.nearby-verify/v46
   E4); 0 page errors, no token in console/URL, only 127.0.0.1 + the staging host. The personal "Messages" switch lives in the
   app's Settings only (the website has no personal settings), so the app half (both lines on a phone) is SETUP-BLOCKED until a
   staging phone build. Session revoked (logout 204, refresh 400) and shredded.
+
+## v4 token, 0429 on staging, E9 retest (2026-11-19 ~12:18-12:25 UTC)
+
+- **Token v4 isolation PASS** (new fingerprint, 0600, owner-only folder): production refused all five calls (project, secrets,
+  functions, Auth config, database query: 403); project listing refused (no `projects_read`); staging allowed all five (200 /
+  database query 201). Token sent only via a process-substitution header; the account-wide `SUPABASE_ACCESS_TOKEN` was unset
+  in every staging process.
+- **Preflight PASS** (exit 0, 4 secret names, URL digest matches, nothing names production; `stg/preflight4.log`).
+- **0429:** committed file sha256 c0e32938…b422 (commit 147a10bc), `deploy.js --target=staging --check` = CHECK OK (rolled back),
+  then applied: ledger row `deployed` 2026-11-19 12:21:36 UTC, approval ref = owner chat ~12:20 UTC, session 26305aa4.
+  `migration:status --target=staging` lists 20270429 recorded. Production untouched.
+- **E9 PASS on staging** (W = only member of business f570296c; customer C2; `stg/e9-retest.log` + database read-back):
+  W muted `owner_messages` -> M1 12:22:55 = no outbox row, no window claimed; unmuted -> M2 12:23:00 = ONE outbox row (15, W,
+  dedupe key `business_message:<M2>:<W>`), window = W at M2's time; M1 still no row after unmute (no replay); M3 12:23:04
+  (inside 5 min) = no row; no dedupe key used twice; W's mutes back to `[]` (all on). send-push answered row 15
+  `{"ok":true,"skipped":"no_token","emailed":true}`; the outbox row still shows `queued`, attempts 1 (as earlier rows).
+  Sessions revoked (logout 204 x2).
+- **E4 email hand-off:** send-push answer for net request 12 (request f4dc22cd) = `emailed:true`. Owner still confirms arrival
+  + contents in the inbox.
+- Expected owner inbox: ONE "customer message" email ~12:23 UTC for M2 (not for M1 or M3).
+- Staging fixture additions for cleanup: messages 667e3a56 / a5b36005 / edbcee81 (C2 -> W), outbox row 15, window row (W, C2).
