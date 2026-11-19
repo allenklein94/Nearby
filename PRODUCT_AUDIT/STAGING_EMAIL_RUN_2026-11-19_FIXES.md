@@ -86,3 +86,19 @@ Branch: `integ/staging-run` (never merged). Logs: /workspaces/.nearby-verify/v46
   + contents in the inbox.
 - Expected owner inbox: ONE "customer message" email ~12:23 UTC for M2 (not for M1 or M3).
 - Staging fixture additions for cleanup: messages 667e3a56 / a5b36005 / edbcee81 (C2 -> W), outbox row 15, window row (W, C2).
+
+## E9 email + link (2026-11-19 ~12:35-12:50 UTC)
+
+- Owner: the 12:23 customer-message email ARRIVED; its link returned HTTP 502. Cause: the private website server (port 8787)
+  was not running (nothing listening; the codespace process had stopped). Restarted the SAME export (`stg/web460`, the
+  Test 6 build, via `stg/site/business`), same address, bound to 127.0.0.1; no email link, secret, migration or production
+  setting changed. Local 200; the forwarded address now answers 302 to GitHub sign-in for a signed-out visitor (private
+  port working) instead of 502.
+- Headless link check (`stg/linkcheck-e9`), link shape = send-push's `?n=business_message_received&r=<M2>&b=<W's business>`:
+  W -> W's dashboard, conversation with Customer C2 open, M2's text shown, address bar back to `/business/`: PASS;
+  W2 (wrong owner) -> W2's own empty business, no C2 message: PASS; signed out -> sign-in screen, nothing shown: PASS.
+  0 page errors, no token in URLs or console, only 127.0.0.1 + the staging host. Sessions revoked (logout 204, refresh 400),
+  shredded.
+- Still the owner's step: click the emailed link in a real browser (GitHub sign-in, then staging sign-in as W). Website
+  sign-in by phone remains blocked on staging (phone provider off), so the real-browser journey needs W's session another way
+  or stays PENDING.
