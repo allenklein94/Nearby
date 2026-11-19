@@ -144,3 +144,21 @@ the URL digest is missing or differs).
   applies the mute, so a muted message suppresses the next 5 minutes of alerts after the switch goes back on. Same for a
   conversation whose only recipients are suspended or blocked. Not fixed (owner decision): smallest fix = claim the window
   only when at least one recipient will actually be sent the alert (mute/suspension/block checked before the claim).
+- 2026-11-19 ~10:00-10:40 UTC: **website sign-in investigation.** "Unsupported phone provider" = staging Auth
+  `external_phone_enabled` false (Auth v2.197.0 `otp.go` returns exactly that message when phone is off); staging has no SMS
+  provider credentials. Supabase's hosted docs require an SMS provider even for test OTP numbers; the owner declined
+  placeholder credentials and an SMS hook. Both staging tokens (v2 + v3) are refused `project_admin_write`, so Auth settings were
+  NOT changed (v3: production 403 on every endpoint tried; v3 also lacks secrets/functions read, so preflight can't run with it).
+  Owner W (`7bfdc2ed…`) now has phone 15615550110 confirmed (admin API, staging only; inert while phone sign-in is off).
+  GitHub port-forward sign-in 302 carries the full path + query (`rd=/business/?n=&r=&b=`).
+- **Option 2 (owner approved): automated headless sessions, no Auth change.** Playwright 1.47 container, fresh sessions for W / W2
+  / C2 in a 700 folder (600 files), injected inside the browser only, revoked after (global logout 204, refresh refused 400),
+  files shredded; every visited URL + console scanned: no token. Website at 127.0.0.1:8787 (same export). 10 cases, real email
+  links (messages 36d3dc6a = E5 email, a7ee1309 = E9 row 13 email): (1) W + C's link = conversation with C incl. that message,
+  query removed PASS; (2) W + C2's link = conversation with C2 PASS; (3) W2 (wrong owner) = own business, nothing of W's PASS;
+  (4) C2 (customer) = "not linked to an approved business" PASS; (5) W + random message id = W's own conversation list (own
+  data, no message opened) SAFE; (6) malformed id = W's dashboard, nothing opened, but the query stays in the address bar
+  (observation, Sev 3); (7) real id + other business's b = nothing opened PASS; (8) unknown type PASS; (9) unknown request id =
+  Opportunities + "This request isn't available anymore." PASS; (10) signed out = Sign in screen PASS. 0 page errors, only
+  127.0.0.1 + the staging host contacted. NOT VERIFIED: the real phone sign-in screen on staging (needs phone sign-in enabled),
+  the link surviving Nearby sign-in in a real browser (headless 2026-11-18 only), a real expired request (staging has 0).
