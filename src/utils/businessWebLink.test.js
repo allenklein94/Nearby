@@ -90,6 +90,19 @@ describe('kept across sign-in, opened once', () => {
     expect(takeBusinessWebLink(win)).toBeNull();
   });
 
+  test('a malformed or invalid link still leaves the address bar, nothing stored, other parameters kept (staging Test 6)', () => {
+    for (const q of ['?n=business_message_received&r=not-a-uuid', `?n=BAD TYPE&r=${RID}`, '?n=business_message_received',
+      `?r=${RID}`, '?b=zzz', `?n=business_message_received&r=${RID}&b=bad`]) {
+      const win = fakeWindow(`${q}&utm=x`);
+      expect(captureBusinessWebLink(win)).toBeNull();
+      expect(win.history.replaceState).toHaveBeenCalledWith(null, '', '/Nearby/business/?utm=x');
+      expect(takeBusinessWebLink(win)).toBeNull();
+    }
+    const plain = fakeWindow('?utm=x');
+    expect(captureBusinessWebLink(plain)).toBeNull();
+    expect(plain.history.replaceState).not.toHaveBeenCalled();
+  });
+
   test('blocked storage never throws (the dashboard still opens)', () => {
     const win = fakeWindow(`?n=business_opportunity_received&r=${RID}`);
     win.sessionStorage = { getItem: () => { throw new Error('denied'); }, setItem: () => { throw new Error('denied'); }, removeItem: () => { throw new Error('denied'); } };

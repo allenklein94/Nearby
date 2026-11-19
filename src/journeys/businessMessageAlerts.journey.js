@@ -27,7 +27,7 @@ const send = (who, partner, body) => `${as(who)}
 d('journey: a customer writes to a business -> its managers get one alert, opening that conversation', () => {
   let s;
   beforeAll(async () => {
-    const people = ['v_oa', 'v_om', 'v_os', 'v_omute', 'v_oreq', 'v_oblk', 'v_ob', 'v_c', 'v_c2', 'v_c3'];
+    const people = ['v_oa', 'v_om', 'v_os', 'v_omute', 'v_oreq', 'v_oblk', 'v_ob', 'v_c', 'v_c2', 'v_c3', 'v_c4'];
     const log = await runJourney(`${actorDeclares(people)} v_pa uuid := gen_random_uuid(); v_pb uuid := gen_random_uuid(); v_start bigint; v_n int; v_multi boolean;`, `
   ${actorsSql({ people, business: { owner: 'v_oa', partner: 'v_pa' } })}
   ${actorsSql({ people: [], business: { owner: 'v_ob', partner: 'v_pb', lat: 40.01 } })}
@@ -44,7 +44,7 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
   update profiles set notification_mutes = array['owner_messages'] where id = v_omute;
   update profiles set notification_mutes = array['owner_requests'] where id = v_oreq;
   insert into blocks (blocker_id, blocked_id) values (v_c3, v_oblk);
-  insert into business_followers (brand_partner_id, user_id) values (v_pa, v_c), (v_pa, v_c2), (v_pa, v_c3), (v_pb, v_c), (v_pa, v_oa);
+  insert into business_followers (brand_partner_id, user_id) values (v_pa, v_c), (v_pa, v_c2), (v_pa, v_c3), (v_pa, v_c4), (v_pb, v_c), (v_pa, v_oa);
   v_multi := to_regclass('private.business_memberships') is not null;
   if v_multi then
     -- OB acts for B but is also staff at A (the second-location gate is lifted only for this fixture, rolled back)
@@ -53,7 +53,7 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
     execute 'alter table private.business_memberships enable trigger gate_second_location';
   end if;
   perform set_config('app.trusted_update', 'false', true);
-  ${rec('meta', `jsonb_build_object('multi', v_multi, 'pa', v_pa, 'pb', v_pb, 'ids', jsonb_build_object('oa', v_oa, 'om', v_om, 'os', v_os, 'omute', v_omute, 'oreq', v_oreq, 'oblk', v_oblk, 'ob', v_ob, 'c', v_c, 'c2', v_c2, 'c3', v_c3))`)}
+  ${rec('meta', `jsonb_build_object('multi', v_multi, 'pa', v_pa, 'pb', v_pb, 'ids', jsonb_build_object('oa', v_oa, 'om', v_om, 'os', v_os, 'omute', v_omute, 'oreq', v_oreq, 'oblk', v_oblk, 'ob', v_ob, 'c', v_c, 'c2', v_c2, 'c3', v_c3, 'c4', v_c4))`)}
 
   -- 0. the Customer messages switch through the app's one writer: an owner turns it off and on; a customer can't touch it
   ${as('v_om')}
@@ -141,6 +141,29 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
   insert into business_messages (partner_id, sender_id, conversation_with_id, from_business, body) values (v_pa, v_c3, v_c3, false, 'hi');
   ${alertsSince('blocked')}
 
+  -- 8c. staging E9 (20270429): OM switches Customer messages off, C4 writes (OM: nothing, no window claimed), OM switches it
+  -- back on, C4 writes again AT ONCE: OM is alerted for the new message only (no replay of the muted one); the others, alerted
+  -- a moment ago, are not alerted twice; a third message right away alerts nobody
+  ${as('v_om')}
+  perform public.set_my_notification_group('owner_messages', false);
+  reset role;
+  ${mark}
+  ${send('v_c4', 'v_pa', 'Muted one')}
+  ${alertsSince('e9_muted')}
+  ${rec('e9_muted_window', `(select count(*) from private.business_message_alert_windows where partner_id = v_pa and customer_id = v_c4 and recipient_id = v_om)`)}
+  ${as('v_om')}
+  perform public.set_my_notification_group('owner_messages', true);
+  reset role;
+  ${mark}
+  ${send('v_c4', 'v_pa', 'After switching back on')}
+  ${alertsSince('e9_unmuted')}
+  ${rec('e9_unmuted_msg', `(select to_jsonb(id) from business_messages where partner_id = v_pa and conversation_with_id = v_c4 and body = 'After switching back on')`)}
+  ${mark}
+  ${send('v_c4', 'v_pa', 'Right after')}
+  ${alertsSince('e9_again')}
+  ${rec('e9_muted_ever', `(select count(*) from push_outbox o join business_messages m on m.id::text = o.data->>'message_id'
+     where m.body = 'Muted one' and m.conversation_with_id = v_c4 and o.recipient_id = v_om)`)}
+
   -- 9. a failing alert never refuses the message (the recipient helper is broken for this step only, rolled back)
   execute $f$create or replace function private._business_message_recipients(p_partner uuid) returns setof uuid
     language plpgsql security definer set search_path to 'public' as $b$ begin raise exception 'simulated alert failure'; end $b$;$f$;
@@ -209,6 +232,16 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
   test('the customer can\'t read the windows or any business alert', () => {
     expect(s.cust_windows.data).toBe('refused');
     expect([0, 'refused']).toContain(s.cust_outbox.data);
+  });
+  test('E9: a muted message claims nothing; switched back on = the next message alerts at once, the muted one never', () => {
+    const { om, oa } = ids();
+    expect(to('e9_muted')).not.toContain(om);
+    expect(to('e9_muted')).toContain(oa);
+    expect(s.e9_muted_window.data).toBe(0);
+    expect(to('e9_unmuted')).toEqual([om]);
+    expect(s.e9_unmuted.data[0].data.message_id).toBe(s.e9_unmuted_msg.data);
+    expect(s.e9_again.data).toEqual([]);
+    expect(s.e9_muted_ever.data).toBe(0);
   });
   test('a failing alert: the message is stored, no alert, the window not claimed', () => {
     expect(s.failure_alerts.data).toEqual([]);

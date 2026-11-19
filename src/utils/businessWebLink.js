@@ -46,18 +46,27 @@ export function businessWebLinkUrl(baseUrl, type, requestId, businessId) {
   return `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}n=${encodeURIComponent(type)}${r ? `&r=${r}` : ''}${b ? `&b=${b}` : ''}`;
 }
 
-// At website start: keep the link for after sign-in and take it out of the address bar. Never throws.
-export function captureBusinessWebLink(win = typeof window !== 'undefined' ? window : null) {
-  if (!win) return null;
-  const link = parseBusinessWebLink(win.location?.search);
-  if (!link) return null;
-  try { win.sessionStorage?.setItem(KEY, JSON.stringify(link)); } catch (_e) { /* private mode: the link is lost, the dashboard still opens */ }
+// The link's own parameters (n, r, b) leave the address bar whether or not they were valid (Test 6, staging 2026-11-19:
+// a malformed link opened the plain dashboard but left its query showing). Other parameters stay. Never throws.
+const LINK_PARAMS = ['n', 'r', 'b'];
+export function stripBusinessWebLinkParams(win) {
   try {
     const q = new URLSearchParams(win.location.search);
-    q.delete('n'); q.delete('r'); q.delete('b');
+    if (!LINK_PARAMS.some((k) => q.has(k))) return;
+    LINK_PARAMS.forEach((k) => q.delete(k));
     const rest = q.toString();
     win.history?.replaceState?.(null, '', `${win.location.pathname}${rest ? `?${rest}` : ''}${win.location.hash || ''}`);
   } catch (_e) { /* address bar keeps it; harmless */ }
+}
+
+// At website start: keep a valid link for after sign-in and take every link parameter out of the address bar. Never throws.
+export function captureBusinessWebLink(win = typeof window !== 'undefined' ? window : null) {
+  if (!win) return null;
+  const link = parseBusinessWebLink(win.location?.search);
+  if (link) {
+    try { win.sessionStorage?.setItem(KEY, JSON.stringify(link)); } catch (_e) { /* private mode: the link is lost, the dashboard still opens */ }
+  }
+  stripBusinessWebLinkParams(win);
   return link;
 }
 
