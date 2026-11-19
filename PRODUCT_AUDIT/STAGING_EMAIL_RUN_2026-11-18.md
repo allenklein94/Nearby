@@ -119,3 +119,17 @@ the URL digest is missing or differs).
   `NEARBY_STAGING_EXPECTED_WEB_URL=<private address>`: exit 0, 4 custom secrets, URL digest matches (preflight3.log).
   Website server restarted (port 8787, 200). Next: E1 (code email to an inbox the owner reads) -> E3 -> E4/E5/E9-E12/E16-E18/E22;
   needs the owner to name the receiving address.
+- 2026-11-19 real emails (owner approved: staging -> support@thisisnearby.com only, which forwards to the owner's Gmail).
+  Token for W via a staging-only password reset + password sign-in (helper /workspaces/.nearby-verify/stg/e-env.sh).
+  **E1 PASS:** `business-email` start 01:46:01 UTC -> code email received by the owner; confirm with the owner's code at
+  01:46:58 = `{ok:true}`, row verified_at 01:46:58, enabled, 0 attempts (under 1 min). Wrong / expired code messages NOT yet checked.
+  Delivery path: send-push is reached from the DB (vault `service_role_key` present); the 4 rows from 2026-11-18 answered
+  `skipped:no_token, emailed:false` (address unverified then = correct). Observation, not judged yet: every outbox row stays
+  `status=queued` after a 200 from send-push.
+  **E5 / E12 (server + link):** C's message 36d3dc6a (01:47:50) -> outbox 9 -> send-push `skipped:no_token, emailed:true`;
+  the owner received it and pasted the email's link = `<BUSINESS_WEB_URL>?n=business_message_received&r=36d3dc6a-…&b=f570296c-…`
+  (exact message + business). Headless (playwright 1.47, /workspaces/.nearby-verify/stg/linkcheck/link.py, signed in by
+  session injection): as W it opens the conversation with C (all of C's messages incl. the new one), query removed, no
+  page error, only 127.0.0.1 + the staging host; as W2 = W2's own Opportunities, nothing from C (E6 PASS); signed out =
+  Sign in screen (E18's after-sign-in leg passed 2026-11-18, links2.log). Owner still to confirm: sender, subject, one copy,
+  no customer name / message text in the email.
