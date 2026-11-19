@@ -172,7 +172,7 @@ d('journey: a customer writes to a business -> its managers get one alert, openi
   ${send('v_c2', 'v_pa', 'Still there?')}
   ${alertsSince('failure_alerts')}
   ${rec('failure_stored', `(select count(*) from business_messages where partner_id = v_pa and conversation_with_id = v_c2 and body = 'Still there?')`)}
-  ${rec('failure_window', `(select to_jsonb(last_alerted_at < now() - interval '30 minutes') from private.business_message_alert_windows where partner_id = v_pa and customer_id = v_c2)`)}
+  ${rec('failure_window', `(select to_jsonb(bool_and(last_alerted_at < now() - interval '30 minutes')) from private.business_message_alert_windows where partner_id = v_pa and customer_id = v_c2)`)}
 `);
     s = stepMap(log);
   }, 120000);
