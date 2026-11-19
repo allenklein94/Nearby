@@ -511,6 +511,11 @@ const STEPS = {
       'full Resend + staging checklist: PRODUCT_AUDIT/BUSINESS_EMAIL_RESEND_STAGING_CHECKLIST_2026-11-18.md',
       'second message within 5 minutes: no new push/email; after 5 minutes: one again',
       'cleanup by recorded ids (messages, followers, outbox rows, test accounts); rollback = scripts/rollback/20270428 (drops trigger + windows table, messages untouched)'] },
+  20270429: { journeys: ['businessMessageAlerts'],
+    manual: ['order: right after 20270428 (same tree); no edge function or build change',
+      'read-only: private.business_message_alert_windows has recipient_id in its primary key, no anon/authenticated grant',
+      'real API (staging E9): a manager turns Customer messages OFF -> a customer message makes no push_outbox row for them and no window row; turned back ON -> the customer\'s NEXT message alerts them at once (one row, that message), the muted message never; a third message within 5 minutes alerts nobody; other managers keep their own 5-minute windows',
+      'rollback: scripts/rollback/20270429 restores the 20270428 window + function (the E9 defect returns); windows hold timestamps only'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.
