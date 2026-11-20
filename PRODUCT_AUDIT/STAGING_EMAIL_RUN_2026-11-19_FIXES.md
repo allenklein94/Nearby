@@ -148,3 +148,31 @@ Branch: `integ/staging-run` (never merged). Logs: /workspaces/.nearby-verify/v46
 - PENDING on phone sign-in / a staging phone build: real-browser sign-in + conversation journey, app half of E11, E13-E15.
 - E23: after the custom-domain cutover.
 - Not done: merge, production, website publish, Build 87, Auth/SMS changes.
+
+## Owner confirmation + E1 plan + cleanup plan (2026-11-20)
+
+- **Owner confirmed (chat, 2026-11-20): both test emails arrived and their links match.** E4 (request alert, request
+  f4dc22cd, ~11:35 UTC 2026-11-19) and E8 (customer message to Location 2, message 222fea1d, ~01:00 UTC 2026-11-20, link
+  `&b=e8000000…`) = **PASS end to end through the email** (link landing checked headless; real-browser sign-in still pending).
+- **E3 + E22: owner's checks**, nothing left to run from here (Resend "Delivered" + SPF/DKIM in the headers; the raw email
+  source carries no customer name, message text or customer id).
+- **E16 DEFERRED (owner):** no swap of the working Resend key; to be scheduled as a controlled provider-failure test.
+- **E1 wrong/expired code: needs one owner step, not started.** Code facts (`business-email`): sending a new code sets
+  `verified_at = null` at once, so W's email alerts stop until the newest code is entered; codes last 30 min, 60 s between
+  sends, 5 wrong tries max. Plan: (1) owner says go; (2) I send code #1 to the same address (support@, forwards to the owner);
+  (3) wrong code -> expect `wrong_code` / "That code doesn't match. Check it and try again." (attempts 1); (4) staging SQL moves
+  code #1's expiry into the past -> any code -> `code_expired` / "That code has expired. Send a new one." (no 30-min wait);
+  (5) after 60 s I send code #2; (6) **owner pastes code #2 from the NEWEST email** (staging code, fine in chat) within 30 min;
+  (7) confirm -> verified again, attempts 0. If step 6 doesn't happen, W stays unverified and no alert email goes out until
+  it does. Optional: 5 wrong tries -> `too_many_attempts`, done before step 5.
+- **Staging inventory (read-only, 2026-11-20):** only E-test data exists: 4 test accounts (W, W2, C, C2), 3 test businesses
+  (W, W2, L2), 3 memberships, 1 email settings row (W), 3 followers, 17 business messages, 2 requests (+2 business rows,
+  2 plans, routing rows), 13 outbox rows, 2 alert windows, 18 location-aware session records (0 live sessions), 0 gatherings;
+  the rest = seed/reference tables + 11 weather_requests (weather job, separate issue).
+- **Cleanup prepared, NOT applied:** `scripts/staging/cleanup-e-tests.sql` (refuses unless every account is an
+  `.e-tests@staging.nearby.invalid` address and every business a "Staging Test Business … (not real)"; ends in ROLLBACK).
+  Stage A (finished, not reused: the 2 requests + cascades, the test outbox rows, the 18 stale session records) dry-run on
+  staging: all go to 0, businesses/messages/email row/accounts untouched; live counts unchanged after (rolled back).
+  Stage B (kept for now, commented out): L2 + its membership/follower/message (keep to repeat E8 in a real browser once phone
+  sign-in works, or move to A if not wanted), W/W2 businesses + messages, W's email settings row (E1 needs it), the 4 accounts
+  (Auth admin API), and the staging Resend key (owner). Applying either stage = owner approval.
