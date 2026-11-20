@@ -20,7 +20,11 @@ the 60 s wait.
 | 01:09:21 | start #2 | 200 `{ok:true}`; attempts back to 0, new code live, still unverified |
 
 Server answers only; the on-screen wording comes from `businessEmailReasonCopy` (not checked in a browser this run).
-Pending: the owner reads code #2 from the newest email; confirm -> verified + enabled.
+| 01:12:07 | owner pasted code #2 from the newest email; confirm | 200 `{ok:true}`: verified_at 01:12:07, enabled true, attempts 0, code cleared; W's mutes empty (all alerts on) |
+
+**E1 PASS (server).** W's address (support@, thisisnearby.com) is verified again and email alerts are enabled. Session
+revoked (logout 204, refresh 400), file shredded; W has 0 live sessions. Alerts were paused 01:08:12-01:12:07 (no test
+alerts sent in that window).
 
 ## Stage A cleanup (committed 2026-11-20 ~01:11 UTC)
 
