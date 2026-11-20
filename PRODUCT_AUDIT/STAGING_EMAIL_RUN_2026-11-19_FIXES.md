@@ -102,3 +102,49 @@ Branch: `integ/staging-run` (never merged). Logs: /workspaces/.nearby-verify/v46
 - Still the owner's step: click the emailed link in a real browser (GitHub sign-in, then staging sign-in as W). Website
   sign-in by phone remains blocked on staging (phone provider off), so the real-browser journey needs W's session another way
   or stays PENDING.
+
+## Real-browser click + remaining non-phone checks (2026-11-20 ~00:55-01:05 UTC)
+
+- **Owner, real browser (after the 502 fix):** clicking the emailed link loaded the staging business sign-in screen (the
+  private website + GitHub port sign-in carried the link through). Submitting the phone number returned "Unsupported phone
+  provider" (staging Auth has phone sign-in off; no SMS provider). Recorded: **real-browser email-link navigation PASS up to
+  the sign-in screen; real-browser authentication and the full open-the-conversation journey remain UNVERIFIED** (the
+  headless runs with an injected session passed that leg, which is not the same). Owner decision: no placeholder SMS
+  credentials; phone-dependent checks stay PENDING.
+- Website server found stopped again at ~00:56 UTC (the codespace process ends on restarts); restarted the SAME export
+  (`stg/web460`) on 127.0.0.1:8787 (`stg/http-e19.log`). Nothing else changed.
+- **E19 PASS (expired request link):** request f4dc22cd (C -> W, staging test) moved past its deadline (expires_at = now - 1 min)
+  and expired by the normal sweep `expire_stale_business_requests()` (request + W's row `expired`, 0 outbox rows). Headless,
+  real link shape `?n=business_opportunity_received&r=f4dc22cd…&b=<W>`: W lands on Opportunities, "FROM YOUR NOTIFICATION |
+  This request has expired. Nothing more to do." with that request's facts (Coffee · 2 people · Fri, Nov 20 · 10 AM) and no
+  offer action; address bar `/business/`; W2 (wrong owner) = own empty business; signed out = Sign in. 0 page errors, no token
+  in URLs/console, only 127.0.0.1 + the staging host. (The first run's FAIL was my expected wording, "isn't available anymore",
+  which is the unknown-id message; the expired wording is the correct state.)
+- **E8 PASS (multi-location, server + headless; email arrival = owner):** setup on staging: second location L2
+  e8000000-0000-4000-8000-0000000000e8 "Staging Test Business W, Location 2 (not real)" (copy of W's business row), W
+  membership L2 (owner). The 0427 gate held: adding L2 with no live location-aware W session was REFUSED
+  (`multi_location_not_ready`); allowed after a W session called `note_location_aware_session` (204). W's selection = L1.
+  C followed L2 (follower 9ce32ff2; the message policy requires it) and wrote message 222fea1d at 01:00:25 -> ONE outbox row
+  (17, W, `data.partner_id` = L2, dedupe `business_message:222fea1d…:W`) -> send-push `{"ok":true,"skipped":"no_token",
+  "emailed":true}` (net request 35). Headless link `?n=business_message_received&r=222fea1d…&b=<L2>`: W (L1 selected) lands on
+  "Staging Test Business W, Location 2 (not real) | Managing 2 locations", conversation with Customer C open showing that
+  message; server selection after = L2 (switched, server-checked). W2 (non-member) = own business, nothing of L2; C (customer)
+  = "not linked to an approved business". 0 page errors, no token leak, only staging hosts. Sessions W/W2/C revoked (logout
+  204, refresh 400) and shredded. **Owner to confirm**: ONE "customer message" email ~01:00 UTC whose link ends `&b=e8000000…`.
+- Observation (not part of these checks): staging's weather job calls OpenWeatherMap with an invalid key (401, net requests
+  31-34). Staging has no weather key; harmless noise, no action taken.
+- Cleanup additions (staging only): business L2 e8000000…, W's L2 membership, W's `location_aware_sessions` row, follower
+  9ce32ff2, message 222fea1d, outbox row 17; request f4dc22cd now `expired`; W's selected location left on L2 (switch-back
+  call used the wrong parameter name; W's sessions are all revoked, so nothing is affected until W signs in again).
+
+### Status after this run
+
+- Done without phone sign-in: E1 (code), E2, E4 (server + link), E5, E6, E7, E8, E9, E10, E11 (website half), E12, E18
+  (headless), E19, E20, E21, Test 6.
+- Owner (inbox / Resend): confirm the E4 and E8 emails; E3 (Resend "Delivered" + SPF/DKIM headers); E22 (no customer data in
+  the email source); E1 wrong + expired code (needs a new code read from the inbox; a new code un-verifies W's address until
+  entered); E16 (needs the staging Resend key changed and then restored by the owner; my token can't write secrets and I don't
+  hold the key).
+- PENDING on phone sign-in / a staging phone build: real-browser sign-in + conversation journey, app half of E11, E13-E15.
+- E23: after the custom-domain cutover.
+- Not done: merge, production, website publish, Build 87, Auth/SMS changes.
