@@ -84,3 +84,55 @@ Worktree `/workspaces/.nearby-verify/wt-visit`; logs `/workspaces/.nearby-verify
   businesses, no automatic-reply policy yet.
 - Found: builds <= 87 still SHOW "✓ Visit confirmed" for the customer's own tap and "Redeemed" on the old business app card
   (old screens read status); server figures correct. Release the new client before 0430 reaches production.
+
+## Staging run (2026-11-21 ~20:20-20:50 UTC; owner approved P1 + P2 config + P3 in chat; staging only; logs `/workspaces/.nearby-verify/vc-staging`)
+
+**P1 DONE: 0430 -> 0431 -> 0432 deployed to staging** through `deploy.js --target=staging`, each `--check` (rolled back) first,
+then applied; ledger rows 20:24:56 / 20:25:17 / 20:25:21 UTC, approval ref "owner, 2026-11-21, chat", session ec52ce79. V0 re-run
+right before: identical. **V1 PASS:** fingerprint after = `visit-confirmation-fingerprints-with.txt` (21 lines, identical);
+ledger 85 -> 88 rows (only the three); `complete_business_reservation(offer_id_param uuid)` still one overload.
+(`status.js` also lists 20270345 NOT RECORDED: the ledger's own migration, applied by staging bootstrap before the ledger
+existed; unchanged, unrelated.)
+
+**Journeys on staging (rolled back, staging-only token as SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF=staging):**
+`visitConfirmation` + `plansThisMonth` + `planHistory` 23/23. Full suite 1535/1572; the 37 failures are environment, not
+0430-0432: 33 in `heldAccountEvidence`, `deletionHardening`, `idDocumentRetention` stop at setup because hosted Supabase's
+`storage.protect_delete` trigger refuses direct `delete from storage.objects` (the local replay has no such trigger); 1 in
+`offerEvidence` expects exactly 3 rows in `private.offer_evidence_purge_log` but staging already holds 3 real daily-cron rows
+(2026-11-19/20/21, 0 purged each), so it reads 6. Test-isolation fixes for hosted runs = separate, not done.
+
+**Real-API run (PostgREST + Auth on staging, real JWTs of the labelled fixtures C = customer, W = owner of W + W Location 2,
+W2 = another business; sessions via staging admin password set + password grant, files 0600 in a 0700 scratchpad; W sends
+`x-nearby-business` = its selection, as current clients do).** Setup: W selected location 1 (L1); auto-accept policy (party
+1-10) on L1 and L2 via `upsert_business_fulfillment_policy` (without the header: refused `location_aware_client_required`,
+0427 working). Bookings = C's broadcast request -> L1/L2 automatic reply -> C's `accept_business_offer` (real path, no SQL
+writes): X, Y, Z, N (today, visit times 20:44-20:48 UTC; C's zone = UTC), T (tomorrow), M (accepted from L2), R1 + R2 (race).
+A targeted request gets no automatic reply (by design: `create_business_request` returns after routing to that business).
+
+| # | Result |
+|---|---|
+| V2 | PASS: T customer + business both refused "You can mark this as completed on the day of the visit." |
+| V3 | PASS (API half): X customer -> `{success, personal}`; observe: completed, mark t, conf f, events 0, plan completed |
+| V4 | PASS: repeat -> `alreadyCompleted`; `customer_done_at` stayed 20:31:08.131 after two repeats |
+| V5 | PASS (API half): value / funnel / performance / reputation redemptions all 0; X still in `get_business_opportunities` (status completed, `visit_confirmed_at` null, no `customer_done_at` key: the personal mark is not shown to the business) |
+| V6 | PASS (API half): W confirms X -> `{confirmed}`; events 1; value 1 redemption ($0, 1 unpriced: automatic replies carry no price), funnel 1, performance 1, reputation 1 (20%) |
+| V7 | PASS: confirm again -> `alreadyCompleted`, `visit_confirmed_at` unchanged (20:31:36.935), events 1; customer repeat after confirm also `alreadyCompleted` |
+| V8 | PASS: Y confirm, then no-show refused "Only a confirmed visit that was not completed can be marked as a no-show." |
+| V13 | PASS: W (selection L1) confirms M (L2) -> "You are not part of this reservation."; header L2 with selection L1 -> `business_selection_changed`; nothing changed |
+| other | PASS: W2 confirm X -> "You are not part of this reservation.", W2 no-show X -> "This visit is not one of yours."; no-show on N before its time -> "You can mark a no-show once the visit time has passed." |
+| push | PASS: no outbox row for a mark or a confirmation (types queued in the run: opportunity, offer accepted, reservation confirmed only; all `queued`, fixtures have no push tokens) |
+
+**Continued 2026-11-21 21:15-21:17 UTC (after a codespace restart; log `vc-staging/api-v9-v11c.log`).** The first V9/V10 tries
+(Z, N at 20:46) were NOT the intended tests: the no-show calls came before the visit time and were refused ("You can mark a
+no-show once the visit time has passed."), and Z was then simply confirmed. Redone on Z2 / N2 / R3 (visits 20:55 / 20:58 /
+20:59 UTC, all passed; N2 + R3 requested by fixture C2 because C hit the request rate limit):
+
+| # | Result |
+|---|---|
+| V9 | PASS: Z2 customer-marked 20:47:23 -> W "Didn't show up" `{marked: true}` -> W confirm refused "This reservation is not in a state that can be completed."; C repeat mark `alreadyCompleted, personal`; observe: mark t, conf f, no-show t, events 0 |
+| V10 (API half) | PASS: N2 W no-show first `{marked: true}`; C2 (the requester) mark refused "This reservation is not in a state that can be completed."; no-show repeat `{marked: false, already: true}`. (A first try as C, not the requester, got "You are not part of this reservation.": correct for a non-party, test-account mistake, not a defect.) What the APP shows = phone step |
+| V11 | PASS: R1 confirm vs no-show at once (no-show not yet eligible) = confirm only; R2 two confirms = one event; R3 confirm vs no-show at once, BOTH eligible = no-show won, confirm refused, C2's later mark refused; no booking anywhere has both a confirmation and a no-show |
+| observe | W: status_completed 7, confirmed_visits 5, customer_marked_only 2 (N, Z2); L2 + W2 all 0 |
+
+Observation (not 0430's change, recorded for the owner): after a no-show the offer stays `accepted`, the reservation
+`confirmed` and the customer's plan `confirmed` (N2, R3); the customer can't read no-shows, so their plan still reads booked.
