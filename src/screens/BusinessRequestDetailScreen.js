@@ -16,7 +16,7 @@ import { getRespondingBusinesses, subscribeToRespondingChanges, nextRespondingCh
 import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
 import { progressKey, visitConfirmationsToAnimate, offerStage } from '../utils/offerProgress';
-import { canMarkDone, isVisitConfirmed } from '../utils/visitConfirmation';
+import { canMarkDone, isVisitConfirmed, isMarkDoneRefusal } from '../utils/visitConfirmation';
 import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgressShown';
 import { acceptedWhenLine, bookedPartySize } from '../utils/acceptedBooking';
 import { offerToPlanMergeNow, planMergeScroll, planTogetherYieldsToMerge, mergeTravelPath } from '../utils/offerToPlanMerge';
@@ -933,7 +933,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       await load();
       setOutcomeModalOfferId(offerId);
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleComplete(offerId) });
+      // V10: one neutral line (never reveals a business's private no-show record), no Try Again; then re-read the real state.
+      if (isMarkDoneRefusal(e)) {
+        Alert.alert(t('ui.shared.errors.didntGoThrough'), t('ui.requestDetail.cantMarkDone'));
+        load();
+      } else {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleComplete(offerId) });
+      }
     }
     setActingOfferId(null);
   }

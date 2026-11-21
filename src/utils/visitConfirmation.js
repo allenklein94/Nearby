@@ -49,3 +49,12 @@ export function canReportNoShow(o, noShowIds = new Set()) {
 export function awaitsBusinessAnswer(o, noShowIds = new Set()) {
   return canReportNoShow(o, noShowIds);
 }
+
+// V10 (owner 2026-11-21): the server refuses a customer's "Mark as done" with this one fixed sentence in five states: a no-show the
+// business recorded, a reservation still confirming, a reservation that failed, no reservation row, or a reservation / offer that
+// changed since the screen loaded. The no-show is private to the business (2026-09-27, kept), so the customer gets ONE neutral line
+// in their language that is true in all five (ui.requestDetail.cantMarkDone), never the raw English sentence and never Try Again
+// (retrying can't help). Exact match only: every other error (day-of-visit rule, network, a non-party) keeps its own path.
+// Wording only: the server's authorization and booking behaviour are unchanged.
+export const MARK_DONE_REFUSED_SERVER_MESSAGE = 'This reservation is not in a state that can be completed.';
+export const isMarkDoneRefusal = (error) => String(error?.message ?? '').trim() === MARK_DONE_REFUSED_SERVER_MESSAGE;
