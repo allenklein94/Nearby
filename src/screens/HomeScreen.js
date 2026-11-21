@@ -1832,7 +1832,7 @@ export default function HomeScreen({ navigation }) {
               {!surprise.suggestion ? (
                 <>
                   <Text style={styles.intentResultsHeading}>{surpriseText(language, 'nothing')}</Text>
-                  <TouchableOpacity onPress={handleSurpriseDismiss}>
+                  <TouchableOpacity onPress={handleSurpriseDismiss} accessibilityRole="button">
                     <Text style={styles.intentResultsDismiss}>{surpriseText(language, 'trySomethingElse')}</Text>
                   </TouchableOpacity>
                 </>
@@ -1896,7 +1896,7 @@ export default function HomeScreen({ navigation }) {
                       <Text style={styles.surpriseShuffleButtonText}>{surpriseText(language, 'shuffle')}</Text>
                     </TouchableOpacity>
                   </View>
-                  <TouchableOpacity onPress={handleSurpriseDismiss}>
+                  <TouchableOpacity onPress={handleSurpriseDismiss} accessibilityRole="button">
                     <Text style={styles.intentResultsDismiss}>{surpriseText(language, 'trySomethingElse')}</Text>
                   </TouchableOpacity>
                 </>
@@ -2025,7 +2025,7 @@ export default function HomeScreen({ navigation }) {
                   <Text style={styles.intentResultsCreateNew}>{t('ui.home.askBusinesses')}</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={handleIntentResultsDismiss}>
+              <TouchableOpacity onPress={handleIntentResultsDismiss} accessibilityRole="button">
                 <Text style={styles.intentResultsDismiss}>{t('ui.home.trySomethingElse')}</Text>
               </TouchableOpacity>
             </View>
@@ -2050,7 +2050,7 @@ export default function HomeScreen({ navigation }) {
                   <Text style={styles.intentResultsCreateNew}>{t('ui.home.askBusinesses')}</Text>
                 </TouchableOpacity>
               )}
-              <TouchableOpacity onPress={handleIntentResultsDismiss}>
+              <TouchableOpacity onPress={handleIntentResultsDismiss} accessibilityRole="button">
                 <Text style={styles.intentResultsDismiss}>{t('ui.home.trySomethingElse')}</Text>
               </TouchableOpacity>
             </View>

@@ -328,7 +328,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
         {enabled && (
           <View style={styles.headerToggle}>
             <Text style={styles.headerToggleLabel}>{tr('ui.friends.on')}</Text>
-            <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} />
+            <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} accessibilityLabel={`${tr('ui.friends.friends')}: ${tr('ui.friends.on')}`} />
           </View>
         )}
       </View>

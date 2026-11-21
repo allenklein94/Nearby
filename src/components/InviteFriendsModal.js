@@ -181,7 +181,7 @@ export default function InviteFriendsModal({
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.lg }}>
+          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.lg }} accessibilityRole="button">
             <Text style={styles.closeText}>{t('ui.inviteModal.done')}</Text>
           </TouchableOpacity>
         </View>

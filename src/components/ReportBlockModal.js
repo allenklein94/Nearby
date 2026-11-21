@@ -106,17 +106,17 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
             multiline
           />
 
-          <TouchableOpacity style={styles.reportButton} onPress={submitReport} disabled={submitting}>
+          <TouchableOpacity style={styles.reportButton} onPress={submitReport} disabled={submitting} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
             <Text style={styles.reportButtonText}>{submitting ? t('ui.reportBlock.submitting') : t('ui.reportBlock.submitReport')}</Text>
           </TouchableOpacity>
 
           {!reportOnly && (
-            <TouchableOpacity style={styles.blockButton} onPress={blockUser}>
+            <TouchableOpacity style={styles.blockButton} onPress={blockUser} accessibilityRole="button">
               <Text style={styles.blockButtonText}>{t('ui.reportBlock.blockUser')}</Text>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }}>
+          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }} accessibilityRole="button">
             <Text style={styles.cancelText}>{t('ui.reportBlock.cancel')}</Text>
           </TouchableOpacity>
         </View>

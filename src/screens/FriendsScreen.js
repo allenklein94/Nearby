@@ -505,7 +505,7 @@ export default function FriendsScreen({ navigation }) {
                       </TouchableOpacity>
                     );
                   })}
-                  <TouchableOpacity onPress={() => setManageCirclesFor(null)} style={{ marginTop: spacing.md }}>
+                  <TouchableOpacity onPress={() => setManageCirclesFor(null)} style={{ marginTop: spacing.md }} accessibilityRole="button">
                     <Text style={styles.modalCancelText}>{t('ui.friends.done')}</Text>
                   </TouchableOpacity>
                 </View>

@@ -595,7 +595,7 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
 
                 <View style={styles.toggleRow}>
                   <Text style={styles.fieldLabel}>Enabled</Text>
-                  <Switch value={enabledInput} onValueChange={setEnabledInput} trackColor={{ true: colors.primary }} />
+                  <Switch value={enabledInput} onValueChange={setEnabledInput} trackColor={{ true: colors.primary }} accessibilityLabel="Enabled" />
                 </View>
 
                 <View style={styles.modalButtonRow}>
