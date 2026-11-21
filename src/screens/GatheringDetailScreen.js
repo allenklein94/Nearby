@@ -2,7 +2,8 @@ import GatheringPublishedPanel from '../components/GatheringPublishedPanel';
 import { practicalFactsIn } from '../i18n/gatheringFactsDisplay';
 import { attendeeSummary, attendeeCluster, CLUSTER_MAX_FACES } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useContext } from 'react';
+import { HeaderHeightContext } from '@react-navigation/elements';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
 import * as Haptics from 'expo-haptics';
@@ -105,6 +106,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const { t, language } = useLanguage();
   const names = useCategoryNames(); // category names in the person's language (display only)
   const styles = getStyles(colors, shadow);
+  const transparentHeaderHeight = useContext(HeaderHeightContext) ?? 0;
   const posthog = usePostHog();
 
   const [gathering, setGathering] = useState(null);
@@ -755,6 +757,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl * 2 }}>
         {justPublished && gathering.isHost && (
+          // The header is transparent (for the hero image); the panel sits above the hero, so it starts below the
+          // header's back button instead of under it (owner UX audit, 2026-11-21).
+          <View style={{ paddingTop: transparentHeaderHeight }}>
           <GatheringPublishedPanel
             gathering={gathering}
             gatheringId={gatheringId}
@@ -767,6 +772,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             onDone={() => navigation.setParams({ justPublished: undefined })}
             navigation={navigation}
           />
+          </View>
         )}
         {coverUrl ? (
           <Image source={{ uri: coverUrl }} style={styles.hero} accessibilityLabel={t('ui.gatherings.coverA11y', { name: gathering.title })} />
