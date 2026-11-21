@@ -185,3 +185,17 @@ profile timezone, falling back to UTC-12 when it is unset or 'UTC' (as for these
 time is 12 h later than the browser's. A client-only guess would either keep this gap or hide the button for hours for real
 customers in other zones. Correct fix = the server sends its visit instant (`_visit_starts_at`) with each booking: a
 migration change, so separate approval. Real customers with a set timezone in the business's own zone see no gap.
+
+**V10 refusal wording (owner 2026-11-21: keep the 2026-09-27 no-show privacy decision; no customer no-show status, no plan
+lifecycle change; wording only) FIXED on this branch only (5661abcf1; main, production, build 87 untouched).**
+State check first (read from `complete_business_reservation`, 20270430): the sentence "This reservation is not in a state that
+can be completed." is raised by three checks covering five states, and by nothing else: (1) offer status not accepted /
+completed (it changed since the screen loaded: cancelled, expired), (2) no reservation row, (3) reservation not confirmed
+(still confirming, or failed), (4) a business-recorded no-show. Every other refusal has its own sentence and keeps its own path
+(day-of-visit rule, not a party, offer not found, network). One neutral line is true in all five: "This booking can't be
+marked as done." ("can no longer" was NOT used: it would be untrue for a reservation still confirming). Customer screen
+(`handleComplete`): exact-match on that sentence -> "That didn't go through" / the new line (11 languages, 10 machine-authored,
+need native review), no Try Again (retrying can't help), then re-reads the booking; everything else unchanged. Business side
+unchanged (it knows its own records). Server authorization + booking behaviour unchanged. Guard `src/utils/markDoneRefusal.test.js`
+(pins the exact server sentence to the migration, so a server rewording fails the test). Re-run 2026-11-21: 21 suites /
+664 tests pass (incl. `undefinedNames`, i18n). App half of V10 still = phone step on the staging iPhone build.
