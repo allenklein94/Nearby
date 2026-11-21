@@ -22,3 +22,18 @@ No dead Settings rows found.
 
 ## Community edit report
 No "can't find this gathering" text exists; the nearest are GatheringDetail "This gathering isn't available anymore." and CommunityDetail's unavailable state. EditCommunity saves via update_community and goes back (CommunityDetail reloads on focus). Gaps found: community gatherings aren't tappable (above); getCommunityGatherings returns [] on any error (shows "no upcoming"). Exact steps still needed.
+
+## Implemented on `post-tier1/ux-audit-fixes` (owner approved 2026-11-21; NOT merged, NOT in a build yet)
+Items 1-5 above; inline missing-field errors on the 7 alert-only forms (Create/Edit Community, EditGathering, AskBusiness, CompleteProfile, BusinessPartnerApply, EditProfile) via one hook `useFormErrors` + `FieldError` (first problem scrolled into view, focused when it is a text field, inline message, entries kept; item 84's marks + Send alert kept as backstop); the labels/roles listed under "Missing labels". Guard `screens/uxAuditFixes.test.js`. NOT DEVICE-VERIFIED: keyboard on full screens vs sheets, header spacing, CTA contrast, community rows.
+
+## Failed read shown as "nothing" (proposal only, nothing changed)
+Not a blanket change to the ~70 reads. Highest risk = an empty result that tells the person something false and makes them act (or not act) on it:
+1. `getPendingFriendRequests` (friends.js) -> Activity / Friends say no requests while some wait.
+2. `getGatheringRequestsForHost` + `getAllPendingRequests` (gatherings.js) -> a host sees no join requests and never approves anyone.
+3. `getCommunityGatherings` (communities.js) -> "no upcoming gatherings" (matches the owner's community report).
+4. `getMyFriends` (friends.js) -> invite sheet "No friends to invite yet" (wrong empty state, C26).
+5. `getMyInterestedGatherings` (gatherings.js) -> Plans' Interested row disappears.
+Proposed fix per case: a sibling read returning `{ data, error }` (the existing function kept for every other caller, so nothing relying on `[]` changes), adopted only by that one screen, which shows the existing `presentRecoverableError` Try Again instead of the empty state. One case per commit, each with a test that a failed read renders Try Again, never the empty state. Needs owner approval; suggested after Tier 1 unless Tier 1 shows one of these.
+
+## Separate UX plan (owner, 2026-11-21: wanted, NOT before build 87, no uncontrolled redesign)
+Discover clutter; very long interests lists; business-profile editing that feels overwhelming; Settings clarity; Quick Picks. Direction: one consistent design system (shared form validation = `useFormErrors`, clear selection states, predictable coral primary actions, organized categories, progressive disclosure for advanced options, reusable layouts). Each area gets its own scoped proposal from Tier 1 phone evidence, owner-approved before any build.
