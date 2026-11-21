@@ -13,6 +13,7 @@ import { vocabValue } from '../i18n/format';
 const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 import { presentRecoverableError } from '../utils/recoverableError';
 import ToggleRow from './ToggleRow';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Owner item 71: ONE optional "Hours" row on the business Profile tab (expands in place; no new screen or settings area).
 // What the owner enters is what is saved -- nothing is guessed, pre-filled with typical hours, or corrected silently; a problem
@@ -223,7 +224,7 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
           ) : null}
           {problem ? <Text style={styles.problem}>{problem}</Text> : null}
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.primary} onPress={() => save(draft)} disabled={saving} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.saveHoursA11y')}>
+            <TouchableOpacity style={[styles.primary, (saving) && disabledButtonStyle(colors)]} onPress={() => save(draft)} disabled={saving} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.saveHoursA11y')}>
               <Text style={styles.primaryText}>{saving ? t('ui.bizComp.saving') : t('ui.bizComp.saveHours')}</Text>
             </TouchableOpacity>
             {saved ? (

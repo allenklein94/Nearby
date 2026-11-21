@@ -19,6 +19,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { QUICK_INTEREST_TAGS } from '../constants/onboardingInterests';
 import { categoryName } from '../i18n/categoryNames';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 const MIN_AGE = 18;
 const TERMS_URL = 'https://allenklein94.github.io/Nearby/terms.html';
@@ -452,7 +453,7 @@ export default function CompleteProfileScreen() {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.nextButton, !agreedToTerms && styles.nextButtonDisabled]}
+              style={[styles.nextButton, !agreedToTerms && disabledButtonStyle(colors)]}
               onPress={submit}
               disabled={submitting || !agreedToTerms}
               activeOpacity={0.85}

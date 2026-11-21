@@ -40,6 +40,7 @@ import { moneyLabel } from '../utils/outcomeDisplay';
 import { getGatheringById } from '../services/gatherings';
 import { gatheringBusinessPartySize } from '../utils/gatheringFullness';
 import { gatheringRequestText, gatheringAskFacts, gatheringAskInputs } from '../utils/gatheringBusinessAsk';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Same canonical 26-tag list business_requests.category's own (now-widened)
 // CHECK constraint validates against -- was a separate, independently-
 // drifting 24-tag copy (missing 'Faith & Spirituality' and 'Dating') before
@@ -1177,7 +1178,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           )}
 
           <TouchableOpacity
-            style={[styles.submitButton, (submitting || !askText.trim() || (gatheringId && !gathering)) && styles.submitButtonDisabled]}
+            style={[styles.submitButton, (submitting || !askText.trim() || (gatheringId && !gathering)) && disabledButtonStyle(colors)]}
             onPress={handleSubmit}
             disabled={submitting || !askText.trim() || (!!gatheringId && !gathering)}
             accessibilityLabel={askSubmitLabel({ targetPartner, matchId, communityId })}

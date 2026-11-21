@@ -77,6 +77,7 @@ import BusinessLogoMark from '../components/BusinessLogoMark';
 import { getScreenedLogos } from '../services/businessLogos';
 import { logoFor } from '../utils/businessLogo';
 import { SOUND_CUES } from '../utils/soundCues';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Wording lives in ui.requestDetail.status.<status> / offerStatus.<status> / offerType.<type>; these list the known keys.
 const STATUS_COPY = {
@@ -1785,7 +1786,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     return (
                       <AssemblyStep step="action">
                       <TouchableOpacity
-                        style={[styles.acceptButton, acceptState.dimmed && styles.acceptButtonWaiting]}
+                        style={[styles.acceptButton, acceptState.dimmed && styles.acceptButtonWaiting, (acceptState.disabled) && disabledButtonStyle(colors)]}
                         onPress={() => handleAccept(o.id)}
                         disabled={acceptState.disabled}
                         accessibilityState={{ disabled: acceptState.disabled, busy: acceptState.busy }}
@@ -1839,7 +1840,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         <>
                           <Text style={styles.helperText}>{t('ui.requestDetail.paymentDidntGoThrough')}{payment.failure_reason ? `: ${payment.failure_reason}` : '.'}</Text>
                           <TouchableOpacity
-                            style={styles.acceptButton}
+                            style={[styles.acceptButton, (collectingPayment) && disabledButtonStyle(colors)]}
                             onPress={() => collectPayment(o.id)}
                             disabled={collectingPayment}
                             accessibilityLabel={t('ui.requestDetail.tryPaymentAgainA11y')}
@@ -1860,7 +1861,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       <>
                         <Text style={styles.helperText}>{t('ui.requestDetail.thisOfferNeedsAReal')}</Text>
                         <TouchableOpacity
-                          style={styles.acceptButton}
+                          style={[styles.acceptButton, (collectingPayment) && disabledButtonStyle(colors)]}
                           onPress={() => collectPayment(o.id)}
                           disabled={collectingPayment}
                           accessibilityLabel={t('ui.requestDetail.completePaymentA11y')}
@@ -1980,7 +1981,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     );
                   })}
                 <TouchableOpacity
-                  style={[styles.groupPlanButton, !selectedNewOrganizerId && styles.groupPlanButtonDisabled]}
+                  style={[styles.groupPlanButton, !selectedNewOrganizerId && disabledButtonStyle(colors)]}
                   onPress={handleAddOrganizer}
                   disabled={!selectedNewOrganizerId || organizerActionBusy}
                   accessibilityLabel={t('ui.requestDetail.confirmAddCoOrganizerA11y')}
@@ -2128,7 +2129,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                     <Text style={styles.addonRemoveText}>{t('ui.requestDetail.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={styles.timelineFormSubmitButton}
+                    style={[styles.timelineFormSubmitButton, (!!addonActionKey) && disabledButtonStyle(colors)]}
                     onPress={submitTimelineForm}
                     disabled={!!addonActionKey}
                     accessibilityLabel={timelineForm.mode === 'add' ? t('ui.requestDetail.addToPlanA11y') : t('ui.requestDetail.saveA11y')}
@@ -2163,7 +2164,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               );
             })}
             <TouchableOpacity
-              style={[styles.groupPlanButton, selectedCandidateIds.length === 0 && styles.groupPlanButtonDisabled]}
+              style={[styles.groupPlanButton, selectedCandidateIds.length === 0 && disabledButtonStyle(colors)]}
               onPress={handleProposeGroupPlan}
               disabled={selectedCandidateIds.length === 0 || proposingGroupPlan}
               accessibilityLabel={t('ui.requestDetail.makeThisAGroupPlanA11y')}
@@ -2215,7 +2216,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               );
             })}
             <TouchableOpacity
-              style={[styles.groupPlanButton, selectedInviteeIds.length === 0 && styles.groupPlanButtonDisabled]}
+              style={[styles.groupPlanButton, selectedInviteeIds.length === 0 && disabledButtonStyle(colors)]}
               onPress={handleInviteSomeone}
               disabled={selectedInviteeIds.length === 0 || invitingSomeone}
               accessibilityLabel={t('ui.requestDetail.sendInviteA11y')}

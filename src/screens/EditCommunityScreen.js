@@ -14,6 +14,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { showSuccessToast } from '../motion';
 import useCategoryNames from '../hooks/useCategoryNames';
+import { disabledButtonStyle } from '../constants/buttonStates';
 export default function EditCommunityScreen({ route, navigation }) {
   const { t } = useLanguage();
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
@@ -132,7 +133,7 @@ export default function EditCommunityScreen({ route, navigation }) {
           </View>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
             onPress={submit}
             disabled={submitting}
             activeOpacity={0.85}

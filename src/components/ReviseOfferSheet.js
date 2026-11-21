@@ -16,6 +16,7 @@ import {
   revisableTerms, revisionDraftFrom, revisionProblem, revisionParams, revisedOfferPreview,
 } from '../utils/offerRevision';
 import { reviseBusinessOffer } from '../services/businessFulfillment';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Item 118 (owner, 2026-10-16): the business's ONE change to an offer it already sent: PRICE AND TIME ONLY. The sheet
 // shows only the terms this reply has (its price, its discount, its time or two times) with Make an Offer's controls,
@@ -130,7 +131,7 @@ export default function ReviseOfferSheet({ offer, business = {}, discountCap = n
               </View>
 
               <TouchableOpacity
-                style={[styles.submit, (problem || sending) && { opacity: 0.5 }]}
+                style={[styles.submit, (problem || sending) && disabledButtonStyle(colors)]}
                 onPress={send}
                 disabled={!!problem || sending}
                 accessibilityRole="button"

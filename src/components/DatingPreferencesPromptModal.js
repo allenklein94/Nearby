@@ -10,6 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
 import { modalAnimation } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Phase 3 of the "build everything" plan (see CLAUDE.md): a real
 // first-open prompt for DiscoveryScreen.js, closing the gap that
 // "Looking For"/"Discovery Preferences" were previously only ever asked
@@ -230,7 +231,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
             <Text style={styles.skipText}>{t('ui.datingPrompt.skipForNow')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.saveButton, shadow.button]}
+            style={[styles.saveButton, shadow.button, (saving) && disabledButtonStyle(colors)]}
             onPress={() => handleSave()}
             disabled={saving}
             activeOpacity={0.85}

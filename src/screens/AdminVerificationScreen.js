@@ -8,6 +8,7 @@ import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function AdminVerificationScreen() {
   const { colors } = useTheme();
@@ -132,7 +133,7 @@ export default function AdminVerificationScreen() {
                 <Text style={styles.rejectButtonText}>Reject</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.approveButton}
+                style={[styles.approveButton, (processingId === s.id) && disabledButtonStyle(colors)]}
                 onPress={() => handleDecision(s, true)}
                 disabled={processingId === s.id}
                 accessibilityLabel={`Approve ${s.profiles?.display_name}'s verification`}

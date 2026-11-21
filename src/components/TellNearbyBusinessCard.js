@@ -11,6 +11,7 @@ import SettingConflictNotice from './SettingConflictNotice';
 import { useSettingConflicts } from '../hooks/useSettingConflicts';
 import { checkBusinessSettingConflicts } from '../services/brandOffers';
 import { conflictMessages } from '../utils/settingConflicts';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // "Tell Nearby about your business": the owner describes the business in a sentence or two, Nearby reads it back as
 // chips, and "Yes, continue" saves it through the existing setters. AI suggests, the owner confirms; nothing is saved
@@ -131,7 +132,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
       />
       {!plan ? (
         <TouchableOpacity
-          style={[styles.primary, { opacity: busy || !text.trim() ? 0.6 : 1 }]}
+          style={[styles.primary, (busy || !text.trim()) && disabledButtonStyle(colors)]}
           onPress={understand}
           disabled={busy || !text.trim()}
           accessibilityRole="button"
@@ -165,7 +166,7 @@ export default function TellNearbyBusinessCard({ partner, onApplied, onOpenProfi
           <SettingConflictNotice messages={conflictMessages(conflicts.entries, 'tell')} />
           <View style={styles.row}>
             {plan.hasChanges ? (
-              <TouchableOpacity style={[styles.primary, { flex: 1, opacity: busy ? 0.6 : 1 }]} onPress={confirm} disabled={busy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.yesContinueA11y')}>
+              <TouchableOpacity style={[styles.primary, { flex: 1 }, (busy) && disabledButtonStyle(colors)]} onPress={confirm} disabled={busy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.yesContinueA11y')}>
                 {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.primaryText}>{t('ui.bizComp.yesContinue')}</Text>}
               </TouchableOpacity>
             ) : null}

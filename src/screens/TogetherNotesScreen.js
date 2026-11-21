@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { TOGETHER_NOTES_KINDS, sectionA11yName } from '../constants/togetherNotesKinds';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Notes two matched people write together, by section (screen-reduction audit B6): trip ideas, big picture, timeline,
 // stress test, constitution. One screen; `kind` picks the sections, table and strings (constants/togetherNotesKinds.js).
@@ -100,7 +101,7 @@ export default function TogetherNotesScreen({ route }) {
                     accessibilityLabel={cfg.inputA11y(t, a11yName)}
                   />
                   <TouchableOpacity
-                    style={styles.addButton}
+                    style={[styles.addButton, (submittingSection === section.key) && disabledButtonStyle(colors)]}
                     onPress={() => handleAdd(section.key)}
                     disabled={submittingSection === section.key}
                     accessibilityLabel={cfg.buttonA11y(t, a11yName)}

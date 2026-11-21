@@ -36,6 +36,7 @@ import OfferTimeChoice from '../components/OfferTimeChoice';
 import { formatProposedTime } from '../components/OfferCustomerBody';
 import { hasTwoTimes, choosableTimes, timeToBook, groupTimeConfirmations, sameInstant, wholePartyView } from '../utils/offerTimes';
 import { isRevisedOffer, isOfferChangedError } from '../utils/offerRevision';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Display labels by stored status, read through ui.groupPlan (status values stay canonical).
 const PARTICIPANT_STATUS_KEYS = ['invited', 'accepted', 'declined', 'left'];
@@ -444,7 +445,7 @@ export default function GroupPlanScreen({ navigation, route }) {
 
         {canDo('group_plan', proposal.status, 'respond') && canDo('group_participant', myParticipant?.status, 'join') && (
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.primaryButton} onPress={handleAccept} disabled={acting} accessibilityLabel={t('ui.groupPlan.joinThisGroupPlanA11y')} accessibilityRole="button">
+            <TouchableOpacity style={[styles.primaryButton, (acting) && disabledButtonStyle(colors)]} onPress={handleAccept} disabled={acting} accessibilityLabel={t('ui.groupPlan.joinThisGroupPlanA11y')} accessibilityRole="button">
               {acting ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.primaryButtonText}>{t('ui.groupPlan.joinSharedRequest')}</Text>}
             </TouchableOpacity>
             <TouchableOpacity onPress={handleDecline} disabled={acting} accessibilityLabel={t('ui.groupPlan.declineThisGroupPlanA11y')} accessibilityRole="button">
@@ -473,7 +474,7 @@ export default function GroupPlanScreen({ navigation, route }) {
             </View>
 
             <TouchableOpacity
-              style={[styles.primaryButton, { marginTop: spacing.lg }]}
+              style={[styles.primaryButton, { marginTop: spacing.lg }, (acting) && disabledButtonStyle(colors)]}
               onPress={handleConfirm}
               disabled={acting}
               accessibilityLabel={t('ui.groupPlan.confirmGroupPlanAndSendA11y')}
@@ -536,7 +537,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                           ? (chosen ? <Text style={styles.confirmCountLine}>{byTime.byTime[chosen] ?? 0} of {acceptedParticipants.length} confirmed</Text> : null)
                           : <Text style={styles.confirmCountLine}>{confirmedForThisOffer.length} of {acceptedParticipants.length} confirmed</Text>}
                         <TouchableOpacity
-                          style={[styles.acceptButton, (iConfirmed || (twoTimes && !chosen)) && styles.acceptButtonDisabled]}
+                          style={[styles.acceptButton, (iConfirmed || (twoTimes && !chosen)) && disabledButtonStyle(colors)]}
                           onPress={() => handleConfirmOffer(o.id, chosen, o.revision ?? 0)}
                           disabled={acting || iConfirmed || (twoTimes && !chosen)}
                           accessibilityLabel={t('ui.groupPlan.confirmThisOfferForTheA11y')}
@@ -566,7 +567,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                   {isInitiator && canDo('offer', offerLifecycleState(o), 'accept') && (
                     <View style={styles.socialOfferActionRow}>
                       <TouchableOpacity
-                        style={[styles.acceptButton, { flex: 1 }]}
+                        style={[styles.acceptButton, { flex: 1 }, (acting) && disabledButtonStyle(colors)]}
                         onPress={() => handleRespondSocialOffer(o.id, true)}
                         disabled={acting}
                         accessibilityLabel={t('ui.groupPlan.acceptSOfferA11y', { name: o.profiles?.display_name ?? 'this' })}
@@ -601,7 +602,7 @@ export default function GroupPlanScreen({ navigation, route }) {
                   accessibilityLabel={t('ui.groupPlan.whatCanYouOfferA11y')}
                 />
                 <TouchableOpacity
-                  style={styles.socialOfferSubmitButton}
+                  style={[styles.socialOfferSubmitButton, (acting) && disabledButtonStyle(colors)]}
                   onPress={handleSubmitSocialOffer}
                   disabled={acting}
                   accessibilityLabel={t('ui.groupPlan.submitSocialOfferA11y')}

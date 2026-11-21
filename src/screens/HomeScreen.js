@@ -114,6 +114,7 @@ import { placeDistanceLabel } from '../services/places';
 import { homeQuickStatRows } from '../utils/homeQuiet';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
 import { gatheringActionOpenParams } from '../utils/primaryAction';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Item 137: a destination keeps the time it was offered under (the evening header reads "Tonight", so its chips open Tonight).
 const PERIOD_DATE_FILTER = { morning: 'morning', afternoon: 'afternoon', evening: 'tonight', weekend: 'weekend' };
@@ -1787,7 +1788,7 @@ export default function HomeScreen({ navigation }) {
               accessibilityLabel={t('ui.home.askHeading')}
             />
             <TouchableOpacity
-              style={[styles.intentButton, shadow.button, (intentThinking || !intentText.trim()) && styles.intentButtonDisabled]}
+              style={[styles.intentButton, shadow.button, (intentThinking || !intentText.trim()) && disabledButtonStyle(colors)]}
               onPress={handleHomeIntentSubmit}
               disabled={intentThinking || !intentText.trim()}
               accessibilityLabel={t('ui.home.findIt')}

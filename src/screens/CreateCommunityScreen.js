@@ -14,6 +14,7 @@ import TagGroupPicker from '../components/TagGroupPicker';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import useCategoryNames from '../hooks/useCategoryNames';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function CreateCommunityScreen({ navigation, route }) {
   const { t } = useLanguage();
@@ -187,7 +188,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
           </View>
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
             onPress={submit}
             disabled={submitting}
             activeOpacity={0.85}

@@ -92,6 +92,7 @@ import { expiredDateLabel } from '../utils/inviteExpiry';
 import { gatheringViewerState } from '../utils/objectState';
 import { canDo, gatheringLifecycleState } from '../utils/objectLifecycle';
 import { interestedConfirmation } from '../utils/actionConfirmations';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Labels: ui.gatheringVocab.vibe.<key>.{label, low, high} (shared with Create/Edit).
 const VIBE_SCALES = [{ key: 'energy_level' }, { key: 'conversation_level' }, { key: 'group_size_feel' }];
@@ -1189,7 +1190,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                         underlying flow. */}
                     <Text style={styles.businessReadyCaption}>{t('ui.gatheringDetail.businessReadyCaption')}</Text>
                     <TouchableOpacity
-                      style={styles.businessReadyButton}
+                      style={[styles.businessReadyButton, (firingBusinessRequest) && disabledButtonStyle(colors)]}
                       onPress={handleAskBusinessesNow}
                       disabled={firingBusinessRequest}
                       accessibilityLabel={t('ui.gatheringDetail.lookNowA11y')}

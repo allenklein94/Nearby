@@ -12,6 +12,7 @@ import { displayDateTime } from '../i18n/display';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 export default function DateCheckInModal({ visible, onClose, matchId, matchName, navigation, isRomanticMatch = true }) {
   const { t, language } = useLanguage();
   const { colors, isDark } = useTheme();
@@ -167,7 +168,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
             />
           )}
 
-          <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting} activeOpacity={0.85} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
+          <TouchableOpacity style={[styles.button, (submitting) && disabledButtonStyle(colors)]} onPress={handleCreate} disabled={submitting} activeOpacity={0.85} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
             <Text style={styles.buttonText}>{submitting ? t('ui.dateCheckIn.settingUp') : t('ui.dateCheckIn.setUpCheckInShare')}</Text>
           </TouchableOpacity>
 

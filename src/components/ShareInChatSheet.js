@@ -7,6 +7,7 @@ import { spacing, radius, typography } from '../theme';
 import { NLoader, modalAnimation, showSuccessToast } from '../motion';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { getMyOneToOneChats, shareGatheringInChat } from '../services/chatShare';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // "Share in a chat" (owner decision 2026-10-20, idea "244" follow-up): one question, which chat. Each row's Send is the
 // person's explicit send of a compact card into that one-to-one chat; nothing is sent until they tap it. Rows stay
@@ -79,7 +80,7 @@ export default function ShareInChatSheet({ visible, onClose, gatheringId, gather
                 <View style={styles.row}>
                   <Text style={styles.name}>{item.name}</Text>
                   <TouchableOpacity
-                    style={[styles.sendButton, sentIds[item.matchId] && styles.sendButtonSent]}
+                    style={[styles.sendButton, sentIds[item.matchId] && styles.sendButtonSent, (sendingId === item.matchId || !!sentIds[item.matchId]) && disabledButtonStyle(colors)]}
                     onPress={() => send(item)}
                     disabled={sendingId === item.matchId || !!sentIds[item.matchId]}
                     accessibilityLabel={sentIds[item.matchId]

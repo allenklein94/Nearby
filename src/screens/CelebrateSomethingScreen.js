@@ -53,6 +53,7 @@ import { PICK_DATE_KEY } from './AskBusinessScreen';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { moneyLabel } from '../utils/outcomeDisplay';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Item 61 ("Celebrate Something" life-events planning layer, CLAUDE.md):
 // occasion -> who's it for -> what to do -> when -> who's involved, then
@@ -2136,7 +2137,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
               </TouchableOpacity>
               {stepKey === 'options' && activityType === AUTO_PLAN_OPTION.key && !autoPlanExpanded ? (
                 <TouchableOpacity
-                  style={[styles.nextButton, (!optionsFetched || optionsLoading || (autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0)) && styles.nextButtonDisabled]}
+                  style={[styles.nextButton, (!optionsFetched || optionsLoading || (autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0)) && disabledButtonStyle(colors)]}
                   onPress={proceedFromAutoPlanSummary}
                   activeOpacity={0.85}
                   disabled={!optionsFetched || optionsLoading || (autoPlanSuggestion.items.length === 0 && autoPlanSuggestion.suggestions.length === 0)}
@@ -2147,7 +2148,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 </TouchableOpacity>
               ) : stepKey === 'options' ? (
                 <TouchableOpacity
-                  style={[styles.nextButton, (selectedIds.size === 0 || submittingOptions) && styles.nextButtonDisabled]}
+                  style={[styles.nextButton, (selectedIds.size === 0 || submittingOptions) && disabledButtonStyle(colors)]}
                   onPress={submitSelectedBusinessRequests}
                   activeOpacity={0.85}
                   disabled={selectedIds.size === 0 || submittingOptions}
@@ -2160,7 +2161,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 </TouchableOpacity>
               ) : stepKey === 'group_invite' ? (
                 <TouchableOpacity
-                  style={[styles.nextButton, (selectedInviteeIds.size === 0 || creatingGroupPlan) && styles.nextButtonDisabled]}
+                  style={[styles.nextButton, (selectedInviteeIds.size === 0 || creatingGroupPlan) && disabledButtonStyle(colors)]}
                   onPress={createGroupVote}
                   activeOpacity={0.85}
                   disabled={selectedInviteeIds.size === 0 || creatingGroupPlan}
@@ -2177,7 +2178,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
                 // a generic "Next" here would have nowhere real to go.
                 customSearchResult ? null : (
                   <TouchableOpacity
-                    style={[styles.nextButton, (!customDescription.trim() || customSearching) && styles.nextButtonDisabled]}
+                    style={[styles.nextButton, (!customDescription.trim() || customSearching) && disabledButtonStyle(colors)]}
                     onPress={submitCustomDescription}
                     activeOpacity={0.85}
                     disabled={!customDescription.trim() || customSearching}

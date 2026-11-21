@@ -141,6 +141,7 @@ import { getUserLocation } from '../services/userLocation';
 import { filterOpenNow, gatheringEntity, placeEntity, perkEntity } from '../utils/operatingStatus';
 import { placesNeedFetch } from '../utils/placesFetchPlan';
 import { gatheringActionOpenParams } from '../utils/primaryAction';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Phase 8 (CLAUDE.md, Discover visual hierarchy) -- real, disclosed
 // thresholds against getGatheringFitReasons()'s real 0-22 score range
@@ -3654,7 +3655,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
                   results" with nothing real to show -- the primary action
                   is creating the thing itself, in the user's own words. */}
               <TouchableOpacity
-                style={styles.createItButton}
+                style={[styles.createItButton, (creatingFromSearch) && disabledButtonStyle(colors)]}
                 onPress={handleCreateItFromSearch}
                 disabled={creatingFromSearch}
                 accessibilityLabel={t('ui.discover.createLookingA11y')}

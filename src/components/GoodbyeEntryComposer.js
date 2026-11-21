@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { showSuccessToast } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 const QUESTIONS = [
   { key: 'whatWasBeautiful', labelKey: 'goodbyeArchive.whatWasBeautiful', placeholderKey: 'ui.goodbyeArchive.eGHowEasyIt' },
@@ -87,7 +88,7 @@ export default function GoodbyeEntryComposer({ initialName = '', onSaved, onCanc
         </View>
       ))}
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
         onPress={handleSubmit}
         disabled={submitting}
         activeOpacity={0.85}

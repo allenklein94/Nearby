@@ -25,6 +25,7 @@ import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cu
 import { CATEGORY_GROUPS, subcategoryOptionsFor, businessTagOptions, toggleSecondaryCategory, MAX_SECONDARY_CATEGORIES } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // 2026-09-06: expanded from a hand-typed 6-value list to the same 15 (then,
 // same day, 19) major categories as CATEGORY_GROUPS (gatheringCategories.js)
@@ -552,7 +553,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
                 accessibilityLabel="Search for your business"
               />
               <TouchableOpacity
-                style={styles.searchButton}
+                style={[styles.searchButton, (searching || !searchQuery.trim()) && disabledButtonStyle(colors)]}
                 onPress={runSearch}
                 disabled={searching || !searchQuery.trim()}
                 accessibilityRole="button"
@@ -988,7 +989,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
 
           {resending ? (
             <TouchableOpacity
-              style={[styles.button, resubmitting && { opacity: 0.6 }]}
+              style={[styles.button, resubmitting && disabledButtonStyle(colors)]}
               onPress={handleResubmit}
               disabled={resubmitting}
               activeOpacity={0.85}
@@ -1000,7 +1001,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
           ) : (
             <>
               <TouchableOpacity
-                style={styles.button}
+                style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
                 onPress={submit}
                 disabled={submitting}
                 activeOpacity={0.85}

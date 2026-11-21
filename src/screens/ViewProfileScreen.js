@@ -32,6 +32,7 @@ import { typography, spacing, radius } from '../theme';
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { selectPeople } from '../services/peopleRead';
+import { disabledButtonStyle } from '../constants/buttonStates';
 const { width } = Dimensions.get('window');
 // Stored connection-goal value -> its label key (same map as ProfileScreen).
 const GOAL_KEYS = { 'Meet friends': 'meetFriends', Date: 'date', Network: 'network', 'Explore my city': 'exploreCity', 'Find community': 'findCommunity', 'Get out more': 'getOutMore' };
@@ -511,7 +512,7 @@ export default function ViewProfileScreen({ route, navigation }) {
           {!isOwnProfile && friendshipStatus === 'pending_received' && (
             <View style={styles.friendRequestRow}>
               <TouchableOpacity
-                style={styles.messageButton}
+                style={[styles.messageButton, (respondingToFriendRequest) && disabledButtonStyle(colors)]}
                 onPress={() => handleRespondToFriendRequest(true)}
                 disabled={respondingToFriendRequest}
                 activeOpacity={0.85}

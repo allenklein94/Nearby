@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { showSuccessToast } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function RelationshipLegacyScreen({ route, navigation }) {
   const { matchId, matchName } = route.params;
@@ -116,7 +117,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
           />
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}

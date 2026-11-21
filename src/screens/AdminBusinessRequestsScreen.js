@@ -15,6 +15,7 @@ import { subcategoryOptionsFor } from '../constants/gatheringCategories';
 import { adminAddCategoryTag } from '../services/categoryTags';
 import { applyRemoteCategoryTags } from '../constants/categoryRegistry';
 import { existingCategoryMatches, emergingResolveCopy } from '../utils/emergingCategoryHint';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -409,7 +410,7 @@ export default function AdminBusinessRequestsScreen() {
                       multiline
                     />
                     <TouchableOpacity
-                      style={styles.sendNotesButton}
+                      style={[styles.sendNotesButton, (processingIds[item.id]) && disabledButtonStyle(colors)]}
                       onPress={() => handleRequestMoreInfo(item)}
                       disabled={processingIds[item.id]}
                       accessibilityLabel={`Send info request for ${item.business_name}`}

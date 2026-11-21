@@ -15,6 +15,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { MatchAnimation, SkeletonFeed, modalAnimation } from '../motion';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function FriendsScreen({ navigation }) {
   const { t, language } = useLanguage();
@@ -205,7 +206,7 @@ export default function FriendsScreen({ navigation }) {
             </View>
 
             <TouchableOpacity
-              style={styles.findContactsButton}
+              style={[styles.findContactsButton, (searchingContacts) && disabledButtonStyle(colors)]}
               onPress={handleFindFromContacts}
               disabled={searchingContacts}
               accessibilityLabel={t('ui.friends.findFriendsFromYourContactsA11y')}
@@ -231,7 +232,7 @@ export default function FriendsScreen({ navigation }) {
                     onPress={() => navigation.navigate('ViewProfile', { userId: person.suggested_id })}
                     action={
                       <TouchableOpacity
-                        style={[styles.acceptButton, requestedIds[person.suggested_id] && styles.acceptButtonSent]}
+                        style={[styles.acceptButton, requestedIds[person.suggested_id] && styles.acceptButtonSent, (requestedIds[person.suggested_id]) && disabledButtonStyle(colors)]}
                         onPress={() => handleSendRequest(person.suggested_id)}
                         disabled={requestedIds[person.suggested_id]}
                         accessibilityLabel={requestedIds[person.suggested_id] ? t('ui.friends.friendRequestSentA11y') : t('ui.friends.sendFriendRequestToA11y', { name: person.display_name })}
@@ -258,7 +259,7 @@ export default function FriendsScreen({ navigation }) {
                     onPress={() => navigation.navigate('ViewProfile', { userId: person.id })}
                     action={
                       <TouchableOpacity
-                        style={[styles.acceptButton, requestedIds[person.id] && styles.acceptButtonSent]}
+                        style={[styles.acceptButton, requestedIds[person.id] && styles.acceptButtonSent, (requestedIds[person.id]) && disabledButtonStyle(colors)]}
                         onPress={() => handleSendRequest(person.id)}
                         disabled={requestedIds[person.id]}
                         accessibilityLabel={requestedIds[person.id] ? t('ui.friends.friendRequestSentA11y') : t('ui.friends.sendFriendRequestToA11y', { name: person.display_name })}

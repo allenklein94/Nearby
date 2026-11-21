@@ -29,6 +29,7 @@ import { withdrawBusinessOffer } from '../services/businessFulfillment';
 import { getBusinessEntitlements, hasEntitlement } from '../services/entitlements';
 import { countLabel } from '../utils/plural';
 import ToggleRow from './ToggleRow';
+import { disabledButtonStyle } from '../constants/buttonStates';
 import {
   getBusinessAiTrustLevel, setBusinessAiTrustLevel,
   getBusinessAiPolicies, upsertBusinessAiPolicy, deleteBusinessAiPolicy,
@@ -597,7 +598,7 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
                   <TouchableOpacity style={styles.cancelButton} onPress={() => setPolicyModalVisible(false)}>
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.saveButton} onPress={handleSavePolicy} disabled={savingPolicy}>
+                  <TouchableOpacity style={[styles.saveButton, (savingPolicy) && disabledButtonStyle(colors)]} onPress={handleSavePolicy} disabled={savingPolicy}>
                     {savingPolicy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.saveButtonText}>Save Policy</Text>}
                   </TouchableOpacity>
                 </View>

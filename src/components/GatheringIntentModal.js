@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Labels come from ui.gatheringIntent.option.<value>.
 const INTENT_OPTIONS = [
   { value: 'meet_someone_new', emoji: '👋' },
@@ -76,7 +77,7 @@ export default function GatheringIntentModal({ visible, gathering, onClose, onCo
           })}
 
           <TouchableOpacity
-            style={styles.submitButton}
+            style={[styles.submitButton, (submitting) && disabledButtonStyle(colors)]}
             onPress={handleConfirm}
             disabled={submitting}
             activeOpacity={0.85}

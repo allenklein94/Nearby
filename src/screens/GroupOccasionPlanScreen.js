@@ -54,6 +54,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // "Group planning for an Occasion" (CLAUDE.md, direct user follow-up to the
 // Occasion rename/simplify pass). User's own example: "Sarah's 30th
@@ -699,7 +700,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                   </View>
                   {detail.myStatus === 'joined' && (
                     <TouchableOpacity
-                      style={[styles.voteButton, opt.myAvailable && styles.voteButtonActive]}
+                      style={[styles.voteButton, opt.myAvailable && styles.voteButtonActive, (acting) && disabledButtonStyle(colors)]}
                       onPress={() => handleToggleDateAvailability(opt)}
                       disabled={acting}
                       activeOpacity={0.85}
@@ -730,7 +731,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 <View style={styles.recommendationBanner}>
                   <Text style={styles.recommendationText}>{t('ui.groupOccasionPlan.hasTheMostAvailabilityAmong', { label: label, availableCount: top.availableCount })}</Text>
                   <TouchableOpacity
-                    style={[styles.decideButton, { marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                    style={[styles.decideButton, { marginTop: spacing.sm, alignSelf: 'flex-start' }, (acting) && disabledButtonStyle(colors)]}
                     onPress={() => handleApplyDate(top)}
                     disabled={acting}
                     activeOpacity={0.85}
@@ -777,7 +778,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       <Text style={styles.addOptionButtonText}>{t('ui.groupOccasionPlan.addThisDate')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.addOptionButton, pendingDateOptions.length === 0 && { opacity: 0.5 }]}
+                      style={[styles.addOptionButton, pendingDateOptions.length === 0 && disabledButtonStyle(colors)]}
                       onPress={handleProposeDates}
                       disabled={pendingDateOptions.length === 0 || proposingDates}
                       activeOpacity={0.85}
@@ -816,7 +817,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             <TouchableOpacity style={styles.declineButton} onPress={() => handleRespond(false)} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.declineInviteA11y')}>
               <Text style={styles.declineButtonText}>{t('ui.groupOccasionPlan.cantMakeIt2')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.acceptButton} onPress={() => handleRespond(true)} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.joinAndVoteA11y')}>
+            <TouchableOpacity style={[styles.acceptButton, (acting) && disabledButtonStyle(colors)]} onPress={() => handleRespond(true)} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.joinAndVoteA11y')}>
               <Text style={styles.acceptButtonText}>{t('ui.groupOccasionPlan.joinVote')}</Text>
             </TouchableOpacity>
           </View>
@@ -839,7 +840,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
             {detail.status === 'fulfilled' ? (
               <Text style={styles.helperText}>{t('ui.groupOccasionPlan.trackItFromYourPlans')}</Text>
             ) : detail.isHost ? (
-              <TouchableOpacity style={styles.decideButton} onPress={() => handleBookWinningBusiness(winningOption)} disabled={booking} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.bookThisBusinessA11y')}>
+              <TouchableOpacity style={[styles.decideButton, (booking) && disabledButtonStyle(colors)]} onPress={() => handleBookWinningBusiness(winningOption)} disabled={booking} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.bookThisBusinessA11y')}>
                 <Text style={styles.decideButtonText}>{booking ? t('ui.groupOccasionPlan.booking') : t('ui.groupOccasionPlan.bookIt')}</Text>
               </TouchableOpacity>
             ) : (
@@ -886,7 +887,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                     <TouchableOpacity style={styles.declineButton} onPress={fetchAndProposeBusinessOptions} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.tryFindingOptionsAgainA11y')}>
                       <Text style={styles.declineButtonText}>{t('ui.groupOccasionPlan.tryAgain')}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.acceptButton} onPress={handleSkipBusinessVote} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.skipAndPickManuallyA11y')}>
+                    <TouchableOpacity style={[styles.acceptButton, (acting) && disabledButtonStyle(colors)]} onPress={handleSkipBusinessVote} disabled={acting} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.skipAndPickManuallyA11y')}>
                       <Text style={styles.acceptButtonText}>{t('ui.groupOccasionPlan.skipIllPick')}</Text>
                     </TouchableOpacity>
                   </View>
@@ -905,7 +906,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                 </View>
                 {detail.myStatus === 'joined' && (
                   <TouchableOpacity
-                    style={[styles.voteButton, option.myVote && styles.voteButtonActive]}
+                    style={[styles.voteButton, option.myVote && styles.voteButtonActive, (acting) && disabledButtonStyle(colors)]}
                     onPress={() => handleToggleVote(option)}
                     disabled={acting}
                     activeOpacity={0.85}
@@ -1050,7 +1051,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                           })}
                         </View>
                         <TouchableOpacity
-                          style={[styles.addOptionButton, selectedNewInviteeIds.size === 0 && { opacity: 0.5 }]}
+                          style={[styles.addOptionButton, selectedNewInviteeIds.size === 0 && disabledButtonStyle(colors)]}
                           onPress={handleInviteMore}
                           disabled={selectedNewInviteeIds.size === 0 || invitingMore}
                           activeOpacity={0.85}
@@ -1077,7 +1078,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                       accessibilityLabel={t('ui.groupOccasionPlan.guestsNameA11y')}
                     />
                     <TouchableOpacity
-                      style={[styles.addOptionButton, !guestName.trim() && { opacity: 0.5 }]}
+                      style={[styles.addOptionButton, !guestName.trim() && disabledButtonStyle(colors)]}
                       onPress={handleInviteGuest}
                       disabled={!guestName.trim() || invitingGuest}
                       activeOpacity={0.85}
@@ -1105,7 +1106,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                   </View>
                   {canVote && (
                     <TouchableOpacity
-                      style={[styles.voteButton, option.myVote && styles.voteButtonActive]}
+                      style={[styles.voteButton, option.myVote && styles.voteButtonActive, (acting) && disabledButtonStyle(colors)]}
                       onPress={() => handleToggleVote(option)}
                       disabled={acting}
                       activeOpacity={0.85}
@@ -1159,7 +1160,7 @@ export default function GroupOccasionPlanScreen({ navigation, route }) {
                   onChangeText={setProposeLabel}
                   accessibilityLabel={t('ui.groupOccasionPlan.optionalNoteForThisIdeaA11y')}
                 />
-                <TouchableOpacity style={styles.addOptionButton} onPress={handlePropose} disabled={acting} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.addThisIdeaA11y')}>
+                <TouchableOpacity style={[styles.addOptionButton, (acting) && disabledButtonStyle(colors)]} onPress={handlePropose} disabled={acting} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.groupOccasionPlan.addThisIdeaA11y')}>
                   <Text style={styles.addOptionButtonText}>{acting ? t('ui.groupOccasionPlan.adding') : t('ui.groupOccasionPlan.addIdea')}</Text>
                 </TouchableOpacity>
               </View>

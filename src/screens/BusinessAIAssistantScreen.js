@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
 import { NLoader } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 const SUGGESTIONS = ['Why did attendance drop this month?', 'What should I promote right now?', 'How am I doing compared to last month?', 'Suggest a new offer'];
 
 export default function BusinessAIAssistantScreen({ route }) {
@@ -72,7 +73,7 @@ export default function BusinessAIAssistantScreen({ route }) {
             returnKeyType="send"
             accessibilityLabel="Ask the business assistant a question"
           />
-          <TouchableOpacity style={styles.askButton} onPress={() => handleAsk()} disabled={loading} accessibilityLabel="Ask" accessibilityRole="button">
+          <TouchableOpacity style={[styles.askButton, (loading) && disabledButtonStyle(colors)]} onPress={() => handleAsk()} disabled={loading} accessibilityLabel="Ask" accessibilityRole="button">
             {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.askButtonText}>Ask</Text>}
           </TouchableOpacity>
         </View>

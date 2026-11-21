@@ -30,6 +30,7 @@ import { FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE } from '../constants/quick
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { orderForTonight } from '../utils/meetTonight';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Taxonomy audit Phase 3 (CLAUDE.md, Aug 25 2026): the 3 real distance
 // buckets get_friend_discovery_candidates() already returns -- never a
@@ -375,7 +376,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
             {t('ui.friends.meetNewPeopleIntro')}
           </Text>
           <TouchableOpacity
-            style={styles.enableButton}
+            style={[styles.enableButton, (togglingOn) && disabledButtonStyle(colors)]}
             onPress={handleEnable}
             disabled={togglingOn}
             activeOpacity={0.85}

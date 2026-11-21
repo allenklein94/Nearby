@@ -9,6 +9,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation, showSuccessToast } from '../motion';
 import { reportRow, insertReport } from '../utils/reportContent';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // `value` is what is saved in reports.reason and read by the admin queue (English, unchanged); `key` names the chip label
 // in the person's language (ui.reportBlock.reason.<key>).
 const REPORT_REASONS = [
@@ -106,7 +107,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
             multiline
           />
 
-          <TouchableOpacity style={styles.reportButton} onPress={submitReport} disabled={submitting} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
+          <TouchableOpacity style={[styles.reportButton, (submitting) && disabledButtonStyle(colors)]} onPress={submitReport} disabled={submitting} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
             <Text style={styles.reportButtonText}>{submitting ? t('ui.reportBlock.submitting') : t('ui.reportBlock.submitReport')}</Text>
           </TouchableOpacity>
 

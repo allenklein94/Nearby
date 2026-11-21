@@ -26,6 +26,7 @@ import { followerCountLine, reliabilityLine, hoursLine, weekHoursRows, bookingMo
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
 // uploaded creative, rendered INSIDE its existing experience card, never
@@ -604,7 +605,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
                     </View>
                   ) : (
                     <TouchableOpacity
-                      style={styles.redeemButton}
+                      style={[styles.redeemButton, (redeemingId === offer.id) && disabledButtonStyle(colors)]}
                       onPress={() => handleRedeem(offer)}
                       disabled={redeemingId === offer.id}
                       activeOpacity={0.85}

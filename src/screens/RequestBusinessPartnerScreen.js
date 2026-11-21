@@ -11,6 +11,7 @@ import BusinessPicker from '../components/BusinessPicker';
 import { checkTextModeration } from '../services/textModeration';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Partner a COMMUNITY with one business (pick it, add a note, send the partnership request), or, from the Create tab with
 // no target, pick which gathering or community first. A gathering never stays here: asking one business for a gathering
@@ -167,7 +168,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
                 multiline
                 accessibilityLabel={t('ui.requestPartner.optionalNoteToTheBusinessA11y')}
               />
-              <TouchableOpacity style={styles.submitButton} onPress={submit} disabled={submitting} accessibilityRole="button">
+              <TouchableOpacity style={[styles.submitButton, (submitting) && disabledButtonStyle(colors)]} onPress={submit} disabled={submitting} accessibilityRole="button">
                 {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{t('ui.requestPartner.sendRequest')}</Text>}
               </TouchableOpacity>
           </>

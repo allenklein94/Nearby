@@ -25,6 +25,7 @@ import useCategoryNames from '../hooks/useCategoryNames';
 import { useLanguage } from '../context/LanguageContext';
 import { displayDateTime } from '../i18n/display';
 import ToggleRow from '../components/ToggleRow';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Labels come from ui.gatheringVocab.vibe.<column> (the same wording GatheringDetail shows).
 const VIBE_SCALES = [
   { key: 'energyLevel', column: 'energy_level' },
@@ -540,7 +541,7 @@ export default function EditGatheringScreen({ route, navigation }) {
           )}
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
             onPress={submit}
             disabled={submitting}
             activeOpacity={0.85}

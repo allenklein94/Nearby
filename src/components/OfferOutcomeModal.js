@@ -8,6 +8,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
 import { SATISFACTION_SCALE } from '../constants/satisfactionScale';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // The one shared four-option scale (constants/satisfactionScale.js), never a second one.
 const SATISFACTION_OPTIONS = SATISFACTION_SCALE;
 
@@ -139,7 +140,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
           />
 
           <TouchableOpacity
-            style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+            style={[styles.submitButton, !canSubmit && disabledButtonStyle(colors)]}
             onPress={handleSubmit}
             disabled={!canSubmit || submitting}
             activeOpacity={0.85}

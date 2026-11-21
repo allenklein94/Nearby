@@ -40,6 +40,7 @@ import { guessOccasionTypeFromEventTitle, formatCalendarEventDateLabel, filterUp
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Sep 14 2026 (CLAUDE.md, "global onboarding -> product wiring" master
 // plan, Phase H) -- a real Occasions CRUD screen, same shape/scope as
@@ -903,7 +904,7 @@ export default function OccasionsScreen({ navigation, route }) {
               </View>
               <Text style={{ color: colors.textPrimary }}>{t('ui.occasions.repeatsEveryYear2')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.addButton, (submitting) && disabledButtonStyle(colors)]} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
               <Text style={styles.addButtonText}>{submitting ? t('ui.occasions.adding') : t('ui.occasions.addOccasion')}</Text>
             </TouchableOpacity>
           </View>

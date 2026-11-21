@@ -16,6 +16,7 @@ import { spacing, radius, typography } from '../theme';
 import { NLoader, modalAnimation, showSuccessToast } from '../motion';
 import { inviteSentConfirmation } from '../utils/actionConfirmations';
 import { inviteSheetRows, inviteStateMap, inviteRefusalState, inviteRowCanInvite, INVITE_ROW_LABEL_KEYS } from '../utils/inviteSheetRows';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Gathering invites go through the older, gathering-specific
 // invite_friend_to_gathering RPC (women-only + blocks-aware, already
 // wired here before this component also learned to invite to
@@ -151,7 +152,7 @@ export default function InviteFriendsModal({
                     </View>
                   ) : (
                     <TouchableOpacity
-                      style={[styles.inviteButton, state === 'sent' && styles.inviteButtonSent]}
+                      style={[styles.inviteButton, state === 'sent' && styles.inviteButtonSent, (invitingId === item.id || !inviteRowCanInvite(state)) && disabledButtonStyle(colors)]}
                       onPress={() => handleInvite(item.id)}
                       disabled={invitingId === item.id || !inviteRowCanInvite(state)}
                       accessibilityLabel={state === 'sent' ? t('ui.inviteModal.inviteSentA11y') : t('ui.inviteModal.inviteA11y', { name: item.display_name })}

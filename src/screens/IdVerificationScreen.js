@@ -8,6 +8,7 @@ import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function IdVerificationScreen() {
   const { colors, shadow } = useTheme();
@@ -138,7 +139,7 @@ export default function IdVerificationScreen() {
         )}
 
         <TouchableOpacity
-          style={styles.submitButton}
+          style={[styles.submitButton, (submitting || !selfieAsset || !idAsset) && disabledButtonStyle(colors)]}
           onPress={handleSubmit}
           disabled={submitting || !selfieAsset || !idAsset}
           activeOpacity={0.85}

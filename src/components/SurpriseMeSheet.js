@@ -7,6 +7,7 @@ import { WHEN_OPTIONS, MOOD_OPTIONS } from '../services/surpriseMeLogic';
 import { modalAnimation } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { surpriseText } from '../i18n/surpriseView';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // A mood chip keeps its emoji; the word is the person's language.
 const moodChip = (opt, language) => `${opt.label.split(' ')[0]} ${surpriseText(language, `sheet.moods.${opt.key}`)}`;
@@ -78,7 +79,7 @@ export default function SurpriseMeSheet({ visible, onClose, onSubmit }) {
           </View>
 
           <TouchableOpacity
-            style={[styles.submitButton, !mood && styles.submitButtonDisabled]}
+            style={[styles.submitButton, !mood && disabledButtonStyle(colors)]}
             onPress={submit}
             disabled={!mood}
             accessibilityLabel={t('title')}

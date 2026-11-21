@@ -19,6 +19,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import { inviteSentConfirmation } from '../utils/actionConfirmations';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Replaces the old plain Alert.alert('Posted!', ...) dead end with two
 // real actions — a working shareable deep link (needs the `linking`
 // config added to RootNavigator.js; a "shareable link" that silently
@@ -289,7 +290,7 @@ export default function GatheringPublishedPanel({ topInset = 0, gathering, gathe
                         {f.sharedContext && <Text style={styles.friendContext}>{f.sharedContext}</Text>}
                       </View>
                       <TouchableOpacity
-                        style={[styles.inviteButton, invitedIds[f.id] && styles.inviteButtonSent]}
+                        style={[styles.inviteButton, invitedIds[f.id] && styles.inviteButtonSent, (invitingId === f.id || invitedIds[f.id]) && disabledButtonStyle(colors)]}
                         onPress={() => handleInvite(f.id)}
                         disabled={invitingId === f.id || invitedIds[f.id]}
                         accessibilityLabel={invitedIds[f.id] ? t('ui.gatheringConfirmation.inviteSentA11y') : t('ui.gatheringConfirmation.inviteA11y', { name: f.display_name })}

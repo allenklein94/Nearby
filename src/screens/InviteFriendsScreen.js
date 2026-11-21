@@ -10,6 +10,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function InviteFriendsScreen() {
   const { colors, shadow } = useTheme();
@@ -132,7 +133,7 @@ export default function InviteFriendsScreen() {
                 accessibilityLabel={t('ui.inviteFriends.referralCodeA11y')}
               />
               <TouchableOpacity
-                style={styles.redeemButton}
+                style={[styles.redeemButton, (redeeming || !redeemInput.trim()) && disabledButtonStyle(colors)]}
                 onPress={handleRedeem}
                 disabled={redeeming || !redeemInput.trim()}
                 accessibilityLabel={t('inviteFriends.redeem')}

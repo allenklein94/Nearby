@@ -32,6 +32,7 @@ import { unlockStatus } from '../utils/unlockProgress';
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import { displayGatheringDateTime } from '../i18n/display';
+import { disabledButtonStyle } from '../constants/buttonStates';
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
 export default function CommunityDetailScreen({ route, navigation }) {
@@ -596,7 +597,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
                     </View>
                   ) : (
                     <TouchableOpacity
-                      style={styles.perkRedeemButton}
+                      style={[styles.perkRedeemButton, (redeemingOfferId === offer.id) && disabledButtonStyle(colors)]}
                       onPress={() => handleRedeemOffer(offer)}
                       disabled={redeemingOfferId === offer.id}
                       activeOpacity={0.85}
@@ -897,7 +898,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
               <TouchableOpacity onPress={() => setAreaModalVisible(false)} style={styles.modalCancelButton} accessibilityLabel={t('ui.community.cancelA11y2')} accessibilityRole="button">
                 <Text style={styles.modalCancelButtonText}>{t('ui.community.cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleSaveArea} disabled={savingArea} style={styles.modalSaveButton} accessibilityLabel={t('ui.community.saveCommunityAreaA11y')} accessibilityRole="button">
+              <TouchableOpacity onPress={handleSaveArea} disabled={savingArea} style={[styles.modalSaveButton, (savingArea) && disabledButtonStyle(colors)]} accessibilityLabel={t('ui.community.saveCommunityAreaA11y')} accessibilityRole="button">
                 <Text style={styles.modalSaveButtonText}>{savingArea ? t('ui.community.saving') : t('ui.community.save')}</Text>
               </TouchableOpacity>
             </View>

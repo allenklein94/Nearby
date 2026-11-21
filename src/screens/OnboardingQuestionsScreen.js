@@ -9,6 +9,7 @@ import { sanitizeInterestGroups } from '../constants/interestGraph';
 import { categoryName, groupName } from '../i18n/categoryNames';
 import { QUICK_INTERESTS, onboardingInterestSelection, migrateOnboardingDraft, savedOnboardingInterests, ONBOARDING_DRAFT_VERSION } from '../constants/onboardingInterests';
 import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // This screen runs before signup — there's no account yet to save
 // these answers to. They're held in AsyncStorage temporarily and
@@ -308,7 +309,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
           ))}
         </View>
         <TouchableOpacity
-          style={[styles.button, !canContinue && styles.buttonDisabled]}
+          style={[styles.button, !canContinue && disabledButtonStyle(colors)]}
           onPress={handleContinue}
           disabled={!canContinue || saving}
           activeOpacity={0.85}

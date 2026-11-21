@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Placeholders: ui.matchNotes.memoryVault.placeholder.<key>.
 // A section label without its leading emoji, for screen readers; letters of every script are kept (the old /[^\w\s]/
@@ -126,7 +127,7 @@ export default function MemoryVaultScreen({ route }) {
                     accessibilityLabel={t('ui.matchNotes.memoryVault.addToA11y', { section: stripIcon(label) })}
                   />
                   <TouchableOpacity
-                    style={styles.addButton}
+                    style={[styles.addButton, (submittingCategory === category.key) && disabledButtonStyle(colors)]}
                     onPress={() => handleAdd(category.key)}
                     disabled={submittingCategory === category.key}
                     accessibilityLabel={t('ui.matchNotes.memoryVault.addMemoryToA11y', { section: stripIcon(label) })}

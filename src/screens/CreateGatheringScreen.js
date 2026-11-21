@@ -45,6 +45,7 @@ import { typography, spacing, radius } from '../theme';
 import { NLoader } from '../motion';
 import { getUserLocation } from '../services/userLocation';
 import useCategoryNames from '../hooks/useCategoryNames';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Real Free/$/$$/$$$ chip labels for the new Price field -- mirrors the
 // visual convention services/places.js's own priceLevelLabel() already
 // established for Google Places results, without reusing that function
@@ -1613,7 +1614,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.nextButton, finalProblems.length > 0 && { opacity: 0.5 }]}
+              style={[styles.nextButton, finalProblems.length > 0 && disabledButtonStyle(colors)]}
               onPress={submit}
               disabled={submitting || finalProblems.length > 0}
               activeOpacity={0.85}
