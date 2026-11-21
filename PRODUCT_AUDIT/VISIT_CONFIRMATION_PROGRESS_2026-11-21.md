@@ -74,3 +74,13 @@ Worktree `/workspaces/.nearby-verify/wt-visit`; logs `/workspaces/.nearby-verify
 ## Not done / blocked
 - No phone or real browser check (none available). No staging deploy (needs owner approval even for staging).
 - Native review of the new strings. Website export not regenerated or published (separate approval).
+
+## Staging preparation (2026-11-21, read-only on staging; nothing written)
+- Plan: section 2b (V0-V15) of `STAGING_E2E_TEST_PLAN_2026-11-15.md` (A11 + B5 now point to it); scripts
+  `scripts/staging/visit-confirmation-observe.sql` + `visit-confirmation-fingerprint.sql` (+ expected pre/with outputs),
+  both run locally against the with-0430 replay.
+- Staging read-only: ledger through 20270429, 0430-0432 next in order; the 19 objects 0430-0432 replace are byte-identical
+  to the tested pre-0430 state (V0 PASS); 0 requests / offers / reservations / no-shows (nothing to reconcile), 3 test
+  businesses, no automatic-reply policy yet.
+- Found: builds <= 87 still SHOW "✓ Visit confirmed" for the customer's own tap and "Redeemed" on the old business app card
+  (old screens read status); server figures correct. Release the new client before 0430 reaches production.
