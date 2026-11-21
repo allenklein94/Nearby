@@ -1,4 +1,5 @@
 import { canRespondToOpportunity, isOfferOpen } from './objectLifecycle';
+import { awaitsBusinessAnswer } from './visitConfirmation';
 import { localDayKey } from './dashboardGlance';
 
 // Owner item 147: the business's requests read as one lightweight pipeline, New -> Reviewing -> Offered -> Won ->
@@ -36,13 +37,15 @@ export function isPipelineOffered(o, now = new Date()) {
   return isOfferOpen(o, now);
 }
 
+// Won = booked and still waiting for the business's answer (accepted, or only the customer's own "Mark as done"), not a
+// no-show. Completed = the business confirmed the visit this month (visit_confirmed_at, 20270430), never a customer mark.
 export function isPipelineWon(o, noShowIds = new Set()) {
-  return o?.status === 'accepted' && !noShowIds.has(o?.id);
+  return awaitsBusinessAnswer(o, noShowIds);
 }
 
 export function isCompletedThisMonth(o, now = new Date()) {
-  if (o?.status !== 'completed' || !o?.completed_at) return false;
-  const key = localDayKey(o.completed_at);
+  if (!o?.visit_confirmed_at) return false;
+  const key = localDayKey(o.visit_confirmed_at);
   const today = localDayKey(now);
   return key != null && today != null && key.slice(0, 7) === today.slice(0, 7);
 }

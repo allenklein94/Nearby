@@ -41,7 +41,8 @@ import { getMyBusinessLocations, noteLocationAwareSession } from '../services/bu
 import { claimActingBusiness, releaseActingBusiness, onSelectionChanged } from '../services/actingBusiness';
 import { currentLocation, selectionChangedElsewhere } from '../utils/businessLocations';
 import OfferProgressSteps, { OfferProgressGlow } from '../motion/OfferProgressSteps';
-import { businessCardStatus, offerProgress, offersToAnimate, progressKey } from '../utils/offerProgress';
+import { businessCardStatus, offerProgress, offersToAnimate, progressKey, offerStage } from '../utils/offerProgress';
+import { canConfirmVisit, canReportNoShow } from '../utils/visitConfirmation';
 import { loadShownProgress, saveShownProgress, loadArrivedOpportunities, saveArrivedOpportunities } from '../services/offerProgressShown';
 import { newArrivals, arrivalSlots, arrivalKey } from '../utils/opportunityArrival';
 import OpportunityArrival, { ArrivalSignal } from '../motion/OpportunityArrival';
@@ -2106,7 +2107,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
       const toPlay = offersToAnimate(results, {
         previous: progressPrevRef.current, live, focusRequestId, shown: new Set(progressShownRef.current.list),
       });
-      progressPrevRef.current = new Map((results ?? []).map((o) => [o.id, o.status]));
+      progressPrevRef.current = new Map((results ?? []).map((o) => [o.id, offerStage(o)]));
       if (toPlay.length === 0) return;
       const keys = toPlay.map(progressKey);
       progressShownRef.current.list = await saveShownProgress(partnerId, progressShownRef.current.list, keys);

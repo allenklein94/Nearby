@@ -1323,4 +1323,183 @@ $function$
 
 ;
 
+CREATE OR REPLACE FUNCTION public.get_business_opportunities(partner_id_param uuid)
+ RETURNS jsonb
+ LANGUAGE plpgsql
+ STABLE SECURITY DEFINER
+ SET search_path TO 'public'
+AS $function$
+declare
+  v_result jsonb;
+begin
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and managed_partner_id = partner_id_param
+  ) then
+    raise exception 'Not authorized for this business';
+  end if;
+
+  select coalesce(jsonb_agg(row_to_json(t) order by t.created_at desc), '[]'::jsonb)
+  into v_result
+  from (
+    select
+      bro.id, bro.request_id, bro.partner_id, bro.offer_type, bro.offer_price, bro.price_is_per_person,
+      bro.offer_description, bro.proposed_time, bro.proposed_time_alt, bro.proposed_party_size_alt, bro.proposed_party_size, bro.created_at, bro.expires_at,
+      bro.offer_title, bro.included_items, bro.discount_pct, bro.valid_until, bro.available_from, bro.available_until,
+      bro.auto_reply, bro.revision, bro.revised_at,
+      bro.responded_at, bro.accepted_at, bro.completed_at, bro.status,
+      bro.availability_id, bro.decline_reason, bro.decline_note,
+      bro.experience_id, bro.media_path, bro.media_type, bro.cancelled_at, bro.package_id, bro.is_directed,
+      jsonb_build_object(
+        'category', br.category,
+        -- Item 119b: a booking made for fewer people shows the headcount booked (summary too), never the 6 asked for.
+        'party_size', coalesce(bro.proposed_party_size, br.party_size),
+        'budget_min', br.budget_min,
+        'budget_max', br.budget_max,
+        'date', br.date,
+        'time_window_start', br.time_window_start,
+        'time_window_end', br.time_window_end,
+        'status', br.status,
+        'expires_at', br.expires_at,
+        'summary', case when bro.proposed_party_size is not null and br.party_size is not null
+          then replace(public.business_safe_request_summary(br.id), 'party of ' || br.party_size, 'party of ' || bro.proposed_party_size)
+          else public.business_safe_request_summary(br.id) end,
+        'is_match_request', br.match_id is not null,
+        'attributes', br.attributes,
+        'dietary', case when cardinality(br.dietary) > 0 then to_jsonb(br.dietary) else null end,
+        'cuisine', br.cuisine,
+        'requested_items', case when cardinality(br.requested_items) > 0 then to_jsonb(br.requested_items) else null end,
+        'occasion', br.occasion,
+        'experience_level', br.experience_level,
+        'surprise_mode', br.surprise_mode,
+        'addon_type', br.addon_type,
+        'is_addon', br.parent_request_id is not null,
+        'plan_time', br.plan_time,
+        'note', case when bro.is_directed then br.note_for_business else null end,
+        'gatherings', case when g.id is not null then jsonb_build_object(
+          'interest_tag', g.interest_tag,
+          'title', case when bro.is_directed and public._title_safe_for_business(g.title) then g.title else null end,
+          'scheduled_at', g.scheduled_at,
+          'price_level', g.price_level
+        ) else null end,
+        'requester_display_name', case
+          when bro.status in ('accepted', 'completed') and br.match_id is null
+          then req.display_name
+          else null
+        end
+      ) as business_requests,
+      case when bres.id is not null then jsonb_build_object(
+        'status', bres.status,
+        'business_payments', case when bp.id is not null then jsonb_build_object('status', bp.status) else null end
+      ) else null end as business_reservations
+    from public.business_request_offers bro
+    join public.business_requests br on br.id = bro.request_id
+    left join public.gatherings g on g.id = br.gathering_id
+    left join public.profiles req on req.id = br.requester_id
+    left join public.business_reservations bres on bres.offer_id = bro.id
+    left join public.business_payments bp on bp.reservation_id = bres.id
+    where bro.partner_id = partner_id_param
+  ) t;
+
+  return v_result;
+end;
+$function$;
+
+
+-- Offer evidence + admin Offer history back to 20270416 (must run before the offer columns are dropped).
+drop function if exists public.admin_business_offer_history(uuid, integer);
+create or replace function public.admin_business_offer_history(partner_id_param uuid, limit_param integer default 50)
+returns table (offer_id uuid, source text, created_at timestamptz, offer_title text, offer_description text, status text,
+               screening text, screened_at timestamptz, viewed_at timestamptz, accepted_at timestamptz, completed_at timestamptz,
+               cancelled_at timestamptz, reported boolean)
+language plpgsql
+stable
+security definer
+set search_path to 'public'
+as $function$
+#variable_conflict use_column
+begin
+  if not check_is_admin(auth.uid()) then
+    raise exception 'Admins only' using errcode = '42501', hint = 'admin_only';
+  end if;
+  return query
+  with live as (
+    select o.id, 'live'::text as src, o.created_at, o.offer_title, o.offer_description, o.status,
+           case when o.auto_reply is not null then 'automatic' else s.risk_tier end as scr, s.created_at as scr_at,
+           o.viewed_at, o.accepted_at, o.completed_at, o.cancelled_at
+      from business_request_offers o
+      left join lateral (select r.risk_tier, r.created_at from business_content_screening_results r
+                          where r.partner_id = o.partner_id and r.target_type = 'offer_response' and r.target_id = o.request_id
+                          order by r.created_at desc limit 1) s on true
+     where o.partner_id = partner_id_param and o.status <> 'pending'
+  ), kept as (
+    select e.offer_id, 'kept'::text, e.created_at, e.offer_title, e.offer_description, e.status,
+           case when e.auto_reply is not null then 'automatic' else e.screening_risk_tier end, e.screened_at,
+           e.viewed_at, e.accepted_at, e.completed_at, e.cancelled_at
+      from private.offer_evidence e
+     where e.partner_id = partner_id_param
+  )
+  select a.id, a.src, a.created_at, a.offer_title, a.offer_description, a.status, a.scr, a.scr_at, a.viewed_at, a.accepted_at,
+         a.completed_at, a.cancelled_at,
+         exists (select 1 from reports r where r.content_type = 'business_offer' and r.content_id = a.id)
+    from (select * from live union all select * from kept) a
+   order by a.created_at desc nulls last
+   limit greatest(1, least(coalesce(limit_param, 50), 200));
+end;
+$function$;
+
+revoke all on function public.admin_business_offer_history(uuid, integer) from public, anon;
+grant execute on function public.admin_business_offer_history(uuid, integer) to authenticated;
+
+create or replace function private.keep_offer_evidence(o public.business_request_offers)
+returns void
+language plpgsql
+security definer
+set search_path to 'public'
+as $function$
+declare
+  v_reasons record;
+  v_name text;
+  v_tier text;
+  v_screened timestamptz;
+  v_state text;
+begin
+  if o.status = 'pending' then
+    return; -- a routed request the business never answered: nothing the business sent
+  end if;
+  begin
+    if exists (select 1 from private.offer_evidence e where e.offer_id = o.id) then
+      return;
+    end if;
+    select * into v_reasons from private.offer_evidence_reasons(o.id, o.partner_id);
+    if cardinality(v_reasons.report_ids) + cardinality(v_reasons.case_ids) + cardinality(v_reasons.hold_ids) = 0 then
+      return;
+    end if;
+    select bp.name into v_name from brand_partners bp where bp.id = o.partner_id;
+    select s.risk_tier, s.created_at into v_tier, v_screened
+      from business_content_screening_results s
+     where s.partner_id = o.partner_id and s.target_type = 'offer_response' and s.target_id = o.request_id
+     order by s.created_at desc limit 1;
+    insert into private.offer_evidence (offer_id, partner_id, partner_name, request_id, offer_type, offer_title, offer_description,
+        included_items, redemption_instructions, offer_price, price_is_per_person, discount_pct, proposed_time, proposed_time_alt,
+        auto_reply, status, created_at, responded_at, viewed_at, accepted_at, completed_at, cancelled_at,
+        screening_risk_tier, screened_at, kept_for_reports, kept_for_cases, kept_for_holds)
+      values (o.id, o.partner_id, v_name, o.request_id, o.offer_type, o.offer_title, o.offer_description,
+        o.included_items, o.redemption_instructions, o.offer_price, o.price_is_per_person, o.discount_pct,
+        o.proposed_time, o.proposed_time_alt, o.auto_reply, o.status, o.created_at, o.responded_at, o.viewed_at,
+        o.accepted_at, o.completed_at, o.cancelled_at, v_tier, v_screened,
+        v_reasons.report_ids, v_reasons.case_ids, v_reasons.hold_ids)
+      on conflict (offer_id) do nothing;
+  exception when others then
+    get stacked diagnostics v_state = returned_sqlstate;
+    begin
+      insert into private.offer_evidence_failures (offer_id, sqlstate) values (o.id, v_state);
+    exception when others then null;
+    end;
+  end;
+end;
+$function$;
+
+alter table private.offer_evidence drop column if exists visit_confirmed_at, drop column if exists customer_done_at;
+
 alter table public.business_request_offers drop column if exists visit_confirmed_at, drop column if exists customer_done_at;

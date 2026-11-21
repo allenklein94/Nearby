@@ -15,7 +15,8 @@ import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestP
 import { getRespondingBusinesses, subscribeToRespondingChanges, nextRespondingCheckMs } from '../services/offerResponding';
 import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
-import { progressKey, visitConfirmationsToAnimate } from '../utils/offerProgress';
+import { progressKey, visitConfirmationsToAnimate, offerStage } from '../utils/offerProgress';
+import { canMarkDone, isVisitConfirmed } from '../utils/visitConfirmation';
 import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgressShown';
 import { acceptedWhenLine, bookedPartySize } from '../utils/acceptedBooking';
 import { offerToPlanMergeNow, planMergeScroll, planTogetherYieldsToMerge, mergeTravelPath } from '../utils/offerToPlanMerge';
@@ -382,7 +383,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     liveReloadRef.current = false;
     try {
       const previous = visitPrevRef.current;
-      visitPrevRef.current = new Map((list ?? []).map((o) => [o.id, o.status]));
+      visitPrevRef.current = new Map((list ?? []).map((o) => [o.id, offerStage(o)]));
       if (!uid || !previous) return;
       if (visitShownRef.current.userId !== uid || !visitShownRef.current.list) {
         visitShownRef.current = { userId: uid, list: await loadShown(visitConfirmedKey(uid)) };
