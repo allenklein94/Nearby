@@ -176,3 +176,21 @@ Branch: `integ/staging-run` (never merged). Logs: /workspaces/.nearby-verify/v46
   Stage B (kept for now, commented out): L2 + its membership/follower/message (keep to repeat E8 in a real browser once phone
   sign-in works, or move to A if not wanted), W/W2 businesses + messages, W's email settings row (E1 needs it), the 4 accounts
   (Auth admin API), and the staging Resend key (owner). Applying either stage = owner approval.
+
+## Twilio staging upgrade DEFERRED (owner, 2026-11-21)
+
+- Owner decision: no Twilio upgrade ($20 not spent), production Twilio credentials never reused on staging, no change to
+  production Auth. The staging Twilio account stays an isolated trial subaccount. Staging Auth phone sign-in stays off.
+- Phone-dependent staging tests are **BLOCKED (no SMS provider on staging)**, never FAIL: real-browser phone sign-in +
+  the signed-in conversation journey (incl. repeating E8 in a real browser), the app half of E11, E13, E14, E15.
+  E13-E15 also need a staging phone build (owner-run EAS build), so an SMS provider alone does not unblock them.
+- Fixtures kept for that future run (Stage B of `scripts/staging/cleanup-e-tests.sql` NOT applied): accounts W, W2, C, C2;
+  businesses W, W2, L2 + memberships/followers/messages; W's verified email settings row; W's confirmed test phone
+  15615550110 (inert while phone sign-in is off); the staging Resend key.
+- Closed by code reading (2026-11-21): outbox rows staying `queued` after send-push answers 200 = BY DESIGN, not a defect.
+  `push_outbox.status` allows only pending/queued/retry/failed (20270248); `queued` = handed to send-push, HTTP results
+  after hand-off are never retried, queued rows are deleted after 7 days.
+- Still doable without phone sign-in: E3 + E22 (owner: Resend "Delivered", SPF/DKIM headers, raw source carries no
+  customer data); E16 (owner-scheduled controlled provider-failure test, needs the staging Resend secret swapped + restored
+  by the owner). E23 waits for the custom-domain cutover (its own approval).
+- Nothing merged, deployed or published; Build 87 and production untouched.
