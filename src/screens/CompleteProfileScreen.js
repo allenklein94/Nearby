@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, Platform, Linking, ScrollView } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
+import FieldError from '../components/FieldError';
+import useFormErrors from '../hooks/useFormErrors';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { supabase } from '../services/supabase';
 import { saveMyNewProfile } from '../services/myProfile';
@@ -65,6 +68,7 @@ export default function CompleteProfileScreen() {
   const { colors, isDark } = useTheme();
   const { t, language } = useLanguage();
   const styles = getStyles(colors);
+  const form = useFormErrors();
   const [step, setStep] = useState(0);
   const [displayName, setDisplayName] = useState('');
   const [birthdate, setBirthdate] = useState(null);
@@ -167,19 +171,24 @@ export default function CompleteProfileScreen() {
 
   function goNext() {
     if (stepKey === 'about') {
+      // A blocked Next explains the first problem under its field, scrolled into view (owner UX audit, 2026-11-21).
       if (!displayName.trim()) {
-        return Alert.alert(t('ui.onboarding.nameRequired'), t('ui.onboarding.enterADisplayName'));
+        form.show('name', t('ui.onboarding.enterADisplayName'));
+        return;
       }
       if (!birthdate) {
-        return Alert.alert(t('ui.onboarding.birthdateRequired'), t('ui.onboarding.thisAppIs18Only'));
+        form.show('birthdate', t('ui.onboarding.thisAppIs18Only'));
+        return;
       }
       const age = calculateAge(birthdate);
       if (age < MIN_AGE) {
-        return Alert.alert(t('ui.onboarding.ageRequirementNotMet'), t('ui.onboarding.youMustBe18Or'));
+        form.show('birthdate', t('ui.onboarding.youMustBe18Or'));
+        return;
       }
     }
     if (stepKey === 'photo' && !photoAsset) {
-      return Alert.alert(t('ui.onboarding.photoRequired'), t('ui.onboarding.addAProfilePhotoTo'));
+      form.show('photo', t('ui.onboarding.addAProfilePhotoTo'));
+      return;
     }
     setStep((s) => Math.min(s + 1, STEP_DEFS.length - 1));
   }
@@ -190,7 +199,8 @@ export default function CompleteProfileScreen() {
 
   async function submit() {
     if (!agreedToTerms) {
-      return Alert.alert(t('ui.onboarding.agreementRequired'), t('ui.onboarding.youMustAgreeToThe'));
+      form.show('terms', t('ui.onboarding.youMustAgreeToThe'));
+      return;
     }
 
     const nameCheck = await checkTextModeration(displayName);
@@ -287,7 +297,9 @@ export default function CompleteProfileScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl }}>
+      <KeyboardSafeView>
+      <ScrollView ref={form.scrollRef} contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl }}>
+        <View ref={form.contentRef}>
         <Text style={styles.header} accessibilityRole="header">{t('completeProfile.header')}</Text>
         <Text style={styles.subheader}>{t('completeProfile.subheader')}</Text>
 
@@ -306,16 +318,20 @@ export default function CompleteProfileScreen() {
               <Text style={styles.badgeText}>{t('ui.onboarding.n18Only')}</Text>
             </View>
 
+            <View ref={form.anchor('name')} />
             <Text style={styles.label}>{t('completeProfile.displayName')}</Text>
             <TextInput
+              ref={form.input('name')}
               style={styles.input}
               value={displayName}
-              onChangeText={setDisplayName}
+              onChangeText={(v) => { setDisplayName(v); form.clear('name'); }}
               placeholder={t('completeProfile.displayNamePlaceholder')}
               placeholderTextColor={colors.textTertiary}
               accessibilityLabel={t('ui.onboarding.displayNameA11y')}
             />
+            <FieldError message={form.errorFor('name')} />
 
+            <View ref={form.anchor('birthdate')} />
             <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
             <TouchableOpacity
               style={styles.input}
@@ -336,13 +352,15 @@ export default function CompleteProfileScreen() {
                 themeVariant={isDark ? 'dark' : 'light'}
                 onChange={(event, selectedDate) => {
                   setShowPicker(Platform.OS === 'ios');
-                  if (selectedDate) setBirthdate(selectedDate);
+                  if (selectedDate) { setBirthdate(selectedDate); form.clear('birthdate'); }
                 }}
               />
             )}
+            <FieldError message={form.errorFor('birthdate')} />
           </>
         )}
 
+        {stepKey === 'photo' && <View ref={form.anchor('photo')} />}
         {stepKey === 'photo' && (
           <>
             <Text style={styles.label}>{t('completeProfile.profilePhoto')}</Text>
@@ -359,6 +377,7 @@ export default function CompleteProfileScreen() {
                 <Text style={styles.photoPickerText}>📷{'\n'}{t('ui.onboarding.tapToChooseAPhoto')}</Text>
               )}
             </TouchableOpacity>
+            <FieldError message={photoAsset ? null : form.errorFor('photo')} />
             <Text style={styles.helperText}>{t('completeProfile.photoHelper')}</Text>
           </>
         )}
@@ -386,6 +405,7 @@ export default function CompleteProfileScreen() {
               })}
             </View>
 
+            <View ref={form.anchor('terms')} />
             <TouchableOpacity
               style={styles.consentRow}
               onPress={() => setAgreedToTerms(!agreedToTerms)}
@@ -404,6 +424,7 @@ export default function CompleteProfileScreen() {
                 <Text style={styles.link} onPress={() => Linking.openURL(PRIVACY_URL)}>{t('completeProfile.privacyPolicy')}</Text>
               </Text>
             </TouchableOpacity>
+            <FieldError message={agreedToTerms ? null : form.errorFor('terms')} />
           </>
         )}
 
@@ -451,7 +472,9 @@ export default function CompleteProfileScreen() {
         >
           <Text style={styles.signOutLinkText}>{t('ui.onboarding.signOut2')}</Text>
         </TouchableOpacity>
+        </View>
       </ScrollView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }
