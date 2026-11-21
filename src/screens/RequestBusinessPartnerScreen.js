@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, FlatList, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import FadeInState from '../components/FadeInState';
 import { NLoader, showSuccessToast } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -140,7 +141,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
   }
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardSafeView>
       <SafeAreaView style={styles.container}>
         <Text style={styles.header}>{t('ui.requestPartner.partnerWithABusiness')}</Text>
         <Text style={styles.subheader}>for {selectedTarget?.title}</Text>
@@ -172,7 +173,7 @@ export default function RequestBusinessPartnerScreen({ navigation, route }) {
           </>
         )}
       </SafeAreaView>
-    </KeyboardAvoidingView>
+    </KeyboardSafeView>
   );
 }
 

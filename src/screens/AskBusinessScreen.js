@@ -14,7 +14,8 @@ import useFormDraft from '../hooks/useFormDraft';
 import DraftBanner from '../components/DraftBanner';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { formatDistance } from '../utils/formatDistance';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
 import { askSubmitLabel } from '../utils/askSubmitLabel';
@@ -636,7 +637,7 @@ export default function AskBusinessScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardSafeView>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           {askDraft.draft && (
             <DraftBanner
@@ -1171,7 +1172,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           </TouchableOpacity>
           </>)}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

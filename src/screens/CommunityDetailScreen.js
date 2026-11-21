@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
+import KeyboardSafeSheet from '../components/KeyboardSafeSheet';
 import { NLoader, SuccessAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
@@ -844,7 +845,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       />
 
       <Modal visible={areaModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAreaModalVisible(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardSafeSheet style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>{t('ui.community.communityArea')}</Text>
             <Text style={styles.modalSubtitle}>
@@ -891,7 +892,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardSafeSheet>
       </Modal>
       <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>

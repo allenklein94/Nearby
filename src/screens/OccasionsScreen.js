@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Platform, Modal } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import FadeInState from '../components/FadeInState';
 import { NLoader, SurpriseRevealAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -497,7 +498,7 @@ export default function OccasionsScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">{t('ui.occasions.occasionsReminders')}</Text>
           <Text style={styles.headerSubtitle}>
@@ -907,7 +908,7 @@ export default function OccasionsScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
 
       <Modal
         visible={showCalendarPicker}

@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { formatDistance } from '../utils/formatDistance';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, TextInput, Platform } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import { NLoader } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
@@ -294,7 +295,7 @@ export default function DateProposalScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <KeyboardSafeView>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.heading}>{t('ui.dateProposal.planSomethingTogether')}</Text>
           <Text style={styles.subtitle}>{t('ui.dateProposal.proposeAPlanWithOnce', { matchName: matchName })}</Text>
@@ -544,7 +545,7 @@ export default function DateProposalScreen({ navigation, route }) {
             </>
           )}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

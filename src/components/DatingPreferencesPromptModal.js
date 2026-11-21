@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Modal, SafeAreaView } from 'react-native';
+import KeyboardSafeSheet from './KeyboardSafeSheet';
 import { supabase } from '../services/supabase';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
@@ -113,6 +114,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} onRequestClose={handleSkip}>
+      <KeyboardSafeSheet>
       <SafeAreaView style={styles.container}>
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={styles.title}>{t('ui.datingPrompt.whatAreYouLookingFor')}</Text>
@@ -239,6 +241,7 @@ export default function DatingPreferencesPromptModal({ visible, userId, initialV
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+      </KeyboardSafeSheet>
     </Modal>
   );
 }

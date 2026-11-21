@@ -8,7 +8,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import ExperiencePerkLine from '../components/ExperiencePerkLine';
 import ExperienceComponentList from '../components/ExperienceComponentList';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, ActivityIndicator, Platform, Keyboard, TouchableWithoutFeedback } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { getMyFriends, getMutualFriends } from '../services/friends';
@@ -1129,7 +1130,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
             <Text style={styles.header} accessibilityRole="header">{t('ui.celebrate.planForSomeone')}</Text>
@@ -2212,7 +2213,7 @@ export default function CelebrateSomethingScreen({ navigation, route }) {
             )}
           </ScrollView>
         </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

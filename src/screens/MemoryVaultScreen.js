@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ActivityIndicator } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import { NLoader } from '../motion';
 import { addMemoryItem, getMemoryItems } from '../services/memoryVault';
 import { checkTextModeration } from '../services/textModeration';
@@ -91,7 +92,7 @@ export default function MemoryVaultScreen({ route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">{t('memoryVault.title')}</Text>
           <Text style={styles.headerSubtitle}>
@@ -138,7 +139,7 @@ export default function MemoryVaultScreen({ route }) {
             );
           })}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

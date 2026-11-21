@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Modal, SafeAreaView } from 'react-native';
+import KeyboardSafeSheet from './KeyboardSafeSheet';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { DATING_QUICK_FILTER_CATALOG } from '../constants/quickFilterCatalog';
@@ -120,6 +121,7 @@ export default function FiltersModal({
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} onRequestClose={onClose}>
+      <KeyboardSafeSheet>
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} accessibilityLabel={t('ui.dating.cancelA11y')} accessibilityRole="button">
@@ -299,6 +301,7 @@ export default function FiltersModal({
           </TouchableOpacity>
         </View>
       </SafeAreaView>
+      </KeyboardSafeSheet>
     </Modal>
   );
 }

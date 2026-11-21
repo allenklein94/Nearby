@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import { checkTextModeration } from '../services/textModeration';
 import { supabase } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
@@ -63,7 +64,7 @@ export default function TogetherNotesScreen({ route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">{cfg.title(t)}</Text>
           <Text style={styles.headerSubtitle}>{cfg.subtitle(t, matchName)}</Text>
@@ -112,7 +113,7 @@ export default function TogetherNotesScreen({ route }) {
             );
           })}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

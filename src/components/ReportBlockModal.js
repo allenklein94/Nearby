@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
+import KeyboardSafeSheet from './KeyboardSafeSheet';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -77,7 +78,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <KeyboardSafeSheet style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>{t('ui.reportBlock.reportOrBlock')}</Text>
 
@@ -119,7 +120,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
             <Text style={styles.cancelText}>{t('ui.reportBlock.cancel')}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardSafeSheet>
     </Modal>
   );
 }

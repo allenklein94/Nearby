@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
+import KeyboardSafeSheet from './KeyboardSafeSheet';
 import { submitOfferOutcome } from '../services/businessFulfillment';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -66,7 +67,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
-      <View style={styles.overlay}>
+      <KeyboardSafeSheet style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>{t('ui.requestDetail.howDidItGo')}</Text>
           <View style={styles.satisfactionRow}>
@@ -151,7 +152,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
             <Text style={styles.skipText}>{t('ui.requestDetail.skip')}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardSafeSheet>
     </Modal>
   );
 }
