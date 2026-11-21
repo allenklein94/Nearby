@@ -2810,6 +2810,8 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
             await completeBusinessReservation(offerId);
             showSuccessToast(t('ui.requestDetail.visitConfirmed'));
             await loadOpportunities(selectedPartner.id);
+            // A confirmation is a redemption: re-read Home's month figures too (else they stayed stale until a reload).
+            loadOfferPerformance(selectedPartner.id);
           } catch (e) {
             presentRecoverableError(Alert, { what: 'confirm that visit', error: e, onRetry: () => handleConfirmVisit(offerId) });
           }

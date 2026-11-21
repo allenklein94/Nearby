@@ -10,6 +10,7 @@ import { installWebAlert } from './src/utils/webAlert';
 import BusinessWebNavigator from './src/navigation/BusinessWebNavigator';
 import { ENVIRONMENT_ERROR } from './src/services/supabase';
 import ConfigErrorScreen from './src/components/ConfigErrorScreen';
+import { SuccessToastHost } from './src/motion';
 
 // Item 127: enforce OS Reduce Motion for every Animated.spring/loop, once, at startup.
 installReducedMotionPolicy(Animated);
@@ -42,6 +43,8 @@ export default function App() {
         <AuthProvider>
           <StatusBarWithTheme />
           <BusinessWebNavigator />
+          {/* D1 (staging run 2026-11-21): without the host every showSuccessToast on the website was dropped silently. */}
+          <SuccessToastHost />
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>
