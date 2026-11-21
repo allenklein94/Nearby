@@ -757,10 +757,8 @@ export default function GatheringDetailScreen({ route, navigation }) {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl * 2 }}>
         {justPublished && gathering.isHost && (
-          // The header is transparent (for the hero image); the panel sits above the hero, so it starts below the
-          // header's back button instead of under it (owner UX audit, 2026-11-21).
-          <View style={{ paddingTop: transparentHeaderHeight }}>
           <GatheringPublishedPanel
+            topInset={transparentHeaderHeight}
             gathering={gathering}
             gatheringId={gatheringId}
             placeName={justPublished.placeName ?? null}
@@ -772,7 +770,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
             onDone={() => navigation.setParams({ justPublished: undefined })}
             navigation={navigation}
           />
-          </View>
         )}
         {coverUrl ? (
           <Image source={{ uri: coverUrl }} style={styles.hero} accessibilityLabel={t('ui.gatherings.coverA11y', { name: gathering.title })} />

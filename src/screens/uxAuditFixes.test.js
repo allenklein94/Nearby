@@ -53,7 +53,8 @@ test('no content under a transparent header', () => {
   expect(line).not.toContain('headerTransparent: true');
   const detail = read('screens/GatheringDetailScreen.js');
   expect(detail).toContain('useContext(HeaderHeightContext)');
-  expect(detail).toMatch(/paddingTop: transparentHeaderHeight \}\}>\s*<GatheringPublishedPanel/);
+  expect(detail).toMatch(/<GatheringPublishedPanel\s*topInset=\{transparentHeaderHeight\}/);
+  expect(read('components/GatheringPublishedPanel.js')).toContain('paddingTop: topInset + spacing.md');
 });
 
 test('community gathering rows open that gathering by id', () => {
@@ -92,10 +93,9 @@ describe('inline missing-field errors', () => {
       expect(src).toContain(`form.errorFor('${f}')`);
     }
   });
-  test('AskBusiness: a blocked Send explains under the field instead of an alert; item 84 marks kept', () => {
+  test('AskBusiness: a blocked Send also explains under the field (item 84 alert + marks kept)', () => {
     const src = read('screens/AskBusinessScreen.js');
-    expect(src).toContain('form.show(missing.key');
-    expect(src).not.toMatch(/Alert\.alert\(t\(`ui\.askBusiness\.missing\./);
+    expect(src).toMatch(/form\.show\(missing\.key[^\n]*\n\s*Alert\.alert\(t\(`ui\.askBusiness\.missing\./);
     expect(src).toContain('styles.missingMark');
     for (const k of ['text', 'category', 'day', 'party']) expect(src).toContain(`{missingMark('${k}')}`);
   });

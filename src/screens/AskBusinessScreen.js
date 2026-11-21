@@ -412,10 +412,10 @@ export default function AskBusinessScreen({ navigation, route }) {
   const carriedRows = fromAsk ? fromWhatYouSaidRows({ inferredSummary: route.params?.carriedSummary }) : [];
   const [carriedDismissed, setCarriedDismissed] = useState(false);
   const [carriedSettled, setCarriedSettled] = useState(false);
+  const missingKeys = fromAsk ? askMissingFields(askForm).map((m) => m.key) : [];
   const stillMissingKeys = askMissingFields(askForm).map((m) => m.key);
-  const missingKeys = fromAsk ? stillMissingKeys : [];
   // A blocked Send (owner UX audit, 2026-11-21) explains the first missing field under it, scrolled into view (+ focus for a
-  // text field), instead of an alert; the explanation leaves once that field is filled. Item 84's marks are unchanged.
+  // text field); item 84's alert stays as the backstop and its marks are unchanged. The explanation leaves once the field is filled.
   const form = useFormErrors();
   function missingMark(key) {
     return (
@@ -480,6 +480,7 @@ export default function AskBusinessScreen({ navigation, route }) {
     const missing = findMissingField();
     if (missing) {
       form.show(missing.key, t(`ui.askBusiness.missing.${missing.key}.body`));
+      Alert.alert(t(`ui.askBusiness.missing.${missing.key}.title`), t(`ui.askBusiness.missing.${missing.key}.body`));
       return;
     }
     if (targetPartner && noteToBusiness.trim()) {

@@ -30,7 +30,9 @@ import { inviteSentConfirmation } from '../utils/actionConfirmations';
 // with, and its Done then replaced it with the gathering. Publishing now lands on GatheringDetail, which shows this panel
 // once at the top (route param justPublished); Done / "I'll do this later" just closes it, so the host is already on
 // their gathering and Back returns where they started Create from.
-export default function GatheringPublishedPanel({ gathering, gatheringId, placeName, customLocation = false, communityName = null, firstHosted = false, businessesAsked, preInviteResult, onDone, navigation }) {
+// topInset: the transparent header's height on GatheringDetail, so the panel starts below the back button (owner UX audit,
+// 2026-11-21); 0 elsewhere.
+export default function GatheringPublishedPanel({ topInset = 0, gathering, gatheringId, placeName, customLocation = false, communityName = null, firstHosted = false, businessesAsked, preInviteResult, onDone, navigation }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -173,7 +175,7 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, topInset > 0 && { paddingTop: topInset + spacing.md }]}>
         <Animated.View style={{ opacity: markOpacity, transform: [{ scale: markScale }], marginBottom: spacing.xs }}>
           <NearbyMark size={40} />
         </Animated.View>
