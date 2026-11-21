@@ -194,3 +194,10 @@ Branch: `integ/staging-run` (never merged). Logs: /workspaces/.nearby-verify/v46
   customer data); E16 (owner-scheduled controlled provider-failure test, needs the staging Resend secret swapped + restored
   by the owner). E23 waits for the custom-domain cutover (its own approval).
 - Nothing merged, deployed or published; Build 87 and production untouched.
+
+## E3 + E22 (owner, 2026-11-21)
+
+- **E3 PASS (owner-verified):** the staging test emails show Delivered in Resend; SPF and DKIM pass in the headers.
+- **E22 PASS (owner-verified):** the raw email source carries no customer name, message text or customer id.
+- E16 stays DEFERRED (owner). Phone-dependent checks stay BLOCKED, not failed. Twilio not upgraded.
+- Staging email checklist now: every non-phone check PASS except E16 (deferred) and E23 (after the custom-domain cutover).
