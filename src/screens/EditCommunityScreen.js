@@ -7,9 +7,8 @@ import FieldError from '../components/FieldError';
 import useFormErrors from '../hooks/useFormErrors';
 import { updateCommunity } from '../services/communities';
 import { checkTextModeration } from '../services/textModeration';
-import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
-import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import TagGroupPicker from '../components/TagGroupPicker';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -102,31 +101,13 @@ export default function EditCommunityScreen({ route, navigation }) {
           </View>
 
           <Text style={styles.label}>{t('ui.community.category')}</Text>
-          <View style={styles.chipsWrap}>
-            {INTEREST_OPTIONS.map((option) => {
-              const style = categoryStyleFor(option);
-              const isSelected = interestTag === option;
-              const photoUrl = curatedCoverPhotoFor(option);
-              return (
-                <TouchableOpacity
-                  key={option}
-                  style={[
-                    styles.chip,
-                    !isSelected && { backgroundColor: `${style.color}20`, borderColor: `${style.color}40` },
-                    isSelected && { backgroundColor: style.color, borderColor: style.color },
-                  ]}
-                  onPress={() => setInterestTag(interestTag === option ? null : option)}
-                  activeOpacity={0.85}
-                  accessibilityLabel={t('ui.community.categoryA11y', { tag: names.tag(option) })}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                >
-                  {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.chipPhoto} /> : null}
-                  <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>{photoUrl ? '' : `${style.icon} `}{names.tag(option)}</Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <TagGroupPicker
+            options={INTEREST_OPTIONS}
+            selected={interestTag ? [interestTag] : []}
+            onToggle={(option) => setInterestTag(interestTag === option ? null : option)}
+            single
+            chipA11yLabel={(option) => t('ui.community.categoryA11y', { tag: names.tag(option) })}
+          />
 
           <Text style={styles.label}>{t('ui.community.visibility')}</Text>
           <View style={{ flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg }}>
@@ -173,16 +154,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   header: { ...typography.title, color: colors.textPrimary, marginBottom: spacing.lg },
   label: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.xs, marginTop: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
-  chipsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  chipPhoto: { width: 18, height: 18, borderRadius: 9 },
-  chipText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600' },
-  chipTextSelected: { color: CATEGORY_BUTTON_TEXT_COLOR },
   visToggle: {
     flex: 1, padding: spacing.md, borderRadius: radius.lg, borderWidth: 1,
     borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center',

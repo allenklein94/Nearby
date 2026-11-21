@@ -24,6 +24,7 @@ import FriendDiscoveryList from '../components/FriendDiscoveryList';
 import { friendViewStyle, otherFriendViewStyle, undecidedCandidates } from '../utils/friendDiscoveryView';
 import LoadErrorState from '../components/LoadErrorState';
 import { PERSONAL_INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import TagGroupPicker from '../components/TagGroupPicker';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE } from '../constants/quickFilterCatalog';
 import { useTheme } from '../context/ThemeContext';
@@ -439,23 +440,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                   return (
                     <View key={key}>
                       <Text style={styles.accordionSubLabel}>{t('ui.friends.interests')}</Text>
-                      <View style={styles.filterChipRow}>
-                        {PERSONAL_INTEREST_OPTIONS.map((tag) => {
-                          const selected = interestFilters.includes(tag);
-                          return (
-                            <TouchableOpacity
-                              key={tag}
-                              style={[styles.filterChip, selected && styles.filterChipActive]}
-                              onPress={() => toggleInterestFilter(tag)}
-                              accessibilityLabel={names.tag(tag)}
-                              accessibilityRole="button"
-                              accessibilityState={{ selected }}
-                            >
-                              <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{names.tag(tag)}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
+                      <TagGroupPicker options={PERSONAL_INTEREST_OPTIONS} selected={interestFilters} onToggle={toggleInterestFilter} />
                     </View>
                   );
                 }

@@ -24,6 +24,7 @@ import { useTheme } from '../context/ThemeContext';
 import { formatAgo } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import TagGroupPicker from './TagGroupPicker';
 import { getBusinessExperiences } from '../services/brandOffers';
 import { withdrawBusinessOffer } from '../services/businessFulfillment';
 import { getBusinessEntitlements, hasEntitlement } from '../services/entitlements';
@@ -531,20 +532,15 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
                 </View>
 
                 <Text style={styles.fieldLabel}>Category</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
-                  <View style={styles.chipRow}>
-                    {INTEREST_OPTIONS.map((c) => (
-                      <TouchableOpacity
-                        key={c}
-                        style={[styles.chip, categoryInput === c && styles.chipSelected]}
-                        onPress={() => setCategoryInput(c)}
-                        accessibilityRole="button"
-                      >
-                        <Text style={[styles.chipText, categoryInput === c && styles.chipTextSelected]}>{c}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
+                <View style={{ marginBottom: spacing.md }}>
+                  <TagGroupPicker
+                    options={INTEREST_OPTIONS}
+                    selected={categoryInput ? [categoryInput] : []}
+                    onToggle={(c) => setCategoryInput(c)}
+                    single
+                    labelFor={(c) => c}
+                  />
+                </View>
 
                 <Text style={styles.fieldLabel}>Send This Offer Template</Text>
                 {experiences.length === 0 ? (

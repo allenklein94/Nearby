@@ -28,6 +28,7 @@ import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import TagGroupPicker from '../components/TagGroupPicker';
 import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/businessAttributes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
@@ -1412,24 +1413,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         <View onLayout={(e) => { interestsSectionYRef.current = e.nativeEvent.layout.y; }}>
           <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.interestsSection')}</Text>
         </View>
-        <View style={styles.chipsWrap}>
-          {INTEREST_OPTIONS.map((interest) => {
-            const selected = interests.includes(interest);
-            return (
-              <TouchableOpacity
-                key={interest}
-                style={[styles.chip, selected && styles.chipSelected]}
-                onPress={() => toggleInterest(interest)}
-                activeOpacity={0.85}
-                accessibilityLabel={names.tag(interest)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{names.tag(interest)}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <TagGroupPicker options={INTEREST_OPTIONS} selected={interests} onToggle={toggleInterest} />
 
         {/* Item 100 (CLAUDE.md, "Let the recipient contribute preferences
             without spoiling the surprise"), half A -- a real, optional,
