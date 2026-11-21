@@ -56,7 +56,6 @@ export default function EditCommunityScreen({ route, navigation }) {
     setSubmitting(false);
   }
 
-  const selectedStyle = interestTag ? categoryStyleFor(interestTag) : null;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -135,7 +134,7 @@ export default function EditCommunityScreen({ route, navigation }) {
           </View>
 
           <TouchableOpacity
-            style={[styles.button, selectedStyle && { backgroundColor: selectedStyle.color }]}
+            style={styles.button}
             onPress={submit}
             disabled={submitting}
             activeOpacity={0.85}
