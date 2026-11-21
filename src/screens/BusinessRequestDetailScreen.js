@@ -52,7 +52,6 @@ import { validityLabel, isOfferExpired, availableWindowLabel, nextValidityRefres
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { expiredRequestAction, askAgainTomorrowParams, isReopenTimePassedError } from '../utils/requestAskAgain';
 import { getGatheringById } from '../services/gatherings';
-import { canCompleteVisit } from '../utils/dashboardGlance';
 import { consumerOfferAction } from '../utils/primaryAction';
 import { offerCloseRefusal } from '../utils/offerCloseClock';
 import useOfferCloseClock from '../hooks/useOfferCloseClock';
@@ -323,8 +322,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // rest of this visit (a reload here never takes it away mid-view; the next visit reads the history again = normal).
   const [firstReplyOfferId, setFirstReplyOfferId] = useState(null);
   const firstReplyDecided = useRef(false);
-  // Item 52: the person's first-ever redemption (their earliest completed offer, from the server). Once known it never moves
-  // ('completed' is final), so it is read only until found, and only while this request has a completed offer of theirs.
+  // Item 52: the person's first-ever redemption (their earliest offer whose visit the BUSINESS confirmed, from the server;
+  // 20270430). Once known it never moves (set once), so it is read only until found, and only while this request has a
+  // business-confirmed offer of theirs.
   const [firstRedemptionOfferId, setFirstRedemptionOfferId] = useState(null);
   const firstRedemptionRef = useRef(null);
   const [reasonAsk, setReasonAsk] = useState(null);
@@ -417,7 +417,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       if (decideFirst) firstReplyDecided.current = true;
       // Item 52: read with the offers, so "✓ Visit confirmed" and its first-time line arrive together (never a line popping in).
       const askFirstRedemption = !firstRedemptionRef.current && result.request.requester_id === uid
-        && result.offers.some((o) => o.status === 'completed');
+        && result.offers.some(isVisitConfirmed);
       const [logos, replyHistory, firstRedemptionId] = await Promise.all([
         logoIds.length > 0 ? getScreenedLogos(logoIds).catch(() => null) : null,
         decideFirst ? fetchFirstReplyState(uid) : null, // null on failure = normal wording
@@ -1706,7 +1706,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             <View collapsable={false} ref={(el) => { cardRefs.current[o.id] = el; if (focusOfferId === o.id) focusCardRef.current = el; }} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
             {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
             <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
-            {o.status === 'completed' ? (
+            {isVisitConfirmed(o) ? (
               <OfferProgressGlow key={progressKey(o)} play={visitPlayKeys.has(progressKey(o))} color={colors.success} radius={radius.lg} timing={SEQUENCES.visitConfirmed} />
             ) : null}
             <View>
@@ -1738,6 +1738,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         person's first-ever redemption, one more line says what they just did (words only). */}
                     {confirmation.visitConfirmed ? (
                       <VisitConfirmed key={progressKey(o)} label={t('ui.requestDetail.visitConfirmed')} note={confirmation.firstVisitNote} play={visitPlayKeys.has(progressKey(o))} soundCue={SOUND_CUES.visitConfirmed} />
+                    ) : null}
+                    {/* 20270430: the person's own "Mark as done" is personal: a plain fact, never "Visit confirmed" (only the
+                        business confirms a visit). */}
+                    {confirmation.markedDone ? (
+                      <Text style={styles.acceptedFact}>{`✓ ${t('ui.requestDetail.markedAsDone')}`}</Text>
                     ) : null}
                   </OfferAcceptedMorph>
                 );
@@ -1892,15 +1897,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       </>
                     );
                   })()}
-                  {canCompleteVisit({ ...o, business_requests: o.business_requests ?? request }) && (
+                  {canMarkDone({ ...o, business_requests: o.business_requests ?? request }) && (
                   <TouchableOpacity
                     style={styles.completeButton}
                     onPress={() => handleComplete(o.id)}
                     disabled={actingOfferId === o.id}
-                    accessibilityLabel={t('ui.requestDetail.markThisReservationCompleteA11y')}
+                    accessibilityLabel={t('ui.requestDetail.markAsDoneA11y')}
                     accessibilityRole="button"
                   >
-                    {actingOfferId === o.id ? <ActivityIndicator color={colors.primary} size="small" /> : <Text style={styles.completeButtonText}>{t('ui.requestDetail.markAsCompleted')}</Text>}
+                    {actingOfferId === o.id ? <ActivityIndicator color={colors.primary} size="small" /> : <Text style={styles.completeButtonText}>{t('ui.requestDetail.markAsDone')}</Text>}
                   </TouchableOpacity>
                   )}
                   <TouchableOpacity

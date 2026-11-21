@@ -42,7 +42,7 @@ d('journey: customer "Mark as done" is personal; business "Confirm visit" is the
      'ok', v_msg not like '%NO ERROR%' and (select customer_done_at is null and visit_confirmed_at is null and status = 'accepted' from business_request_offers where id = v_offer),
      'data', jsonb_build_object('message', v_msg)));
 
-  update business_requests set date = current_date - 1 where id = v_req;
+  update business_requests set date = current_date - 2 where id = v_req;
 
   -- 2. strangers and another business are refused
   perform set_config('request.jwt.claims', json_build_object('sub', v_x, 'role', 'authenticated')::text, true);
@@ -65,7 +65,7 @@ d('journey: customer "Mark as done" is personal; business "Confirm visit" is the
      'data', jsonb_build_object('result', v_res, 'row', v_row - 'offer_description', 'events', v_events)));
 
   -- 4. "N plans this month" counts it (personal completion)
-  select count(*) into v_n from get_my_plans_this_month(now() - interval '40 days', now() + interval '1 day') where plan_key like '%' || v_offer::text || '%';
+  select count(*) into v_n from get_my_plans_this_month(now() - interval '40 days', now() + interval '1 day') where plan_key = 'r:' || v_req::text;
   log := log || jsonb_build_array(jsonb_build_object('step','plans_this_month_counts_personal','ok', v_n = 1, 'data', jsonb_build_object('rows', v_n)));
 
   -- 5. no business figure moves; the booking stays in Bookings with no confirmation

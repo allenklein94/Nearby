@@ -66,7 +66,7 @@ import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCr
 import { sanitizePlainLanguageSuggestion, plainLanguageDiffers, plainLanguageContext, claimProblem, acceptPlainLanguage } from '../utils/plainLanguageOffer';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
 import { priorityTimeRangeFromChoice, priorityTimeStringToDate, priorityTimeRangeLabel } from '../utils/priorityTimeRange';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, markBusinessNoShow, getMyBusinessNoShows, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, uploadBusinessLogo, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue, getPartnerOfferFunnel } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, markBusinessNoShow, getMyBusinessNoShows, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, uploadBusinessLogo, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue, getPartnerOfferFunnel, completeBusinessReservation } from '../services/businessFulfillment';
 import { submissionView, inFlightRequestIds, payloadToForm } from '../utils/offerSubmission';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
@@ -724,6 +724,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
     return true;
   }, []);
   const [markingNoShowId, setMarkingNoShowId] = useState(null);
+  const [confirmingVisitId, setConfirmingVisitId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   // After offerModalRequestId's declaration: reading it earlier is a ReferenceError in browsers (blank web dashboard, 2026-11-14).
   useEffect(() => {
@@ -2795,6 +2796,29 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
     ]);
   }
 
+  // 20270430 (owner decisions 2026-11-21): the business is authoritative for a visit. "Confirm visit" calls the same
+  // complete_business_reservation the customer's "Mark as done" calls; the server knows who is asking (the business =
+  // visit_confirmed_at, the only confirmed visit / redemption) and refuses before the visit day, after a no-show, or for
+  // another business. Repeat = success, nothing changes. Cannot be undone, so it asks once.
+  function handleConfirmVisit(offerId) {
+    Alert.alert(t('ui.bizDash1.confirmThisVisit'), t('ui.bizDash1.confirmThisVisitBody'), [
+      { text: t('ui.bizDash1.neverMind'), style: 'cancel' },
+      {
+        text: t('ui.bizDash2.confirmVisit'), onPress: async () => {
+          setConfirmingVisitId(offerId);
+          try {
+            await completeBusinessReservation(offerId);
+            showSuccessToast(t('ui.requestDetail.visitConfirmed'));
+            await loadOpportunities(selectedPartner.id);
+          } catch (e) {
+            presentRecoverableError(Alert, { what: 'confirm that visit', error: e, onRetry: () => handleConfirmVisit(offerId) });
+          }
+          setConfirmingVisitId(null);
+        },
+      },
+    ]);
+  }
+
   function handleCancelReservation(offerId) {
     Alert.alert(t('ui.bizDash1.cancelThisReservation'), t('ui.bizDash1.theCustomerWillBeNotified'), [
       { text: t('ui.bizDash1.neverMind'), style: 'cancel' },
@@ -4230,6 +4254,24 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                             </Text>
                           )}
                           <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
+                          {/* 20270430: the business confirms the visit (from its day on). The primary action here. */}
+                          {canConfirmVisit(o, { noShowIds }) && (
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                              onPress={() => handleConfirmVisit(o.id)}
+                              disabled={confirmingVisitId === o.id}
+                              accessibilityLabel={t('ui.bizDash2.confirmVisitA11y')}
+                              accessibilityRole="button"
+                            >
+                              {confirmingVisitId === o.id ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                              ) : (
+                                <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.confirmVisit')}</Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
+                          {/* Cancel only while still booked (the server refuses it once either side marked it done). */}
+                          {o.status === 'accepted' && (
                           <TouchableOpacity
                             style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.danger, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                             onPress={() => handleCancelReservation(o.id)}
@@ -4243,7 +4285,8 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                               <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>{t('ui.bizDash2.cancelReservation')}</Text>
                             )}
                           </TouchableOpacity>
-                          {visitHasPassed(o) && (
+                          )}
+                          {visitHasPassed(o) && canReportNoShow(o, noShowIds) && (
                             <TouchableOpacity
                               style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.border, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
                               onPress={() => handleMarkNoShow(o.id)}
