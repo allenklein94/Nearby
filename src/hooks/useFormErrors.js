@@ -6,8 +6,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { firstFormProblem, formErrorScrollY } from '../utils/formErrors';
 
-export default function useFormErrors() {
-  const scrollRef = useRef(null);
+// options.scrollRef: a screen that already holds its ScrollView's ref passes it in. contentRef is optional: without it the
+// ScrollView's own content view (getInnerViewRef) is the measuring base.
+export default function useFormErrors(options = {}) {
+  const ownScrollRef = useRef(null);
+  const scrollRef = options.scrollRef ?? ownScrollRef;
   const contentRef = useRef(null);
   const anchors = useRef({});
   const inputs = useRef({});
@@ -50,7 +53,7 @@ export default function useFormErrors() {
     if (!reveal) return undefined;
     const frame = requestAnimationFrame(() => {
       const node = anchors.current[reveal.field];
-      const content = contentRef.current;
+      const content = contentRef.current ?? scrollRef.current?.getInnerViewRef?.();
       const focus = () => inputs.current[reveal.field]?.focus?.();
       if (!node || !content || !scrollRef.current) { focus(); return; }
       try {
@@ -68,6 +71,7 @@ export default function useFormErrors() {
       }
     });
     return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reveal]);
 
   return { scrollRef, contentRef, anchor, input, show, showFirst, clear, errorFor: (field) => errors[field] ?? null };

@@ -7,6 +7,9 @@ import { getInsightsStats } from '../services/insights';
 import React, { useEffect, useRef, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
+import FieldError from '../components/FieldError';
+import useFormErrors from '../hooks/useFormErrors';
 import { supabase } from '../services/supabase';
 import { readMyProfile } from '../services/myProfile';
 import { useTheme } from '../context/ThemeContext';
@@ -192,6 +195,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const recordingIntroRef = useRef(null);
   const recordingIntroTimerRef = useRef(null);
   const scrollRef = useRef(null);
+  const form = useFormErrors({ scrollRef });
   const editSectionYRef = useRef(0);
   const interestsSectionYRef = useRef(0);
   // Edit mode: what the form held when it loaded (or was last saved), so Back can tell whether anything would be lost.
@@ -579,11 +583,13 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   async function save() {
     const nameCheck = await checkTextModeration(displayName);
     if (!nameCheck.safe) {
-      return Alert.alert(t('ui.profile.displayNameNotAllowed'), t('ui.profile.pleaseReviseYourDisplayName'));
+      form.show('name', t('ui.profile.pleaseReviseYourDisplayName'));
+      return;
     }
     const bioCheck = await checkTextModeration(bio);
     if (!bioCheck.safe) {
-      return Alert.alert(t('ui.profile.bioNotAllowed'), t('ui.profile.pleaseReviseYourBioAnd'));
+      form.show('bio', t('ui.profile.pleaseReviseYourBioAnd'));
+      return;
     }
     for (const [label, value] of [[t('ui.profile.fieldPronouns'), pronouns], [t('ui.profile.fieldGender'), gender], [t('ui.profile.fieldOrientation'), sexualOrientation]]) {
       if (value.trim()) {
@@ -720,6 +726,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardSafeView>
       <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }} onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={64}>
         {!editing && (
           <>
@@ -1081,18 +1088,23 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         <Text style={styles.helperText}>{t('ui.profile.tapAndHoldAPhoto', { max: MAX_EXTRA_PHOTOS })}</Text>
 
         <View style={styles.formCard}>
+          <View ref={form.anchor('name')} />
           <Text style={styles.label}>{t('profile.displayName')}</Text>
-          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} accessibilityLabel={t('ui.profile.displayNameA11y')} />
+          <TextInput ref={form.input('name')} style={styles.input} value={displayName} onChangeText={(v) => { setDisplayName(v); form.clear('name'); }} placeholderTextColor={colors.textTertiary} accessibilityLabel={t('ui.profile.displayNameA11y')} />
+          <FieldError message={form.errorFor('name')} />
 
+          <View ref={form.anchor('bio')} />
           <Text style={styles.label}>{t('profile.bio')}</Text>
           <TextInput
+            ref={form.input('bio')}
             style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
             value={bio}
-            onChangeText={setBio}
+            onChangeText={(v) => { setBio(v); form.clear('bio'); }}
             multiline
             placeholderTextColor={colors.textTertiary}
             accessibilityLabel={t('ui.profile.bioA11y')}
           />
+          <FieldError message={form.errorFor('bio')} />
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.prompts')}</Text>
@@ -1477,6 +1489,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
           </>
         )}
       </ScrollView>
+      </KeyboardSafeView>
 
       <Modal visible={questionPickerVisible} animationType={modalAnimation('slide')} onRequestClose={() => setQuestionPickerVisible(false)}>
         <SafeAreaView style={styles.container}>
