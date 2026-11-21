@@ -164,3 +164,24 @@ entitlement-gated reads (missed-match, category outcomes) log 400 console errors
 **Still not run (need the owner):** V3 + V6 customer half + V10 app half + V12 = staging iPhone build (P2 blocked on the
 `nearby-staging` Expo project id: not readable from this session); V6 toast in a real browser after D1's fix; V15 rollback
 rehearsal (own approval).
+
+**D1 FIXED on this branch only (0ee217ca4, owner approved 2026-11-21; main untouched).** `App.web.js` mounts the existing
+`SuccessToastHost` (one line + import; no new component, screen or motion). Also: a website "Confirm visit" re-reads Home's
+month figures with the existing `loadOfferPerformance` (read-only). Guard `src/motion/successToastHostMounted.test.js` (both
+roots mount the host once, inside ThemeProvider, after the navigator; one toast at a time; confirm re-reads the figures).
+Jest 596/596 suites, 8027 tests. Website re-exported against staging (`vc-staging/web-d1`, from the main checkout detached at
+0ee217ca4, then switched back to main). Headless run against real staging (`vc-staging/web-run-d1/`), fresh bookings X3 + X4:
+
+| Check | Result |
+|---|---|
+| Single confirm (X3) | PASS: one dialog, one call `{confirmed}`, "✓ Visit confirmed" toast shown once (1 appearance, never 2 at once; screenshot 30) |
+| Rapid double-click (X4) | PASS: one dialog, one server call, one toast; X4 one redemption event |
+| Home figures | PASS: 6 -> 7 -> 8 redeemed without a reload; server confirmed_visits 8 |
+| Other 12 toasts | NOT each triggered in the browser: they call the same `showSuccessToast` into the same single host (code + guard); a re-save of "what you're looking for" was tried but its button was not reachable headless |
+
+**"Didn't show up" before the visit time: NOT fixed (not a straightforward UI fix).** The button is already gated by
+`visitHasPassed`, which reads the request's date + start on the BUSINESS's clock; the server reads them in the CUSTOMER's
+profile timezone, falling back to UTC-12 when it is unset or 'UTC' (as for these fixtures), so on staging the server's visit
+time is 12 h later than the browser's. A client-only guess would either keep this gap or hide the button for hours for real
+customers in other zones. Correct fix = the server sends its visit instant (`_visit_starts_at`) with each booking: a
+migration change, so separate approval. Real customers with a set timezone in the business's own zone see no gap.
