@@ -15,6 +15,8 @@ import DraftBanner from '../components/DraftBanner';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { formatDistance } from '../utils/formatDistance';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, ActivityIndicator, Alert, Platform } from 'react-native';
+import FieldError from '../components/FieldError';
+import useFormErrors from '../hooks/useFormErrors';
 import KeyboardSafeView from '../components/KeyboardSafeView';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { submitBusinessRequest, submitBusinessRequestForGathering, submitBusinessRequestForCommunity, searchActiveBusinessAvailability } from '../services/businessFulfillment';
@@ -410,10 +412,19 @@ export default function AskBusinessScreen({ navigation, route }) {
   const carriedRows = fromAsk ? fromWhatYouSaidRows({ inferredSummary: route.params?.carriedSummary }) : [];
   const [carriedDismissed, setCarriedDismissed] = useState(false);
   const [carriedSettled, setCarriedSettled] = useState(false);
-  const missingKeys = fromAsk ? askMissingFields(askForm).map((m) => m.key) : [];
+  const stillMissingKeys = askMissingFields(askForm).map((m) => m.key);
+  const missingKeys = fromAsk ? stillMissingKeys : [];
+  // A blocked Send (owner UX audit, 2026-11-21) explains the first missing field under it, scrolled into view (+ focus for a
+  // text field), instead of an alert; the explanation leaves once that field is filled. Item 84's marks are unchanged.
+  const form = useFormErrors();
   function missingMark(key) {
-    if (!missingKeys.includes(key)) return null;
-    return <Text style={styles.missingMark} accessibilityLiveRegion="polite">{t(`ui.askBusiness.missing.${key}.title`)}</Text>;
+    return (
+      <>
+        <View ref={form.anchor(key)} />
+        {missingKeys.includes(key) ? <Text style={styles.missingMark} accessibilityLiveRegion="polite">{t(`ui.askBusiness.missing.${key}.title`)}</Text> : null}
+        <FieldError message={stillMissingKeys.includes(key) ? form.errorFor(key) : null} />
+      </>
+    );
   }
   const carriedValue = (r) => {
     if (r.layer === 'activity') return names.tag(r.key);
@@ -468,7 +479,7 @@ export default function AskBusinessScreen({ navigation, route }) {
   async function handleSubmit() {
     const missing = findMissingField();
     if (missing) {
-      Alert.alert(t(`ui.askBusiness.missing.${missing.key}.title`), t(`ui.askBusiness.missing.${missing.key}.body`));
+      form.show(missing.key, t(`ui.askBusiness.missing.${missing.key}.body`));
       return;
     }
     if (targetPartner && noteToBusiness.trim()) {
@@ -638,7 +649,8 @@ export default function AskBusinessScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardSafeView>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
+        <ScrollView ref={form.scrollRef} contentContainerStyle={{ padding: spacing.lg }}>
+          <View ref={form.contentRef}>
           {askDraft.draft && (
             <DraftBanner
               what="request"
@@ -723,6 +735,7 @@ export default function AskBusinessScreen({ navigation, route }) {
           <Text style={styles.label}>{t('ui.askBusiness.whatDoYouWant')}</Text>
           {missingMark('text')}
           <TextInput
+            ref={form.input('text')}
             style={styles.textArea}
             placeholder={t('ui.askBusiness.dinnerFor4Tonight')}
             placeholderTextColor={colors.textTertiary}
@@ -854,6 +867,7 @@ export default function AskBusinessScreen({ navigation, route }) {
               <Text style={styles.label}>{t('ui.askBusiness.partySize')}</Text>
               {missingMark('party')}
               <TextInput
+                ref={form.input('party')}
                 style={styles.input}
                 placeholder={t('ui.askBusiness.partySizePlaceholder')}
                 placeholderTextColor={colors.textTertiary}
@@ -1171,6 +1185,7 @@ export default function AskBusinessScreen({ navigation, route }) {
             {submitting ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitButtonText}>{askSubmitLabel({ targetPartner, matchId, communityId })}</Text>}
           </TouchableOpacity>
           </>)}
+          </View>
         </ScrollView>
       </KeyboardSafeView>
     </SafeAreaView>

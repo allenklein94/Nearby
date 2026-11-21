@@ -9,6 +9,9 @@ import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { gatheringEditRefusal } from '../utils/gatheringEditRefusal';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
+import FieldError from '../components/FieldError';
+import useFormErrors from '../hooks/useFormErrors';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { checkTextModeration } from '../services/textModeration';
@@ -46,6 +49,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  const form = useFormErrors();
   // Item 74: Link only exists only for an Everyone gathering (also a DB CHECK).
   const canBeLinkOnly = (gathering.visibility ?? 'everyone') === 'everyone' && gathering.is_public !== false;
   const [title, setTitle] = useState(gathering.title);
@@ -122,21 +126,26 @@ export default function EditGatheringScreen({ route, navigation }) {
   }
 
   async function submit() {
+    // A blocked save explains itself under the field (top to bottom: title, then time), scrolled into view.
     if (!title.trim()) {
-      return Alert.alert(t('ui.gatheringForm.alert.titleRequired'), t('ui.gatheringForm.alert.titleRequiredBody'));
+      form.show('title', t('ui.gatheringForm.alert.titleRequiredBody'));
+      return;
     }
     if (scheduledAt.getTime() <= Date.now()) {
-      return Alert.alert(t('ui.gatheringForm.edit.pickFutureTime'), t('ui.gatheringForm.alert.pickTimeBody'));
+      form.show('when', t('ui.gatheringForm.alert.pickTimeBody'));
+      return;
     }
 
     const titleCheck = await checkTextModeration(title);
     if (!titleCheck.safe) {
-      return Alert.alert(t('ui.gatheringForm.alert.titleNotAllowed'), t('ui.gatheringForm.alert.reviseBody'));
+      form.show('title', t('ui.gatheringForm.alert.reviseBody'));
+      return;
     }
     if (description.trim()) {
       const descCheck = await checkTextModeration(description);
       if (!descCheck.safe) {
-        return Alert.alert(t('ui.gatheringForm.alert.descNotAllowed'), t('ui.gatheringForm.alert.reviseDescBody'));
+        form.show('description', t('ui.gatheringForm.alert.reviseDescBody'));
+        return;
       }
     }
 
@@ -187,19 +196,25 @@ export default function EditGatheringScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardSafeView>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={form.scrollRef} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+          <View ref={form.contentRef}>
           <Text style={styles.header}>{t('ui.gatheringForm.edit.header')}</Text>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.cantChange')}</Text>
 
+          <View ref={form.anchor('title')}>
           <Text style={styles.label}>{t('ui.gatheringForm.edit.title')}</Text>
           <TextInput
+            ref={form.input('title')}
             style={styles.input}
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(v) => { setTitle(v); form.clear('title'); }}
             placeholderTextColor={colors.textTertiary}
             accessibilityLabel={t('ui.gatheringForm.titleA11y')}
           />
+          <FieldError message={form.errorFor('title')} />
+          </View>
 
           {missingCategory && (
             <>
@@ -230,16 +245,21 @@ export default function EditGatheringScreen({ route, navigation }) {
             </>
           )}
 
+          <View ref={form.anchor('description')}>
           <Text style={styles.label}>{t('ui.gatheringForm.edit.description')}</Text>
           <TextInput
+            ref={form.input('description')}
             style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(v) => { setDescription(v); form.clear('description'); }}
             multiline
             placeholderTextColor={colors.textTertiary}
             accessibilityLabel={t('ui.gatheringForm.descriptionA11y')}
           />
+          <FieldError message={form.errorFor('description')} />
+          </View>
 
+          <View ref={form.anchor('when')}>
           <Text style={styles.label}>{t('ui.gatheringForm.edit.dateTime')}</Text>
           <TouchableOpacity
             style={styles.dateButton}
@@ -256,10 +276,12 @@ export default function EditGatheringScreen({ route, navigation }) {
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(event, selectedDate) => {
                 setShowPicker(Platform.OS === 'ios');
-                if (selectedDate) setScheduledAt(selectedDate);
+                if (selectedDate) { setScheduledAt(selectedDate); form.clear('when'); }
               }}
             />
           )}
+          <FieldError message={form.errorFor('when')} />
+          </View>
 
           <Text style={styles.label}>{t('ui.gatheringForm.edit.coverPhoto')}</Text>
           <TouchableOpacity
@@ -542,8 +564,10 @@ export default function EditGatheringScreen({ route, navigation }) {
           >
             <Text style={styles.buttonText}>{submitting ? t('ui.gatheringForm.edit.saving') : t('ui.gatheringForm.edit.save')}</Text>
           </TouchableOpacity>
+          </View>
         </ScrollView>
       </TouchableWithoutFeedback>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }
