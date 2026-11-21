@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
+import FieldError from '../components/FieldError';
+import useFormErrors from '../hooks/useFormErrors';
 import { createCommunity, seedCommunityFromGathering } from '../services/communities';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyManagedPartner } from '../services/brandOffers';
@@ -18,6 +21,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  const form = useFormErrors();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [interestTag, setInterestTag] = useState(null);
@@ -47,17 +51,20 @@ export default function CreateCommunityScreen({ navigation, route }) {
 
   async function submit() {
     if (!name.trim()) {
-      return Alert.alert(t('ui.community.nameRequired'), t('ui.community.giveYourCommunityAName'));
+      form.show('name', t('ui.community.giveYourCommunityAName'));
+      return;
     }
 
     const nameCheck = await checkTextModeration(name);
     if (!nameCheck.safe) {
-      return Alert.alert(t('ui.community.nameNotAllowed'), t('ui.community.pleaseReviseTheNameAnd'));
+      form.show('name', t('ui.community.pleaseReviseTheNameAnd'));
+      return;
     }
     if (description.trim()) {
       const descCheck = await checkTextModeration(description);
       if (!descCheck.safe) {
-        return Alert.alert(t('ui.community.descriptionNotAllowed'), t('ui.community.pleaseReviseYourDescriptionAnd'));
+        form.show('description', t('ui.community.pleaseReviseYourDescriptionAnd'));
+        return;
       }
     }
 
@@ -107,8 +114,10 @@ export default function CreateCommunityScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardSafeView>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={form.scrollRef} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+          <View ref={form.contentRef}>
           <Text style={styles.header}>{t('ui.community.createACommunity2')}</Text>
           <Text style={styles.subheader}>{t('ui.community.anOngoingGroupThatCan')}</Text>
 
@@ -118,26 +127,34 @@ export default function CreateCommunityScreen({ navigation, route }) {
             </View>
           )}
 
+          <View ref={form.anchor('name')}>
           <Text style={styles.label}>{t('ui.community.name')}</Text>
           <TextInput
+            ref={form.input('name')}
             style={styles.input}
             placeholder={t('ui.community.downtownRunners')}
             placeholderTextColor={colors.textTertiary}
             value={name}
-            onChangeText={setName}
+            onChangeText={(v) => { setName(v); form.clear('name'); }}
             accessibilityLabel={t('ui.community.communityNameA11y')}
           />
+          <FieldError message={form.errorFor('name')} />
+          </View>
 
+          <View ref={form.anchor('description')}>
           <Text style={styles.label}>{t('ui.community.description')}</Text>
           <TextInput
+            ref={form.input('description')}
             style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
             placeholder={t('ui.community.whatsThisCommunityAbout')}
             placeholderTextColor={colors.textTertiary}
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(v) => { setDescription(v); form.clear('description'); }}
             multiline
             accessibilityLabel={t('ui.community.communityDescriptionOptionalA11y')}
           />
+          <FieldError message={form.errorFor('description')} />
+          </View>
 
           <Text style={styles.label}>{t('ui.community.category')}</Text>
           <View style={styles.chipsWrap}>
@@ -198,8 +215,10 @@ export default function CreateCommunityScreen({ navigation, route }) {
           >
             <Text style={styles.buttonText}>{submitting ? t('ui.community.creating') : t('ui.community.createCommunity')}</Text>
           </TouchableOpacity>
+          </View>
         </ScrollView>
       </TouchableWithoutFeedback>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }
