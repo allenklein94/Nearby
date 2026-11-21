@@ -827,10 +827,20 @@ export default function CommunityDetailScreen({ route, navigation }) {
               ? gatherings.filter((g) => new Date(g.scheduled_at).toDateString() === selectedDate.toDateString())
               : gatherings
             ).map((g) => (
-              <View key={g.id} style={styles.gatheringCard}>
+              // Opens that gathering (owner UX audit, 2026-11-21: the rows were a dead end). GatheringDetail reads it
+              // through the viewer's own access rules, so nothing is shown that they couldn't already open.
+              <TouchableOpacity
+                key={g.id}
+                style={styles.gatheringCard}
+                onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`${g.title}, ${displayGatheringDateTime(g, language)}`}
+                accessibilityHint={t('ui.nav.viewGatheringA11y')}
+              >
                 <Text style={styles.gatheringTitle}>{g.title}</Text>
                 <Text style={styles.gatheringMeta}>{displayGatheringDateTime(g, language)}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </>
         )}
