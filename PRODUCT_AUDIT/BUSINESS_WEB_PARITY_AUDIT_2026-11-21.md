@@ -69,17 +69,32 @@ calls it is the customer's (`BusinessRequestDetailScreen`, `canCompleteVisit`); 
 (`git log -S`). So every reader of offer `completed` today counts customer self-marks as visits, contradicting the
 documented rule (items 52/53, ideas 343/388, the trust doctrine: "only a business-confirmed visit counts").
 
-## Recommended shape (for owner approval after Tier 1)
-Make offer `completed` MEAN business-confirmed, so the ~40 existing readers become correct without touching each one:
-1. Server: `complete_business_reservation` called by the business = today's behaviour. Called by the requester = record a
-   personal mark only (new nullable `customer_marked_done_at` on the offer or the plan; status unchanged, no event, no
-   metric). Builds <= 87 keep calling it from the customer side and get success, so nothing breaks.
-2. Business UI: "Confirm visit" on eligible bookings (same rule as `canCompleteVisit`: accepted, confirmed reservation, no
-   no-show, visit day reached), mutually exclusive with "Didn't show up" (the server already refuses completion after a
-   no-show; the reverse must be checked).
-3. Customer UI: "Visit confirmed" only from business confirmation; own mark shows a personal state. New wording needs the
-   owner's approval and native review.
-4. A journey covering both sides + the metric readers, run on a replay and staging before any deploy.
+## Owner decisions on the open questions (2026-11-21, for the post-Tier-1 plan)
+1. **Where the customer's mark lives:** on the specific offer/booking, never the plan (a plan can hold several bookings,
+   each with its own state). Personal completion is stored separately from business-confirmed attendance.
+2. **What counts where (three distinct metrics):**
+   - *Plans completed* ("N plans this month", item 53) = may count customer-reported personal completion.
+   - *Confirmed visits* = business-confirmed attendance only.
+   - *Redemptions* = verified redemption events under their own rules (perk codes stay separate).
+   Business performance, offer value, verified visit counts, redemption totals and any transaction metric never rise
+   from a customer's personal mark alone.
+3. **Wording:** customer action "Mark as done" -> "Marked as done"; after the business confirms: "Visit confirmed".
+   Never two competing completion buttons for the customer. New strings need native review.
+
+## Approach (owner safeguard, 2026-11-21): do NOT redefine `completed` in place
+The earlier recommendation (make `completed` mean business-confirmed so the ~40 readers change at once) is WITHDRAWN:
+it could silently change sponsored refunds, group bookings and historical reporting. Instead:
+1. Add a DISTINCT, backward-compatible business-confirmation state beside today's `completed` (exact shape decided by
+   the audit below), plus the customer's personal mark on the same offer/booking.
+2. Migrate each dependent calculation DELIBERATELY, one family at a time, each with its own test showing which events it
+   now counts (personal / confirmed / redeemed). Readers not yet migrated keep today's behaviour until they are.
+3. Older app versions (<= 87) keep working: the customer's existing button call must still succeed.
+4. Business "Confirm visit" lives in the existing Bookings interface (no new screen), same eligibility as
+   `canCompleteVisit`; idempotent (repeat = success, nothing changed); a confirmed visit and a no-show can never both
+   exist (the server already refuses completion after a no-show; the reverse refusal must be added and tested).
+5. Customer screen: "Visit confirmed" only from business confirmation; own mark shows "Marked as done".
+6. Journeys for both sides + every migrated reader, from-scratch replay + staging before any deploy; each step
+   (migration, build, website publish) keeps its own owner approval.
 
 ## Pre-implementation audit still to do (dependencies found, not yet read in full)
 Readers of offer `completed` / `completed_at` (migration families, `integ/staging-run`):
@@ -103,5 +118,6 @@ Readers of offer `completed` / `completed_at` (migration families, `integ/stagin
 - **Existing data:** production has 0 business offers (no backfill question); staging test rows were completed by
   whoever ran the test (confirmer unknown).
 
-Open owner questions: (1) where the customer's personal mark lives (offer vs plan); (2) whether "N plans this month"
-should still count a customer's own mark (today it does); (3) the customer-side wording for their own mark.
+The audit must also cover: permissions (requester vs business vs staged memberships), historical rows (what an existing
+`completed` means once the distinction exists: confirmer unknown; production has 0 offers), and how each reader family
+should classify personal vs confirmed. Open questions from 2026-11-21 are DECIDED (above).
