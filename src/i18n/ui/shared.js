@@ -480,7 +480,7 @@ export default {
         review_this_offer: { service: 'Hiện không thể xem xét ưu đãi này.', input: 'Không thể xem xét ưu đãi này. Hãy kiểm tra và thử lại.' },
         post_your_availability: { service: 'Hiện không thể đăng chỗ trống của bạn.', input: 'Không thể đăng chỗ trống của bạn. Hãy kiểm tra và thử lại.' },
         mark_that_visit: { service: 'Hiện không thể đánh dấu lượt ghé đó.', input: 'Không thể đánh dấu lượt ghé đó. Hãy kiểm tra và thử lại.' },
-        confirm_that_visit: { service: "Hiện không thể xác nhận lượt đến đó.", input: "Không thể xác nhận lượt đến đó. Vui lòng kiểm tra và thử lại." },
+        confirm_that_visit: { service: "Hiện không thể xác nhận lượt ghé đó.", input: "Không thể xác nhận lượt ghé đó. Hãy kiểm tra và thử lại." },
         forget_that: { service: 'Hiện không thể xóa mục đó.', input: 'Không thể xóa mục đó. Hãy kiểm tra và thử lại.' },
         find_places_nearby: { service: 'Hiện không thể tìm địa điểm gần đây.', input: 'Không thể tìm địa điểm gần đây. Hãy kiểm tra và thử lại.' },
         find_businesses_for_you: { service: 'Hiện không thể tìm cơ sở cho bạn.', input: 'Không thể tìm cơ sở cho bạn. Hãy kiểm tra và thử lại.' },
