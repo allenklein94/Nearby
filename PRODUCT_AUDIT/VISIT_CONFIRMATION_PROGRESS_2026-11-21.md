@@ -52,10 +52,25 @@ Worktree `/workspaces/.nearby-verify/wt-visit`; logs `/workspaces/.nearby-verify
 - Jest: `utils/visitConfirmation.test.js` + updated offer progress / pipeline / presentation / first redemption / moments /
   admin history / dashboard rule / lifecycle matrix (regenerated); guard allow-lists name 0432 for its views only.
 
-## Verification run
-(see `/workspaces/.nearby-verify/v463/progress.log`; summarized in the final report)
+## Verification run (2026-11-21, at 4e1ef0387; logs `/workspaces/.nearby-verify/v464` + `v464r`; local only, never production)
+- Rollback 0432 -> 0431 -> 0430 = the saved pre-0430 schema, 0 diff lines (the earlier 1-line diff was a stale
+  `private.offer_evidence.customer_done_at` left in the local container by a WIP version of 0430; dropped, not a rollback bug).
+- Journeys with 0430-0432: 1572/1572. On the rolled-back DB, offer + groupBooking journeys fail 50/79 (they really test 0430).
+  Re-apply after rollback = identical schema (0 diff lines).
+- Concurrency: visit-confirmation (confirm vs no-show: exactly one wins; double confirm; customer + business at once),
+  booking-capacity, reschedule-accept, offer-revision: all pass.
+- Jest 595/595 suites, 8023 tests (11 todo). Fixed this run: `offerAcceptedMorph.test.js` had a syntax error (the suite
+  had never run; it now passes), moment 6's fixture remembered the raw status instead of `offerStage()` (code was right),
+  + a new case: customer marks done, then the business confirms live = the Visit confirmed moment plays once.
+- iOS + web exports clean (4e1ef0387).
+- From-scratch replay on an EMPTY database (PG 17.6 + real Auth schema, the established recipe): 555/555 migrations incl.
+  0430-0432, journeys 1572/1572 on it.
+- Reviewed by hand: `complete_business_reservation` vs its 20270330 predecessor (no check dropped; builds <= 87 still get
+  `success: true`); every trigger on business_request_offers (only `_learn_from_redemption` reads 'completed', the
+  customer's own learning, left on status by design); `business_lifecycle_events` (service role only, records status
+  truthfully; the funnel reads it only for 'offered'); website confirm dialog (`utils/webAlert.js` -> window.confirm);
+  client 'completed' readers outside the rule are booked-state checks (accepted|completed), correct as is.
 
 ## Not done / blocked
 - No phone or real browser check (none available). No staging deploy (needs owner approval even for staging).
 - Native review of the new strings. Website export not regenerated or published (separate approval).
-- 0430-0432 applied on top of a from-scratch 0429 replay, not replayed from an empty database.
