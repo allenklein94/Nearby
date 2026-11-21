@@ -136,3 +136,31 @@ no-show once the visit time has passed."), and Z was then simply confirmed. Redo
 
 Observation (not 0430's change, recorded for the owner): after a no-show the offer stays `accepted`, the reservation
 `confirmed` and the customer's plan `confirmed` (N2, R3); the customer can't read no-shows, so their plan still reads booked.
+
+**Website on staging (P3; 2026-11-21 21:20-21:30 UTC).** The local export `vc-staging/web` (built 20:34 from 4d9f501fe, embedded
+env = staging, `nearbyEnv.variant` staging, placeholder Expo project id 00000000-...0429 = web needs none; production ref
+appears only in environments.js's PRODUCTION table), served on a private port inside the Playwright container, driven
+headless against REAL staging (no mocks): owner W's real session (password grant) put in the website's own storage key;
+selected location L1. Fresh booking X2 (C2, Coffee, 10:30 local = 22:30 UTC, automatic reply accepted 21:19:49, C2 marked
+done 21:20:00). Evidence `vc-staging/web-run/` (log, screenshots, page text).
+
+| # | Result |
+|---|---|
+| V2 (website) | PASS: T (Nov 22) card shows only "Cancel Reservation", no "Confirm visit" / "Didn't show up" |
+| V5 (website) | PASS: X2 customer-marked, still listed in Upcoming with "Confirm visit" + "Didn't show up"; Home Performance "5 redeemed" (customer marks not counted) |
+| V6 (website) | PASS except the toast: browser confirm "Confirm this visit?\n\nConfirm only once the customer has been here. It counts as a confirmed visit and can't be undone." -> OK -> `{success, confirmed}`; card leaves Upcoming; observe X2 confirmed, events 1; reload: Home "6 redeemed" = server 6. **FAIL: no "Visit confirmed" toast** (see defect D1). Customer half = phone |
+| V7 (website) | Second tab dropped the button by itself (live reload), so a stale-tab tap can't be made; repeat already PASS via the API |
+| V9 (website) | PASS: no-show bookings Z2 / N2 / R3 not listed; `get_my_business_no_shows` returns the three |
+| V13 (website) | PASS: L2's booking M not listed while L1 is selected |
+| push | PASS: since 21:19 only opportunity / offer accepted / reservation confirmed queued; nothing for the mark or the confirmation |
+
+**D1 (defect, website, NOT specific to this branch; main has it too):** `App.web.js` never mounts `SuccessToastHost`, so every
+`showSuccessToast` on the business website is dropped silently (13 calls in BusinessDashboardScreen, incl. "Visit
+confirmed"). Smallest fix: mount `<SuccessToastHost />` in App.web.js. NOT built (needs approval; main = build 87's source).
+**Minor:** Home's figures refresh only on reload after a confirm (switching tabs shows the old "5 redeemed"); "Didn't show up"
+is shown before the visit time (N, visit 08:46 UTC tomorrow) and the server refuses it with a clear message; two
+entitlement-gated reads (missed-match, category outcomes) log 400 console errors on load (pre-existing).
+
+**Still not run (need the owner):** V3 + V6 customer half + V10 app half + V12 = staging iPhone build (P2 blocked on the
+`nearby-staging` Expo project id: not readable from this session); V6 toast in a real browser after D1's fix; V15 rollback
+rehearsal (own approval).
