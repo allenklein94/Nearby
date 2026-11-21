@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useFormDraft from '../hooks/useFormDraft';
 import DraftBanner from '../components/DraftBanner';
 import FromWhatYouSaidCard from '../components/FromWhatYouSaidCard';
@@ -128,6 +128,9 @@ const formatText = (t, o) => (o.key === null ? t('ui.gatheringOptions.notSpecifi
 // "Outstanding: Capacity / Waitlist" section — and lives in "More
 // options" below (optional, defaults to No Limit, matching every
 // pre-existing gathering's real behavior).
+// How much of the field above its error stays visible after the scroll (label + input).
+const ERROR_SCROLL_CONTEXT = 120;
+
 export default function CreateGatheringScreen({ navigation, route }) {
   const names = useCategoryNames(); // category / occasion names shown in the person's language (display only)
   const { colors, shadow, isDark } = useTheme();
@@ -543,16 +546,57 @@ export default function CreateGatheringScreen({ navigation, route }) {
     pickCommunity: 'ui.gatheringForm.alert.pickCommunityBody', noCommunities: 'ui.gatheringForm.alert.noCommunitiesBody',
     invalidChoice: 'ui.gatheringForm.error.invalidChoice', invalidCapacity: 'ui.gatheringForm.error.invalidCapacity',
   };
+  // Next / Go to step with a problem: the screen scrolls to the TOPMOST shown error (owner UX plan, 2026-11-21) so the
+  // explanation is never off-screen, and a missing title focuses the Title field. Every entered value is kept.
+  const scrollRef = useRef(null);
+  const contentRef = useRef(null);
+  const titleInputRef = useRef(null);
+  const errorRefs = useRef({});
+  const [revealToken, setRevealToken] = useState(0);
   function fieldError(field) {
     const p = problemFor(shownProblems, field);
-    return p ? <Text style={styles.fieldError} accessibilityLiveRegion="polite">{t(ERROR_TEXT[p.code])}</Text> : null;
+    return p ? (
+      <Text
+        ref={(r) => { if (r) errorRefs.current[field] = r; else delete errorRefs.current[field]; }}
+        style={styles.fieldError}
+        accessibilityLiveRegion="polite"
+      >
+        {t(ERROR_TEXT[p.code])}
+      </Text>
+    ) : null;
   }
+  useEffect(() => {
+    if (!revealToken) return undefined;
+    const frame = requestAnimationFrame(() => {
+      const content = contentRef.current;
+      const shown = shownProblems.map((p) => errorRefs.current[p.field]).filter(Boolean);
+      if (!content || !scrollRef.current || shown.length === 0) return;
+      let best = null;
+      let pending = shown.length;
+      const done = () => {
+        pending -= 1;
+        if (pending > 0) return;
+        if (best != null) scrollRef.current?.scrollTo({ y: Math.max(0, best - ERROR_SCROLL_CONTEXT), animated: true });
+        if (shownProblems.some((p) => p.field === 'title')) titleInputRef.current?.focus();
+      };
+      shown.forEach((node) => {
+        try {
+          node.measureLayout(content, (_x, y) => { best = best == null ? y : Math.min(best, y); done(); }, done);
+        } catch (_e) {
+          done();
+        }
+      });
+    });
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealToken]);
 
   // Blocks only on a required value that is missing or invalid; keeps every value and stays on this step.
   function goNext() {
     if (stepProblems(stepKey, validationForm).length > 0) {
       setAttemptedStep(stepKey);
       if (stepKey === 'details') setShowMoreOptions(true); // its fields live under More options
+      setRevealToken((n) => n + 1);
       return;
     }
     setAttemptedStep(null);
@@ -575,6 +619,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
     setAttemptedStep(key);
     if (key === 'details') setShowMoreOptions(true);
     setStep(i);
+    setRevealToken((n) => n + 1);
   }
 
   async function submit() {
@@ -689,7 +734,8 @@ export default function CreateGatheringScreen({ navigation, route }) {
   return (
     <SafeAreaView style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+        <View ref={contentRef} collapsable={false}>
         <Text style={styles.header} accessibilityRole="header">{t('gatherings.createHeader')}</Text>
         <Text style={styles.subheader}>{t('gatherings.createSubheader')}</Text>
 
@@ -717,6 +763,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
           <>
             <Text style={styles.label}>{t('gatherings.titleLabel')}</Text>
             <TextInput
+              ref={titleInputRef}
               style={styles.input}
               placeholder={t('gatherings.titlePlaceholder')}
               placeholderTextColor={colors.textTertiary}
@@ -1556,7 +1603,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
           </TouchableOpacity>
           {step < STEP_DEFS.length - 1 ? (
             <TouchableOpacity
-              style={[styles.nextButton, selectedStyle && { backgroundColor: selectedStyle.color }]}
+              style={styles.nextButton}
               onPress={goNext}
               activeOpacity={0.85}
               accessibilityLabel={t('ui.common.next')}
@@ -1566,7 +1613,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
-              style={[styles.nextButton, selectedStyle && { backgroundColor: selectedStyle.color }, finalProblems.length > 0 && { opacity: 0.5 }]}
+              style={[styles.nextButton, finalProblems.length > 0 && { opacity: 0.5 }]}
               onPress={submit}
               disabled={submitting || finalProblems.length > 0}
               activeOpacity={0.85}
@@ -1576,6 +1623,7 @@ export default function CreateGatheringScreen({ navigation, route }) {
               <Text style={styles.nextButtonText}>{submitting ? t('gatherings.posting') : t('gatherings.postButton')}</Text>
             </TouchableOpacity>
           )}
+        </View>
         </View>
       </ScrollView>
       </TouchableWithoutFeedback>

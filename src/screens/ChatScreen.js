@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, Image, ActivityIndicator, AppState } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ActivityIndicator, AppState } from 'react-native';
 import FadeInState from '../components/FadeInState';
 import { NLoader, showSuccessToast } from '../motion';
-import { useHeaderHeight } from '@react-navigation/elements';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import { Audio, Video } from 'expo-av';
 import { supabase, functionUrl } from '../services/supabase';
 import { checkTextModeration } from '../services/textModeration';
@@ -116,7 +116,6 @@ export default function ChatScreen({ route, navigation }) {
   const { t, language } = useLanguage();
   const styles = getStyles(colors);
   const posthog = usePostHog();
-  const headerHeight = useHeaderHeight();
   const fetchPage = useCallback(async ({ limit, beforeCreatedAt }) => {
     let query = supabase
       .from('messages')
@@ -1193,11 +1192,7 @@ export default function ChatScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}
-      >
+      <KeyboardSafeView>
         {messages.length === 0 ? (
           <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
@@ -1486,7 +1481,7 @@ export default function ChatScreen({ route, navigation }) {
             )}
           </View>
         )}
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
 
       <GifPickerModal
         visible={gifPickerVisible}

@@ -1384,7 +1384,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
           ) : (
             <>
               <TouchableOpacity
-                style={[styles.joinButton, { backgroundColor: categoryStyle.color }, shadow.button]}
+                style={[styles.joinButton, { backgroundColor: colors.primary }, shadow.button]}
                 onPress={() => setIntentModalVisible(true)}
                 disabled={joining}
                 activeOpacity={0.85}

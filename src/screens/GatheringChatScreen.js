@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Image } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import FadeInState from '../components/FadeInState';
 import { NLoader, showSuccessToast } from '../motion';
 import * as Haptics from 'expo-haptics';
@@ -203,7 +204,7 @@ export default function GatheringChatScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         {messages.length === 0 ? (
           <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
@@ -309,7 +310,7 @@ export default function GatheringChatScreen({ route, navigation }) {
             <Text style={styles.sendButtonText}>{t('ui.groupChat.send')}</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
 
       <ReportBlockModal
         visible={!!reportTarget}
