@@ -8,7 +8,7 @@ import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_O
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { gatheringEditRefusal } from '../utils/gatheringEditRefusal';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
 import KeyboardSafeView from '../components/KeyboardSafeView';
 import FieldError from '../components/FieldError';
 import useFormErrors from '../hooks/useFormErrors';
@@ -24,6 +24,7 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { useLanguage } from '../context/LanguageContext';
 import { displayDateTime } from '../i18n/display';
+import ToggleRow from '../components/ToggleRow';
 // Labels come from ui.gatheringVocab.vibe.<column> (the same wording GatheringDetail shows).
 const VIBE_SCALES = [
   { key: 'energyLevel', column: 'energy_level' },
@@ -349,10 +350,9 @@ export default function EditGatheringScreen({ route, navigation }) {
           <AgeRangePicker min={ageMin} max={ageMax} onChange={(a, b) => { setAgeMin(a); setAgeMax(b); }} />
 
           {/* Item 188: informational only. Nearby sells no tickets and this changes no join, capacity or ranking rule. */}
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={ticketRequired} onValueChange={setTicketRequired} accessibilityLabel={t('ui.gatheringForm.ticket')}>
             <Text style={styles.label}>{t('ui.gatheringForm.ticket')}</Text>
-            <Switch value={ticketRequired} onValueChange={setTicketRequired} accessibilityLabel={t('ui.gatheringForm.ticket')} />
-          </View>
+          </ToggleRow>
           <Text style={styles.subheader}>{t('ui.gatheringForm.ticketHelp')}</Text>
 
           <Text style={styles.label}>{t('ui.gatheringForm.equipment')}</Text>
@@ -452,43 +452,31 @@ export default function EditGatheringScreen({ route, navigation }) {
               </View>
             </>
           )}
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={showGroupInsights} onValueChange={setShowGroupInsights} accessibilityLabel={t('ui.gatheringForm.edit.showInsightsA11y')}>
             <Text style={styles.label}>{t('ui.gatheringForm.edit.showInsights')}</Text>
-            <Switch
-              value={showGroupInsights}
-              onValueChange={setShowGroupInsights}
-              accessibilityLabel={t('ui.gatheringForm.edit.showInsightsA11y')}
-            />
-          </View>
+          </ToggleRow>
           <Text style={styles.sectionHeader}>{t('ui.gatheringForm.edit.settings')}</Text>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.visibilityLine', { label: t(`ui.gatheringVocab.visibility.${visibilityKey(gathering)}.label`) })}</Text>
           {canBeLinkOnly && (
             <>
-              <View style={styles.toggleRow}>
+              <ToggleRow style={styles.toggleRow} value={!discoverable} onValueChange={(v) => setDiscoverable(!v)} accessibilityLabel={t('ui.gatheringForm.linkOnly')}>
                 <Text style={styles.label}>{t('ui.gatheringForm.linkOnly')}</Text>
-                <Switch value={!discoverable} onValueChange={(v) => setDiscoverable(!v)} accessibilityLabel={t('ui.gatheringForm.linkOnly')} />
-              </View>
+              </ToggleRow>
               <Text style={styles.subheader}>{t('ui.gatheringForm.edit.linkOnlyHelp')}</Text>
             </>
           )}
           {gathering.is_public !== false && (
             <>
-              <View style={styles.toggleRow}>
+              <ToggleRow style={styles.toggleRow} value={requiresApproval} onValueChange={setRequiresApproval} accessibilityLabel={t('ui.gatheringForm.edit.approval')}>
                 <Text style={styles.label}>{t('ui.gatheringForm.edit.approval')}</Text>
-                <Switch
-                  value={requiresApproval}
-                  onValueChange={setRequiresApproval}
-                  accessibilityLabel={t('ui.gatheringForm.edit.approval')}
-                />
-              </View>
+              </ToggleRow>
               <Text style={styles.subheader}>{t('ui.gatheringForm.edit.approvalHelp')}</Text>
             </>
           )}
 
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={limitAttendees} onValueChange={setLimitAttendees} accessibilityLabel={t('ui.gatheringForm.edit.limit')}>
             <Text style={styles.label}>{t('ui.gatheringForm.edit.limit')}</Text>
-            <Switch value={limitAttendees} onValueChange={setLimitAttendees} accessibilityLabel={t('ui.gatheringForm.edit.limit')} />
-          </View>
+          </ToggleRow>
           {limitAttendees && (
             <View style={styles.toggleRow}>
               <TouchableOpacity onPress={() => setCapacity((n) => Math.max(peopleGoing(gathering), n - 1))} accessibilityLabel={t('ui.gatheringForm.edit.decreaseA11y')} accessibilityRole="button">
@@ -501,20 +489,17 @@ export default function EditGatheringScreen({ route, navigation }) {
             </View>
           )}
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.limitHelp')}</Text>
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={askLocalBusinesses} onValueChange={setAskLocalBusinesses} accessibilityLabel={t('ui.gatheringForm.edit.allowBiz')}>
             <Text style={styles.label}>{t('ui.gatheringForm.edit.allowBiz')}</Text>
-            <Switch value={askLocalBusinesses} onValueChange={setAskLocalBusinesses} accessibilityLabel={t('ui.gatheringForm.edit.allowBiz')} />
-          </View>
+          </ToggleRow>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.allowBizHelp')}</Text>
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={allowAttendeeInvites} onValueChange={setAllowAttendeeInvites} accessibilityLabel={t('ui.gatheringForm.guestsInvite')}>
             <Text style={styles.label}>{t('ui.gatheringForm.guestsInvite')}</Text>
-            <Switch value={allowAttendeeInvites} onValueChange={setAllowAttendeeInvites} accessibilityLabel={t('ui.gatheringForm.guestsInvite')} />
-          </View>
+          </ToggleRow>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.guestsHelp')}</Text>
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={hostNotifications} onValueChange={setHostNotifications} accessibilityLabel={t('ui.gatheringForm.notify')}>
             <Text style={styles.label}>{t('ui.gatheringForm.notify')}</Text>
-            <Switch value={hostNotifications} onValueChange={setHostNotifications} accessibilityLabel={t('ui.gatheringForm.notify')} />
-          </View>
+          </ToggleRow>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.notifyHelp')}</Text>
 
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.insightsHelp')}</Text>

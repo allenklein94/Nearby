@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, TextInput, TouchableOpacity, Switch, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import ToggleRow from './ToggleRow';
 import {
   getMyBusinessEmailSettings, startBusinessEmailVerification, confirmBusinessEmail,
   removeBusinessEmail, setBusinessEmailEnabled, businessEmailReasonCopy,
@@ -56,10 +57,9 @@ export default function BusinessEmailNotifications() {
 
       {verified ? (
         <>
-          <View style={styles.row}>
+          <ToggleRow style={styles.row} value={!!settings.enabled} onValueChange={toggle} disabled={busy} accessibilityLabel={t('ui.bizComp.emailAlertsA11y')}>
             <Text style={styles.email}>{settings.email}</Text>
-            <Switch value={!!settings.enabled} onValueChange={toggle} disabled={busy} accessibilityLabel={t('ui.bizComp.emailAlertsA11y')} />
-          </View>
+          </ToggleRow>
           <TouchableOpacity onPress={remove} disabled={busy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.removeEmailAddressA11y')}>
             <Text style={styles.link}>{t('ui.bizComp.removeThisAddress')}</Text>
           </TouchableOpacity>

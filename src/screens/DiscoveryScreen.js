@@ -1,7 +1,7 @@
 import { datingCardFacts } from '../utils/datingCardReasons';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
-import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView, Switch } from 'react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView } from 'react-native';
 import { PullToRefresh, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
@@ -42,6 +42,7 @@ import { endOfTonight } from '../utils/freeTonight';
 import { orderForTonight } from '../utils/meetTonight';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
+import ToggleRow from '../components/ToggleRow';
 const UNDO_WINDOW_SECONDS = 5;
 
 const DISCOVERY_FILTER_FIELDS = [
@@ -623,7 +624,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
           "Filters" chip. All of that content now lives inside FiltersModal
           (extended below), reached from this one honest summary line --
           real state, never a fabricated count. */}
-      <View style={styles.freeTonightRow}>
+      <ToggleRow style={styles.freeTonightRow} value={!!myFreeTonight} onValueChange={toggleFreeTonight} accessibilityLabel={t('ui.dating.freeTonightA11y')}>
         <View style={{ flex: 1 }}>
           <Text style={styles.freeTonightTitle}>{t('ui.dating.freeTonight')}</Text>
           <Text style={styles.freeTonightHint}>
@@ -632,8 +633,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
               : t('ui.dating.optionalTurnOnToSee')}
           </Text>
         </View>
-        <Switch value={!!myFreeTonight} onValueChange={toggleFreeTonight} accessibilityLabel={t('ui.dating.freeTonightA11y')} />
-      </View>
+      </ToggleRow>
 
       <TouchableOpacity
         style={[styles.filtersButton, filtersSummaryCount > 0 && styles.filtersButtonActive]}

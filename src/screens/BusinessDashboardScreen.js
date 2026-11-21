@@ -129,6 +129,7 @@ import { isGatheringUpcoming } from '../utils/objectState';
 import { categoryOutcomeLine, categoryRatingLine, offerPriceLabel } from '../utils/outcomeDisplay';
 import { countLabel } from '../utils/plural';
 import { bestTimeLine } from '../utils/bestTime';
+import ToggleRow from '../components/ToggleRow';
 // Tab, tool, offer-type and duration labels live in ui.bizDash3 (11 languages), keyed by `key`.
 const SECTIONS = [
   { key: 'home', icon: '🏠' },
@@ -6693,16 +6694,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 accessibilityLabel={t('ui.bizDash3.targetInterestTagOptionalA11y')}
               />
 
-              <View style={[styles.toggleRow, { marginTop: spacing.md }]}>
+              <ToggleRow style={[styles.toggleRow, { marginTop: spacing.md }]} value={unlockEnabled} onValueChange={setUnlockEnabled} accessibilityLabel={unlockEnabled ? t('ui.bizDash3.groupUnlockOnA11y') : t('ui.bizDash3.groupUnlockOffA11y')}>
                 <Text style={styles.toggleRowLabel}>
                   {offerGatheringId ? t('ui.bizDash3.requireAMinimumNumberOf') : t('ui.bizDash3.requireACommunityToHit')}
                 </Text>
-                <Switch
-                  value={unlockEnabled}
-                  onValueChange={setUnlockEnabled}
-                  accessibilityLabel={unlockEnabled ? t('ui.bizDash3.groupUnlockOnA11y') : t('ui.bizDash3.groupUnlockOffA11y')}
-                />
-              </View>
+              </ToggleRow>
 
               {unlockEnabled && (
                 <>

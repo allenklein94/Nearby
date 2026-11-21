@@ -6,7 +6,7 @@ import { getMomentumStats } from '../services/momentum';
 import { getInsightsStats } from '../services/insights';
 import React, { useEffect, useRef, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager } from 'react-native';
 import KeyboardSafeView from '../components/KeyboardSafeView';
 import FieldError from '../components/FieldError';
 import useFormErrors from '../hooks/useFormErrors';
@@ -37,6 +37,7 @@ import { modalAnimation, showSuccessToast, animateLayout, NLoader } from '../mot
 import { countLabel } from '../utils/plural';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { profileFormSnapshot, isProfileFormDirty, guardProfileLeave } from '../utils/profileEditDirty';
+import ToggleRow from '../components/ToggleRow';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -1265,18 +1266,12 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
           </View>
           <Text style={styles.helperText}>{t('ui.profile.selectAllThatApplyMatching')}</Text>
 
-          <View style={[styles.settingRow, { marginTop: spacing.md }]}>
+          <ToggleRow style={[styles.settingRow, { marginTop: spacing.md }]} value={genderHidden} onValueChange={(v) => toggleHiddenPref('gender_hidden', v, setGenderHidden)} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.profile.hideMyGenderA11y')}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>{t('ui.profile.hideMyGender')}</Text>
               <Text style={styles.helperText}>{t('ui.profile.yourGenderWontBeShown')}</Text>
             </View>
-            <Switch
-              value={genderHidden}
-              onValueChange={(v) => toggleHiddenPref('gender_hidden', v, setGenderHidden)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.profile.hideMyGenderA11y')}
-            />
-          </View>
+          </ToggleRow>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.profile.myEthnicity')}</Text>
           <View style={styles.chipsWrap}>
@@ -1294,18 +1289,12 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
               </TouchableOpacity>
             ))}
           </View>
-          <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
+          <ToggleRow style={[styles.settingRow, { marginTop: spacing.sm }]} value={ethnicityHidden} onValueChange={(v) => toggleHiddenPref('ethnicity_hidden', v, setEthnicityHidden)} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.profile.hideMyEthnicityA11y')}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>{t('ui.profile.hideMyEthnicity')}</Text>
               <Text style={styles.helperText}>{t('ui.profile.yourEthnicityWontBeShown')}</Text>
             </View>
-            <Switch
-              value={ethnicityHidden}
-              onValueChange={(v) => toggleHiddenPref('ethnicity_hidden', v, setEthnicityHidden)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.profile.hideMyEthnicityA11y')}
-            />
-          </View>
+          </ToggleRow>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.profile.myHeight')}</Text>
           <View style={styles.heightRow}>

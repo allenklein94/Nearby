@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, TouchableOpacity, TextInput, Switch, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Platform, Alert } from 'react-native';
 import PlatformDateTimeInput from './PlatformDateTimeInput';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -12,6 +12,7 @@ import { vocabValue } from '../i18n/format';
 
 const WEEKDAY_INDEX = { sun: 0, mon: 1, tue: 2, wed: 3, thu: 4, fri: 5, sat: 6 };
 import { presentRecoverableError } from '../utils/recoverableError';
+import ToggleRow from './ToggleRow';
 
 // Owner item 71: ONE optional "Hours" row on the business Profile tab (expands in place; no new screen or settings area).
 // What the owner enters is what is saved -- nothing is guessed, pre-filled with typical hours, or corrected silently; a problem
@@ -190,10 +191,9 @@ export default function BusinessHoursEditor({ partner, onSaved }) {
               <Text style={styles.link}>{t('ui.bizComp.useThisDevicesTimeZone', { zone: deviceTimeZone() })}</Text>
             </TouchableOpacity>
           ) : null}
-          <View style={styles.switchRow}>
+          <ToggleRow style={styles.switchRow} value={draft.temporarily_closed === true} onValueChange={(v) => update((d) => { d.temporarily_closed = v; return d; })} accessibilityLabel={t('ui.bizComp.temporarilyClosedA11y')}>
             <Text style={styles.label}>{t('ui.bizComp.temporarilyClosed')}</Text>
-            <Switch value={draft.temporarily_closed === true} onValueChange={(v) => update((d) => { d.temporarily_closed = v; return d; })} accessibilityLabel={t('ui.bizComp.temporarilyClosedA11y')} />
-          </View>
+          </ToggleRow>
           {DAY_ORDER.map((d) => renderDayEditor('week', d, dayChip(d)))}
           {Array.isArray(draft.week.mon) || draft.week.mon === 'closed' || draft.week.mon === 'all_day' ? (
             <TouchableOpacity onPress={() => update((d) => { DAY_ORDER.forEach((k) => { d.week[k] = JSON.parse(JSON.stringify(d.week.mon)); }); return d; })} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.copyMondayToEveryDayA11y')}>
