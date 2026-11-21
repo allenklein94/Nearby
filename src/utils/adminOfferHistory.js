@@ -12,11 +12,10 @@ export function offerHistorySteps(row) {
   steps.push(row.screening ? SCREENING[row.screening] ?? `Screened: ${row.screening}` : 'Screening: no record');
   if (row.viewed_at) steps.push(`Viewed ${day(row.viewed_at)}`);
   if (row.accepted_at) steps.push(`Accepted ${day(row.accepted_at)}`);
-  // 20270430: "Redeemed" only from the business's own confirmation; a customer's personal "Mark as done" and an older
-  // completion whose confirmer nobody recorded say so (admin English, like the rest of this screen).
-  if (row.customer_done_at) steps.push(`Customer marked done ${day(row.customer_done_at)}`);
+  // 20270430: "Redeemed" only from the business's own confirmation; any other completion (the customer's own mark, or one
+  // from before 20270430 whose confirmer nobody recorded) says so. Business side only: the customer's mark is never shown.
   if (row.visit_confirmed_at) steps.push(`Redeemed (business confirmed) ${day(row.visit_confirmed_at)}`);
-  else if (row.completed_at && !row.customer_done_at) steps.push(`Completed ${day(row.completed_at)} (confirmer not recorded)`);
+  else if (row.completed_at) steps.push(`Completed ${day(row.completed_at)} (not confirmed by the business)`);
   if (row.cancelled_at) steps.push(`Cancelled ${day(row.cancelled_at)}`);
   return steps;
 }

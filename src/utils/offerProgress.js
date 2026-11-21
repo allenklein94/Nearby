@@ -34,7 +34,11 @@ export function offerProgress(offer, now = new Date()) {
 // The status the business card's status line shows: a stored 'offered' that is no longer open reads as 'expired'
 // ("No longer open"), so the card, the pipeline and the customer's card agree at the same instant.
 export function businessCardStatus(offer, now = new Date()) {
-  return offer?.status === 'offered' && !isOfferOpen(offer, now) ? 'expired' : offer?.status;
+  if (offer?.status === 'offered' && !isOfferOpen(offer, now)) return 'expired';
+  // 20270430: a booking only the customer marked done is still the business's to answer: it reads "accepted" (the steps
+  // stay at Accepted too); "completed" only once the business confirmed the visit.
+  if (offer?.status === 'completed' && !isVisitConfirmed(offer)) return 'accepted';
+  return offer?.status;
 }
 
 // The one key a transition is remembered by: an offer reaching a status. Shown once, never replayed.

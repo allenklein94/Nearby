@@ -82,10 +82,12 @@ describe('moment 1: request sent pulse', () => {
 });
 
 describe('moment 6: Visit confirmed', () => {
-  const o = (status) => ({ id: 'o1', request_id: 'r1', status, business_reservations: [{ status: 'confirmed' }] });
+  // 'completed' here = the business confirmed (visit_confirmed_at, 20270430); the customer's own mark never plays it.
+  const o = (status) => ({ id: 'o1', request_id: 'r1', status, business_reservations: [{ status: 'confirmed' }], ...(status === 'completed' ? { visit_confirmed_at: '2026-11-21T12:00:00Z' } : {}) });
 
   it('plays only for accepted -> completed seen live', () => {
     const previous = new Map([['o1', 'accepted']]);
+    expect(visitConfirmationsToAnimate([{ ...o('accepted'), status: 'completed', customer_done_at: '2026-11-21T12:00:00Z' }], { previous, live: true })).toEqual([]);
     expect(visitConfirmationsToAnimate([o('completed')], { previous, live: true })).toHaveLength(1);
     expect(visitConfirmationsToAnimate([o('completed')], { previous, live: false })).toEqual([]); // revisit / focus reload
     expect(visitConfirmationsToAnimate([o('completed')], { previous: new Map(), live: true })).toEqual([]); // first read = baseline

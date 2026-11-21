@@ -516,6 +516,16 @@ const STEPS = {
       'read-only: private.business_message_alert_windows has recipient_id in its primary key, no anon/authenticated grant',
       'real API (staging E9): a manager turns Customer messages OFF -> a customer message makes no push_outbox row for them and no window row; turned back ON -> the customer\'s NEXT message alerts them at once (one row, that message), the muted message never; a third message within 5 minutes alerts nobody; other managers keep their own 5-minute windows',
       'rollback: scripts/rollback/20270429 restores the 20270428 window + function (the E9 defect returns); windows hold timestamps only'] },
+  20270430: { journeys: ['visitConfirmation', 'groupBookingLifecycle', 'offerJourney', 'offerEvidence', 'plansThisMonth', 'noShowJourney'],
+    manual: ['order: after 20270429; 20270431 and 20270432 right after it (same tree); no edge function change. Client: Confirm visit / Mark as done ship in a build after 87 + the website export; builds <= 87 keep working (their Mark as Completed call = the personal mark)',
+      'read-only: business_request_offers.customer_done_at + visit_confirmed_at exist, no client UPDATE policy on the table; get_business_opportunities returns visit_confirmed_at and never customer_done_at; private.offer_evidence has visit_confirmed_at only',
+      'read-only before AND after: count offers with status completed (production had 0 on 2026-11-21); any existing ones stay unconfirmed (confirmer unknown) and show "Marked as done" / Bookings keeps them for the business to answer',
+      'real API (staging first, dedicated test accounts): customer Mark as done -> customer_done_at set, no OFFER_REDEEMED, business Performance/value unchanged; business Confirm visit on the website AND the app -> visit_confirmed_at set, one OFFER_REDEEMED, Performance +1; repeat taps = success, nothing changes; Didn\'t show up after a confirmation refused; a confirmation after a no-show refused',
+      'rollback: run 20270432 then 20270431 then 20270430 rollbacks; the two columns are dropped (who confirmed is lost; count rows with either set first and get owner approval if any)'] },
+  20270431: { journeys: ['offerJourney', 'visitConfirmation'],
+    manual: ['order: right after 20270430', 'read-only: the four routing functions read visit_confirmed_at for completed counts (pg_get_functiondef)', 'rollback: scripts/rollback/20270431 (before the 20270430 rollback)'] },
+  20270432: { journeys: ['requestFunnel', 'intentFunnel'],
+    manual: ['order: right after 20270431', 'read-only: request_journey / routing_candidate_outcomes / intent_funnel still have no anon/authenticated grant; completed outcomes only where visit_confirmed_at is set', 'rollback: scripts/rollback/20270432 (first of the three)'] },
 };
 
 // Edge functions and Auth settings staged alongside (not migrations): rollback + check for each.

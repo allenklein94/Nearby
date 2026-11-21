@@ -147,6 +147,8 @@ function offerRows() {
     ['offered', 'request past its deadline', offerSample('offered'), { request: { ...openRequest, expires_at: at(-HOUR) } }],
     ['offered', 'group plan request', offerSample('offered'), { request: openRequest, isGroupPlanRequest: true }],
     ['offered', 'valid_until passed, not yet swept', offerSample('offered', { valid_until: at(-1) }), { request: openRequest }],
+    ['completed', 'business confirmed the visit (20270430)', offerSample('completed', { visit_confirmed_at: at(-HOUR) }), { request: openRequest }],
+    ['completed', "customer's own Mark as done only (20270430)", offerSample('completed', { customer_done_at: at(-HOUR) }), { request: openRequest }],
   ];
   for (const [state, variant, o, ctx] of derived) {
     const a = consumerOfferAction(o, { ...ctx, now: NOW });
@@ -162,7 +164,10 @@ function opportunityRows() {
     ['pending', 'request open', base('pending'), {}],
     ['pending', 'offer being reviewed', base('pending'), { inFlight: true }],
     ['pending', 'request expired', base('pending', { status: 'open', expires_at: at(-HOUR) }), {}],
-    ...['offered', 'accepted', 'completed', 'declined', 'expired', 'cancelled', 'withdrawn'].map((s) => [s, '', base(s), {}]),
+    ...['offered', 'accepted', 'declined', 'expired', 'cancelled', 'withdrawn'].map((s) => [s, '', base(s), {}]),
+    // 20270430: 'completed' is "done by someone"; only the business's confirmation is Redeemed
+    ['completed', 'business confirmed the visit', { ...base('completed'), visit_confirmed_at: at(-HOUR) }, {}],
+    ['completed', "customer's own Mark as done only", { ...base('completed'), customer_done_at: at(-HOUR) }, {}],
     ['offered', 'request expired, not yet swept', base('offered', { status: 'open', expires_at: at(-HOUR) }), {}],
   ];
   for (const [state, variant, o, ctx] of cases) {

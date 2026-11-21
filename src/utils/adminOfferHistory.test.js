@@ -7,16 +7,14 @@ describe('admin offer history lines (20270416)', () => {
     expect(steps.map((s) => s.split(' ')[0])).toEqual(['Created', 'Screened:', 'Viewed', 'Accepted', 'Redeemed']);
     expect(offerHistorySteps({ created_at: at, screening: 'low' })).toHaveLength(2);
   });
-  test('20270430: Redeemed only from the business; a customer mark or an unrecorded completion never reads as one', () => {
+  test('20270430: Redeemed only from the business; any other completion says it was not confirmed', () => {
     const base = { screening: 'low', accepted_at: at, completed_at: at };
-    const own = offerHistorySteps({ ...base, customer_done_at: at });
-    expect(own.some((s) => s.startsWith('Customer marked done'))).toBe(true);
-    expect(own.some((s) => s.startsWith('Redeemed') || s.startsWith('Completed'))).toBe(false);
-    const both = offerHistorySteps({ ...base, customer_done_at: at, visit_confirmed_at: at });
-    expect(both.filter((s) => s.startsWith('Redeemed (business confirmed)'))).toHaveLength(1);
-    const legacy = offerHistorySteps(base);
-    expect(legacy.some((s) => s.startsWith('Redeemed'))).toBe(false);
-    expect(legacy.some((s) => /^Completed .*\(confirmer not recorded\)$/.test(s))).toBe(true);
+    const unconfirmed = offerHistorySteps(base);
+    expect(unconfirmed.some((s) => s.startsWith('Redeemed'))).toBe(false);
+    expect(unconfirmed.some((s) => /^Completed .*\(not confirmed by the business\)$/.test(s))).toBe(true);
+    const confirmed = offerHistorySteps({ ...base, visit_confirmed_at: at });
+    expect(confirmed.filter((s) => s.startsWith('Redeemed (business confirmed)'))).toHaveLength(1);
+    expect(confirmed.some((s) => s.startsWith('Completed'))).toBe(false);
   });
   test('screening outcome named; automatic replies say so; no record is said, never guessed', () => {
     expect(offerHistorySteps({ screening: 'high' })).toEqual(['Screened: blocked']);

@@ -46,8 +46,13 @@ describe('intent funnel (item 126)', () => {
     // joining still clears the current Interested mark
     expect(follow).toMatch(/delete from gathering_interested where gathering_id = new\.gathering_id and user_id = new\.user_id/);
     // no other migration, app file or edge function touches the history table
+    // 20270432 restates the service-role intent_funnel view (redeemed = business-confirmed visit): the history is read
+    // there, inside that one view, and nowhere else in the file.
+    const restatesFunnel = ['20270432_visit_confirmation_analysis_views.sql'];
     for (const f of fs.readdirSync(dir).filter((x) => x.endsWith('.sql') && x !== '20270250_interested_to_attending.sql')) {
-      expect(fs.readFileSync(path.join(dir, f), 'utf8')).not.toMatch(/gathering_interested_joins/);
+      let sql = fs.readFileSync(path.join(dir, f), 'utf8');
+      if (restatesFunnel.includes(f)) sql = sql.replace(/create or replace view public\.intent_funnel as[\s\S]*?;\n/i, '');
+      expect(sql).not.toMatch(/gathering_interested_joins/);
     }
     const files = [...walk(path.join(root, 'src')), ...walk(path.join(root, 'supabase/functions'))]
       .filter((f) => /\.(js|ts)$/.test(f) && !f.endsWith('.test.js') && !f.endsWith('.journey.js'));

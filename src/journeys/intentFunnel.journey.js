@@ -130,7 +130,10 @@ d('journey: typed asks -> each milestone -> one funnel row per ask -> summary ra
   select id into v_offer from business_request_offers where request_id = v_req and partner_id = v_partner;
   perform set_config('request.jwt.claims', json_build_object('sub', v_u, 'role', 'authenticated')::text, true);
   perform accept_business_offer(v_offer);
-  perform complete_business_reservation(v_offer);
+  perform complete_business_reservation(v_offer); -- the customer's own mark (personal, 20270430)
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  perform complete_business_reservation(v_offer); -- the business confirms the visit = redeemed
+  perform set_config('request.jwt.claims', json_build_object('sub', v_u, 'role', 'authenticated')::text, true);
   -- a second request from the same ask must not create a second row
   perform create_business_request(raw_text_param := 'coffee again', latitude_param := 40.0, longitude_param := -75.0, category_param := 'Coffee',
      party_size_param := 3, submission_id_param := s_redeem, target_partner_id_param := v_partner);

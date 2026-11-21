@@ -91,10 +91,13 @@ describe('canCompleteVisit', () => {
       expect(canCompleteVisit({ status, proposed_time: at(19, 19) }, now)).toBe(false);
     }
   });
-  it('the request screen offers Mark as Completed only through this rule; the server re-checks', () => {
+  it('the request screen offers Mark as done only through canMarkDone (this rule + not yet answered); the server re-checks', () => {
     const screen = fs.readFileSync(path.join(__dirname, '../screens/BusinessRequestDetailScreen.js'), 'utf8');
-    expect(screen).toMatch(/canCompleteVisit\(\{ \.\.\.o, business_requests: o\.business_requests \?\? request \}\) && \(\s*<TouchableOpacity\s+style=\{styles\.completeButton\}/);
-    const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270330_complete_reservation_not_before_visit_day.sql'), 'utf8');
+    expect(screen).toMatch(/canMarkDone\(\{ \.\.\.o, business_requests: o\.business_requests \?\? request \}\) && \(\s*<TouchableOpacity\s+style=\{styles\.completeButton\}/);
+    const rule = fs.readFileSync(path.join(__dirname, './visitConfirmation.js'), 'utf8');
+    expect(rule).toMatch(/return o\.status === 'accepted' && canCompleteVisit\(o, now\);/);
+    // 20270430 keeps the visit-day rule for both sides (the customer's mark and the business's confirmation)
+    const sql = fs.readFileSync(path.join(__dirname, '../../supabase/migrations/20270430_business_visit_confirmation.sql'), 'utf8');
     expect(sql).toMatch(/if not public\._visit_local_day_reached\(offer_id_param\) then/);
   });
 });

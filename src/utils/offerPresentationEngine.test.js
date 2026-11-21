@@ -16,9 +16,15 @@ beforeEach(() => resetAssembledForTests());
 
 describe('which card, from the stored state', () => {
   test.each([
-    ['pending', 'waiting'], ['offered', 'open'], ['accepted', 'booked'], ['completed', 'visited'],
+    ['pending', 'waiting'], ['offered', 'open'], ['accepted', 'booked'],
     ['declined', 'closed'], ['withdrawn', 'closed'], ['cancelled', 'closed'],
   ])('%s -> %s', (status, card) => expect(offerCard({ status }, NOW)).toBe(card));
+  // 20270430: 'completed' is "visited" only once the business confirmed the visit; the customer's own mark stays booked.
+  test('completed -> visited only with the business confirmation', () => {
+    expect(offerCard({ status: 'completed', visit_confirmed_at: NOW.toISOString() }, NOW)).toBe('visited');
+    expect(offerCard({ status: 'completed', customer_done_at: NOW.toISOString() }, NOW)).toBe('booked');
+    expect(offerCard({ status: 'completed' }, NOW)).toBe('booked');
+  });
   test('an open reply past its valid_until is closed and says it expired', () => {
     const p = presentOffer(reply({ valid_until: earlier }), ctx());
     expect(p.card).toBe('closed');
@@ -51,7 +57,12 @@ describe('the four outputs', () => {
     expect(booked.confirmation).toMatchObject({ booked: true, titleKey: 'ui.requestDetail.youreBooked', plays: true, visitConfirmed: false });
     const noRow = presentOffer({ id: 'o1', status: 'accepted' }, ctx());
     expect(noRow.confirmation).toMatchObject({ booked: false, state: 'accepted', plays: false });
-    expect(presentOffer({ id: 'o1', status: 'completed', business_reservations: [{ status: 'confirmed' }] }, ctx()).confirmation.visitConfirmed).toBe(true);
+    const visited = presentOffer({ id: 'o1', status: 'completed', visit_confirmed_at: NOW.toISOString(), business_reservations: [{ status: 'confirmed' }] }, ctx());
+    expect(visited.confirmation).toMatchObject({ visitConfirmed: true, markedDone: false });
+    // the customer's own "Mark as done": still booked, "Marked as done", never "Visit confirmed"
+    const own = presentOffer({ id: 'o1', status: 'completed', customer_done_at: NOW.toISOString(), business_reservations: [{ status: 'confirmed' }] }, ctx());
+    expect(own.confirmation).toMatchObject({ visitConfirmed: false, markedDone: true, booked: true });
+    expect(presentOffer({ id: 'o1', status: 'accepted', business_reservations: [{ status: 'confirmed' }] }, ctx()).confirmation.markedDone).toBe(false);
   });
   test('every rendering is one of the declared ones', () => {
     for (const o of [reply(), { status: 'accepted' }, { status: 'declined' }, { status: 'pending' }]) {

@@ -135,15 +135,23 @@ d('journey: group confirms -> one reservation -> shared cancel / no-show / compl
   log := log || jsonb_build_array(jsonb_build_object('step','requester_completes','ok', (v_res->>'success')::boolean and v_st = 'completed' and v_t1 is not null,
      'data', jsonb_build_object('offer', v_st)));
 
+  -- 20270430: the requester's call is their personal mark (no OFFER_REDEEMED); the business's first call is the
+  -- confirmation (the one OFFER_REDEEMED, completed_at unchanged); each side's repeat is success and changes nothing.
   v_res := complete_business_reservation(v_offer);
+  select count(*) into v_n from domain_events where type = 'OFFER_REDEEMED' and object_id = v_offer;
   perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
   v_res := v_res || jsonb_build_object('business', complete_business_reservation(v_offer));
+  v_res := v_res || jsonb_build_object('business_again', complete_business_reservation(v_offer));
   select completed_at into v_t2 from business_request_offers where id = v_offer;
   select count(*) into v_events from domain_events where type = 'OFFER_REDEEMED' and object_id = v_offer;
   perform set_config('request.jwt.claims', json_build_object('sub', v_d, 'role', 'authenticated')::text, true);
   begin perform complete_business_reservation(v_offer); v_msg := 'NO ERROR'; exception when others then v_msg := sqlerrm; end;
   log := log || jsonb_build_array(jsonb_build_object('step','complete_is_idempotent',
-     'ok', (v_res->>'alreadyCompleted')::boolean and (v_res->'business'->>'alreadyCompleted')::boolean and v_t2 = v_t1 and v_events = 1 and v_msg <> 'NO ERROR',
+     'ok', (v_res->>'alreadyCompleted')::boolean and v_n = 0
+           and (v_res->'business'->>'confirmed')::boolean and not coalesce((v_res->'business'->>'alreadyCompleted')::boolean, false)
+           and (v_res->'business_again'->>'alreadyCompleted')::boolean
+           and (select visit_confirmed_at is not null and customer_done_at is not null from business_request_offers where id = v_offer)
+           and v_t2 = v_t1 and v_events = 1 and v_msg <> 'NO ERROR',
      'data', jsonb_build_object('result', v_res, 'redeemed_events', v_events, 'participant_after', v_msg)));
 
   -- 9. a DIRECT booking still creates its reservation AND payment exactly as before

@@ -165,7 +165,7 @@ d('journey: offer evidence under report / investigation / hold + admin offer his
     expect(rows.map((r) => [r.source, r.offer_id])).toEqual(expect.arrayContaining([['kept', expect.any(String)], ['live', expect.any(String)]]));
     expect(rows.find((r) => r.source === 'kept')).toMatchObject({ offer_title: 'Coffee for two', screening: null, reported: true }); // o4: kept under its held report
     expect(Object.keys(rows[0]).sort()).toEqual(['accepted_at', 'cancelled_at', 'completed_at', 'created_at', 'offer_description', 'offer_id',
-      'offer_title', 'reported', 'screened_at', 'screening', 'source', 'status', 'viewed_at']);
+      'offer_title', 'reported', 'screened_at', 'screening', 'source', 'status', 'viewed_at', 'visit_confirmed_at']); // 20270430: business side only (never customer_done_at)
     expect(s.client_reads_evidence.data.error).toMatch(/permission denied/);
     expect(s.failure.data).toEqual({ offer_deleted: true, logged: ['XX000'] });
     expect(s.grants.data).toEqual({ auth_select: false, service_select: false, auth_reasons: false, auth_purge: false,
