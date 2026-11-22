@@ -36,7 +36,8 @@ import { typography, spacing, radius } from '../theme';
 import { modalAnimation, showSuccessToast, animateLayout, NLoader } from '../motion';
 import { countLabel } from '../utils/plural';
 import useCategoryNames from '../hooks/useCategoryNames';
-import { profileFormSnapshot, isProfileFormDirty, guardProfileLeave } from '../utils/profileEditDirty';
+import { profileFormSnapshot, isProfileFormDirty } from '../utils/profileEditDirty';
+import useLeaveGuard from '../hooks/useLeaveGuard';
 import ToggleRow from '../components/ToggleRow';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
@@ -215,24 +216,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       if (recordingIntroTimerRef.current) clearInterval(recordingIntroTimerRef.current);
     };
   }, []);
-
-  // Item 35 follow-up (owner, 2026-10-08): leaving Edit Profile with unsaved changes asks first, wherever it was opened from
-  // (Profile, Settings, the interests link, Dating Preferences). beforeRemove covers the header back, Android back and swipe.
-  useEffect(() => {
-    if (!editing || !navigation?.addListener) return undefined;
-    return navigation.addListener('beforeRemove', (event) => {
-      guardProfileLeave({
-        dirty: dirtyRef.current,
-        allowLeave: allowLeaveRef.current,
-        event,
-        proceed: (action) => { allowLeaveRef.current = true; navigation.dispatch(action); },
-        confirm: ({ onKeepEditing, onDiscard }) => Alert.alert(t('ui.profile.discardTitle'), t('ui.profile.discardBody'), [
-          { text: t('ui.profile.keepEditing'), style: 'cancel', onPress: onKeepEditing },
-          { text: t('ui.profile.discardChanges'), style: 'destructive', onPress: onDiscard },
-        ]),
-      });
-    });
-  }, [navigation, editing, t]);
 
   // Taxonomy audit Phase 1: Settings' "Gender identity & who you're
   // interested in are managed on your Profile ->" link lands here.
@@ -724,6 +707,17 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     genderIdentity, interestedInGenders, myEthnicity, heightFeet, heightInchesVal, basics, prompts, connectionGoal,
   });
   dirtyRef.current = editing && isProfileFormDirty(baselineRef.current, currentSnapshot);
+  // Item 35 follow-up (owner, 2026-10-08): leaving Edit Profile with unsaved changes asks first, wherever it was opened from
+  // (Profile, Settings, the interests link, Dating Preferences): header back, back swipe and Android back. Through the one
+  // leave guard (useLeaveGuard: iOS cancels the native pop, so Back is never dead; Tier 1 fix 2026-11-22).
+  useLeaveGuard({
+    active: dirtyRef.current,
+    allowLeaveRef,
+    confirm: ({ onKeepEditing, onDiscard }) => Alert.alert(t('ui.profile.discardTitle'), t('ui.profile.discardBody'), [
+      { text: t('ui.profile.keepEditing'), style: 'cancel', onPress: onKeepEditing },
+      { text: t('ui.profile.discardChanges'), style: 'destructive', onPress: onDiscard },
+    ]),
+  });
   const completeness = getProfileCompleteness({ photoUrl, bio, prompts, interests, connectionGoal, extraPhotos });
 
   return (

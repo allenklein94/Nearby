@@ -1,5 +1,5 @@
 // Item 35 follow-up (owner, 2026-10-08): Edit Profile never throws edits away silently. One comparison decides whether the
-// form has unsaved changes, and one guard decides what a leave attempt (header back, Android back, swipe) does.
+// form has unsaved changes, and the one leave guard (hooks/useLeaveGuard.js) decides what a leave attempt (header back, Android back, swipe) does.
 //
 // Only the fields the Save button writes count. Photos, extra photos, the voice intro and the two "hide" switches save the
 // moment they are changed, so they are never "unsaved".
@@ -30,15 +30,4 @@ export function isProfileFormDirty(baseline, current) {
   return baseline !== current;
 }
 
-// What a leave attempt does. Clean (or leaving right after a save) = leave at once. Dirty = stay and ask: "Keep editing"
-// leaves everything as typed, "Discard changes" lets the original navigation continue (back to wherever Edit Profile was
-// opened from).
-export function guardProfileLeave({ dirty, allowLeave, event, confirm, proceed }) {
-  if (allowLeave || !dirty) return 'left';
-  event.preventDefault();
-  confirm({
-    onKeepEditing: () => {},
-    onDiscard: () => proceed(event.data?.action),
-  });
-  return 'asked';
-}
+// What a leave attempt does (ask / leave) lives in the one leave guard, hooks/useLeaveGuard.js.
