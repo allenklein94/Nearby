@@ -85,6 +85,8 @@ import { businessLocationNotice, businessLocationBanner } from '../utils/busines
 import { LOCATION_MODES, locationModeOf, isServiceArea, businessLocationWrite } from '../utils/businessLocationMode';
 import { dashboardGlance, visitHasPassed } from '../utils/dashboardGlance';
 import { businessHomeTiles } from '../utils/businessHomeTiles';
+import { homeRequestPreview, homeRequestRow } from '../utils/businessHomeRequests';
+import useHomeRequestClock from '../hooks/useHomeRequestClock';
 import { businessPipeline, PIPELINE_STAGES, isPipelineWon } from '../utils/businessPipeline';
 import { splitAggregatedDemand } from '../utils/offeredDemand';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
@@ -373,6 +375,17 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       setSection('profile');
     }
   }
+  // A Home request row opens that exact request in Opportunities: the same focus path a push uses (item 140 / idea "187":
+  // Opportunities tab, fresh reload, request first + outlined, scrolled into view; a request that closed meanwhile says so).
+  function openHomeRequest(requestId) {
+    if (requestId === focusRequestId) {
+      focusScrolledForRef.current = null;
+      setSection('opportunities');
+      if (selectedPartner) loadOpportunities(selectedPartner.id);
+    } else {
+      navigation.setParams({ focusRequestId: requestId });
+    }
+  }
   function openHomeTile(target) {
     if (target === 'performance' && section === 'home' && openTool === 'analytics' && performanceYRef.current != null) {
       mainScrollRef.current?.scrollTo({ y: performanceYRef.current, animated: true }); // already open: just go there
@@ -632,6 +645,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const resolved = withScores.filter((o) => !isAwaitingDecision(o));
     return [...awaiting, ...resolved];
   }, [opportunities, selectedPartner, activePrioritySignals, fulfillmentPolicy, businessWeather]);
+  // Owner, 2026-11-22: Home previews up to 3 of this location's open requests (utils/businessHomeRequests.js), in the
+  // Opportunities order; the clock re-renders when one reaches its deadline. Arrivals/bookings/cancellations come in
+  // through loadOpportunities' existing live reload.
+  const homeRequestClockMs = useHomeRequestClock(scoredOpportunities, { submissions: offerSubmissions, partnerId: selectedPartner?.id ?? null });
   // Phase 5 (CLAUDE.md) -- a real count of how many currently-open
   // opportunities the already-computed weather signal is boosting right
   // now, derived entirely from scoredOpportunities' own already-stamped
@@ -3890,6 +3907,33 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                                 ))}
                               </View>
                             )}
+                            {(() => {
+                              const preview = homeRequestPreview(scoredOpportunities, { submissions: offerSubmissions, partnerId: selectedPartner.id, loaded: opportunitiesLoaded, now: new Date(homeRequestClockMs) });
+                              if (preview.rows.length === 0) return null;
+                              return (
+                                <View style={styles.homeRequestList}>
+                                  <Text style={styles.notesLabel}>{t('ui.bizDash1.tiles.newRequests', { count: preview.total })}</Text>
+                                  {preview.rows.map((o) => {
+                                    const row = homeRequestRow(o, { categoryLabel: o.business_requests?.category ? categoryName(o.business_requests.category, language) : null });
+                                    return (
+                                      <TouchableOpacity
+                                        key={row.key}
+                                        style={styles.homeRequestRow}
+                                        onPress={() => openHomeRequest(row.requestId)}
+                                        accessibilityLabel={[row.title, row.line].filter(Boolean).join(', ')}
+                                        accessibilityRole="button"
+                                      >
+                                        <Text style={styles.homeRequestTitle}>{row.title}</Text>
+                                        {!!row.line && <Text style={styles.breakdownText}>{row.line}</Text>}
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                  <TouchableOpacity onPress={() => setSection('opportunities')} accessibilityLabel={t('ui.bizDash2.viewOpportunitiesA11y')} accessibilityRole="button">
+                                    <Text style={styles.briefBestOpportunity}>{t('ui.bizDash2.viewOpportunities')}</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              );
+                            })()}
                             <Text style={styles.notesLabel}>{t('ui.bizDash1.today')}</Text>
                             <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                               {todayBookings.map((item) => (
@@ -8560,6 +8604,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   homeTileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   homeTile: { flexGrow: 1, flexBasis: '30%', minWidth: 140, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   homeTileLine: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 2 },
+  homeRequestList: { marginBottom: spacing.md },
+  homeRequestRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  homeRequestTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
   // Item 150's month block (Offer Performance): equal cells, wrap to 2 x 2 on a phone; value + disclosure apart below.
   funnelBlock: { marginBottom: spacing.md },
   funnelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
