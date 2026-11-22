@@ -9,6 +9,7 @@ import { sanitizeInterestGroups } from '../constants/interestGraph';
 import { categoryName, groupName } from '../i18n/categoryNames';
 import { QUICK_INTERESTS, onboardingInterestSelection, migrateOnboardingDraft, savedOnboardingInterests, ONBOARDING_DRAFT_VERSION } from '../constants/onboardingInterests';
 import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
+import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
 
 // This screen runs before signup — there's no account yet to save
 // these answers to. They're held in AsyncStorage temporarily and
@@ -20,13 +21,6 @@ export const ONBOARDING_ANSWERS_KEY = 'pending_onboarding_answers';
 // Removed with the answers key once the account is created (CompleteProfileScreen).
 export const ONBOARDING_DRAFT_KEY = 'pending_onboarding_questions_draft';
 
-const COMFORT_LEVELS = [
-  { value: 'one_on_one' },
-  { value: 'small_groups' },
-  { value: 'large_gatherings' },
-  { value: 'open' },
-];
-
 export default function OnboardingQuestionsScreen({ navigation }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
@@ -34,7 +28,8 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   const [stepIndex, setStepIndex] = useState(0);
   const [goals, setGoals] = useState([]);
   const [lookingFor, setLookingFor] = useState(null);
-  const [comfortLevel, setComfortLevel] = useState(null);
+  // Several choices allowed; 'open' is exclusive (constants/socialComfort.js). Kept as an array, stored comma-joined.
+  const [comfortLevels, setComfortLevels] = useState([]);
   // Item 94: a few quick picks + optional words, both mapped onto the one taxonomy (constants/onboardingInterests.js).
   const [quickKeys, setQuickKeys] = useState([]);
   const [anythingElse, setAnythingElse] = useState('');
@@ -55,7 +50,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
         const d = migrateOnboardingDraft(JSON.parse(raw));
         setGoals(d.goals);
         setLookingFor(d.lookingFor);
-        setComfortLevel(d.comfortLevel);
+        setComfortLevels(parseComfortLevels(d.comfortLevel));
         setQuickKeys(d.quickKeys);
         setAnythingElse(d.anythingElse);
         setExcluded(d.excluded);
@@ -70,9 +65,9 @@ export default function OnboardingQuestionsScreen({ navigation }) {
   useEffect(() => {
     if (!hydrated.current) return;
     AsyncStorage.setItem(ONBOARDING_DRAFT_KEY, JSON.stringify({
-      v: ONBOARDING_DRAFT_VERSION, goals, lookingFor, comfortLevel, quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff,
+      v: ONBOARDING_DRAFT_VERSION, goals, lookingFor, comfortLevel: serializeComfortLevels(comfortLevels), quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff,
     })).catch(() => {});
-  }, [goals, lookingFor, comfortLevel, quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff]);
+  }, [goals, lookingFor, comfortLevels, quickKeys, anythingElse, excluded, earlierTags, earlierGroups, earlierOff]);
 
   function toggleGoal(label) {
     setGoals((prev) => (prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]));
@@ -106,7 +101,7 @@ export default function OnboardingQuestionsScreen({ navigation }) {
         ONBOARDING_ANSWERS_KEY,
         JSON.stringify({
           onboarding_motivations: motivationsFromAnswers({ goals, lookingFor }),
-          social_comfort_level: comfortLevel,
+          social_comfort_level: serializeComfortLevels(comfortLevels),
           // Canonical tags (see interestGraph.js): seed CompleteProfile's interests step and this
           // month's mood, so onboarding never introduces a vocabulary of its own.
           monthly_interests: savedTags,
@@ -274,25 +269,22 @@ export default function OnboardingQuestionsScreen({ navigation }) {
 
         {step === 'comfort' && (
           <>
-            <Text style={styles.title}>{t('ui.onboarding.whatSoundsMostLikeYou')}</Text>
-            <Text style={styles.subtitle}>
-              {lookingFor === 'dating' || lookingFor === 'both'
-                ? t('ui.onboarding.itHelpsUsSuggestThe')
-                : t('ui.onboarding.itHelpsUsSuggestThe2')}
-            </Text>
+            <Text style={styles.title}>{t('ui.onboarding.socialPlansTitle')}</Text>
+            <Text style={styles.subtitle}>{t('ui.onboarding.socialPlansSubtitle')}</Text>
             <View style={{ gap: spacing.sm }}>
-              {COMFORT_LEVELS.map((c) => {
-                const selected = comfortLevel === c.value;
+              {COMFORT_LEVELS.map((value) => {
+                const selected = comfortLevels.includes(value);
                 return (
                   <TouchableOpacity
-                    key={c.value}
-                    style={[styles.option, selected && styles.optionSelected]}
-                    onPress={() => setComfortLevel(c.value)}
-                    accessibilityLabel={t(`ui.onboarding.comfort.${c.value}`)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
+                    key={value}
+                    style={[styles.option, styles.optionRow, selected && styles.optionSelected]}
+                    onPress={() => setComfortLevels((prev) => toggleComfortLevel(prev, value))}
+                    accessibilityLabel={t(`ui.onboarding.comfort.${value}`)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: selected }}
                   >
-                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{t(`ui.onboarding.comfort.${c.value}`)}</Text>
+                    <Text style={styles.optionIcon}>{selected ? '☑' : '☐'}</Text>
+                    <Text style={[styles.optionText, selected && styles.optionTextSelected]}>{t(`ui.onboarding.comfort.${value}`)}</Text>
                   </TouchableOpacity>
                 );
               })}

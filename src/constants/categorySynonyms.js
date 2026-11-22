@@ -304,7 +304,7 @@ export function tagsInText(text) {
     if (phrase.length < 3 || !tags.length) continue;
     const pw = phrase.split(' ');
     for (let i = 0; i + pw.length <= words.length; i++) {
-      if (pw.every((w, j) => words[i + j] === w)) hits.push({ start: i, len: pw.length, chars: phrase.length, tags });
+      if (pw.every((w, j) => words[i + j] === w)) hits.push({ start: i, len: pw.length, chars: phrase.length, tags, phrase });
     }
   }
   hits.sort((a, b) => b.chars - a.chars || a.start - b.start);
@@ -316,7 +316,7 @@ export function tagsInText(text) {
     span.forEach((i) => taken.add(i));
     kept.push(h);
   }
-  return kept.sort((a, b) => a.start - b.start).flatMap((h) => h.tags.map((tag) => ({ tag, word: words[h.start], prev: words.slice(Math.max(0, h.start - 2), h.start).join(' '), start: h.start })));
+  return kept.sort((a, b) => a.start - b.start).flatMap((h) => h.tags.map((tag) => ({ tag, word: words[h.start], prev: words.slice(Math.max(0, h.start - 2), h.start).join(' '), start: h.start, len: h.len, generic: GENERIC_FORMAT_KEYS.has(h.phrase) || SETTING_KEYS.has(h.phrase) })));
 }
 
 // Everything a search should look for: the person's own words first, then the canonical tag names their words stand for.

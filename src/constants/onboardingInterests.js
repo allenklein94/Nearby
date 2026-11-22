@@ -1,6 +1,7 @@
 import { INTEREST_OPTIONS } from './gatheringCategories';
 import { ONBOARDING_INTEREST_GROUPS } from './interestGraph';
 import { searchScope } from './categoryTree';
+import { tagsInText } from './categorySynonyms';
 
 // Onboarding asks about interests lightly (owner item 94): "What are you into? Choose a few" from a short list, then an
 // optional "Anything else?" in the person's own words. Nothing new is stored: every pick maps onto the ONE taxonomy as
@@ -54,20 +55,64 @@ export function mapAnythingElse(text) {
   const tags = [];
   const groups = [];
   const unmatched = [];
+  const addTag = (t) => { if (CONSUMER_TAGS.has(t) && !tags.includes(t)) tags.push(t); };
+  const addUnmatched = (w) => { if (w && !unmatched.includes(w)) unmatched.push(w); };
   for (const part of parts) {
     const scope = searchScope(part);
-    let hit = false;
-    if (scope.level === 'tag') {
-      for (const t of scope.tags) if (CONSUMER_TAGS.has(t) && !tags.includes(t)) { tags.push(t); hit = true; }
-      if (scope.tags.some((t) => CONSUMER_TAGS.has(t))) hit = true;
-    } else if (scope.level === 'group' && ONBOARDING_GROUPS.has(scope.group)) {
+    if (scope.level === 'group' && ONBOARDING_GROUPS.has(scope.group)) {
       if (!groups.includes(scope.group)) groups.push(scope.group);
-      hit = true;
+      continue;
     }
-    if (!hit && !unmatched.includes(part)) unmatched.push(part);
+    if (scope.level === 'tag' && scope.tags.some((t) => CONSUMER_TAGS.has(t))) {
+      // Owner, 2026-11-22: an entry typed without commas ("pickleball hockey board games") used to keep only its first
+      // match and drop the rest without a word. Every activity named in the entry now counts, and every word left over is
+      // shown under "Not matched yet". An entry fully explained by its matches keeps exactly the old result.
+      const { hits, leftover } = entryCoverage(part);
+      if (leftover.length === 0 && hits.length <= 1) {
+        scope.tags.forEach(addTag);
+      } else {
+        hits.forEach(addTag);
+        if (!hits.some((t) => CONSUMER_TAGS.has(t))) scope.tags.forEach(addTag);
+        leftover.forEach(addUnmatched);
+      }
+      continue;
+    }
+    addUnmatched(part);
   }
   return { tags, groups, unmatched };
 }
+
+// Small words that carry no interest of their own ("and", "i like"), never reported as unmatched.
+const GLUE_WORDS = new Set(['and', 'or', 'i', 'me', 'my', 'like', 'love', 'enjoy', 'also', 'too', 'the', 'a', 'an', 'some', 'with',
+  'plus', 'of', 'to', 'really', 'into', 'stuff', 'thing', 'things', 'etc', 'lot', 'lots', 'more', 'other']);
+
+// The tags every whole-word phrase in one entry names (the one phrase matcher, tagsInText) + the runs of words no phrase
+// covers, in the person's words (lowercased), glue words dropped.
+function entryCoverage(part) {
+  const words = String(part).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(Boolean);
+  const found = tagsInText(part);
+  const covered = new Set();
+  for (const f of found) for (let i = 0; i < (f.len ?? 1); i++) covered.add(f.start + i);
+  const leftover = [];
+  let run = [];
+  const flush = () => {
+    const phrase = trimGlue(run.join(' '));
+    if (phrase) leftover.push(phrase);
+    run = [];
+  };
+  words.forEach((w, i) => { if (covered.has(i)) flush(); else run.push(w); });
+  flush();
+  // A format/setting word ("class", "outdoor") names a category only when nothing concrete is named, as in tagsForPhrase.
+  const concrete = found.filter((f) => !f.generic);
+  return { hits: [...new Set((concrete.length ? concrete : found).map((f) => f.tag))], leftover };
+}
+
+const trimGlue = (phrase) => {
+  const w = phrase.split(' ');
+  while (w.length && GLUE_WORDS.has(w[0])) w.shift();
+  while (w.length && GLUE_WORDS.has(w[w.length - 1])) w.pop();
+  return w.join(' ');
+};
 
 // Everything onboarding saves: quick picks + the confirmed free text, merged and deduped.
 export function onboardingInterestSelection(quickKeys, anythingElseText) {

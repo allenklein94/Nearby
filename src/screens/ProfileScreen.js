@@ -26,6 +26,7 @@ import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
 import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/businessAttributes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
@@ -124,6 +125,8 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const [extraPhotos, setExtraPhotos] = useState([]);
   const [uploadingExtra, setUploadingExtra] = useState(false);
   const [interests, setInterests] = useState([]);
+  // The onboarding social-plans answer (owner, 2026-11-22: editable later). Several choices; 'open' exclusive; ranking only.
+  const [socialComfortLevels, setSocialComfortLevels] = useState([]);
   // Item 100 (CLAUDE.md, "Let the recipient contribute preferences without
   // spoiling the surprise"), half A: a real, optional, self-declared
   // standing preference -- same posture as `interests` above, drawn from
@@ -309,6 +312,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       setBio(data.bio || '');
       setPhotoVerified(!!data.photo_verified);
       setInterests(data.interests || []);
+      setSocialComfortLevels(parseComfortLevels(data.social_comfort_level));
       setCuisinePreferences(data.cuisine_preferences || []);
       setVenuePreferences(data.venue_preferences || []);
       setPronouns(data.pronouns || '');
@@ -329,6 +333,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       setManagesBusiness(!!data.managed_partner_id);
       baselineRef.current = profileFormSnapshot({
         displayName: data.display_name || '', bio: data.bio || '', interests: data.interests || [],
+        socialComfortLevels: parseComfortLevels(data.social_comfort_level),
         cuisinePreferences: data.cuisine_preferences || [], venuePreferences: data.venue_preferences || [],
         pronouns: data.pronouns || '', gender: data.gender || '', sexualOrientation: data.sexual_orientation || '',
         genderIdentity: data.gender_identity || [], interestedInGenders: data.interested_in_genders || [],
@@ -629,6 +634,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         display_name: displayName,
         bio,
         interests,
+        social_comfort_level: serializeComfortLevels(socialComfortLevels),
         cuisine_preferences: cuisinePreferences,
         venue_preferences: venuePreferences,
         pronouns: pronouns.trim() || null,
@@ -719,7 +725,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
 
   const usedQuestions = prompts.map((p) => p.question);
   const currentSnapshot = profileFormSnapshot({
-    displayName, bio, interests, cuisinePreferences, venuePreferences, pronouns, gender, sexualOrientation,
+    displayName, bio, interests, socialComfortLevels, cuisinePreferences, venuePreferences, pronouns, gender, sexualOrientation,
     genderIdentity, interestedInGenders, myEthnicity, heightFeet, heightInchesVal, basics, prompts, connectionGoal,
   });
   dirtyRef.current = editing && isProfileFormDirty(baselineRef.current, currentSnapshot);
@@ -1421,6 +1427,28 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
                 accessibilityState={{ selected }}
               >
                 <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{names.tag(interest)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* The onboarding social-plans question, editable here (owner, 2026-11-22; no screen of its own). */}
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.onboarding.socialPlansTitle')}</Text>
+        <Text style={styles.sublabel}>{t('ui.onboarding.pickAnyThatFit')}</Text>
+        <View style={styles.chipsWrap}>
+          {COMFORT_LEVELS.map((value) => {
+            const selected = socialComfortLevels.includes(value);
+            return (
+              <TouchableOpacity
+                key={value}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => setSocialComfortLevels((prev) => toggleComfortLevel(prev, value))}
+                activeOpacity={0.85}
+                accessibilityLabel={t(`ui.onboarding.comfort.${value}`)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(`ui.onboarding.comfort.${value}`)}</Text>
               </TouchableOpacity>
             );
           })}
