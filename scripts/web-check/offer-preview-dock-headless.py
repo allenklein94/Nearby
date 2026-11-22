@@ -107,6 +107,8 @@ def run(browser, name, kind, query='', width=1280):
 
 BOX = """(id) => { const e = document.querySelector('[data-testid="'+id+'"]'); if (!e) return null; const r = e.getBoundingClientRect(); return {top:r.top,bottom:r.bottom,h:r.height,w:r.width,left:r.left,right:r.right}; }"""
 def box(pg, id): return pg.evaluate(BOX, id)
+# Largest sideways scroll anywhere on the page (0 = no form has scrolled horizontally).
+def max_scroll_left(pg): return pg.evaluate("() => Math.max(0, ...[...document.querySelectorAll('*')].map(e => e.scrollLeft))")
 def send_box(pg):
     return pg.evaluate("""() => { const d = document.querySelector('[data-testid="offer-preview-dock"]'); if (!d) return null;
       const el = [...d.querySelectorAll('[role=button]')].find(b => /Send Offer|Sending/.test(b.innerText)); if (!el) return null;
@@ -167,6 +169,7 @@ with sync_playwright() as p:
             # The row must fit the sheet: the input's left edge stays inside it too (before the fix the row was wider than the
             # sheet, so the whole form scrolled sideways and cut the left side off; the button alone looked whole).
             whole = ab and ib and ib['x'] >= 17 and ab['x'] + ab['width'] <= w - 17 and ab['y'] >= 0 and ab['y'] + ab['height'] <= dk['top']
+            whole = whole and max_scroll_left(pg) == 0
             check(f'{tag} [{state}] What\'s included row fits: input + Add whole, form not shifted, above the dock', whole,
                   f"input x={ib and round(ib['x'])} add={ab and {k: round(v) for k, v in ab.items()}}")
             check(f'{tag} [{state}] Add is at least 44 pt tall', ab and ab['height'] >= 44, str(ab and round(ab['height'])))
@@ -182,6 +185,42 @@ with sync_playwright() as p:
         check(f'{tag} Send Offer from the dock submits (mocked, nothing reaches Supabase)', any('screen-business-content' in x or 'submit' in x for x in sent), '; '.join(sent[:4]))
         pg.screenshot(path=f'/out/dock_{w}_4_after_send.png')
         check(f'{tag} no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+        r['ctx'].close()
+
+    # Occasion Package editor (owner 2026-11-22): the same "What's included" row: field shrinks, Add whole + 44 pt, no sideways scroll;
+    # adding and removing items still works.
+    for (w, h) in [(320, 568), (375, 667), (390, 844), (430, 932)]:
+        HEIGHT[w] = h; tag = f'[package {w}x{h}]'
+        r = run(b, f'pkg_{w}', 'linked', '', width=w); pg = r['page']; before = len(r['errors'])
+        try:
+            pg.get_by_text('Availability', exact=True).first.click(); pg.wait_for_timeout(1200)
+            pg.get_by_text('More ways to offer', exact=False).first.click(); pg.wait_for_timeout(800)
+            pg.get_by_text('+ Add Package', exact=True).first.click(); pg.wait_for_timeout(1200)
+            field = pg.get_by_placeholder('e.g. Birthday dessert').first
+            field.scroll_into_view_if_needed(); pg.wait_for_timeout(300)
+        except Exception as e:
+            check(f'{tag} opens the package editor', False, str(e)[:160]); r['ctx'].close(); continue
+        check(f'{tag} opens the package editor', True)
+        add = pg.get_by_label('Add item', exact=True)
+        check(f'{tag} exactly one Add item button on screen', add.count() == 1, str(add.count()))
+        add = add.first
+        ib = field.bounding_box(); ab = add.bounding_box()
+        fits = ib and ab and ib['x'] >= 17 and ab['x'] + ab['width'] <= w - 17 and ab['y'] >= 0 and ab['y'] + ab['height'] <= h
+        check(f'{tag} row fits: field + Add whole inside the sheet', fits, f"field x={ib and round(ib['x'])} w={ib and round(ib['width'])} add={ab and {k: round(v) for k, v in ab.items()}}")
+        check(f'{tag} field shrinks (narrower than the sheet minus Add)', ib and ab and ib['x'] + ib['width'] <= ab['x'], '')
+        check(f'{tag} Add is at least 44 pt tall', ab and ab['height'] >= 44, str(ab and round(ab['height'])))
+        check(f'{tag} no sideways scroll', max_scroll_left(pg) == 0, str(max_scroll_left(pg)))
+        for item in ('Cake (test)', 'Candles (test)'):
+            field.fill(item); add.click(); pg.wait_for_timeout(300)
+        t = pg.inner_text('body')
+        check(f'{tag} Add adds both items', 'Cake (test) ×' in t and 'Candles (test) ×' in t)
+        pg.get_by_label('Remove Cake (test)', exact=True).first.click(); pg.wait_for_timeout(300)
+        t = pg.inner_text('body')
+        check(f'{tag} tapping an item removes only it', 'Cake (test) ×' not in t and 'Candles (test) ×' in t)
+        check(f'{tag} still no sideways scroll after adding', max_scroll_left(pg) == 0, str(max_scroll_left(pg)))
+        pg.screenshot(path=f'/out/pkg_{w}.png')
+        check(f'{tag} nothing saved (no package write sent)', not any(('create_occasion_package' in x or 'update_occasion_package' in x) for x in r['seen']),
+              '; '.join(x for x in r['seen'] if 'occasion' in x))  # reads (POST /rpc/get_my_occasion_packages) are fine
         r['ctx'].close()
     b.close()
 srv.terminate()

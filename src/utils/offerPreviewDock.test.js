@@ -114,4 +114,14 @@ describe('screen wiring', () => {
     expect(dash).toContain('inlineAddInput: { flex: 1, minWidth: 0 },');
     expect(dash).toMatch(/inlineAddButton: \{ flexShrink: 0,[^}]*minHeight: 44/);
   });
+  test("Occasion Package's What's included row uses the same rule (field shrinks, Add whole + 44 pt)", () => {
+    const pkg = dash.slice(dash.indexOf('<Modal visible={packageModalVisible}'), dash.indexOf("t('ui.bizDash3.minimumGuestsOptional')"));
+    const row = pkg.slice(pkg.indexOf("t('ui.bizDash3.whatsIncluded')"));
+    expect(row).toContain('style={[styles.input, styles.inlineAddInput]}');
+    expect(row).toContain('style={[styles.smallActionButton, styles.inlineAddButton, { backgroundColor: colors.primary }]}');
+    expect(row).toContain('onPress={addPackageIncludedItem}');
+    expect(row).toContain('onPress={() => removePackageIncludedItem(index)}');
+    // no included-items row anywhere still sizes its input with a bare flex: 1
+    expect(dash).not.toMatch(/style=\{\[styles\.input, \{ flex: 1 \}\]\}[\s\S]{0,600}onPress=\{add\w*IncludedItem\}/);
+  });
 });
