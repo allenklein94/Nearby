@@ -13,6 +13,8 @@ import { SuccessToastHost } from './src/motion';
 import OfferArrivalHost from './src/components/OfferArrivalSignal';
 import OfferTravelOverlay from './src/motion/OfferTravelOverlay';
 import { setupNotificationTapHandling } from './src/services/notifications';
+import { ENVIRONMENT_ERROR, SERVICES } from './src/services/supabase';
+import ConfigErrorScreen from './src/components/ConfigErrorScreen';
 import { STRIPE_PUBLISHABLE_KEY, isStripeConfigured } from './src/services/stripeConnect';
 
 // StripeProvider requires a real, non-empty publishableKey to initialize —
@@ -35,7 +37,8 @@ installReducedMotionPolicy(Animated);
 
 Sentry.init({
   dsn: 'https://4abcadc6172e8798db6dbb4ac609a3f8@o4511759611461632.ingest.us.sentry.io/4511759617163264',
-  enabled: !__DEV__,
+  // Crash reports only from production (src/config/environments.js serviceSwitches): staging never mixes into them.
+  enabled: !__DEV__ && SERVICES.crashReporting,
   tracesSampleRate: 0.2,
 });
 
@@ -45,16 +48,24 @@ function StatusBarWithTheme() {
 }
 
 function App() {
+  // A missing or mixed environment = nothing else renders (no request, no notification handling).
+  if (ENVIRONMENT_ERROR) return <ConfigErrorScreen message={ENVIRONMENT_ERROR} />;
+  return <ConfiguredApp />;
+}
+
+function ConfiguredApp() {
   useEffect(() => {
     const cleanup = setupNotificationTapHandling();
     return cleanup;
   }, []);
 
+  // Analytics only from production; elsewhere a disabled client keeps usePostHog() callers working and sends nothing.
+  const posthog = SERVICES.analytics
+    ? { apiKey: 'phc_kEv3UMR6bbSC9Er9aVRarCxjiBVvW8ye2Gae2msUpjem', options: { host: 'https://us.i.posthog.com' } }
+    : { apiKey: 'disabled', options: { disabled: true } };
+
   return (
-    <PostHogProvider
-      apiKey="phc_kEv3UMR6bbSC9Er9aVRarCxjiBVvW8ye2Gae2msUpjem"
-      options={{ host: 'https://us.i.posthog.com' }}
-    >
+    <PostHogProvider apiKey={posthog.apiKey} options={posthog.options}>
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
