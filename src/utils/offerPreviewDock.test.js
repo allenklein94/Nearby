@@ -106,4 +106,12 @@ describe('screen wiring', () => {
     expect(dock).toContain('nestedScrollEnabled');
     expect(dock).not.toMatch(/Animated|LayoutAnimation|animateLayout/);
   });
+  test("What's included row: the input shrinks, Add never does (clipped at 320 pt, 2026-11-22)", () => {
+    const row = formScroll.slice(formScroll.indexOf("t('ui.bizDash3.whatsIncludedOptional')"), formScroll.indexOf("t('ui.bizDash3.addItemA11y')"));
+    expect(row).toContain('style={[styles.input, styles.inlineAddInput]}');
+    expect(row).toContain('styles.inlineAddButton');
+    expect(row).toContain('onPress={addOfferIncludedItem}');
+    expect(dash).toContain('inlineAddInput: { flex: 1, minWidth: 0 },');
+    expect(dash).toMatch(/inlineAddButton: \{ flexShrink: 0,[^}]*minHeight: 44/);
+  });
 });

@@ -157,6 +157,24 @@ with sync_playwright() as p:
         check(f'{tag} preview updates live while open', 'Three lattes, one free (test)' in pt and 'Two lattes' not in pt)
         pg.locator('[data-testid="offer-preview-toggle"]').click(); pg.wait_for_timeout(400)
         check(f'{tag} collapses again', box(pg, 'offer-preview-panel') is None)
+        # "What's included" Add (clipped at 320 pt before 2026-11-22): whole, inside the sheet, tappable; preview collapsed then expanded.
+        for state in ('collapsed', 'expanded'):
+            if state == 'expanded': pg.locator('[data-testid="offer-preview-toggle"]').click(); pg.wait_for_timeout(400)
+            add = pg.get_by_label('Add item', exact=True).first
+            add.scroll_into_view_if_needed(); pg.wait_for_timeout(300)
+            ab = add.bounding_box(); dk = box(pg, 'offer-preview-dock')
+            ib = pg.get_by_placeholder('e.g. Private table').first.bounding_box()
+            # The row must fit the sheet: the input's left edge stays inside it too (before the fix the row was wider than the
+            # sheet, so the whole form scrolled sideways and cut the left side off; the button alone looked whole).
+            whole = ab and ib and ib['x'] >= 17 and ab['x'] + ab['width'] <= w - 17 and ab['y'] >= 0 and ab['y'] + ab['height'] <= dk['top']
+            check(f'{tag} [{state}] What\'s included row fits: input + Add whole, form not shifted, above the dock', whole,
+                  f"input x={ib and round(ib['x'])} add={ab and {k: round(v) for k, v in ab.items()}}")
+            check(f'{tag} [{state}] Add is at least 44 pt tall', ab and ab['height'] >= 44, str(ab and round(ab['height'])))
+            item = f'Window seat {state}'
+            pg.get_by_placeholder('e.g. Private table').first.fill(item); add.click(); pg.wait_for_timeout(400)
+            check(f'{tag} [{state}] tapping Add adds the item', f'{item} ×' in pg.inner_text('body'))
+            pg.screenshot(path=f'/out/dock_{w}_5_add_{state}.png')
+            if state == 'expanded': pg.locator('[data-testid="offer-preview-toggle"]').click(); pg.wait_for_timeout(400)
         n0 = len(r['seen'])
         sb = send_box(pg)
         pg.mouse.click(w / 2, (sb['top'] + sb['bottom']) / 2); pg.wait_for_timeout(1500)

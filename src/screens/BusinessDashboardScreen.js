@@ -7464,7 +7464,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <Text style={[styles.sectionHeader, { marginTop: spacing.sm }]}>{t('ui.bizDash3.whatsIncludedOptional')}</Text>
               <View style={{ flexDirection: 'row' }}>
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, styles.inlineAddInput]}
                   placeholder={t('ui.bizDash3.eGPrivateTable')}
                   placeholderTextColor={colors.textTertiary}
                   value={offerIncludedItemDraft}
@@ -7473,7 +7473,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   accessibilityLabel={t('ui.bizDash3.addAnIncludedItemA11y')}
                 />
                 <TouchableOpacity
-                  style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
+                  style={[styles.smallActionButton, styles.inlineAddButton, { backgroundColor: colors.primary }]}
                   onPress={addOfferIncludedItem}
                   accessibilityLabel={t('ui.bizDash3.addItemA11y')}
                   accessibilityRole="button"
@@ -8674,6 +8674,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   offerSheet: { maxHeight: '92%' },
   offerSheetScroll: { flexGrow: 0, flexShrink: 1 },
   offerDockSend: { marginTop: spacing.sm },
+  // Make an Offer's "What's included" row (owner 2026-11-22): the input shrinks (minWidth 0: a web text field otherwise keeps its
+  // built-in width and pushed Add off a 320 pt screen) and Add never does, so the button is always whole and tappable.
+  inlineAddInput: { flex: 1, minWidth: 0 },
+  inlineAddButton: { flexShrink: 0, marginLeft: spacing.sm, alignSelf: 'center', minHeight: 44 },
   sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
