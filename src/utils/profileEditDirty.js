@@ -4,7 +4,7 @@
 // Only the fields the Save button writes count. Photos, extra photos, the voice intro and the two "hide" switches save the
 // moment they are changed, so they are never "unsaved".
 
-const SET_FIELDS = ['interests', 'cuisinePreferences', 'venuePreferences', 'genderIdentity', 'interestedInGenders'];
+const SET_FIELDS = ['interests', 'socialComfortLevels', 'cuisinePreferences', 'venuePreferences', 'genderIdentity', 'interestedInGenders'];
 const TEXT_FIELDS = ['displayName', 'bio', 'pronouns', 'gender', 'sexualOrientation', 'heightFeet', 'heightInchesVal', 'connectionGoal'];
 
 const sortedSet = (v) => [...new Set(Array.isArray(v) ? v : [])].sort();
