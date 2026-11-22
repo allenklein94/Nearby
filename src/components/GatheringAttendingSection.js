@@ -222,7 +222,7 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
         <View style={[styles.growthPrompt, { borderColor: categoryStyle.color }]}>
           <Text style={styles.growthPromptTitle}>{t('ui.gatheringHub.wantToBringSomeone')}</Text>
           <TouchableOpacity
-            style={[styles.growthAction, { backgroundColor: categoryStyle.color }]}
+            style={[styles.growthAction, { backgroundColor: colors.primary }]}
             onPress={() => setGrowthInviteModalVisible(true)}
             activeOpacity={0.85}
             accessibilityLabel={t('ui.gatheringHub.inviteAFriendA11y')}
@@ -388,7 +388,7 @@ export default function GatheringAttendingSection({ gathering, gatheringId, navi
                 </Text>
               )}
               <TouchableOpacity
-                style={[styles.bigButton, { backgroundColor: iAmOnMyWay ? colors.surface : categoryStyle.color, borderWidth: iAmOnMyWay ? 1 : 0, borderColor: colors.border }, shadow.button]}
+                style={[styles.bigButton, { backgroundColor: iAmOnMyWay ? colors.surface : colors.primary, borderWidth: iAmOnMyWay ? 1 : 0, borderColor: colors.border }, shadow.button]}
                 onPress={handleOnMyWay}
                 disabled={onMyWayBusy}
                 activeOpacity={0.85}
@@ -441,13 +441,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   growthPromptTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   growthAction: { width: '100%', borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginBottom: spacing.sm },
   growthActionSecondary: { backgroundColor: colors.surfaceElevated, borderWidth: 1, borderColor: colors.border },
-  // Aug 30 2026 -- dark, not white: this is the base color for the primary
-  // ("Invite a Friend", solid categoryStyle.color fill) variant; the
-  // secondary ("Share Link") variant still correctly overrides via
-  // growthActionTextSecondary, applied later in the same style array. See
-  // gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR comment
-  // for the measured white-on-PALETTE contrast failure this fixes.
-  growthActionText: { color: CATEGORY_BUTTON_TEXT_COLOR, fontWeight: '700', fontSize: 15 },
+  // Primary action = coral with white text, like every primary CTA (owner UX audit, 2026-11-21); the secondary
+  // ("Share Link") variant overrides via growthActionTextSecondary.
+  growthActionText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   growthActionTextSecondary: { color: colors.textPrimary },
   growthSkip: { color: colors.textTertiary, fontSize: 13, fontWeight: '600' },
   section: { marginTop: spacing.lg, paddingTop: spacing.lg, borderTopWidth: 1, borderTopColor: colors.border },
@@ -469,13 +465,9 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   map: { width: '100%', height: 180, borderRadius: radius.lg },
   onTheWayText: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginBottom: spacing.sm, textAlign: 'center' },
   bigButton: { borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },
-  // Aug 30 2026 -- this is the base ("I'M ON MY WAY", solid
-  // categoryStyle.color fill) color; the active ("✓ ON YOUR WAY", plain
-  // colors.surface fill) state still correctly overrides to
-  // colors.textSecondary via the inline `iAmOnMyWay && {...}` spread at
-  // its own render site, applied after this base style. See
-  // gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR comment.
-  bigButtonText: { color: CATEGORY_BUTTON_TEXT_COLOR, fontWeight: '800', fontSize: 15, letterSpacing: 0.5 },
+  // Base = coral primary with white text (owner UX audit, 2026-11-21); the "✓ ON YOUR WAY" state overrides to
+  // colors.textSecondary at its render site.
+  bigButtonText: { color: '#fff', fontWeight: '800', fontSize: 15, letterSpacing: 0.5 },
   checkInLink: { marginTop: spacing.md, alignItems: 'center' },
   checkInLinkText: { color: colors.textTertiary, fontSize: 13, fontWeight: '600' },
   uberLink: { marginTop: spacing.sm, alignItems: 'center' },

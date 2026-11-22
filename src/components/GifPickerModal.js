@@ -78,6 +78,8 @@ export default function GifPickerModal({ visible, onClose, onSelect }) {
                 style={styles.gifTile}
                 onPress={() => handleSelect(item)}
                 activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={t('ui.chat.sendAGifA11y')}
               >
                 <Image
                   source={{ uri: item.images.fixed_width_small.url }}

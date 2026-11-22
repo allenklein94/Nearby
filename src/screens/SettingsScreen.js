@@ -45,6 +45,7 @@ import { showSuccessToast } from '../motion';
 import { clearHiddenSponsors } from '../services/sponsored';
 import { loadSoundCuesEnabled, setSoundCuesEnabled, subscribeSoundCuesEnabled } from '../services/soundCues';
 import { soundCuesSupported } from '../utils/soundCues';
+import ToggleRow from '../components/ToggleRow';
 function toE164(rawInput) {
   const digits = rawInput.replace(/\D/g, '');
   if (digits.length === 10) return `+1${digits}`;
@@ -770,30 +771,18 @@ export default function SettingsScreen({ navigation, route }) {
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('settings.appearance')}</Text>
         <View style={styles.card}>
-          <View style={styles.settingRow}>
+          <ToggleRow style={styles.settingRow} value={isDark} onValueChange={toggleTheme} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.settings.darkModeA11y')}>
             <Text style={styles.settingLabel}>{t('settings.darkMode')}</Text>
-            <Switch
-              value={isDark}
-              onValueChange={toggleTheme}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.darkModeA11y')}
-            />
-          </View>
+          </ToggleRow>
           {soundCuesSupported(Platform.OS) ? (
             <>
               <View style={styles.divider} />
-              <View style={styles.settingRow}>
+              <ToggleRow style={styles.settingRow} value={soundCuesOn} onValueChange={(v) => { setSoundCuesEnabled(v).catch(() => {}); }} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.settings.soundCuesA11y')}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.settingLabel}>{t('ui.settings.soundCues')}</Text>
                   <Text style={styles.helperText}>{t('ui.settings.soundCuesHelp')}</Text>
                 </View>
-                <Switch
-                  value={soundCuesOn}
-                  onValueChange={(v) => { setSoundCuesEnabled(v).catch(() => {}); }}
-                  trackColor={{ true: colors.primary, false: colors.border }}
-                  accessibilityLabel={t('ui.settings.soundCuesA11y')}
-                />
-              </View>
+              </ToggleRow>
             </>
           ) : null}
           <View style={styles.divider} />
@@ -974,17 +963,11 @@ export default function SettingsScreen({ navigation, route }) {
                 const label = t(keys.label);
                 return (
                   <View key={g}>
-                    <View style={styles.settingRow}>
+                    <ToggleRow style={styles.settingRow} value={on} onValueChange={(v) => toggleNotificationGroup(g, v)} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.notificationPrefs.toggleA11y', { label })}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.helperText}><Text style={{ fontWeight: '600' }}>{label}</Text>{'\n'}{t(keys.hint)}</Text>
                       </View>
-                      <Switch
-                        value={on}
-                        onValueChange={(v) => toggleNotificationGroup(g, v)}
-                        trackColor={{ true: colors.primary, false: colors.border }}
-                        accessibilityLabel={t('ui.notificationPrefs.toggleA11y', { label })}
-                      />
-                    </View>
+                    </ToggleRow>
                     {g === 'discover_recommendations' && on && (
                       <>
                     <TouchableOpacity
@@ -1080,34 +1063,22 @@ export default function SettingsScreen({ navigation, route }) {
 
         <Text style={styles.sectionLabel} accessibilityRole="header" onLayout={(e) => { privacyYRef.current = e.nativeEvent.layout.y; }}>{t('ui.settings.privacy')}</Text>
         <View style={styles.card}>
-          <View style={styles.settingRow}>
+          <ToggleRow style={styles.settingRow} value={friendNearbyOn} onValueChange={toggleFriendNearby} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.friendNearby.settingTitle')}>
             <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>{t('ui.friendNearby.settingTitle')}</Text>
               <Text style={styles.helperText}>{t('ui.friendNearby.settingHelper')}</Text>
               {friendNearbyOn && friendNearbyNoLocation ? <Text style={styles.helperText}>{t('ui.friendNearby.locationOff')}</Text> : null}
             </View>
-            <Switch
-              value={friendNearbyOn}
-              onValueChange={toggleFriendNearby}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.friendNearby.settingTitle')}
-            />
-          </View>
+          </ToggleRow>
           {crossedPathsOn !== null && (
             <>
               <View style={styles.divider} />
-              <View style={styles.settingRow}>
+              <ToggleRow style={styles.settingRow} value={crossedPathsOn} onValueChange={toggleCrossedPaths} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.crossedPaths.settingTitle')}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.settingLabel}>{t('ui.crossedPaths.settingTitle')}</Text>
                   <Text style={styles.helperText}>{t('ui.crossedPaths.settingHelper')}</Text>
                 </View>
-                <Switch
-                  value={crossedPathsOn}
-                  onValueChange={toggleCrossedPaths}
-                  trackColor={{ true: colors.primary, false: colors.border }}
-                  accessibilityLabel={t('ui.crossedPaths.settingTitle')}
-                />
-              </View>
+              </ToggleRow>
             </>
           )}
           <View style={styles.divider} />
@@ -1209,18 +1180,12 @@ export default function SettingsScreen({ navigation, route }) {
             </View>
           </View>
           <View style={styles.divider} />
-          <View style={styles.settingRow}>
+          <ToggleRow style={styles.settingRow} value={shareInterestInDemand} onValueChange={(v) => toggleNotifPref('share_interest_in_demand', v, setShareInterestInDemand)} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.settings.includeMyInterestedActivityInA11y')}>
             <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>{t('ui.settings.includeMyInterestedInAnonymous')}</Text>
               <Text style={styles.helperText}>{t('ui.settings.whenYouTapInterestedOn')}</Text>
             </View>
-            <Switch
-              value={shareInterestInDemand}
-              onValueChange={(v) => toggleNotifPref('share_interest_in_demand', v, setShareInterestInDemand)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.includeMyInterestedActivityInA11y')}
-            />
-          </View>
+          </ToggleRow>
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>
@@ -1245,31 +1210,19 @@ export default function SettingsScreen({ navigation, route }) {
             />
           </View>
           <View style={styles.divider} />
-          <View style={styles.settingRow}>
+          <ToggleRow style={styles.settingRow} value={readReceiptsEnabled} onValueChange={(v) => toggleNotifPref('read_receipts_enabled', v, setReadReceiptsEnabled)} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.settings.readReceiptsA11y')}>
             <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>{t('ui.settings.readReceipts')}</Text>
               <Text style={styles.helperText}>{t('ui.settings.letMatchesSeeWhenYouve')}</Text>
             </View>
-            <Switch
-              value={readReceiptsEnabled}
-              onValueChange={(v) => toggleNotifPref('read_receipts_enabled', v, setReadReceiptsEnabled)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.readReceiptsA11y')}
-            />
-          </View>
+          </ToggleRow>
           <View style={styles.divider} />
-          <View style={styles.settingRow}>
+          <ToggleRow style={styles.settingRow} value={womenMessageFirst} onValueChange={(v) => toggleNotifPref('women_message_first', v, setWomenMessageFirst)} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.settings.iMessageFirstA11y')}>
             <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>{t('ui.settings.iMessageFirst')}</Text>
               <Text style={styles.helperText}>{t('ui.settings.whenYouMatchWithSomeone')}</Text>
             </View>
-            <Switch
-              value={womenMessageFirst}
-              onValueChange={(v) => toggleNotifPref('women_message_first', v, setWomenMessageFirst)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.settings.iMessageFirstA11y')}
-            />
-          </View>
+          </ToggleRow>
           <View style={styles.divider} />
           <View>
             <Text style={styles.settingLabel}>{t('ui.settings.whoCanSeeMyRequests')}</Text>

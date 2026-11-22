@@ -15,8 +15,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from './EmptyCopy';
 import React, { useState, useCallback, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, TextInput, Switch,
-  StyleSheet, Alert, ActivityIndicator, Modal, KeyboardAvoidingView,
+  View, Text, ScrollView, TouchableOpacity, TextInput, StyleSheet, Alert, ActivityIndicator, Modal, KeyboardAvoidingView,
   Platform, TouchableWithoutFeedback, Keyboard,
 } from 'react-native';
 import { NLoader, modalAnimation } from '../motion';
@@ -24,12 +23,13 @@ import { useTheme } from '../context/ThemeContext';
 import { formatAgo } from '../utils/timeLabels';
 import { spacing, radius, typography } from '../theme';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
-import CategorySearchField from './CategorySearchField';
-import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
+import TagGroupPicker from './TagGroupPicker';
 import { getBusinessExperiences } from '../services/brandOffers';
 import { withdrawBusinessOffer } from '../services/businessFulfillment';
 import { getBusinessEntitlements, hasEntitlement } from '../services/entitlements';
 import { countLabel } from '../utils/plural';
+import ToggleRow from './ToggleRow';
+import { disabledButtonStyle } from '../constants/buttonStates';
 import {
   getBusinessAiTrustLevel, setBusinessAiTrustLevel,
   getBusinessAiPolicies, upsertBusinessAiPolicy, deleteBusinessAiPolicy,
@@ -98,7 +98,6 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
   const [nameInput, setNameInput] = useState('');
   const [policyLevelInput, setPolicyLevelInput] = useState(2);
   const [categoryInput, setCategoryInput] = useState(null);
-  const [categoryQuery, setCategoryQuery] = useState('');
   const [experienceIdInput, setExperienceIdInput] = useState(null);
   const [partySizeMaxInput, setPartySizeMaxInput] = useState('');
   const [hoursStartInput, setHoursStartInput] = useState('');
@@ -534,26 +533,15 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
                 </View>
 
                 <Text style={styles.fieldLabel}>Category</Text>
-                <CategorySearchField
-                  value={categoryQuery}
-                  onChangeText={setCategoryQuery}
-                  noMatch={noCategoryMatch(INTEREST_OPTIONS, categoryQuery, { selected: categoryInput })}
-                  style={{ marginBottom: spacing.sm }}
-                />
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: spacing.md }}>
-                  <View style={styles.chipRow}>
-                    {filterCategoryOptions(INTEREST_OPTIONS, categoryQuery, { selected: categoryInput }).map((c) => (
-                      <TouchableOpacity
-                        key={c}
-                        style={[styles.chip, categoryInput === c && styles.chipSelected]}
-                        onPress={() => setCategoryInput(c)}
-                        accessibilityRole="button"
-                      >
-                        <Text style={[styles.chipText, categoryInput === c && styles.chipTextSelected]}>{c}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
+                <View style={{ marginBottom: spacing.md }}>
+                  <TagGroupPicker
+                    options={INTEREST_OPTIONS}
+                    selected={categoryInput ? [categoryInput] : []}
+                    onToggle={(c) => setCategoryInput(c)}
+                    single
+                    labelFor={(c) => c}
+                  />
+                </View>
 
                 <Text style={styles.fieldLabel}>Send This Offer Template</Text>
                 {experiences.length === 0 ? (
@@ -602,16 +590,15 @@ export default function BusinessAIAutomationPanel({ partnerId, partnerName }) {
                   />
                 </View>
 
-                <View style={styles.toggleRow}>
+                <ToggleRow style={styles.toggleRow} value={enabledInput} onValueChange={setEnabledInput} trackColor={{ true: colors.primary }} accessibilityLabel="Enabled">
                   <Text style={styles.fieldLabel}>Enabled</Text>
-                  <Switch value={enabledInput} onValueChange={setEnabledInput} trackColor={{ true: colors.primary }} />
-                </View>
+                </ToggleRow>
 
                 <View style={styles.modalButtonRow}>
                   <TouchableOpacity style={styles.cancelButton} onPress={() => setPolicyModalVisible(false)}>
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.saveButton} onPress={handleSavePolicy} disabled={savingPolicy}>
+                  <TouchableOpacity style={[styles.saveButton, (savingPolicy) && disabledButtonStyle(colors)]} onPress={handleSavePolicy} disabled={savingPolicy}>
                     {savingPolicy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.saveButtonText}>Save Policy</Text>}
                   </TouchableOpacity>
                 </View>

@@ -6,6 +6,7 @@ import { typography, spacing, radius } from '../theme';
 import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/businessAttributes';
 import { updateMyDiningPreferences } from '../services/preferencePolls';
 import { modalAnimation } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Progressive completion (Preference wiring, Phase 4): shown from Home only to someone who picked a
 // food & drink interest and hasn't set tastes yet. Same fields, vocabulary and store as ProfileScreen's
@@ -55,7 +56,7 @@ export default function DiningPreferencesPromptModal({ visible, onClose, onSaved
             </View>
           </ScrollView>
           <TouchableOpacity
-            style={[styles.saveButton, cuisines.length + venues.length === 0 && { opacity: 0.5 }]}
+            style={[styles.saveButton, cuisines.length + venues.length === 0 && disabledButtonStyle(colors)]}
             onPress={handleSave}
             disabled={saving || cuisines.length + venues.length === 0}
             activeOpacity={0.85}

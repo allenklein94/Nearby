@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Modal, ScrollView } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
-import { categoryStyleFor } from '../constants/gatheringCategoryStyles';
-import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import TagGroupPicker from './TagGroupPicker';
+import KeyboardSafeSheet from './KeyboardSafeSheet';
 
 import { modalAnimation } from '../motion';
 const MAX_PICKS = 5;
@@ -35,36 +35,13 @@ export default function QuickPicksEditModal({ visible, onClose, initialPicks, on
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <KeyboardSafeSheet style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>{t('ui.quickPicks.editQuickPicks')}</Text>
           <Text style={styles.subtitle}>{t('ui.quickPicks.chooseUpToCategoriesTo', { maxPicks: MAX_PICKS })}</Text>
 
-          <ScrollView style={{ maxHeight: 340 }}>
-            <View style={styles.chipWrap}>
-              {INTEREST_OPTIONS.map((tag) => {
-                const isSelected = selected.includes(tag);
-                const style = categoryStyleFor(tag);
-                const photoUrl = curatedCoverPhotoFor(tag);
-                return (
-                  <TouchableOpacity
-                    key={tag}
-                    style={[
-                      styles.chip,
-                      !isSelected && { backgroundColor: `${style.color}20`, borderColor: `${style.color}40` },
-                      isSelected && { backgroundColor: colors.primary, borderColor: colors.primary },
-                    ]}
-                    onPress={() => toggle(tag)}
-                    accessibilityRole="button"
-                    accessibilityLabel={tag}
-                    accessibilityState={{ selected: isSelected }}
-                  >
-                    {photoUrl ? <Image source={{ uri: photoUrl }} style={styles.chipPhoto} /> : null}
-                    <Text style={[styles.chipText, isSelected && { color: '#fff' }]}>{photoUrl ? '' : `${style.icon} `}{tag}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+          <ScrollView style={{ maxHeight: 420 }} keyboardShouldPersistTaps="handled">
+            <TagGroupPicker options={INTEREST_OPTIONS} selected={selected} onToggle={toggle} max={MAX_PICKS} />
           </ScrollView>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave} accessibilityRole="button" accessibilityLabel={t('ui.quickPicks.saveQuickPicksA11y')}>
@@ -77,7 +54,7 @@ export default function QuickPicksEditModal({ visible, onClose, initialPicks, on
             <Text style={styles.cancelButtonText}>{t('ui.quickPicks.cancel')}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardSafeSheet>
     </Modal>
   );
 }
@@ -88,10 +65,6 @@ function getStyles(colors) {
     sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg, paddingBottom: spacing.xl },
     title: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.xs },
     subtitle: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.md },
-    chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingBottom: spacing.sm },
-    chip: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
-    chipPhoto: { width: 18, height: 18, borderRadius: 9 },
-    chipText: { ...typography.caption, color: colors.textPrimary },
     saveButton: { backgroundColor: colors.primary, borderRadius: radius.md, paddingVertical: spacing.md, alignItems: 'center', marginTop: spacing.md },
     saveButtonText: { ...typography.bodyBold, color: '#fff' },
     resetButton: { paddingVertical: spacing.md, alignItems: 'center' },

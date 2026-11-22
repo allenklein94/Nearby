@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput, Alert } from 'react-native';
+import KeyboardSafeSheet from './KeyboardSafeSheet';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -13,6 +14,7 @@ import { reportReasonsFor } from '../utils/reportReasons';
 // the reason's fixed `legacy` value, which the database maps to its stable code (20270370). Never a translated string.
 // A report about a business (target 'business', 20270381) offers the business reasons only.
 const reasonChips = (target) => reportReasonsFor(target).map((r) => ({ value: r.legacy, key: r.key }));
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // reportOnly: the caller owns blocking (a host's Block in Manage attendees also takes the person off the gathering), so
 // the sheet shows only the report.
@@ -81,7 +83,7 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
-      <View style={styles.overlay}>
+      <KeyboardSafeSheet style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>{title || t('ui.reportBlock.reportOrBlock')}</Text>
 
@@ -109,21 +111,21 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
             multiline
           />
 
-          <TouchableOpacity style={styles.reportButton} onPress={submitReport} disabled={submitting}>
+          <TouchableOpacity style={[styles.reportButton, (submitting) && disabledButtonStyle(colors)]} onPress={submitReport} disabled={submitting} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
             <Text style={styles.reportButtonText}>{submitting ? t('ui.reportBlock.submitting') : t('ui.reportBlock.submitReport')}</Text>
           </TouchableOpacity>
 
           {!reportOnly && (
-            <TouchableOpacity style={styles.blockButton} onPress={blockUser}>
+            <TouchableOpacity style={styles.blockButton} onPress={blockUser} accessibilityRole="button">
               <Text style={styles.blockButtonText}>{t('ui.reportBlock.blockUser')}</Text>
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }}>
+          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }} accessibilityRole="button">
             <Text style={styles.cancelText}>{t('ui.reportBlock.cancel')}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardSafeSheet>
     </Modal>
   );
 }

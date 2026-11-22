@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { geocodeAddress } from '../services/places';
 import { initialPin, pinProvenance } from '../utils/locationProvenance';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Lets a host either search for an address or fine-tune by dragging
 // the pin directly, rather than being locked to wherever their
@@ -118,7 +119,7 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
           returnKeyType="search"
           accessibilityLabel={t('ui.selectLocation.searchForALocationA11y')}
         />
-        <TouchableOpacity style={styles.searchButton} onPress={() => handleSearch()} disabled={searching} accessibilityLabel={t('ui.selectLocation.searchA11y')} accessibilityRole="button">
+        <TouchableOpacity style={[styles.searchButton, (searching) && disabledButtonStyle(colors)]} onPress={() => handleSearch()} disabled={searching} accessibilityLabel={t('ui.selectLocation.searchA11y')} accessibilityRole="button">
           {searching ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.searchButtonText}>{t('ui.selectLocation.go')}</Text>}
         </TouchableOpacity>
       </View>
@@ -149,7 +150,7 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
         <TouchableOpacity style={styles.currentLocationButton} onPress={useMyCurrentLocation} accessibilityLabel={t('ui.selectLocation.useMyCurrentLocationA11y')} accessibilityRole="button">
           <Text style={styles.currentLocationText}>{t('ui.selectLocation.useMyCurrentLocation')}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.confirmButton, !pinCoords && { opacity: 0.5 }]} onPress={handleConfirm} disabled={!pinCoords} accessibilityLabel={t('ui.selectLocation.confirmThisLocationA11y')} accessibilityRole="button" accessibilityState={{ disabled: !pinCoords }}>
+        <TouchableOpacity style={[styles.confirmButton, !pinCoords && disabledButtonStyle(colors)]} onPress={handleConfirm} disabled={!pinCoords} accessibilityLabel={t('ui.selectLocation.confirmThisLocationA11y')} accessibilityRole="button" accessibilityState={{ disabled: !pinCoords }}>
           <Text style={styles.confirmButtonText}>{t('ui.selectLocation.confirmLocation')}</Text>
         </TouchableOpacity>
       </View>

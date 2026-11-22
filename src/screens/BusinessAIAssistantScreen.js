@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, SafeAreaView, ActivityIndicator, Platform } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import { askBusinessAssistant } from '../services/businessAI';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 
 import { NLoader } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 const SUGGESTIONS = ['Why did attendance drop this month?', 'What should I promote right now?', 'How am I doing compared to last month?', 'Suggest a new offer'];
 
 export default function BusinessAIAssistantScreen({ route }) {
@@ -32,7 +34,7 @@ export default function BusinessAIAssistantScreen({ route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md }}>
           <Text style={styles.subtitle}>Ask about {partnerName ?? 'your business'}'s real performance data — followers, redemptions, and growth.</Text>
         </View>
@@ -71,11 +73,11 @@ export default function BusinessAIAssistantScreen({ route }) {
             returnKeyType="send"
             accessibilityLabel="Ask the business assistant a question"
           />
-          <TouchableOpacity style={styles.askButton} onPress={() => handleAsk()} disabled={loading} accessibilityLabel="Ask" accessibilityRole="button">
+          <TouchableOpacity style={[styles.askButton, (loading) && disabledButtonStyle(colors)]} onPress={() => handleAsk()} disabled={loading} accessibilityLabel="Ask" accessibilityRole="button">
             {loading ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.askButtonText}>Ask</Text>}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

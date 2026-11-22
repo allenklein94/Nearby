@@ -11,6 +11,7 @@ import { presentRecoverableError } from '../utils/recoverableError';
 import { unlockStatus } from '../utils/unlockProgress';
 import { perkRedemptionState } from '../utils/perkRedemptionState';
 import PerkCodeBox from './PerkCodeBox';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // The selected perk's redemption context, shown in place under its card on Discover -> Perks (owner, 2026-10-04: the
 // former BrandOffers screen's redemption moved here; there is no separate perk screen or second perk list). It loads only
@@ -160,7 +161,7 @@ export default function PerkRedemptionPanel({ offer, redemption, onRedemption, o
           </View>
         ) : (
           <TouchableOpacity
-            style={styles.redeemButton}
+            style={[styles.redeemButton, (redeeming) && disabledButtonStyle(colors)]}
             onPress={handleRedeem}
             disabled={redeeming}
             activeOpacity={0.85}

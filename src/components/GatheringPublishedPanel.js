@@ -20,6 +20,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { MOTION_BUDGET, SEQUENCES, AMBIENT } from '../motion/motionBudget';
 import { inviteSentConfirmation } from '../utils/actionConfirmations';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Replaces the old plain Alert.alert('Posted!', ...) dead end with two
 // real actions — a working shareable deep link (needs the `linking`
 // config added to RootNavigator.js; a "shareable link" that silently
@@ -31,7 +32,9 @@ import { inviteSentConfirmation } from '../utils/actionConfirmations';
 // with, and its Done then replaced it with the gathering. Publishing now lands on GatheringDetail, which shows this panel
 // once at the top (route param justPublished); Done / "I'll do this later" just closes it, so the host is already on
 // their gathering and Back returns where they started Create from.
-export default function GatheringPublishedPanel({ gathering, gatheringId, placeName, customLocation = false, communityName = null, firstHosted = false, businessesAsked, preInviteResult, onDone, navigation }) {
+// topInset: the transparent header's height on GatheringDetail, so the panel starts below the back button (owner UX
+// audit of Nov 21 2026); 0 elsewhere.
+export default function GatheringPublishedPanel({ topInset = 0, gathering, gatheringId, placeName, customLocation = false, communityName = null, firstHosted = false, businessesAsked, preInviteResult, onDone, navigation }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -178,7 +181,7 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
   });
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, topInset > 0 && { paddingTop: topInset + spacing.md }]}>
         <Animated.View style={{ opacity: markOpacity, transform: [{ scale: markScale }], marginBottom: spacing.xs }}>
           <NearbyMark size={40} />
         </Animated.View>
@@ -292,7 +295,7 @@ export default function GatheringPublishedPanel({ gathering, gatheringId, placeN
                         {f.sharedContext && <Text style={styles.friendContext}>{f.sharedContext}</Text>}
                       </View>
                       <TouchableOpacity
-                        style={[styles.inviteButton, invitedIds[f.id] && styles.inviteButtonSent]}
+                        style={[styles.inviteButton, invitedIds[f.id] && styles.inviteButtonSent, (invitingId === f.id || invitedIds[f.id]) && disabledButtonStyle(colors)]}
                         onPress={() => handleInvite(f.id)}
                         disabled={invitingId === f.id || invitedIds[f.id]}
                         accessibilityLabel={invitedIds[f.id] ? t('ui.gatheringConfirmation.inviteSentA11y') : t('ui.gatheringConfirmation.inviteA11y', { name: f.display_name })}

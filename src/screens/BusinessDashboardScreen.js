@@ -142,6 +142,8 @@ import { isGatheringUpcoming } from '../utils/objectState';
 import { categoryOutcomeLine, categoryRatingLine, offerPriceLabel } from '../utils/outcomeDisplay';
 import { countLabel } from '../utils/plural';
 import { bestTimeLine } from '../utils/bestTime';
+import ToggleRow from '../components/ToggleRow';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Tab, tool, offer-type and duration labels live in ui.bizDash3 (11 languages), keyed by `key`.
 const SECTIONS = [
   { key: 'home', icon: '🏠' },
@@ -4139,7 +4141,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                       hidden on web, native behavior untouched. */}
                   {(
                     <TouchableOpacity
-                      style={[styles.postUpdateButton, { marginTop: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }]}
+                      style={[styles.postUpdateButton, { marginTop: spacing.sm, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.primary }, (postingMoment) && disabledButtonStyle(colors)]}
                       onPress={handlePostMoment}
                       disabled={postingMoment}
                       accessibilityLabel={t('ui.bizDash1.postARealTimePhotoA11y')}
@@ -5585,7 +5587,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                     accessibilityLabel={t('ui.bizDash2.redemptionConfirmationCodeA11y')}
                   />
                   <TouchableOpacity
-                    style={[styles.createOfferButton, { marginBottom: 0, marginLeft: spacing.sm, opacity: confirmingCode || !redemptionCodeInput.trim() ? 0.6 : 1 }]}
+                    style={[styles.createOfferButton, { marginBottom: 0, marginLeft: spacing.sm }, (confirmingCode || !redemptionCodeInput.trim()) && disabledButtonStyle(colors)]}
                     onPress={handleConfirmRedemption}
                     disabled={confirmingCode || !redemptionCodeInput.trim()}
                     accessibilityLabel={t('ui.bizDash2.confirmRedemptionCodeA11y')}
@@ -5826,7 +5828,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                     })}
                   </View>
                   <TouchableOpacity
-                    style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
+                    style={[styles.postUpdateButton, { marginTop: spacing.sm }, (savingAccommodations) && disabledButtonStyle(colors)]}
                     onPress={handleSaveAccommodations}
                     disabled={savingAccommodations}
                     accessibilityLabel={t('ui.bizDash2.saveWhatYouCanAccommodateA11y')}
@@ -6218,7 +6220,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                   })}
                 </View>
                 <TouchableOpacity
-                  style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
+                  style={[styles.postUpdateButton, { marginTop: spacing.sm }, (savingPriorityAttributes) && disabledButtonStyle(colors)]}
                   onPress={handleSavePriorityAttributes}
                   disabled={savingPriorityAttributes}
                   accessibilityLabel={t('ui.bizDash2.saveWhatYoureLookingForA11y')}
@@ -6309,7 +6311,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                       })}
                     </View>
                     <TouchableOpacity
-                      style={[styles.postUpdateButton, { marginTop: spacing.sm }]}
+                      style={[styles.postUpdateButton, { marginTop: spacing.sm }, (savingBoost) && disabledButtonStyle(colors)]}
                       onPress={handleSetBoost}
                       disabled={savingBoost}
                       accessibilityLabel={t('ui.bizDash2.saveTemporaryBoostA11y')}
@@ -6539,7 +6541,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                         </Text>
                       )}
                       <TouchableOpacity
-                        style={[styles.createOfferButton, { marginTop: spacing.sm }]}
+                        style={[styles.createOfferButton, { marginTop: spacing.sm }, (connectingStripe) && disabledButtonStyle(colors)]}
                         onPress={handleConnectStripe}
                         disabled={connectingStripe}
                         accessibilityLabel={stripeStatus?.hasAccount ? t('ui.bizDash3.continueStripeSetupA11y') : t('ui.bizDash3.connectStripeA11y')}
@@ -6593,7 +6595,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                       />
                       <View style={{ flexDirection: 'row', marginTop: spacing.sm }}>
                         <TouchableOpacity
-                          style={[styles.createOfferButton, { opacity: savingReservationProvider || !reservationProviderInput ? 0.6 : 1 }]}
+                          style={[styles.createOfferButton, (savingReservationProvider || !reservationProviderInput) && disabledButtonStyle(colors)]}
                           onPress={handleSaveReservationProvider}
                           disabled={savingReservationProvider || !reservationProviderInput}
                           accessibilityLabel={t('ui.bizDash3.saveReservationProviderA11y')}
@@ -6771,16 +6773,11 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 accessibilityLabel={t('ui.bizDash3.targetInterestTagOptionalA11y')}
               />
 
-              <View style={[styles.toggleRow, { marginTop: spacing.md }]}>
+              <ToggleRow style={[styles.toggleRow, { marginTop: spacing.md }]} value={unlockEnabled} onValueChange={setUnlockEnabled} accessibilityLabel={unlockEnabled ? t('ui.bizDash3.groupUnlockOnA11y') : t('ui.bizDash3.groupUnlockOffA11y')}>
                 <Text style={styles.toggleRowLabel}>
                   {offerGatheringId ? t('ui.bizDash3.requireAMinimumNumberOf') : t('ui.bizDash3.requireACommunityToHit')}
                 </Text>
-                <Switch
-                  value={unlockEnabled}
-                  onValueChange={setUnlockEnabled}
-                  accessibilityLabel={unlockEnabled ? t('ui.bizDash3.groupUnlockOnA11y') : t('ui.bizDash3.groupUnlockOffA11y')}
-                />
-              </View>
+              </ToggleRow>
 
               {unlockEnabled && (
                 <>
@@ -6816,7 +6813,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
               )}
 
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, (submitting) && disabledButtonStyle(colors)]}
                 onPress={handleCreateOffer}
                 disabled={submitting}
                 accessibilityLabel={submitting ? t('ui.bizDash3.creatingA11y') : t('ui.bizDash3.createOfferA11y')}
@@ -6871,7 +6868,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                     accessibilityLabel={t('ui.bizDash3.businessAddressA11y')}
                   />
                   <TouchableOpacity
-                    style={styles.submitButton}
+                    style={[styles.submitButton, (savingAddress || !addressInput.trim()) && disabledButtonStyle(colors)]}
                     onPress={handleUpdateAddress}
                     disabled={savingAddress || !addressInput.trim()}
                     accessibilityLabel={savingAddress ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveAddressA11y')}
@@ -7065,7 +7062,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 </>
               )}
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, (savingProfile || !editNameInput.trim()) && disabledButtonStyle(colors)]}
                 onPress={handleSaveProfile}
                 disabled={savingProfile || !editNameInput.trim()}
                 accessibilityLabel={savingProfile ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveProfileA11y')}
@@ -7189,7 +7186,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 }}
               />
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, (savingExperience || !expTitleInput.trim()) && disabledButtonStyle(colors)]}
                 onPress={handleSaveExperience}
                 disabled={savingExperience || !expTitleInput.trim()}
                 accessibilityLabel={savingExperience ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveExperienceA11y')}
@@ -7259,7 +7256,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 accessibilityLabel={t('ui.bizDash3.updateDetailsOptionalA11y')}
               />
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, (postingUpdate) && disabledButtonStyle(colors)]}
                 onPress={handlePostUpdate}
                 disabled={postingUpdate}
                 accessibilityLabel={postingUpdate ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendUpdateA11y')}
@@ -7801,7 +7798,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 );
               })()}
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, (respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)) && disabledButtonStyle(colors)]}
                 onPress={handleSubmitOffer}
                 disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
                 accessibilityRole="button"
@@ -7966,7 +7963,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 accessibilityLabel={t('ui.bizDash3.noteAboutTheAlternativeTimeA11y')}
               />
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, (!altTime || respondingOpportunityId === altSheetRequestId) && disabledButtonStyle(colors)]}
                 onPress={() => {
                   const second = draftSecondTime('alt_time', altTime, altTime2);
                   const fewer = draftSecondPartySize('alt_time', altTime, altTime2, altPartySize2, partyOfRequest(altSheetRequestId));
@@ -8021,7 +8018,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 />
               )}
               <TouchableOpacity
-                style={styles.submitButton}
+                style={[styles.submitButton, (!declineReasonInput || respondingOpportunityId === declineModalRequestId) && disabledButtonStyle(colors)]}
                 onPress={handleSubmitDecline}
                 disabled={!declineReasonInput || respondingOpportunityId === declineModalRequestId}
                 accessibilityLabel={respondingOpportunityId === declineModalRequestId ? t('ui.bizDash3.decliningA11y') : t('ui.bizDash3.confirmDeclineA11y')}
@@ -8281,7 +8278,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 </>
               )}
               <TouchableOpacity
-                style={[styles.submitButton, { marginTop: spacing.md }]}
+                style={[styles.submitButton, { marginTop: spacing.md }, (postingAvailability || !availabilityTitleInput.trim()) && disabledButtonStyle(colors)]}
                 onPress={handlePostAvailability}
                 disabled={postingAvailability || !availabilityTitleInput.trim()}
                 accessibilityLabel={postingAvailability ? t('ui.bizDash3.postingA11y') : t('ui.bizDash3.postAvailabilityA11y')}
@@ -8423,7 +8420,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 })}
               </View>
               <TouchableOpacity
-                style={[styles.submitButton, { marginTop: spacing.md }]}
+                style={[styles.submitButton, { marginTop: spacing.md }, (savingPackage || !packageNameInput.trim() || !packageOccasionInput) && disabledButtonStyle(colors)]}
                 onPress={handleSavePackage}
                 disabled={savingPackage || !packageNameInput.trim() || !packageOccasionInput}
                 accessibilityLabel={savingPackage ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.savePackageA11y')}
@@ -8607,7 +8604,7 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                 </TouchableOpacity>
               </View>
               <TouchableOpacity
-                style={[styles.submitButton, { marginTop: spacing.md }]}
+                style={[styles.submitButton, { marginTop: spacing.md }, (savingPolicy) && disabledButtonStyle(colors)]}
                 onPress={handleSavePolicy}
                 disabled={savingPolicy}
                 accessibilityLabel={savingPolicy ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.savePolicyA11y')}

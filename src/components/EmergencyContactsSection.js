@@ -9,6 +9,7 @@ import { getMyEmergencyContacts, addEmergencyContact, deleteEmergencyContact } f
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Emergency contacts, shown in place under Settings > Safety (screen-reduction audit 2026-10-24, owner approved: this was its
 // own screen, EmergencyContacts, same pattern as BlockedUsersSection). Loads when the section opens; add/remove re-read the list.
@@ -157,7 +158,7 @@ export default function EmergencyContactsSection() {
               onChangeText={setRelationship}
               accessibilityLabel={t('ui.emergencyContacts.relationshipOptionalA11y')}
             />
-            <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={submitting} activeOpacity={0.85} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
+            <TouchableOpacity style={[styles.addButton, (submitting) && disabledButtonStyle(colors)]} onPress={handleAdd} disabled={submitting} activeOpacity={0.85} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
               <Text style={styles.addButtonText}>{submitting ? t('ui.emergencyContacts.adding') : t('ui.emergencyContacts.addContact')}</Text>
             </TouchableOpacity>
           </View>

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Alert, ActivityIndicator } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import { supabase, functionUrl } from '../services/supabase';
 import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
@@ -125,7 +126,7 @@ export default function RehearsalRoomScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <FlatList
           ref={listRef}
           data={messages}
@@ -161,7 +162,7 @@ export default function RehearsalRoomScreen({ navigation }) {
             {sending ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={styles.sendText}>{t('ui.rehearsal.send')}</Text>}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Switch, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingTopBar from '../components/OnboardingTopBar';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { NOTIFICATION_CATEGORIES } from '../constants/notificationCategories';
 import { ONBOARDING_ANSWERS_KEY } from './OnboardingQuestionsScreen';
+import ToggleRow from '../components/ToggleRow';
 
 export default function OnboardingNotificationsScreen({ navigation }) {
   const { t } = useLanguage();
@@ -43,18 +44,12 @@ export default function OnboardingNotificationsScreen({ navigation }) {
         <Text style={styles.subtitle}>{t('ui.onboarding.youCanFineTuneAll')}</Text>
         <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
           {NOTIFICATION_CATEGORIES.map((c) => (
-            <View key={c.column} style={styles.row}>
+            <ToggleRow key={c.column} style={styles.row} value={choices[c.column]} onValueChange={(v) => setChoices((prev) => ({ ...prev, [c.column]: v }))} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.onboarding.notifyMeAboutA11y', { label: t(`ui.onboarding.notify.${c.column}.label`) })}>
               <View style={{ flex: 1 }}>
                 <Text style={styles.label}>{c.icon} {t(`ui.onboarding.notify.${c.column}.label`)}</Text>
                 <Text style={styles.hint}>{t(`ui.onboarding.notify.${c.column}.hint`)}</Text>
               </View>
-              <Switch
-                value={choices[c.column]}
-                onValueChange={(v) => setChoices((prev) => ({ ...prev, [c.column]: v }))}
-                trackColor={{ true: colors.primary, false: colors.border }}
-                accessibilityLabel={t('ui.onboarding.notifyMeAboutA11y', { label: t(`ui.onboarding.notify.${c.column}.label`) })}
-              />
-            </View>
+            </ToggleRow>
           ))}
         </View>
         <TouchableOpacity style={styles.button} onPress={handleContinue} activeOpacity={0.85} accessibilityRole="button" accessibilityLabel={t('ui.onboarding.continueA11y')}>

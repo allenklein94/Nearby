@@ -8,6 +8,7 @@ import { spacing, radius, typography } from '../theme';
 import { navigateKeepingTrail } from '../services/openDestination';
 import { gatheringsTabParams } from '../utils/gatheringFilters';
 import { SATISFACTION_SCALE } from '../constants/satisfactionScale';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Owner item 34 (2026-10-11): the ONE post-gathering "How was it?", asked inline on the completed plan card in Home's Your Plans
 // (utils/gatheringCompletion.js), never in a pop-up. It replaced GatheringFeedbackModal (which opened over Home on its own) and
@@ -148,7 +149,7 @@ export default function GatheringFeedbackInline({ gatheringId, navigation, onDon
         </TouchableOpacity>
         {satisfaction && (
           <TouchableOpacity
-            style={styles.submitButton}
+            style={[styles.submitButton, (submitting) && disabledButtonStyle(colors)]}
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}

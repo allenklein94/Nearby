@@ -100,6 +100,7 @@ describe('the full catalog stays one tap away', () => {
   it('the profile interest editor still lists every personal interest tag', () => {
     const p = read('screens/ProfileScreen.js');
     expect(p).toMatch(/PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS/);
-    expect(p).toMatch(/INTEREST_OPTIONS\.map\(\(interest\)/);
+    // every tag still offered, now grouped by the shared picker (UX consistency item 1, 2026-11-21)
+    expect(p).toMatch(/<TagGroupPicker options=\{INTEREST_OPTIONS\}/);
   });
 });

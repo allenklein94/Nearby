@@ -3,6 +3,9 @@ import { searchBusinessTypes } from '../utils/businessTypeSearch';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Keyboard, TouchableWithoutFeedback, ActivityIndicator } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
+import FieldError from '../components/FieldError';
+import useFormErrors from '../hooks/useFormErrors';
 import * as Location from 'expo-location';
 import { randomUUID } from 'expo-crypto';
 import { supabase } from '../services/supabase';
@@ -25,6 +28,7 @@ import CategorySearchField from '../components/CategorySearchField';
 import { LOCATION_MODES, isServiceArea, signupLocationProblem, signupLocationFields } from '../utils/businessLocationMode';
 import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
 import { spacing, radius, typography } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // 2026-09-06: expanded from a hand-typed 6-value list to the same 15 (then,
 // same day, 19) major categories as CATEGORY_GROUPS (gatheringCategories.js)
@@ -64,6 +68,7 @@ async function getOptionalLocationBias() {
 export default function BusinessPartnerApplyScreen({ navigation, route }) {
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  const form = useFormErrors();
 
   // Business Partner acquisition experience, Milestone 2 (see CLAUDE.md's locked
   // Decision 2): a real "Find your business" step ahead of the form, using the
@@ -203,11 +208,13 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
 
   async function handleResubmit() {
     if (!businessName.trim()) {
-      return Alert.alert('Business name required', "Tell us your business's name.");
+      form.show('name', "Tell us your business's name.");
+      return;
     }
     const nameCheck = await checkTextModeration(businessName);
     if (!nameCheck.safe) {
-      return Alert.alert('Name not allowed', 'Please revise and try again.');
+      form.show('name', 'This name isn’t allowed. Please revise it and try again.');
+      return;
     }
     setResubmitting(true);
     try {
@@ -258,7 +265,8 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
   // themselves taps Submit Application.
   async function runBusinessOnboardingAssistant() {
     if (!description.trim()) {
-      return Alert.alert('Tell us about your business first', 'Add a short description above, then try again.');
+      form.show('description', 'Add a short description here, then try again.');
+      return;
     }
     setClassifying(true);
     try {
@@ -364,12 +372,14 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
 
   async function submit() {
     if (!businessName.trim()) {
-      return Alert.alert('Business name required', "Tell us your business's name.");
+      form.show('name', "Tell us your business's name.");
+      return;
     }
 
     const nameCheck = await checkTextModeration(businessName);
     if (!nameCheck.safe) {
-      return Alert.alert('Name not allowed', 'Please revise and try again.');
+      form.show('name', 'This name isn’t allowed. Please revise it and try again.');
+      return;
     }
     const locationProblem = signupLocationProblem({ mode: locationMode, address, latitude, longitude });
     if (locationProblem) {
@@ -557,7 +567,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
                 accessibilityLabel="Search for your business"
               />
               <TouchableOpacity
-                style={styles.searchButton}
+                style={[styles.searchButton, (searching || !searchQuery.trim()) && disabledButtonStyle(colors)]}
                 onPress={runSearch}
                 disabled={searching || !searchQuery.trim()}
                 accessibilityRole="button"
@@ -599,8 +609,10 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardSafeView>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={form.scrollRef} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+          <View ref={form.contentRef}>
           {resending ? statusHeader : (
             <TouchableOpacity onPress={() => setStep('search')} accessibilityRole="button">
               <Text style={styles.backLink}>← Back to search</Text>
@@ -618,26 +630,32 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             <Text style={styles.header}>Complete your profile</Text>
           )}
 
+          <View ref={form.anchor('name')} />
           <Text style={styles.label}>Business Name</Text>
           <TextInput
+            ref={form.input('name')}
             style={styles.input}
             placeholder="Coastal Coffee"
             placeholderTextColor={colors.textTertiary}
             value={businessName}
-            onChangeText={setBusinessName}
+            onChangeText={(v) => { setBusinessName(v); form.clear('name'); }}
             accessibilityLabel="Business name"
           />
+          <FieldError message={form.errorFor('name')} />
 
+          <View ref={form.anchor('description')} />
           <Text style={styles.label}>Tell us about your business</Text>
           <TextInput
+            ref={form.input('description')}
             style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
             placeholder="What do you do, and what kind of community would you want to build?"
             placeholderTextColor={colors.textTertiary}
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(v) => { setDescription(v); form.clear('description'); }}
             multiline
             accessibilityLabel="Business description, optional"
           />
+          <FieldError message={form.errorFor('description')} />
 
           {!resending && (<>
           <TouchableOpacity
@@ -1032,7 +1050,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
 
           {resending ? (
             <TouchableOpacity
-              style={[styles.button, resubmitting && { opacity: 0.6 }]}
+              style={[styles.button, resubmitting && disabledButtonStyle(colors)]}
               onPress={handleResubmit}
               disabled={resubmitting}
               activeOpacity={0.85}
@@ -1044,7 +1062,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
           ) : (
             <>
               <TouchableOpacity
-                style={styles.button}
+                style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
                 onPress={submit}
                 disabled={submitting}
                 activeOpacity={0.85}
@@ -1056,8 +1074,10 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
               <Text style={styles.reviewNote}>Once submitted, your business is reviewed before going live.</Text>
             </>
           )}
+          </View>
         </ScrollView>
       </TouchableWithoutFeedback>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

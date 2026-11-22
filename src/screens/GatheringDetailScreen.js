@@ -2,7 +2,8 @@ import GatheringPublishedPanel from '../components/GatheringPublishedPanel';
 import { practicalFactsIn } from '../i18n/gatheringFactsDisplay';
 import { attendeeSummary, attendeeCluster, CLUSTER_MAX_FACES } from '../utils/gatheringAttendeeDisplay';
 import { presentRecoverableError } from '../utils/recoverableError';
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useContext } from 'react';
+import { HeaderHeightContext } from '@react-navigation/elements';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
 import { NLoader, showSuccessToast } from '../motion';
 import * as Haptics from 'expo-haptics';
@@ -91,6 +92,7 @@ import { expiredDateLabel } from '../utils/inviteExpiry';
 import { gatheringViewerState } from '../utils/objectState';
 import { canDo, gatheringLifecycleState } from '../utils/objectLifecycle';
 import { interestedConfirmation } from '../utils/actionConfirmations';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Labels: ui.gatheringVocab.vibe.<key>.{label, low, high} (shared with Create/Edit).
 const VIBE_SCALES = [{ key: 'energy_level' }, { key: 'conversation_level' }, { key: 'group_size_feel' }];
@@ -105,6 +107,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const { t, language } = useLanguage();
   const names = useCategoryNames(); // category names in the person's language (display only)
   const styles = getStyles(colors, shadow);
+  const transparentHeaderHeight = useContext(HeaderHeightContext) ?? 0;
   const posthog = usePostHog();
 
   const [gathering, setGathering] = useState(null);
@@ -762,6 +765,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       <ScrollView contentContainerStyle={{ paddingBottom: spacing.xxl * 2 }}>
         {justPublished && gathering.isHost && (
           <GatheringPublishedPanel
+            topInset={transparentHeaderHeight}
             gathering={gathering}
             gatheringId={gatheringId}
             placeName={justPublished.placeName ?? null}
@@ -1187,7 +1191,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
                         underlying flow. */}
                     <Text style={styles.businessReadyCaption}>{t('ui.gatheringDetail.businessReadyCaption')}</Text>
                     <TouchableOpacity
-                      style={styles.businessReadyButton}
+                      style={[styles.businessReadyButton, (firingBusinessRequest) && disabledButtonStyle(colors)]}
                       onPress={handleAskBusinessesNow}
                       disabled={firingBusinessRequest}
                       accessibilityLabel={t('ui.gatheringDetail.lookNowA11y')}
@@ -1385,7 +1389,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
           ) : (
             <>
               <TouchableOpacity
-                style={[styles.joinButton, { backgroundColor: categoryStyle.color }, shadow.button]}
+                style={[styles.joinButton, { backgroundColor: colors.primary }, shadow.button]}
                 onPress={() => setIntentModalVisible(true)}
                 disabled={joining}
                 activeOpacity={0.85}
@@ -1662,10 +1666,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   },
   pendingText: { color: colors.textSecondary, fontSize: 14, textAlign: 'center' },
   joinButton: { marginTop: spacing.xl, borderRadius: radius.full, paddingVertical: spacing.md, alignItems: 'center' },
-  // Aug 30 2026 -- dark, not white: categoryStyle.color is a deliberately
-  // low-saturation badge palette, not built to carry solid white CTA
-  // text (measured 2.03-3.19:1 contrast, below the WCAG floor -- the
-  // real cause of "this button looks disabled"). See
-  // gatheringCategoryStyles.js's own CATEGORY_BUTTON_TEXT_COLOR comment.
-  joinButtonText: { color: CATEGORY_BUTTON_TEXT_COLOR, fontWeight: '800', fontSize: 16, letterSpacing: 0.5 },
+  // White on the coral primary, the same as Create's Next (owner UX audit, 2026-11-21).
+  joinButtonText: { color: '#fff', fontWeight: '800', fontSize: 16, letterSpacing: 0.5 },
 });

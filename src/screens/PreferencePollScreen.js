@@ -9,6 +9,7 @@ import { getMyPendingPreferencePolls, answerPreferencePoll } from '../services/p
 import { preferencePollQuestion } from '../constants/preferencePollQuestions';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Item 100 (CLAUDE.md, "Let the recipient contribute preferences without
 // spoiling the surprise"), half B: the target-facing side of a real,
@@ -109,7 +110,7 @@ export default function PreferencePollScreen() {
                 })}
               </View>
               <TouchableOpacity
-                style={[styles.submitButton, selected.size === 0 && styles.submitButtonDisabled]}
+                style={[styles.submitButton, selected.size === 0 && disabledButtonStyle(colors)]}
                 onPress={() => submit(poll.id)}
                 disabled={selected.size === 0 || answeringId === poll.id}
                 activeOpacity={0.85}

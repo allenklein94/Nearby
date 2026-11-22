@@ -7,6 +7,7 @@ import { SPONSORED_LABEL } from '../constants/sponsored';
 import { checkMySponsoredSlot, getMySponsoredPlacements, cancelMySponsoredHold, startSponsoredCheckout, cancelPaidSponsoredPlacement } from '../services/sponsored';
 import { SPONSORED_TERMS_VERSION, SPONSORED_TERMS_SECTIONS } from '../constants/sponsoredTerms';
 import { placementStatusLine, statsLine, priceLabel, startDateOptions, dayLabel } from '../utils/sponsoredPromotions';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Owner-side "Promotions" (design section 7). A paid, clearly labeled spotlight; never an Opportunity, never in Demand.
 // Shown only when the database says this business can buy one (empty allow-list = the section says nothing is available
@@ -135,7 +136,7 @@ export default function SponsoredPromotionsPanel({ offers = [] }) {
           {slotProblem ? <Text style={styles.error}>{slotProblem}</Text> : null}
           {message ? <Text style={styles.error}>{message.key ? t(message.key) : message.text}</Text> : null}
 
-          <TouchableOpacity style={[styles.cta, !canSubmit && { opacity: 0.5 }]} disabled={!canSubmit} onPress={buy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.continueToPaymentA11y')}>
+          <TouchableOpacity style={[styles.cta, !canSubmit && disabledButtonStyle(colors)]} disabled={!canSubmit} onPress={buy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.continueToPaymentA11y')}>
             <Text style={styles.ctaText}>{price ? t('ui.bizComp.continueToPayment', { price: price }) : t('ui.bizComp.continueToPayment2')}</Text>
           </TouchableOpacity>
           <View style={[styles.row, { alignItems: 'center', marginTop: spacing.md }]}>

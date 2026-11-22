@@ -32,6 +32,7 @@ import { openDestination } from '../services/openDestination';
 import { activityLoadNotice } from '../utils/homeLoadNotice';
 import { displayAgo } from '../i18n/display';
 import useCategoryNames from '../hooks/useCategoryNames';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // A genuinely unified feed — notices/waves, recent crossed paths,
 // and other activity all interleaved by recency into one
@@ -741,7 +742,7 @@ export default function ActivityScreen({ navigation, route, initialSubSection: i
                   </View>
                   {premium && (
                     <TouchableOpacity
-                      style={[styles.inlineButton, alreadyNoticedBack && styles.inlineButtonDone]}
+                      style={[styles.inlineButton, alreadyNoticedBack && styles.inlineButtonDone, (alreadyNoticedBack) && disabledButtonStyle(colors)]}
                       onPress={() => handleNoticeBack(item)}
                       disabled={alreadyNoticedBack}
                       accessibilityLabel={alreadyNoticedBack ? t('ui.activity.alreadyNoticedBackA11y') : t('ui.activity.noticeBackA11y', { name: n.profiles?.display_name })}

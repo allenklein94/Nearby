@@ -12,6 +12,7 @@ import { displayDateTime } from '../i18n/display';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 export default function DateCheckInModal({ visible, onClose, matchId, matchName, navigation, isRomanticMatch = true }) {
   const { t, language } = useLanguage();
   const { colors, isDark } = useTheme();
@@ -148,7 +149,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
           )}
 
           <Text style={styles.label}>{t('ui.dateCheckIn.whenAreYouMeeting')}</Text>
-          <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)}>
+          <TouchableOpacity style={styles.input} onPress={() => setShowPicker(true)} accessibilityRole="button">
             <Text style={{ color: colors.textPrimary }}>
               {displayDateTime(scheduledAt.toISOString(), language)}
             </Text>
@@ -167,7 +168,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
             />
           )}
 
-          <TouchableOpacity style={styles.button} onPress={handleCreate} disabled={submitting} activeOpacity={0.85}>
+          <TouchableOpacity style={[styles.button, (submitting) && disabledButtonStyle(colors)]} onPress={handleCreate} disabled={submitting} activeOpacity={0.85} accessibilityRole="button" accessibilityState={{ disabled: submitting }}>
             <Text style={styles.buttonText}>{submitting ? t('ui.dateCheckIn.settingUp') : t('ui.dateCheckIn.setUpCheckInShare')}</Text>
           </TouchableOpacity>
 
@@ -187,7 +188,7 @@ export default function DateCheckInModal({ visible, onClose, matchId, matchName,
           </TouchableOpacity>
           <Text style={styles.locationHint}>{t('ui.dateCheckIn.aOneTimeSnapshotOf')}</Text>
 
-          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }}>
+          <TouchableOpacity onPress={onClose} style={{ marginTop: spacing.md }} accessibilityRole="button">
             <Text style={styles.cancelText}>{t('ui.dateCheckIn.cancel')}</Text>
           </TouchableOpacity>
         </View>

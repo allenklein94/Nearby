@@ -6,7 +6,10 @@ import { getMomentumStats } from '../services/momentum';
 import { getInsightsStats } from '../services/insights';
 import React, { useEffect, useRef, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
+import FieldError from '../components/FieldError';
+import useFormErrors from '../hooks/useFormErrors';
 import { supabase } from '../services/supabase';
 import { readMyProfile } from '../services/myProfile';
 import { useTheme } from '../context/ThemeContext';
@@ -27,6 +30,7 @@ import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
+import TagGroupPicker from '../components/TagGroupPicker';
 import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/businessAttributes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
@@ -35,6 +39,7 @@ import { modalAnimation, showSuccessToast, animateLayout, NLoader } from '../mot
 import { countLabel } from '../utils/plural';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { profileFormSnapshot, isProfileFormDirty, guardProfileLeave } from '../utils/profileEditDirty';
+import ToggleRow from '../components/ToggleRow';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -196,6 +201,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const recordingIntroRef = useRef(null);
   const recordingIntroTimerRef = useRef(null);
   const scrollRef = useRef(null);
+  const form = useFormErrors({ scrollRef });
   const editSectionYRef = useRef(0);
   const interestsSectionYRef = useRef(0);
   // Edit mode: what the form held when it loaded (or was last saved), so Back can tell whether anything would be lost.
@@ -585,16 +591,16 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     // what changes); 'hold' = saved, the published text stays until a person approves the new one.
     const base = baselineRef.current ? JSON.parse(baselineRef.current) : {};
     let held = false;
-    const screenChanged = async (value, baseValue, kind, notAllowedTitle, notAllowedBody) => {
+    const screenChanged = async (value, baseValue, kind, notAllowedTitle, notAllowedBody, onRefuse) => {
       const now = normalizeUgcText(value);
       if (!now || now === normalizeUgcText(baseValue ?? '')) return true;
       const result = await screenUserContent([{ text: value, kind }]);
-      if (blockedByScreening(Alert, t, result, { notAllowedTitle, notAllowedBody })) return false;
+      if (blockedByScreening(Alert, t, result, { notAllowedTitle, notAllowedBody, onRefuse })) return false;
       if (result.outcome === 'hold') held = true;
       return true;
     };
-    if (!(await screenChanged(displayName, base.displayName, UGC_KINDS.displayName, t('ui.profile.displayNameNotAllowed'), t('ui.profile.pleaseReviseYourDisplayName')))) return;
-    if (!(await screenChanged(bio, base.bio, UGC_KINDS.bio, t('ui.profile.bioNotAllowed'), t('ui.profile.pleaseReviseYourBioAnd')))) return;
+    if (!(await screenChanged(displayName, base.displayName, UGC_KINDS.displayName, t('ui.profile.displayNameNotAllowed'), t('ui.profile.pleaseReviseYourDisplayName'), (msg) => form.show('name', msg)))) return;
+    if (!(await screenChanged(bio, base.bio, UGC_KINDS.bio, t('ui.profile.bioNotAllowed'), t('ui.profile.pleaseReviseYourBioAnd'), (msg) => form.show('bio', msg)))) return;
     for (const [label, value, baseValue] of [[t('ui.profile.fieldPronouns'), pronouns, base.pronouns], [t('ui.profile.fieldGender'), gender, base.gender], [t('ui.profile.fieldOrientation'), sexualOrientation, base.sexualOrientation]]) {
       if (!(await screenChanged(value, baseValue, UGC_KINDS.profileDetail, t('ui.profile.notAllowed', { label: label }), t('ui.profile.pleaseReviseThisFieldAnd')))) return;
     }
@@ -733,6 +739,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardSafeView>
       <ScrollView ref={scrollRef} contentContainerStyle={{ padding: spacing.lg }} onScroll={(e) => { scrollYRef.current = e.nativeEvent.contentOffset.y; }} scrollEventThrottle={64}>
         {!editing && (
           <>
@@ -1094,18 +1101,23 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         <Text style={styles.helperText}>{t('ui.profile.tapAndHoldAPhoto', { max: MAX_EXTRA_PHOTOS })}</Text>
 
         <View style={styles.formCard}>
+          <View ref={form.anchor('name')} />
           <Text style={styles.label}>{t('profile.displayName')}</Text>
-          <TextInput style={styles.input} value={displayName} onChangeText={setDisplayName} placeholderTextColor={colors.textTertiary} accessibilityLabel={t('ui.profile.displayNameA11y')} />
+          <TextInput ref={form.input('name')} style={styles.input} value={displayName} onChangeText={(v) => { setDisplayName(v); form.clear('name'); }} placeholderTextColor={colors.textTertiary} accessibilityLabel={t('ui.profile.displayNameA11y')} />
+          <FieldError message={form.errorFor('name')} />
 
+          <View ref={form.anchor('bio')} />
           <Text style={styles.label}>{t('profile.bio')}</Text>
           <TextInput
+            ref={form.input('bio')}
             style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
             value={bio}
-            onChangeText={setBio}
+            onChangeText={(v) => { setBio(v); form.clear('bio'); }}
             multiline
             placeholderTextColor={colors.textTertiary}
             accessibilityLabel={t('ui.profile.bioA11y')}
           />
+          <FieldError message={form.errorFor('bio')} />
         </View>
 
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.prompts')}</Text>
@@ -1265,18 +1277,12 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
           </View>
           <Text style={styles.helperText}>{t('ui.profile.selectAllThatApplyMatching')}</Text>
 
-          <View style={[styles.settingRow, { marginTop: spacing.md }]}>
+          <ToggleRow style={[styles.settingRow, { marginTop: spacing.md }]} value={genderHidden} onValueChange={(v) => toggleHiddenPref('gender_hidden', v, setGenderHidden)} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.profile.hideMyGenderA11y')}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>{t('ui.profile.hideMyGender')}</Text>
               <Text style={styles.helperText}>{t('ui.profile.yourGenderWontBeShown')}</Text>
             </View>
-            <Switch
-              value={genderHidden}
-              onValueChange={(v) => toggleHiddenPref('gender_hidden', v, setGenderHidden)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.profile.hideMyGenderA11y')}
-            />
-          </View>
+          </ToggleRow>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.profile.myEthnicity')}</Text>
           <View style={styles.chipsWrap}>
@@ -1294,18 +1300,12 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
               </TouchableOpacity>
             ))}
           </View>
-          <View style={[styles.settingRow, { marginTop: spacing.sm }]}>
+          <ToggleRow style={[styles.settingRow, { marginTop: spacing.sm }]} value={ethnicityHidden} onValueChange={(v) => toggleHiddenPref('ethnicity_hidden', v, setEthnicityHidden)} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.profile.hideMyEthnicityA11y')}>
             <View style={{ flex: 1 }}>
               <Text style={styles.label}>{t('ui.profile.hideMyEthnicity')}</Text>
               <Text style={styles.helperText}>{t('ui.profile.yourEthnicityWontBeShown')}</Text>
             </View>
-            <Switch
-              value={ethnicityHidden}
-              onValueChange={(v) => toggleHiddenPref('ethnicity_hidden', v, setEthnicityHidden)}
-              trackColor={{ true: colors.primary, false: colors.border }}
-              accessibilityLabel={t('ui.profile.hideMyEthnicityA11y')}
-            />
-          </View>
+          </ToggleRow>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.profile.myHeight')}</Text>
           <View style={styles.heightRow}>
@@ -1413,24 +1413,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         <View onLayout={(e) => { interestsSectionYRef.current = e.nativeEvent.layout.y; }}>
           <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.interestsSection')}</Text>
         </View>
-        <View style={styles.chipsWrap}>
-          {INTEREST_OPTIONS.map((interest) => {
-            const selected = interests.includes(interest);
-            return (
-              <TouchableOpacity
-                key={interest}
-                style={[styles.chip, selected && styles.chipSelected]}
-                onPress={() => toggleInterest(interest)}
-                activeOpacity={0.85}
-                accessibilityLabel={names.tag(interest)}
-                accessibilityRole="button"
-                accessibilityState={{ selected }}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{names.tag(interest)}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <TagGroupPicker options={INTEREST_OPTIONS} selected={interests} onToggle={toggleInterest} />
 
         {/* The onboarding social-plans question, editable here (owner, 2026-11-22; no screen of its own). */}
         <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.onboarding.socialPlansTitle')}</Text>
@@ -1512,6 +1495,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
           </>
         )}
       </ScrollView>
+      </KeyboardSafeView>
 
       <Modal visible={questionPickerVisible} animationType={modalAnimation('slide')} onRequestClose={() => setQuestionPickerVisible(false)}>
         <SafeAreaView style={styles.container}>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform, ActivityIndicator } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import { NLoader } from '../motion';
 import { addMemoryItem, getMemoryItems } from '../services/memoryVault';
 import { checkTextModeration } from '../services/textModeration';
@@ -10,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Placeholders: ui.matchNotes.memoryVault.placeholder.<key>.
 // A section label without its leading emoji, for screen readers; letters of every script are kept (the old /[^\w\s]/
@@ -91,7 +93,7 @@ export default function MemoryVaultScreen({ route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">{t('memoryVault.title')}</Text>
           <Text style={styles.headerSubtitle}>
@@ -125,7 +127,7 @@ export default function MemoryVaultScreen({ route }) {
                     accessibilityLabel={t('ui.matchNotes.memoryVault.addToA11y', { section: stripIcon(label) })}
                   />
                   <TouchableOpacity
-                    style={styles.addButton}
+                    style={[styles.addButton, (submittingCategory === category.key) && disabledButtonStyle(colors)]}
                     onPress={() => handleAdd(category.key)}
                     disabled={submittingCategory === category.key}
                     accessibilityLabel={t('ui.matchNotes.memoryVault.addMemoryToA11y', { section: stripIcon(label) })}
@@ -138,7 +140,7 @@ export default function MemoryVaultScreen({ route }) {
             );
           })}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

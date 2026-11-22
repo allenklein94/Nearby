@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius } from '../theme';
 import { FRIEND_DECISIONS } from '../utils/friendDiscoveryView';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Owner idea 156: the labelled Pass / Connect pair, shared by Friends discovery's list rows and its optional deck, so both
 // modes offer the same two explicit, worded choices (never a bare ✕ / 🤝). `compact` = the list row's size.
@@ -25,7 +26,7 @@ export default function FriendDecisionButtons({ name, onDecide, compact = false,
         <Text style={styles.passText}>{t(pass.labelKey)}</Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.connect, compact && styles.compact]}
+        style={[styles.connect, compact && styles.compact, (disabled) && disabledButtonStyle(colors)]}
         onPress={() => onDecide(connect.direction)}
         disabled={disabled}
         activeOpacity={0.85}

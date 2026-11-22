@@ -13,6 +13,7 @@ import { spacing, radius, typography } from '../theme';
 
 import { NLoader } from '../motion';
 import { PEOPLE_FRIENDS } from '../utils/recommendationContext';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // "I'd call the whole feature 'Occasion' ... I wouldn't clutter Create
 // with 10 separate buttons" (direct user request, CLAUDE.md, 2026-09-12):
 // replaced the old "big-button icon grid + With people/With businesses/
@@ -283,7 +284,7 @@ export default function CreateHubScreen({ navigation, route }) {
                   accessibilityLabel={t('ui.createHub.whatDoYouHaveInA11y')}
                 />
                 <TouchableOpacity
-                  style={styles.assistantButton}
+                  style={[styles.assistantButton, (thinking || !assistantText.trim()) && disabledButtonStyle(colors)]}
                   onPress={handleAskAssistant}
                   disabled={thinking || !assistantText.trim()}
                   accessibilityLabel={t('ui.createHub.submitA11y')}

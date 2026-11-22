@@ -52,9 +52,15 @@ export async function screenUserContent(items) {
 
 // The pieces a screen shows. `blockedAlert` = true when the save must stop (and the person was told why); the screen's own
 // "not allowed" title/body stay its words for a refusal.
-export function blockedByScreening(Alert, t, result, { notAllowedTitle, notAllowedBody }) {
+// `onRefuse` (optional): a form shows a refused text inline under its field (UX audit, owner 2026-11-21) instead of the
+// alert; a check that couldn't run ('unavailable' / 'limit') is a service problem and stays an alert.
+export function blockedByScreening(Alert, t, result, { notAllowedTitle, notAllowedBody, onRefuse }) {
   const outcome = result?.outcome;
-  if (outcome === 'refuse') { Alert.alert(notAllowedTitle, notAllowedBody); return true; }
+  if (outcome === 'refuse') {
+    if (onRefuse) onRefuse(notAllowedBody);
+    else Alert.alert(notAllowedTitle, notAllowedBody);
+    return true;
+  }
   if (outcome === 'unavailable') {
     Alert.alert(t('ui.shared.errors.contentCheckUnavailableTitle'), t('ui.shared.errors.contentCheckUnavailable'));
     return true;

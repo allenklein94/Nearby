@@ -102,8 +102,10 @@ describe('category search (owner, 2026-11-15)', () => {
     expect(apply).toMatch(/filterCategoryOptions\(businessTagOptions\(\), categoryQuery/);
     expect(apply).not.toMatch(/\{businessTagOptions\(\)\.map\(/);
     const ai = read('components/BusinessAIAutomationPanel.js');
-    expect(ai).toMatch(/filterCategoryOptions\(INTEREST_OPTIONS, categoryQuery/);
-    for (const src of [dash, apply, ai]) expect((src.match(/<CategorySearchField/g) || []).length).toBeGreaterThan(0);
+    // The AI rule category moved to the grouped TagGroupPicker (main, 2026-11-21), which carries its own search box.
+    expect(ai).toMatch(/<TagGroupPicker\s+options=\{INTEREST_OPTIONS\}/);
+    expect(ai).not.toMatch(/\{INTEREST_OPTIONS\.map\(/);
+    for (const src of [dash, apply]) expect((src.match(/<CategorySearchField/g) || []).length).toBeGreaterThan(0);
     expect((dash.match(/<CategorySearchField/g) || []).length).toBe(3);
   });
 });

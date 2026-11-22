@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, Switch, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { BUSINESS_NOTIFICATION_GROUPS } from '../constants/businessNotificationGroups';
 import { getMyBusinessNotificationPrefs, setBusinessNotificationGroupMuted } from '../services/businessEmail';
+import ToggleRow from './ToggleRow';
 
 // Which kinds of alerts an owner wants, on the phone and by email alike. Everything is on until switched off.
 export default function BusinessNotificationPreferences() {
@@ -33,13 +34,12 @@ export default function BusinessNotificationPreferences() {
       <Text style={styles.header}>{t('ui.bizComp.whichAlertsDoYouWant')}</Text>
       <Text style={styles.body}>{t('ui.bizComp.appliesToPhoneAndEmail')}</Text>
       {BUSINESS_NOTIFICATION_GROUPS.map((g, i) => (
-        <View key={g.key} style={[styles.row, i > 0 && styles.divider]}>
+        <ToggleRow key={g.key} style={[styles.row, i > 0 && styles.divider]} value={!muted.includes(g.key)} onValueChange={(on) => toggle(g.key, on)} accessibilityLabel={t(`ui.bizComp.notifGroup.${g.key}.label`)}>
           <View style={{ flex: 1, marginRight: spacing.sm }}>
             <Text style={styles.label}>{t(`ui.bizComp.notifGroup.${g.key}.label`)}</Text>
             <Text style={styles.detail}>{t(`ui.bizComp.notifGroup.${g.key}.detail`)}</Text>
           </View>
-          <Switch value={!muted.includes(g.key)} onValueChange={(on) => toggle(g.key, on)} accessibilityLabel={t(`ui.bizComp.notifGroup.${g.key}.label`)} />
-        </View>
+        </ToggleRow>
       ))}
       {error ? <Text style={styles.detail}>{t(error)}</Text> : null}
     </View>

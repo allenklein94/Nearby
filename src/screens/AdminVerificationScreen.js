@@ -8,6 +8,7 @@ import { supabase } from '../services/supabase';
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // 20270400: ID images are the most sensitive files Nearby holds: a review link lasts 15 minutes (it was 60), like profile photos.
 const ID_IMAGE_LINK_SECONDS = 15 * 60;
@@ -135,7 +136,7 @@ export default function AdminVerificationScreen() {
                 <Text style={styles.rejectButtonText}>Reject</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.approveButton}
+                style={[styles.approveButton, (processingId === s.id) && disabledButtonStyle(colors)]}
                 onPress={() => handleDecision(s, true)}
                 disabled={processingId === s.id}
                 accessibilityLabel={`Approve ${s.profiles?.display_name}'s verification`}

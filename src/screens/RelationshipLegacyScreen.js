@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Platform } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import { submitLegacyEntry } from '../services/relationshipLegacy';
 import { checkTextModeration } from '../services/textModeration';
 import { usePostHog } from 'posthog-react-native';
@@ -8,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { showSuccessToast } from '../motion';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function RelationshipLegacyScreen({ route, navigation }) {
   const { matchId, matchName } = route.params;
@@ -55,7 +57,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">💌 {t('legacyLibrary.leaveWisdom')}</Text>
           <Text style={styles.headerSubtitle}>{t('ui.relationshipLegacy.anythingYouAndHaveLearned', { matchName: matchName })}</Text>
@@ -115,7 +117,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
           />
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}
@@ -125,7 +127,7 @@ export default function RelationshipLegacyScreen({ route, navigation }) {
             <Text style={styles.buttonText}>{submitting ? t('ui.relationshipLegacy.sharing') : t('ui.relationshipLegacy.shareThisWisdom')}</Text>
           </TouchableOpacity>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

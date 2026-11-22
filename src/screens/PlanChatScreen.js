@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Image, ActivityIndicator } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import FadeInState from '../components/FadeInState';
 import * as Haptics from 'expo-haptics';
 import { getPlanChatInfo, getPlanMessagesPage, getPlanMessageById, sendPlanMessage } from '../services/planChat';
@@ -151,7 +152,7 @@ export default function PlanChatScreen({ route, navigation }) {
         )}
       </View>
 
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         {loadError ? (
           <LoadErrorState message={t('ui.groupChat.couldntLoadThisChat')} onRetry={loadInitial} />
         ) : loadingInitial ? (
@@ -238,7 +239,7 @@ export default function PlanChatScreen({ route, navigation }) {
             <Text style={styles.sendButtonText}>{t('ui.groupChat.send')}</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
 
       <ReportBlockModal
         visible={!!reportTarget}

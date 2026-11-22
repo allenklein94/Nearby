@@ -2,7 +2,8 @@ import React, { useState, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Modal } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator, Alert, Platform, Modal } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import FadeInState from '../components/FadeInState';
 import { NLoader, SurpriseRevealAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
@@ -39,6 +40,7 @@ import { guessOccasionTypeFromEventTitle, formatCalendarEventDateLabel, filterUp
 import LoadErrorState from '../components/LoadErrorState';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Sep 14 2026 (CLAUDE.md, "global onboarding -> product wiring" master
 // plan, Phase H) -- a real Occasions CRUD screen, same shape/scope as
@@ -497,7 +499,7 @@ export default function OccasionsScreen({ navigation, route }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         <ScrollView contentContainerStyle={{ padding: spacing.lg }}>
           <Text style={styles.headerTitle} accessibilityRole="header">{t('ui.occasions.occasionsReminders')}</Text>
           <Text style={styles.headerSubtitle}>
@@ -902,12 +904,12 @@ export default function OccasionsScreen({ navigation, route }) {
               </View>
               <Text style={{ color: colors.textPrimary }}>{t('ui.occasions.repeatsEveryYear2')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.addButton} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
+            <TouchableOpacity style={[styles.addButton, (submitting) && disabledButtonStyle(colors)]} onPress={handleAdd} disabled={submitting} activeOpacity={0.85}>
               <Text style={styles.addButtonText}>{submitting ? t('ui.occasions.adding') : t('ui.occasions.addOccasion')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
 
       <Modal
         visible={showCalendarPicker}

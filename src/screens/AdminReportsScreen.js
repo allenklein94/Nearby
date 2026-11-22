@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { disabledButtonStyle } from '../constants/buttonStates';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../services/supabase';
@@ -218,7 +219,7 @@ export default function AdminReportsScreen({ navigation }) {
                 <Text style={styles.actionText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionButton, styles.resolveButton, !ready && styles.actionDisabled]}
+                style={[styles.actionButton, styles.resolveButton, !ready && disabledButtonStyle(colors)]}
                 onPress={submitRestriction}
                 disabled={!ready}
                 accessibilityRole="button"
@@ -358,7 +359,7 @@ export default function AdminReportsScreen({ navigation }) {
                 <Text style={styles.actionText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.actionButton, styles.resolveButton, !ready && styles.actionDisabled]}
+                style={[styles.actionButton, styles.resolveButton, !ready && disabledButtonStyle(colors)]}
                 onPress={holdForm.mode === 'place' ? submitHold : confirmRelease}
                 disabled={!ready}
                 accessibilityRole="button"
@@ -617,7 +618,7 @@ export default function AdminReportsScreen({ navigation }) {
                     <Text style={styles.actionText}>Keep It</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.resolveButton, !removalReasonReady(removing.reason) && styles.actionDisabled]}
+                    style={[styles.actionButton, styles.resolveButton, !removalReasonReady(removing.reason) && disabledButtonStyle(colors)]}
                     onPress={removeObject}
                     disabled={!removalReasonReady(removing.reason)}
                     accessibilityRole="button"

@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, TextInput } from 'react-native';
+import KeyboardSafeSheet from './KeyboardSafeSheet';
 import { submitOfferOutcome } from '../services/businessFulfillment';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation } from '../motion';
 import { SATISFACTION_SCALE } from '../constants/satisfactionScale';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // The one shared four-option scale (constants/satisfactionScale.js), never a second one.
 const SATISFACTION_OPTIONS = SATISFACTION_SCALE;
 
@@ -66,7 +68,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
 
   return (
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={handleClose}>
-      <View style={styles.overlay}>
+      <KeyboardSafeSheet style={styles.overlay}>
         <View style={styles.sheet}>
           <Text style={styles.title}>{t('ui.requestDetail.howDidItGo')}</Text>
           <View style={styles.satisfactionRow}>
@@ -138,7 +140,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
           />
 
           <TouchableOpacity
-            style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}
+            style={[styles.submitButton, !canSubmit && disabledButtonStyle(colors)]}
             onPress={handleSubmit}
             disabled={!canSubmit || submitting}
             activeOpacity={0.85}
@@ -151,7 +153,7 @@ export default function OfferOutcomeModal({ visible, offerId, onClose }) {
             <Text style={styles.skipText}>{t('ui.requestDetail.skip')}</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardSafeSheet>
     </Modal>
   );
 }

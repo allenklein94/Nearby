@@ -8,7 +8,10 @@ import { EQUIPMENT_OPTIONS, DURATION_OPTIONS, GENRE_OPTIONS, GATHERING_FEATURE_O
 import React, { useState, useEffect } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { gatheringEditRefusal } from '../utils/gatheringEditRefusal';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image, Switch } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, ScrollView, Alert, Platform, Keyboard, TouchableWithoutFeedback, Image } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
+import FieldError from '../components/FieldError';
+import useFormErrors from '../hooks/useFormErrors';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
 import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
@@ -22,6 +25,8 @@ import { CATEGORY_GROUPS } from '../constants/gatheringCategories';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { useLanguage } from '../context/LanguageContext';
 import { displayDateTime } from '../i18n/display';
+import ToggleRow from '../components/ToggleRow';
+import { disabledButtonStyle } from '../constants/buttonStates';
 // Labels come from ui.gatheringVocab.vibe.<column> (the same wording GatheringDetail shows).
 const VIBE_SCALES = [
   { key: 'energyLevel', column: 'energy_level' },
@@ -47,6 +52,7 @@ export default function EditGatheringScreen({ route, navigation }) {
   const { t, language } = useLanguage();
   const { colors, shadow } = useTheme();
   const styles = getStyles(colors, shadow);
+  const form = useFormErrors();
   // Item 74: Link only exists only for an Everyone gathering (also a DB CHECK).
   const canBeLinkOnly = (gathering.visibility ?? 'everyone') === 'everyone' && gathering.is_public !== false;
   const [title, setTitle] = useState(gathering.title);
@@ -123,11 +129,14 @@ export default function EditGatheringScreen({ route, navigation }) {
   }
 
   async function submit() {
+    // A blocked save explains itself under the field (top to bottom: title, then time), scrolled into view.
     if (!title.trim()) {
-      return Alert.alert(t('ui.gatheringForm.alert.titleRequired'), t('ui.gatheringForm.alert.titleRequiredBody'));
+      form.show('title', t('ui.gatheringForm.alert.titleRequiredBody'));
+      return;
     }
     if (scheduledAt.getTime() <= Date.now()) {
-      return Alert.alert(t('ui.gatheringForm.edit.pickFutureTime'), t('ui.gatheringForm.alert.pickTimeBody'));
+      form.show('when', t('ui.gatheringForm.alert.pickTimeBody'));
+      return;
     }
 
     // 20270373: only changed text is screened (the database checks only what changes); 'hold' = the published text stays
@@ -135,12 +144,12 @@ export default function EditGatheringScreen({ route, navigation }) {
     let held = false;
     if (title.trim() !== (gathering.title || '').trim()) {
       const titleCheck = await screenUserContent([{ text: title, kind: UGC_KINDS.gatheringTitle }]);
-      if (blockedByScreening(Alert, t, titleCheck, { notAllowedTitle: t('ui.gatheringForm.alert.titleNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseBody') })) return;
+      if (blockedByScreening(Alert, t, titleCheck, { notAllowedTitle: t('ui.gatheringForm.alert.titleNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseBody'), onRefuse: (msg) => form.show('title', msg) })) return;
       held = titleCheck.outcome === 'hold';
     }
     if (description.trim() && description.trim() !== (gathering.description || '').trim()) {
       const descCheck = await screenUserContent([{ text: description, kind: UGC_KINDS.gatheringDescription }]);
-      if (blockedByScreening(Alert, t, descCheck, { notAllowedTitle: t('ui.gatheringForm.alert.descNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseDescBody') })) return;
+      if (blockedByScreening(Alert, t, descCheck, { notAllowedTitle: t('ui.gatheringForm.alert.descNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseDescBody'), onRefuse: (msg) => form.show('description', msg) })) return;
       held = held || descCheck.outcome === 'hold';
     }
 
@@ -193,19 +202,25 @@ export default function EditGatheringScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardSafeView>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
-        <ScrollView contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={form.scrollRef} contentContainerStyle={{ padding: spacing.lg }} keyboardShouldPersistTaps="handled">
+          <View ref={form.contentRef}>
           <Text style={styles.header}>{t('ui.gatheringForm.edit.header')}</Text>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.cantChange')}</Text>
 
+          <View ref={form.anchor('title')}>
           <Text style={styles.label}>{t('ui.gatheringForm.edit.title')}</Text>
           <TextInput
+            ref={form.input('title')}
             style={styles.input}
             value={title}
-            onChangeText={setTitle}
+            onChangeText={(v) => { setTitle(v); form.clear('title'); }}
             placeholderTextColor={colors.textTertiary}
             accessibilityLabel={t('ui.gatheringForm.titleA11y')}
           />
+          <FieldError message={form.errorFor('title')} />
+          </View>
 
           {missingCategory && (
             <>
@@ -236,16 +251,21 @@ export default function EditGatheringScreen({ route, navigation }) {
             </>
           )}
 
+          <View ref={form.anchor('description')}>
           <Text style={styles.label}>{t('ui.gatheringForm.edit.description')}</Text>
           <TextInput
+            ref={form.input('description')}
             style={[styles.input, { height: 90, textAlignVertical: 'top' }]}
             value={description}
-            onChangeText={setDescription}
+            onChangeText={(v) => { setDescription(v); form.clear('description'); }}
             multiline
             placeholderTextColor={colors.textTertiary}
             accessibilityLabel={t('ui.gatheringForm.descriptionA11y')}
           />
+          <FieldError message={form.errorFor('description')} />
+          </View>
 
+          <View ref={form.anchor('when')}>
           <Text style={styles.label}>{t('ui.gatheringForm.edit.dateTime')}</Text>
           <TouchableOpacity
             style={styles.dateButton}
@@ -262,10 +282,12 @@ export default function EditGatheringScreen({ route, navigation }) {
               display={Platform.OS === 'ios' ? 'spinner' : 'default'}
               onChange={(event, selectedDate) => {
                 setShowPicker(Platform.OS === 'ios');
-                if (selectedDate) setScheduledAt(selectedDate);
+                if (selectedDate) { setScheduledAt(selectedDate); form.clear('when'); }
               }}
             />
           )}
+          <FieldError message={form.errorFor('when')} />
+          </View>
 
           <Text style={styles.label}>{t('ui.gatheringForm.edit.coverPhoto')}</Text>
           <TouchableOpacity
@@ -333,10 +355,9 @@ export default function EditGatheringScreen({ route, navigation }) {
           <AgeRangePicker min={ageMin} max={ageMax} onChange={(a, b) => { setAgeMin(a); setAgeMax(b); }} />
 
           {/* Item 188: informational only. Nearby sells no tickets and this changes no join, capacity or ranking rule. */}
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={ticketRequired} onValueChange={setTicketRequired} accessibilityLabel={t('ui.gatheringForm.ticket')}>
             <Text style={styles.label}>{t('ui.gatheringForm.ticket')}</Text>
-            <Switch value={ticketRequired} onValueChange={setTicketRequired} accessibilityLabel={t('ui.gatheringForm.ticket')} />
-          </View>
+          </ToggleRow>
           <Text style={styles.subheader}>{t('ui.gatheringForm.ticketHelp')}</Text>
 
           <Text style={styles.label}>{t('ui.gatheringForm.equipment')}</Text>
@@ -436,43 +457,31 @@ export default function EditGatheringScreen({ route, navigation }) {
               </View>
             </>
           )}
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={showGroupInsights} onValueChange={setShowGroupInsights} accessibilityLabel={t('ui.gatheringForm.edit.showInsightsA11y')}>
             <Text style={styles.label}>{t('ui.gatheringForm.edit.showInsights')}</Text>
-            <Switch
-              value={showGroupInsights}
-              onValueChange={setShowGroupInsights}
-              accessibilityLabel={t('ui.gatheringForm.edit.showInsightsA11y')}
-            />
-          </View>
+          </ToggleRow>
           <Text style={styles.sectionHeader}>{t('ui.gatheringForm.edit.settings')}</Text>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.visibilityLine', { label: t(`ui.gatheringVocab.visibility.${visibilityKey(gathering)}.label`) })}</Text>
           {canBeLinkOnly && (
             <>
-              <View style={styles.toggleRow}>
+              <ToggleRow style={styles.toggleRow} value={!discoverable} onValueChange={(v) => setDiscoverable(!v)} accessibilityLabel={t('ui.gatheringForm.linkOnly')}>
                 <Text style={styles.label}>{t('ui.gatheringForm.linkOnly')}</Text>
-                <Switch value={!discoverable} onValueChange={(v) => setDiscoverable(!v)} accessibilityLabel={t('ui.gatheringForm.linkOnly')} />
-              </View>
+              </ToggleRow>
               <Text style={styles.subheader}>{t('ui.gatheringForm.edit.linkOnlyHelp')}</Text>
             </>
           )}
           {gathering.is_public !== false && (
             <>
-              <View style={styles.toggleRow}>
+              <ToggleRow style={styles.toggleRow} value={requiresApproval} onValueChange={setRequiresApproval} accessibilityLabel={t('ui.gatheringForm.edit.approval')}>
                 <Text style={styles.label}>{t('ui.gatheringForm.edit.approval')}</Text>
-                <Switch
-                  value={requiresApproval}
-                  onValueChange={setRequiresApproval}
-                  accessibilityLabel={t('ui.gatheringForm.edit.approval')}
-                />
-              </View>
+              </ToggleRow>
               <Text style={styles.subheader}>{t('ui.gatheringForm.edit.approvalHelp')}</Text>
             </>
           )}
 
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={limitAttendees} onValueChange={setLimitAttendees} accessibilityLabel={t('ui.gatheringForm.edit.limit')}>
             <Text style={styles.label}>{t('ui.gatheringForm.edit.limit')}</Text>
-            <Switch value={limitAttendees} onValueChange={setLimitAttendees} accessibilityLabel={t('ui.gatheringForm.edit.limit')} />
-          </View>
+          </ToggleRow>
           {limitAttendees && (
             <View style={styles.toggleRow}>
               <TouchableOpacity onPress={() => setCapacity((n) => Math.max(peopleGoing(gathering), n - 1))} accessibilityLabel={t('ui.gatheringForm.edit.decreaseA11y')} accessibilityRole="button">
@@ -485,20 +494,17 @@ export default function EditGatheringScreen({ route, navigation }) {
             </View>
           )}
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.limitHelp')}</Text>
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={askLocalBusinesses} onValueChange={setAskLocalBusinesses} accessibilityLabel={t('ui.gatheringForm.edit.allowBiz')}>
             <Text style={styles.label}>{t('ui.gatheringForm.edit.allowBiz')}</Text>
-            <Switch value={askLocalBusinesses} onValueChange={setAskLocalBusinesses} accessibilityLabel={t('ui.gatheringForm.edit.allowBiz')} />
-          </View>
+          </ToggleRow>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.allowBizHelp')}</Text>
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={allowAttendeeInvites} onValueChange={setAllowAttendeeInvites} accessibilityLabel={t('ui.gatheringForm.guestsInvite')}>
             <Text style={styles.label}>{t('ui.gatheringForm.guestsInvite')}</Text>
-            <Switch value={allowAttendeeInvites} onValueChange={setAllowAttendeeInvites} accessibilityLabel={t('ui.gatheringForm.guestsInvite')} />
-          </View>
+          </ToggleRow>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.guestsHelp')}</Text>
-          <View style={styles.toggleRow}>
+          <ToggleRow style={styles.toggleRow} value={hostNotifications} onValueChange={setHostNotifications} accessibilityLabel={t('ui.gatheringForm.notify')}>
             <Text style={styles.label}>{t('ui.gatheringForm.notify')}</Text>
-            <Switch value={hostNotifications} onValueChange={setHostNotifications} accessibilityLabel={t('ui.gatheringForm.notify')} />
-          </View>
+          </ToggleRow>
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.notifyHelp')}</Text>
 
           <Text style={styles.subheader}>{t('ui.gatheringForm.edit.insightsHelp')}</Text>
@@ -539,7 +545,7 @@ export default function EditGatheringScreen({ route, navigation }) {
           )}
 
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
             onPress={submit}
             disabled={submitting}
             activeOpacity={0.85}
@@ -548,8 +554,10 @@ export default function EditGatheringScreen({ route, navigation }) {
           >
             <Text style={styles.buttonText}>{submitting ? t('ui.gatheringForm.edit.saving') : t('ui.gatheringForm.edit.save')}</Text>
           </TouchableOpacity>
+          </View>
         </ScrollView>
       </TouchableWithoutFeedback>
+      </KeyboardSafeView>
     </SafeAreaView>
   );
 }

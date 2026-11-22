@@ -26,11 +26,13 @@ import FriendDiscoveryList from '../components/FriendDiscoveryList';
 import { friendViewStyle, otherFriendViewStyle, undecidedCandidates } from '../utils/friendDiscoveryView';
 import LoadErrorState from '../components/LoadErrorState';
 import { PERSONAL_INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import TagGroupPicker from '../components/TagGroupPicker';
 import useCategoryNames from '../hooks/useCategoryNames';
 import { FRIEND_DEFAULT_ORDER, FRIEND_DEFAULT_VISIBLE } from '../constants/quickFilterCatalog';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
 import { orderForTonight } from '../utils/meetTonight';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Taxonomy audit Phase 3 (CLAUDE.md, Aug 25 2026): the 3 real distance
 // buckets get_friend_discovery_candidates() already returns -- never a
@@ -332,7 +334,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
         {enabled && (
           <View style={styles.headerToggle}>
             <Text style={styles.headerToggleLabel}>{tr('ui.friends.on')}</Text>
-            <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} />
+            <Switch value={enabled} onValueChange={handleDisable} trackColor={{ true: colors.primary }} accessibilityLabel={`${tr('ui.friends.friends')}: ${tr('ui.friends.on')}`} />
           </View>
         )}
       </View>
@@ -378,7 +380,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
             {t('ui.friends.meetNewPeopleIntro')}
           </Text>
           <TouchableOpacity
-            style={styles.enableButton}
+            style={[styles.enableButton, (togglingOn) && disabledButtonStyle(colors)]}
             onPress={handleEnable}
             disabled={togglingOn}
             activeOpacity={0.85}
@@ -443,23 +445,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
                   return (
                     <View key={key}>
                       <Text style={styles.accordionSubLabel}>{t('ui.friends.interests')}</Text>
-                      <View style={styles.filterChipRow}>
-                        {PERSONAL_INTEREST_OPTIONS.map((tag) => {
-                          const selected = interestFilters.includes(tag);
-                          return (
-                            <TouchableOpacity
-                              key={tag}
-                              style={[styles.filterChip, selected && styles.filterChipActive]}
-                              onPress={() => toggleInterestFilter(tag)}
-                              accessibilityLabel={names.tag(tag)}
-                              accessibilityRole="button"
-                              accessibilityState={{ selected }}
-                            >
-                              <Text style={[styles.filterChipText, selected && styles.filterChipTextActive]}>{names.tag(tag)}</Text>
-                            </TouchableOpacity>
-                          );
-                        })}
-                      </View>
+                      <TagGroupPicker options={PERSONAL_INTEREST_OPTIONS} selected={interestFilters} onToggle={toggleInterestFilter} />
                     </View>
                   );
                 }

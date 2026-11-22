@@ -9,6 +9,7 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { showSuccessToast } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 WebBrowser.maybeCompleteAuthSession();
 
 const MAX_FAVORITE_TRACKS = 5;
@@ -143,7 +144,7 @@ export default function MusicModeScreen({ navigation }) {
             }}
           />
           <TouchableOpacity
-            style={styles.saveButton}
+            style={[styles.saveButton, (saving) && disabledButtonStyle(colors)]}
             onPress={handleSave}
             disabled={saving}
             activeOpacity={0.85}

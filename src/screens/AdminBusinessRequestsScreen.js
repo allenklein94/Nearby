@@ -19,6 +19,7 @@ import AdminBusinessVerificationSection from '../components/AdminBusinessVerific
 import AdminDuplicateWarnings from '../components/AdminDuplicateWarnings';
 import AdminOfferHistory from '../components/AdminOfferHistory';
 import { warningsFor, approvalNeedsConfirm, mediaMatchPairs, dismissArgs } from '../utils/businessDuplicateWarnings';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function AdminBusinessRequestsScreen() {
   const { colors, shadow } = useTheme();
@@ -454,7 +455,7 @@ export default function AdminBusinessRequestsScreen() {
                       multiline
                     />
                     <TouchableOpacity
-                      style={styles.sendNotesButton}
+                      style={[styles.sendNotesButton, (processingIds[item.id]) && disabledButtonStyle(colors)]}
                       onPress={() => handleRequestMoreInfo(item)}
                       disabled={processingIds[item.id]}
                       accessibilityLabel={`Send info request for ${item.business_name}`}

@@ -5,6 +5,7 @@ import { readMyProfile } from '../services/myProfile';
 import { pinProvenance } from '../utils/locationProvenance';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Business website version of the location picker (react-native-maps has no web build). Same contract as the native
 // screen -- it hands selectedLat/selectedLng back to CreateGathering -- with the choices a host can actually use on
@@ -90,7 +91,7 @@ export default function SelectGatheringLocationScreen({ navigation, route }) {
           <Text style={styles.optionText}>📍 Use my current location</Text>
         </TouchableOpacity>
         <Text style={styles.subtle}>{pin ? `Selected: ${pin.label ?? 'Pinned spot'}` : 'Pick a location above.'}</Text>
-        <TouchableOpacity style={[styles.confirmButton, !pin && { opacity: 0.5 }]} onPress={handleConfirm} disabled={!pin} accessibilityRole="button" accessibilityLabel="Confirm this location">
+        <TouchableOpacity style={[styles.confirmButton, !pin && disabledButtonStyle(colors)]} onPress={handleConfirm} disabled={!pin} accessibilityRole="button" accessibilityLabel="Confirm this location">
           <Text style={styles.confirmButtonText}>Confirm Location</Text>
         </TouchableOpacity>
       </View>

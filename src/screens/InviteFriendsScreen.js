@@ -4,6 +4,7 @@ import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // A plain invitation (owner, 2026-11-09): no referral code, no count, no reward. Inviting never earns anything.
 const APP_URL = 'https://apps.apple.com/app/nearby-crossed-paths/id6792143175';

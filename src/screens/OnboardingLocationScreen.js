@@ -5,6 +5,7 @@ import * as Location from 'expo-location';
 import OnboardingTopBar from '../components/OnboardingTopBar';
 import { useTheme } from '../context/ThemeContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export default function OnboardingLocationScreen({ navigation }) {
   const { t } = useLanguage();
@@ -30,7 +31,7 @@ export default function OnboardingLocationScreen({ navigation }) {
         <Text style={styles.subtitle}>{t('ui.onboarding.nearbyUsesYourLocationTo')}</Text>
         <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
           <TouchableOpacity
-            style={styles.primary}
+            style={[styles.primary, (requesting) && disabledButtonStyle(colors)]}
             onPress={handleAllow}
             disabled={requesting}
             activeOpacity={0.85}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useLayoutEffect } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import EmptyCopy from '../components/EmptyCopy';
-import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Image, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Image, ActivityIndicator, Modal } from 'react-native';
+import KeyboardSafeView from '../components/KeyboardSafeView';
 import FadeInState from '../components/FadeInState';
 import { NLoader, modalAnimation } from '../motion';
 import { Ionicons } from '@expo/vector-icons';
@@ -151,7 +152,7 @@ export default function CommunityChatScreen({ route, navigation }) {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardSafeView>
         {messages.length === 0 ? (
           <FadeInState style={[styles.emptyState, { flex: 1, justifyContent: 'center' }]}>
             <Text style={styles.emptyEmoji}>💬</Text>
@@ -240,7 +241,7 @@ export default function CommunityChatScreen({ route, navigation }) {
             <Text style={styles.sendButtonText}>{t('ui.groupChat.send')}</Text>
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+      </KeyboardSafeView>
 
       <ReportBlockModal
         visible={!!reportTarget}

@@ -3,6 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import EmptyCopy from '../components/EmptyCopy';
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, ActivityIndicator, Image, Modal } from 'react-native';
+import KeyboardSafeSheet from '../components/KeyboardSafeSheet';
 import { NLoader, SuccessAnimation, modalAnimation } from '../motion';
 import { useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../services/supabase';
@@ -32,6 +33,7 @@ import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import ReportBlockModal from '../components/ReportBlockModal';
 import { displayGatheringDateTime } from '../i18n/display';
+import { disabledButtonStyle } from '../constants/buttonStates';
 const ROLE_LABELS = { creator: 'Creator', leader: 'Leader', member: 'Member' };
 
 export default function CommunityDetailScreen({ route, navigation }) {
@@ -597,7 +599,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
                     </View>
                   ) : (
                     <TouchableOpacity
-                      style={styles.perkRedeemButton}
+                      style={[styles.perkRedeemButton, (redeemingOfferId === offer.id) && disabledButtonStyle(colors)]}
                       onPress={() => handleRedeemOffer(offer)}
                       disabled={redeemingOfferId === offer.id}
                       activeOpacity={0.85}
@@ -828,10 +830,20 @@ export default function CommunityDetailScreen({ route, navigation }) {
               ? gatherings.filter((g) => new Date(g.scheduled_at).toDateString() === selectedDate.toDateString())
               : gatherings
             ).map((g) => (
-              <View key={g.id} style={styles.gatheringCard}>
+              // Opens that gathering (owner UX audit, 2026-11-21: the rows were a dead end). GatheringDetail reads it
+              // through the viewer's own access rules, so nothing is shown that they couldn't already open.
+              <TouchableOpacity
+                key={g.id}
+                style={styles.gatheringCard}
+                onPress={() => navigation.navigate('GatheringDetail', { gatheringId: g.id })}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel={`${g.title}, ${displayGatheringDateTime(g, language)}`}
+                accessibilityHint={t('ui.nav.viewGatheringA11y')}
+              >
                 <Text style={styles.gatheringTitle}>{g.title}</Text>
                 <Text style={styles.gatheringMeta}>{displayGatheringDateTime(g, language)}</Text>
-              </View>
+              </TouchableOpacity>
             ))}
           </>
         )}
@@ -867,7 +879,7 @@ export default function CommunityDetailScreen({ route, navigation }) {
       />
 
       <Modal visible={areaModalVisible} animationType={modalAnimation('slide')} transparent onRequestClose={() => setAreaModalVisible(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardSafeSheet style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
             <Text style={styles.modalTitle}>{t('ui.community.communityArea')}</Text>
             <Text style={styles.modalSubtitle}>
@@ -909,12 +921,12 @@ export default function CommunityDetailScreen({ route, navigation }) {
               <TouchableOpacity onPress={() => setAreaModalVisible(false)} style={styles.modalCancelButton} accessibilityLabel={t('ui.community.cancelA11y2')} accessibilityRole="button">
                 <Text style={styles.modalCancelButtonText}>{t('ui.community.cancel')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleSaveArea} disabled={savingArea} style={styles.modalSaveButton} accessibilityLabel={t('ui.community.saveCommunityAreaA11y')} accessibilityRole="button">
+              <TouchableOpacity onPress={handleSaveArea} disabled={savingArea} style={[styles.modalSaveButton, (savingArea) && disabledButtonStyle(colors)]} accessibilityLabel={t('ui.community.saveCommunityAreaA11y')} accessibilityRole="button">
                 <Text style={styles.modalSaveButtonText}>{savingArea ? t('ui.community.saving') : t('ui.community.save')}</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardSafeSheet>
       </Modal>
       <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
     </SafeAreaView>

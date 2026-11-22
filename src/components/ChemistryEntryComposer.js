@@ -12,6 +12,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
 import { showSuccessToast } from '../motion';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 export const CHEMISTRY_SIGNALS = [
   { key: 'felt_relaxed', icon: '😌', labelKey: 'relaxed' },
@@ -101,7 +102,7 @@ export default function ChemistryEntryComposer({ initialName = '', onSaved, onCa
         accessibilityLabel={t('ui.chemistryEntry.additionalNoteA11y')}
       />
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, (submitting) && disabledButtonStyle(colors)]}
         onPress={handleSubmit}
         disabled={submitting}
         activeOpacity={0.85}

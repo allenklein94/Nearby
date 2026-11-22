@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { View, Text, TextInput, TouchableOpacity, Switch, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
+import ToggleRow from './ToggleRow';
+import { disabledButtonStyle } from '../constants/buttonStates';
 import {
   getMyBusinessEmailSettings, startBusinessEmailVerification, confirmBusinessEmail,
   removeBusinessEmail, setBusinessEmailEnabled, businessEmailReasonCopy,
@@ -56,10 +58,9 @@ export default function BusinessEmailNotifications() {
 
       {verified ? (
         <>
-          <View style={styles.row}>
+          <ToggleRow style={styles.row} value={!!settings.enabled} onValueChange={toggle} disabled={busy} accessibilityLabel={t('ui.bizComp.emailAlertsA11y')}>
             <Text style={styles.email}>{settings.email}</Text>
-            <Switch value={!!settings.enabled} onValueChange={toggle} disabled={busy} accessibilityLabel={t('ui.bizComp.emailAlertsA11y')} />
-          </View>
+          </ToggleRow>
           <TouchableOpacity onPress={remove} disabled={busy} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.removeEmailAddressA11y')}>
             <Text style={styles.link}>{t('ui.bizComp.removeThisAddress')}</Text>
           </TouchableOpacity>
@@ -68,7 +69,7 @@ export default function BusinessEmailNotifications() {
         <>
           <TextInput style={styles.input} value={code} onChangeText={setCode} placeholder={t('ui.bizComp.n6DigitCode')} placeholderTextColor={colors.textSecondary}
             keyboardType="number-pad" maxLength={6} accessibilityLabel={t('ui.bizComp.verificationCodeA11y')} />
-          <TouchableOpacity style={[styles.button, (busy || code.length !== 6) && styles.disabled]} onPress={confirm} disabled={busy || code.length !== 6} accessibilityRole="button">
+          <TouchableOpacity style={[styles.button, (busy || code.length !== 6) && disabledButtonStyle(colors)]} onPress={confirm} disabled={busy || code.length !== 6} accessibilityRole="button">
             {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.buttonText}>{t('ui.bizComp.confirm')}</Text>}
           </TouchableOpacity>
           <TouchableOpacity onPress={() => { setCodeSent(false); setCode(''); setMessage(null); }} accessibilityRole="button">
@@ -79,7 +80,7 @@ export default function BusinessEmailNotifications() {
         <>
           <TextInput style={styles.input} value={email} onChangeText={setEmail} placeholder={t('ui.bizComp.youYourbusinessCom')} placeholderTextColor={colors.textSecondary}
             keyboardType="email-address" autoCapitalize="none" autoCorrect={false} accessibilityLabel={t('ui.bizComp.emailAddressA11y')} />
-          <TouchableOpacity style={[styles.button, (busy || !email.includes('@')) && styles.disabled]} onPress={sendCode} disabled={busy || !email.includes('@')} accessibilityRole="button">
+          <TouchableOpacity style={[styles.button, (busy || !email.includes('@')) && disabledButtonStyle(colors)]} onPress={sendCode} disabled={busy || !email.includes('@')} accessibilityRole="button">
             {busy ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.buttonText}>{t('ui.bizComp.sendACode')}</Text>}
           </TouchableOpacity>
         </>

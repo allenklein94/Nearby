@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
+import { disabledButtonStyle } from '../constants/buttonStates';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -138,7 +139,7 @@ export default function AdminBusinessVerificationSection({ refreshKey }) {
                 placeholder="Your decision and why" placeholderTextColor={colors.textTertiary}
               />
               <Text style={styles.help}>Your name and the time are recorded with it. A recorded review can't be edited.</Text>
-              <TouchableOpacity style={[styles.button, busy && { opacity: 0.5 }]} disabled={busy} onPress={() => submitReview(row)} accessibilityRole="button">
+              <TouchableOpacity style={[styles.button, busy && disabledButtonStyle(colors)]} disabled={busy} onPress={() => submitReview(row)} accessibilityRole="button">
                 <Text style={styles.buttonText}>Record review</Text>
               </TouchableOpacity>
             </View>
@@ -151,7 +152,7 @@ export default function AdminBusinessVerificationSection({ refreshKey }) {
                 placeholder="Why verification is being removed (e.g. ownership changed, evidence no longer valid)"
                 placeholderTextColor={colors.textTertiary}
               />
-              <TouchableOpacity style={[styles.button, busy && { opacity: 0.5 }]} disabled={busy} onPress={() => submitRevoke(row)} accessibilityRole="button">
+              <TouchableOpacity style={[styles.button, busy && disabledButtonStyle(colors)]} disabled={busy} onPress={() => submitRevoke(row)} accessibilityRole="button">
                 <Text style={styles.buttonText}>Revoke verification</Text>
               </TouchableOpacity>
             </View>

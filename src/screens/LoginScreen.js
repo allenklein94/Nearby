@@ -10,6 +10,7 @@ import NearbyMark from '../components/brand/NearbyMark';
 import TurnstileWidget from '../components/TurnstileWidget';
 import useAuthCaptcha from '../hooks/useAuthCaptcha';
 import { authCaptchaOptions, captchaUnavailableError, isCaptchaRefusal, turnstileLanguage } from '../utils/captcha';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 const REVIEWER_PHONE_DIGITS = '5555550199';
 
@@ -164,7 +165,7 @@ export default function LoginScreen({ navigation }) {
             />
           )}
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (loading) && disabledButtonStyle(colors)]}
             onPress={sendOtp}
             disabled={loading}
             activeOpacity={0.85}
@@ -188,7 +189,7 @@ export default function LoginScreen({ navigation }) {
             textContentType="oneTimeCode"
           />
           <TouchableOpacity
-            style={styles.button}
+            style={[styles.button, (loading) && disabledButtonStyle(colors)]}
             onPress={verifyOtp}
             disabled={loading}
             activeOpacity={0.85}

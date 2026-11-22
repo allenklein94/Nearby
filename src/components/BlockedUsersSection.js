@@ -10,6 +10,7 @@ import { usePostHog } from 'posthog-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
+import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Blocked people, shown in place under Settings > Safety (screen-reduction audit B10, 2026-10-09: this was its own
 // screen, BlockedUsers). Loads when the section is opened; unblocking re-reads the list.
@@ -111,7 +112,7 @@ export default function BlockedUsersSection() {
             )}
             <Text style={styles.name}>{block.profiles?.display_name || t('ui.blockedUsers.someone')}</Text>
             <TouchableOpacity
-              style={styles.unblockButton}
+              style={[styles.unblockButton, (unblockingId === block.id) && disabledButtonStyle(colors)]}
               onPress={() => confirmUnblock(block)}
               disabled={unblockingId === block.id}
               accessibilityLabel={t('ui.blockedUsers.unblockA11y', { name: block.profiles?.display_name || t('ui.blockedUsers.thisPerson') })}

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet, Alert } from 'react-native';
+import { disabledButtonStyle } from '../constants/buttonStates';
 import { useLanguage } from '../context/LanguageContext';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
@@ -117,7 +118,7 @@ export default function BusinessContactDetails({ partnerId }) {
           />
           {problem === 'website' ? <Text style={styles.problem}>{t('ui.bizComp.contactDetailsInvalidWebsite')}</Text> : null}
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.primary} onPress={save} disabled={saving} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.contactDetailsSave')}>
+            <TouchableOpacity style={[styles.primary, saving && disabledButtonStyle(colors)]} onPress={save} disabled={saving} accessibilityRole="button" accessibilityLabel={t('ui.bizComp.contactDetailsSave')}>
               <Text style={styles.primaryText}>{saving ? t('ui.bizComp.saving') : t('ui.bizComp.contactDetailsSave')}</Text>
             </TouchableOpacity>
           </View>
