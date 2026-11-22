@@ -1,8 +1,9 @@
 # Staging iPhone onboarding findings (2026-11-22)
 
 Found during the owner's first run of the Nearby Staging iPhone app (staging Supabase `nearby-staging`).
-Owner APPROVED all as post-Tier-1 work (2026-11-22). NOT built; no app, server or production change. Do not implement
-before Tier 1 passes; each item still needs its own build ask.
+Owner APPROVED all as post-Tier-1 work (2026-11-22), then ordered them built the same day ("fix these now", + multi-select
+social plans). BUILT on `post-tier1/onboarding-fixes` (client only, no migration), NOT merged, NOT in build 87, NOT
+DEVICE-VERIFIED. See the CLAUDE.md line for the build record.
 
 ## Post-Tier-1 work (priority order)
 
