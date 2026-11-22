@@ -38,6 +38,7 @@ export default function OfferPreviewDock({ hasPreview, label, summary, sendButto
           accessibilityRole="button"
           accessibilityLabel={summary ? `${label}: ${summary}` : label}
           accessibilityState={{ expanded: state.showPanel }}
+          aria-expanded={state.showPanel}
           hitSlop={4}
         >
           <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
