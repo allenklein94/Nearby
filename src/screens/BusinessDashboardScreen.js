@@ -15,7 +15,10 @@ import AgeRangePicker from '../components/AgeRangePicker';
 import SettingConflictNotice from '../components/SettingConflictNotice';
 import { useSettingConflicts } from '../hooks/useSettingConflicts';
 import { conflictMessages, hasPending, shownValue } from '../utils/settingConflicts';
-import OfferCustomerBody from '../components/OfferCustomerBody';
+import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
+import { Ionicons } from '@expo/vector-icons';
+import useKeyboardVisible from '../hooks/useKeyboardVisible';
+import { offerPreviewDockLayout, offerPreviewSummary, OFFER_PREVIEW_CARD_MAX_FRACTION } from '../utils/offerPreviewDock';
 import SecondTimePartySize from '../components/SecondTimePartySize';
 import { presentOffer } from '../utils/offerPresentationEngine';
 import BusinessLogoMark from '../components/BusinessLogoMark';
@@ -26,7 +29,7 @@ import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionC
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image, useWindowDimensions } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
 import BusinessHoursEditor from '../components/BusinessHoursEditor';
@@ -646,6 +649,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }, []);
   const [markingNoShowId, setMarkingNoShowId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
+  // The offer form's Customer Preview dock (utils/offerPreviewDock.js): closed to one line each time the form opens.
+  const [offerPreviewOpen, setOfferPreviewOpen] = useState(false);
+  useEffect(() => { if (offerModalRequestId) setOfferPreviewOpen(false); }, [offerModalRequestId]);
+  const keyboardVisible = useKeyboardVisible();
+  const { height: windowHeight } = useWindowDimensions();
   // After offerModalRequestId's declaration: reading it earlier is a ReferenceError in browsers (blank web dashboard, 2026-11-14).
   useEffect(() => {
     setPreviewLogo(null);
@@ -7170,7 +7178,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
-            <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
+            {(() => {
+            // Item 49's live preview, now in a dock pinned under the form (owner, 2026-11-22): one mapping
+            // (utils/offerDraftPreview.js), one body + engine shared with the customer's real card (item 21); never a second preview.
+            const previewOffer = offerModalRequestId ? draftPreviewOffer({
+              type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
+              proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
+              partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
+              discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
+              availFrom: offerAvailFrom, availUntil: offerAvailUntil,
+              creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
+            }) : null;
+            const dock = offerPreviewDockLayout({ hasPreview: !!previewOffer, expanded: offerPreviewOpen, keyboardVisible });
+            const previewSummary = offerPreviewSummary(previewOffer, { t, formatTime: (iso) => formatProposedTime(iso, language) });
+            const sendDisabled = respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime);
+            return (
+            <View style={[styles.sheet, styles.offerSheet]}>
+            <ScrollView style={styles.offerSheetScroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.sheetTitle}>{t('ui.bizDash3.makeAnOffer')}</Text>
               {offerDraft.draft && (
                 <DraftBanner
@@ -7650,24 +7674,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   }}
                 />
               ) : null}
-              {/* Item 49 (was item 84's separate step): the Customer Preview builds live as the owner fills the form, right
-                  above Send Offer. One mapping (utils/offerDraftPreview.js), one body + engine shared with the customer's real card. */}
-              {(() => {
-                const previewOffer = draftPreviewOffer({
-                  type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
-                  proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
-                  partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
-                  discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
-                  availFrom: offerAvailFrom, availUntil: offerAvailUntil,
-                  creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
-                });
-                if (!previewOffer) return null;
+              <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md, marginBottom: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
+                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
+              </TouchableOpacity>
+            </ScrollView>
+            <View style={styles.offerDock}>
+              {dock.bar && (() => {
                 const localMedia = !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
                 const shown = presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } });
                 return (
-                  <View style={{ marginTop: spacing.md }}>
-                    <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
-                    <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
+                  <>
+                    <TouchableOpacity
+                      style={styles.offerDockBar}
+                      onPress={() => { if (keyboardVisible) { Keyboard.dismiss(); setOfferPreviewOpen(true); } else setOfferPreviewOpen((v) => !v); }}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${t('ui.bizDash3.customerPreview')}: ${previewSummary}`}
+                      accessibilityState={{ expanded: dock.card }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.notesLabel, { marginTop: 0 }]}>{t('ui.bizDash3.customerPreview')}</Text>
+                        {!dock.card && !!previewSummary && <Text style={styles.offerDockSummary} numberOfLines={1}>{previewSummary}</Text>}
+                      </View>
+                      <Ionicons name={dock.card ? 'chevron-down' : 'chevron-up'} size={18} color={colors.textTertiary} />
+                    </TouchableOpacity>
+                    {dock.card && (
+                      <ScrollView style={{ maxHeight: Math.round(windowHeight * OFFER_PREVIEW_CARD_MAX_FRACTION) }} keyboardShouldPersistTaps="handled">
+                    <Text style={[styles.helperText, { marginTop: 0 }]}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
                     <View style={styles.gatheringRow}>
                       <View style={styles.previewPartnerRow}>
                         <BusinessLogoMark uri={previewLogo} />
@@ -7684,22 +7716,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                     {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
                     <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
-                  </View>
+                      </ScrollView>
+                    )}
+                  </>
                 );
               })()}
+              {dock.send && (
               <TouchableOpacity
-                style={[styles.submitButton, (respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)) && disabledButtonStyle(colors)]}
+                style={[styles.submitButton, styles.offerDockSend, sendDisabled && disabledButtonStyle(colors)]}
                 onPress={handleSubmitOffer}
-                disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
+                disabled={sendDisabled}
                 accessibilityRole="button"
                 accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
               >
                 <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
-                <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
-              </TouchableOpacity>
-            </ScrollView>
+              )}
+            </View>
+            </View>
+            );
+            })()}
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
@@ -8656,6 +8692,13 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
   sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
+  // Make an Offer: the form scrolls, the Customer Preview dock + Send Offer stay pinned under it (utils/offerPreviewDock.js).
+  offerSheet: { maxHeight: '94%', paddingBottom: spacing.lg },
+  offerSheetScroll: { flexGrow: 0, flexShrink: 1 },
+  offerDock: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border, paddingTop: spacing.sm },
+  offerDockBar: { flexDirection: 'row', alignItems: 'center', minHeight: 44, gap: spacing.sm },
+  offerDockSummary: { ...typography.body, color: colors.textPrimary, fontWeight: '600', marginTop: 2 },
+  offerDockSend: { marginTop: spacing.sm },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
   submitButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },

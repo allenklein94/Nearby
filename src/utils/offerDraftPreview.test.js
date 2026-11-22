@@ -58,11 +58,13 @@ describe('item 49: live Customer Preview from the offer draft', () => {
     expect(draftPreviewOffer(base, NOW).media_path).toBeNull();
   });
 
-  test('the dashboard shows it live in the form, above Send Offer, with no separate preview step', () => {
+  // Owner 2026-11-22: the live preview now sits in a dock pinned under the form beside Send Offer (one line, opens to the
+  // full card); still live, still on the one form screen, still before Send (screens/offerPreviewDock.test.js).
+  test('the dashboard shows it live on the form screen, before Send Offer, with no separate preview step', () => {
     const dash = fs.readFileSync(path.join(__dirname, '../screens/BusinessDashboardScreen.js'), 'utf8');
-    const form = dash.slice(dash.indexOf("t('ui.bizDash3.makeAnOffer')"), dash.indexOf('<Modal visible={!!acceptSheetRequestId}'));
+    const form = dash.slice(dash.indexOf('<Modal visible={!!offerModalRequestId}'), dash.indexOf('<Modal visible={!!acceptSheetRequestId}'));
     expect(form).toContain('draftPreviewOffer(');
-    expect(form.indexOf('draftPreviewOffer(')).toBeLessThan(form.indexOf('onPress={handleSubmitOffer}'));
+    expect(form.indexOf('<OfferCustomerBody offer={previewOffer}')).toBeLessThan(form.indexOf('onPress={handleSubmitOffer}'));
     expect(dash).not.toContain('offerPreviewing');
     expect(dash).not.toContain('handlePreviewOffer');
     expect(dash).not.toContain("t('ui.bizDash3.previewOffer')");
