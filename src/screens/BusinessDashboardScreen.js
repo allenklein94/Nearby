@@ -89,6 +89,8 @@ import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
 import { draftPreviewOffer, draftSecondTime, draftSecondPartySize } from '../utils/offerDraftPreview';
+import { previewDockSummary } from '../utils/offerPreviewDock';
+import OfferPreviewDock from '../components/OfferPreviewDock';
 import ReviseOfferSheet from '../components/ReviseOfferSheet';
 import { canReviseOffer, isRevisedOffer } from '../utils/offerRevision';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
@@ -7170,7 +7172,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
-            <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
+            {/* Owner 2026-11-22: the form scrolls; the dock below it (outside the scroll) keeps the live Customer Preview one tap
+                away and Send Offer always in reach (components/OfferPreviewDock.js, rules utils/offerPreviewDock.js). */}
+            <View style={[styles.sheet, styles.offerSheet]}>
+            <ScrollView style={styles.offerSheetScroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.sheetTitle}>{t('ui.bizDash3.makeAnOffer')}</Text>
               {offerDraft.draft && (
                 <DraftBanner
@@ -7650,56 +7655,66 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   }}
                 />
               ) : null}
-              {/* Item 49 (was item 84's separate step): the Customer Preview builds live as the owner fills the form, right
-                  above Send Offer. One mapping (utils/offerDraftPreview.js), one body + engine shared with the customer's real card. */}
-              {(() => {
-                const previewOffer = draftPreviewOffer({
-                  type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
-                  proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
-                  partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
-                  discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
-                  availFrom: offerAvailFrom, availUntil: offerAvailUntil,
-                  creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
-                });
-                if (!previewOffer) return null;
-                const localMedia = !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
-                const shown = presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } });
-                return (
-                  <View style={{ marginTop: spacing.md }}>
-                    <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
-                    <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
-                    <View style={styles.gatheringRow}>
-                      <View style={styles.previewPartnerRow}>
-                        <BusinessLogoMark uri={previewLogo} />
-                        <Text style={[styles.offerTitle, styles.previewPartnerName]}>{selectedPartner?.name}</Text>
-                      </View>
-                      {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
-                      <Text style={styles.breakdownText}>{shown.heard}</Text>
-                      <Text style={styles.breakdownText}>{shown.statusLine}</Text>
-                      {!!previewOffer.offer_title && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{previewOffer.offer_title}</Text>}
-                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} partySize={partyOfRequest(offerModalRequestId)} />
-                      <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
-                        <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
-                      </View>
-                    </View>
-                    {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
-                    <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
-                  </View>
-                );
-              })()}
-              <TouchableOpacity
-                style={[styles.submitButton, (respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)) && disabledButtonStyle(colors)]}
-                onPress={handleSubmitOffer}
-                disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
-                accessibilityRole="button"
-                accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
-              >
-                <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
-              </TouchableOpacity>
               <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
                 <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </ScrollView>
+            {/* Item 49: the Customer Preview builds live as the owner fills the form. One mapping (utils/offerDraftPreview.js),
+                one body + engine shared with the customer's real card, rendered ONLY here, inside the dock's panel. */}
+            {(() => {
+              const previewOffer = draftPreviewOffer({
+                type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
+                proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
+                partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
+                discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
+                availFrom: offerAvailFrom, availUntil: offerAvailUntil,
+                creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
+              });
+              const localMedia = previewOffer && !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
+              const shown = previewOffer ? presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } }) : null;
+              const sendBlocked = respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime);
+              return (
+                <OfferPreviewDock
+                  hasPreview={!!previewOffer}
+                  label={t('ui.bizDash3.customerPreview')}
+                  summary={previewDockSummary(previewOffer)}
+                  sendButton={(
+                    <TouchableOpacity
+                      style={[styles.submitButton, styles.offerDockSend, sendBlocked && disabledButtonStyle(colors)]}
+                      onPress={handleSubmitOffer}
+                      disabled={sendBlocked}
+                      accessibilityRole="button"
+                      accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
+                    >
+                      <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
+                    </TouchableOpacity>
+                  )}
+                >
+                  {previewOffer && (
+                    <View>
+                      <Text style={[styles.helperText, { marginTop: 0 }]}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
+                      <View style={styles.gatheringRow}>
+                        <View style={styles.previewPartnerRow}>
+                          <BusinessLogoMark uri={previewLogo} />
+                          <Text style={[styles.offerTitle, styles.previewPartnerName]}>{selectedPartner?.name}</Text>
+                        </View>
+                        {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
+                        <Text style={styles.breakdownText}>{shown.heard}</Text>
+                        <Text style={styles.breakdownText}>{shown.statusLine}</Text>
+                        {!!previewOffer.offer_title && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{previewOffer.offer_title}</Text>}
+                        <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} partySize={partyOfRequest(offerModalRequestId)} />
+                        <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
+                          <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
+                        </View>
+                      </View>
+                      {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
+                      <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
+                    </View>
+                  )}
+                </OfferPreviewDock>
+              );
+            })()}
+            </View>
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
@@ -8655,6 +8670,10 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   modalCloseText: { color: colors.primary, fontWeight: '600' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
+  // Make an Offer (owner 2026-11-22): the sheet holds a shrinking form scroll + the preview dock; it never covers the status bar.
+  offerSheet: { maxHeight: '92%' },
+  offerSheetScroll: { flexGrow: 0, flexShrink: 1 },
+  offerDockSend: { marginTop: spacing.sm },
   sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },
