@@ -103,3 +103,55 @@ describe('the back button names the tab, never the route "MainTabs"', () => {
     }
   });
 });
+
+// Owner (2026-11-22): Back across Profile, Settings, Friends, Gatherings and Edit Profile, untouched or edited, and the
+// back swipe. The press itself is native (nativeBackPatch.test.js guards the iOS 26 fix); these check what JS decides.
+describe('Back across the app returns where it came from; only Edit Profile ever asks', () => {
+  const ROOT = ['MainTabs', 'EditProfile', 'Settings', 'Friends', 'GatheringDetail', 'ViewProfile'];
+  const TABS = ['Home', 'Discover', 'Create', 'Activity', 'Profile'];
+  const opts = (names) => ({ routeNames: names, routeParamList: {}, routeGetIdList: {} });
+  const stack = routers.StackRouter({});
+  const tabs = routers.TabRouter({});
+  const onTab = (tab) => {
+    const state = stack.getInitialState(opts(ROOT));
+    const tabState = tabs.getStateForAction(tabs.getInitialState(opts(TABS)), routers.TabActions.jumpTo(tab), opts(TABS));
+    return { ...state, routes: [{ ...state.routes[0], state: tabState }] };
+  };
+  const names = (s) => s.routes.map((r) => r.name);
+  const focusedTab = (s) => { const t = s.routes[0].state; return t.routes[t.index].name; };
+
+  test.each([
+    ['Profile', ['Settings', 'EditProfile']],
+    ['Profile', ['Friends', 'ViewProfile']],
+    ['Discover', ['GatheringDetail']],
+    ['Home', ['GatheringDetail', 'ViewProfile']],
+    ['Profile', ['Settings']],
+  ])('from the %s tab through %j, Back pops one screen at a time to the same tab', (tab, trail) => {
+    let state = onTab(tab);
+    for (const r of trail) state = stack.getStateForAction(state, routers.StackActions.push(r, { id: r }), opts(ROOT));
+    for (let i = trail.length - 1; i >= 0; i--) {
+      state = stack.getStateForAction(state, routers.StackActions.pop(), opts(ROOT));
+      expect(names(state)).toEqual(['MainTabs', ...trail.slice(0, i)]);
+    }
+    expect(focusedTab(state)).toBe(tab);
+  });
+
+  test('Profile, Settings, Friends and gathering screens never hold Back, untouched or edited', () => {
+    for (const f of ['screens/SettingsScreen.js', 'screens/FriendsScreen.js', 'screens/GatheringDetailScreen.js', 'screens/ViewProfileScreen.js']) {
+      const s = fs.readFileSync(path.join(SRC, f), 'utf8');
+      expect(s).not.toMatch(/useLeaveGuard|usePreventRemove|beforeRemove/);
+    }
+    // Profile TAB renders the same component: its guard is only active in edit mode.
+    const profile = fs.readFileSync(path.join(SRC, 'screens/ProfileScreen.js'), 'utf8');
+    expect(profile).toMatch(/dirtyRef\.current = editing && isProfileFormDirty/);
+  });
+
+  test('no route turns the back swipe or the back button off', () => {
+    expect(root).not.toMatch(/gestureEnabled:\s*false/);
+    expect(root).not.toMatch(/headerBackVisible:\s*false/);
+    expect(root).not.toMatch(/headerLeft/);
+    for (const { p, s } of files) {
+      if (/gestureEnabled:\s*false|headerBackVisible:\s*false/.test(s)) throw new Error(`${p} disables Back or the back swipe`);
+    }
+  });
+});
