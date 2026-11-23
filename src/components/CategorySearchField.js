@@ -65,7 +65,7 @@ const getStyles = (colors) => StyleSheet.create({
   input: { flex: 1, backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border, minHeight: 44 },
   clear: { marginLeft: spacing.sm, minWidth: 44, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   clearText: { color: colors.textSecondary, fontSize: 16, fontWeight: '700' },
-  toggle: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  toggle: { alignSelf: 'flex-start', minHeight: 32, justifyContent: 'center' }, // + hitSlop 6 above/below = 44 px touch target
   toggleText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
   noMatch: { color: colors.textSecondary, fontSize: 13, marginTop: spacing.xs },
 });

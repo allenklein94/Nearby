@@ -456,6 +456,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [boostCategoryQuery, setBoostCategoryQuery] = useState('');
   const [boostCategoryListOpen, setBoostCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [boostDurationInput, setBoostDurationInput] = useState('today');
+  const boostChipOptions = filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput, collapsed: !boostCategoryListOpen });
   const [savingBoost, setSavingBoost] = useState(false);
   // Phase 6 -- Signature Experiences.
   const [experiences, setExperiences] = useState([]);
@@ -5806,8 +5807,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   onToggleExpanded={() => setBoostCategoryListOpen((v) => !v)}
                   total={AVAILABILITY_CATEGORY_OPTIONS.length}
                 />
+                {/* Collapsed with nothing chosen = no chips: render no empty row (keeps the gap to the next section tight). */}
+                {boostChipOptions.length > 0 && (
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput, collapsed: !boostCategoryListOpen }).map((c) => {
+                  {boostChipOptions.map((c) => {
                     const selected = boostCategoryInput === c;
                     return (
                       <TouchableOpacity
@@ -5823,6 +5826,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     );
                   })}
                 </View>
+                )}
                 {boostCategoryInput && (
                   <>
                     <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
