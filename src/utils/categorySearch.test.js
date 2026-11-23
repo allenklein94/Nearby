@@ -148,3 +148,21 @@ describe('collapsed pickers (owner, 2026-11-23)', () => {
     expect(field).toMatch(/accessibilityState=\{\{ expanded \}\}/);
   });
 });
+
+// Owner, 2026-11-23: the dashboard's category chips show the TRANSLATED name (categoryName via categorySearchLabel), never
+// the stored key; the stored key stays the saved value. The sign-up form is English-only by design and keeps the key.
+describe('category chips are translated (owner, 2026-11-23)', () => {
+  const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+  test('no dashboard category chip prints or announces its raw key', () => {
+    const dash = read('screens/BusinessDashboardScreen.js');
+    expect(dash).not.toMatch(/>\{c\}<\/Text>/);
+    expect(dash).not.toMatch(/accessibilityLabel=\{c\}\s*$/m);
+    expect((dash.match(/>\{categorySearchLabel\(c\)\}<\/Text>/g) || []).length).toBe(3);
+    expect((dash.match(/accessibilityLabel=\{categorySearchLabel\(c\)\}/g) || []).length).toBe(3);
+  });
+  test('the shared translation really differs from the key in another language', () => {
+    const translated = ALL.filter((c) => categoryName(c, 'es') !== c);
+    expect(translated.length).toBeGreaterThan(ALL.length / 2);
+    for (const c of ALL) expect(typeof categoryName(c, 'es')).toBe('string');
+  });
+});

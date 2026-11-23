@@ -368,6 +368,7 @@ export default function BusinessDashboardScreen(props) {
 function BusinessDashboardForLocation({ navigation, route, onLocationSwitched }) {
   const { t, language } = useLanguage();
   // Category search matches the owner's language as well as the stored tag the chip shows.
+  // The one display name for a business category chip AND its search (translated; the stored key stays the saved value).
   const categorySearchLabel = (c) => categoryName(c, language);
   const offerTypeLabel = (key) => (OFFER_TYPE_OPTIONS.some((o) => o.key === key) ? t(`ui.bizDash3.offerType.${key}`) : key);
   const { colors, shadow, isDark } = useTheme();
@@ -6329,10 +6330,10 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => setBoostCategoryInput(selected ? null : c)}
                         accessibilityRole="button"
-                        accessibilityLabel={c}
+                        accessibilityLabel={categorySearchLabel(c)}
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -7052,10 +7053,10 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                         setEditCategoriesInput((prev) => toggleSecondaryCategory(prev, c)); // item 186: at most 5
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={c}
+                      accessibilityLabel={categorySearchLabel(c)}
                       accessibilityState={{ selected }}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -8129,10 +8130,10 @@ function BusinessDashboardForLocation({ navigation, route, onLocationSwitched })
                     style={[styles.chip, availabilityCategoryInput === c && styles.chipSelected]}
                     onPress={() => setAvailabilityCategoryInput(availabilityCategoryInput === c ? null : c)}
                     accessibilityRole="button"
-                    accessibilityLabel={c}
+                    accessibilityLabel={categorySearchLabel(c)}
                     accessibilityState={{ selected: availabilityCategoryInput === c }}
                   >
-                    <Text style={[styles.chipText, availabilityCategoryInput === c && styles.chipTextSelected]}>{c}</Text>
+                    <Text style={[styles.chipText, availabilityCategoryInput === c && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

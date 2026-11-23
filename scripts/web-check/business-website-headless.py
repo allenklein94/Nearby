@@ -38,8 +38,8 @@ def profile_for(kind):
          'managed_partner_id': PARTNER if kind == 'linked' else None}
     return p
 
-def run(browser, name, kind, query='', width=1280):
-    ctx = browser.new_context(viewport={'width': width, 'height': 900})
+def run(browser, name, kind, query='', width=1280, locale=None):
+    ctx = browser.new_context(viewport={'width': width, 'height': 900}, **({'locale': locale} if locale else {}))
     errors, writes, seen, noise = [], [], [], []
     page = ctx.new_page()
     page.on('pageerror', lambda e: (errors.append('pageerror: ' + str(e)[:200]), print('STACK', name, (e.stack or '')[:900], flush=True)))
@@ -336,6 +336,24 @@ with sync_playwright() as p:
             check(f'{tag} section shows the boost heading + search box', False, str(e)[:200])
         check(f'{tag} no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
         r['ctx'].close()
+
+    # Category chips show the TRANSLATED name (owner, 2026-11-23): in Spanish, "See all" lists "Bolos", never "Bowling".
+    r = run(b, 'k_boost_es', 'linked', width=390, locale='es-ES')
+    pg = r['page']; before = len(r['errors'])
+    try:
+        pg.get_by_text('Perfil', exact=True).first.click(); pg.wait_for_timeout(1500)
+        grp('¿De qué quieres más?').click(); pg.wait_for_timeout(1000)
+        pg.get_by_role('button', name=_re.compile(r'^Ver todo \(\d+\)$')).first.click(); pg.wait_for_timeout(800)
+        t = pg.inner_text('body')
+        check('[boost picker es] chips use the translated name (Bolos, not Bowling)', 'Bolos' in t and 'Bowling' not in t, t[:200].replace('\n', ' | '))
+        check('[boost picker es] screen-reader label translated too', pg.get_by_role('button', name='Bolos', exact=True).count() >= 1)
+        pg.get_by_placeholder('Buscar categorías').last.fill('bolo'); pg.wait_for_timeout(800)
+        check('[boost picker es] searching the Spanish name finds it', 'Bolos' in pg.inner_text('body'))
+        pg.screenshot(path='/out/k_boost_es.png', full_page=True)
+    except Exception as e:
+        check('[boost picker es] chips use the translated name (Bolos, not Bowling)', False, str(e)[:200])
+    check('[boost picker es] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+    r['ctx'].close()
 
     # Offer Performance (owner, 2026-11-15): four real counts as cells (2 x 2 on a phone, one row when wide), the value of
     # offers redeemed apart with its disclosure, the same disclosure on the Home tile, and no viewed count anywhere.
