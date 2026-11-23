@@ -102,8 +102,10 @@ describe('category search (owner, 2026-11-15)', () => {
     expect(apply).toMatch(/filterCategoryOptions\(businessTagOptions\(\), categoryQuery/);
     expect(apply).not.toMatch(/\{businessTagOptions\(\)\.map\(/);
     const ai = read('components/BusinessAIAutomationPanel.js');
-    expect(ai).toMatch(/filterCategoryOptions\(INTEREST_OPTIONS, categoryQuery/);
-    for (const src of [dash, apply, ai]) expect((src.match(/<CategorySearchField/g) || []).length).toBeGreaterThan(0);
+    // On main the AI rule keeps its grouped picker (TagGroupPicker, already collapsed by group), not the flat search.
+    expect(ai).toMatch(/<TagGroupPicker/);
+    expect(ai).not.toMatch(/\{INTEREST_OPTIONS\.map\(/);
+    for (const src of [dash, apply]) expect((src.match(/<CategorySearchField/g) || []).length).toBeGreaterThan(0);
     expect((dash.match(/<CategorySearchField/g) || []).length).toBe(3);
   });
 });
