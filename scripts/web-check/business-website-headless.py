@@ -298,6 +298,45 @@ with sync_playwright() as p:
     check('[profile groups] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
     r['ctx'].close()
 
+    # Temporary boost picker starts COLLAPSED (owner, 2026-11-23): no category chips until "See all (N)", typing searches
+    # all of them, "Show less" closes it again; checked on a 320 / 390 / 1280 px wide window.
+    for width in (320, 390, 1280):
+        tag = f'[boost picker {width}px]'
+        r = run(b, f'k_boost_{width}', 'linked', width=width)
+        pg = r['page']; before = len(r['errors'])
+        try:
+            pg.get_by_text('Profile', exact=True).first.click(); pg.wait_for_timeout(1500)
+            grp('What do you want more of?').click(); pg.wait_for_timeout(1000)
+            t = pg.inner_text('body'); i = t.find('Temporary boost'); boost = t[i:i + 1500] if i >= 0 else ''
+            pg.screenshot(path=f'/out/k_boost_{width}_closed.png', full_page=True)
+            h_closed = pg.evaluate('document.documentElement.scrollHeight')
+            check(f'{tag} section shows the boost heading + search box', i >= 0 and pg.get_by_placeholder('Search categories').count() >= 1, t[-200:].replace('\n', ' | '))
+            check(f'{tag} collapsed: no category chips (Bowling / Pickleball absent)', 'Bowling' not in boost and 'Pickleball' not in boost, boost[:300].replace('\n', ' | '))
+            see = pg.get_by_role('button', name=_re.compile(r'^See all \(\d+\)$'))
+            check(f'{tag} one "See all (N)" link, N = the full list', see.count() == 1 and int(_re.search(r'\((\d+)\)', see.first.inner_text()).group(1)) > 200, see.first.inner_text() if see.count() else 'none')
+            see.first.click(); pg.wait_for_timeout(800)
+            t2 = pg.inner_text('body'); h_open = pg.evaluate('document.documentElement.scrollHeight')
+            check(f'{tag} "See all" opens the full list in place', 'Bowling' in t2 and 'Pickleball' in t2 and len(t2) > len(t) + 1500, f'text closed={len(t)} open={len(t2)}')
+            pg.get_by_role('button', name='Show less').first.click(); pg.wait_for_timeout(800)
+            t_less = pg.inner_text('body')
+            check(f'{tag} "Show less" closes it again', 'Bowling' not in t_less and abs(len(t_less) - len(t)) < 50, f'{len(t_less)} vs {len(t)}')
+            box = pg.get_by_placeholder('Search categories').last
+            box.fill('pickle'); pg.wait_for_timeout(800)
+            t3 = pg.inner_text('body')
+            check(f'{tag} typing searches the whole list while collapsed', 'Pickleball' in t3 and 'Bowling' not in t3)
+            check(f'{tag} the See all link hides while searching', pg.get_by_role('button', name=_re.compile(r'^See all \(')).count() == 0)
+            pg.get_by_text('Pickleball', exact=True).first.click(); pg.wait_for_timeout(600)
+            box.fill(''); pg.wait_for_timeout(800)
+            t4 = pg.inner_text('body'); j = t4.find('Temporary boost'); b4 = t4[j:j + 1200]
+            pg.screenshot(path=f'/out/k_boost_{width}_selected.png', full_page=True)
+            check(f'{tag} after clearing the search the chosen chip stays visible, nothing else', 'Pickleball' in b4 and 'Bowling' not in b4, b4[:300].replace('\n', ' | '))
+            check(f'{tag} choosing a category still shows the existing duration choices', 'this weekend' in b4.lower() and '1 week' in b4.lower(), b4[:300].replace('\n', ' | '))
+            check(f'{tag} no horizontal page scroll', pg.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'))
+        except Exception as e:
+            check(f'{tag} section shows the boost heading + search box', False, str(e)[:200])
+        check(f'{tag} no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+        r['ctx'].close()
+
     # Offer Performance (owner, 2026-11-15): four real counts as cells (2 x 2 on a phone, one row when wide), the value of
     # offers redeemed apart with its disclosure, the same disclosure on the Home tile, and no viewed count anywhere.
     PERF['on'] = True
