@@ -118,6 +118,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
   // itself started with -- no AI suggestion for this field yet.
   const [categories, setCategories] = useState([]);
   const [categoryQuery, setCategoryQuery] = useState(''); // search inside "Also Classify As" only (utils/categorySearch.js)
+  const [categoryListOpen, setCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [website, setWebsite] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -864,9 +865,12 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             onChangeText={setCategoryQuery}
             noMatch={noCategoryMatch(businessTagOptions(), categoryQuery, { selected: categories })}
             style={{ marginBottom: spacing.xs }}
+            expanded={categoryListOpen}
+            onToggleExpanded={() => setCategoryListOpen((v) => !v)}
+            total={businessTagOptions().length}
           />
           <View style={styles.chipRow}>
-            {filterCategoryOptions(businessTagOptions(), categoryQuery, { selected: categories }).map((c) => (
+            {filterCategoryOptions(businessTagOptions(), categoryQuery, { selected: categories, collapsed: !categoryListOpen }).map((c) => (
               <TouchableOpacity
                 key={c}
                 style={[styles.chip, categories.includes(c) && styles.chipActive]}

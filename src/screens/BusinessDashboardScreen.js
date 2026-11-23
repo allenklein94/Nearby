@@ -312,6 +312,7 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
 export default function BusinessDashboardScreen({ navigation, route }) {
   const { t, language } = useLanguage();
   // Category search matches the owner's language as well as the stored tag the chip shows.
+  // The one display name for a business category chip AND its search (translated; the stored key stays the saved value).
   const categorySearchLabel = (c) => categoryName(c, language);
   const offerTypeLabel = (key) => (OFFER_TYPE_OPTIONS.some((o) => o.key === key) ? t(`ui.bizDash3.offerType.${key}`) : key);
   const { colors, shadow, isDark } = useTheme();
@@ -393,6 +394,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // from editSubcategoryInput (one leaf tag under the primary major).
   const [editCategoriesInput, setEditCategoriesInput] = useState([]);
   const [profileCategoryQuery, setProfileCategoryQuery] = useState(''); // search inside the picker only (utils/categorySearch.js)
+  const [profileCategoryListOpen, setProfileCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [editDifferentiatorInput, setEditDifferentiatorInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   // "Business Story" plan, Phase 2 -- Business Goals ("what we want more
@@ -452,6 +454,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [activePrioritySignals, setActivePrioritySignals] = useState([]);
   const [boostCategoryInput, setBoostCategoryInput] = useState(null);
   const [boostCategoryQuery, setBoostCategoryQuery] = useState('');
+  const [boostCategoryListOpen, setBoostCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [boostDurationInput, setBoostDurationInput] = useState('today');
   const [savingBoost, setSavingBoost] = useState(false);
   // Phase 6 -- Signature Experiences.
@@ -700,6 +703,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [availabilityDescriptionInput, setAvailabilityDescriptionInput] = useState('');
   const [availabilityCategoryInput, setAvailabilityCategoryInput] = useState(null);
   const [availabilityCategoryQuery, setAvailabilityCategoryQuery] = useState('');
+  const [availabilityCategoryListOpen, setAvailabilityCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [availabilityOfferTypeInput, setAvailabilityOfferTypeInput] = useState('standard');
   const [availabilityPriceInput, setAvailabilityPriceInput] = useState('');
   const [availabilityDiscountInput, setAvailabilityDiscountInput] = useState('');
@@ -5798,9 +5802,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   value={boostCategoryQuery}
                   onChangeText={setBoostCategoryQuery}
                   noMatch={noCategoryMatch(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput })}
+                  expanded={boostCategoryListOpen}
+                  onToggleExpanded={() => setBoostCategoryListOpen((v) => !v)}
+                  total={AVAILABILITY_CATEGORY_OPTIONS.length}
                 />
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput }).map((c) => {
+                  {filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput, collapsed: !boostCategoryListOpen }).map((c) => {
                     const selected = boostCategoryInput === c;
                     return (
                       <TouchableOpacity
@@ -5808,10 +5815,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => setBoostCategoryInput(selected ? null : c)}
                         accessibilityRole="button"
-                        accessibilityLabel={c}
+                        accessibilityLabel={categorySearchLabel(c)}
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                       </TouchableOpacity>
                     );
                   })}
@@ -6898,9 +6905,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 value={profileCategoryQuery}
                 onChangeText={setProfileCategoryQuery}
                 noMatch={noCategoryMatch(businessTagOptions(), profileCategoryQuery, { labelFor: categorySearchLabel, selected: editCategoriesInput })}
+                expanded={profileCategoryListOpen}
+                onToggleExpanded={() => setProfileCategoryListOpen((v) => !v)}
+                total={businessTagOptions().length}
               />
               <View style={styles.chipRow}>
-                {filterCategoryOptions(businessTagOptions(), profileCategoryQuery, { labelFor: categorySearchLabel, selected: editCategoriesInput }).map((c) => {
+                {filterCategoryOptions(businessTagOptions(), profileCategoryQuery, { labelFor: categorySearchLabel, selected: editCategoriesInput, collapsed: !profileCategoryListOpen }).map((c) => {
                   const selected = editCategoriesInput.includes(c);
                   return (
                     <TouchableOpacity
@@ -6910,10 +6920,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         setEditCategoriesInput((prev) => toggleSecondaryCategory(prev, c)); // item 186: at most 5
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={c}
+                      accessibilityLabel={categorySearchLabel(c)}
                       accessibilityState={{ selected }}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -7972,18 +7982,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 value={availabilityCategoryQuery}
                 onChangeText={setAvailabilityCategoryQuery}
                 noMatch={noCategoryMatch(AVAILABILITY_CATEGORY_OPTIONS, availabilityCategoryQuery, { labelFor: categorySearchLabel, selected: availabilityCategoryInput })}
+                expanded={availabilityCategoryListOpen}
+                onToggleExpanded={() => setAvailabilityCategoryListOpen((v) => !v)}
+                total={AVAILABILITY_CATEGORY_OPTIONS.length}
               />
               <View style={styles.chipRow}>
-                {filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, availabilityCategoryQuery, { labelFor: categorySearchLabel, selected: availabilityCategoryInput }).map((c) => (
+                {filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, availabilityCategoryQuery, { labelFor: categorySearchLabel, selected: availabilityCategoryInput, collapsed: !availabilityCategoryListOpen }).map((c) => (
                   <TouchableOpacity
                     key={c}
                     style={[styles.chip, availabilityCategoryInput === c && styles.chipSelected]}
                     onPress={() => setAvailabilityCategoryInput(availabilityCategoryInput === c ? null : c)}
                     accessibilityRole="button"
-                    accessibilityLabel={c}
+                    accessibilityLabel={categorySearchLabel(c)}
                     accessibilityState={{ selected: availabilityCategoryInput === c }}
                   >
-                    <Text style={[styles.chipText, availabilityCategoryInput === c && styles.chipTextSelected]}>{c}</Text>
+                    <Text style={[styles.chipText, availabilityCategoryInput === c && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
