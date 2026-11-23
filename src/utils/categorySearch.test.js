@@ -109,3 +109,42 @@ describe('category search (owner, 2026-11-15)', () => {
     expect((dash.match(/<CategorySearchField/g) || []).length).toBe(3);
   });
 });
+
+// Owner, 2026-11-23: the four flat category pickers start COLLAPSED. With no search typed only the selected chips show
+// (none selected = no chips at all); "See all (N)" opens the full list in place; typing always searches the full list.
+describe('collapsed pickers (owner, 2026-11-23)', () => {
+  const read = (rel) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+  test('collapsed + empty search = only the selected options, in list order', () => {
+    expect(filterCategoryOptions(ALL, '', { collapsed: true })).toEqual([]);
+    const two = [ALL[40], ALL[3]];
+    expect(filterCategoryOptions(ALL, '', { collapsed: true, selected: two })).toEqual([ALL[3], ALL[40]]);
+    expect(filterCategoryOptions(ALL, '   ', { collapsed: true, selected: ALL[7] })).toEqual([ALL[7]]);
+  });
+  test('opened (not collapsed) = the full list, unchanged', () => {
+    expect(filterCategoryOptions(ALL, '', { collapsed: false })).toEqual(ALL);
+    expect(filterCategoryOptions(ALL, '')).toEqual(ALL);
+  });
+  test('typing searches the whole list even while collapsed; selections stay visible', () => {
+    const coffee = ALL.find((c) => /coffee/i.test(c));
+    expect(coffee).toBeTruthy();
+    const out = filterCategoryOptions(ALL, 'coff', { collapsed: true, selected: [ALL[0]] });
+    expect(out).toContain(coffee);
+    expect(out).toContain(ALL[0]);
+    expect(filterCategoryOptions(ALL, 'coff', { collapsed: true })).toEqual(filterCategoryOptions(ALL, 'coff'));
+  });
+  test('every flat picker is wired collapsed by default with the See all / Show less toggle', () => {
+    const dash = read('screens/BusinessDashboardScreen.js');
+    for (const q of ['profileCategory', 'boostCategory', 'availabilityCategory']) {
+      expect(dash).toMatch(new RegExp(`const \\[${q}ListOpen, set\\w+\\] = useState\\(false\\)`));
+      expect(dash).toMatch(new RegExp(`collapsed: !${q}ListOpen`));
+      expect(dash).toMatch(new RegExp(`expanded=\\{${q}ListOpen\\}`));
+    }
+    const apply = read('screens/BusinessPartnerApplyScreen.js');
+    expect(apply).toMatch(/const \[categoryListOpen, setCategoryListOpen\] = useState\(false\)/);
+    expect(apply).toMatch(/collapsed: !categoryListOpen/);
+    const field = read('components/CategorySearchField.js');
+    expect(field).toMatch(/t\('ui\.common\.showLess'\)/);
+    expect(field).toMatch(/t\('ui\.common\.seeAllPlain'\)/);
+    expect(field).toMatch(/accessibilityState=\{\{ expanded \}\}/);
+  });
+});
