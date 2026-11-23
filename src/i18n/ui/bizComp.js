@@ -2,6 +2,9 @@
 // wording; the other ten languages are machine-authored and need native-speaker review. Edit the JSON, then rebuild.
 export default {
   en: {
+    searchCategories: "Search categories",
+    noCategoriesMatch: "No categories match “{query}”.",
+    clearCategorySearch: "Clear search",
     lastDays: "Last {windowDays} days",
     demandNearYouA11y: "Demand near you",
     demandNearYou: "Demand near you",
@@ -150,6 +153,9 @@ export default {
     },
   },
   es: {
+    searchCategories: "Buscar categorías",
+    noCategoriesMatch: "Ninguna categoría coincide con “{query}”.",
+    clearCategorySearch: "Borrar búsqueda",
     lastDays: "Últimos {windowDays} días",
     demandNearYouA11y: "Demanda cerca de ti",
     demandNearYou: "Demanda cerca de ti",
@@ -298,6 +304,9 @@ export default {
     },
   },
   de: {
+    searchCategories: "Kategorien suchen",
+    noCategoriesMatch: "Keine Kategorie passt zu „{query}“.",
+    clearCategorySearch: "Suche löschen",
     lastDays: "Letzte {windowDays} Tage",
     demandNearYouA11y: "Nachfrage in deiner Nähe",
     demandNearYou: "Nachfrage in deiner Nähe",
@@ -446,6 +455,9 @@ export default {
     },
   },
   fr: {
+    searchCategories: "Rechercher des catégories",
+    noCategoriesMatch: "Aucune catégorie ne correspond à « {query} ».",
+    clearCategorySearch: "Effacer la recherche",
     lastDays: "{windowDays} derniers jours",
     demandNearYouA11y: "Demande près de chez vous",
     demandNearYou: "Demande près de chez vous",
@@ -594,6 +606,9 @@ export default {
     },
   },
   pt: {
+    searchCategories: "Buscar categorias",
+    noCategoriesMatch: "Nenhuma categoria corresponde a “{query}”.",
+    clearCategorySearch: "Limpar busca",
     lastDays: "Últimos {windowDays} dias",
     demandNearYouA11y: "Demanda perto de você",
     demandNearYou: "Demanda perto de você",
@@ -742,6 +757,9 @@ export default {
     },
   },
   ht: {
+    searchCategories: "Chèche kategori",
+    noCategoriesMatch: "Pa gen okenn kategori ki koresponn ak “{query}”.",
+    clearCategorySearch: "Efase rechèch la",
     lastDays: "{windowDays} dènye jou yo",
     demandNearYouA11y: "Demann toupre ou",
     demandNearYou: "Demann toupre ou",
@@ -890,6 +908,9 @@ export default {
     },
   },
   zh: {
+    searchCategories: "搜索类别",
+    noCategoriesMatch: "没有与“{query}”匹配的类别。",
+    clearCategorySearch: "清除搜索",
     lastDays: "最近 {windowDays} 天",
     demandNearYouA11y: "你附近的需求",
     demandNearYou: "你附近的需求",
@@ -1038,6 +1059,9 @@ export default {
     },
   },
   vi: {
+    searchCategories: "Tìm danh mục",
+    noCategoriesMatch: "Không có danh mục nào khớp với “{query}”.",
+    clearCategorySearch: "Xóa tìm kiếm",
     lastDays: "{windowDays} ngày qua",
     demandNearYouA11y: "Nhu cầu gần bạn",
     demandNearYou: "Nhu cầu gần bạn",
@@ -1186,6 +1210,9 @@ export default {
     },
   },
   tl: {
+    searchCategories: "Maghanap ng kategorya",
+    noCategoriesMatch: "Walang kategoryang tugma sa “{query}”.",
+    clearCategorySearch: "I-clear ang paghahanap",
     lastDays: "Huling {windowDays} araw",
     demandNearYouA11y: "Demand malapit sa iyo",
     demandNearYou: "Demand malapit sa iyo",
@@ -1334,6 +1361,9 @@ export default {
     },
   },
   ru: {
+    searchCategories: "Поиск категорий",
+    noCategoriesMatch: "Нет категорий, подходящих под «{query}».",
+    clearCategorySearch: "Очистить поиск",
     lastDays: "Последние {windowDays} дн.",
     demandNearYouA11y: "Спрос рядом с вами",
     demandNearYou: "Спрос рядом с вами",
@@ -1482,6 +1512,9 @@ export default {
     },
   },
   ko: {
+    searchCategories: "카테고리 검색",
+    noCategoriesMatch: "“{query}”와(과) 일치하는 카테고리가 없어요.",
+    clearCategorySearch: "검색 지우기",
     lastDays: "최근 {windowDays}일",
     demandNearYouA11y: "내 주변 수요",
     demandNearYou: "내 주변 수요",

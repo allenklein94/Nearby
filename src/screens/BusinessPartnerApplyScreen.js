@@ -24,6 +24,8 @@ import { activityChoices, toggleActivity } from '../constants/activityLayer';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { CATEGORY_GROUPS, subcategoryOptionsFor, businessTagOptions, toggleSecondaryCategory, MAX_SECONDARY_CATEGORIES } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
+import CategorySearchField from '../components/CategorySearchField';
+import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
 import { spacing, radius, typography } from '../theme';
 import { disabledButtonStyle } from '../constants/buttonStates';
 
@@ -115,6 +117,7 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
   // Manual pick only this pass, same disclosed scope boundary subcategory
   // itself started with -- no AI suggestion for this field yet.
   const [categories, setCategories] = useState([]);
+  const [categoryQuery, setCategoryQuery] = useState(''); // search inside "Also Classify As" only (utils/categorySearch.js)
   const [website, setWebsite] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -856,8 +859,14 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
               above (e.g. a food_drink bar that's also an entertainment_
               nightlife live-music venue). */}
           <Text style={styles.label}>Also Classify As (optional, up to {MAX_SECONDARY_CATEGORIES} in all)</Text>
+          <CategorySearchField
+            value={categoryQuery}
+            onChangeText={setCategoryQuery}
+            noMatch={noCategoryMatch(businessTagOptions(), categoryQuery, { selected: categories })}
+            style={{ marginBottom: spacing.xs }}
+          />
           <View style={styles.chipRow}>
-            {businessTagOptions().map((c) => (
+            {filterCategoryOptions(businessTagOptions(), categoryQuery, { selected: categories }).map((c) => (
               <TouchableOpacity
                 key={c}
                 style={[styles.chip, categories.includes(c) && styles.chipActive]}
