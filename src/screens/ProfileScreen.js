@@ -5,6 +5,7 @@ import { usePostHog } from 'posthog-react-native';
 import { getMomentumStats } from '../services/momentum';
 import { getInsightsStats } from '../services/insights';
 import React, { useEffect, useRef, useState } from 'react';
+import { UNSTABLE_usePreventRemove as usePreventRemove, CommonActions } from '@react-navigation/native';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager } from 'react-native';
 import KeyboardSafeView from '../components/KeyboardSafeView';
@@ -221,22 +222,12 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   }, []);
 
   // Item 35 follow-up (owner, 2026-10-08): leaving Edit Profile with unsaved changes asks first, wherever it was opened from
-  // (Profile, Settings, the interests link, Dating Preferences). beforeRemove covers the header back, Android back and swipe.
-  useEffect(() => {
-    if (!editing || !navigation?.addListener) return undefined;
-    return navigation.addListener('beforeRemove', (event) => {
-      guardProfileLeave({
-        dirty: dirtyRef.current,
-        allowLeave: allowLeaveRef.current,
-        event,
-        proceed: (action) => { allowLeaveRef.current = true; navigation.dispatch(action); },
-        confirm: ({ onKeepEditing, onDiscard }) => Alert.alert(t('ui.profile.discardTitle'), t('ui.profile.discardBody'), [
-          { text: t('ui.profile.keepEditing'), style: 'cancel', onPress: onKeepEditing },
-          { text: t('ui.profile.discardChanges'), style: 'destructive', onPress: onDiscard },
-        ]),
-      });
-    });
-  }, [navigation, editing, t]);
+  // (Profile, Settings, the interests link, Dating Preferences). Build 87 Tier 1 fix (2026-11-22): a plain 'beforeRemove'
+  // listener cannot hold the iOS NATIVE back button in this native stack (the screen is already gone natively when it fires),
+  // so the guard uses usePreventRemove (below, after the dirty check), which tells the native header to hold the pop
+  // (preventNativeDismiss) and then asks. It also covers Android back and the swipe. Leaving after Discard or Save goes
+  // through `leaveAction`: prevention is switched off by a re-render first, then that one navigation is dispatched.
+  const [leaveAction, setLeaveAction] = useState(null);
 
   // Taxonomy audit Phase 1: Settings' "Gender identity & who you're
   // interested in are managed on your Profile ->" link lands here.
@@ -664,7 +655,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     baselineRef.current = currentSnapshot;
     if (editing && navigation.canGoBack?.()) {
       allowLeaveRef.current = true;
-      navigation.goBack();
+      setLeaveAction(CommonActions.goBack());
     }
   }
 
@@ -735,6 +726,23 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     genderIdentity, interestedInGenders, myEthnicity, heightFeet, heightInchesVal, basics, prompts, connectionGoal,
   });
   dirtyRef.current = editing && isProfileFormDirty(baselineRef.current, currentSnapshot);
+  usePreventRemove(editing && dirtyRef.current && !allowLeaveRef.current && leaveAction == null, ({ data }) => {
+    guardProfileLeave({
+      dirty: true,
+      allowLeave: false,
+      event: { data, preventDefault: () => {} }, // usePreventRemove has already held this navigation
+      proceed: (action) => { allowLeaveRef.current = true; setLeaveAction(action); },
+      confirm: ({ onKeepEditing, onDiscard }) => Alert.alert(t('ui.profile.discardTitle'), t('ui.profile.discardBody'), [
+        { text: t('ui.profile.keepEditing'), style: 'cancel', onPress: onKeepEditing },
+        { text: t('ui.profile.discardChanges'), style: 'destructive', onPress: onDiscard },
+      ]),
+    });
+  });
+  // Declared after usePreventRemove on purpose: effects run in order, so the guard has already switched off for this
+  // render when the held (or post-Save) navigation is dispatched.
+  useEffect(() => {
+    if (leaveAction) navigation.dispatch(leaveAction);
+  }, [leaveAction]);
   const completeness = getProfileCompleteness({ photoUrl, bio, prompts, interests, connectionGoal, extraPhotos });
 
   return (

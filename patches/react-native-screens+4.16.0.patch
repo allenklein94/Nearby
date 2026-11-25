@@ -1,0 +1,21 @@
+diff --git a/node_modules/react-native-screens/ios/RNSScreenStack.mm b/node_modules/react-native-screens/ios/RNSScreenStack.mm
+--- a/node_modules/react-native-screens/ios/RNSScreenStack.mm
++++ b/node_modules/react-native-screens/ios/RNSScreenStack.mm
+@@ -230,13 +230,10 @@
+     // which we check indirectly by checking if transitionCoordinator is set.
+     // If it's not, we are safe to proceed.
+     if (self.transitionCoordinator == nil) {
+-      // We still need to disable interactions for back button so click effects are not applied,
+-      // and there is unfortunately no better place for it currently
+-      UIView *button = [navigationBar rnscreens_findBackButtonWrapperView];
+-      if (button != nil) {
+-        button.userInteractionEnabled = false;
+-      }
+-
++      // Nearby patch (2026-11-22, Build 87 Tier 1 bug): 4.16.0 disabled the back button's touches here and relied on
++      // navigationBar:didPopItem: to turn them back on. When that never ran for the button instance on screen (a pop
++      // that did not go through the bar, a prevented dismiss, or the flag carried to the next button), the back button
++      // stayed visible but dead on every later screen. react-native-screens 4.17+ removed this; so do we.
+       return true;
+     }
+ 

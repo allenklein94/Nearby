@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { Animated, TouchableOpacity, Text, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { NavigationContainer, createNavigationContainerRef } from '@react-navigation/native';
+import { NavigationContainer, createNavigationContainerRef, getFocusedRouteNameFromRoute } from '@react-navigation/native';
+import { mainTabsBackTitle } from './mainTabsBackTitle';
 import TogetherNotesScreen from '../screens/TogetherNotesScreen';
 import { TOGETHER_NOTES_KINDS } from '../constants/togetherNotesKinds';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -380,7 +381,10 @@ export default function RootNavigator() {
           <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
         ) : (
           <>
-            <Stack.Screen name="MainTabs" component={MainTabs} />
+            {/* Build 87 Tier 1 fix (2026-11-22): iOS labels a pushed screen's back button with the PREVIOUS screen's title.
+                The tab container had none, so the internal route name leaked ("MainTabs"); it now carries the active
+                tab's own label ("‹ Profile"), from the one tab-label key (mainTabsBackTitle). Its own header stays hidden. */}
+            <Stack.Screen name="MainTabs" component={MainTabs} options={({ route }) => ({ title: t(mainTabsBackTitle(getFocusedRouteNameFromRoute(route))) })} />
             {/* Phase 5: Profile left the bottom tab bar -- reached via the
                 persistent header-icon avatar (TabHeaderActions) -- and
                 stays a real, pushed screen (a transparent native header for
@@ -391,7 +395,7 @@ export default function RootNavigator() {
                 into it as a mode, so there's no separate pushed Discover
                 screen anymore; `navigate('Discover')` from a sibling tab
                 resolves to the tab directly. */}
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: t('ui.profile.editYourProfile'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, headerBackButtonMenuEnabled: false, title: t('ui.profile.editYourProfile'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="Messages" component={MessagesScreen} options={{ headerShown: true, title: t('ui.nav.title.messages'), headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.textPrimary, headerShadowVisible: false }} />
             <Stack.Screen name="OnboardingRecommendations" component={OnboardingRecommendationsScreen} />
             <Stack.Screen name="OnboardingOccasions" component={OnboardingOccasionsScreen} />
