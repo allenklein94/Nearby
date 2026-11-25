@@ -527,6 +527,9 @@ const STEPS = {
       'rollback: run 20270432 then 20270431 then 20270430 rollbacks; the two columns are dropped (who confirmed is lost; count rows with either set first and get owner approval if any)'] },
   20270431: { journeys: ['offerJourney', 'visitConfirmation'],
     manual: ['order: right after 20270430', 'read-only: the four routing functions read visit_confirmed_at for completed counts (pg_get_functiondef)', 'rollback: scripts/rollback/20270431 (before the 20270430 rollback)'] },
+  20270433: { journeys: ['ownFriendSwipes', 'friendDiscoveryChoice', 'peopleMatchJourney'],
+    manual: ['read-only right after: friend_discovery_swipes grants = select (from_user, to_user) to authenticated only, one select policy "Read your own friend swipes"; anon none; row count unchanged',
+      'phone (build 87, two accounts that crossed paths): A passes on B in Friends > Crossed Paths, leaves and reopens Friends: B is gone (before 0433 B came back); B sees nothing about A\'s swipe'] },
   20270432: { journeys: ['requestFunnel', 'intentFunnel'],
     manual: ['order: right after 20270431', 'read-only: request_journey / routing_candidate_outcomes / intent_funnel still have no anon/authenticated grant; completed outcomes only where visit_confirmed_at is set', 'rollback: scripts/rollback/20270432 (first of the three)'] },
 };
