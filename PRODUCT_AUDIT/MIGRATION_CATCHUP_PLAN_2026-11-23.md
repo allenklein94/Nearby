@@ -235,3 +235,23 @@ Full record: `PRODUCT_AUDIT/MIGRATION_CATCHUP_ISOLATED_TEST_PROGRESS_2026-11-25.
 - R9 READY: live versions + rollback references recorded; all three functions type-check.
 - R11: codes for 0355-0372 computed (`/workspaces/.nearby-verify/catchup/codes-0348-0372.txt`); listing is not approval.
 - Pre-existing bug found (on prod today, not migration-related): Friends discovery can't read `friend_discovery_swipes`.
+
+### 8.9 Preparation finished (2026-11-25, nothing deployed, nothing merged into main)
+- Batch 1 approval packet (codes, deploy + verification + rollback per migration, `moderate-photo` redeploy, the exact
+  Tier 1 list, Phase 1 Privacy Policy wording): `PRODUCT_AUDIT/BATCH1_APPROVAL_PACKET_2026-11-25.md` on
+  `deploy/catchup-0348-0432` (28c5d34be).
+- Backup credential: `scripts/backup/set-prod-db-url.py` on the deploy branch (hidden input, file 0600 from the first byte,
+  refuses to overwrite, prints checks only). Checked here: a 0600 create really stays 0600 under this workspace's ACLs, and
+  `.claude/prod-db-url` is gitignored. The owner runs it in their own terminal (not `!`, so nothing can echo into the chat).
+- Friends swipe-history fix: 20270433 on `fix/friend-swipe-history` (525e2afe3), server only, build 87 benefits with no
+  new build; sha256 2c858e95a804873a957b281eb529f1006463b9b724ff57e3741180d67bfdcb41. Number order puts it after 0432
+  unless the owner asks for it to be renumbered into Phase 1.
+- Build 88 integration: `integ/build-88` (97d50372e) = deploy branch + `release/website-option-a-src`. Every line Option A
+  added is present (diffed line by line); Jest 604/604 suites, 8139 tests; web + iOS exports clean (2026-11-25).
+- 0373 vs build 87, reconciled: the "passes at 0432" results were (a) the call check, which proves only that each RPC
+  exists with the arguments sent, and (b) `build87Compatibility`, which at 0432 PASSES BY ASSERTING THE REFUSAL (42501,
+  hint `screening_required`). End to end at 0373+, build 87 can't save text on profiles (so new sign-ups get stuck),
+  gatherings, communities, gathering/community chat, gathering questions, photo comments, social invites, business
+  requests or partnership requests, and it has no handling for `screening_required` (it shows a generic error). Wall B
+  stands: 0373 onward only after build 88 is on every device + Anthropic credit.
+- Also fixed: `.claude/live-test-account.json` and `.claude/mcp.json` were mode 666; now 600.
