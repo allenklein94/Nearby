@@ -24,7 +24,7 @@ The ledger and `deploy.js` enforce strict number order: a held migration holds e
 
 **Wall A (blocks all 85):** 0348 breaks build 86 (it reads its own profile with `select('*')`, refused after 0348; fails
 closed). Build 87 must be built, processed by Apple and installed on EVERY device first (inventory 2026-10-29: one
-iPhone on build 86). Build 87 has not been started (last check 2026-11-21). The business website is no longer a
+iPhone on build 86). UPDATE 2026-11-25: build 87 is built (2a28c8e8), on TestFlight, and on the one known device (see 8.3). The business website is no longer a
 blocker: the live site (published today) already carries the pre/post-0348 profile reads.
 
 **Wall B (blocks 0373-0432):** 0373 refuses public text writes (gathering titles, bios, etc.) that weren't screened
@@ -107,3 +107,120 @@ Don't deploy anything now. Do now (no production change): pick the backup method
 the deploy branch and the full-sequence test (precondition 5) once you approve those two steps. Batches 1-5 can run
 right after Build 87 + Tier 1. Batches 6-11 wait for build 88 and Anthropic credit. That's the earliest point of
 "zero pending".
+
+---
+
+## 8. Owner decisions (2026-11-23) and progress
+
+Approved: one consolidated deploy branch (preparation only); backup option B (logical dump + verified restore, isolated).
+Held: the rolled-back test on production (locks); the isolated database is tested first.
+
+### 8.1 Deploy branch: `deploy/catchup-0348-0432` (pushed, NOT merged, nothing deployed)
+- Base `staging/onboarding-visit-2026-11-22` (= main/build 87 source + onboarding fixes + visit confirmation + every
+  staged trust & safety, business-website and multi-location branch), + 0417 and its rollback (migration files only;
+  0417's client stays on `post-tier1/dating-card-reasons`). 85 files 0348-0432, no gaps.
+- + `scripts/backup/prod-logical-backup.sh` (option B).
+- Batch 1 approval codes (sha256 of the committed files; 0348 = the code recorded 2026-10-29):
+  - 20270348:12372a270d356266336f3163bf2f53afd84611dad4be1c8edfb610089585a515
+  - 20270349:e14971c04fd70bc79c0e66fa77b07637a7fbead2e572dab921859c86649c11cf
+  - 20270350:4cf8bff802c3a370244912ecb574c7ebdb9d41adcdee0a0d6a7fc910b8100802
+  - 20270351:5ce0f0e8b742fcd41a0c874252e75c33c3c17ad31bb54f907c24b69912bc99aa
+  - 20270352:fb95bbd49b30fa033ed23cd6525f4679d2849c3be16ed914161c6c2433109efe
+  - 20270353:3035c5c0dbb59cf65861f655734edc586bf48786c3287d5220d5e2e1bdce0a8b
+  - 20270354:39704832c7061377b8e19e331c77799827237b10027a4871ae4425f86f410c8f
+  Listing a code here is NOT approval; each is used only after you approve that migration's deploy.
+
+### 8.2 Backup (option B): script ready, needs one thing from you
+`bash scripts/backup/prod-logical-backup.sh` (run from the deploy branch): read-only `pg_dump` of public, private, auth,
+storage -> a 0600 file outside the repo -> restored into a container on an internal network with no route out (PG 17.6,
+production's engine) -> every table's row count + row md5 compared source vs restored, schema diffed; any mismatch = FAIL.
+Needs `.claude/prod-db-url` (gitignored), created by you, mode 600, holding production's connection string (Supabase
+dashboard > Connect > Session pooler URI, with the database password). The script never prints it. The dump holds
+personal data: it stays in `/workspaces/.nearby-verify/backups/` (mode 700), never committed. Storage FILES (photos) are
+not in a database dump. Text check of the 85 files: none deletes storage objects directly; 0402/0403 only read them;
+0400 starts the ID-document retention lifecycle (ID files deleted after their retention period; production held 0 ID
+files on 2026-10-27: recheck before Batch 8). A Storage copy is a separate step if you want one.
+
+### 8.3 Does 0348 really need build 87 on every device? (updated 2026-11-25)
+**Build 87 status (owner, 2026-11-25; checked read-only):** EAS iOS build 87 FINISHED 2026-11-22 from 2a28c8e8 (the
+approved source), submitted, current TestFlight build. Your iPhone's only live app session (phone-login account)
+reported `Nearby/87` at its last token refresh, 2026-11-24 23:06 UTC (Auth updates the user agent on each refresh;
+on 2026-10-29 the same session said `Nearby/86`). So the one known device is on 87.
+
+**Yes: 0348 genuinely breaks build 86, and the break is hard, not cosmetic.** Build 86's start-up check
+(`AuthContext.checkProfile`, 7d72d615) reads `display_name, birthdate, photo_url, is_admin` from its own `profiles`
+row. 0348 revokes table-level SELECT and grants only the viewer-safe columns (no `birthdate`, no `is_admin`), so that
+read fails (42501). Build 86 ignores the error, treats the person as "profile not complete" and sends them into
+onboarding, whose sign-up upsert is also refused (journey `appVersionCompatibility`: `b86_own_profile_star` and
+`b86_signup_upsert` = 42501 after 0348). Result: a build-86 user is stuck in onboarding, and Settings, Profile,
+Dating and ViewProfile fail too. Build 87 reads its own row through `get_my_profile()` with a pre-0348 fallback.
+
+Making 86 compatible isn't worth doing: column grants apply per role, not per row, so a build-86-safe grant would be
+the leak itself. The only alternative (a row-masking view replacing `profiles`) is a large new unverified change.
+
+**What "every user" means today:** 10 accounts (all yours), 2 signed in during the last 30 days, ONE live app
+session (the iPhone, now on 87). The other two push-token rows (applereview, outlook) date from the 2026-10-27 token
+move and have no live session. If they sign in again, it must be on build 87.
+
+**The one remaining unknown, for you in App Store Connect:** is any version of Nearby live on the PUBLIC App Store
+(or with external TestFlight testers)? If 1.0.0 (build 86 or older) is for sale, a stranger could download it after
+0348 and get stuck in onboarding. Before 0348, one of: (a) no public version exists, (b) build 87 is released to the
+App Store and the old version is replaced, or (c) the app is removed from sale until then. TestFlight-only = fine.
+
+### 8.4 Build 88 dependencies
+The deploy branch already carries the client side the post-87 migrations need: public-text screening calls
+(`screen-user-content`, 0373), Dating Browse via `browse_dating_candidates` (0382), location-aware business sessions
+(0424-0427), visit confirmation (0430), no host reputation / referral reward (0407), Trending yes/no (0409).
+Not in it yet (each still on its own branch; you choose what joins build 88):
+- `post-tier1/dating-card-reasons` + `browse-global-ranking` + `dating-appearance-ranking` (0417's client, Browse ranking)
+- `release/website-option-a-src` (the website you just published: its source is NOT on main or the deploy branch, so a
+  later export from either would undo Option A's pickers) **important**
+- `post-tier1/business-web-only` (exact-request email link), `post-tier1/custom-domain`, `post-tier1/category-picker-collapsed`
+- `post-tier1/offer-preview-compact` / `offer-preview-dock`, `fix/main-tabs-back`, `fix/native-back-prevent-remove`,
+  `test/back-fix-staging`, `staging/environment-config`
+- `post-tier1/popularity-established` (client half of 0409's Trending answer)
+Build 88 = one integration branch from the deploy branch + the chosen ones, full Jest + exports + journeys, staging iPhone
+build first, then production. It is built only after build 87 + Tier 1 (freeze).
+
+### 8.5 Anthropic screening requirements (production)
+- Production's `ANTHROPIC_API_KEY` org has no credit. Needed before 0373 (public text), and for hand-written offers
+  (0372/0415), photo/chat-image moderation, "Read this for me", plain-language, create assistant, translations.
+- Functions that call Anthropic: screen-business-content, screen-user-content (new), rewrite-offer-plain-language,
+  read-offer-creative, moderate-chat-image, create-assistant, ai-concierge, business-ai-assistant,
+  business-onboarding-assistant, translate-message, generate-* (4), rehearsal-chat. Model: claude-haiku-4-5-20251001.
+- 0387 (screening outage alerts) opens an alert on the first credit failure, so a lapse is visible.
+- Also outside Anthropic before 0396: a Google Web Risk API key (link safety).
+- 0414's deploy gate needs a real two-business identical-image upload, so credit on STAGING too (your separate org).
+
+### 8.6 Exact requirements to deploy 0348-0372 while build 87 is on TestFlight (2026-11-25)
+Build 87 is compatible with 0348-0372 by design (Wall B starts at 0373). Before Batch 1, all of these, in order:
+
+| # | Requirement | Status | Who |
+|---|---|---|---|
+| R1 | Build 87 installed on every device that runs Nearby | DONE for the one known device (UA `Nearby/87`); confirm no other phone/simulator has the app | you |
+| R2 | No public App Store / external-tester install of build 86 or older (8.3) | UNKNOWN | you (App Store Connect) |
+| R3 | Tier 1 passes on build 87 against production as it is (0347) | NOT RUN | you, on the iPhone |
+| R4 | Build 87 compatibility test at 0372: a journey running build 87's EXACT queries (2a28c8e8: own profile via `get_my_profile`, sign-up insert/update, profile edit, push register/logout, Friends, Dating, ViewProfile, id_verified retry, report submit, gathering create) on a from-scratch replay at 0347 then 0348-0372. `appVersionCompatibility` today encodes build 86 + an October "new build"; it needs a build-87 block | NOT BUILT | me, isolated replay only |
+| R5 | Fresh drift check: production schema == replay at 0347 (last 2026-10-29) | NOT RUN | me, read-only |
+| R6 | Full-sequence test 0001-0432 on an isolated replay: all journeys + 6 concurrency scripts + every rollback round trip, from the deploy branch (head 38b074e5d) | NOT RUN (owner held the production rolled-back test; isolated first) | me |
+| R7 | Verified backup (option B): dump + isolated restore + per-table md5 match, taken right before EACH batch | BLOCKED: `.claude/prod-db-url` doesn't exist yet | you create it (mode 600, session pooler URI), then I run it |
+| R8 | 0348 sequence (approved 2026-10-29): you sign in on the website (Coastal Coffee) + open the five tabs + save a profile change BEFORE 0348; right after 0348 the `get_my_profile()` check (own / cross-user / signed out + catalog); then you repeat the website pass. Any failure = stop | READY | both |
+| R9 | Edge functions in step: `moderate-photo` redeploy right after 0349 (`delete-account` stays held), `report-presence` after 0363, `screen-business-content` at 0372 from the 0415 branch or later | READY in the deploy branch | me, each with your approval |
+| R10 | Privacy Policy sentences for 0355 + 0357 published with them | DRAFTED, not published | you approve |
+| R11 | Per-migration approval code (sha256) for each of the 25, issued after R1-R7 pass | Batch 1 codes listed in 8.1; 0355-0372 to list | you |
+| R12 | Post-deploy real-API checks with the dedicated test account: profile privacy (N6), suspension incl. the old-token case, rate limits (0358/0362), 0364 server-only grants plan | WRITTEN, run after each batch | me |
+
+Known effects you will see on build 87 after Batches 1-5 (by design, not defects): the outlook business account has no
+verified phone, so after 0352 it can do business things only (no social actions); new gatherings limited to 5 per
+24 h (0362); the sign-up hook (0367) and photo detection (0368) install OFF; hand-written offers still fail without
+Anthropic credit (as today).
+
+Clearing 0348-0372 does not need build 88. 0373 onward does (8.4, 8.5).
+
+### 8.7 Isolated testing plan (no production writes)
+1. R5 drift check (read-only catalog dump of production vs replay at 0347).
+2. Replay 0001-0347 -> apply 0348-0372 one by one from the deploy branch -> R4's build-87 compatibility journey +
+   all journeys + concurrency -> roll back 0372 -> 0348 newest first -> schema == 0347 replay -> re-apply identical.
+3. Continue 0373-0432 on the same replay (R6) so the later batches are proven too, without deploying them.
+4. Logs to `/workspaces/.nearby-verify/catchup/`; commit before each long run (codespace restarts every ~20 min).
+5. Only then: R7 backup, then your approval of Batch 1.
