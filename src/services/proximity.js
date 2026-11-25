@@ -27,6 +27,7 @@ import { calculateCompatibility } from './compatibility';
 import { getMyActiveLiveTrackingSession } from './liveTracking';
 import { mergeCrossedPathsSignals } from './crossedPathsSignals';
 import { isDatingOptedIn } from '../utils/datingCountConsent';
+import { appearancePreferencesOf, rankDatingCandidates } from '../utils/datingAppearance';
 
 // Unified Crossed Paths, step 3 (CLAUDE.md, 2026-09-10): the shared-
 // gathering-attendance half of the signal union -- see
@@ -225,26 +226,6 @@ export async function getNearbyMatches() {
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
-  // Sep 3 2026 ("global onboarding -> product wiring" master plan,
-  // CLAUDE.md, Phase B) -- a real hair_color matching filter, same
-  // preference shape as ethnicityPreferences above, but deliberately
-  // NOT the same exclusion rule: a candidate with no basics.hair_color
-  // set is never excluded, even while this preference is active --
-  // absence of self-reported data is never held against a candidate.
-  const hairColorPreferences = myProfile?.dating_pref_hair_colors ?? [];
-  // Sep 14 2026 -- same real filter, same absence-never-excludes rule,
-  // for the second appearance-based preference: eye color. Unlike hair
-  // color, basics.eye_color was already a real curated select (not free
-  // text), so this needed no promote-out-of-basics step -- only the
-  // missing preference/filter half.
-  const eyeColorPreferences = myProfile?.dating_pref_eye_colors ?? [];
-  // Phase F -- same absence-never-excludes posture as hair color above,
-  // but reads a real profiles.height_inches column, not basics.height
-  // (which stays free text, never silently converted). A candidate who
-  // hasn't re-entered their height through the new picker yet is never
-  // excluded just because this preference is active.
-  const heightMinPref = myProfile?.dating_pref_min_height_inches ?? null;
-  const heightMaxPref = myProfile?.dating_pref_max_height_inches ?? null;
 
   const { data: sightings, error } = await supabase
     .from('sightings')
@@ -341,19 +322,8 @@ export async function getNearbyMatches() {
       if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(item.profiles.ethnicity)) {
         return false;
       }
-      const candidateHairColor = item.profiles.basics?.hair_color;
-      if (hairColorPreferences.length > 0 && candidateHairColor && !hairColorPreferences.includes(candidateHairColor)) {
-        return false;
-      }
-      const candidateEyeColor = item.profiles.basics?.eye_color;
-      if (eyeColorPreferences.length > 0 && candidateEyeColor && !eyeColorPreferences.includes(candidateEyeColor)) {
-        return false;
-      }
-      const candidateHeight = item.profiles.height_inches;
-      if (candidateHeight != null) {
-        if (heightMinPref != null && candidateHeight < heightMinPref) return false;
-        if (heightMaxPref != null && candidateHeight > heightMaxPref) return false;
-      }
+      // Hair color, eye color and height never exclude (owner, 2026-11-14): they are soft preferences, used only to
+      // order Browse (utils/datingAppearance.js). Crossed Paths keeps its own order.
       return true;
     });
 }
@@ -394,17 +364,6 @@ export async function getBrowseMatches(offset = 0) {
   const minAge = myProfile?.preferred_min_age ?? 18;
   const maxAge = myProfile?.preferred_max_age ?? 99;
   const ethnicityPreferences = myProfile?.ethnicity_preferences ?? [];
-  // Sep 3 2026 ("global onboarding -> product wiring" master plan,
-  // CLAUDE.md, Phase B) -- same real filter as getNearbyMatches above;
-  // a candidate with no basics.hair_color set is never excluded.
-  const hairColorPreferences = myProfile?.dating_pref_hair_colors ?? [];
-  // Sep 14 2026 -- same real filter as getNearbyMatches above; a
-  // candidate with no basics.eye_color set is never excluded.
-  const eyeColorPreferences = myProfile?.dating_pref_eye_colors ?? [];
-  // Phase F -- same real filter as getNearbyMatches above, over the
-  // real profiles.height_inches column (never basics.height).
-  const heightMinPref = myProfile?.dating_pref_min_height_inches ?? null;
-  const heightMaxPref = myProfile?.dating_pref_max_height_inches ?? null;
 
   const { data: existingMatches } = await supabase
     .from('matches')
@@ -440,21 +399,14 @@ export async function getBrowseMatches(offset = 0) {
     return [];
   }
 
-  return (profiles ?? [])
+  const candidates = (profiles ?? [])
     .filter((p) => !excludedUserIds.has(p.id) && !matchedUserIds.has(p.id) && isDatingOptedIn({ profiles: p }))
     .filter((p) => passesGenderMatch(myProfile, p))
     .filter((p) => {
       const age = p.age ?? null;
       if (age !== null && (age < minAge || age > maxAge)) return false;
       if (ethnicityPreferences.length > 0 && !ethnicityPreferences.includes(p.ethnicity)) return false;
-      const candidateHairColor = p.basics?.hair_color;
-      if (hairColorPreferences.length > 0 && candidateHairColor && !hairColorPreferences.includes(candidateHairColor)) return false;
-      const candidateEyeColor = p.basics?.eye_color;
-      if (eyeColorPreferences.length > 0 && candidateEyeColor && !eyeColorPreferences.includes(candidateEyeColor)) return false;
-      if (p.height_inches != null) {
-        if (heightMinPref != null && p.height_inches < heightMinPref) return false;
-        if (heightMaxPref != null && p.height_inches > heightMaxPref) return false;
-      }
+      // Appearance preferences rank below, never exclude (owner, 2026-11-14).
       return true;
     })
     .map((p) => {
@@ -486,5 +438,8 @@ export async function getBrowseMatches(offset = 0) {
     // A real multi-signal blend, if ever built, needs new data this
     // query doesn't collect yet, and real weights "tested rather than
     // guessed" per the user's own words -- not invented in this pass.
-    .sort((a, b) => (b.compatibilityScore ?? 0) - (a.compatibilityScore ?? 0));
+    // Owner 2026-11-14: compatibility score + a fixed +/-2 per appearance preference, ordering only, never removes anyone
+    // (utils/datingAppearance.js); the shown compatibility score is unchanged.
+    .filter(Boolean);
+  return rankDatingCandidates(candidates, appearancePreferencesOf(myProfile));
 }
