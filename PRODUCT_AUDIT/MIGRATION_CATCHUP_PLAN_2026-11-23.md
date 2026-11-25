@@ -224,3 +224,14 @@ Clearing 0348-0372 does not need build 88. 0373 onward does (8.4, 8.5).
 3. Continue 0373-0432 on the same replay (R6) so the later batches are proven too, without deploying them.
 4. Logs to `/workspaces/.nearby-verify/catchup/`; commit before each long run (codespace restarts every ~20 min).
 5. Only then: R7 backup, then your approval of Batch 1.
+
+### 8.8 Isolated testing results (2026-11-25, local only, nothing deployed)
+Full record: `PRODUCT_AUDIT/MIGRATION_CATCHUP_ISOLATED_TEST_PROGRESS_2026-11-25.md` on `deploy/catchup-0348-0432` (7c43fa135).
+- R4 DONE: build 87 journey 12/12 at 0372, 6/6 at 0432; build 87 + published website call check 324/324 at both.
+- R5 DONE: no functional drift (prod CRLF line endings, one redundant column grant, extension schemas).
+- R6 DONE: 85/85 apply; all journeys pass (incl. the new build87Compatibility at its fixed commit); 31/31 concurrency;
+  rollback 0432 -> 0348 = 0347 behaviour (ACL order + whitespace only); re-apply identical; Jest 604/604 suites.
+- R7 script FIXED (3 bugs found by the dry run) and dry-run PASS (306 tables identical); still needs `.claude/prod-db-url`.
+- R9 READY: live versions + rollback references recorded; all three functions type-check.
+- R11: codes for 0355-0372 computed (`/workspaces/.nearby-verify/catchup/codes-0348-0372.txt`); listing is not approval.
+- Pre-existing bug found (on prod today, not migration-related): Friends discovery can't read `friend_discovery_swipes`.
