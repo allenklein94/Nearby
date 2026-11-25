@@ -91,7 +91,7 @@ d('journey: build 87 keeps working against the trust & safety database (0347 -> 
       allow_attendee_invites, ticket_required, features, duration_minutes)
       values (v_a, 'Coffee at the pier', 'Build 87 journey', 'Coffee', null, '26.5,-80.0', '26.5,-80.0', 26.51, -80.05,
       now() + interval '2 days', true, false, true, false, 'everyone', true, 6, false, true, false, '{}', 60) returning id into v_g`, `v_g is not null`)}
-`);
+`, { realUgcScreening: true }); // the real 0373 lookup: build 87 never calls screen-user-content
     s = stepMap(log);
   }, 120000);
 
@@ -102,7 +102,11 @@ d('journey: build 87 keeps working against the trust & safety database (0347 -> 
     expect(data('own_public_cols')).toBe(1);
   });
 
-  test('sign-up: insert works; a retry gets 23505 and the update saves', () => {
+  test('sign-up: insert works and a retry updates, up to 0372; from 0373 the unscreened name is refused (Wall B)', () => {
+    if (data('state').ugc) {
+      expect(data('signup_insert').code).toBe('42501'); // hint screening_required: build 87 can't sign anyone up after 0373
+      return;
+    }
     expect(data('signup_insert')).toBe('Build 87');
     expect(data('signup_retry_insert').code).toBe('23505');
     expect(data('signup_retry_update')).toBe(1);
@@ -128,6 +132,6 @@ d('journey: build 87 keeps working against the trust & safety database (0347 -> 
 
   test('a gathering with build 87\'s insert is created up to 0372; from 0373 it needs screening (Wall B, recorded)', () => {
     if (!data('state').ugc) expect(data('gathering')).toBe(true);
-    else expect(data('gathering')).toHaveProperty('code');
+    else expect(data('gathering').code).toBe('42501'); // hint screening_required
   });
 });
