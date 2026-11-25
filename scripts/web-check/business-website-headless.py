@@ -38,8 +38,8 @@ def profile_for(kind):
          'managed_partner_id': PARTNER if kind == 'linked' else None}
     return p
 
-def run(browser, name, kind, query='', width=1280):
-    ctx = browser.new_context(viewport={'width': width, 'height': 900})
+def run(browser, name, kind, query='', width=1280, locale=None):
+    ctx = browser.new_context(viewport={'width': width, 'height': 900}, **({'locale': locale} if locale else {}))
     errors, writes, seen, noise = [], [], [], []
     page = ctx.new_page()
     page.on('pageerror', lambda e: (errors.append('pageerror: ' + str(e)[:200]), print('STACK', name, (e.stack or '')[:900], flush=True)))
@@ -296,6 +296,63 @@ with sync_playwright() as p:
     except Exception as e:
         check('[profile summary] summary heading + the five section titles show', False, str(e)[:160])
     check('[profile groups] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+    r['ctx'].close()
+
+    # Temporary boost picker starts COLLAPSED (owner, 2026-11-23): no category chips until "See all (N)", typing searches
+    # all of them, "Show less" closes it again; checked on a 320 / 390 / 1280 px wide window.
+    for width in (320, 390, 1280):
+        tag = f'[boost picker {width}px]'
+        r = run(b, f'k_boost_{width}', 'linked', width=width)
+        pg = r['page']; before = len(r['errors'])
+        try:
+            pg.get_by_text('Profile', exact=True).first.click(); pg.wait_for_timeout(1500)
+            grp('What do you want more of?').click(); pg.wait_for_timeout(1000)
+            t = pg.inner_text('body'); i = t.find('Temporary boost'); boost = t[i:i + 1500] if i >= 0 else ''
+            pg.screenshot(path=f'/out/k_boost_{width}_closed.png', full_page=True)
+            h_closed = pg.evaluate('document.documentElement.scrollHeight')
+            check(f'{tag} section shows the boost heading + search box', i >= 0 and pg.get_by_placeholder('Search categories').count() >= 1, t[-200:].replace('\n', ' | '))
+            check(f'{tag} collapsed: no category chips (Bowling / Pickleball absent)', 'Bowling' not in boost and 'Pickleball' not in boost, boost[:300].replace('\n', ' | '))
+            see = pg.get_by_role('button', name=_re.compile(r'^See all \(\d+\)$'))
+            check(f'{tag} one "See all (N)" link, N = the full list', see.count() == 1 and int(_re.search(r'\((\d+)\)', see.first.inner_text()).group(1)) > 200, see.first.inner_text() if see.count() else 'none')
+            see.first.click(); pg.wait_for_timeout(800)
+            t2 = pg.inner_text('body'); h_open = pg.evaluate('document.documentElement.scrollHeight')
+            check(f'{tag} "See all" opens the full list in place', 'Bowling' in t2 and 'Pickleball' in t2 and len(t2) > len(t) + 1500, f'text closed={len(t)} open={len(t2)}')
+            pg.get_by_role('button', name='Show less').first.click(); pg.wait_for_timeout(800)
+            t_less = pg.inner_text('body')
+            check(f'{tag} "Show less" closes it again', 'Bowling' not in t_less and abs(len(t_less) - len(t)) < 50, f'{len(t_less)} vs {len(t)}')
+            box = pg.get_by_placeholder('Search categories').last
+            box.fill('pickle'); pg.wait_for_timeout(800)
+            t3 = pg.inner_text('body')
+            check(f'{tag} typing searches the whole list while collapsed', 'Pickleball' in t3 and 'Bowling' not in t3)
+            check(f'{tag} the See all link hides while searching', pg.get_by_role('button', name=_re.compile(r'^See all \(')).count() == 0)
+            pg.get_by_text('Pickleball', exact=True).first.click(); pg.wait_for_timeout(600)
+            box.fill(''); pg.wait_for_timeout(800)
+            t4 = pg.inner_text('body'); j = t4.find('Temporary boost'); b4 = t4[j:j + 1200]
+            pg.screenshot(path=f'/out/k_boost_{width}_selected.png', full_page=True)
+            check(f'{tag} after clearing the search the chosen chip stays visible, nothing else', 'Pickleball' in b4 and 'Bowling' not in b4, b4[:300].replace('\n', ' | '))
+            check(f'{tag} choosing a category still shows the existing duration choices', 'this weekend' in b4.lower() and '1 week' in b4.lower(), b4[:300].replace('\n', ' | '))
+            check(f'{tag} no horizontal page scroll', pg.evaluate('document.documentElement.scrollWidth <= window.innerWidth + 1'))
+        except Exception as e:
+            check(f'{tag} section shows the boost heading + search box', False, str(e)[:200])
+        check(f'{tag} no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+        r['ctx'].close()
+
+    # Category chips show the TRANSLATED name (owner, 2026-11-23): in Spanish, "See all" lists "Bolos", never "Bowling".
+    r = run(b, 'k_boost_es', 'linked', width=390, locale='es-ES')
+    pg = r['page']; before = len(r['errors'])
+    try:
+        pg.get_by_text('Perfil', exact=True).first.click(); pg.wait_for_timeout(1500)
+        grp('¿De qué quieres más?').click(); pg.wait_for_timeout(1000)
+        pg.get_by_role('button', name=_re.compile(r'^Ver todo \(\d+\)$')).first.click(); pg.wait_for_timeout(800)
+        t = pg.inner_text('body')
+        check('[boost picker es] chips use the translated name (Bolos, not Bowling)', 'Bolos' in t and 'Bowling' not in t, t[:200].replace('\n', ' | '))
+        check('[boost picker es] screen-reader label translated too', pg.get_by_role('button', name='Bolos', exact=True).count() >= 1)
+        pg.get_by_placeholder('Buscar categorías').last.fill('bolo'); pg.wait_for_timeout(800)
+        check('[boost picker es] searching the Spanish name finds it', 'Bolos' in pg.inner_text('body'))
+        pg.screenshot(path='/out/k_boost_es.png', full_page=True)
+    except Exception as e:
+        check('[boost picker es] chips use the translated name (Bolos, not Bowling)', False, str(e)[:200])
+    check('[boost picker es] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
     r['ctx'].close()
 
     # Offer Performance (owner, 2026-11-15): four real counts as cells (2 x 2 on a phone, one row when wide), the value of

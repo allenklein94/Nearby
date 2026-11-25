@@ -25,10 +25,12 @@ export function categoryMatches(query, texts) {
 
 // options: the picker's own list, in its own order. labelFor: what the chip shows. keyFor: the saved value.
 // selected: saved value(s) currently picked (array or a single value or null).
-export function filterCategoryOptions(options, query, { labelFor = (o) => o, keyFor = (o) => o, selected = [] } = {}) {
+// collapsed (owner, 2026-11-23): the picker starts closed. With no search typed it shows ONLY the selected options (in the
+// list's order), so ~256 chips never fill the page; "See all (N)" opens the full list in place, typing always searches all.
+export function filterCategoryOptions(options, query, { labelFor = (o) => o, keyFor = (o) => o, selected = [], collapsed = false } = {}) {
   const list = Array.isArray(options) ? options : [];
-  if (normalizeForSearch(query) === '') return list;
   const picked = new Set(Array.isArray(selected) ? selected : selected == null ? [] : [selected]);
+  if (normalizeForSearch(query) === '') return collapsed ? list.filter((o) => picked.has(keyFor(o))) : list;
   return list.filter((o) => picked.has(keyFor(o)) || categoryMatches(query, [String(labelFor(o) ?? ''), String(keyFor(o) ?? '')]));
 }
 
