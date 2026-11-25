@@ -47,6 +47,8 @@ d('journey: build 87 keeps working against the trust & safety database (0347 -> 
   ${profileReadGrant('v_a', ['v_b'])}
   update profiles set onboarding_motivations = array['Go on dates', 'Make new friends'], open_to_friend_discovery = true,
     wide_area = '41.2,-73.1' where id in (v_a, v_b);
+  -- the journey actors have no photo; a real signed-up person has one (CompleteProfileScreen requires it)
+  update profiles set photo_url = 'https://example.invalid/b87.jpg' where id = v_a;
   ${rec('state', `jsonb_build_object(
       'n6', to_regprocedure('public.get_my_profile()') is not null,
       'id_verified', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'id_verified'),
