@@ -68,7 +68,7 @@ def run(browser, name, kind, query='', width=1280):
         if path.endswith('/rpc/get_business_opportunities') and kind == 'linked' and OPP['on']:
             exp = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(time.time() + 86400))
             day = time.strftime('%Y-%m-%d', time.gmtime(time.time() + 86400))
-            return body([{'id': '44444444-4444-4444-8444-444444444444', 'request_id': REQ, 'status': OPP['status'], 'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+            return body([{'id': '44444444-4444-4444-8444-444444444444', 'request_id': REQ, 'partner_id': PARTNER, 'status': OPP['status'], 'created_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
                           'business_requests': {'id': REQ, 'status': 'open', 'category': 'Coffee', 'interest_tag': 'Coffee', 'party_size': 2,
                                                 'date': day, 'expires_at': exp, 'attributes': [], 'summary': 'Coffee for 2 (mock)'}}])
         if path.endswith('/rpc/get_aggregated_demand_for_partner') and kind == 'linked' and RADAR['on']:
@@ -202,6 +202,33 @@ with sync_playwright() as p:
         check('[booking] a confirmed visit is listed first on Bookings', False, str(e)[:160])
     check('[booking] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
     r['ctx'].close()
+    OPP['on'] = False; OPP['status'] = 'pending'
+
+    # Business Home request preview (owner, 2026-11-22): an open request shows on Home (category, party size, day), a click
+    # opens that exact request in Opportunities; none open / booked = no section at all.
+    import re as _re
+    OPP['on'] = True; OPP['status'] = 'pending'
+    r = run(b, 'j_home_requests', 'linked')
+    pg = r['page']; before = len(r['errors'])
+    try:
+        t = pg.inner_text('body'); pg.screenshot(path='/out/j_home_requests.png', full_page=True)
+        check('[home requests] an open request is previewed on Home', ('1 new request' in t.lower() or '1 NEW REQUEST' in t) and '2 people' in t, t[:300].replace('\n', ' | '))
+        check('[home requests] "View opportunities" link shown', 'View opportunities' in t, '')
+        check("[home requests] never the customer's own words (summary unused when a category exists)", 'Coffee for 2 (mock)' not in t, '')
+        pg.get_by_role('button', name=_re.compile(r'^Coffee, 2 people')).first.click(); pg.wait_for_timeout(1500)
+        t2 = pg.inner_text('body'); pg.screenshot(path='/out/j_home_requests_open.png', full_page=True)
+        check('[home requests] a click opens that request in Opportunities (its own actions shown)', 'Accept & Offer' in t2, t2[:200].replace('\n', ' | '))
+    except Exception as e:
+        check('[home requests] a click opens that request in Opportunities (its own actions shown)', False, str(e)[:160])
+    check('[home requests] no page errors', len(r['errors']) == before and not r['errors'], '; '.join(r['errors'][:3]))
+    r['ctx'].close()
+    for status in ('accepted', None):
+        if status: OPP['on'] = True; OPP['status'] = status
+        else: OPP['on'] = False; OPP['status'] = 'pending'
+        r = run(b, f'j_home_requests_{status or "none"}', 'linked')
+        t = r['page'].inner_text('body')
+        check(f'[home requests] {status or "no requests"}: no preview section, no placeholder', 'View opportunities' not in t and 'new request' not in t.lower().replace('0 new requests', ''), '')
+        r['ctx'].close()
     OPP['on'] = False; OPP['status'] = 'pending'
 
     RADAR['on'] = True

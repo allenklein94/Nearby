@@ -33,8 +33,16 @@ export function nextOfferCloseAt(offers, ctx = {}, nowMs = Date.now()) {
   return best;
 }
 
-export function startOfferCloseClock(offers, ctx, onTick, { appState = null, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
-  if (nextOfferCloseAt(offers, ctx, now()) == null) return () => {};
+export function startOfferCloseClock(offers, ctx, onTick, opts = {}) {
+  return startDeadlineClock((nowMs) => nextOfferCloseAt(offers, ctx, nowMs), onTick, opts);
+}
+
+// The one timer behind every "re-render at a real deadline" clock (this file, and the business Home request preview,
+// utils/businessHomeRequests.js): `nextAt(nowMs)` = the next instant something shown changes, or null (no timer, no
+// AppState listener). One timer, re-armed after each fire, capped at MAX_SLEEP_MS, paused in the background, one catch-up
+// render on return to the foreground.
+export function startDeadlineClock(nextAt, onTick, { appState = null, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
+  if (nextAt(now()) == null) return () => {};
   let timer = null;
   let stopped = false;
   const paused = () => !!appState && PAUSED.has(appState.currentState);
@@ -42,7 +50,7 @@ export function startOfferCloseClock(offers, ctx, onTick, { appState = null, now
   const schedule = () => {
     cancel();
     if (stopped || paused()) return;
-    const at = nextOfferCloseAt(offers, ctx, now());
+    const at = nextAt(now());
     if (at == null) return;
     timer = setTimer(() => {
       timer = null;
