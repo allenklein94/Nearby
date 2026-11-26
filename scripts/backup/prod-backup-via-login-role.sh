@@ -37,7 +37,11 @@ d=json.load(sys.stdin); d=d if isinstance(d,list) else [d]
 s=[p for p in d if p.get('pool_mode')=='session' or p.get('database_type')=='PRIMARY'][0]
 print(s['db_host'])")
 echo "pooler host: $POOLER"
-api -X POST "https://api.supabase.com/v1/projects/$REF/cli/login-role" -d '{"read_only":true}' | python3 -I -c "
+# 2026-11-26 first run: Supabase's read_only=true role can read 0 of 206 tables, so it cannot back anything up.
+# FULL_READ=1 asks for the CLI's normal role (owner approval needed: it CAN write). It is still used only inside
+# read-only transactions (prod-logical-backup.sh's one snapshot), lives <= 5 min, and is deleted by the trap.
+RO=true; [ "${FULL_READ:-0}" = 1 ] && RO=false
+api -X POST "https://api.supabase.com/v1/projects/$REF/cli/login-role" -d '{"read_only":'"$RO"'}' | python3 -I -c "
 import json,sys,urllib.parse as u
 d=json.load(sys.stdin)
 sys.stderr.write('temporary role: %s (ttl %ss)\n' % (d['role'], d['ttl_seconds']))
@@ -54,10 +58,9 @@ select 'can_read '||count(*)||' tables' from pg_class c join pg_namespace n on n
 select 'cannot_read '||count(*)||' tables' from pg_class c join pg_namespace n on n.oid=c.relnamespace
  where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') and not has_table_privilege(c.oid,'select');
 SQL
-if docker run -i --rm --env-file "$ENVF" postgres:17 bash -c 'psql "$SRC" -X -q -v ON_ERROR_STOP=1 ' <<<"begin; create table public._backup_write_probe(x int); rollback;" >/dev/null 2>&1; then
-  rm -f "$ENVF"; echo "FAIL: role can write (probe rolled back, nothing kept); aborting"; exit 5
-fi
-echo "write probe refused: role is read-only"
+unread=$(docker run -i --rm --env-file "$ENVF" postgres:17 bash -c 'psql "$SRC" -X -q -A -t -c "$0"' "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') and not has_table_privilege(c.oid,'select')")
+[ "$unread" = 0 ] || { rm -f "$ENVF"; echo "FAIL: role cannot read $unread tables; a backup would be incomplete"; exit 5; }
+echo "role can read every table; every source read below runs in one READ ONLY transaction"
 rm -f "$ENVF"
 
 SOURCE_URL_FILE="$URLF" OUT="$OUT" bash "$REPO/scripts/backup/prod-logical-backup.sh"

@@ -35,52 +35,80 @@ printf 'SRC=%s\n' "$(tr -d '\n' < "$URL_FILE")" > "$ENVF"
 NETFLAG=${SOURCE_NETWORK:+--network $SOURCE_NETWORK}
 DUMP="$OUT/prod-$TS.dump"
 
-echo "1/3 dump -> $DUMP"
-# Runs as this user with umask 077: the dump is owned by us and 0600 from its first byte (as root it was root-owned,
-# so chmod failed and the file kept the workspace's default 666 ACL; found by the 2026-11-25 dry run).
+# Every source read happens in ONE read-only repeatable-read snapshot, opened once (2026-11-26: production's temporary
+# login role has a 5-minute password, and fingerprints taken at another moment than the dump can differ because cron
+# jobs write; so the dump, schema dump, fingerprints, cron, extensions and the public-ACL check all share that snapshot).
+# Read-only friendly: no temp tables (CREATE is refused in a read-only transaction), fingerprints via \gexec.
+FPQ="select format('select %L||'' ''||count(*)||'' ''||md5(coalesce(string_agg(x::text, E''\\n'' order by x::text), '''')) from %I.%I x', n.nspname||'.'||c.relname, n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') order by n.nspname||'.'||c.relname"
+CRONFP="select 'cron.job '||count(*)||' '||md5(coalesce(string_agg(jobname||'|'||schedule||'|'||command||'|'||active, E'\\n' order by jobname), '')) from cron.job"
+CRONQ="select format('select cron.schedule(%L, %L, %L);', jobname, schedule, command) || case when active then '' else format(' update cron.job set active = false where jobname = %L;', jobname) end from cron.job order by jobname"
+EXTQ="select format('create schema if not exists %I; create extension if not exists %I with schema %I;', n.nspname, e.extname, n.nspname) from pg_extension e join pg_namespace n on n.oid = e.extnamespace where e.extname in ('pg_trgm', 'btree_gist') and n.nspname not in ('public', 'private', 'auth', 'storage')"
+PUBQ="select exists (select 1 from pg_namespace n, aclexplode(coalesce(n.nspacl, acldefault('n', n.nspowner))) a where n.nspname = 'public' and a.grantee = 0 and a.privilege_type = 'USAGE')"
+B=$(basename "$DUMP" .dump); SRCSQL="$OUT/source-$TS.psql"
+cat > "$SRCSQL" <<PSQL
+\\set ON_ERROR_STOP 1
+\\pset tuples_only on
+\\pset format unaligned
+begin isolation level repeatable read read only;
+select pg_export_snapshot() as snap \\gset
+\\setenv SNAP :snap
+\\! pg_dump "\$SRC" --snapshot="\$SNAP" -Fc --no-subscriptions -n public -n private -n auth -n storage -f /out/$B.dump && touch /out/$B.dump.ok
+\\! pg_dump "\$SRC" --snapshot="\$SNAP" --schema-only -n public -n private -f /out/schema-source-$TS.sql && touch /out/schema-source-$TS.sql.ok
+\\o /out/fp-source-$TS.txt
+$FPQ \\gexec
+$CRONFP;
+\\o /out/cron-$TS.sql
+$CRONQ;
+\\o /out/ext-$TS.sql
+$EXTQ;
+\\o /out/pub-$TS.txt
+$PUBQ;
+\\o
+commit;
+PSQL
+
+echo "1/3 source snapshot: dump + schema + fingerprints + cron -> $DUMP"
 docker run --rm $NETFLAG --user "$(id -u):$(id -g)" -e HOME=/tmp --env-file "$ENVF" -v "$OUT":/out "$CLIENT" bash -c \
-  'umask 077; pg_dump "$SRC" -Fc --no-subscriptions -n public -n private -n auth -n storage -f /out/'"$(basename "$DUMP")"
-chmod 600 "$DUMP" || { echo "cannot make $DUMP private: deleting it"; rm -f "$DUMP"; exit 3; }
+  'umask 077; psql "$SRC" -X -q -f /out/'"$(basename "$SRCSQL")" > "$OUT/source-$TS.log" 2>&1 || { echo "FAIL: source snapshot (see source-$TS.log)"; exit 3; }
+[ -f "$DUMP.ok" ] || { echo "FAIL: pg_dump did not finish (see source-$TS.log)"; rm -f "$DUMP"; exit 3; }
+[ -f "$OUT/schema-source-$TS.sql.ok" ] || { echo "FAIL: schema dump did not finish"; exit 3; }
+rm -f "$DUMP.ok" "$OUT/schema-source-$TS.sql.ok"
+chmod 600 "$OUT"/*-"$TS"* "$DUMP"
 [ "$(stat -c %a "$DUMP")" = 600 ] || { echo "$DUMP not 0600: deleting it"; rm -f "$DUMP"; exit 3; }
 sha256sum "$DUMP" | tee "$DUMP.sha256"
+echo "   cron jobs exported: $(grep -c 'cron.schedule' "$OUT/cron-$TS.sql"); tables fingerprinted: $(grep -vc '^cron.job' "$OUT/fp-source-$TS.txt")"
+echo "   source connections closed: nothing below touches the source"
 
 echo "2/3 restore into $NAME (internal network, no route out)"
 docker network inspect $NET >/dev/null 2>&1 || docker network create --internal $NET >/dev/null
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 docker run -d --name "$NAME" --network $NET -e POSTGRES_PASSWORD=postgres "$IMAGE" >/dev/null
-# Wait for the image's own health check: pg_isready alone is true during first-time setup, whose server then restarts
-# and drops the restore's connection (2026-11-25 dry run: 4452 'no connection to the server').
 for i in $(seq 1 90); do [ "$(docker inspect -f '{{.State.Health.Status}}' "$NAME")" = healthy ] && break; sleep 2; done
 [ "$(docker inspect -f '{{.State.Health.Status}}' "$NAME")" = healthy ] || { echo "restore container never became healthy"; exit 3; }
 SA() { docker exec -i -e PGPASSWORD=postgres "$NAME" "$@"; }  # as supabase_admin: this image's postgres is not a superuser
 docker exec "$NAME" bash -c 'getent hosts example.com >/dev/null 2>&1 && exit 9 || exit 0' || { echo "restore container can resolve the internet: abort"; exit 3; }
+SA psql -h localhost -U supabase_admin -d postgres -X -q < "$OUT/ext-$TS.sql" > "$OUT/ext-restore-$TS.log" 2>&1 || true
 docker cp "$DUMP" "$NAME":/tmp/prod.dump
-# The image already carries Supabase's roles and the auth/storage schemas; restore over them, keep going on errors that
-# are platform-owned objects, and record every error so none is silently skipped.
-SA pg_restore -h localhost -U supabase_admin -d postgres --clean --if-exists /tmp/prod.dump \
-  > "$OUT/restore-$TS.log" 2>&1 || true
+SA pg_restore -h localhost -U supabase_admin -d postgres --clean --if-exists /tmp/prod.dump > "$OUT/restore-$TS.log" 2>&1 || true
 echo "   restore errors: $(grep -c 'ERROR' "$OUT/restore-$TS.log" || true) (see $OUT/restore-$TS.log)"
+if [ "$(tr -d '[:space:]' < "$OUT/pub-$TS.txt")" = t ]; then
+  SA psql -h localhost -U supabase_admin -d postgres -X -q -c 'grant usage on schema public to public' >/dev/null
+fi
+SA psql -h localhost -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1 -c 'create extension if not exists pg_cron' >/dev/null
+SA psql -h localhost -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1 < "$OUT/cron-$TS.sql" >/dev/null || { echo "FAIL: cron jobs did not recreate"; exit 1; }
 
-echo "3/3 verify (row counts + row md5 per table, schema diff)"
-FP=$(cat <<'SQL'
-do $$ declare r record; c bigint; h text; begin
-  create temp table _fp(tbl text primary key, n bigint, h text);
-  for r in select n.nspname s, c.relname t from pg_class c join pg_namespace n on n.oid=c.relnamespace
-           where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') loop
-    execute format('select count(*), md5(coalesce(string_agg(x::text, %L order by x::text), %L)) from %I.%I x', E'\n', '', r.s, r.t) into c, h;
-    insert into _fp values (r.s||'.'||r.t, c, h);
-  end loop; end $$;
-select tbl||' '||n||' '||h from _fp order by tbl;
-SQL
-)
-docker run -i --rm $NETFLAG --env-file "$ENVF" "$CLIENT" bash -c 'psql "$SRC" -X -q -A -t -v ON_ERROR_STOP=1' <<<"$FP" > "$OUT/fp-source-$TS.txt"
-SA psql -h localhost -U supabase_admin -d postgres -X -q -A -t -v ON_ERROR_STOP=1 <<<"$FP" > "$OUT/fp-restored-$TS.txt"
-docker run --rm $NETFLAG --env-file "$ENVF" "$CLIENT" bash -c 'pg_dump "$SRC" --schema-only -n public -n private' > "$OUT/schema-source-$TS.sql"
+echo "3/3 verify (row counts + row md5 per table, schema + grants diff)"
+printf '%s\n' '\pset tuples_only on' '\pset format unaligned' "$FPQ \\gexec" "$CRONFP;" \
+  | SA psql -h localhost -U supabase_admin -d postgres -X -q -v ON_ERROR_STOP=1 > "$OUT/fp-restored-$TS.txt"
 SA pg_dump -h localhost -U supabase_admin -d postgres --schema-only -n public -n private > "$OUT/schema-restored-$TS.sql"
 diff <(grep -v '^--' "$OUT/schema-source-$TS.sql" | grep -v '^$') <(grep -v '^--' "$OUT/schema-restored-$TS.sql" | grep -v '^$') > "$OUT/schema-diff-$TS.txt" || true
+grants=$(diff <(grep -E '^(GRANT|REVOKE)' "$OUT/schema-source-$TS.sql" | sort) <(grep -E '^(GRANT|REVOKE)' "$OUT/schema-restored-$TS.sql" | sort) | grep -c '^[<>]' || true)
+echo "   grant lines differing: $grants"
 tables=$(wc -l < "$OUT/fp-source-$TS.txt")
-[ "$tables" -gt 0 ] || { echo "FAIL: source fingerprint is empty"; exit 1; }
+[ "$tables" -gt 1 ] || { echo "FAIL: source fingerprint is empty"; exit 1; }
 bad=$(diff "$OUT/fp-source-$TS.txt" "$OUT/fp-restored-$TS.txt" | grep -c '^[<>]' || true)
 echo "   tables compared: $tables; differing lines: $bad; schema diff lines: $(wc -l < "$OUT/schema-diff-$TS.txt")"
+chmod 600 "$OUT"/*-"$TS"* 2>/dev/null || true
+if [ "$grants" != 0 ]; then echo "FAIL: restored grants differ from the source (see schema-diff-$TS.txt)"; exit 1; fi
 if [ "$bad" != 0 ]; then echo "FAIL: restored data differs (see fp-*-$TS.txt)"; exit 1; fi
 echo "PASS: backup $DUMP restores with identical rows in every table ($tables). Restored copy left running as $NAME."
