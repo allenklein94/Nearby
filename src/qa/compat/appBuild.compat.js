@@ -76,7 +76,7 @@ async function mockScreenBusinessContent(userId, body) {
     await svc(`insert into business_content_screening_results (partner_id, target_type, target_id, submitted_by, content_snapshot,
                  risk_tier, model_reasoning, source)
                select p.managed_partner_id, 'offer_response', null, $1,
-                 private.screening_content_offer_response($2::uuid, $3::text, $4::text, $5::text[]::text, $6::text, $7::text, $8::text, $9::text, $10::uuid),
+                 private.screening_content_offer_response($2::uuid, $3::text, $4::text, $5::text[], $6::text, $7::text, $8::text, $9::text, $10::uuid),
                  'low', 'compat stand-in for screen-business-content', 'submission'
                  from profiles p where p.id = $1`,
     [userId, body.requestId, body.offerDescription, body.offerTitle ?? null, body.includedItems ?? [], body.redemptionInstructions ?? null,

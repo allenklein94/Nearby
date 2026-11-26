@@ -7,17 +7,31 @@ const files = [];
   if (st.isDirectory()) { if (!/node_modules|__tests__|journeys|qa$/.test(f)) walk(p); }
   else if (/\.js$/.test(f) && !/\.test\.js$|\.live\.js$|\.journey\.js$/.test(f)) files.push(p); } })(root);
 const out = { rpc: [], table: [], files: files.length };
+// Comments blanked (same length, line numbers kept) so words in a comment inside an argument object are not read as keys.
+function stripComments(src) {
+  let out = '', i = 0, q = null;
+  while (i < src.length) { const c = src[i], n = src[i + 1];
+    if (q) { out += c; if (c === '\\') { out += n ?? ''; i += 2; continue; } if (c === q) q = null; i++; continue; }
+    if (c === "'" || c === '"' || c === '`') { q = c; out += c; i++; continue; }
+    if (c === '/' && n === '/') { while (i < src.length && src[i] !== '\n') { out += ' '; i++; } continue; }
+    if (c === '/' && n === '*') { while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) { out += src[i] === '\n' ? '\n' : ' '; i++; } out += '  '; i += 2; continue; }
+    out += c; i++; }
+  return out;
+}
 function objectKeys(src, i) { // src[i] === '{' : top-level keys of the object literal
-  let depth = 0, j = i, keys = [], tok = '';
+  // afterColon: inside a value (a key was already taken), so identifiers there are values, not shorthand keys.
+  let depth = 0, j = i, keys = [], tok = '', afterColon = false;
   for (; j < src.length && j < i + 3000; j++) { const c = src[j];
     if (c === '{' || c === '[' || c === '(') depth++;
     else if (c === '}' || c === ']' || c === ')') { depth--; if (depth === 0) break; }
-    if (depth === 1) { if (/[A-Za-z0-9_$'"]/.test(c)) tok += c; else { if (c === ':' && tok) keys.push(tok.replace(/['"]/g, ''));
-      if (c === ',' && tok && /^[A-Za-z_$][\w$]*$/.test(tok)) keys.push(tok); /* shorthand */ tok = ''; } } }
-  if (tok && /^[A-Za-z_$][\w$]*$/.test(tok)) keys.push(tok);
+    if (depth === 1) { if (/[A-Za-z0-9_$'"]/.test(c)) tok += c; else {
+      if (c === ':' && tok && !afterColon) { keys.push(tok.replace(/['"]/g, '')); afterColon = true; }
+      if (c === ',') { if (tok && !afterColon && /^[A-Za-z_$][\w$]*$/.test(tok)) keys.push(tok); /* shorthand */ afterColon = false; }
+      if (!/\s/.test(c)) tok = ''; } } }
+  if (tok && !afterColon && /^[A-Za-z_$][\w$]*$/.test(tok)) keys.push(tok);
   return [...new Set(keys)];
 }
-for (const f of files) { const src = fs.readFileSync(f, 'utf8'); const rel = path.relative(root, f);
+for (const f of files) { const src = stripComments(fs.readFileSync(f, 'utf8')); const rel = path.relative(root, f);
   for (const m of src.matchAll(/\.rpc\(\s*'([a-z_0-9]+)'\s*(,\s*)?/g)) { const at = m.index + m[0].length;
     const args = m[2] && src[at] === '{' ? objectKeys(src, at) : (m[2] ? null : []);
     out.rpc.push({ name: m[1], args, file: rel, line: src.slice(0, m.index).split('\n').length }); }
