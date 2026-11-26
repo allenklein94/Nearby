@@ -3,7 +3,6 @@ import { useLanguage } from '../context/LanguageContext';
 import { Animated, TouchableOpacity, Text, Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, createNavigationContainerRef, getFocusedRouteNameFromRoute } from '@react-navigation/native';
-import { mainTabsBackTitle } from './mainTabsBackTitle';
 import TogetherNotesScreen from '../screens/TogetherNotesScreen';
 import { TOGETHER_NOTES_KINDS } from '../constants/togetherNotesKinds';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -381,10 +380,9 @@ export default function RootNavigator() {
           <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
         ) : (
           <>
-            {/* Build 87 Tier 1 fix (2026-11-22): iOS labels a pushed screen's back button with the PREVIOUS screen's title.
-                The tab container had none, so the internal route name leaked ("MainTabs"); it now carries the active
-                tab's own label ("‹ Profile"), from the one tab-label key (mainTabsBackTitle). Its own header stays hidden. */}
-            <Stack.Screen name="MainTabs" component={MainTabs} options={({ route }) => ({ title: t(mainTabsBackTitle(getFocusedRouteNameFromRoute(route))) })} />
+            {/* Tier 1 fix (2026-11-22): the title is never shown (no header here); it is what the iOS back button reads on a
+                screen opened from a tab ("Profile", not the route name "MainTabs"). */}
+            <Stack.Screen name="MainTabs" component={MainTabs} options={({ route }) => ({ title: t(`ui.nav.tab.${lcFirst(getFocusedRouteNameFromRoute(route) ?? 'Home')}`) })} />
             {/* Phase 5: Profile left the bottom tab bar -- reached via the
                 persistent header-icon avatar (TabHeaderActions) -- and
                 stays a real, pushed screen (a transparent native header for

@@ -5,7 +5,6 @@ import { usePostHog } from 'posthog-react-native';
 import { getMomentumStats } from '../services/momentum';
 import { getInsightsStats } from '../services/insights';
 import React, { useEffect, useRef, useState } from 'react';
-import { UNSTABLE_usePreventRemove as usePreventRemove, CommonActions } from '@react-navigation/native';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Image, ScrollView, Modal, FlatList, KeyboardAvoidingView, Platform, UIManager } from 'react-native';
 import KeyboardSafeView from '../components/KeyboardSafeView';
@@ -18,8 +17,7 @@ import { joinedNearbyDate } from '../utils/joinedDate';
 import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
-import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
-import { UGC_KINDS, normalizeUgcText } from '../utils/ugcText';
+import { checkTextModeration } from '../services/textModeration';
 import { getProfileQuickStats, getAchievements, getEarnedProfileStats } from '../services/homeDashboard';
 import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl, deleteVoiceIntro } from '../services/voiceNotes';
 import { BASICS_FIELDS } from '../constants/basicsFields';
@@ -30,9 +28,7 @@ import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
-import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
 import TagGroupPicker from '../components/TagGroupPicker';
-import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
 import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/businessAttributes';
 import VoicePlayButton from '../components/VoicePlayButton';
 import { typography, spacing, radius } from '../theme';
@@ -40,7 +36,8 @@ import { typography, spacing, radius } from '../theme';
 import { modalAnimation, showSuccessToast, animateLayout, NLoader } from '../motion';
 import { countLabel } from '../utils/plural';
 import useCategoryNames from '../hooks/useCategoryNames';
-import { profileFormSnapshot, isProfileFormDirty, guardProfileLeave } from '../utils/profileEditDirty';
+import { profileFormSnapshot, isProfileFormDirty } from '../utils/profileEditDirty';
+import useLeaveGuard from '../hooks/useLeaveGuard';
 import ToggleRow from '../components/ToggleRow';
 const MAX_VOICE_INTRO_SECONDS = 30;
 
@@ -132,8 +129,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const [extraPhotos, setExtraPhotos] = useState([]);
   const [uploadingExtra, setUploadingExtra] = useState(false);
   const [interests, setInterests] = useState([]);
-  // The onboarding social-plans answer (owner, 2026-11-22: editable later). Several choices; 'open' exclusive; ranking only.
-  const [socialComfortLevels, setSocialComfortLevels] = useState([]);
   // Item 100 (CLAUDE.md, "Let the recipient contribute preferences without
   // spoiling the surprise"), half A: a real, optional, self-declared
   // standing preference -- same posture as `interests` above, drawn from
@@ -222,14 +217,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     };
   }, []);
 
-  // Item 35 follow-up (owner, 2026-10-08): leaving Edit Profile with unsaved changes asks first, wherever it was opened from
-  // (Profile, Settings, the interests link, Dating Preferences). Build 87 Tier 1 fix (2026-11-22): a plain 'beforeRemove'
-  // listener cannot hold the iOS NATIVE back button in this native stack (the screen is already gone natively when it fires),
-  // so the guard uses usePreventRemove (below, after the dirty check), which tells the native header to hold the pop
-  // (preventNativeDismiss) and then asks. It also covers Android back and the swipe. Leaving after Discard or Save goes
-  // through `leaveAction`: prevention is switched off by a re-render first, then that one navigation is dispatched.
-  const [leaveAction, setLeaveAction] = useState(null);
-
   // Taxonomy audit Phase 1: Settings' "Gender identity & who you're
   // interested in are managed on your Profile ->" link lands here.
   // editSectionYRef isn't measured until the About You section actually
@@ -310,7 +297,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       setBio(data.bio || '');
       setPhotoVerified(!!data.photo_verified);
       setInterests(data.interests || []);
-      setSocialComfortLevels(parseComfortLevels(data.social_comfort_level));
       setCuisinePreferences(data.cuisine_preferences || []);
       setVenuePreferences(data.venue_preferences || []);
       setPronouns(data.pronouns || '');
@@ -331,7 +317,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       setManagesBusiness(!!data.managed_partner_id);
       baselineRef.current = profileFormSnapshot({
         displayName: data.display_name || '', bio: data.bio || '', interests: data.interests || [],
-        socialComfortLevels: parseComfortLevels(data.social_comfort_level),
         cuisinePreferences: data.cuisine_preferences || [], venuePreferences: data.venue_preferences || [],
         pronouns: data.pronouns || '', gender: data.gender || '', sexualOrientation: data.sexual_orientation || '',
         genderIdentity: data.gender_identity || [], interestedInGenders: data.interested_in_genders || [],
@@ -459,8 +444,10 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     if (!draftAnswer.trim()) {
       return Alert.alert(t('ui.profile.answerRequired'), t('ui.profile.writeAShortAnswerTo'));
     }
-    const check = await screenUserContent([{ text: draftAnswer, kind: UGC_KINDS.bio }]);
-    if (blockedByScreening(Alert, t, check, { notAllowedTitle: t('ui.profile.answerNotAllowed'), notAllowedBody: t('ui.profile.pleaseReviseYourAnswerAnd') })) return;
+    const check = await checkTextModeration(draftAnswer);
+    if (!check.safe) {
+      return Alert.alert(t('ui.profile.answerNotAllowed'), t('ui.profile.pleaseReviseYourAnswerAnd'));
+    }
 
     setPrompts((prev) => {
       const next = [...prev];
@@ -579,36 +566,34 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   }
 
   async function save() {
-    // 20270373: every changed public text is screened before the save (the database refuses unscreened text and checks only
-    // what changes); 'hold' = saved, the published text stays until a person approves the new one.
-    const base = baselineRef.current ? JSON.parse(baselineRef.current) : {};
-    let held = false;
-    const screenChanged = async (value, baseValue, kind, notAllowedTitle, notAllowedBody, onRefuse) => {
-      const now = normalizeUgcText(value);
-      if (!now || now === normalizeUgcText(baseValue ?? '')) return true;
-      const result = await screenUserContent([{ text: value, kind }]);
-      if (blockedByScreening(Alert, t, result, { notAllowedTitle, notAllowedBody, onRefuse })) return false;
-      if (result.outcome === 'hold') held = true;
-      return true;
-    };
-    if (!(await screenChanged(displayName, base.displayName, UGC_KINDS.displayName, t('ui.profile.displayNameNotAllowed'), t('ui.profile.pleaseReviseYourDisplayName'), (msg) => form.show('name', msg)))) return;
-    if (!(await screenChanged(bio, base.bio, UGC_KINDS.bio, t('ui.profile.bioNotAllowed'), t('ui.profile.pleaseReviseYourBioAnd'), (msg) => form.show('bio', msg)))) return;
-    for (const [label, value, baseValue] of [[t('ui.profile.fieldPronouns'), pronouns, base.pronouns], [t('ui.profile.fieldGender'), gender, base.gender], [t('ui.profile.fieldOrientation'), sexualOrientation, base.sexualOrientation]]) {
-      if (!(await screenChanged(value, baseValue, UGC_KINDS.profileDetail, t('ui.profile.notAllowed', { label: label }), t('ui.profile.pleaseReviseThisFieldAnd')))) return;
+    const nameCheck = await checkTextModeration(displayName);
+    if (!nameCheck.safe) {
+      form.show('name', t('ui.profile.pleaseReviseYourDisplayName'));
+      return;
+    }
+    const bioCheck = await checkTextModeration(bio);
+    if (!bioCheck.safe) {
+      form.show('bio', t('ui.profile.pleaseReviseYourBioAnd'));
+      return;
+    }
+    for (const [label, value] of [[t('ui.profile.fieldPronouns'), pronouns], [t('ui.profile.fieldGender'), gender], [t('ui.profile.fieldOrientation'), sexualOrientation]]) {
+      if (value.trim()) {
+        const check = await checkTextModeration(value);
+        if (!check.safe) {
+          return Alert.alert(t('ui.profile.notAllowed', { label: label }), t('ui.profile.pleaseReviseThisFieldAnd'));
+        }
+      }
     }
 
     const textBasicsFields = BASICS_FIELDS.filter((f) => f.type === 'text');
     for (const field of textBasicsFields) {
       const value = basics[field.key];
-      if (typeof value === 'string' && value.trim()) {
-        if (!(await screenChanged(value, base.basics?.[field.key], UGC_KINDS.profileDetail, t('ui.profile.notAllowed', { label: basicsLabel(field, language) }), t('ui.profile.pleaseReviseThisFieldAnd')))) return;
+      if (value && value.trim()) {
+        const check = await checkTextModeration(value);
+        if (!check.safe) {
+          return Alert.alert(t('ui.profile.notAllowed', { label: basicsLabel(field, language) }), t('ui.profile.pleaseReviseThisFieldAnd'));
+        }
       }
-    }
-    // Prompt answers were screened when written; a new one is screened again here so the save is within its window.
-    const baseAnswers = new Set((base.prompts || []).map((p) => normalizeUgcText(p?.answer)));
-    for (const prompt of prompts) {
-      if (baseAnswers.has(normalizeUgcText(prompt?.answer))) continue;
-      if (!(await screenChanged(prompt?.answer, '', UGC_KINDS.bio, t('ui.profile.answerNotAllowed'), t('ui.profile.pleaseReviseYourAnswerAnd')))) return;
     }
 
     // Phase F -- height is optional, but a genuinely half-filled pair
@@ -632,7 +617,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         display_name: displayName,
         bio,
         interests,
-        social_comfort_level: serializeComfortLevels(socialComfortLevels),
         cuisine_preferences: cuisinePreferences,
         venue_preferences: venuePreferences,
         pronouns: pronouns.trim() || null,
@@ -647,16 +631,12 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         connection_goal: connectionGoal || null,
       })
       .eq('id', userId);
-    if (error) {
-      if (handledScreeningRefusal(Alert, t, error, { notAllowedTitle: t('ui.profile.bioNotAllowed'), notAllowedBody: t('ui.profile.pleaseReviseYourBioAnd') })) return;
-      return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
-    }
-    if (held) showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
-    else showSuccessToast(t('ui.profile.saved'));
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
+    showSuccessToast(t('ui.profile.saved'));
     baselineRef.current = currentSnapshot;
     if (editing && navigation.canGoBack?.()) {
       allowLeaveRef.current = true;
-      setLeaveAction(CommonActions.goBack());
+      navigation.goBack();
     }
   }
 
@@ -723,27 +703,21 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
 
   const usedQuestions = prompts.map((p) => p.question);
   const currentSnapshot = profileFormSnapshot({
-    displayName, bio, interests, socialComfortLevels, cuisinePreferences, venuePreferences, pronouns, gender, sexualOrientation,
+    displayName, bio, interests, cuisinePreferences, venuePreferences, pronouns, gender, sexualOrientation,
     genderIdentity, interestedInGenders, myEthnicity, heightFeet, heightInchesVal, basics, prompts, connectionGoal,
   });
   dirtyRef.current = editing && isProfileFormDirty(baselineRef.current, currentSnapshot);
-  usePreventRemove(editing && dirtyRef.current && !allowLeaveRef.current && leaveAction == null, ({ data }) => {
-    guardProfileLeave({
-      dirty: true,
-      allowLeave: false,
-      event: { data, preventDefault: () => {} }, // usePreventRemove has already held this navigation
-      proceed: (action) => { allowLeaveRef.current = true; setLeaveAction(action); },
-      confirm: ({ onKeepEditing, onDiscard }) => Alert.alert(t('ui.profile.discardTitle'), t('ui.profile.discardBody'), [
-        { text: t('ui.profile.keepEditing'), style: 'cancel', onPress: onKeepEditing },
-        { text: t('ui.profile.discardChanges'), style: 'destructive', onPress: onDiscard },
-      ]),
-    });
+  // Item 35 follow-up (owner, 2026-10-08): leaving Edit Profile with unsaved changes asks first, wherever it was opened from
+  // (Profile, Settings, the interests link, Dating Preferences): header back, back swipe and Android back. Through the one
+  // leave guard (useLeaveGuard: iOS cancels the native pop, so Back is never dead; Tier 1 fix 2026-11-22).
+  useLeaveGuard({
+    active: dirtyRef.current,
+    allowLeaveRef,
+    confirm: ({ onKeepEditing, onDiscard }) => Alert.alert(t('ui.profile.discardTitle'), t('ui.profile.discardBody'), [
+      { text: t('ui.profile.keepEditing'), style: 'cancel', onPress: onKeepEditing },
+      { text: t('ui.profile.discardChanges'), style: 'destructive', onPress: onDiscard },
+    ]),
   });
-  // Declared after usePreventRemove on purpose: effects run in order, so the guard has already switched off for this
-  // render when the held (or post-Save) navigation is dispatched.
-  useEffect(() => {
-    if (leaveAction) navigation.dispatch(leaveAction);
-  }, [leaveAction]);
   const completeness = getProfileCompleteness({ photoUrl, bio, prompts, interests, connectionGoal, extraPhotos });
 
   return (
@@ -1423,28 +1397,6 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
           <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.interestsSection')}</Text>
         </View>
         <TagGroupPicker options={INTEREST_OPTIONS} selected={interests} onToggle={toggleInterest} />
-
-        {/* The onboarding social-plans question, editable here (owner, 2026-11-22; no screen of its own). */}
-        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.onboarding.socialPlansTitle')}</Text>
-        <Text style={styles.sublabel}>{t('ui.onboarding.pickAnyThatFit')}</Text>
-        <View style={styles.chipsWrap}>
-          {COMFORT_LEVELS.map((value) => {
-            const selected = socialComfortLevels.includes(value);
-            return (
-              <TouchableOpacity
-                key={value}
-                style={[styles.chip, selected && styles.chipSelected]}
-                onPress={() => setSocialComfortLevels((prev) => toggleComfortLevel(prev, value))}
-                activeOpacity={0.85}
-                accessibilityLabel={t(`ui.onboarding.comfort.${value}`)}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
-              >
-                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(`ui.onboarding.comfort.${value}`)}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
 
         {/* Item 100 (CLAUDE.md, "Let the recipient contribute preferences
             without spoiling the surprise"), half A -- a real, optional,
