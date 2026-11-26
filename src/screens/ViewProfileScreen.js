@@ -391,8 +391,9 @@ export default function ViewProfileScreen({ route, navigation }) {
 
   const filledBasics = BASICS_FIELDS
     .filter((f) => f.type === 'select')
-    .map((field) => ({ icon: field.icon, value: profile.basics?.[field.key] }))
-    .filter((f) => f.value);
+    .map((field) => ({ icon: field.icon, value: profile.basics?.[field.key], appearanceOnly: field.appearanceOnly }))
+    // An undisclosed tattoos / piercings answer is shown as nothing (owner, 2026-11-14).
+    .filter((f) => f.value && !(f.appearanceOnly && f.value === 'Prefer not to say'));
 
   const prompts = profile.prompts || [];
 

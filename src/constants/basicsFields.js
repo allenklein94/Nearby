@@ -18,6 +18,10 @@ export const BASICS_FIELDS = [
   { key: 'job_title', label: 'Job Title', icon: '💼', type: 'text', placeholder: 'e.g. Software Engineer' },
   { key: 'hair_color', label: 'Hair Color', icon: '💇', type: 'select', options: ['Black', 'Brown', 'Blonde', 'Red', 'Gray', 'White', 'Bald', 'Other'] },
   { key: 'eye_color', label: 'Eye Color', icon: '👁️', type: 'select', options: ['Brown', 'Blue', 'Green', 'Hazel', 'Gray', 'Other'] },
+  // Tattoos + piercings (owner, 2026-11-14): optional, self-described, soft Dating ranking only (utils/datingAppearance.js).
+  // 'Prefer not to say' and unanswered are neutral; neither is ever compared for compatibility or offered as a filter.
+  { key: 'tattoos', label: 'Tattoos', icon: '🖋️', type: 'select', appearanceOnly: true, options: ['Has tattoos', 'No tattoos', 'Prefer not to say'] },
+  { key: 'piercings', label: 'Piercings', icon: '💎', type: 'select', appearanceOnly: true, options: ['Has piercings', 'No piercings', 'Prefer not to say'] },
   { key: 'diet', label: 'Diet', icon: '🍽️', type: 'select', options: ['Omnivore', 'Vegetarian', 'Vegan', 'Pescatarian', 'Halal', 'Kosher', 'Other'] },
   { key: 'languages_spoken', label: 'Languages I Speak', icon: '🗣️', type: 'text', placeholder: 'e.g. English, Spanish' },
   { key: 'relationship_type', label: 'Relationship Type', icon: '💑', type: 'select', options: ['Monogamy', 'Non-monogamy', 'Figuring out'] },

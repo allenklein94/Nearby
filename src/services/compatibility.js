@@ -42,6 +42,12 @@ function withRelationshipIntention(basics, profile) {
 }
 
 export const NEVER_COMPARED_BASICS = Object.freeze(['job_title']);
+// Appearance is never compatibility (owner, 2026-11-14): hair color, eye color, height, tattoos and piercings influence
+// Dating only through the capped appearance adjustment in utils/datingAppearance.js (+/- 6), never also as a
+// compatibility match/mismatch (that counted appearance twice, and rewarded looking like the viewer). The 35% profile
+// part is computed from the remaining, non-appearance answers. Every BASICS_FIELDS entry describing how someone looks
+// must be listed here (guard: services/compatibilityAppearance.test.js).
+export const APPEARANCE_ONLY_BASICS = Object.freeze(['hair_color', 'eye_color', 'height', 'tattoos', 'piercings']);
 
 export function generateCompatibilityReport(myProfile, theirProfile) {
   const myInterests = myProfile?.interests ?? [];
@@ -68,7 +74,7 @@ export function generateCompatibilityReport(myProfile, theirProfile) {
   }
 
   // Item 184 (owner, LOCKED, not LinkedIn): Job Title is a profile fact only; it is never compared, matched or scored.
-  const comparableKeys = Object.keys(myBasics).filter((key) => !NEVER_COMPARED_BASICS.includes(key) && theirBasics[key] !== undefined);
+  const comparableKeys = Object.keys(myBasics).filter((key) => !NEVER_COMPARED_BASICS.includes(key) && !APPEARANCE_ONLY_BASICS.includes(key) && theirBasics[key] !== undefined);
   const matchingFields = [];
   const differingFields = [];
 

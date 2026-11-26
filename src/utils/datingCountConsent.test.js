@@ -78,8 +78,16 @@ describe('Dating counts need an explicit Dating opt-in', () => {
 describe('every Dating card source reads the server opt-in view (cards, not only counts)', () => {
   const src = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
   const prox = src('services/proximity.js');
-  const body = (name) => prox.slice(prox.indexOf(`export async function ${name}(`), prox.indexOf('\n}\n', prox.indexOf(`export async function ${name}(`)));
-  test.each(['getNearbyMatches', 'getBrowseMatches'])('%s reads dating_candidates_visible_to_me, never people_visible_to_me, and re-checks the verdict', (name) => {
+  const body = (name) => {
+    const start = prox.search(new RegExp(`(export )?async function ${name}\\(`));
+    return prox.slice(start, prox.indexOf('\n}\n', start));
+  };
+  // Browse's read lives in buildBrowsePool (owner 2026-11-14, Option A); getBrowseMatches only pages through it.
+  test('getBrowseMatches reads only through buildBrowsePool', () => {
+    expect(body('getBrowseMatches')).toMatch(/await buildBrowsePool\(inputs\.userId, inputs\.myProfile\)/);
+    expect(body('getBrowseMatches')).not.toMatch(/\.from\(/);
+  });
+  test.each(['getNearbyMatches', 'buildBrowsePool'])('%s reads dating_candidates_visible_to_me, never people_visible_to_me, and re-checks the verdict', (name) => {
     const fn = body(name);
     // 20270382: Browse reads through browseDatingCandidates (services/datingBrowse.js): browse_dating_candidates, whose
     // rows come from private.dating_candidate_rows (the same opt-in rule), else this same view.
