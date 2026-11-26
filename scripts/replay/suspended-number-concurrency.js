@@ -157,14 +157,14 @@ const errors = (run) => run.results.filter((r) => !r.ok).map((r) => r.error).joi
     const late = crypto.randomUUID();
     ids.push(late);
     run = await together([
-      { sql: 'select private.match_suspended_numbers() opened', hold: 1500 },
+      { sql: 'select private.match_suspended_numbers() opened', hold: 6000 }, // wide margin: a loaded machine must not fail it
       { sql: `with u as (insert into auth.users (id, aud, role, email, created_at, phone, phone_confirmed_at)
                 values ($1, 'authenticated', 'authenticated', $2, now(), $3, now()) returning id) select clock_timestamp() t from u`,
         args: [late, `late-${late.slice(0, 8)}@concurrency.invalid`, num(10)], delay: 200, hold: 0 },
     ]);
     const signupMs = run.results[1].at;
     check(run.results.every((r) => r.ok), `both committed (${errors(run)})`);
-    check(signupMs < 1200, `the sign-up committed while the run still held its transaction (${signupMs} ms < 1500)`);
+    check(signupMs < 5500, `the sign-up committed while the run still held its transaction (${signupMs} ms < 6000)`);
     const before = await caseOf(late);
     await db.query('select private.match_suspended_numbers()');
     const afterLate = await caseOf(late);

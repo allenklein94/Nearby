@@ -27,6 +27,16 @@ const { Client } = require(process.env.NEARBY_PG_MODULE || 'pg');
 const crypto = require('crypto');
 
 const HOLD_MS = 120;
+// Check 4 proves "the two deletions don't queue behind each other" with a barrier, never wall-clock time (wall-clock failed under CPU
+// load with no lock wait at all: investigated 2026-11-26, 60 rounds idle + loaded, lock-wait detector positive-controlled). Each
+// deletion stays open until BOTH have finished their statements; if one were blocked by the other's locks the barrier could not
+// fill, the first would give up after BARRIER_MS and commit, and the round fails as queued.
+const BARRIER_MS = 5000;
+function barrier(n) {
+  let arrived = 0; let open; const all = new Promise((r) => { open = r; });
+  return { arrive() { arrived += 1; if (arrived >= n) open(true); },
+    wait(ms) { return Promise.race([all, sleep(ms).then(() => false)]).then((ok) => { if (!ok) this.timedOut = true; }); }, timedOut: false };
+}
 const ROUNDS = 8;
 let failures = 0;
 const check = (ok, msg) => { if (!ok) failures += 1; console.log(`  ${ok ? '✓' : '✗ FAIL:'} ${msg}`); };
@@ -45,7 +55,8 @@ async function run(step) {
     }
     let r = null;
     for (const q of Array.isArray(step.sql) ? step.sql : [step.sql]) r = await c.query(q, step.args);
-    await sleep(HOLD_MS);
+    if (step.barrier) step.barrier.arrive(); // its statements are done while its transaction is still open
+    await (step.barrier ? step.barrier.wait(BARRIER_MS) : sleep(HOLD_MS));
     await c.query('commit');
     return { ok: true, rows: r.rows };
   } catch (e) {
@@ -155,20 +166,21 @@ const delAccount = (u) => [`delete from profiles where id = '${u}'`, `delete fro
     check(dl === 0, 'no deadlock');
 
     console.log('4. two accounts under one hold, deleted at once');
-    bad = 0; dl = 0;
+    bad = 0; dl = 0; let queued = 0;
     for (let i = 0; i < ROUNDS; i += 1) {
       const u1 = await person(); const u2 = await person();
       const { rows } = await db.query(`insert into private.account_review_cases (signal, sha256, reason) values ('identical_photo', $1, 'many_accounts') returning id`, [`race-${crypto.randomUUID()}`]);
       cases.push(rows[0].id);
       await db.query(`insert into private.account_review_case_members (case_id, user_id) values ($1, $2), ($1, $3)`, [rows[0].id, u1, u2]);
       await run({ sub: admin, sql: placeSql('review_case', rows[0].id) });
-      const t0 = Date.now();
-      const res = await Promise.all([run({ sql: delAccount(u1) }), run({ sql: delAccount(u2) })]);
+      const b = barrier(2);
+      const res = await Promise.all([run({ sql: delAccount(u1), barrier: b }), run({ sql: delAccount(u2), barrier: b })]);
       if (deadlock(res)) dl += 1;
       if (!res.every((r) => r.ok) || await count(u1, 'case_member') !== 1 || await count(u2, 'case_member') !== 1) bad += 1;
-      if (Date.now() - t0 > HOLD_MS * 2 + 400) bad += 1; // would mean one waited for the other's commit
+      if (b.timedOut) queued += 1; // one deletion could not finish its statements while the other was still open
     }
-    check(bad === 0, 'both finish side by side, both copied');
+    check(bad === 0, 'both finish, both copied');
+    check(queued === 0, `neither deletion waited for the other's commit (queued ${queued}/${ROUNDS})`);
     check(dl === 0, 'no deadlock');
 
     console.log('5. the same account preserved twice at once');

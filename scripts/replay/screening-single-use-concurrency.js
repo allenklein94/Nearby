@@ -56,6 +56,9 @@ const send = (req) => `select submit_business_offer(request_id_param => '${req}'
     const a = await connect();
     const b = await connect();
     for (const c of [a, b]) { await c.query(`begin; ${claims(owner)}`); await c.query('set local role authenticated'); }
+    // A stays open until after B is answered, so B returning at all proves it never waited on A's lock; a lock wait would hit this
+    // timeout instead (a load-independent proof: the old "< HOLD_MS" bound could fail on a slow machine with no wait at all).
+    await b.query(`set local lock_timeout = '5s'`);
     let aErr = null;
     try { await a.query(send(reqs[0])); } catch (e) { aErr = e; }
     const t0 = Date.now();
@@ -65,7 +68,7 @@ const send = (req) => `select submit_business_offer(request_id_param => '${req}'
     await sleep(HOLD_MS);
     check(!aErr, `A landed (${aErr?.message ?? 'ok'})`);
     check(!bRes.ok && bRes.hint === 'screening_required', `B refused (${bRes.hint ?? bRes.error ?? 'landed!'})`);
-    check(waited < HOLD_MS, `B was answered at once (${waited} ms), never waited on A's lock`);
+    check(!/lock timeout/i.test(bRes.error || ''), `B was answered while A still held its transaction (${waited} ms), never waited on A's lock`);
     await b.query('rollback');
     await a.query('rollback');
     const { rows: [{ consumed }] } = await admin.query(`select consumed_at is not null as consumed from business_content_screening_results where id = $1`, [scr]);
