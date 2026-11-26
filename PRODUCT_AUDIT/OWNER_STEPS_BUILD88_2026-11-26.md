@@ -13,6 +13,7 @@ export APP_VARIANT=staging NEARBY_STAGING_EAS_PROJECT_ID=6f49be3c-0885-45bf-892f
 read -rs NEARBY_STAGING_PUBLISHABLE_KEY && export NEARBY_STAGING_PUBLISHABLE_KEY
 eas build -p ios --profile staging      # sign in to Apple when asked (ad hoc credentials)
 ```
+Then run `PRODUCT_AUDIT/BUILD88_DEVICE_CHECKLIST_2026-11-26.md` on it (P3 first).
 Known: maps blank in staging (no staging Maps key). The staging test OTP expired 2026-11-28: renew before testing.
 
 ## 3. Resend on PRODUCTION (you set secrets; never paste the key in chat)
