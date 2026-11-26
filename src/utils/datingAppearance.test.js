@@ -114,7 +114,8 @@ describe('wiring guard', () => {
   });
 
   test('Browse orders through the one shared rule; age + ethnicity filters stay', () => {
-    expect(src).toMatch(/rankDatingCandidates\(candidates, appearancePreferencesOf\(myProfile\)\)/);
+    // Build 88 (20270382 kept): each capped server page is ranked within itself (rankBrowsePage).
+    expect(src).toMatch(/return rankDatingCandidates\([\s\S]*?appearancePreferencesOf\(myProfile\),\s*\);/);
     expect(src).toMatch(/age < minAge \|\| age > maxAge/);
     expect(src).toMatch(/ethnicityPreferences\.includes/);
   });

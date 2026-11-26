@@ -47,7 +47,15 @@
   "editYourInterestsOnProfileA11y": "Edit your interests on Profile",
   "editYourInterestsOnProfile": "Edit your interests on Profile →",
   "genderIdentityEthnicityAndTheirA11y": "Gender identity, ethnicity, and their visibility are managed on your Profile",
-  "genderIdentityEthnicityAndTheir": "Gender identity, ethnicity, and their visibility are managed on your Profile →"
+  "genderIdentityEthnicityAndTheir": "Gender identity, ethnicity, and their visibility are managed on your Profile →",
+  "tattooPreference": "Tattoos",
+  "piercingPreference": "Piercings",
+  "noPreference": "No preference",
+  "withTattoos": "With tattoos",
+  "withoutTattoos": "Without tattoos",
+  "withPiercings": "With piercings",
+  "withoutPiercings": "Without piercings",
+  "appearanceRanksNotHidesChoice": "Puts people who match higher in your list; nobody is hidden for it."
  },
  "es": {
   "invalidRange": "Rango no válido",
@@ -97,7 +105,15 @@
   "editYourInterestsOnProfileA11y": "Editar tus intereses en el Perfil",
   "editYourInterestsOnProfile": "Edita tus intereses en el Perfil →",
   "genderIdentityEthnicityAndTheirA11y": "La identidad de género, la etnia y su visibilidad se gestionan en tu Perfil",
-  "genderIdentityEthnicityAndTheir": "La identidad de género, la etnia y su visibilidad se gestionan en tu Perfil →"
+  "genderIdentityEthnicityAndTheir": "La identidad de género, la etnia y su visibilidad se gestionan en tu Perfil →",
+  "tattooPreference": "Tatuajes",
+  "piercingPreference": "Piercings",
+  "noPreference": "Sin preferencia",
+  "withTattoos": "Con tatuajes",
+  "withoutTattoos": "Sin tatuajes",
+  "withPiercings": "Con piercings",
+  "withoutPiercings": "Sin piercings",
+  "appearanceRanksNotHidesChoice": "Sube en tu lista a quienes coinciden; nadie queda oculto por esto."
  },
  "de": {
   "invalidRange": "Ungültiger Bereich",
@@ -147,7 +163,15 @@
   "editYourInterestsOnProfileA11y": "Deine Interessen im Profil bearbeiten",
   "editYourInterestsOnProfile": "Deine Interessen im Profil bearbeiten →",
   "genderIdentityEthnicityAndTheirA11y": "Geschlechtsidentität, ethnische Zugehörigkeit und ihre Sichtbarkeit verwaltest du in deinem Profil",
-  "genderIdentityEthnicityAndTheir": "Geschlechtsidentität, ethnische Zugehörigkeit und ihre Sichtbarkeit verwaltest du in deinem Profil →"
+  "genderIdentityEthnicityAndTheir": "Geschlechtsidentität, ethnische Zugehörigkeit und ihre Sichtbarkeit verwaltest du in deinem Profil →",
+  "tattooPreference": "Tattoos",
+  "piercingPreference": "Piercings",
+  "noPreference": "Keine Präferenz",
+  "withTattoos": "Mit Tattoos",
+  "withoutTattoos": "Ohne Tattoos",
+  "withPiercings": "Mit Piercings",
+  "withoutPiercings": "Ohne Piercings",
+  "appearanceRanksNotHidesChoice": "Zeigt passende Personen weiter oben in deiner Liste; niemand wird dafür ausgeblendet."
  },
  "fr": {
   "invalidRange": "Plage non valide",
@@ -197,7 +221,15 @@
   "editYourInterestsOnProfileA11y": "Modifier tes centres d'intérêt dans le Profil",
   "editYourInterestsOnProfile": "Modifie tes centres d'intérêt dans le Profil →",
   "genderIdentityEthnicityAndTheirA11y": "L'identité de genre, l'origine ethnique et leur visibilité se gèrent dans ton Profil",
-  "genderIdentityEthnicityAndTheir": "L'identité de genre, l'origine ethnique et leur visibilité se gèrent dans ton Profil →"
+  "genderIdentityEthnicityAndTheir": "L'identité de genre, l'origine ethnique et leur visibilité se gèrent dans ton Profil →",
+  "tattooPreference": "Tatouages",
+  "piercingPreference": "Piercings",
+  "noPreference": "Pas de préférence",
+  "withTattoos": "Avec tatouages",
+  "withoutTattoos": "Sans tatouages",
+  "withPiercings": "Avec piercings",
+  "withoutPiercings": "Sans piercings",
+  "appearanceRanksNotHidesChoice": "Place plus haut dans ta liste les personnes qui correspondent ; personne n’est masqué pour autant."
  },
  "pt": {
   "invalidRange": "Intervalo inválido",
@@ -247,7 +279,15 @@
   "editYourInterestsOnProfileA11y": "Editar seus interesses no Perfil",
   "editYourInterestsOnProfile": "Edite seus interesses no Perfil →",
   "genderIdentityEthnicityAndTheirA11y": "Identidade de gênero, etnia e a visibilidade delas são gerenciadas no seu Perfil",
-  "genderIdentityEthnicityAndTheir": "Identidade de gênero, etnia e a visibilidade delas são gerenciadas no seu Perfil →"
+  "genderIdentityEthnicityAndTheir": "Identidade de gênero, etnia e a visibilidade delas são gerenciadas no seu Perfil →",
+  "tattooPreference": "Tatuagens",
+  "piercingPreference": "Piercings",
+  "noPreference": "Sem preferência",
+  "withTattoos": "Com tatuagens",
+  "withoutTattoos": "Sem tatuagens",
+  "withPiercings": "Com piercings",
+  "withoutPiercings": "Sem piercings",
+  "appearanceRanksNotHidesChoice": "Coloca mais acima na sua lista quem combina; ninguém é ocultado por isso."
  },
  "ht": {
   "invalidRange": "Ranje pa valab",
@@ -297,7 +337,15 @@
   "editYourInterestsOnProfileA11y": "Modifye enterè w yo sou Pwofil ou",
   "editYourInterestsOnProfile": "Modifye enterè w yo sou Pwofil ou →",
   "genderIdentityEthnicityAndTheirA11y": "Idantite sèks, etnisite ak vizibilite yo jere sou Pwofil ou",
-  "genderIdentityEthnicityAndTheir": "Idantite sèks, etnisite ak vizibilite yo jere sou Pwofil ou →"
+  "genderIdentityEthnicityAndTheir": "Idantite sèks, etnisite ak vizibilite yo jere sou Pwofil ou →",
+  "tattooPreference": "Tatou",
+  "piercingPreference": "Pyèsin",
+  "noPreference": "Pa gen preferans",
+  "withTattoos": "Ak tatou",
+  "withoutTattoos": "San tatou",
+  "withPiercings": "Ak pyèsin",
+  "withoutPiercings": "San pyèsin",
+  "appearanceRanksNotHidesChoice": "Mete moun ki koresponn yo pi wo nan lis ou; pèsonn pa kache pou sa."
  },
  "zh": {
   "invalidRange": "范围无效",
@@ -347,7 +395,15 @@
   "editYourInterestsOnProfileA11y": "在个人资料中编辑你的兴趣",
   "editYourInterestsOnProfile": "在个人资料中编辑你的兴趣 →",
   "genderIdentityEthnicityAndTheirA11y": "性别认同、种族及其可见性在你的个人资料中管理",
-  "genderIdentityEthnicityAndTheir": "性别认同、种族及其可见性在你的个人资料中管理 →"
+  "genderIdentityEthnicityAndTheir": "性别认同、种族及其可见性在你的个人资料中管理 →",
+  "tattooPreference": "纹身",
+  "piercingPreference": "穿孔",
+  "noPreference": "无偏好",
+  "withTattoos": "有纹身",
+  "withoutTattoos": "无纹身",
+  "withPiercings": "有穿孔",
+  "withoutPiercings": "无穿孔",
+  "appearanceRanksNotHidesChoice": "符合的人会排在你列表的更前面；不会因此隐藏任何人。"
  },
  "vi": {
   "invalidRange": "Khoảng không hợp lệ",
@@ -397,7 +453,15 @@
   "editYourInterestsOnProfileA11y": "Chỉnh sửa sở thích trong Hồ sơ",
   "editYourInterestsOnProfile": "Chỉnh sửa sở thích trong Hồ sơ →",
   "genderIdentityEthnicityAndTheirA11y": "Bản dạng giới, sắc tộc và chế độ hiển thị được quản lý trong Hồ sơ của bạn",
-  "genderIdentityEthnicityAndTheir": "Bản dạng giới, sắc tộc và chế độ hiển thị được quản lý trong Hồ sơ của bạn →"
+  "genderIdentityEthnicityAndTheir": "Bản dạng giới, sắc tộc và chế độ hiển thị được quản lý trong Hồ sơ của bạn →",
+  "tattooPreference": "Hình xăm",
+  "piercingPreference": "Khuyên",
+  "noPreference": "Không ưu tiên",
+  "withTattoos": "Có hình xăm",
+  "withoutTattoos": "Không có hình xăm",
+  "withPiercings": "Có xỏ khuyên",
+  "withoutPiercings": "Không xỏ khuyên",
+  "appearanceRanksNotHidesChoice": "Đưa những người phù hợp lên cao hơn trong danh sách của bạn; không ai bị ẩn vì điều này."
  },
  "tl": {
   "invalidRange": "Hindi wastong saklaw",
@@ -447,7 +511,15 @@
   "editYourInterestsOnProfileA11y": "I-edit ang iyong mga interes sa Profile",
   "editYourInterestsOnProfile": "I-edit ang iyong mga interes sa Profile →",
   "genderIdentityEthnicityAndTheirA11y": "Ang gender identity, etnisidad, at ang visibility nila ay pinamamahalaan sa iyong Profile",
-  "genderIdentityEthnicityAndTheir": "Ang gender identity, etnisidad, at ang visibility nila ay pinamamahalaan sa iyong Profile →"
+  "genderIdentityEthnicityAndTheir": "Ang gender identity, etnisidad, at ang visibility nila ay pinamamahalaan sa iyong Profile →",
+  "tattooPreference": "Tattoo",
+  "piercingPreference": "Piercing",
+  "noPreference": "Walang kagustuhan",
+  "withTattoos": "May tattoo",
+  "withoutTattoos": "Walang tattoo",
+  "withPiercings": "May piercing",
+  "withoutPiercings": "Walang piercing",
+  "appearanceRanksNotHidesChoice": "Inilalagay nang mas mataas sa listahan mo ang mga tugma; walang itinatago dahil dito."
  },
  "ru": {
   "invalidRange": "Неверный диапазон",
@@ -497,7 +569,15 @@
   "editYourInterestsOnProfileA11y": "Изменить интересы в профиле",
   "editYourInterestsOnProfile": "Изменить интересы в профиле →",
   "genderIdentityEthnicityAndTheirA11y": "Гендерная идентичность, этничность и их видимость настраиваются в вашем профиле",
-  "genderIdentityEthnicityAndTheir": "Гендерная идентичность, этничность и их видимость настраиваются в вашем профиле →"
+  "genderIdentityEthnicityAndTheir": "Гендерная идентичность, этничность и их видимость настраиваются в вашем профиле →",
+  "tattooPreference": "Татуировки",
+  "piercingPreference": "Пирсинг",
+  "noPreference": "Без предпочтений",
+  "withTattoos": "С татуировками",
+  "withoutTattoos": "Без татуировок",
+  "withPiercings": "С пирсингом",
+  "withoutPiercings": "Без пирсинга",
+  "appearanceRanksNotHidesChoice": "Поднимает подходящих людей выше в вашем списке; никто не скрывается из-за этого."
  },
  "ko": {
   "invalidRange": "잘못된 범위",
@@ -547,6 +627,14 @@
   "editYourInterestsOnProfileA11y": "프로필에서 관심사 편집",
   "editYourInterestsOnProfile": "프로필에서 관심사 편집 →",
   "genderIdentityEthnicityAndTheirA11y": "성별 정체성, 민족, 공개 여부는 프로필에서 관리해요",
-  "genderIdentityEthnicityAndTheir": "성별 정체성, 민족, 공개 여부는 프로필에서 관리해요 →"
+  "genderIdentityEthnicityAndTheir": "성별 정체성, 민족, 공개 여부는 프로필에서 관리해요 →",
+  "tattooPreference": "타투",
+  "piercingPreference": "피어싱",
+  "noPreference": "상관없음",
+  "withTattoos": "타투 있음",
+  "withoutTattoos": "타투 없음",
+  "withPiercings": "피어싱 있음",
+  "withoutPiercings": "피어싱 없음",
+  "appearanceRanksNotHidesChoice": "맞는 사람을 목록에서 더 위로 보여 줘요. 이 때문에 숨겨지는 사람은 없어요."
  }
 }

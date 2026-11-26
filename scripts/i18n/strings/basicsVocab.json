@@ -193,7 +193,15 @@
   "option.gender.genderfluid": "Genderfluid",
   "option.gender.agender": "Agender",
   "option.gender.other": "Other",
-  "option.gender.prefer_not_to_say": "Prefer not to say"
+  "option.gender.prefer_not_to_say": "Prefer not to say",
+  "label.tattoos": "Tattoos",
+  "option.tattoos.has_tattoos": "Has tattoos",
+  "option.tattoos.no_tattoos": "No tattoos",
+  "option.tattoos.prefer_not_to_say": "Prefer not to say",
+  "label.piercings": "Piercings",
+  "option.piercings.has_piercings": "Has piercings",
+  "option.piercings.no_piercings": "No piercings",
+  "option.piercings.prefer_not_to_say": "Prefer not to say"
  },
  "es": {
   "label.height": "Altura",
@@ -389,7 +397,15 @@
   "option.gender.genderfluid": "Género fluido",
   "option.gender.agender": "Agénero",
   "option.gender.other": "Otro",
-  "option.gender.prefer_not_to_say": "Prefiero no decirlo"
+  "option.gender.prefer_not_to_say": "Prefiero no decirlo",
+  "label.tattoos": "Tatuajes",
+  "option.tattoos.has_tattoos": "Tiene tatuajes",
+  "option.tattoos.no_tattoos": "Sin tatuajes",
+  "option.tattoos.prefer_not_to_say": "Prefiero no decirlo",
+  "label.piercings": "Piercings",
+  "option.piercings.has_piercings": "Tiene piercings",
+  "option.piercings.no_piercings": "Sin piercings",
+  "option.piercings.prefer_not_to_say": "Prefiero no decirlo"
  },
  "de": {
   "label.height": "Größe",
@@ -585,7 +601,15 @@
   "option.gender.genderfluid": "Genderfluid",
   "option.gender.agender": "Agender",
   "option.gender.other": "Andere",
-  "option.gender.prefer_not_to_say": "Möchte ich nicht sagen"
+  "option.gender.prefer_not_to_say": "Möchte ich nicht sagen",
+  "label.tattoos": "Tattoos",
+  "option.tattoos.has_tattoos": "Hat Tattoos",
+  "option.tattoos.no_tattoos": "Keine Tattoos",
+  "option.tattoos.prefer_not_to_say": "Möchte ich nicht sagen",
+  "label.piercings": "Piercings",
+  "option.piercings.has_piercings": "Hat Piercings",
+  "option.piercings.no_piercings": "Keine Piercings",
+  "option.piercings.prefer_not_to_say": "Möchte ich nicht sagen"
  },
  "fr": {
   "label.height": "Taille",
@@ -781,7 +805,15 @@
   "option.gender.genderfluid": "Genre fluide",
   "option.gender.agender": "Agenre",
   "option.gender.other": "Autre",
-  "option.gender.prefer_not_to_say": "Je préfère ne pas le dire"
+  "option.gender.prefer_not_to_say": "Je préfère ne pas le dire",
+  "label.tattoos": "Tatouages",
+  "option.tattoos.has_tattoos": "A des tatouages",
+  "option.tattoos.no_tattoos": "Pas de tatouages",
+  "option.tattoos.prefer_not_to_say": "Je préfère ne pas le dire",
+  "label.piercings": "Piercings",
+  "option.piercings.has_piercings": "A des piercings",
+  "option.piercings.no_piercings": "Pas de piercings",
+  "option.piercings.prefer_not_to_say": "Je préfère ne pas le dire"
  },
  "pt": {
   "label.height": "Altura",
@@ -977,7 +1009,15 @@
   "option.gender.genderfluid": "Gênero fluido",
   "option.gender.agender": "Agênero",
   "option.gender.other": "Outro",
-  "option.gender.prefer_not_to_say": "Prefiro não dizer"
+  "option.gender.prefer_not_to_say": "Prefiro não dizer",
+  "label.tattoos": "Tatuagens",
+  "option.tattoos.has_tattoos": "Tem tatuagens",
+  "option.tattoos.no_tattoos": "Sem tatuagens",
+  "option.tattoos.prefer_not_to_say": "Prefiro não dizer",
+  "label.piercings": "Piercings",
+  "option.piercings.has_piercings": "Tem piercings",
+  "option.piercings.no_piercings": "Sem piercings",
+  "option.piercings.prefer_not_to_say": "Prefiro não dizer"
  },
  "ht": {
   "label.height": "Wotè",
@@ -1173,7 +1213,15 @@
   "option.gender.genderfluid": "Jan likid",
   "option.gender.agender": "San jan",
   "option.gender.other": "Lòt",
-  "option.gender.prefer_not_to_say": "Mwen pito pa di"
+  "option.gender.prefer_not_to_say": "Mwen pito pa di",
+  "label.tattoos": "Tatou",
+  "option.tattoos.has_tattoos": "Gen tatou",
+  "option.tattoos.no_tattoos": "Pa gen tatou",
+  "option.tattoos.prefer_not_to_say": "Mwen pito pa di",
+  "label.piercings": "Pyèsin",
+  "option.piercings.has_piercings": "Gen pyèsin",
+  "option.piercings.no_piercings": "Pa gen pyèsin",
+  "option.piercings.prefer_not_to_say": "Mwen pito pa di"
  },
  "zh": {
   "label.height": "身高",
@@ -1369,7 +1417,15 @@
   "option.gender.genderfluid": "性别流动",
   "option.gender.agender": "无性别",
   "option.gender.other": "其他",
-  "option.gender.prefer_not_to_say": "不愿透露"
+  "option.gender.prefer_not_to_say": "不愿透露",
+  "label.tattoos": "纹身",
+  "option.tattoos.has_tattoos": "有纹身",
+  "option.tattoos.no_tattoos": "没有纹身",
+  "option.tattoos.prefer_not_to_say": "不愿透露",
+  "label.piercings": "穿孔",
+  "option.piercings.has_piercings": "有穿孔",
+  "option.piercings.no_piercings": "没有穿孔",
+  "option.piercings.prefer_not_to_say": "不愿透露"
  },
  "vi": {
   "label.height": "Chiều cao",
@@ -1565,7 +1621,15 @@
   "option.gender.genderfluid": "Giới tính linh hoạt",
   "option.gender.agender": "Vô giới",
   "option.gender.other": "Khác",
-  "option.gender.prefer_not_to_say": "Không muốn nói"
+  "option.gender.prefer_not_to_say": "Không muốn nói",
+  "label.tattoos": "Hình xăm",
+  "option.tattoos.has_tattoos": "Có hình xăm",
+  "option.tattoos.no_tattoos": "Không có hình xăm",
+  "option.tattoos.prefer_not_to_say": "Không muốn nói",
+  "label.piercings": "Khuyên",
+  "option.piercings.has_piercings": "Có xỏ khuyên",
+  "option.piercings.no_piercings": "Không xỏ khuyên",
+  "option.piercings.prefer_not_to_say": "Không muốn nói"
  },
  "tl": {
   "label.height": "Taas",
@@ -1761,7 +1825,15 @@
   "option.gender.genderfluid": "Genderfluid",
   "option.gender.agender": "Agender",
   "option.gender.other": "Iba pa",
-  "option.gender.prefer_not_to_say": "Ayokong sabihin"
+  "option.gender.prefer_not_to_say": "Ayokong sabihin",
+  "label.tattoos": "Tattoo",
+  "option.tattoos.has_tattoos": "May tattoo",
+  "option.tattoos.no_tattoos": "Walang tattoo",
+  "option.tattoos.prefer_not_to_say": "Ayokong sabihin",
+  "label.piercings": "Piercing",
+  "option.piercings.has_piercings": "May piercing",
+  "option.piercings.no_piercings": "Walang piercing",
+  "option.piercings.prefer_not_to_say": "Ayokong sabihin"
  },
  "ru": {
   "label.height": "Рост",
@@ -1957,7 +2029,15 @@
   "option.gender.genderfluid": "Гендерфлюид",
   "option.gender.agender": "Агендер",
   "option.gender.other": "Другое",
-  "option.gender.prefer_not_to_say": "Предпочитаю не указывать"
+  "option.gender.prefer_not_to_say": "Предпочитаю не указывать",
+  "label.tattoos": "Татуировки",
+  "option.tattoos.has_tattoos": "Есть татуировки",
+  "option.tattoos.no_tattoos": "Нет татуировок",
+  "option.tattoos.prefer_not_to_say": "Предпочитаю не говорить",
+  "label.piercings": "Пирсинг",
+  "option.piercings.has_piercings": "Есть пирсинг",
+  "option.piercings.no_piercings": "Нет пирсинга",
+  "option.piercings.prefer_not_to_say": "Предпочитаю не говорить"
  },
  "ko": {
   "label.height": "키",
@@ -2153,6 +2233,14 @@
   "option.gender.genderfluid": "젠더플루이드",
   "option.gender.agender": "무성별",
   "option.gender.other": "기타",
-  "option.gender.prefer_not_to_say": "밝히지 않음"
+  "option.gender.prefer_not_to_say": "밝히지 않음",
+  "label.tattoos": "타투",
+  "option.tattoos.has_tattoos": "타투 있음",
+  "option.tattoos.no_tattoos": "타투 없음",
+  "option.tattoos.prefer_not_to_say": "밝히고 싶지 않음",
+  "label.piercings": "피어싱",
+  "option.piercings.has_piercings": "피어싱 있음",
+  "option.piercings.no_piercings": "피어싱 없음",
+  "option.piercings.prefer_not_to_say": "밝히고 싶지 않음"
  }
 }
