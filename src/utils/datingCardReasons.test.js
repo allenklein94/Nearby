@@ -165,7 +165,8 @@ describe('Dating Browse reasons (owner, 2026-11-14)', () => {
   });
   test('wiring: Browse computes reasons from the fresh row the card shows, and both cards render through datingReasonText', () => {
     const svc = read('../services/proximity.js');
-    expect(svc).toMatch(/merge: \(candidate, row\)[\s\S]{0,200}sharedDatingFacts\(myProfile, profiles\)/);
+    // Build 88: one capped server page per call (20270382); each card's facts are computed from the row it shows.
+    expect(svc).toMatch(/profiles: p,\s*\.\.\.sharedDatingFacts\(myProfile, p\)/);
     expect(svc).toMatch(/BROWSE_PROFILE_COLUMNS = '[^']*relationship_intention/);
     for (const f of ['../screens/DiscoveryScreen.js', '../components/SwipeableDiscoveryCards.js']) {
       expect(read(f)).toMatch(/facts\.reasons\.map\(\(reason\) =>[\s\S]{0,120}datingReasonText\(reason, t\)/);
