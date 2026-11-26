@@ -17,7 +17,8 @@ import { joinedNearbyDate } from '../utils/joinedDate';
 import { useLanguage } from '../context/LanguageContext';
 import { pickProfilePhoto, uploadProfilePhoto, getSignedPhotoUrl } from '../services/photos';
 import { pickExtraPhoto, uploadExtraPhoto, getExtraPhotos, deleteExtraPhoto, setAsMainPhoto } from '../services/extraPhotos';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS, normalizeUgcText } from '../utils/ugcText';
 import { getProfileQuickStats, getAchievements, getEarnedProfileStats } from '../services/homeDashboard';
 import { startRecording, stopRecording, uploadVoiceIntro, getSignedVoiceIntroUrl, deleteVoiceIntro } from '../services/voiceNotes';
 import { BASICS_FIELDS } from '../constants/basicsFields';
@@ -28,6 +29,7 @@ import { GENDER_IDENTITY_OPTIONS } from '../constants/genderOptions';
 import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
 import { PERSONAL_INTEREST_OPTIONS as INTEREST_OPTIONS } from '../constants/gatheringCategories';
+import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
 import TagGroupPicker from '../components/TagGroupPicker';
 import { CUISINE_OPTIONS, VENUE_PREFERENCE_OPTIONS } from '../constants/businessAttributes';
 import VoicePlayButton from '../components/VoicePlayButton';
@@ -129,6 +131,8 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   const [extraPhotos, setExtraPhotos] = useState([]);
   const [uploadingExtra, setUploadingExtra] = useState(false);
   const [interests, setInterests] = useState([]);
+  // The onboarding social-plans answer (owner, 2026-11-22: editable later). Several choices; 'open' exclusive; ranking only.
+  const [socialComfortLevels, setSocialComfortLevels] = useState([]);
   // Item 100 (CLAUDE.md, "Let the recipient contribute preferences without
   // spoiling the surprise"), half A: a real, optional, self-declared
   // standing preference -- same posture as `interests` above, drawn from
@@ -297,6 +301,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       setBio(data.bio || '');
       setPhotoVerified(!!data.photo_verified);
       setInterests(data.interests || []);
+      setSocialComfortLevels(parseComfortLevels(data.social_comfort_level));
       setCuisinePreferences(data.cuisine_preferences || []);
       setVenuePreferences(data.venue_preferences || []);
       setPronouns(data.pronouns || '');
@@ -317,6 +322,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
       setManagesBusiness(!!data.managed_partner_id);
       baselineRef.current = profileFormSnapshot({
         displayName: data.display_name || '', bio: data.bio || '', interests: data.interests || [],
+        socialComfortLevels: parseComfortLevels(data.social_comfort_level),
         cuisinePreferences: data.cuisine_preferences || [], venuePreferences: data.venue_preferences || [],
         pronouns: data.pronouns || '', gender: data.gender || '', sexualOrientation: data.sexual_orientation || '',
         genderIdentity: data.gender_identity || [], interestedInGenders: data.interested_in_genders || [],
@@ -444,10 +450,8 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
     if (!draftAnswer.trim()) {
       return Alert.alert(t('ui.profile.answerRequired'), t('ui.profile.writeAShortAnswerTo'));
     }
-    const check = await checkTextModeration(draftAnswer);
-    if (!check.safe) {
-      return Alert.alert(t('ui.profile.answerNotAllowed'), t('ui.profile.pleaseReviseYourAnswerAnd'));
-    }
+    const check = await screenUserContent([{ text: draftAnswer, kind: UGC_KINDS.bio }]);
+    if (blockedByScreening(Alert, t, check, { notAllowedTitle: t('ui.profile.answerNotAllowed'), notAllowedBody: t('ui.profile.pleaseReviseYourAnswerAnd') })) return;
 
     setPrompts((prev) => {
       const next = [...prev];
@@ -566,34 +570,36 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
   }
 
   async function save() {
-    const nameCheck = await checkTextModeration(displayName);
-    if (!nameCheck.safe) {
-      form.show('name', t('ui.profile.pleaseReviseYourDisplayName'));
-      return;
-    }
-    const bioCheck = await checkTextModeration(bio);
-    if (!bioCheck.safe) {
-      form.show('bio', t('ui.profile.pleaseReviseYourBioAnd'));
-      return;
-    }
-    for (const [label, value] of [[t('ui.profile.fieldPronouns'), pronouns], [t('ui.profile.fieldGender'), gender], [t('ui.profile.fieldOrientation'), sexualOrientation]]) {
-      if (value.trim()) {
-        const check = await checkTextModeration(value);
-        if (!check.safe) {
-          return Alert.alert(t('ui.profile.notAllowed', { label: label }), t('ui.profile.pleaseReviseThisFieldAnd'));
-        }
-      }
+    // 20270373: every changed public text is screened before the save (the database refuses unscreened text and checks only
+    // what changes); 'hold' = saved, the published text stays until a person approves the new one.
+    const base = baselineRef.current ? JSON.parse(baselineRef.current) : {};
+    let held = false;
+    const screenChanged = async (value, baseValue, kind, notAllowedTitle, notAllowedBody, onRefuse) => {
+      const now = normalizeUgcText(value);
+      if (!now || now === normalizeUgcText(baseValue ?? '')) return true;
+      const result = await screenUserContent([{ text: value, kind }]);
+      if (blockedByScreening(Alert, t, result, { notAllowedTitle, notAllowedBody, onRefuse })) return false;
+      if (result.outcome === 'hold') held = true;
+      return true;
+    };
+    if (!(await screenChanged(displayName, base.displayName, UGC_KINDS.displayName, t('ui.profile.displayNameNotAllowed'), t('ui.profile.pleaseReviseYourDisplayName'), (msg) => form.show('name', msg)))) return;
+    if (!(await screenChanged(bio, base.bio, UGC_KINDS.bio, t('ui.profile.bioNotAllowed'), t('ui.profile.pleaseReviseYourBioAnd'), (msg) => form.show('bio', msg)))) return;
+    for (const [label, value, baseValue] of [[t('ui.profile.fieldPronouns'), pronouns, base.pronouns], [t('ui.profile.fieldGender'), gender, base.gender], [t('ui.profile.fieldOrientation'), sexualOrientation, base.sexualOrientation]]) {
+      if (!(await screenChanged(value, baseValue, UGC_KINDS.profileDetail, t('ui.profile.notAllowed', { label: label }), t('ui.profile.pleaseReviseThisFieldAnd')))) return;
     }
 
     const textBasicsFields = BASICS_FIELDS.filter((f) => f.type === 'text');
     for (const field of textBasicsFields) {
       const value = basics[field.key];
-      if (value && value.trim()) {
-        const check = await checkTextModeration(value);
-        if (!check.safe) {
-          return Alert.alert(t('ui.profile.notAllowed', { label: basicsLabel(field, language) }), t('ui.profile.pleaseReviseThisFieldAnd'));
-        }
+      if (typeof value === 'string' && value.trim()) {
+        if (!(await screenChanged(value, base.basics?.[field.key], UGC_KINDS.profileDetail, t('ui.profile.notAllowed', { label: basicsLabel(field, language) }), t('ui.profile.pleaseReviseThisFieldAnd')))) return;
       }
+    }
+    // Prompt answers were screened when written; a new one is screened again here so the save is within its window.
+    const baseAnswers = new Set((base.prompts || []).map((p) => normalizeUgcText(p?.answer)));
+    for (const prompt of prompts) {
+      if (baseAnswers.has(normalizeUgcText(prompt?.answer))) continue;
+      if (!(await screenChanged(prompt?.answer, '', UGC_KINDS.bio, t('ui.profile.answerNotAllowed'), t('ui.profile.pleaseReviseYourAnswerAnd')))) return;
     }
 
     // Phase F -- height is optional, but a genuinely half-filled pair
@@ -617,6 +623,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         display_name: displayName,
         bio,
         interests,
+        social_comfort_level: serializeComfortLevels(socialComfortLevels),
         cuisine_preferences: cuisinePreferences,
         venue_preferences: venuePreferences,
         pronouns: pronouns.trim() || null,
@@ -631,8 +638,12 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
         connection_goal: connectionGoal || null,
       })
       .eq('id', userId);
-    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
-    showSuccessToast(t('ui.profile.saved'));
+    if (error) {
+      if (handledScreeningRefusal(Alert, t, error, { notAllowedTitle: t('ui.profile.bioNotAllowed'), notAllowedBody: t('ui.profile.pleaseReviseYourBioAnd') })) return;
+      return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => save() });
+    }
+    if (held) showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
+    else showSuccessToast(t('ui.profile.saved'));
     baselineRef.current = currentSnapshot;
     if (editing && navigation.canGoBack?.()) {
       allowLeaveRef.current = true;
@@ -703,7 +714,7 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
 
   const usedQuestions = prompts.map((p) => p.question);
   const currentSnapshot = profileFormSnapshot({
-    displayName, bio, interests, cuisinePreferences, venuePreferences, pronouns, gender, sexualOrientation,
+    displayName, bio, interests, socialComfortLevels, cuisinePreferences, venuePreferences, pronouns, gender, sexualOrientation,
     genderIdentity, interestedInGenders, myEthnicity, heightFeet, heightInchesVal, basics, prompts, connectionGoal,
   });
   dirtyRef.current = editing && isProfileFormDirty(baselineRef.current, currentSnapshot);
@@ -1397,6 +1408,28 @@ export default function ProfileScreen({ navigation, route, mode = 'summary' }) {
           <Text style={styles.sectionLabel} accessibilityRole="header">{t('profile.interestsSection')}</Text>
         </View>
         <TagGroupPicker options={INTEREST_OPTIONS} selected={interests} onToggle={toggleInterest} />
+
+        {/* The onboarding social-plans question, editable here (owner, 2026-11-22; no screen of its own). */}
+        <Text style={styles.sectionLabel} accessibilityRole="header">{t('ui.onboarding.socialPlansTitle')}</Text>
+        <Text style={styles.sublabel}>{t('ui.onboarding.pickAnyThatFit')}</Text>
+        <View style={styles.chipsWrap}>
+          {COMFORT_LEVELS.map((value) => {
+            const selected = socialComfortLevels.includes(value);
+            return (
+              <TouchableOpacity
+                key={value}
+                style={[styles.chip, selected && styles.chipSelected]}
+                onPress={() => setSocialComfortLevels((prev) => toggleComfortLevel(prev, value))}
+                activeOpacity={0.85}
+                accessibilityLabel={t(`ui.onboarding.comfort.${value}`)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected }}
+              >
+                <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{t(`ui.onboarding.comfort.${value}`)}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
 
         {/* Item 100 (CLAUDE.md, "Let the recipient contribute preferences
             without spoiling the surprise"), half A -- a real, optional,

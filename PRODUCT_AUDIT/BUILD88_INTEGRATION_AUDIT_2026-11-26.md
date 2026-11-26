@@ -38,3 +38,13 @@ email reply-to), `post-tier1/category-picker-collapsed`, `post-tier1/multi-locat
 - Edge functions, env vars, flags: unchanged from `MIGRATION_CATCHUP_PLAN_2026-11-23.md` §8.8 (edge-function plan with live versions) on the deploy branch; nothing in the merges above adds a function or secret.
 - `package.json` now runs patch-package on install (native-back): a clean `npm ci` must apply the react-native-screens patch before the iOS build (checked on `test/back-fix-staging` 2026-11-22).
 - Staging rehearsal of real content screening: blocked until the separate Anthropic organization is funded and its key is set on staging only.
+
+## Verification (2026-11-26, local only)
+- First Jest run: 9 suites failed. Causes: (1) my Back-fix conflict resolution took native-back's whole files and dropped the
+  trial's newer `ProfileScreen.js` changes (content screening, social-plans editing); REDONE as trial version + only the
+  native-back vs main-tabs-back delta (same base aae44aae6, applied cleanly); `profileTab.test.js` + the superseded
+  `nativeBackButton.test.js` (main-tabs-back's narrower patch) aligned/removed; (2) a duplicate `COMFORT_LEVELS` import in
+  `OnboardingQuestionsScreen.js` and `ProfileScreen.js` ALREADY on `integ/build88-trial` (a merge leftover there), removed;
+  (3) the shared node_modules had no react-native-screens patch: real `npm ci` here applies it (patch-package ✔).
+- After the fixes: Jest **608/608 suites, 8189 passed, 0 failed** (11 todo); iOS bundle export clean (real modules).
+- Not run: journeys on a replay, website export, phone. Not merged: Dating (0382 decision) + offer dock (port).

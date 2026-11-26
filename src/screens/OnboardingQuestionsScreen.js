@@ -11,7 +11,6 @@ import { QUICK_INTERESTS, onboardingInterestSelection, migrateOnboardingDraft, s
 import { ONBOARDING_GOALS, LOOKING_FOR_OPTIONS, motivationsFromAnswers } from '../constants/onboardingGoals';
 import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
 import { disabledButtonStyle } from '../constants/buttonStates';
-import { COMFORT_LEVELS, parseComfortLevels, serializeComfortLevels, toggleComfortLevel } from '../constants/socialComfort';
 
 // This screen runs before signup — there's no account yet to save
 // these answers to. They're held in AsyncStorage temporarily and
