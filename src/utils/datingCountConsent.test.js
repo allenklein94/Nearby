@@ -82,28 +82,28 @@ describe('every Dating card source reads the server opt-in view (cards, not only
     const start = prox.search(new RegExp(`(export )?async function ${name}\\(`));
     return prox.slice(start, prox.indexOf('\n}\n', start));
   };
-  // Browse's read lives in buildBrowsePool (owner 2026-11-14, Option A); getBrowseMatches only pages through it.
-  test('getBrowseMatches reads only through buildBrowsePool', () => {
-    expect(body('getBrowseMatches')).toMatch(/await buildBrowsePool\(inputs\.userId, inputs\.myProfile\)/);
-    expect(body('getBrowseMatches')).not.toMatch(/\.from\(/);
+  // Build 88 (20270382 kept, owner 2026-11-26): Browse reads one capped page per call through browseDatingCandidates
+  // (services/datingBrowse.js: browse_dating_candidates, whose rows come from private.dating_candidate_rows, the same
+  // opt-in rule, else this same view); the page is ranked in rankBrowsePage, which re-checks the verdict.
+  test('getBrowseMatches reads only through browseDatingCandidates and re-checks the verdict', () => {
+    const fn = body('getBrowseMatches');
+    expect(fn).toMatch(/browseDatingCandidates\(/);
+    expect(fn).not.toMatch(/\.from\(/);
+    expect(fn).toMatch(/DATING_CANDIDATE_COLUMNS[,)]/);
+    expect(fn).toMatch(/rankBrowsePage\(myProfile, page, excluded\)/);
+    expect(prox).toMatch(/function browseEligibility\(myProfile\) \{[\s\S]*?isDatingOptedIn\(/);
+    const browse = src('services/datingBrowse.js');
+    expect(browse).toMatch(/\.from\('dating_candidates_visible_to_me'\)/);
+    expect(browse).toMatch(/rpc\('browse_dating_candidates'/);
   });
-  test.each(['getNearbyMatches', 'buildBrowsePool'])('%s reads dating_candidates_visible_to_me, never people_visible_to_me, and re-checks the verdict', (name) => {
+  test.each(['getNearbyMatches', 'recheckBrowseOnReturn'])('%s reads dating_candidates_visible_to_me, never people_visible_to_me, and re-checks the verdict', (name) => {
     const fn = body(name);
-    // 20270382: Browse reads through browseDatingCandidates (services/datingBrowse.js): browse_dating_candidates, whose
-    // rows come from private.dating_candidate_rows (the same opt-in rule), else this same view.
-    if (name === 'getBrowseMatches') {
-      expect(fn).toMatch(/browseDatingCandidates\(/);
-      const browse = src('services/datingBrowse.js');
-      expect(browse).toMatch(/\.from\('dating_candidates_visible_to_me'\)/);
-      expect(browse).toMatch(/rpc\('browse_dating_candidates'/);
-    } else {
-      expect(fn).toMatch(/\.from\('dating_candidates_visible_to_me'\)/);
-    }
+    expect(fn).toMatch(/\.from\('dating_candidates_visible_to_me'\)/);
     expect(fn).not.toMatch(/\.from\('people_visible_to_me'\)|\.from\('profiles'\)\s*\n\s*\.select\('id, display_name/);
     // Both reads share ONE column list (it carries the server's verdict, dating_opted_in).
     expect(fn).toMatch(/DATING_CANDIDATE_COLUMNS[,)]/);
     expect(prox).toMatch(/const DATING_CANDIDATE_COLUMNS = '[^']*, dating_opted_in';/);
-    expect(fn).toMatch(/isDatingOptedIn\(/);
+    expect(fn).toMatch(name === 'getNearbyMatches' ? /isDatingOptedIn\(/ : /browseEligibility\(myProfile\)/);
   });
   test('Crossed Paths (sightings + shared gatherings) keeps only people the server returned', () => {
     expect(body('getNearbyMatches')).toMatch(/\.filter\(\(item\) => item\.profiles !== null && isDatingOptedIn\(item\)\)/);
