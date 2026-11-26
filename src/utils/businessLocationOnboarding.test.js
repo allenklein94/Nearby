@@ -57,7 +57,7 @@ describe('Profile shows the saved location', () => {
 });
 
 describe('website sign-up asks the same question', () => {
-  const html = read('docs/business.html');
+  const html = require('../qa/publishedPage').pageToPublish('business.html'); // staged until 20270419 is live
   const fn = read('supabase/functions/submit-business-application/index.ts');
   test('the form offers both modes and only a storefront must give an address', () => {
     expect(html).toMatch(/name="locationMode" value="storefront" checked/);

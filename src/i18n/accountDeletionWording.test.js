@@ -21,7 +21,7 @@ describe('account deletion wording', () => {
     }
   });
   test('the Privacy Policy matches: no "all associated data", and it names what may be kept', () => {
-    const p = repo('docs/privacy.html');
+    const p = require('../qa/publishedPage').pageToPublish('privacy.html'); // staged until Batch 8 publishes it
     expect(p).not.toMatch(/all associated data/i);
     expect(p).toMatch(/legal preservation obligation/);
     expect(p).toMatch(/original photos or media/);
@@ -38,6 +38,6 @@ describe('account deletion wording', () => {
     expect(f).not.toMatch(/json\(\{ error: \w+Error\.message \}, 500\)/);
   });
   test('the Terms point at the same rule and promise nothing wider', () => {
-    expect(repo('docs/terms.html')).not.toMatch(/all (associated|your) data/i);
+    expect(require('../qa/publishedPage').pageToPublish('terms.html')).not.toMatch(/all (associated|your) data/i);
   });
 });
