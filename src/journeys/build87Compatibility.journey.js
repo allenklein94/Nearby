@@ -47,6 +47,8 @@ d('journey: build 87 keeps working against the trust & safety database (0347 -> 
   ${profileReadGrant('v_a', ['v_b'])}
   update profiles set onboarding_motivations = array['Go on dates', 'Make new friends'], open_to_friend_discovery = true,
     wide_area = '41.2,-73.1' where id in (v_a, v_b);
+  -- the journey actors have no photo; a real signed-up person has one (CompleteProfileScreen requires it)
+  update profiles set photo_url = 'https://example.invalid/b87.jpg' where id = v_a;
   ${rec('state', `jsonb_build_object(
       'n6', to_regprocedure('public.get_my_profile()') is not null,
       'id_verified', exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'profiles' and column_name = 'id_verified'),
@@ -83,13 +85,20 @@ d('journey: build 87 keeps working against the trust & safety database (0347 -> 
   ${as('report', 'v_a', `insert into reports (reporter_id, reported_id, reason, details) values (v_a, v_b, 'Fake profile', 'b87 journey')`,
     `(select reason from reports where reporter_id = v_a and reported_id = v_b order by created_at desc limit 1)`)}
 
+  -- Edit Profile (services/myProfile.js: one update of the changed fields), non-text updates, community create
+  ${as('edit_nontext', 'v_a', `update profiles set interests = array['Coffee', 'Hiking'], last_home_visit = now() where id = v_a; get diagnostics v_n = row_count`, 'v_n')}
+  ${as('edit_bio', 'v_a', `update profiles set bio = 'New bio written in build 87' where id = v_a; get diagnostics v_n = row_count`, 'v_n')}
+  ${as('edit_name', 'v_a', `update profiles set display_name = 'Renamed In 87' where id = v_a; get diagnostics v_n = row_count`, 'v_n')}
+  ${as('community', 'v_a', `insert into communities (name, description, interest_tag, is_public, creator_id)
+      values ('Pier coffee club', 'Build 87 journey', 'Coffee', true, v_a)`)}
+
   -- gathering (createGathering's insert keys)
   ${as('gathering', 'v_a', `insert into gatherings (host_id, title, description, interest_tag, activity, area, wide_area, precise_lat, precise_lng,
       scheduled_at, is_public, requires_approval, show_on_map, women_only, visibility, discoverable, capacity, ask_local_businesses,
       allow_attendee_invites, ticket_required, features, duration_minutes)
       values (v_a, 'Coffee at the pier', 'Build 87 journey', 'Coffee', null, '26.5,-80.0', '26.5,-80.0', 26.51, -80.05,
       now() + interval '2 days', true, false, true, false, 'everyone', true, 6, false, true, false, '{}', 60) returning id into v_g`, `v_g is not null`)}
-`);
+`, { realUgcScreening: true }); // the real 0373 lookup: build 87 never calls screen-user-content
     s = stepMap(log);
   }, 120000);
 
@@ -100,7 +109,11 @@ d('journey: build 87 keeps working against the trust & safety database (0347 -> 
     expect(data('own_public_cols')).toBe(1);
   });
 
-  test('sign-up: insert works; a retry gets 23505 and the update saves', () => {
+  test('sign-up: insert works and a retry updates, up to 0372; from 0373 the unscreened name is refused (Wall B)', () => {
+    if (data('state').ugc) {
+      expect(data('signup_insert').code).toBe('42501'); // hint screening_required: build 87 can't sign anyone up after 0373
+      return;
+    }
     expect(data('signup_insert')).toBe('Build 87');
     expect(data('signup_retry_insert').code).toBe('23505');
     expect(data('signup_retry_update')).toBe(1);
@@ -126,6 +139,17 @@ d('journey: build 87 keeps working against the trust & safety database (0347 -> 
 
   test('a gathering with build 87\'s insert is created up to 0372; from 0373 it needs screening (Wall B, recorded)', () => {
     if (!data('state').ugc) expect(data('gathering')).toBe(true);
-    else expect(data('gathering')).toHaveProperty('code');
+    else expect(data('gathering').code).toBe('42501'); // hint screening_required
+  });
+
+  test('non-text profile updates keep working in every state (interests, last visit)', () => {
+    expect(data('edit_nontext')).toBe(1);
+  });
+
+  test('Edit Profile name/bio and community create work up to 0372; from 0373 refused without screening (Wall B, recorded)', () => {
+    for (const k of ['edit_bio', 'edit_name', 'community']) {
+      if (!data('state').ugc) expect(data(k).code).toBeUndefined();
+      else expect(data(k).code).toBe('42501'); // hint screening_required: build 87 never calls screen-user-content
+    }
   });
 });

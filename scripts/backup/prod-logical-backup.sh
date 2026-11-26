@@ -36,20 +36,28 @@ NETFLAG=${SOURCE_NETWORK:+--network $SOURCE_NETWORK}
 DUMP="$OUT/prod-$TS.dump"
 
 echo "1/3 dump -> $DUMP"
-docker run --rm $NETFLAG --env-file "$ENVF" -v "$OUT":/out "$CLIENT" bash -c \
-  'pg_dump "$SRC" -Fc --no-subscriptions -n public -n private -n auth -n storage -f /out/'"$(basename "$DUMP")"
-chmod 600 "$DUMP"; sha256sum "$DUMP" | tee "$DUMP.sha256"
+# Runs as this user with umask 077: the dump is owned by us and 0600 from its first byte (as root it was root-owned,
+# so chmod failed and the file kept the workspace's default 666 ACL; found by the 2026-11-25 dry run).
+docker run --rm $NETFLAG --user "$(id -u):$(id -g)" -e HOME=/tmp --env-file "$ENVF" -v "$OUT":/out "$CLIENT" bash -c \
+  'umask 077; pg_dump "$SRC" -Fc --no-subscriptions -n public -n private -n auth -n storage -f /out/'"$(basename "$DUMP")"
+chmod 600 "$DUMP" || { echo "cannot make $DUMP private: deleting it"; rm -f "$DUMP"; exit 3; }
+[ "$(stat -c %a "$DUMP")" = 600 ] || { echo "$DUMP not 0600: deleting it"; rm -f "$DUMP"; exit 3; }
+sha256sum "$DUMP" | tee "$DUMP.sha256"
 
 echo "2/3 restore into $NAME (internal network, no route out)"
 docker network inspect $NET >/dev/null 2>&1 || docker network create --internal $NET >/dev/null
 docker rm -f "$NAME" >/dev/null 2>&1 || true
 docker run -d --name "$NAME" --network $NET -e POSTGRES_PASSWORD=postgres "$IMAGE" >/dev/null
-for i in $(seq 1 60); do docker exec "$NAME" pg_isready -U postgres -q && break; sleep 2; done
+# Wait for the image's own health check: pg_isready alone is true during first-time setup, whose server then restarts
+# and drops the restore's connection (2026-11-25 dry run: 4452 'no connection to the server').
+for i in $(seq 1 90); do [ "$(docker inspect -f '{{.State.Health.Status}}' "$NAME")" = healthy ] && break; sleep 2; done
+[ "$(docker inspect -f '{{.State.Health.Status}}' "$NAME")" = healthy ] || { echo "restore container never became healthy"; exit 3; }
+SA() { docker exec -i -e PGPASSWORD=postgres "$NAME" "$@"; }  # as supabase_admin: this image's postgres is not a superuser
 docker exec "$NAME" bash -c 'getent hosts example.com >/dev/null 2>&1 && exit 9 || exit 0' || { echo "restore container can resolve the internet: abort"; exit 3; }
 docker cp "$DUMP" "$NAME":/tmp/prod.dump
 # The image already carries Supabase's roles and the auth/storage schemas; restore over them, keep going on errors that
 # are platform-owned objects, and record every error so none is silently skipped.
-docker exec "$NAME" bash -c 'pg_restore -U postgres -d postgres --clean --if-exists --no-owner --role=postgres /tmp/prod.dump' \
+SA pg_restore -h localhost -U supabase_admin -d postgres --clean --if-exists /tmp/prod.dump \
   > "$OUT/restore-$TS.log" 2>&1 || true
 echo "   restore errors: $(grep -c 'ERROR' "$OUT/restore-$TS.log" || true) (see $OUT/restore-$TS.log)"
 
@@ -65,12 +73,13 @@ do $$ declare r record; c bigint; h text; begin
 select tbl||' '||n||' '||h from _fp order by tbl;
 SQL
 )
-docker run --rm $NETFLAG --env-file "$ENVF" "$CLIENT" bash -c 'psql "$SRC" -X -q -A -t -v ON_ERROR_STOP=1' <<<"$FP" > "$OUT/fp-source-$TS.txt"
-docker exec -i "$NAME" psql -U postgres -X -q -A -t -v ON_ERROR_STOP=1 <<<"$FP" > "$OUT/fp-restored-$TS.txt"
+docker run -i --rm $NETFLAG --env-file "$ENVF" "$CLIENT" bash -c 'psql "$SRC" -X -q -A -t -v ON_ERROR_STOP=1' <<<"$FP" > "$OUT/fp-source-$TS.txt"
+SA psql -h localhost -U supabase_admin -d postgres -X -q -A -t -v ON_ERROR_STOP=1 <<<"$FP" > "$OUT/fp-restored-$TS.txt"
 docker run --rm $NETFLAG --env-file "$ENVF" "$CLIENT" bash -c 'pg_dump "$SRC" --schema-only -n public -n private' > "$OUT/schema-source-$TS.sql"
-docker exec "$NAME" pg_dump -U postgres --schema-only -n public -n private > "$OUT/schema-restored-$TS.sql"
+SA pg_dump -h localhost -U supabase_admin -d postgres --schema-only -n public -n private > "$OUT/schema-restored-$TS.sql"
 diff <(grep -v '^--' "$OUT/schema-source-$TS.sql" | grep -v '^$') <(grep -v '^--' "$OUT/schema-restored-$TS.sql" | grep -v '^$') > "$OUT/schema-diff-$TS.txt" || true
 tables=$(wc -l < "$OUT/fp-source-$TS.txt")
+[ "$tables" -gt 0 ] || { echo "FAIL: source fingerprint is empty"; exit 1; }
 bad=$(diff "$OUT/fp-source-$TS.txt" "$OUT/fp-restored-$TS.txt" | grep -c '^[<>]' || true)
 echo "   tables compared: $tables; differing lines: $bad; schema diff lines: $(wc -l < "$OUT/schema-diff-$TS.txt")"
 if [ "$bad" != 0 ]; then echo "FAIL: restored data differs (see fp-*-$TS.txt)"; exit 1; fi
