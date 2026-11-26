@@ -7,7 +7,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { perkRedemptionState, perkCodeMessage, redemptionsByOffer } from '../utils/perkRedemptionState';
 import PerkCodeBox from '../components/PerkCodeBox';
 import { getBusinessProfile, getBusinessFollowerCount, getBusinessPublicGatherings, getBusinessActiveOffers, isFollowingBusiness, followBusiness, unfollowBusiness, getRedemptionCounts, getMyRedemptionRows, getMyRedemptionFor, redeemOffer, getMyManagedPartner, logBusinessProfileView, getBusinessExperiences, getBusinessMessagesPage } from '../services/brandOffers';
-import { getBusinessLovedTags, getBusinessReputation, getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
+import { getSignedGatheringPhotoUrl, getApprovedAttendeeCount } from '../services/gatherings';
 import { getCommunityMemberCount } from '../services/communities';
 import { businessPrimaryAction } from '../utils/primaryAction';
 import { LEGACY_RESERVATION_ATTRIBUTE } from '../constants/bookingMode';
@@ -26,6 +26,10 @@ import { followerCountLine, reliabilityLine, hoursLine, weekHoursRows, bookingMo
 import { isNotFound } from '../utils/notFound';
 import UnavailableState from '../components/UnavailableState';
 import { createFromBusinessParams } from '../utils/businessPlanPrefill';
+import { isVerifiedBusiness } from '../services/businessVerification';
+import ReportBlockModal from '../components/ReportBlockModal';
+import { canReportBusiness } from '../utils/reportContent';
+import VerifiedBusinessBadge from '../components/VerifiedBusinessBadge';
 import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Phase 4 (media upload, CLAUDE.md) -- a Signature Experience's own real
@@ -75,6 +79,11 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [loadError, setLoadError] = useState(false);
   // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
   const [unavailable, setUnavailable] = useState(false);
+  // Verified Business (owner, 2026-10-31): decided by the server only; unknown = no badge.
+  const [verified, setVerified] = useState(false);
+  // "Report business" (20270381): quiet link at the end of the page; the report is about the business, never its owner.
+  const [reporting, setReporting] = useState(false);
+  const [myPartnerId, setMyPartnerId] = useState(undefined);
   const [followerCount, setFollowerCount] = useState(0);
   const [following, setFollowing] = useState(false);
   const [gatherings, setGatherings] = useState([]);
@@ -84,13 +93,9 @@ export default function BusinessProfileScreen({ route, navigation }) {
   const [myRedemptions, setMyRedemptions] = useState({});
   const [unlockProgress, setUnlockProgress] = useState({});
   const [redeemingId, setRedeemingId] = useState(null);
-  const [lovedTags, setLovedTags] = useState([]);
-  const [reputation, setReputation] = useState(null);
   const [photoUrls, setPhotoUrls] = useState([]);
   // 10/10 roadmap Part 5 (see CLAUDE.md's "10/10 roadmap" plan) -- the
-  // business-fulfillment request/offer reliability line, distinct from
-  // `reputation` above (which is the gathering-hosting welcoming/would-
-  // attend-again reputation, a different signal entirely).
+  // business-fulfillment request/offer reliability line.
   const [fulfillmentReputation, setFulfillmentReputation] = useState(null);
   const [fulfillmentResponseTime, setFulfillmentResponseTime] = useState(null);
   // "Business Story" plan, Phase 6 -- Signature Experiences.
@@ -106,14 +111,12 @@ export default function BusinessProfileScreen({ route, navigation }) {
 
   const load = useCallback(async () => {
     try {
-      const [profile, count, isFollowing, upcomingGatherings, activeOffers, tags, rep, fulfillRep, fulfillResponseTime, myPartner, signatureExperiences] = await Promise.all([
+      const [profile, count, isFollowing, upcomingGatherings, activeOffers, fulfillRep, fulfillResponseTime, myPartner, signatureExperiences] = await Promise.all([
         getBusinessProfile(partnerId),
         getBusinessFollowerCount(partnerId),
         isFollowingBusiness(partnerId),
         getBusinessPublicGatherings(partnerId),
         getBusinessActiveOffers(partnerId),
-        getBusinessLovedTags(partnerId),
-        getBusinessReputation(partnerId),
         getPartnerOfferReputation(partnerId),
         getPartnerAvgResponseTime(partnerId),
         getMyManagedPartner(),
@@ -123,6 +126,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
         getBusinessExperiences(partnerId),
       ]);
 
+      setMyPartnerId(myPartner?.id ?? null);
       if (!hasLoggedView.current && myPartner?.id !== partnerId) {
         hasLoggedView.current = true;
         logBusinessProfileView(partnerId, route.params?.source === 'deep_link' ? 'deep_link' : 'in_app');
@@ -134,8 +138,6 @@ export default function BusinessProfileScreen({ route, navigation }) {
       setFollowing(isFollowing);
       setGatherings(upcomingGatherings);
       setOffers(activeOffers);
-      setLovedTags(tags);
-      setReputation(rep);
       setFulfillmentReputation(fulfillRep);
       setFulfillmentResponseTime(fulfillResponseTime);
       // Filtered client-side too, on top of RLS -- so the business's own
@@ -145,6 +147,7 @@ export default function BusinessProfileScreen({ route, navigation }) {
       setExperiences((signatureExperiences ?? []).filter((e) => e.active));
       setLoadError(false);
       getBusinessMessagesPage(partnerId, null, { limit: 1 }).then((rows) => setHasThread(rows.length > 0)).catch(() => {});
+      isVerifiedBusiness(partnerId).then(setVerified).catch(() => setVerified(false));
 
       if (activeOffers.length > 0) {
         getRedemptionCounts(activeOffers.map((o) => o.id)).then(setRedemptionCounts);
@@ -269,6 +272,9 @@ export default function BusinessProfileScreen({ route, navigation }) {
           )}
           <View style={{ flex: 1 }}>
             <Text style={styles.title}>{partner.name}</Text>
+            {verified ? (
+              <VerifiedBusinessBadge style={styles.verifiedBadge} />
+            ) : null}
             <Text style={styles.meta}>
               {followerCountLine(followerCount, language)}
               {partner.address ? ` · ${partner.address}` : ''}
@@ -548,18 +554,6 @@ export default function BusinessProfileScreen({ route, navigation }) {
           </View>
         )}
 
-        {reputation && reputation.feedbackCount > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionHeader}>{t('ui.businessProfile.whatPeopleSay')}</Text>
-            {reputation.welcomingPct != null && reputation.wouldReturnPct != null && (
-              <Text style={styles.repLine}>
-                ⭐ {t('ui.businessProfile.reputationLine', { welcoming: reputation.welcomingPct, again: reputation.wouldReturnPct, count: reputation.feedbackCount })}
-              </Text>
-            )}
-            {lovedTags.length > 0 && <Text style={styles.repLine}>{t('ui.businessProfile.whatPeopleLoved')}{' '}{lovedTags.join(' · ')}</Text>}
-          </View>
-        )}
-
         {photoUrls.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionHeader}>{t('ui.businessProfile.photos')}</Text>
@@ -645,19 +639,35 @@ export default function BusinessProfileScreen({ route, navigation }) {
             })}
           </View>
         )}
+        {myPartnerId !== undefined && canReportBusiness(partnerId, myPartnerId) ? (
+          <TouchableOpacity style={styles.reportLink} onPress={() => setReporting(true)} accessibilityRole="button" accessibilityLabel={t('ui.reportBlock.reportBusinessTitle', { name: partner.name })}>
+            <Text style={styles.reportLinkText}>{t('ui.reportBlock.reportBusiness')}</Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
+      <ReportBlockModal
+        visible={reporting}
+        onClose={() => setReporting(false)}
+        target="business"
+        title={t('ui.reportBlock.reportBusinessTitle', { name: partner.name })}
+        reportedUserId={null}
+        reportedContent={{ type: 'business', id: partnerId }}
+      />
     </SafeAreaView>
   );
 }
 
 const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  reportLink: { alignSelf: 'center', paddingVertical: spacing.md, marginTop: spacing.lg },
+  reportLinkText: { color: colors.textTertiary, fontSize: 13 },
   headerRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.md },
   logo: { width: 64, height: 64, borderRadius: radius.lg, marginRight: spacing.md },
   logoPlaceholder: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, justifyContent: 'center', alignItems: 'center' },
   logoPlaceholderText: { fontSize: 28 },
   title: { ...typography.title, color: colors.textPrimary },
   meta: { color: colors.textTertiary, fontSize: 13, marginTop: 2 },
+  verifiedBadge: { marginTop: 2 },
   reliabilityLine: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', marginTop: spacing.sm },
   description: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.lg, lineHeight: 20 },
   attributeSectionHeader: { ...typography.small, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.xs },
@@ -683,7 +693,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   planHereButtonText: { color: '#fff', fontWeight: '700', fontSize: 15 },
   section: { marginBottom: spacing.lg },
   sectionHeader: { ...typography.caption, color: colors.textTertiary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: spacing.sm },
-  repLine: { color: colors.textSecondary, fontSize: 13, marginBottom: spacing.xs },
   photo: { width: 140, height: 100, borderRadius: radius.md, marginRight: spacing.sm },
   offerCard: { backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, padding: spacing.md, marginBottom: spacing.sm },
   offerTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '700' },

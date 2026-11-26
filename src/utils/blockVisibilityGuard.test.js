@@ -153,7 +153,11 @@ describe('client code never decides "who blocked me" (migration 20270265)', () =
     expect(read('src/services/friends.js')).toMatch(/from\('people_visible_to_me'\)/);
     // Item 121 follow-up (20270314): both Dating reads use dating_candidates_visible_to_me, a view over people_visible_to_me
     // (so the block rule still applies server-side); proximity.js reads no profile view directly anymore.
+    // 20270382: Browse's read moved to services/datingBrowse.js (browse_dating_candidates, the view as its fallback).
+    // proximity.js keeps Crossed Paths' read + Browse's return re-check of the people already shown (by id, build 88).
     expect(read('src/services/proximity.js').match(/from\('dating_candidates_visible_to_me'\)/g)).toHaveLength(2);
+    expect(read('src/services/datingBrowse.js').match(/from\('dating_candidates_visible_to_me'\)/g)).toHaveLength(1);
+    expect(read('src/services/datingBrowse.js')).not.toMatch(/from\('people_visible_to_me'\)|from\('profiles'\)/);
     expect(read('src/services/proximity.js')).not.toMatch(/from\('people_visible_to_me'\)/);
     expect(read('supabase/migrations/20270314_dating_discovery_consent.sql')).toMatch(/from public\.people_visible_to_me v/);
     expect(read('src/services/friendDiscovery.js')).toMatch(/from\('people_visible_to_me'\)/);

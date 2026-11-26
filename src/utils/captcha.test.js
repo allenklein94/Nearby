@@ -222,13 +222,18 @@ describe('LoginScreen wiring (source guard)', () => {
     expect(reviewer).toBeGreaterThan(-1);
     expect(take).toBeGreaterThan(reviewer);
   });
-  test('only one auth call in the app needs a token (no password or email sign-in UI)', () => {
+  test('only the code requests need a token (sign-in + the 20270375 step-up), each carries it (no password or email sign-in UI)', () => {
     const appSrc = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) return /qa|journeys|__/.test(e.name) ? [] : appSrc(p);
       return /\.js$/.test(e.name) && !/\.test\.js$/.test(e.name) ? [fs.readFileSync(p, 'utf8')] : [];
     });
     const all = appSrc(path.join(__dirname, '..')).join('\n');
-    expect(all.match(/auth\.(signInWithOtp|signUp|signInWithPassword|resetPasswordForEmail|signInAnonymously)\(/g)).toEqual(['auth.signInWithOtp(']);
+    expect(all.match(/auth\.(signInWithOtp|signUp|signInWithPassword|resetPasswordForEmail|signInAnonymously)\(/g)).toEqual(['auth.signInWithOtp(', 'auth.signInWithOtp(']);
+    const stepUp = fs.readFileSync(path.join(__dirname, '..', 'services', 'accountStepUp.js'), 'utf8');
+    expect(stepUp).toMatch(/signInWithOtp\(\{ \.\.\.target, options: \{ shouldCreateUser: false, \.\.\.authCaptchaOptions\(captchaToken\) \} \}\)/);
+    const settings = fs.readFileSync(path.join(__dirname, '..', 'screens', 'SettingsScreen.js'), 'utf8');
+    expect(settings.match(/beginStepUp\('[a-z_]+', [^,]+, await stepUpCaptchaToken\('[a-z_]+'\)\)/g)).toHaveLength(2);
+    expect(settings).toMatch(/captcha\.reset\(\)/);
   });
 });

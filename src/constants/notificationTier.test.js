@@ -13,7 +13,7 @@ const block = (name) => pushSrc.slice(pushSrc.indexOf(`const ${name} = {`), push
 
 describe('every push type has exactly one priority', () => {
   test('the table covers every type the app handles, and nothing else', () => {
-    expect(TYPES).toHaveLength(91);
+    expect(TYPES).toHaveLength(94);
     expect(Object.keys(NOTIFICATION_PRIORITY_BY_TYPE).sort()).toEqual([...TYPES].sort());
     for (const p of Object.values(NOTIFICATION_PRIORITY_BY_TYPE)) expect(NOTIFICATION_PRIORITIES).toContain(p);
   });
@@ -64,8 +64,10 @@ describe('delivery', () => {
     expect(pushSrc).toMatch(/const delivery = PRIORITY_DELIVERY\[notifPriority\];/);
     expect(pushSrc).toMatch(/\.\.\.delivery,/);
     expect(pushSrc).not.toMatch(/RECOMMENDATION_TYPES|isImportant/);
-    // the web-only business owner's email fallback skips only low priority (plus the digest, which it always needs)
-    expect(pushSrc).toMatch(/if \(notifPriority !== 'low' \|\| EMAIL_EXTRA_TYPES\.has\(data\?\.type\)\)/);
+    // the web-only business owner's email fallback carries only the owner's business alert types (EMAIL_TYPES, whatever their
+    // priority: the low-priority digest included); sendPushDigestEmail.test.js keeps the set equal to the owner groups
+    expect(pushSrc).toMatch(/if \(!EMAIL_TYPES\.has\(data\?\.type\)\) return \{ emailed: false/);
+    expect(pushSrc).not.toMatch(/EMAIL_EXTRA_TYPES/);
   });
   test('the app creates one Android channel per priority, with matching importance', () => {
     const n = fs.readFileSync(path.join(__dirname, '..', 'services', 'notifications.js'), 'utf8');

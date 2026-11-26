@@ -185,7 +185,8 @@ describe('item 131 audit guards', () => {
   });
 
   it('Browse paging has a stable order', () => {
-    const t = fs.readFileSync(path.join(SRC, 'services/proximity.js'), 'utf8');
+    // 20270382: the Browse page is read in services/datingBrowse.js (function first, the view as its fallback).
+    const t = fs.readFileSync(path.join(SRC, 'services/datingBrowse.js'), 'utf8');
     expect(t).toMatch(/\.order\('id', \{ ascending: true \}\)\s*\n\s*\.range\(offset/);
   });
 });

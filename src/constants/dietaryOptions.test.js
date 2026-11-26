@@ -91,7 +91,7 @@ describe('structured and declared only; wired where it matters', () => {
   it('the only writer is the owner setter; nothing derives it from text, menus, cuisine or photos', () => {
     expect(mig).toMatch(/managed_partner_id = partner_id_param/);
     const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)]));
-    const writers = walk(path.join(ROOT, 'src')).filter((f) => /\.js$/.test(f) && !/\.test\.js$/.test(f) && /set_business_dietary_options/.test(fs.readFileSync(f, 'utf8')));
+    const writers = walk(path.join(ROOT, 'src')).filter((f) => /\.js$/.test(f) && !/\.(test|journey)\.js$/.test(f) && /set_business_dietary_options/.test(fs.readFileSync(f, 'utf8')));
     expect(writers.map((f) => path.relative(ROOT, f))).toEqual(['src/services/brandOffers.js']);
     for (const fn of ['create-assistant', 'business-onboarding-assistant', 'screen-business-content', 'submit-business-application'])
       expect(r(`supabase/functions/${fn}/index.ts`)).not.toMatch(/dietary_options/);

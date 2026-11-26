@@ -10,7 +10,7 @@
 // column its sender already checked, so those older checks can never block something the person left on. Their one
 // non-push use follows automatically: turning off Discover > Recommendations also stops keeping the notification area.
 //
-// Item 143: a business owner's OPERATIONAL alerts are their own area ('business_owner', four owner_* groups) in the same
+// Item 143: a business owner's OPERATIONAL alerts are their own area ('business_owner', five owner_* groups since 20270428) in the same
 // store, independent of the customer 'businesses' area: one can never change or silence the other, even on one account
 // that is both. Groups are assigned by each type's real RECIPIENT (audited from the senders), not by the word "business".
 // The owner area is shown only to a business owner, and only an owner can change it (server-enforced). Account notices to
@@ -26,9 +26,10 @@ export const NOTIFICATION_AREAS = [
   { key: 'discover', icon: '🎯', groups: ['discover_recommendations', 'discover_nearby_people'] },
   { key: 'communities', icon: '🏘️', groups: ['communities'], legacyColumn: 'notify_community' },
   // Business owners only; no older column (owner senders read these groups only, via _send_push).
-  { key: 'business_owner', icon: '💼', ownerOnly: true, groups: ['owner_requests', 'owner_offers', 'owner_reservations', 'owner_demand'] },
+  { key: 'business_owner', icon: '💼', ownerOnly: true, groups: ['owner_requests', 'owner_messages', 'owner_offers', 'owner_reservations', 'owner_demand'] },
 ];
-export const OWNER_GROUPS = ['owner_requests', 'owner_offers', 'owner_reservations', 'owner_demand'];
+// 'owner_messages' (20270428): a customer's message to the business, its own switch (never under New requests).
+export const OWNER_GROUPS = ['owner_requests', 'owner_messages', 'owner_offers', 'owner_reservations', 'owner_demand'];
 export const isOwnerGroup = (g) => OWNER_GROUPS.includes(g);
 // The areas a person sees: the owner area only when they manage a business.
 export function visibleNotificationAreas({ isBusinessOwner } = {}) {
@@ -123,14 +124,16 @@ export const NOTIFICATION_GROUP_BY_TYPE = {
   // Your business (to the business OWNER: managed_partner_id)
   business_opportunity_received: 'owner_requests', business_opportunities_digest: 'owner_requests',
   business_request_cancelled: 'owner_requests', business_request_expiring: 'owner_requests',
+  business_message_received: 'owner_messages',
   business_offer_accepted: 'owner_offers', business_offer_review_result: 'owner_offers',
   reservation_cancelled_by_customer: 'owner_reservations',
   aggregated_demand_growing: 'owner_demand', occasion_demand_growing: 'owner_demand',
 };
 
-// Account notices, never muted: to a business-partner applicant, and an admin's notice of a new report (20270355).
+// Account notices, never muted: to a business-partner applicant, an admin's notice of a new report (20270355), and the
+// account security notice (20270375: a new sign-in elsewhere, a number change).
 export const ACCOUNT_NOTICE_TYPES = ['business_partner_approved', 'business_partner_denied', 'business_partner_needs_info',
-  'admin_report_received'];
+  'admin_report_received', 'admin_screening_outage', 'account_security_notice'];
 
 export function notificationGroupOf(type) {
   return NOTIFICATION_GROUP_BY_TYPE[type] ?? null;

@@ -2,8 +2,8 @@ import { tr } from '../i18n/translate';
 import { supabase } from './supabase';
 import { readMyProfile } from './myProfile';
 import { getNearbyMatches } from './proximity';
-import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
-import { getNearbyGatherings, getMyInterestedGatherings, getApprovedCounts, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters } from './gatherings';
+import { isTrendingGathering } from '../constants/trending';
+import { getNearbyGatherings, getMyInterestedGatherings, getApprovedCounts, pickBestGathering, fetchGatheringVisibilityContext, applyGatheringVisibilityFilters, compareTrendingOrder } from './gatherings';
 import { gatheringEnvironment } from '../constants/environmentMatch';
 import { createWeatherLoader } from './weatherLoader';
 import { getMyGroupPlans } from './groupPlans';
@@ -18,9 +18,10 @@ import { getMyLearnedAffinity } from './behaviorSignals';
 import { relatedHobbyFor } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from './friendInterests';
 import { isGatheringPast } from '../utils/objectState';
-import { attendeeTotal, attendingFigure } from '../utils/gatheringFullness';
+import { attendingFigure } from '../utils/gatheringFullness';
 import { SIGNAL_TEXT } from '../utils/homeSignalMerge';
 import { intentResultDestination } from '../utils/recommendationContext';
+import { getMyFamiliarHosts } from './familiarHosts';
 
 function isToday(iso) {
   const d = new Date(iso);
@@ -444,8 +445,8 @@ export async function getHomeDashboard() {
     .sort((a, b) => new Date(a.scheduled_at) - new Date(b.scheduled_at))
     .slice(0, 4);
   let trendingGatherings = nearbyGatherings
-    .filter((g) => attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN)
-    .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
+    .filter(isTrendingGathering)
+    .sort(compareTrendingOrder)
     .slice(0, 3);
 
   // Starting within the next 30 minutes. Gatherings that already started are
@@ -587,8 +588,8 @@ export async function getHomeDashboard() {
     const notMine = (g) => !upcomingPlanIds.has(g.id);
     const pool = nearbyGatherings.filter(notMine);
     trendingGatherings = pool
-      .filter((g) => attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN)
-      .sort((a, b) => attendeeTotal(b) - attendeeTotal(a))
+      .filter(isTrendingGathering)
+      .sort(compareTrendingOrder)
       .slice(0, 3);
     happeningNow = happeningNow.filter(notMine);
     bestPickPool = pool;
@@ -618,7 +619,9 @@ export async function getHomeDashboard() {
 
   const friendIds = (myFriendships ?? []).map((f) => (f.user_a === myId ? f.user_b : f.user_a));
   // Best Pick by the one ranking ladder (services/gatherings.js pickBestGathering): friends attending count, then room, time, interest.
-  bestPick = pickBestGathering(bestPickPool, { friendIds, myUserId: myId });
+  // Host familiarity (20270410, utils/hostFamiliarity.js): breaks a tie on the whole ladder only; a failure = no tie-break.
+  const familiarHosts = await getMyFamiliarHosts().catch(() => null);
+  bestPick = pickBestGathering(bestPickPool, { friendIds, myUserId: myId, familiarHosts });
 
   let friendsActivity = [];
   let friendsActivityMore = [];

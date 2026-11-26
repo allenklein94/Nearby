@@ -8,6 +8,9 @@ import { LanguageProvider } from './src/context/LanguageContext';
 import { PostHogProvider } from 'posthog-react-native';
 import { installWebAlert } from './src/utils/webAlert';
 import BusinessWebNavigator from './src/navigation/BusinessWebNavigator';
+import { ENVIRONMENT_ERROR } from './src/services/supabase';
+import ConfigErrorScreen from './src/components/ConfigErrorScreen';
+import { SuccessToastHost } from './src/motion';
 
 // Item 127: enforce OS Reduce Motion for every Animated.spring/loop, once, at startup.
 installReducedMotionPolicy(Animated);
@@ -28,15 +31,20 @@ function StatusBarWithTheme() {
 }
 
 export default function App() {
+  // A missing or mixed environment = nothing else renders (src/config/environments.js).
+  if (ENVIRONMENT_ERROR) return <ConfigErrorScreen message={ENVIRONMENT_ERROR} />;
   return (
     // The shared gathering screens call usePostHog(); outside a provider its client is undefined and capture() would throw.
     // A disabled client keeps them working without sending any analytics from the business website.
-    <PostHogProvider apiKey="disabled" options={{ disabled: true }}>
+    // autocapture off: its screen tracker runs outside the NavigationContainer and logged an error on every page.
+    <PostHogProvider apiKey="disabled" options={{ disabled: true }} autocapture={false}>
     <ThemeProvider>
       <LanguageProvider>
         <AuthProvider>
           <StatusBarWithTheme />
           <BusinessWebNavigator />
+          {/* D1 (staging run 2026-11-21): without the host every showSuccessToast on the website was dropped silently. */}
+          <SuccessToastHost />
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>

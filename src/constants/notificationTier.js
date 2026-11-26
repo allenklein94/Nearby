@@ -26,6 +26,10 @@ const HIGH = [
   'message', 'plan_message', 'video_call',
   // business owner: a same-day/next-day request (only urgent requests push individually), a booking, a customer cancelling
   'business_opportunity_received', 'business_offer_accepted', 'reservation_cancelled_by_customer',
+  // your account: a new sign-in elsewhere, or your number changed (20270375); if it wasn't you, act now
+  'account_security_notice',
+  // business owner: a customer wrote to you (at most one per conversation per 5 minutes, 20270428)
+  'business_message_received',
 ];
 
 const LOW = [
@@ -61,6 +65,8 @@ const MEDIUM = [
   'business_request_cancelled', 'business_offer_review_result',
   // admins: a new report to review (20270355; private, no name or content)
   'admin_report_received',
+  // admins: offer screening unavailable / working again (20270387; phase + failure kind only)
+  'admin_screening_outage',
 ];
 
 export const NOTIFICATION_PRIORITY_BY_TYPE = Object.freeze(Object.fromEntries([

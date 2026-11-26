@@ -242,10 +242,6 @@ export const INTENTIONAL_ENGLISH = {
   'src/utils/freeTonight.js': {
     '🌙 Both free tonight': 'English canonical constant kept for the people-match journey; shown through ui.crossedPaths.bothFreeTonight',
   },
-  'src/components/ReportBlockModal.js': {
-    'Inappropriate photo': 'stored reports.reason value read by the admin queue; shown through ui.reportBlock.reason.*', 'Harassment or abuse': 'same',
-    'Fake profile': 'same', 'Spam or scam': 'same', 'Underage user': 'same', Other: 'same',
-  },
   'src/components/StartSomethingModal.js': Object.fromEntries(['Something Else', 'Coffee', 'Dinner', 'Walk', 'Sports', 'Games', 'Music', 'Volunteer', 'Pizza', 'Mexican', 'Sushi', 'Burgers', 'Healthy', 'Italian', "Doesn't matter"]
     .map((label) => [label, 'option identity compared by code (SUB_OPTIONS lookup, Home quick picks); shown through i18n/optionLabels quickOptionLabel'])),
   'src/navigation/RootNavigator.js': {

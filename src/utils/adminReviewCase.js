@@ -12,6 +12,11 @@ export const CASE_SIGNAL_LABEL = {
   similar_photo: 'Similar photo',
   behavior: 'Activity pattern',
   report: 'From a report',
+  prior_suspension: 'Phone number of a suspended account',
+  prior_unresolved: 'Earlier account left with something unresolved',
+  shared_device: 'Same phone notification token',
+  shared_text: 'Same public text',
+  shared_link: 'Same website in public gatherings',
 };
 
 export const CASE_REASON_LABEL = {
@@ -19,6 +24,9 @@ export const CASE_REASON_LABEL = {
   similar_names: 'On accounts with similar names',
   behavior_pattern: 'Unusual activity pattern',
   reported_profile: 'Opened by an admin from a report',
+  suspended_number_reused: 'Signed up with a number a suspended account used',
+  unresolved_account_returned: 'Same number or phone as a deleted account',
+  suspended_device: 'Also used by a suspended account',
 };
 
 export const OUTCOME_LABEL = { no_action: 'No action needed', action_taken: 'Action taken' };
@@ -124,4 +132,211 @@ export function linkProblem(link) {
 // Reports an admin may turn into an investigation (any report about an account; the report itself never opens one).
 export function canOpenInvestigation(report) {
   return !!report && !!report.reported_id;
+}
+
+// A prior-suspension case (20270374): the earlier account's decisions, from admin_get_prior_suspension. A matching number is
+// a reason to look, never proof it is the same person: numbers are reassigned. Never shows the number (the server never
+// returns it). One line per decision, oldest first, plus a line when the record has expired (12 months).
+export const PRIOR_SUSPENSION_NOTE = 'A matching phone number is a reason to look, not proof it is the same person: carriers reassign numbers. Nothing has happened to this account.';
+const RELEASED_LABEL = { account_deleted: 'Earlier account deleted', number_changed: 'Earlier account moved to another number' };
+const DECISION_LABEL = { suspend: 'Suspended', reinstate: 'Reinstated' };
+
+export function priorSuspensionLines(records) {
+  const out = [];
+  for (const r of Array.isArray(records) ? records : []) {
+    if (!r || !r.still_kept) { out.push('Earlier record no longer kept (12-month limit)'); continue; }
+    out.push(`${RELEASED_LABEL[r.released] || 'Earlier account'} ${new Date(r.released_at).toLocaleDateString()} · record kept until ${new Date(r.expires_at).toLocaleDateString()}`);
+    for (const d of Array.isArray(r.decisions) ? r.decisions : []) {
+      const by = d.admin_name || (d.admin_id ? `Admin ${String(d.admin_id).slice(0, 8)}` : 'an admin');
+      out.push(`${new Date(d.at).toLocaleString()} · ${DECISION_LABEL[d.action] || d.action} by ${by}${d.reason ? `: ${d.reason}` : ''}`);
+    }
+  }
+  return out;
+}
+
+// What a deleted account left behind (20270406), from admin_get_deleted_account_record: a record exists only if a report, case or pause was
+// unresolved when it was deleted. Never the number, device, former id or anything about other people (the server never returns them).
+export const DELETED_ACCOUNT_NOTE = 'A matching phone number or device is a reason to look, not proof it is the same person: carriers reassign numbers and families share phones. Nothing here restricted anyone, and the person hasn\'t been told.';
+const UNRESOLVED_LABEL = { open_report: 'open reports', open_case: 'an open review case', active_pause: 'an active pause' };
+
+export function deletedAccountLines(records) {
+  const out = [];
+  for (const r of Array.isArray(records) ? records : []) {
+    if (!r || !r.still_kept) { out.push('The record of the deleted account is no longer kept'); continue; }
+    const what = (r.reasons || []).map((x) => UNRESOLVED_LABEL[x] || x).join(', ');
+    out.push(`Deleted ${new Date(r.released_at).toLocaleDateString()} with ${what} · record kept until ${new Date(r.expires_at).toLocaleDateString()}`);
+    if (r.open_reports) out.push(`${r.open_reports} report${r.open_reports === 1 ? '' : 's'} open when it was deleted`);
+    if (r.open_cases) out.push(`${r.open_cases} review case${r.open_cases === 1 ? '' : 's'} open when it was deleted`);
+    for (const p of Array.isArray(r.pauses) ? r.pauses : []) {
+      out.push(`Paused (${p.capability}) until ${new Date(p.expires_at).toLocaleDateString()}: ${p.reason}`);
+    }
+  }
+  return out;
+}
+
+// Shared-device cases (20270376): the same app install's notification token registered by several accounts. Only counts and
+// the suspended accounts' ids/times reach the admin; never the token or its key.
+export const SHARED_DEVICE_NOTE = 'The same notification token is a reason to look, not proof it is the same person: families share phones, one person may have several accounts, and a token can move with a phone. Nothing has happened to these accounts.';
+
+export function sharedDeviceLines(evidence) {
+  const e = evidence && typeof evidence === 'object' ? evidence : {};
+  const out = [];
+  if (Number.isFinite(e.accounts)) out.push(`${e.accounts} account${e.accounts === 1 ? '' : 's'} registered this token in the last ${e.window_days || 90} days`);
+  const live = Array.isArray(e.suspended_accounts) ? e.suspended_accounts : [];
+  if (live.length) out.push(`${live.length} of them suspended`);
+  const also = Array.isArray(e.corroborating_cases) ? e.corroborating_cases : [];
+  if (also.length) {
+    const kinds = [...new Set(also.map((c) => CASE_SIGNAL_LABEL[c.signal] || c.signal))];
+    out.push(`Opened because these accounts are also in ${also.length} other review case${also.length === 1 ? '' : 's'}: ${kinds.join(', ')}`);
+  }
+  for (const f of Array.isArray(e.former_suspended_accounts) ? e.former_suspended_accounts : []) {
+    out.push(`Earlier on a suspended account since deleted (Account ${String(f.former_account_id).slice(0, 8)}, suspended ${new Date(f.suspended_at).toLocaleDateString()})`);
+  }
+  return out;
+}
+
+// Shared-text cases (20270378): the same long public bio or public gathering description posted by several accounts. Only
+// counts and the public gatherings' ids reach the admin; never the text or its key (the admin reads the text where it is
+// already public: the accounts' profiles and those gatherings).
+export const SHARED_TEXT_NOTE = 'The same public text is a reason to look, not proof it is the same person: co-organisers, clubs and friends copy each other\'s descriptions. If it is legitimate, close the case as "No action needed". Nothing has happened to these accounts.';
+
+export function sharedTextLines(evidence) {
+  const e = evidence && typeof evidence === 'object' ? evidence : {};
+  const out = [];
+  const days = e.window_days || 30;
+  if (Number.isFinite(e.accounts)) out.push(`${e.accounts} account${e.accounts === 1 ? '' : 's'} in this case`);
+  if (Number.isFinite(e.texts) && e.texts > 1) out.push(`${e.texts} different texts shared by the same accounts`);
+  if (Number.isFinite(e.bio_accounts) && e.bio_accounts > 0) out.push(`${e.bio_accounts} posted the same profile bio in the last ${days} days`);
+  if (Number.isFinite(e.gathering_accounts) && e.gathering_accounts > 0) out.push(`${e.gathering_accounts} posted the same public gathering description in the last ${days} days`);
+  const ids = Array.isArray(e.gathering_ids) ? e.gathering_ids : [];
+  if (ids.length) out.push(`Gatherings: ${ids.map((id) => String(id).slice(0, 8)).join(', ')}`);
+  return out;
+}
+
+// Shared-link cases (20270413): public gatherings from several accounts sending people to the same website. Only counts and
+// the public gatherings' ids reach the admin; never the link, its site or its key (the admin reads the link in those
+// public gatherings, where everyone can already read it).
+export const SHARED_LINK_NOTE = 'The same website is a reason to look, not proof it is the same person or a scam: several hosts often link one local venue, club or promoter. Open the gatherings to see the link. If it is legitimate, close the case as "No action needed". Nothing has happened to these accounts.';
+
+export function sharedLinkLines(evidence) {
+  const e = evidence && typeof evidence === 'object' ? evidence : {};
+  const out = [];
+  const days = e.window_days || 30;
+  if (Number.isFinite(e.accounts)) out.push(`${e.accounts} account${e.accounts === 1 ? '' : 's'} in this case linked the same website in public gatherings in the last ${days} days`);
+  if (Number.isFinite(e.links) && e.links > 1) out.push(`${e.links} different websites shared by the same accounts`);
+  const ids = Array.isArray(e.gathering_ids) ? e.gathering_ids : [];
+  if (ids.length) out.push(`Gatherings: ${ids.map((id) => String(id).slice(0, 8)).join(', ')}`);
+  return out;
+}
+
+// Shared review cases (20270379): for each account in the open case, the OTHER existing review cases it is in and the
+// other accounts in those cases, from admin_get_shared_review_cases. Direct connections only: the accounts listed under a
+// linked case are never expanded further (the admin opens that case to look). The relationship is always "Shared review
+// case", never "same person" or "likely related"; each line names the case's own signal, reason and status.
+export const SHARED_CASE_LABEL = 'Shared review case';
+export const SHARED_CASES_NOTE = 'Other review cases these accounts are in. Being in the same review case is not proof the accounts belong to the same person or are related; open a case to see why it exists. Nothing here changes any account.';
+
+const CASE_STATUS_LABEL = { open: 'Open' };
+
+export function caseStatusLine(c) {
+  if (!c) return '';
+  const parts = [c.status === 'closed' ? `Closed · ${OUTCOME_LABEL[c.outcome] || c.outcome}` : (CASE_STATUS_LABEL[c.status] || c.status)];
+  if (c.status === 'open' && c.overdue) parts.push('Review overdue');
+  if (c.status === 'closed' && c.new_evidence_since_closed) parts.push('New evidence since closed');
+  return parts.join(' · ');
+}
+
+// One group per account of the open case that is in at least one other case; each linked case once, with the other
+// accounts by name (an account also in the open case is marked so). Accounts with no other case are left out.
+export function sharedCaseGroups(result) {
+  const out = [];
+  for (const a of Array.isArray(result) ? result : []) {
+    const seen = new Set();
+    const cases = [];
+    for (const c of Array.isArray(a?.cases) ? a.cases : []) {
+      if (!c || !c.id || seen.has(c.id)) continue;
+      seen.add(c.id);
+      const others = [];
+      const seenOther = new Set();
+      for (const o of Array.isArray(c.other_accounts) ? c.other_accounts : []) {
+        if (!o || seenOther.has(o.user_id) || o.user_id === a.user_id) continue;
+        seenOther.add(o.user_id);
+        others.push(`${who(o.display_name, o.user_id)}${o.in_this_case ? ' (also in this case)' : ''}${o.suspended ? ' · Suspended' : ''}`);
+      }
+      cases.push({
+        id: c.id,
+        label: SHARED_CASE_LABEL,
+        title: caseTitle(c),
+        status: caseStatusLine(c),
+        opened: c.opened_at,
+        others: others.length ? `With ${others.join(', ')}` : 'No other accounts in that case',
+      });
+    }
+    if (!cases.length) continue;
+    const total = Number.isFinite(a.total) ? a.total : cases.length;
+    out.push({
+      userId: a.user_id,
+      name: who(a.display_name, a.user_id),
+      suspended: !!a.suspended,
+      cases,
+      more: total > cases.length ? total - cases.length : 0,
+    });
+  }
+  return out;
+}
+
+// Account facts (20270401): one account's facts for a review case. Plain facts only: never a score, a verdict or a
+// recommendation. Reports are allegations until an admin records an outcome, so the two are never one number.
+// Unknown stays out (no invented 0 and no guessed age).
+const DAY_MS = 86400000;
+export function accountAgeLabel(createdAt, now = Date.now()) {
+  const at = createdAt ? new Date(createdAt).getTime() : NaN;
+  if (!Number.isFinite(at) || at > now) return null;
+  const days = Math.floor((now - at) / DAY_MS);
+  if (days < 1) return 'Less than 1 day';
+  if (days < 60) return `${days} day${days === 1 ? '' : 's'}`;
+  if (days < 730) return `${Math.floor(days / 30)} months`;
+  return `${Math.floor(days / 365)} years`;
+}
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+export function accountFactsLines(f, now = Date.now()) {
+  const age = accountAgeLabel(f?.account_created_at, now);
+  const account = [
+    age ? `Account age: ${age}` : null,
+    typeof f?.phone_verified === 'boolean' ? (f.phone_verified ? 'Phone verified' : 'Phone not verified') : null,
+    f?.level === 'established' ? 'Established' : f?.level === 'new' ? 'New' : null,
+  ].filter(Boolean).join(' · ');
+  const received = Number(f?.reports_received) || 0;
+  const breakdown = [
+    f?.reports_open ? `${f.reports_open} open` : null,
+    f?.reports_no_action ? `${f.reports_no_action} closed, no action` : null,
+    f?.reports_action_taken ? `${f.reports_action_taken} closed, action taken` : null,
+    f?.reports_no_outcome ? `${f.reports_no_outcome} closed, no outcome recorded` : null,
+  ].filter(Boolean).join(' · ');
+  return {
+    name: f?.display_name || f?.user_id || '',
+    account,
+    reports: received ? `${plural(received, 'report')} received: ${breakdown}` : 'No reports received',
+  };
+}
+
+export const ACCOUNT_FACTS_NOTE = 'A report is an allegation until an admin records an outcome. Reports about a business aren\'t included, and resolved reports are deleted after 12 months.';
+
+// Link count in the case (20270404). Only what the server counted; no text checked = no line, never a 0 that was never looked for.
+export function caseLinkCountLine(c) {
+  const checked = Number(c?.texts_checked);
+  if (!Number.isInteger(checked) || checked < 1) return null;
+  const links = Number(c?.distinct_links) || 0;
+  const texts = plural(checked, 'reported text');
+  if (!links) return `Possible external links: 0 · ${texts} checked`;
+  return `Possible external links: ${links} · found in ${Number(c?.texts_with_links) || 0} of ${texts} checked`;
+}
+
+export const CASE_LINK_COUNT_NOTE = 'Each different link counts once. Only the reported text stored with this case is checked, and a stored copy can be cut short; the reporter\'s words and anything not reported aren\'t checked. Detection can also match ordinary words like "node.js", so read the text. A link isn\'t a finding.';
+
+// The function isn't on this database yet (older database): show nothing rather than an error.
+export function accountFactsMissing(error) {
+  return error?.code === 'PGRST202' || error?.code === '42883';
 }

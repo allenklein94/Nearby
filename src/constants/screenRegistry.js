@@ -43,7 +43,7 @@ export const SCREEN_REGISTRY = {
   Occasions: { jobs: ['C'], reason: 'Add, edit and remove the occasions Nearby remembers for you.' },
   MusicMode: { jobs: ['C'], reason: 'Connect Spotify and pick the tracks shown on your profile.' },
   IdVerification: { jobs: ['C'], reason: 'Submit your ID for verification.' },
-  InviteFriends: { jobs: ['C'], reason: 'Invite people to Nearby and track the bonus.' },
+  InviteFriends: { jobs: ['C'], reason: 'Invite people to Nearby.' },
   Paywall: { jobs: ['E'], reason: 'Upgrade to premium.' },
   Legal: { jobs: ['F'], reason: 'Terms and privacy policy.' },
 

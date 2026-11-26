@@ -93,10 +93,12 @@ describe('screen wiring (BusinessRequestDetail)', () => {
     expect(catchBlock).toMatch(/presentRecoverableError/);
     expect(handler).toMatch(/setActingOfferId\(null\)/);
   });
-  test('redeem: the business\'s own instructions, no Redeem button; Mark as completed unchanged', () => {
+  test('redeem: the business\'s own instructions, no Redeem button; the person\'s own Mark as done (20270430)', () => {
     expect(src).toMatch(/shown\.redemption \? \(\s*<View style=\{styles\.redeemCallout\}>/);
     expect(src).not.toMatch(/t\('ui\.requestDetail\.redeem'\)/);
     expect(src).toMatch(/onPress=\{\(\) => handleComplete\(o\.id\)\}/);
-    expect(src).toMatch(/t\('ui\.requestDetail\.markAsCompleted'\)/);
+    expect(src).toMatch(/t\('ui\.requestDetail\.markAsDone'\)/);
+    expect(src).toMatch(/canMarkDone\(/);
+    expect(src).not.toMatch(/markAsCompleted/);
   });
 });

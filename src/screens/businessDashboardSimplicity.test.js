@@ -26,7 +26,7 @@ describe('business dashboard simplicity', () => {
     expect(idx('{moreOffersOpen && (')).toBeLessThan(idx("t('ui.bizDash2.occasionPackages')}</Text>"));
   });
   it('leads Profile with Tell Nearby and keeps policy/notifications/payments/AI behind Settings', () => {
-    const settings = idx('{profileSettingsOpen && (');
+    const settings = idx("{profileGroup === 'settings' && ("); // Profile groups (owner audit 2026-11-14)
     for (const needle of ["t('ui.bizDash2.fulfillmentPolicy')}</Text>", '<BusinessNotificationPreferences />', "t('ui.bizDash3.getPaidViaStripe')", "t('ui.bizDash3.aiAutomationSettings')"]) {
       expect(idx(needle)).toBeGreaterThan(settings);
     }

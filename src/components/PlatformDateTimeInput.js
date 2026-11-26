@@ -35,7 +35,7 @@ function fromLocalInputValue(value, mode, fallback) {
 // no-op dead path there, not a runtime risk). Preserves the exact same
 // onChange(event, selectedDate) two-arg signature the native picker uses,
 // so an existing call site needs no change beyond swapping the import.
-export default function PlatformDateTimeInput({ value, mode = 'datetime', minimumDate, onChange, ...rest }) {
+export default function PlatformDateTimeInput({ value, mode = 'datetime', minimumDate, maximumDate, onChange, ...rest }) {
   if (Platform.OS === 'web') {
     const inputType = mode === 'time' ? 'time' : mode === 'date' ? 'date' : 'datetime-local';
     return (
@@ -43,10 +43,12 @@ export default function PlatformDateTimeInput({ value, mode = 'datetime', minimu
         type={inputType}
         value={toLocalInputValue(value, mode)}
         min={minimumDate ? toLocalInputValue(minimumDate, mode) : undefined}
+        max={maximumDate ? toLocalInputValue(maximumDate, mode) : undefined}
+        aria-label={rest.accessibilityLabel}
         onChange={(e) => onChange({ nativeEvent: {} }, fromLocalInputValue(e.target.value, mode, value))}
         style={{ fontSize: 16, padding: 8, borderRadius: 8, border: '1px solid #ccc', width: '100%' }}
       />
     );
   }
-  return <DateTimePickerNative value={value} mode={mode} minimumDate={minimumDate} onChange={onChange} {...rest} />;
+  return <DateTimePickerNative value={value} mode={mode} minimumDate={minimumDate} maximumDate={maximumDate} onChange={onChange} {...rest} />;
 }

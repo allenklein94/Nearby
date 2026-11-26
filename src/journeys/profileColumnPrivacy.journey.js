@@ -17,7 +17,7 @@
 // profiles with the service key: PRODUCT_AUDIT/N6_PROFILE_PRIVACY_PROGRESS_2026-10-28.md), the app's screens on a phone.
 // Known and unchanged: profiles' row rule is not block-filtered, so a blocked person's PUBLIC columns still read by id
 // (CLAUDE.md known residual); the views do filter blocks.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql , profileReadGrant } = require('./journeyHarness');
 const { PUBLIC_PROFILE_COLUMNS, LATER_PUBLIC_PROFILE_COLUMNS } = require('../constants/publicProfileColumns');
 
 const d = hasToken ? describe : describe.skip;
@@ -80,6 +80,7 @@ d('journey: another person reads only public profile columns (N6)', () => {
     ethnicity = 'Journey-H', ethnicity_hidden = true where id = v_e;
   update profiles set cuisine_preferences = array['thai'], venue_preferences = array['quiet'] where id in (v_f, v_d);
   insert into blocks (blocker_id, blocked_id) values (v_a, v_d);
+  ${profileReadGrant('v_a', ['v_b', 'v_c', 'v_e'])}
   ${rec('state', `jsonb_build_object('n6', to_regprocedure('public.get_my_profile()') is not null)`)}
 
   -- ===== The grant itself =====
@@ -89,7 +90,7 @@ d('journey: another person reads only public profile columns (N6)', () => {
   ${rec('anon_any', `(select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'profiles'
       and has_column_privilege('anon', 'public.profiles', column_name, 'SELECT'))`)}
   ${rec('profile_views', `(select coalesce(jsonb_agg(c.relname::text order by c.relname), '[]') from pg_class c where c.relnamespace = 'public'::regnamespace
-      and c.relkind in ('v', 'm') and pg_get_viewdef(c.oid) ~* '\\mprofiles\\M' and has_table_privilege('authenticated', c.oid, 'SELECT'))`)}
+      and c.relkind in ('v', 'm') and pg_get_viewdef(c.oid) ~* '\\m(profiles|people_rows|dating_candidate_rows)\\M' and has_table_privilege('authenticated', c.oid, 'SELECT'))`)}
   ${rec('invoker_profile_functions', `(select coalesce(jsonb_agg(p.proname::text order by p.proname), '[]') from pg_proc p
       where p.pronamespace in ('public'::regnamespace, 'private'::regnamespace) and not p.prosecdef and p.prosrc ~* '\\mprofiles\\M')`)}
   ${rec('realtime_profiles', `(select count(*) from pg_publication_tables where tablename = 'profiles')`)}
@@ -208,6 +209,8 @@ d('journey: another person reads only public profile columns (N6)', () => {
 
   test('nothing else reopens profiles: only the two people views read it; no function runs a profiles read as the caller', () => {
     // Before N6 the Dating view reads profiles through people_visible_to_me, so only that one names profiles itself.
+    // From 20270382 the two views read profiles through their private row views (private.people_rows /
+    // private.dating_candidate_rows); those count as reading profiles.
     const views = data('profile_views').filter((v) => v !== 'dating_candidates_visible_to_me');
     expect(views).toEqual(['people_visible_to_me']);
     expect(data('invoker_profile_functions')).toEqual([]);

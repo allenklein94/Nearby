@@ -2,6 +2,7 @@
 # From-scratch migration replay on an empty database (Docker, supabase/postgres:15.1.0.147).
 #   bash scripts/replay/from-scratch-replay.sh            # fresh container, every migration, stops at the first error
 #   KEEP=1 bash scripts/replay/from-scratch-replay.sh     # leave the container running for checks afterwards
+#   REPLAY_IMAGE=public.ecr.aws/supabase/postgres:17.6.1.003 ...                # production's engine (PG 17.6) instead of the default
 # Never touches production. Each migration file runs in ONE transaction with ON_ERROR_STOP (production applies each file
 # as one Management API query), as `postgres`, in filename order. Log: $OUT/replay.log (default /tmp/nearby-replay).
 # Then, with KEEP=1 (IP = docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' nearby-replay):
@@ -19,6 +20,8 @@
 #   internal Docker network with no route out (checked before any migration runs: the replay aborts if it can reach the
 #   internet). pg_net is the real one; its queued calls just fail. vault gets a placeholder secret (not a key).
 #   Cron jobs are created by the migrations, then paused after the replay.
+#  BEFORE_MIGRATIONS (opt-in, unset by default): a command run right after the isolation check, before the environment
+#   steps; used only to let a real Auth server migrate its own schema first (scripts/replay/suspended-number-auth-local.js).
 #  OPERATIONAL STEPS production ran outside a migration file, reproduced at the same point:
 #   - before 20270294 (item 168): the app code inventory sync (scripts/taxonomy/sync-code-dependencies.js). The migration's
 #     moves refuse to run on a database that has never been synced. Inventory = scripts/taxonomy/code-dependencies.json at
@@ -34,6 +37,7 @@ psql_as() { local u=$1; shift; docker exec -i -e PGPASSWORD=postgres "$NAME" psq
 sync_inventory() { # $1 = git revision whose code-dependencies.json is synced
   git -C "$ROOT" show "$1:scripts/taxonomy/code-dependencies.json" > "$OUT/inventory.json" || return 1
   docker cp "$OUT/inventory.json" "$NAME:/tmp/inventory.json" >/dev/null || return 1
+  psql_as supabase_admin -c 'grant execute on function pg_read_file(text) to postgres' || return 1  # the PG 17 image's postgres isn't a superuser
   psql_as postgres -1 <<SQL
 select pg_catalog.set_config('replay.inv', pg_read_file('/tmp/inventory.json'), true);
 select 'inventory sync @ $1: ' || sync_category_code_dependencies(current_setting('replay.inv')::jsonb, 'replay:$1')::text;
@@ -42,10 +46,13 @@ SQL
 
 docker rm -f "$NAME" >/dev/null 2>&1
 docker network inspect nearby-replay-internal >/dev/null 2>&1 || docker network create --internal nearby-replay-internal >/dev/null
-docker run -d --name "$NAME" --network nearby-replay-internal -e POSTGRES_PASSWORD=postgres supabase/postgres:15.1.0.147 >/dev/null || exit 1
+docker run -d --name "$NAME" --network nearby-replay-internal -e POSTGRES_PASSWORD=postgres "${REPLAY_IMAGE:-supabase/postgres:15.1.0.147}" >/dev/null || exit 1
 for _ in $(seq 1 90); do [ "$(docker inspect -f '{{.State.Health.Status}}' "$NAME")" = healthy ] && break; sleep 2; done
 # no route out: a real request from inside the container must fail
 if docker exec "$NAME" timeout 5 bash -c 'exec 3<>/dev/tcp/1.1.1.1/443' 2>/dev/null; then echo "container can reach the internet; refusing"; exit 1; fi
+# optional, opt-in: a command run on the fresh, empty database before anything else (e.g. a real Auth server doing its own
+# schema migrations first, as on a hosted project: node scripts/replay/suspended-number-auth-local.js prepare)
+if [ -n "${BEFORE_MIGRATIONS:-}" ]; then bash -c "$BEFORE_MIGRATIONS" || { echo "BEFORE_MIGRATIONS failed"; exit 1; }; fi
 
 psql_as supabase_admin <<'SQL' || exit 1
 alter table auth.users add column if not exists phone text unique default null;
@@ -56,6 +63,9 @@ grant all on auth.sessions to postgres, service_role;
 alter table storage.buckets add column if not exists public boolean default false;
 alter table storage.buckets add column if not exists file_size_limit bigint;
 alter table storage.buckets add column if not exists allowed_mime_types text[];
+-- production's storage.objects: owner_id, and no foreign key from owner to auth.users (checked read-only 2026-11-08)
+alter table storage.objects add column if not exists owner_id text;
+alter table storage.objects drop constraint if exists objects_owner_fkey;
 -- the hosted auth service's current helpers (this image's read only the legacy request.jwt.claim.* settings)
 create or replace function auth.uid() returns uuid language sql stable as $f$
   select coalesce(nullif(current_setting('request.jwt.claim.sub', true), ''),

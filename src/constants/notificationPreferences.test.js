@@ -11,13 +11,15 @@ const root = path.join(__dirname, '..', '..');
 const mig = (f) => fs.readFileSync(path.join(root, 'supabase', 'migrations', f), 'utf8');
 const base = mig('20270258_notification_preferences_central.sql'); // derivation trigger, _send_push check
 const sql = mig('20270259_business_owner_notification_preferences.sql'); // seed, owner senders (item 143)
-const msg = mig('20270262_shared_playlists_trips_notification_group.sql'); // current CHECK, setter, derivation
+const msg = mig('20270262_shared_playlists_trips_notification_group.sql'); // current derivation
+// Current CHECK + setter: 20270428 added the owner 'owner_messages' switch ("Customer messages").
+const groupsSql = mig('20270428_business_message_alerts.sql');
 // Type moves after the item-143 seed, in order: message -> messages (20270260), video_call -> video_calls (20270261),
 // playlist_addition + trip_idea_addition -> shared_playlists_trips (20270262).
 const moves = ['20270260_messages_notification_group.sql', '20270261_video_calls_notification_group.sql',
   '20270262_shared_playlists_trips_notification_group.sql'].map(mig).join('\n');
 // New push types after the moves, each seeded by its own migration: plan_message (20270298).
-const ADDED_TYPE_MIGRATIONS = ['20270298_plan_message_push.sql', '20270312_offer_revision.sql'];
+const ADDED_TYPE_MIGRATIONS = ['20270298_plan_message_push.sql', '20270312_offer_revision.sql', '20270428_business_message_alerts.sql'];
 
 describe('every push type is placed exactly once', () => {
   test('8. person-mutable groups + account notices = every push type, exactly once', () => {
@@ -49,9 +51,9 @@ describe('the database copy is identical', () => {
     expect(seed).toEqual(NOTIFICATION_GROUP_BY_TYPE);
   });
   test('the CHECK and the setter accept exactly the groups', () => {
-    const check = msg.match(/notification_mutes <@ array\[([\s\S]*?)\]/)[1];
+    const check = groupsSql.match(/notification_mutes <@ array\[([\s\S]*?)\]/)[1];
     expect([...check.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort()).toEqual([...NOTIFICATION_GROUPS].sort());
-    const setter = msg.match(/group_param not in \(([\s\S]*?)\)/)[1];
+    const setter = groupsSql.match(/group_param not in \(([\s\S]*?)\)/)[1];
     expect([...setter.matchAll(/'([a-z_]+)'/g)].map((m) => m[1]).sort()).toEqual([...NOTIFICATION_GROUPS].sort());
   });
   test('each older column is derived from exactly its area groups', () => {

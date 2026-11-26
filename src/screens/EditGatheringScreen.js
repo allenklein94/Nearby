@@ -14,7 +14,8 @@ import FieldError from '../components/FieldError';
 import useFormErrors from '../hooks/useFormErrors';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { updateGathering, setGatheringCapacity, setGatheringCategoryIfMissing, pickGatheringCoverPhoto, uploadGatheringCoverPhoto, getSignedGatheringPhotoUrl } from '../services/gatherings';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS } from '../utils/ugcText';
 import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
@@ -138,17 +139,18 @@ export default function EditGatheringScreen({ route, navigation }) {
       return;
     }
 
-    const titleCheck = await checkTextModeration(title);
-    if (!titleCheck.safe) {
-      form.show('title', t('ui.gatheringForm.alert.reviseBody'));
-      return;
+    // 20270373: only changed text is screened (the database checks only what changes); 'hold' = the published text stays
+    // until a person approves the new one.
+    let held = false;
+    if (title.trim() !== (gathering.title || '').trim()) {
+      const titleCheck = await screenUserContent([{ text: title, kind: UGC_KINDS.gatheringTitle }]);
+      if (blockedByScreening(Alert, t, titleCheck, { notAllowedTitle: t('ui.gatheringForm.alert.titleNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseBody'), onRefuse: (msg) => form.show('title', msg) })) return;
+      held = titleCheck.outcome === 'hold';
     }
-    if (description.trim()) {
-      const descCheck = await checkTextModeration(description);
-      if (!descCheck.safe) {
-        form.show('description', t('ui.gatheringForm.alert.reviseDescBody'));
-        return;
-      }
+    if (description.trim() && description.trim() !== (gathering.description || '').trim()) {
+      const descCheck = await screenUserContent([{ text: description, kind: UGC_KINDS.gatheringDescription }]);
+      if (blockedByScreening(Alert, t, descCheck, { notAllowedTitle: t('ui.gatheringForm.alert.descNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseDescBody'), onRefuse: (msg) => form.show('description', msg) })) return;
+      held = held || descCheck.outcome === 'hold';
     }
 
     const cleanedTimelineSteps = timelineSteps
@@ -186,11 +188,13 @@ export default function EditGatheringScreen({ route, navigation }) {
       const nextCapacity = limitAttendees ? capacity : null;
       if ((gathering.capacity ?? null) !== nextCapacity) await setGatheringCapacity(gathering.id, nextCapacity);
       if (missingCategory && newCategory) await setGatheringCategoryIfMissing(gathering.id, newCategory);
-      showSuccessToast(t('ui.gatheringForm.edit.updated'), t('ui.gatheringForm.edit.updatedBody'));
+      if (held) showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
+      else showSuccessToast(t('ui.gatheringForm.edit.updated'), t('ui.gatheringForm.edit.updatedBody'));
       navigation.goBack();
     } catch (e) {
       const refusal = gatheringEditRefusal(e);
       if (refusal) Alert.alert(t(refusal.titleKey), t(refusal.bodyKey));
+      else if (handledScreeningRefusal(Alert, t, e, { notAllowedTitle: t('ui.gatheringForm.alert.titleNotAllowed'), notAllowedBody: t('ui.gatheringForm.alert.reviseBody') })) { /* told */ }
       else presentRecoverableError(Alert, { what: 'save your changes', error: e, draftKept: true, onRetry: () => submit() });
     }
     setSubmitting(false);

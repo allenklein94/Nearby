@@ -16,7 +16,7 @@
 //   Fix 4: the id-verification bucket accepts images only, 10 MB max.
 // One rolled-back transaction. Not covered: real sign-in being refused by Supabase Auth (banned_until is what Auth reads;
 // proven on a phone/device only), storage uploads through the Storage API (limits are bucket settings), the app screens.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite , profileReadGrant, crossingReady, CROSSING_AREA } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -49,13 +49,17 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   })}
   update profiles set is_admin = true where id = v_admin;
   -- v_np signed up by email: no phone
-  update auth.users set phone = null, phone_confirmed_at = null where id = v_np;
+  ${fixturePhoneWrite(`update auth.users set phone = null, phone_confirmed_at = null where id = v_np;`)}
   update profiles set photo_url = v_u || '/main-1.jpg', photo_verified = false where id = v_u;
   update profiles set onboarding_motivations = array['Go on dates'], wide_area = '41.2,-73.1' where id in (v_da, v_db, v_dc, v_np);
   update profiles set onboarding_motivations = array['Make new friends'] where id = v_dc;
   update profiles set open_to_friend_discovery = true, wide_area = '41.2,-73.1' where id in (v_fa, v_fb, v_np);
   insert into profile_photos (user_id, photo_url, position, photo_verified) values (v_u, v_u || '/extra-1.jpg', 1, true) returning id into v_extra;
   insert into auth.sessions (id, user_id, created_at, updated_at) values (gen_random_uuid(), v_x, now(), now());
+  ${profileReadGrant('v_y', ['v_u'])}
+  ${profileReadGrant('v_u', ['v_x'])}
+  ${profileReadGrant('v_da', ['v_db', 'v_np', 'v_dc'])}
+  ${profileReadGrant('v_fa', ['v_fb', 'v_np'])}
 
   -- ===== Fix 1: self-grant =====
   ${as('self_photo_verified', 'v_u', 'update profiles set photo_verified = true where id = v_u', '(select photo_verified from profiles where id = v_u)')}
@@ -79,6 +83,8 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
       'main_url', (select photo_url from profiles where id = v_u), 'main_verified', (select photo_verified from profiles where id = v_u),
       'extra_url', (select photo_url from profile_photos where id = v_extra), 'extra_verified', (select photo_verified from profile_photos where id = v_extra)))`)}
   ${as('swap_others_photo', 'v_y', 'perform swap_main_photo(v_extra)')}
+  -- 20270400 closes new ID submissions until an admin migration opens them; these checks are about the insert rules, so open it here
+  if to_regclass('private.id_document_settings') is not null then execute 'update private.id_document_settings set uploads_enabled = true where id'; end if;
   ${as('submission_approved', 'v_u', `insert into id_verification_submissions (user_id, selfie_path, id_photo_path, status) values (v_u, v_u || '/selfie-1.jpg', v_u || '/id-1.jpg', 'approved')`)}
   ${as('submission_other_folder', 'v_u', `insert into id_verification_submissions (user_id, selfie_path, id_photo_path) values (v_u, v_y || '/selfie-1.jpg', v_u || '/id-1.jpg')`)}
   ${as('submission_pending', 'v_u', `insert into id_verification_submissions (user_id, selfie_path, id_photo_path, status) values (v_u, v_u || '/selfie-1.jpg', v_u || '/id-1.jpg', 'pending') returning id into v_sub`)}
@@ -107,7 +113,7 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
     values (v_x, 'JTS coffee', now() + interval '2 days', 1.5, -150.5, 'Coffee', 'journey', 10, 'everyone', true) returning id into v_g;
   perform set_config('request.jwt.claims', '', true);
   insert into gathering_interest (gathering_id, user_id, status) values (v_g, v_att, 'approved');
-  insert into reports (reporter_id, reported_id, reason) values (v_y, v_x, 'Journey report') returning id into v_rep;
+  insert into reports (reporter_id, reported_id, reason) values (v_y, v_x, 'Other') returning id into v_rep;
   select id into v_match from matches where (user_a = v_x and user_b = v_y) or (user_a = v_y and user_b = v_x) limit 1;
   if v_match is null then
     insert into matches (user_a, user_b) values (least(v_x, v_y), greatest(v_x, v_y)) returning id into v_match;
@@ -135,7 +141,7 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   ${as('suspended_waves', 'v_x', `insert into notices (from_user, to_user) values (v_x, v_u)`)}
   ${as('suspended_unhides', 'v_x', 'update profiles set profile_hidden = false where id = v_x', '(select profile_hidden from profiles where id = v_x)')}
   ${as('suspended_unsuspends', 'v_x', 'update profiles set suspended_at = null where id = v_x', '(select suspended_at is not null from profiles where id = v_x)')}
-  ${as('suspended_can_report', 'v_x', `insert into reports (reporter_id, reported_id, reason) values (v_x, v_y, 'Journey counter-report')`)}
+  ${as('suspended_can_report', 'v_x', `insert into reports (reporter_id, reported_id, reason) values (v_x, v_y, 'Other')`)}
   ${as('others_read_profile', 'v_u', 'v_n := 0', '(select count(*) from profiles where id = v_x)')}
   ${as('admin_reads_profile', 'v_admin', 'v_n := 0', '(select count(*) from profiles where id = v_x)')}
   ${as('new_viewer_sees_gathering', 'v_u', 'v_n := 0', '(select count(*) from gatherings where id = v_g)')}
@@ -174,14 +180,16 @@ d('journey: trust & safety launch blockers (fixes 1-5 + crossed paths)', () => {
   ${as('own_flag_kept', 'v_np', 'v_n := 0', '(select open_to_friend_discovery from people_visible_to_me where id = v_np)')}
 
   -- ===== Crossed-paths push consent (sightings are written by the service: no signed-in user) =====
+  -- from 20270384 also: everyone here turned Crossed Paths on and reports the same cell, so only the pool rules decide
+  ${crossingReady(['v_da', 'v_db', 'v_dc', 'v_fa', 'v_fb', 'v_np', 'v_u'])}
   select coalesce(max(id), 0) into v_start from push_outbox;
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_da, v_db, now(), now() + interval '48 hours');
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_da, v_dc, now(), now() + interval '48 hours');
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_fa, v_fb, now(), now() + interval '48 hours');
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_da, v_np, now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_da, v_db, '${CROSSING_AREA}', now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_da, v_dc, '${CROSSING_AREA}', now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_fa, v_fb, '${CROSSING_AREA}', now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_da, v_np, '${CROSSING_AREA}', now(), now() + interval '48 hours');
   insert into blocks (blocker_id, blocked_id) values (v_fb, v_u);
   update profiles set open_to_friend_discovery = true where id = v_u;
-  insert into sightings (user_a, user_b, last_seen_at, expires_at) values (v_u, v_fb, now(), now() + interval '48 hours');
+  insert into sightings (user_a, user_b, approx_area, last_seen_at, expires_at) values (v_u, v_fb, '${CROSSING_AREA}', now(), now() + interval '48 hours');
   ${rec('crossed_pushes', `(select coalesce(jsonb_agg(jsonb_build_array(
       case recipient_id when v_da then 'da' when v_db then 'db' when v_dc then 'dc' when v_fa then 'fa' when v_fb then 'fb' when v_np then 'np' when v_u then 'u' end,
       case data->>'other_user_id' when v_da::text then 'da' when v_db::text then 'db' when v_dc::text then 'dc' when v_fa::text then 'fa'

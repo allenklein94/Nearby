@@ -1,4 +1,5 @@
 import { recordAcceptBehavior } from '../services/behaviorSignals';
+import { hasMapPin } from '../utils/businessLocationMode';
 import { rankReplies, fittingTime } from '../utils/replyFit';
 import { hasTwoTimes, canBookWith, timeToBook } from '../utils/offerTimes';
 import { offerAcceptButtonState } from '../utils/offerAcceptLock';
@@ -14,7 +15,8 @@ import { NLoader, SuccessAnimation, ModeTransition, OfferAcceptedMorph, RequestP
 import { getRespondingBusinesses, subscribeToRespondingChanges, nextRespondingCheckMs } from '../services/offerResponding';
 import { OfferProgressGlow } from '../motion/OfferProgressSteps';
 import { SEQUENCES } from '../motion/motionBudget';
-import { progressKey, visitConfirmationsToAnimate } from '../utils/offerProgress';
+import { progressKey, visitConfirmationsToAnimate, offerStage } from '../utils/offerProgress';
+import { canMarkDone, isVisitConfirmed, isMarkDoneRefusal } from '../utils/visitConfirmation';
 import { loadShown, saveShown, visitConfirmedKey } from '../services/offerProgressShown';
 import { acceptedWhenLine, bookedPartySize } from '../utils/acceptedBooking';
 import { offerToPlanMergeNow, planMergeScroll, planTogetherYieldsToMerge, mergeTravelPath } from '../utils/offerToPlanMerge';
@@ -42,6 +44,7 @@ import { stripTrailingCelebrationIcon, buildPlanHeaderChangeKey } from '../utils
 import OccasionPlanShareCard from '../components/OccasionPlanShareCard';
 import CelebrationHeaderIcon from '../components/CelebrationHeaderIcon';
 import OfferMedia from '../components/OfferMedia';
+import ReportBlockModal from '../components/ReportBlockModal';
 import OfferAssembly, { AssemblyStep, AssemblyGlow } from '../components/OfferAssembly';
 import OfferCustomerBody, { formatProposedTime } from '../components/OfferCustomerBody';
 import { presentOffer } from '../utils/offerPresentationEngine';
@@ -49,7 +52,6 @@ import { validityLabel, isOfferExpired, availableWindowLabel, nextValidityRefres
 import { canDo, offerLifecycleState } from '../utils/objectLifecycle';
 import { expiredRequestAction, askAgainTomorrowParams, isReopenTimePassedError } from '../utils/requestAskAgain';
 import { getGatheringById } from '../services/gatherings';
-import { canCompleteVisit } from '../utils/dashboardGlance';
 import { consumerOfferAction } from '../utils/primaryAction';
 import { offerCloseRefusal } from '../utils/offerCloseClock';
 import useOfferCloseClock from '../hooks/useOfferCloseClock';
@@ -77,6 +79,7 @@ import BusinessLogoMark from '../components/BusinessLogoMark';
 import { getScreenedLogos } from '../services/businessLogos';
 import { logoFor } from '../utils/businessLogo';
 import { SOUND_CUES } from '../utils/soundCues';
+import { offerCardStyleSpec } from '../components/offerCardStyles';
 import { disabledButtonStyle } from '../constants/buttonStates';
 
 // Wording lives in ui.requestDetail.status.<status> / offerStatus.<status> / offerType.<type>; these list the known keys.
@@ -223,6 +226,8 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // Item 139: the object was deleted or is no longer visible (often opened from a push or link): say so, never retry.
   const [unavailable, setUnavailable] = useState(false);
   const [actingOfferId, setActingOfferId] = useState(null);
+  // 20270372: the reply being reported (⋯ -> Report this offer); the server decides who the report is about.
+  const [reportingOfferId, setReportingOfferId] = useState(null);
   // Item 119: the time picked on each two-time reply (offer id -> ISO), until "I'll take this one" books it.
   const [pickedTimes, setPickedTimes] = useState({});
   const [cancelling, setCancelling] = useState(false);
@@ -318,8 +323,9 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
   // rest of this visit (a reload here never takes it away mid-view; the next visit reads the history again = normal).
   const [firstReplyOfferId, setFirstReplyOfferId] = useState(null);
   const firstReplyDecided = useRef(false);
-  // Item 52: the person's first-ever redemption (their earliest completed offer, from the server). Once known it never moves
-  // ('completed' is final), so it is read only until found, and only while this request has a completed offer of theirs.
+  // Item 52: the person's first-ever redemption (their earliest offer whose visit the BUSINESS confirmed, from the server;
+  // 20270430). Once known it never moves (set once), so it is read only until found, and only while this request has a
+  // business-confirmed offer of theirs.
   const [firstRedemptionOfferId, setFirstRedemptionOfferId] = useState(null);
   const firstRedemptionRef = useRef(null);
   const [reasonAsk, setReasonAsk] = useState(null);
@@ -378,7 +384,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
     liveReloadRef.current = false;
     try {
       const previous = visitPrevRef.current;
-      visitPrevRef.current = new Map((list ?? []).map((o) => [o.id, o.status]));
+      visitPrevRef.current = new Map((list ?? []).map((o) => [o.id, offerStage(o)]));
       if (!uid || !previous) return;
       if (visitShownRef.current.userId !== uid || !visitShownRef.current.list) {
         visitShownRef.current = { userId: uid, list: await loadShown(visitConfirmedKey(uid)) };
@@ -412,7 +418,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       if (decideFirst) firstReplyDecided.current = true;
       // Item 52: read with the offers, so "✓ Visit confirmed" and its first-time line arrive together (never a line popping in).
       const askFirstRedemption = !firstRedemptionRef.current && result.request.requester_id === uid
-        && result.offers.some((o) => o.status === 'completed');
+        && result.offers.some(isVisitConfirmed);
       const [logos, replyHistory, firstRedemptionId] = await Promise.all([
         logoIds.length > 0 ? getScreenedLogos(logoIds).catch(() => null) : null,
         decideFirst ? fetchFirstReplyState(uid) : null, // null on failure = normal wording
@@ -928,7 +934,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
       await load();
       setOutcomeModalOfferId(offerId);
     } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleComplete(offerId) });
+      // V10: one neutral line (never reveals a business's private no-show record), no Try Again; then re-read the real state.
+      if (isMarkDoneRefusal(e)) {
+        Alert.alert(t('ui.shared.errors.didntGoThrough'), t('ui.requestDetail.cantMarkDone'));
+        load();
+      } else {
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleComplete(offerId) });
+      }
     }
     setActingOfferId(null);
   }
@@ -1664,6 +1676,21 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
               <View style={styles.offerPartnerRow}>
                 <BusinessLogoMark uri={logoFor(partnerLogos, o.partner_id)} />
                 <Text style={[styles.offerPartnerName, styles.offerPartnerNameFlex]}>{o.brand_partners?.name ?? t('ui.requestDetail.aBusiness')}</Text>
+                {/* 20270372: a quiet ⋯ on a reply the business really sent: Report this offer (the only item). */}
+                {o.status !== 'pending' && o.offer_description ? (
+                  <TouchableOpacity
+                    style={styles.offerMoreButton}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    accessibilityRole="button"
+                    accessibilityLabel={t('ui.requestDetail.offerMoreA11y', { name: o.brand_partners?.name ?? t('ui.requestDetail.aBusiness') })}
+                    onPress={() => Alert.alert(o.brand_partners?.name ?? t('ui.requestDetail.aBusiness'), undefined, [
+                      { text: t('ui.requestDetail.reportThisOffer'), onPress: () => setReportingOfferId(o.id) },
+                      { text: t('ui.reportBlock.cancel'), style: 'cancel' },
+                    ])}
+                  >
+                    <Text style={styles.offerMoreText}>⋯</Text>
+                  </TouchableOpacity>
+                ) : null}
               </View>
               {/* Item 92 ("Businesses should be able to respond specifically to
                   the occasion", CLAUDE.md): a real, named offer title -- "Special
@@ -1686,7 +1713,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
             <View collapsable={false} ref={(el) => { cardRefs.current[o.id] = el; if (focusOfferId === o.id) focusCardRef.current = el; }} style={[styles.offerCard, focusOfferId === o.id && styles.offerCardFocused]} onLayout={(e) => onOfferLayout(o.id, e)}>
             {/* The finish: one coral outline glow (~300 ms) as the card completes; nothing at all outside an assembly. */}
             <AssemblyGlow color={colors.primary} radius={radius.lg} inset={focusOfferId === o.id ? 2 : 1} />
-            {o.status === 'completed' ? (
+            {isVisitConfirmed(o) ? (
               <OfferProgressGlow key={progressKey(o)} play={visitPlayKeys.has(progressKey(o))} color={colors.success} radius={radius.lg} timing={SEQUENCES.visitConfirmed} />
             ) : null}
             <View>
@@ -1718,6 +1745,11 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                         person's first-ever redemption, one more line says what they just did (words only). */}
                     {confirmation.visitConfirmed ? (
                       <VisitConfirmed key={progressKey(o)} label={t('ui.requestDetail.visitConfirmed')} note={confirmation.firstVisitNote} play={visitPlayKeys.has(progressKey(o))} soundCue={SOUND_CUES.visitConfirmed} />
+                    ) : null}
+                    {/* 20270430: the person's own "Mark as done" is personal: a plain fact, never "Visit confirmed" (only the
+                        business confirms a visit). */}
+                    {confirmation.markedDone ? (
+                      <Text style={styles.acceptedFact}>{`✓ ${t('ui.requestDetail.markedAsDone')}`}</Text>
                     ) : null}
                   </OfferAcceptedMorph>
                 );
@@ -1815,7 +1847,7 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       <Text style={styles.redeemCalloutText}>{shown.redemption}</Text>
                     </View>
                   ) : null}
-                  {o.brand_partners?.latitude != null && o.brand_partners?.longitude != null && (
+                  {hasMapPin(o.brand_partners) && (
                     <TouchableOpacity
                       onPress={() => openUberToDestination({
                         latitude: o.brand_partners.latitude,
@@ -1872,15 +1904,15 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
                       </>
                     );
                   })()}
-                  {canCompleteVisit({ ...o, business_requests: o.business_requests ?? request }) && (
+                  {canMarkDone({ ...o, business_requests: o.business_requests ?? request }) && (
                   <TouchableOpacity
                     style={styles.completeButton}
                     onPress={() => handleComplete(o.id)}
                     disabled={actingOfferId === o.id}
-                    accessibilityLabel={t('ui.requestDetail.markThisReservationCompleteA11y')}
+                    accessibilityLabel={t('ui.requestDetail.markAsDoneA11y')}
                     accessibilityRole="button"
                   >
-                    {actingOfferId === o.id ? <ActivityIndicator color={colors.primary} size="small" /> : <Text style={styles.completeButtonText}>{t('ui.requestDetail.markAsCompleted')}</Text>}
+                    {actingOfferId === o.id ? <ActivityIndicator color={colors.primary} size="small" /> : <Text style={styles.completeButtonText}>{t('ui.requestDetail.markAsDone')}</Text>}
                   </TouchableOpacity>
                   )}
                   <TouchableOpacity
@@ -2264,6 +2296,13 @@ export default function BusinessRequestDetailScreen({ navigation, route }) {
         onClose={() => setOutcomeModalOfferId(null)}
       />
       <CancellationReasonSheet ask={reasonAsk} onClose={() => setReasonAsk(null)} />
+      <ReportBlockModal
+        visible={!!reportingOfferId}
+        onClose={() => setReportingOfferId(null)}
+        reportedUserId={null}
+        reportOnly
+        reportedContent={reportingOfferId ? { type: 'business_offer', id: reportingOfferId } : null}
+      />
     </SafeAreaView>
   );
 }
@@ -2335,23 +2374,12 @@ const getStyles = (colors) => StyleSheet.create({
   comparisonHeaderRow: { marginBottom: spacing.md },
   comparisonHeaderText: { ...typography.headline, color: colors.textPrimary, marginBottom: 2 },
   comparisonHeaderSubtext: { ...typography.caption, color: colors.textSecondary },
-  offerCard: {
-    backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
-    padding: spacing.md, marginBottom: spacing.md,
-  },
+  // The reply card's frame, header lines and button: one shared look with the owner's preview (components/offerCardStyles.js).
+  ...offerCardStyleSpec(colors),
   // the offer this screen was opened on (destination contract): selected state, so coral per the colour rule
   offerCardFocused: { borderColor: colors.primary, borderWidth: 2 },
-  offerPartnerName: { ...typography.body, color: colors.textPrimary, fontWeight: '700' },
-  offerPartnerRow: { flexDirection: 'row', alignItems: 'center' },
-  offerPartnerNameFlex: { flexShrink: 1 },
-  // Item 92 ("Businesses should be able to respond specifically to the
-  // occasion", CLAUDE.md): a real, named offer reads as its own headline
-  // -- "Special Birthday Offer" -- distinct from the plain business-name
-  // line above it, so the compelling structured response the item asks
-  // for actually looks like one, not just more prose.
-  offerTitleHeadline: { ...typography.headline, color: colors.textPrimary, marginTop: 2 },
-  offerReputationLine: { ...typography.caption, color: colors.textSecondary, marginTop: 2 },
-  offerStatus: { ...typography.caption, color: colors.textTertiary, marginTop: 2, marginBottom: spacing.xs },
+  offerMoreButton: { marginLeft: 'auto', paddingLeft: spacing.sm },
+  offerMoreText: { ...typography.body, color: colors.textTertiary, fontWeight: '700' },
   offerTypeLabel: { ...typography.caption, color: colors.info, fontWeight: '700', marginBottom: spacing.xs },
   offerDescription: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.xs },
   offerIncludedItem: { ...typography.body, color: colors.textPrimary, marginBottom: 2 },
@@ -2361,9 +2389,6 @@ const getStyles = (colors) => StyleSheet.create({
   redeemCalloutText: { ...typography.body, color: colors.textPrimary },
   offerPrice: { ...typography.body, color: colors.textPrimary, fontWeight: '700', marginBottom: spacing.sm },
   offerViewedIndicator: { ...typography.caption, color: colors.textTertiary, marginBottom: spacing.sm },
-  acceptButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
-  acceptButtonWaiting: { opacity: 0.5 },
-  acceptButtonText: { color: '#fff', fontWeight: '700' },
   completeButton: { borderWidth: 1, borderColor: colors.primary, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },
   completeButtonText: { color: colors.primary, fontWeight: '700' },
   cancelReservationButton: { borderWidth: 1, borderColor: colors.danger, borderRadius: radius.full, paddingVertical: spacing.sm, alignItems: 'center', marginTop: spacing.xs },

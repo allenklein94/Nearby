@@ -3,7 +3,9 @@ import { useLanguage } from '../context/LanguageContext';
 import { presentRecoverableError } from '../utils/recoverableError';
 import { Modal, View, Image, TouchableOpacity, Text, StyleSheet, Dimensions, PanResponder, Animated, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { getPhotoComments, addPhotoComment, deletePhotoComment } from '../services/photoComments';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS } from '../utils/ugcText';
+import { showSuccessToast } from '../motion';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const DISMISS_THRESHOLD = 120;
@@ -86,17 +88,17 @@ export default function PhotoLightbox({ visible, photoUri, onClose, photoOwnerId
 
   async function handleSend() {
     if (!draft.trim()) return;
-    const check = await checkTextModeration(draft);
-    if (!check.safe) {
-      Alert.alert(t('ui.media.commentNotAllowed'), t('ui.media.pleaseRephraseYourCommentAnd'));
-      return;
-    }
+    // 20270373: screened before it's written; 'hold' = posted, seen only by you until a person approves it.
+    const check = await screenUserContent([{ text: draft, kind: UGC_KINDS.comment }]);
+    if (blockedByScreening(Alert, t, check, { notAllowedTitle: t('ui.media.commentNotAllowed'), notAllowedBody: t('ui.media.pleaseRephraseYourCommentAnd') })) return;
     setSending(true);
     try {
       const added = await addPhotoComment(photoOwnerId, photoRef, draft.trim());
       setComments((prev) => [...prev, added]);
       setDraft('');
+      if (check.outcome === 'hold') showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
     } catch (e) {
+      if (handledScreeningRefusal(Alert, t, e, { notAllowedTitle: t('ui.media.commentNotAllowed'), notAllowedBody: t('ui.media.pleaseRephraseYourCommentAnd') })) { setSending(false); return; }
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSend() });
     }
     setSending(false);

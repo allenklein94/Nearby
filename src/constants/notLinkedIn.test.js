@@ -18,7 +18,9 @@ const rel = (f) => path.relative(ROOT, f);
 describe('Nearby is not LinkedIn', () => {
   it('Job Title is read only where it is declared, labeled and explicitly excluded from comparison', () => {
     const readers = sources.filter((f) => fs.readFileSync(f, 'utf8').includes('job_title')).map(rel).sort();
-    expect(readers).toEqual(['src/constants/basicsFields.js', 'src/i18n/ui/basicsVocab.js', 'src/services/compatibility.js']);
+    // 20270373 lists it only to SCREEN the typed text before it publishes (private.ugc_basics_text); never compared.
+    expect(readers).toEqual(['src/constants/basicsFields.js', 'src/i18n/ui/basicsVocab.js', 'src/services/compatibility.js',
+      'supabase/migrations/20270373_user_content_screening.sql']);
     expect(NEVER_COMPARED_BASICS).toContain('job_title');
   });
 

@@ -74,7 +74,7 @@ describe('save-time contradictions: one server trigger, no client copy (migratio
     const fn = fs.readFileSync(path.join(ROOT, 'supabase/functions/screen-business-content/index.ts'), 'utf8');
     expect((fn.match(/experience (update|create) failed', writeError\);\s*return writeRefusal\(writeError\)/g) ?? []).length).toBe(2);
     // one helper: a setting conflict = 400 {code, conflicts}; another rule refusal = 400; anything else = 500
-    expect(fn).toMatch(/function writeRefusal[\s\S]{0,400}code: 'setting_conflict', conflicts \}, 400\)[\s\S]{0,200}err\?\.code === 'P0001'[\s\S]{0,120}isRuleRefusal \? 400 : 500/);
+    expect(fn).toMatch(/function writeRefusal[\s\S]{0,400}code: 'setting_conflict', conflicts \}, 400\)[\s\S]{0,300}err\?\.code === 'P0001'[\s\S]{0,200}isRuleRefusal \? 400 : 500/);
   });
   it('no conflict decision in the client; the profile editor surfaces the refusal as the owner\'s to fix', () => {
     const dash = fs.readFileSync(path.join(ROOT, 'src/screens/BusinessDashboardScreen.js'), 'utf8');

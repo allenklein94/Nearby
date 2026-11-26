@@ -19,6 +19,7 @@
 // only the content the reply carries. Brand assets are limited to the business's name and its screened logo. Nothing here
 // may read payment, sponsorship, ranking or plan fields (guard: utils/offerPresentationEngine.test.js); consumer context
 // changes only timing and wording (first-ever reply, just accepted, Reduce Motion, owner preview), never prominence.
+import { isVisitConfirmed, offerVisitState } from './visitConfirmation';
 import { businessReplyKind, businessReplyStatus, heardLine } from './offerCopy';
 import { assemblySteps, shouldAssemble } from './offerAssembly';
 import { acceptedBookingState, ACCEPTED_TITLE_KEY } from './acceptedBooking';
@@ -52,7 +53,8 @@ export function offerCard(offer, now = new Date()) {
   if (state === 'pending') return 'waiting';
   if (state === 'offered') return 'open';
   if (state === 'accepted') return 'booked';
-  if (state === 'completed') return 'visited';
+  // 'visited' = the business confirmed the visit (20270430); the customer's own "Mark as done" stays booked + marked.
+  if (state === 'completed') return isVisitConfirmed(offer) ? 'visited' : 'booked';
   return 'closed';
 }
 
@@ -114,6 +116,8 @@ export function presentOffer(offer, { business = {}, context = {} } = {}) {
       warn: bookingState === 'not_through',
       plays: !preview && justAccepted, // the morph itself settles at once under Reduce Motion
       visitConfirmed: card === 'visited',
+      // The customer's own "Mark as done" (or a completion nobody recorded): "Marked as done", never "Visit confirmed".
+      markedDone: card === 'booked' && offerVisitState(offer) === 'marked_done',
       // Item 52: the first-ever redemption says once what just happened (words only, under "✓ Visit confirmed").
       firstVisitNote: card === 'visited' && !preview && isFirstRedemption === true ? tr('ui.requestDetail.firstVisitNote') : null,
     } : null,

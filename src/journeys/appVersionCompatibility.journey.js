@@ -16,7 +16,7 @@
 // already there) update the same fields (saveMyNewProfile in services/myProfile.js).
 // One rolled-back transaction. Not covered: the old build's screens on a phone, Spotify on build 86 (after 20270347 it
 // can't read its own tokens back; 0 accounts have Spotify connected).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql , profileReadGrant } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -51,6 +51,7 @@ d('journey: installed app versions keep working against the trust & safety datab
       ${actorDeclares(['v_a', 'v_b'])}
       v_new uuid := gen_random_uuid(); v_new2 uuid := gen_random_uuid(); v_out jsonb; v_n int; v_row jsonb; v_tok text;`, `
   ${actorsSql({ people: ['v_a', 'v_b'], friends: [] })}
+  ${profileReadGrant('v_a', ['v_b'])}
   update profiles set onboarding_motivations = array['Go on dates', 'Make new friends'], open_to_friend_discovery = true,
     wide_area = '41.2,-73.1' where id in (v_a, v_b);
   ${rec('state', `jsonb_build_object('tokens_private', to_regclass('private.push_tokens') is not null,

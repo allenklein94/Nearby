@@ -1,3 +1,4 @@
+import { pulseNoteNeedsScreening, cleanNote } from '../utils/businessNoteScreening';
 import { supabase, functionUrl } from './supabase';
 import { readMyProfile } from './myProfile';
 import { expandSearchTerms } from '../constants/categorySynonyms';
@@ -235,7 +236,7 @@ export async function getNearbyBusinesses(lat, lng, radiusMiles = 50) {
   const { lat: myLat, lng: myLng } = await resolveCoords(lat, lng);
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, logo_url, latitude, longitude, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, category, subcategory, categories, cuisine, weather_setting')
+    .select('id, name, logo_url, latitude, longitude, location_source, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, category, subcategory, categories, cuisine, weather_setting')
     .eq('active', true)
     .not('latitude', 'is', null)
     .not('longitude', 'is', null)
@@ -318,7 +319,7 @@ export async function getAllActivePartners() {
 export async function getOfferById(offerId) {
   const { data, error } = await supabase
     .from('brand_offers')
-    .select('*, brand_partners(name, address, latitude, longitude, subcategory, categories)')
+    .select('*, brand_partners(name, address, latitude, longitude, location_source, subcategory, categories)')
     .eq('id', offerId)
     .maybeSingle();
 
@@ -570,6 +571,14 @@ export async function getBusinessMessagesPage(partnerId, conversationWithId = nu
   return data ?? [];
 }
 
+// 20270428: the one message a customer-message alert names, read under the owner's own access (RLS), so the dashboard can
+// open its conversation. Anything unreadable = null (never an error the owner sees).
+export async function getBusinessMessageConversation(messageId) {
+  const { data, error } = await supabase.from('business_messages').select('partner_id, conversation_with_id').eq('id', messageId).maybeSingle();
+  if (error) return null;
+  return data ?? null;
+}
+
 export async function sendMessageToBusiness(partnerId, body) {
   const { data: sessionData } = await supabase.auth.getSession();
   const myId = sessionData?.session?.user?.id;
@@ -773,7 +782,7 @@ export async function submitBusinessProfileForScreening(partnerId, { name, descr
 // free text) or handleToggleExperienceActive() (only flips `active`,
 // carries the already-published fields forward unchanged) -- neither
 // introduces new unscreened content.
-export async function submitBusinessExperienceForScreening(partnerId, { experienceId, title, description, icon, attributes, priceLevel, partyType, mediaPath = null, mediaType = null }) {
+export async function submitBusinessExperienceForScreening(partnerId, { experienceId, title, description, icon, attributes, priceLevel, partyType, mediaPath = null, mediaType = null, aiSuggested = false }) {
   const { data: sessionData } = await supabase.auth.getSession();
   const token = sessionData?.session?.access_token;
   if (!token) throw new Error('You need to be signed in to do that.');
@@ -796,6 +805,7 @@ export async function submitBusinessExperienceForScreening(partnerId, { experien
       partyType: partyType ?? null,
       mediaPath,
       mediaType,
+      aiSuggested: aiSuggested === true,
     }),
   });
 
@@ -1037,6 +1047,26 @@ export async function setBusinessOperatingHours(partnerId, hours) {
   if (error) throw error;
 }
 
+// Business phone + website (migration 20270423): private to the business's managers (and admins), never on brand_partners.
+// null = none saved yet. Throws on refusal (not a manager) or a network failure.
+export async function getBusinessContactDetails(partnerId) {
+  const { data, error } = await supabase.rpc('get_business_contact_details', { partner_id_param: partnerId });
+  if (error) throw error;
+  return (Array.isArray(data) ? data[0] : data) ?? null;
+}
+
+// Saves both (empty = cleared); returns what the server stored (normalised). Refusals carry hint invalid_phone /
+// invalid_website / not_business_manager / account_suspended.
+export async function setBusinessContactDetails(partnerId, { phone, website }) {
+  const { data, error } = await supabase.rpc('set_business_contact_details', {
+    partner_id_param: partnerId,
+    phone_param: phone ?? null,
+    website_param: website ?? null,
+  });
+  if (error) throw error;
+  return (Array.isArray(data) ? data[0] : data) ?? null;
+}
+
 // partnerId -> the partner row (name, place, attributes, hours, pulse, booking_mode) for the open-now resolver and the item-72 action on typed-ask
 // business results. Best-effort: a failure is an empty map, which makes every business "unknown" (never "closed").
 export async function getPartnerOperatingInfo(partnerIds) {
@@ -1044,7 +1074,7 @@ export async function getPartnerOperatingInfo(partnerIds) {
   if (ids.length === 0) return new Map();
   const { data, error } = await supabase
     .from('brand_partners')
-    .select('id, name, latitude, longitude, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, dietary_options, cuisine, accommodates_party_types, weather_setting')
+    .select('id, name, latitude, longitude, location_source, address, attributes, operating_hours, availability_pulse, availability_pulse_updated_at, booking_mode, max_group_size, private_room_capacity, outdoor_capacity, dietary_options, cuisine, accommodates_party_types, weather_setting')
     .in('id', ids);
   if (error) return new Map();
   return new Map((data ?? []).map((r) => [r.id, r]));
@@ -1065,13 +1095,34 @@ export async function getPartnerWeatherSettings(partnerIds) {
 // not the deeper capacity-rules business_fulfillment_policies mechanism.
 // updated_at is stamped server-side inside the RPC, never client-
 // supplied, so a business can't forge freshness.
-export async function setBusinessAvailabilityPulse(partnerId, pulse, note = null) {
+//
+// 20270415: a new or changed note goes through Nearby's content check (the server refuses it otherwise) and returns the
+// check's result ({ published, blocked }); a status tap with the same note, or no note, saves directly ({ published: true }).
+export async function setBusinessAvailabilityPulse(partnerId, pulse, note = null, previousNote = null) {
+  if (pulseNoteNeedsScreening(note, previousNote)) {
+    return callNoteScreening({ partnerId, targetType: 'availability_note', pulse, note: cleanNote(note) }, "Couldn't save your status right now.");
+  }
   const { error } = await supabase.rpc('set_business_availability_pulse', {
     partner_id_param: partnerId,
     pulse_param: pulse,
-    note_param: note,
+    note_param: cleanNote(note),
   });
   if (error) throw error;
+  return { published: true, blocked: false };
+}
+
+export async function callNoteScreening(payload, fallbackMessage) {
+  const { data: sessionData } = await supabase.auth.getSession();
+  const token = sessionData?.session?.access_token;
+  if (!token) throw new Error('You need to be signed in to do that.');
+  const response = await fetch(functionUrl('screen-business-content'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(payload),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok && !result?.riskTier) throw serviceError(response, result, fallbackMessage);
+  return result;
 }
 
 // "Business Story" plan, Phase 6 -- Signature Experiences. One shared

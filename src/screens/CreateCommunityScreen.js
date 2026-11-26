@@ -8,7 +8,11 @@ import useFormErrors from '../hooks/useFormErrors';
 import { createCommunity, seedCommunityFromGathering } from '../services/communities';
 import { recordBehaviorEvent } from '../services/behaviorSignals';
 import { getMyManagedPartner } from '../services/brandOffers';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS } from '../utils/ugcText';
+import { showSuccessToast } from '../motion';
+import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
+import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
 import { INTEREST_OPTIONS } from '../constants/gatheringCategories';
 import TagGroupPicker from '../components/TagGroupPicker';
 import { useTheme } from '../context/ThemeContext';
@@ -55,17 +59,17 @@ export default function CreateCommunityScreen({ navigation, route }) {
       return;
     }
 
-    const nameCheck = await checkTextModeration(name);
-    if (!nameCheck.safe) {
-      form.show('name', t('ui.community.pleaseReviseTheNameAnd'));
-      return;
+    // 20270373: screened before it's written; 'hold' = created, seen only by you until a person approves it.
+    let held = false;
+    if (true) {
+      const nameCheck = await screenUserContent([{ text: name, kind: UGC_KINDS.communityName }]);
+      if (blockedByScreening(Alert, t, nameCheck, { notAllowedTitle: t('ui.community.nameNotAllowed'), notAllowedBody: t('ui.community.pleaseReviseTheNameAnd'), onRefuse: (msg) => form.show('name', msg) })) return;
+      held = nameCheck.outcome === 'hold';
     }
     if (description.trim()) {
-      const descCheck = await checkTextModeration(description);
-      if (!descCheck.safe) {
-        form.show('description', t('ui.community.pleaseReviseYourDescriptionAnd'));
-        return;
-      }
+      const descCheck = await screenUserContent([{ text: description, kind: UGC_KINDS.communityDescription }]);
+      if (blockedByScreening(Alert, t, descCheck, { notAllowedTitle: t('ui.community.descriptionNotAllowed'), notAllowedBody: t('ui.community.pleaseReviseYourDescriptionAnd'), onRefuse: (msg) => form.show('description', msg) })) return;
+      held = held || descCheck.outcome === 'hold';
     }
 
     setSubmitting(true);
@@ -78,6 +82,13 @@ export default function CreateCommunityScreen({ navigation, route }) {
       });
 
       recordBehaviorEvent('create', 'community', community.id, interestTag);
+      // A held community (20270373) is seen only by you until approved: nobody is invited into it yet.
+      if (held) {
+        setSubmitting(false);
+        navigation.replace('CommunityDetail', { communityId: community.id, communityName: community.name });
+        showSuccessToast(t('ui.shared.contentHeldTitle'), t('ui.shared.contentHeld'));
+        return;
+      }
       const seedGatheringId = route?.params?.seedFromGatheringId;
       let seedReason = null;
       if (seedGatheringId) {
@@ -106,6 +117,7 @@ export default function CreateCommunityScreen({ navigation, route }) {
         notificationReason: seedReason,
       });
     } catch (e) {
+      if (handledScreeningRefusal(Alert, t, e, { notAllowedTitle: t('ui.community.nameNotAllowed'), notAllowedBody: t('ui.community.pleaseReviseTheNameAnd') })) { setSubmitting(false); return; }
       presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => submit() });
     }
     setSubmitting(false);

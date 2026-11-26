@@ -53,7 +53,7 @@ describe('selectWithIdVerified', () => {
     const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((e) => {
       const p = path.join(dir, e.name);
       if (e.isDirectory()) return walk(p);
-      if (!/\.js$/.test(e.name) || /\.(test|journey)\.js$/.test(e.name) || e.name === 'idVerifiedColumn.js') return;
+      if (!/\.js$/.test(e.name) || /\.(test|journey|live)\.js$/.test(e.name) || e.name === 'idVerifiedColumn.js') return;
       const src = fs.readFileSync(p, 'utf8');
       const namesColumn = /['"`][^'"`\n]*\bid_verified\b[^'"`\n]*['"`]/.test(src.replace(/^\s*\/\/.*$/gm, ''));
       if (namesColumn && !src.includes('selectWithIdVerified') && !src.includes('selectPeople(')) offenders.push(path.relative(root, p));

@@ -5,7 +5,7 @@
 export default {
   en: {
     limitTitle: 'Daily limit reached', upgrade: 'Upgrade to Premium',
-    waitlistTitle: "You're on the waitlist", waitlistBody: "This gathering is full right now — we'll let you know if a spot opens up.",
+    waitlistTitle: "You're on the waitlist", waitlistBody: "This gathering is full right now.",
     inTitle: "You're In! ✓", inBody: "This gathering is public, so you're confirmed to attend — you can chat with the host anytime.",
     keepBrowsing: 'Keep Browsing', sendMessage: 'Send a Message',
     requestTitle: 'Request sent', requestBody: 'The host will review and let you know.',
@@ -41,7 +41,7 @@ export default {
   },
   es: {
     limitTitle: 'Llegaste al límite diario', upgrade: 'Mejorar a Premium',
-    waitlistTitle: 'Estás en la lista de espera', waitlistBody: 'Esta reunión está llena por ahora — te avisaremos si se libera un lugar.',
+    waitlistTitle: 'Estás en la lista de espera', waitlistBody: 'Esta reunión está llena por ahora.',
     inTitle: '¡Estás dentro! ✓', inBody: 'Esta reunión es pública, así que tu asistencia está confirmada — puedes escribirle al anfitrión cuando quieras.',
     keepBrowsing: 'Seguir explorando', sendMessage: 'Enviar un mensaje',
     requestTitle: 'Solicitud enviada', requestBody: 'El anfitrión la revisará y te avisará.',
@@ -77,7 +77,7 @@ export default {
   },
   de: {
     limitTitle: 'Tageslimit erreicht', upgrade: 'Auf Premium upgraden',
-    waitlistTitle: 'Du stehst auf der Warteliste', waitlistBody: 'Dieses Treffen ist gerade voll — wir sagen dir Bescheid, wenn ein Platz frei wird.',
+    waitlistTitle: 'Du stehst auf der Warteliste', waitlistBody: 'Dieses Treffen ist gerade voll.',
     inTitle: 'Du bist dabei! ✓', inBody: 'Dieses Treffen ist öffentlich, deine Teilnahme ist also bestätigt — du kannst dem Gastgeber jederzeit schreiben.',
     keepBrowsing: 'Weiter stöbern', sendMessage: 'Nachricht senden',
     requestTitle: 'Anfrage gesendet', requestBody: 'Der Gastgeber prüft sie und meldet sich.',
@@ -113,7 +113,7 @@ export default {
   },
   fr: {
     limitTitle: 'Limite quotidienne atteinte', upgrade: 'Passer à Premium',
-    waitlistTitle: "Vous êtes sur la liste d'attente", waitlistBody: 'Cette rencontre est complète pour le moment — nous vous préviendrons si une place se libère.',
+    waitlistTitle: "Vous êtes sur la liste d'attente", waitlistBody: 'Cette rencontre est complète pour le moment.',
     inTitle: 'Vous y êtes ! ✓', inBody: "Cette rencontre est publique, votre participation est donc confirmée — vous pouvez écrire à l'organisateur à tout moment.",
     keepBrowsing: 'Continuer à explorer', sendMessage: 'Envoyer un message',
     requestTitle: 'Demande envoyée', requestBody: "L'organisateur va l'examiner et vous tiendra au courant.",
@@ -149,7 +149,7 @@ export default {
   },
   pt: {
     limitTitle: 'Limite diário atingido', upgrade: 'Assinar o Premium',
-    waitlistTitle: 'Você está na lista de espera', waitlistBody: 'Este encontro está lotado agora — avisaremos se abrir uma vaga.',
+    waitlistTitle: 'Você está na lista de espera', waitlistBody: 'Este encontro está lotado agora.',
     inTitle: 'Você está dentro! ✓', inBody: 'Este encontro é público, então sua presença está confirmada — você pode falar com o organizador quando quiser.',
     keepBrowsing: 'Continuar explorando', sendMessage: 'Enviar uma mensagem',
     requestTitle: 'Pedido enviado', requestBody: 'O organizador vai analisar e te avisar.',
@@ -185,7 +185,7 @@ export default {
   },
   ht: {
     limitTitle: 'Ou rive nan limit jounen an', upgrade: 'Pase nan Premium',
-    waitlistTitle: 'Ou sou lis datant lan', waitlistBody: 'Rasanbleman sa a plen kounye a — n ap fè w konnen si yon plas louvri.',
+    waitlistTitle: 'Ou sou lis datant lan', waitlistBody: 'Rasanbleman sa a plen kounye a.',
     inTitle: 'Ou ladan l! ✓', inBody: 'Rasanbleman sa a piblik, kidonk prezans ou konfime — ou ka ekri òganizatè a nenpòt lè.',
     keepBrowsing: 'Kontinye gade', sendMessage: 'Voye yon mesaj',
     requestTitle: 'Demann voye', requestBody: 'Òganizatè a ap egzamine l epi l ap fè w konnen.',
@@ -221,7 +221,7 @@ export default {
   },
   zh: {
     limitTitle: '已达每日上限', upgrade: '升级到高级版',
-    waitlistTitle: '你已在候补名单中', waitlistBody: '这个聚会目前已满 — 有空位时我们会通知你。',
+    waitlistTitle: '你已在候补名单中', waitlistBody: '这个聚会目前已满。',
     inTitle: '你已加入！✓', inBody: '这是公开聚会，你的参加已确认 — 随时可以和组织者聊天。',
     keepBrowsing: '继续浏览', sendMessage: '发送消息',
     requestTitle: '请求已发送', requestBody: '组织者会查看并通知你。',
@@ -257,7 +257,7 @@ export default {
   },
   vi: {
     limitTitle: 'Đã đạt giới hạn hôm nay', upgrade: 'Nâng cấp lên Premium',
-    waitlistTitle: 'Bạn đang trong danh sách chờ', waitlistBody: 'Buổi gặp mặt này hiện đã đủ người — chúng tôi sẽ báo khi có chỗ trống.',
+    waitlistTitle: 'Bạn đang trong danh sách chờ', waitlistBody: 'Buổi gặp mặt này hiện đã đủ người.',
     inTitle: 'Bạn đã tham gia! ✓', inBody: 'Đây là buổi gặp mặt công khai nên bạn đã được xác nhận tham dự — bạn có thể nhắn tin cho người tổ chức bất cứ lúc nào.',
     keepBrowsing: 'Tiếp tục xem', sendMessage: 'Gửi tin nhắn',
     requestTitle: 'Đã gửi yêu cầu', requestBody: 'Người tổ chức sẽ xem xét và báo cho bạn.',
@@ -293,7 +293,7 @@ export default {
   },
   tl: {
     limitTitle: 'Naabot mo na ang limit ngayong araw', upgrade: 'Mag-upgrade sa Premium',
-    waitlistTitle: 'Nasa waitlist ka', waitlistBody: 'Puno pa ang pagtitipong ito — sasabihan ka namin kapag may bakanteng puwesto.',
+    waitlistTitle: 'Nasa waitlist ka', waitlistBody: 'Puno pa ang pagtitipong ito.',
     inTitle: 'Kasama ka na! ✓', inBody: 'Pampubliko ang pagtitipong ito, kaya kumpirmado ang pagdalo mo — puwede mong i-chat ang host kahit kailan.',
     keepBrowsing: 'Mag-browse Pa', sendMessage: 'Magpadala ng Mensahe',
     requestTitle: 'Naipadala ang kahilingan', requestBody: 'Susuriin ito ng host at ipapaalam sa iyo.',
@@ -329,7 +329,7 @@ export default {
   },
   ru: {
     limitTitle: 'Дневной лимит исчерпан', upgrade: 'Перейти на Premium',
-    waitlistTitle: 'Вы в листе ожидания', waitlistBody: 'Сейчас мест нет — мы сообщим, если место освободится.',
+    waitlistTitle: 'Вы в листе ожидания', waitlistBody: 'Сейчас мест нет.',
     inTitle: 'Вы идёте! ✓', inBody: 'Это открытая встреча, поэтому ваше участие подтверждено — вы можете написать организатору в любое время.',
     keepBrowsing: 'Смотреть дальше', sendMessage: 'Написать сообщение',
     requestTitle: 'Запрос отправлен', requestBody: 'Организатор рассмотрит его и сообщит вам.',
@@ -365,7 +365,7 @@ export default {
   },
   ko: {
     limitTitle: '오늘 한도에 도달했어요', upgrade: '프리미엄으로 업그레이드',
-    waitlistTitle: '대기자 명단에 올랐어요', waitlistBody: '지금은 이 모임이 꽉 찼어요 — 자리가 나면 알려드릴게요.',
+    waitlistTitle: '대기자 명단에 올랐어요', waitlistBody: '지금은 이 모임이 꽉 찼어요.',
     inTitle: '참여 확정! ✓', inBody: '공개 모임이라 참석이 확정됐어요 — 언제든 주최자와 채팅할 수 있어요.',
     keepBrowsing: '계속 둘러보기', sendMessage: '메시지 보내기',
     requestTitle: '요청을 보냈어요', requestBody: '주최자가 확인한 뒤 알려드릴 거예요.',

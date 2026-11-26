@@ -16,7 +16,7 @@ export const NOTIFICATION_ACTION_KEYS = [
   'view_notices', 'see_details', 'browse_gatherings', 'find_something_else', 'view_friend_request',
   'view_profile', 'start_planning', 'plan_visit', 'view_progress', 'open_dashboard', 'view_application', 'view_business',
   'view_opportunities', 'view_your_offers', 'view_booking', 'view_community', 'see_ideas', 'view_proposal', 'answer_question',
-  'review_reports',
+  'review_reports', 'review_content', 'open_settings',
 ];
 
 export const NOTIFICATION_ACTION_BY_TYPE = {
@@ -62,12 +62,15 @@ export const NOTIFICATION_ACTION_BY_TYPE = {
   community_area_demand_growing: 'view_community', business_partnership_response: 'see_details',
   // a business owner
   business_partner_approved: 'open_dashboard', business_partner_denied: 'view_application', business_partner_needs_info: 'view_application',
-  admin_report_received: 'review_reports',
+  admin_report_received: 'review_reports', admin_screening_outage: 'review_content',
+  // your account's security notice (20270375) opens Settings, where Sign Out ends every session
+  account_security_notice: 'open_settings',
   business_opportunity_received: 'view_opportunities', business_opportunities_digest: 'view_opportunities',
   aggregated_demand_growing: 'view_opportunities', occasion_demand_growing: 'view_opportunities',
   business_request_cancelled: 'view_opportunities', business_offer_review_result: 'view_your_offers',
   business_request_expiring: 'review_request',
   business_offer_accepted: 'view_booking', reservation_cancelled_by_customer: 'view_booking',
+  business_message_received: 'reply',
 };
 
 export const CATEGORY_PREFIX = 'nearby_';

@@ -1,4 +1,7 @@
+import { declineNoteNeedsScreening, cleanNote } from '../utils/businessNoteScreening';
+import { callNoteScreening } from './brandOffers';
 import { translate } from '../i18n/translate';
+import { withViewReceipts } from './offerViewReceipts';
 import { requestRefusal } from '../utils/requestRefusal';
 import { displayMoney } from '../i18n/display';
 import { localWhenParts } from '../utils/gatheringStructure';
@@ -480,7 +483,7 @@ export async function getAcceptedOfferForRequest(requestId) {
   if (!requestId) return null;
   const { data, error } = await supabase
     .from('business_request_offers')
-    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, proposed_party_size, status, partner_id, media_path, media_type, media_poster_path, redemption_instructions, valid_until, available_from, available_until, brand_partners(name, logo_url, address, latitude, longitude)')
+    .select('id, offer_type, offer_price, price_is_per_person, offer_description, proposed_time, proposed_party_size, status, partner_id, media_path, media_type, media_poster_path, redemption_instructions, valid_until, available_from, available_until, brand_partners(name, logo_url, address, latitude, longitude, location_source)')
     .eq('request_id', requestId)
     .in('status', ['accepted', 'completed'])
     .maybeSingle();
@@ -618,14 +621,15 @@ export async function getBusinessRequestWithOffers(requestId) {
   // real reservation exists (i.e. the offer has been accepted).
   const { data: offers, error: offersError } = await supabase
     .from('business_request_offers')
-    .select('*, brand_partners(name, logo_url, address, latitude, longitude), business_reservations(status, business_payments(status, amount, provider, failure_reason))')
+    .select('*, brand_partners(name, logo_url, address, latitude, longitude, location_source), business_reservations(status, business_payments(status, amount, provider, failure_reason))')
     .eq('request_id', requestId)
     .order('created_at', { ascending: true });
   if (offersError) throw new Error(offersError.message);
 
   // Item 119b: a group plan's request never shows a reply's smaller-party time (the group books its whole party; the
   // server refuses the other), so every reader of this request gets the whole-party view.
-  const rows = offers ?? [];
+  // 20270422: the requester's read receipt comes from business_offer_views (never the offer row a business reads).
+  const rows = await withViewReceipts(offers ?? []);
   return { request, offers: request?.group_plan_id ? rows.map(wholePartyView) : rows };
 }
 
@@ -968,14 +972,21 @@ export async function submitBusinessOfferResponseForScreening(partnerId, request
 // were shown, not why a request was never shown at all. reason must be
 // one of DECLINE_REASON_OPTIONS' own keys; noteParam is only ever
 // meaningful (and only ever stored) alongside reason === 'other'.
-export async function declineBusinessOpportunity(requestId, reason, note = null) {
+//
+// 20270415: a note goes through Nearby's content check first ({ published, blocked, result }); without a note the decline
+// is sent directly. The server never stores an unchecked note.
+export async function declineBusinessOpportunity(requestId, reason, note = null, partnerId = null) {
+  if (declineNoteNeedsScreening(reason, note)) {
+    if (!partnerId) throw new Error('Missing business');
+    return callNoteScreening({ partnerId, targetType: 'decline_note', requestId, reason, note: cleanNote(note) }, "Couldn't send that right now.");
+  }
   const { data, error } = await supabase.rpc('decline_business_offer', {
     request_id_param: requestId,
     reason_param: reason,
-    note_param: note,
+    note_param: reason === 'other' ? cleanNote(note) : null,
   });
   if (error) throw new Error(error.message);
-  return data;
+  return { published: true, blocked: false, result: data };
 }
 
 // The real, curated decline-reason vocabulary -- a human owner's own

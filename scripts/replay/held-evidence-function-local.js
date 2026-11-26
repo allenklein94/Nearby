@@ -1,0 +1,353 @@
+#!/usr/bin/env node
+// Migration 20270402 with the REAL delete-account function running under Supabase's edge runtime, against real Auth, real Storage, real
+// PostgREST and a from-scratch database. Nothing here talks to production: the database stays on its internal network, the runtime has
+// internet only to load its imports, and send-push is a local stub that records what it was asked to send.
+//   REPLAY_IMAGE=public.ecr.aws/supabase/postgres:17.6.1.003 NAME=nearby-replay17 OUT=... KEEP=1 \
+//     BEFORE_MIGRATIONS='node scripts/replay/suspended-number-auth-local.js prepare' bash scripts/replay/from-scratch-replay.sh
+//   NAME=nearby-replay17 OUT=... node scripts/replay/held-evidence-function-local.js
+// Everything it created is removed at the end (the guards are paused for that cleanup only).
+// Proves, with real bytes in real Storage:
+//   A. no hold: every file in all three media buckets goes (voice messages too), the account goes, nothing is kept.
+//   B. a hold: the held original survives byte for byte, also when the person and the service role try to delete it; unrelated files go.
+//      Reading it: a link is refused until an admin opens it on record; refused for another person, ever.
+//   C. a failed copy: a generic error with no database text; the account + files untouched; the failure recorded + an admin push; the retry works.
+//   D. Storage down: the account still goes; the files wait, and the hourly run removes them when Storage is back.
+//   E. the scheduled path: no notice when the copy fails; otherwise the notice says what happens, and the account goes.
+//   G. (20270406) leaving with an open report + case: a record, an open case; the number coming back through real Auth opens one private case and nothing else.
+//   F. (20270405) an organizer with a booked group plan + a paid booking: the function deletes them; the plan ends, nobody takes it over, the business and an admin are told a
+//      refund is owed, participants are told, their requests return; a refund closes the exception; every who-did-it column and the solo captured payment stay right.
+const { execFileSync } = require('child_process');
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
+
+const DB = process.env.NAME || 'nearby-replay';
+const OUT = process.env.OUT || '/tmp/nearby-replay';
+const STORAGE_IMAGE = process.env.STORAGE_IMAGE || 'public.ecr.aws/supabase/storage-api:v1.28.0';
+const EDGE_IMAGE = process.env.EDGE_IMAGE || 'public.ecr.aws/supabase/edge-runtime:v1.77.8';
+const POSTGREST_IMAGE = process.env.POSTGREST_IMAGE || 'postgrest/postgrest:v13.0.7';
+const INTERNAL = 'nearby-replay-internal'; const AUTH = 'nearby-suspended-auth'; const AUTH_NET = 'nearby-suspended-auth-net';
+const FN_NET = 'nearby-fn-net'; const GW = 'nearby-fn-gw'; const REST = 'nearby-fn-rest'; const EDGE = 'nearby-fn-edge'; const STORAGE = 'nearby-storage';
+const PORT = 59997; const URL_ = `http://127.0.0.1:${PORT}`;
+const ROOT = path.join(__dirname, '../..');
+
+const sh = (args, opts = {}) => execFileSync('docker', args, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'], ...opts });
+const quiet = (args) => { try { return sh(args); } catch { return ''; } };
+const psql = (sql, user = 'postgres') => sh(['exec', '-i', '-e', 'PGPASSWORD=postgres', DB, 'psql', '-h', 'localhost', '-U', user, '-d', 'postgres', '-X', '-At', '-v', 'ON_ERROR_STOP=1', '-c', sql]).trim();
+const one = (sql) => psql(sql).split('\n').pop();
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+let failures = 0;
+const rec = (check, pass, detail) => { if (!pass) failures += 1; console.log(`  ${pass ? '✓' : '✗ FAIL:'} ${check}${pass ? '' : ` ${JSON.stringify(detail)}`}`); };
+
+const secret = sh(['inspect', '-f', '{{range .Config.Env}}{{println .}}{{end}}', AUTH]).split('\n').find((l) => l.startsWith('GOTRUE_JWT_SECRET=')).slice('GOTRUE_JWT_SECRET='.length);
+const jwt = (claims) => {
+  const b = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const body = `${b({ alg: 'HS256', typ: 'JWT' })}.${b({ iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 6 * 3600, ...claims })}`;
+  return `${body}.${crypto.createHmac('sha256', secret).update(body).digest('base64url')}`;
+};
+const SERVICE = jwt({ role: 'service_role' }); const ANON = jwt({ role: 'anon' });
+
+const GATEWAY = `
+const http=require('http');const pushes=[];
+const routes={'/rest/v1/':['${REST}',3000,'/'],'/auth/v1/':['${AUTH}',9999,'/'],'/storage/v1/':['${STORAGE}',5000,'/'],'/functions/v1/delete-account':['${EDGE}',9000,'/']};
+http.createServer((q,s)=>{
+  if(q.url==='/_pushes'){s.end(JSON.stringify(pushes));return;}
+  if(q.url.startsWith('/functions/v1/send-push')){let b='';q.on('data',d=>b+=d);q.on('end',()=>{pushes.push(JSON.parse(b));s.end('{}');});return;}
+  const k=Object.keys(routes).find(p=>q.url.startsWith(p));
+  if(!k){s.statusCode=404;s.end();return;}
+  const [host,port,base]=routes[k];
+  const h={...q.headers,host:host+':'+port};
+  const p=http.request({host,port,path:base+q.url.slice(k.length),method:q.method,headers:h},r=>{s.writeHead(r.statusCode,r.headers);r.pipe(s);});
+  p.on('error',e=>{s.statusCode=503;s.end(JSON.stringify({message:'gateway: '+e.code}));});q.pipe(p);
+}).listen(8000);`;
+
+async function up() {
+  for (const c of [GW, REST, EDGE]) quiet(['rm', '-f', c]);
+  quiet(['network', 'create', FN_NET]);
+  psql(`alter role authenticator with password 'postgres';`, 'supabase_admin');
+  console.log('starting Storage ...');
+  execFileSync('bash', [path.join(ROOT, 'scripts/replay/storage-api-up.sh')], { env: { ...process.env, NAME: DB, OUT, STORAGE_IMAGE, LOCAL_JWT_SECRET: secret }, stdio: 'inherit' });
+  sh(['run', '-d', '--name', REST, '--network', INTERNAL, '-e', `PGRST_DB_URI=postgres://authenticator:postgres@${DB}:5432/postgres`,
+    '-e', 'PGRST_DB_SCHEMAS=public', '-e', 'PGRST_DB_ANON_ROLE=anon', '-e', `PGRST_JWT_SECRET=${secret}`, POSTGREST_IMAGE]);
+  sh(['run', '-d', '--name', EDGE, '--network', FN_NET, '-v', `${path.join(ROOT, 'supabase/functions')}:/fn:ro`,
+    '-e', `SUPABASE_URL=http://${GW}:8000`, '-e', `SUPABASE_SECRET_KEYS=${JSON.stringify({ default: SERVICE })}`,
+    EDGE_IMAGE, 'start', '--main-service', '/fn/delete-account', '--port', '9000']);
+  sh(['run', '-d', '--name', GW, '--network', FN_NET, '-p', `127.0.0.1:${PORT}:8000`, 'node:20-alpine', 'node', '-e', GATEWAY]);
+  sh(['network', 'connect', INTERNAL, GW]);
+  sh(['network', 'connect', AUTH_NET, GW]);
+  for (let i = 0; i < 60; i += 1) {
+    const r = await fetch(`${URL_}/rest/v1/`, { headers: { apikey: ANON } }).catch(() => null);
+    if (r && r.status < 500) break;
+    await sleep(1000);
+  }
+}
+
+async function callFunction(token, body) {
+  // the runtime loads its imports on the first call
+  for (let i = 0; i < 40; i += 1) {
+    const r = await fetch(`${URL_}/functions/v1/delete-account`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: body ? JSON.stringify(body) : undefined }).catch(() => null);
+    if (r && r.status !== 503) { const text = await r.text(); return { status: r.status, text, json: (() => { try { return JSON.parse(text); } catch { return null; } })() }; }
+    await sleep(3000);
+  }
+  throw new Error(`the function never answered:\n${quiet(['logs', '--tail', '30', EDGE])}`);
+}
+
+(async () => {
+  await up();
+  const admin = createClient(URL_, SERVICE, { auth: { persistSession: false, autoRefreshToken: false } });
+  const client = () => createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } });
+  const JPEG = crypto.randomBytes(2048);
+  const person = async (label, isAdmin = false) => {
+    const email = `${label}-${crypto.randomUUID().slice(0, 8)}@local.invalid`; const password = crypto.randomBytes(16).toString('hex');
+    const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+    if (error) throw new Error(`createUser: ${error.message}`);
+    const id = data.user.id;
+    psql(`insert into profiles (id, display_name, birthdate, created_at, terms_accepted_at, timezone, photo_verified, profile_hidden, is_admin)
+          values ('${id}', 'Local Person', date '1995-03-01', now(), now(), 'America/New_York', true, false, ${isAdmin}) on conflict (id) do update set is_admin = ${isAdmin};`);
+    const c = client();
+    const { data: s, error: e2 } = await c.auth.signInWithPassword({ email, password });
+    if (e2) throw new Error(`sign in: ${e2.message}`);
+    return { id, c, token: s.session.access_token };
+  };
+  const put = async (p, bucket, name, bytes = crypto.randomBytes(512)) => {
+    const { error } = await p.c.storage.from(bucket).upload(`${p.id}/${name}`, bytes, { contentType: 'application/octet-stream' });
+    if (error) throw new Error(`upload ${bucket}: ${error.message}`);
+    return { bucket, name: `${p.id}/${name}`, bytes };
+  };
+  const inStorage = async (f) => (await admin.storage.from(f.bucket).download(f.name)).error == null;
+  const queue = (id) => one(`select count(*) from private.account_file_cleanup where account_id = '${id}'`);
+  const gone = (id) => one(`select count(*) from auth.users where id = '${id}'`) === '0';
+  psql(`update private.account_security_settings set deletion_protection_enabled = false;`);
+
+  console.log('A. no hold');
+  const a = await person('free');
+  const aPhoto = await put(a, 'profile-photos', 'main.jpg'); const aOld = await put(a, 'profile-photos', 'old.jpg');
+  const aVoice = await put(a, 'chat-media', 'voice-1.m4a'); const aIntro = await put(a, 'profile-audio', 'voice-intro-1.m4a');
+  psql(`update profiles set photo_url = '${aPhoto.name}' where id = '${a.id}';`);
+  // 20270403: a gathering cover lives under the gathering's id, not the person's
+  const coverGathering = psql(`insert into gatherings (host_id, title, description, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public)
+    values ('${a.id}', 'Walk', 'Walk', now() + interval '3 days', 26.7, -80.03, 'Coffee', 'abc', 'everyone', true) returning id;`).split('\n')[0];
+  const aCover = { bucket: 'gathering-photos', name: `${coverGathering}/cover.jpg` };
+  await admin.storage.from('gathering-photos').upload(aCover.name, crypto.randomBytes(256), { contentType: 'image/jpeg' });
+  psql(`update gatherings set cover_photo_path = '${aCover.name}' where id = '${coverGathering}';`);
+  rec('the cover is really in Storage', await inStorage(aCover));
+  const ra = await callFunction(a.token);
+  rec('the function answers ok, with the number of files Storage confirmed', ra.status === 200 && ra.json?.ok && ra.json?.filesRemoved === 5, ra);
+  rec('the gathering cover left too', !(await inStorage(aCover)));
+  rec('the account is gone', gone(a.id));
+  rec('every file is gone: photo, replaced photo, voice message, voice intro', !(await inStorage(aPhoto)) && !(await inStorage(aOld)) && !(await inStorage(aVoice)) && !(await inStorage(aIntro)));
+  rec('nothing kept, nothing queued', one(`select count(*) from private.held_account_evidence where account_id = '${a.id}'`) === '0' && queue(a.id) === '0');
+  rec('no deletion marker left', one(`select count(*) from private.account_deletion_markers where account_id = '${a.id}'`) === '0');
+
+  console.log('A2. a cancelled gathering: the cover leaves on the hourly run, the account stays');
+  const host = await person('host');
+  const g2 = psql(`insert into gatherings (host_id, title, description, scheduled_at, precise_lat, precise_lng, interest_tag, area, visibility, is_public)
+    values ('${host.id}', 'Walk', 'Walk', now() + interval '3 days', 26.7, -80.03, 'Coffee', 'abc', 'everyone', true) returning id;`).split('\n')[0];
+  const g2Cover = { bucket: 'gathering-photos', name: `${g2}/cover.jpg` };
+  await admin.storage.from('gathering-photos').upload(g2Cover.name, crypto.randomBytes(256), { contentType: 'image/jpeg' });
+  psql(`delete from gatherings where id = '${g2}';`);
+  const rc = await callFunction(SERVICE, { purge_due: true });
+  rec('the cover is gone, the host is not', rc.status === 200 && !(await inStorage(g2Cover)) && !gone(host.id), rc);
+  rec('nothing left in the queue for it', queue(host.id) === '0');
+
+  console.log('B. a hold');
+  const mod = await person('admin', true); const other = await person('other');
+  const b = await person('held');
+  const bPhoto = await put(b, 'profile-photos', 'main.jpg', JPEG); const bVoice = await put(b, 'chat-media', 'voice-1.m4a');
+  psql(`update profiles set photo_url = '${bPhoto.name}' where id = '${b.id}';`);
+  const reportId = psql(`insert into reports (reporter_id, reported_id, reason) values ('${other.id}', '${b.id}', 'Inappropriate photo') returning id;`).split('\n')[0];
+  const hold = await mod.c.rpc('admin_place_legal_hold', { target_type_param: 'report', target_id_param: reportId, reason_param: 'Preservation request from counsel', reference_param: 'REF-1' });
+  rec('the hold reports one file kept', hold.data?.files?.kept === 1, hold);
+  await b.c.storage.from('profile-photos').remove([bPhoto.name]);
+  rec('the person removing their own photo: no error shown, the file stays', await inStorage(bPhoto));
+  const objectId = one(`select object_id from private.legal_hold_files where hold_id = '${hold.data.hold_id}';`);
+  const rb = await callFunction(b.token);
+  rec('the deletion goes through, indistinguishably', rb.status === 200 && rb.json?.ok === true && !/hold|evidence/i.test(rb.text), rb);
+  rec('the account is gone', gone(b.id));
+  rec('the held original is still there; the voice message is not', (await inStorage(bPhoto)) && !(await inStorage(bVoice)));
+  const dl = await admin.storage.from('profile-photos').download(bPhoto.name);
+  rec('byte for byte', dl.data && Buffer.from(await dl.data.arrayBuffer()).equals(JPEG));
+  await admin.storage.from('profile-photos').remove([bPhoto.name]);
+  rec('even the service role can\'t remove it through Storage', await inStorage(bPhoto));
+  const before = await mod.c.storage.from('profile-photos').createSignedUrl(bPhoto.name, 60);
+  rec('an admin gets no link before opening it on record', !!before.error, before);
+  const opened = await mod.c.rpc('admin_open_held_file', { hold_id_param: hold.data.hold_id, object_id_param: objectId, purpose_param: 'Reviewing for REF-1' });
+  rec('opening returns where it is', opened.data?.[0]?.object_name === bPhoto.name, opened);
+  const link = await mod.c.storage.from('profile-photos').createSignedUrl(bPhoto.name, 60);
+  rec('then a link is issued', !!link.data?.signedUrl, link);
+  rec('the opening is on record, with the reason', one(`select count(*) from private.legal_hold_file_access where object_id = '${objectId}' and admin_id = '${mod.id}' and purpose = 'Reviewing for REF-1'`) === '1');
+  const stranger = await other.c.storage.from('profile-photos').createSignedUrl(bPhoto.name, 60);
+  rec('another person gets no link', !!stranger.error, stranger);
+  const strangerOpen = await other.c.rpc('admin_open_held_file', { hold_id_param: hold.data.hold_id, object_id_param: objectId, purpose_param: 'Trying to open this' });
+  rec('and can\'t open it', strangerOpen.error?.hint === 'admin_only', strangerOpen);
+
+  console.log('C. a failed copy');
+  const c = await person('stuck');
+  const cPhoto = await put(c, 'profile-photos', 'main.jpg');
+  psql(`update profiles set photo_url = '${cPhoto.name}' where id = '${c.id}';`);
+  const caseId = psql(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${c.id}') returning id;`).split('\n')[0];
+  await mod.c.rpc('admin_place_legal_hold', { target_type_param: 'review_case', target_id_param: caseId, reason_param: 'Preservation request from counsel' });
+  psql(`create or replace function private.test_refuse_copy() returns trigger language plpgsql as 'begin raise exception ''held evidence copy failed''; end';
+        create trigger test_refuse_copy before insert on private.held_account_evidence for each row execute function private.test_refuse_copy();`, 'postgres');
+  const rFail = await callFunction(c.token);
+  rec('a generic error, nothing from the database', rFail.status === 500 && rFail.text === '{"error":"Failed to delete account"}', rFail);
+  rec('the account and file are untouched', !gone(c.id) && (await inStorage(cPhoto)) && one(`select count(*) from profiles where id = '${c.id}'`) === '1');
+  rec('the failure is recorded', one(`select count(*) from private.account_deletion_failures where account_id = '${c.id}' and step = 'preserve'`) === '1');
+  rec('an admin was told, with counts only', one(`select count(*) from push_outbox where recipient_id = '${mod.id}' and dedupe_key like 'account_deletion:%' and body not like '%${c.id}%'`) === '1');
+  psql('drop trigger test_refuse_copy on private.held_account_evidence; drop function private.test_refuse_copy();');
+  const rc2 = await callFunction(c.token);
+  rec('the retry succeeds and keeps the evidence', rc2.status === 200 && gone(c.id) && one(`select count(*) from private.held_account_evidence where account_id = '${c.id}' and record_type = 'review_case'`) === '1', rc2);
+
+  console.log('D. Storage down');
+  const d = await person('storagedown');
+  const dPhoto = await put(d, 'profile-photos', 'main.jpg');
+  psql(`update profiles set photo_url = '${dPhoto.name}' where id = '${d.id}';`);
+  sh(['stop', STORAGE]);
+  const rd = await callFunction(d.token);
+  rec('the account still goes', rd.status === 200 && gone(d.id), rd);
+  rec('the file waits, nothing is lost track of', queue(d.id) === '1' && one(`select attempts from private.account_file_cleanup where account_id = '${d.id}'`) === '1');
+  sh(['start', STORAGE]);
+  for (let i = 0; i < 30; i += 1) { const r = await fetch(`${URL_}/storage/v1/status`).catch(() => null); if (r && r.status === 200) break; await sleep(2000); }
+  rec('Storage is back and the file is still there', await inStorage(dPhoto));
+  const rh = await callFunction(SERVICE, { purge_due: true });
+  rec('the hourly run removes it', rh.status === 200 && !(await inStorage(dPhoto)) && queue(d.id) === '0', rh);
+
+  console.log('E. the scheduled path');
+  const pushes = async () => JSON.parse(await (await fetch(`${URL_}/_pushes`)).text());
+  const e = await person('scheduled');
+  const eCase = psql(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${e.id}') returning id;`).split('\n')[0];
+  await mod.c.rpc('admin_place_legal_hold', { target_type_param: 'review_case', target_id_param: eCase, reason_param: 'Preservation request from counsel' });
+  psql(`insert into private.account_deletion_requests (user_id, requested_at, purge_at, status) values ('${e.id}', now() - interval '8 days', now() - interval '1 day', 'pending');`);
+  psql(`create or replace function private.test_refuse_copy() returns trigger language plpgsql as 'begin raise exception ''copy failed''; end';
+        create trigger test_refuse_copy before insert on private.held_account_evidence for each row execute function private.test_refuse_copy();`);
+  const n0 = (await pushes()).length;
+  const re1 = await callFunction(SERVICE, { purge_due: true });
+  rec('a failed copy: not deleted, and no notice sent', re1.json?.deleted === 0 && !gone(e.id) && (await pushes()).length === n0, re1);
+  psql('drop trigger test_refuse_copy on private.held_account_evidence; drop function private.test_refuse_copy();');
+  const re2 = await callFunction(SERVICE, { purge_due: true });
+  const notice = (await pushes()).slice(-1)[0];
+  rec('then it goes, keeping the evidence', re2.json?.deleted === 1 && gone(e.id) && one(`select count(*) from private.held_account_evidence where account_id = '${e.id}'`) !== '0', re2);
+  rec('the notice says what is happening and what may be kept', notice?.title === 'Your Nearby account is being deleted' && /limited records/.test(notice?.body || ''), notice);
+  rec('no refusal or failure text anywhere in the answers', ![ra, rb, rd, rh, re1, re2].some((r) => /held|hold|evidence/i.test(r.text)));
+
+  // Migration 20270405: the states that refused a deletion, through the real function, real Auth and real Storage.
+  console.log('F. everything that used to refuse a deletion');
+  const orgz = await person('organizer'); const next = await person('next'); const third = await person('third');
+  const fPhoto = await put(orgz, 'profile-photos', 'main.jpg'); const fVoice = await put(orgz, 'chat-media', 'voice-1.m4a');
+  psql(`update profiles set photo_url = '${fPhoto.name}', intent_visibility = 'friends' where id = '${orgz.id}';
+        update profiles set intent_visibility = 'friends' where id in ('${next.id}', '${third.id}');
+        insert into friendships (user_a, user_b, status, requested_by) values ('${orgz.id}', '${next.id}', 'accepted', '${orgz.id}'), ('${orgz.id}', '${third.id}', 'accepted', '${orgz.id}') on conflict do nothing;`);
+  const partnerId = psql(`insert into brand_partners (name, active, latitude, longitude) values ('Local Coffee', true, 40.0, -75.0) returning id;`).split('\n')[0];
+  const askFor = async (p) => { const { data, error } = await p.c.rpc('create_business_request', { raw_text_param: 'local deletion test', latitude_param: 40.1, longitude_param: -75.1, category_param: 'Coffee', party_size_param: 1, budget_max_param: 40, radius_miles_param: 15 }); if (error) throw new Error(`ask: ${error.message}`); return data.requestId; };
+  const fRequests = [await askFor(orgz), await askFor(next), await askFor(third)];
+  const prop = await orgz.c.rpc('propose_group_plan', { source_request_id_param: fRequests[0], invitee_source_request_ids_param: fRequests.slice(1) });
+  if (prop.error) throw new Error(`propose: ${prop.error.message}`);
+  await orgz.c.rpc('set_group_plan_budget', { proposal_id_param: prop.data, agreed_budget_max_param: 40 });
+  await next.c.rpc('respond_to_group_plan', { proposal_id_param: prop.data, accept_param: true });
+  await third.c.rpc('respond_to_group_plan', { proposal_id_param: prop.data, accept_param: true });
+  const conf = await orgz.c.rpc('confirm_group_plan', { proposal_id_param: prop.data, exclude_user_ids_param: [] });
+  if (conf.error) throw new Error(`confirm: ${conf.error.message}`);
+  const fOffer = psql(`insert into business_request_offers (request_id, partner_id, status, offer_type, offer_description) values ('${conf.data.requestId}', '${partnerId}', 'offered', 'standard', 'Yes')
+    on conflict (request_id, partner_id) do update set status = 'offered', offer_type = 'standard', offer_description = 'Yes', valid_until = null returning id;`).split('\n')[0];
+  for (const p of [orgz, next, third]) { const r = await p.c.rpc('confirm_group_plan_offer', { proposal_id_param: prop.data, offer_id_param: fOffer }); if (r.error) throw new Error(`confirm offer: ${r.error.message}`); }
+  // the customer's own captured payment + every who-did-it column
+  const ownReq = await askFor(orgz);
+  const ownOffer = psql(`insert into business_request_offers (request_id, partner_id, status, offer_type, offer_description) values ('${ownReq}', '${partnerId}', 'offered', 'standard', 'Yes')
+    on conflict (request_id, partner_id) do update set status = 'offered', offer_type = 'standard', offer_description = 'Yes', valid_until = null returning id;`).split('\n')[0];
+  const acc = await orgz.c.rpc('accept_business_offer', { offer_id_param: ownOffer });
+  if (acc.error) throw new Error(`accept: ${acc.error.message}`);
+  const payId = psql(`update business_payments p set status = 'captured', amount = 25, stripe_payment_intent_id = 'pi_local_f', stripe_charge_id = 'ch_local_f', failure_reason = 'previous attempt' from business_reservations r where r.id = p.reservation_id and r.offer_id = '${ownOffer}' returning p.id;`).split('\n')[0];
+  const offerId = psql(`insert into brand_offers (partner_id, title, reward_type) values ('${partnerId}', 'Free coffee', 'free_item') returning id;`).split('\n')[0];
+  const redId = psql(`insert into offer_redemptions (offer_id, user_id, confirmed_at, confirmed_by) values ('${offerId}', '${next.id}', now(), '${orgz.id}') returning id;`).split('\n')[0];
+  const scrId = psql(`insert into business_content_screening_results (partner_id, target_type, submitted_by, reviewed_by, content_snapshot, risk_tier) values ('${partnerId}', 'offer', '${orgz.id}', '${orgz.id}', '{}', 'low') returning id;`).split('\n')[0];
+  const restId = psql(`insert into private.account_restrictions (user_id, capability, reason, admin_id, starts_at, expires_at) values ('${next.id}', 'messages', 'Local test: repeated messages', '${orgz.id}', now(), now() + interval '7 days') returning id;`).split('\n')[0];
+  // a paid booking on the plan (a group booking makes no payment row today; an add-on can): the same refusal the reservation rules give
+  const groupRes = one(`select id from business_reservations where offer_id = '${fOffer}'`);
+  const groupPay = psql(`insert into business_payments (reservation_id, status, amount, currency, payer_id, provider, stripe_payment_intent_id, stripe_charge_id) values ('${groupRes}', 'captured', 30, 'usd', '${orgz.id}', 'stripe', 'pi_local_group', 'ch_local_group') returning id;`).split('\n')[0];
+  psql(`delete from push_outbox where recipient_id in ('${next.id}', '${third.id}') or data->>'offer_id' = '${fOffer}';`);
+  const impact = await orgz.c.rpc('account_deletion_plan_impact');
+  rec('the app can read the warning before deleting', impact.data?.plans === 1 && impact.data?.bookings === 1 && impact.data?.paid === 2, impact);
+  const othersImpact = await next.c.rpc('account_deletion_plan_impact');
+  rec('a participant has nothing to be warned about', othersImpact.data?.plans === 0 && othersImpact.data?.paid === 0, othersImpact);
+  const listAsClient = await next.c.rpc('admin_list_payment_exceptions');
+  rec('nobody but an admin can list the exceptions', !!listAsClient.error, listAsClient);
+  const rF = await callFunction(orgz.token);
+  rec('the function answers ok', rF.status === 200 && rF.json?.ok === true, rF);
+  rec('the account is gone from Auth and profiles', gone(orgz.id) && one(`select count(*) from profiles where id = '${orgz.id}'`) === '0');
+  rec('their files are gone', !(await inStorage(fPhoto)) && !(await inStorage(fVoice)));
+  rec('the plan and booking ended, nobody took them over', one(`select count(*) from group_plan_proposals where id = '${prop.data}'`) === '0'
+    && one(`select count(*) from business_requests where id = '${conf.data.requestId}'`) === '0'
+    && one(`select count(*) from business_reservations where offer_id = '${fOffer}'`) === '0');
+  rec('everyone in it is told, opening their own request', one(`select count(*) from push_outbox where recipient_id = '${next.id}' and data->>'type' = 'plan_cancelled' and data->>'request_id' = '${fRequests[1]}'`) === '1'
+    && one(`select count(*) from push_outbox where recipient_id = '${third.id}' and data->>'type' = 'plan_cancelled' and data->>'request_id' = '${fRequests[2]}'`) === '1');
+  rec('the cancellation is on record', one(`select count(*) from cancellation_events where entity_type = 'business_reservation' and entity_id = '${fOffer}'`) === '1');
+  rec('their own requests came back', one(`select status from business_requests where id = '${fRequests[1]}'`) === 'open' && one(`select status from business_requests where id = '${fRequests[2]}'`) === 'open');
+  const nextReq = await next.c.from('business_requests').select('id, status').eq('id', fRequests[1]).maybeSingle();
+  rec('the participant reads it through the real API', nextReq.data?.status === 'open', nextReq);
+  rec('the paid booking: one exception for it, none of it holding a person', one(`select count(*) from private.payment_exceptions where payment_id = '${groupPay}' and status = 'open' and kind = 'paid_booking_ended' and amount = 30`) === '1', one(`select count(*) from private.payment_exceptions`));
+  rec('the solo paid booking too', one(`select count(*) from private.payment_exceptions where payment_id = '${payId}' and status = 'open'`) === '1');
+  rec('the paid record stays with no person on it', one(`select count(*) from business_payments where id = '${groupPay}' and payer_id is null and reservation_id is null and status = 'captured'`) === '1');
+  psql(`update business_payments set status = 'refunded' where id = '${groupPay}';`);
+  rec('the refund closes it', one(`select status from private.payment_exceptions where payment_id = '${groupPay}'`) === 'resolved');
+  rec('the captured payment stayed with no person on it', one(`select count(*) from business_payments where id = '${payId}' and reservation_id is null and payer_id is null and failure_reason is null and status = 'captured' and amount = 25 and stripe_charge_id = 'ch_local_f' and partner_id = '${partnerId}'`) === '1');
+  const paidRow = await next.c.from('business_payments').select('id').eq('id', payId);
+  rec('nobody reads it through the real API', (paidRow.data || []).length === 0, paidRow);
+  rec('a redemption they confirmed stays, without their id', one(`select count(*) from offer_redemptions where id = '${redId}' and confirmed_by is null and user_id = '${next.id}'`) === '1');
+  rec('a screening result stays, without their id', one(`select count(*) from business_content_screening_results where id = '${scrId}' and submitted_by is null and reviewed_by is null`) === '1');
+  rec('a pause they placed stays, without their id', one(`select count(*) from private.account_restrictions where id = '${restId}' and admin_id is null`) === '1');
+  rec('no database text in the answer', !/foreign key|violates|constraint/i.test(rF.text));
+  const rNext = await callFunction(next.token);
+  rec('the next person can leave too', rNext.status === 200 && gone(next.id), rNext);
+  rec('their redemption stays for billing, without them', one(`select count(*) from offer_redemptions where id = '${redId}' and user_id is null and confirmed_at is not null`) === '1');
+  const rThird = await callFunction(third.token);
+  rec('the last person leaves; the kept money records do not', rThird.status === 200 && gone(third.id) && one(`select count(*) from business_payments where id in ('${payId}', '${groupPay}')`) === '2', rThird);
+  psql(`alter table private.payment_exception_events disable trigger payment_exception_events_append_only; delete from private.payment_exception_events; delete from private.payment_exceptions; alter table private.payment_exception_events enable trigger payment_exception_events_append_only;`, 'supabase_admin');
+  psql(`delete from cancellation_events where entity_id = '${fOffer}'; delete from business_payments where id in ('${payId}', '${groupPay}'); delete from offer_redemptions where id = '${redId}'; delete from brand_offers where id = '${offerId}';
+        delete from business_content_screening_results where id = '${scrId}'; delete from business_request_offers where partner_id = '${partnerId}'; delete from brand_partners where id = '${partnerId}';`);
+  psql(`alter table private.account_restrictions disable trigger user; delete from private.account_restrictions where id = '${restId}'; alter table private.account_restrictions enable trigger user;`, 'supabase_admin');
+
+  // Migration 20270406: an account leaving with something unresolved, then its number coming back through real Auth.
+  console.log('G. leaving with something unresolved');
+  const left = await person('unresolved'); const reporter = await person('reporter');
+  const num = `1561555${crypto.randomInt(1000, 9999)}`;
+  psql(`alter table auth.users disable trigger aa_account_takeover_guard; update auth.users set phone = '${num}', phone_confirmed_at = now() where id = '${left.id}'; alter table auth.users enable trigger aa_account_takeover_guard;`, 'supabase_admin');
+  const gPhoto = await put(left, 'profile-photos', 'main.jpg');
+  const gReport = psql(`insert into reports (reporter_id, reported_id, reason) values ('${reporter.id}', '${left.id}', 'spam_scam') returning id;`).split('\n')[0];
+  const gCase = psql(`insert into private.account_review_cases (signal, reason, subject_user) values ('report', 'reported_profile', '${left.id}') returning id;`).split('\n')[0];
+  const rG = await callFunction(left.token);
+  rec('the deletion goes through, indistinguishably', rG.status === 200 && rG.json?.ok === true && !/record|report|case|kept/i.test(rG.text.replace('filesRemoved', '')), rG);
+  rec('the account and its files are gone', gone(left.id) && !(await inStorage(gPhoto)));
+  rec('the record links the report and case, 90 days', one(`select count(*) from private.unresolved_account_records where former_account_id = '${left.id}' and report_ids = array['${gReport}']::uuid[] and case_ids = array['${gCase}']::uuid[] and phone_key is not null and expires_at - released_at = interval '90 days'`) === '1');
+  rec('the case is still open, without its subject', one(`select count(*) from private.account_review_cases where id = '${gCase}' and status = 'open' and subject_user is null`) === '1');
+  const adminRead = await mod.c.rpc('admin_get_deleted_account_record', { case_id_param: gCase });
+  rec('an admin reads what was kept through the real API, without the number or the id', adminRead.data?.[0]?.open_reports === 1 && !JSON.stringify(adminRead.data).includes(num) && !JSON.stringify(adminRead.data).includes(left.id), adminRead);
+  const notAdmin = await reporter.c.rpc('admin_get_deleted_account_record', { case_id_param: gCase });
+  rec('anyone else is refused', !!notAdmin.error, notAdmin);
+  const back = await admin.auth.admin.createUser({ phone: num, phone_confirm: true });
+  rec('the number signs up again through real Auth, nothing in the way', !back.error && !!back.data?.user?.id, back.error);
+  const backId = back.data.user.id;
+  psql('select private.match_suspended_numbers();', 'postgres');
+  rec('one private case about the new account', one(`select count(*) from private.account_review_cases where signal = 'prior_unresolved' and subject_user = '${backId}' and status = 'open'`) === '1');
+  rec('no restriction, no suspension, no notice', one(`select count(*) from private.account_restrictions where user_id = '${backId}'`) === '0' && one(`select count(*) from push_outbox where recipient_id = '${backId}'`) === '0');
+  psql(`alter table private.unresolved_account_records disable trigger user; alter table private.unresolved_account_events disable trigger user;
+        delete from private.account_review_cases where id = '${gCase}' or subject_user = '${backId}'; delete from private.unresolved_account_events where record_id in (select id from private.unresolved_account_records where former_account_id = '${left.id}');
+        delete from private.unresolved_account_records where former_account_id = '${left.id}';
+        alter table private.unresolved_account_records enable trigger user; alter table private.unresolved_account_events enable trigger user;
+        delete from reports where id = '${gReport}'; delete from reports where reporter_id = '${reporter.id}'; delete from profiles where id = '${backId}'; delete from auth.users where id = '${backId}'; delete from profiles where id = '${reporter.id}'; delete from auth.users where id = '${reporter.id}';`, 'supabase_admin');
+
+  psql(`alter table private.held_account_evidence disable trigger user; alter table private.legal_hold_files disable trigger user; alter table private.legal_hold_file_access disable trigger user;
+        alter table private.legal_holds disable trigger legal_hold_immutable; alter table private.suspended_account_records disable trigger suspended_record_guard;
+        delete from private.legal_hold_file_access; delete from private.legal_hold_files; delete from private.held_account_evidence; delete from private.legal_holds;
+        delete from private.account_file_cleanup; delete from private.account_deletion_markers; delete from private.account_deletion_failures;
+        delete from private.suspended_account_records where decisions::text like '%Local test%';
+        delete from reports where reason = 'inappropriate_photo' and reporter_id is null and reported_id is null; delete from reports where reporter_id = '${other.id}'; delete from push_outbox where dedupe_key like 'account_deletion:%';
+        delete from storage.objects where bucket_id = 'profile-photos' and name = '${bPhoto.name}';
+        alter table private.held_account_evidence enable trigger user; alter table private.legal_hold_files enable trigger user; alter table private.legal_hold_file_access enable trigger user;
+        alter table private.legal_holds enable trigger legal_hold_immutable; alter table private.suspended_account_records enable trigger suspended_record_guard;`, 'supabase_admin');
+  for (const p of [mod, other]) { psql(`delete from profiles where id = '${p.id}'; delete from auth.users where id = '${p.id}';`); }
+  if (process.env.KEEP !== '1') for (const x of [GW, REST, EDGE]) quiet(['rm', '-f', x]);
+  console.log(failures ? `FAILED: ${failures}` : 'ALL PASS');
+  fs.writeFileSync(path.join(OUT, 'function-result.txt'), failures ? `FAILED ${failures}\n` : 'ALL PASS\n');
+  process.exit(failures ? 1 : 0);
+})().catch((e) => { console.error(e); console.error(quiet(['logs', '--tail', '40', EDGE])); process.exit(1); });

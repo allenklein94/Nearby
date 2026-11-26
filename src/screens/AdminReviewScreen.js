@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, TextInput, Image, StyleSheet, SafeAreaView, Alert, useWindowDimensions } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
@@ -6,9 +6,16 @@ import { useAuth } from '../context/AuthContext';
 import { typography, spacing, radius } from '../theme';
 import LoadErrorState from '../components/LoadErrorState';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { reportReasonLabel, sortReportQueue, reportQueueTag } from '../utils/reportReasons';
+import AccountFactsSection from '../components/AccountFactsSection';
+import LinkedReportsSection from '../components/LinkedReportsSection';
+import CaseLinkCount from '../components/CaseLinkCount';
+import { behaviorEvidenceLines } from '../utils/behaviorCaseEvidence';
 import {
   ADMIN_PHOTO_LINK_SECONDS, caseTitle, caseBadges, caseActions, eventLine, photosByAccount, casePhotoPaths, signedUrlMap,
-  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, OUTCOME_LABEL, CHECK_RESULT_LABEL,
+  linksStale, reopenReasonProblem, linkProblem, canOpenInvestigation, deletedAccountLines, DELETED_ACCOUNT_NOTE, OUTCOME_LABEL, CHECK_RESULT_LABEL,
+  priorSuspensionLines, PRIOR_SUSPENSION_NOTE, sharedDeviceLines, SHARED_DEVICE_NOTE, sharedTextLines, SHARED_TEXT_NOTE, sharedLinkLines, SHARED_LINK_NOTE,
+  sharedCaseGroups, SHARED_CASES_NOTE,
 } from '../utils/adminReviewCase';
 
 // Admin review on the business website (owner, 2026-10-30; 20270368 + 20270369). Website only (BusinessWebNavigator), so
@@ -17,6 +24,7 @@ import {
 // under review"). A case is a reason to look, never proof: closing or reopening it changes nothing about the accounts.
 // Reports stay reports: an admin may open a linked investigation from one; a report never opens one by itself.
 const REPORT_COLUMNS = 'id, reason, details, created_at, resolved, reported_id, reported:profiles!reports_reported_id_fkey(display_name)';
+const isMissingColumn = (error) => !!error && ['PGRST204', '42703'].includes(error.code);
 
 export default function AdminReviewScreen() {
   const { colors } = useTheme();
@@ -28,6 +36,11 @@ export default function AdminReviewScreen() {
   const [includeClosed, setIncludeClosed] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [selected, setSelected] = useState(null); // full case from admin_get_account_review_case
+  const [prior, setPrior] = useState(null); // a prior-suspension case's earlier decisions (20270374), else null
+  const [kept, setKept] = useState(null); // what a deleted account left behind (20270406), else null
+  const [reportKept, setReportKept] = useState({}); // the same, per open report the admin asked about
+  const [shared, setShared] = useState(null); // other review cases its accounts are in (20270379, read-only), else null
+  const openId = useRef(null); // the case on screen: a late answer for an earlier case is dropped
   const [links, setLinks] = useState({ at: 0, urls: {} });
   const [note, setNote] = useState('');
   const [reason, setReason] = useState('');
@@ -35,11 +48,18 @@ export default function AdminReviewScreen() {
 
   const load = useCallback(async () => {
     const listed = await supabase.rpc('admin_list_account_review_cases', { include_closed_param: includeClosed });
-    const rep = await supabase.from('reports').select(REPORT_COLUMNS).eq('resolved', false).order('created_at', { ascending: false }).limit(100);
+    // 20270398: urgent safety, then impersonation, oldest first within each (review_priority, before the 100-row limit); older databases: newest first
+    const openReports = (columns, byPriority) => {
+      let query = supabase.from('reports').select(columns).eq('resolved', false);
+      if (byPriority) query = query.order('review_priority', { ascending: false });
+      return query.order('created_at', { ascending: byPriority }).limit(100);
+    };
+    let rep = await openReports(`${REPORT_COLUMNS}, content_type, content_excerpt, reported_deleted_at`, true);
+    if (isMissingColumn(rep.error)) rep = await openReports(REPORT_COLUMNS, false);
     if (listed.error || rep.error) { setLoadError(true); return; }
     setLoadError(false);
     setCases(listed.data || []);
-    setReports(rep.data || []);
+    setReports(sortReportQueue(rep.data || []));
   }, [includeClosed]);
 
   useEffect(() => { if (isAdmin) load(); }, [isAdmin, load]);
@@ -55,6 +75,21 @@ export default function AdminReviewScreen() {
     const { data, error } = await supabase.rpc('admin_get_account_review_case', { case_id_param: id });
     if (error) return presentRecoverableError(Alert, { what: 'open that case', error, onRetry: () => openCase(id) });
     setSelected(data);
+    setPrior(null);
+    setKept(null);
+    setShared(null);
+    openId.current = id;
+    supabase.rpc('admin_get_shared_review_cases', { case_id_param: id }).then(
+      (r) => { if (openId.current === id) setShared(r.error ? { error: true } : sharedCaseGroups(r.data)); },
+      () => { if (openId.current === id) setShared({ error: true }); });
+    if (data?.signal === 'prior_suspension') {
+      const earlier = await supabase.rpc('admin_get_prior_suspension', { case_id_param: id });
+      setPrior(earlier.error ? { error: true } : (earlier.data || []));
+    }
+    // only the server knows whether this case touches a deleted account: an empty answer shows nothing
+    supabase.rpc('admin_get_deleted_account_record', { case_id_param: id }).then(
+      (r) => { if (openId.current === id) setKept(r.error ? { error: true } : (r.data?.length ? r.data : null)); },
+      () => { if (openId.current === id) setKept({ error: true }); });
     setNote(''); setReason(''); setCheck({ source: '', result: 'no_match', link: '' });
     signPhotos(data);
   }, [signPhotos]);
@@ -143,9 +178,26 @@ export default function AdminReviewScreen() {
       {!reports.length ? <Text style={styles.meta}>No open reports.</Text> : null}
       {reports.map((r) => (
         <View key={r.id} style={styles.card}>
-          <Text style={styles.title}>{r.reason}</Text>
-          <Text style={styles.meta}>About {r.reported?.display_name || 'an account'} · {new Date(r.created_at).toLocaleString()}</Text>
+          <Text style={styles.title}>{reportReasonLabel(r.reason)}{reportQueueTag(r.reason)}</Text>
+          <Text style={styles.meta}>{r.content_type === 'business' ? 'About a business (nobody named)' : `About ${r.reported?.display_name || 'an account'}`} · {new Date(r.created_at).toLocaleString()}</Text>
+          {['business', 'story', 'gathering', 'community'].includes(r.content_type) && r.content_excerpt ? <Text style={styles.details}>{r.content_excerpt}</Text> : null}
           {r.details ? <Text style={styles.details}>{r.details}</Text> : null}
+          {r.reported_deleted_at && !r.reported_id ? (
+            <>
+              <Text style={styles.meta}>The account has been deleted.</Text>
+              {reportKept[r.id] ? (reportKept[r.id].error
+                ? <Text style={styles.meta}>Couldn't load what was kept.</Text>
+                : deletedAccountLines(reportKept[r.id]).map((line, i) => <Text key={`k${i}`} style={styles.event}>{line}</Text>))
+                : (
+                  <TouchableOpacity style={styles.button} accessibilityRole="button" onPress={async () => {
+                    const record = await supabase.rpc('admin_get_deleted_account_record', { report_id_param: r.id });
+                    setReportKept((all) => ({ ...all, [r.id]: record.error ? { error: true } : (record.data || []) }));
+                  }}>
+                    <Text style={styles.buttonText}>What was kept</Text>
+                  </TouchableOpacity>
+                )}
+            </>
+          ) : null}
           {canOpenInvestigation(r) ? (
             <TouchableOpacity style={styles.button} onPress={() => openFromReport(r)} accessibilityRole="button">
               <Text style={styles.buttonText}>Open investigation</Text>
@@ -163,6 +215,68 @@ export default function AdminReviewScreen() {
       <Text style={styles.meta}>
         {selected.status === 'open' ? `Review by ${new Date(selected.review_due_at).toLocaleDateString()}` : `Closed ${new Date(selected.closed_at).toLocaleString()}`}
       </Text>
+      {selected.signal === 'prior_suspension' ? (
+        <>
+          <Text style={styles.subTitle}>Earlier suspension</Text>
+          <Text style={styles.meta}>{PRIOR_SUSPENSION_NOTE}</Text>
+          {prior?.error ? <Text style={styles.meta}>Couldn't load the earlier decisions. Open the case again to retry.</Text> : null}
+          {Array.isArray(prior) ? priorSuspensionLines(prior).map((line, i) => <Text key={`p${i}`} style={styles.event}>{line}</Text>) : null}
+        </>
+      ) : null}
+      {kept ? (
+        <>
+          <Text style={styles.subTitle}>Deleted account</Text>
+          <Text style={styles.meta}>{DELETED_ACCOUNT_NOTE}</Text>
+          {kept.error ? <Text style={styles.meta}>Couldn't load what was kept. Open the case again to retry.</Text> : null}
+          {Array.isArray(kept) ? deletedAccountLines(kept).map((line, i) => <Text key={`k${i}`} style={styles.event}>{line}</Text>) : null}
+        </>
+      ) : null}
+      {selected.signal === 'shared_device' ? (
+        <>
+          <Text style={styles.subTitle}>Same phone notification token</Text>
+          <Text style={styles.meta}>{SHARED_DEVICE_NOTE}</Text>
+          {sharedDeviceLines(selected.evidence).map((line, i) => <Text key={`d${i}`} style={styles.event}>{line}</Text>)}
+        </>
+      ) : null}
+      {selected.signal === 'shared_text' ? (
+        <>
+          <Text style={styles.subTitle}>Same public text</Text>
+          <Text style={styles.meta}>{SHARED_TEXT_NOTE}</Text>
+          {sharedTextLines(selected.evidence).map((line, i) => <Text key={`t${i}`} style={styles.event}>{line}</Text>)}
+        </>
+      ) : null}
+      {selected.signal === 'shared_link' ? (
+        <>
+          <Text style={styles.subTitle}>Same website in public gatherings</Text>
+          <Text style={styles.meta}>{SHARED_LINK_NOTE}</Text>
+          {sharedLinkLines(selected.evidence).map((line, i) => <Text key={`l${i}`} style={styles.event}>{line}</Text>)}
+        </>
+      ) : null}
+      {behaviorEvidenceLines(selected.evidence).length ? (
+        <>
+          <Text style={styles.subTitle}>Activity counted</Text>
+          {behaviorEvidenceLines(selected.evidence).map((line, i) => <Text key={`b${i}`} style={styles.event}>{line}</Text>)}
+        </>
+      ) : null}
+      <AccountFactsSection caseId={selected.id} styles={styles} />
+      <Text style={styles.subTitle}>Shared review cases</Text>
+      <Text style={styles.meta}>{SHARED_CASES_NOTE}</Text>
+      {shared?.error ? <Text style={styles.meta}>Couldn't load the shared review cases. Open the case again to retry.</Text> : null}
+      {Array.isArray(shared) && !shared.length ? <Text style={styles.meta}>These accounts are in no other review case.</Text> : null}
+      {Array.isArray(shared) ? shared.map((g) => (
+        <View key={g.userId} style={styles.card}>
+          <Text style={styles.title}>{g.name}{g.suspended ? ' · Suspended' : ''}</Text>
+          {g.cases.map((c) => (
+            <TouchableOpacity key={c.id} onPress={() => openCase(c.id)} accessibilityRole="button" accessibilityLabel={`${c.label}: ${c.title}, ${c.status}. Open this case`}>
+              <Text style={styles.badge}>{c.label}</Text>
+              <Text style={styles.link}>{c.title}</Text>
+              <Text style={styles.meta}>{c.status} · Opened {new Date(c.opened).toLocaleDateString()}</Text>
+              <Text style={styles.meta}>{c.others}</Text>
+            </TouchableOpacity>
+          ))}
+          {g.more ? <Text style={styles.meta}>{g.more} older case{g.more === 1 ? '' : 's'} not shown</Text> : null}
+        </View>
+      )) : null}
       <Text style={styles.subTitle}>Photos side by side</Text>
       <Text style={styles.meta}>A similar photo is a reason to look, never proof (shared, stock and group photos match too). Links last 15 minutes.</Text>
       <ScrollView horizontal contentContainerStyle={styles.photoRow}>
@@ -180,14 +294,8 @@ export default function AdminReviewScreen() {
           </View>
         ))}
       </ScrollView>
-      {selected.reports?.length ? (
-        <>
-          <Text style={styles.subTitle}>Linked reports</Text>
-          {selected.reports.map((r) => (
-            <Text key={r.report_id} style={styles.meta}>{r.still_kept ? `${r.reason} · ${new Date(r.created_at).toLocaleString()}${r.resolved ? ' · resolved' : ''}` : 'Report no longer kept (retention)'}</Text>
-          ))}
-        </>
-      ) : null}
+      <CaseLinkCount caseId={selected.id} styles={styles} />
+      <LinkedReportsSection reports={selected.reports} styles={styles} />
       <Text style={styles.subTitle}>History</Text>
       {(selected.events || []).map((e, i) => (
         <Text key={`${e.at}-${i}`} style={styles.event}>{new Date(e.at).toLocaleString()} · {eventLine(e)}</Text>

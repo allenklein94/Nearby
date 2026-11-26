@@ -2,7 +2,9 @@ import { secretKey, publishableKey } from '../_shared/supabaseKeys.ts';
 import { serve } from 'https://deno.land/std@0.203.0/http/server.ts';
 import { loadCategoryVocab } from '../_shared/categoryTags.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.0';
-import { classifyContent, RISK_CATEGORIES } from '../_shared/contentClassifier.ts';
+import { classifyContent, classifyContentDetailed, RISK_CATEGORIES, reportClassifierHealth } from '../_shared/contentClassifier.ts';
+import { screeningFailureKind as healthFailureKind } from '../_shared/screeningHealth.js';
+import { screeningFailureKind } from '../_shared/screeningFailure.js';
 import { screenOfferMedia as screenOfferMediaShared, OFFER_MEDIA_BUCKET } from '../_shared/offerMediaScreening.js';
 
 // Aug 27 2026 plan (CLAUDE.md), Decision 6 -- the real Business Trust &
@@ -121,7 +123,21 @@ const OFFER_TYPE_OPTIONS = ['standard', 'discount', 'perk', 'upgrade', 'alt_time
 // vocabulary above is.
 const BUNDLE_OCCASION_OPTIONS = ['date_night', 'anniversary', 'birthday', 'celebration', 'family_gathering'];
 const BUNDLE_COMPONENT_OPTIONS = ['dinner', 'something_to_do', 'finish_the_night', 'something_fun', 'sweet_treat', 'food', 'family_fun'];
-const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response', 'creative'];
+const TARGET_TYPES = ['business_profile', 'experience', 'offer', 'availability', 'update', 'offer_response', 'creative', 'package',
+  'availability_note', 'decline_note'];
+
+// Offer safety (20270372, gap 2): offers never carry website links, email addresses or phone numbers. ONE rule in the
+// database (private.offer_contact_kind, also enforced by triggers on every offer table); asked here first, so contact
+// details are refused before screening and never held for review. A database without 20270372 has no such function:
+// nothing to check (its tables have no such trigger either).
+const OFFER_CONTACT_MESSAGE = "Offers can't include website links, email addresses or phone numbers. Customers reach you through Nearby.";
+async function offerContactRefusal(admin: any, texts: (string | null | undefined)[]) {
+  const list = texts.filter((t): t is string => typeof t === 'string' && t.trim() !== '');
+  if (list.length === 0) return null;
+  const { data, error } = await admin.rpc('offer_contact_info_kind', { texts_param: list });
+  if (error || !data) return null;
+  return json({ error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info', kind: data }, 400);
+}
 
 // The screening SERVICE failed (classifier unreachable/out of credit/bad reply, or the audit log write failed) -- not a
 // verdict on the content and not a validation problem (those return 400 with their own message, and a real policy hit is a
@@ -145,10 +161,26 @@ function conflictsOf(err: any): string[] | null {
   } catch { return null; }
 }
 
+// 20270399: an admin's temporary pause on this manager's business actions. The database refuses the write (hint
+// 'account_restricted', detail = JSON {capability, until}); passed on as 400 with that detail so the app says, in the
+// person's language, what is paused and until when (utils/accountRestrictions.js), never "try again".
+const RESTRICTED_MESSAGE = 'This action is paused on your account';
+const RESTRICTED_TARGETS = ['offer_response', 'availability', 'offer', 'update'];
+function restrictedResponse(details: string | null) {
+  return { status: 400, body: { error: RESTRICTED_MESSAGE, code: 'account_restricted', details } };
+}
+function restrictedRefusal(err: any) {
+  return err?.hint === 'account_restricted' ? restrictedResponse(err.details ?? err.detail ?? null) : null;
+}
+
 function writeRefusal(err: any) {
+  const paused = restrictedRefusal(err);
+  if (paused) return json(paused.body, paused.status);
   const conflicts = conflictsOf(err);
   if (conflicts) return json({ error: conflicts.join('\n'), code: 'setting_conflict', conflicts }, 400);
-  const isRuleRefusal = err?.code === 'P0001' || err?.code === '23514';
+  if (err?.hint === 'offer_contact_info') return json({ error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info' }, 400);
+  if (err?.hint === 'business_video_paused') return json({ error: VIDEO_PAUSED_MESSAGE, code: 'business_video_paused' }, 400);
+  const isRuleRefusal = err?.code === 'P0001' || err?.code === '23514' || err?.code === '22023';
   return json({ error: err?.message || 'Could not save your changes.' }, isRuleRefusal ? 400 : 500);
 }
 
@@ -182,6 +214,28 @@ const SUPPORTED_IMAGE_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'im
 // and the first frame becomes its poster. Limits, disclosed: the audio track and moments between sampled frames are not
 // reviewed (playback is muted by default). A storage or screening-service failure is a 503 (fail closed), never a pass.
 // The rules live in _shared/offerMediaScreening.js (pure, Jest-tested); this only supplies storage and the classifier.
+// Video offers paused (owner 2026-11-02, migration 20270388): the database refuses every new business video while its switch
+// is off; asked here first so a refused video costs no storage reads or AI calls. The database stays the authority: before
+// 20270388 is live the function doesn't exist (PGRST202) and nothing changes here.
+const VIDEO_PAUSED_MESSAGE = "Video offers aren't available yet. Attach a photo instead.";
+async function videoPausedRefusal(admin: any, mediaType: string) {
+  if (mediaType !== 'video') return null;
+  const { data, error } = await admin.rpc('business_video_enabled');
+  if (error?.code === 'PGRST202') return null;
+  if (error) return { status: 503, service: true };
+  return data === true ? null : { status: 400, error: VIDEO_PAUSED_MESSAGE, code: 'business_video_paused' };
+}
+async function screenUnlessVideoPaused(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
+  const paused = await videoPausedRefusal(admin, mediaType);
+  if (paused) return paused;
+  const result: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType, framePaths);
+  // photos only (video fingerprinting is deferred); a refused or failed screen records nothing
+  if (result && !result.error && !result.service && result.sha256) {
+    await recordMediaFingerprint(admin, partnerId, 'offer_photo', mediaPath, result.sha256);
+  }
+  return result;
+}
+
 function screenOfferMedia(admin: any, partnerId: string, mediaPath: string, mediaType: string, framePaths: string[]) {
   return screenOfferMediaShared({
     storage: {
@@ -235,6 +289,9 @@ async function classifyImage(imageUrl: string) {
   }
 
   const bytes = new Uint8Array(buffer);
+  // 20270414: the SHA-256 of these exact bytes, so an identical logo / offer photo on a DIFFERENT business can be shown to
+  // an admin (never decides anything; recorded only after a successful screen, by recordMediaFingerprint below).
+  const sha256 = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)), (b) => b.toString(16).padStart(2, '0')).join('');
   let binary = '';
   for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
   const base64Data = btoa(binary);
@@ -248,40 +305,56 @@ Reply with ONLY valid JSON in this exact shape, nothing else:
 
 Guidance: "low" means this reads as an ordinary, legitimate business logo with no concerning signal -- this should be the overwhelming majority of real submissions, never a de facto bottleneck for normal content. "high" means a clear, unambiguous match to one or more prohibited categories -- reserve this for genuinely obvious cases. "medium" means a real but ambiguous or partial signal a human should look at. "uncertain" means you genuinely cannot tell either way from the image given -- treat this the same as medium, never as low.`;
 
-  const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'image', source: { type: 'base64', media_type: contentType, data: base64Data } },
-          { type: 'text', text: promptText },
-        ],
-      }],
-    }),
-  });
+  if (!ANTHROPIC_API_KEY) {
+    await reportClassifierHealth(false, healthFailureKind({ keyMissing: true }));
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true, failure: 'permanent' };
+  }
+  let anthropicResponse: Response;
+  try {
+    anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      signal: AbortSignal.timeout(20000),
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 300,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: contentType, data: base64Data } },
+            { type: 'text', text: promptText },
+          ],
+        }],
+      }),
+    });
+  } catch (e) {
+    console.error('screen-business-content: SERVICE_FAILURE vision request failed', String(e));
+    await reportClassifierHealth(false, healthFailureKind({ error: e }));
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true, failure: 'transient' };
+  }
 
-  const anthropicData = await anthropicResponse.json();
+  const anthropicData = await anthropicResponse.json().catch(() => null);
   const raw = anthropicData?.content?.[0]?.text?.trim();
   if (!raw) {
     console.error('screen-business-content: SERVICE_FAILURE unexpected Anthropic vision response', anthropicResponse.status, JSON.stringify(anthropicData));
-    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
+    const healthKind = healthFailureKind({ status: anthropicResponse.status, body: anthropicData });
+    await reportClassifierHealth(false, healthKind, anthropicResponse.status);
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true, failure: screeningFailureKind({ status: anthropicResponse.status, healthKind }) };
   }
 
   let parsed: any;
   try {
     parsed = JSON.parse(raw);
   } catch (_e) {
-    console.error('screen-business-content: model did not return valid JSON for image', raw);
-    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true };
+    console.error('screen-business-content: SERVICE_FAILURE model did not return valid JSON for image', raw.length);
+    await reportClassifierHealth(false, 'bad_reply', anthropicResponse.status);
+    return { error: "We couldn't review this image right now. Please try again in a bit.", service: true, failure: 'transient' };
   }
+  await reportClassifierHealth(true);
 
   const riskTier = ['low', 'medium', 'high', 'uncertain'].includes(parsed?.risk_tier) ? parsed.risk_tier : 'uncertain';
   const matchedCategories = Array.isArray(parsed?.matched_categories)
@@ -291,7 +364,21 @@ Guidance: "low" means this reads as an ordinary, legitimate business logo with n
     ? parsed.reasoning.trim().slice(0, 1000)
     : 'No reasoning returned by the classifier.';
 
-  return { riskTier, matchedCategories, reasoning };
+  return { riskTier, matchedCategories, reasoning, sha256 };
+}
+
+// 20270414: identical business media across businesses, for admin review only. Service role; best effort: a failure is
+// logged and never blocks, delays or changes screening. kind 'logo' (ref = the logo URL) or 'offer_photo' (ref = the path).
+async function recordMediaFingerprint(admin: any, partnerId: string, kind: string, ref: string, sha256: unknown) {
+  if (typeof sha256 !== 'string' || !/^[0-9a-f]{64}$/.test(sha256)) return;
+  try {
+    const { error } = await admin.rpc('record_business_media_fingerprint', {
+      p_partner: partnerId, p_kind: kind, p_ref: ref, p_sha256: sha256,
+    });
+    if (error && error.code !== 'PGRST202') console.error('screen-business-content: media fingerprint not recorded', error.code);
+  } catch (_e) {
+    console.error('screen-business-content: media fingerprint not recorded');
+  }
 }
 
 // Combines two independent tier results into one overall decision, real
@@ -303,18 +390,58 @@ function worseTier(a: string, b: string): string {
   return TIER_SEVERITY[a] >= TIER_SEVERITY[b] ? a : b;
 }
 
+// Automatic retry (owner, 2026-11-15; migration 20270420): the once-a-minute job (dispatch_offer_screening_retries)
+// calls this function with the service key and a submission it has already claimed ('reviewing'). The run then acts
+// for the person who submitted it, on their saved offer, through the same validation and screening as Try again.
+// Any answer other than "started" settles the claimed row here, so a claimed row is never left hanging.
 serve(async (req) => {
+  let workerSubmissionId: string | null = null;
+  const res = await handleRequest(req, (id) => { workerSubmissionId = id; });
+  if (workerSubmissionId && res.status !== 202) await settleWorkerRun(workerSubmissionId, res.clone());
+  return res;
+});
+
+async function settleWorkerRun(submissionId: string, res: Response) {
+  try {
+    const admin = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
+    const b: any = await res.json().catch(() => ({}));
+    if (res.status === 503 || res.status >= 500) {
+      await admin.rpc('_record_offer_screening_unavailable', { submission_id_param: submissionId, failure_param: b?.failure === 'permanent' ? 'permanent' : 'transient' });
+      return;
+    }
+    const patch = res.status === 400
+      ? { status: 'needs_changes', reason: String(b?.error ?? 'Please review your offer and send it again.').slice(0, 300) }
+      : { status: 'not_sent', reason: String(b?.error ?? 'It could not be sent.').slice(0, 300) };
+    await admin.from('business_offer_submissions').update({ ...patch, next_retry_at: null, updated_at: new Date().toISOString() })
+      .eq('id', submissionId).eq('status', 'reviewing');
+  } catch (e) {
+    console.error('screen-business-content: could not settle an automatic retry', e);
+  }
+}
+
+async function handleRequest(req: Request, markWorker: (id: string) => void): Promise<Response> {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Missing auth' }, 401);
 
     const supabaseAuth = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
     const token = authHeader.replace('Bearer ', '');
-    const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
-    if (userError || !userData?.user) return json({ error: 'Invalid session' }, 401);
-    const myId = userData.user.id;
-
     let body = await req.json();
+    let myId: string;
+    // The automatic-retry job: only with the service key, only for a submission the job claimed ('reviewing').
+    let autoRetry: any = null;
+    if (SERVICE_ROLE_KEY && token === SERVICE_ROLE_KEY && typeof body?.autoRetrySubmissionId === 'string' && body.autoRetrySubmissionId) {
+      const { data: sub } = await supabaseAuth.from('business_offer_submissions').select('*').eq('id', body.autoRetrySubmissionId).maybeSingle();
+      if (!sub || sub.status !== 'reviewing' || sub.dismissed_at) return json({ skipped: true }, 200);
+      autoRetry = sub;
+      markWorker(sub.id);
+      myId = sub.submitted_by;
+      body = { ...sub.payload, partnerId: sub.partner_id, targetType: 'offer_response', async: true };
+    } else {
+      const { data: userData, error: userError } = await supabaseAuth.auth.getUser(token);
+      if (userError || !userData?.user) return json({ error: 'Invalid session' }, 401);
+      myId = userData.user.id;
+    }
     const { partnerId, targetType } = body;
     if (!partnerId || typeof partnerId !== 'string') return json({ error: 'Missing partnerId' }, 400);
     if (!TARGET_TYPES.includes(targetType)) {
@@ -332,7 +459,22 @@ serve(async (req) => {
       return json({ error: 'You do not manage this business' }, 403);
     }
 
-    const { data: withinLimit } = await admin.rpc('check_and_increment_ai_use', {
+    // 20270399: a paused manager is told at once, before any screening call is spent and before an offer is queued (the
+    // app's offer path queues and screens in the background, so a refusal at write time would first say "sent for
+    // review"). The write itself is still refused by the database if a pause starts in between. Before 20270399 the
+    // reader doesn't exist: nothing is paused.
+    // An automatic retry has no signed-in owner to tell; the database still refuses a paused manager's write.
+    if (!autoRetry && RESTRICTED_TARGETS.includes(targetType)) {
+      const asCaller = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, { global: { headers: { Authorization: authHeader } } });
+      const { data: pausedUntil, error: pausedError } = await asCaller.rpc('get_my_account_restriction', { capability_param: 'offers' });
+      if (!pausedError && pausedUntil) {
+        const r = restrictedResponse(JSON.stringify({ capability: 'offers', until: new Date(pausedUntil).toISOString().replace(/\.\d{3}Z$/, 'Z') }));
+        return json(r.body, r.status);
+      }
+    }
+
+    // An automatic retry never uses the owner's daily allowance (at most three, and only after a failure).
+    const { data: withinLimit } = autoRetry ? { data: true } : await admin.rpc('check_and_increment_ai_use', {
       user_id_param: myId,
       daily_limit: DAILY_AI_LIMIT,
     });
@@ -341,7 +483,9 @@ serve(async (req) => {
     }
 
     const supabaseAsUser = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-      global: { headers: { Authorization: authHeader } },
+      // Multi-location (20270426): the user-scoped calls name the location this request was checked for, so a switch made
+      // on another device while this runs (screening takes seconds) refuses them instead of writing to the new location.
+      global: { headers: { Authorization: authHeader, 'x-nearby-business': partnerId } },
     });
 
     // "Your photos & videos" (owner, 2026-10-10): the business adds media it already has to its creative library without
@@ -378,6 +522,9 @@ serve(async (req) => {
       if (cMediaType === 'video' && (cFrames.length < 1 || !cFrames.every((f) => f.startsWith(folder) && !f.includes('..')))) {
         return json({ error: 'A video needs preview images. Please add it again.' }, 400);
       }
+      const pausedVideo: any = await videoPausedRefusal(admin, cMediaType);
+      if (pausedVideo?.service) return json({ error: "We couldn't save that right now. Please try again.", code: 'screening_unavailable' }, 503);
+      if (pausedVideo) return json({ error: pausedVideo.error, code: pausedVideo.code }, 400);
 
       const now = new Date().toISOString();
       if (rowId) {
@@ -401,7 +548,7 @@ serve(async (req) => {
       const work = (async () => {
         let patch: Record<string, unknown>;
         try {
-          const m: any = await screenOfferMedia(admin, partnerId, cMediaPath, cMediaType, cFrames);
+          const m: any = await screenUnlessVideoPaused(admin, partnerId, cMediaPath, cMediaType, cFrames);
           if (m.service) patch = { status: 'retry' };
           else if (m.error) patch = { status: 'needs_changes', problem: String(m.error).slice(0, 300) };
           else {
@@ -498,6 +645,7 @@ What makes them different: ${differentiator || '(none)'}`;
       if (logoChanged) {
         const imageResult = await classifyImage(logoUrl);
         if ('error' in imageResult) return json({ error: imageResult.error }, 400);
+        await recordMediaFingerprint(admin, partnerId, 'logo', logoUrl!, imageResult.sha256);
         riskTier = worseTier(textResult.riskTier, imageResult.riskTier);
         matchedCategories = Array.from(new Set([...textResult.matchedCategories, ...imageResult.matchedCategories]));
         reasoning = `Text: ${textResult.reasoning} Logo image: ${imageResult.reasoning}`;
@@ -591,6 +739,11 @@ What makes them different: ${differentiator || '(none)'}`;
       // icon.
       const mediaPath = typeof body.mediaPath === 'string' && body.mediaPath.trim() ? body.mediaPath.trim() : null;
       const mediaType = body.mediaType === 'image' || body.mediaType === 'video' ? body.mediaType : null;
+      if (mediaType === 'video') {
+        const pausedVideo: any = await videoPausedRefusal(admin, mediaType);
+        if (pausedVideo?.service) return json({ error: "We couldn't save that right now. Please try again.", code: 'screening_unavailable' }, 503);
+        if (pausedVideo) return json({ error: pausedVideo.error, code: pausedVideo.code }, 400);
+      }
 
       // Defense in depth for the edit case -- confirm the experience being
       // edited genuinely belongs to this partner before ever screening or
@@ -667,7 +820,8 @@ Description: ${description || '(none)'}`;
           attributes_param: attributes,
           price_level_param: priceLevel,
           party_type_param: partyType,
-          ai_suggested_param: false,
+          // "Keep" on a suggestion Nearby derived (provenance only; it is screened like any other experience).
+          ai_suggested_param: body.aiSuggested === true,
           media_path_param: mediaPath,
           media_type_param: mediaType,
         });
@@ -721,6 +875,7 @@ Description: ${description || '(none)'}`;
       const contentBlock = `Title: ${title}
 Description: ${description || '(none)'}`;
 
+      { const refused = await offerContactRefusal(admin, [title, description, redemptionInstructions]); if (refused) return refused; }
       const result = await classifyContent(contentBlock);
       if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
@@ -767,7 +922,7 @@ Description: ${description || '(none)'}`;
         });
         if (writeError) {
           console.error('screen-business-content: low-tier offer write failed', writeError);
-          return json({ error: writeError.message || 'Could not save your changes.' }, 500);
+          return writeRefusal(writeError);
         }
         return json({ riskTier, published: true, blocked: false, screeningId });
       }
@@ -838,6 +993,7 @@ Description: ${description || '(none)'}`;
         const conflict = await preCheckConflicts(supabaseAsUser, partnerId, 'availability', { bundle_occasion: bundleOccasion });
         if (conflict) return conflict;
       }
+      { const refused = await offerContactRefusal(admin, [title, description]); if (refused) return refused; }
       const result = await classifyContent(contentBlock);
       if (!result) return screeningUnavailable();
       const { riskTier, matchedCategories, reasoning } = result;
@@ -881,6 +1037,84 @@ Description: ${description || '(none)'}`;
           return writeRefusal(writeError);
         }
         return json({ riskTier, published: true, blocked: false, screeningId, availabilityId: writeResult?.availabilityId, matchedCount: writeResult?.matchedCount });
+      }
+
+      if (riskTier === 'high') {
+        return json({
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be published — it was flagged during a routine content check.",
+        }, 200);
+      }
+
+      return json({ riskTier, published: false, blocked: false, screeningId });
+    }
+
+    if (targetType === 'package') {
+      // Occasion packages (business_occasion_packages; 20270372): a standing package becomes an automatic offer to matching
+      // requests, so it is screened like an offer reply. packageId null = new, else that package of this business (edit).
+      // The snapshot holds the whole package: the write function's binding compares name / description / included items
+      // (normalized exactly as the package functions store them), and an approved held package is applied from it.
+      const packageId = typeof body.packageId === 'string' && body.packageId ? body.packageId : null;
+      const name = typeof body.name === 'string' ? body.name.trim().slice(0, 120) : '';
+      if (!name) return json({ error: 'Give this package a real name.' }, 400);
+      const descriptionRaw = typeof body.description === 'string' ? body.description.trim().slice(0, 1000) : '';
+      const description = descriptionRaw || null;
+      const includedItems = Array.isArray(body.includedItems)
+        ? body.includedItems.filter((i: unknown) => typeof i === 'string' && (i as string).trim()).map((i: string) => i.trim().slice(0, 80)).slice(0, 20)
+        : [];
+      const occasionType = typeof body.occasionType === 'string' && body.occasionType ? body.occasionType : null;
+      if (!occasionType) return json({ error: 'Invalid occasion' }, 400);
+      const minGuests = Number.isInteger(body.minGuests) ? body.minGuests : null;
+      const pricePerPerson = Number.isFinite(body.pricePerPerson) ? body.pricePerPerson : null;
+      const availableDays = Array.isArray(body.availableDays) ? body.availableDays.filter((d: unknown) => Number.isInteger(d)) : null;
+      if (packageId) {
+        const { data: existing } = await admin.from('business_occasion_packages').select('partner_id').eq('id', packageId).maybeSingle();
+        if (!existing || existing.partner_id !== partnerId) return json({ error: 'Package not found.' }, 404);
+      }
+      {
+        const conflict = await preCheckConflicts(supabaseAsUser, partnerId, 'package', { occasion_type: occasionType });
+        if (conflict) return conflict;
+      }
+      { const refused = await offerContactRefusal(admin, [name, description, ...includedItems]); if (refused) return refused; }
+
+      const contentBlock = [
+        `Package name: ${name}`,
+        `Description: ${description || '(none)'}`,
+        includedItems.length > 0 ? `Included items: ${includedItems.join(', ')}` : null,
+      ].filter(Boolean).join('\n');
+      const result = await classifyContent(contentBlock);
+      if (!result) return screeningUnavailable();
+      const { riskTier, matchedCategories, reasoning } = result;
+
+      const contentSnapshot = { packageId, occasionType, name, description, includedItems, minGuests, pricePerPerson, availableDays };
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: 'package',
+        target_id_param: packageId,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
+      });
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return screeningUnavailable();
+      }
+
+      if (riskTier === 'low') {
+        const args = {
+          occasion_type_param: occasionType, name_param: name, description_param: description, included_items_param: includedItems,
+          min_guests_param: minGuests, price_per_person_param: pricePerPerson, available_days_param: availableDays,
+        };
+        const { data: writeResult, error: writeError } = packageId
+          ? await supabaseAsUser.rpc('update_occasion_package', { package_id_param: packageId, ...args })
+          : await supabaseAsUser.rpc('create_occasion_package', args);
+        if (writeError) {
+          console.error('screen-business-content: low-tier package write failed', writeError);
+          return writeRefusal(writeError);
+        }
+        return json({ riskTier, published: true, blocked: false, screeningId, packageId: writeResult?.packageId ?? packageId });
       }
 
       if (riskTier === 'high') {
@@ -948,6 +1182,68 @@ Body: ${updateBody || '(none)'}`;
       return json({ riskTier, published: false, blocked: false, screeningId });
     }
 
+    // 20270415 (owner, 2026-11-12): the two short business notes customers can read. Same classifier as profile text; the
+    // database refuses either note without this call's result (or, for a decline, leaves the note out). Unlike profile text
+    // a medium/uncertain note is NOT held for review: a "right now" note is stale by then, so medium and high are both
+    // refused (nothing written) and the row is closed at once (auto_blocked) so it never waits in the review queue.
+    if (targetType === 'availability_note' || targetType === 'decline_note') {
+      const isPulse = targetType === 'availability_note';
+      const note = typeof body.note === 'string' ? body.note.trim() : '';
+      if (!note) return json({ error: 'Add a note, or save without one.' }, 400);
+      if (note.length > (isPulse ? 140 : 500)) return json({ error: 'Note is too long' }, 400);
+      const pulse = isPulse ? body.pulse : null;
+      if (isPulse && !['open', 'limited', 'full'].includes(pulse)) return json({ error: 'Invalid availability pulse' }, 400);
+      const requestId = !isPulse && typeof body.requestId === 'string' && body.requestId ? body.requestId : null;
+      const reason = !isPulse ? body.reason : null;
+      if (!isPulse && (!requestId || reason !== 'other')) return json({ error: 'A note goes with the reason "Other".' }, 400);
+
+      const { data: contactKind, error: contactError } = await admin.rpc('offer_contact_info_kind', { texts_param: [note] });
+      if (!contactError && contactKind) {
+        return json({ error: "Notes can't include website links, email addresses or phone numbers. Customers reach you through Nearby.",
+          code: 'offer_contact_info', kind: contactKind }, 400);
+      }
+
+      const result = await classifyContent(`${isPulse ? 'Availability note' : 'Decline note'}: ${note}`);
+      if (!result) return screeningUnavailable();
+      const { riskTier, matchedCategories, reasoning } = result;
+      const contentSnapshot = isPulse ? { note } : { requestId, note };
+      const { data: screeningId, error: logError } = await admin.rpc('record_business_content_screening', {
+        partner_id_param: partnerId,
+        target_type_param: targetType,
+        target_id_param: requestId,
+        submitted_by_param: myId,
+        content_snapshot_param: contentSnapshot,
+        risk_tier_param: riskTier,
+        matched_categories_param: matchedCategories,
+        model_reasoning_param: reasoning,
+      });
+      if (logError) {
+        console.error('screen-business-content: failed to log screening result', logError);
+        return screeningUnavailable();
+      }
+
+      if (riskTier !== 'low') {
+        if (riskTier !== 'high') {
+          await admin.from('business_content_screening_results')
+            .update({ review_outcome: 'auto_blocked', reviewed_at: new Date().toISOString() })
+            .eq('id', screeningId);
+        }
+        return json({
+          riskTier, published: false, blocked: true, matchedCategories, screeningId,
+          error: "This content couldn't be sent — it was flagged during a routine content check.",
+        }, 200);
+      }
+
+      const { data: writeResult, error: writeError } = isPulse
+        ? await supabaseAsUser.rpc('set_business_availability_pulse', { partner_id_param: partnerId, pulse_param: pulse, note_param: note })
+        : await supabaseAsUser.rpc('decline_business_offer', { request_id_param: requestId, reason_param: reason, note_param: note });
+      if (writeError) {
+        console.error('screen-business-content: low-tier note write failed', writeError);
+        return writeRefusal(writeError);
+      }
+      return json({ riskTier, published: true, blocked: false, screeningId, result: writeResult ?? null });
+    }
+
     // targetType === 'offer_response' -- a business's response to a
     // specific customer request (business_request_offers), submitted via
     // submitBusinessOfferResponse() -> submit_business_offer(). Already
@@ -956,13 +1252,13 @@ Body: ${updateBody || '(none)'}`;
     // classification here, not left as the narrower check.
     // Item 83: "Try again" on a submission whose screening could not finish. The saved payload is re-run through the
     // exact same validation and screening below; the claim is atomic so two taps cannot run it twice.
-    let submissionId: string | null = null;
-    if (typeof body.retrySubmissionId === 'string' && body.retrySubmissionId) {
+    let submissionId: string | null = autoRetry ? autoRetry.id : null;
+    if (!autoRetry && typeof body.retrySubmissionId === 'string' && body.retrySubmissionId) {
       const { data: sub } = await admin.from('business_offer_submissions').select('*').eq('id', body.retrySubmissionId).eq('partner_id', partnerId).maybeSingle();
       if (!sub) return json({ error: 'That offer is not available anymore.' }, 404);
       const stale = new Date(Date.now() - 3 * 60 * 1000).toISOString();
       const { data: claimed } = await admin.from('business_offer_submissions')
-        .update({ status: 'reviewing', reason: null, matched_categories: [], attempts: (sub.attempts ?? 1) + 1, updated_at: new Date().toISOString() })
+        .update({ status: 'reviewing', reason: null, matched_categories: [], attempts: (sub.attempts ?? 1) + 1, next_retry_at: null, updated_at: new Date().toISOString() })
         .eq('id', sub.id)
         .or(`status.eq.unavailable,and(status.eq.reviewing,updated_at.lt.${stale})`)
         .select('id').maybeSingle();
@@ -1059,7 +1355,19 @@ Body: ${updateBody || '(none)'}`;
       }
     }
 
+    {
+      const refused = await offerContactRefusal(admin, [offerTitle, offerDescription, redemptionInstructions, ...includedItems]);
+      if (refused) {
+        if (submissionId) {
+          await admin.from('business_offer_submissions').update({ status: 'needs_changes', reason: OFFER_CONTACT_MESSAGE, updated_at: new Date().toISOString() }).eq('id', submissionId);
+        }
+        return refused;
+      }
+    }
+
     const UNAVAILABLE = { status: 503, body: { error: "We couldn't review this right now. Please try again in a bit.", code: 'screening_unavailable' } };
+    // the same answer, saying whether the server should retry it by itself (screeningFailure.js)
+    const unavailable = (failure?: string) => ({ status: 503, body: { ...UNAVAILABLE.body, failure: failure === 'permanent' ? 'permanent' : 'transient' } });
     const runOfferScreening = async (): Promise<{ status: number; body: any }> => {
       const contentBlock = [
         offerTitle ? `Offer title: ${offerTitle}` : null,
@@ -1088,16 +1396,19 @@ Body: ${updateBody || '(none)'}`;
           result = { riskTier: 'low', matchedCategories: [], reasoning: 'Fixed Nearby-authored response text; no owner-written content to classify.' };
         }
       }
-      if (!result) result = await classifyContent(contentBlock);
-      if (!result) return UNAVAILABLE;
+      if (!result) {
+        const c = await classifyContentDetailed(contentBlock);
+        if ('failure' in c) return unavailable(c.failure);
+        result = c;
+      }
 
       // Rich offers, Phase 2: screen the attached media too; the worst tier across text and media wins.
       let posterPath: string | null = null;
       if (creativeRow) {
         posterPath = creativeRow.poster_path; // already screened when saved: reused without re-screening
       } else if (mediaPath) {
-        const m: any = await screenOfferMedia(admin, partnerId, mediaPath, mediaType!, framePaths);
-        if (m.service) return UNAVAILABLE;
+        const m: any = await screenUnlessVideoPaused(admin, partnerId, mediaPath, mediaType!, framePaths);
+        if (m.service) return unavailable(m.failure);
         if (m.error) return { status: m.status, body: { error: m.error, ...(m.code ? { code: m.code } : {}) } };
         result = {
           riskTier: worseTier(result.riskTier, m.tier),
@@ -1129,11 +1440,11 @@ Body: ${updateBody || '(none)'}`;
       });
       if (logError) {
         console.error('screen-business-content: failed to log screening result', logError);
-        return UNAVAILABLE;
+        return unavailable('transient');
       }
 
       if (riskTier === 'low') {
-        const { data: writeResult, error: writeError } = await supabaseAsUser.rpc('submit_business_offer', {
+        const offerArgs = {
           request_id_param: requestId, offer_type_param: offerType, offer_description_param: offerDescription,
           offer_price_param: offerPrice, proposed_time_param: proposedTime, proposed_time_alt_param: proposedTimeAlt, proposed_party_size_alt_param: proposedPartySizeAlt, experience_id_param: experienceId,
           media_path_param: mediaPath, media_type_param: mediaType,
@@ -1146,9 +1457,17 @@ Body: ${updateBody || '(none)'}`;
           valid_until_param: validUntil,
           available_from_param: availableFrom,
           available_until_param: availableUntil,
-        });
+        };
+        // An automatic retry has no signed-in owner: it sends as the submitter and marks the submission published in one
+        // transaction (_submit_business_offer_for_submission, server only), so the same submission can't be sent twice.
+        const { data: writeResult, error: writeError } = autoRetry
+          ? await admin.rpc('_submit_business_offer_for_submission', { submission_id_param: autoRetry.id, args_param: offerArgs, screening_id_param: screeningId })
+          : await supabaseAsUser.rpc('submit_business_offer', offerArgs);
         if (writeError) {
           console.error('screen-business-content: low-tier offer_response write failed', writeError);
+          if (writeError.hint === 'offer_contact_info') return { status: 400, body: { error: OFFER_CONTACT_MESSAGE, code: 'offer_contact_info' } };
+          const paused = restrictedRefusal(writeError);
+          if (paused) return paused;
           return { status: 500, body: { error: writeError.message || 'Could not send your response.' } };
         }
         // Item 51: the business's first-ever offer = the server's one claim (partner_first_offers, set by trigger in this write).
@@ -1188,14 +1507,23 @@ Body: ${updateBody || '(none)'}`;
         try {
           const o = await runOfferScreening();
           const b = o.body ?? {};
-          if (o.status === 503) patch = { status: 'unavailable', reason: null };
+          if (o.status === 503) {
+            // Records the failure and, for a temporary one with automatic tries left, when the server tries again.
+            const { error: recErr } = await admin.rpc('_record_offer_screening_unavailable', { submission_id_param: id, failure_param: b.failure ?? 'transient' });
+            if (!recErr) return;
+            console.error('screen-business-content: could not schedule the automatic retry', recErr);
+            patch = { status: 'unavailable', reason: null };
+          }
           else if (b.published) patch = { status: 'published', offer_id: b.offerId ?? null, screening_id: b.screeningId ?? null };
           else if (b.blocked) patch = { status: 'needs_changes', matched_categories: b.matchedCategories ?? [], screening_id: b.screeningId ?? null };
           else if (o.status === 200) patch = { status: 'in_review', screening_id: b.screeningId ?? null };
+          else if (b.code === 'account_restricted') patch = { status: 'not_sent', reason: null };
           else if (o.status === 400) patch = { status: 'needs_changes', reason: String(b.error ?? 'Please review your offer and send it again.').slice(0, 300) };
           else patch = { status: 'not_sent', reason: String(b.error ?? 'It could not be sent.').slice(0, 300) };
         } catch (e) {
           console.error('screen-business-content: background screening crashed', e);
+          const { error: recErr } = await admin.rpc('_record_offer_screening_unavailable', { submission_id_param: id, failure_param: 'transient' });
+          if (!recErr) return;
           patch = { status: 'unavailable', reason: null };
         }
         const { error: upErr } = await admin.from('business_offer_submissions').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
@@ -1213,4 +1541,4 @@ Body: ${updateBody || '(none)'}`;
     console.error('screen-business-content error:', err);
     return json({ error: String(err) }, 500);
   }
-});
+}

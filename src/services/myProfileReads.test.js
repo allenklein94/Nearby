@@ -113,6 +113,9 @@ describe('N6: profile reads name only public columns', () => {
   test('no migration from 20270348 on reopens private profile columns', () => {
     const dir = path.join(SRC, '..', 'supabase', 'migrations');
     const OWN_VIEWS = new Set(['people_visible_to_me', 'dating_candidates_visible_to_me']);
+    // 20270382: the two views' rows live in owner-only private views (same columns as the public views); allowed only
+    // while the same migration revokes them from every client role.
+    const PRIVATE_ROW_VIEWS = new Set(['private.people_rows', 'private.dating_candidate_rows']);
     const problems = [];
     for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.sql') && n >= '20270348').sort()) {
       const sql = fs.readFileSync(path.join(dir, f), 'utf8').replace(/--[^\n]*/g, '');
@@ -123,8 +126,15 @@ describe('N6: profile reads name only public columns', () => {
         const cols = /select\s*\(([^)]*)\)/i.exec(what);
         if (cols) for (const c of cols[1].split(',').map((x) => x.trim())) if (!isPublic(c)) problems.push(`${f}: private column ${c} granted`);
       }
-      for (const m of sql.matchAll(/create\s+(?:or\s+replace\s+)?(?:materialized\s+)?view\s+(?:public\.)?([a-z_]+)([\s\S]*?);/gi)) {
-        if (/\bprofiles\b/i.test(m[2]) && !OWN_VIEWS.has(m[1])) problems.push(`${f}: new view ${m[1]} over profiles`);
+      for (const m of sql.matchAll(/create\s+(?:or\s+replace\s+)?(?:materialized\s+)?view\s+(?:(public|private)\.)?([a-z_]+)([\s\S]*?);/gi)) {
+        const [, schema = 'public', name, rest] = m;
+        if (!/\bprofiles\b/i.test(rest)) continue;
+        if (schema === 'public' && OWN_VIEWS.has(name)) continue;
+        const full = `${schema}.${name}`;
+        if (PRIVATE_ROW_VIEWS.has(full)
+          && new RegExp(`revoke\\s+all\\s+on\\s+[^;]*\\b${full.replace('.', '\\.')}\\b[^;]*from\\s+public,\\s*anon,\\s*authenticated`, 'i').test(sql)
+          && !new RegExp(`grant[^;]*\\b${full.replace('.', '\\.')}\\b`, 'i').test(sql)) continue;
+        problems.push(`${f}: new view ${full} over profiles`);
       }
       if (/alter\s+publication[^;]*\bprofiles\b/i.test(sql)) problems.push(`${f}: profiles added to a publication`);
       if (/alter\s+default\s+privileges[^;]*grant[^;]*select/i.test(sql)) problems.push(`${f}: default SELECT privileges`);

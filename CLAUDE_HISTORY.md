@@ -1,6 +1,218 @@
-# 2026-11-11: idea 27 (relationship-based trust) declined, docs only
+# 2026-11-12: 20270413 shared website across accounts, staged, verified locally
+## 2026-11-16 (later): 0426 fail-closed + server-enforced rollout gate (owner review)
 
-Owner closed idea 27 alongside idea 26: a new account hosting many strangers is a different risk from friends organizing together, but letting friendships or invitations raise trust is manipulable by coordinated fake accounts (idea 26's audit already showed no such path exists and kept it that way), adds complexity and could disadvantage legitimate new users. Kept unchanged (staged, not live): 0362's 5/15 per 24 h creation limits, 0363/0365 review signals, invited joins exempt from join signals. Distinction recorded for real testing: the limit counts gatherings created, not strangers per gathering. No migrations, screens, scores or restrictions. Next: build 87 + Tier 1.
+Owner: option (a), but enforced by the server if feasible; no fail-open for location-specific writes; hosted staging
+checks (ask approval first); finish both trees; freeze after.
+- Fail closed: the check now runs the recovery paths (select_managed_business, get_my_businesses,
+  note_location_aware_session) first, before anything that can fail; then, for a request that names a location, any
+  failure to complete (lock timeout, unexpected error, unreadable headers) refuses a WRITE and lets a read pass. Requests
+  without the header never reach that branch (builds <= 87 / single-location use can't be taken down by a fault).
+  Journey: unreadable headers refuse a write, recovery still passes.
+- Rollout gate (server-enforced): BEFORE INSERT trigger on private.business_memberships refuses a membership of a SECOND
+  business (hint multi_location_not_ready) unless private.multi_location_ready: the account has >= 1 live auth session
+  (not past not_after where Auth has it) and EVERY live session has a row in private.location_aware_sessions (written only
+  by note_location_aware_session from the session's own JWT session_id; Business Mode calls it on mount; no client grant
+  on the table). Covers every path (approval, web claim, service role). Never gated: the first location, re-recording an
+  existing membership (switching). Journey: no session / old session only / old + new session = refused; old signed out
+  = allowed; an old phone signing in later can still switch between existing locations; anon can't record; clients
+  can't read the table. Real API: gate refuses, a stale screen can still record its session.
+- Known gap: an old build that signs in AFTER the account already has two locations is not stopped (it sends no header and
+  can't be told apart from any other request). Closing it = refuse header-less business requests for accounts with 2+
+  locations (option b), which the owner did not choose. Reported, not built.
+- Hosted staging (authenticator ALTER ROLE, gateway CORS for the header, edge-function forwarding, concurrent switch)
+  needs approval B (staging project nearby-staging, empty today): requested, not done.
+
+## 2026-11-16: Stale-location guard 20270426 (owner: finish the cross-device risk now)
+
+Owner (pasted): don't carry a known wrong-location save into production; bind each location-specific write to the
+location the screen intended, server-side; keep older builds working; stop and explain any break or broad rewrite; test
+two simultaneous sessions, unauthorized / suspended / stale / cross-location / single-location; rerun everything; report
+remaining risks; no merge / deploy / publish / production / build 87 change.
+
+Audit (dev replay DB, read-only): 97 client-callable public functions read the selected location (64 of them write: the
+set_business_* family, update_business_profile, post/cancel availability, submit/withdraw/revise/decline offers,
+reservations, redemptions, packages, experiences, AI policies, customer notes, fulfillment policy, sponsored, Stripe);
+3 direct-write RLS policies (brand_offers insert/update/delete, business_messages insert, business_updates insert) + 2
+storage policies (logo, offer media) + stories; 6 edge functions. Already bound before this change: every set_business_*
+/ update_business_profile / contact / pin setter takes partner_id_param and refuses a mismatch with the selection; the 5
+edge functions that act for a location (screen-business-content, business-ai-assistant, read-offer-creative,
+rewrite-offer-plain-language) compare the client's partnerId with the selection; storage paths must match the selection
+(fail closed); business_messages must match the conversation's business (fail closed). EXPOSED (wrote to the location
+selected NOW): every write with no location argument (post_business_availability, create_occasion_package,
+submit_business_offer / decline_business_offer on a request routed to BOTH locations, confirm_offer_redemption by code,
+cancel/complete/no-show by id when both locations hold it, brand_offers / business_updates inserts, Stripe onboarding)
+and the check-then-write gap inside screen-business-content (screening takes seconds).
+
+Fix (one place, no function or policy rewritten): migration 20270426 = PostgREST pre-request check
+public.nearby_pre_request (alter role authenticator set pgrst.db_pre_request; refuses to install over another hook, hint
+pre_request_in_use). Client (services/actingBusiness.js, wired as the Supabase client's fetch): Business Mode claims the
+location once its partner loads, releases on unmount (a late release never clears a newer claim), and sends it as
+x-nearby-business on REST calls only (never select_managed_business / get_my_businesses, edge functions, storage, auth).
+Server: header present + signed in + not one of those two paths -> compare with profiles.managed_partner_id (FOR SHARE on a
+write, so a racing switch waits until the write commits); different / malformed / unknown / lock timeout = the whole
+request refused before it runs (400, P0001, hint business_selection_changed); client then clears the claim and Business
+Mode reloads for the selected location. Header only refuses, never grants. No header = unchanged. An unexpected internal
+error inside the check returns without refusing (never takes the whole API down). Edge functions: screen-business-content
+and business-ai-assistant forward the checked partnerId as the header on their user-scoped calls; Stripe onboarding takes
+partnerId from the client and answers 409 when stale. Rollback resets the setting only when it still names this check.
+Post-deploy step 20270426 in scripts/live-verify/post-deploy.js (API smoke first: the check runs on every request).
+
+Verified (local only): journey businessSelectionGuard 9/9 (stale screen refused for writes + reads, matching screen works,
+recovery paths allowed, no/empty header unchanged, malformed/unknown refused, A-only staff naming B refused, signed out +
+service role unaffected, removed membership refused); 9/9 fail with 0426 rolled back. Real PostgREST v13 two-device test
+(scripts/replay/business-selection-api-local.js) 28/28: phone shows A, website switches to B, then all 97 client-callable
+business functions, 6 direct writes, a GET of B and a real create_occasion_package are refused; B byte-identical across
+40 tables; recovery (list, switch back, reload on B) works; A-only staff naming B refused; a switch racing a checked write
+waits and the write lands on A; with 0426 rolled back 97/97 are not refused and the stale package lands on B. Unit test
+services/actingBusiness.test.js 8. Full both-tree run = v453, DONE 2026-11-16 (logs /workspaces/.nearby-verify/v453): ml aaf7904e replay 501/501, journeys 904/904, real API 30/30, rollback 0426 -> guard journeys 28/28 fail + 97/97 functions not refused + stale package lands on B, re-apply diff 0, Jest 553/7479, iOS export clean (from the main checkout); mx a3dd3ebc replay 549/549, journeys 1534/1534, real API 30/30 (first run 29/30: the no-header residual demo was stopped by the trust tree's screening check before reaching B; test fixed 2e0b1c41 to accept that stop, guard not involved), rollback -> 28/28 fail, re-apply diff 0, Jest 589/7888, iOS export clean (from the real checkout at a3dd3ebc).
+
+Remaining risks (reported, not fixed):
+1. OWNER DECISION: a client that sends no header (build <= 87, the current website) on an account holding SEVERAL
+   locations still writes to the location selected now (shown by the API test's residual check). Today no account holds
+   two memberships (0424 not live) and build <= 87 has no location selector. Options: (a) procedural gate: no account gets
+   a second location until all its devices run a build after 0426 and the website is re-exported (no code); (b) server:
+   refuse header-less requests to the 97 business functions + 3 direct-write tables for accounts with 2+ memberships (old
+   builds' Business Mode stops working for those accounts until updated; consumer use unaffected; list derived from
+   pg_proc at request time so new functions are covered). Recommended: (a) for the first multi-location accounts, (b) only
+   if external multi-location owners arrive before old builds are gone.
+2. Fails open on an unexpected internal error in the check (deliberate: a bug must not take the API down).
+3. Requests sent before Business Mode's first load finishes carry no header (reads at mount); every write after the
+   location is shown is checked.
+4. Not checked here: Supabase hosted lets postgres ALTER ROLE authenticator (documented by Supabase; staging), the gateway's
+   CORS allows the header from the website (staging), deno check of the 3 edge functions (no deno in this codespace), the
+   edge functions themselves (not redeployed), a phone.
+5. A refused save shows the screen's existing error, then Business Mode reloads (no new string).
+
+## 2026-11-16: Multi-location readiness pass (owner review, points 1-5)
+
+Owner (pasted review): keep the foundation isolated; investigate per-device selection, fix email links to the right location,
+rerun the complete combined suites, prove 0424/0425 with 0422/0423, document limits; no merge/deploy/publish/production.
+1. Per-device selection: investigated, not built. Options: (a) a session-scoped helper keyed on the JWT session replacing every
+   reader of managed_partner_id (115 functions, 27 policies, 6 edge functions): large rewrite, high regression risk; (b) a
+   PostgREST db_pre_request hook setting the column per request from a header: GET requests run read-only (can't write/lock),
+   edge functions don't forward the header, per-account locking. Found instead: non-request writes (profile, hours, pin,
+   availability, contact) follow the CURRENT selection, so a phone still showing A after the website switched to B would save to
+   B; the 0424 header wrongly said such actions fail closed (corrected). Fix: Business Mode re-reads the selection on focus and on
+   return to the foreground and reloads for the server's location (`selectionChangedElsewhere`, wrapper in BusinessDashboardScreen).
+2. Location in alerts + email links: partner_id added to business_request_cancelled, reservation_cancelled_by_customer (5 sites)
+   and _push_offer_submission_result (0424; rollback restores 0248's body); email link `?n&r&b` (send-push + client, guard keeps
+   them equal; a location-only link for review results / demand alerts); website + push tap share `locationPlanForLink`
+   (owner_* alert types only, so a perk/business-profile push never switches or falls back): switch first, foreign location =
+   plain Opportunities.
+3+4. Journey `multiLocationCrossPrivacy` (8 tests; first run failed on its own setup: review submission needs request_id; fixed).
+   Results (v452): ml tree replay 500/500, full journeys 892/892, rollback 16/16 fail, re-apply diff 0, Jest 552/552 (7471), iOS
+   export clean (main checkout; worktree export fails with symlinked node_modules, known). Combined tree replay 548/548, full
+   journeys 1522/1522, rollback 0425+0424 16/16 fail, re-apply diff 0, Jest first 586/588 (two integration guards: 0425 had no
+   post-deploy step; Verified Business guard didn't allow 0425, which only redefines 0371's own functions) then 588/588 (7880),
+   iOS export clean. Disk was 96% full: removed six finished detached worktrees + stopped replay containers.
+5. EAS (read-only build:list): latest iOS = 86 (7d72d615, 2026-10-18); build 87 not made.
+
+## 2026-11-16: Multi-location foundation (20270424 + integration 20270425), staged
+
+Owner chose Option B (build now, isolated) after the audit: one account = one business through `profiles.managed_partner_id`
+(480 references / 192 migration files; 115 live functions, 27 policies, 6 triggers on the business-web tree, 127 functions on
+the combined trust tree). Design: keep the column as "the ONE location the account acts for now" (no existing function
+rewritten, builds <= 87 unchanged) + `private.business_memberships` (owner|staff, no client grant) + `select_managed_business`
+(the only client switch; membership + not suspended; same "Business not found" for non-member and missing) +
+`get_my_businesses` + trigger recording the membership whenever a trusted path sets the column + removal trigger moving the
+account to a remaining membership. 12 recipient lookups moved to memberships (bodies = live definitions, only the lookup
+changed; partner_id added to business_opportunity_received / business_offer_accepted pushes); digest = one per account across
+its locations. Existing defect fixed: a second approved application moved the owner off the first business.
+Client: `utils/businessLocations.js` (rule), `services/businessLocations.js`, `components/BusinessLocationSelector.js` in
+place of the header name box only when > 1 location; BusinessDashboard remounts per location (switch or push
+`locationSwitchedTo`); `routeNotificationTap` switches first for a push naming another membership (best effort).
+Integration (`integ/multi-location-x-trust`): the 12 functions are byte-identical on the trust tree (0424 reverts nothing);
+8 trust functions used "acting for" as "member of": 20270425 moves them to membership (report-own-business guard, admin
+verify conflict of interest, verification lapse on a mere switch, payment-exception / content-removal / evidence recipients).
+Verification (local only; logs /workspaces/.nearby-verify/v450 + v451): business-web tree replay 499/499 + 0424, journeys
+884/884 (two real failures fixed first: push-key privacy test, trusted-flag save/restore naming), `businessMemberships` 8/8
+(8/8 fail without 0424), rollback (guard refuses while an account has 2+ memberships unless approved in the transaction;
+approved path runs) + re-apply schema diff 0; Jest 552 suites / 7462 + 6 new (post-deploy step added); iOS export clean.
+Combined tree: replay 546/546 (PG 17.6), 0424 + 0425 applied, `trustMembershipLookups` 5/5 (4/5 fail without 0425),
+re-apply diff 0; full combined journeys 1513/1514, the one failure = `businessVerification` modelling "manager left" by clearing managed_partner_id (now = switching location); updated on the integration branch to remove the membership, 14/14.
+Remaining risks: selection per account not per device; email fallback links carry no location; roles grant nothing yet;
+staff can see their location's billing as today; no UI to add staff/locations beyond the application flow; not device- or
+browser-verified; 3 strings need native review.
+
+## 2026-11-15: Business phone + website editable (20270423) + Business Profile authorization journey
+
+Owner reversed "defer" to "fix it now": persist phone + website from the application, editable by managers, private.
+Built: migration 20270423 (private table, two definer functions, approval trigger, unambiguous backfill, rollback that
+refuses while rows exist), Profile > Business Profile "Phone + website" row (shared app + website), client rules mirroring
+the server normalisation (`utils/businessContactDetails.js`, test). Journey `businessProfileAuthorization` (13 tests):
+managers save update_business_profile, operating hours, location pin, 19 other setters and contact; refused for an ordinary
+account, another business's manager, anon (no execute), an account that set itself manager (guard reverts), admins
+(contact write), a suspended manager (contact), invalid values, and direct REST-style table writes (0 rows / permission
+denied); both businesses + contact rows byte-identical after every refusal; backfill statement taken from the migration
+file. Mutation: removing the hours manager check fails 3 tests. Found + fixed on the way: businessOfferViewPrivacy had no
+beforeAll timeout (flaky under load), dietary-writer guard counted journeys as writers, post-deploy plan lacked 0423.
+Results: business-web tree replay 499/499, journeys 876/876 (after the timeout fix), rollback -> 13/13 fail, re-apply diff 0;
+combined trust tree replay 546/546, journeys 1501/1501, same rollback result; Jest 551/551 (7457) and 587/587 (7866);
+iOS export clean. Prod read-only: 1 business, its approved application not linked to it, no contact values -> backfill 0.
+Not verified: phone/browser rendering, save + reload across app and website, a real-API run (post-deploy step), native
+review. Compatibility: new objects only; builds <= 87 unaffected. EAS: latest iOS build is 86 (7d72d615, 2026-10-18);
+build 87 has not been made.
+
+## 2026-11-15: Business website launch blockers prepared (four audits + integration gate 2)
+
+Owner: resolve the remaining business website blockers now; deploy, publish or merge nothing. Results:
+- Blank dashboard: already fixed on main (708b7600, f6c50f96; main now 990fe5f9). Exported main to /tmp (never docs/) and ran
+  the headless check: 27/53 with the offer-form step opened via the Opportunities tab (the stock checker reaches it through the
+  email link, which main lacks). Dashboard, five tabs, Make an Offer and its preview render; no ReferenceError; every console
+  error = PostHog's useNavigation noise (fixed on this branch only). Remaining fails = this branch's later features.
+- Email fallback: audited, code complete. Limitation recorded, not changed: email only when the owner has no push token.
+- Screening: deno 2.1.4 (npm, in /tmp) `deno check`: screen-business-content, submit-business-application clean; business-email
+  fixed (non-null env); send-push clean with strict off (its tests run the source as plain JS, so no annotations). Failure
+  handling fail-closed; credit/key/model never retried. Gate 3 (security of `_submit_business_offer_for_submission` + worker
+  entry) passed by code reading.
+- Gate 2: integration tree `integ/business-web-x-trust` (pushed; test vehicle only, docs = trust stack's). Resolved: two
+  `screeningFailureKind` functions (0387 health cause vs 0420 retry kind) -> the health cause feeds the retry rule
+  (`healthKind`, ported to this branch); 0399 paused-manager check skipped for automatic tries (the DB refuses the write);
+  0372 offer report-button styles kept. Found + fixed: post-deploy.js on rate-limit-api-checks didn't parse (30381b0d);
+  screeningHealth.js default-null params failed deno check (d397295b); notificationTier guard stale on this branch (dd62ce1e);
+  retry journey lacked 0372's per-try screening result (stand-in, d8596dd6). Combined: replay 543/543 (with the Auth prepare
+  step), journeys 1475/1475, Jest 583/583 suites, deno clean. Logs /workspaces/.nearby-verify/v428, /tmp/claude-1000/web429.
+- Staging: bootstrap already validated locally (v427). New plan `PRODUCT_AUDIT/STAGING_E2E_TEST_PLAN_2026-11-15.md`
+  (storefront + service-area through redemption, failure cases, staging secrets). Staging must deploy the combined tree.
+- Disk was full (47 MB): removed 11 exited local replay containers from earlier sessions and the npm cache.
+
+## 2026-11-15: Dead push tokens (20270421, staged)
+
+Owner (pasted assessment, 2026-11-15): fix the gap where a business owner who deleted the app keeps a stored push token and so
+gets neither push nor email. Built: migration `20270421_push_token_invalidation.sql` (private `push_receipt_checks`: ticket id,
+token SHA-256 only, alert words only for EMAIL_TYPES; service-role-only `_record_push_ticket`, `_invalidate_push_token`,
+`_push_receipts_due`, `_settle_push_receipt`; cron `check-push-receipts` */5 -> send-push `check_receipts`), send-push
+(`emailBusinessAlert` shared by the no-token and dead-token paths; ticket bookkeeping never affects the push), rollback
+script, post-deploy step. Rules: only DeviceNotRegistered counts; a token is cleared only while still the failed one (reinstall
+kept); each recorded send settles once (no duplicate email); no receipt = asked again, dropped after 24 h; never-settled rows
+dropped after 2 days. Verified locally only (logs /workspaces/.nearby-verify/v430): from-scratch replay 497/497, journeys
+858/858 incl. `pushTokenInvalidation` 8/8 (fails 8/8 after rollback), re-apply schema diff 0, Jest 548 suites / 7403 tests
+incl. `sendPushDeadToken.test.js` (real handler). Guard `domainEvents.test.js` now allows `dispatch_push_receipt_checks` as a
+non-push send-push caller. Not run: `deno check` (no deno here), a real Expo receipt, a deleted-app device test (staging).
+Also fixed d8596dd6's regression: `offerScreeningRetry` used `pg_temp._journey_screened`, defined only in the trust branch's
+harness; the journey now defines it itself (no-op before 0372).
+
+## 2026-11-15: Make an Offer preview matches the customer card
+
+Owner approved the narrow fix for idea 35's gap (different wording, same website, not yet on Google's list). Built on 0378's pattern and 0396's link detector: private.shared_link_destination (host only; punycode decoder in plpgsql, %XX, IPv4 forms; registrable domain with common ccTLD second levels; platform list ignore / per_site / per_path in private.shared_link_platforms; bare names need a known ending so "Port St.Lucie" isn't a site), HMAC under private.link_signal_secret, private.link_sightings (key, account, gathering, first/last seen), case signal shared_link (0406's list + one), cluster + closed-case rules as 0378, trigger zz_gathering_link_sighting (public visible gatherings, title + description), backfill + purge job, detector-switch entry `link` (numbers 5) + disclosure marker, admin website line + note. Found while testing: 0358 already caps public posts with a link at 3/day per account, and 0362 at 5 gatherings/day. Results (local only): replay 537/537, journeys 1426/1426, sharedPublicLinks 17/17 (17/17 fail without 0413; a naive host mutation fails 10/17), rollback = 0412 schema 0 diff, re-apply 0 diff, Jest 563 / 7587, concurrency shared-link + shared-text + behavior-signal + gathering-signal pass. sha256 1cc457ac4f6bb46ca6422f0954aaa6dd8ee1eea7d5282f7d9bf3157ec0ca1666. Not run: production, phone, website.
+
+# 2026-11-12: 20270412 repeated host cancellations, staged, verified locally
+
+Owner: close the repeated-host-cancellation gap narrowly (idea 34 follow-up). Audit: gatherings have no status; cancelling deletes the row. Delete paths: cancel_gathering (host, records cancellation_events actor 'host'), the API's own delete (RLS "Hosts can delete own gatherings", skips cancellation_events, so a detector on that table could be bypassed), admin removal (0393, runs as the admin), account deletion (cascade, no signed-in person). 0385's BEFORE DELETE trigger already separates them by auth.uid() = host. 0385/0386's create_cancel = 3 in 7 days, each within 48 h of creation: misses gatherings posted well ahead (my idea 34 note that no detector looked at cancellations was wrong). Built: settings columns repeat_cancel_* (3 / 30 / 2, owner's proposed numbers), gathering_cancel_log.approved_others (one count, no ids), kind repeated_cancellations (alone kind, create_cancel family), behavior_evaluate_case = 0385's verbatim + the family line, _gathering_signal_cancel = 0385's create_cancel unchanged + the new rule; fresh-after-close rule for the new kind only. Also: admin evidence line (behaviorCaseEvidence returned nothing for unknown kinds, so a case would have shown no reason); guard comparing DB kinds to admin lines, with 0382's discovery_limit pair named as an existing gap (reported, not fixed). 0385 journeys' exact column/settings expectations updated for the shared row/log; its OFF step turns the new detector off too. Results (local only): replay 536/536, journeys 1409/1409, new journey 11/11 (all fail on the rolled-back DB; mutation checks: counting pending/waitlisted fails the legit-cases test, counting non-host deletes fails the not-the-host test), rollback schema = 0411 fresh replay (0 diff), re-apply 0 diff, Jest 563 / 7583, behavior-signal + gathering-signal concurrency pass. Not run: production, phone, realtime.
+
+# 2026-11-11: 20270411 host attendance respects blocks, staged, verified locally
+
+Owner: fix the residual found by 0410's journey (a host read every gathering_interest row on their own gathering, a blocked person's too). Audit: the host SELECT branch of "Users see own interest or gatherings they host" had no block check (the app's host list hid blocked people client-side only; the host's Activity pending list, Home pending count, direct API and realtime did not); get_business_top_members / get_business_member_gathering_history (a hosting business) listed attendees without one; a blocked pair's direct insert is ALREADY refused both ways by item 147's visibility trigger (a first insert-policy change was dropped as redundant); on the staged stack 0348's profile column limits refuse every direct insert anyway (the app uses join_gathering). Follow-up (owner): a block never ADDS access: _promote_from_waitlist skipped no one, so a waitlisted person in a blocked pair could become approved (meet-up point, chat, a host match re-created) or pending (unseeable, holding a seat); now skipped, they keep their place, the next unblocked person is seated. Already approved before the block: keeps reservation, row, meet-up point (location fixed after creation, 0343), time-change pushes; chat hidden both ways by sender.
+
+Unchanged: rows, capacity/approved counts, approvals, removal, invites, cancel, check-in, reports, admin/service role, 0410's function. Trade-offs (owner accepted): host can't see/decline/remove a blocked person (already so in the app); their seat still counts; host's client-side waitlist count leaves them out; a blocked waitlisted person stays waitlisted (also on "No limit") until the block ends or they leave; after an unblock they're promoted only at the next spot-opening event (no re-check on unblock). Waitlist lines (owner, 2026-11-12, copy only, no migration or behaviour change): `ui.gatheringDetail.onWaitlist` = "🕒 You're on the waitlist." and `ui.gatherings.waitlistBody` = "This gathering is full right now." in all 11 languages (the "we'll let you know if a spot opens up" clause removed: a blocked waitlisted person is never promoted, so it was a promise the app can't keep; same words for everyone, never reveals a block). Guard `src/i18n/waitlistWording.test.js`; 10 languages machine-authored, need native review.
+
+Results (local replay only, never prod; logs /workspaces/.nearby-verify/v412; first run before the promotion fix in v412-run1): replay 535/535; journeys 1398/1398 incl. `blockedAttendeePrivacy` 9/9 (4 fail without 0411) + `hostFamiliarity` (now expects the host no longer reads the blocker's row); `scripts/replay/host-attendance-api-local.js` real PostgREST with the app's host query shapes 18/18 (EXPECT=open on the rolled-back DB shows all 7 leaks); rollback + re-apply 0 diff; Jest 562 suites / 7578; concurrency behavior-signal, gathering-signal, content-removal, gated-perk-legal-hold, media-report pass. Not run: realtime server, phone, production (post-deploy plan has realtime + blocked-waitlist checks). sha256 6993492ca2feba33704096a98f948b4026f8258cbde8c39380fe519ca58ac6bc.
+
+# 2026-11-11: 20270409 Trending needs established attendees, staged, verified locally
+
+Owner approved after the audit: five coordinated accounts could make any gathering "🔥 Trending" (approved joins >= 5, counted on the phone; no staged signal saw it, join_burst is per person). Fix: server yes/no `trending` on `get_gathering_approved_counts` (5+ established approved attendees, never the host, suspended excluded), `approved_count` unchanged, client reads only that answer (`isTrendingGathering`). Popularity ranking unchanged (option (a)); no established count returned (would leak how many attendees are new). Multi-number/device farms: monitoring only.
+
+Results (local replay, never prod): replay 533/533; journeys 1384/1384 (`trendingEstablished` 10/10, 6 fail without 0409); rollback schema = 0408's verified dump, re-apply 0 diff; Jest 561 / 7567 (first run failed only on the missing post-deploy step, added); iOS + web exports exit 0. sha256 606521671da922125c1f53bc2b38ffc21fa9d5da87183deb738e5bc528a201a1. Logs /workspaces/.nearby-verify/v410.
 
 # 2026-11-09: 20270408 "What people loved" removed + gathering ratings private, staged, verified locally
 
@@ -18,21 +230,781 @@ Trending audit: English wording = "🔥 Trending", "Trending Near You", "most po
 
 Found at the end, reported, not changed: "💛 What people loved" (getHostLovedTags / getBusinessLovedTags) still public from the same rows with no minimum; policy "Anyone can view feedback" (live on prod, 2 rows) lets any signed-in user read every rating with its reviewer_id.
 
-## Coordinated fake credibility + idea 26 (2026-11-09, owner)
+# 2026-11-08: 20270403 final deletion + legal-hold hardening, staged, verified on PG 17.6
 
-Idea 26 (composite trust history) closed as covered; scoring declined. Follow-up audit: can coordinated fake accounts earn trust, reach, limits or powers by interacting?
+Owner ordered the final technical pass. Built on `post-tier1/deletion-hardening`: gathering covers no longer orphaned; hold timing gap between the profile delete and the file's removal closed; 0402's over-preservation of replaced photos fixed; account-level holds (moderation records only, reason + reference); purge log, dry run, monthly reminder; identifiers stripped from evidence copies at any depth; generic function errors. Flaky journeys fixed at their cause. A restart interrupted verification; rerun from a fresh replay. Test defects found and fixed on the way: journey 7's empty-log assumption, a duplicate variable that had kept the function test's cover checks from ever running, setup errors in the Storage + bundle steps. Results and limits: `PRODUCT_AUDIT/ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`, last section. Nothing merged, deployed or built.
 
-Audited: main + all 37 `post-tier1/*` branches (migrations through 20270406). Result: no path.
-- `private.trust_level`: one definition (20270356), reads suspension, verified phone, account age. Readers: `enforce_rate_limit`, `_gathering_signal_join` (a review signal's count), `admin_get_account_facts` (display).
-- `private.rate_limit_rules`: primary key action + level + window; no function rewrites rules or settings at runtime.
-- Referrals: `grant_referral_bonus` adds 3 `bonus_notices` to both sides with no ceiling for the referrer, but `enforce_notice_daily_limit` never reads the bonus (checked on prod too), so a sixth Notice in 24 h is refused. Prod: 1 redemption, 2 accounts with a bonus, max 3.
-- Premium: paid/admin only.
+# 2026-11-08: 0402 hardening pass (six legal-hold issues), staged, verified on PG 17.6
 
-Fix: none needed. Tests on branch `post-tier1/coordinated-credibility-guard` (943fa75e), based on the staged tip: journey `coordinatedCredibility` 11/11 on a local replay of the stack (leader of a 5-account ring vs a no-friends control: same level, powers and refusals for message, invitation, gathering, friend request; bonus never passes the Notice cap; age + phone moves the level both ways); mutation (trust_level rewards friends, cap honours bonus, in a rolled-back prelude) fails 7/11; static guard 8/8; Jest 558 suites / 7535 tests.
+Owner reopened the mandatory review items before build 87. Built on `post-tier1/held-deletion-evidence`: original files kept in their private bucket with an audited opening; deletion wording in 11 languages + Privacy Policy draft + push; hold scope follows the hold; files removed after the account under the hold lock; marker for the between-deletes window; failures recorded + admin push; retention policy table starts empty (no 12-month default). Also found: deletion sent voice messages to the wrong bucket, on production too (code reading). A session restart interrupted verification; resumed, 3 stale journey expectations fixed, one tracked `node_modules` symlink removed. Results and limits: `PRODUCT_AUDIT/ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`. Nothing merged, deployed or built.
 
-Not covered by that scope, reported for an owner decision, nothing changed: the host reputation line (RLS needs only an approved attendee; checked under real roles in a rolled-back transaction, feedback on a gathering 10 days away accepted, one review = 100%; no floor; prod 2 rows); Trending at 5 attendees and the popularity tier; perk unlock counts (prod 0 gated perks); invited joins skip both join signals; "Hosted N"; "Our pick" record; demand floors. The "3 bonus Notices" copy promises something the server cap refuses, and the bonus is spent first.
+# 2026-11-08: 0402 accepted as staged; development stopped for build 87
 
-Limit: this stops activity earning credibility. It doesn't stop fake accounts existing or coordinating. Everything above is staged except the live friend-request limit; prod is on 0347.
+Owner accepted 0402 as staged + locally verified, not approved to merge or deploy; remaining legal-hold issues = mandatory pre-launch review (audit doc,
+"Owner decision"); 12 months not legally approved. Next: build 87 from main (owner runs it), then Tier 1. No session starts the build.
+
+# 2026-11-08: 20270402 held account evidence staged + locally verified (mandatory pre-launch fix)
+
+Owner: design + stage the smallest correction; preservation succeeds before deletion; normal deletion unchanged; only necessary evidence; test
+deletion, release, rollback, races; no merge, deploy, screen or unrelated feature. Migration sha256 9fc3a35273dbe6a80ea942d5844d6adf6734bf9e7bcc504247a6f0c7a7dbdbf9, branch
+`post-tier1/held-deletion-evidence`, stacked on `post-tier1/admin-case-evidence`; own deploy approval after 0401. A codespace restart interrupted the
+first attempt; the WIP was reviewed against the FK graph (every cascade / SET NULL into moderation tables on a replay) before continuing, which added:
+photo hashes + security events to the copy, a case hold keeping linked reports, the suspended-account purge respecting holds. A slip caught in review:
+the first rewrite of that purge dropped 0374's queue + failures retention. Test-only problems found by running the suite afterwards: two scripts' leftovers
+broke `suspendedNumberRetention`; one psql -c put suspend + reinstate in one transaction (same now(), 0374's tie-break is random between them; real
+admin calls are separate transactions, so not a production path). `delete-account`'s stray `verificationPaths` from the 0400 branch fixed (deploy gate).
+Results, limits, decisions for counsel: `PRODUCT_AUDIT/ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`. EAS same day: newest iOS build 86, build 87 not started.
+
+# 2026-11-08: moderation records vs account deletion, verified + recorded as pre-launch (nothing built)
+
+Owner accepted the audit-logging assessment and asked for the deletion behaviour to be verified and documented, with nothing implemented.
+Local replay of all 525 staged migrations + a rolled-back deletion of a held account: reports and report_actions survive; held cases with
+`subject_user` (behaviour, report, prior suspension, account recovery) vanish with their history, leaving a dangling hold; pauses and
+account_moderation_actions cascade; 0374's copy ignores holds and skips reinstated accounts. This corrects the earlier same-day statement,
+which named only suspension and pause records. EAS at the same time: newest iOS build still 86, nothing queued. Findings, proposed
+correction, questions for legal: `PRODUCT_AUDIT/ACCOUNT_DELETION_AUDIT_RETENTION_2026-11-08.md`.
+
+# 2026-11-08: whole case in Admin Review; 0401 accepted as staged
+
+Owner accepted 0401 as staged and approved consolidating the evidence into Admin Review, then stopping feature work. Client only on
+`post-tier1/admin-case-evidence`. Added to the case: counted activity lines; for each linked report its details, the server copy
+(content_excerpt, sent time) and a held reported photo. Reused admin reads (reports policy, admin_get_report_media, 15-minute Storage links);
+REPORTED_WHAT moved to `reportReasons.js` as one table. Admin Reports keeps queue, actions and its evidence lines. Deliberately not moved:
+Pause Actions + legal holds (actions, not evidence). Not rendered in a browser or with real data.
+
+# 2026-11-08: 0401 Account facts in the admin case view (staged, locally verified)
+
+Owner: approve the facts line from idea 23 now, staged, without delaying build 87. Migration 20270401 on `post-tier1/account-facts`
+(not merged, not deployed, not in build 87; own deploy approval after 0400; sha256 0284c5885e7be5f3083cd6b31727c56ec6d0c069a9ad1a1474389a20f44b38c9, commit 537f63ba).
+`admin_get_account_facts(case_id)`: stable, definer, `private.require_admin`, accounts in that case only; created_at, has_verified_phone,
+trust_level, reports received + open / no_action / action_taken / no_outcome from the latest `report_actions` outcome (a reopened report = open; a
+plain resolve = no outcome). Excluded: auto_* rows (moderate-photo files them with reporter = the account), reports about a business (reported_id null,
+0381), purged reports. Never a phone, email, reporter or report text; journey asserts the exact key set. Section self-fetches; function missing = absent;
+other error = a retry line. Verified: replay 525/525, journey 7/7 (7/7 fail rolled back), journeys 1208/1208, rollback/re-apply, Jest 552/552, iOS export.
+Correction to the idea 23 assessment: behaviour evidence lines are on Admin Reports only, device/text/prior-suspension sections on Admin Review only (not unified, recorded).
+
+# 2026-11-08: ideas 18, 19, 21, 22 closed as designed (nothing built)
+
+Owner agreed: keep the invisible trust & safety design. 18 fast reporting: the one sheet already is reason + optional details +
+Submit (code reading, not phone-tested; build 87 has 6 reasons, staged 8, no Unsafe or Impersonation until 0381/0398). 19 shadow
+friction: already rejected 2026-11-07; admin pauses (0399) are visible, dated, never automatic; discovery reach not covered
+(known limit, new decision if ever wanted). 21 mandatory ID: already refused; the ID-upload gate is unchanged. 22 what the user
+sees: Phone Verified badge and suspicion-triggered verification DECLINED. Pre-launch requirements recorded: API-level phone-only
+sign-up (0367 + switch) and Turnstile tested before enforcement. Build 87 checked same day: not started (latest iOS = 86).
+
+# 2026-11-08: 0400 ID-document retention + deletion (staged, locally verified)
+
+Owner (2026-11-07): build the approved ID-document lifecycle now, staged, so optional ID uploads can reach production users
+only once retention + deletion exist and are verified (the ID-upload gate). Migration 20270400 on
+`post-tier1/id-document-retention` (stacked on `post-tier1/admin-restrictions`), NOT merged, NOT deployed, not in build 87;
+own deploy approval after 0399; sha256 d3cd463d2f0302104465898ee51dc6181877b49dab4758ecfc245f502b9ee935 (commit 8f0be29b; earlier 281a5ab7…d3fd at cda7af6f VOID;
+any later change to the file voids it).
+- Retention = the approved target (owner decision 2, 2026-10-27), unchanged: approved -> images deleted 7 days after the decision,
+  rejected -> 30 days, never reviewed -> auto-rejected (no reviewer) at 60 days and images due at once, uploads no submission names
+  -> 24 hours, account deletion -> the whole folder on the next hourly run. The submission row stays as the record; id_verified is
+  unaffected. ONE trigger rule `private.id_submission_retention` (clients can't set or move the dates).
+- Uploads CLOSED until a separate admin migration opens them (`private.id_document_settings.uploads_enabled` false, no client
+  access): the bucket insert policy and the submission insert both refuse (hint `id_verification_paused`). App (this branch, not
+  build 87): IdVerificationScreen asks `id_verification_open()` before any photo and says "ID verification isn't available right
+  now. Nothing was uploaded." (`ui.shared.errors.idVerificationPaused`, 11 languages, 10 machine-authored, need native review);
+  build 87 against a deployed 0400 gets the server refusal shown as a generic error. Admin review links 15 min (were 60).
+- Deletion confirmed, never assumed (0391's rule): a file leaves `private.id_document_cleanup` only when Storage answers 2xx/404
+  AND no storage.objects row is left; bounded retries (10, then an admin re-arms), a failure log, one private admin push a day
+  (counts only), URL-safe paths only. Never touched: a pending submission's files, files inside their period, a submission under
+  an admin legal hold (target `id_submission` added to 0395's holds; a hold outlives the account's deletion). Audit
+  `private.id_document_deletion_log`: submission id, image, reason, times; never a path, user id or image; NO purge (no period
+  approved: owner decides). Admins read a file only while its submission is pending or held; the owner reads their own folder.
+- `delete-account` no longer removes ID files itself (the database queues them on profile delete); deploy it ONLY AFTER 0400 is
+  live, and on rollback redeploy the previous version first. Guard `edgeFunctionSourcesGuard.test.js` updated.
+- Two defects found and fixed this session (both in 0400 in place):
+  (1) a hold placed after the job SENT a DELETE (pg_net runs it after the job commits; it can't be recalled) answered "held". Now
+  "deleting" (Admin Reports note: "Its deletion from Storage was already under way and can't be stopped, so the file may not be
+  kept."). Fixed for 0395's reported-Story-photo branch too, since 0400 redefines `admin_place_legal_hold`. Journey checks both
+  (fails on the earlier 0400: received "held").
+  (2) RACE, reproduced 8/8 in both orders by the new `scripts/replay/id-document-concurrency.js`: the queue has no link to the
+  submission row, so while a hold was still committing the job queued + sent both DELETEs and the hold answered "held". Fixed: the
+  send step share-locks the submission row first (`for share skip locked`: a hold mid-commit = skipped this run, no wait, no
+  deadlock; a send first = the hold waits and then sees "deleting"). After the fix 24/24 rounds pass (incl. two jobs at once: each
+  file sent once).
+- Residual found larger than recorded, then FIXED (2026-11-08, in 0400 in place): the Story-photo job's version of race (2). New
+  step 8 of `scripts/replay/media-report-concurrency.js` (a hold vs the expiry job deleting an expired reported Story whose photo
+  "No action needed" released) reproduced it 20/20 in BOTH orders: the send step re-checked the evidence row without a lock, read
+  it as released while the hold's update was uncommitted, sent the DELETE, and the hold answered "held". 0400 now redefines
+  `private._story_file_send` (0391's, + the photo's evidence rows share-locked with skip locked before sending: a hold mid-commit =
+  skipped this run; a send first = the hold waits, then answers "deleting"); the rollback restores 0391's verbatim. After: 20/20
+  (10 held with no DELETE then or on a later run, 10 "deleting" after the one real send), steps 1-7 unchanged.
+  Re-verified on the local replay (fix applied in place, not a fresh replay): journeys 1201/1201 before and after the scripts;
+  media-report-concurrency 8/8 steps, gated-perk-legal-hold + id-document concurrency pass; real Storage API (1.11.13)
+  media-report-storage-api, media-cleanup-faults, id-document-storage-api, story-storage-api pass; rate-limit rules fingerprint
+  unchanged; rollback = pre-0400 replay's public + private schema except the known hold-type line, re-apply identical (full dump);
+  Jest 551/551 (7433 + 11 todo). New sha256 d3cd463d…e935.
+- Owner (2026-11-08): ACCEPTED 0400 AS STAGED incl. this fix; required one final fresh rebuild first. DONE 2026-11-08: fresh replay
+  with the final 0400 (sha256 d3cd463d2f0302104465898ee51dc6181877b49dab4758ecfc245f502b9ee935, commit 8f0be29b; real Auth first)
+  524/524; journeys 1201/1201 before and after the scripts; media-report-concurrency all steps (step 8: 10 held, 10 deleting),
+  gated-perk-legal-hold-concurrency, id-document-concurrency pass; real Storage API 1.11.13: media-report-storage-api,
+  media-cleanup-faults, id-document-storage-api, story-storage-api, photo-storage-api pass; rate-limit rules fingerprint unchanged
+  after every script; rollback = the pre-0400 fresh replay's public + private schema except the one intended hold-type line;
+  re-apply identical (full schema dump). post-deploy.js 20270400 gains the reported-Story-photo hold check. CLOSED. Not merged,
+  not deployed, uploads not opened, build 87 untouched. EAS (read-only, 2026-11-08): no build 87 exists; latest iOS = 86 (7d72d615,
+  2026-10-18); main 3f82f58a contains 98e8d118; build numbers remote + auto-increment.
+  (Interrupted run note: a codespace restart killed the script mid-step-8 and left the local replay without its 32 rate-limit rules
+  and with friends Stories on; restored from the pre-0400 replay, fingerprint identical; leftover test actors deleted.)
+- `legalHolds` journey counted every hold in the table (holds are append-only, so committed test holds from the Storage API
+  script broke it); it now counts only holds made in its own run.
+- Verified locally 2026-11-07/08: fresh replay 524/524 (real Auth first); journey `idDocumentRetention` 12/12; journeys 1201/1201
+  before and after the scripts; 24 existing concurrency scripts + `id-document-concurrency.js` pass; real Storage API
+  `scripts/replay/id-document-storage-api.js` 16/16 (real pg_net -> real Storage 1.11.13: refused key, refused connection, really
+  deleted, pending kept, held kept then deleted on release, account folder incl. a stray upload); rollback
+  (`scripts/rollback/20270400_id_document_retention.rollback.sql`) = a fresh 523-migration replay's schema except one intended line
+  (the hold-type list keeps `id_submission` while released ID-submission hold records exist; the rollback refuses while one is
+  active), storage policies + buckets identical; re-apply identical (67,389 lines); Jest 551/551 (7433 + 11 todo); iOS export clean.
+- Not run (deploy gates, `post-deploy.js` 20270400): prod prelude journeys 0348-0400, prod aborted rollback, grants vs prod, real
+  API (closed upload refused + the app message), real Storage deletion on prod (same gate as 0391: the job's key accepted by prod
+  Storage), native review, phone. Opening uploads = its own migration + approval, after those pass and the legal review of
+  retention.
+
+# 2026-11-07: 0399 review fixes (owner review: business reply path, paused-action wording, legal holds)
+
+Owner (2026-11-07, after the fixes): ACCEPTED AS STAGED + LOCALLY VERIFIED; not merged, not deployed; no further reporting
+or account-restriction features. Pre-production compliance review item recorded: account deletion vs legal holds (below).
+`useChatComposer`'s diff (included in the fix commit from an earlier uncommitted change) reviewed: only the pause branch.
+Build 87 status checked on EAS the same day: latest iOS build = 86 (2026-10-18, 7d72d615); 87 not started.
+
+Owner review of staged 0399 (2026-11-07): accept as staged; fix (1) the restriction message on the real paused action
+paths without rebuilding screens, (2) test whether a paused business can still reply through another path, (3) check the
+12-month purge against 20270395's legal holds; no feature expansion. 0399 edited in place (staged), new sha256
+d9e01d8b11f8514b075e4781a3cd18e215f2277b1c9aa087c1c2f79a7a5ec7f1; the earlier a1397db9... hash is void.
+- (2) Business reply: the app's real path is Make an Offer -> `screen-business-content` (queued, `async`) -> background
+  screening -> `submit_business_offer` as the signed-in manager. The DB trigger already refused it (now proven in the journey:
+  refused, row stays pending, goes out after Lift Pause), BUT the app first said "sent for review" and the background job then
+  stored the refusal as `not_sent` with the server's English text, after spending a screening call. FIXED: new
+  `public.get_my_account_restriction(capability)` (the caller's own pause only; authenticated) asked by the edge function
+  BEFORE the AI-use count, screening or queuing for offer_response / availability / offer / update = 400
+  {code 'account_restricted', details}; `writeRefusal` + the low-tier reply write map the DB refusal the same way (a pause
+  starting in between); the background job records such a refusal as `not_sent` (never "needs changes"). App: `serviceError`
+  carries the hint + details, so `recoverableErrorCopy` shows the localized pause line, no Try Again. Needs the
+  `screen-business-content` redeploy in the SAME release, right after 0399 (post-deploy step added).
+- (1) Paused action paths audited (code reading): chats (all five use `useChatComposer`), photo comments, gathering
+  questions, gathering invites (`InviteFriendsModal`, publish panel single invite), gathering + community create/edit,
+  profile save, business owner replies already reach the shared copy. FIXED (each reuses `presentRecoverableError`):
+  `sendFriendRequest` turned every 42501 (the pause's errcode) into "You can't send a friend request to this person" (Friends,
+  ViewProfile, Story viewer); Friend discovery Connect showed a generic "couldn't save" + Retry; Dating notice/wave showed the
+  server's English message; the publish panel's circle invite said "some invites didn't go through, try again". No new
+  strings, screens or components. Guard tests in `utils/accountRestrictions.test.js` (13).
+- (3) Legal holds: the purge took no account of holds. FIXED: `purge_ended_account_restrictions` takes `legal_hold_lock()`
+  and skips a restriction whose report (`report_on_legal_hold`, incl. its removal record) or review case is under an active
+  hold; released = purged on the next run. Not changed (owner: no arbitrary retention change): a restriction is not itself a
+  hold target, one made without a report/case can't be held, and account deletion still removes it (as 0357's case members;
+  holds don't stop an account deletion anywhere today): recorded for the legal-hold procedure review.
+- Verified locally 2026-11-07: from-scratch replay (real Auth first) 523/523 with the ORIGINAL 0399 (the gate "replay with
+  0399" now run), then 0399 rolled back + the revised file applied: journey `adminAccountRestrictions` 9/9 (new: business reply
+  refused + nothing written + after lift; reader own-only, anon refused; held case kept, unheld purged, purged after release),
+  journeys 1189/1189, `account-restriction-concurrency.js` 11/11, rollback leaves no 0399 object + re-apply identical (0 diff
+  lines), Jest 550/550 (7420 + 11 todo; one run first failed nearbyPulse's ring heuristic on a new '// 20270399' comment, reworded), iOS bundle exports clean.
+- Not run: `deno check` of the edge function (no Deno in this environment: read by eye + source guard test), the edge
+  function running, prod prelude journeys 0348-0399, prod aborted rollback, grants vs prod, real API, phone, native review.
+
+# 2026-11-07: Admin-controlled temporary restrictions (20270399, staged)
+
+Owner (2026-11-07) declined "shadow friction" (automatic, hidden limits on suspicious accounts) and approved instead an
+admin-controlled response: existing signals stay admin-only; an admin, after reviewing evidence, applies temporary targeted
+restrictions that expire by themselves, are explained to the person, auditable and reversible. Checked first: the only admin
+response was 0351's suspension (indefinite, every social action, no explanation of what or until when), so this was built.
+
+Built on `post-tier1/admin-restrictions` (stacked on `post-tier1/unsafe-report-reason`), migration 20270399 (sha256
+a1397db9b244905b7f8af496c96ed04742a11a9ac1e221ca59587fad2d5c5f57), NOT merged, NOT deployed, build 87 unchanged.
+- Server: `private.account_restrictions` (one row per paused action: user, capability, reason 10-1000, report / review case,
+  admin, starts_at, expires_at <= 30 days, lifted_at/by/reason; a row can only be lifted, once) + append-only
+  `private.account_restriction_events` (restrict / lift, admin, reason; no update, delete only by cascade). No client access.
+  ONE reading `private.account_restricted_until`; `private._refuse_restricted_actor` on 27 BEFORE triggers (named zz_refuse_
+  restricted_*, so they run before screening / suspension checks): messages = new rows in messages, gathering/community/plan/
+  business messages, photo comments, gathering questions (actor column = the caller); invitations = social_invites; friend_
+  requests = pending friendships, friend-discovery likes (pass still works), notices; gatherings = new gatherings + communities;
+  offers = the business's own manager sending/changing a reply, availability, perks, updates (a customer's write on the same row
+  never counts); links = a link not already in the text (20270396's `ugc_links`) in profiles, gatherings, communities, questions,
+  comments, every chat. Refusal: errcode 42501, hint `account_restricted`, detail JSON {capability, until}. Expiry is read at
+  each action (no job); service-role/cron writes never count. Admin: `admin_restrict_account` (admin, never self, 1-30 days,
+  known capabilities, optional report / case, advisory lock per account), `admin_lift_account_restriction` (reason; ended or
+  lifted = {already}), `admin_list_account_restrictions` (active + ended, who, why). Purge 12 months after a pause ended (cron
+  `purge-ended-account-restrictions`, 04:40). Rollback `scripts/rollback/20270399_admin_account_restrictions.rollback.sql`.
+- App: `utils/accountRestrictions.js` (capabilities + what each covers, 1/3/7/14/30 days, reason rule, status lines, refusal
+  reader); `recoverableErrorCopy` shows `ui.shared.errors.accountRestricted` with the end date, no Try Again (11 languages, 10
+  machine-authored, need native review). Admin Reports: "Pause Actions" on an open report's person and each review-case member
+  (not for a suspended account), six action toggles, duration, reason; active pauses listed with "Lift Pause". Older database =
+  no control.
+- Verified locally (2026-11-07, on the 0398 replay database with 0399 applied on top): journey `adminAccountRestrictions` 7/7
+  (fails 7/7 with 0399 rolled back), journeys 1187/1187, `scripts/replay/account-restriction-concurrency.js` 11/11 (two admins
+  lift at once = one lift; two pause at once = both recorded; a message before the pause stays, the next is refused; after a
+  lift the next goes through), rollback = 0398 schema 0 diff lines, re-apply identical (pg_dump 69,711 lines), Jest 550/550
+  (7417 + 11 todo), iOS bundle exports with the control.
+- Limits: a paused business's automatic replies keep answering (a customer's request must never fail; deactivate or suspend the
+  business for that); editing an existing message and discovery reach are not covered; surfaces not using the shared error copy
+  show the server's English line; the business reply path (submit_business_offer) is not in the journey (availability is).
+- Not run (deploy gates, `post-deploy.js` 20270399): a from-scratch replay with 0399 in it, prod prelude journeys 0348-0399,
+  prod aborted rollback, grants vs prod, real API with test accounts, phone, website re-export, native review.
+
+# 2026-11-07: "Unsafe activity or situation" + urgent-first admin queue (20270398, staged)
+
+Owner approved (2026-11-07, options 1/1/2): an urgent report reason for in-person safety, offered on profiles, messages,
+gatherings, communities, businesses and offers (not photos), on the existing sheet + optional details; and the admin queue fixed
+so urgent safety reports come first. Correction recorded: before 0398 "urgent" (harassment, underage) meant only its own cap
+(30 / 24 h instead of the ordinary 10); the queue sorted only impersonation first (0381). Earlier today I had told the owner
+urgent reports "go first": that was wrong.
+
+Built on `post-tier1/unsafe-report-reason` (stacked on `post-tier1/report-feedback`), migration 20270398 (sha256
+04953678…07be), NOT merged, NOT deployed, not in build 87; own deploy approval after 0397.
+- Server: code `unsafe_situation` (English value 'Unsafe activity or situation') in `private.report_reason_code` + the reason
+  check; `private.is_urgent_report_reason` = harassment, underage_user, unsafe_situation. ONE shared urgent allowance: the
+  `urgent_report` rate limit counts every urgent report by that reporter, whichever reason (journey: a 4th urgent report past a
+  cap of 3 refused for any reason); the ordinary cap is still skipped. `reports.review_priority` (generated, dropped + re-added:
+  PG 15 can't alter the expression; no index, view, policy or column grant used it) = 2 urgent safety, 1 impersonation, 0 rest.
+  Ordering only: nothing suspends, hides, removes or notifies anyone.
+- App: `utils/reportReasons.js` (new reason, business + gathering/community lists include it, media doesn't; `reportQueuePriority`,
+  `reportQueueTag` " · Urgent" / " · Priority"; `sortReportQueue` = open, priority, OLDEST first within each group, then resolved
+  newest first); both admin screens ask the server for review_priority desc, created_at asc. Label `ui.reportBlock.reason.unsafe`
+  in 11 languages (10 machine-authored, need native review). DEPLOY GATE: 0398 live before any build offering the reason
+  (0370-0397 refuse the value).
+- Verified locally (2026-11-07): 0398 applied on the fresh 0397 replay (521 migrations + 0398), journey `unsafeReportReason` 5/5
+  (fails on the rolled-back DB, as does `reportReasonCodes`, which loops over the app's table), journeys 1180/1180, object-report +
+  media-report + review-case concurrency pass, rollback = 0397 schema 0 diff lines, re-apply identical (69,032 lines), Jest 549/549
+  (7407 + 11 todo). Not run: a from-scratch replay with 0398 in it (applied on top), prod gates (`post-deploy.js` 20270398), real
+  API, phone (8 reasons in the sheet), native review. Offer report with this reason not in the journey (no content-type condition).
+
+# 2026-11-07: Reporter feedback loop (20270397, staged)
+
+Owner approved a narrowly scoped post-Tier 1 change: the person who filed a report sees, privately in the existing Activity tab,
+"Report received" and later "Review completed. Thank you for helping keep Nearby safe." No new screen, tab, reporting or moderation
+system; no push (owner: Activity update only); build 87 and main unchanged.
+
+Built on `post-tier1/report-feedback` (stacked on `post-tier1/link-safety`), migration 20270397 (sha256 dc01b74f…f175), NOT merged,
+NOT deployed; own deploy approval after 0396.
+- Server: one private row per report `private.report_reporter_status` (report id, reporter id, received_at, completed_at; no client
+  grant). AFTER INSERT trigger on `reports` creates it for every non-automated report with a reporter (every content type: profile,
+  gathering, community, business, offer, message, Story/memory, sponsored; refused inserts create nothing; moderate-photo's `auto_%`
+  codes none). AFTER UPDATE OF resolved sets completed_at once (`where completed_at is null`) on resolved false -> true, so a retry of
+  `admin_resolve_report` (returns `{already}`), a reopen + second resolve and the old direct "Mark Resolved" path never complete it
+  again: one completion per report, ever. Backfill: existing reports get a row (resolved = completed at first resolve action).
+  Reader `get_my_report_updates()` (definer, authenticated only): the caller's own rows, newest 20, ids + times only (never outcome,
+  note, reason, reported account or evidence). Rows go with the report (12-month purge cascade) and the reporter's account.
+- App: ActivityScreen reads `services/reportUpdates.js` -> `utils/reportUpdates.js` (one row per report: received, then completed in
+  its place, dated then; Earlier group, no destination, plain row). ReportBlockModal's toast now says "Report received"
+  (`ui.reportBlock.reportSubmitted` reworded, 11 languages); new `ui.activity.reportReceived` / `reviewCompleted` (11 languages; 10
+  machine-authored, need native review). Older DB = function missing = no rows, never an error.
+- Verified locally (2026-11-07): fresh replay 521/521 (real Auth first), journey `reportFeedback` 5/5 (fails 5/5 after rollback),
+  journeys 1175/1175, object-report + media-report + review-case concurrency scripts pass, rollback removes only 0397's objects,
+  re-apply schema identical (pg_dump 69,029 lines), Jest 549/549 (7407 + 11 todo) after adding 0397's post-deploy step.
+- Not run (deploy gates, `post-deploy.js` 20270397): prod prelude journeys 0348-0397, prod aborted rollback, grants vs prod, real
+  API with test accounts, phone, native review. Not covered by the journey: offer + Story/memory report inserts (the trigger has no
+  type condition; their fixtures live in offerSafety / mediaReports).
+- Owner ACCEPTED as staged (2026-11-07). Full Jest rerun after the post-deploy fix: 549/549 suites, 7407 passed + 11 todo. Build 87
+  status checked read-only (`eas build:list`, 2026-11-07): latest iOS build is still 86 (7d72d615, 2026-10-18); build 87 never started.
+
+# 2026-11-07: Legal-hold control in Admin Reports (20270395's functions, staged)
+
+Owner approved one final addition: a minimal legal-hold control inside Admin Reports (no new screen). Client only; 20270395 is
+unchanged (its sha256 stays 532d63b0…42b0), so the server's admin-only checks, written reasons, append-only record, one active hold
+per item, retention skips and "release never overrides another hold" remain proven by journey `legalHolds` 8/8 (not re-run: no
+server change). Built: `src/utils/legalHolds.js` (reason/reference limits = the migration's, active-hold lookup, status line,
+photo-already-deleted note) + `AdminReportsScreen.js` (Place / Release on every report and review case card; release asks for
+confirmation and says nothing is deleted now; "Other legal holds" lists holds without a card, e.g. a removal record held directly;
+a report hold also keeps its removal record; an older database shows no control). Guard `src/utils/legalHolds.test.js` (5: limits
+match the migration, only the three admin functions, no table access, control on both card types, confirmation). Jest 547/547
+(7394 + 11 todo), iOS bundle exports clean. Procedure DRAFT `PRODUCT_AUDIT/LEGAL_HOLD_PROCEDURE_2026-11-07.md` (who / place /
+review / release / audit; NOT legally reviewed, no retention period invented). Not merged, not deployed, not in build 87, NOT
+DEVICE-VERIFIED. Development stops here: next = build 87 + Tier 1.
+
+# 2026-11-07: Removal follow-ups (20270394 + 20270395, staged)
+
+Owner approved three follow-ups to 0393 on 2026-11-07. Built on `post-tier1/removal-followups` (stacked on 0393's branch), not
+merged, not deployed, build 87 unchanged.
+
+**20270394 (gated perk gate removed, sha256 a597730d3e6fafafdef4948ff6648504f5290673ebc118567a9ed63ecda9f06d).** Defect found by
+0393's journey: `brand_offers.gathering_id` / `unlock_community_id` are ON DELETE SET NULL but `brand_offers_unlock_shape_check`
+required the id while `unlock_scope` was set, so deleting a gathering / community with a gated perk failed the whole statement: a
+host's `cancel_gathering`, a creator deleting a community, the account-deletion cascade of that host / creator, and 0393's removal
+(which cleared the gate as a workaround, leaving a perk a business could re-enable for everyone). Fix: `gate_removed_at`; BEFORE
+DELETE triggers on gatherings + communities deactivate and stamp every attached perk (incl. unscoped perks attached by gathering_id
+alone); the check accepts a gated perk without its id only when stamped; `brand_offer_gate_removed_guard` keeps the stamp and refuses
+active = true (hint `perk_gate_removed`); 0393's `content_removal_close_links` loses its perk branch. Unchanged: redemptions,
+expired perks, billing, bookings / refunds / paid reservations (cancel_gathering's rules), pushes. Perks orphaned before 0394 can't be
+identified (id already null): left as they are.
+
+**20270395 (legal holds, sha256 532d63b0f58aa1bc54f2b8e3e027a8bb27b28e95a5b53ed0b9590ed5ff0142b0).** `private.legal_holds` (no
+client access; append-only by trigger, one release with a reason); `admin_place_legal_hold` / `admin_release_legal_hold` /
+`admin_list_legal_holds` (check_is_admin). While active: `purge_expired_reports`, `purge_content_removal_snapshots`,
+`purge_account_review_cases` skip the evidence; "No action needed" doesn't release a held report's photo; placing a hold re-holds a
+released photo still in Storage (an already deleted file is said, never claimed). A hold on a removal keeps its report and vice versa.
+Holds and purges share one lock (no half outcome). Nothing is held automatically, no content classed as legally held by the system, no
+retention period set: the 12-month periods are unchanged and still need LEGAL REVIEW. No admin screen (functions only, owner to decide).
+
+**Test fixes.** `ugc-moderation-concurrency.js` section 4 parks queue rows other scripts left (cause of the 2026-11-06 one-off,
+reproduced); `media-report-concurrency.js` counts DELETEs from a temporary trigger log on `net.http_request_queue` (as supabase_admin,
+removed after) instead of the queue pg_net's worker drains (cause of scenario 5's "0-0"). New race script's `report()` now throws the
+server's reason.
+
+**Verification (local, 2026-11-07).** Fresh replay 519/519 (real Auth first, fixtures); journeys 1164/1164 before and after one pass
+of all 22 concurrency scripts, run alone, each exit code + a fingerprint of `private.rate_limit_rules` recorded after it (unchanged
+every time); `gated-perk-legal-hold-concurrency.js` 5 sections pass; on a fresh replay of a worktree at e4be8225 (0393 only) the new
+journeys fail 17/17 and the other 1147 pass; rollback 0395 then 0394 = that fresh 0393 schema, pg_dump 0 diff lines (65,647, grants
+included); re-apply = 0 diff lines (66,039); Jest 546/546 (7389 + 11 todo). An earlier attempt the same day showed failures that came
+from two runners overlapping on one database (a first background run still going): not a code defect; the runner's log line also
+printed date's exit code, now fixed. Not run (deploy gates, `post-deploy.js` 20270394 / 20270395): prod prelude journeys 0348-0395,
+prod aborted rollback, grants vs prod, real API with test accounts. Progress log: `PRODUCT_AUDIT/REMOVAL_FOLLOWUPS_VERIFICATION_2026-11-07.md`.
+
+# 2026-11-06: Admins remove reported gatherings + communities (20270393, staged)
+
+Owner approved 0392 as staged and asked for one final addition, then a stop. Built on `post-tier1/admin-content-removal`: migration +
+rollback, journey `contentRemoval`, `content-removal-concurrency.js`, `utils/reportObjects.js` + test, the card's Remove form, post-deploy
+step. The first plan was 0373's existing `moderation_state = 'removed'` (no new state, reversible). The catalog ruled it out: 74 SECURITY
+DEFINER functions read gatherings without the visibility rule (meet-up point, join, check-in, reminders), and held rows never had
+attendees, so nobody had audited those paths for existing participants. Deleting the row closes them by construction and the app
+already handles a deleted gathering. The cost is that it can't be undone. Reading the side effects found: memories fall back to ordinary
+Stories on SET NULL; the generator re-creates a series from past occurrences (race closed with a shared advisory lock, proven both
+orders); `notify_gathering_cancelled` would say "cancelled by the host". The journey found one more: a gated perk's check refuses the
+FK's SET NULL, so the delete failed. Same check also fails a host's cancel of such a gathering today: reported, not fixed. Bulk chat
+retention deliberately not built: unasked, a new privacy flow; chat goes as on a cancel, reported messages keep their copies. A verification
+run stopped on the 3-a-day community limit (test setup), leaving that replay dirty; all results are from a second, clean replay.
+Verification: CLAUDE.md line.
+
+# 2026-11-06: Direct gathering + community reports (20270392, staged)
+
+Owner reversed the earlier deferral: build now on a separate post-Tier-1 branch, tested, not merged or deployed, build 87 untouched. Built
+on `post-tier1/gathering-community-reports`: migration + rollback, journey `objectReports`, `object-report-concurrency.js`, post-deploy
+step, `OBJECT_REPORT_CODES`, the two links. Followed the business/story pattern: invoker branch proves visibility, a definer trigger
+sets the owner and copy. Neither screen has a ⋯ menu, so the links reuse "Report business"'s quiet link instead of a new menu. The
+journey caught a defect in the first draft: the duplicate check ran on the client-sent reporter_id before RLS refused it, so anyone
+could learn whether another person had reported an object; it now runs only for auth.uid(). The new race script first deleted the
+shared rate-limit rules and left its people behind, failing 8 journeys in the second pass; it now restores both (rules hash equal
+before and after). The rollback was compared by diff against the live schema (only 0392's items) and re-apply identity, not against
+a pristine 0391-only replay. Verification: CLAUDE.md line.
+
+# 2026-11-06: Story file deletion reliability (inside staged 20270391)
+
+Owner authorized a narrow fix for the gate 0391 failed: failed Storage deletions logged, monitored, safely retried. Both defects were
+reproduced on committed 0391 first (4 of 24 journey tests failing): a queue row deleted before any answer existed, and a raw path in
+the URL, so a name ending `?x` made the service-role DELETE land on another file, letting a poster destroy their own held evidence.
+pg_net is asynchronous, so one hourly run sends and the next reads `net._http_response`. Added: `private.story_file_cleanup_log`,
+bounded backoff, admin status/retry RPCs, the Reports notice (`utils/storyFileCleanup.js`), `stories_media_name_safe`, and
+`media-cleanup-faults.js` + `fault-proxy.js`, which drive real pg_net and real Storage with failures injected per file. The first
+rollback proof was vacuous (it compared states that never had 0391 applied); it now reports whether the apply changed anything.
+A codespace restart interrupted the final run; it was rebuilt and re-run in full. Verification: CLAUDE.md line, audit section 8.
+Owner accepted it as staged only (2026-11-06) at commit 0b274052, sha256 fc6ab9c7256a7df8d974294ce3469da3d74802a2348d151eac87e7d015e1da8d, and closed the development cycle: build 87 + Tier 1 next.
+
+# 2026-11-05: Photo reports + removal + real file deletion (20270391, staged)
+
+Owner approved 0390 as staged only and decided: memory photos stay on (server visibility, reporting, host or admin removal); build a
+focused report path for memories and Stories on the existing report system, evidence kept past expiry and removal without keeping
+unrelated media; Stories stay off; cover mismatch fixed in a later build; stage and test on the post-Tier-1 sequence, no build 87,
+main or production change; then stop feature development. Built on `post-tier1/story-reports`: migration + rollback, journey
+`mediaReports`, `scripts/replay/media-report-storage-api.js`, `media-report-concurrency.js`, post-deploy step, `utils/memoryActions.js`,
+`utils/reportMedia.js`, audit section 6. Design: hold the one file in place rather than copy it, because the bucket has no client
+UPDATE or DELETE policy (proven through the real Storage API) and a hold commits atomically with the report. Found on the way: the
+expiry job's POST is a 404, so no Story file was ever deleted (prod: 2 files, 0 stories); fixed with one DELETE per file, the form that
+works on both pg_net versions (prod 0.20.3, replay 0.7.1). The first journey run on a rolled-back-and-reapplied DB saw orphans the
+migration had rightly queued, so its delete assertions are scoped to the journey's own folder. Verification: CLAUDE.md line.
+
+# 2026-11-05: Stories security + launch media policy (20270390, staged)
+
+Owner decisions after the public media audit: public Stories and all Story video off until moderation + reporting exist; build
+the security migration now; friends-only photos only once verified with a working report path, otherwise off; covers kept but
+never shown unreviewed, using existing fallback imagery; all server-enforced; verify direct API, foreign file references,
+expiry, visibility, rollback, concurrency where relevant, and the real Storage API. Built on `post-tier1/stories-security`:
+migration + rollback, journey `storiesSecurity`, `scripts/replay/story-storage-api.js`, post-deploy step. The Story report path
+was not built (needs a content type, evidence kept past the 24 h deletion, an admin view and a build), so friends-only stays off.
+A cover fallback needed no client change: `getSignedGatheringPhotoUrl` returns null on refusal, the same branch as no cover.
+`gatheringRowPrivacy` encoded the old "cover follows gathering visibility" rule and was updated; four journeys that post
+personal Stories on purpose turn the switch on inside their rolled-back transaction. Verification: CLAUDE.md line.
+
+# 2026-11-05: Business Moments paused (20270389, staged) + public media audit
+
+Owner approved 0388 as staged only, approved pausing Business Moments entirely before outside business onboarding (photos have
+no screening; infrastructure kept), and asked for a focused read-only audit of Stories and every public media entry point,
+no moderation platform, with onboarding requiring verified server-side enforcement. Built on `post-tier1/moments-pause`:
+migration `20270389_business_moments_paused.sql` + rollback, journey `businessMomentsPaused`, post-deploy step, activation
+checklist sections 7-8; two journeys that post a moment on purpose turn the switch on inside their rolled-back transaction.
+Audit `PRODUCT_AUDIT/PUBLIC_MEDIA_AUDIT_2026-11-05.md`: probes ran under the real `authenticated` role on a replay, in
+rolled-back transactions; the real Storage API and a phone were not tested. The session was cut off by a codespace restart
+before its verification was read, so it was rerun from a fresh replay. Verification and open decision: CLAUDE.md line.
+
+# Business video paused for the first launch (20270388, staged)
+
+Owner approved Option A as a temporary first-launch safeguard, not a removal: a business video is judged only from 1-3 frames
+the business's phone supplies, so a modified client can pair harmless frames with any video; no audio check; a reviewer sees
+only the first frame. Built on `post-tier1/video-offers-hold`: migration `20270388_video_offers_paused.sql` + rollback, early
+refusal in `screen-business-content` (`videoPausedRefusal`, `screenUnlessVideoPaused`; tolerates 0388 not live, PGRST202),
+journey `businessVideoPaused`, post-deploy step, activation checklist section 8 + the outside-business conditions. The audit
+of surfaces found a fourth path the first draft missed: Business Moments are direct `stories` inserts with no screening,
+readable by every signed-in user; the pause covers them (`partner_id` set only; a person's story unchanged). Clients have no
+UPDATE policy on `stories`. `media_type` can't be spoofed into playback (check constraints; clients play only 'video'). Prod
+read-only 2026-11-05: 0 videos on offers / creatives / experiences, 0 moments. Verification and open items: CLAUDE.md line.
+
+# 2026-11-02: screening outage alerts (20270387) built + staged; 0372 activation checklist
+
+Owner (2026-11-02): offer screening's two production issues are PRIORITY RELEASE BLOCKERS (screening never succeeded in
+prod: 0 results, credit unverified; the submit_business_offer / post_business_availability / update_business_profile
+bypass is live for approved business managers). Checklist `PRODUCT_AUDIT/OFFER_SCREENING_ACTIVATION_CHECKLIST_2026-11-02.md`
+(read-only facts, ordering: 0372 only after 0348-0371, approvals, risks). Then the owner asked for admin outage monitoring
+before external onboarding, smallest change on existing infrastructure, deduped, infrastructure failures distinct from
+content verdicts, fail-closed kept, no content or credentials in alerts. Built on `post-tier1/screening-outage-alerts`:
+`_shared/screeningHealth.js`, reporting in `_shared/contentClassifier.ts` + the logo classifier, migration
+`20270387_screening_outage_alerts.sql` + rollback, push type `admin_screening_outage` (medium, never muted, "Review
+Content" -> AdminContentReview, 11 languages, 10 need native review), journey `screeningOutageAlerts`, concurrency
+`scripts/replay/screening-outage-concurrency.js`, Jest `src/constants/screeningOutageAlerts.test.js`, post-deploy step.
+Full design, verification and limits: the checklist's section 6. NOT deployed, NOT merged; build 87 unchanged.
+Screening development stopped here (owner); next = Build 87 + Tier 1.
+
+# 2026-11-02: Verified Business badge explanation (owner), staged with 0371
+
+Owner (2026-11-02): improve the badge's explanation now, not defer it; keep 0371's four checks and every locked rule; inspect
+first; tap = an existing lightweight popover or sheet, never a new screen; same words wherever it appears (app + business
+website); no Stripe check, no new levels, no ranking/routing/offer change; staged branch only, no merge/deploy/publish, build 87
+unchanged. Found: Business Profile showed badge + an always-visible meaning line ("…isn't a rating of its quality or safety");
+the preview sheet showed the badge alone with no explanation; no popover component exists in the app.
+
+Built on `post-tier1/business-verification` (257eb167), then merged forward through all 14 stacked branches (one import-only
+conflict on `post-tier1/impersonation-and-business-reports`, both sides kept): `src/components/VerifiedBusinessBadge.js` = the
+ONE rendering, a button (`accessibilityState.expanded`) that shows the explanation in place under it and hides it on a second tap
+(item 45: expand inline; inside the preview sheet a second sheet would stack); both screens use it. String
+`ui.businessProfile.verifiedBusinessExplanation` (owner's exact English; 10 machine-authored translations need native review);
+removed `verifiedBusinessMeaning`, `ui.businessProfile.verifiedBusinessA11y`, `ui.businessSheet.verifiedBusiness(A11y)`. Guard
+`businessVerification.test.js`: exact wording, only the explicit "does not guarantee" negation allowed, one badge rendering, no
+navigation/modal/animation in it, decision A readers unchanged. Jest 534/534 on the 0371 branch, 542/542 (7338) at the top of the
+stack. NOT done: device check, iOS bundle export of the branch, business website re-export (not published; happens with 0371).
+
+# 2026-11-02: 0385 closed-case fix (owner): fresh signals after a closed behaviour case open a new case; idea 11 closed
+
+Owner (2026-11-02): accept 0385 + 0386 as locally verified; before closing idea 11, fix the 0369 rule that sent every later
+behaviour signal to the person's closed case as new evidence (so an old closed case silenced future alerts); smallest compatible
+fix, keep dedup, daily cap and the 90-day size-only quiet, never reopen historical cases automatically, nothing unrelated; then
+close idea 11, stop anti-abuse development, return to build 87 + Tier 1.
+
+Changed in place in `20270385_gathering_review_signals.sql` (`private.behavior_evaluate_case`; rollback unchanged, it restores
+0382's original): signals with `last_at` after the latest closed behaviour case that qualify by the existing rules open a NEW
+case carrying `previous_case_id`; the closed case gets no event and no `new_evidence_at`; an open case's refresh keeps its other
+evidence keys; the large-gathering quiet = ANY behaviour case about a large_public_gathering closed 'no_action' within 90 days
+(was: only the latest close). Behaviour cases only. Tests: `gatheringReviewSignals` (repeat rule rewritten + six-months-later
+case + cap holds with a waiting-list entry), `reviewCaseHistory` (behaviour expectation now one new case, old closed),
+`gathering-signal-concurrency.js` step 6.
+
+Verification (2026-11-02, local replay only, after a codespace restart): fresh replay 510/510 (real Auth first); the three
+affected journeys 30/30; journeys 1063/1063 before AND after all 17 concurrency scripts; rollback of 0386 + 0385 then re-apply
+then rollback again: identical both ways (5,356 rolled back / 5,408 applied, sorted snapshot of functions + ACLs, policies,
+constraints, triggers, columns, relations + ACLs, indexes, cron); both journeys fail 16/16 on the rolled-back DB; Jest 542/542
+(7337). NOT run (deploy gates): prod prelude journeys 0348-0386, prod aborted rollback, grants vs prod. Staged, not merged, not
+deployed, detection OFF. The earlier entry's limit ("a closed behaviour case means later signals become new evidence on it")
+no longer holds.
+
+# 2026-11-02: gathering review signals 20270385 + 20270386 built + locally verified, staged (owner idea 11 pre-launch items)
+
+Owner (2026-11-02) approved the three signals from `PRODUCT_AUDIT/GATHERING_REVIEW_SIGNALS_PROPOSAL_2026-11-02.md`: attendee
+surge 15 / 60 min with case rule B (alone only when >= half are New accounts, else a private note needing a second distinct
+signal); create-then-cancel 3 in 7 days, each within 48 h, only with someone else joined or invited, 30-day minimal log without
+titles or locations; large public gathering capacity >= 50 or attendance >= 25, once per gathering / series, first opens a case,
+after a 'No action needed' large-gathering case within 90 days size-only signals open nothing but still count beside a different
+signal. Private admin review only; detection OFF until a separate activation migration with its own approval; isolated branch;
+then STOP expanding the anti-abuse backlog and return to build 87 + Tier 1.
+
+Built (branch `post-tier1/gathering-review-signals`, stacked on `post-tier1/crossed-paths-safeguards`): migration
+`supabase/migrations/20270385_gathering_review_signals.sql` (settings table all null, cancel log, size marks, 4 new kinds,
+`behavior_evaluate_case` = 0382's + attendee-surge family + repeat rule, triggers on gatherings / gathering_interest, purge),
+`supabase/migrations/20270386_gathering_review_signal_thresholds.sql` (approved numbers; appends the three alone kinds, keeping
+the existing order so the rollback restores it exactly; refuses without 0385 or with review cases off), rollbacks
+`scripts/rollback/20270385_gathering_review_signals.rollback.sql` + `20270386_...rollback.sql`, journeys
+`src/journeys/gatheringReviewSignals.journey.js` (12) + `gatheringSignalThresholds.journey.js` (3), concurrency
+`scripts/replay/gathering-signal-concurrency.js` (20 parallel New joiners = one signal + one case; 30 parallel joins = one size
+mark; 4 parallel cancellations = one signal + one case; two parallel capacity edits = one mark; cross-joins between two surging
+gatherings both commit), admin wording `src/utils/behaviorCaseEvidence.js` (counts only), `post-deploy.js` steps 20270385/6.
+
+Verification (2026-11-02, local replay only): fresh replay 510/510 (real Auth first); the two journeys 15/15; journeys
+1062/1062 before AND after all 17 concurrency scripts (found + fixed on resume: the journey's OFF check counted the whole cancel
+log, so another script's rows broke it; now scoped to its own actors); rollback of 0386 + 0385 = the pre-0385 originals item for
+item (0382's evaluate_case, 0363's purge, 0382 / 0363 constraints, re-created in a rolled-back transaction and compared); both
+journeys fail 15/15 on the rolled-back DB; re-apply round trip identical (5,190 items, run twice: the first showed only the
+case_alone_kinds order, which led to the append fix); one intermittent `profileAntiScraping` failure on the rolled-back DB,
+passed 3 runs in a row after (that suite has a recorded flake); Jest 542/542 (7337). NOT run (deploy gates): prod journeys with
+the 0348-0386 prelude, prod aborted rollback, grants vs prod. Limits: thresholds provisional (no real usage); a closed behaviour
+case means later signals become new evidence on it, never a fresh case (0369, unchanged); a detector failure is caught and only
+that signal is missed.
+
+# 2026-11-02: 20270384 one encounter per pair (owner decision), accepted as locally complete, Crossed Paths development stopped
+
+Owner (2026-11-02): accept 0384 as locally complete; for the confirmation residual choose ONE crossing record per pair until
+it expires (not a vaguer card time: that hides it on screen but repeated updates still reveal it); keep the 48 h expiry; turning
+the feature off and on must not create an artificial new encounter; keep mutual opt-in, immediate withdrawal, server-side
+limits and "You crossed paths nearby"; show the exact Privacy Policy paragraph for approval, never publish automatically; test
+locally (concurrent reports, consent toggling, expiry, probing); stay staged; then stop Crossed Paths work and return to build
+87 + Tier 1; flag the live production issue as a release priority.
+Built in 0384 in place: `refresh_cooldown_minutes` removed; the write guard refuses any crossing (insert or refresh) while a
+live memory exists for the pair and never refreshes a live row; `private.crossed_paths_encounters` (user_a < user_b, expiry
+only, FK cascade, no client grant) written by AFTER trigger `zz_sighting_encounter_memory` with every new crossing (never
+swallowed: no crossing without its memory), NOT deleted by switching off, a pool change or a block, deleted by the purge at its
+expiry; an expired, unpurged row re-used for a new encounter resets `first_seen_at` and trigger `zz_sighting_new_encounter_push`
+sends the same push as a new row; an UPDATE that doesn't move last_seen_at (trusted maintenance; clients can't write
+sightings) passes unchanged. Rollback drops the table, function and two triggers. Fixtures adjusted (pass before AND after):
+`sightingExpiry` (re-crossing within 48 h = same record, not refreshed from 0384), `storySightingLocation` (its swapped-order
+second row of the same pair forgets the first memory to test the pin). Journey `crossedPathsSafeguards` 48 steps (new: memory
+written, kept after off, off -> on no new encounter, no refresh within or after the hour, expired unpurged row = new encounter
+pushed once each, purge deletes expired memory, pool rejoin no new encounter, new encounter after expiry); concurrency step 5.
+Verification: fresh replay with real Auth first 508/508; journeys 1047/1047 (first full run had one failure in
+`profileAntiScraping` mia2_signal, unrelated to crossings; passed alone and in 3 later full runs: recorded as a flake);
+16 concurrency scripts all pass; journeys 1047/1047 after them; step 5 FAILS with the memory trigger disabled (2 encounters,
+2 pushes each); with 0384 rolled back the journey fails 48/48 and the other 999 pass; re-apply = schema identical (pg_dump,
+49,931 sorted lines); Jest 542/542 (7336). Privacy Policy paragraph PROPOSED in
+`PRODUCT_AUDIT/CROSSED_PATHS_LOCATION_TRUST_2026-11-02.md` section 3 (optional/off by default, approximate, one record per
+encounter, 48 h, withdrawal, the pair note kept until the original 48 h end, what it can reveal); not published. Not run
+(deploy gates): prod prelude journeys 0348-0384, prod aborted rollback, grants vs prod, two-phone check.
+
+# 2026-11-02: 20270384 follow-up (limit bypass check, location-trust residual, copy without distance, Privacy Policy draft)
+
+Owner (2026-11-02): probe numbers (30 s / 20 an hour / 10 min / hourly refresh) APPROVED as initial values; confirm they
+can't be trivially bypassed by resetting a session or switching accounts; document the client-supplied-location residual
+(no tracking or fingerprinting); Privacy Policy describing mutual opt-in, approximate proximity, retention, turning it off.
+Found + FIXED: switching Crossed Paths off deleted the probe row, so off -> on reset the counters (a bypass). Off now
+clears only the stored cell; the counters (no location) stay until an hour idle (purge). Limits are per account; several
+accounts = each its own allowance, bounded by 0352's verified phone (+ 0376 when activated): recorded residual. Copy: no
+distance anywhere ("📍 You crossed paths nearby", the old "35 feet" understated 3 x 3 matches), 11 languages. Doc with the
+bypass table, the confirmation residual, three options (coarser card time, no refresh, re-notify after a day; none built)
+and the Privacy Policy DRAFT (not published): `PRODUCT_AUDIT/CROSSED_PATHS_LOCATION_TRUST_2026-11-02.md`. A codespace restart
+interrupted the work; afterwards a mangled journey step (three names passed to `step`) was fixed and everything rerun:
+fresh replay with real Auth first 508/508, journeys 1039/1039 (journey 40/40, 2 new steps: off -> on + clearing presence
+keep the limits, an exact hit after that still not recorded), 16 concurrency scripts (crossed-paths step 3 now checks no
+stored CELL is left), journeys 1039/1039 again, journey fails 40/40 with 0384 rolled back and the other 999 pass, Jest
+542/542 (7336). Not run: prod deploy gates (unchanged).
+
+# 2026-11-02: 20270384 crossed paths safeguards (idea 10, second follow-up), built + locally verified, staged, not deployed
+
+Owner (2026-11-02): accept 0383 as locally tested, do NOT close idea 10; fix (1) 0382's stale read (a sighting granted a
+profile read until the 10-minute purge, even expired or no longer allowed), (2) verify Crossed Paths needs both people's
+OWN consent (it didn't: being in the same Dating/Friends pool was treated as consent), (3) review report-presence for
+location probing and add the smallest server-side safeguard if a concrete exploit exists. No new screens, scores or
+tracking systems. Branch `post-tier1/crossed-paths-safeguards` (stacked on `post-tier1/crossed-paths-consent`), NOT merged,
+NOT deployed, build 87 unchanged; own deploy approval after 0383.
+
+Files: `supabase/migrations/20270384_crossed_paths_safeguards.sql` (header = the full reasoning), rollback
+`scripts/rollback/20270384_crossed_paths_safeguards.rollback.sql`, journey `src/journeys/crossedPathsSafeguards.journey.js`
+(38), concurrency `scripts/replay/crossed-paths-concurrency.js`, client `src/services/crossedPathsSharing.js` (+ test: only the
+Settings switch can turn it on), Settings switch (shown only when the server has it), 2 strings `ui.crossedPaths.settingTitle`
+/ `settingHelper` (10 machine-authored, need native review), `report-presence` source (redeploy WITH the migration),
+`post-deploy.js` step 20270384, journey harness `crossingReady` (fixtures pass before AND after 0384).
+
+As built: (1) `viewer_may_read_profile`: a sighting grants a read only while `expires_at > now()` AND the pair passes
+`private.crossed_paths_pair_allowed`, checked on every read. (2) `private.crossed_paths_consent` (OFF by default, no
+backfill), changed only by `set_crossed_paths_sharing` (logged with time in `private.crossed_paths_consent_log`; off =
+consent, probe record and every crossing of that person deleted at once); the pair rule needs both rows, so every reader of
+it (write guard, read policy, push, purge, profile read) inherits it. (3) Concrete exploit found (code reading): the cell is
+client-supplied, the only check is 700 mph vs the caller's own last report, no rate limit, so an opted-in account could claim
+11 m tiles every ~0.1 s, sweep ~1 km2 in ~2 min and locate an opted-in person to ~30 m, then repeat to follow; and the
+function returned `matchedCount` (headcount of a claimed cell) to ANY caller. Fix: for people with the switch on, a private
+probe record keeps their last ELIGIBLE cell: a new cell at most every 30 s and 20 per rolling hour (same cell again = free;
+proposed numbers, NOT owner-approved); a crossing is recorded only if both have a fresh (< 10 min) eligible cell, one tile
+apart at most, the record's cell being one of them; refresh at most once an hour; `matchedCount` removed. Presence itself is
+unchanged (push targeting, online status). Concurrency fix found while testing: "off" racing a crossing write left the
+crossing behind in BOTH orders (shown by the new script with the lock removed: 2 FAILED); the write guard and probe trigger
+now read consent `for share`, and the switch locks its profile row `for no key update` (never blocks the crossing's FK check).
+
+Verification (2026-11-02, after a codespace restart): fresh replay with real Auth first 508/508; journeys 1037/1037; with 0384
+rolled back the new journey fails 38/38 and the other 999 pass; rollback removes exactly 0384's objects and re-apply is
+identical (5,480 sorted items); all 16 concurrency scripts pass (new one: 8 parallel cells = 1 counted; off vs crossing both
+orders; off vs own report both orders; both sides writing one crossing = 1 record, 1 push each); journeys 1037/1037 again
+after them; Jest 542/542. NOT run (deploy gates): prod journeys with 0348-0384 prelude, prod aborted rollback, grants vs prod,
+owner approval of the probe numbers, Privacy Policy sentence, two-phone check.
+Residual by design: two people who BOTH turned it on can learn "within ~30 m in the last 10 minutes" from one well-guessed
+claimed cell, once an hour per pair (the feature itself). Observation, not changed: the existing card label "Within about 35
+feet" understates premium 3 x 3 matches (up to ~30 m). Production keeps the original vulnerability until 0383 + 0384 deploy.
+
+# 2026-11-02: 20270383 crossed paths only between people who both chose it (idea 10 follow-up), built + locally verified, staged, not deployed
+
+Branch `post-tier1/crossed-paths-consent` (stacked on `post-tier1/profile-anti-scraping`; off main, build 87 unchanged). Found
+2026-11-01 by code reading (LIVE prod behaviour, not only staged): `report-presence` records a sighting for ANY two people in the
+same ~11 m cell (premium ~33 m) within 10 minutes, opted in or not (its block check is a no-op under the service role), and
+each person can read their own sighting rows through the API (other id + last_seen_at), so a client-supplied cell could
+confirm a non-consenting person's presence at a place. 0353 (staged) fixed only the push; with 0382 a sighting would also
+grant a profile read. Files: migration `supabase/migrations/20270383_crossed_paths_consent.sql`, rollback
+`scripts/rollback/20270383_crossed_paths_consent.rollback.sql`, journey `src/journeys/crossedPathsConsent.journey.js` (27),
+`post-deploy.js` step 20270383. As built: ONE pair rule `private.crossed_paths_pair_allowed` (= 0353's push rule minus the
+recipient's notification switch: both discoverable, both screened + not hidden, no block either way, both in the SAME pool,
+Dating or friend discovery); a BEFORE INSERT/UPDATE trigger drops a refused sighting silently (no row, no push, no error; edge
+function + app unchanged); the read policy also needs it (`sighting_pair_visible`, answers only for a pair that includes the
+caller), so opt-out / hide / suspension / block hide existing rows at once; `purge_expired_sightings` (cron 10 min) also
+deletes refused pairs, run once by the migration. Journey fixtures adjusted (pass before AND after 0383): `sightingExpiry`
+(C + blocked person choose Dating; the blocked row may be purged), `storySightingLocation` (poster/friend/stranger choose
+Dating; anon refusal message from either function), `datingConsent` (A-D crossing not stored from 0383). Also found while
+resuming: `notify_proximity` is derived from `notification_mutes` (20270258), so the journey mutes `discover_nearby_people`;
+suspension needs `app.trusted_update`.
+Verification (2026-11-02, after a codespace restart): fresh replay with real Auth first 507/507; journey 27/27; journeys
+999/999; with 0383 rolled back the journey fails 27/27 and the other 972 pass; rollback round trip identical (27,150 sorted
+catalog items applied / 27,146 rolled back, diff = exactly 0383's 3 functions + trigger + policy + purge body); all 15
+concurrency scripts pass; journeys 999/999 again after them; Jest 541/541 (7330). NOT run (deploy gates): prod journeys with
+the 0348-0383 prelude, prod aborted rollback, grants vs prod, a read-only count of rows the one-off purge would delete, the
+two-phone check; rolled-back schema not compared against a separate fresh 0382 replay.
+Residuals: for a pair who BOTH opted in, a crossing still means "within ~11-33 m within 10 minutes" from a client-supplied
+cell (coarsening/delay = owner decision); 0382's `viewer_may_read_profile` reads sightings without the pair rule or expiry,
+so a withdrawn or expired row can still grant a profile read until the next purge (<= 10 min).
+
+# 2026-11-01: 20270382 people anti-scraping (idea 9, option B), built + locally verified, staged, not deployed
+
+Owner chose option B (2026-11-01). Branch `post-tier1/profile-anti-scraping` (off main, build 87 unchanged). Files: migration
+`supabase/migrations/20270382_profile_anti_scraping.sql` (header lists the before/after), rollback
+`scripts/rollback/20270382_profile_anti_scraping.rollback.sql`, journey `src/journeys/profileAntiScraping.journey.js` (13),
+concurrency `scripts/replay/profile-serve-concurrency.js`, client `src/services/datingBrowse.js` (+ test; `proximity.js`
+Browse reads through it), journey harness + 5 journeys adjusted to the read rule, guards updated (`myProfileReads`,
+`blockVisibilityGuard`, `datingCountConsent`, `nearbyOntology`: owner-only private row views allowed only while revoked
+from every client role), `post-deploy.js` step 20270382. Verification (2026-11-01, after a codespace restart): fresh replay
+with real Auth first 506/506; journeys 972/972; all 15 concurrency scripts pass; journeys 972/972 again after them;
+`profileAntiScraping` fails 13/13 with 0382 rolled back; rollback -> re-apply snapshot identical (29,633 items: functions
+with defs/ACLs/settings, policies, views, columns, column + table grants, triggers, constraints, indexes, cron jobs; sorted
+with collate "C"); the rolled-back snapshot equals a separate fresh replay of 0001-0381 (29,284 items, no diff); on that
+0381 database the other 959 journeys pass; Jest 541/541 (7330). NOT run (deploy gates): prod journeys with the 0348-0382
+prelude, prod aborted rollback, grants vs prod, new build with `browse_dating_candidates` on every device before deploy,
+phone check. Numbers proposed, not approved; the discovery-limit signal stays off until separately approved.
+
+# 2026-11-01: owner idea 8 (impersonation) closed as covered by staged protections
+
+Owner agreed (2026-11-01): covered by 0381 (Impersonation reason prioritized in the admin queue + Report business), 0371 (Verified Business: identity + authority evidence) and 0350 (ID Verified: an ID check only, never a particular celebrity). Reports never punish automatically; an admin reviews evidence. Deferred improvement: a formal ownership dispute process for a brand owner or public figure who is not a Nearby user (admins receive and evaluate an outside claim manually, independent evidence, no account required). Principle: verified identity is not verified ownership of a name, brand or persona. Declined: celebrity verification, more badges, automated penalties, another reporting system. Nothing built; all migrations stay staged.
+
+# 2026-11-01: 20270381 impersonation reason + "Report business", built + locally verified, staged, not deployed
+
+Owner approved (2026-11-01): impersonation as its own report reason, and a way to report a business itself. Branch
+`post-tier1/impersonation-and-business-reports` (stacked on `post-tier1/photo-detection-activation`; off main, build 87
+unchanged). Files: migration `supabase/migrations/20270381_impersonation_and_business_reports.sql`, rollback
+`scripts/rollback/20270381_impersonation_and_business_reports.rollback.sql`, journey
+`src/journeys/impersonationBusinessReports.journey.js`, client `utils/reportReasons.js` (`reportReasonsFor`,
+`sortReportQueue`), `utils/reportContent.js` (fallbacks), `ReportBlockModal` (`target="business"` = report only, business
+reasons only), Report business link on `BusinessPreviewSheet` + `BusinessProfileScreen`, admin queue order on
+`AdminReportsScreen` + `AdminReviewScreen`, post-deploy step `scripts/live-verify/post-deploy.js` 20270381.
+As built: reason `impersonation` (legacy value "Impersonation"), prioritized via generated `reports.review_priority` (ordering
+only), NOT urgent (ordinary cap); existing `fake_profile` rows unchanged; label "Fake profile or impersonation" split into
+"Fake profile" + "Impersonation" (11 languages, 10 machine-authored, need native review, + `reportBusiness` /
+`reportBusinessTitle`). Business report = `content_type 'business'`: read as the reporter (active + visible only), server
+copy (name, address, description), `reported_id` forced NULL, own business refused, no account investigation or Suspend.
+Old-database safety: Impersonation refused (`report_reason_invalid`) -> refiled as "Fake profile" with "[Impersonation]";
+business type refused (constraint) -> filed with nobody named and "[business id]" in details (both checked on a
+pre-0381 replay). The sheet stays a presentation (item 17 lock): the viewer's managed business is read by DiscoverHubScreen
+and passed in (`myPartnerId`).
+Resume after a codespace restart: the WIP commit had the journey written but not run. Verification (2026-11-01): fresh
+replay with real Auth first 505/505; journey 8/8 (fails 8/8 after rollback); `reportReasonCodes` scoped to 0370's six
+reasons so it still passes at 0370's own post-deploy step (it failed 3 on a pre-0381 DB because it iterated the client's
+7-reason table); predecessor journeys 40/40 on the rolled-back DB; rollback round trip identical (5297 items); 14
+concurrency scripts; journeys 959/959 before and after them; Jest 540/540 (7326; the 3 WIP failures fixed: item 17 sheet
+lock, `{!reportOnly && (` guard, missing post-deploy step). NOT run (deploy gates): prod journeys with the 0348-0381
+prelude, prod aborted rollback, grants vs prod, phone check.
+
+Owner (2026-11-01): accepted as locally verified, keep staged, no changes unless a critical defect; asked whether business
+reports on older databases identify the business reliably. Answer: never misattributed (no person named in any state;
+prod today has no content columns and a nullable `reported_id`, checked read-only), but NOT reliable identification: the
+fallback stores only "[business <uuid>]" in the reporter-controlled details, unverified by the server, with no name or
+business label on the admin screen (`AdminReportsScreen` shows the label only from `content_type`). Not treated as a
+critical defect (no wrong target, admin can still look the id up). Proposed gate, not applied: 0381 live before any build
+offering "Report business" reaches a device.
+Owner (2026-11-01): gate APPROVED as proposed: 0381 deployed + verified before any build with "Report business" is released to
+users; fallback not rewritten; separate deploy approval kept; build 87 unaffected.
+
+**Duplicate-photo detection activation prepared (owner, 2026-11-01).** Owner: activate before public launch, prepare now on a separate staged branch, keep thresholds + human review + privacy, check dependencies / production verification / admin workflow / rollback, add a controlled activation plan with a way to disable; deploy nothing. Branch `post-tier1/photo-detection-activation` (stacked on `post-tier1/shared-case-links`). Files: migration `supabase/migrations/20270380_photo_detection_activation.sql`, rollback `scripts/rollback/20270380_photo_detection_activation.rollback.sql`, switch `scripts/trust-safety/photo-detection-switch.js` (+ test, 11), backfill `scripts/trust-safety/fingerprint-existing-photos.js` (near-duplicate step added: before, older photos would only ever get exact fingerprints), journey `src/journeys/photoDetectionActivation.journey.js` (8), `reviewCaseHistory` defaults made activation-aware, concurrency `scripts/replay/review-case-concurrency.js` step 6 (+ multi-statement result fix in its helper), `post-deploy.js` step 20270380 + switch entry, plan `PRODUCT_AUDIT/PHOTO_DETECTION_ACTIVATION_PLAN_2026-11-01.md`. Found: the activation race (a photo recorded while the activation transaction is open is judged by nobody); fixed operationally (`on` commits the numbers then sweeps separately; one `sweep` right after the 0380 deploy), proven by step 6 (3/3 deterministic before the fix path, one case with all six after). Verification: fresh replay 504/504 (real Auth first), journeys 951/951 before + after all 14 concurrency scripts, journey fails 8/8 with 0380 rolled back, rollback round trip 882 -> 881 -> 882 functions identical (defs + ACLs + settings), refusals with exact rules 4/0.5 and without 0369, switch exercised against the replay, Jest 540/540 (7321). NOT run: prod prelude journeys, prod aborted rollback, grants vs prod.
+
+# 2026-11-01: shared-device option 3 (0376 revised in place)
+Owner approved option 3: a phone shared by several accounts is not suspicious by itself. `private.evaluate_shared_device` now opens a `many_accounts` case only when `private.shared_device_corroboration(accounts)` returns at least one existing review case that is open or closed "action_taken" and ties those accounts together: an identical_photo / similar_photo case with 2+ of the token's accounts, or behavior / report cases covering 2+ different accounts on the token (one report about one person never puts a household under review). Shared-device, shared-text, prior-suspension and recovery cases never count; no score. New triggers `zz_review_member_device_recheck` (account_review_case_members insert) + `zz_review_case_device_recheck` (account_review_cases status/outcome change) re-evaluate the accounts' keys, so order doesn't matter; evaluations serialized by a global xact lock taken after each side's own write. Suspended-device rule unchanged. Evidence gains `corroborating_cases` (id + kind), shown on the admin screen as "Opened because these accounts are also in N other review cases: {kinds}". Detection still OFF (activation migration, owner numbers N = 4 / 90 days, separate approval). Tests: journey `sharedDeviceSignal` 18/18 (new: household of 4, one report, behaviour + report on two accounts, photo case with one account + outsider, closed no-action photo case, admin reopen counts, below N, photo case before sightings); 4/18 fail with the previous evaluate function; concurrency scenario 5 (corroborating case vs last registration, both orders: one case); fresh replay 503/503 with 0377-0379 on top, journeys 943/943, all 14 concurrency scripts, rollback 0379->0376 + re-apply identical (4268 -> 4164 -> 4268), Jest 539/539. Merged forward into post-tier1/friend-request-burst, shared-text-signal, shared-case-links. NOT run: prod journeys with prelude, prod aborted rollback, grants vs prod.
+# 2026-11-01: 0379 accepted
+Owner accepted 20270379 as built and locally verified; idea 5's read-only account-linking view = complete in development, staged, unmerged, undeployed (not available to admins until deployed after 0378). Mandatory deploy requirements kept: prod journeys with 0348-0379 prelude + prod aborted rollback, grants vs prod, migration-order approvals, `src/qa/sharedReviewCasesSignedIn.live.js` (non-admin refused), website re-export + browser check. No more account-linking features, scoring, fingerprinting or screens. Next = build 87 from main + Tier 1.
+
+# 2026-11-01: shared review cases, read-only admin account-linking view (20270379) built + staged
+**Shared review cases (owner 2026-11-01, "build it now") BUILT + STAGED as 20270379 on `post-tier1/shared-case-links` (stacked on `post-tier1/shared-text-signal`), NOT merged, NOT deployed, website NOT re-exported or published, build 87 unchanged (website-only screen).** One read-only, admin-only function `public.admin_get_shared_review_cases(case_id_param)` (security definer, stable, `private.require_admin()` per call; EXECUTE authenticated only, anon/public none): for each account of the open case (members + subject, once each) its OTHER existing review cases (member or subject; each once; open first, then most recent; max 50 + a total) with signal, reason, status, outcome, overdue / new-evidence flags, and the other accounts in those cases (name, suspended, `in_this_case`). DIRECT connections only: accounts listed under a linked case are never expanded (no network / friends-of-friends); the admin opens a linked case in place to look further. Reads only `private.account_review_cases`, `_members` and `profiles`; stores nothing, writes nothing, no scores, clustering, IP, device fingerprinting or account changes. UI: a "Shared review cases" section inside `AdminReviewScreen`'s existing case detail (no new screen or route), each row labelled "Shared review case" with `caseTitle` + `caseStatusLine` + "With {names}" (never "same person" / "likely related"; note says a shared case is not proof), tap = `openCase`; a late answer for an earlier case is dropped (`openId` ref). Rules `sharedCaseGroups` / `caseStatusLine` / `SHARED_CASE_LABEL` / `SHARED_CASES_NOTE` in `utils/adminReviewCase.js`. Tests: guard `utils/sharedReviewCases.test.js` (12: grouping, duplicates, wording, migration read-only/admin-only/direct-only/tables, screen wiring) + screen RPC allow-list updated in `adminReviewCase.test.js`; journey `sharedReviewCases` 9/9 (shared cases, subject+member once, pair across two cases, unrelated accounts absent, no expansion, nothing written, unknown = case_not_found, member/unrelated/anon/demoted admin refused, grants), fails 9/9 after rollback. Fresh from-scratch replay (real Auth first) 503/503, journeys 939/939, `review-case-concurrency.js` passes, rollback round trip identical (879 -> 878 -> 879 functions, defs + ACLs hashed), Jest 539/539 (7309). NOT run (deploy gates): prod journeys with the 0348-0379 prelude, prod aborted rollback, grants vs prod, gated signed-in test `src/qa/sharedReviewCasesSignedIn.live.js` (`NEARBY_POST_DEPLOY_0379=1`), website re-export + browser check. Rollback `scripts/rollback/20270379_shared_review_case_links.rollback.sql`; `post-deploy.js` entry 20270379.
+
+# 2026-11-01: same public text on several accounts (20270378) built + staged, behaviour sequences deferred
+**Shared public text signal (owner 2026-11-01, idea 4 gap 1) BUILT + STAGED as 20270378 on `post-tier1/shared-text-signal`, NOT merged, NOT deployed, detection OFF.** Identical long public bios / visible public gathering descriptions on >= 5 distinct accounts in 30 days (owner's untested starting point) open one private admin-review case per cluster; keyed hash only, never the text; short, few-word and listed-template text ignored; never restricts. Cross-account behavioural-sequence detection DEFERRED (owner). Files: migration, rollback `scripts/rollback/20270378_shared_public_text_signals.rollback.sql`, journey `src/journeys/sharedPublicText.journey.js`, concurrency `scripts/replay/shared-text-concurrency.js`, website admin wording (`src/utils/adminReviewCase.js` + test, `src/screens/AdminReviewScreen.js`; export not regenerated/published), post-deploy step 20270378, real-Auth replay helpers' start-order fix. Verification + gaps + Privacy Policy draft: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`, last section.
+
+# 2026-11-01: friend-request burst limit (20270377) built + staged
+**Friend-request burst limit (owner 2026-11-01, from idea 24) BUILT + STAGED as 20270377 on `post-tier1/friend-request-burst`, NOT merged, NOT deployed.** 5 friend requests per rolling 10 minutes at both trust levels beside the unchanged 15 per local day; counted from a private log written only for requests really created (AFTER INSERT), checked under the sender's profiles-row lock; refusal hint `friend_request_limit` -> `ui.shared.errors.friendRequestLimit` (11 languages, 10 need native review); never restricts. Files: migration, rollback `scripts/rollback/20270377_friend_request_burst_limit.rollback.sql`, journey `src/journeys/friendRequestBurstLimit.journey.js`, concurrency `scripts/replay/friend-request-concurrency.js`, `utils/recoverableError.js` (+test), `i18n/ui/shared.js`, post-deploy step, `trustSafetyI123` row count. Verification + gaps: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`, last section.
+
+# 2026-11-01: shared device token signal (20270376) built + staged, VoIP numbers assessed
+
+
+Owner (2026-11-01): finish idea 18's account-cycling gaps now, separate from build 87 and production. Gap 1 built as
+20270376 (staged, detection off); gap 2 (VoIP / virtual numbers) assessed only, nothing built or activated. Files:
+migration `supabase/migrations/20270376_shared_device_signals.sql`, rollback
+`scripts/rollback/20270376_shared_device_signals.rollback.sql`, journey `src/journeys/sharedDeviceSignal.journey.js`,
+concurrency `scripts/replay/shared-device-concurrency.js`, website admin wording (`src/utils/adminReviewCase.js`,
+`src/screens/AdminReviewScreen.js`), post-deploy step (`scripts/live-verify/post-deploy.js` 20270376), assessment
+`PRODUCT_AUDIT/VOIP_NUMBER_ASSESSMENT_2026-11-01.md`, design + privacy draft in `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`
+(last section). Verification: a plain replay stops at 0375 (its stand-in auth tables lack `auth.sessions.not_after` and
+`auth.mfa_factors`), so the replay ran with real Auth migrating first (`BEFORE_MIGRATIONS='node scripts/replay/account-takeover-auth-local.js prepare'`),
+as 0375's own verification did: 500/500, journeys 901/901, 12/12 concurrency scripts, rollback round trip identical, Jest 538/538.
+
+# 2026-11-01: 0375 revised in place (account takeover + recovery, D1-D4 with owner adjustments), locally verified, not deployed
+
+Owner approved D1-D4 with adjustments (step-up, no blanket deletion delay after checking Apple, audited recovery with independent evidence, passkeys = evaluation). Built into 20270375 (never deployed), `services/accountStepUp.js`, `utils/accountStepUp.js`, Settings, `delete-account`. On resume after a codespace restart, verification found and fixed: trusted-write save/restore missing in `account_deletion_authorize` + `admin_recover_account` (0359 guard); the step-up's code request needed a Turnstile token (Auth checks /otp); journey fixtures clearing/moving test phones now use the scoped recovery marker (`fixturePhoneWrite` in journeyHarness.js); a hold-expiry journey case id bug; `account-security-concurrency.js` rewritten for the permit model. Results: see CLAUDE.md's 0375 line. Design + facts: `PRODUCT_AUDIT/ACCOUNT_RECOVERY_DESIGN_2026-11-01.md` sections 4-5; runbook DRAFT.
+
+Previous CLAUDE.md 0375 line (superseded):
+
+**Account takeover through a phone number / SIM swap (owner, 2026-10-31; exception to the freeze for genuine account-security vulnerabilities) STAGED, NOT DEPLOYED, NOT MERGED, NOT APPROVED FOR PRODUCTION; EXTERNAL-LAUNCH BLOCKER (owner, 2026-11-01): no external users until a tested recovery path, protected deletion and a stronger-than-SMS plan exist. Investigation 2026-11-01 (replay + real Auth, never prod): the Auth admin API number change inside the 24 h window answers OK but saves nothing (silently blocks admin recovery); the owner's session survives an intruder's number change, but the intruder's confirmation counts as a new sign-in, so 0375 then refuses the owner's change BACK for 24 h (the clock works for the intruder). Proposed design (NOT approved, NOT built): `PRODUCT_AUDIT/ACCOUNT_RECOVERY_DESIGN_2026-11-01.md` (D1 7-day session age via a permit RPC, replacing the clock, amending 0375 in place; D2 deletion immediate from an old session, else scheduled 7 d + Keep my account; D3 admin recovery hold + admin_recover_account + runbook; D4 optional passkey evaluation). Earlier (2026-11-01): RESIDUAL RISKS OPEN for the external-launch security review: (R1) a stolen SMS code still grants a session (the 24 h wait only delays a number move); (R2) account deletion from a stolen session is unprotected (another SMS check is no protection against a SIM swap); (R3) a refused password attempt still signs the owner out (Auth acts before the DB); (R4) NO real recovery path after an unauthorized number change (no support runbook, a phone-only owner can't prove ownership, the guard also blocks admin changes for 24 h); never describe SMS-only sign-in as SIM-swap resistant. 24 h clock = `auth.users.last_sign_in_at` (latest sign-in on ANY device, not the session's creation; refresh never moves it; proven on real Auth). Was: BUILT + STAGED as 20270375 on branch `post-tier1/account-takeover` (stacked on `post-tier1/suspended-number-retention`; off main, build 87 unchanged), NOT DEPLOYED (own approval, after 0374; needs 0369), NOT DEVICE-VERIFIED, native review of 2 `ui.settings.phoneChangeWait*` + `ui.notificationActions.open_settings` pending (10 languages), Privacy Policy sentence DRAFTED (publish with 0375):** audit on real Auth v2.197.0 with prod settings found that one SMS code for the number (SIM swap / port-out / recycled number) let the holder V1 move the account to their own number (owner locked out), V2 add a password (re-entry without SMS), V3 add an email (second way in), V4 then enrol an authenticator (owner locked out of every change); no notice, no record. Fix: a phone-only account never gains a password or email (quietly not saved, BEFORE UPDATE `aa_account_takeover_guard`); a number change waits 24 h after the latest sign-in (`private.phone_change_allowed_at`; Settings asks `get_my_phone_change_wait` first and says when; `utils/phoneChangeWait.js`); ONE push `account_security_notice` (new sign-in while signed in elsewhere, max 1/h; completed number change; high, never muted, opens Settings whose Sign Out ends every session); private record `private.account_security_events` (kind + time, 12 months, admins only via `admin_get_account_security_events`); never a restriction, score or fingerprint. Verified 2026-11-01: journey `accountTakeoverProtection` 8/8 (fails 8/8 without); prod journeys 876/876 with 0348-0375 (rolled back); replay 499/499 + 876/876 + all 11 concurrency scripts (new `account-security-concurrency.js`); real Auth 19/19 (`scripts/replay/account-takeover-auth-local.js`); rollback round trips identical (replay + prod aborted); grants 3291/3291; Jest 536/537 suites (only the known benchmark). Remaining risks (recorded, not fixed): the SMS sign-in itself (second factor / passkeys = later decision); a password attempt still signs the owner out (Auth does it before the DB refuses); the 24 h wait can be outlasted when the owner has no signed-in device; deletion from a stolen session (owner decision; not delayed, App Store easy deletion); email accounts until B5 reauth is applied; Twilio Verify path = post-deploy phone check. Deploy also wants `send-push` redeploy (high priority + "Open Settings" button; else medium, no button). Details: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`, last section.
+
+# 2026-11-01: Account takeover through a phone number / SIM swap (20270375), built + staged, not deployed
+
+Owner (2026-10-31): finish the SIM-swap / phone-number takeover review now (exception to the freeze for genuine account-security vulnerabilities), audit first, fix only confirmed critical gaps on a separate post-Tier-1 branch (`post-tier1/account-takeover`, stacked on `post-tier1/suspended-number-retention`), never in build 87, no merge or deploy. Audit findings (V1-V4, what was already protected, what is inherent), the as-built design, verification, remaining risks, deployment dependencies and the drafted Privacy Policy sentence: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`, section "Account takeover through a phone number / SIM swap". Files: migration `supabase/migrations/20270375_account_takeover_protection.sql`, rollback `scripts/rollback/20270375_account_takeover_protection.rollback.sql`, journey `src/journeys/accountTakeoverProtection.journey.js`, real-Auth check `scripts/replay/account-takeover-auth-local.js` (Auth + mail catcher via the replay's `BEFORE_MIGRATIONS` hook), concurrency `scripts/replay/account-security-concurrency.js`, gated live test `src/qa/accountTakeoverSignedIn.live.js`, post-deploy step in `scripts/live-verify/post-deploy.js`, app `src/utils/phoneChangeWait.js` + Settings' number change + the push tables (destination, tier, action, never-muted list, `send-push` copy) + 13 new strings. A codespace restart interrupted the work; afterwards two journey assertions were corrected (a null password in the fixture; a purge counted in the same statement), real Auth found a double notice on an honest number change (fixed: the session a number change opens sends no "new sign-in"), and every check was rerun.
+
+# 2026-10-31: Suspended-number re-registration (20270374), built + staged, not deployed
+
+Owner (2026-10-31): build the approved design now (exception to the freeze), on its own branch `post-tier1/suspended-number-retention` (stacked on `post-tier1/ugc-moderation`), never in build 87, own deploy approval after 0373. Design, as-built details, known limits and the drafted Privacy Policy sentence: `PRODUCT_AUDIT/TRUST_SAFETY_FIXES_2026-10-27.md`, section "Suspended-number re-registration". Files: migration `supabase/migrations/20270374_suspended_number_retention.sql`, rollback `scripts/rollback/20270374_suspended_number_retention.rollback.sql`, journey `src/journeys/suspendedNumberRetention.journey.js`, concurrency `scripts/replay/suspended-number-concurrency.js`, real-Auth check `scripts/replay/suspended-number-auth-local.js` (+ opt-in `BEFORE_MIGRATIONS` hook in `from-scratch-replay.sh`), gated live test `src/qa/suspendedNumberSignedIn.live.js`, post-deploy step in `scripts/live-verify/post-deploy.js`, admin case wording in `src/utils/adminReviewCase.js` + `src/screens/AdminReviewScreen.js` (website only). A codespace restart interrupted verification; it was rerun in full afterwards. Verification: see the progress doc (journey 10/10, fails without; prod journeys 868/868 with 0348-0374; replay 498/498 + 868/868 + 10 concurrency scripts; real Auth 14/14; rollback round trips identical; grants 3287/3287; Jest 536/7279).
+
+# 2026-10-31: User-content screening (20270373), built + staged, not deployed; ACCEPTED + CLOSED by the owner
+
+Owner (2026-10-31): accepted as code-complete and locally verified, NOT production-verified; stays staged. Decision: group-plan,
+gathering and community chat stay reports-based (preserved evidence + human review), no routine AI screening of conversations
+without a separate decision, so 0373's group-chat queue/triggers/cron/edge batch must be removed and re-verified before 0373 can be
+approved (not done: freeze). Gates: that removal, multilingual calibration, working screening service, compatible native build,
+signed-in real-API tests, native review, iPhone testing. Development frozen again: next = build 87 + Tier 1.
+
+Owner approved (external-user security gate). Branch `post-tier1/ugc-moderation` (stacked on `post-tier1/offer-safety`), main +
+build 87 unchanged. Findings, design, status and the full verification: `PRODUCT_AUDIT/UGC_MODERATION_PROGRESS_2026-10-31.md`;
+rules in the migration header (`supabase/migrations/20270373_user_content_screening.sql`). Finding that drove it: all public
+consumer text was a direct client write screened only client-side by `moderate-text` (AWS, English-only, fail-open), so a direct
+API call skipped it and 10 of 11 languages were effectively unscreened. Built: server-bound screening rows (sha256 of the trimmed
+text, single user, < 30 min), BEFORE triggers on the public tables, held review queue (`private.ugc_held_items`, admin
+approve/reject, never own content, decided once, lock order content row -> item), per-language calibration table (all pending =
+held), group-chat post-send queue + cron, `held_not_shareable` on invitations / business + partnership requests / invite-link
+preview, `get_my_held_content` (kind new_row vs edit), new edge `screen-user-content` (shared classifier module, Anthropic
+haiku, fail closed), client wiring on 8 screens + admin section, 11-language strings, gated calibration runner + set, gated
+signed-in post-deploy test, concurrency script, post-deploy step. Verification after a codespace restart (2026-10-31): Jest
+536/7277; replay 497/497 + journeys 858/858 + 9 concurrency scripts; prod journeys 858/858 with 0348-0373 (rolled back);
+`ugcModeration` 8/8, fails 8/8 without 0373; rollback round trip identical on replay and prod (aborted, exact ACL order);
+grants replay == prod+0348-0373 3285/3285. Not run: calibration (no Anthropic credit), signed-in live test (0373 not live),
+any device check, native review.
+
+# 2026-10-31: Offer safety (20270372), built + staged, not deployed; ACCEPTED + CLOSED by the owner (code-complete, locally verified; 5 activation gates in the progress doc, first = a successful real screening call)
+
+Owner approved gaps 1-3. Branch `post-tier1/offer-safety` (stacked on `post-tier1/business-verification`), main + build 87
+unchanged. Findings, design and full verification: `PRODUCT_AUDIT/OFFER_SAFETY_PROGRESS_2026-10-31.md`; rules in the
+migration header (`supabase/migrations/20270372_offer_safety.sql`). Summary: the seven screened write functions moved to
+private (`*_unscreened`) behind thin public wrappers that require and consume a matching low-risk screening result
+(`private.require_business_screening`); perks + business updates by a BEFORE INSERT trigger; occasion packages get a
+'package' screening branch (client `services/occasionPackages.js` now saves through screen-business-content; held packages
+applied on admin approval); AI-suggested experiences kept via the screening path; one contact rule enforced by triggers
+on every offer text + an edge pre-check; `reports.content_type 'business_offer'` with server-side capture
+(`BusinessRequestDetailScreen` ⋯ -> Report this offer -> `ReportBlockModal reportOnly`). Journey harness: screened stand-ins
+(pg_temp.j_*) for journeys playing a business directly. Rollback `scripts/rollback/20270372_offer_safety.rollback.sql`
+(refuses if offer reports or package screening rows exist). Work spanned a codespace restart; all verification re-run after
+it (numbers in the progress doc). Deploy: after 0371, `screen-business-content` right after the migration; post-deploy step
+in `scripts/live-verify/post-deploy.js`.
+
+# 2026-10-31: Verified Business (20270371), built + staged, not deployed; ACCEPTED + CLOSED by the owner (code-complete, locally verified; activation = 4 post-deploy steps)
+
+Owner decisions A (badge shown only on the business preview sheet + Business Profile; never read by routing, matching,
+ranking, offers, replies or Opportunities) + B (evidence-based admin review). Built across a codespace restart; verification
+re-run after it. Migration header in `supabase/migrations/20270371_business_verification.sql` holds the full rules: four
+checks with fixed method lists (identity, authority, contact, consistency), outcome + factual note each; all four passed =
+verified, inconclusive never verifies; append-only `private.business_verification_events` (update only for a deleted
+admin's id going null, delete only by the business's own cascade); admin-only verify / revoke (reason required) / list,
+conflict of interest refused (`verification_conflict_of_interest`), decisions serialized by a row lock; badge only while
+the business is active and its verified name, address and manager still hold. Client: `services/businessVerification.js`
+(the one reader; missing function or any error = no badge), `utils/businessVerification.js`,
+`components/AdminBusinessVerificationSection.js` (in Admin Business Requests); strings `ui.businessSheet.verifiedBusiness*`
++ `ui.businessProfile.verifiedBusiness*` (10 languages machine-authored, need native review). Tests: journey
+`businessVerification` 14/14; prod journeys 843/843 with 0348-0371 as prelude (rolled back); from-scratch replay 495/495,
+journeys 843/843 on it, `scripts/replay/business-verification-concurrency.js` all pass (concurrent revokes = one, verify vs
+revoke 10 rounds always one order, no deadlocks); rollback round trip: catalog fingerprint identical on the replay and on
+prod (aborted transaction, prelude 0348-0370); grants replay = prod+0348-0371 3265/3265; Jest 534 suites / 7239 tests.
+Rollback `scripts/rollback/20270371_business_verification.rollback.sql` (deletes the history: export first). Post-deploy:
+`scripts/live-verify/post-deploy.js` 20270371 + gated `src/qa/businessVerificationSignedIn.live.js`. Website export not
+regenerated (would publish). Nothing deployed.
 
 # 2026-10-31: account state model approved as built
 
@@ -9355,6 +10327,16 @@ Choices are stashed in the existing `pending_onboarding_answers` blob and Comple
 columns, one store). Not surfaced at onboarding: Community. No migration. Jest 685/685. Device-unverified. Business export re-run: byte-identical (not in the bundle), nothing to commit.
 (verified by rebuilding).
 
+
+## Manual account appeals (owner idea 20, 2026-11-07)
+
+Owner approved a basic manual appeals process now (no screen, migration, automated restriction or appeals system). Built, client only, staged on `post-tier1/admin-restrictions`:
+- `src/constants/support.js`: ONE support address for appeals + recovery; `SUPPORT_EMAIL = null`, `SUPPORT_EMAIL_VERIFIED = false` until the owner configures and verifies a mailbox.
+- `src/utils/accountReview.js`: `supportEmail` (shown only when set + verified + well-formed), `reviewRequestLine`, `withReviewLine`, `isSignInBlocked` (Auth `user_banned` or the banned message).
+- `recoverableError.js`: `accountRuleMessage(hint)` = the one account-rule wording; `account_suspended` carries the review line; banned sign-in = `signInBlocked` + review line, no Try Again. `accountRestrictions.restrictionRefusalMessage` carries the line (all pause paths). `useChatComposer` uses `accountRuleMessage`. LoginScreen reviewer path routes a banned refusal to the shared copy (the SMS path already did).
+- Strings `ui.shared.errors.signInBlocked` / `requestReview` (11 languages; 10 machine-authored).
+- Procedure DRAFT `PRODUCT_AUDIT/ACCOUNT_APPEALS_PROCEDURE_2026-11-07.md` (intake, identity check, independent admin when possible, written decision via the existing reason-required controls + `account_moderation_actions` / restriction / recovery audit, reply = outcome only); recovery runbook points to it.
+- Verified: guard `accountReview.test.js` (11), Jest 551/551 (7432 + 11 todo), iOS bundle exports. NOT verified: real Auth's banned `verifyOtp` response, phone rendering, legal review. Website has no public instructions yet (Terms §9 sentence drafted, not added).
 
 ## 2026-10-30 New accounts only by phone (20270367, staged)
 Owner: investigate the email sign-up exposure before freezing trust & safety; no prod Auth change without approval; no selfie, fingerprinting, VoIP intelligence or AI scoring.

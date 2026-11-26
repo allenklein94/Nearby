@@ -11,6 +11,8 @@ import { ETHNICITY_OPTIONS } from '../constants/ethnicityOptions';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
 import { BASICS_FIELDS } from '../constants/basicsFields';
 import { feetInchesToTotalInches, isBlankHeightPair, totalInchesToFeetInches } from '../utils/heightUnits';
+import { readWithOptionalColumns, writeWithOptionalColumns } from '../utils/optionalProfileColumns';
+import { PRESENCE_PREFERENCES } from '../utils/datingAppearance';
 
 // Sep 3 2026 ("global onboarding -> product wiring" master plan,
 // CLAUDE.md, Phase B) -- the real, curated 8-value vocabulary a
@@ -24,6 +26,11 @@ const HAIR_COLOR_OPTIONS = BASICS_FIELDS.find((f) => f.key === 'hair_color')?.op
 // text), so this is purely the missing preference/filter half, not a
 // promote-out-of-basics step.
 const EYE_COLOR_OPTIONS = BASICS_FIELDS.find((f) => f.key === 'eye_color')?.options ?? [];
+// Tattoos / piercings (owner, 2026-11-14): one soft choice each, stored as null (no preference) / 'with' / 'without'.
+const PRESENCE_CHOICES = [
+  { key: 'tattoos', column: 'dating_pref_tattoos', title: 'ui.datingPrefs.tattooPreference', labels: { with: 'ui.datingPrefs.withTattoos', without: 'ui.datingPrefs.withoutTattoos' } },
+  { key: 'piercings', column: 'dating_pref_piercings', title: 'ui.datingPrefs.piercingPreference', labels: { with: 'ui.datingPrefs.withPiercings', without: 'ui.datingPrefs.withoutPiercings' } },
+];
 import { typography, spacing, radius, shadow } from '../theme';
 
 import { showSuccessToast } from '../motion';
@@ -52,6 +59,9 @@ export default function DatingPreferencesScreen({ navigation }) {
   const [ethnicityPreferences, setEthnicityPreferences] = useState([]);
   const [hairColorPreferences, setHairColorPreferences] = useState([]);
   const [eyeColorPreferences, setEyeColorPreferences] = useState([]);
+  // { tattoos: null|'with'|'without', piercings: ... }; shown only once the server has the columns (staged 20270417).
+  const [presencePrefs, setPresencePrefs] = useState({ tattoos: null, piercings: null });
+  const [presencePrefsAvailable, setPresencePrefsAvailable] = useState(false);
   // Phase F (CLAUDE.md, Sep 3 2026 master plan) -- a real height-range
   // preference, wired into proximity.js the exact same way as
   // hairColorPreferences above: min/max total inches stored on the
@@ -73,8 +83,11 @@ export default function DatingPreferencesScreen({ navigation }) {
     const id = sessionData?.session?.user?.id;
     setUserId(id);
     if (id) {
-      const { data } = await readMyProfile('preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, interests, dating_preferences_set');
+      const { data, available } = await readWithOptionalColumns(readMyProfile, 'preferred_min_age, preferred_max_age, relationship_intention, ethnicity_preferences, dating_pref_hair_colors, dating_pref_eye_colors, dating_pref_min_height_inches, dating_pref_max_height_inches, dating_pref_tattoos, dating_pref_piercings, interests, dating_preferences_set');
+      setPresencePrefsAvailable(available);
       if (data) {
+        const asPref = (v) => (PRESENCE_PREFERENCES.includes(v) ? v : null);
+        setPresencePrefs({ tattoos: asPref(data.dating_pref_tattoos), piercings: asPref(data.dating_pref_piercings) });
         setMinAge(String(data.preferred_min_age ?? 18));
         setMaxAge(String(data.preferred_max_age ?? 99));
         setRelationshipIntention(
@@ -152,19 +165,26 @@ export default function DatingPreferencesScreen({ navigation }) {
       return Alert.alert(t('ui.datingPrefs.invalidRange'), t('ui.datingPrefs.maximumHeightMustBeAt'));
     }
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        preferred_min_age: minAgeNum,
-        preferred_max_age: maxAgeNum,
-        ethnicity_preferences: ethnicityPreferences,
-        dating_pref_hair_colors: hairColorPreferences,
-        dating_pref_eye_colors: eyeColorPreferences,
-        dating_pref_min_height_inches: minHeightToSave,
-        dating_pref_max_height_inches: maxHeightToSave,
-        dating_preferences_set: true,
-      })
-      .eq('id', userId);
+    const values = {
+      preferred_min_age: minAgeNum,
+      preferred_max_age: maxAgeNum,
+      ethnicity_preferences: ethnicityPreferences,
+      dating_pref_hair_colors: hairColorPreferences,
+      dating_pref_eye_colors: eyeColorPreferences,
+      dating_pref_min_height_inches: minHeightToSave,
+      dating_pref_max_height_inches: maxHeightToSave,
+      dating_preferences_set: true,
+    };
+    // Only sent once the server has the columns; a save never fails because a staged migration isn't live yet.
+    if (presencePrefsAvailable) {
+      values.dating_pref_tattoos = presencePrefs.tattoos;
+      values.dating_pref_piercings = presencePrefs.piercings;
+    }
+    const { error, available } = await writeWithOptionalColumns(
+      (row) => supabase.from('profiles').update(row).eq('id', userId),
+      values,
+    );
+    if (!available) setPresencePrefsAvailable(false);
     if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => savePreferences() });
     showSuccessToast(t('ui.datingPrefs.saved'));
   }
@@ -315,7 +335,7 @@ export default function DatingPreferencesScreen({ navigation }) {
               );
             })}
           </View>
-          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust')}</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.appearanceRanksNotHides')}</Text>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrefs.eyeColorPreferences')}</Text>
           <View style={styles.chipsWrap}>
@@ -336,7 +356,7 @@ export default function DatingPreferencesScreen({ navigation }) {
               );
             })}
           </View>
-          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust')}</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.appearanceRanksNotHides')}</Text>
 
           <Text style={[styles.label, { marginTop: spacing.lg }]}>{t('ui.datingPrefs.heightPreference')}</Text>
           <View style={styles.heightRangeRow}>
@@ -395,7 +415,33 @@ export default function DatingPreferencesScreen({ navigation }) {
               </View>
             </View>
           </View>
-          <Text style={styles.helperText}>{t('ui.datingPrefs.aRealFilterNotJust2')}</Text>
+          <Text style={styles.helperText}>{t('ui.datingPrefs.appearanceRanksNotHides2')}</Text>
+
+          {presencePrefsAvailable && PRESENCE_CHOICES.map((choice) => (
+            <View key={choice.key}>
+              <Text style={[styles.label, { marginTop: spacing.lg }]}>{t(choice.title)}</Text>
+              <View style={styles.chipsWrap}>
+                {[null, ...PRESENCE_PREFERENCES].map((value) => {
+                  const selected = presencePrefs[choice.key] === value;
+                  const label = value === null ? t('ui.datingPrefs.noPreference') : t(choice.labels[value]);
+                  return (
+                    <TouchableOpacity
+                      key={String(value)}
+                      style={[styles.chip, selected && styles.chipSelected]}
+                      onPress={() => setPresencePrefs((prev) => ({ ...prev, [choice.key]: value }))}
+                      activeOpacity={0.85}
+                      accessibilityLabel={`${t(choice.title)}: ${label}`}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected, checked: selected }}
+                    >
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              <Text style={styles.helperText}>{t('ui.datingPrefs.appearanceRanksNotHidesChoice')}</Text>
+            </View>
+          ))}
 
           <TouchableOpacity
             style={styles.button}

@@ -23,6 +23,8 @@ const LIVE = ['admin-sponsored-refund', 'ai-concierge', 'business-ai-assistant',
   'create-business-payment-intent', 'create-sponsored-checkout', 'delete-account', 'moderate-photo', 'read-offer-creative',
   'report-presence', 'resweep-business-content', 'rewrite-offer-plain-language', 'screen-business-content', 'send-push',
   'sponsored-stripe-webhook', 'stripe-connect-webhook', 'submit-business-application', ...RECOVERED].sort();
+// In the repo, NOT deployed yet (each deploys only with its migration's own approval): 20270373's screen-user-content.
+const STAGED = ['screen-user-content'];
 
 function loadHelper(env) {
   const code = ts.transpileModule(fs.readFileSync(path.join(FUNCTIONS, '_shared', 'supabaseKeys.ts'), 'utf8'),
@@ -34,8 +36,8 @@ function loadHelper(env) {
 }
 
 describe('edge functions never depend on the legacy JWT secret', () => {
-  test('every live function has a repo source, and nothing else', () => {
-    expect(dirs).toEqual(LIVE);
+  test('every live function has a repo source, and nothing else (besides the staged ones, named)', () => {
+    expect(dirs).toEqual([...LIVE, ...STAGED].sort());
   });
 
   test.each(dirs)('%s reads no JWT secret and embeds no key', (name) => {

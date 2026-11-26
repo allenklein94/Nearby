@@ -44,16 +44,21 @@ describe('item 147: business request pipeline', () => {
 
   test('Won = booked, not yet redeemed; a redeemed or cancelled booking or a no-show is not Won', () => {
     expect(isPipelineWon(row({ id: 1, status: 'accepted' }))).toBe(true);
-    expect(isPipelineWon(row({ id: 2, status: 'completed' }))).toBe(false);
+    expect(isPipelineWon(row({ id: 2, status: 'completed', visit_confirmed_at: NOW.toISOString() }))).toBe(false);
+    // 20270430: the customer's own "Mark as done" stays Won until the business confirms (or says no-show)
+    expect(isPipelineWon(row({ id: 6, status: 'completed', customer_done_at: NOW.toISOString() }))).toBe(true);
+    expect(isPipelineWon(row({ id: 7, status: 'completed', customer_done_at: NOW.toISOString() }), new Set([7]))).toBe(false);
     expect(isPipelineWon(row({ id: 3, status: 'cancelled' }))).toBe(false);
     expect(isPipelineWon(row({ id: 4, status: 'accepted' }), new Set([4]))).toBe(false);
   });
 
   test('Completed = redeemed this calendar month only', () => {
-    expect(isCompletedThisMonth(row({ id: 1, status: 'completed', completed_at: new Date(2026, 9, 1, 0, 5).toISOString() }), NOW)).toBe(true);
-    expect(isCompletedThisMonth(row({ id: 2, status: 'completed', completed_at: new Date(2026, 8, 30, 23, 55).toISOString() }), NOW)).toBe(false);
-    expect(isCompletedThisMonth(row({ id: 3, status: 'completed', completed_at: new Date(2025, 9, 10).toISOString() }), NOW)).toBe(false);
+    expect(isCompletedThisMonth(row({ id: 1, status: 'completed', completed_at: new Date(2026, 9, 1, 0, 5).toISOString(), visit_confirmed_at: new Date(2026, 9, 1, 0, 5).toISOString() }), NOW)).toBe(true);
+    expect(isCompletedThisMonth(row({ id: 2, status: 'completed', completed_at: new Date(2026, 8, 30, 23, 55).toISOString(), visit_confirmed_at: new Date(2026, 8, 30, 23, 55).toISOString() }), NOW)).toBe(false);
+    expect(isCompletedThisMonth(row({ id: 3, status: 'completed', completed_at: new Date(2025, 9, 10).toISOString(), visit_confirmed_at: new Date(2025, 9, 10).toISOString() }), NOW)).toBe(false);
     expect(isCompletedThisMonth(row({ id: 4, status: 'completed' }), NOW)).toBe(false);
+    // a completion the business did not confirm is never Completed
+    expect(isCompletedThisMonth(row({ id: 6, status: 'completed', completed_at: new Date(2026, 9, 10).toISOString(), customer_done_at: new Date(2026, 9, 10).toISOString() }), NOW)).toBe(false);
     expect(isCompletedThisMonth(row({ id: 5, status: 'accepted', completed_at: new Date(2026, 9, 10).toISOString() }), NOW)).toBe(false);
   });
 
@@ -62,15 +67,15 @@ describe('item 147: business request pipeline', () => {
     expect(businessPipeline([offered], [], { now: NOW })).toMatchObject({ offered: 1, won: 0, completed: 0 });
     const won = { ...offered, status: 'accepted' };
     expect(businessPipeline([won], [], { now: NOW })).toMatchObject({ offered: 0, won: 1, completed: 0 });
-    const redeemed = { ...won, status: 'completed', completed_at: new Date(2026, 9, 14).toISOString() };
+    const redeemed = { ...won, status: 'completed', completed_at: new Date(2026, 9, 14).toISOString(), visit_confirmed_at: new Date(2026, 9, 14).toISOString() };
     expect(businessPipeline([redeemed], [], { now: NOW })).toMatchObject({ new: 0, offered: 0, won: 0, completed: 1 });
   });
 
   test('every row lands in at most one stage', () => {
     const rows = [
       row({ id: 1 }), row({ id: 2, status: 'offered' }), row({ id: 3, status: 'accepted' }),
-      row({ id: 4, status: 'completed', completed_at: new Date(2026, 9, 2).toISOString() }),
-      row({ id: 5, status: 'declined' }), row({ id: 6, status: 'completed', completed_at: new Date(2026, 5, 2).toISOString() }),
+      row({ id: 4, status: 'completed', completed_at: new Date(2026, 9, 2).toISOString(), visit_confirmed_at: new Date(2026, 9, 2).toISOString() }),
+      row({ id: 5, status: 'declined' }), row({ id: 6, status: 'completed', completed_at: new Date(2026, 5, 2).toISOString(), visit_confirmed_at: new Date(2026, 5, 2).toISOString() }),
     ];
     for (const r of rows) {
       const hits = [isPipelineNew(r, new Set(), NOW), isPipelineOffered(r, NOW), isPipelineWon(r), isCompletedThisMonth(r, NOW)].filter(Boolean);

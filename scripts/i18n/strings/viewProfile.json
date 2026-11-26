@@ -29,7 +29,7 @@
     "sVoiceIntro": "{name}'s voice intro",
     "voiceIntro": "🎙️ Voice intro",
     "music": "🎵 Music",
-    "badge.verified": "Verified",
+    "badge.verified": "ID Verified",
     "badge.premium": "Premium",
     "badge.newHere": "New Here",
     "interestedIn": "Interested in {genders}",
@@ -53,10 +53,6 @@
     "hostedMany": {
       "one": "🎉 Hosted {hosted} gatherings, averaging {count} attendee",
       "other": "🎉 Hosted {hosted} gatherings, averaging {count} attendees"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming}% said welcoming · {again}% would attend again ({count} review)",
-      "other": "⭐ {welcoming}% said welcoming · {again}% would attend again ({count} reviews)"
     },
     "hopingToFind": "Hoping to find: {goal}",
     "lookingFor": "Looking for: {value}",
@@ -95,7 +91,7 @@
     "sVoiceIntro": "Presentación de voz de {name}",
     "voiceIntro": "🎙️ Presentación de voz",
     "music": "🎵 Música",
-    "badge.verified": "Verificado",
+    "badge.verified": "Identidad verificada",
     "badge.premium": "Premium",
     "badge.newHere": "Nuevo aquí",
     "interestedIn": "Le interesan: {genders}",
@@ -119,10 +115,6 @@
     "hostedMany": {
       "one": "🎉 Organizó {hosted} reuniones, con un promedio de {count} asistente",
       "other": "🎉 Organizó {hosted} reuniones, con un promedio de {count} asistentes"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming}% dijo que fue acogedor · {again}% volvería ({count} reseña)",
-      "other": "⭐ {welcoming}% dijo que fue acogedor · {again}% volvería ({count} reseñas)"
     },
     "hopingToFind": "Espera encontrar: {goal}",
     "lookingFor": "Busca: {value}",
@@ -161,7 +153,7 @@
     "sVoiceIntro": "Sprachvorstellung von {name}",
     "voiceIntro": "🎙️ Sprachvorstellung",
     "music": "🎵 Musik",
-    "badge.verified": "Verifiziert",
+    "badge.verified": "Identität verifiziert",
     "badge.premium": "Premium",
     "badge.newHere": "Neu hier",
     "interestedIn": "Interessiert an: {genders}",
@@ -185,10 +177,6 @@
     "hostedMany": {
       "one": "🎉 {hosted} Treffen veranstaltet, im Schnitt {count} Teilnehmer",
       "other": "🎉 {hosted} Treffen veranstaltet, im Schnitt {count} Teilnehmende"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming}% fanden es einladend · {again}% würden wiederkommen ({count} Bewertung)",
-      "other": "⭐ {welcoming}% fanden es einladend · {again}% würden wiederkommen ({count} Bewertungen)"
     },
     "hopingToFind": "Möchte finden: {goal}",
     "lookingFor": "Sucht: {value}",
@@ -227,7 +215,7 @@
     "sVoiceIntro": "Présentation vocale de {name}",
     "voiceIntro": "🎙️ Présentation vocale",
     "music": "🎵 Musique",
-    "badge.verified": "Vérifié",
+    "badge.verified": "Identité vérifiée",
     "badge.premium": "Premium",
     "badge.newHere": "Nouveau ici",
     "interestedIn": "Intéressé par : {genders}",
@@ -251,10 +239,6 @@
     "hostedMany": {
       "one": "🎉 A organisé {hosted} rencontres, avec en moyenne {count} participant",
       "other": "🎉 A organisé {hosted} rencontres, avec en moyenne {count} participants"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming} % l’ont trouvé accueillant · {again} % reviendraient ({count} avis)",
-      "other": "⭐ {welcoming} % l’ont trouvé accueillant · {again} % reviendraient ({count} avis)"
     },
     "hopingToFind": "Espère trouver : {goal}",
     "lookingFor": "Recherche : {value}",
@@ -293,7 +277,7 @@
     "sVoiceIntro": "Apresentação em áudio de {name}",
     "voiceIntro": "🎙️ Apresentação em áudio",
     "music": "🎵 Música",
-    "badge.verified": "Verificado",
+    "badge.verified": "Identidade verificada",
     "badge.premium": "Premium",
     "badge.newHere": "Novo por aqui",
     "interestedIn": "Interesse em: {genders}",
@@ -317,10 +301,6 @@
     "hostedMany": {
       "one": "🎉 Organizou {hosted} encontros, com média de {count} participante",
       "other": "🎉 Organizou {hosted} encontros, com média de {count} participantes"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming}% acharam acolhedor · {again}% voltariam ({count} avaliação)",
-      "other": "⭐ {welcoming}% acharam acolhedor · {again}% voltariam ({count} avaliações)"
     },
     "hopingToFind": "Quer encontrar: {goal}",
     "lookingFor": "Procura: {value}",
@@ -359,7 +339,7 @@
     "sVoiceIntro": "Prezantasyon vwa {name}",
     "voiceIntro": "🎙️ Prezantasyon vwa",
     "music": "🎵 Mizik",
-    "badge.verified": "Verifye",
+    "badge.verified": "Idantite verifye",
     "badge.premium": "Premium",
     "badge.newHere": "Nouvo isit la",
     "interestedIn": "Enterese nan: {genders}",
@@ -380,9 +360,6 @@
     },
     "hostedMany": {
       "other": "🎉 Òganize {hosted} rankont, an mwayèn {count} patisipan"
-    },
-    "reputation": {
-      "other": "⭐ {welcoming}% di li te akeyan · {again}% ta retounen ({count} avi)"
     },
     "hopingToFind": "Espere jwenn: {goal}",
     "lookingFor": "Ap chèche: {value}",
@@ -420,7 +397,7 @@
     "sVoiceIntro": "{name} 的语音介绍",
     "voiceIntro": "🎙️ 语音介绍",
     "music": "🎵 音乐",
-    "badge.verified": "已验证",
+    "badge.verified": "身份已验证",
     "badge.premium": "高级会员",
     "badge.newHere": "新成员",
     "interestedIn": "感兴趣：{genders}",
@@ -441,9 +418,6 @@
     },
     "hostedMany": {
       "other": "🎉 组织过 {hosted} 次聚会，平均 {count} 人参加"
-    },
-    "reputation": {
-      "other": "⭐ {welcoming}% 认为很友好 · {again}% 愿意再来（{count} 条评价）"
     },
     "hopingToFind": "希望找到：{goal}",
     "lookingFor": "寻找：{value}",
@@ -481,7 +455,7 @@
     "sVoiceIntro": "Lời giới thiệu bằng giọng nói của {name}",
     "voiceIntro": "🎙️ Giới thiệu bằng giọng nói",
     "music": "🎵 Âm nhạc",
-    "badge.verified": "Đã xác minh",
+    "badge.verified": "Đã xác minh danh tính",
     "badge.premium": "Premium",
     "badge.newHere": "Mới tham gia",
     "interestedIn": "Quan tâm đến: {genders}",
@@ -502,9 +476,6 @@
     },
     "hostedMany": {
       "other": "🎉 Đã tổ chức {hosted} buổi gặp, trung bình {count} người tham gia"
-    },
-    "reputation": {
-      "other": "⭐ {welcoming}% thấy thân thiện · {again}% sẽ tham gia lại ({count} đánh giá)"
     },
     "hopingToFind": "Mong tìm: {goal}",
     "lookingFor": "Đang tìm: {value}",
@@ -542,7 +513,7 @@
     "sVoiceIntro": "Voice intro ni {name}",
     "voiceIntro": "🎙️ Voice intro",
     "music": "🎵 Musika",
-    "badge.verified": "Verified",
+    "badge.verified": "ID Verified",
     "badge.premium": "Premium",
     "badge.newHere": "Bago Rito",
     "interestedIn": "Interesado sa: {genders}",
@@ -566,10 +537,6 @@
     "hostedMany": {
       "one": "🎉 Nag-host ng {hosted} gathering, karaniwang {count} dumalo",
       "other": "🎉 Nag-host ng {hosted} gathering, karaniwang {count} dumalo"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming}% ang nagsabing magiliw · {again}% ang dadalo ulit ({count} review)",
-      "other": "⭐ {welcoming}% ang nagsabing magiliw · {again}% ang dadalo ulit ({count} review)"
     },
     "hopingToFind": "Umaasang makahanap ng: {goal}",
     "lookingFor": "Naghahanap ng: {value}",
@@ -608,7 +575,7 @@
     "sVoiceIntro": "Голосовое приветствие: {name}",
     "voiceIntro": "🎙️ Голосовое приветствие",
     "music": "🎵 Музыка",
-    "badge.verified": "Подтверждён",
+    "badge.verified": "Личность подтверждена",
     "badge.premium": "Премиум",
     "badge.newHere": "Новичок",
     "interestedIn": "Интересуют: {genders}",
@@ -638,12 +605,6 @@
       "few": "🎉 Встреч проведено: {hosted}, в среднем {count} участника",
       "many": "🎉 Встреч проведено: {hosted}, в среднем {count} участников",
       "other": "🎉 Встреч проведено: {hosted}, в среднем {count} участников"
-    },
-    "reputation": {
-      "one": "⭐ {welcoming}% отметили радушие · {again}% пришли бы снова ({count} отзыв)",
-      "few": "⭐ {welcoming}% отметили радушие · {again}% пришли бы снова ({count} отзыва)",
-      "many": "⭐ {welcoming}% отметили радушие · {again}% пришли бы снова ({count} отзывов)",
-      "other": "⭐ {welcoming}% отметили радушие · {again}% пришли бы снова ({count} отзывов)"
     },
     "hopingToFind": "Надеется найти: {goal}",
     "lookingFor": "Ищет: {value}",
@@ -684,7 +645,7 @@
     "sVoiceIntro": "{name}님의 음성 소개",
     "voiceIntro": "🎙️ 음성 소개",
     "music": "🎵 음악",
-    "badge.verified": "인증됨",
+    "badge.verified": "신분 인증됨",
     "badge.premium": "프리미엄",
     "badge.newHere": "새로 왔어요",
     "interestedIn": "관심 대상: {genders}",
@@ -705,9 +666,6 @@
     },
     "hostedMany": {
       "other": "🎉 모임 {hosted}회 주최, 평균 {count}명 참석"
-    },
-    "reputation": {
-      "other": "⭐ {welcoming}%가 환영받았다고 답함 · {again}%가 다시 참석 의향 (후기 {count}개)"
     },
     "hopingToFind": "찾고 싶은 것: {goal}",
     "lookingFor": "찾는 것: {value}",

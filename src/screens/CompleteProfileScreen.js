@@ -5,6 +5,7 @@ import KeyboardSafeView from '../components/KeyboardSafeView';
 import FieldError from '../components/FieldError';
 import useFormErrors from '../hooks/useFormErrors';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
 import { supabase } from '../services/supabase';
 import { saveMyNewProfile } from '../services/myProfile';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,7 +13,8 @@ import { mutesFromOnboardingChoices } from '../constants/notificationPreferences
 import { ONBOARDING_ANSWERS_KEY, ONBOARDING_DRAFT_KEY } from './OnboardingQuestionsScreen';
 import { canonicalizeInterests, sanitizeInterestGroups } from '../constants/interestGraph';
 import { pickProfilePhoto, uploadProfilePhoto } from '../services/photos';
-import { checkTextModeration } from '../services/textModeration';
+import { screenUserContent, blockedByScreening, handledScreeningRefusal } from '../services/userContentScreening';
+import { UGC_KINDS } from '../utils/ugcText';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -204,9 +206,11 @@ export default function CompleteProfileScreen() {
       return;
     }
 
-    const nameCheck = await checkTextModeration(displayName);
-    if (!nameCheck.safe) {
-      return Alert.alert(t('ui.onboarding.displayNameNotAllowed'), t('ui.onboarding.pleaseChooseADifferentDisplay'));
+    // 20270373: a new profile needs a name others can see, so a name held for a person's check can't be used yet.
+    const nameCheck = await screenUserContent([{ text: displayName, kind: UGC_KINDS.displayName }]);
+    if (blockedByScreening(Alert, t, nameCheck, { notAllowedTitle: t('ui.onboarding.displayNameNotAllowed'), notAllowedBody: t('ui.onboarding.pleaseChooseADifferentDisplay') })) return;
+    if (nameCheck.outcome === 'hold') {
+      return Alert.alert(t('ui.shared.contentHeldTitle'), t('ui.onboarding.nameNeedsReview'));
     }
 
     setSubmitting(true);
@@ -274,6 +278,7 @@ export default function CompleteProfileScreen() {
 
       if (profileError) {
         setSubmitting(false);
+        if (handledScreeningRefusal(Alert, t, profileError, { notAllowedTitle: t('ui.onboarding.displayNameNotAllowed'), notAllowedBody: t('ui.onboarding.pleaseChooseADifferentDisplay') })) return;
         return Alert.alert(t('ui.onboarding.error'), profileError.message);
       }
 
@@ -334,6 +339,17 @@ export default function CompleteProfileScreen() {
 
             <View ref={form.anchor('birthdate')} />
             <Text style={styles.label}>{t('completeProfile.dateOfBirth')}</Text>
+            {/* Business website (owner, 2026-11-14): the browser's own date field; the native picker has no web version. */}
+            {Platform.OS === 'web' ? (
+              <PlatformDateTimeInput
+                value={birthdate}
+                mode="date"
+                maximumDate={maxSelectableDate}
+                accessibilityLabel={birthdate ? t('ui.onboarding.dateOfBirthA11y', { date: birthdate.toLocaleDateString() }) : t('ui.onboarding.dateOfBirthNotSetA11y')}
+                onChange={(_event, selectedDate) => { if (selectedDate) setBirthdate(selectedDate); }}
+              />
+            ) : (
+            <>
             <TouchableOpacity
               style={styles.input}
               onPress={() => setShowPicker(true)}
@@ -356,6 +372,8 @@ export default function CompleteProfileScreen() {
                   if (selectedDate) { setBirthdate(selectedDate); form.clear('birthdate'); }
                 }}
               />
+            )}
+            </>
             )}
             <FieldError message={form.errorFor('birthdate')} />
           </>

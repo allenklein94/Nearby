@@ -123,7 +123,7 @@ export function formatCrossedPathsTimeShort(iso) {
 
 // Reason-aware copy for the gathering-attendance explanation, shared by
 // every render call site so "You were both at {title}" is worded
-// identically everywhere. Proximity's own "📍 Within about 35 feet ..."
+// identically everywhere. Proximity's own "📍 You crossed paths nearby ..."
 // copy stays inline at each call site -- it's Dating Crossed Paths' own
 // long-standing exact wording, not worth abstracting further.
 export function gatheringReasonText(reason, formatTime = formatCrossedPathsTimeShort) {

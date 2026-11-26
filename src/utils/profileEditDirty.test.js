@@ -2,7 +2,8 @@
 // "Discard changes" / "Keep editing". Same guard wherever Edit Profile was opened from.
 const fs = require('fs');
 const path = require('path');
-const { profileFormSnapshot, isProfileFormDirty, guardProfileLeave } = require('./profileEditDirty');
+const { profileFormSnapshot, isProfileFormDirty } = require('./profileEditDirty');
+const { leaveGuardResponse } = require('./leaveGuard');
 
 const LOADED = {
   displayName: 'Sam', bio: 'Coffee person', interests: ['Coffee', 'Hiking'], cuisinePreferences: ['italian'], venuePreferences: [],
@@ -34,49 +35,50 @@ describe('is the form dirty?', () => {
   });
 });
 
-function attempt({ dirty: isDirty, allowLeave = false }) {
-  const event = { preventDefault: jest.fn(), data: { action: { type: 'GO_BACK' } } };
+// The guard runs only when the form is dirty (useLeaveGuard's `active`); the navigation is already held when it answers.
+function attempt({ allowLeave = false }) {
+  const action = { type: 'GO_BACK' };
   const proceed = jest.fn();
   let buttons = null;
-  const result = guardProfileLeave({ dirty: isDirty, allowLeave, event, proceed, confirm: (b) => { buttons = b; } });
-  return { result, event, proceed, buttons };
+  const result = leaveGuardResponse({ allowLeave, action, proceed, confirm: (b) => { buttons = b; } });
+  return { result, proceed, buttons };
 }
 
 describe('leaving Edit Profile', () => {
-  test('clean state: Back returns immediately, no prompt', () => {
-    const a = attempt({ dirty: false });
-    expect(a.result).toBe('left');
-    expect(a.event.preventDefault).not.toHaveBeenCalled();
-    expect(a.buttons).toBeNull();
+  test('clean state: nothing is held at all (the guard is only active while dirty)', () => {
+    const src = fs.readFileSync(path.join(__dirname, '../screens/ProfileScreen.js'), 'utf8');
+    expect(src).toMatch(/useLeaveGuard\(\{\n    active: dirtyRef\.current,/);
+    expect(src).toMatch(/dirtyRef\.current = editing && isProfileFormDirty\(/);
   });
-  test('dirty state: Back is held and the prompt offers Keep editing / Discard changes', () => {
-    const a = attempt({ dirty: true });
+  test('dirty state: Back asks, offering Keep editing / Discard changes', () => {
+    const a = attempt({});
     expect(a.result).toBe('asked');
-    expect(a.event.preventDefault).toHaveBeenCalledTimes(1);
+    expect(a.proceed).not.toHaveBeenCalled();
     expect(Object.keys(a.buttons).sort()).toEqual(['onDiscard', 'onKeepEditing']);
   });
   test('Keep editing stays on the screen with every change intact (nothing navigates)', () => {
-    const a = attempt({ dirty: true });
+    const a = attempt({});
     a.buttons.onKeepEditing();
     expect(a.proceed).not.toHaveBeenCalled();
   });
   test('Discard changes continues the original Back, to whatever screen opened Edit Profile', () => {
-    const a = attempt({ dirty: true });
+    const a = attempt({});
     a.buttons.onDiscard();
     expect(a.proceed).toHaveBeenCalledWith({ type: 'GO_BACK' });
   });
-  test('right after Save, leaving never asks (Save is unchanged: saves and returns)', () => {
-    const a = attempt({ dirty: true, allowLeave: true });
+  test('right after Save, leaving never asks and the held Back continues', () => {
+    const a = attempt({ allowLeave: true });
     expect(a.result).toBe('left');
-    expect(a.event.preventDefault).not.toHaveBeenCalled();
+    expect(a.buttons).toBeNull();
+    expect(a.proceed).toHaveBeenCalledWith({ type: 'GO_BACK' });
   });
 });
 
 describe('wiring in ProfileScreen (edit mode, every entry point)', () => {
   const src = fs.readFileSync(path.join(__dirname, '../screens/ProfileScreen.js'), 'utf8');
-  test('one beforeRemove guard, registered only in edit mode, independent of where the screen was opened from', () => {
-    expect(src.match(/addListener\('beforeRemove'/g)).toHaveLength(1);
-    expect(src).toMatch(/if \(!editing \|\| !navigation\?\.addListener\) return undefined;/);
+  test('one leave guard, active only in edit mode, independent of where the screen was opened from', () => {
+    expect(src).not.toMatch(/addListener\('beforeRemove'/);
+    expect(src.match(/useLeaveGuard\(\{/g)).toHaveLength(1);
     expect(src).not.toMatch(/route\?\.params\?\.(from|origin)/);
   });
   test('the prompt buttons are Keep editing (cancel) and Discard changes (destructive), in 11 languages', () => {

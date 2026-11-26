@@ -314,3 +314,11 @@ deleted, else the original is restored and the `.bak` kept. Final dry run: both 
 broken. Redaction NOT YET EXECUTED: complete only once `--apply` prints "ALL DONE: both transcripts redacted and
 verified." (record the date here). Investigation closed (owner): no further credential investigation without new evidence. Deleting files does not
 erase codespace snapshots/backups (accepted: the key is revoked).
+
+## 2026-11-01: the revoked secret appeared a third time
+
+Same mistake as 2026-10-29: `GET /v1/projects/{ref}/postgrest` was called unfiltered (to read `max_rows` for the People
+anti-scraping assessment), so `jwt_secret` landed in this session's transcript. Checked by hash only: 88 characters,
+sha256 starts `a64f4e23ee16` = the SAME revoked HS256 key; no new or active secret. `max_rows` = 1000 (the one field needed).
+Rule restated: never call that endpoint; if a PostgREST setting is ever needed, pipe the response through a filter that
+prints only that field, inside the same command.

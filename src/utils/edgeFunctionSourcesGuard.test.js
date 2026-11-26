@@ -27,24 +27,54 @@ describe('edge function sources are never empty', () => {
 });
 
 describe('recovered functions keep their behaviour', () => {
-  test('delete-account: verifies the caller, removes their files (incl. ID verification), then profile, then auth user', () => {
+  test('delete-account: verifies the caller, then copies held evidence, profile, auth user, and only then the files (20270402)', () => {
     const s = src('delete-account');
     expect(s).toMatch(/auth\.getUser\(token\)/);
-    const files = s.indexOf("storage.from('profile-photos').remove(");
-    const idFiles = s.indexOf("storage.from('id-verification').remove(");
-    const profile = s.indexOf("from('profiles').delete().eq('id', userId)");
-    const authUser = s.indexOf('auth.admin.deleteUser(userId)');
-    expect(files).toBeGreaterThan(-1);
-    expect(idFiles).toBeGreaterThan(files);
-    expect(profile).toBeGreaterThan(idFiles);
+    const body = s.slice(s.indexOf('async function deleteEverything'));
+    const preserve = body.indexOf('preserveHeldEvidence(admin, userId)');
+    const profile = body.indexOf("from('profiles').delete().eq('id', userId)");
+    const authUser = body.indexOf('auth.admin.deleteUser(userId)');
+    const files = body.indexOf('removeDueFiles(admin, userId)');
+    expect(preserve).toBeGreaterThan(-1);
+    expect(profile).toBeGreaterThan(preserve);
     expect(authUser).toBeGreaterThan(profile);
+    expect(files).toBeGreaterThan(authUser);
+    // the only removal takes what the database handed over, after its hold check; never a path this function worked out
+    expect(s.match(/\.remove\(/g)).toHaveLength(1);
+    expect(s).toMatch(/rpc\('account_file_cleanup_claim'/);
+    expect(s).toMatch(/\.remove\(names\)/);
   });
 
-  test('delete-account: removes the whole ID folder, incl. uploads that never got a submission row (2026-10-27)', () => {
+  // 20270400: ID files are no longer removed here. Deleting the profile makes the database queue the whole id-verification folder
+  // (incl. uploads that never got a submission row); the hourly job deletes them and keeps each queued until Storage confirms it,
+  // and never deletes a file under a legal hold. A direct remove here would skip both.
+  test('delete-account: leaves ID files to the database\'s confirmed-deletion queue (20270400)', () => {
     const s = src('delete-account');
-    const list = s.indexOf("storage.from('id-verification').list(userId");
-    expect(list).toBeGreaterThan(-1);
-    expect(list).toBeLessThan(s.indexOf("storage.from('id-verification').remove("));
+    expect(s).not.toMatch(/storage\.from\('id-verification'\)\.remove\(/);
+    expect(s).toMatch(/20270400/);
+    expect(s).toMatch(/Deploy this version only AFTER 20270400 is live/);
+  });
+
+  // 20270402: a failed copy stops the deletion, reaches an admin, and tells the person nothing about why.
+  test('delete-account: a failure stops the deletion, is recorded, and never returns database text', () => {
+    const s = src('delete-account');
+    expect(s).toMatch(/rpc\('account_deletion_preserve_held_evidence'/);
+    expect(s).toMatch(/if \(error\) throw await failed\(admin, userId, 'preserve'/);
+    expect(s).not.toMatch(/PGRST202'\) \{\s*console\.error\('held evidence/);
+    expect(s).toMatch(/rpc\('account_deletion_record_failure'/);
+    expect(s).not.toMatch(/String\(err\)/);
+    expect(s).not.toMatch(/Failed to delete profile: \$\{/);
+  });
+
+  test('delete-account: the scheduled notice follows the copy and promises no more than happens', () => {
+    const s = src('delete-account');
+    expect(s.indexOf('preserveHeldEvidence(admin, userId);\n          await fetch')).toBeGreaterThan(-1);
+    expect(s).not.toMatch(/has been deleted/);
+    expect(s).toMatch(/limited records where the law or user safety requires it/);
+  });
+
+  test('delete-account: every name in its return is declared (0400 left a removed variable there)', () => {
+    expect(src('delete-account')).not.toMatch(/verificationPaths/);
   });
 
   test('moderate-photo: verifies the caller, only their own photo, and fails closed when the age check fails', () => {
@@ -73,6 +103,12 @@ describe('recovered functions keep their behaviour', () => {
     expect(rejection).toMatch(/try \{\s*await admin\.rpc\('record_location_jump', \{ p_user: userId, p_area: area \}\);\s*\} catch/);
     expect(rejection).toMatch(/status: 400/);
     expect(s.match(/record_location_jump/g)).toHaveLength(1); // never for an accepted report
+  });
+
+  test('report-presence: never returns a headcount of a claimed cell (20270384)', () => {
+    const s = src('report-presence');
+    expect(s).not.toMatch(/matchedCount/);
+    expect(s).toMatch(/JSON\.stringify\(\{ ok: true \}\)/);
   });
 
   test('review-login: failed PIN guesses are capped for ALL callers, not only per (spoofable) IP; no PIN = closed', () => {

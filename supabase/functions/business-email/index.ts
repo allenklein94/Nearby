@@ -23,7 +23,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) return json({ error: 'Missing auth' }, 401);
-    const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+    const admin = createClient(SUPABASE_URL!, SERVICE_ROLE_KEY!);
     const { data: userData, error: userError } = await admin.auth.getUser(authHeader.replace('Bearer ', ''));
     if (userError || !userData?.user) return json({ error: 'Invalid session' }, 401);
     const myId = userData.user.id;

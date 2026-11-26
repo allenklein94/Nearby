@@ -2,7 +2,7 @@
 // live). ViewProfile shows how often someone changed what they're looking for; the count now follows the profile's own
 // visibility (people_visible_to_me): yourself, or a verified, not hidden profile with no block either way. Every other
 // case gets nothing, exactly like the profile itself. Runs under the real client role.
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql , profileReadGrant } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 const ACTORS = ['v_me', 'v_open', 'v_hidden', 'v_unverified', 'v_blocked_me', 'v_i_blocked', 'v_suspended', 'v_admin'];
@@ -29,6 +29,7 @@ d('journey: intention change count follows profile visibility (20270366)', () =>
   update profiles set photo_verified = false where id = v_unverified;
   update profiles set suspended_at = now(), profile_hidden = true where id = v_suspended;
   insert into blocks (blocker_id, blocked_id) values (v_blocked_me, v_me), (v_me, v_i_blocked);
+  ${profileReadGrant('v_me', ACTORS.filter((a) => a !== 'v_me'))}
   insert into intention_history (user_id, old_intention, new_intention)
     select u, 'Make friends', 'Go on dates' from unnest(array[${ACTORS.join(', ')}]) u;
   ${count('self', 'v_me', 'v_me')}

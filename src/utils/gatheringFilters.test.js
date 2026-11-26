@@ -23,8 +23,8 @@ describe('gathering filters (B3: the feed folded into Discover)', () => {
     expect(applyGatheringFilters(list, { planKind: 'friends' }).map((x) => x.id)).toEqual([1]);
     expect(applyGatheringFilters(list, { local: true }).map((x) => x.id)).toEqual([1]);
   });
-  it('trending is the one shared floor of people going', () => {
-    const list = [g({ id: 1, approvedCount: 5 }), g({ id: 2, approvedCount: 4 })];
+  it('trending is the server answer (20270409): never the count alone, missing = not trending', () => {
+    const list = [g({ id: 1, approvedCount: 5, isTrending: true }), g({ id: 2, approvedCount: 4 }), g({ id: 3, approvedCount: 9, isTrending: false }), g({ id: 4, approvedCount: 9 })];
     expect(applyGatheringFilters(list, { trending: true }).map((x) => x.id)).toEqual([1]);
   });
   it('For You replaces a single category and reads the person categories', () => {

@@ -21,8 +21,6 @@ import {
   acknowledgeInterestedDisclosure,
   leaveGathering,
   getHostStats,
-  getHostReputation,
-  getHostLovedTags,
   getApprovedAttendeeCount,
   getPendingInterestCount,
   getHostSentInvitations,
@@ -53,6 +51,7 @@ import { getMyPartnershipRequestForTarget } from '../services/businessPartnershi
 import GatheringQnA from '../components/GatheringQnA';
 import HostAttendeeManager from '../components/HostAttendeeManager';
 import HostCommandCenter from '../components/HostCommandCenter';
+import { getMyHeldContent } from '../services/userContentScreening';
 import { approvedIds, newJoinsToAnimate, joinedNote, noteLeadId, acceptedInviteeIds, joinArrivalPlan, asideMs } from '../utils/hostLiveJoins';
 import { AvatarArrive } from '../motion/JoinArrival';
 import InterestedSaved from '../motion/InterestedSaved';
@@ -76,6 +75,7 @@ import LoadErrorState from '../components/LoadErrorState';
 import AcceptedBusinessOfferCard from '../components/AcceptedBusinessOfferCard';
 import { bookedPartySize } from '../utils/acceptedBooking';
 import PlanCompletionRow from '../components/PlanCompletionRow';
+import ReportBlockModal from '../components/ReportBlockModal';
 import { getGatheringPlanCompletion, formatPlaceStatusLabel } from '../utils/planCompletion';
 import { categoryStyleFor, CATEGORY_BUTTON_TEXT_COLOR } from '../constants/gatheringCategoryStyles';
 import { curatedCoverPhotoFor } from '../constants/gatheringCoverPhotos';
@@ -122,8 +122,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [groupInsights, setGroupInsights] = useState(null);
   const [offer, setOffer] = useState(null);
   const [hostStats, setHostStats] = useState(null);
-  const [hostReputation, setHostReputation] = useState(null);
-  const [lovedTags, setLovedTags] = useState([]);
   const [intentModalVisible, setIntentModalVisible] = useState(false);
   const [joining, setJoining] = useState(false);
   // Set by an auto-approved join on THIS screen: the attending section shows "You're in" then "bring someone" (audit B1).
@@ -137,6 +135,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
   const [leaving, setLeaving] = useState(false);
   const [inviteModalVisible, setInviteModalVisible] = useState(false);
   const [shareInChatVisible, setShareInChatVisible] = useState(false);
+  const [reporting, setReporting] = useState(false);
   // The host can turn invitations off for everyone but themselves (allow_attendee_invites; also enforced server-side).
   const canInvite = !!gathering && (gathering.isHost || gathering.allow_attendee_invites !== false);
   const [countdownStats, setCountdownStats] = useState(null);
@@ -235,22 +234,16 @@ export default function GatheringDetailScreen({ route, navigation }) {
     setLoading(false);
 
     try {
-      const [cover, hostPhoto, offerResult, stats, reputation] = await Promise.all([
+      const [cover, hostPhoto, offerResult, stats] = await Promise.all([
         g.cover_photo_path ? getSignedGatheringPhotoUrl(g.cover_photo_path) : Promise.resolve(null),
         g.host?.photo_url ? getSignedPhotoUrl(g.host.photo_url) : Promise.resolve(null),
         getGatheringOffer(gatheringId),
         getHostStats(g.host_id),
-        getHostReputation(g.host_id),
       ]);
       setCoverUrl(cover);
       setHostPhotoUrl(hostPhoto);
       setOffer(offerResult);
       setHostStats(stats);
-      setHostReputation(reputation);
-
-      if (g.host_id) {
-        getHostLovedTags(g.host_id).then(setLovedTags);
-      }
 
       if (g.isHost) {
         // requests = pending JOIN requests (they need the host's decision); Interested is the separate private count
@@ -408,7 +401,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
       // gets back 'none' rather than this screen guessing.
       setGroupInsights(await getGatheringGroupInsights(gatheringId));
     } catch (e) {
-      // Enrichment data (cover photo, host stats/reputation, offer, attendee
+      // Enrichment data (cover photo, host stats, offer, attendee
       // photos/first-timer count) failed to load — the core gathering
       // content above already rendered successfully, so this fails quietly
       // rather than replacing a working screen with an error state.
@@ -455,6 +448,19 @@ export default function GatheringDetailScreen({ route, navigation }) {
       unsubscribe();
     };
   }, [isHostViewer, gatheringId, load]));
+
+  // 20270373: a gathering waiting for a person's check is seen only by its host; say so (from the host's own held items,
+  // never a gathering column, so this works before the migration is live: no function = nothing held).
+  const [heldForReview, setHeldForReview] = useState(false);
+  useFocusEffect(useCallback(() => {
+    if (!isHostViewer || !gatheringId) { setHeldForReview(false); return undefined; }
+    let cancelled = false;
+    getMyHeldContent().then((items) => {
+      // only a held NEW gathering is hidden from others; a held edit leaves the published gathering visible
+      if (!cancelled) setHeldForReview(items.some((i) => i.target_table === 'gatherings' && i.target_id === gatheringId && i.kind === 'new_row'));
+    });
+    return () => { cancelled = true; };
+  }, [isHostViewer, gatheringId]));
 
   // A gathering is its own plan, so there is no "whole plan" screen for it (screen-reduction audit B2). Only when it is part
   // of something bigger (a night out, an occasion) does it link up to that plan, for the host and approved attendees.
@@ -888,7 +894,7 @@ export default function GatheringDetailScreen({ route, navigation }) {
             <GatheringFeedbackPrompt gatheringId={gatheringId} />
           )}
 
-          {memoryState.showMemories && <GatheringMemories gatheringId={gatheringId} openOnLoad={route.params?.openMemories === true} />}
+          {memoryState.showMemories && <GatheringMemories gatheringId={gatheringId} openOnLoad={route.params?.openMemories === true} isHost={isHostViewer} />}
 
           {attendeeTotal(gathering) > 0 && (
             <View style={styles.section}>
@@ -1091,14 +1097,6 @@ export default function GatheringDetailScreen({ route, navigation }) {
                 {t('ui.gatheringDetail.hostedStats', { hosted: t('ui.gatheringDetail.hostedCount', { count: hostStats.gatherings_hosted }), avg: t('ui.gatheringDetail.avgAttendees', { count: Math.round(hostStats.avg_attendance) }) })}
               </Text>
             )}
-            {hostReputation && hostReputation.feedback_count > 0 && (
-              <Text style={styles.organizerStatLine}>
-                {t('ui.gatheringDetail.reputation', { welcoming: hostReputation.welcoming_pct, again: hostReputation.would_return_pct, reviews: t('ui.gatheringDetail.reviews', { count: hostReputation.feedback_count }) })}
-              </Text>
-            )}
-            {lovedTags.length > 0 && (
-              <Text style={styles.organizerStatLine}>{t('ui.gatheringDetail.lovedList', { list: lovedTags.join(' · ') })}</Text>
-            )}
           </View>
 
           <GatheringQnA gatheringId={gatheringId} isHost={gathering.isHost} />
@@ -1123,6 +1121,9 @@ export default function GatheringDetailScreen({ route, navigation }) {
                     </Text>
                   ) : null;
                 })()
+              )}
+              {heldForReview && (
+                <Text style={styles.almostFullNudge} accessibilityRole="text">{t('ui.shared.gatheringHeld')}</Text>
               )}
               <HostCommandCenter
                 stats={countdownStats}
@@ -1479,8 +1480,29 @@ export default function GatheringDetailScreen({ route, navigation }) {
             justJoined={justJoined}
             onChanged={load}
           />
+
+          {/* Report Gathering (20270392): a quiet link, as on a business; joining isn't needed. Never for the host. */}
+          {!gathering.isHost && (
+            <TouchableOpacity
+              onPress={() => setReporting(true)}
+              style={styles.reportLink}
+              accessibilityLabel={t('ui.reportBlock.reportBusinessTitle', { name: gathering.title })}
+              accessibilityRole="button"
+            >
+              <Text style={styles.reportLinkText}>{t('ui.reportBlock.reportGathering')}</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </ScrollView>
+
+      <ReportBlockModal
+        visible={reporting}
+        onClose={() => setReporting(false)}
+        reportedUserId={gathering.host_id}
+        reportedContent={{ type: 'gathering', id: gathering.id }}
+        target="gathering"
+        title={t('ui.reportBlock.reportBusinessTitle', { name: gathering.title })}
+      />
 
       <GatheringIntentModal
         visible={intentModalVisible}
@@ -1514,6 +1536,8 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   loadingContainer: { flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
   notFoundText: { color: colors.textSecondary, fontSize: 15 },
+  reportLink: { alignSelf: 'center', paddingVertical: spacing.sm, marginTop: spacing.md },
+  reportLinkText: { color: colors.textTertiary, fontSize: 13 },
   hero: { width: '100%', height: HERO_HEIGHT },
   heroFallback: { alignItems: 'center', justifyContent: 'center' },
   heroFallbackIcon: { fontSize: 72 },

@@ -24,6 +24,9 @@ import { activityChoices, toggleActivity } from '../constants/activityLayer';
 import { BUSINESS_ATTRIBUTE_OPTIONS, businessAttributeLabel, CUISINE_OPTIONS, cuisineLabel, OCCASION_OPTIONS, occasionLabel } from '../constants/businessAttributes';
 import { CATEGORY_GROUPS, subcategoryOptionsFor, businessTagOptions, toggleSecondaryCategory, MAX_SECONDARY_CATEGORIES } from '../constants/gatheringCategories';
 import { useTheme } from '../context/ThemeContext';
+import CategorySearchField from '../components/CategorySearchField';
+import { LOCATION_MODES, isServiceArea, signupLocationProblem, signupLocationFields } from '../utils/businessLocationMode';
+import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
 import { spacing, radius, typography } from '../theme';
 import { disabledButtonStyle } from '../constants/buttonStates';
 
@@ -115,6 +118,8 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
   // Manual pick only this pass, same disclosed scope boundary subcategory
   // itself started with -- no AI suggestion for this field yet.
   const [categories, setCategories] = useState([]);
+  const [categoryQuery, setCategoryQuery] = useState(''); // search inside "Also Classify As" only (utils/categorySearch.js)
+  const [categoryListOpen, setCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [website, setWebsite] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
@@ -126,6 +131,9 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
   // path (no Places result to source a real coordinate from).
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
+  // Owner, 2026-11-15: where the business is, asked here (no extra screen). Storefront = address + its own pin, both required;
+  // "We go to customers" = only roughly where it's based (rounded, never an address: utils/businessLocationMode.js).
+  const [locationMode, setLocationMode] = useState(null);
   const [requestedFeatures, setRequestedFeatures] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -374,6 +382,16 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
       form.show('name', 'This name isn’t allowed. Please revise it and try again.');
       return;
     }
+    const locationProblem = signupLocationProblem({ mode: locationMode, address, latitude, longitude });
+    if (locationProblem) {
+      const LOCATION_PROBLEM_COPY = {
+        choose_mode: ['Where is your business?', 'Tell us whether customers come to you or you go to them, so nearby requests can reach you.'],
+        address_required: ['Address required', "Tell us your business's address."],
+        pin_required: ['Place your business on the map', 'Tap your door on the map so nearby requests reach the right place.'],
+        area_required: ['Mark your area', "Mark roughly where you're based so nearby requests can reach you."],
+      };
+      return Alert.alert(...LOCATION_PROBLEM_COPY[locationProblem]);
+    }
     if (!category && unlistedText.trim()) {
       const textCheck = await checkTextModeration(unlistedText);
       if (!textCheck.safe) {
@@ -397,11 +415,8 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
         categories,
         website: website.trim() || null,
         phone: phone.trim() || null,
-        address: address.trim() || null,
-        latitude,
-        longitude,
-        location_source: latitude != null && longitude != null ? locationSource ?? 'host_pin' : null,
-        google_place_id: googleReference?.placeId ?? null,
+        // One rule for what is stored: a service-area application sends no address and a rounded point.
+        ...signupLocationFields({ mode: locationMode, address, latitude, longitude, locationSource, googlePlaceId: googleReference?.placeId ?? null }),
         details_source: SIGNUP_DETAILS_SOURCE,
         requested_features: requestedFeatures.length ? requestedFeatures : null,
         attributes,
@@ -856,8 +871,17 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
               above (e.g. a food_drink bar that's also an entertainment_
               nightlife live-music venue). */}
           <Text style={styles.label}>Also Classify As (optional, up to {MAX_SECONDARY_CATEGORIES} in all)</Text>
+          <CategorySearchField
+            value={categoryQuery}
+            onChangeText={setCategoryQuery}
+            noMatch={noCategoryMatch(businessTagOptions(), categoryQuery, { selected: categories })}
+            style={{ marginBottom: spacing.xs }}
+            expanded={categoryListOpen}
+            onToggleExpanded={() => setCategoryListOpen((v) => !v)}
+            total={businessTagOptions().length}
+          />
           <View style={styles.chipRow}>
-            {businessTagOptions().map((c) => (
+            {filterCategoryOptions(businessTagOptions(), categoryQuery, { selected: categories, collapsed: !categoryListOpen }).map((c) => (
               <TouchableOpacity
                 key={c}
                 style={[styles.chip, categories.includes(c) && styles.chipActive]}
@@ -937,6 +961,35 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
             accessibilityLabel="Phone, optional"
           />
 
+          {!resending && (<>
+          <Text style={styles.label}>Where is your business?</Text>
+          <View style={styles.chipRow}>
+            {[
+              { key: LOCATION_MODES.storefront, label: 'Customers come to us' },
+              { key: LOCATION_MODES.serviceArea, label: 'We go to customers' },
+            ].map((m) => (
+              <TouchableOpacity
+                key={m.key}
+                style={[styles.chip, locationMode === m.key && styles.chipActive]}
+                onPress={() => {
+                  if (locationMode === m.key) return;
+                  // A pin means something different in each mode (a door vs. a rough area): never carry it across.
+                  setLocationMode(m.key);
+                  setLatitude(null);
+                  setLongitude(null);
+                  setLocationSource(null);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel={m.label}
+                accessibilityState={{ selected: locationMode === m.key }}
+              >
+                <Text style={[styles.chipText, locationMode === m.key && styles.chipTextActive]}>{m.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          </>)}
+
+          {(resending ? !isServiceArea(request) : locationMode !== LOCATION_MODES.serviceArea) && (<>
           <Text style={styles.label}>Address</Text>
           <TextInput
             style={styles.input}
@@ -954,15 +1007,27 @@ export default function BusinessPartnerApplyScreen({ navigation, route }) {
                 setLocationSource(null);
               }
             }}
-            accessibilityLabel="Address, optional"
+            accessibilityLabel={resending ? 'Address' : 'Address, required'}
           />
+          </>)}
 
-          {!resending && (<>
+          {!resending && locationMode === LOCATION_MODES.storefront && (<>
           <Text style={styles.label}>Location on the map</Text>
           <TouchableOpacity style={styles.locationRow} onPress={openLocationPin} accessibilityRole="button"
-            accessibilityLabel={latitude != null ? 'Location placed. Change it on the map' : 'Place your business on the map, optional'}>
+            accessibilityLabel={latitude != null ? 'Location placed. Change it on the map' : 'Place your business on the map, required'}>
             <Text style={styles.locationRowText}>
-              {latitude != null ? '✓ Location placed · Change' : 'Place your business on the map (optional) →'}
+              {latitude != null ? '✓ Location placed · Change' : 'Place your business on the map →'}
+            </Text>
+          </TouchableOpacity>
+          </>)}
+
+          {!resending && locationMode === LOCATION_MODES.serviceArea && (<>
+          <Text style={styles.label}>Your area</Text>
+          <Text style={styles.chipText}>Mark roughly where you're based. Only an area about half a mile across is kept, never your address, and customers don't see a map pin for you.</Text>
+          <TouchableOpacity style={styles.locationRow} onPress={openLocationPin} accessibilityRole="button"
+            accessibilityLabel={latitude != null ? 'Area marked. Change it on the map' : 'Mark your area on the map, required'}>
+            <Text style={styles.locationRowText}>
+              {latitude != null ? '✓ Area marked · Change' : 'Mark your area on the map →'}
             </Text>
           </TouchableOpacity>
           </>)}

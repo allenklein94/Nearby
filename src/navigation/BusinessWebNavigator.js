@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import LoginScreen from '../screens/LoginScreen';
+import CompleteProfileScreen from '../screens/CompleteProfileScreen';
+import { captureBusinessWebLink } from '../utils/businessWebLink';
 import BusinessWebHomeScreen from '../screens/BusinessWebHomeScreen';
 import BusinessDashboardScreen from '../screens/BusinessDashboardScreen';
 import BusinessProfileScreen from '../screens/BusinessProfileScreen';
@@ -34,16 +36,17 @@ const Stack = createNativeStackNavigator();
 // GitHub-Pages-SPA-refresh-404 problem for a v1 without a 404.html
 // redirect trick.
 //
-// A business owner reaching this navigator will already have
-// profileComplete=true and managed_partner_id set -- the only way that
-// gets linked is via approve_business_partner_request()'s phone-matched
-// claim trigger, which requires having already completed real phone-OTP
-// signup + CompleteProfileScreen once in the native app -- so there's no
-// onboarding flow to duplicate here; BusinessWebHomeScreen's own
-// managed_partner_id check is the entire gate.
+// managed_partner_id is set only by the phone-matched claim
+// (_claim_web_business_requests): on approval when a profile already
+// exists, else when the profile is created. A signed-in visitor with no
+// profile yet gets the app's own CompleteProfileScreen here (owner,
+// 2026-11-14: no app install needed); BusinessWebHomeScreen's
+// managed_partner_id check stays the entire gate to the dashboard.
 export default function BusinessWebNavigator() {
-  const { session, loading, profileLoading } = useAuth();
+  const { session, loading, profileLoading, profileComplete } = useAuth();
   const { colors } = useTheme();
+  // An alert email's request link is kept before sign-in and opened after it (utils/businessWebLink.js).
+  useState(() => captureBusinessWebLink());
 
   if (loading || (session && profileLoading)) return null;
 
@@ -52,6 +55,10 @@ export default function BusinessWebNavigator() {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!session ? (
           <Stack.Screen name="Login" component={LoginScreen} />
+        ) : !profileComplete ? (
+          // Website-only owners (owner, 2026-11-14): the app's own profile step, so creating the profile links an approved
+          // application to this account (the profile-created claim trigger) without ever installing the app.
+          <Stack.Screen name="CompleteProfile" component={CompleteProfileScreen} />
         ) : (
           <>
             <Stack.Screen name="BusinessWebHome" component={BusinessWebHomeScreen} />

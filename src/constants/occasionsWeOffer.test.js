@@ -63,9 +63,10 @@ import {
 } from '../services/intentResolverScoring';
 
 describe('consumer-side: businessFitsOccasion / occasionBonus', () => {
-  it('an explicit offering counts, and so does want-more; neither stacks', () => {
+  it('only an explicit offering counts; wanting more is a wish, never a capability (owner audit 2026-11-14)', () => {
     expect(businessFitsOccasion({ offered_occasions: ['birthday'] }, 'birthday')).toBe(true);
-    expect(businessFitsOccasion({ priority_occasions: ['birthday'] }, 'birthday')).toBe(true);
+    expect(businessFitsOccasion({ priority_occasions: ['birthday'] }, 'birthday')).toBe(false);
+    expect(occasionBonus({ priority_occasions: ['birthday'] }, 'birthday')).toBe(0);
     expect(occasionBonus({ offered_occasions: ['birthday'], priority_occasions: ['birthday'] }, 'birthday')).toBe(SCORE_HAPPENING_NOW);
   });
   it('is silent without a real occasion or a real declaration', () => {

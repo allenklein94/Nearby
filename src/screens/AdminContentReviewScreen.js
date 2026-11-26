@@ -75,6 +75,47 @@ function SnapshotMedia({ snapshot, colors }) {
   );
 }
 
+// 20270373: held people's content. "Approve" publishes it (an edit is applied, a new item becomes visible, a hidden chat
+// message is shown again); "Keep hidden" leaves it unpublished. Never an account action: those stay in Admin review.
+const USER_TARGET_LABELS = {
+  profiles: 'Profile', gatherings: 'Gathering', communities: 'Community', gathering_questions: 'Gathering Q&A',
+  photo_comments: 'Photo comment', community_messages: 'Community chat', gathering_messages: 'Gathering chat',
+};
+const USER_KIND_LABELS = {
+  new_row: 'New, waiting to be shown', edit: 'Edit, waiting to replace the shown text',
+  chat_hidden: 'Hidden after sending (high risk)', chat_review: 'Visible, flagged for a look',
+};
+
+function heldText(value) {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map((p) => (p && typeof p === 'object' ? `${p.question ?? ''}: ${p.answer ?? ''}` : String(p))).join('\n');
+  if (value && typeof value === 'object') return Object.entries(value).map(([k, v]) => `${k}: ${v}`).join('\n');
+  return String(value ?? '');
+}
+
+function HeldUserItem({ item, styles, busy, onDecide }) {
+  const chatVisible = item.kind === 'chat_review';
+  return (
+    <View style={styles.card}>
+      <Text style={styles.partnerName}>{item.author_name || 'Someone'}</Text>
+      <Text style={styles.targetType}>{USER_TARGET_LABELS[item.target_table] ?? item.target_table} · {item.field} · {USER_KIND_LABELS[item.kind] ?? item.kind}</Text>
+      <Text style={styles.snapshotBody}>{heldText(item.held_value)}</Text>
+      {item.reason ? <Text style={styles.reasoning}>{item.reason}</Text> : null}
+      <Text style={styles.timestamp}>{item.created_at ? new Date(item.created_at).toLocaleString() : ''}</Text>
+      <View style={styles.actionsRow}>
+        <TouchableOpacity style={styles.approveButton} disabled={busy} onPress={() => onDecide(item, true)}
+          accessibilityRole="button" accessibilityLabel={chatVisible ? 'No issue, keep it visible' : 'Approve and show it'}>
+          <Text style={styles.approveButtonText}>{chatVisible ? 'No Issue' : 'Approve & Show'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.denyButton} disabled={busy} onPress={() => onDecide(item, false)}
+          accessibilityRole="button" accessibilityLabel={chatVisible ? 'Hide this message' : 'Keep it hidden'}>
+          <Text style={styles.denyButtonText}>{chatVisible ? 'Hide' : 'Keep Hidden'}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
 const CATEGORY_LABELS = {
   illegal_drugs: 'Illegal drugs',
   weapons: 'Weapons',
@@ -99,14 +140,24 @@ export default function AdminContentReviewScreen() {
   const [processingIds, setProcessingIds] = useState({});
 
   const load = useCallback(async () => {
-    const { data, error } = await supabase.rpc('admin_get_pending_content_screenings');
-    if (error) {
-      console.error('AdminContentReviewScreen load error', error);
-      setItems([]);
-      return;
-    }
-    setItems(data ?? []);
+    const [{ data, error }, people] = await Promise.all([
+      supabase.rpc('admin_get_pending_content_screenings'),
+      // 20270373: people's held text (profile, gathering, community, Q&A, comment) and flagged group-chat messages. Before
+      // the migration is live the function doesn't exist: nothing extra.
+      supabase.rpc('admin_list_held_user_content'),
+    ]);
+    if (error) console.error('AdminContentReviewScreen load error', error);
+    const userItems = (people?.error ? [] : people?.data ?? []).map((u) => ({ ...u, id: `u:${u.item_id}`, userItem: true }));
+    setItems([...(error ? [] : data ?? []), ...userItems]);
   }, []);
+
+  async function handleUserDecision(item, approve) {
+    setProcessingIds((prev) => ({ ...prev, [item.id]: true }));
+    const { error } = await supabase.rpc('admin_decide_held_user_content', { p_item_id: item.item_id, p_approve: approve, p_note: null });
+    if (error) presentRecoverableError(Alert, { what: 'complete that', error, onRetry: () => handleUserDecision(item, approve) });
+    else setItems((prev) => prev.filter((i) => i.id !== item.id));
+    setProcessingIds((prev) => ({ ...prev, [item.id]: false }));
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -147,6 +198,7 @@ export default function AdminContentReviewScreen() {
           </FadeInState>
         }
         renderItem={({ item }) => {
+          if (item.userItem) return <HeldUserItem item={item} styles={styles} busy={!!processingIds[item.id]} onDecide={handleUserDecision} />;
           const snapshot = item.content_snapshot ?? {};
           const isResweep = item.source === 'resweep';
           return (

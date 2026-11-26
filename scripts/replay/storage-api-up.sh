@@ -18,7 +18,7 @@ P() { docker exec -i -e PGPASSWORD=postgres "$NAME" psql -h localhost -U supabas
 POLHASH="select md5(string_agg(policyname||cmd||array_to_string(roles,',')||coalesce(qual,'')||coalesce(with_check,''),'|' order by policyname)) from pg_policies where schemaname='storage'"
 
 node -e "
-const c=require('crypto');const s='local-replay-jwt-secret-not-a-real-key-'+c.randomBytes(8).toString('hex');
+const c=require('crypto');const s=process.env.LOCAL_JWT_SECRET||'local-replay-jwt-secret-not-a-real-key-'+c.randomBytes(8).toString('hex');
 const j=(p)=>{const h=Buffer.from(JSON.stringify({alg:'HS256',typ:'JWT'})).toString('base64url');const b=Buffer.from(JSON.stringify(p)).toString('base64url');return h+'.'+b+'.'+c.createHmac('sha256',s).update(h+'.'+b).digest('base64url');};
 const now=Math.floor(Date.now()/1e3);
 require('fs').writeFileSync('$OUT/storage-keys.json',JSON.stringify({secret:s,anon:j({role:'anon',iat:now,exp:now+86400}),service:j({role:'service_role',iat:now,exp:now+86400})}));"

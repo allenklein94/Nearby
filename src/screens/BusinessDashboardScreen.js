@@ -10,6 +10,9 @@ import { bizWindowPhrase } from '../i18n/bizFormat';
 import { attributeLabel, experienceOptionLabel } from '../i18n/optionLabels';
 import { cuisineName } from '../i18n/businessProfileDisplay';
 import { categoryName } from '../i18n/categoryNames';
+import BusinessLocationSelector from '../components/BusinessLocationSelector';
+import CategorySearchField from '../components/CategorySearchField';
+import { filterCategoryOptions, noCategoryMatch } from '../utils/categorySearch';
 import DraftBanner from '../components/DraftBanner';
 import AgeRangePicker from '../components/AgeRangePicker';
 import SettingConflictNotice from '../components/SettingConflictNotice';
@@ -26,26 +29,32 @@ import { replySentConfirmation, offerQueuedConfirmation } from '../utils/actionC
 import useFormDraft from '../hooks/useFormDraft';
 import { serializableAsset, assetStillExists } from '../services/formDrafts';
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, ActivityIndicator, Modal, TextInput, Alert, Switch, Keyboard, TouchableWithoutFeedback, KeyboardAvoidingView, Platform, Share, Image, AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import PlatformDateTimeInput from '../components/PlatformDateTimeInput';
 import BusinessHoursEditor from '../components/BusinessHoursEditor';
+import BusinessContactDetails from '../components/BusinessContactDetails';
 import QRCode from 'react-native-qrcode-svg';
 import { randomUUID } from 'expo-crypto';
 import { useFocusEffect } from '@react-navigation/native';
+import { getMyBusinessLocations, noteLocationAwareSession } from '../services/businessLocations';
+import { claimActingBusiness, releaseActingBusiness, onSelectionChanged } from '../services/actingBusiness';
+import { currentLocation, selectionChangedElsewhere } from '../utils/businessLocations';
 import OfferProgressSteps, { OfferProgressGlow } from '../motion/OfferProgressSteps';
-import { businessCardStatus, offerProgress, offersToAnimate, progressKey } from '../utils/offerProgress';
+import { businessCardStatus, offerProgress, offersToAnimate, progressKey, offerStage } from '../utils/offerProgress';
+import { canConfirmVisit, canReportNoShow } from '../utils/visitConfirmation';
 import { loadShownProgress, saveShownProgress, loadArrivedOpportunities, saveArrivedOpportunities } from '../services/offerProgressShown';
 import { newArrivals, arrivalSlots, arrivalKey } from '../utils/opportunityArrival';
 import OpportunityArrival, { ArrivalSignal } from '../motion/OpportunityArrival';
 import { supabase } from '../services/supabase';
 import { billingBreakdownLines } from '../utils/billingBreakdown';
 import { invoiceRow } from '../utils/invoiceDisplay';
-import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, setBusinessLocation, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, createBusinessExperience, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore, setBusinessDietaryOptions } from '../services/brandOffers';
+import { getMyBusinessOffers, toggleOfferActive, getMyBusinessGatherings, getBusinessInsights, updateBusinessAddress, updateBusinessProfile, submitBusinessProfileForScreening, submitBusinessOfferForScreening, submitBusinessUpdateForScreening, getRedemptionCounts, getEstimatedAmountOwed, getMyInvoices, setBusinessLocation, getMyManagedPartner, confirmOfferRedemption, getBusinessDiscoveryStats, setBusinessAvailabilityPulse, getBusinessExperiences, updateBusinessExperience, submitBusinessExperienceForScreening, deleteBusinessExperience, setBusinessAccommodations, setBusinessOfferedOccasions, setBusinessWeatherSetting, setBusinessPriceLevel, setBusinessSuitedAges, setBusinessBookingMode, setBusinessMaxGroupSize, setBusinessSpaceCapacity, setBusinessTypicalSpend, setBusinessNotAccommodated, setBusinessWantMore, setBusinessDietaryOptions } from '../services/brandOffers';
 import { cleanMaxGroupSize, maxGroupSizeProblem, SPACES, spaceCapacityProblem } from '../constants/businessCapabilities';
 import { BUSINESS_PRICE_LEVELS, typicalSpendProblem } from '../constants/businessPrice';
 import { getBusinessCommunities } from '../services/communities';
-import { getBusinessConversations, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
+import { messageFocusPlan } from '../utils/businessMessageFocus';
+import { getBusinessConversations, getBusinessMessageConversation, replyAsBusinessOwner, getBusinessMessagesPage, getBusinessTopMembers, getBusinessVisitFrequency, getBusinessMemberGatheringHistory, getBusinessCustomerNote, saveBusinessCustomerNote, getMyPendingContentScreenings } from '../services/brandOffers';
 // P2 remediation item 11 (CLAUDE.md) -- reuse the admin queue's own real
 // target-type label map rather than a second, drifting copy.
 import { TARGET_TYPE_LABELS } from './AdminContentReviewScreen';
@@ -57,7 +66,7 @@ import { creativeFormPatch, detectedSummary, extractedDiscountWarning, canReadCr
 import { sanitizePlainLanguageSuggestion, plainLanguageDiffers, plainLanguageContext, claimProblem, acceptPlainLanguage } from '../utils/plainLanguageOffer';
 import { videoLimitProblem, MAX_REDEMPTION_LENGTH, validUntilFromChoice, availableWindowFromChoice } from '../utils/offerMedia';
 import { priorityTimeRangeFromChoice, priorityTimeStringToDate, priorityTimeRangeLabel } from '../utils/priorityTimeRange';
-import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, markBusinessNoShow, getMyBusinessNoShows, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, uploadBusinessLogo, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue, getPartnerOfferFunnel } from '../services/businessFulfillment';
+import { getBusinessOpportunities, submitBusinessOfferResponseForScreening, declineBusinessOpportunity, submitBusinessAvailabilityForScreening, cancelBusinessAvailability, cancelBusinessReservation, markBusinessNoShow, getMyBusinessNoShows, getMyBusinessAvailability, getAggregatedDemandForPartner, getPartnerDemandSignals, getOccasionDemandForPartner, getMyBusinessFulfillmentPolicy, upsertBusinessFulfillmentPolicy, formatOfferSummary, getMissedMatchSummary, getPartnerCategoryOutcomes, MISSED_MATCH_REASON_LABELS, DECLINE_REASON_OPTIONS, DECLINE_REASON_LABELS, getPartnerDeclinePatterns, DAY_OF_WEEK_OPTIONS, getPartnerOfferPerformance, pickBusinessOfferMedia, uploadBusinessOfferMedia, uploadOfferVideoFrames, readOfferCreative, rewriteOfferPlainLanguage, getMyCreatives, uploadBusinessLogo, archiveBusinessCreative, getSignedBusinessOfferMediaUrl, getAvailabilityDemandPreview, getPartnerMatchFit, getMyOfferSubmissions, dismissOfferSubmission, retryOfferSubmission, getPartnerOfferValue, getPartnerOfferFunnel, completeBusinessReservation } from '../services/businessFulfillment';
 import { submissionView, inFlightRequestIds, payloadToForm } from '../utils/offerSubmission';
 // Item 68 (CLAUDE.md): a business's own durable, named occasion package.
 import { getMyOccasionPackages, createOccasionPackage, updateOccasionPackage, setOccasionPackageActive, deleteOccasionPackage, formatOccasionPackageDetail, formatIncludedItemsLabel, findMatchingOccasionPackage, getBusinessReturningOccasionCustomers, sendBusinessRecallOutreach } from '../services/occasionPackages';
@@ -77,9 +86,12 @@ import { isWeatherIndoorBiased, isWeatherOutdoorBiased } from '../utils/weatherB
 // Item 70 (CLAUDE.md): a real, honest "when" label for a pending request's
 // own date/time window, shown on the business's opportunity card.
 import { budgetMeetsMinSpend } from '../utils/budgetTier';
-import { businessLocationNotice } from '../utils/businessLocationNotice';
+import { businessLocationNotice, businessLocationBanner } from '../utils/businessLocationNotice';
+import { LOCATION_MODES, locationModeOf, isServiceArea, businessLocationWrite } from '../utils/businessLocationMode';
 import { dashboardGlance, visitHasPassed } from '../utils/dashboardGlance';
 import { businessHomeTiles } from '../utils/businessHomeTiles';
+import { homeRequestPreview, homeRequestRow } from '../utils/businessHomeRequests';
+import useHomeRequestClock from '../hooks/useHomeRequestClock';
 import { businessPipeline, PIPELINE_STAGES, isPipelineWon } from '../utils/businessPipeline';
 import { splitAggregatedDemand } from '../utils/offeredDemand';
 import { buildOpportunityCard, buildMatchReasons, availabilityCoversRequest } from '../utils/businessOpportunityCard';
@@ -88,7 +100,10 @@ import { buildAlternativeText, alternativePickerStart, usualTermsLine, standardA
 import { formatPlanTimeLabel } from '../utils/planAddonReadiness';
 import { defaultScheduledWindow, resolveAvailabilityWindow, scheduledWindowProblem, shiftEndAfterStart, demandPreviewLine } from '../utils/availabilityWindow';
 import { activeDiscountCap, parseDiscountPct, discountCapProblem } from '../utils/discountCap';
-import { draftPreviewOffer, draftSecondTime, draftSecondPartySize } from '../utils/offerDraftPreview';
+import { draftPreviewOffer, draftSecondTime, draftSecondPartySize, previewAcceptAction } from '../utils/offerDraftPreview';
+import { getOfferCardStyles } from '../components/offerCardStyles';
+import { previewDockSummary } from '../utils/offerPreviewDock';
+import OfferPreviewDock from '../components/OfferPreviewDock';
 import ReviseOfferSheet from '../components/ReviseOfferSheet';
 import { canReviseOffer, isRevisedOffer } from '../utils/offerRevision';
 // P1 item 7 (CLAUDE.md, Aug 28 Full Coherence Audit): the same real,
@@ -102,7 +117,10 @@ import TellNearbyBusinessCard from '../components/TellNearbyBusinessCard';
 import CreativeLibrarySection from '../components/CreativeLibrarySection';
 import { pickerCreatives } from '../utils/creativeLibrary';
 import { describeDemandSignals } from '../utils/demandSignals';
-import { opportunityPrimaryAction, consumerOfferAction } from '../utils/primaryAction';
+import { matchRadarRows, isUnofferedGap, bestUnofferedGap, hasDeclaredOfferedCategory } from '../utils/matchRadarRows';
+import { toggleProfileGroup, profileGroupFor } from '../utils/profileGroups';
+import { profileSummaryLine } from '../utils/profileSummary';
+import { opportunityPrimaryAction } from '../utils/primaryAction';
 import { BOOKING_MODE_OPTIONS, LEGACY_RESERVATION_ATTRIBUTE, bookingModeOf } from '../constants/bookingMode';
 import { NOT_ACCOMMODATED_OPTIONS, ADULT_AGE_RULES, notAccommodatedOf, toggleNotAccommodated } from '../constants/businessRestrictions';
 import { BUSINESS_DIETARY_OPTIONS, dietaryOptionsOf, dietaryRelevantFor } from '../constants/dietaryOptions';
@@ -112,7 +130,6 @@ import { EXPERIENCE_LEVEL_OPTIONS } from '../services/celebrateSomething';
 import { deriveSignatureExperienceSuggestions } from '../constants/businessExperienceSuggestions';
 import { bundleableOccasions, experienceComponentOptionsForOccasion } from '../constants/experienceTemplates';
 import { classifyBusinessCategory } from '../constants/businessCategoryClassifier';
-import { extractAttributesFromText } from '../constants/businessAttributeExtraction';
 import { INTEREST_OPTIONS, subcategoryOptionsFor, businessTagOptions, toggleSecondaryCategory, isCustomerOnlyTag } from '../constants/gatheringCategories';
 import SponsoredPromotionsPanel from '../components/SponsoredPromotionsPanel';
 import LoadErrorState from '../components/LoadErrorState';
@@ -307,8 +324,54 @@ function BusinessOfferMediaPreview({ path, type, colors }) {
   );
 }
 
-export default function BusinessDashboardScreen({ navigation, route }) {
+// Multi-location (20270424, STAGED): switching location remounts Business Mode from scratch, so no state from the previous
+// location (drafts, open forms, loaded lists, realtime channels) can carry into the next one.
+// The selection is per account: when another device or the website switched it, Business Mode reloads on focus / on return
+// to the foreground for the location the server now has selected, so this screen never shows one location while its
+// profile, hours and availability writes land on another (utils/businessLocations.js `selectionChangedElsewhere`).
+// That reload is a convenience; the protection is the server's (20270426): every REST request names the location this
+// screen shows (services/actingBusiness.js) and is refused once the selection differs, so a stale screen never writes
+// to (or reads) the other location even inside the window before the reload.
+export default function BusinessDashboardScreen(props) {
+  const [locationKey, setLocationKey] = useState(0);
+  // A business push for another location switches first (services/notifications.js) and says so in locationSwitchedTo.
+  const switchedTo = props.route?.params?.locationSwitchedTo;
+  const key = `${locationKey}:${switchedTo ?? ''}`;
+  const shown = useRef(undefined); // the location this screen shows; undefined = not known yet
+  useEffect(() => { if (switchedTo) shown.current = switchedTo; }, [switchedTo]);
+  const recheck = useCallback(async () => {
+    const list = await getMyBusinessLocations();
+    if (!list.length) return; // single location / 0424 not live / failed read: nothing to compare
+    if (shown.current === undefined) {
+      shown.current = currentLocation(list)?.partner_id ?? null;
+      return;
+    }
+    const now = selectionChangedElsewhere(shown.current, list);
+    if (now === undefined) return;
+    shown.current = now;
+    setLocationKey((k) => k + 1);
+  }, []);
+  useEffect(() => { noteLocationAwareSession(); }, []); // rollout gate: this session names its location (20270426)
+  useFocusEffect(useCallback(() => { recheck(); }, [recheck]));
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => { if (s === 'active') recheck(); });
+    return () => sub.remove();
+  }, [recheck]);
+  const onLocationSwitched = useCallback(() => {
+    shown.current = undefined; // this device switched: re-seed from the server on the next check
+    setLocationKey((k) => k + 1);
+    recheck();
+  }, [recheck]);
+  // The server refused a request because the account's location changed elsewhere (20270426): reload for the new one.
+  useEffect(() => onSelectionChanged(onLocationSwitched), [onLocationSwitched]);
+  return <BusinessDashboardForLocation key={key} {...props} onLocationSwitched={onLocationSwitched} />;
+}
+
+function BusinessDashboardForLocation({ navigation, route, onLocationSwitched }) {
   const { t, language } = useLanguage();
+  // Category search matches the owner's language as well as the stored tag the chip shows.
+  // The one display name for a business category chip AND its search (translated; the stored key stays the saved value).
+  const categorySearchLabel = (c) => categoryName(c, language);
   const offerTypeLabel = (key) => (OFFER_TYPE_OPTIONS.some((o) => o.key === key) ? t(`ui.bizDash3.offerType.${key}`) : key);
   const { colors, shadow, isDark } = useTheme();
   const styles = getStyles(colors, shadow);
@@ -325,6 +388,30 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   };
   const on = (...tabs) => tabs.includes(section);
   const tool = (key) => section === 'home' && openTool === key;
+  // One Profile group header (owner audit 2026-11-14): its existing title + an open/closed mark; tap toggles it in place.
+  // Owner, 2026-11-14 (later): + one line of what is SAVED for it (utils/profileSummary.js), so the headers together are
+  // the reviewable summary of what Nearby knows; tapping one opens its existing controls to change it.
+  const renderProfileGroupHeader = (key, title) => {
+    const summary = profileSummaryLine(key, selectedPartner, {
+      categoryLabel: (k) => BUSINESS_CATEGORIES.find((c) => c.key === k)?.label ?? k,
+      subcategoryLabel: (k) => categoryName(k, language),
+      upToPeople: (n) => t('ui.businessProfile.v.upToPeople', { count: n }),
+      serviceArea: t('ui.bizHelp.location.modeServiceArea'),
+      notSet: t('ui.bizDash2.notSet'),
+    });
+    return (
+      <TouchableOpacity
+        onPress={() => setProfileGroup((g) => toggleProfileGroup(g, key))}
+        style={[styles.gatheringRow, { marginTop: spacing.md }]}
+        accessibilityRole="button"
+        accessibilityLabel={summary ? `${title}, ${summary}` : title}
+        accessibilityState={{ expanded: profileGroup === key }}
+      >
+        <Text style={styles.offerTitle}>{title}{' '}{profileGroup === key ? '⌄' : '›'}</Text>
+        {summary ? <Text style={[styles.breakdownText, { marginTop: 2 }]} numberOfLines={2}>{summary}</Text> : null}
+      </TouchableOpacity>
+    );
+  };
   // Item 36: the Performance tile opens Offer Performance (More tools -> Analytics) and scrolls to it once it has laid out.
   const mainScrollRef = useRef(null);
   const scrollToPerformanceRef = useRef(false);
@@ -333,11 +420,23 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const libraryYRef = useRef(null);
   const scrollToLibraryRef = useRef(false);
   function openCreativeLibrary() {
-    if (section === 'profile' && libraryYRef.current != null) {
+    if (section === 'profile' && profileGroup === 'basics' && libraryYRef.current != null) {
       mainScrollRef.current?.scrollTo({ y: libraryYRef.current, animated: true });
     } else {
       scrollToLibraryRef.current = true;
+      setProfileGroup('basics'); // the library lives in Business Profile
       setSection('profile');
+    }
+  }
+  // A Home request row opens that exact request in Opportunities: the same focus path a push uses (item 140 / idea "187":
+  // Opportunities tab, fresh reload, request first + outlined, scrolled into view; a request that closed meanwhile says so).
+  function openHomeRequest(requestId) {
+    if (requestId === focusRequestId) {
+      focusScrolledForRef.current = null;
+      setSection('opportunities');
+      if (selectedPartner) loadOpportunities(selectedPartner.id);
+    } else {
+      navigation.setParams({ focusRequestId: requestId });
     }
   }
   function openHomeTile(target) {
@@ -352,7 +451,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
   // Secondary areas stay collapsed: Availability leads with "tell us when you have room", Profile with "tell us what you offer".
   const [moreOffersOpen, setMoreOffersOpen] = useState(false);
-  const [profileSettingsOpen, setProfileSettingsOpen] = useState(false);
+  // Owner audit 2026-11-14: Profile's groups, one open at a time (utils/profileGroups.js).
+  const [profileGroup, setProfileGroup] = useState(() => profileGroupFor(route?.params?.initialProfileGroup));
   const [selectedPartner, setSelectedPartner] = useState(null);
   // Item 86: contradictory settings are refused by the server and shown inline under the control (never an alert, never a
   // silent change). One entry per editing surface; see hooks/useSettingConflicts.js.
@@ -373,6 +473,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [estimatedOwed, setEstimatedOwed] = useState({ redemptionCount: 0, estimatedAmount: 0, billingModel: null, includedUnits: 0, billableCount: 0 });
   const [addressInput, setAddressInput] = useState('');
   const [savingAddress, setSavingAddress] = useState(false);
+  // Storefront vs "We go to customers" (utils/businessLocationMode.js), chosen in the address sheet. The pin screen returns here;
+  // pendingLocation says which mode that pin is for (and, when a service-area business becomes a storefront, the address to save
+  // once its pin is placed: an address is never stored while the business is still a service area).
+  const [locationModeInput, setLocationModeInput] = useState(LOCATION_MODES.storefront);
+  const pendingLocation = useRef(null);
   const [editProfileModalVisible, setEditProfileModalVisible] = useState(false);
   const [editNameInput, setEditNameInput] = useState('');
   const [editDescriptionInput, setEditDescriptionInput] = useState('');
@@ -388,6 +493,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // 2026-09-10) -- secondary, cross-major self-classification, distinct
   // from editSubcategoryInput (one leaf tag under the primary major).
   const [editCategoriesInput, setEditCategoriesInput] = useState([]);
+  const [profileCategoryQuery, setProfileCategoryQuery] = useState(''); // search inside the picker only (utils/categorySearch.js)
+  const [profileCategoryListOpen, setProfileCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [editDifferentiatorInput, setEditDifferentiatorInput] = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
   // "Business Story" plan, Phase 2 -- Business Goals ("what we want more
@@ -428,16 +535,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // the record call itself failed -- callers must not call respond-to
   // with a null id.
   const [categorySuggestionId, setCategorySuggestionId] = useState(null);
-  // Same addendum -- "Teach Nearby." Never auto-applies -- the extracted
-  // chips are always shown for explicit confirm/edit/discard first.
-  const [teachNearbyInput, setTeachNearbyInput] = useState('');
-  const [teachNearbyExtracted, setTeachNearbyExtracted] = useState(null);
-  const [savingTeachNearby, setSavingTeachNearby] = useState(false);
-  // Business Intelligence & Opportunity Engine, Phase 1 -- one suggestion
-  // id per currently-extracted attribute, keyed by attribute name, so
-  // removing/confirming/discarding a specific chip can mark that exact
-  // suggestion's own provenance row, not a blanket batch action.
-  const [teachNearbySuggestionIds, setTeachNearbySuggestionIds] = useState({});
   // Real, durable AI Suggestion / Audit log (Phase 1) -- the last 10
   // suggestion attempts for this business, whatever their source/status.
   const [recentSuggestions, setRecentSuggestions] = useState([]);
@@ -446,7 +543,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // priority_attributes/priority_time_windows chips above.
   const [activePrioritySignals, setActivePrioritySignals] = useState([]);
   const [boostCategoryInput, setBoostCategoryInput] = useState(null);
+  const [boostCategoryQuery, setBoostCategoryQuery] = useState('');
+  const [boostCategoryListOpen, setBoostCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [boostDurationInput, setBoostDurationInput] = useState('today');
+  const boostChipOptions = filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput, collapsed: !boostCategoryListOpen });
   const [savingBoost, setSavingBoost] = useState(false);
   // Phase 6 -- Signature Experiences.
   const [experiences, setExperiences] = useState([]);
@@ -601,6 +701,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     const resolved = withScores.filter((o) => !isAwaitingDecision(o));
     return [...awaiting, ...resolved];
   }, [opportunities, selectedPartner, activePrioritySignals, fulfillmentPolicy, businessWeather]);
+  // Owner, 2026-11-22: Home previews up to 3 of this location's open requests (utils/businessHomeRequests.js), in the
+  // Opportunities order; the clock re-renders when one reaches its deadline. Arrivals/bookings/cancellations come in
+  // through loadOpportunities' existing live reload.
+  const homeRequestClockMs = useHomeRequestClock(scoredOpportunities, { submissions: offerSubmissions, partnerId: selectedPartner?.id ?? null });
   // Phase 5 (CLAUDE.md) -- a real count of how many currently-open
   // opportunities the already-computed weather signal is boosting right
   // now, derived entirely from scoredOpportunities' own already-stamped
@@ -645,6 +749,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     return true;
   }, []);
   const [markingNoShowId, setMarkingNoShowId] = useState(null);
+  const [confirmingVisitId, setConfirmingVisitId] = useState(null);
   const [offerModalRequestId, setOfferModalRequestId] = useState(null);
   // After offerModalRequestId's declaration: reading it earlier is a ReferenceError in browsers (blank web dashboard, 2026-11-14).
   useEffect(() => {
@@ -693,6 +798,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [availabilityTitleInput, setAvailabilityTitleInput] = useState('');
   const [availabilityDescriptionInput, setAvailabilityDescriptionInput] = useState('');
   const [availabilityCategoryInput, setAvailabilityCategoryInput] = useState(null);
+  const [availabilityCategoryQuery, setAvailabilityCategoryQuery] = useState('');
+  const [availabilityCategoryListOpen, setAvailabilityCategoryListOpen] = useState(false); // collapsed by default (owner, 2026-11-23)
   const [availabilityOfferTypeInput, setAvailabilityOfferTypeInput] = useState('standard');
   const [availabilityPriceInput, setAvailabilityPriceInput] = useState('');
   const [availabilityDiscountInput, setAvailabilityDiscountInput] = useState('');
@@ -865,6 +972,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   const [growth, setGrowth] = useState(null);
   const [gatheringBreakdowns, setGatheringBreakdowns] = useState({});
   const [conversations, setConversations] = useState([]);
+  const [conversationsLoadedFor, setConversationsLoadedFor] = useState(null); // business id the inbox list last loaded for
   const [activeConversation, setActiveConversation] = useState(null);
   const [conversationMessages, setConversationMessages] = useState([]);
   const [replyText, setReplyText] = useState('');
@@ -910,8 +1018,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   // dismissible, never blocking anything below it.
   const [showWelcomeCard, setShowWelcomeCard] = useState(false);
 
+  // Multi-location (20270426): every REST request from this Business Mode names the location it shows (claimed once the
+  // partner has loaded, released when this location's Business Mode goes away); the server refuses them if the account
+  // has since been switched to another location, and the wrapper above reloads for it.
+  const actingClaim = useRef({ mounted: true, token: null, id: undefined });
   useEffect(() => {
+    const claim = actingClaim.current;
+    claim.mounted = true;
     loadMyPartner();
+    return () => { claim.mounted = false; releaseActingBusiness(claim.token); };
   }, []);
 
   // Fires once real coordinates exist on the loaded partner -- never
@@ -931,6 +1046,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     let loadedPartnerId = null;
     try {
       const partner = await getMyManagedPartner();
+      const claim = actingClaim.current;
+      if (!claim.mounted) return;
+      // One location per mount: a later reload that returns another location (only possible before the first claim
+      // reaches the server) reloads Business Mode instead of mixing two locations on one screen.
+      if (claim.id !== undefined && claim.id !== (partner?.id ?? null)) { onLocationSwitched?.(); return; }
+      claim.id = partner?.id ?? null;
+      claim.token = claimActingBusiness(claim.id);
       setSelectedPartner(partner);
       setLoadError(false);
       if (partner) {
@@ -1081,9 +1203,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
   // Owner decisions 2026-10-22 (final, Option B): saving the address saves the words only; the map then opens on that
   // address (Google only centres it) and the business taps its own door. Only that pin is stored (setBusinessLocation).
-  function openBusinessPin(address) {
+  function openBusinessPin(address, pending = { mode: LOCATION_MODES.storefront }) {
     const p = selectedPartner;
-    const own = p?.latitude != null && p?.longitude != null && (address ?? p.address) === p.address;
+    pendingLocation.current = pending;
+    const own = p?.latitude != null && p?.longitude != null && !isServiceArea(p) && (address ?? p.address) === p.address;
     navigation.navigate('SelectGatheringLocation', {
       returnTo: 'BusinessDashboard',
       ...(own ? { initialLat: p.latitude, initialLng: p.longitude } : { searchText: address ?? p?.address ?? '' }),
@@ -1094,6 +1217,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     if (!addressInput.trim()) return;
     const address = addressInput.trim();
     const moved = address !== (selectedPartner.address ?? '');
+    if (isServiceArea(selectedPartner)) {
+      // Becoming a storefront: the address is saved after its pin, in the return handler below.
+      setAddressModalVisible(false);
+      openBusinessPin(address, { mode: LOCATION_MODES.storefront, address });
+      return;
+    }
     setSavingAddress(true);
     try {
       await updateBusinessAddress(selectedPartner.id, address);
@@ -1107,19 +1236,43 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSavingAddress(false);
   }
 
-  // The pin the business placed comes back here with its provenance (utils/locationProvenance.js).
+  // A service-area business marks roughly where it is based; only a rounded area is stored (migration 20270419).
+  function handleMarkServiceArea() {
+    setAddressModalVisible(false);
+    const p = selectedPartner;
+    pendingLocation.current = { mode: LOCATION_MODES.serviceArea };
+    navigation.navigate('SelectGatheringLocation', {
+      returnTo: 'BusinessDashboard',
+      ...(p?.latitude != null && p?.longitude != null ? { initialLat: p.latitude, initialLng: p.longitude } : {}),
+    });
+  }
+
+  // The pin the business placed comes back here with its provenance (utils/locationProvenance.js), written in the mode the owner
+  // chose (businessLocationWrite: a service-area point is rounded, its address cleared).
   useEffect(() => {
     const p = route?.params;
     if (!selectedPartner?.id || typeof p?.selectedLat !== 'number' || typeof p?.selectedLng !== 'number') return;
-    const pin = { latitude: p.selectedLat, longitude: p.selectedLng, locationSource: p.selectedLocationSource === 'device' ? 'device' : 'host_pin', googlePlaceId: p.selectedPlaceId ?? null };
+    const pending = pendingLocation.current ?? { mode: LOCATION_MODES.storefront };
+    pendingLocation.current = null;
+    const write = businessLocationWrite(pending.mode, { latitude: p.selectedLat, longitude: p.selectedLng, locationSource: p.selectedLocationSource, googlePlaceId: p.selectedPlaceId ?? null });
     navigation.setParams({ selectedLat: undefined, selectedLng: undefined, selectedLocationSource: undefined, selectedPlaceId: undefined, selectedPlaceName: undefined });
+    const save = async () => {
+      await setBusinessLocation(selectedPartner.id, write);
+      if (pending.address) await updateBusinessAddress(selectedPartner.id, pending.address);
+    };
     (async () => {
       try {
-        await setBusinessLocation(selectedPartner.id, pin);
-        setSelectedPartner((prev) => ({ ...prev, latitude: pin.latitude, longitude: pin.longitude }));
-        showSuccessToast(t('ui.bizDash1.saved'), t('ui.bizDash1.yourBusinessAddressIsNow'));
+        await save();
+        setSelectedPartner((prev) => ({
+          ...prev,
+          latitude: write.latitude,
+          longitude: write.longitude,
+          location_source: write.locationSource,
+          address: pending.mode === LOCATION_MODES.serviceArea ? null : pending.address ?? prev.address,
+        }));
+        showSuccessToast(t('ui.bizDash1.saved'), pending.mode === LOCATION_MODES.serviceArea ? undefined : t('ui.bizDash1.yourBusinessAddressIsNow'));
       } catch (e) {
-        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => setBusinessLocation(selectedPartner.id, pin) });
+        presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => save() });
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1614,111 +1767,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     }
   }
 
-  // Same addendum -- "Teach Nearby." Never auto-applies: extraction is
-  // purely local, and nothing writes anywhere until the owner explicitly
-  // confirms the real extracted chips.
-  function handleInterpretTeachNearby() {
-    const extracted = extractAttributesFromText(teachNearbyInput);
-    setTeachNearbyExtracted(extracted);
-    // Business Intelligence & Opportunity Engine, Phase 1 -- log each real
-    // extracted attribute into the durable provenance table, fire-and-
-    // forget, non-blocking. One suggestion row per attribute, matching
-    // this flow's own per-chip confirm/edit/discard shape.
-    if (selectedPartner) {
-      extracted.forEach((attribute) => {
-        recordBusinessAttributeSuggestion(
-          selectedPartner.id,
-          'attribute',
-          attribute,
-          'ai_inferred',
-          t('ui.bizDash1.extractedFromWhatYouTyped')
-        ).then((id) => {
-          if (id) setTeachNearbySuggestionIds((prev) => ({ ...prev, [attribute]: id }));
-        });
-      });
-    }
-  }
-
-  function handleDiscardTeachNearby() {
-    Object.values(teachNearbySuggestionIds).forEach((id) => {
-      respondToBusinessAttributeSuggestion(id, false).catch((err) =>
-        console.error('respondToBusinessAttributeSuggestion failed', err)
-      );
-    });
-    setTeachNearbySuggestionIds({});
-    setTeachNearbyInput('');
-    setTeachNearbyExtracted(null);
-    if (selectedPartner) {
-      getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
-    }
-  }
-
-  function handleRemoveTeachNearbyChip(attribute) {
-    const id = teachNearbySuggestionIds[attribute];
-    if (id) {
-      respondToBusinessAttributeSuggestion(id, false).catch((err) =>
-        console.error('respondToBusinessAttributeSuggestion failed', err)
-      );
-      setTeachNearbySuggestionIds((prev) => {
-        const next = { ...prev };
-        delete next[attribute];
-        return next;
-      });
-    }
-    setTeachNearbyExtracted((prev) => (prev ?? []).filter((a) => a !== attribute));
-  }
-
-  // Confirming merges the extracted attributes into the business's own
-  // real attributes array (union, never a duplicate, never removing an
-  // attribute already confirmed elsewhere) and writes through the same
-  // real update_business_profile RPC every other profile edit already
-  // uses -- this never invents a new write path for attributes.
-  async function handleConfirmTeachNearby() {
-    if (!selectedPartner || !teachNearbyExtracted || teachNearbyExtracted.length === 0) return;
-    setSavingTeachNearby(true);
-    try {
-      const merged = Array.from(new Set([...(selectedPartner.attributes ?? []), ...teachNearbyExtracted]));
-      await updateBusinessProfile(selectedPartner.id, {
-        name: selectedPartner.name,
-        description: selectedPartner.description,
-        address: selectedPartner.address,
-        logoUrl: selectedPartner.logo_url,
-        category: selectedPartner.category,
-        attributes: merged,
-        cuisine: selectedPartner.cuisine,
-        differentiator: selectedPartner.differentiator,
-        // Category is unchanged here -- must re-pass the current
-        // subcategory/categories or updateBusinessProfile's non-coalesce
-        // contract would silently null them out on this unrelated
-        // attributes-only write.
-        subcategory: selectedPartner.subcategory,
-        categories: selectedPartner.categories ?? [],
-      });
-      setSelectedPartner((prev) => ({ ...prev, attributes: merged }));
-      // Business Intelligence & Opportunity Engine, Phase 1 -- close out
-      // the real provenance record for every attribute that survived to
-      // this confirm (any explicitly removed chip was already rejected in
-      // handleRemoveTeachNearbyChip). Fire-and-forget -- the canonical
-      // merge write above already succeeded.
-      teachNearbyExtracted.forEach((attribute) => {
-        const id = teachNearbySuggestionIds[attribute];
-        if (id) {
-          respondToBusinessAttributeSuggestion(id, true).catch((err) =>
-            console.error('respondToBusinessAttributeSuggestion failed', err)
-          );
-        }
-      });
-      setTeachNearbySuggestionIds({});
-      setTeachNearbyInput('');
-      setTeachNearbyExtracted(null);
-      getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {});
-      showSuccessToast(t('ui.bizDash1.addedToYourProfile'), t('ui.bizDash1.theseNowShowUpUnder'));
-    } catch (e) {
-      presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleConfirmTeachNearby() });
-    }
-    setSavingTeachNearby(false);
-  }
-
   // Phase 3 -- one tap sets and saves the pulse (matches the vision doc's
   // own "that's it" simplicity) using whatever note is currently typed.
   async function handleSavePulse(pulse) {
@@ -1726,7 +1774,13 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSavingPulse(true);
     try {
       const note = pulseNoteInput.trim() || null;
-      await setBusinessAvailabilityPulse(selectedPartner.id, pulse, note);
+      // 20270415: a new note is checked first; a flagged one saves nothing (status unchanged, the note stays typed).
+      const result = await setBusinessAvailabilityPulse(selectedPartner.id, pulse, note, selectedPartner.availability_pulse_note);
+      if (!result?.published) {
+        Alert.alert(t('ui.bizDash1.couldntSend'), t('ui.bizDash1.thisContentCouldntBeSent'));
+        setSavingPulse(false);
+        return;
+      }
       setSelectedPartner((prev) => ({
         ...prev,
         availability_pulse: pulse,
@@ -1857,7 +1911,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   async function handleKeepSuggestion(suggestion) {
     if (!selectedPartner) return;
     try {
-      await createBusinessExperience(selectedPartner.id, {
+      // 20270372: a kept suggestion is published through the same content check as any experience (aiSuggested = provenance).
+      const result = await submitBusinessExperienceForScreening(selectedPartner.id, {
+        experienceId: null,
         title: suggestion.title,
         description: suggestion.description,
         icon: suggestion.icon,
@@ -1868,6 +1924,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       });
       await loadExperiences(selectedPartner.id);
       settingConflicts.clear(`experience_suggestion:${suggestion.attribute}`);
+      if (result?.blocked) {
+        Alert.alert(t('ui.bizDash1.couldntPublish'), t('ui.bizDash1.thisContentCouldntBePublished'));
+      } else if (!result?.published) {
+        showSuccessToast(t('ui.bizDash1.submittedForReview'), t('ui.bizDash1.thisExperienceIsBeingReviewed'));
+      }
     } catch (e) {
       const entitlementError = parseEntitlementError(e);
       if (entitlementError?.kind === 'limit') {
@@ -2073,7 +2134,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
       const toPlay = offersToAnimate(results, {
         previous: progressPrevRef.current, live, focusRequestId, shown: new Set(progressShownRef.current.list),
       });
-      progressPrevRef.current = new Map((results ?? []).map((o) => [o.id, o.status]));
+      progressPrevRef.current = new Map((results ?? []).map((o) => [o.id, offerStage(o)]));
       if (toPlay.length === 0) return;
       const keys = toPlay.map(progressKey);
       progressShownRef.current.list = await saveShownProgress(partnerId, progressShownRef.current.list, keys);
@@ -2134,6 +2195,32 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     setSection('opportunities');
     if (selectedPartner) loadOpportunities(selectedPartner.id);
   }, [focusRequestId]);
+  // 20270428: a customer-message alert opens the inbox ON that conversation, once per message. The message is re-read
+  // under the owner's own access; another location's, a deleted or an unreadable message leaves the plain inbox.
+  const focusMessageId = route?.params?.focusMessageId ?? null;
+  const messageFocusDoneRef = useRef(null);
+  const messageFocusRowRef = useRef({ id: null, row: undefined });
+  useEffect(() => {
+    if (!focusMessageId) return;
+    setSection('inbox_modal');
+    setActiveConversation(null);
+  }, [focusMessageId]);
+  useEffect(() => {
+    if (!focusMessageId || !selectedPartner || messageFocusDoneRef.current === focusMessageId) return undefined;
+    let live = true;
+    (async () => {
+      if (messageFocusRowRef.current.id !== focusMessageId) {
+        messageFocusRowRef.current = { id: focusMessageId, row: await getBusinessMessageConversation(focusMessageId) };
+      }
+      if (!live) return;
+      const plan = messageFocusPlan(messageFocusRowRef.current.row, selectedPartner.id, conversations,
+        { conversationsLoaded: conversationsLoadedFor === selectedPartner.id });
+      if (plan.kind === 'wait') return;
+      messageFocusDoneRef.current = focusMessageId;
+      if (plan.kind === 'open') openConversation(plan.convo);
+    })();
+    return () => { live = false; };
+  }, [focusMessageId, selectedPartner?.id, conversations, conversationsLoadedFor]);
   // Idea "187": once the list has loaded, bring the focus line (and the outlined card right under it) into view, once per
   // request. A stale or unknown request scrolls to the same line saying it is no longer available; no card is outlined.
   const focusPanelRef = useRef(null);
@@ -2692,11 +2779,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     if (!declineReasonInput) return;
     setRespondingOpportunityId(declineModalRequestId);
     try {
-      await declineBusinessOpportunity(
+      const result = await declineBusinessOpportunity(
         declineModalRequestId,
         declineReasonInput,
-        declineReasonInput === 'other' ? declineNoteInput.trim() || null : null
+        declineReasonInput === 'other' ? declineNoteInput.trim() || null : null,
+        selectedPartner.id
       );
+      // 20270415: a flagged note declines nothing; the modal stays open with the note so it can be changed or removed.
+      if (!result?.published) {
+        Alert.alert(t('ui.bizDash1.couldntSend'), t('ui.bizDash1.thisContentCouldntBeSent'));
+        setRespondingOpportunityId(null);
+        return;
+      }
       setDeclineModalRequestId(null);
       await loadOpportunities(selectedPartner.id);
       loadDeclinePatterns(selectedPartner.id);
@@ -2723,6 +2817,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             presentRecoverableError(Alert, { what: 'mark that visit', error: e, onRetry: () => handleMarkNoShow(offerId) });
           }
           setMarkingNoShowId(null);
+        },
+      },
+    ]);
+  }
+
+  // 20270430 (owner decisions 2026-11-21): the business is authoritative for a visit. "Confirm visit" calls the same
+  // complete_business_reservation the customer's "Mark as done" calls; the server knows who is asking (the business =
+  // visit_confirmed_at, the only confirmed visit / redemption) and refuses before the visit day, after a no-show, or for
+  // another business. Repeat = success, nothing changes. Cannot be undone, so it asks once.
+  function handleConfirmVisit(offerId) {
+    Alert.alert(t('ui.bizDash1.confirmThisVisit'), t('ui.bizDash1.confirmThisVisitBody'), [
+      { text: t('ui.bizDash1.neverMind'), style: 'cancel' },
+      {
+        text: t('ui.bizDash2.confirmVisit'), onPress: async () => {
+          setConfirmingVisitId(offerId);
+          try {
+            await completeBusinessReservation(offerId);
+            showSuccessToast(t('ui.requestDetail.visitConfirmed'));
+            await loadOpportunities(selectedPartner.id);
+            // A confirmation is a redemption: re-read Home's month figures too (else they stayed stale until a reload).
+            loadOfferPerformance(selectedPartner.id);
+          } catch (e) {
+            presentRecoverableError(Alert, { what: 'confirm that visit', error: e, onRetry: () => handleConfirmVisit(offerId) });
+          }
+          setConfirmingVisitId(null);
         },
       },
     ]);
@@ -2860,14 +2979,21 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         pricePerPerson: Number.isFinite(priceNum) && priceNum >= 0 ? priceNum : null,
         availableDays: packageAvailableDaysInput.length > 0 ? packageAvailableDaysInput : null,
       };
-      if (editingPackageId) {
-        await updateOccasionPackage(editingPackageId, params);
-      } else {
-        await createOccasionPackage(params);
-      }
+      // 20270372: saved through the content check (a package becomes an automatic offer), like an offer reply.
+      const result = editingPackageId
+        ? await updateOccasionPackage(selectedPartner.id, editingPackageId, params)
+        : await createOccasionPackage(selectedPartner.id, params);
       settingConflicts.clear('package');
-      setPackageModalVisible(false);
-      await loadMyOccasionPackages();
+      if (result?.blocked) {
+        Alert.alert(t('ui.bizDash1.couldntPublish'), t('ui.bizDash1.thisContentCouldntBePublished'));
+      } else {
+        setPackageModalVisible(false);
+        await loadMyOccasionPackages();
+        if (!result?.published) {
+          showSuccessToast(t('ui.bizDash1.submittedForReview'),
+            editingPackageId ? t('ui.bizDash1.yourChangesAreBeingReviewed2') : t('ui.bizDash1.thisOfferIsBeingReviewed'));
+        }
+      }
     } catch (e) {
       if (!settingConflicts.report('package', e, { check: { kind: 'package', patch: { occasion_type: packageOccasionInput } } })) {
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleSavePackage() });
@@ -3227,6 +3353,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
     try {
       const results = await getBusinessConversations(partnerId);
       setConversations(results);
+      setConversationsLoadedFor(partnerId);
       return results;
     } catch (e) {
       // Non-fatal -- the rest of the dashboard already loaded independently.
@@ -3443,7 +3570,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
   }
 
   // "Business Web as an Operating System" Phase 3 -- the real per-template
-  // offer-performance funnel (Offer / Viewed / Accepted / Redeemed), built
+  // offer-performance funnel (Offered / Accepted / Redeemed; the viewed count is never shown: views are private
+  // behaviour signals, item 77), built
   // entirely over already-tracked data via the new experience_id column on
   // business_request_offers. Owner-only, same non-fatal loader shape as
   // every other Insights-tab section on this screen.
@@ -3695,25 +3823,31 @@ export default function BusinessDashboardScreen({ navigation, route }) {
             <Text style={{ fontSize: 22 }}>💬</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.partnerSelector} accessibilityLabel={selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThisA11y')}>
-          <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThis')}</Text>
-        </View>
+        {/* 20270424: an account with several locations switches here (server-checked); one location = the plain name. */}
+        <BusinessLocationSelector onSwitched={onLocationSwitched}>
+          <View style={styles.partnerSelector} accessibilityLabel={selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThisA11y')}>
+            <Text style={styles.partnerSelectorText}>{selectedPartner?.name ?? t('ui.bizDash1.noBusinessFoundForThis')}</Text>
+          </View>
+        </BusinessLocationSelector>
       </View>
       {selectedPartner && (
         <TouchableOpacity
           style={[styles.addressBanner, businessLocationNotice(selectedPartner) && { borderColor: colors.primary }]}
           onPress={() => {
-            // An address with no pin yet goes straight to the map; otherwise the address editor.
+            // An address with no pin yet goes straight to the map; otherwise the address sheet (storefront or service area).
             if (selectedPartner.address && businessLocationNotice(selectedPartner)) { openBusinessPin(selectedPartner.address); return; }
+            // A service-area business with no area yet goes straight to marking it.
+            if (isServiceArea(selectedPartner) && businessLocationNotice(selectedPartner)) { handleMarkServiceArea(); return; }
             setAddressInput(selectedPartner.address ?? '');
+            setLocationModeInput(locationModeOf(selectedPartner) ?? LOCATION_MODES.storefront);
             setAddressModalVisible(true);
           }}
           activeOpacity={0.85}
-          accessibilityLabel={businessLocationNotice(selectedPartner)?.text ?? t('ui.bizDash1.addressTapToEditA11y', { address: selectedPartner.address })}
+          accessibilityLabel={businessLocationNotice(selectedPartner)?.text ?? (selectedPartner.address ? t('ui.bizDash1.addressTapToEditA11y', { address: selectedPartner.address }) : businessLocationBanner(selectedPartner)?.text)}
           accessibilityRole="button"
         >
           <Text style={[styles.addressBannerText, businessLocationNotice(selectedPartner) && { color: colors.textPrimary }]}>
-            {businessLocationNotice(selectedPartner)?.text ?? `📍 ${selectedPartner.address}`}
+            {businessLocationBanner(selectedPartner)?.text}
           </Text>
         </TouchableOpacity>
       )}
@@ -3846,12 +3980,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   // (request_count + unmet_intent_count), never blended
                   // into totalDemand/bestDemand above -- those still
                   // reflect every category regardless of served status.
-                  const demandGaps = aggregatedDemand.filter(
-                    (d) => d.is_demand_gap && (Number(d.request_count) > 0 || Number(d.unmet_intent_count) > 0)
-                  );
-                  const bestGap = [...demandGaps].sort(
-                    (a, b) => (Number(b.request_count) + Number(b.unmet_intent_count)) - (Number(a.request_count) + Number(a.unmet_intent_count))
-                  )[0];
+                  // Owner audit 2026-11-14: only a category the business really doesn't offer (utils/matchRadarRows.js).
+                  const bestGap = bestUnofferedGap(aggregatedDemand, { offeredKnown: hasDeclaredOfferedCategory(selectedPartner) });
                   let suggestion = null;
                   if (!selectedPartner.differentiator) {
                     suggestion = { text: t('ui.bizDash1.addWhatMakesYouDifferent'), onPress: () => setEditProfileModalVisible(true) };
@@ -3861,9 +3991,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     // before the softer signals below it.
                     suggestion = { text: t('ui.bizDash1.tellUsWhyPeopleChoose'), onPress: () => setEditProfileModalVisible(true) };
                   } else if ((selectedPartner.accommodates_party_types ?? []).length === 0 && !fulfillmentPolicy) {
-                    suggestion = { text: t('ui.bizDash1.tellNearbyWhatYouCan'), onPress: () => setSection('business') };
+                    suggestion = { text: t('ui.bizDash1.tellNearbyWhatYouCan'), onPress: () => { setProfileGroup('accommodate'); setSection('business'); } };
                   } else if (!isAvailabilityPulseFresh(selectedPartner.availability_pulse_updated_at)) {
-                    suggestion = { text: t('ui.bizDash1.setYourAvailabilitySoPeople'), onPress: () => setSection('business') };
+                    suggestion = { text: t('ui.bizDash1.setYourAvailabilitySoPeople'), onPress: () => { setProfileGroup('grow'); setSection('business'); } };
                   } else if (pendingCount > 0) {
                     suggestion = { text: t('ui.bizDash1.newOpportunitYourBusinessView', { count: pendingCount }), onPress: () => setSection('requests') };
                   } else if (bestGap) {
@@ -3893,16 +4023,44 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                                     key={tile.key}
                                     style={[styles.homeTile, tile.highlight && { borderColor: colors.primary }]}
                                     onPress={() => openHomeTile(tile.target)}
-                                    accessibilityLabel={[tile.title, tile.line, tile.valueLine].filter(Boolean).join(', ')}
+                                    accessibilityLabel={[tile.title, tile.line, tile.valueLine, tile.valueNote].filter(Boolean).join(', ')}
                                     accessibilityRole="button"
                                   >
                                     <Text style={styles.notesLabel}>{tile.title}</Text>
                                     <Text style={styles.homeTileLine}>{tile.line}</Text>
                                     {!!tile.valueLine && <Text style={styles.breakdownText}>{tile.valueLine}</Text>}
+                                    {!!tile.valueNote && <Text style={styles.funnelNote}>{tile.valueNote}</Text>}
                                   </TouchableOpacity>
                                 ))}
                               </View>
                             )}
+                            {(() => {
+                              const preview = homeRequestPreview(scoredOpportunities, { submissions: offerSubmissions, partnerId: selectedPartner.id, loaded: opportunitiesLoaded, now: new Date(homeRequestClockMs) });
+                              if (preview.rows.length === 0) return null;
+                              return (
+                                <View style={styles.homeRequestList}>
+                                  <Text style={styles.notesLabel}>{t('ui.bizDash1.tiles.newRequests', { count: preview.total })}</Text>
+                                  {preview.rows.map((o) => {
+                                    const row = homeRequestRow(o, { categoryLabel: o.business_requests?.category ? categoryName(o.business_requests.category, language) : null });
+                                    return (
+                                      <TouchableOpacity
+                                        key={row.key}
+                                        style={styles.homeRequestRow}
+                                        onPress={() => openHomeRequest(row.requestId)}
+                                        accessibilityLabel={[row.title, row.line].filter(Boolean).join(', ')}
+                                        accessibilityRole="button"
+                                      >
+                                        <Text style={styles.homeRequestTitle}>{row.title}</Text>
+                                        {!!row.line && <Text style={styles.breakdownText}>{row.line}</Text>}
+                                      </TouchableOpacity>
+                                    );
+                                  })}
+                                  <TouchableOpacity onPress={() => setSection('opportunities')} accessibilityLabel={t('ui.bizDash2.viewOpportunitiesA11y')} accessibilityRole="button">
+                                    <Text style={styles.briefBestOpportunity}>{t('ui.bizDash2.viewOpportunities')}</Text>
+                                  </TouchableOpacity>
+                                </View>
+                              );
+                            })()}
                             <Text style={styles.notesLabel}>{t('ui.bizDash1.today')}</Text>
                             <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
                               {todayBookings.map((item) => (
@@ -4112,6 +4270,99 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               </>
             )}
 
+{on('bookings') && (
+<>
+                {/* Bookings (owner, 2026-11-14): confirmed visits are this tab's namesake, so they come first, and an
+                    empty tab says so (only once they really loaded) instead of opening on hosted gatherings. */}
+                {opportunitiesLoaded === true && opportunities.filter((o) => isPipelineWon(o, noShowIds)).length === 0 && (
+                  <EmptyCopy id="business_bookings" style={{ marginBottom: spacing.lg }} />
+                )}
+                {opportunities.filter((o) => isPipelineWon(o, noShowIds)).length > 0 && (
+                  <View style={{ marginBottom: spacing.lg }}>
+                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.upcomingNearbyVisits')}</Text>
+                    <Text style={styles.helperText}>
+                      {t('ui.bizDash2.realConfirmedVisitsHeadedYour')}
+                    </Text>
+                    {opportunities.filter((o) => isPipelineWon(o, noShowIds)).map((o) => {
+                      const visit = describeVisit(o);
+                      return (
+                        <View key={o.id} style={styles.gatheringRow}>
+                          <Text style={styles.breakdownText}>{visit.kicker}</Text>
+                          <Text style={styles.offerTitle}>{visit.title}</Text>
+                          <Text style={styles.breakdownText}>
+                            {[
+                              visit.when,
+                              o.business_requests?.party_size ? t('ui.bizHelp.opportunity.people', { count: o.business_requests.party_size }) : null,
+                              formatOfferSummary(o),
+                            ].filter(Boolean).join(' · ')}
+                          </Text>
+                          {/* Item 69 (CLAUDE.md): the ONE place a real name
+                              ever reaches a business -- once this is a
+                              genuine confirmed reservation, get_business_
+                              opportunities() reveals the primary
+                              requester's real display name (never for a
+                              dating-sourced request, which stays "Two
+                              people planning to visit" above). */}
+                          {o.business_requests?.requester_display_name && (
+                            <Text style={[styles.breakdownText, { fontWeight: '600' }]}>
+                              👤 {o.business_requests.requester_display_name}
+                            </Text>
+                          )}
+                          <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
+                          {/* 20270430: the business confirms the visit (from its day on). The primary action here. */}
+                          {canConfirmVisit(o, { noShowIds }) && (
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.primary, marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                              onPress={() => handleConfirmVisit(o.id)}
+                              disabled={confirmingVisitId === o.id}
+                              accessibilityLabel={t('ui.bizDash2.confirmVisitA11y')}
+                              accessibilityRole="button"
+                            >
+                              {confirmingVisitId === o.id ? (
+                                <ActivityIndicator color="#fff" size="small" />
+                              ) : (
+                                <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.confirmVisit')}</Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
+                          {/* Cancel only while still booked (the server refuses it once either side marked it done). */}
+                          {o.status === 'accepted' && (
+                          <TouchableOpacity
+                            style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.danger, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                            onPress={() => handleCancelReservation(o.id)}
+                            disabled={cancellingReservationOfferId === o.id}
+                            accessibilityLabel={t('ui.bizDash2.cancelThisReservationA11y')}
+                            accessibilityRole="button"
+                          >
+                            {cancellingReservationOfferId === o.id ? (
+                              <ActivityIndicator color={colors.danger} size="small" />
+                            ) : (
+                              <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>{t('ui.bizDash2.cancelReservation')}</Text>
+                            )}
+                          </TouchableOpacity>
+                          )}
+                          {visitHasPassed(o) && canReportNoShow(o, noShowIds) && (
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.border, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
+                              onPress={() => handleMarkNoShow(o.id)}
+                              disabled={markingNoShowId === o.id}
+                              accessibilityLabel={t('ui.bizDash2.markThatTheCustomerDidntA11y')}
+                              accessibilityRole="button"
+                            >
+                              {markingNoShowId === o.id ? (
+                                <ActivityIndicator color={colors.textSecondary} size="small" />
+                              ) : (
+                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.didntShowUp')}</Text>
+                              )}
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+</>
+)}
             {section === 'bookings' && (
               gatherings.length === 0 ? (
                 <View style={{ alignItems: 'center' }}>
@@ -4330,75 +4581,6 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 
             {section !== 'inbox_modal' && (
               <>
-{on('bookings') && (
-<>
-                {opportunities.filter((o) => isPipelineWon(o, noShowIds)).length > 0 && (
-                  <View style={{ marginBottom: spacing.lg }}>
-                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.upcomingNearbyVisits')}</Text>
-                    <Text style={styles.helperText}>
-                      {t('ui.bizDash2.realConfirmedVisitsHeadedYour')}
-                    </Text>
-                    {opportunities.filter((o) => isPipelineWon(o, noShowIds)).map((o) => {
-                      const visit = describeVisit(o);
-                      return (
-                        <View key={o.id} style={styles.gatheringRow}>
-                          <Text style={styles.breakdownText}>{visit.kicker}</Text>
-                          <Text style={styles.offerTitle}>{visit.title}</Text>
-                          <Text style={styles.breakdownText}>
-                            {[
-                              visit.when,
-                              o.business_requests?.party_size ? `${o.business_requests.party_size} ${o.business_requests.party_size === 1 ? 'person' : 'people'}` : null,
-                              formatOfferSummary(o),
-                            ].filter(Boolean).join(' · ')}
-                          </Text>
-                          {/* Item 69 (CLAUDE.md): the ONE place a real name
-                              ever reaches a business -- once this is a
-                              genuine confirmed reservation, get_business_
-                              opportunities() reveals the primary
-                              requester's real display name (never for a
-                              dating-sourced request, which stays "Two
-                              people planning to visit" above). */}
-                          {o.business_requests?.requester_display_name && (
-                            <Text style={[styles.breakdownText, { fontWeight: '600' }]}>
-                              👤 {o.business_requests.requester_display_name}
-                            </Text>
-                          )}
-                          <BusinessOfferMediaPreview path={o.media_path} type={o.media_type} colors={colors} />
-                          <TouchableOpacity
-                            style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.danger, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
-                            onPress={() => handleCancelReservation(o.id)}
-                            disabled={cancellingReservationOfferId === o.id}
-                            accessibilityLabel={t('ui.bizDash2.cancelThisReservationA11y')}
-                            accessibilityRole="button"
-                          >
-                            {cancellingReservationOfferId === o.id ? (
-                              <ActivityIndicator color={colors.danger} size="small" />
-                            ) : (
-                              <Text style={[styles.smallActionButtonText, { color: colors.danger }]}>{t('ui.bizDash2.cancelReservation')}</Text>
-                            )}
-                          </TouchableOpacity>
-                          {visitHasPassed(o) && (
-                            <TouchableOpacity
-                              style={[styles.smallActionButton, { borderWidth: 1, borderColor: colors.border, backgroundColor: 'transparent', marginTop: spacing.sm, alignSelf: 'flex-start' }]}
-                              onPress={() => handleMarkNoShow(o.id)}
-                              disabled={markingNoShowId === o.id}
-                              accessibilityLabel={t('ui.bizDash2.markThatTheCustomerDidntA11y')}
-                              accessibilityRole="button"
-                            >
-                              {markingNoShowId === o.id ? (
-                                <ActivityIndicator color={colors.textSecondary} size="small" />
-                              ) : (
-                                <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.didntShowUp')}</Text>
-                              )}
-                            </TouchableOpacity>
-                          )}
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
-</>
-)}
 
                 {/* Item 79 (CLAUDE.md, "businesses get a new demand
                     signal"): the occasion-primary sibling of Match Radar
@@ -4426,14 +4608,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 {entitlements && !hasEntitlement(entitlements, 'advanced_match_radar') && (
                   renderLockedFeature('advanced_match_radar', t('ui.bizDash2.unlockTheUnmetIntentSignal'))
                 )}
-                {aggregatedDemand.length === 0 ? (
+                {/* Owner, 2026-11-14 (option 1): demand in the categories you offer lives in Opportunities' "Demand near
+                    you"; Match Radar keeps only demand outside them + the premium unmet searches (utils/matchRadarRows.js). */}
+                {matchRadarRows(aggregatedDemand, { offeredKnown: hasDeclaredOfferedCategory(selectedPartner) }).length === 0 ? (
                   <EmptyCopy id="business_demand" />
                 ) : (
-                  aggregatedDemand.map((d) => (
+                  matchRadarRows(aggregatedDemand, { offeredKnown: hasDeclaredOfferedCategory(selectedPartner) }).map((d) => (
                     <View key={d.category} style={styles.gatheringRow}>
-                      {d.request_count > 0 ? (
+                      {d.showRequests ? (
                         <Text style={styles.offerTitle}>
-                          {t('ui.bizDash2.peopleLookingForCategory', { count: d.request_count, category: categoryName(d.category, language) })}
+                          {t('ui.bizDash2.peopleLookingOutsideYourCategories', { count: d.request_count, category: categoryName(d.category, language) })}
                         </Text>
                       ) : (
                         // Gap 1 (see CLAUDE.md's "Aug 18 2026" connectivity-audit
@@ -4442,10 +4626,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         // intent nearby -- was previously invisible here entirely.
                         // Deliberately never phrased like a confirmed count.
                         <Text style={styles.offerTitle}>
-                          {t('ui.bizDash2.recentSearchesFoundNothing', { count: d.unmet_intent_count, category: categoryName(d.category, language) })}
+                          {t('ui.bizDash2.recentSearchesFoundNothing', { count: d.unmetCount, category: categoryName(d.category, language) })}
                         </Text>
                       )}
-                      {d.is_demand_gap && (
+                      {isUnofferedGap(d, { offeredKnown: hasDeclaredOfferedCategory(selectedPartner) }) && (
                         // Business Intelligence Phase 5 (Intelligence): a
                         // genuinely different concept from the 🟡 marker
                         // above -- that one is about confidence of the
@@ -4455,7 +4639,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         // conflate.
                         <Text style={styles.helperText}>{t('ui.bizDash2.youDontCurrentlyOfferThis')}</Text>
                       )}
-                      {d.request_count > 0 && (
+                      {d.showRequests && (
                         <Text style={styles.breakdownText}>
                           {[
                             d.total_party_size ? t('ui.bizDash2.totalGuests', { count: Number(d.total_party_size) }) : null,
@@ -4468,7 +4652,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           ].filter(Boolean).join(' · ')}
                         </Text>
                       )}
-                      {d.request_count > 0 && d.dominant_occasion && (
+                      {d.showRequests && d.dominant_occasion && (
                         // "Intelligent demand inbox" plan, Phase 4(d): a real
                         // occasion-based bucket alongside category/party-size/
                         // time-window -- same "no new signal, just surface
@@ -4479,12 +4663,12 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                           {t('ui.bizDash2.mostlyOccasion', { occasion: language === 'en' ? occasionLabel(d.dominant_occasion).toLowerCase() : categoryName(occasionLabel(d.dominant_occasion), language), n: d.dominant_occasion_count, total: d.request_count })}
                         </Text>
                       )}
-                      {d.request_count > 0 && d.unmet_intent_count > 0 && (
+                      {d.showRequests && d.unmetCount > 0 && (
                         // Gap 1's own "never blended" requirement -- a real,
                         // separate softer signal on top of the real request
                         // count above, never summed into it.
                         <Text style={styles.helperText}>
-                          {t('ui.bizDash2.alsoMoreSearchesFoundNothing', { count: d.unmet_intent_count })}
+                          {t('ui.bizDash2.alsoMoreSearchesFoundNothing', { count: d.unmetCount })}
                         </Text>
                       )}
                       {/* "Nearby V3/V4" plan, Phase B: no new backend mechanism --
@@ -4917,10 +5101,9 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.postAvailability2')}</Text>
                   </TouchableOpacity>
                 </View>
+                {/* One accurate line (owner, 2026-11-14): a posting reaches only matching OPEN requests (item 114). The second
+                    line ("...no need to wait for someone to ask") implied it reaches people who never asked; removed. */}
                 <Text style={styles.helperText}>{t('ui.bizDash2.tellUsWhenYouHave')}</Text>
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.haveOpenSeatsOrA')}
-                </Text>
                 {myAvailability.length === 0 ? (
                   <EmptyCopy id="business_postings" />
                 ) : (
@@ -5331,8 +5514,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               )}
 
               {/* "Business Web as an Operating System" Phase 3 -- a real
-                  per-template offer-performance funnel: viewed/accepted/
-                  completed counts grouped by which real Signature
+                  per-template offer-performance funnel: offered/accepted/
+                  completed counts (never viewed: item 77) grouped by which real Signature
                   Experience actually generated the offer (or by offer
                   type, for an offer with no linked template) -- built
                   entirely over already-tracked data, no new signal
@@ -5349,16 +5532,26 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               {/* Item 150: one row per funnel stage this month, then the value of the offers redeemed (never "revenue"). */}
               {(() => {
                 const f = offerFunnelView(offerFunnel, offerValue);
+                // The four counts as equal cells (2 x 2 on a phone, one row when wide); the value of offers redeemed sits
+                // apart underneath with its disclosure, so money never reads as a fifth stage.
                 return f ? (
-                  <View style={{ marginBottom: spacing.sm }} accessibilityRole="summary">
+                  <View style={styles.funnelBlock} accessibilityRole="summary">
                     <Text style={styles.offerTitle}>{f.title}</Text>
-                    {[...f.stages, ...(f.valueRow ? [f.valueRow] : [])].map((row) => (
-                      <View key={row.key} style={{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2 }}>
-                        <Text style={styles.breakdownText}>{row.label}</Text>
-                        <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{row.amount ?? row.count}</Text>
+                    <View style={styles.funnelGrid}>
+                      {f.stages.map((stage) => (
+                        <View key={stage.key} style={styles.funnelStage} accessible accessibilityLabel={`${stage.label}: ${stage.count}`}>
+                          <Text style={styles.funnelCount}>{stage.count}</Text>
+                          <Text style={styles.funnelLabel}>{stage.label}</Text>
+                        </View>
+                      ))}
+                    </View>
+                    {!!f.valueRow && (
+                      <View style={styles.funnelValue} accessible accessibilityLabel={[`${f.valueRow.label}: ${f.valueRow.amount}`, f.note].filter(Boolean).join('. ')}>
+                        <Text style={styles.funnelLabel}>{f.valueRow.label}</Text>
+                        <Text style={styles.funnelCount}>{f.valueRow.amount}</Text>
+                        {!!f.note && <Text style={styles.funnelNote}>{f.note}</Text>}
                       </View>
-                    ))}
-                    {!!f.note && <Text style={styles.breakdownText}>{f.note}</Text>}
+                    )}
                   </View>
                 ) : null;
               })()}
@@ -5370,7 +5563,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   <View key={row.group_key} style={styles.offerCard}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.offerTitle}>{row.group_label}</Text>
-                      <Text style={styles.offerDescription}>{t('ui.bizDash1.offeredViewedAcceptedRedeemed', { offerCount: row.offer_count, viewedCount: row.viewed_count, acceptedCount: row.accepted_count, completedCount: row.completed_count })}</Text>
+                      <Text style={styles.offerDescription}>{t('ui.bizDash1.offeredAcceptedRedeemed', { offerCount: row.offer_count, acceptedCount: row.accepted_count, completedCount: row.completed_count })}</Text>
                     </View>
                   </View>
                 ))
@@ -5470,10 +5663,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                       partner={selectedPartner}
                       onApplied={(applied) => setSelectedPartner((prev) => ({ ...prev, ...applied }))}
                       onOpenProfileEditor={openEditProfileModal}
+                      onSuggestionsChanged={() => getBusinessAttributeSuggestions(selectedPartner.id).then(setRecentSuggestions).catch(() => {})}
                     />
                   </View>
                 )}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.businessProfile')}</Text>
+<Text style={[styles.sectionHeader, { marginTop: spacing.lg }]}>{t('ui.bizDash2.whatNearbyKnowsAboutYou')}</Text>
+{renderProfileGroupHeader('basics', t('ui.bizDash2.businessProfile'))}
+{profileGroup === 'basics' && (
+<>
                 <View style={styles.gatheringRow}>
                   <Text style={styles.offerTitle}>{selectedPartner?.name}</Text>
                   <Text style={styles.breakdownText}>
@@ -5579,7 +5776,14 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </View>
                   </View>
                 )}
+                {/* Phone + website (owner, 2026-11-15; 20270423): private to the business, opens in place like Hours. */}
+                {selectedPartner ? <BusinessContactDetails partnerId={selectedPartner.id} /> : null}
 
+</>
+)}
+{renderProfileGroupHeader('accommodate', t('ui.bizDash2.whatYouCanAccommodate'))}
+{profileGroup === 'accommodate' && (
+<>
                 {/* "Business Profile Phase 1" addendum -- "What You Can
                     Accommodate." Group size is read-only here (reflecting
                     the real business_fulfillment_policies row already
@@ -5591,21 +5795,70 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     Wi-Fi/pet-friendly/private-room have no real taxonomy
                     anywhere in this app and are deliberately not fabricated
                     here. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.whatYouCanAccommodate')}</Text>
                 <Text style={styles.helperText}>
                   {t('ui.bizDash2.helpNearbySendYouRequests')}
                 </Text>
-                <View style={styles.gatheringRow}>
-                  <Text style={[styles.breakdownText, { fontWeight: '700' }]}>{t('ui.bizDash2.groupSize')}</Text>
-                  <Text style={styles.breakdownText}>
-                    {fulfillmentPolicy?.party_size_min != null || fulfillmentPolicy?.party_size_max != null
-                      ? t('ui.bizDash2.groupsOf', { partySizeMin: fulfillmentPolicy.party_size_min ?? '1', partySizeMax: fulfillmentPolicy.party_size_max ?? '∞' })
-                      : t('ui.bizDash2.notSetYet')}
-                  </Text>
-                  <TouchableOpacity onPress={openPolicyModal} accessibilityLabel={t('ui.bizDash2.editGroupSizeA11y')} accessibilityRole="button">
-                    <Text style={styles.messageMemberLink}>✏️ {fulfillmentPolicy ? t('ui.bizDash2.edit') : t('ui.bizDash2.setYourGroupSize')}</Text>
-                  </TouchableOpacity>
+                {/* Owner audit 2026-11-14: the ONE group size here is the value routing reads (brand_partners.max_group_size,
+                    _business_request_fanout). The automatic-reply party range is a different rule and stays under Settings. */}
+                {/* Item 80: largest group (total people), owner-declared; used only to decide which requests reach you. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.largestGroupYouCanHost')}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
+                  <TextInput
+                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                    placeholder={t('ui.bizDash2.notSet')}
+                    placeholderTextColor={colors.textTertiary}
+                    value={maxGroupDraft ?? (selectedPartner?.max_group_size != null ? String(selectedPartner.max_group_size) : '')}
+                    onChangeText={(t) => setMaxGroupDraft(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    accessibilityLabel={t('ui.bizDash2.largestGroupYouCanHostA11y')}
+                  />
+                  {maxGroupDraft !== null && (
+                    <TouchableOpacity
+                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                      onPress={handleSaveMaxGroupSize}
+                      disabled={savingMaxGroup}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('ui.bizDash2.saveGroupSizeA11y')}
+                    >
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingMaxGroup ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.totalPeopleCountingEveryoneRequests')}
+                </Text>
+                {SPACES.filter((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)).map((sp) => (
+                  <View key={sp.key} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
+                    <Text style={[styles.helperText, { width: 110, marginTop: 0 }]}>{sp.label}</Text>
+                    <TextInput
+                      style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                      placeholder={t('ui.bizDash2.notSet')}
+                      placeholderTextColor={colors.textTertiary}
+                      value={spaceDrafts[sp.key] ?? (selectedPartner?.[sp.column] != null ? String(selectedPartner[sp.column]) : '')}
+                      onChangeText={(t) => setSpaceDrafts((prev) => ({ ...prev, [sp.key]: t.replace(/[^0-9]/g, '') }))}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                      accessibilityLabel={t('ui.bizDash2.largestGroupTotalPeopleA11y', { label: sp.label })}
+                    />
+                    {spaceDrafts[sp.key] !== undefined && (
+                      <TouchableOpacity
+                        style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                        onPress={() => handleSaveSpaceCapacity(sp)}
+                        disabled={savingSpace === sp.key}
+                        accessibilityRole="button"
+                        accessibilityLabel={t('ui.bizDash2.saveSizeA11y', { label: sp.label })}
+                      >
+                        <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpace === sp.key ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                ))}
+                {SPACES.some((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)) && (
+                  <Text style={styles.helperText}>
+                    {t('ui.bizDash2.theMostPeopleEachSpace')}
+                  </Text>
+                )}
                 <View style={[styles.gatheringRow, { marginTop: spacing.sm }]}>
                   <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>{t('ui.bizDash2.experiencesUses')}</Text>
                   <View style={styles.chipRow}>
@@ -5652,10 +5905,286 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </TouchableOpacity>
                 </View>
 
+                {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
+                    tap (no Save button); Nearby then routes matching occasion requests here first, and a
+                    package (if any) is still what gets offered -- nothing is invented for this list alone. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.occasionsWeOffer')}</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {OFFERED_OCCASION_OPTIONS.map((o) => {
+                    const selected = shownValue(settingConflicts.entries, 'offered_occasions', selectedPartner?.offered_occasions ?? []).includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handleToggleOfferedOccasion(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.offeredA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'offered_occasions')}
+                  onSave={pendingSaveFor('offered_occasions', (v) => saveOfferedOccasions(v))}
+                  saving={savingPendingSetting === 'offered_occasions'}
+                />
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.requestsForTheseOccasionsReach')}
+                </Text>
+                {/* Hours (item 71): one optional row, expands in place. Feeds the consumer "Open now" filter; never inferred. */}
+                {selectedPartner ? (
+                  <BusinessHoursEditor
+                    partner={selectedPartner}
+                    onSaved={(hours) => setSelectedPartner((prev) => ({ ...prev, operating_hours: hours }))}
+                  />
+                ) : null}
+                {/* Weather sensitivity (item 63): say it once; Nearby ranks your offers with the weather (never hides them). */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.isYourExperienceAffectedBy')}</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {WEATHER_SETTING_OPTIONS.map((o) => {
+                    const selected = shownValue(settingConflicts.entries, 'weather_setting', selectedPartner?.weather_setting ?? null) === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickWeatherSetting(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'weather_setting')}
+                  onSave={pendingSaveFor('weather_setting', (v) => saveWeatherSetting(v))}
+                  saving={savingPendingSetting === 'weather_setting'}
+                />
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.outdoorOnlyShownLessWhen')}
+                </Text>
+                {/* Booking mode (item 72): one owner-declared answer that sets the customer's button. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.howDoCustomersComeIn')}</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {BOOKING_MODE_OPTIONS.map((o) => {
+                    const selected = bookingModeOf(selectedPartner) === o.key;
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickBookingMode(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.setsTheButtonCustomersSee')}
+                </Text>
+                {/* Price (items 40 + 82): one coarse tier, $ to $$$$, plus an optional typical spend per person. Owner-declared, never inferred. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDoesItUsuallyCost')}</Text>
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {BUSINESS_PRICE_LEVELS.map((key) => {
+                    const selected = (selectedPartner?.price_level ?? null) === key;
+                    return (
+                      <TouchableOpacity
+                        key={key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handlePickPriceLevel(key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${key}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{key}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
+                  <TextInput
+                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
+                    placeholder={t('ui.bizDash2.typicalSpendPerPersonOptional')}
+                    placeholderTextColor={colors.textTertiary}
+                    value={spendDraft ?? (selectedPartner?.typical_spend_per_person != null ? String(selectedPartner.typical_spend_per_person) : '')}
+                    onChangeText={(t) => setSpendDraft(t.replace(/[^0-9]/g, ''))}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                    accessibilityLabel={t('ui.bizDash2.typicalSpendPerPersonInA11y')}
+                  />
+                  {spendDraft !== null && (
+                    <TouchableOpacity
+                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
+                      onPress={handleSaveTypicalSpend}
+                      disabled={savingSpend}
+                      accessibilityRole="button"
+                      accessibilityLabel={t('ui.bizDash2.saveTypicalSpendA11y')}
+                    >
+                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpend ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.aRoughIdeaIsEnough')}
+                </Text>
+                {/* "Business Story" plan, Phase 6 -- Signature Experiences.
+                    Suggestions are derived purely from attributes the
+                    owner has already confirmed (Phase 1) -- never an LLM
+                    call, never fabricated. A suggestion drops out of this
+                    review list the moment it's addressed (kept, edited +
+                    saved, or explicitly removed) -- see
+                    dismissedSuggestionAttrs. */}
+                {(() => {
+                  const suggestions = deriveSignatureExperienceSuggestions({
+                    category: selectedPartner?.category,
+                    attributes: selectedPartner?.attributes ?? [],
+                    cuisine: selectedPartner?.cuisine,
+                    cuisineLabel: selectedPartner?.cuisine ? cuisineLabel(selectedPartner.cuisine) : null,
+                  });
+                  const covered = new Set([
+                    ...experiences.flatMap((e) => e.attributes ?? []),
+                    ...dismissedSuggestionAttrs,
+                  ]);
+                  const pending = suggestions.filter((s) => !covered.has(s.attribute));
+                  if (pending.length === 0) return null;
+                  return (
+                    <>
+                      <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.weCreatedExperiences', { count: pending.length })}</Text>
+                      <Text style={styles.helperText}>
+                        {t('ui.bizDash2.basedOnWhatYouTold')}
+                      </Text>
+                      {pending.map((s) => (
+                        <View key={s.attribute} style={styles.gatheringRow}>
+                          <Text style={styles.offerTitle}>{s.icon} {s.title}</Text>
+                          <Text style={styles.breakdownText}>{s.description}</Text>
+                          <Text style={[styles.breakdownText, { color: colors.textTertiary, fontStyle: 'italic' }]}>
+                            {t('ui.bizDash2.basedOn')}{' '}{businessAttributeLabel(s.attribute)}
+                          </Text>
+                          <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
+                              onPress={() => handleKeepSuggestion(s)}
+                              accessibilityLabel={t('ui.bizDash2.keepA11y', { title: s.title })}
+                              accessibilityRole="button"
+                            >
+                              <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.keep')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                              onPress={() => openExperienceModal(s, { fromSuggestionId: s.attribute })}
+                              accessibilityLabel={t('ui.bizDash2.editA11y2', { title: s.title })}
+                              accessibilityRole="button"
+                            >
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.edit')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
+                              onPress={() => handleRemoveSuggestion(s)}
+                              accessibilityLabel={t('ui.bizDash2.removeA11y', { title: s.title })}
+                              accessibilityRole="button"
+                            >
+                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.remove')}</Text>
+                            </TouchableOpacity>
+                          </View>
+                          <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, `experience_suggestion:${s.attribute}`)} />
+                        </View>
+                      ))}
+                    </>
+                  );
+                })()}
+
+</>
+)}
+{renderProfileGroupHeader('who', t('ui.bizDash3.whosThisFor'))}
+{profileGroup === 'who' && (
+<>
+                {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatAgesIsItSuited')}</Text>
+                <AgeRangePicker
+                  label={t('ui.bizDash2.ages')}
+                  min={shownValue(settingConflicts.entries, 'suited_ages', { min: selectedPartner?.suited_age_min ?? null }).min ?? null}
+                  max={shownValue(settingConflicts.entries, 'suited_ages', { max: selectedPartner?.suited_age_max ?? null }).max ?? null}
+                  onChange={handlePickSuitedAges}
+                />
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'suited_ages')}
+                  onSave={pendingSaveFor('suited_ages', (v) => saveSuitedAges(v))}
+                  saving={savingPendingSetting === 'suited_ages'}
+                />
+                {/* Item 86: what you don't accommodate. Requests that conflict are never sent to you or shown with your business. */}
+                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDontYouAccommodate')}</Text>
+                {[NOT_ACCOMMODATED_OPTIONS.filter((o) => !ADULT_AGE_RULES.includes(o.key)), NOT_ACCOMMODATED_OPTIONS.filter((o) => ADULT_AGE_RULES.includes(o.key))].map((group, gi) => (
+                <View key={gi}>
+                {gi === 1 && <Text style={[styles.helperText, { marginTop: spacing.sm }]}>{t('ui.bizDash2.ageRestrictionPickOne')}</Text>}
+                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                  {group.map((o) => {
+                    const selected = shownValue(settingConflicts.entries, 'not_accommodated', notAccommodatedOf(selectedPartner)).includes(o.key);
+                    return (
+                      <TouchableOpacity
+                        key={o.key}
+                        style={[styles.chip, selected && styles.chipSelected]}
+                        onPress={() => handleToggleNotAccommodated(o.key)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                        accessibilityState={{ selected }}
+                      >
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                </View>
+                ))}
+                <SettingConflictNotice
+                  messages={conflictMessages(settingConflicts.entries, 'not_accommodated')}
+                  onSave={pendingSaveFor('not_accommodated', (v) => saveNotAccommodated(v))}
+                  saving={savingPendingSetting === 'not_accommodated'}
+                />
+                <Text style={styles.helperText}>
+                  {t('ui.bizDash2.requestsThatConflictArentSent')}
+                </Text>
+                {/* Item 88: dietary options, asked only of a food business (or one that already declared some). */}
+                {dietaryRelevantFor(selectedPartner) && (
+                  <>
+                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDietaryOptionsDoYou')}</Text>
+                    <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
+                      {BUSINESS_DIETARY_OPTIONS.map((o) => {
+                        const selected = shownValue(settingConflicts.entries, 'dietary_options', dietaryOptionsOf(selectedPartner)).includes(o.key);
+                        return (
+                          <TouchableOpacity
+                            key={o.key}
+                            style={[styles.chip, selected && styles.chipSelected]}
+                            onPress={() => handleToggleDietaryOption(o.key)}
+                            accessibilityRole="button"
+                            accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
+                            accessibilityState={{ selected }}
+                          >
+                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                    <Text style={styles.helperText}>
+                      {t('ui.bizDash2.customersWhoAskForThese')}
+                    </Text>
+                  </>
+                )}
+</>
+)}
+{renderProfileGroupHeader('grow', t('ui.bizDash2.whatDoYouWantMore'))}
+{profileGroup === 'grow' && (
+<>
                 {/* "Business Story" plan, Phase 2 -- Business Goals. A real,
                     small, dedicated save distinct from the full profile
                     edit above -- meant to be revisited often. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.whatDoYouWantMore')}</Text>
                 <Text style={styles.helperText}>
                   {t('ui.bizDash2.tellNearbyOnceAndIt')}
                 </Text>
@@ -5787,8 +6316,18 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     ))}
                   </View>
                 )}
+                <CategorySearchField
+                  value={boostCategoryQuery}
+                  onChangeText={setBoostCategoryQuery}
+                  noMatch={noCategoryMatch(AVAILABILITY_CATEGORY_OPTIONS, boostCategoryQuery, { labelFor: categorySearchLabel, selected: boostCategoryInput })}
+                  expanded={boostCategoryListOpen}
+                  onToggleExpanded={() => setBoostCategoryListOpen((v) => !v)}
+                  total={AVAILABILITY_CATEGORY_OPTIONS.length}
+                />
+                {/* Collapsed with nothing chosen = no chips: render no empty row (keeps the gap to the next section tight). */}
+                {boostChipOptions.length > 0 && (
                 <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {AVAILABILITY_CATEGORY_OPTIONS.map((c) => {
+                  {boostChipOptions.map((c) => {
                     const selected = boostCategoryInput === c;
                     return (
                       <TouchableOpacity
@@ -5796,14 +6335,15 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         style={[styles.chip, selected && styles.chipSelected]}
                         onPress={() => setBoostCategoryInput(selected ? null : c)}
                         accessibilityRole="button"
-                        accessibilityLabel={c}
+                        accessibilityLabel={categorySearchLabel(c)}
                         accessibilityState={{ selected }}
                       >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
+                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
+                )}
                 {boostCategoryInput && (
                   <>
                     <View style={[styles.chipRow, { marginTop: spacing.sm }]}>
@@ -5876,336 +6416,8 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   </Text>
                 )}
 
-                {/* "Business Story" plan, Phase 6 -- Signature Experiences.
-                    Suggestions are derived purely from attributes the
-                    owner has already confirmed (Phase 1) -- never an LLM
-                    call, never fabricated. A suggestion drops out of this
-                    review list the moment it's addressed (kept, edited +
-                    saved, or explicitly removed) -- see
-                    dismissedSuggestionAttrs. */}
-                {(() => {
-                  const suggestions = deriveSignatureExperienceSuggestions({
-                    category: selectedPartner?.category,
-                    attributes: selectedPartner?.attributes ?? [],
-                    cuisine: selectedPartner?.cuisine,
-                    cuisineLabel: selectedPartner?.cuisine ? cuisineLabel(selectedPartner.cuisine) : null,
-                  });
-                  const covered = new Set([
-                    ...experiences.flatMap((e) => e.attributes ?? []),
-                    ...dismissedSuggestionAttrs,
-                  ]);
-                  const pending = suggestions.filter((s) => !covered.has(s.attribute));
-                  if (pending.length === 0) return null;
-                  return (
-                    <>
-                      <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.weCreatedExperiences', { count: pending.length })}</Text>
-                      <Text style={styles.helperText}>
-                        {t('ui.bizDash2.basedOnWhatYouTold')}
-                      </Text>
-                      {pending.map((s) => (
-                        <View key={s.attribute} style={styles.gatheringRow}>
-                          <Text style={styles.offerTitle}>{s.icon} {s.title}</Text>
-                          <Text style={styles.breakdownText}>{s.description}</Text>
-                          <Text style={[styles.breakdownText, { color: colors.textTertiary, fontStyle: 'italic' }]}>
-                            {t('ui.bizDash2.basedOn')}{' '}{businessAttributeLabel(s.attribute)}
-                          </Text>
-                          <View style={{ flexDirection: 'row', marginTop: spacing.sm, flexWrap: 'wrap', gap: spacing.sm }}>
-                            <TouchableOpacity
-                              style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
-                              onPress={() => handleKeepSuggestion(s)}
-                              accessibilityLabel={t('ui.bizDash2.keepA11y', { title: s.title })}
-                              accessibilityRole="button"
-                            >
-                              <Text style={styles.smallActionButtonText}>{t('ui.bizDash2.keep')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
-                              onPress={() => openExperienceModal(s, { fromSuggestionId: s.attribute })}
-                              accessibilityLabel={t('ui.bizDash2.editA11y2', { title: s.title })}
-                              accessibilityRole="button"
-                            >
-                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.edit')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                              style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
-                              onPress={() => handleRemoveSuggestion(s)}
-                              accessibilityLabel={t('ui.bizDash2.removeA11y', { title: s.title })}
-                              accessibilityRole="button"
-                            >
-                              <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.remove')}</Text>
-                            </TouchableOpacity>
-                          </View>
-                          <SettingConflictNotice messages={conflictMessages(settingConflicts.entries, `experience_suggestion:${s.attribute}`)} />
-                        </View>
-                      ))}
-                    </>
-                  );
-                })()}
-
 </>
 )}
-{on('profile') && (
-<>
-                {/* "Occasions we offer": an explicit capability, separate from "want more" above. Saves on
-                    tap (no Save button); Nearby then routes matching occasion requests here first, and a
-                    package (if any) is still what gets offered -- nothing is invented for this list alone. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.occasionsWeOffer')}</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {OFFERED_OCCASION_OPTIONS.map((o) => {
-                    const selected = shownValue(settingConflicts.entries, 'offered_occasions', selectedPartner?.offered_occasions ?? []).includes(o.key);
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handleToggleOfferedOccasion(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.offeredA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <SettingConflictNotice
-                  messages={conflictMessages(settingConflicts.entries, 'offered_occasions')}
-                  onSave={pendingSaveFor('offered_occasions', (v) => saveOfferedOccasions(v))}
-                  saving={savingPendingSetting === 'offered_occasions'}
-                />
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.requestsForTheseOccasionsReach')}
-                </Text>
-                {/* Hours (item 71): one optional row, expands in place. Feeds the consumer "Open now" filter; never inferred. */}
-                {selectedPartner ? (
-                  <BusinessHoursEditor
-                    partner={selectedPartner}
-                    onSaved={(hours) => setSelectedPartner((prev) => ({ ...prev, operating_hours: hours }))}
-                  />
-                ) : null}
-                {/* Weather sensitivity (item 63): say it once; Nearby ranks your offers with the weather (never hides them). */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.isYourExperienceAffectedBy')}</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {WEATHER_SETTING_OPTIONS.map((o) => {
-                    const selected = shownValue(settingConflicts.entries, 'weather_setting', selectedPartner?.weather_setting ?? null) === o.key;
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handlePickWeatherSetting(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <SettingConflictNotice
-                  messages={conflictMessages(settingConflicts.entries, 'weather_setting')}
-                  onSave={pendingSaveFor('weather_setting', (v) => saveWeatherSetting(v))}
-                  saving={savingPendingSetting === 'weather_setting'}
-                />
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.outdoorOnlyShownLessWhen')}
-                </Text>
-                {/* Booking mode (item 72): one owner-declared answer that sets the customer's button. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.howDoCustomersComeIn')}</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {BOOKING_MODE_OPTIONS.map((o) => {
-                    const selected = bookingModeOf(selectedPartner) === o.key;
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handlePickBookingMode(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.setsTheButtonCustomersSee')}
-                </Text>
-                {/* Price (items 40 + 82): one coarse tier, $ to $$$$, plus an optional typical spend per person. Owner-declared, never inferred. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDoesItUsuallyCost')}</Text>
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {BUSINESS_PRICE_LEVELS.map((key) => {
-                    const selected = (selectedPartner?.price_level ?? null) === key;
-                    return (
-                      <TouchableOpacity
-                        key={key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handlePickPriceLevel(key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${key}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{key}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
-                  <TextInput
-                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                    placeholder={t('ui.bizDash2.typicalSpendPerPersonOptional')}
-                    placeholderTextColor={colors.textTertiary}
-                    value={spendDraft ?? (selectedPartner?.typical_spend_per_person != null ? String(selectedPartner.typical_spend_per_person) : '')}
-                    onChangeText={(t) => setSpendDraft(t.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    accessibilityLabel={t('ui.bizDash2.typicalSpendPerPersonInA11y')}
-                  />
-                  {spendDraft !== null && (
-                    <TouchableOpacity
-                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
-                      onPress={handleSaveTypicalSpend}
-                      disabled={savingSpend}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('ui.bizDash2.saveTypicalSpendA11y')}
-                    >
-                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpend ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.aRoughIdeaIsEnough')}
-                </Text>
-                {/* Item 80: largest group (total people), owner-declared; used only to decide which requests reach you. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.largestGroupYouCanHost')}</Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xs }}>
-                  <TextInput
-                    style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                    placeholder={t('ui.bizDash2.notSet')}
-                    placeholderTextColor={colors.textTertiary}
-                    value={maxGroupDraft ?? (selectedPartner?.max_group_size != null ? String(selectedPartner.max_group_size) : '')}
-                    onChangeText={(t) => setMaxGroupDraft(t.replace(/[^0-9]/g, ''))}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    accessibilityLabel={t('ui.bizDash2.largestGroupYouCanHostA11y')}
-                  />
-                  {maxGroupDraft !== null && (
-                    <TouchableOpacity
-                      style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
-                      onPress={handleSaveMaxGroupSize}
-                      disabled={savingMaxGroup}
-                      accessibilityRole="button"
-                      accessibilityLabel={t('ui.bizDash2.saveGroupSizeA11y')}
-                    >
-                      <Text style={[styles.chipText, styles.chipTextSelected]}>{savingMaxGroup ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.totalPeopleCountingEveryoneRequests')}
-                </Text>
-                {SPACES.filter((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)).map((sp) => (
-                  <View key={sp.key} style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.sm }}>
-                    <Text style={[styles.helperText, { width: 110, marginTop: 0 }]}>{sp.label}</Text>
-                    <TextInput
-                      style={[styles.notesInput, { flex: 1, minHeight: 0 }]}
-                      placeholder={t('ui.bizDash2.notSet')}
-                      placeholderTextColor={colors.textTertiary}
-                      value={spaceDrafts[sp.key] ?? (selectedPartner?.[sp.column] != null ? String(selectedPartner[sp.column]) : '')}
-                      onChangeText={(t) => setSpaceDrafts((prev) => ({ ...prev, [sp.key]: t.replace(/[^0-9]/g, '') }))}
-                      keyboardType="number-pad"
-                      maxLength={4}
-                      accessibilityLabel={t('ui.bizDash2.largestGroupTotalPeopleA11y', { label: sp.label })}
-                    />
-                    {spaceDrafts[sp.key] !== undefined && (
-                      <TouchableOpacity
-                        style={[styles.chip, styles.chipSelected, { marginLeft: spacing.sm }]}
-                        onPress={() => handleSaveSpaceCapacity(sp)}
-                        disabled={savingSpace === sp.key}
-                        accessibilityRole="button"
-                        accessibilityLabel={t('ui.bizDash2.saveSizeA11y', { label: sp.label })}
-                      >
-                        <Text style={[styles.chipText, styles.chipTextSelected]}>{savingSpace === sp.key ? t('ui.bizDash2.saving2') : t('ui.bizDash2.save')}</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                ))}
-                {SPACES.some((sp) => (selectedPartner?.attributes ?? []).includes(sp.attribute)) && (
-                  <Text style={styles.helperText}>
-                    {t('ui.bizDash2.theMostPeopleEachSpace')}
-                  </Text>
-                )}
-                {/* Suited ages (item 50): descriptive only, never a restriction; owner-declared. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatAgesIsItSuited')}</Text>
-                <AgeRangePicker
-                  label={t('ui.bizDash2.ages')}
-                  min={shownValue(settingConflicts.entries, 'suited_ages', { min: selectedPartner?.suited_age_min ?? null }).min ?? null}
-                  max={shownValue(settingConflicts.entries, 'suited_ages', { max: selectedPartner?.suited_age_max ?? null }).max ?? null}
-                  onChange={handlePickSuitedAges}
-                />
-                <SettingConflictNotice
-                  messages={conflictMessages(settingConflicts.entries, 'suited_ages')}
-                  onSave={pendingSaveFor('suited_ages', (v) => saveSuitedAges(v))}
-                  saving={savingPendingSetting === 'suited_ages'}
-                />
-                {/* Item 86: what you don't accommodate. Requests that conflict are never sent to you or shown with your business. */}
-                <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDontYouAccommodate')}</Text>
-                {[NOT_ACCOMMODATED_OPTIONS.filter((o) => !ADULT_AGE_RULES.includes(o.key)), NOT_ACCOMMODATED_OPTIONS.filter((o) => ADULT_AGE_RULES.includes(o.key))].map((group, gi) => (
-                <View key={gi}>
-                {gi === 1 && <Text style={[styles.helperText, { marginTop: spacing.sm }]}>{t('ui.bizDash2.ageRestrictionPickOne')}</Text>}
-                <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                  {group.map((o) => {
-                    const selected = shownValue(settingConflicts.entries, 'not_accommodated', notAccommodatedOf(selectedPartner)).includes(o.key);
-                    return (
-                      <TouchableOpacity
-                        key={o.key}
-                        style={[styles.chip, selected && styles.chipSelected]}
-                        onPress={() => handleToggleNotAccommodated(o.key)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                        accessibilityState={{ selected }}
-                      >
-                        <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.icon} {o.label}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-                </View>
-                ))}
-                <SettingConflictNotice
-                  messages={conflictMessages(settingConflicts.entries, 'not_accommodated')}
-                  onSave={pendingSaveFor('not_accommodated', (v) => saveNotAccommodated(v))}
-                  saving={savingPendingSetting === 'not_accommodated'}
-                />
-                <Text style={styles.helperText}>
-                  {t('ui.bizDash2.requestsThatConflictArentSent')}
-                </Text>
-                {/* Item 88: dietary options, asked only of a food business (or one that already declared some). */}
-                {dietaryRelevantFor(selectedPartner) && (
-                  <>
-                    <Text style={styles.sectionHeader}>{t('ui.bizDash2.whatDietaryOptionsDoYou')}</Text>
-                    <View style={[styles.chipRow, { marginTop: spacing.xs }]}>
-                      {BUSINESS_DIETARY_OPTIONS.map((o) => {
-                        const selected = shownValue(settingConflicts.entries, 'dietary_options', dietaryOptionsOf(selectedPartner)).includes(o.key);
-                        return (
-                          <TouchableOpacity
-                            key={o.key}
-                            style={[styles.chip, selected && styles.chipSelected]}
-                            onPress={() => handleToggleDietaryOption(o.key)}
-                            accessibilityRole="button"
-                            accessibilityLabel={`${o.label}${selected ? t('ui.bizDash2.selectedA11y') : ''}`}
-                            accessibilityState={{ selected }}
-                          >
-                            <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{o.label}</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                    <Text style={styles.helperText}>
-                      {t('ui.bizDash2.customersWhoAskForThese')}
-                    </Text>
-                  </>
-                )}
 </>
 )}
 {on('offers') && moreOffersOpen && (
@@ -6269,116 +6481,11 @@ export default function BusinessDashboardScreen({ navigation, route }) {
 )}
 {on('profile') && (
 <>
-                {/* "Business Profile Phase 1" addendum -- "Teach Nearby."
-                    A real, deterministic keyword extraction against the
-                    existing attributes vocabulary, never an LLM call and
-                    never auto-applied -- the extracted chips are always
-                    shown for an explicit confirm/edit/discard first. */}
-                <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.teachNearby')}</Text>
-                <Text style={styles.helperText}>{t('ui.bizDash2.anythingElseWeShouldKnow')}</Text>
-                {!teachNearbyExtracted ? (
-                  <>
-                    <TextInput
-                      style={[styles.input, { marginTop: spacing.sm, minHeight: 60 }]}
-                      placeholder={t('ui.bizDash2.ourRooftopPatioIsOur')}
-                      placeholderTextColor={colors.textTertiary}
-                      value={teachNearbyInput}
-                      onChangeText={setTeachNearbyInput}
-                      multiline
-                      maxLength={300}
-                      accessibilityLabel={t('ui.bizDash2.tellNearbyAboutYourBusinessA11y')}
-                    />
-                    <TouchableOpacity
-                      style={[styles.postUpdateButton, { marginTop: spacing.sm }, (!teachNearbyInput.trim()) && disabledButtonStyle(colors)]}
-                      onPress={handleInterpretTeachNearby}
-                      disabled={!teachNearbyInput.trim()}
-                      accessibilityLabel={t('ui.bizDash2.submitA11y')}
-                      accessibilityRole="button"
-                    >
-                      <Text style={styles.postUpdateButtonText}>{t('ui.bizDash2.submit')}</Text>
-                    </TouchableOpacity>
-                  </>
-                ) : (
-                  <View style={styles.gatheringRow}>
-                    {teachNearbyExtracted.length === 0 ? (
-                      <Text style={styles.emptyText}>
-                        {t('ui.bizDash2.nearbyDidntRecognizeAnythingSpecific')}
-                      </Text>
-                    ) : (
-                      <>
-                        <Text style={[styles.breakdownText, { fontWeight: '700', marginBottom: spacing.xs }]}>{t('ui.bizDash2.nearbyUnderstood')}</Text>
-                        <View style={styles.chipRow}>
-                          {teachNearbyExtracted.map((attribute) => (
-                            <TouchableOpacity
-                              key={attribute}
-                              style={styles.chip}
-                              onPress={() => handleRemoveTeachNearbyChip(attribute)}
-                              accessibilityLabel={t('ui.bizDash2.removeA11y2', { businessAttributeLabel: businessAttributeLabel(attribute) })}
-                              accessibilityRole="button"
-                            >
-                              <Text style={styles.chipText}>{businessAttributeLabel(attribute)} ✕</Text>
-                            </TouchableOpacity>
-                          ))}
-                        </View>
-                      </>
-                    )}
-                    <View style={{ flexDirection: 'row', marginTop: spacing.sm, gap: spacing.sm }}>
-                      {teachNearbyExtracted.length > 0 && (
-                        <TouchableOpacity
-                          style={[styles.smallActionButton, { backgroundColor: colors.primary }]}
-                          onPress={handleConfirmTeachNearby}
-                          disabled={savingTeachNearby}
-                          accessibilityLabel={t('ui.bizDash2.addToProfileA11y')}
-                          accessibilityRole="button"
-                        >
-                          <Text style={styles.smallActionButtonText}>{savingTeachNearby ? t('ui.bizDash2.adding') : t('ui.bizDash2.addToProfile')}</Text>
-                        </TouchableOpacity>
-                      )}
-                      <TouchableOpacity
-                        style={[styles.smallActionButton, { backgroundColor: colors.surfaceElevated }]}
-                        onPress={handleDiscardTeachNearby}
-                        accessibilityLabel={t('ui.bizDash2.discardA11y')}
-                        accessibilityRole="button"
-                      >
-                        <Text style={[styles.smallActionButtonText, { color: colors.textPrimary }]}>{t('ui.bizDash2.discard')}</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-
-                {/* Business Intelligence & Opportunity Engine, Phase 1 --
-                    the real AI Suggestion / Audit log: every category-
-                    classification and Teach Nearby suggestion this
-                    business has ever seen, whatever it was resolved to.
-                    Read-only -- act on a real suggestion via the category
-                    banner or Teach Nearby above, not from here. */}
-                {recentSuggestions.length > 0 && (
-                  <>
-                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.recentAiSuggestions')}</Text>
-                    <Text style={styles.helperText}>
-                      {t('ui.bizDash2.everyRealDeterministicSuggestionNearby')}
-                    </Text>
-                    {recentSuggestions.map((s) => (
-                      <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
-                        <Text style={styles.breakdownText}>
-                          {s.attribute_key === 'category'
-                            ? t('ui.bizDash2.category', { label: BUSINESS_CATEGORIES.find((c) => c.key === s.attribute_value)?.label ?? s.attribute_value })
-                            : t('ui.bizDash2.attribute', { businessAttributeLabel: businessAttributeLabel(s.attribute_value) ?? s.attribute_value })}
-                        </Text>
-                        <Text style={[styles.helperText, { marginTop: 2 }]}>
-                          {s.status === 'confirmed' ? t('ui.bizDash2.added') : s.status === 'rejected' ? t('ui.bizDash2.keptAsIs') : t('ui.bizDash2.awaitingYourReview')}
-                          {s.reason ? ` — ${s.reason}` : ''}
-                        </Text>
-                      </View>
-                    ))}
-                  </>
-                )}
-
-                <TouchableOpacity onPress={() => setProfileSettingsOpen((v) => !v)} style={[styles.gatheringRow, { marginTop: spacing.xl }]} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.settingsA11y')} accessibilityState={{ expanded: profileSettingsOpen }}>
-                  <Text style={styles.offerTitle}>{t('ui.bizDash2.settings')}{' '}{profileSettingsOpen ? '⌄' : '›'}</Text>
-                  {!profileSettingsOpen && <Text style={styles.breakdownText}>{t('ui.bizDash2.termsNotificationsPaymentsAiAutomation')}</Text>}
+                <TouchableOpacity onPress={() => setProfileGroup((g) => toggleProfileGroup(g, 'settings'))} style={[styles.gatheringRow, { marginTop: spacing.md }]} accessibilityRole="button" accessibilityLabel={t('ui.bizDash2.settingsA11y')} accessibilityState={{ expanded: profileGroup === 'settings' }}>
+                  <Text style={styles.offerTitle}>{t('ui.bizDash2.settings')}{' '}{profileGroup === 'settings' ? '⌄' : '›'}</Text>
+                  {profileGroup !== 'settings' && <Text style={styles.breakdownText}>{t('ui.bizDash2.termsNotificationsPaymentsAiAutomation')}</Text>}
                 </TouchableOpacity>
-                {profileSettingsOpen && (
+                {profileGroup === 'settings' && (
                 <>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: spacing.lg }}>
                   <Text style={styles.sectionHeader}>{t('ui.bizDash2.fulfillmentPolicy')}</Text>
@@ -6598,6 +6705,34 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                     </>
                   )}
                 </View>
+                {/* Business Intelligence & Opportunity Engine, Phase 1 --
+                    the real AI Suggestion / Audit log: every category-
+                    classification and Teach Nearby suggestion this
+                    business has ever seen, whatever it was resolved to.
+                    Read-only -- act on a real suggestion via the category
+                    banner or Tell Nearby (owner 2026-11-14: Teach Nearby merged into it; this
+                    history moved here under Settings), not from here. */}
+                {recentSuggestions.length > 0 && (
+                  <>
+                    <Text style={[styles.sectionHeader, { marginTop: spacing.xl }]}>{t('ui.bizDash2.recentAiSuggestions')}</Text>
+                    <Text style={styles.helperText}>
+                      {t('ui.bizDash2.everyRealDeterministicSuggestionNearby')}
+                    </Text>
+                    {recentSuggestions.map((s) => (
+                      <View key={s.id} style={[styles.gatheringRow, { marginTop: spacing.xs }]}>
+                        <Text style={styles.breakdownText}>
+                          {s.attribute_key === 'category'
+                            ? t('ui.bizDash2.category', { label: BUSINESS_CATEGORIES.find((c) => c.key === s.attribute_value)?.label ?? s.attribute_value })
+                            : t('ui.bizDash2.attribute', { businessAttributeLabel: businessAttributeLabel(s.attribute_value) ?? s.attribute_value })}
+                        </Text>
+                        <Text style={[styles.helperText, { marginTop: 2 }]}>
+                          {s.status === 'confirmed' ? t('ui.bizDash2.added') : s.status === 'rejected' ? t('ui.bizDash2.keptAsIs') : t('ui.bizDash2.awaitingYourReview')}
+                          {s.reason ? ` — ${s.reason}` : ''}
+                        </Text>
+                      </View>
+                    ))}
+                  </>
+                )}
                 </>
                 )}
 </>
@@ -6760,23 +6895,46 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <Text style={[styles.modalCloseText, { marginBottom: spacing.md }]}>
                 {t('ui.bizDash3.thisDeterminesWhoSeesYour')}
               </Text>
-              <TextInput
-                style={styles.input}
-                placeholder={t('ui.bizDash3.eG123MainSt')}
-                placeholderTextColor={colors.textTertiary}
-                value={addressInput}
-                onChangeText={setAddressInput}
-                accessibilityLabel={t('ui.bizDash3.businessAddressA11y')}
-              />
-              <TouchableOpacity
-                style={[styles.submitButton, (savingAddress || !addressInput.trim()) && disabledButtonStyle(colors)]}
-                onPress={handleUpdateAddress}
-                disabled={savingAddress || !addressInput.trim()}
-                accessibilityLabel={savingAddress ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveAddressA11y')}
-                accessibilityRole="button"
-              >
-                <Text style={styles.submitButtonText}>{savingAddress ? t('ui.bizDash3.saving') : t('ui.bizDash3.saveAddress')}</Text>
-              </TouchableOpacity>
+              <View style={[styles.chipRow, { marginTop: 0, marginBottom: spacing.md }]}>
+                {[LOCATION_MODES.storefront, LOCATION_MODES.serviceArea].map((m) => {
+                  const on = locationModeInput === m;
+                  const label = t(m === LOCATION_MODES.storefront ? 'ui.bizHelp.location.modeStorefront' : 'ui.bizHelp.location.modeServiceArea');
+                  return (
+                    <TouchableOpacity key={m} style={[styles.chip, on && styles.chipSelected]} onPress={() => setLocationModeInput(m)}
+                      accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected: on }}>
+                      <Text style={[styles.chipText, on && styles.chipTextSelected]}>{label}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {locationModeInput === LOCATION_MODES.serviceArea ? (
+                <>
+                  <Text style={styles.helperText}>{t('ui.bizHelp.location.serviceAreaHint')}</Text>
+                  <TouchableOpacity style={styles.submitButton} onPress={handleMarkServiceArea} accessibilityRole="button" accessibilityLabel={t('ui.bizHelp.location.markArea')}>
+                    <Text style={styles.submitButtonText}>{t('ui.bizHelp.location.markArea')}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder={t('ui.bizDash3.eG123MainSt')}
+                    placeholderTextColor={colors.textTertiary}
+                    value={addressInput}
+                    onChangeText={setAddressInput}
+                    accessibilityLabel={t('ui.bizDash3.businessAddressA11y')}
+                  />
+                  <TouchableOpacity
+                    style={[styles.submitButton, (savingAddress || !addressInput.trim()) && disabledButtonStyle(colors)]}
+                    onPress={handleUpdateAddress}
+                    disabled={savingAddress || !addressInput.trim()}
+                    accessibilityLabel={savingAddress ? t('ui.bizDash3.savingA11y') : t('ui.bizDash3.saveAddressA11y')}
+                    accessibilityRole="button"
+                  >
+                    <Text style={styles.submitButtonText}>{savingAddress ? t('ui.bizDash3.saving') : t('ui.bizDash3.saveAddress')}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
               <TouchableOpacity onPress={() => setAddressModalVisible(false)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
                 <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
@@ -6882,8 +7040,16 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <Text style={styles.helperText}>
                 {t('ui.bizDash3.alsoShowUpUnderAny')} {t('ui.bizDash3.upToFiveCategories')}
               </Text>
+              <CategorySearchField
+                value={profileCategoryQuery}
+                onChangeText={setProfileCategoryQuery}
+                noMatch={noCategoryMatch(businessTagOptions(), profileCategoryQuery, { labelFor: categorySearchLabel, selected: editCategoriesInput })}
+                expanded={profileCategoryListOpen}
+                onToggleExpanded={() => setProfileCategoryListOpen((v) => !v)}
+                total={businessTagOptions().length}
+              />
               <View style={styles.chipRow}>
-                {businessTagOptions().map((c) => {
+                {filterCategoryOptions(businessTagOptions(), profileCategoryQuery, { labelFor: categorySearchLabel, selected: editCategoriesInput, collapsed: !profileCategoryListOpen }).map((c) => {
                   const selected = editCategoriesInput.includes(c);
                   return (
                     <TouchableOpacity
@@ -6893,10 +7059,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                         setEditCategoriesInput((prev) => toggleSecondaryCategory(prev, c)); // item 186: at most 5
                       }}
                       accessibilityRole="button"
-                      accessibilityLabel={c}
+                      accessibilityLabel={categorySearchLabel(c)}
                       accessibilityState={{ selected }}
                     >
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{c}</Text>
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -7170,7 +7336,10 @@ export default function BusinessDashboardScreen({ navigation, route }) {
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.overlay}>
-            <ScrollView style={styles.sheet} keyboardShouldPersistTaps="handled">
+            {/* Owner 2026-11-22: the form scrolls; the dock below it (outside the scroll) keeps the live Customer Preview one tap
+                away and Send Offer always in reach (components/OfferPreviewDock.js, rules utils/offerPreviewDock.js). */}
+            <View style={[styles.sheet, styles.offerSheet]}>
+            <ScrollView style={styles.offerSheetScroll} keyboardShouldPersistTaps="handled">
               <Text style={styles.sheetTitle}>{t('ui.bizDash3.makeAnOffer')}</Text>
               {offerDraft.draft && (
                 <DraftBanner
@@ -7459,7 +7628,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <Text style={[styles.sectionHeader, { marginTop: spacing.sm }]}>{t('ui.bizDash3.whatsIncludedOptional')}</Text>
               <View style={{ flexDirection: 'row' }}>
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, styles.inlineAddInput]}
                   placeholder={t('ui.bizDash3.eGPrivateTable')}
                   placeholderTextColor={colors.textTertiary}
                   value={offerIncludedItemDraft}
@@ -7468,7 +7637,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   accessibilityLabel={t('ui.bizDash3.addAnIncludedItemA11y')}
                 />
                 <TouchableOpacity
-                  style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
+                  style={[styles.smallActionButton, styles.inlineAddButton, { backgroundColor: colors.primary }]}
                   onPress={addOfferIncludedItem}
                   accessibilityLabel={t('ui.bizDash3.addItemA11y')}
                   accessibilityRole="button"
@@ -7650,56 +7819,70 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   }}
                 />
               ) : null}
-              {/* Item 49 (was item 84's separate step): the Customer Preview builds live as the owner fills the form, right
-                  above Send Offer. One mapping (utils/offerDraftPreview.js), one body + engine shared with the customer's real card. */}
-              {(() => {
-                const previewOffer = draftPreviewOffer({
-                  type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
-                  proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
-                  partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
-                  discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
-                  availFrom: offerAvailFrom, availUntil: offerAvailUntil,
-                  creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
-                });
-                if (!previewOffer) return null;
-                const localMedia = !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
-                const shown = presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } });
-                return (
-                  <View style={{ marginTop: spacing.md }}>
-                    <Text style={styles.notesLabel}>{t('ui.bizDash3.customerPreview')}</Text>
-                    <Text style={styles.helperText}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
-                    <View style={styles.gatheringRow}>
-                      <View style={styles.previewPartnerRow}>
-                        <BusinessLogoMark uri={previewLogo} />
-                        <Text style={[styles.offerTitle, styles.previewPartnerName]}>{selectedPartner?.name}</Text>
-                      </View>
-                      {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
-                      <Text style={styles.breakdownText}>{shown.heard}</Text>
-                      <Text style={styles.breakdownText}>{shown.statusLine}</Text>
-                      {!!previewOffer.offer_title && <Text style={[styles.offerTitle, { marginTop: spacing.xs }]}>{previewOffer.offer_title}</Text>}
-                      <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} partySize={partyOfRequest(offerModalRequestId)} />
-                      <View style={[styles.submitButton, { opacity: 0.45, marginTop: spacing.sm }]} accessible accessibilityRole="button" accessibilityState={{ disabled: true }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
-                        <Text style={styles.submitButtonText}>{consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label}</Text>
-                      </View>
-                    </View>
-                    {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
-                    <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
-                  </View>
-                );
-              })()}
-              <TouchableOpacity
-                style={[styles.submitButton, (respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)) && disabledButtonStyle(colors)]}
-                onPress={handleSubmitOffer}
-                disabled={respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime)}
-                accessibilityRole="button"
-                accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
-              >
-                <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
-              </TouchableOpacity>
               <TouchableOpacity onPress={() => setOfferModalRequestId(null)} style={{ marginTop: spacing.md }} accessibilityLabel={t('ui.bizDash3.cancelA11y')} accessibilityRole="button">
                 <Text style={styles.modalCloseText}>{t('ui.bizDash3.cancel')}</Text>
               </TouchableOpacity>
             </ScrollView>
+            {/* Item 49: the Customer Preview builds live as the owner fills the form. One mapping (utils/offerDraftPreview.js),
+                one body + engine shared with the customer's real card, rendered ONLY here, inside the dock's panel. */}
+            {(() => {
+              const previewOffer = draftPreviewOffer({
+                type: offerTypeInput, title: offerTitleInput, description: offerDescriptionInput, includedItems: offerIncludedItemsInput,
+                proposedTime: offerProposedTime, proposedTimeAlt: offerProposedTimeAlt, price: offerPriceInput, priceIsPerPerson: offerPriceIsPerPerson,
+                partySizeAlt: offerPartySizeAlt, requestPartySize: partyOfRequest(offerModalRequestId),
+                discount: offerDiscountInput, discountCap, validDay: offerValidDay, validTime: offerValidTime,
+                availFrom: offerAvailFrom, availUntil: offerAvailUntil,
+                creative: offerCreativeId ? creatives.find((c) => c.id === offerCreativeId) : null,
+              });
+              const localMedia = previewOffer && !offerCreativeId && offerPickedMediaAsset?.uri ? { uri: offerPickedMediaAsset.uri, type: offerPickedMediaAsset.type === 'video' ? 'video' : 'image' } : null;
+              const shown = previewOffer ? presentOffer(previewOffer, { business: { name: selectedPartner?.name ?? null, logoUri: previewLogo }, context: { viewer: 'owner_preview' } }) : null;
+              const previewAction = previewAcceptAction();
+              const cardStyles = getOfferCardStyles(colors);
+              const sendBlocked = respondingOpportunityId === offerModalRequestId || !offerDescriptionInput.trim() || (offerTypeInput === 'alt_time' && !offerProposedTime);
+              return (
+                <OfferPreviewDock
+                  hasPreview={!!previewOffer}
+                  label={t('ui.bizDash3.customerPreview')}
+                  summary={previewDockSummary(previewOffer)}
+                  sendButton={(
+                    <TouchableOpacity
+                      style={[styles.submitButton, styles.offerDockSend, sendBlocked && disabledButtonStyle(colors)]}
+                      onPress={handleSubmitOffer}
+                      disabled={sendBlocked}
+                      accessibilityRole="button"
+                      accessibilityLabel={respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sendingA11y') : t('ui.bizDash3.sendOfferA11y')}
+                    >
+                      <Text style={styles.submitButtonText}>{respondingOpportunityId === offerModalRequestId ? t('ui.bizDash3.sending') : t('ui.bizDash3.sendOffer')}</Text>
+                    </TouchableOpacity>
+                  )}
+                >
+                  {previewOffer && (
+                    <View>
+                      <Text style={[styles.helperText, { marginTop: 0 }]}>{t('ui.bizDash3.thisIsWhatTheCustomer')}</Text>
+                      {/* Item 49: the same frame, header, title and button styles as the customer's card (components/offerCardStyles.js). */}
+                      <View style={cardStyles.offerCard}>
+                        <View style={cardStyles.offerPartnerRow}>
+                          <BusinessLogoMark uri={previewLogo} />
+                          <Text style={[cardStyles.offerPartnerName, cardStyles.offerPartnerNameFlex]}>{selectedPartner?.name}</Text>
+                        </View>
+                        {/* Same lines, same order as the customer's card, from the same Offer Presentation Engine (item 21). */}
+                        {shown.heard ? <Text style={cardStyles.offerReputationLine}>{shown.heard}</Text> : null}
+                        {shown.statusLine ? <Text style={cardStyles.offerStatus}>{shown.statusLine}</Text> : null}
+                        {!!previewOffer.offer_title && <Text style={cardStyles.offerTitleHeadline}>{previewOffer.offer_title}</Text>}
+                        <OfferCustomerBody offer={previewOffer} localMedia={localMedia} countdown={shown.countdown} partySize={partyOfRequest(offerModalRequestId)} />
+                        {/* The customer's button, shown but never live here (previewAcceptAction): nothing is screened, sent or booked yet. */}
+                        <View style={[cardStyles.acceptButton, cardStyles.acceptButtonWaiting]} pointerEvents="none" accessible accessibilityRole="button" accessibilityState={{ disabled: previewAction.disabled }} accessibilityLabel={t('ui.bizDash3.previewOfTheCustomersAcceptA11y')}>
+                          <Text style={cardStyles.acceptButtonText}>{previewAction.label}</Text>
+                        </View>
+                      </View>
+                      {!!offerRedemptionInput.trim() && <Text style={styles.helperText}>{t('ui.bizDash3.howToRedeemIsShown')}</Text>}
+                      <Text style={styles.helperText}>{t('ui.bizDash3.textPhotosAndVideosAre')}</Text>
+                    </View>
+                  )}
+                </OfferPreviewDock>
+              );
+            })()}
+            </View>
           </View>
         </TouchableWithoutFeedback>
         </KeyboardAvoidingView>
@@ -7951,17 +8134,25 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                 accessibilityLabel={t('ui.bizDash3.availabilityDescriptionOptionalA11y')}
               />
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.categoryOptional')}</Text>
+              <CategorySearchField
+                value={availabilityCategoryQuery}
+                onChangeText={setAvailabilityCategoryQuery}
+                noMatch={noCategoryMatch(AVAILABILITY_CATEGORY_OPTIONS, availabilityCategoryQuery, { labelFor: categorySearchLabel, selected: availabilityCategoryInput })}
+                expanded={availabilityCategoryListOpen}
+                onToggleExpanded={() => setAvailabilityCategoryListOpen((v) => !v)}
+                total={AVAILABILITY_CATEGORY_OPTIONS.length}
+              />
               <View style={styles.chipRow}>
-                {AVAILABILITY_CATEGORY_OPTIONS.map((c) => (
+                {filterCategoryOptions(AVAILABILITY_CATEGORY_OPTIONS, availabilityCategoryQuery, { labelFor: categorySearchLabel, selected: availabilityCategoryInput, collapsed: !availabilityCategoryListOpen }).map((c) => (
                   <TouchableOpacity
                     key={c}
                     style={[styles.chip, availabilityCategoryInput === c && styles.chipSelected]}
                     onPress={() => setAvailabilityCategoryInput(availabilityCategoryInput === c ? null : c)}
                     accessibilityRole="button"
-                    accessibilityLabel={c}
+                    accessibilityLabel={categorySearchLabel(c)}
                     accessibilityState={{ selected: availabilityCategoryInput === c }}
                   >
-                    <Text style={[styles.chipText, availabilityCategoryInput === c && styles.chipTextSelected]}>{c}</Text>
+                    <Text style={[styles.chipText, availabilityCategoryInput === c && styles.chipTextSelected]}>{categorySearchLabel(c)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>
@@ -8233,7 +8424,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
               <Text style={[styles.sectionHeader, { marginTop: spacing.md }]}>{t('ui.bizDash3.whatsIncluded')}</Text>
               <View style={{ flexDirection: 'row' }}>
                 <TextInput
-                  style={[styles.input, { flex: 1 }]}
+                  style={[styles.input, styles.inlineAddInput]}
                   placeholder={t('ui.bizDash3.eGBirthdayDessert')}
                   placeholderTextColor={colors.textTertiary}
                   value={packageIncludedItemDraft}
@@ -8242,7 +8433,7 @@ export default function BusinessDashboardScreen({ navigation, route }) {
                   accessibilityLabel={t('ui.bizDash3.addAnIncludedItemA11y')}
                 />
                 <TouchableOpacity
-                  style={[styles.smallActionButton, { backgroundColor: colors.primary, marginLeft: spacing.sm, alignSelf: 'center' }]}
+                  style={[styles.smallActionButton, styles.inlineAddButton, { backgroundColor: colors.primary }]}
                   onPress={addPackageIncludedItem}
                   accessibilityLabel={t('ui.bizDash3.addItemA11y')}
                   accessibilityRole="button"
@@ -8579,6 +8770,17 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   homeTileRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   homeTile: { flexGrow: 1, flexBasis: '30%', minWidth: 140, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   homeTileLine: { color: colors.textPrimary, fontSize: 15, fontWeight: '700', marginTop: 2 },
+  homeRequestList: { marginBottom: spacing.md },
+  homeRequestRow: { paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border },
+  homeRequestTitle: { color: colors.textPrimary, fontSize: 15, fontWeight: '600' },
+  // Item 150's month block (Offer Performance): equal cells, wrap to 2 x 2 on a phone; value + disclosure apart below.
+  funnelBlock: { marginBottom: spacing.md },
+  funnelGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
+  funnelStage: { flexGrow: 1, flexBasis: '22%', minWidth: 120, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  funnelCount: { color: colors.textPrimary, fontSize: 22, fontWeight: '700' },
+  funnelLabel: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  funnelValue: { marginTop: spacing.sm, padding: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
+  funnelNote: { color: colors.textSecondary, fontSize: 12, marginTop: spacing.xs },
   pipelineRow: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.sm },
   pipelineStage: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface },
   helperText: { color: colors.textTertiary, fontSize: 12, lineHeight: 18, marginTop: spacing.lg, fontStyle: 'italic' },
@@ -8646,8 +8848,6 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   replyRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
   sendReplyButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingHorizontal: spacing.md, justifyContent: 'center' },
   sendReplyButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-  previewPartnerRow: { flexDirection: 'row', alignItems: 'center' },
-  previewPartnerName: { flexShrink: 1 },
   gatheringRow: {
     backgroundColor: colors.surface, borderRadius: radius.lg, borderWidth: 1, borderColor: colors.border,
     padding: spacing.md, marginBottom: spacing.sm,
@@ -8655,6 +8855,14 @@ const getStyles = (colors, shadow) => StyleSheet.create({
   modalCloseText: { color: colors.primary, fontWeight: '600' },
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, padding: spacing.lg },
+  // Make an Offer (owner 2026-11-22): the sheet holds a shrinking form scroll + the preview dock; it never covers the status bar.
+  offerSheet: { maxHeight: '92%' },
+  offerSheetScroll: { flexGrow: 0, flexShrink: 1 },
+  offerDockSend: { marginTop: spacing.sm },
+  // The "What's included" rows (Make an Offer + Occasion Package, owner 2026-11-22): the input shrinks (minWidth 0: a web text field otherwise keeps its
+  // built-in width and pushed Add off a 320 pt screen) and Add never does, so the button is always whole and tappable.
+  inlineAddInput: { flex: 1, minWidth: 0 },
+  inlineAddButton: { flexShrink: 0, marginLeft: spacing.sm, alignSelf: 'center', minHeight: 44 },
   sheetTitle: { ...typography.headline, color: colors.textPrimary, marginBottom: spacing.md },
   input: { backgroundColor: colors.surface, color: colors.textPrimary, borderRadius: radius.md, padding: spacing.md, fontSize: 15, borderWidth: 1, borderColor: colors.border },
   submitButton: { backgroundColor: colors.primary, borderRadius: radius.full, paddingVertical: 14, alignItems: 'center', marginTop: spacing.lg },

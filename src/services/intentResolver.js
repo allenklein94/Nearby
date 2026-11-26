@@ -2,6 +2,8 @@ import { recordSearchBehavior, getMyLearnedAffinity } from './behaviorSignals';
 import { applyLearnedAffinity, askStatesConstraint, comparePersonalTieBreak } from '../utils/learnedAffinity';
 import { applyExperienceFeedback, forTypedAsk } from '../utils/experienceFeedback';
 import { getMyExperienceFeedback } from './experienceFeedback';
+import { getMyFamiliarHosts } from './familiarHosts';
+import { compareFamiliarity } from '../utils/hostFamiliarity';
 import { openDestination } from './openDestination';
 import * as Location from 'expo-location';
 import { getNearbyGatherings, getGatheringFitReasons } from './gatherings';
@@ -740,6 +742,7 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   // Item 156: the person's learned category affinity (the same signal the feeds use). Started now, awaited by its pass.
   const learnedAffinityPromise = getMyLearnedAffinity().catch(() => null);
   const experienceFeedbackPromise = getMyExperienceFeedback().catch(() => null);
+  const familiarHostsPromise = getMyFamiliarHosts().catch(() => null); // 20270410: tie-break only
 
   // Item 69: "willing to travel" widens every search one step on the shared radius list (15 -> 30 mi), bounded by its maximum.
   const distanceWillingness = distanceWillingnessFromText(rawText);
@@ -1020,7 +1023,9 @@ export async function resolveIntent({ category, dateWindow, rawText, partySize =
   if (ledger) deduped = deduped.map((c) => ({ ...c, rankVector: typedAskRankVector(ledger.signalsFor(c)) }));
   // Personalization that became a literal tie-breaker (learned affinity under a stated constraint, declared-interest history
   // under a stated mood) never touched the score: it orders only results that tie on everything else.
-  deduped.sort((a, b) => compareRanked(a, b) || comparePersonalTieBreak(a, b));
+  // Host familiarity (owner, 2026-11-11, utils/hostFamiliarity.js): the last tie-break, after everything above (never a score point).
+  const familiarHosts = await familiarHostsPromise;
+  deduped.sort((a, b) => compareRanked(a, b) || comparePersonalTieBreak(a, b) || compareFamiliarity(a, b, familiarHosts, (c) => (c.type === 'gathering' ? c.host_id : null)));
   // Item 162: a NEED (the asked category is a need/service group) is ordered availability > proximity > reliability >
   // personalization, each a tie-breaker for the one before (utils/needAsk.js). A want keeps the order above, unchanged.
   const kind = askKind({ category, rawText });

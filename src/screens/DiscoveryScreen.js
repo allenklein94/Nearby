@@ -1,11 +1,12 @@
-import { datingCardFacts } from '../utils/datingCardReasons';
+import { datingCardFacts, datingReasonText } from '../utils/datingCardReasons';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Feather } from '@expo/vector-icons';
 import { View, Text, FlatList, Image, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Animated, ScrollView } from 'react-native';
 import { PullToRefresh, SkeletonFeed } from '../motion';
 import FadeInState from '../components/FadeInState';
 import { useFocusEffect } from '@react-navigation/native';
-import { getNearbyMatches, getBrowseMatches, reportPresence } from '../services/proximity';
+import { getNearbyMatches, getBrowseMatches, recheckBrowseOnReturn, reportPresence } from '../services/proximity';
+import LoadErrorState from '../components/LoadErrorState';
 import { getUserLocation } from '../services/userLocation';
 import { formatCrossedPathsTime, gatheringReasonText } from '../services/crossedPathsSignals';
 import { checkAndCountBrowseView } from '../services/browseLimits';
@@ -17,6 +18,8 @@ import { shouldOfferBreak, dismissBreakSuggestion } from '../services/confidence
 import { isPremium } from '../services/purchases';
 import { checkNoticeLimit, checkWaveLimit } from '../services/noticeLimits';
 import { supabase } from '../services/supabase';
+import { presentRecoverableError } from '../utils/recoverableError';
+import { restrictionRefusal } from '../utils/accountRestrictions';
 import { readMyProfile } from '../services/myProfile';
 import { getSignedPhotoUrl } from '../services/photos';
 import { INTENTION_OPTIONS } from '../constants/intentionOptions';
@@ -46,7 +49,8 @@ import ToggleRow from '../components/ToggleRow';
 const UNDO_WINDOW_SECONDS = 5;
 
 const DISCOVERY_FILTER_FIELDS = [
-  ...BASICS_FIELDS.filter((f) => f.type === 'select'),
+  // Appearance-only fields (tattoos, piercings) are never a filter: they only rank Browse (owner, 2026-11-14).
+  ...BASICS_FIELDS.filter((f) => f.type === 'select' && !f.appearanceOnly),
   { key: 'ethnicity', label: 'Ethnicity', icon: '🌍', options: ETHNICITY_OPTIONS, topLevel: true },
 ];
 
@@ -69,6 +73,12 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   const [nearby, setNearby] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  // Read by the Browse return check (focus effect) without re-running it on every list change.
+  const nearbyRef = useRef(nearby);
+  nearbyRef.current = nearby;
+  const initialLoadingRef = useRef(initialLoading);
+  initialLoadingRef.current = initialLoading;
+  const loadBrowseBatchRef = useRef(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [photoUrls, setPhotoUrls] = useState({});
   const [onlineStatuses, setOnlineStatuses] = useState({});
@@ -101,6 +111,9 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   const [browseOffset, setBrowseOffset] = useState(0);
   const [browseHasMore, setBrowseHasMore] = useState(true);
   const [loadingMoreBrowse, setLoadingMoreBrowse] = useState(false);
+  // A Browse read that failed (network, server): never shown as "no more people"; the list stays and Try Again re-asks
+  // the same page (owner, 2026-11-14).
+  const [browseLoadFailed, setBrowseLoadFailed] = useState(false);
   const [sightingMapTarget, setSightingMapTarget] = useState(null);
   const [showSightingsOverview, setShowSightingsOverview] = useState(false);
   const [showDatingPrefsPrompt, setShowDatingPrefsPrompt] = useState(false);
@@ -191,11 +204,21 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     }
   }
 
+  // Loads one Browse page (one capped server page, ranked within itself; services/proximity.js). Returns
+  // { status: 'shown' | 'failed' | 'limited' | 'empty', offset, nextOffset }: `browseOffset` is the server offset of the
+  // NEXT page and moves only to a successful call's nextOffset. Nothing on screen changes unless the page was shown.
   const loadBrowseBatch = useCallback(async (offset) => {
-    const results = await getBrowseMatches(offset);
+    // hasMore = the server page was full (an empty filtered page is never "no more people").
+    const { items: results, hasMore, failed, nextOffset } = await getBrowseMatches(offset);
+    if (failed) {
+      setBrowseLoadFailed(true);
+      return { status: 'failed', offset, nextOffset: offset };
+    }
+    const shownOffset = offset;
 
     if (myUserId) {
-      const limitCheck = await checkAndCountBrowseView(myUserId, results.length);
+      // Counts only the profiles about to be displayed, each once per day.
+      const limitCheck = await checkAndCountBrowseView(myUserId, results.map((item) => item.id));
       if (!limitCheck.allowed) {
         setBrowseHasMore(false);
         Alert.alert(
@@ -206,12 +229,14 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
             { text: t('ui.dating.upgradeToPremium'), onPress: () => navigation.navigate('Paywall') },
           ]
         );
-        return;
+        return { status: 'limited', offset, nextOffset: offset };
       }
     }
 
-    setBrowseHasMore(results.length > 0);
+    setBrowseLoadFailed(false);
+    setBrowseHasMore(hasMore);
 
+    // Photo links only for the profiles shown.
     const urlEntries = await Promise.all(
       results.map(async (item) => {
         const path = item.profiles?.photo_url;
@@ -224,14 +249,20 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
 
     const otherUserIds = results.map((item) => item.otherUserId);
     const storyPresence = await getStoryPresenceForUsers(otherUserIds);
-    setStoryByUserId((prev) => (offset === 0 ? storyPresence : { ...prev, ...storyPresence }));
+    setStoryByUserId((prev) => (shownOffset === 0 ? storyPresence : { ...prev, ...storyPresence }));
 
-    if (offset === 0) {
+    if (shownOffset === 0) {
       setNearby(results);
     } else {
-      setNearby((prev) => [...prev, ...results]);
+      // Server pages never repeat anyone (stable id order); the id check only guards against a page asked twice.
+      setNearby((prev) => {
+        const have = new Set(prev.map((p) => p.id));
+        return [...prev, ...results.filter((r) => !have.has(r.id))];
+      });
     }
+    return { status: results.length > 0 ? 'shown' : 'empty', offset: shownOffset, nextOffset };
   }, [myUserId, isUserPremium]);
+  loadBrowseBatchRef.current = loadBrowseBatch;
 
   async function switchDiscoveryMode(mode) {
     if (mode === discoveryMode) return;
@@ -239,27 +270,64 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
     setNearby([]);
     setBrowseOffset(0);
     setBrowseHasMore(true);
+    setBrowseLoadFailed(false);
     setInitialLoading(true);
     if (mode === 'browse') {
-      await loadBrowseBatch(0);
+      const result = await loadBrowseBatch(0);
+      if (result.status !== 'failed') setBrowseOffset(result.nextOffset);
       setInitialLoading(false);
     } else {
       await load();
     }
   }
 
-  async function loadMoreBrowse() {
+  // `auto` = the list's own end-reached call: it never retries a failed page by itself (no retry loop); Try Again and
+  // the card deck's explicit request do.
+  async function loadMoreBrowse({ auto = false } = {}) {
     if (loadingMoreBrowse || !browseHasMore) return;
+    if (auto && browseLoadFailed) return;
     setLoadingMoreBrowse(true);
-    const nextOffset = browseOffset + 20;
-    await loadBrowseBatch(nextOffset);
-    setBrowseOffset(nextOffset);
+    const result = await loadBrowseBatch(browseOffset);
+    // The offset moves only when a page was really read (a failure or the daily limit keeps it, so nothing is skipped).
+    if (result.status === 'shown' || result.status === 'empty') setBrowseOffset(result.nextOffset);
     setLoadingMoreBrowse(false);
+  }
+
+  async function retryBrowse() {
+    // Nothing on screen, or a failed refresh at the end of the list: ask page 1 again; otherwise the page that failed.
+    if (nearby.length === 0 || !browseHasMore) {
+      const empty = nearby.length === 0;
+      if (empty) setInitialLoading(true);
+      const result = await loadBrowseBatch(0);
+      if (result.status !== 'failed') setBrowseOffset(result.nextOffset);
+      if (empty) setInitialLoading(false);
+    } else {
+      await loadMoreBrowse();
+    }
   }
 
   useFocusEffect(
     useCallback(() => {
       if (discoveryMode === 'crossedPaths') load();
+      // Coming back to Browse (from a profile, Dating preferences, a chat): anyone who became a friend or match, blocked
+      // or was blocked, or left Dating leaves the list now; saved preferences start the list over. A failed check
+      // changes nothing (owner, 2026-11-14).
+      if (discoveryMode === 'browse' && !initialLoadingRef.current && nearbyRef.current.length > 0) {
+        let cancelled = false;
+        (async () => {
+          const shownIds = nearbyRef.current.map((item) => item.id);
+          const { remove, restart } = await recheckBrowseOnReturn(shownIds);
+          if (cancelled) return;
+          if (restart) {
+            const result = await loadBrowseBatchRef.current(0);
+            if (!cancelled && result.status !== 'failed') setBrowseOffset(result.nextOffset);
+          } else if (remove.size > 0) {
+            setNearby((prev) => prev.filter((item) => !remove.has(item.id)));
+          }
+        })();
+        return () => { cancelled = true; };
+      }
+      return undefined;
     }, [load, discoveryMode])
   );
 
@@ -313,6 +381,10 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   // section already on Settings), not a vague suggestion with nothing to
   // tap.
   function renderPeopleEmptyState() {
+    // A failed Browse read is never "no one matches" (owner, 2026-11-14).
+    if (discoveryMode === 'browse' && browseLoadFailed) {
+      return <LoadErrorState onRetry={retryBrowse} />;
+    }
     if (locationOff) {
       return (
         <FadeInState opportunity style={styles.emptyState}>
@@ -454,6 +526,8 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
             .eq('id', existing.id);
 
           if (updateError) {
+            // 20270399: a paused wave says what is paused and until when, in the person's language
+            if (restrictionRefusal(updateError)) { presentRecoverableError(Alert, { what: 'complete that', error: updateError }); return false; }
             Alert.alert(t('ui.dating.waveNotSent'), updateError.message);
             return false;
           }
@@ -466,6 +540,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
         return true;
       }
 
+      if (restrictionRefusal(insertError)) { presentRecoverableError(Alert, { what: 'complete that', error: insertError }); return false; }
       Alert.alert(isWave ? t('ui.dating.waveNotSent') : t('ui.dating.noticeNotSent'), insertError.message);
       return false;
     }
@@ -497,7 +572,14 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
   async function onRefresh() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setRefreshing(true);
-    await load();
+    if (discoveryMode === 'browse') {
+      // Pull to refresh in Browse re-reads Browse from the first server page, never Crossed Paths. A failed refresh
+      // keeps the list on screen and its next offset.
+      const result = await loadBrowseBatch(0);
+      if (result.status !== 'failed') setBrowseOffset(result.nextOffset);
+    } else {
+      await load();
+    }
     setRefreshing(false);
   }
 
@@ -665,7 +747,7 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
             onViewProfile={(userId) => navigation.navigate('ViewProfile', { userId, viewContext: 'dating' })}
             onReport={(id, name) => setReportTarget({ id, name })}
             compatibilityColor={compatibilityColor}
-            onNeedMore={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
+            onNeedMore={discoveryMode === 'browse' ? () => loadMoreBrowse() : undefined}
             discoveryMode={discoveryMode}
             onShowCompatibility={showCompatibilityReport}
             freeTonightIds={freeTonightIds}
@@ -679,14 +761,16 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: spacing.xl }}
         refreshControl={<PullToRefresh refreshing={refreshing} onRefresh={onRefresh} />}
-        onEndReached={discoveryMode === 'browse' ? loadMoreBrowse : undefined}
+        onEndReached={discoveryMode === 'browse' ? () => loadMoreBrowse({ auto: true }) : undefined}
         onEndReachedThreshold={0.5}
         ListFooterComponent={
           discoveryMode === 'browse' && loadingMoreBrowse ? (
             <View style={{ paddingVertical: spacing.lg }}>
               <SkeletonFeed count={1} />
             </View>
-          ) : null
+          ) : (discoveryMode === 'browse' && browseLoadFailed && filteredNearby.length > 0 ? (
+            <LoadErrorState onRetry={retryBrowse} />
+          ) : null)
         }
         ListEmptyComponent={renderPeopleEmptyState()}
         renderItem={({ item }) => {
@@ -754,13 +838,9 @@ export default function DiscoveryScreen({ navigation, embedded = false, tonight 
                   </TouchableOpacity>
                 )}
               </View>
-              {facts.reason && (
-                <Text style={styles.sharedText}>
-                  {facts.reason.kind === 'shared_interests'
-                    ? `✨ ${t('discovery.youBothLike')} ${facts.reason.tags.slice(0, 3).join(', ')}${facts.reason.tags.length > 3 ? ` +${facts.reason.tags.length - 3} ${t('discovery.moreCount')}` : ''}`
-                    : `✨ ${facts.reason.text}`}
-                </Text>
-              )}
+              {facts.reason && facts.reasons.map((reason) => (
+                <Text key={reason.kind} style={styles.sharedText}>{datingReasonText(reason, t)}</Text>
+              ))}
               {facts.availability && <Text style={styles.sharedText}>{facts.availability}</Text>}
               <View style={styles.proximityRow}>
                 <Text style={styles.proximityText}>{facts.where}</Text>

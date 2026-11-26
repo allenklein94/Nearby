@@ -77,6 +77,7 @@ describe('organic code never touches the sponsored system', () => {
     'src/components/SponsoredCard.js', 'src/components/SponsoredSpotlightSlot.js', 'src/services/sponsored.js',
     'src/constants/sponsored.js', 'src/components/SponsoredPromotionsPanel.js', 'src/utils/sponsoredPromotions.js', 'src/utils/sponsoredTerms.test.js', 'src/constants/sponsoredTerms.js', 'src/screens/AdminSponsoredRefundsScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/SettingsScreen.js',
     'src/i18n/ui/coverage.js', // the localization registry lists the two sponsored components by path; it renders nothing
+    'src/utils/reportReasons.js', 'src/utils/reportReasons.test.js', // "Report this ad"'s reason code (sponsored_content) + its parity check; no sponsored data or rendering
   ].map((p) => path.join(root, p));
   const pattern = /sponsored_|get_sponsored|record_sponsored|SponsoredCard|SponsoredSpotlight|services\/sponsored|constants\/sponsored|show_sponsored_places/;
   it('no other source file references it', () => {

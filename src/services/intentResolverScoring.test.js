@@ -141,12 +141,13 @@ describe('accommodatesPartyTypeBonus', () => {
 
 // Intent engine vision, first increment (2026-09-06).
 describe('occasionBonus', () => {
-  it('awards a bonus when the ask names a real occasion the business declared it wants', () => {
-    expect(occasionBonus({ priority_occasions: ['birthday', 'date_night'] }, 'birthday')).toBe(SCORE_HAPPENING_NOW);
+  it('awards a bonus when the ask names a real occasion the business says it OFFERS (a want-more wish alone earns none)', () => {
+    expect(occasionBonus({ offered_occasions: ['birthday', 'date_night'] }, 'birthday')).toBe(SCORE_HAPPENING_NOW);
+    expect(occasionBonus({ priority_occasions: ['birthday', 'date_night'] }, 'birthday')).toBe(0);
   });
 
   it('awards nothing when the ask implied no real occasion', () => {
-    expect(occasionBonus({ priority_occasions: ['birthday'] }, null)).toBe(0);
+    expect(occasionBonus({ offered_occasions: ['birthday'] }, null)).toBe(0);
   });
 
   it('awards nothing for a real mismatch, never a fabricated match', () => {

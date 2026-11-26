@@ -185,7 +185,11 @@ d('journey: every notification leads to one direct next action (items 140 + 141)
     // "you replied" (focusedOpportunityView, never the push's wording).
     // Nothing about the customer rides in the push beyond the safe summary (privacy boundary).
     const p = find(owner, 'business_opportunity_received', 'request_id', request);
-    expect(Object.keys(p.data).sort()).toEqual(['request_id', 'type']);
+    // 20270424 adds the business's OWN id (partner_id: which location the push is for, so a multi-location owner's app
+    // switches to it first); never anything about the customer.
+    const keys = Object.keys(p.data).sort();
+    expect(keys.filter((k) => k !== 'partner_id')).toEqual(['request_id', 'type']);
+    if (keys.includes('partner_id')) expect(typeof p.data.partner_id).toBe('string');
   });
 
   test('something nearby fits you -> View Gathering -> that gathering, low (never interrupts)', async () => {

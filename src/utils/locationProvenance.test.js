@@ -131,7 +131,8 @@ describe('source guards', () => {
     expect(fn).toMatch(/setLatitude\(null\)/);
     expect(src).not.toMatch(/From Google Maps — please verify|These details are correct for my business|details_confirmed_at/);
     expect(src).toMatch(/details_source: SIGNUP_DETAILS_SOURCE/);
-    expect(src).toMatch(/google_place_id: googleReference\?\.placeId/);
+    // the place ID travels only through the one location rule (utils/businessLocationMode.js: storefront host_pin only)
+    expect(src).toMatch(/signupLocationFields\(\{[^}]*googlePlaceId: googleReference\?\.placeId/);
     expect(read('src/services/places.js')).not.toMatch(/export async function getPlaceDetails/);
   });
   test('sign-up category: Google only SUGGESTS a key of Nearby\'s own taxonomy, set only by the business\'s tap (review 2026-10-22)', () => {
@@ -160,7 +161,8 @@ describe('source guards', () => {
     expect(svc).toMatch(/supabase\.rpc\('set_business_location'/);
     const dash = read('src/screens/BusinessDashboardScreen.js');
     expect(dash).toMatch(/returnTo: 'BusinessDashboard'/);
-    expect(dash).toMatch(/await setBusinessLocation\(selectedPartner\.id, pin\)/);
+    expect(dash).toMatch(/const write = businessLocationWrite\(pending\.mode, \{ latitude: p\.selectedLat/);
+    expect(dash).toMatch(/await setBusinessLocation\(selectedPartner\.id, write\)/);
   });
   test('no client code reads a gathering\'s place ID or location source', () => {
     for (const f of ['src/services/gatherings.js', 'src/screens/GatheringDetailScreen.js', 'src/screens/DiscoverHubScreen.js', 'src/screens/HomeScreen.js']) {

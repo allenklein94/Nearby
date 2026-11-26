@@ -54,7 +54,8 @@ describe('Discover wiring', () => {
   const src = fs.readFileSync(path.join(__dirname, '../screens/DiscoverHubScreen.js'), 'utf8');
   it('map pins and business rows read the one business rule', () => {
     expect(src).toMatch(/const shownBusinesses = discoverBusinesses\(businesses,/);
-    expect(src).toMatch(/const mapBusinesses = showPerks \? shownBusinesses : \[\];/);
+    // same rule; only a business that goes to its customers has no pin (utils/businessLocationMode.js)
+    expect(src).toMatch(/const mapBusinesses = showPerks \? shownBusinesses\.filter\(hasMapPin\) : \[\];/);
     expect(src).toMatch(/const searchedBusinesses = isSearching && \(isAll \|\| typeFilter === 'places'\) \? shownBusinesses : \[\];/);
     expect(src).not.toMatch(/applyOpenNow\(businesses/);
   });

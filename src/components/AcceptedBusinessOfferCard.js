@@ -1,4 +1,5 @@
 import React from 'react';
+import { hasMapPin } from '../utils/businessLocationMode';
 import { useLanguage } from '../context/LanguageContext';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import OfferMedia from './OfferMedia';
@@ -59,7 +60,7 @@ export default function AcceptedBusinessOfferCard({
       {offer.offer_description ? <Text style={styles.desc}>{offer.offer_description}</Text> : null}
       <OfferMedia path={offer.media_path} type={offer.media_type} posterPath={offer.media_poster_path} />
       {visibleRedemption(offer) ? <Text style={styles.sub}>{t('ui.acceptedOffer.howToRedeem')}{' '}{visibleRedemption(offer)}</Text> : null}
-      {offer.brand_partners?.latitude != null && offer.brand_partners?.longitude != null && (
+      {hasMapPin(offer.brand_partners) && (
         <TouchableOpacity
           onPress={() => openUberToDestination({
             latitude: offer.brand_partners.latitude,

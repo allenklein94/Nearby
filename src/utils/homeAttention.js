@@ -16,6 +16,7 @@ import { isWithinRightNowWindow } from './rightNowWindow';
 import { recommendationRow } from './recommendationFacts';
 import { signalTier, tierVector, compareTierVectors, SIGNAL_TIERS } from '../constants/signalPriority';
 import { feedbackFor, feedbackDelta, LOVED_REASONS } from './experienceFeedback';
+import { compareFamiliarity } from './hostFamiliarity';
 
 // Item 33 (owner, 2026-10-08): Home hierarchy = intent, Picked For You (2-3), Your Plans (1-3) + See all, the social line,
 // Nearby Right Now (2-3), then more. Each list is capped at 3.
@@ -50,7 +51,7 @@ function isUrgent(g, now) {
 // personal-interest tier, Not for me = one less, scaled by account `maturity` like every feedback weight (feedbackWeight; the
 // loved reason line itself is not counted again). A Best Pick the person
 // called Not for me (its host, business or kind) loses the lead and competes as an ordinary candidate.
-export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], exclude = null, intentTags = null, now = new Date(), max = MAX_HOME_ATTENTION, feedback = null, maturity = null } = {}) {
+export function selectHomeAttention({ hero = null, cards = [], recommended = [], soon = [], exclude = null, intentTags = null, now = new Date(), max = MAX_HOME_ATTENTION, feedback = null, maturity = null, familiarHosts = null } = {}) {
   const absorbed = new Map();
   const fbOf = (g) => feedbackFor({ hostId: g?.host_id, partnerId: g?.hosting_partner_id, category: g?.interest_tag }, feedback);
   if (hero && fbOf(hero).direction < 0) {
@@ -125,7 +126,8 @@ export function selectHomeAttention({ hero = null, cards = [], recommended = [],
   const room = Math.max(0, max - (hero ? 1 : 0));
   const ranked = candidates
     .map((c) => ({ c, v: vectorOf(c) }))
-    .sort((a, b) => compareTierVectors(a.v, b.v) || a.c.order - b.c.order)
+    // host familiarity (owner, 2026-11-11, utils/hostFamiliarity.js): only between cards that tie on the whole ladder
+    .sort((a, b) => compareTierVectors(a.v, b.v) || compareFamiliarity(a.c, b.c, familiarHosts, (c) => (c.kind === 'gathering' ? c.gathering?.host_id : null)) || a.c.order - b.c.order)
     .map(({ c }) => c);
   const items = ranked.slice(0, room);
   return { hero, items, absorbed, total: (hero ? 1 : 0) + candidates.length, shown: (hero ? 1 : 0) + items.length };

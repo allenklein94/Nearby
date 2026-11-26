@@ -7,7 +7,6 @@ import { formatApproxDistanceAway } from '../utils/formatDistance';
 import { gatheringLocationProvenance } from '../utils/locationProvenance';
 import { supabase } from './supabase';
 import { readMyProfile } from './myProfile';
-import { tr } from '../i18n/translate';
 import { randomUUID } from 'expo-crypto';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -16,6 +15,7 @@ import { getMyFriends } from './friends';
 import { getMyCommunities } from './communities';
 import { REASON_TEXT, becauseYouLikeReason, reasonText } from '../constants/recommendationReasonVocabulary';
 import { SIGNAL_TIERS, tierVector, compareRanked } from '../constants/signalPriority';
+import { isTrendingGathering } from '../constants/trending';
 import { getUserLocation, requireUserLocation } from './userLocation';
 import { isGatheringPast, isGatheringUpcoming } from '../utils/objectState';
 import { attendeeTotal, attendingFigure, isGatheringFull } from '../utils/gatheringFullness';
@@ -23,6 +23,7 @@ import { cleanFeatures } from '../utils/gatheringPractical';
 import { cleanAgeRange } from '../utils/suitedAges';
 import { isValidCoordinate } from '../utils/planLogisticsActions';
 import { resetExperienceFeedbackCache } from './experienceFeedback';
+import { compareFamiliarity } from '../utils/hostFamiliarity';
 
 function localArea(latitude, longitude) {
   const bucketLat = Math.round(latitude * 100) / 100;
@@ -221,7 +222,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
   }
 
   const maxMiles = tierMaxMiles(tier);
-  const approvedCounts = await getApprovedCounts(gatheringIds);
+  const { counts: approvedCounts, trending: trendingById } = await getApprovedCountsAndTrending(gatheringIds);
 
   return filtered
     .map((gathering) => {
@@ -243,6 +244,7 @@ async function enrichGatheringsWithDistanceAndSort(filtered, myLat, myLng, myInt
         longitude: gathering.show_on_map ? (dist?.fuzzed_lng ?? null) : null,
         approvedAttendees,
         approvedCount: approvedCounts[gathering.id] ?? null,
+        isTrending: trendingById[gathering.id] === true,
       };
     })
     .filter((gathering) => gathering.is_public || gathering.distanceMiles === null || gathering.distanceMiles <= maxMiles)
@@ -434,8 +436,8 @@ async function attachApprovedAttendees(gatheringList) {
     byGathering[row.gathering_id].push(row);
   }
 
-  const approvedCounts = await getApprovedCounts(gatheringList.map((g) => g.id));
-  return gatheringList.map((g) => ({ ...g, approvedAttendees: byGathering[g.id] ?? [], approvedCount: approvedCounts[g.id] ?? null }));
+  const { counts: approvedCounts, trending: trendingById } = await getApprovedCountsAndTrending(gatheringList.map((g) => g.id));
+  return gatheringList.map((g) => ({ ...g, approvedAttendees: byGathering[g.id] ?? [], approvedCount: approvedCounts[g.id] ?? null, isTrending: trendingById[g.id] === true }));
 }
 
 // "Interested" (I might go): private, non-committal, separate from attendance (gathering_interest). It never counts
@@ -745,15 +747,6 @@ export async function hasSubmittedFeedback(gatheringId) {
     .maybeSingle();
 
   return !!data;
-}
-
-export async function getHostReputation(hostId) {
-  const { data, error } = await supabase.rpc('get_host_reputation', { host_id_param: hostId });
-  if (error) {
-    console.error('getHostReputation error', error);
-    return null;
-  }
-  return data?.[0] ?? null;
 }
 
 export async function getHostStats(hostId) {
@@ -1188,6 +1181,8 @@ export const GATHERING_FIT_TIER = {
   close_distance: SIGNAL_TIERS.discovery,
   first_timers: SIGNAL_TIERS.discovery,
 };
+// Idea 42: the old attendance cap (min(count, 10)), now given whole only when the server says Trending.
+export const POPULARITY_POINTS = 10;
 const HAS_ROOM_POINTS = 4; // rank-only; the same availability credit typed search gives a gathering with room
 
 export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendAttendeeCount = 0 } = {}) {
@@ -1200,8 +1195,13 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
   const attendeeCount = attendeeTotal(gathering);
 
   if (attendeeCount > 0) {
-    // The points stay on guests; the words count the host too (item 28 follow-up), so never "1 person" once someone joined.
-    add('attendance', Math.min(attendeeCount, 10), reasonText('peopleAttending', { count: attendingFigure(gathering, attendeeCount) }));
+    // The words count the host too (item 28 follow-up), so never "1 person" once someone joined; the reason line still shows
+    // the real "N attending" figure.
+    // Popularity needs established attendees (owner idea 42, 2026-11-12, option 1): the POINTS are the server's Trending
+    // yes/no (20270409: 5+ established approved attendees, never the host), full credit or none, never the raw count. New
+    // accounts joining can't raise a gathering's popularity rank, fit score or Discover tile size; the server never sends how
+    // many attendees are established, so no new data leaves it. A missing answer = not trending = no points.
+    add('attendance', isTrendingGathering(gathering) ? POPULARITY_POINTS : 0, reasonText('peopleAttending', { count: attendingFigure(gathering, attendeeCount) }));
   }
   if (gathering.matchesYourInterests) {
     // P1 item 4 (CLAUDE.md, Aug 28 Full Coherence Audit): shared,
@@ -1235,6 +1235,13 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
   return { score, reasons, parts, rankVector: tierVector(parts) };
 }
 
+// Home's Trending list order (owner idea 42): every gathering in it is already Trending (equal popularity), so it is ordered by
+// the same fit ladder as everything else, never by the raw attendee count (new accounts joining can't move it up). Ties keep
+// their incoming order (stable sort).
+export function compareTrendingOrder(a, b) {
+  return compareRanked(getGatheringFitReasons(a), getGatheringFitReasons(b));
+}
+
 // Home's Best Pick: ONE gathering. Eligibility is the surface's own rule (a pick must clear a fit score of 5, so an ordinary
 // night has no pick); among the eligible, the one ranking ladder picks (compareRanked on the tier vector). Friends attending are
 // counted from the approved attendees the viewer can already see, accepted friends only.
@@ -1243,103 +1250,17 @@ export function getGatheringFitReasons(gathering, { firstTimerCount = 0, friendA
 // "Happening today" (3 + 2) alone reach 5 but never make a Best Pick. Score, threshold, reasons and ranking are unchanged.
 export const BEST_PICK_MIN_SCORE = 5;
 export const BEST_PICK_PERSONAL_CODES = Object.freeze(['interest_match', 'friends_attending']);
-export function pickBestGathering(pool, { friendIds = null, myUserId = null } = {}) {
+export function pickBestGathering(pool, { friendIds = null, myUserId = null, familiarHosts = null } = {}) {
   const friends = friendIds instanceof Set ? friendIds : new Set(friendIds ?? []);
   const scored = (pool ?? []).map((g) => {
     const friendAttendeeCount = (g?.approvedAttendees ?? []).filter((a) => a?.user_id && a.user_id !== myUserId && friends.has(a.user_id)).length;
     return { gathering: g, ...getGatheringFitReasons(g, { friendAttendeeCount }) };
   }).filter((x) => x.score >= BEST_PICK_MIN_SCORE)
     .filter((x) => x.parts.some((p) => BEST_PICK_PERSONAL_CODES.includes(p.code)) || (!!x.gathering?.host_id && x.gathering.host_id !== myUserId && friends.has(x.gathering.host_id)));
-  const top = scored.sort(compareRanked)[0];
+  // Host familiarity (owner, 2026-11-11, utils/hostFamiliarity.js): only between picks that tie on the whole ladder; it never
+  // makes a gathering eligible (score + personal reason above are unchanged).
+  const top = scored.sort((a, b) => compareRanked(a, b) || compareFamiliarity(a, b, familiarHosts, (x) => x.gathering?.host_id))[0];
   return top ? { ...top.gathering, reasons: top.reasons } : null;
-}
-
-const GREAT_BECAUSE_LABELS = {
-  people: 'The people',
-  location: 'The location',
-  activity: 'The activity',
-  conversation: 'Great conversations',
-  host: 'The host',
-};
-
-// Real aggregate of past attendees' own categorical feedback for this
-// host's gatherings — no free-text testimonial exists in the schema,
-// so this is the honest equivalent of "what people loved" rather than
-// a fabricated quote. `gathering_feedback` is publicly SELECTable
-// (see its RLS), so no new RPC is needed.
-export async function getHostLovedTags(hostId) {
-  const { data, error } = await supabase
-    .from('gathering_feedback')
-    .select('great_because, gatherings!inner(host_id)')
-    .eq('gatherings.host_id', hostId);
-
-  if (error) {
-    console.error('getHostLovedTags error', error);
-    return [];
-  }
-
-  const counts = {};
-  for (const row of data ?? []) {
-    for (const tag of row.great_because ?? []) {
-      counts[tag] = (counts[tag] ?? 0) + 1;
-    }
-  }
-
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([tag]) => (GREAT_BECAUSE_LABELS[tag] ? tr(`ui.businessProfile.v.loved.${tag}`) : tag));
-}
-
-// Business-hosted equivalent of getHostLovedTags/getHostReputation — same
-// honest-aggregate approach, keyed on hosting_partner_id instead of
-// host_id since a business isn't a profiles row. No new RPC/migration:
-// gathering_feedback is already publicly SELECTable, same as the per-host
-// version above.
-export async function getBusinessLovedTags(partnerId) {
-  const { data, error } = await supabase
-    .from('gathering_feedback')
-    .select('great_because, gatherings!inner(hosting_partner_id)')
-    .eq('gatherings.hosting_partner_id', partnerId);
-
-  if (error) {
-    console.error('getBusinessLovedTags error', error);
-    return [];
-  }
-
-  const counts = {};
-  for (const row of data ?? []) {
-    for (const tag of row.great_because ?? []) {
-      counts[tag] = (counts[tag] ?? 0) + 1;
-    }
-  }
-
-  return Object.entries(counts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 3)
-    .map(([tag]) => (GREAT_BECAUSE_LABELS[tag] ? tr(`ui.businessProfile.v.loved.${tag}`) : tag));
-}
-
-export async function getBusinessReputation(partnerId) {
-  const { data, error } = await supabase
-    .from('gathering_feedback')
-    .select('felt_welcoming, would_attend_again, gatherings!inner(hosting_partner_id)')
-    .eq('gatherings.hosting_partner_id', partnerId);
-
-  if (error) {
-    console.error('getBusinessReputation error', error);
-    return null;
-  }
-
-  const rows = data ?? [];
-  const welcomingRated = rows.filter((r) => r.felt_welcoming !== null);
-  const returnRated = rows.filter((r) => r.would_attend_again !== null);
-
-  return {
-    welcomingPct: welcomingRated.length ? Math.round((100 * welcomingRated.filter((r) => r.felt_welcoming).length) / welcomingRated.length) : null,
-    wouldReturnPct: returnRated.length ? Math.round((100 * returnRated.filter((r) => r.would_attend_again).length) / returnRated.length) : null,
-    feedbackCount: rows.length,
-  };
 }
 
 export async function stopRecurringSeries(gatheringId) {
@@ -1418,17 +1339,27 @@ export async function getGatheringGroupInsights(gatheringId) {
 // taken from the visible rows can be short; join_gathering counts every
 // approved row. A failed lookup returns {} -- callers then fall back to the
 // visible rows (see utils/gatheringFullness.js `attendeeTotal`).
-export async function getApprovedCounts(gatheringIds) {
+// The same read also carries the server's Trending answer (20270409): `trending` = 5+ established approved attendees, a yes/no
+// only. `trending[id]` is true only when the server said so; a missing column (older database) or a failed read = not trending.
+export async function getApprovedCountsAndTrending(gatheringIds) {
   const ids = [...new Set((gatheringIds ?? []).filter(Boolean))];
-  if (ids.length === 0) return {};
+  if (ids.length === 0) return { counts: {}, trending: {} };
   const { data, error } = await supabase.rpc('get_gathering_approved_counts', { gathering_ids: ids });
   if (error) {
     console.error('get_gathering_approved_counts error', error);
-    return {};
+    return { counts: {}, trending: {} };
   }
   const counts = Object.fromEntries((data ?? []).map((r) => [r.gathering_id, r.approved_count]));
+  const trending = Object.fromEntries((data ?? []).map((r) => [r.gathering_id, r.trending === true]));
   // A gathering with no approved rows is simply absent from the RPC result.
-  return Object.fromEntries(ids.map((id) => [id, counts[id] ?? 0]));
+  return {
+    counts: Object.fromEntries(ids.map((id) => [id, counts[id] ?? 0])),
+    trending: Object.fromEntries(ids.map((id) => [id, trending[id] === true])),
+  };
+}
+
+export async function getApprovedCounts(gatheringIds) {
+  return (await getApprovedCountsAndTrending(gatheringIds)).counts;
 }
 
 // null (unknown) when the lookup fails, never a fabricated 0.

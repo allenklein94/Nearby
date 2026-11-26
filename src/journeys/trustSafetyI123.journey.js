@@ -21,7 +21,7 @@
 // One rolled-back transaction. Thresholds used here are journey-only test values, never proposals. Not covered: the
 // app screens, real uploads through the Storage API + the hash moderate-photo computes (Jest guard reads its source), the
 // push actually reaching an admin's phone, group chats other than the shapes shown (same trigger function on each table).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, storedReason, fixturePhoneWrite } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -63,7 +63,7 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
   delete from private.rate_limit_rules;
   update private.trust_settings set established_min_account_age = null;
   update private.account_signal_settings set duplicate_photo_min_accounts = null, similar_name_min_similarity = null;
-  update auth.users set phone = null, phone_confirmed_at = null where id = v_np;
+  ${fixturePhoneWrite(`update auth.users set phone = null, phone_confirmed_at = null where id = v_np;`)}
   insert into matches (user_a, user_b) values (v_a, v_b) returning id into v_m;
   insert into matches (user_a, user_b) values (v_a, v_c) returning id into v_m2;
   insert into messages (match_id, sender_id, body, created_at) values (v_m, v_b, 'first from b', now() - interval '2 minutes');
@@ -97,12 +97,14 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
   ${as('reporter_reads_own', 'v_a', `v_n := (select count(*) from reports where content_excerpt is not null)`, 'v_n')}
 
   -- admin notice: one push per admin per 15 minutes, worded without names; never to the reporter / reported admin
+  -- (titles / bodies read from this journey's own admins only: other admins' pushes, e.g. a replay's committed
+  -- review-case-concurrency.js rows, are not this journey's)
   ${rec('admin_pushes', `(select jsonb_build_object(
       'admin', (select count(*) from push_outbox where recipient_id = v_admin and data->>'type' = 'admin_report_received'),
       'admin2', (select count(*) from push_outbox where recipient_id = v_admin2 and data->>'type' = 'admin_report_received'),
       'non_admins', (select count(*) from push_outbox where recipient_id in (v_a, v_b, v_c, v_d, v_np, v_e, v_f) and data->>'type' = 'admin_report_received'),
-      'titles', (select jsonb_agg(distinct title) from push_outbox where data->>'type' = 'admin_report_received'),
-      'bodies', (select jsonb_agg(distinct body) from push_outbox where data->>'type' = 'admin_report_received')))`)}
+      'titles', (select jsonb_agg(distinct title) from push_outbox where recipient_id in (v_admin, v_admin2) and data->>'type' = 'admin_report_received'),
+      'bodies', (select jsonb_agg(distinct body) from push_outbox where recipient_id in (v_admin, v_admin2) and data->>'type' = 'admin_report_received')))`)}
   delete from push_outbox where data->>'type' = 'admin_report_received';
   ${as('admin_reports_admin2', 'v_admin', `insert into reports (reporter_id, reported_id, reason) values (v_admin, v_admin2, 'Other')`)}
   ${rec('admin_reports_admin2_pushes', `(select jsonb_build_object('admin', count(*) filter (where recipient_id = v_admin), 'admin2', count(*) filter (where recipient_id = v_admin2)) from push_outbox where data->>'type' = 'admin_report_received')`)}
@@ -269,7 +271,7 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
     // the existing direct "Mark Resolved" still works and is now logged with the admin
     expect(data('admin_direct_resolve')).toEqual([{ action: 'resolved', by_admin: true }]);
     // a server-side update (no client role) still can't change the evidence
-    expect(data('server_edits_evidence')).toEqual({ excerpt: 'second from b', reason: 'Harassment or abuse', reported_b: true, resolved: true });
+    expect(data('server_edits_evidence')).toEqual({ excerpt: 'second from b', reason: storedReason('Harassment or abuse'), reported_b: true, resolved: true });
     expect(data('server_resolve_logged')).toEqual([{ action: 'resolved', by_admin: true }]);
     expect(hint('non_admin_resolve')).toBe('admin_only');
     expect(data('admin_resolve')).toEqual({ rows: [{ action: 'resolved_action_taken', note: 'Warned in person' }], resolved: true });
@@ -289,7 +291,7 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
 
   test('I3 retention: a report outlives either account; resolved reports go after 12 months, unresolved never', () => {
     expect(data('report_by_e')).toBe('ok');
-    expect(data('reported_deleted')).toEqual({ reported_null: true, stamped: true, reporter_kept: true, excerpt: 'threat from f', reason: 'Harassment or abuse' });
+    expect(data('reported_deleted')).toEqual({ reported_null: true, stamped: true, reporter_kept: true, excerpt: 'threat from f', reason: storedReason('Harassment or abuse') });
     expect(data('reporter_deleted')).toEqual({ reporter_null: true, stamped: true, reported_kept: true });
     expect(data('admin_reads_after_delete')).toBe(2);
     expect(data('reporter_still_reads_own')).toBe(1);
@@ -355,8 +357,9 @@ d('journey: trust & safety I3 report evidence, I2 rate limits, I1 duplicate sign
     expect(r['urgent_report:new:86400']).toBe(30);
     expect(r['commercial_post:new:86400']).toBe(3);
     expect(r['direct_message:established:60']).toBeGreaterThan(r['direct_message:new:60']);
-    // 20270358's 28 rows (20270362's gathering_create rows are proven by journey gatheringCreationLimits)
-    expect(Object.keys(r).filter((k) => !k.startsWith('gathering_create:'))).toHaveLength(28);
+    // 20270358's 28 rows (20270362's gathering_create rows are proven by journey gatheringCreationLimits, 20270377's
+    // friend_request rows by journey friendRequestBurstLimit)
+    expect(Object.keys(r).filter((k) => !k.startsWith('gathering_create:') && !k.startsWith('friend_request:'))).toHaveLength(28);
     expect(data('approved_signals')).toEqual({ min_accounts: 3, similarity: 0.5 });
   });
 

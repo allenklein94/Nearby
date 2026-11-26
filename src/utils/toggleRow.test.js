@@ -41,7 +41,8 @@ test('every other on/off control is a ToggleRow', () => {
   for (const [f, n] of Object.entries(counts)) expect([f, n]).toEqual([f, 1]);
 });
 
-test('24 rows use ToggleRow', () => {
+// 25 = main's 24 + Settings' crossed-paths switch (trust branch), converted when main was merged into staging (2026-11-22).
+test('25 rows use ToggleRow', () => {
   const n = sources.reduce((acc, f) => acc + (fs.readFileSync(f, 'utf8').match(/<ToggleRow\b/g) ?? []).length, 0);
-  expect(n).toBe(24);
+  expect(n).toBe(25);
 });

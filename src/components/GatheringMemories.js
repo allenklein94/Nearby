@@ -6,7 +6,9 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 import { modalAnimation } from '../motion';
 import { presentRecoverableError } from '../utils/recoverableError';
-import { getGatheringMemories, addGatheringMemory, deleteStory, getSignedStoryUrl } from '../services/stories';
+import { getGatheringMemories, addGatheringMemory, deleteStory, removeGatheringMemoryAsHost, getSignedStoryUrl } from '../services/stories';
+import ReportBlockModal from './ReportBlockModal';
+import { memoryActions } from '../utils/memoryActions';
 import { supabase } from '../services/supabase';
 
 // Owner item 122 (2026-10-16, LOCKED): "a gathering could leave a memory". On a COMPLETED gathering (gatheringMemoryState in
@@ -17,7 +19,8 @@ import { supabase } from '../services/supabase';
 // collage or public sharing. Static (no motion). Video is tap-to-play in the viewer, never autoplayed or preloaded.
 // Item 123: `openOnLoad` (a tap on Plans -> Past's card with memories) opens the viewer once the server returns at least one
 // memory; Close lands on this gathering's detail. Nothing visible = it simply stays closed.
-export default function GatheringMemories({ gatheringId, openOnLoad = false }) {
+// 20270391 (owner, 2026-11-05): anyone there can report someone else's memory, and the host can remove one (memoryActions).
+export default function GatheringMemories({ gatheringId, openOnLoad = false, isHost = false }) {
   const { t } = useLanguage();
   const m = (key, vars) => t(`ui.gatheringMemories.${key}`, vars);
   const { colors } = useTheme();
@@ -27,6 +30,7 @@ export default function GatheringMemories({ gatheringId, openOnLoad = false }) {
   const [adding, setAdding] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [myUserId, setMyUserId] = useState(null);
+  const [reporting, setReporting] = useState(null);
   const openedOnLoad = useRef(false);
 
   useEffect(() => {
@@ -84,7 +88,8 @@ export default function GatheringMemories({ gatheringId, openOnLoad = false }) {
         style: 'destructive',
         onPress: async () => {
           try {
-            await deleteStory(memory.id);
+            if (memoryActions(memory, myUserId, isHost).remove === 'host') await removeGatheringMemoryAsHost(memory.id);
+            else await deleteStory(memory.id);
             setMemories((prev) => (prev ?? []).filter((r) => r.id !== memory.id));
           } catch (e) {
             presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => handleRemove(memory) });
@@ -134,11 +139,18 @@ export default function GatheringMemories({ gatheringId, openOnLoad = false }) {
               <View key={r.id} style={styles.viewerItem}>
                 <View style={styles.viewerItemHeader}>
                   <Text style={styles.poster}>{nameOf(r)}</Text>
-                  {r.user_id === myUserId && (
-                    <TouchableOpacity onPress={() => handleRemove(r)} accessibilityRole="button" accessibilityLabel={`${m('remove')}, ${labelOf(r)}`}>
-                      <Text style={styles.remove}>{m('remove')}</Text>
-                    </TouchableOpacity>
-                  )}
+                  <View style={styles.itemActions}>
+                    {memoryActions(r, myUserId, isHost).report && (
+                      <TouchableOpacity onPress={() => setReporting(r)} accessibilityRole="button" accessibilityLabel={`${m('report')}, ${labelOf(r)}`}>
+                        <Text style={styles.report}>{m('report')}</Text>
+                      </TouchableOpacity>
+                    )}
+                    {memoryActions(r, myUserId, isHost).remove && (
+                      <TouchableOpacity onPress={() => handleRemove(r)} accessibilityRole="button" accessibilityLabel={`${m('remove')}, ${labelOf(r)}`}>
+                        <Text style={styles.remove}>{m('remove')}</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
                 {urls[r.id] ? (
                   r.media_type === 'video' ? (
@@ -152,6 +164,16 @@ export default function GatheringMemories({ gatheringId, openOnLoad = false }) {
               </View>
             ))}
           </ScrollView>
+          <ReportBlockModal
+            visible={!!reporting}
+            onClose={() => setReporting(null)}
+            onBlocked={() => { setReporting(null); setViewerOpen(false); load(); }}
+            reportedUserId={reporting?.user_id}
+            reportedUserName={reporting ? nameOf(reporting) : null}
+            reportedContent={reporting ? { type: 'story', id: reporting.id } : null}
+            target="media"
+            title={t('ui.reportBlock.reportPhoto')}
+          />
         </SafeAreaView>
       </Modal>
     </View>
@@ -175,6 +197,8 @@ const getStyles = (colors) => StyleSheet.create({
   viewerItem: { marginBottom: spacing.lg, paddingHorizontal: spacing.lg },
   viewerItemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
   poster: { color: colors.textPrimary, fontWeight: '700' },
+  itemActions: { flexDirection: 'row', gap: spacing.md },
+  report: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
   remove: { color: colors.textSecondary, fontWeight: '600', fontSize: 13 },
   full: { width: '100%', height: 400, borderRadius: radius.lg },
 });

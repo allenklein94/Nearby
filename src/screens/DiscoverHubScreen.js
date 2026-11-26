@@ -10,7 +10,7 @@ import { contextHasCuisines, offerInContext, applyCuisine, cuisineChips, cuisine
 import { getNearbyMatches } from '../services/proximity';
 import { getFriendDiscoveryCandidates } from '../services/friendDiscovery';
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import { isTrendingGathering } from '../constants/trending';
 import ExperienceComponentList from '../components/ExperienceComponentList';
 import SponsoredSpotlightSlot from '../components/SponsoredSpotlightSlot';
 import PerkTierLine from '../components/PerkTierLine';
@@ -21,6 +21,7 @@ import { askBusinessesFits } from '../utils/placesToGo';
 import { learnedProximityFor } from '../utils/learnedProximity';
 import { behaviorNudge, broadGroupNudge, relatedHobbyNudge, forYouBlend, COMFORT_POINTS } from '../constants/blendedRanking';
 import { feedbackFor, feedbackDelta } from '../utils/experienceFeedback';
+import { familiarityOf } from '../utils/hostFamiliarity';
 import { comfortFits } from '../constants/socialComfort';
 import { relatedHobbyFor, relatedInterestReason } from '../constants/hobbyRelations';
 import { getFriendsInterestedIn } from '../services/friendInterests';
@@ -45,7 +46,7 @@ import { cardInterestedEligible } from '../utils/cardInterested';
 import { NotInterestedMore, NotInterestedRow, NotInterestedLine } from '../components/NotInterested';
 import { withoutHidden } from '../utils/notInterested';
 import { getPublicCommunities, getMyCommunities, searchPublicCommunities } from '../services/communities';
-import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows } from '../services/brandOffers';
+import { getActiveOffers, getNearbyBusinesses, searchOffers, getMyRedemptionRows, getMyManagedPartner } from '../services/brandOffers';
 import { perkRedemptionState, redemptionsByOffer } from '../utils/perkRedemptionState';
 import { searchNearbyPlacesResult } from '../services/places';
 import useAlsoNearby from '../hooks/useAlsoNearby';
@@ -106,6 +107,7 @@ import { SIGNAL_TIERS, tierVector } from '../constants/signalPriority';
 import { recordSearchBehavior } from '../services/behaviorSignals';
 import { searchTopic, friendsLineForTopic } from '../utils/unifiedSearch';
 import { discoverBusinesses } from '../utils/discoverBusinesses';
+import { hasMapPin } from '../utils/businessLocationMode';
 import { mapSearchContext, rememberMapRegion, mapRegionToRestore } from '../utils/mapRegionMemory';
 import { searchResultTabs, topResultKinds, effectiveResultTab, resultKindView } from '../utils/searchResultTabs';
 import { foundBlockShownIds, withoutFoundBlock } from '../utils/searchTopDedupe';
@@ -653,6 +655,15 @@ export default function DiscoverHubScreen({ navigation, route }) {
   // Item 17 (owner, 2026-10-04): a business tapped on a browsing surface (result row, map pin) opens the shared preview sheet
   // over Discover; nothing underneath changes. Perks and gatherings keep their own in-place expansion.
   const [previewBusiness, setPreviewBusiness] = useState(null);
+  // "Report business" on the preview sheet (20270381): the business this person manages (if any) is never offered for
+  // reporting. Read here, only once a sheet opens, so the sheet stays a presentation (item 17). undefined = not known yet.
+  const [myManagedPartnerId, setMyManagedPartnerId] = useState(undefined);
+  useEffect(() => {
+    if (!previewBusiness || myManagedPartnerId !== undefined) return undefined;
+    let live = true;
+    getMyManagedPartner().then((p) => { if (live) setMyManagedPartnerId(p?.id ?? null); }).catch(() => { if (live) setMyManagedPartnerId(null); });
+    return () => { live = false; };
+  }, [previewBusiness, myManagedPartnerId]);
   const [previewPinSpot, setPreviewPinSpot] = useState(null); // item 44: set only when the sheet opens from a map pin
   // A screen opened on top (a push tap, an action from the sheet) never keeps the sheet floating over it.
   useFocusEffect(useCallback(() => () => { setPreviewBusiness(null); setPreviewPinSpot(null); }, []));
@@ -1275,6 +1286,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
       // item 137: this person's usual trip for the gathering's category (rank-only, weakest tier; no reason line)
       { tier: SIGNAL_TIERS.discovery, delta: learnedProximityFor(personalization.learnedProximity, g.interest_tag, g.distanceMiles) },
     ]);
+    // Host familiarity (owner, 2026-11-11): a tie-breaker in compareDiscover only, never a reason or a score point.
+    fit.familiarity = familiarityOf(g.host_id, personalization.familiarHosts);
     return { ...g, fit };
   }
 
@@ -2066,7 +2079,8 @@ export default function DiscoverHubScreen({ navigation, route }) {
   }
 
   const mapDeals = showPerks ? filteredOffers.filter((o) => o.latitude != null && o.longitude != null) : [];
-  const mapBusinesses = showPerks ? shownBusinesses : [];
+  // A business that goes to its customers has no pin (only a rounded area is stored; utils/businessLocationMode.js); it stays in the list.
+  const mapBusinesses = showPerks ? shownBusinesses.filter(hasMapPin) : [];
 
   const activeModeInfo = DISCOVER_MODES.find((m) => m.key === mode);
 
@@ -2086,7 +2100,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
       friendGoingReason(g, myFriendIds, myUserId),
       g.matchesYourInterests && g.interest_tag ? becauseYouLikeReason(g.interest_tag) : null,
       friendsInterestReason(g.interest_tag, friendInterestByTag[g.interest_tag]),
-      attendeeCount >= TRENDING_ATTENDANCE_MIN ? reasonText('attendingCount', { count: attendingFigure(g, attendeeCount) }) : null,
+      isTrendingGathering(g) ? reasonText('attendingCount', { count: attendingFigure(g, attendeeCount) }) : null,
       ...(g.fit?.reasons ?? []),
     ].filter(Boolean);
   }
@@ -2216,7 +2230,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
 
   function heroEyebrow(g) {
     // Codes are fixed English; shown as ui.discover.badge.<code> in the person's language.
-    const code = g.matchesYourInterests ? 'PERSONALIZED' : attendeeTotal(g) >= TRENDING_ATTENDANCE_MIN ? 'TRENDING' : (gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED');
+    const code = g.matchesYourInterests ? 'PERSONALIZED' : isTrendingGathering(g) ? 'TRENDING' : (gatheringTimeBadge(g.scheduled_at) ?? 'RECOMMENDED');
     return t(`ui.discover.badge.${code.replace(/ /g, '_')}`);
   }
 
@@ -3715,7 +3729,7 @@ export default function DiscoverHubScreen({ navigation, route }) {
           />
         </SafeAreaView>
       </Modal>
-      <BusinessPreviewSheet partner={previewBusiness} pinSpot={previewPinSpot} navigation={navigation} onClose={() => { setPreviewBusiness(null); setPreviewPinSpot(null); }} />
+      <BusinessPreviewSheet partner={previewBusiness} pinSpot={previewPinSpot} navigation={navigation} myPartnerId={myManagedPartnerId} onClose={() => { setPreviewBusiness(null); setPreviewPinSpot(null); }} />
     </SafeAreaView>
   );
 }

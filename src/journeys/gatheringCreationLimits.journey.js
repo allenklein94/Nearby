@@ -4,7 +4,7 @@
 // recurring occurrence never counts, joining is untouched, and reaching the limit never restricts the account.
 // Every step runs as an ordinary signed-in person under the real client role, in ONE rolled-back transaction.
 // Not covered: the app's alert on a phone (Jest covers the hint -> sentence mapping in recoverableError.test.js).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, fixturePhoneWrite } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -36,7 +36,7 @@ d('journey: gathering creation limits (20270362)', () => {
   perform set_config('app.trusted_update', 'false', true);
   -- v_new: account 1-4 days old = new; v_est: verified phone + 10 days = established; v_nophone: 30 days, no phone = new
   update auth.users set created_at = now() - interval '10 days' where id = v_est;
-  update auth.users set created_at = now() - interval '30 days', phone = null, phone_confirmed_at = null where id = v_nophone;
+  ${fixturePhoneWrite(`update auth.users set created_at = now() - interval '30 days', phone = null, phone_confirmed_at = null where id = v_nophone;`)}
   ${rec('levels', `jsonb_build_object('new', private.trust_level(v_new), 'est', private.trust_level(v_est), 'nophone', private.trust_level(v_nophone))`)}
   ${rec('rules', `(select jsonb_object_agg(trust_level, max_count) from private.rate_limit_rules where action = 'gathering_create' and window_seconds = 86400)`)}
   ${rec('old_trigger_gone', `not exists (select 1 from pg_trigger where tgname = 'on_gathering_created_enforce_limit' and tgrelid = 'public.gatherings'::regclass)`)}

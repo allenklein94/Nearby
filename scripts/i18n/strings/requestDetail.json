@@ -89,8 +89,10 @@
   "thisOfferNeedsAReal": "💳 This offer needs a real payment before it's fully confirmed.",
   "completePaymentA11y": "Complete payment",
   "completePayment": "Complete Payment",
-  "markThisReservationCompleteA11y": "Mark this reservation complete",
-  "markAsCompleted": "Mark as Completed",
+  "markAsDoneA11y": "Mark this booking as done",
+  "markAsDone": "Mark as done",
+  "markedAsDone": "Marked as done",
+  "cantMarkDone": "This booking can't be marked as done.",
   "cancelThisReservationA11y": "Cancel this reservation",
   "openGroupChatA11y": "Open group chat, {countLabel}",
   "groupChat": "💬 Group Chat ({n})",
@@ -286,7 +288,9 @@
   "offerUpdated": "Updated",
   "offerJustChanged": "This offer just changed. Check the new terms.",
   "forCountOfYour": "For {count} of your {total}",
-  "forCountPeople": "For {count} people"
+  "forCountPeople": "For {count} people",
+  "reportThisOffer": "Report this offer",
+  "offerMoreA11y": "More options for {name}'s offer"
  },
  "es": {
   "youreBooked": "Tienes reserva",
@@ -378,8 +382,10 @@
   "thisOfferNeedsAReal": "💳 Esta oferta necesita un pago real antes de quedar confirmada.",
   "completePaymentA11y": "Completar el pago",
   "completePayment": "Completar el pago",
-  "markThisReservationCompleteA11y": "Marcar esta reserva como completada",
-  "markAsCompleted": "Marcar como completada",
+  "markAsDoneA11y": "Marcar esta reserva como hecha",
+  "markAsDone": "Marcar como hecho",
+  "markedAsDone": "Marcado como hecho",
+  "cantMarkDone": "Esta reserva no se puede marcar como hecha.",
   "cancelThisReservationA11y": "Cancelar esta reserva",
   "openGroupChatA11y": "Abrir chat de grupo, {countLabel}",
   "groupChat": "💬 Chat de grupo ({n})",
@@ -575,7 +581,9 @@
   "offerUpdated": "Actualizada",
   "offerJustChanged": "Esta oferta acaba de cambiar. Revisa las nuevas condiciones.",
   "forCountOfYour": "Para {count} de tus {total}",
-  "forCountPeople": "Para {count} personas"
+  "forCountPeople": "Para {count} personas",
+  "reportThisOffer": "Denunciar esta oferta",
+  "offerMoreA11y": "Más opciones para la oferta de {name}"
  },
  "de": {
   "youreBooked": "Du bist gebucht",
@@ -667,8 +675,10 @@
   "thisOfferNeedsAReal": "💳 Dieses Angebot braucht eine echte Zahlung, bevor es ganz bestätigt ist.",
   "completePaymentA11y": "Zahlung abschließen",
   "completePayment": "Zahlung abschließen",
-  "markThisReservationCompleteA11y": "Diese Reservierung als erledigt markieren",
-  "markAsCompleted": "Als erledigt markieren",
+  "markAsDoneA11y": "Diese Buchung als erledigt markieren",
+  "markAsDone": "Als erledigt markieren",
+  "markedAsDone": "Als erledigt markiert",
+  "cantMarkDone": "Diese Buchung kann nicht als erledigt markiert werden.",
   "cancelThisReservationA11y": "Diese Reservierung stornieren",
   "openGroupChatA11y": "Gruppenchat öffnen, {countLabel}",
   "groupChat": "💬 Gruppenchat ({n})",
@@ -864,7 +874,9 @@
   "offerUpdated": "Aktualisiert",
   "offerJustChanged": "Dieses Angebot wurde gerade geändert. Prüfe die neuen Bedingungen.",
   "forCountOfYour": "Für {count} von euren {total}",
-  "forCountPeople": "Für {count} Personen"
+  "forCountPeople": "Für {count} Personen",
+  "reportThisOffer": "Dieses Angebot melden",
+  "offerMoreA11y": "Weitere Optionen für das Angebot von {name}"
  },
  "fr": {
   "youreBooked": "C'est réservé",
@@ -956,8 +968,10 @@
   "thisOfferNeedsAReal": "💳 Cette offre nécessite un vrai paiement avant d'être entièrement confirmée.",
   "completePaymentA11y": "Finaliser le paiement",
   "completePayment": "Finaliser le paiement",
-  "markThisReservationCompleteA11y": "Marquer cette réservation comme terminée",
-  "markAsCompleted": "Marquer comme terminée",
+  "markAsDoneA11y": "Marquer cette réservation comme faite",
+  "markAsDone": "Marquer comme fait",
+  "markedAsDone": "Marqué comme fait",
+  "cantMarkDone": "Cette réservation ne peut pas être marquée comme faite.",
   "cancelThisReservationA11y": "Annuler cette réservation",
   "openGroupChatA11y": "Ouvrir la discussion de groupe, {countLabel}",
   "groupChat": "💬 Discussion de groupe ({n})",
@@ -1153,7 +1167,9 @@
   "offerUpdated": "Mise à jour",
   "offerJustChanged": "Cette offre vient de changer. Vérifiez les nouvelles conditions.",
   "forCountOfYour": "Pour {count} sur vos {total}",
-  "forCountPeople": "Pour {count} personnes"
+  "forCountPeople": "Pour {count} personnes",
+  "reportThisOffer": "Signaler cette offre",
+  "offerMoreA11y": "Plus d'options pour l'offre de {name}"
  },
  "pt": {
   "youreBooked": "Reserva feita",
@@ -1245,8 +1261,10 @@
   "thisOfferNeedsAReal": "💳 Esta oferta precisa de um pagamento real antes de ficar totalmente confirmada.",
   "completePaymentA11y": "Concluir pagamento",
   "completePayment": "Concluir pagamento",
-  "markThisReservationCompleteA11y": "Marcar esta reserva como concluída",
-  "markAsCompleted": "Marcar como concluída",
+  "markAsDoneA11y": "Marcar esta reserva como feita",
+  "markAsDone": "Marcar como feito",
+  "markedAsDone": "Marcado como feito",
+  "cantMarkDone": "Esta reserva não pode ser marcada como feita.",
   "cancelThisReservationA11y": "Cancelar esta reserva",
   "openGroupChatA11y": "Abrir chat do grupo, {countLabel}",
   "groupChat": "💬 Chat do grupo ({n})",
@@ -1442,7 +1460,9 @@
   "offerUpdated": "Atualizada",
   "offerJustChanged": "Esta oferta acabou de mudar. Confira os novos termos.",
   "forCountOfYour": "Para {count} dos seus {total}",
-  "forCountPeople": "Para {count} pessoas"
+  "forCountPeople": "Para {count} pessoas",
+  "reportThisOffer": "Denunciar esta oferta",
+  "offerMoreA11y": "Mais opções para a oferta de {name}"
  },
  "ht": {
   "youreBooked": "Ou gen rezèvasyon",
@@ -1534,8 +1554,10 @@
   "thisOfferNeedsAReal": "💳 Òf sa a bezwen yon vrè peman anvan li konfime nèt.",
   "completePaymentA11y": "Fini peman an",
   "completePayment": "Fini peman an",
-  "markThisReservationCompleteA11y": "Make rezèvasyon sa a kòm fini",
-  "markAsCompleted": "Make kòm fini",
+  "markAsDoneA11y": "Make rezèvasyon sa a fini",
+  "markAsDone": "Make li fini",
+  "markedAsDone": "Make li fini deja",
+  "cantMarkDone": "Ou pa ka make rezèvasyon sa a fini.",
   "cancelThisReservationA11y": "Anile rezèvasyon sa a",
   "openGroupChatA11y": "Louvri chat gwoup la, {countLabel}",
   "groupChat": "💬 Chat gwoup ({n})",
@@ -1731,7 +1753,9 @@
   "offerUpdated": "Mete ajou",
   "offerJustChanged": "Òf sa a fèk chanje. Gade nouvo kondisyon yo.",
   "forCountOfYour": "Pou {count} sou {total} ou yo",
-  "forCountPeople": "Pou {count} moun"
+  "forCountPeople": "Pou {count} moun",
+  "reportThisOffer": "Siyale òf sa a",
+  "offerMoreA11y": "Plis opsyon pou òf {name}"
  },
  "zh": {
   "youreBooked": "已预订",
@@ -1823,8 +1847,10 @@
   "thisOfferNeedsAReal": "💳 这个优惠需要完成付款后才算完全确认。",
   "completePaymentA11y": "完成付款",
   "completePayment": "完成付款",
-  "markThisReservationCompleteA11y": "将这个预订标记为已完成",
-  "markAsCompleted": "标记为已完成",
+  "markAsDoneA11y": "将此预订标记为已完成",
+  "markAsDone": "标记为已完成",
+  "markedAsDone": "已标记为完成",
+  "cantMarkDone": "此预订无法标记为已完成。",
   "cancelThisReservationA11y": "取消这个预订",
   "openGroupChatA11y": "打开群聊，{countLabel}",
   "groupChat": "💬 群聊（{n}）",
@@ -2017,7 +2043,9 @@
   "offerUpdated": "已更新",
   "offerJustChanged": "此报价刚刚有变化，请查看新条款。",
   "forCountOfYour": "适合你们 {total} 人中的 {count} 人",
-  "forCountPeople": "适合 {count} 人"
+  "forCountPeople": "适合 {count} 人",
+  "reportThisOffer": "举报此优惠",
+  "offerMoreA11y": "{name} 的优惠的更多选项"
  },
  "vi": {
   "youreBooked": "Bạn đã đặt chỗ",
@@ -2109,8 +2137,10 @@
   "thisOfferNeedsAReal": "💳 Ưu đãi này cần thanh toán thật trước khi được xác nhận hoàn toàn.",
   "completePaymentA11y": "Hoàn tất thanh toán",
   "completePayment": "Hoàn tất thanh toán",
-  "markThisReservationCompleteA11y": "Đánh dấu đặt chỗ này đã hoàn thành",
-  "markAsCompleted": "Đánh dấu đã hoàn thành",
+  "markAsDoneA11y": "Đánh dấu đặt chỗ này là đã xong",
+  "markAsDone": "Đánh dấu đã xong",
+  "markedAsDone": "Đã đánh dấu là xong",
+  "cantMarkDone": "Không thể đánh dấu đặt chỗ này là đã xong.",
   "cancelThisReservationA11y": "Hủy đặt chỗ này",
   "openGroupChatA11y": "Mở trò chuyện nhóm, {countLabel}",
   "groupChat": "💬 Trò chuyện nhóm ({n})",
@@ -2303,7 +2333,9 @@
   "offerUpdated": "Đã cập nhật",
   "offerJustChanged": "Ưu đãi này vừa thay đổi. Hãy xem điều khoản mới.",
   "forCountOfYour": "Cho {count} trong {total} người của bạn",
-  "forCountPeople": "Cho {count} người"
+  "forCountPeople": "Cho {count} người",
+  "reportThisOffer": "Báo cáo ưu đãi này",
+  "offerMoreA11y": "Thêm tùy chọn cho ưu đãi của {name}"
  },
  "tl": {
   "youreBooked": "Naka-book ka na",
@@ -2395,8 +2427,10 @@
   "thisOfferNeedsAReal": "💳 Kailangan ng totoong bayad ang alok na ito bago ito ganap na makumpirma.",
   "completePaymentA11y": "Tapusin ang bayad",
   "completePayment": "Tapusin ang bayad",
-  "markThisReservationCompleteA11y": "Markahang tapos ang reservation na ito",
-  "markAsCompleted": "Markahang tapos",
+  "markAsDoneA11y": "Markahan ang booking na ito bilang tapos",
+  "markAsDone": "Markahan bilang tapos",
+  "markedAsDone": "Namarkahan bilang tapos",
+  "cantMarkDone": "Hindi maaaring markahan ang booking na ito bilang tapos.",
   "cancelThisReservationA11y": "Kanselahin ang reservation na ito",
   "openGroupChatA11y": "Buksan ang group chat, {countLabel}",
   "groupChat": "💬 Group chat ({n})",
@@ -2592,7 +2626,9 @@
   "offerUpdated": "Na-update",
   "offerJustChanged": "Nagbago lang ang alok na ito. Tingnan ang mga bagong tuntunin.",
   "forCountOfYour": "Para sa {count} sa iyong {total}",
-  "forCountPeople": "Para sa {count} tao"
+  "forCountPeople": "Para sa {count} tao",
+  "reportThisOffer": "I-report ang alok na ito",
+  "offerMoreA11y": "Higit pang opsyon para sa alok ng {name}"
  },
  "ru": {
   "youreBooked": "Бронь подтверждена",
@@ -2684,8 +2720,10 @@
   "thisOfferNeedsAReal": "💳 Для полного подтверждения этого предложения нужна настоящая оплата.",
   "completePaymentA11y": "Завершить оплату",
   "completePayment": "Завершить оплату",
-  "markThisReservationCompleteA11y": "Отметить бронь как завершённую",
-  "markAsCompleted": "Отметить как завершённое",
+  "markAsDoneA11y": "Отметить эту бронь как выполненную",
+  "markAsDone": "Отметить как выполненное",
+  "markedAsDone": "Отмечено как выполненное",
+  "cantMarkDone": "Эту бронь нельзя отметить как выполненную.",
   "cancelThisReservationA11y": "Отменить эту бронь",
   "openGroupChatA11y": "Открыть групповой чат, {countLabel}",
   "groupChat": "💬 Групповой чат ({n})",
@@ -2887,7 +2925,9 @@
   "offerUpdated": "Обновлено",
   "offerJustChanged": "Это предложение только что изменилось. Посмотрите новые условия.",
   "forCountOfYour": "Для {count} из ваших {total}",
-  "forCountPeople": "Для {count} человек"
+  "forCountPeople": "Для {count} человек",
+  "reportThisOffer": "Пожаловаться на это предложение",
+  "offerMoreA11y": "Другие действия с предложением {name}"
  },
  "ko": {
   "youreBooked": "예약 완료",
@@ -2979,8 +3019,10 @@
   "thisOfferNeedsAReal": "💳 이 제안은 결제가 완료되어야 최종 확정돼요.",
   "completePaymentA11y": "결제 완료하기",
   "completePayment": "결제 완료하기",
-  "markThisReservationCompleteA11y": "이 예약을 완료로 표시",
-  "markAsCompleted": "완료로 표시",
+  "markAsDoneA11y": "이 예약을 완료로 표시",
+  "markAsDone": "완료로 표시",
+  "markedAsDone": "완료로 표시됨",
+  "cantMarkDone": "이 예약은 완료로 표시할 수 없습니다.",
   "cancelThisReservationA11y": "이 예약 취소",
   "openGroupChatA11y": "그룹 채팅 열기, {countLabel}",
   "groupChat": "💬 그룹 채팅 ({n})",
@@ -3173,6 +3215,8 @@
   "offerUpdated": "업데이트됨",
   "offerJustChanged": "이 제안이 방금 변경됐어요. 새 조건을 확인하세요.",
   "forCountOfYour": "{total}명 중 {count}명",
-  "forCountPeople": "{count}명"
+  "forCountPeople": "{count}명",
+  "reportThisOffer": "이 제안 신고하기",
+  "offerMoreA11y": "{name}의 제안에 대한 더 많은 옵션"
  }
 }

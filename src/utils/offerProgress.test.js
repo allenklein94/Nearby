@@ -8,7 +8,9 @@ import { SEQUENCES, settleMs, MOTION_BUDGET } from '../motion/motionBudget';
 import { notificationDestination } from '../navigation/notificationDestinations';
 
 const read = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
-const offer = (id, status, request_id = `r-${id}`) => ({ id, status, request_id, business_requests: { status: 'open', expires_at: null } });
+// 'completed' here = the business confirmed the visit (visit_confirmed_at, 20270430); a customer's own mark is tested apart.
+const CONFIRMED_AT = '2026-10-18T12:00:00Z';
+const offer = (id, status, request_id = `r-${id}`) => ({ id, status, request_id, business_requests: { status: 'open', expires_at: null }, ...(status === 'completed' ? { visit_confirmed_at: CONFIRMED_AT } : {}) });
 
 describe('owner item 13: Offer sent -> Accepted -> Redeemed from the stored status only', () => {
   it('maps the three path statuses and nothing else', () => {
@@ -17,6 +19,8 @@ describe('owner item 13: Offer sent -> Accepted -> Redeemed from the stored stat
     expect(offerProgress(offer('a', 'accepted'))).toEqual({ current: 1 });
     // acceptance is not redemption: only `completed` (business-confirmed) lights Redeemed
     expect(offerProgress(offer('a', 'completed'))).toEqual({ current: 2 });
+    // 20270430: the customer's own "Mark as done" also stores 'completed', but it is never a redemption
+    expect(offerProgress({ ...offer('a', 'accepted'), status: 'completed', customer_done_at: CONFIRMED_AT })).toEqual({ current: 1 });
     for (const s of ['pending', 'declined', 'expired', 'cancelled', 'withdrawn', 'not_chosen', undefined]) {
       expect(offerProgress(offer('a', s))).toBeNull();
     }
@@ -145,7 +149,7 @@ describe('expiry boundary: customer card, business card and pipeline agree (froz
   it('accepted / redeemed steps and the stored-expired line are unchanged by the clock', () => {
     for (const ms of [END - 1, END, END + 1]) {
       expect(offerProgress(stored({ status: 'accepted' }), new Date(ms))).toEqual({ current: 1 });
-      expect(offerProgress(stored({ status: 'completed' }), new Date(ms))).toEqual({ current: 2 });
+      expect(offerProgress(stored({ status: 'completed', visit_confirmed_at: CONFIRMED_AT }), new Date(ms))).toEqual({ current: 2 });
       expect(businessCardStatus(stored({ status: 'expired' }), new Date(ms))).toBe('expired');
       expect(businessCardStatus(stored({ status: 'accepted' }), new Date(ms))).toBe('accepted');
     }

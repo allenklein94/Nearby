@@ -12,7 +12,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Crossed Paths",
-        desc: "The main way you find people — shows you who you've actually been near recently (about 35 feet, a few minutes ago), not just anyone in the city.",
+        desc: "The main way you find people — shows you who you've actually been near recently (a few minutes ago), not just anyone in the city.",
       },
       noticesWaves: {
         name: "Notices & Waves",
@@ -84,7 +84,7 @@ export default {
       },
       idVerification: {
         name: "ID Verification",
-        desc: "Verify your identity to get a badge on your profile and appear when others filter for verified profiles.",
+        desc: "Verify your identity to get an ID Verified badge on your profile and appear when others filter for ID-verified profiles.",
       },
       blockedUsers: {
         name: "Blocked Users",
@@ -100,7 +100,7 @@ export default {
       },
       inviteFriends: {
         name: "Invite Friends",
-        desc: "Share your referral code — when a friend joins with it, you both get 3 bonus Notices.",
+        desc: "Share Nearby with a friend from the app.",
       },
       offersPerks: {
         name: "Offers & Perks",
@@ -127,7 +127,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Caminos Cruzados",
-        desc: "La forma principal de encontrar gente: te muestra con quién has coincidido de verdad hace poco (a unos 10 metros, hace unos minutos), no a cualquiera de la ciudad.",
+        desc: "La forma principal de encontrar gente: te muestra con quién has coincidido de verdad hace poco (hace unos minutos), no a cualquiera de la ciudad.",
       },
       noticesWaves: {
         name: "Avisos y saludos",
@@ -199,7 +199,7 @@ export default {
       },
       idVerification: {
         name: "Verificación de identidad",
-        desc: "Verifica tu identidad para tener una insignia en tu perfil y aparecer cuando otros filtren por perfiles verificados.",
+        desc: "Verifica tu identidad para tener la insignia Identidad verificada en tu perfil y aparecer cuando otros filtren por perfiles con identidad verificada.",
       },
       blockedUsers: {
         name: "Usuarios bloqueados",
@@ -215,7 +215,7 @@ export default {
       },
       inviteFriends: {
         name: "Invitar amigos",
-        desc: "Comparte tu código de invitación: cuando un amigo se una con él, ambos reciben 3 avisos extra.",
+        desc: "Comparte Nearby con un amigo desde la app.",
       },
       offersPerks: {
         name: "Ofertas y ventajas",
@@ -242,7 +242,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Gekreuzte Wege",
-        desc: "Der wichtigste Weg, Menschen zu finden: Er zeigt, wem du kürzlich wirklich nahe warst (etwa 10 Meter, vor ein paar Minuten), nicht irgendwen in der Stadt.",
+        desc: "Der wichtigste Weg, Menschen zu finden: Er zeigt, wem du kürzlich wirklich nahe warst (vor ein paar Minuten), nicht irgendwen in der Stadt.",
       },
       noticesWaves: {
         name: "Hinweise & Winken",
@@ -314,7 +314,7 @@ export default {
       },
       idVerification: {
         name: "Identitätsprüfung",
-        desc: "Bestätige deine Identität, um ein Abzeichen im Profil zu bekommen und angezeigt zu werden, wenn andere nach verifizierten Profilen filtern.",
+        desc: "Verifiziere deine Identität, um das Abzeichen „Identität verifiziert“ auf deinem Profil zu bekommen und zu erscheinen, wenn andere nach Profilen mit verifizierter Identität filtern.",
       },
       blockedUsers: {
         name: "Blockierte Personen",
@@ -330,7 +330,7 @@ export default {
       },
       inviteFriends: {
         name: "Freunde einladen",
-        desc: "Teile deinen Einladungscode: Wenn sich jemand damit anmeldet, bekommt ihr beide 3 zusätzliche Hinweise.",
+        desc: "Teile Nearby direkt aus der App mit Freunden.",
       },
       offersPerks: {
         name: "Angebote & Vorteile",
@@ -357,7 +357,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Chemins Croisés",
-        desc: "Le moyen principal de trouver des gens : il vous montre qui vous avez vraiment croisé récemment (à environ 10 mètres, il y a quelques minutes), pas n'importe qui en ville.",
+        desc: "Le moyen principal de trouver des gens : il vous montre qui vous avez vraiment croisé récemment (il y a quelques minutes), pas n'importe qui en ville.",
       },
       noticesWaves: {
         name: "Avis et signes",
@@ -429,7 +429,7 @@ export default {
       },
       idVerification: {
         name: "Vérification d'identité",
-        desc: "Vérifiez votre identité pour obtenir un badge sur votre profil et apparaître quand d'autres filtrent les profils vérifiés.",
+        desc: "Vérifie ton identité pour obtenir le badge Identité vérifiée sur ton profil et apparaître quand d'autres filtrent les profils à identité vérifiée.",
       },
       blockedUsers: {
         name: "Utilisateurs bloqués",
@@ -445,7 +445,7 @@ export default {
       },
       inviteFriends: {
         name: "Inviter des amis",
-        desc: "Partagez votre code de parrainage : quand un ami s'inscrit avec, vous recevez tous les deux 3 avis bonus.",
+        desc: "Partagez Nearby avec un ami depuis l'application.",
       },
       offersPerks: {
         name: "Offres et avantages",
@@ -472,7 +472,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Caminhos Cruzados",
-        desc: "O principal jeito de encontrar pessoas: mostra quem esteve mesmo perto de você recentemente (cerca de 10 metros, há poucos minutos), não qualquer pessoa da cidade.",
+        desc: "O principal jeito de encontrar pessoas: mostra quem esteve mesmo perto de você recentemente (há poucos minutos), não qualquer pessoa da cidade.",
       },
       noticesWaves: {
         name: "Avisos e acenos",
@@ -544,7 +544,7 @@ export default {
       },
       idVerification: {
         name: "Verificação de identidade",
-        desc: "Verifique sua identidade para ganhar um selo no perfil e aparecer quando outras pessoas filtrarem por perfis verificados.",
+        desc: "Verifique sua identidade para ter o selo Identidade verificada no seu perfil e aparecer quando outras pessoas filtrarem por perfis com identidade verificada.",
       },
       blockedUsers: {
         name: "Usuários bloqueados",
@@ -560,7 +560,7 @@ export default {
       },
       inviteFriends: {
         name: "Convidar amigos",
-        desc: "Compartilhe seu código de indicação: quando um amigo entrar com ele, vocês dois ganham 3 avisos extras.",
+        desc: "Compartilhe o Nearby com um amigo pelo app.",
       },
       offersPerks: {
         name: "Ofertas e vantagens",
@@ -587,7 +587,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Chemen Kwaze",
-        desc: "Prensipal fason pou jwenn moun: li montre w moun ki te vrèman toupre w dènyèman (anviwon 35 pye, kèk minit de sa), pa nenpòt moun nan vil la.",
+        desc: "Prensipal fason pou jwenn moun: li montre w moun ki te vrèman toupre w dènyèman (kèk minit de sa), pa nenpòt moun nan vil la.",
       },
       noticesWaves: {
         name: "Avi ak salitasyon",
@@ -659,7 +659,7 @@ export default {
       },
       idVerification: {
         name: "Verifikasyon idantite",
-        desc: "Verifye idantite w pou jwenn yon badj sou pwofil ou epi parèt lè lòt moun filtre pou pwofil verifye.",
+        desc: "Verifye idantite w pou w jwenn badj Idantite verifye a sou pwofil ou epi parèt lè lòt moun filtre pou pwofil ak idantite verifye.",
       },
       blockedUsers: {
         name: "Moun ki bloke",
@@ -675,7 +675,7 @@ export default {
       },
       inviteFriends: {
         name: "Envite zanmi",
-        desc: "Pataje kòd referans ou: lè yon zanmi antre avè l, nou tou de jwenn 3 avi bonis.",
+        desc: "Pataje Nearby ak yon zanmi nan aplikasyon an.",
       },
       offersPerks: {
         name: "Òf ak avantaj",
@@ -702,7 +702,7 @@ export default {
     f: {
       crossedPaths: {
         name: "擦肩而过",
-        desc: "找到人的主要方式：显示最近真正在你附近出现过的人（约 10 米内、几分钟前），而不是城里的任何人。",
+        desc: "找到人的主要方式：显示最近真正在你附近出现过的人（几分钟前），而不是城里的任何人。",
       },
       noticesWaves: {
         name: "提醒与招手",
@@ -774,7 +774,7 @@ export default {
       },
       idVerification: {
         name: "身份认证",
-        desc: "认证身份后，资料上会显示徽章，别人筛选已认证资料时也能看到你。",
+        desc: "验证你的身份，即可在个人资料上获得“身份已验证”徽章，并在其他人筛选身份已验证的资料时出现。",
       },
       blockedUsers: {
         name: "已屏蔽的用户",
@@ -790,7 +790,7 @@ export default {
       },
       inviteFriends: {
         name: "邀请好友",
-        desc: "分享你的邀请码：好友用它加入后，你们都能获得 3 次额外提醒。",
+        desc: "在应用内把 Nearby 分享给朋友。",
       },
       offersPerks: {
         name: "优惠与福利",
@@ -817,7 +817,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Đường Đời Giao Nhau",
-        desc: "Cách chính để tìm người: cho bạn thấy ai thật sự ở gần bạn gần đây (khoảng 10 mét, vài phút trước), không phải bất kỳ ai trong thành phố.",
+        desc: "Cách chính để tìm người: cho bạn thấy ai thật sự ở gần bạn gần đây (vài phút trước), không phải bất kỳ ai trong thành phố.",
       },
       noticesWaves: {
         name: "Thông báo & vẫy tay",
@@ -889,7 +889,7 @@ export default {
       },
       idVerification: {
         name: "Xác minh danh tính",
-        desc: "Xác minh danh tính để có huy hiệu trên hồ sơ và xuất hiện khi người khác lọc hồ sơ đã xác minh.",
+        desc: "Xác minh danh tính để có huy hiệu Đã xác minh danh tính trên hồ sơ và xuất hiện khi người khác lọc hồ sơ đã xác minh danh tính.",
       },
       blockedUsers: {
         name: "Người đã chặn",
@@ -905,7 +905,7 @@ export default {
       },
       inviteFriends: {
         name: "Mời bạn bè",
-        desc: "Chia sẻ mã giới thiệu: khi bạn bè tham gia bằng mã đó, cả hai đều nhận thêm 3 lượt thông báo.",
+        desc: "Chia sẻ Nearby với bạn bè ngay trong ứng dụng.",
       },
       offersPerks: {
         name: "Ưu đãi & quyền lợi",
@@ -932,7 +932,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Nagkrus na Landas",
-        desc: "Ang pangunahing paraan para makahanap ng tao: ipinapakita kung sino talaga ang napalapit sa iyo kamakailan (mga 35 talampakan, ilang minuto na ang nakalipas), hindi kung sinuman sa lungsod.",
+        desc: "Ang pangunahing paraan para makahanap ng tao: ipinapakita kung sino talaga ang napalapit sa iyo kamakailan (ilang minuto na ang nakalipas), hindi kung sinuman sa lungsod.",
       },
       noticesWaves: {
         name: "Mga abiso at Wave",
@@ -1004,7 +1004,7 @@ export default {
       },
       idVerification: {
         name: "ID verification",
-        desc: "I-verify ang pagkakakilanlan mo para magkaroon ng badge sa profile at lumabas kapag nag-filter ang iba ng verified na profile.",
+        desc: "I-verify ang pagkakakilanlan mo para magkaroon ng ID Verified badge sa profile at lumabas kapag nag-filter ang iba ng ID verified na profile.",
       },
       blockedUsers: {
         name: "Mga naka-block",
@@ -1020,7 +1020,7 @@ export default {
       },
       inviteFriends: {
         name: "Mag-imbita ng kaibigan",
-        desc: "Ibahagi ang referral code mo: kapag sumali ang kaibigan gamit ito, pareho kayong makakakuha ng 3 bonus na abiso.",
+        desc: "Ibahagi ang Nearby sa kaibigan mula sa app.",
       },
       offersPerks: {
         name: "Mga alok at perk",
@@ -1047,7 +1047,7 @@ export default {
     f: {
       crossedPaths: {
         name: "Пересечённые Пути",
-        desc: "Главный способ находить людей: показывает тех, кто недавно действительно был рядом (около 10 метров, несколько минут назад), а не кого угодно в городе.",
+        desc: "Главный способ находить людей: показывает тех, кто недавно действительно был рядом (несколько минут назад), а не кого угодно в городе.",
       },
       noticesWaves: {
         name: "Уведомления и взмахи",
@@ -1119,7 +1119,7 @@ export default {
       },
       idVerification: {
         name: "Проверка личности",
-        desc: "Подтвердите личность, чтобы получить значок в профиле и появляться, когда другие фильтруют проверенные профили.",
+        desc: "Подтвердите личность, чтобы получить значок «Личность подтверждена» в профиле и появляться, когда другие ищут профили с подтверждённой личностью.",
       },
       blockedUsers: {
         name: "Заблокированные",
@@ -1135,7 +1135,7 @@ export default {
       },
       inviteFriends: {
         name: "Пригласить друзей",
-        desc: "Поделитесь реферальным кодом: когда друг зарегистрируется с ним, вы оба получите 3 бонусных уведомления.",
+        desc: "Поделитесь Nearby с другом прямо из приложения.",
       },
       offersPerks: {
         name: "Предложения и бонусы",
@@ -1162,7 +1162,7 @@ export default {
     f: {
       crossedPaths: {
         name: "스쳐 지나간 인연",
-        desc: "사람을 찾는 주된 방법이에요. 도시 아무나가 아니라 최근 실제로 가까이 있었던 사람(약 10미터, 몇 분 전)을 보여 줘요.",
+        desc: "사람을 찾는 주된 방법이에요. 도시 아무나가 아니라 최근 실제로 가까이 있었던 사람(몇 분 전)을 보여 줘요.",
       },
       noticesWaves: {
         name: "알림 & 웨이브",
@@ -1234,7 +1234,7 @@ export default {
       },
       idVerification: {
         name: "신원 인증",
-        desc: "신원을 인증하면 프로필에 배지가 생기고, 인증된 프로필만 보는 사람에게도 표시돼요.",
+        desc: "신분을 인증하면 프로필에 신분 인증됨 배지가 표시되고, 다른 사람이 신분 인증된 프로필만 볼 때도 나타나요.",
       },
       blockedUsers: {
         name: "차단한 사용자",
@@ -1250,7 +1250,7 @@ export default {
       },
       inviteFriends: {
         name: "친구 초대",
-        desc: "추천 코드를 공유하세요. 친구가 그 코드로 가입하면 둘 다 알림 3개를 추가로 받아요.",
+        desc: "앱에서 친구에게 Nearby를 공유하세요.",
       },
       offersPerks: {
         name: "혜택 & 특전",

@@ -7,6 +7,8 @@
 // Wording is ui.shared.errors (one sentence pair per `what` phrase); a phrase with no entry keeps the English frame.
 import { tr } from '../i18n/translate';
 import { videoProblemText, SERVER_VIDEO_MESSAGES } from './videoProblem';
+import { restrictionRefusal, restrictionRefusalMessage } from './accountRestrictions';
+import { isSignInBlocked, withReviewLine } from './accountReview';
 
 const whatSlug = (what) => String(what).replace(/\W+/g, '_');
 function whatLine(what, form) {
@@ -22,6 +24,10 @@ export function serviceError(response, result, fallback) {
   e.code = result?.code ?? null;
   // Item 86: a refused contradictory setting carries the server's exact lines, shown inline (utils/settingConflicts.js).
   if (Array.isArray(result?.conflicts)) e.conflicts = result.conflicts;
+  // A rule the edge function reports by code (20270372: offer_contact_info) is read like the database's own hint.
+  if (result?.code && ACCOUNT_RULE_HINTS[result.code]) e.hint = result.code;
+  // 20270399: an admin's pause, passed on by the edge function with the database's detail {capability, until}
+  if (result?.code === 'account_restricted') { e.hint = 'account_restricted'; e.details = result.details ?? null; }
   return e;
 }
 
@@ -30,7 +36,22 @@ export const ACCOUNT_RULE_HINTS = {
   account_suspended: 'ui.shared.errors.accountSuspended',
   rate_limited: 'ui.shared.errors.rateLimited',  // 20270356: volume limits by trust level
   gathering_limit: 'ui.shared.errors.gatheringLimit',  // 20270362: gatherings created per day by trust level
+  friend_request_limit: 'ui.shared.errors.friendRequestLimit',  // 20270377: friend requests per rolling 10 minutes
+  friend_request_daily_limit: 'ui.shared.errors.friendRequestDailyLimit',  // 20270377: the existing 15 friend requests per local day
+  offer_contact_info: 'ui.shared.errors.offerContactInfo',  // 20270372: no links, emails or phone numbers in offer text
+  held_not_shareable: 'ui.shared.errors.heldNotShareable',  // 20270373: no invitation / business request for held content
+  id_verification_paused: 'ui.shared.errors.idVerificationPaused',  // 20270400: new ID uploads closed until the retention lifecycle is on
 };
+
+// The account decisions a person may ask to have reviewed (owner 2026-11-07): their message carries the review line.
+const REVIEWABLE_HINTS = new Set(['account_suspended']);
+
+// ONE wording for an account rule the server enforces, used by every surface (alerts, the chat composer).
+export function accountRuleMessage(hint) {
+  const key = ACCOUNT_RULE_HINTS[hint];
+  if (!key) return null;
+  return REVIEWABLE_HINTS.has(hint) ? withReviewLine(tr(key)) : tr(key);
+}
 
 const NETWORK = /network request failed|failed to fetch|network error|timed? ?out|offline|internet|connection/i;
 
@@ -56,8 +77,13 @@ export function recoverableErrorCopy({ what, error, draftKept = false }) {
     return { title: whatLine(what, 'service') ?? `We couldn't ${what} right now.`, message: parts.join(' '), canRetry: true };
   }
   // An account rule the server enforces (20270351 / 20270352 / 20270356): say the rule in the person's language; retrying can't help.
-  const rule = ACCOUNT_RULE_HINTS[error?.hint];
-  if (rule) return { title: tr('ui.shared.errors.didntGoThrough'), message: tr(rule), canRetry: false };
+  // 20270399: an admin's temporary pause on this one action: say so, and until when; retrying can't help.
+  const paused = restrictionRefusal(error);
+  if (paused) return { title: tr('ui.shared.errors.didntGoThrough'), message: restrictionRefusalMessage(paused), canRetry: false };
+  const rule = accountRuleMessage(error?.hint);
+  if (rule) return { title: tr('ui.shared.errors.didntGoThrough'), message: rule, canRetry: false };
+  // Auth refused a suspended / held account at sign-in: say so (never the raw "User is banned"), + how to ask for a review.
+  if (isSignInBlocked(error)) return { title: tr('ui.shared.errors.didntGoThrough'), message: withReviewLine(tr('ui.shared.errors.signInBlocked')), canRetry: false };
   const detail = String(error?.message ?? '').trim();
   return { title: tr('ui.shared.errors.didntGoThrough'), message: detail || (whatLine(what, 'input') ?? `We couldn't ${what}. Please check it and try again.`), canRetry: false };
 }

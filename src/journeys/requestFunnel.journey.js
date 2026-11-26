@@ -73,12 +73,13 @@ d('journey: business requests -> each stage and break point -> request funnel su
   insert into business_reservations (offer_id, status) values (o, 'cancelled');
   insert into business_request_offers (request_id, partner_id, status, responded_at, accepted_at) values (r_booked, v_partner, 'accepted', v_wk, v_wk) returning id into o;
   insert into business_reservations (offer_id, status, confirmed_at) values (o, 'confirmed', v_wk);
-  insert into business_request_offers (request_id, partner_id, status, responded_at, accepted_at, completed_at) values (r_redeemed, v_partner, 'completed', v_wk, v_wk, v_wk);
+  -- 'completed' + visit_confirmed_at = the business confirmed the visit (20270430: only that counts as redeemed)
+  insert into business_request_offers (request_id, partner_id, status, responded_at, accepted_at, completed_at, visit_confirmed_at) values (r_redeemed, v_partner, 'completed', v_wk, v_wk, v_wk, v_wk);
   -- crosses the week boundary: created Sunday, offer Monday, accepted Tuesday, redeemed Wednesday of the NEXT week
   insert into business_request_offers (request_id, partner_id, status) values (r_cross, v_partner, 'pending') returning id into o;
   update business_request_offers set status = 'offered', responded_at = timestamptz '2020-01-13 09:00+00' where id = o;
   update business_request_offers set status = 'accepted', accepted_at = timestamptz '2020-01-14 10:00+00' where id = o;
-  update business_request_offers set status = 'completed', completed_at = timestamptz '2020-01-15 11:00+00' where id = o;
+  update business_request_offers set status = 'completed', completed_at = timestamptz '2020-01-15 11:00+00', visit_confirmed_at = timestamptz '2020-01-15 11:00+00' where id = o;
 
   -- ---- per-request journey columns ----
   select * into j from request_journey where request_id = r_cross;

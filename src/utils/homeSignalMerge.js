@@ -9,7 +9,7 @@ import { friendGoingReason } from './recommendationFacts';
 import { interestMatch } from './interestMatch';
 import { friendsInterestReason } from './friendInterests';
 import { attendeeTotal, attendingFigure } from './gatheringFullness';
-import { TRENDING_ATTENDANCE_MIN } from '../constants/trending';
+import { isTrendingGathering } from '../constants/trending';
 import { reasonText } from '../constants/recommendationReasonVocabulary';
 
 export const SIGNAL_TEXT = {
@@ -20,7 +20,7 @@ export const SIGNAL_TEXT = {
   // Popular, not personal: says how many are really going (approved attendees; Interested is private and never counted).
   trending: (g) => {
     const n = attendeeTotal(g);
-    return n >= TRENDING_ATTENDANCE_MIN ? reasonText('trendingGoing', { count: attendingFigure(g, n) }) : reasonText('trendingNearby');
+    return isTrendingGathering(g) ? reasonText('trendingGoing', { count: attendingFigure(g, n) }) : reasonText('trendingNearby');
   },
   soon: () => reasonText('startingSoon'),
   friend: (g, isPast) => {

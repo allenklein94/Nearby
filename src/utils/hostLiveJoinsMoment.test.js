@@ -283,7 +283,7 @@ describe('item 28 follow-up: the cluster and the count', () => {
     expect(read('../services/gatherings.js')).toMatch(/'peopleAttending', \{ count: attendingFigure\(gathering, attendeeCount\) \}/);
     expect(read('../services/homeDashboard.js')).toMatch(/peopleCount: attendingFigure\(p, /);
     expect(read('../screens/PlansScreen.js')).toMatch(/attendingFigure\(item\.gathering\)/);
-    // Trending still means >= 5 JOINED people (the locked threshold compares guests)
-    expect(read('./discoverSections.js')).toMatch(/attendeeTotal\(g\) >= TRENDING_ATTENDANCE_MIN/);
+    // Trending is the server's answer (20270409: 5+ established joined guests, never the host), never a count on the phone
+    expect(read('./discoverSections.js')).toMatch(/remaining\(\)\.filter\(isTrendingGathering\)/);
   });
 });

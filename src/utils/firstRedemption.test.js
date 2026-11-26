@@ -11,7 +11,8 @@ const read = (f) => fs.readFileSync(path.join(__dirname, '..', f), 'utf8');
 const code = (f) => read(f).split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
 const LANGS = ['en', 'es', 'de', 'fr', 'pt', 'ht', 'zh', 'vi', 'tl', 'ru', 'ko'];
 const NOW = new Date(2026, 9, 12, 15, 0);
-const visited = (extra = {}) => ({ id: 'o1', status: 'completed', offer_type: 'standard', business_reservations: [{ status: 'confirmed' }], ...extra });
+// a visit the business confirmed (visit_confirmed_at, 20270430): the only redemption
+const visited = (extra = {}) => ({ id: 'o1', status: 'completed', visit_confirmed_at: '2026-11-21T12:00:00Z', offer_type: 'standard', business_reservations: [{ status: 'confirmed' }], ...extra });
 const ctx = (extra = {}) => ({ context: { now: NOW, playedIds: new Set(), ...extra } });
 const NOTE = 'You used Nearby to turn a request into a real-world experience.';
 
@@ -50,12 +51,13 @@ describe('the decision (presentOffer, the one presentation source)', () => {
 });
 
 describe('the source: server history, read with the offers', () => {
-  test('the earliest completed offer on the person\'s own requests, null on failure', () => {
+  test('the earliest BUSINESS-CONFIRMED visit on the person\'s own requests (20270430), null on failure', () => {
     const src = read('services/offerArrivalSource.js');
     const fn = src.split('export async function fetchFirstRedemptionId')[1].split('\n}\n')[0];
     expect(fn).toMatch(/\.eq\('business_requests\.requester_id', userId\)/);
-    expect(fn).toMatch(/\.eq\('status', 'completed'\)/);
-    expect(fn).toMatch(/\.order\('completed_at', \{ ascending: true \}\)/);
+    expect(fn).toMatch(/\.not\('visit_confirmed_at', 'is', null\)/);
+    expect(fn).toMatch(/\.order\('visit_confirmed_at', \{ ascending: true \}\)/);
+    expect(fn).not.toMatch(/'completed'/); // a customer's own "Mark as done" is never a redemption
     expect(fn).toMatch(/\.limit\(1\)/);
     expect(fn).toMatch(/return null;/);
     for (const f of ['services/offerArrivalSource.js', 'screens/BusinessRequestDetailScreen.js', 'utils/offerPresentationEngine.js']) {

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { isSignInBlocked } from '../utils/accountReview';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert } from 'react-native';
-import { supabase, functionUrl } from '../services/supabase';
+import { supabase, functionUrl, PUBLISHABLE_KEY } from '../services/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import { typography, spacing, radius } from '../theme';
@@ -87,7 +88,7 @@ export default function LoginScreen({ navigation }) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: 'Bearer sb_publishable_NU_9KSD7wft-FDSHclDHuw_6vsUDrZW',
+            Authorization: `Bearer ${PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ pin: otp }),
         });
@@ -102,7 +103,7 @@ export default function LoginScreen({ navigation }) {
           token_hash: result.tokenHash,
           type: 'magiclink',
         });
-        if (verifyError) return Alert.alert(t('ui.onboarding.error'), verifyError.message);
+        if (verifyError) return isSignInBlocked(verifyError) ? presentRecoverableError(Alert, { what: 'complete that', error: verifyError }) : Alert.alert(t('ui.onboarding.error'), verifyError.message);
       } catch (e) {
         setLoading(false);
         presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => verifyOtp() });

@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { supabase, functionUrl } from './supabase';
 
 // Profile photo links (owner, 2026-10-28): a signed URL is a bearer link the server can't take back, so it lives 15 min
@@ -14,6 +14,9 @@ export const PROFILE_PHOTO_URL_LIFETIME_S = 900;
 // existing caller (ProfileScreen, CompleteProfileScreen) gets this
 // for free, with no changes needed on their end.
 export async function pickProfilePhoto() {
+  // Business website (owner, 2026-11-14): a browser opens its own file chooser (which offers the camera on a phone);
+  // the camera/library choice above it would only show as a confirm box there.
+  if (Platform.OS === 'web') return pickFromLibrary();
   return new Promise((resolve, reject) => {
     Alert.alert(
       'Add a Photo',
@@ -101,7 +104,22 @@ function base64ToUint8Array(base64) {
   return new Uint8Array(bytes);
 }
 
-export async function uploadProfilePhoto(userId, asset) {
+// Business website (owner, 2026-11-14): expo-file-system has no web implementation; the picker's web shim already gives a
+// blob:/data: URL a plain fetch can read (same as uploadBusinessOfferMedia's web branch). The stored path and type follow
+// the file's real type; screening (moderate-photo) reads the stored object either way.
+export function webProfilePhotoType(blobType) {
+  const t = String(blobType || '').toLowerCase();
+  if (t === 'image/png') return { contentType: 'image/png', ext: 'png' };
+  if (t === 'image/webp') return { contentType: 'image/webp', ext: 'webp' };
+  return { contentType: 'image/jpeg', ext: 'jpg' };
+}
+
+async function readProfilePhoto(asset) {
+  if (Platform.OS === 'web') {
+    const blob = await (await fetch(asset.uri)).blob();
+    if (!blob || blob.size === 0) throw new Error('Could not read the selected photo. Please try a different one.');
+    return { body: blob, ...webProfilePhotoType(blob.type) };
+  }
   const base64 = await FileSystem.readAsStringAsync(asset.uri, {
     encoding: 'base64',
   });
@@ -109,13 +127,16 @@ export async function uploadProfilePhoto(userId, asset) {
   if (!base64 || base64.length === 0) {
     throw new Error('Could not read the selected photo. Please try a different one.');
   }
+  return { body: base64ToUint8Array(base64), contentType: 'image/jpeg', ext: 'jpg' };
+}
 
-  const bytes = base64ToUint8Array(base64);
-  const path = `${userId}/main-${Date.now()}.jpg`;
+export async function uploadProfilePhoto(userId, asset) {
+  const { body, contentType, ext } = await readProfilePhoto(asset);
+  const path = `${userId}/main-${Date.now()}.${ext}`;
 
   const { error: uploadError } = await supabase.storage
     .from('profile-photos')
-    .upload(path, bytes, { contentType: 'image/jpeg', cacheControl: String(PROFILE_PHOTO_URL_LIFETIME_S) });
+    .upload(path, body, { contentType, cacheControl: String(PROFILE_PHOTO_URL_LIFETIME_S) });
 
   if (uploadError) throw uploadError;
 

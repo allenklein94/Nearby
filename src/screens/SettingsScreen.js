@@ -6,6 +6,12 @@ import { PERKS_TAB } from '../utils/recommendationContext';
 import { navigateKeepingTrail } from '../services/openDestination';
 import { FRIEND_VIEW_STYLES, friendViewStyle } from '../utils/friendDiscoveryView';
 import { presentRecoverableError } from '../utils/recoverableError';
+import { phoneChangeWaitUntil, phoneChangeWaitTime } from '../utils/phoneChangeWait';
+import { stepUpRefusal, maskedTarget } from '../utils/accountStepUp';
+import { beginStepUp, finishStepUp } from '../services/accountStepUp';
+import TurnstileWidget from '../components/TurnstileWidget';
+import useAuthCaptcha from '../hooks/useAuthCaptcha';
+import { captchaUnavailableError, isCaptchaRefusal, turnstileLanguage } from '../utils/captcha';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, ScrollView, Switch, Linking, Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { supabase } from '../services/supabase';
@@ -15,10 +21,12 @@ import { setMyNotificationGroup } from '../services/notificationPrefs';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
-import { deleteAccount } from '../services/account';
+import { deleteAccount, getDeletionPlanImpact } from '../services/account';
+import { deletionPlanNotice } from '../utils/accountDeletionPlanNotice';
 import { requestDataExport } from '../services/dataExport';
 import { clearNotificationArea } from '../services/notificationArea';
 import { getMyFriendNearbySharing, setFriendNearbySharing } from '../services/friendNearby';
+import { getMyCrossedPathsSharing, setCrossedPathsSharing } from '../services/crossedPathsSharing';
 import { getUserLocation } from '../services/userLocation';
 import { clearMyBehaviorHistory, getMyBehaviorCategories, forgetBehaviorCategory, addLearnedInterestToProfile, removeAddedInterestFromProfile } from '../services/behaviorSignals';
 import { learnedAffinities } from '../utils/learnedAffinity';
@@ -118,6 +126,8 @@ export default function SettingsScreen({ navigation, route }) {
   const [readReceiptsEnabled, setReadReceiptsEnabled] = useState(true);
   // Item 39: "Let friends know when I'm nearby" -- OFF by default; this toggle is the ONLY way to turn it on.
   const [friendNearbyOn, setFriendNearbyOn] = useState(false);
+  // 20270384: null = the server has no Crossed Paths switch yet (no row shown); off by default
+  const [crossedPathsOn, setCrossedPathsOn] = useState(null);
   const [friendNearbyNoLocation, setFriendNearbyNoLocation] = useState(false);
   const [shareInterestInDemand, setShareInterestInDemand] = useState(false);
   const [showSponsoredPlaces, setShowSponsoredPlaces] = useState(true);
@@ -165,6 +175,12 @@ export default function SettingsScreen({ navigation, route }) {
   const [otpSent, setOtpSent] = useState(false);
   const [e164NewPhone, setE164NewPhone] = useState('');
   const [deleting, setDeleting] = useState(false);
+  // 20270375: the step-up in progress ({ purpose, stepUpId, target, client, newPhone? }) and its code
+  const [stepUp, setStepUp] = useState(null);
+  const [stepUpCode, setStepUpCode] = useState('');
+  // the step-up's code request is an Auth /otp call: it carries a Turnstile token like sign-in (widget mounted only while asking)
+  const captcha = useAuthCaptcha();
+  const [captchaFor, setCaptchaFor] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const scrollRef = useRef(null);
@@ -188,9 +204,19 @@ export default function SettingsScreen({ navigation, route }) {
     }
   }
 
+  // The ONLY place Crossed Paths can be turned on (crossedPathsSharing.test.js).
+  async function toggleCrossedPaths(on) {
+    try {
+      setCrossedPathsOn(await setCrossedPathsSharing(on));
+    } catch (e) {
+      presentRecoverableError(Alert, { what: 'complete that', error: e });
+    }
+  }
+
   useEffect(() => {
     load();
     checkOsPermission();
+    getMyCrossedPathsSharing().then(setCrossedPathsOn).catch(() => setCrossedPathsOn(null));
     getMyFriendNearbySharing()
       .then((on) => { setFriendNearbyOn(on); if (on) checkFriendNearbyLocation(false); })
       .catch(() => {});
@@ -378,8 +404,86 @@ export default function SettingsScreen({ navigation, route }) {
     if (!formatted) {
       return Alert.alert(t('ui.settings.invalidNumber'), t('ui.settings.enterA10DigitUs'));
     }
+    // 20270375: a number changes only from a device signed in for 7 days, after a code to the CURRENT number (step-up)
+    const waitUntil = phoneChangeWaitUntil(await supabase.rpc('get_my_phone_change_wait'));
+    if (waitUntil) {
+      return Alert.alert(t('ui.settings.phoneChangeWaitTitle'), t('ui.settings.phoneChangeWaitBody', { time: phoneChangeWaitTime(waitUntil) }));
+    }
+    try {
+      const flow = await beginStepUp('phone_change', formatted, await stepUpCaptchaToken('phone_change'));
+      if (flow.status === 'unavailable') return startPhoneChange(formatted);    // before 0375 is live: as before
+      setStepUpCode('');
+      setStepUp({ ...flow, purpose: 'phone_change', newPhone: formatted });
+    } catch (e) {
+      const shown = isCaptchaRefusal(e) ? captchaUnavailableError('refused') : e;
+      if (!presentStepUpRefusal(e)) presentRecoverableError(Alert, { what: 'complete that', error: shown, onRetry: () => sendPhoneChangeOtp() });
+    }
+  }
+
+  // A Turnstile token for the step-up's code request; fails open like sign-in (no token if the check can't complete: Auth
+  // decides once enforcement is on). The widget shows only while this runs, where the person asked.
+  async function stepUpCaptchaToken(purpose) {
+    if (!captcha.enabled) return null;
+    setCaptchaFor(purpose);
+    try {
+      return await captcha.take();
+    } catch {
+      return null;
+    } finally {
+      captcha.reset();
+      setCaptchaFor(null);
+    }
+  }
+
+  function renderStepUpCaptcha(purpose) {
+    if (!captcha.enabled || captchaFor !== purpose) return null;
+    return (
+      <TurnstileWidget
+        ref={captcha.widget}
+        config={captcha.config}
+        dark={isDark}
+        language={turnstileLanguage(language)}
+        onEvent={captcha.onEvent}
+        accessibilityLabel={t('login.securityCheckA11y')}
+      />
+    );
+  }
+
+  // A step-up refusal the person can act on (its own words), else false (the caller shows the ordinary error).
+  function presentStepUpRefusal(e) {
+    const key = stepUpRefusal(e);
+    if (!key) return false;
+    if (key === 'phoneChangeWait') {
+      supabase.rpc('get_my_phone_change_wait').then((r) => {
+        const until = phoneChangeWaitUntil(r);
+        Alert.alert(t('ui.settings.phoneChangeWaitTitle'), until
+          ? t('ui.settings.phoneChangeWaitBody', { time: phoneChangeWaitTime(until) })
+          : t('ui.settings.stepUpFailed'));
+      });
+    } else {
+      Alert.alert(t('ui.settings.confirmItsYouTitle'), t(`ui.settings.${key}`));
+    }
+    return true;
+  }
+
+  async function confirmStepUp() {
+    const flow = stepUp;
+    if (!flow) return;
+    try {
+      const ok = await finishStepUp(flow, stepUpCode);
+      setStepUp(null);
+      setStepUpCode('');
+      if (!ok) return Alert.alert(t('ui.settings.confirmItsYouTitle'), t('ui.settings.stepUpFailed'));
+      if (flow.purpose === 'phone_change') return startPhoneChange(flow.newPhone);
+      return runDeletion();
+    } catch (e) {
+      if (!presentStepUpRefusal(e)) presentRecoverableError(Alert, { what: 'complete that', error: e, onRetry: () => confirmStepUp() });
+    }
+  }
+
+  async function startPhoneChange(formatted) {
     const { error } = await supabase.auth.updateUser({ phone: formatted });
-    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => sendPhoneChangeOtp() });
+    if (error) return presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => startPhoneChange(formatted) });
     setE164NewPhone(formatted);
     setOtpSent(true);
   }
@@ -433,10 +537,15 @@ export default function SettingsScreen({ navigation, route }) {
     );
   }
 
-  function confirmDeleteAccountFinal() {
+  async function confirmDeleteAccountFinal() {
+    const notice = deletionPlanNotice(await getDeletionPlanImpact().catch(() => null));
     Alert.alert(
       t('ui.settings.areYouAbsolutelySure'),
-      t('ui.settings.yourAccountAndAllAssociated'),
+      [
+        notice.endsPlans && t('ui.settings.deletionEndsGroupPlans'),
+        notice.paidBooking && t('ui.settings.deletionPaidBooking'),
+        t('ui.settings.yourAccountAndAllAssociated'),
+      ].filter(Boolean).join('\n\n'),
       [
         { text: t('ui.settings.cancel'), style: 'cancel' },
         { text: t('ui.settings.deleteMyAccount'), style: 'destructive', onPress: handleDeleteAccount },
@@ -444,14 +553,59 @@ export default function SettingsScreen({ navigation, route }) {
     );
   }
 
+  // 20270375 D2: a code to the account's own number first (Apple allows it), then the deletion
   async function handleDeleteAccount() {
+    try {
+      const flow = await beginStepUp('delete', null, await stepUpCaptchaToken('delete'));
+      if (flow.status === 'unavailable') return runDeletion();                  // before 0375 is live: as before
+      setStepUpCode('');
+      setStepUp({ ...flow, purpose: 'delete' });
+    } catch (e) {
+      if (isCaptchaRefusal(e)) {
+        presentRecoverableError(Alert, { what: 'complete that', error: captchaUnavailableError('refused'), onRetry: () => handleDeleteAccount() });
+      } else if (!presentStepUpRefusal(e)) Alert.alert(t('ui.settings.deletionFailed'), e.message);
+    }
+  }
+
+  async function runDeletion() {
     setDeleting(true);
     try {
-      await deleteAccount();
+      const result = await deleteAccount();
+      if (result?.scheduled) {
+        const date = result.purgeAt ? new Date(result.purgeAt).toLocaleDateString([], { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+        Alert.alert(t('ui.settings.deletionScheduledTitle'), t('ui.settings.deletionScheduledBody', { date }));
+      }
     } catch (e) {
       setDeleting(false);
-      Alert.alert(t('ui.settings.deletionFailed'), e.message);
+      if (!presentStepUpRefusal(e)) Alert.alert(t('ui.settings.deletionFailed'), e.message);
     }
+  }
+
+  // The step-up's code field (one at a time, shown where it was asked for)
+  function renderStepUp(purpose) {
+    if (stepUp?.purpose !== purpose) return null;
+    return (
+      <View style={{ marginTop: spacing.sm }}>
+        <Text style={styles.label}>{t('ui.settings.confirmItsYouBody', { target: maskedTarget(stepUp.target) })}</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={t('ui.settings.n6DigitCode')}
+          placeholderTextColor={colors.textTertiary}
+          keyboardType="number-pad"
+          value={stepUpCode}
+          onChangeText={setStepUpCode}
+          accessibilityLabel={t('ui.settings.verificationCodeA11y')}
+        />
+        <TouchableOpacity style={styles.button} onPress={confirmStepUp} activeOpacity={0.85}
+          accessibilityLabel={t('ui.settings.continue')} accessibilityRole="button">
+          <Text style={styles.buttonText}>{t('ui.settings.continue')}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => { setStepUp(null); setStepUpCode(''); }} style={{ marginTop: spacing.sm }}
+          accessibilityLabel={t('ui.settings.cancelA11y')} accessibilityRole="button">
+          <Text style={styles.cancelText}>{t('ui.settings.cancel')}</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
@@ -490,6 +644,8 @@ export default function SettingsScreen({ navigation, route }) {
               <Text style={styles.rowButtonText}>{t('settings.changePhoneNumber')}</Text>
               <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
+          ) : stepUp?.purpose === 'phone_change' ? (
+            renderStepUp('phone_change')
           ) : !otpSent ? (
             <View>
               <Text style={styles.label}>{t('ui.settings.newPhoneNumber')}</Text>
@@ -502,6 +658,7 @@ export default function SettingsScreen({ navigation, route }) {
                 onChangeText={setNewPhoneInput}
                 accessibilityLabel={t('ui.settings.newPhoneNumberA11y')}
               />
+              {renderStepUpCaptcha('phone_change')}
               <TouchableOpacity
                 style={styles.button}
                 onPress={sendPhoneChangeOtp}
@@ -579,6 +736,8 @@ export default function SettingsScreen({ navigation, route }) {
             {deleting ? t('ui.settings.deletingAccount') : t('ui.settings.deleteAccount')}
           </Text>
         </TouchableOpacity>
+        {renderStepUpCaptcha('delete')}
+        {renderStepUp('delete')}
 
         <Text
           style={styles.groupHeader}
@@ -911,6 +1070,17 @@ export default function SettingsScreen({ navigation, route }) {
               {friendNearbyOn && friendNearbyNoLocation ? <Text style={styles.helperText}>{t('ui.friendNearby.locationOff')}</Text> : null}
             </View>
           </ToggleRow>
+          {crossedPathsOn !== null && (
+            <>
+              <View style={styles.divider} />
+              <ToggleRow style={styles.settingRow} value={crossedPathsOn} onValueChange={toggleCrossedPaths} trackColor={{ true: colors.primary, false: colors.border }} accessibilityLabel={t('ui.crossedPaths.settingTitle')}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.settingLabel}>{t('ui.crossedPaths.settingTitle')}</Text>
+                  <Text style={styles.helperText}>{t('ui.crossedPaths.settingHelper')}</Text>
+                </View>
+              </ToggleRow>
+            </>
+          )}
           <View style={styles.divider} />
           <View style={styles.settingRow}>
             <View style={{ flex: 1 }}>

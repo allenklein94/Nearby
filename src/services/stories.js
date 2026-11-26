@@ -314,6 +314,13 @@ export async function deleteStory(storyId) {
   if (error) throw error;
 }
 
+// The host taking a memory down from their own gathering (20270391); the poster's own Remove stays deleteStory. A photo under
+// report stays with the report for review; everyone else stops seeing it at once.
+export async function removeGatheringMemoryAsHost(storyId) {
+  const { error } = await supabase.rpc('remove_gathering_memory', { story_id_param: storyId });
+  if (error) throw error;
+}
+
 export async function getStoryViewers(storyId) {
   const { data, error } = await supabase
     .from('story_views')

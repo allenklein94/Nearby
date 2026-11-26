@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { MARKETPLACE_MOMENTS } from '../constants/motionLanguage';
 import { SEQUENCES, settleMs, MOTION_BUDGET } from './motionBudget';
-import { offersToAnimate, visitConfirmationsToAnimate, progressKey } from '../utils/offerProgress';
+import { offersToAnimate, visitConfirmationsToAnimate, progressKey, offerStage } from '../utils/offerProgress';
 import { acceptedBookingState } from '../utils/acceptedBooking';
 
 const src = (p) => fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
@@ -82,19 +82,28 @@ describe('moment 1: request sent pulse', () => {
 });
 
 describe('moment 6: Visit confirmed', () => {
-  const o = (status) => ({ id: 'o1', request_id: 'r1', status, business_reservations: [{ status: 'confirmed' }] });
+  // 'completed' here = the business confirmed (visit_confirmed_at, 20270430); the customer's own mark never plays it.
+  const o = (status) => ({ id: 'o1', request_id: 'r1', status, business_reservations: [{ status: 'confirmed' }], ...(status === 'completed' ? { visit_confirmed_at: '2026-11-21T12:00:00Z' } : {}) });
 
   it('plays only for accepted -> completed seen live', () => {
     const previous = new Map([['o1', 'accepted']]);
+    expect(visitConfirmationsToAnimate([{ ...o('accepted'), status: 'completed', customer_done_at: '2026-11-21T12:00:00Z' }], { previous, live: true })).toEqual([]);
     expect(visitConfirmationsToAnimate([o('completed')], { previous, live: true })).toHaveLength(1);
     expect(visitConfirmationsToAnimate([o('completed')], { previous, live: false })).toEqual([]); // revisit / focus reload
     expect(visitConfirmationsToAnimate([o('completed')], { previous: new Map(), live: true })).toEqual([]); // first read = baseline
     expect(visitConfirmationsToAnimate([o('accepted')], { previous: new Map([['o1', 'offered']]), live: true })).toEqual([]); // acceptance is not a visit
   });
+  it('the customer marked it done first, then the business confirms live: plays once', () => {
+    const marked = { ...o('accepted'), status: 'completed', customer_done_at: '2026-11-21T11:00:00Z' };
+    const previous = new Map([['o1', offerStage(marked)]]);
+    expect(offerStage(marked)).toBe('accepted');
+    expect(visitConfirmationsToAnimate([{ ...marked, visit_confirmed_at: '2026-11-21T12:00:00Z' }], { previous, live: true })).toHaveLength(1);
+  });
   it('duplicate realtime events or notifications never replay it', () => {
     const shown = new Set([progressKey(o('completed'))]);
     expect(visitConfirmationsToAnimate([o('completed')], { previous: new Map([['o1', 'accepted']]), live: true, shown })).toEqual([]);
-    expect(visitConfirmationsToAnimate([o('completed')], { previous: new Map([['o1', 'completed']]), live: true })).toEqual([]);
+    // the screen remembers offerStage(), so an already-confirmed visit is remembered as 'redeemed'
+    expect(visitConfirmationsToAnimate([o('completed')], { previous: new Map([['o1', offerStage(o('completed'))]]), live: true })).toEqual([]);
     // a push tap is not a customer trigger here
     expect(offersToAnimate([o('completed')], { focusRequestId: 'r1' })).toHaveLength(1);
     expect(visitConfirmationsToAnimate([o('completed')], { focusRequestId: 'r1' })).toEqual([]);

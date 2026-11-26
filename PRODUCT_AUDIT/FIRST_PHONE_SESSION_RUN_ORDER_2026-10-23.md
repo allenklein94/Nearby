@@ -61,10 +61,6 @@ Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one
    verification (owner 2026-10-29: required before Session B, never replaced by the seed's fixture phones): sign out, sign
    up with a real phone number not already on an account, receive the text, enter the code, finish onboarding (C2); also
    enter one wrong code first and confirm it is refused. Note the account for later cleanup (it writes real rows).
-   New-user path, same controlled test (owner 2026-11-08, one account, no seed): on that new account create a gathering, invite someone, then block
-   a test account and open Report on it (submit only between two test accounts: a submitted report is kept). Record any confusing step or
-   unexpected restriction. Repeat after the staged gates and limits deploy: on production at 0347 they aren't active, so a clean pass here says nothing about them.
-   Block behaviour, not just the button (owner 2026-11-08; two test accounts A + B, set up BEFORE blocking: a match, a friend request option, a shared gathering; check from BOTH sides; no second device or no setup = SETUP-BLOCKED, never PASS). After A blocks B, expected: B isn't told; (a) any match is gone, neither can message the other 1:1; (b) neither can send the other a friend request; (c) neither appears in the other's Dating or Friends discovery (needs both in the same opted-in pool nearby, seen BEFORE the block, or that check proves nothing); (d) a host and a person they blocked (either direction): the person can't see or join that gathering, and can't be invited; (e) shared gathering where neither hosts: both stay attending, each is hidden from the other's Who's going and that gathering's chat. KNOWN LIMITS, recorded, not new failures (trust & safety audit section 5): a profile opened directly by id still loads; a shared group plan keeps both in its chat; the crossed-paths push can still name the other person. Anything else reachable = FAIL (Sev 1).
 1. Your Progress on Profile checks 1-4.
 2. Screen-reduction checks 4-6 (Emergency contacts incl. the keyboard, the date check-in link, Subscription).
 3. Screen-reduction checks 1-3 (business application; 2-3 need the admin account; see P3).
@@ -84,12 +80,6 @@ Tier 1, changed since build 86 (never seen on any phone; run first, ~30 min, one
    either cancel, or submit only between two test accounts on a controlled test message (a submitted report is kept, never deleted).
    Note whether the sheet shows which message is reported. Evidence retention after deletion is NOT tested here: it needs 0355 live
    (post-deploy step 20270355). Findability problem = USABILITY, report the exact spot; no new reporting feature.
-9. Limit-message watch (owner 2026-11-01, observe only, never hunt for a limit): if any limit message appears ("You've reached the
-   limit for creating gatherings for now. Please try again later." or a rate-limit sentence), note the exact words + screen. Is it
-   neutral and helpful, and never says or implies "because your account is new"? Production runs the OLD flat gathering trigger
-   until 0362 is deployed, so the staged per-tier wording is checked again in 0362's post-deploy step. No reset time is shown:
-   the server sends none today (hint only); adding one = a separate approved change. Translations: native review (10 languages).
-   Punitive or confusing wording = USABILITY with the exact text; wording-only fix proposed, no new feature.
 
 Tier 2, the journey (session A parts 1-7, in order; seed required for 2-4, credit for hand-written replies):
 part 6's ~20-min gathering FIRST, then parts 1-5, part 7 (automatic reply), coming back for the Request deadline watch, Ask again
@@ -104,7 +94,7 @@ expected (C23 (0)), not a defect.
 
 ## Session A: your own run (the journey, in order)
 
-1. **Get in**: C1 (cold start), C2 (onboarding incl. location), C21 (a) then (b). Sign-in watch (owner idea 50, 2026-11-12; record, no new check): did sign-in + onboarding feel simple and welcoming, and did anyone show confusion or concern about safety or who is real? Only that evidence reopens reassurance wording; then, once signed in, could they find Report, Block and support without help? Verification-label watch (owner idea 51, 2026-11-12; record, no new check): "ID Verified" is the only person badge (phone verification shows no label: confirm nothing on a profile reads as "verified" from a phone alone); a tester reads "ID Verified" as a completed check (on prod before 0350 the flag is not yet tied to an approved ID: a result there is SETUP-BLOCKED, never PASS); "Verified Business" + its explanation (only in a build after 0371's branch merges, NOT build 87) read as identity, never a quality or safety guarantee.
+1. **Get in**: C1 (cold start), C2 (onboarding incl. location), C21 (a) then (b).
 2. **Search understands me**, Home AND Discover: item 45 checks 1-13; chip checklist (`UNDERSTOOD_CHIP_REMOVAL_DEVICE_CHECKLIST_2026-10-15.md`)
    checks 1-17; check 18j's search, date-chip, weekday-to-weekday and year bullets; item 86 checks 1-6, 8, 13-15; item 84 check 14.
 3. **Create from the ask**: item 82 checks 1-11; chip checklist check 10 (Create half); check 18 (a-i) + 18j's Create bullets;
@@ -220,13 +210,6 @@ chip that expands in place on Discover; an active hidden filter stays visible + 
 how many filters inside it are active ("More filters (2)"). No new screens, sheets or navigation, no chips rearranged by
 inferred interests or context, no filtering-logic change. Needs owner approval of the build + its new strings (11 languages). (d) On Gatherings, turn on Local (~1 mi): can they say what changed versus the
 normal list (15 mi)? Confusion = wording / discoverability of the existing Local filter first, never more distance options.
-
-Discover dedupe check (owner idea 43, 2026-11-12; PASS/FAIL; build 87+, seeded gatherings + a friend attending one that matches
-a declared interest): scroll the whole Discover Things to Do screen once. PASS = each gathering appears ONCE on that screen even when
-it qualifies for several sections (Because you like X, Friends are into, Trending, Tonight/Today/This Weekend), and its card shows at
-most its two strongest reasons. FAIL = the same gathering on two or more cards on one screen: screenshot each, note the sections. A
-fail is fixed in the shared Discover dedupe chain, never per section. Not a failure: the same gathering on Home AND Discover (each
-surface has its own once-per-surface rule).
 
 Quick pick watch (owner, 2026-10-25; PASS/FAIL, seeded gatherings, phone on its real local time): tap two Home quick picks:
 (a) Discover opens on Gatherings with that pick's category and the CURRENT period's time filter (evening = Tonight), cards at once,

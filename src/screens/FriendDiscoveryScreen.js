@@ -18,6 +18,8 @@ import { getStoryPresenceForUsers } from '../services/stories';
 import StoryViewerModal from '../components/StoryViewerModal';
 import { calculateFriendCompatibility } from '../services/compatibility';
 import { supabase } from '../services/supabase';
+import { presentRecoverableError } from '../utils/recoverableError';
+import { restrictionRefusal } from '../utils/accountRestrictions';
 import { readMyProfile } from '../services/myProfile';
 import FriendDiscoverySwipeCards, { DISTANCE_BUCKET_KEYS } from '../components/FriendDiscoverySwipeCards';
 import FriendDiscoveryList from '../components/FriendDiscoveryList';
@@ -239,6 +241,8 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
     } catch (e) {
       console.error('recordFriendDiscoverySwipe failed', e);
       setDecidedIds((prev) => { const next = new Set(prev); next.delete(item.id); return next; });
+      // 20270399: a paused Connect says what is paused and until when (no Retry: it would be refused again)
+      if (restrictionRefusal(e)) { presentRecoverableError(Alert, { what: 'complete that', error: e }); return false; }
       Alert.alert(
         t('ui.friends.couldntSaveThat'),
         t(direction === 'like' ? 'ui.friends.likeFailed' : 'ui.friends.passFailed', { name: item.display_name ?? t('ui.friends.thisPerson') }),
@@ -295,7 +299,7 @@ export default function FriendDiscoveryScreen({ navigation, embedded = false, to
     ...interestFilters.slice(0, 2),
     ...(interestFilters.length > 2 ? [`+${interestFilters.length - 2}`] : []),
     ...(distanceFilter ? [distanceFilter] : []),
-    ...(verifiedOnlyFilter ? ['Verified'] : []),
+    ...(verifiedOnlyFilter ? [t('ui.friends.verified')] : []),
     ...(onlineOnlyFilter ? ['Online'] : []),
   ];
   const filterSummary = filterSummaryParts.length > 0 ? filterSummaryParts.join(' · ') : 'All';

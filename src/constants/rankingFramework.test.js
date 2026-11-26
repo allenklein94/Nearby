@@ -64,6 +64,6 @@ describe('typed search has one ordering, not several', () => {
   it('the ranking ledger is separate from the audit trace (the audit can never change an order)', () => {
     const src = read('services/intentResolver.js');
     expect(src).toMatch(/ledger = createRankLedger\(deduped\)/);
-    expect(src).toMatch(/deduped\.sort\(\(a, b\) => compareRanked\(a, b\) \|\| comparePersonalTieBreak\(a, b\)\)/);
+    expect(src).toMatch(/deduped\.sort\(\(a, b\) => compareRanked\(a, b\) \|\| comparePersonalTieBreak\(a, b\) \|\| compareFamiliarity\(a, b, familiarHosts, /); // + 20270410's last tie-break
   });
 });

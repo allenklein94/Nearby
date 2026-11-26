@@ -80,21 +80,25 @@ export async function screenOfferMedia(deps, partnerId, mediaPath, mediaType, fr
   let tier = 'low';
   const categories = [];
   const notes = [];
+  let sha256 = null;
   for (const path of toCheck) {
     const url = await deps.storage.signedUrl(path);
     if (!url) return { status: 400, error: 'We could not read that photo or video. Please attach it again.' };
     const r = await deps.classifyImage(url);
     if ('error' in r) {
-      if (r.service) return { status: 503, service: true };
+      if (r.service) return { status: 503, service: true, ...(r.failure ? { failure: r.failure } : {}) };
       return { status: 400, error: "That photo or video preview couldn't be read. Try a different one." };
     }
     tier = deps.worseTier(tier, r.riskTier);
     for (const c of r.matchedCategories) if (!categories.includes(c)) categories.push(c);
     notes.push(r.reasoning);
+    // 20270414: a photo's own bytes only; a video's client-sampled frames are never fingerprinted (video deferred)
+    if (mediaType === 'image' && typeof r.sha256 === 'string') sha256 = r.sha256;
   }
   return {
     tier, categories,
     reasoning: `Media (${mediaType}${mediaType === 'video' ? `, ${toCheck.length} sampled frame(s)` : ''}): ${notes.join(' ')}`,
     posterPath: mediaType === 'video' ? framePaths[0] : null,
+    sha256,
   };
 }

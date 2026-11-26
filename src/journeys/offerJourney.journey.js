@@ -108,7 +108,7 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
   perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   set local role authenticated;
   select o.id into v_redeem_before from business_request_offers o join business_requests r on r.id = o.request_id
-    where r.requester_id = v_host and o.status = 'completed' and o.completed_at is not null order by o.completed_at, o.id limit 1;
+    where r.requester_id = v_host and o.visit_confirmed_at is not null order by o.visit_confirmed_at, o.id limit 1;
   reset role;
   -- owner decision 2026-10-11 (1): before the visit day, completing is refused and nothing changes
   begin perform complete_business_reservation(v_offer); v_early := 'NO ERROR'; exception when others then v_early := sqlerrm; end;
@@ -119,11 +119,16 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
   v_tz := coalesce(nullif(nullif((select timezone from profiles where id = v_host), ''), 'UTC'), 'Etc/GMT+12');
   update business_request_offers set proposed_time = ((now() at time zone v_tz)::date + time '23:59') at time zone v_tz where id = v_offer;
   v_res := complete_business_reservation(v_offer);
+  -- 20270430: the host's own call is a personal mark (never a redemption); the business then confirms the visit
+  perform set_config('request.jwt.claims', json_build_object('sub', v_owner, 'role', 'authenticated')::text, true);
+  v_res := v_res || jsonb_build_object('business', complete_business_reservation(v_offer));
+  perform set_config('request.jwt.claims', json_build_object('sub', v_host, 'role', 'authenticated')::text, true);
   set local role authenticated;
   select o.id into v_redeem_after from business_request_offers o join business_requests r on r.id = o.request_id
-    where r.requester_id = v_host and o.status = 'completed' and o.completed_at is not null order by o.completed_at, o.id limit 1;
+    where r.requester_id = v_host and o.visit_confirmed_at is not null order by o.visit_confirmed_at, o.id limit 1;
   reset role;
-  log := log || jsonb_build_array(jsonb_build_object('step','visit_completed','ok', coalesce((v_res->>'success')::boolean,false),
+  log := log || jsonb_build_array(jsonb_build_object('step','visit_completed','ok', coalesce((v_res->>'personal')::boolean,false)
+       and coalesce((v_res->'business'->>'confirmed')::boolean,false),
      'data', jsonb_build_object('offer', (select status from business_request_offers where id = v_offer), 'offer_id', v_offer,
         'first_redemption_before', v_redeem_before, 'first_redemption_after', v_redeem_after)));
 
@@ -195,7 +200,8 @@ d('journey: gathering -> ask a specific business -> offer -> accept -> visit -> 
     const { offer_id, first_redemption_before, first_redemption_after } = s.visit_completed.data;
     expect(first_redemption_after).toBe(first_redemption_before ?? offer_id);
     const first = first_redemption_after === offer_id;
-    const card = presentOffer({ id: offer_id, status: 'completed', business_reservations: [{ status: 'confirmed' }] },
+    // 20270430: the card says "Visit confirmed" only from the business's confirmation (the row this journey produced).
+    const card = presentOffer({ id: offer_id, status: 'completed', visit_confirmed_at: new Date().toISOString(), business_reservations: [{ status: 'confirmed' }] },
       { context: { isFirstRedemption: first } });
     expect(card.confirmation.visitConfirmed).toBe(true);
     expect(card.confirmation.firstVisitNote).toBe(first ? 'You used Nearby to turn a request into a real-world experience.' : null);
@@ -310,14 +316,14 @@ d('journey: several replies -> the reply that meets the request ranks first, "Ou
   for i in 1..8 loop
     insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
       values (v_c, 'history', 0.5, 0.5, now() - interval '1 day', 'fulfilled', 'Coffee', 2, 10) returning id into v_h;
-    insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at)
-      values (v_h, v_strong, 'completed', 'standard', now() - interval '2 days', now() - interval '2 days', now() - interval '1 day');
+    insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at, visit_confirmed_at)
+      values (v_h, v_strong, 'completed', 'standard', now() - interval '2 days', now() - interval '2 days', now() - interval '1 day', now() - interval '1 day');
     if i <= 6 then
       insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
         values (v_c, 'history', 0.5, 0.5, now() - interval '1 day', 'fulfilled', 'Coffee', 2, 10) returning id into v_h;
-      insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at)
+      insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at, visit_confirmed_at)
         values (v_h, v_est, case when i <= 5 then 'completed' else 'accepted' end, 'standard', now() - interval '2 days', now() - interval '2 days',
-                case when i <= 5 then now() - interval '1 day' end);
+                case when i <= 5 then now() - interval '1 day' end, case when i <= 5 then now() - interval '1 day' end);
     end if;
   end loop;
   -- the customer asks: coffee for 4 tomorrow at 7 PM, up to $15 a person (R); and a second ask with no time or budget (R0)
@@ -445,9 +451,10 @@ d('journey: automatic policy / AI replies never qualify on a stated time they di
     for i in 1..(case when p = v_man then 6 else 8 end) loop
       insert into business_requests (requester_id, raw_text, latitude, longitude, expires_at, status, category, party_size, radius_miles)
         values (v_c, 'history', 0.5, 0.5, now() - interval '1 day', 'fulfilled', 'Coffee', 2, 10) returning id into v_h;
-      insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at)
+      insert into business_request_offers (request_id, partner_id, status, offer_type, responded_at, accepted_at, completed_at, visit_confirmed_at)
         values (v_h, p, case when p = v_man and i = 6 then 'accepted' else 'completed' end, 'standard', now() - interval '2 days',
-                now() - interval '2 days', case when p = v_man and i = 6 then null else now() - interval '1 day' end);
+                now() - interval '2 days', case when p = v_man and i = 6 then null else now() - interval '1 day' end,
+                case when p = v_man and i = 6 then null else now() - interval '1 day' end);
     end loop;
   end loop;
   -- the standing policy: auto-accept parties up to 10, declared hours 8 AM - 8 PM
@@ -1139,7 +1146,7 @@ d('journey: a second time for fewer people -> the person may pick it -> books th
 
   -- 5. the person takes 7 PM for 4: booked for 4, one time and one headcount on the offer; the business sees 4
   v_res := accept_business_offer(v_offer, v_t1);
-  update business_request_offers set status = 'completed', completed_at = now() where id = v_offer;
+  update business_request_offers set status = 'completed', completed_at = now(), visit_confirmed_at = now() where id = v_offer;
   perform set_config('request.jwt.claims', json_build_object('sub', v_o1, 'role', 'authenticated')::text, true);
   select e into v_row from jsonb_array_elements(get_business_opportunities(v_a)) e where e->>'request_id' = v_r::text;
   log := log || jsonb_build_array(jsonb_build_object('step', 'smaller_time_booked', 'ok', (v_res->>'success')::boolean, 'data', jsonb_build_object(

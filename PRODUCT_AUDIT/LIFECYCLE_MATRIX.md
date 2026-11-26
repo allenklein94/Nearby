@@ -90,7 +90,7 @@ allowed transitions; the state each leads to is enforced server-side) · Animati
 | pending | customer, request open | actionable | card: waiting | view: "View" · list row: none |  | view, respond |  | utils/primaryAction.js consumerOfferAction; utils/offerPresentationEngine.js offerCard; utils/primaryAction.js offerPrimaryAction |
 | offered | customer, request open | actionable | card: open | accept_offer: "I'll take this one" · list row: "View Offer" |  | view, accept, decline | offerTravel, businessResponds, offerAssembly | utils/primaryAction.js consumerOfferAction; utils/offerPresentationEngine.js offerCard; utils/primaryAction.js offerPrimaryAction |
 | accepted | customer, request open | actionable | You're booked · card: booked | view: "View" · list row: none |  | view, cancel, redeem | offerToPlan, offerAccepted, offerProgress | utils/primaryAction.js consumerOfferAction; utils/offerPresentationEngine.js offerCard; utils/primaryAction.js offerPrimaryAction |
-| completed | customer, request open | completed | Completed · card: visited | view: "View" · list row: none |  | view | offerProgress, visitConfirmed | utils/primaryAction.js consumerOfferAction; utils/offerPresentationEngine.js offerCard; utils/primaryAction.js offerPrimaryAction |
+| completed | customer, request open | completed | Completed · card: booked | view: "View" · list row: none |  | view | offerProgress, visitConfirmed | utils/primaryAction.js consumerOfferAction; utils/offerPresentationEngine.js offerCard; utils/primaryAction.js offerPrimaryAction |
 | declined | customer, request open | expired | No longer available · card: closed | view: "View" · list row: none |  | view |  | utils/primaryAction.js consumerOfferAction; utils/offerPresentationEngine.js offerCard; utils/primaryAction.js offerPrimaryAction |
 | expired | customer, request open | expired | Expired · card: closed | view: "View" · list row: none |  | view |  | utils/primaryAction.js consumerOfferAction; utils/offerPresentationEngine.js offerCard; utils/primaryAction.js offerPrimaryAction |
 | cancelled | customer, request open | expired | No longer available · card: closed | view: "View" · list row: none |  | view |  | utils/primaryAction.js consumerOfferAction; utils/offerPresentationEngine.js offerCard; utils/primaryAction.js offerPrimaryAction |
@@ -99,6 +99,8 @@ allowed transitions; the state each leads to is enforced server-side) · Animati
 | offered (request_closed) | request past its deadline | actionable | Request closed · card: open | view: "View" |  | view, accept, decline | offerTravel, businessResponds, offerAssembly | utils/primaryAction.js consumerOfferAction |
 | offered | group plan request | actionable | card: open | confirm_with_group: "Confirm With the Group →" |  | view, accept, decline | offerTravel, businessResponds, offerAssembly | utils/primaryAction.js consumerOfferAction |
 | offered (expired) | valid_until passed, not yet swept | actionable | Expired · card: closed | view: "View" |  | view, accept, decline | offerTravel, businessResponds, offerAssembly | utils/primaryAction.js consumerOfferAction |
+| completed | business confirmed the visit (20270430) | completed | Completed · card: visited | view: "View" |  | view | offerProgress, visitConfirmed | utils/primaryAction.js consumerOfferAction |
+| completed | customer's own Mark as done only (20270430) | completed | Completed · card: booked | view: "View" |  | view | offerProgress, visitConfirmed | utils/primaryAction.js consumerOfferAction |
 
 **Expiration:** offered + valid_until = now -> expired; 1 ms later -> offered (derived before the hourly sweep stores it; objectLifecycle.js offerLifecycleState)
 
@@ -117,11 +119,12 @@ The business's view of the same offer row: Allowed actions and Animation are tha
 | pending | request expired | actionable | No longer open · card status: pending | status only: "No longer open" |  | view, respond |  | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
 | offered |  | actionable | card status: offered · steps: [sent] > accepted > redeemed | view (no label from the table) |  | view, accept, decline | offerTravel, businessResponds, offerAssembly | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
 | accepted |  | actionable | card status: accepted · steps: sent > [accepted] > redeemed | view (no label from the table) |  | view, cancel, redeem | offerToPlan, offerAccepted, offerProgress | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
-| completed |  | completed | card status: completed · steps: sent > accepted > [redeemed] | view (no label from the table) |  | view | offerProgress, visitConfirmed | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
 | declined |  | expired | card status: declined | view (no label from the table) |  | view |  | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
 | expired |  | expired | card status: expired | view (no label from the table) |  | view |  | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
 | cancelled |  | expired | card status: cancelled | view (no label from the table) |  | view |  | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
 | withdrawn |  | expired | card status: withdrawn | view (no label from the table) |  | view |  | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
+| completed | business confirmed the visit | completed | card status: completed · steps: sent > accepted > [redeemed] | view (no label from the table) |  | view | offerProgress, visitConfirmed | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
+| completed | customer's own Mark as done only | completed | card status: accepted · steps: sent > [accepted] > redeemed | view (no label from the table) |  | view | offerProgress, visitConfirmed | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
 | offered | request expired, not yet swept | actionable | card status: expired | view (no label from the table) |  | view, accept, decline | offerTravel, businessResponds, offerAssembly | utils/primaryAction.js opportunityPrimaryAction; utils/offerProgress.js offerProgress / businessCardStatus |
 
 **Expiration:** answerable only while its request is open before expires_at (objectLifecycle.js canRespondToOpportunity)
@@ -131,6 +134,7 @@ The business's view of the same offer row: Allowed actions and Animation are tha
 | Push type | Opens | Priority | Mute group |
 |---|---|---|---|
 | aggregated_demand_growing | BusinessDashboard | low | owner_demand |
+| business_message_received | BusinessDashboard | high | owner_messages |
 | business_offer_accepted | BusinessDashboard | high | owner_offers |
 | business_offer_review_result | BusinessDashboard | medium | owner_offers |
 | business_opportunities_digest | BusinessDashboard | low | owner_requests |
@@ -209,7 +213,9 @@ The business's view of the same offer row: Allowed actions and Animation are tha
 
 | Push type | Opens | Priority | Mute group |
 |---|---|---|---|
+| account_security_notice | Settings | high | (none) |
 | admin_report_received | AdminReports | medium | (none) |
+| admin_screening_outage | AdminContentReview | medium | (none) |
 | anniversary_upcoming | CelebrateSomething / Occasions | medium | friends_occasions |
 | birthday | ViewProfile | medium | friends_occasions |
 | birthday_upcoming | CelebrateSomething / Occasions | medium | friends_occasions |

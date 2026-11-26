@@ -32,7 +32,44 @@ function migrationFacts(file, repoRoot) {
   try { facts.headSha256 = sha256(git(repoRoot, ['show', `HEAD:${rel}`])); } catch { facts.headSha256 = null; }
   const c = git(repoRoot, ['log', '-1', '--format=%H', '--', rel]).toString().trim();
   facts.commit = /^[0-9a-f]{40}$/.test(c) ? c : null;
+  facts.gateFailures = predeployGateFailures(facts.version, repoRoot);
   return facts;
+}
+
+// Owner-required checks a migration must have passed BEFORE it may be deployed (not after). Each is evidence committed in
+// the repo, so the refusal is the same one Jest proves. A version not listed has no extra gate.
+//   20270414 (owner, 2026-11-12): the business-comparison disclosure published in docs/privacy.html (marker), and a committed
+//   evidence file recording a passing `deno check` of screen-business-content and a passing real two-business identical-
+//   image upload (that needs 0414 + the edge function on a NON-production project first: no staging project exists yet).
+const PREDEPLOY_GATES = {
+  20270414: {
+    marker: { file: 'docs/privacy.html', text: 'business-disclosure:duplicate-check' },
+    evidence: { file: 'PRODUCT_AUDIT/evidence/20270414_predeploy.md', checks: ['deno-check', 'real-upload-test'] },
+  },
+};
+function predeployGateFailures(version, repoRoot) {
+  const g = PREDEPLOY_GATES[version];
+  if (!g) return [];
+  // Evidence counts only as COMMITTED at HEAD: an uncommitted or edited copy on disk never passes (and says so).
+  const read = (f) => { try { return git(repoRoot, ['show', `HEAD:${f}`]).toString('utf8'); } catch { return null; } };
+  const dirty = (f) => { try { return git(repoRoot, ['status', '--porcelain', '--', f]).toString().trim() !== ''; } catch { return true; } };
+  const r = [];
+  [g.marker.file, g.evidence.file].forEach((f) => { if (dirty(f)) r.push(`pre-deploy gate: ${f} has uncommitted changes; only the committed copy counts`); });
+  const page = read(g.marker.file);
+  if (!page || !page.includes(g.marker.text)) r.push(`pre-deploy gate: ${g.marker.file} does not carry the approved disclosure (marker ${g.marker.text})`);
+  const ev = read(g.evidence.file);
+  // Fail closed: only a line "<check>: PASS <where/when>" passes. A recorded FAIL, a missing line, two answers for one check,
+  // or anything malformed refuses, each with its own reason.
+  g.evidence.checks.forEach((c) => {
+    const lines = (ev || '').split(/\r?\n/).filter((l) => l.trim().toLowerCase().startsWith(`${c}:`));
+    const want = `${g.evidence.file}: "${c}: PASS <where/when>"`;
+    if (!ev) r.push(`pre-deploy gate: no evidence file (${want} required)`);
+    else if (!lines.length) r.push(`pre-deploy gate: ${c} has no result recorded (${want} required)`);
+    else if (lines.length > 1) r.push(`pre-deploy gate: ${c} is recorded ${lines.length} times; keep exactly one result`);
+    else if (/^\S+:\s*FAIL\b/i.test(lines[0].trim())) r.push(`pre-deploy gate: ${c} is recorded as FAILED: "${lines[0].trim().slice(0, 120)}"`);
+    else if (!new RegExp(`^${c}: PASS \\S+`).test(lines[0].trim())) r.push(`pre-deploy gate: ${c} result is malformed: "${lines[0].trim().slice(0, 120)}" (${want} required)`);
+  });
+  return r;
 }
 
 // Statements that would break the single-transaction guarantee (or can't run inside one). plpgsql `end;` is fine; a
@@ -52,10 +89,15 @@ function forbiddenStatements(sql) {
 }
 
 // The approval must name THIS version and THIS exact file hash: `<version>:<sha256>`. Nothing generic ("true", "yes") passes.
-const approvalToken = (facts) => `${facts.version}:${facts.sha256}`;
+// Staging (owner approval B, 2026-11-15) has its own approval variable and token, so a production approval can never be
+// replayed on staging or the reverse; each database keeps its own private.migration_ledger.
+const approvalVar = (target) => (target === 'staging' ? 'NEARBY_STAGING_APPROVAL' : 'NEARBY_PROD_APPROVAL');
+const approvalToken = (facts, target) => `${target === 'staging' ? 'staging:' : ''}${facts.version}:${facts.sha256}`;
 
 // Every reason to refuse, before anything is sent. `ledger` = { exists, rows: [{ version, ... }] } read by status SQL.
-function preflight({ facts, env, ledger }) {
+// target: the pre-deploy gates guard PRODUCTION only (their evidence comes from non-production runs: staging + local); a
+// missing target counts as production, so it fails closed.
+function preflight({ facts, env, ledger, target }) {
   const r = [];
   if (!facts.exists) return [`file not found: ${facts.rel}`];
   if (!facts.inMigrationsDir) r.push(`not a migration file under ${MIGRATIONS_DIR}/ named <8 digits>_<name>.sql: ${facts.rel}`);
@@ -66,9 +108,13 @@ function preflight({ facts, env, ledger }) {
     if (!facts.commit) r.push('no commit found for the file');
   }
   forbiddenStatements(facts.content).forEach((w) => r.push(`migration contains ${w}`));
-  const approval = (env.NEARBY_PROD_APPROVAL || '').trim();
-  if (!approval) r.push(`missing approval: set NEARBY_PROD_APPROVAL=${approvalToken(facts)} (the owner's approval of this version + hash)`);
-  else if (approval !== approvalToken(facts)) r.push(`approval "${approval}" does not match this migration (${approvalToken(facts)})`);
+  if (target !== 'local' && target !== 'staging') (facts.gateFailures || []).forEach((w) => r.push(w));
+  const varName = approvalVar(target);
+  const otherVar = approvalVar(target === 'staging' ? 'prod' : 'staging');
+  if ((env[otherVar] || '').trim()) r.push(`${otherVar} is set during a ${target === 'staging' ? 'staging' : 'production'} deploy: unset it (approvals never cross environments)`);
+  const approval = (env[varName] || '').trim();
+  if (!approval) r.push(`missing approval: set ${varName}=${approvalToken(facts, target)} (the owner's approval of this version + hash)`);
+  else if (approval !== approvalToken(facts, target)) r.push(`approval "${approval}" does not match this migration (${approvalToken(facts, target)})`);
   if (!(env.NEARBY_APPROVAL_REF || '').trim()) r.push('missing NEARBY_APPROVAL_REF (where/when the owner approved it)');
   if (!(env.NEARBY_SESSION_ID || '').trim()) r.push('missing NEARBY_SESSION_ID (the deploying session)');
   if (facts.version) {
@@ -129,13 +175,18 @@ function repoMigrations(repoRoot) {
 
 // Targets. 'prod' = the Management API (scripts/live-verify/lib/db.js); 'local' = a disposable database by URL, refused if it
 // looks like a hosted Supabase address. Every query goes over one connection per call, like the Management API.
-function runner(target) {
+function runner(target, env = process.env) {
+  const { PRODUCTION_REF } = require('../lib/stagingTarget');
   if (target === 'prod') {
-    const url = process.env.NEARBY_LOCAL_DB_URL;
+    const url = env.NEARBY_LOCAL_DB_URL;
     if (url) throw new Error('NEARBY_LOCAL_DB_URL is set: refusing --target=prod (unset it to make the target unambiguous)');
-    const { runSql } = require('../live-verify/lib/db');
-    return { name: 'production (Management API)', run: (sql) => runSql(sql) };
+    if (env.SUPABASE_PROJECT_REF && env.SUPABASE_PROJECT_REF !== PRODUCTION_REF) throw new Error('SUPABASE_PROJECT_REF names another project: refusing --target=prod (unset it)');
+    if (env.NEARBY_STAGING_REF) throw new Error('NEARBY_STAGING_REF is set: refusing --target=prod (unset it to make the target unambiguous)');
+    if (env.NEARBY_STAGING_ACCESS_TOKEN) throw new Error('NEARBY_STAGING_ACCESS_TOKEN is set: refusing --target=prod (unset it to make the target unambiguous)');
+    const { runSqlOnRef } = require('../live-verify/lib/db');
+    return { name: 'production (Management API)', ref: PRODUCTION_REF, run: (sql) => runSqlOnRef(PRODUCTION_REF, sql) };
   }
+  if (target === 'staging') return stagingRunner(env);
   if (target === 'local') {
     const url = process.env.NEARBY_LOCAL_DB_URL;
     if (!url) throw new Error('--target=local needs NEARBY_LOCAL_DB_URL (a disposable database)');
@@ -154,7 +205,45 @@ function runner(target) {
       },
     };
   }
-  throw new Error('--target=prod or --target=local is required');
+  throw new Error('--target=prod, --target=staging or --target=local is required');
+}
+
+// 'staging' (owner approval B, 2026-11-15; PRODUCT_AUDIT/STAGING_PROJECT_PLAN_2026-11-15.md): the separate staging project
+// through the Management API, never production. The ref comes ONLY from scripts/lib/stagingTarget.js (NEARBY_STAGING_REF or
+// the gitignored .claude/staging.json; production's ref refused in any form); the token ONLY from NEARBY_STAGING_ACCESS_TOKEN,
+// which must differ from SUPABASE_ACCESS_TOKEN (an access token reaches every project in the account, so the REF isolates;
+// a separate token keeps a production session's token from ever being the one that touches staging, and the reverse).
+// Refused too: NEARBY_LOCAL_DB_URL or SUPABASE_PROJECT_REF set (the target must be unambiguous).
+function stagingRunner(env = process.env, fetchImpl = (...a) => fetch(...a), opts = {}) {
+  if (env.NEARBY_LOCAL_DB_URL) throw new Error('NEARBY_LOCAL_DB_URL is set: refusing --target=staging (unset it)');
+  if (env.SUPABASE_PROJECT_REF) throw new Error('SUPABASE_PROJECT_REF is set: refusing --target=staging (the ref comes only from NEARBY_STAGING_REF or .claude/staging.json)');
+  const { stagingRef } = require('../lib/stagingTarget');
+  const { ref } = stagingRef({ env, ...(opts.file ? { file: opts.file } : {}) });
+  const token = String(env.NEARBY_STAGING_ACCESS_TOKEN || '').trim();
+  if (!token) throw new Error('--target=staging needs NEARBY_STAGING_ACCESS_TOKEN (a separate token, never SUPABASE_ACCESS_TOKEN)');
+  if (env.SUPABASE_ACCESS_TOKEN && token === String(env.SUPABASE_ACCESS_TOKEN).trim()) {
+    throw new Error('NEARBY_STAGING_ACCESS_TOKEN is the same token as SUPABASE_ACCESS_TOKEN: use a separate staging token');
+  }
+  return {
+    name: `staging ${ref} (Management API)`,
+    ref,
+    // 429 = the Management API's throttler refused the request before any SQL ran (no transaction started), so it is the
+    // ONE status retried, with backoff (found on the hosted bootstrap 2026-11-18). Every other failure surfaces at once.
+    run: async (sql) => {
+      const waits = opts.retryWaitsMs || [5000, 10000, 20000, 40000, 60000, 60000, 60000];
+      for (let attempt = 0; ; attempt += 1) {
+        const res = await fetchImpl(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: sql }),
+        });
+        const text = await res.text();
+        if (res.status === 429 && attempt < waits.length) { await new Promise((r) => setTimeout(r, waits[attempt])); continue; }
+        if (!res.ok) throw new Error(`staging query failed (${res.status}): ${text.slice(0, 8000)}`);
+        return text ? JSON.parse(text) : [];
+      }
+    },
+  };
 }
 
 async function readLedger(run) {
@@ -165,6 +254,7 @@ async function readLedger(run) {
 }
 
 module.exports = {
+  PREDEPLOY_GATES, predeployGateFailures,
   LEDGER_MIGRATION, BASELINE_MAX, DRY_RUN_MARK, LEDGER_EXISTS_SQL, LEDGER_ROWS_SQL,
-  migrationFacts, forbiddenStatements, approvalToken, preflight, deploySql, dryRunSql, statusReport, repoMigrations, runner, readLedger,
+  migrationFacts, forbiddenStatements, approvalVar, approvalToken, preflight, deploySql, dryRunSql, statusReport, repoMigrations, runner, stagingRunner, readLedger,
 };

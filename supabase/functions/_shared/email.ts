@@ -9,11 +9,20 @@ export async function sendEmail(to: string, subject: string, text: string): Prom
   const key = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('EMAIL_FROM');
   if (!key || !from) return { sent: false, reason: 'email_not_configured' };
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: [to], subject, text }),
-  });
+  const replyTo = (Deno.env.get('EMAIL_REPLY_TO') || '').trim();
+  // A slow or unreachable provider never hangs the caller (send-push, business-email): 10 s, then 'provider_unreachable'.
+  let res: Response;
+  try {
+    res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      // EMAIL_REPLY_TO (optional): the sender (alerts@mail.<domain>) receives no mail, so a reply goes to the support inbox.
+      body: JSON.stringify({ from, to: [to], subject, text, ...(replyTo ? { reply_to: replyTo } : {}) }),
+      signal: AbortSignal.timeout(10_000),
+    });
+  } catch (_e) {
+    return { sent: false, reason: 'provider_unreachable' };
+  }
   if (!res.ok) return { sent: false, reason: `provider_error_${res.status}` };
   return { sent: true };
 }

@@ -6,6 +6,13 @@
 
 import { validUntilFromChoice, availableWindowFromChoice } from './offerMedia';
 import { parseDiscountPct, discountCapProblem } from './discountCap';
+import { consumerOfferAction } from './primaryAction';
+
+// The button the preview shows: the customer's real open-reply button (same table, same words: "I'll take this one"),
+// but never live in the preview. It books nothing and claims nothing: the draft hasn't been screened, sent or booked.
+export function previewAcceptAction() {
+  return { label: consumerOfferAction({ status: 'offered' }, { request: { status: 'open' } }).label, disabled: true };
+}
 
 // Item 119: the second time a reply sends (ISO) -- only on an alternative-time reply, only beside a first time, and not
 // when it is the same time as the first (that is one time). Send and the preview both use this, so they cannot differ.

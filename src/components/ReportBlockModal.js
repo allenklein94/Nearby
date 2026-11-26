@@ -8,24 +8,27 @@ import { useTheme } from '../context/ThemeContext';
 import { spacing, radius, typography } from '../theme';
 
 import { modalAnimation, showSuccessToast } from '../motion';
-import { reportRow, insertReport } from '../utils/reportContent';
+import { reportRow, insertReport, isDuplicateReport } from '../utils/reportContent';
+import { reportReasonsFor } from '../utils/reportReasons';
+// One reason table (utils/reportReasons.js): the chip label is translated (ui.reportBlock.reason.<key>); what is saved is
+// the reason's fixed `legacy` value, which the database maps to its stable code (20270370). Never a translated string.
+// A report about a business (target 'business', 20270381) offers the business reasons only.
+const reasonChips = (target) => reportReasonsFor(target).map((r) => ({ value: r.legacy, key: r.key }));
 import { disabledButtonStyle } from '../constants/buttonStates';
-// `value` is what is saved in reports.reason and read by the admin queue (English, unchanged); `key` names the chip label
-// in the person's language (ui.reportBlock.reason.<key>).
-const REPORT_REASONS = [
-  { value: 'Inappropriate photo', key: 'inappropriatePhoto' },
-  { value: 'Harassment or abuse', key: 'harassment' },
-  { value: 'Fake profile', key: 'fakeProfile' },
-  { value: 'Spam or scam', key: 'spam' },
-  { value: 'Underage user', key: 'underage' },
-  { value: 'Other', key: 'other' },
-];
 
 // reportOnly: the caller owns blocking (a host's Block in Manage attendees also takes the person off the gathering), so
 // the sheet shows only the report.
 // reportedContent: optional { type, id } of what is being reported (a long-pressed message, or { type: 'match_chat',
 // id: matchId } from a 1:1 chat); the server keeps its own copy of it (utils/reportContent.js).
-export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly = false, reportedContent = null }) {
+// target 'business' + reportedContent { type: 'business', id: partnerId } (20270381, "Report business"): report only, no
+// person named (the server sets nobody), title = title prop ("Report {name}").
+// target 'media' + reportedContent { type: 'story', id } (20270391, a Story or a gathering memory): the reasons about a photo;
+// Block stays, since the person who posted it is known.
+// target 'gathering' / 'community' + reportedContent { type, id } (20270392): report only, reportedUserId = the host or creator (the
+// server sets it from the object; the client value is only the older-database fallback).
+export default function ReportBlockModal({ visible, onClose, onBlocked, reportedUserId, reportedUserName, reportOnly: reportOnlyProp = false, reportedContent = null, target = 'person', title = null }) {
+  const REPORT_REASON_CHIPS = reasonChips(target);
+  const reportOnly = reportOnlyProp || target === 'business' || target === 'gathering' || target === 'community';
   const { t } = useLanguage();
   const { colors } = useTheme();
   const styles = getStyles(colors);
@@ -41,15 +44,16 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
     const { data: sessionData } = await supabase.auth.getSession();
     const reporterId = sessionData?.session?.user?.id;
 
-    const row = reportRow({ reporterId, reportedId: reportedUserId, reason: selectedReason, details: details.trim(), content: reportedContent });
+    const row = reportRow({ reporterId, reportedId: target === 'business' ? null : reportedUserId, reason: selectedReason, details: details.trim(), content: reportedContent });
     const { error } = await insertReport((r) => supabase.from('reports').insert(r), row);
 
     setSubmitting(false);
-    if (error) {
+    if (error && !isDuplicateReport(error)) {
       presentRecoverableError(Alert, { what: 'complete that', error: error, onRetry: () => submitReport() });
       return;
     }
-    showSuccessToast(t('ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
+    if (error) showSuccessToast(t('ui.reportBlock.alreadyReported'), t('ui.reportBlock.thankYouOurTeamWill')); // a duplicate: nothing lost
+    else showSuccessToast(t('ui.reportBlock.reportSubmitted'), t('ui.reportBlock.thankYouOurTeamWill'));
     setSelectedReason(null);
     setDetails('');
     onClose();
@@ -81,11 +85,11 @@ export default function ReportBlockModal({ visible, onClose, onBlocked, reported
     <Modal visible={visible} animationType={modalAnimation('slide')} transparent onRequestClose={onClose}>
       <KeyboardSafeSheet style={styles.overlay}>
         <View style={styles.sheet}>
-          <Text style={styles.title}>{t('ui.reportBlock.reportOrBlock')}</Text>
+          <Text style={styles.title}>{title || t('ui.reportBlock.reportOrBlock')}</Text>
 
           <Text style={styles.label}>{t('ui.reportBlock.reasonForReport')}</Text>
           <View style={styles.reasonsWrap}>
-            {REPORT_REASONS.map(({ value, key }) => (
+            {REPORT_REASON_CHIPS.map(({ value, key }) => (
               <TouchableOpacity
                 key={value}
                 style={[styles.reasonChip, selectedReason === value && styles.reasonChipSelected]}

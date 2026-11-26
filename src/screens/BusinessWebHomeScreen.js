@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { getMyManagedPartner } from '../services/brandOffers';
+import { businessWebDestination, linkPushData, takeBusinessWebLink } from '../utils/businessWebLink';
+import { ensureBusinessLocationForPush } from '../services/businessLocations';
+import { LOCATION_FALLBACK_DESTINATION } from '../utils/businessLocations';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { typography, spacing } from '../theme';
@@ -33,7 +36,25 @@ export default function BusinessWebHomeScreen({ navigation }) {
       const admin = adminReviewAvailable(isAdmin, probe);
       setShowAdmin(admin);
       if (partner && !admin) {
-        navigation.replace('BusinessDashboard');
+        // An alert email's link (utils/businessWebLink.js) opens the exact request, like the push; else the dashboard.
+        const link = takeBusinessWebLink();
+        if (!link) {
+          navigation.replace('BusinessDashboard');
+          return;
+        }
+        // Multi-location (20270424): the link's location first (server-checked membership); a location this account can't
+        // switch to = plain Opportunities, never that request under the location currently selected.
+        ensureBusinessLocationForPush(linkPushData(link))
+          .then(({ open }) => (open ? businessWebDestination(link) : LOCATION_FALLBACK_DESTINATION))
+          .then((dest) => {
+          if (cancelled) return;
+          if (dest.name === 'BusinessDashboard') {
+            navigation.replace('BusinessDashboard', dest.params);
+          } else {
+            navigation.replace('BusinessDashboard'); // Back from the linked screen lands on the dashboard
+            navigation.navigate(dest.name, dest.params);
+          }
+        });
       } else if (partner) {
         setHasBusiness(true);
         setChecking(false);
@@ -78,9 +99,9 @@ export default function BusinessWebHomeScreen({ navigation }) {
       {adminLinks}
       <Text style={styles.title} accessibilityRole="header">This view is for approved Nearby business partners</Text>
       <Text style={styles.body}>
-        This account isn't linked to an approved business yet. If you've applied, download the
-        Nearby app and sign in with the same phone number to get access once approved. If you
-        haven't applied, visit nearby's business page to get started.
+        This account isn't linked to an approved business yet. Once your application is approved,
+        it links to this account automatically if you signed in here with the phone number you
+        applied with. If you haven't applied, visit Nearby's business page to get started.
       </Text>
     </SafeAreaView>
   );

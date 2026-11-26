@@ -4,7 +4,7 @@
 // never reopens for unchanged evidence, only an admin reopens it, with a reason; a report never opens a case by itself.
 // Hashes here are fixed numbers (the matching rule is what's tested); real photos are measured by
 // scripts/trust-safety/calibrate-photo-hashes.js. Every client action runs under the real role (set local role + JWT claims).
-const { runJourney, stepMap, hasToken, actorDeclares, actorsSql } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, actorDeclares, actorsSql, storedReason } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -73,7 +73,8 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
   update profiles set display_name = 'Ravi Shah' where id = v_g;
   update profiles set display_name = 'Olu Ade' where id = v_m;
   update profiles set display_name = 'Tess Nguyen' where id = v_q;
-  ${rec('defaults', `(select jsonb_build_object('dhash', similar_photo_max_dhash, 'phash', similar_photo_max_phash) from private.account_signal_settings)`)}
+  ${rec('defaults', `(select jsonb_build_object('dhash', similar_photo_max_dhash, 'phash', similar_photo_max_phash,
+      'activated', to_regprocedure('private.evaluate_existing_photo_signals()') is not null) from private.account_signal_settings)`)}
   -- the exact-copy rules as approved (20270358); similarity distances OFF
   update private.account_signal_settings set duplicate_photo_min_accounts = 3, similar_name_min_similarity = 0.5,
     similar_photo_max_dhash = null, similar_photo_max_phash = null;
@@ -191,7 +192,7 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
   ${obj('v_x', 'other.jpg')}
   ${as('admin_sees_unrelated_photo', 'v_admin', `select count(*) into v_n from storage.objects where id = ${objId('v_x', 'other.jpg')}`, 'v_n')}
 
-  -- ===== behaviour: a closed case doesn't come back on old signals =====
+  -- ===== behaviour: a closed case doesn't come back on old signals; fresh ones open a new case (20270385) =====
   update private.behavior_signal_settings set review_cases_enabled = true, case_window_hours = 24, max_new_cases_per_day = 20,
     case_alone_kinds = array['repeated_messages'];
   insert into private.behavior_signals (user_id, kind, evidence) values (v_b, 'repeated_messages', '{"recipients": 9}');
@@ -218,7 +219,7 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
   update private.account_review_cases set opened_at = now() - interval '13 months', review_due_at = now() - interval '12 months' where id = v_case;
   perform private.purge_account_review_cases();
   ${rec('purged', `jsonb_build_object('identical_left', (select count(*) from private.account_review_cases where sha256 = ${shaT}),
-      'behavior_left', (select count(*) from private.account_review_cases where signal = 'behavior' and subject_user = v_b),
+      'behavior_left', (select count(*) from private.account_review_cases where signal = 'behavior' and subject_user = v_b and status = 'closed'),
       'orphan_events', (select count(*) from private.account_review_case_events e where not exists (select 1 from private.account_review_cases c where c.id = e.case_id)),
       'open_kept', (select status from private.account_review_cases where id = v_case))`)}
   ${as('admin_sees_purged_photo', 'v_admin', `select count(*) into v_n from storage.objects where id = ${objId('v_k', 'k1.jpg')}`, 'v_n')}
@@ -251,8 +252,9 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
   const data = (k) => s[k].data;
   const hint = (k) => s[k].data && s[k].data.hint;
 
-  test('0368: off until approved; recorded only by the service role, for a photo in use, with valid hashes', () => {
-    expect(data('defaults')).toEqual({ dhash: null, phash: null });
+  test('0368: off until approved (20270380 activates at 10/10); recorded only by the service role, for a photo in use, with valid hashes', () => {
+    const { activated } = data('defaults');
+    expect(data('defaults')).toEqual(activated ? { dhash: 10, phash: 10, activated } : { dhash: null, phash: null, activated });
     expect(data('off_recorded_no_case')).toEqual({ hashes: 5, cases: 0 });
     expect(data('client_records_hashes').error).toMatch(/permission denied/);
     expect(data('bad_variant_refused')).toBe(false);
@@ -321,7 +323,7 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
     expect(data('admin_opens_from_report').new).toBe(true);
     expect(data('admin_links_second_report')).toEqual({ case_id: data('admin_opens_from_report').case_id, new: false });
     expect(data('report_case')).toEqual({ signal: 'report', reason: 'reported_profile', members: 1, photos: 1, reports: 2, linked_events: 2 });
-    expect(data('report_untouched')).toEqual({ reason: 'Fake profile', resolved: false });
+    expect(data('report_untouched')).toEqual({ reason: storedReason('Fake profile'), resolved: false });
   });
 
   test('0369: a case photo is readable only by an admin, and only while it is attached to a case', () => {
@@ -332,9 +334,9 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
     expect(data('admin_sees_purged_photo')).toBe(0);
   });
 
-  test('0369: a closed behaviour case does not come back on old signals; new signals are noted once a day on it', () => {
+  test('0369 + 0385: a closed behaviour case does not come back on old signals; fresh ones open ONE new case, the old stays closed', () => {
     expect(data('behavior_old_signals')).toEqual({ cases: 1, new_evidence: 0 });
-    expect(data('behavior_new_signals')).toEqual({ cases: 1, open: 0, new_evidence: 1 });
+    expect(data('behavior_new_signals')).toEqual({ cases: 2, open: 1, new_evidence: 0 });
   });
 
   test('0369: resolved cases go 12 months after closing with their history; open cases stay and are flagged overdue', () => {
@@ -346,7 +348,7 @@ d('journey: near-duplicate photos + review case history (20270368 + 20270369)', 
     expect(data('delete_account')).toBe('ok');
     expect(data('after_delete')).toEqual({ member: 0, photos: 0, hashes: 0, new_evidence_kept: 1, subject_nulled: 1 });
     expect(data('delete_reported')).toBe('ok');
-    expect(data('report_case_gone')).toBe(0);
+    expect(data('report_case_gone')).toBe(1); // 20270406: an open case stays open without its subject; a closed one goes (journey deletedAccountUnresolved)
   });
 
   test('nothing restricts anyone; clients can read none of it', () => {

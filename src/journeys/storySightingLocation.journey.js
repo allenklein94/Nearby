@@ -11,7 +11,7 @@
 //     participant cannot read approx_area directly; unparseable values store nothing; get_sighting_fuzzed_coords is gone.
 //   grants: the pin function, the triggers' functions and the secret are out of client reach.
 // Rolled back. Coordinates are mid-Atlantic, away from a cell edge (12.3456789 / 0.007 = 1763.67, -45.6789123 / 0.007 = -6525.56).
-const { runJourney, stepMap, hasToken } = require('./journeyHarness');
+const { runJourney, stepMap, hasToken, crossingReady } = require('./journeyHarness');
 
 const d = hasToken ? describe : describe.skip;
 
@@ -70,6 +70,16 @@ d('journey: stories and sightings never store a precise location (item 148)', ()
   insert into brand_partners (name, tier) values ('J148 Cafe', 'growth') returning id into v_partner;
   perform set_config('app.trusted_update', 'true', true);
   update profiles set managed_partner_id = v_partner where id = v_biz;
+  if to_regclass('private.business_moments_settings') is not null then execute 'update private.business_moments_settings set enabled = true where id'; end if; -- moments paused by 0389: this checks what a moment stores / the 0388 refusal
+  if to_regclass('private.story_media_settings') is not null then execute 'update private.story_media_settings set public_stories_enabled = true, friends_stories_enabled = true where id'; end if; -- personal Stories paused by 0390: this journey checks visibility + location, not the pause
+  -- from 20270383 a crossing is recorded only inside a pool both people chose: poster, friend and stranger choose Dating
+  update profiles set onboarding_motivations = array['Go on dates'], photo_verified = true where id in (v_p, v_f, v_str);
+  -- from 20270384 also Crossed Paths on + a fresh presence cell each (poster and friend one tile apart; stranger's
+  -- 'somewhere' crossing below is then refused outright, before it ever reaches the pin trigger)
+  ${crossingReady(['v_p', 'v_str'], '12.3457,-45.6789')}
+  ${crossingReady(['v_f'], '12.3458,-45.6788')}
+  log := log || jsonb_build_array(jsonb_build_object('step', 'probeRule', 'ok', true,
+    'data', to_regclass('private.crossed_paths_probe') is not null));
 
   -- the poster's own inserts, the way uploadStory makes them (insert, no returning)
   ${as('v_p')}
@@ -150,8 +160,11 @@ d('journey: stories and sightings never store a precise location (item 148)', ()
   -- D4: sightings (written by the server only; no client insert path exists)
   insert into sightings (user_a, user_b, approx_area, first_seen_at, last_seen_at, expires_at)
     values (v_p, v_f, '12.3457,-45.6789', now(), now(), now() + interval '1 day') returning id into v_s;
+  -- the swapped-order row is the same pair: from 20270384 one encounter per pair, so forget the first one's memory to test
+  -- the pin in the other order
+  if to_regclass('private.crossed_paths_encounters') is not null then execute 'delete from private.crossed_paths_encounters'; end if;
   insert into sightings (user_a, user_b, approx_area, first_seen_at, last_seen_at, expires_at)
-    values (v_f, v_p, '12.3459,-45.6787', now(), now(), now() + interval '1 day') returning id into v_s2;
+    values (v_f, v_p, '12.3458,-45.6788', now(), now(), now() + interval '1 day') returning id into v_s2;
   insert into sightings (user_a, user_b, approx_area, first_seen_at, last_seen_at, expires_at)
     values (v_p, v_str, 'somewhere', now(), now(), now() + interval '1 day') returning id into v_bad;
   update sightings set approx_area = approx_area where id = v_s;
@@ -254,10 +267,13 @@ d('journey: stories and sightings never store a precise location (item 148)', ()
     for (const k of ['stranger', 'friend', 'poster']) {
       expect(data(k).app_reads).toEqual({ stories: expect.any(Number), sightings: expect.any(Number) });
     }
-    // signed out: the app never reads these; the sightings policy already refused anon before item 148 (is_blocked)
-    expect(data('anon').app_reads).toBe('permission denied for function is_blocked');
-    expect(data('poster').app_reads.sightings).toBe(3); // two with the friend + one with the stranger
-    expect(data('stranger').app_reads.sightings).toBe(1); // the stranger's own (unparseable) sighting with the poster
+    // signed out: the app never reads these; the sightings policy already refused anon before item 148 (is_blocked; from
+    // 20270383 its pair rule sighting_pair_visible, also authenticated-only)
+    expect(['permission denied for function is_blocked', 'permission denied for function sighting_pair_visible']).toContain(data('anon').app_reads);
+    // two with the friend + (before 20270384) one with the stranger, whose unparseable cell 0384 refuses outright
+    const probe = data('probeRule');
+    expect(data('poster').app_reads.sightings).toBe(probe ? 2 : 3);
+    expect(data('stranger').app_reads.sightings).toBe(probe ? 0 : 1); // the stranger's own (unparseable) sighting with the poster
   });
 
   test('grants: only the location columns are unreadable; pin function, trigger functions and secret are out of reach', () => {

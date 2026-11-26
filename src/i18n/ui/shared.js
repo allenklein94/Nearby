@@ -10,13 +10,27 @@ export default {
     header: { messages: 'Messages', messagesUnread: 'Messages, {count} unread', profile: 'Your Profile', hint: '💬 Your messages live here now', dismissHint: 'Dismiss this tip', gotIt: 'Got it' },
     gatheringStatus: { hosting: 'Hosting', going: 'Going', interested: 'Requested', maybe: 'Interested', waitlisted: 'Waitlisted', attended: 'Attended', hosted: 'Hosted', didNotAttend: "Didn't attend" },
     planStatus: { pending: 'Pending', accepted: 'Accepted', confirmed: 'Confirmed', declined: 'Declined', cancelled: 'Cancelled', completed: 'Completed' },
+    contentHeldTitle: 'Thanks, we\'re taking a look',
+    contentHeld: 'We check some posts before others can see them. Only you can see this until it\'s approved, usually soon.',
+    gatheringHeld: 'Only you can see this gathering while Nearby checks it. It will appear for others once it\'s approved.',
     errors: {
       notNow: 'Not now', tryAgain: 'Try Again', checkConnection: 'Check your connection.', draftSaved: 'Your draft is saved.', nothingLost: 'Nothing was lost. Please try again.',
       didntGoThrough: "That didn't go through",
       phoneRequired: 'Messaging, invitations, connecting and hosting need an account with a verified phone number.',
       accountSuspended: 'This account is suspended, so it can\'t message, invite, connect or host.',
+      accountRestricted: 'Nearby paused this on your account after a review. Available again: {date}. Everything else works as usual.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'This account can\'t sign in right now. It has been suspended, or it is on hold while an account problem is checked.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'ID verification isn\'t available right now. Nothing was uploaded.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: 'Think this is a mistake? Contact support at {email} to request a review. We\'ll help verify your account.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'You\'ve reached the limit for this for now. Please try again later.',
       gatheringLimit: 'You\'ve reached the limit for creating gatherings for now. Please try again later.',
+      friendRequestLimit: 'You\'ve sent several friend requests in a short time. Please wait a few minutes and try again.',
+      friendRequestDailyLimit: 'You can send up to 15 friend requests per day. Try again tomorrow.',
+      offerContactInfo: 'Offers can\'t include website links, email addresses or phone numbers. Customers reach you through Nearby.',
+      heldNotShareable: 'Only you can see this until Nearby checks it. You can invite people or ask businesses once it\'s approved.',
+      contentCheckUnavailableTitle: 'Couldn\'t check this right now',
+      contentCheckUnavailable: 'Nearby checks what you post before others see it, and the check isn\'t available right now. Nothing was posted. Please try again in a moment.',
+      contentCheckLimit: 'You\'ve reached today\'s limit for posting new text. You can try again tomorrow.',
       what: {
         complete_that: { service: "We couldn't complete that right now.", input: "We couldn't complete that. Please check it and try again." },
         update_these_ideas: { service: "We couldn't update these ideas right now.", input: "We couldn't update these ideas. Please check it and try again." },
@@ -39,6 +53,7 @@ export default {
         review_this_offer: { service: "We couldn't review this offer right now.", input: "We couldn't review this offer. Please check it and try again." },
         post_your_availability: { service: "We couldn't post your availability right now.", input: "We couldn't post your availability. Please check it and try again." },
         mark_that_visit: { service: "We couldn't mark that visit right now.", input: "We couldn't mark that visit. Please check it and try again." },
+        confirm_that_visit: { service: "We couldn't confirm that visit right now.", input: "We couldn't confirm that visit. Please check it and try again." },
         forget_that: { service: "We couldn't forget that right now.", input: "We couldn't forget that. Please check it and try again." },
         find_places_nearby: { service: "We couldn't find places nearby right now.", input: "We couldn't find places nearby. Please check it and try again." },
         find_businesses_for_you: { service: "We couldn't find businesses for you right now.", input: "We couldn't find businesses for you. Please check it and try again." },
@@ -56,13 +71,27 @@ export default {
     header: { messages: 'Mensajes', messagesUnread: 'Mensajes, {count} sin leer', profile: 'Tu perfil', hint: '💬 Tus mensajes ahora están aquí', dismissHint: 'Descartar este consejo', gotIt: 'Entendido' },
     gatheringStatus: { hosting: 'Organizas', going: 'Vas', interested: 'Solicitado', maybe: 'Te interesa', waitlisted: 'En lista de espera', attended: 'Asististe', hosted: 'Organizaste', didNotAttend: 'No asististe' },
     planStatus: { pending: 'Pendiente', accepted: 'Aceptado', confirmed: 'Confirmado', declined: 'Rechazado', cancelled: 'Cancelado', completed: 'Completado' },
+    contentHeldTitle: 'Gracias, lo estamos revisando',
+    contentHeld: 'Revisamos algunas publicaciones antes de que otros las vean. Solo tú puedes verla hasta que se apruebe, normalmente pronto.',
+    gatheringHeld: 'Solo tú puedes ver esta reunión mientras Nearby la revisa. Aparecerá para los demás cuando se apruebe.',
     errors: {
       notNow: 'Ahora no', tryAgain: 'Intentar de nuevo', checkConnection: 'Revisa tu conexión.', draftSaved: 'Tu borrador está guardado.', nothingLost: 'No se perdió nada. Inténtalo de nuevo.',
       didntGoThrough: 'No se pudo completar',
       phoneRequired: 'Para enviar mensajes, invitar, conectar u organizar necesitas una cuenta con un número de teléfono verificado.',
       accountSuspended: 'Esta cuenta está suspendida, así que no puede enviar mensajes, invitar, conectar ni organizar.',
+      accountRestricted: 'Nearby pausó esto en tu cuenta tras una revisión. Disponible de nuevo: {date}. Todo lo demás funciona con normalidad.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Esta cuenta no puede iniciar sesión ahora mismo. Fue suspendida o está en espera mientras se revisa un problema con la cuenta.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'La verificación de identidad no está disponible ahora mismo. No se subió nada.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: '¿Crees que es un error? Escribe a soporte en {email} para pedir una revisión. Te ayudaremos a verificar tu cuenta.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Llegaste al límite de esto por ahora. Inténtalo de nuevo más tarde.',
       gatheringLimit: 'Llegaste al límite para crear reuniones por ahora. Inténtalo de nuevo más tarde.',
+      friendRequestLimit: 'Enviaste varias solicitudes de amistad en poco tiempo. Espera unos minutos e inténtalo de nuevo.',
+      friendRequestDailyLimit: 'Puedes enviar hasta 15 solicitudes de amistad por día. Inténtalo de nuevo mañana.',
+      offerContactInfo: 'Las ofertas no pueden incluir enlaces a sitios web, correos electrónicos ni números de teléfono. Los clientes te contactan a través de Nearby.',
+      heldNotShareable: 'Solo tú puedes ver esto hasta que Nearby lo revise. Podrás invitar a personas o pedir a negocios cuando esté aprobado.',
+      contentCheckUnavailableTitle: 'No pudimos revisar esto ahora',
+      contentCheckUnavailable: 'Nearby revisa lo que publicas antes de que otros lo vean, y la revisión no está disponible ahora. No se publicó nada. Inténtalo de nuevo en un momento.',
+      contentCheckLimit: 'Llegaste al límite de hoy para publicar texto nuevo. Puedes intentarlo de nuevo mañana.',
       what: {
         complete_that: { service: 'No pudimos completar eso ahora.', input: 'No pudimos completar eso. Revísalo e inténtalo de nuevo.' },
         update_these_ideas: { service: 'No pudimos actualizar estas ideas ahora.', input: 'No pudimos actualizar estas ideas. Revísalo e inténtalo de nuevo.' },
@@ -85,6 +114,7 @@ export default {
         review_this_offer: { service: 'No pudimos revisar esta oferta ahora.', input: 'No pudimos revisar esta oferta. Revísala e inténtalo de nuevo.' },
         post_your_availability: { service: 'No pudimos publicar tu disponibilidad ahora.', input: 'No pudimos publicar tu disponibilidad. Revísala e inténtalo de nuevo.' },
         mark_that_visit: { service: 'No pudimos marcar esa visita ahora.', input: 'No pudimos marcar esa visita. Revísalo e inténtalo de nuevo.' },
+        confirm_that_visit: { service: "No pudimos confirmar esa visita ahora.", input: "No pudimos confirmar esa visita. Revísalo e inténtalo de nuevo." },
         forget_that: { service: 'No pudimos olvidar eso ahora.', input: 'No pudimos olvidar eso. Revísalo e inténtalo de nuevo.' },
         find_places_nearby: { service: 'No pudimos encontrar lugares cercanos ahora.', input: 'No pudimos encontrar lugares cercanos. Revísalo e inténtalo de nuevo.' },
         find_businesses_for_you: { service: 'No pudimos encontrar negocios para ti ahora.', input: 'No pudimos encontrar negocios para ti. Revísalo e inténtalo de nuevo.' },
@@ -102,13 +132,27 @@ export default {
     header: { messages: 'Nachrichten', messagesUnread: 'Nachrichten, {count} ungelesen', profile: 'Dein Profil', hint: '💬 Deine Nachrichten findest du jetzt hier', dismissHint: 'Tipp ausblenden', gotIt: 'Verstanden' },
     gatheringStatus: { hosting: 'Du veranstaltest', going: 'Du gehst hin', interested: 'Angefragt', maybe: 'Interessiert', waitlisted: 'Auf der Warteliste', attended: 'Teilgenommen', hosted: 'Veranstaltet', didNotAttend: 'Nicht teilgenommen' },
     planStatus: { pending: 'Ausstehend', accepted: 'Angenommen', confirmed: 'Bestätigt', declined: 'Abgelehnt', cancelled: 'Abgesagt', completed: 'Abgeschlossen' },
+    contentHeldTitle: 'Danke, wir schauen es uns an',
+    contentHeld: 'Manche Beiträge prüfen wir, bevor andere sie sehen. Bis zur Freigabe siehst nur du ihn, meist dauert das nicht lange.',
+    gatheringHeld: 'Nur du siehst dieses Treffen, während Nearby es prüft. Andere sehen es, sobald es freigegeben ist.',
     errors: {
       notNow: 'Nicht jetzt', tryAgain: 'Erneut versuchen', checkConnection: 'Prüfe deine Verbindung.', draftSaved: 'Dein Entwurf ist gespeichert.', nothingLost: 'Es ging nichts verloren. Bitte versuche es erneut.',
       didntGoThrough: 'Das hat nicht geklappt',
       phoneRequired: 'Für Nachrichten, Einladungen, Verbindungen und eigene Treffen brauchst du ein Konto mit bestätigter Telefonnummer.',
       accountSuspended: 'Dieses Konto ist gesperrt und kann keine Nachrichten senden, einladen, sich verbinden oder etwas veranstalten.',
+      accountRestricted: 'Nearby hat das nach einer Prüfung für dein Konto pausiert. Wieder verfügbar: {date}. Alles andere funktioniert wie gewohnt.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Mit diesem Konto ist die Anmeldung gerade nicht möglich. Es wurde gesperrt oder ist angehalten, während ein Kontoproblem geprüft wird.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Die Identitätsprüfung ist gerade nicht verfügbar. Es wurde nichts hochgeladen.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: 'Glaubst du, dass das ein Fehler ist? Wende dich an den Support unter {email} und bitte um eine Prüfung. Wir helfen dir, dein Konto zu bestätigen.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Du hast dafür vorerst das Limit erreicht. Bitte versuch es später noch einmal.',
       gatheringLimit: 'Du hast vorerst das Limit für neue Treffen erreicht. Bitte versuch es später noch einmal.',
+      friendRequestLimit: 'Du hast in kurzer Zeit mehrere Freundschaftsanfragen gesendet. Bitte warte ein paar Minuten und versuch es dann noch einmal.',
+      friendRequestDailyLimit: 'Du kannst bis zu 15 Freundschaftsanfragen pro Tag senden. Versuch es morgen noch einmal.',
+      offerContactInfo: 'Angebote dürfen keine Website-Links, E-Mail-Adressen oder Telefonnummern enthalten. Kunden erreichen dich über Nearby.',
+      heldNotShareable: 'Nur du kannst das sehen, bis Nearby es geprüft hat. Sobald es freigegeben ist, kannst du Leute einladen oder Geschäfte anfragen.',
+      contentCheckUnavailableTitle: 'Das konnten wir gerade nicht prüfen',
+      contentCheckUnavailable: 'Nearby prüft, was du veröffentlichst, bevor andere es sehen, und die Prüfung ist gerade nicht verfügbar. Es wurde nichts veröffentlicht. Bitte versuche es gleich noch einmal.',
+      contentCheckLimit: 'Du hast das heutige Limit für neue Texte erreicht. Du kannst es morgen wieder versuchen.',
       what: {
         complete_that: { service: 'Das konnte gerade nicht abgeschlossen werden.', input: 'Das konnte nicht abgeschlossen werden. Bitte prüfe es und versuche es erneut.' },
         update_these_ideas: { service: 'Diese Ideen konnten gerade nicht aktualisiert werden.', input: 'Diese Ideen konnten nicht aktualisiert werden. Bitte prüfe es und versuche es erneut.' },
@@ -131,6 +175,7 @@ export default {
         review_this_offer: { service: 'Dieses Angebot konnte gerade nicht geprüft werden.', input: 'Dieses Angebot konnte nicht geprüft werden. Bitte prüfe es und versuche es erneut.' },
         post_your_availability: { service: 'Deine Verfügbarkeit konnte gerade nicht veröffentlicht werden.', input: 'Deine Verfügbarkeit konnte nicht veröffentlicht werden. Bitte prüfe sie und versuche es erneut.' },
         mark_that_visit: { service: 'Dieser Besuch konnte gerade nicht markiert werden.', input: 'Dieser Besuch konnte nicht markiert werden. Bitte prüfe es und versuche es erneut.' },
+        confirm_that_visit: { service: "Dieser Besuch konnte gerade nicht bestätigt werden.", input: "Dieser Besuch konnte nicht bestätigt werden. Bitte prüfe es und versuche es erneut." },
         forget_that: { service: 'Das konnte gerade nicht vergessen werden.', input: 'Das konnte nicht vergessen werden. Bitte prüfe es und versuche es erneut.' },
         find_places_nearby: { service: 'Orte in der Nähe konnten gerade nicht gefunden werden.', input: 'Orte in der Nähe konnten nicht gefunden werden. Bitte prüfe es und versuche es erneut.' },
         find_businesses_for_you: { service: 'Geschäfte für dich konnten gerade nicht gefunden werden.', input: 'Geschäfte für dich konnten nicht gefunden werden. Bitte prüfe es und versuche es erneut.' },
@@ -148,13 +193,27 @@ export default {
     header: { messages: 'Messages', messagesUnread: 'Messages, {count} non lus', profile: 'Votre profil', hint: '💬 Vos messages se trouvent désormais ici', dismissHint: 'Ignorer ce conseil', gotIt: 'Compris' },
     gatheringStatus: { hosting: "Vous l'organisez", going: "Vous y allez", interested: 'Demandé', maybe: 'Intéressé', waitlisted: "Sur liste d'attente", attended: 'Participé', hosted: 'Organisé', didNotAttend: 'Absent' },
     planStatus: { pending: 'En attente', accepted: 'Accepté', confirmed: 'Confirmé', declined: 'Refusé', cancelled: 'Annulé', completed: 'Terminé' },
+    contentHeldTitle: 'Merci, nous y jetons un œil',
+    contentHeld: 'Nous vérifions certaines publications avant que d\'autres les voient. Vous seul la voyez jusqu\'à son approbation, en général rapidement.',
+    gatheringHeld: 'Vous seul voyez ce rassemblement pendant que Nearby le vérifie. Il apparaîtra pour les autres une fois approuvé.',
     errors: {
       notNow: 'Pas maintenant', tryAgain: 'Réessayer', checkConnection: 'Vérifiez votre connexion.', draftSaved: 'Votre brouillon est enregistré.', nothingLost: "Rien n'a été perdu. Veuillez réessayer.",
       didntGoThrough: "Cela n'a pas abouti",
       phoneRequired: 'Pour envoyer des messages, inviter, te connecter ou organiser, il faut un compte avec un numéro de téléphone vérifié.',
       accountSuspended: 'Ce compte est suspendu : il ne peut pas envoyer de messages, inviter, se connecter ni organiser.',
+      accountRestricted: 'Nearby a mis cela en pause sur ton compte après un examen. De nouveau disponible : {date}. Tout le reste fonctionne normalement.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Ce compte ne peut pas se connecter pour le moment. Il a été suspendu ou il est en attente pendant la vérification d\'un problème de compte.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'La vérification d\'identité n\'est pas disponible pour le moment. Rien n\'a été envoyé.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: 'Tu penses que c\'est une erreur ? Contacte l\'assistance à {email} pour demander un réexamen. Nous t\'aiderons à vérifier ton compte.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Tu as atteint la limite pour le moment. Réessaie plus tard.',
       gatheringLimit: 'Tu as atteint la limite de création de rassemblements pour le moment. Réessaie plus tard.',
+      friendRequestLimit: 'Tu as envoyé plusieurs demandes d\'ami en peu de temps. Attends quelques minutes et réessaie.',
+      friendRequestDailyLimit: 'Tu peux envoyer jusqu\'à 15 demandes d\'ami par jour. Réessaie demain.',
+      offerContactInfo: 'Les offres ne peuvent pas contenir de liens vers des sites web, d\'adresses e-mail ni de numéros de téléphone. Les clients te contactent via Nearby.',
+      heldNotShareable: 'Toi seul peux voir ceci jusqu\'à ce que Nearby l\'ait vérifié. Une fois approuvé, tu pourras inviter des gens ou demander à des commerces.',
+      contentCheckUnavailableTitle: 'Impossible de vérifier ceci pour le moment',
+      contentCheckUnavailable: 'Nearby vérifie ce que vous publiez avant que d\'autres le voient, et la vérification n\'est pas disponible pour le moment. Rien n\'a été publié. Réessayez dans un instant.',
+      contentCheckLimit: 'Vous avez atteint la limite du jour pour publier du nouveau texte. Vous pourrez réessayer demain.',
       what: {
         complete_that: { service: "Impossible de terminer cette action pour le moment.", input: "Impossible de terminer cette action. Vérifiez et réessayez." },
         update_these_ideas: { service: 'Impossible de mettre à jour ces idées pour le moment.', input: 'Impossible de mettre à jour ces idées. Vérifiez et réessayez.' },
@@ -177,6 +236,7 @@ export default {
         review_this_offer: { service: "Impossible d'examiner cette offre pour le moment.", input: "Impossible d'examiner cette offre. Vérifiez-la et réessayez." },
         post_your_availability: { service: 'Impossible de publier votre disponibilité pour le moment.', input: 'Impossible de publier votre disponibilité. Vérifiez et réessayez.' },
         mark_that_visit: { service: 'Impossible de marquer cette visite pour le moment.', input: 'Impossible de marquer cette visite. Vérifiez et réessayez.' },
+        confirm_that_visit: { service: "Impossible de confirmer cette visite pour le moment.", input: "Impossible de confirmer cette visite. Vérifiez et réessayez." },
         forget_that: { service: "Impossible d'oublier cela pour le moment.", input: "Impossible d'oublier cela. Vérifiez et réessayez." },
         find_places_nearby: { service: 'Impossible de trouver des lieux à proximité pour le moment.', input: 'Impossible de trouver des lieux à proximité. Vérifiez et réessayez.' },
         find_businesses_for_you: { service: 'Impossible de trouver des commerces pour vous pour le moment.', input: 'Impossible de trouver des commerces pour vous. Vérifiez et réessayez.' },
@@ -194,13 +254,27 @@ export default {
     header: { messages: 'Mensagens', messagesUnread: 'Mensagens, {count} não lidas', profile: 'Seu perfil', hint: '💬 Suas mensagens agora ficam aqui', dismissHint: 'Dispensar esta dica', gotIt: 'Entendi' },
     gatheringStatus: { hosting: 'Você organiza', going: 'Você vai', interested: 'Solicitado', maybe: 'Interessado', waitlisted: 'Na lista de espera', attended: 'Participou', hosted: 'Organizou', didNotAttend: 'Não participou' },
     planStatus: { pending: 'Pendente', accepted: 'Aceito', confirmed: 'Confirmado', declined: 'Recusado', cancelled: 'Cancelado', completed: 'Concluído' },
+    contentHeldTitle: 'Obrigado, estamos dando uma olhada',
+    contentHeld: 'Verificamos algumas publicações antes que outras pessoas as vejam. Só você vê isso até ser aprovado, normalmente em pouco tempo.',
+    gatheringHeld: 'Só você vê este encontro enquanto o Nearby o verifica. Ele aparecerá para os outros quando for aprovado.',
     errors: {
       notNow: 'Agora não', tryAgain: 'Tentar novamente', checkConnection: 'Verifique sua conexão.', draftSaved: 'Seu rascunho está salvo.', nothingLost: 'Nada foi perdido. Tente novamente.',
       didntGoThrough: 'Não deu certo',
       phoneRequired: 'Para enviar mensagens, convidar, se conectar ou organizar, é preciso uma conta com número de telefone verificado.',
       accountSuspended: 'Esta conta está suspensa, então não pode enviar mensagens, convidar, se conectar nem organizar.',
+      accountRestricted: 'O Nearby pausou isso na sua conta após uma análise. Disponível novamente: {date}. Todo o resto funciona normalmente.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Esta conta não pode entrar agora. Ela foi suspensa ou está em espera enquanto um problema da conta é verificado.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'A verificação de identidade não está disponível agora. Nada foi enviado.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: 'Acha que isso é um erro? Fale com o suporte em {email} para pedir uma análise. Vamos ajudar a verificar sua conta.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Você atingiu o limite disso por enquanto. Tente novamente mais tarde.',
       gatheringLimit: 'Você atingiu o limite para criar encontros por enquanto. Tente novamente mais tarde.',
+      friendRequestLimit: 'Você enviou vários pedidos de amizade em pouco tempo. Aguarde alguns minutos e tente novamente.',
+      friendRequestDailyLimit: 'Você pode enviar até 15 pedidos de amizade por dia. Tente novamente amanhã.',
+      offerContactInfo: 'As ofertas não podem incluir links de sites, endereços de e-mail nem números de telefone. Os clientes falam com você pelo Nearby.',
+      heldNotShareable: 'Só você pode ver isto até o Nearby verificar. Você poderá convidar pessoas ou pedir a negócios assim que for aprovado.',
+      contentCheckUnavailableTitle: 'Não conseguimos verificar isso agora',
+      contentCheckUnavailable: 'O Nearby verifica o que você publica antes que outras pessoas vejam, e a verificação não está disponível agora. Nada foi publicado. Tente de novo em instantes.',
+      contentCheckLimit: 'Você atingiu o limite de hoje para publicar texto novo. Tente de novo amanhã.',
       what: {
         complete_that: { service: 'Não foi possível concluir isso agora.', input: 'Não foi possível concluir isso. Verifique e tente novamente.' },
         update_these_ideas: { service: 'Não foi possível atualizar estas ideias agora.', input: 'Não foi possível atualizar estas ideias. Verifique e tente novamente.' },
@@ -223,6 +297,7 @@ export default {
         review_this_offer: { service: 'Não foi possível analisar esta oferta agora.', input: 'Não foi possível analisar esta oferta. Verifique e tente novamente.' },
         post_your_availability: { service: 'Não foi possível publicar sua disponibilidade agora.', input: 'Não foi possível publicar sua disponibilidade. Verifique e tente novamente.' },
         mark_that_visit: { service: 'Não foi possível marcar essa visita agora.', input: 'Não foi possível marcar essa visita. Verifique e tente novamente.' },
+        confirm_that_visit: { service: "Não foi possível confirmar essa visita agora.", input: "Não foi possível confirmar essa visita. Verifique e tente novamente." },
         forget_that: { service: 'Não foi possível esquecer isso agora.', input: 'Não foi possível esquecer isso. Verifique e tente novamente.' },
         find_places_nearby: { service: 'Não foi possível encontrar lugares por perto agora.', input: 'Não foi possível encontrar lugares por perto. Verifique e tente novamente.' },
         find_businesses_for_you: { service: 'Não foi possível encontrar estabelecimentos para você agora.', input: 'Não foi possível encontrar estabelecimentos para você. Verifique e tente novamente.' },
@@ -240,13 +315,27 @@ export default {
     header: { messages: 'Mesaj', messagesUnread: 'Mesaj, {count} ou poko li', profile: 'Pwofil ou', hint: '💬 Mesaj ou yo la a kounye a', dismissHint: 'Retire konsèy sa a', gotIt: 'Mwen konprann' },
     gatheringStatus: { hosting: 'W ap òganize', going: 'W ap prale', interested: 'Mande', maybe: 'Enterese', waitlisted: 'Sou lis datant', attended: 'Te ale', hosted: 'Te òganize', didNotAttend: 'Pa t ale' },
     planStatus: { pending: 'Ap tann', accepted: 'Aksepte', confirmed: 'Konfime', declined: 'Refize', cancelled: 'Anile', completed: 'Fini' },
+    contentHeldTitle: 'Mèsi, n ap gade l',
+    contentHeld: 'Nou verifye kèk piblikasyon anvan lòt moun wè yo. Se sèlman ou ki ka wè l jiskaske li apwouve, anjeneral byen vit.',
+    gatheringHeld: 'Se sèlman ou ki ka wè rasanbleman sa a pandan Nearby ap verifye l. L ap parèt pou lòt moun lè li apwouve.',
     errors: {
       notNow: 'Pa kounye a', tryAgain: 'Eseye ankò', checkConnection: 'Verifye koneksyon ou.', draftSaved: 'Bouyon ou anrejistre.', nothingLost: 'Anyen pa pèdi. Tanpri eseye ankò.',
       didntGoThrough: 'Sa pa t pase',
       phoneRequired: 'Pou voye mesaj, envite, konekte oswa òganize, ou bezwen yon kont ki gen yon nimewo telefòn verifye.',
       accountSuspended: 'Kont sa a sispann, kidonk li pa ka voye mesaj, envite, konekte oswa òganize.',
+      accountRestricted: 'Nearby mete sa an poz sou kont ou apre yon revizyon. Disponib ankò: {date}. Tout lòt bagay mache nòmalman.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Kont sa a pa ka konekte kounye a. Yo sispann li, oswa li an atant pandan y ap verifye yon pwoblèm sou kont lan.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Verifikasyon idantite pa disponib kounye a. Anyen pa t voye.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: 'Ou panse se yon erè? Kontakte sipò nan {email} pou mande yon revizyon. N ap ede w verifye kont ou.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Ou rive nan limit pou sa a pou kounye a. Tanpri eseye ankò pita.',
       gatheringLimit: 'Ou rive nan limit pou kreye rasanbleman pou kounye a. Tanpri eseye ankò pita.',
+      friendRequestLimit: 'Ou voye plizyè demann zanmi nan yon ti tan. Tanpri tann kèk minit epi eseye ankò.',
+      friendRequestDailyLimit: 'Ou ka voye jiska 15 demann zanmi pa jou. Eseye ankò demen.',
+      offerContactInfo: 'Òf yo pa ka gen lyen sit entènèt, adrès imèl oswa nimewo telefòn. Kliyan yo kontakte w atravè Nearby.',
+      heldNotShareable: 'Se ou sèl ki ka wè sa jiskaske Nearby verifye l. W ap ka envite moun oswa mande biznis yo yon fwa li apwouve.',
+      contentCheckUnavailableTitle: 'Nou pa t ka verifye sa a kounye a',
+      contentCheckUnavailable: 'Nearby verifye sa ou pibliye anvan lòt moun wè l, epi verifikasyon an pa disponib kounye a. Anyen pa t pibliye. Tanpri eseye ankò nan yon ti moman.',
+      contentCheckLimit: 'Ou rive nan limit jodi a pou pibliye nouvo tèks. Ou ka eseye ankò demen.',
       what: {
         complete_that: { service: 'Nou pa t ka fini sa kounye a.', input: 'Nou pa t ka fini sa. Tanpri verifye l epi eseye ankò.' },
         update_these_ideas: { service: 'Nou pa t ka mete ide sa yo ajou kounye a.', input: 'Nou pa t ka mete ide sa yo ajou. Tanpri verifye epi eseye ankò.' },
@@ -269,6 +358,7 @@ export default {
         review_this_offer: { service: 'Nou pa t ka revize òf sa a kounye a.', input: 'Nou pa t ka revize òf sa a. Tanpri verifye l epi eseye ankò.' },
         post_your_availability: { service: 'Nou pa t ka pibliye disponiblite ou kounye a.', input: 'Nou pa t ka pibliye disponiblite ou. Tanpri verifye epi eseye ankò.' },
         mark_that_visit: { service: 'Nou pa t ka make vizit sa a kounye a.', input: 'Nou pa t ka make vizit sa a. Tanpri verifye epi eseye ankò.' },
+        confirm_that_visit: { service: "Nou pa t ka konfime vizit sa a kounye a.", input: "Nou pa t ka konfime vizit sa a. Tanpri verifye epi eseye ankò." },
         forget_that: { service: 'Nou pa t ka bliye sa kounye a.', input: 'Nou pa t ka bliye sa. Tanpri verifye epi eseye ankò.' },
         find_places_nearby: { service: 'Nou pa t ka jwenn kote toupre kounye a.', input: 'Nou pa t ka jwenn kote toupre. Tanpri verifye epi eseye ankò.' },
         find_businesses_for_you: { service: 'Nou pa t ka jwenn biznis pou ou kounye a.', input: 'Nou pa t ka jwenn biznis pou ou. Tanpri verifye epi eseye ankò.' },
@@ -286,13 +376,27 @@ export default {
     header: { messages: '消息', messagesUnread: '消息，{count}条未读', profile: '你的个人资料', hint: '💬 消息现在在这里', dismissHint: '关闭此提示', gotIt: '知道了' },
     gatheringStatus: { hosting: '你是组织者', going: '你会去', interested: '已申请', maybe: '感兴趣', waitlisted: '候补中', attended: '已参加', hosted: '已组织', didNotAttend: '未参加' },
     planStatus: { pending: '待定', accepted: '已接受', confirmed: '已确认', declined: '已拒绝', cancelled: '已取消', completed: '已完成' },
+    contentHeldTitle: '谢谢，我们正在查看',
+    contentHeld: '部分内容会在其他人看到之前经过检查。通过之前只有你能看到，通常很快。',
+    gatheringHeld: 'Nearby 检查期间只有你能看到这个聚会。通过后其他人就能看到。',
     errors: {
       notNow: '以后再说', tryAgain: '重试', checkConnection: '请检查网络连接。', draftSaved: '你的草稿已保存。', nothingLost: '没有丢失任何内容，请重试。',
       didntGoThrough: '操作未成功',
       phoneRequired: '发消息、邀请、建立联系和发起活动需要一个已验证手机号码的账号。',
       accountSuspended: '此账号已被暂停，无法发消息、邀请、建立联系或发起活动。',
+      accountRestricted: '经过审核，Nearby 暂停了你账户的这项操作。恢复时间：{date}。其他功能照常使用。',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: '此账户目前无法登录。它已被停用，或在核查账户问题期间被暂时冻结。',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: '身份验证暂时无法使用。没有上传任何内容。',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: '认为这是误判？请联系客服 {email} 申请复核。我们会协助你验证账户。',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: '你暂时已达到此操作的上限，请稍后再试。',
       gatheringLimit: '你暂时已达到创建聚会的上限，请稍后再试。',
+      friendRequestLimit: '你在短时间内发送了多个好友请求。请等几分钟后再试。',
+      friendRequestDailyLimit: '你每天最多可以发送 15 个好友请求。请明天再试。',
+      offerContactInfo: '优惠内容不能包含网站链接、电子邮件地址或电话号码。顾客会通过 Nearby 联系你。',
+      heldNotShareable: '在 Nearby 审核之前，只有你能看到这项内容。通过审核后，你就可以邀请他人或向商家发出请求。',
+      contentCheckUnavailableTitle: '暂时无法检查',
+      contentCheckUnavailable: 'Nearby 会在其他人看到之前检查你发布的内容，但检查服务暂时不可用。什么都没有发布。请稍后再试。',
+      contentCheckLimit: '你已达到今天发布新文字的上限。明天可以再试。',
       what: {
         complete_that: { service: '现在无法完成此操作。', input: '无法完成此操作。请检查后重试。' },
         update_these_ideas: { service: '现在无法更新这些建议。', input: '无法更新这些建议。请检查后重试。' },
@@ -315,6 +419,7 @@ export default {
         review_this_offer: { service: '现在无法审核此优惠。', input: '无法审核此优惠。请检查后重试。' },
         post_your_availability: { service: '现在无法发布你的空位。', input: '无法发布你的空位。请检查后重试。' },
         mark_that_visit: { service: '现在无法标记这次到访。', input: '无法标记这次到访。请检查后重试。' },
+        confirm_that_visit: { service: "现在无法确认这次到店。", input: "无法确认这次到店。请检查后重试。" },
         forget_that: { service: '现在无法忘记这一项。', input: '无法忘记这一项。请检查后重试。' },
         find_places_nearby: { service: '现在无法找到附近的地点。', input: '无法找到附近的地点。请检查后重试。' },
         find_businesses_for_you: { service: '现在无法为你找到商家。', input: '无法为你找到商家。请检查后重试。' },
@@ -332,13 +437,27 @@ export default {
     header: { messages: 'Tin nhắn', messagesUnread: 'Tin nhắn, {count} chưa đọc', profile: 'Hồ sơ của bạn', hint: '💬 Tin nhắn của bạn giờ nằm ở đây', dismissHint: 'Ẩn mẹo này', gotIt: 'Đã hiểu' },
     gatheringStatus: { hosting: 'Bạn tổ chức', going: 'Bạn sẽ đi', interested: 'Đã gửi yêu cầu', maybe: 'Quan tâm', waitlisted: 'Trong danh sách chờ', attended: 'Đã tham dự', hosted: 'Đã tổ chức', didNotAttend: 'Không tham dự' },
     planStatus: { pending: 'Đang chờ', accepted: 'Đã chấp nhận', confirmed: 'Đã xác nhận', declined: 'Đã từ chối', cancelled: 'Đã hủy', completed: 'Đã hoàn thành' },
+    contentHeldTitle: 'Cảm ơn, chúng tôi đang xem xét',
+    contentHeld: 'Chúng tôi kiểm tra một số bài đăng trước khi người khác thấy. Chỉ bạn thấy nội dung này cho đến khi được duyệt, thường là sớm.',
+    gatheringHeld: 'Chỉ bạn thấy buổi gặp mặt này trong khi Nearby kiểm tra. Người khác sẽ thấy khi được duyệt.',
     errors: {
       notNow: 'Để sau', tryAgain: 'Thử lại', checkConnection: 'Hãy kiểm tra kết nối.', draftSaved: 'Bản nháp của bạn đã được lưu.', nothingLost: 'Không mất gì cả. Vui lòng thử lại.',
       didntGoThrough: 'Không thực hiện được',
       phoneRequired: 'Để nhắn tin, mời, kết nối hoặc tổ chức, bạn cần tài khoản có số điện thoại đã xác minh.',
       accountSuspended: 'Tài khoản này đang bị tạm ngưng nên không thể nhắn tin, mời, kết nối hoặc tổ chức.',
+      accountRestricted: 'Nearby đã tạm dừng thao tác này trên tài khoản của bạn sau khi xem xét. Dùng lại được từ: {date}. Mọi thứ khác vẫn hoạt động bình thường.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Tài khoản này hiện không thể đăng nhập. Tài khoản đã bị đình chỉ hoặc đang bị tạm giữ trong khi kiểm tra một vấn đề về tài khoản.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Xác minh danh tính hiện không khả dụng. Chưa có gì được tải lên.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: 'Bạn cho rằng đây là nhầm lẫn? Hãy liên hệ bộ phận hỗ trợ qua {email} để yêu cầu xem xét lại. Chúng tôi sẽ giúp bạn xác minh tài khoản.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Bạn đã đạt giới hạn cho việc này trong lúc này. Vui lòng thử lại sau.',
       gatheringLimit: 'Bạn đã đạt giới hạn tạo buổi gặp mặt trong lúc này. Vui lòng thử lại sau.',
+      friendRequestLimit: 'Bạn đã gửi nhiều lời mời kết bạn trong thời gian ngắn. Vui lòng đợi vài phút rồi thử lại.',
+      friendRequestDailyLimit: 'Bạn có thể gửi tối đa 15 lời mời kết bạn mỗi ngày. Vui lòng thử lại vào ngày mai.',
+      offerContactInfo: 'Ưu đãi không được chứa liên kết trang web, địa chỉ email hoặc số điện thoại. Khách hàng liên hệ với bạn qua Nearby.',
+      heldNotShareable: 'Chỉ bạn thấy được nội dung này cho đến khi Nearby kiểm tra xong. Sau khi được duyệt, bạn có thể mời mọi người hoặc hỏi các cửa hàng.',
+      contentCheckUnavailableTitle: 'Không thể kiểm tra lúc này',
+      contentCheckUnavailable: 'Nearby kiểm tra nội dung bạn đăng trước khi người khác thấy, và việc kiểm tra hiện không khả dụng. Chưa có gì được đăng. Vui lòng thử lại sau giây lát.',
+      contentCheckLimit: 'Bạn đã đạt giới hạn đăng văn bản mới hôm nay. Bạn có thể thử lại vào ngày mai.',
       what: {
         complete_that: { service: 'Hiện không thể hoàn tất việc này.', input: 'Không thể hoàn tất việc này. Hãy kiểm tra và thử lại.' },
         update_these_ideas: { service: 'Hiện không thể cập nhật những gợi ý này.', input: 'Không thể cập nhật những gợi ý này. Hãy kiểm tra và thử lại.' },
@@ -361,6 +480,7 @@ export default {
         review_this_offer: { service: 'Hiện không thể xem xét ưu đãi này.', input: 'Không thể xem xét ưu đãi này. Hãy kiểm tra và thử lại.' },
         post_your_availability: { service: 'Hiện không thể đăng chỗ trống của bạn.', input: 'Không thể đăng chỗ trống của bạn. Hãy kiểm tra và thử lại.' },
         mark_that_visit: { service: 'Hiện không thể đánh dấu lượt ghé đó.', input: 'Không thể đánh dấu lượt ghé đó. Hãy kiểm tra và thử lại.' },
+        confirm_that_visit: { service: "Hiện không thể xác nhận lượt ghé đó.", input: "Không thể xác nhận lượt ghé đó. Hãy kiểm tra và thử lại." },
         forget_that: { service: 'Hiện không thể xóa mục đó.', input: 'Không thể xóa mục đó. Hãy kiểm tra và thử lại.' },
         find_places_nearby: { service: 'Hiện không thể tìm địa điểm gần đây.', input: 'Không thể tìm địa điểm gần đây. Hãy kiểm tra và thử lại.' },
         find_businesses_for_you: { service: 'Hiện không thể tìm cơ sở cho bạn.', input: 'Không thể tìm cơ sở cho bạn. Hãy kiểm tra và thử lại.' },
@@ -378,13 +498,27 @@ export default {
     header: { messages: 'Mga Mensahe', messagesUnread: 'Mga Mensahe, {count} hindi pa nababasa', profile: 'Ang Iyong Profile', hint: '💬 Nandito na ngayon ang mga mensahe mo', dismissHint: 'Isara ang tip na ito', gotIt: 'Sige' },
     gatheringStatus: { hosting: 'Ikaw ang host', going: 'Pupunta ka', interested: 'Humiling', maybe: 'Interesado', waitlisted: 'Nasa waitlist', attended: 'Dumalo', hosted: 'Nag-host', didNotAttend: 'Hindi dumalo' },
     planStatus: { pending: 'Nakabinbin', accepted: 'Tinanggap', confirmed: 'Kumpirmado', declined: 'Tinanggihan', cancelled: 'Kinansela', completed: 'Tapos na' },
+    contentHeldTitle: 'Salamat, tinitingnan namin ito',
+    contentHeld: 'Tinitingnan muna namin ang ilang post bago ito makita ng iba. Ikaw lang ang nakakakita nito hanggang maaprubahan, kadalasan ay mabilis.',
+    gatheringHeld: 'Ikaw lang ang nakakakita ng gathering na ito habang tinitingnan ito ng Nearby. Lalabas ito sa iba kapag naaprubahan.',
     errors: {
       notNow: 'Hindi muna', tryAgain: 'Subukan Muli', checkConnection: 'Tingnan ang iyong koneksyon.', draftSaved: 'Naka-save ang iyong draft.', nothingLost: 'Walang nawala. Pakisubukan muli.',
       didntGoThrough: 'Hindi ito natuloy',
       phoneRequired: 'Kailangan ng account na may verified na phone number para makapag-message, makapag-imbita, makakonekta o makapag-host.',
       accountSuspended: 'Naka-suspend ang account na ito, kaya hindi ito makakapag-message, makakapag-imbita, makakakonekta o makakapag-host.',
+      accountRestricted: 'Ipinahinto muna ito ng Nearby sa account mo pagkatapos ng isang pagsusuri. Magagamit ulit: {date}. Gumagana pa rin nang normal ang lahat ng iba pa.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Hindi makakapag-sign in ang account na ito sa ngayon. Sinuspinde ito, o naka-hold habang sinusuri ang isang problema sa account.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Hindi available ang ID verification ngayon. Walang na-upload.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: 'Sa tingin mo ay pagkakamali ito? Makipag-ugnayan sa support sa {email} para humiling ng pagsusuri. Tutulungan ka naming i-verify ang account mo.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Naabot mo na ang limitasyon dito sa ngayon. Pakisubukan ulit mamaya.',
       gatheringLimit: 'Naabot mo na ang limitasyon sa paggawa ng mga pagtitipon sa ngayon. Pakisubukan ulit mamaya.',
+      friendRequestLimit: 'Nagpadala ka ng ilang friend request sa maikling panahon. Maghintay ng ilang minuto at subukan ulit.',
+      friendRequestDailyLimit: 'Hanggang 15 friend request lang ang puwede mong ipadala bawat araw. Subukan ulit bukas.',
+      offerContactInfo: 'Hindi puwedeng maglaman ang mga alok ng link ng website, email address o numero ng telepono. Naaabot ka ng mga customer sa pamamagitan ng Nearby.',
+      heldNotShareable: 'Ikaw lang ang makakakita nito hangga\'t hindi ito nasusuri ng Nearby. Puwede ka nang mag-imbita ng tao o magtanong sa mga negosyo kapag naaprubahan na.',
+      contentCheckUnavailableTitle: 'Hindi ito ma-check ngayon',
+      contentCheckUnavailable: 'Tinitingnan ng Nearby ang ipinopost mo bago ito makita ng iba, at hindi available ang pag-check ngayon. Walang na-post. Pakisubukan ulit maya-maya.',
+      contentCheckLimit: 'Naabot mo na ang limit ngayong araw sa pag-post ng bagong text. Puwede kang sumubok ulit bukas.',
       what: {
         complete_that: { service: 'Hindi ito matapos ngayon.', input: 'Hindi ito matapos. Pakisuri at subukan muli.' },
         update_these_ideas: { service: 'Hindi ma-update ang mga ideyang ito ngayon.', input: 'Hindi ma-update ang mga ideyang ito. Pakisuri at subukan muli.' },
@@ -407,6 +541,7 @@ export default {
         review_this_offer: { service: 'Hindi masuri ang alok na ito ngayon.', input: 'Hindi masuri ang alok na ito. Pakisuri at subukan muli.' },
         post_your_availability: { service: 'Hindi ma-post ang iyong availability ngayon.', input: 'Hindi ma-post ang iyong availability. Pakisuri at subukan muli.' },
         mark_that_visit: { service: 'Hindi mamarkahan ang pagbisitang iyon ngayon.', input: 'Hindi mamarkahan ang pagbisitang iyon. Pakisuri at subukan muli.' },
+        confirm_that_visit: { service: "Hindi makumpirma ang pagbisitang iyon ngayon.", input: "Hindi makumpirma ang pagbisitang iyon. Pakisuri at subukang muli." },
         forget_that: { service: 'Hindi ito makalimutan ngayon.', input: 'Hindi ito makalimutan. Pakisuri at subukan muli.' },
         find_places_nearby: { service: 'Hindi makahanap ng mga lugar sa malapit ngayon.', input: 'Hindi makahanap ng mga lugar sa malapit. Pakisuri at subukan muli.' },
         find_businesses_for_you: { service: 'Hindi makahanap ng mga negosyo para sa iyo ngayon.', input: 'Hindi makahanap ng mga negosyo para sa iyo. Pakisuri at subukan muli.' },
@@ -424,13 +559,27 @@ export default {
     header: { messages: 'Сообщения', messagesUnread: 'Сообщения, непрочитанных: {count}', profile: 'Ваш профиль', hint: '💬 Сообщения теперь здесь', dismissHint: 'Скрыть подсказку', gotIt: 'Понятно' },
     gatheringStatus: { hosting: 'Вы организатор', going: 'Вы идёте', interested: 'Запрос отправлен', maybe: 'Интересно', waitlisted: 'В листе ожидания', attended: 'Были', hosted: 'Организовали', didNotAttend: 'Не были' },
     planStatus: { pending: 'Ожидает', accepted: 'Принято', confirmed: 'Подтверждено', declined: 'Отклонено', cancelled: 'Отменено', completed: 'Завершено' },
+    contentHeldTitle: 'Спасибо, мы посмотрим',
+    contentHeld: 'Некоторые публикации мы проверяем, прежде чем их увидят другие. До одобрения это видите только вы, обычно недолго.',
+    gatheringHeld: 'Пока Nearby проверяет эту встречу, её видите только вы. Другие увидят её после одобрения.',
     errors: {
       notNow: 'Не сейчас', tryAgain: 'Повторить', checkConnection: 'Проверьте подключение.', draftSaved: 'Ваш черновик сохранён.', nothingLost: 'Ничего не потеряно. Попробуйте снова.',
       didntGoThrough: 'Не получилось',
       phoneRequired: 'Чтобы писать сообщения, приглашать, знакомиться и проводить встречи, нужен аккаунт с подтверждённым номером телефона.',
       accountSuspended: 'Этот аккаунт заблокирован: он не может писать сообщения, приглашать, знакомиться или проводить встречи.',
+      accountRestricted: 'После проверки Nearby приостановил это действие в вашем аккаунте. Снова доступно: {date}. Всё остальное работает как обычно.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: 'Сейчас в этот аккаунт нельзя войти. Он заблокирован или временно приостановлен, пока проверяется проблема с аккаунтом.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: 'Проверка личности сейчас недоступна. Ничего не было загружено.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: 'Считаете, что это ошибка? Напишите в поддержку на {email}, чтобы запросить пересмотр. Мы поможем подтвердить ваш аккаунт.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: 'Вы пока достигли лимита для этого действия. Попробуйте позже.',
       gatheringLimit: 'Вы пока достигли лимита на создание встреч. Попробуйте позже.',
+      friendRequestLimit: 'Вы отправили несколько запросов в друзья за короткое время. Подождите несколько минут и попробуйте снова.',
+      friendRequestDailyLimit: 'Вы можете отправлять до 15 запросов в друзья в день. Попробуйте снова завтра.',
+      offerContactInfo: 'В предложениях нельзя указывать ссылки на сайты, адреса электронной почты или номера телефонов. Клиенты связываются с вами через Nearby.',
+      heldNotShareable: 'Пока Nearby это не проверит, это видите только вы. После одобрения вы сможете приглашать людей и обращаться к заведениям.',
+      contentCheckUnavailableTitle: 'Сейчас не удалось проверить',
+      contentCheckUnavailable: 'Nearby проверяет публикации, прежде чем их увидят другие, а проверка сейчас недоступна. Ничего не опубликовано. Попробуйте ещё раз чуть позже.',
+      contentCheckLimit: 'Вы достигли сегодняшнего лимита на публикацию нового текста. Попробуйте снова завтра.',
       what: {
         complete_that: { service: 'Сейчас не удалось это выполнить.', input: 'Не удалось это выполнить. Проверьте и попробуйте снова.' },
         update_these_ideas: { service: 'Сейчас не удалось обновить эти идеи.', input: 'Не удалось обновить эти идеи. Проверьте и попробуйте снова.' },
@@ -453,6 +602,7 @@ export default {
         review_this_offer: { service: 'Сейчас не удалось проверить это предложение.', input: 'Не удалось проверить это предложение. Проверьте и попробуйте снова.' },
         post_your_availability: { service: 'Сейчас не удалось опубликовать свободные места.', input: 'Не удалось опубликовать свободные места. Проверьте и попробуйте снова.' },
         mark_that_visit: { service: 'Сейчас не удалось отметить этот визит.', input: 'Не удалось отметить этот визит. Проверьте и попробуйте снова.' },
+        confirm_that_visit: { service: "Сейчас не удалось подтвердить этот визит.", input: "Не удалось подтвердить этот визит. Проверьте и попробуйте ещё раз." },
         forget_that: { service: 'Сейчас не удалось это забыть.', input: 'Не удалось это забыть. Проверьте и попробуйте снова.' },
         find_places_nearby: { service: 'Сейчас не удалось найти места поблизости.', input: 'Не удалось найти места поблизости. Проверьте и попробуйте снова.' },
         find_businesses_for_you: { service: 'Сейчас не удалось подобрать заведения для вас.', input: 'Не удалось подобрать заведения для вас. Проверьте и попробуйте снова.' },
@@ -470,13 +620,27 @@ export default {
     header: { messages: '메시지', messagesUnread: '메시지, 읽지 않음 {count}개', profile: '내 프로필', hint: '💬 이제 메시지는 여기에 있어요', dismissHint: '이 팁 닫기', gotIt: '알겠어요' },
     gatheringStatus: { hosting: '주최 중', going: '참석 예정', interested: '요청함', maybe: '관심 있음', waitlisted: '대기 중', attended: '참석함', hosted: '주최함', didNotAttend: '불참' },
     planStatus: { pending: '대기 중', accepted: '수락됨', confirmed: '확정됨', declined: '거절됨', cancelled: '취소됨', completed: '완료됨' },
+    contentHeldTitle: '감사합니다, 확인하고 있어요',
+    contentHeld: '일부 게시물은 다른 사람이 보기 전에 확인해요. 승인될 때까지 나만 볼 수 있으며, 보통 금방 끝나요.',
+    gatheringHeld: 'Nearby가 확인하는 동안 이 모임은 나만 볼 수 있어요. 승인되면 다른 사람에게도 보여요.',
     errors: {
       notNow: '나중에', tryAgain: '다시 시도', checkConnection: '연결 상태를 확인해 주세요.', draftSaved: '초안이 저장되어 있어요.', nothingLost: '잃어버린 것은 없어요. 다시 시도해 주세요.',
       didntGoThrough: '처리되지 않았어요',
       phoneRequired: '메시지, 초대, 연결, 모임 주최는 전화번호가 인증된 계정에서만 할 수 있어요.',
       accountSuspended: '이 계정은 정지되어 메시지, 초대, 연결, 모임 주최를 할 수 없어요.',
+      accountRestricted: '검토 후 Nearby가 계정에서 이 기능을 일시 중지했어요. 다시 사용 가능: {date}. 다른 기능은 평소처럼 이용할 수 있어요.',  // 20270399: an admin's temporary pause; {date} = when it ends
+      signInBlocked: '지금은 이 계정으로 로그인할 수 없어요. 계정이 정지되었거나 계정 문제를 확인하는 동안 보류 중이에요.',  // Auth refuses sign-in: suspended (20270351) or a recovery hold (20270375)
+      idVerificationPaused: '지금은 신분 확인을 이용할 수 없어요. 아무것도 업로드되지 않았어요.',  // 20270400: new ID uploads refused by the server until the retention + deletion lifecycle is on
+      requestReview: '잘못된 조치라고 생각되시나요? {email}(으)로 고객 지원팀에 연락해 검토를 요청하세요. 계정 확인을 도와드릴게요.',  // owner 2026-11-07: manual appeals; never asks for the account's phone number by email (verification handled separately); shown only once SUPPORT_EMAIL is configured + verified; {email} = that address
       rateLimited: '지금은 이 작업의 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
       gatheringLimit: '지금은 모임 만들기 한도에 도달했어요. 잠시 후 다시 시도해 주세요.',
+      friendRequestLimit: '짧은 시간에 친구 요청을 여러 번 보냈어요. 몇 분 후에 다시 시도해 주세요.',
+      friendRequestDailyLimit: '친구 요청은 하루에 최대 15번까지 보낼 수 있어요. 내일 다시 시도해 주세요.',
+      offerContactInfo: '제안에는 웹사이트 링크, 이메일 주소, 전화번호를 넣을 수 없어요. 고객은 Nearby를 통해 연락해요.',
+      heldNotShareable: 'Nearby가 확인하기 전까지는 나만 볼 수 있어요. 승인되면 사람들을 초대하거나 업체에 요청할 수 있어요.',
+      contentCheckUnavailableTitle: '지금은 확인할 수 없어요',
+      contentCheckUnavailable: 'Nearby는 다른 사람이 보기 전에 게시물을 확인하는데, 지금은 확인을 할 수 없어요. 아무것도 게시되지 않았어요. 잠시 후 다시 시도해 주세요.',
+      contentCheckLimit: '오늘 새 글을 게시할 수 있는 한도에 도달했어요. 내일 다시 시도해 주세요.',
       what: {
         complete_that: { service: '지금은 완료할 수 없어요.', input: '완료할 수 없었어요. 확인 후 다시 시도해 주세요.' },
         update_these_ideas: { service: '지금은 이 아이디어를 업데이트할 수 없어요.', input: '이 아이디어를 업데이트할 수 없었어요. 확인 후 다시 시도해 주세요.' },
@@ -499,6 +663,7 @@ export default {
         review_this_offer: { service: '지금은 이 혜택을 검토할 수 없어요.', input: '이 혜택을 검토할 수 없었어요. 확인 후 다시 시도해 주세요.' },
         post_your_availability: { service: '지금은 이용 가능 시간을 게시할 수 없어요.', input: '이용 가능 시간을 게시할 수 없었어요. 확인 후 다시 시도해 주세요.' },
         mark_that_visit: { service: '지금은 그 방문을 표시할 수 없어요.', input: '그 방문을 표시할 수 없었어요. 확인 후 다시 시도해 주세요.' },
+        confirm_that_visit: { service: "지금은 그 방문을 확인할 수 없어요.", input: "그 방문을 확인할 수 없었어요. 확인 후 다시 시도해 주세요." },
         forget_that: { service: '지금은 삭제할 수 없어요.', input: '삭제할 수 없었어요. 확인 후 다시 시도해 주세요.' },
         find_places_nearby: { service: '지금은 주변 장소를 찾을 수 없어요.', input: '주변 장소를 찾을 수 없었어요. 확인 후 다시 시도해 주세요.' },
         find_businesses_for_you: { service: '지금은 맞는 업체를 찾을 수 없어요.', input: '맞는 업체를 찾을 수 없었어요. 확인 후 다시 시도해 주세요.' },
