@@ -175,6 +175,11 @@ with sync_playwright() as p:
     # with its real button, shown but never live: clicking it sends nothing.
     try:
         pg.get_by_placeholder(PREVIEW_PLACEHOLDER).first.fill('Two lattes for the price of one (test)'); pg.wait_for_timeout(800)
+        # Build 88: the preview lives in the dock under the form, collapsed until its "Customer preview" line is tapped
+        # (offer-preview-dock-headless.py checks the dock itself at phone widths).
+        toggle = pg.locator('[data-testid="offer-preview-toggle"]')
+        if toggle.count() and toggle.first.get_attribute('aria-expanded') != 'true':
+            toggle.first.click(); pg.wait_for_timeout(600)
         t = pg.inner_text('body')
         pg.screenshot(path='/out/g_offer_preview.png', full_page=True)
         check('[offer preview] typing a description builds the customer card', 'customer preview' in t.lower() and 'Two lattes for the price of one (test)' in t, '')
