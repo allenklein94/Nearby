@@ -31,7 +31,7 @@ mkdir -p "$OUT"; chmod 700 "$OUT"
 [ -f "$URL_FILE" ] || { echo "missing $URL_FILE (create it yourself, mode 0600)"; exit 2; }
 perm=$(stat -c %a "$URL_FILE"); [ "$perm" = 600 ] || { echo "$URL_FILE must be mode 600 (is $perm)"; exit 2; }
 ENVF=$(mktemp "$OUT/.env.XXXXXX"); trap 'rm -f "$ENVF"' EXIT
-printf 'SRC=%s\n' "$(tr -d '\n' < "$URL_FILE")" > "$ENVF"
+printf 'SRC=%s\nPGOPTIONS=-c default_transaction_read_only=on\n' "$(tr -d '\n' < "$URL_FILE")" > "$ENVF"
 NETFLAG=${SOURCE_NETWORK:+--network $SOURCE_NETWORK}
 DUMP="$OUT/prod-$TS.dump"
 
@@ -39,8 +39,8 @@ DUMP="$OUT/prod-$TS.dump"
 # login role has a 5-minute password, and fingerprints taken at another moment than the dump can differ because cron
 # jobs write; so the dump, schema dump, fingerprints, cron, extensions and the public-ACL check all share that snapshot).
 # Read-only friendly: no temp tables (CREATE is refused in a read-only transaction), fingerprints via \gexec.
-FPQ="select format('select %L||'' ''||count(*)||'' ''||md5(coalesce(string_agg(x::text, E''\\n'' order by x::text), '''')) from %I.%I x', n.nspname||'.'||c.relname, n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') order by n.nspname||'.'||c.relname"
-CRONFP="select 'cron.job '||count(*)||' '||md5(coalesce(string_agg(jobname||'|'||schedule||'|'||command||'|'||active, E'\\n' order by jobname), '')) from cron.job"
+FPQ="select format('select %L||'' ''||count(*)||'' ''||md5(coalesce(string_agg(x::text, E''\\n'' order by x::text collate \"C\"), '''')) from %I.%I x', n.nspname||'.'||c.relname, n.nspname, c.relname) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') order by n.nspname||'.'||c.relname"
+CRONFP="select 'cron.job '||count(*)||' '||md5(coalesce(string_agg(jobname||'|'||schedule||'|'||command||'|'||active, E'\\n' order by jobname collate \"C\"), '')) from cron.job"
 CRONQ="select format('select cron.schedule(%L, %L, %L);', jobname, schedule, command) || case when active then '' else format(' update cron.job set active = false where jobname = %L;', jobname) end from cron.job order by jobname"
 EXTQ="select format('create schema if not exists %I; create extension if not exists %I with schema %I;', n.nspname, e.extname, n.nspname) from pg_extension e join pg_namespace n on n.oid = e.extnamespace where e.extname in ('pg_trgm', 'btree_gist') and n.nspname not in ('public', 'private', 'auth', 'storage')"
 PUBQ="select exists (select 1 from pg_namespace n, aclexplode(coalesce(n.nspacl, acldefault('n', n.nspowner))) a where n.nspname = 'public' and a.grantee = 0 and a.privilege_type = 'USAGE')"
@@ -50,6 +50,13 @@ cat > "$SRCSQL" <<PSQL
 \\pset tuples_only on
 \\pset format unaligned
 begin isolation level repeatable read read only;
+select current_setting('transaction_read_only') = 'on' and current_setting('default_transaction_read_only') = 'on' as ro \\gset
+\\if :ro
+\\echo 'snapshot read-only: yes'
+\\else
+\\echo 'FAIL: snapshot is not read-only'
+select 1/0;
+\\endif
 select pg_export_snapshot() as snap \\gset
 \\setenv SNAP :snap
 \\! pg_dump "\$SRC" --snapshot="\$SNAP" -Fc --no-subscriptions -n public -n private -n auth -n storage -f /out/$B.dump && touch /out/$B.dump.ok

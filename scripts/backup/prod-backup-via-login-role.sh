@@ -49,7 +49,16 @@ print('postgresql://%s.%s:%s@%s:5432/postgres?sslmode=require' % (d['role'], sys
 " "$REF" "$POOLER" > "$URLF"
 chmod 600 "$URLF"
 
-ENVF=$(mktemp "$OUT/.env.XXXXXX"); printf 'SRC=%s\n' "$(cat "$URLF")" > "$ENVF"
+ENVF=$(mktemp "$OUT/.env.XXXXXX")
+# Owner (2026-11-26): the FULL_READ role can write, so EVERY connection to production starts read-only: libpq sends
+# default_transaction_read_only=on at connect (PGOPTIONS), and each check below proves the server applied it.
+printf 'SRC=%s\nPGOPTIONS=-c default_transaction_read_only=on\n' "$(cat "$URLF")" > "$ENVF"
+echo "read-only enforcement check:"
+ro=$(docker run -i --rm --env-file "$ENVF" postgres:17 bash -c 'psql "$SRC" -X -q -A -t -c "show default_transaction_read_only"')
+[ "$ro" = on ] || { rm -f "$ENVF"; echo "FAIL: connection is not read-only by default ($ro); nothing dumped"; exit 4; }
+probe=$(docker run -i --rm --env-file "$ENVF" postgres:17 bash -c 'psql "$SRC" -X -q -A -t -c "create temp table nearby_ro_probe(x int)" 2>&1' || true)
+echo "$probe" | grep -q 'read-only transaction' || { rm -f "$ENVF"; echo "FAIL: write probe was not refused as read-only"; exit 4; }
+echo "   default_transaction_read_only=on; write probe refused (read-only transaction)"
 echo "permission check:"
 docker run -i --rm --env-file "$ENVF" postgres:17 bash -c 'psql "$SRC" -X -q -A -t -v ON_ERROR_STOP=1' <<'SQL' || { rm -f "$ENVF"; echo "FAIL: permission check"; exit 4; }
 select 'read_only_default='||current_setting('default_transaction_read_only');
