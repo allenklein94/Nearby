@@ -79,7 +79,7 @@ select 'can_read '||count(*)||' tables' from pg_class c join pg_namespace n on n
 select 'cannot_read '||count(*)||' tables' from pg_class c join pg_namespace n on n.oid=c.relnamespace
  where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') and not has_table_privilege(c.oid,'select');
 SQL
-unread=$(docker run -i --rm -e SRC_ROLE --env-file "$ENVF" postgres:17 bash -c 'psql "$SRC" -X -q -A -t -c "set default_transaction_read_only = on" -c "set role \\"$SRC_ROLE\\"" -c "$0"' "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') and not has_table_privilege(c.oid,'select')")
+unread=$(docker run -i --rm -e SRC_ROLE --env-file "$ENVF" postgres:17 bash -c 'psql "$SRC" -X -q -A -t -c "set default_transaction_read_only = on" -c "set role $SRC_ROLE" -c "$0"' "select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where c.relkind in ('r','p') and n.nspname in ('public','private','auth','storage') and not has_table_privilege(c.oid,'select')")
 [ "$unread" = 0 ] || { rm -f "$ENVF"; echo "FAIL: role cannot read $unread tables; a backup would be incomplete"; exit 5; }
 echo "role can read every table; every source read below runs in one READ ONLY transaction"
 rm -f "$ENVF"
