@@ -50,6 +50,10 @@ cat > "$SRCSQL" <<PSQL
 \\pset tuples_only on
 \\pset format unaligned
 set default_transaction_read_only = on;
+\\if `[ -n "\$SRC_ROLE" ] && echo 1 || echo 0`
+\\set r `echo \$SRC_ROLE`
+set role :"r";
+\\endif
 begin isolation level repeatable read read only;
 select current_setting('transaction_read_only') = 'on' and current_setting('default_transaction_read_only') = 'on' as ro \\gset
 \\if :ro
@@ -60,8 +64,8 @@ select 1/0;
 \\endif
 select pg_export_snapshot() as snap \\gset
 \\setenv SNAP :snap
-\\! pg_dump "\$SRC" --snapshot="\$SNAP" -Fc --no-subscriptions -n public -n private -n auth -n storage -f /out/$B.dump && touch /out/$B.dump.ok
-\\! pg_dump "\$SRC" --snapshot="\$SNAP" --schema-only -n public -n private -f /out/schema-source-$TS.sql && touch /out/schema-source-$TS.sql.ok
+\\! pg_dump "\$SRC" \${SRC_ROLE:+--role="\$SRC_ROLE"} --snapshot="\$SNAP" -Fc --no-subscriptions -n public -n private -n auth -n storage -f /out/$B.dump && touch /out/$B.dump.ok
+\\! pg_dump "\$SRC" \${SRC_ROLE:+--role="\$SRC_ROLE"} --snapshot="\$SNAP" --schema-only -n public -n private -f /out/schema-source-$TS.sql && touch /out/schema-source-$TS.sql.ok
 \\o /out/fp-source-$TS.txt
 $FPQ \\gexec
 $CRONFP;
@@ -76,7 +80,7 @@ commit;
 PSQL
 
 echo "1/3 source snapshot: dump + schema + fingerprints + cron -> $DUMP"
-docker run --rm $NETFLAG --user "$(id -u):$(id -g)" -e HOME=/tmp --env-file "$ENVF" -v "$OUT":/out "$CLIENT" bash -c \
+docker run --rm $NETFLAG --user "$(id -u):$(id -g)" -e HOME=/tmp -e SRC_ROLE --env-file "$ENVF" -v "$OUT":/out "$CLIENT" bash -c \
   'umask 077; psql "$SRC" -X -q -f /out/'"$(basename "$SRCSQL")" > "$OUT/source-$TS.log" 2>&1 || { echo "FAIL: source snapshot (see source-$TS.log)"; exit 3; }
 [ -f "$DUMP.ok" ] || { echo "FAIL: pg_dump did not finish (see source-$TS.log)"; rm -f "$DUMP"; exit 3; }
 [ -f "$OUT/schema-source-$TS.sql.ok" ] || { echo "FAIL: schema dump did not finish"; exit 3; }
