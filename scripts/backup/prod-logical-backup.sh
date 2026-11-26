@@ -49,6 +49,7 @@ cat > "$SRCSQL" <<PSQL
 \\set ON_ERROR_STOP 1
 \\pset tuples_only on
 \\pset format unaligned
+set default_transaction_read_only = on;
 begin isolation level repeatable read read only;
 select current_setting('transaction_read_only') = 'on' and current_setting('default_transaction_read_only') = 'on' as ro \\gset
 \\if :ro
